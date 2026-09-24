@@ -758,7 +758,7 @@ class FileSystem
             $data                     = curl_exec($ch);
             $responseInfo['status']  = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
             $responseInfo['headers'] = $responseHeaders;
-            curl_close($ch);
+            unset($ch);
         } else {
             throw new RuntimeException(sprintf('Unable to get content from "%s". CURL not initializes.
             Is PHP-curl extension installed?', $url));
@@ -939,7 +939,7 @@ class FileSystem
                 $success    = curl_exec($ch);
                 $curlErrno  = curl_errno($ch);
                 $httpStatus = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-                curl_close($ch);
+                unset($ch);
                 fclose($fp);
 
                 if ($success === false || $curlErrno !== 0 || $httpStatus < 200 || $httpStatus >= 300) {

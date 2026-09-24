@@ -133,7 +133,7 @@ MESSAGE;
                         if (function_exists('finfo_open')) {
                             $finfo  = finfo_open(FILEINFO_MIME);
                             $output = finfo_file($finfo, $tmpName);
-                            finfo_close($finfo);
+                            unset($finfo);
 
                             $output = explode('; ', $output);
                             if (is_array($output)) {

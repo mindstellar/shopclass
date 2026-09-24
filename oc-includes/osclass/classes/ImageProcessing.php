@@ -103,7 +103,6 @@ class ImageProcessing
                     imagesavealpha($bg, true);
                     imagealphablending($bg, true);
                     imagecopy($bg, $this->im, 0, 0, 0, 0, $this->width, $this->height);
-                    imagedestroy($this->im);
                     $this->im = $bg;
                 }
                 break;
@@ -128,10 +127,9 @@ class ImageProcessing
      */
     public function __destruct()
     {
+        // A GD image is an object since PHP 8.0 and is freed with it; only Imagick needs this.
         if ($this->use_imagick) {
             $this->im->destroy();
-        } else {
-            imagedestroy($this->im);
         }
     }
 
@@ -249,7 +247,6 @@ class ImageProcessing
                 $this->width,
                 $this->height
             );
-            imagedestroy($this->im);
             $this->im = $newIm;
         }
         $this->width  = $width;
@@ -526,7 +523,7 @@ class ImageProcessing
                 $watermark_height,
                 100
             );
-            imagedestroy($watermark);
+            unset($watermark);
         }
 
         return $this;
@@ -649,8 +646,7 @@ class ImageProcessing
             //Write Image
             imagepng($image, osc_uploads_path() . $watermark_filename);
 
-            // Clean memory
-            imagedestroy($image);
+            unset($image);
         }
 
         // save new image name to preference

@@ -78,7 +78,7 @@ final class UploadMimes
             $finfo = @finfo_open(FILEINFO_MIME_TYPE);
             if ($finfo !== false) {
                 $mime = (string)@finfo_file($finfo, $path);
-                @finfo_close($finfo);
+                unset($finfo);
             }
         }
         if ($mime === '' && function_exists('mime_content_type')) {
