@@ -73,6 +73,7 @@ file_put_contents($outside . 'index.php', "<?php\n/*\nTheme Name: Evil\n*/\n");
 $makeTheme('storefront');
 $makeTheme('folio');
 $makeTheme('my-theme');
+$makeTheme('my.theme');
 
 $themes = new WebThemes();
 
@@ -117,7 +118,7 @@ harness_section('getListThemes is the allowlist the preview checks against');
 
 $installed = $themes->getListThemes();
 sort($installed);
-pin('it lists the installed themes', array('folio', 'my-theme', 'storefront'), $installed);
+pin('it lists the installed themes, a dotted name too', array('folio', 'my-theme', 'my.theme', 'storefront'), $installed);
 check('and not the directory planted outside', !in_array('outside', $installed, true));
 check('a traversal string is not in it', !in_array('../outside', $installed, true));
 
