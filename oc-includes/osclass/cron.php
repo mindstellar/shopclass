@@ -122,6 +122,7 @@ if (is_array($cron)) {
         // anything; what is left is history, and under a sustained guessing run
         // the table is the fastest-growing one in the schema.
         \mindstellar\security\LoginThrottle::prune();
+        \mindstellar\security\RateLimit::prune();
 
         // Pre-generate the XML sitemap into the object cache so bots never trigger
         // the (potentially heavy) location scans on the request path. Regeneration

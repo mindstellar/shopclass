@@ -708,6 +708,16 @@ CREATE TABLE /*TABLE_PREFIX*/t_login_attempt (
         INDEX idx_date (dt_date)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
+CREATE TABLE /*TABLE_PREFIX*/t_rate_counter (
+    s_bucket VARCHAR(100) NOT NULL,
+    i_window INT UNSIGNED NOT NULL,
+    i_expires INT UNSIGNED NOT NULL,
+    i_count INT UNSIGNED NOT NULL DEFAULT 0,
+
+        PRIMARY KEY (s_bucket, i_window),
+        INDEX idx_expires (i_expires)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
 CREATE TABLE /*TABLE_PREFIX*/t_item_upload_tmp (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     s_token VARCHAR(64) NOT NULL DEFAULT '',

@@ -163,6 +163,8 @@ jobs:
         run: php tests/route-hook-dispatch.php
       - name: Symlinked plugin paths
         run: php tests/plugin-path-symlink.php
+      - name: Private-network address guard
+        run: php tests/address-guard.php
       # A priority outside the old 0-10 loop was stored and never run, with no warning.
       - name: Hook priority
         run: php tests/hook-priority.php
