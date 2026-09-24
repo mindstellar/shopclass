@@ -101,6 +101,7 @@ In development.
 
 ### Security
 
+- A theme or plugin name made only of dots, such as `..`, is refused, so a child theme cannot name the folder above the themes as its parent.
 - The email template test send needs a CSRF token.
 - Search alert emails escape listing titles and the subscriber's name and address in the
   message body. The `alert_email_*_description_after` filters now receive that escaped text.
