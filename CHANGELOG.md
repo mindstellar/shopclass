@@ -60,6 +60,7 @@ In development.
 - `osc_job_enqueue()` refuses a payload larger than 64 KB instead of storing it cut off.
 - A route's captured values arrive decoded on friendly URLs, the same as with `?page=route`.
 - A theme in a folder with a dot in its name, such as `my.theme`, now shows under Appearance.
+- A plugin symlinked into `oc-content/plugins/` gets its own hook names, so install and uninstall run.
 - The admin sidebar no longer jumps at the end of opening or closing a group.
 - A refused save no longer moves the admin sidebar's highlight to Dashboard.
 - Saving an email template with a taken internal name no longer saved half of it.
