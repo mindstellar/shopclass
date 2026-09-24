@@ -301,6 +301,7 @@ filter billing_listing_limit_message
 filter body_class
 filter bot_user_agents
 filter cache_relevant_cookies
+filter cli_commands
 filter comment_bulk_filter
 filter comments_processing_row
 filter contact_params

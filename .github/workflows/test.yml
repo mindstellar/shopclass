@@ -147,6 +147,9 @@ jobs:
       # Core finds a template to send by its internal name, so a save must never rename it.
       - name: Email template save
         run: php tests/admin-email-save.php
+      # A plugin adds oc-cli.php commands through a filter; it must never replace a core one.
+      - name: CLI commands filter
+        run: php tests/cli-commands-filter.php
       # Every mail used to go out HTML-only: the plain copy each builder handed over
       # was never read. Pins the conversion, and that link addresses survive it.
       - name: Mail plain-text copy

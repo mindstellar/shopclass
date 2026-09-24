@@ -69,6 +69,31 @@ class Cli
     ];
 
     /**
+     * Commands a plugin added through the `cli_commands` filter.
+     *
+     * @var array<string, array{callback: callable, summary: string}>
+     */
+    private array $added = [];
+
+    /**
+     * Collect the commands plugins add. A plugin cannot take over a core command's name.
+     */
+    public function __construct()
+    {
+        $added = function_exists('osc_apply_filter') ? osc_apply_filter('cli_commands', array()) : array();
+        foreach (is_array($added) ? $added : array() as $name => $spec) {
+            if (is_string($name) && $name !== '' && !isset($this->commands[$name])
+                && is_array($spec) && isset($spec['callback']) && is_callable($spec['callback'])
+            ) {
+                $this->added[$name] = array(
+                    'callback' => $spec['callback'],
+                    'summary'  => (string)($spec['summary'] ?? ''),
+                );
+            }
+        }
+    }
+
+    /**
      * Entry point: dispatch one CLI invocation.
      *
      * @param array<int, string> $argv arguments after the script name
@@ -94,17 +119,21 @@ class Cli
             $command = 'help';
         }
 
-        if (!isset($this->commands[$command])) {
+        if (!isset($this->commands[$command]) && !isset($this->added[$command])) {
             $this->err(sprintf("Unknown command: %s\n\n", $command));
             $this->cmdHelp([]);
 
             return 2;
         }
 
-        $args   = $this->parseOptions(array_slice($argv, 1));
-        $method = $this->commands[$command][0];
+        $args = $this->parseOptions(array_slice($argv, 1));
 
         try {
+            if (isset($this->added[$command])) {
+                return (int) call_user_func($this->added[$command]['callback'], $args);
+            }
+            $method = $this->commands[$command][0];
+
             return (int) $this->$method($args);
         } catch (\Throwable $e) {
             $this->err('Error: ' . $e->getMessage() . "\n");
@@ -1453,6 +1482,12 @@ class Cli
         $this->out("Commands:\n");
         foreach ($this->commands as $name => [, $summary]) {
             $this->out(sprintf("  %-20s %s\n", $name, $summary));
+        }
+        if ($this->added !== array()) {
+            $this->out("\nAdded by plugins:\n");
+            foreach ($this->added as $name => $spec) {
+                $this->out(sprintf("  %-20s %s\n", $name, $spec['summary']));
+            }
         }
 
         return 0;

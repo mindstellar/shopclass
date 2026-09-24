@@ -125,7 +125,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 511 names. Generated from the source; do not edit by hand.
+Core fires 512 names. Generated from the source; do not edit by hand.
 
 ### Admin (77)
 
@@ -415,7 +415,7 @@ Core fires 511 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/osclass/classes/model/Search.php` |
 
-### Other (183)
+### Other (184)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -479,6 +479,7 @@ Core fires 511 names. Generated from the source; do not edit by hand.
 | `body_class` | filter | `$classes, $class` | `oc-includes/osclass/helpers/hTheme.php` |
 | `cache_relevant_cookies` | filter | `array_values(array_unique(array( session_name() ?: 'osclass', 'osclass', 'oc_cache_bypass', 'oc_userLocale', )))` | `oc-includes/osclass/helpers/hHttpCache.php` |
 | `change_email_confirm` | action | `Params::getParam('userId'), $userOldEmail, $userEmailTmp['s_new_email']` | `oc-includes/osclass/classes/controller/CWebUserNonSecure.php` |
+| `cli_commands` | filter | `array()` | `oc-includes/osclass/classes/cli/Cli.php` |
 | `contact_form` | action | — | `oc-includes/osclass/gui/contact-content.php` |
 | `contact_params` | filter | `$params` | `oc-includes/osclass/classes/controller/CWebContact.php` |
 | `correct_login_url_redirect` | filter | `$url_redirect` | `oc-includes/osclass/classes/controller/CWebLogin.php` |
