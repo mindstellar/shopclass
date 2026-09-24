@@ -1198,13 +1198,13 @@ final class LocationImporter
      * that is what a visitor reads. Matching them has to ignore both, along with the
      * spacing and punctuation that move between snapshots: "Villeneuve-d'Ascq" and
      * "Villeneuve d Ascq" are one place written twice, and a comparison that says
-     * otherwise imports it twice.
+     * otherwise imports it twice. Public so a listing importer matches places the same way.
      *
      * @param string $value
      *
      * @return string
      */
-    private static function normalizeKey(string $value): string
+    public static function normalizeKey(string $value): string
     {
         $value = trim($value);
         if ($value === '') {
