@@ -1978,8 +1978,14 @@ class ItemActions
 
         $userId = null;
         if ($this->is_admin) {
-            // user
-            $data = User::newInstance()->findByEmail(Params::getParam('contactEmail'));
+            // An explicit ownerId names the account, 0 for none. Without it the admin
+            // editor's rule applies: the account whose e-mail is the contact e-mail.
+            if (Params::existParam('ownerId')) {
+                $ownerId = Params::getParamInt('ownerId');
+                $data    = $ownerId > 0 ? User::newInstance()->findByPrimaryKey($ownerId) : array();
+            } else {
+                $data = User::newInstance()->findByEmail(Params::getParam('contactEmail'));
+            }
             if (isset($data['pk_i_id']) && is_numeric($data['pk_i_id'])) {
                 $userId = $data['pk_i_id'];
             }
