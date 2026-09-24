@@ -129,6 +129,25 @@ know why:
 php oc-cli.php doctor
 ```
 
+## Commands added by plugins
+
+A plugin can add its own commands with the `cli_commands` filter. `help` lists them
+under **Added by plugins**. A plugin cannot replace a core command.
+
+```php
+osc_add_filter('cli_commands', function (array $commands) {
+    $commands['acme:sync'] = array(
+        'summary'  => 'Sync listings from Acme (--dry-run)',
+        'callback' => function (array $args): int {
+            // $args holds the parsed options: --dry-run becomes 'dry-run' => true.
+            return 0; // the exit code
+        },
+    );
+
+    return $commands;
+});
+```
+
 ## Legacy invocation
 
 The older cron entry point still works for existing crontabs:
