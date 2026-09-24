@@ -907,6 +907,7 @@ return array(
     'mindstellar\\security\\ActionThrottle' => $baseDir . '/oc-includes/osclass/classes/security/ActionThrottle.php',
     'mindstellar\\security\\ActionToken' => $baseDir . '/oc-includes/osclass/classes/security/ActionToken.php',
     'mindstellar\\security\\AddressGuard' => $baseDir . '/oc-includes/osclass/classes/security/AddressGuard.php',
+    'mindstellar\\security\\FailOpen' => $baseDir . '/oc-includes/osclass/classes/security/FailOpen.php',
     'mindstellar\\security\\LoginThrottle' => $baseDir . '/oc-includes/osclass/classes/security/LoginThrottle.php',
     'mindstellar\\security\\PluginAjaxFile' => $baseDir . '/oc-includes/osclass/classes/security/PluginAjaxFile.php',
     'mindstellar\\security\\RateLimit' => $baseDir . '/oc-includes/osclass/classes/security/RateLimit.php',

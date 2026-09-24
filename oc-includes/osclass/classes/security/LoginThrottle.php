@@ -217,12 +217,7 @@ class LoginThrottle
      */
     private static function unavailable(\Throwable $e)
     {
-        static $logged = false;
-
-        if (!$logged) {
-            $logged = true;
-            error_log('LoginThrottle unavailable, allowing the attempt: ' . $e->getMessage());
-        }
+        FailOpen::log('LoginThrottle', 'the attempt', $e);
     }
 
     /**

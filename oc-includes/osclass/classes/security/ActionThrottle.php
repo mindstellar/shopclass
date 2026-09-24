@@ -115,11 +115,6 @@ class ActionThrottle
      */
     private static function unavailable(\Throwable $e)
     {
-        static $logged = false;
-
-        if (!$logged) {
-            $logged = true;
-            error_log('ActionThrottle unavailable, allowing the action: ' . $e->getMessage());
-        }
+        FailOpen::log('ActionThrottle', 'the action', $e);
     }
 }

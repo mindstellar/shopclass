@@ -85,17 +85,7 @@ final class JobQueue
     {
         JobRegistry::assertType($type);
 
-        $encoded = json_encode($payload);
-        if ($encoded === false) {
-            throw new InvalidArgumentException(
-                'Job payload for "' . $type . '" cannot be encoded: ' . json_last_error_msg()
-            );
-        }
-        if (strlen($encoded) > self::MAX_PAYLOAD_BYTES) {
-            throw new InvalidArgumentException(
-                'Job payload for "' . $type . '" is larger than ' . self::MAX_PAYLOAD_BYTES . ' bytes'
-            );
-        }
+        $encoded = self::encode($payload, 'Job payload for "' . $type . '"');
 
         $delay   = max(0, (int) ($options['delay'] ?? 0));
         $storage = $options['storage'] ?? null;
@@ -196,14 +186,10 @@ final class JobQueue
      */
     public function repeat(int $id, array $payload, int $delaySeconds = 0): void
     {
-        $encoded = json_encode($payload);
-        if ($encoded === false) {
-            $this->fail($id, 'Repeat payload cannot be encoded: ' . json_last_error_msg());
-
-            return;
-        }
-        if (strlen($encoded) > self::MAX_PAYLOAD_BYTES) {
-            $this->fail($id, 'Repeat payload is larger than ' . self::MAX_PAYLOAD_BYTES . ' bytes');
+        try {
+            $encoded = self::encode($payload, 'Repeat payload');
+        } catch (InvalidArgumentException $e) {
+            $this->fail($id, $e->getMessage());
 
             return;
         }
@@ -219,6 +205,28 @@ final class JobQueue
         } catch (DbException $e) {
             // absorbed; the stale-lock sweep recovers it
         }
+    }
+
+    /**
+     * A payload as the JSON s_payload stores.
+     *
+     * @param array<string,mixed> $payload
+     * @param string              $what    names the payload in the error
+     *
+     * @return string
+     * @throws InvalidArgumentException when it cannot be encoded or is larger than MAX_PAYLOAD_BYTES
+     */
+    private static function encode(array $payload, string $what): string
+    {
+        $encoded = json_encode($payload);
+        if ($encoded === false) {
+            throw new InvalidArgumentException($what . ' cannot be encoded: ' . json_last_error_msg());
+        }
+        if (strlen($encoded) > self::MAX_PAYLOAD_BYTES) {
+            throw new InvalidArgumentException($what . ' is larger than ' . self::MAX_PAYLOAD_BYTES . ' bytes');
+        }
+
+        return $encoded;
     }
 
     /**

@@ -1034,6 +1034,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\security\\ActionThrottle' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/ActionThrottle.php',
         'mindstellar\\security\\ActionToken' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/ActionToken.php',
         'mindstellar\\security\\AddressGuard' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/AddressGuard.php',
+        'mindstellar\\security\\FailOpen' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/FailOpen.php',
         'mindstellar\\security\\LoginThrottle' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/LoginThrottle.php',
         'mindstellar\\security\\PluginAjaxFile' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/PluginAjaxFile.php',
         'mindstellar\\security\\RateLimit' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/RateLimit.php',
