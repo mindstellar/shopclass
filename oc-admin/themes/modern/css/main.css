@@ -22210,27 +22210,32 @@ form h3, form .h3 {
   }
   #upload-plugins thead,
   #email-templates thead,
-  #media-table thead {
+  #media-table thead,
+  .osc-table-stack thead {
     display: none;
   }
   #upload-plugins td,
   #email-templates td,
-  #media-table td {
+  #media-table td,
+  .osc-table-stack td {
     display: block;
   }
   #upload-plugins td:empty,
   #email-templates td:empty,
-  #media-table td:empty {
+  #media-table td:empty,
+  .osc-table-stack td:empty {
     display: none;
   }
   #upload-plugins td:first-child,
   #email-templates td:first-child,
-  #media-table td:first-child {
+  #media-table td:first-child,
+  .osc-table-stack td:first-child {
     font-weight: 600;
   }
   #upload-plugins td:not(:first-child)[data-col-name]::before,
   #email-templates td:not(:first-child)[data-col-name]::before,
-  #media-table td:not(:first-child)[data-col-name]::before {
+  #media-table td:not(:first-child)[data-col-name]::before,
+  .osc-table-stack td:not(:first-child)[data-col-name]::before {
     content: attr(data-col-name) ": ";
     padding-inline-end: 0.5rem;
     font-weight: 500;

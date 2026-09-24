@@ -146,9 +146,11 @@
   // Simple content tables (no bulk-actions column) collapse to labelled cards on
   // phones, mirroring the datatables pattern: drop the header row, make the first
   // cell the card title, and prefix every other cell with its column name.
+  // .osc-table-stack is the same layout for a table of a plugin's own.
   #upload-plugins,
   #email-templates,
-  #media-table {
+  #media-table,
+  .osc-table-stack {
     thead {
       display: none;
     }

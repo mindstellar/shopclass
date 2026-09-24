@@ -440,6 +440,9 @@ These are published and additive. Restyle them freely — they will not be renam
 `osc-disclosure-hint`, `osc-disclosure-body`, `osc-user-card`, `field-error`, and the
 `data-osc-tab-error` and `data-osc-tab-mine` attributes on a locale tab.
 
+On a list screen of your own, add `osc-table-stack` to the element around a table. On a phone
+each row then becomes a card, and each cell is labelled from its `data-col-name` attribute.
+
 The rich-text field is the exception: it mounts a third-party editor, whose own markup is
 not a contract. Style it through `.osc-field` around it, not the editor's internals.
 
