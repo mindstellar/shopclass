@@ -268,7 +268,7 @@ function osc_theme_asset_url($file = '')
     $current = (string) $themes->getCurrentTheme();
     $info    = $themes->loadThemeInfo($current);
     if (!is_array($info) || empty($info['template'])
-        || !preg_match('/^[a-zA-Z0-9._-]+$/', (string) $info['template'])
+        || !preg_match('/^(?!\.+$)[a-zA-Z0-9._-]+$/', (string) $info['template'])
         || $info['template'] === $current
     ) {
         return $ownUrl;
@@ -306,7 +306,7 @@ function osc_current_web_theme_path($file = '')
     $current = (string) $themes->getCurrentTheme();
     $info    = $themes->loadThemeInfo($current);
     if (is_array($info) && !empty($info['template'])
-        && preg_match('/^[a-zA-Z0-9._-]+$/', (string) $info['template'])
+        && preg_match('/^(?!\.+$)[a-zA-Z0-9._-]+$/', (string) $info['template'])
         && $info['template'] !== $current
     ) {
         $parentPath = osc_themes_path() . $info['template'] . '/';

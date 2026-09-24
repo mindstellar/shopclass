@@ -71,7 +71,7 @@ class Plugin extends UpgradePackage
         // Plugins::listAll() emits; getInfo() needs the latter, the paths below the former.
         $slug = is_string($plugin_short_name) ? explode('/', trim($plugin_short_name, '/'))[0] : '';
         if ($slug === ''
-            || !preg_match('/^[a-zA-Z0-9._-]+$/', $slug)
+            || !preg_match('/^(?!\.+$)[a-zA-Z0-9._-]+$/', $slug)
             || !is_file(PLUGINS_PATH . $slug . '/index.php')
         ) {
             throw new RuntimeException(__('Invalid plugin name.'));

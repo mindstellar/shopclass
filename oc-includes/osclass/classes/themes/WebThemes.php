@@ -72,7 +72,7 @@ class WebThemes extends Themes
 
         $info = $this->loadThemeInfo($this->theme);
         if (isset($info['template']) && $info['template'] !== ''
-            && preg_match('/^[a-zA-Z0-9._-]+$/', (string) $info['template'])
+            && preg_match('/^(?!\.+$)[a-zA-Z0-9._-]+$/', (string) $info['template'])
             && $info['template'] !== $this->theme
         ) {
             $parent_functions_path = osc_base_path() . 'oc-content/themes/' . $info['template'] . '/functions.php';
@@ -233,7 +233,7 @@ class WebThemes extends Themes
     {
         // A theme is a directory name, never a path. Belt and braces behind the
         // caller-side checks: nothing may resolve outside oc-content/themes/.
-        if (preg_match('/^[a-zA-Z0-9._-]+$/', (string) $this->theme)
+        if (preg_match('/^(?!\.+$)[a-zA-Z0-9._-]+$/', (string) $this->theme)
             && strpos((string) $this->theme, '..') === false
             && file_exists($this->path . $this->theme . '/')
         ) {

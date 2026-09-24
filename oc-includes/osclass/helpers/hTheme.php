@@ -116,7 +116,7 @@ function osc_theme_template_paths(): array
 
     $info = $themes->loadThemeInfo($themes->getCurrentTheme());
     if (is_array($info) && isset($info['template']) && $info['template'] !== ''
-        && preg_match('/^[a-zA-Z0-9._-]+$/', $info['template'])
+        && preg_match('/^(?!\.+$)[a-zA-Z0-9._-]+$/', $info['template'])
     ) {
         $parent = osc_themes_path() . $info['template'] . '/';
         if (is_dir($parent)) {
@@ -239,7 +239,7 @@ function osc_theme_chrome(): ?array
     // own shell is the right answer when nothing in the active lineage answers.
     $info = $themes->loadThemeInfo($themes->getCurrentTheme());
     if (is_array($info) && isset($info['template']) && $info['template'] !== ''
-        && preg_match('/^[a-zA-Z0-9._-]+$/', $info['template'])
+        && preg_match('/^(?!\.+$)[a-zA-Z0-9._-]+$/', $info['template'])
     ) {
         $parent = osc_themes_path() . $info['template'] . '/';
         if (is_dir($parent)) {
@@ -416,7 +416,7 @@ function osc_gui_view(string $themeView, string $contentFile, array $opts = arra
         // page this fallback exists to replace.
         $info = $themes->loadThemeInfo($themes->getCurrentTheme());
         if (is_array($info) && !empty($info['template'])
-            && preg_match('/^[a-zA-Z0-9._-]+$/', (string) $info['template'])
+            && preg_match('/^(?!\.+$)[a-zA-Z0-9._-]+$/', (string) $info['template'])
         ) {
             $parentPath = osc_themes_path() . $info['template'] . '/';
             if (file_exists($parentPath . $themeView)) {
@@ -1116,7 +1116,7 @@ function osc_theme_has_screenshot($theme = null)
  */
 function _osc_theme_screenshot_asset($theme)
 {
-    if (!is_string($theme) || $theme === '' || !preg_match('/^[a-zA-Z0-9._-]+$/', $theme)) {
+    if (!is_string($theme) || $theme === '' || !preg_match('/^(?!\.+$)[a-zA-Z0-9._-]+$/', $theme)) {
         return null;
     }
 

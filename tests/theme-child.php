@@ -177,6 +177,11 @@ $makeTheme('child-dots', '../../etc');
 WebThemes::$current = 'child-dots';
 pin('a parent name carrying a path is refused', array('child-dots', 'storefront'), $walk());
 
+// No slash, so it passed the name check, and it named the folder above the themes.
+$makeTheme('child-dotdot', '..');
+WebThemes::$current = 'child-dotdot';
+pin('a parent named .. is refused', array('child-dotdot', 'storefront'), $walk());
+
 $makeTheme('child-blank', '');
 WebThemes::$current = 'child-blank';
 pin('an empty Parent Theme is not a parent', array('child-blank', 'storefront'), $walk());
