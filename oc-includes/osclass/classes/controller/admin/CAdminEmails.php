@@ -69,23 +69,10 @@ class CAdminEmails extends AdminSecBaseModel
                 osc_csrf_check();
                 $id = Params::getParam('id');
 
-                $aFieldsDescription = array();
-                $postParams         = Params::getParamsAsArray('', false);
-                $not_empty          = false;
-                foreach ($postParams as $k => $v) {
-                    if (preg_match('|(.+?)#(.+)|', $k, $m)) {
-                        if ($m[2] == 's_title' && $v != '') {
-                            $not_empty = true;
-                        }
-                        $aFieldsDescription[$m[1]][$m[2]] = $v;
-                    }
-                }
-
+                $aFieldsDescription = self::descriptions(Params::getParamsAsArray('', false));
                 Session::newInstance()->_setForm('aFieldsDescription', $aFieldsDescription);
 
-                // The internal name is how core finds a template to send, so it is never
-                // renamed here.
-                if (!$not_empty) {
+                if (!self::save($id, $aFieldsDescription, $this->emailManager)) {
                     $error = _m('The email couldn\'t be updated, at least one title should not be empty');
                     osc_add_flash_error_message($error, 'admin');
                     $this->_exportVariableToView('editorErrors', array('s_title' => $error));
@@ -94,9 +81,6 @@ class CAdminEmails extends AdminSecBaseModel
                     break;
                 }
 
-                foreach ($aFieldsDescription as $k => $_data) {
-                    $this->emailManager->updateDescription($id, $k, $_data['s_title'], $_data['s_text']);
-                }
                 Session::newInstance()->_clearVariables();
                 osc_add_flash_ok_message(_m('The email/alert has been updated'), 'admin');
                 $this->redirectTo(osc_admin_base_url(true) . '?page=emails');
@@ -175,6 +159,56 @@ class CAdminEmails extends AdminSecBaseModel
 
                 $this->doView('emails/index.php');
         }
+    }
+
+    /**
+     * The posted subject and message of each locale, from fields named '<locale>#<field>'.
+     *
+     * @param array<string,mixed> $post the request parameters
+     *
+     * @return array<string,array<string,string>> locale code => field => value
+     */
+    public static function descriptions(array $post): array
+    {
+        $descriptions = array();
+        foreach ($post as $key => $value) {
+            if (is_string($value) && preg_match('|(.+?)#(.+)|', (string)$key, $m)) {
+                $descriptions[$m[1]][$m[2]] = $value;
+            }
+        }
+
+        return $descriptions;
+    }
+
+    /**
+     * Write a template's subject and message in every locale posted.
+     *
+     * Nothing is written unless one locale has a subject. The internal name is how core finds
+     * a template to send, so it is never changed here.
+     *
+     * @param int|string                         $id
+     * @param array<string,array<string,string>> $descriptions from descriptions()
+     * @param Page                               $pages
+     *
+     * @return bool false when the save was refused
+     */
+    public static function save($id, array $descriptions, Page $pages): bool
+    {
+        $titled = false;
+        foreach ($descriptions as $fields) {
+            if (($fields['s_title'] ?? '') !== '') {
+                $titled = true;
+            }
+        }
+        if (!$titled) {
+            return false;
+        }
+
+        foreach ($descriptions as $locale => $fields) {
+            $pages->updateDescription($id, $locale, $fields['s_title'] ?? '', $fields['s_text'] ?? '');
+        }
+
+        return true;
     }
 
     //hopefully generic...
