@@ -55,6 +55,8 @@ In development.
 
 - Moving a listing to no country no longer prints a failed database query.
 - No more deprecation notices on PHP 8.5 from image resizing, downloads and contact-form attachments.
+- A job run that ran out of time left the rest of its batch waiting 15 minutes; they now run on the next tick.
+- `osc_job_enqueue()` refuses a payload larger than 64 KB instead of storing it cut off.
 - The admin sidebar no longer jumps at the end of opening or closing a group.
 - A refused save no longer moves the admin sidebar's highlight to Dashboard.
 - Saving an email template with a taken internal name no longer saved half of it.
