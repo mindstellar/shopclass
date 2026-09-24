@@ -106,10 +106,9 @@ See [installing locations](/docs/configure/locations/).
 | `jobs:status` | Show what is waiting and name anything that gave up. |
 
 Slow work — moving photos to remote storage, emptying a large category, whatever a
-plugin queues — is done in the background rather than during a page load. That queue
-also drains from the hourly `cron` tier, but a busy site fills it faster than one pass
-an hour clears, and the hourly tier does too much else to schedule it more often.
-`jobs:work` turns only that crank, so it can go on a tight schedule of its own:
+plugin queues — is done in the background rather than during a page load. Every
+`cron` run also works through that queue. `jobs:work` does only this work, so it can
+run every minute and pick new work up quickly:
 
 ```cron
 * * * * * php /path/to/site/oc-cli.php jobs:work --max-seconds=50 >/dev/null 2>&1
