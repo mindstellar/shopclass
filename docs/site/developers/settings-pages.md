@@ -105,7 +105,7 @@ Keys every field takes:
 | `collect` | `callable(array $field): mixed` — how the submission becomes this field's value, for a control core cannot read by name. It replaces the read, the trim and the purify |
 | `purify` | `false` to store markup as submitted (see below) |
 | `column` | The key to store under, when it is not the field's own name |
-| `persist` | `false` to store nowhere, or a callable returning what the key takes |
+| `persist` | `false` to store nowhere, or a callable returning what the key takes: `null` leaves it as it was, `FormSpec::WRITE_NULL` stores NULL (an empty string on a preference page) |
 | `write_only` | The control never shows what is stored |
 
 `depends` is decided again on the server. The browser hiding the row is only a

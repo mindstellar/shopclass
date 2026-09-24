@@ -123,14 +123,17 @@ deactivated with work still queued, and reactivating it is enough to let the job
 | `osc_job_forget($id)` | throw a job that gave up away |
 | `osc_job_dead_letters($limit)` | the jobs that gave up, each with its last error |
 
+A payload is stored as JSON in a 64 KB column. `osc_job_enqueue()` throws an
+`InvalidArgumentException` for one that is larger, and a `$job->repeat()` payload that
+is larger fails the job. Queue an id and read the rest when the job runs.
+
 ## Running the queue
 
-Cron drains it on every tick, which costs one query when the queue is empty. That is
-enough for most sites.
+Every `cron` run drains it, whichever tier it runs, and an empty queue costs one query.
+That is enough for most sites.
 
-A busy site should run the worker on its own schedule instead, because the hourly cron
-runs the whole hourly job — expiry mail, purges, stats — and nobody can safely run that
-every two minutes:
+To pick work up sooner than cron runs, add the worker on its own. `jobs:work` drains the
+queue and does nothing else, so it is safe to run every minute:
 
 ```
 * * * * * php /path/to/oc-cli.php jobs:work --max-seconds=50

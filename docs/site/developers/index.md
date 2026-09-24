@@ -57,6 +57,7 @@ Worth knowing before you port something:
 | Know which view file core picks | [Template hierarchy](/docs/developers/template-hierarchy/) |
 | Let core write the document head | [Theme head](/docs/developers/theme-head/) |
 | Run slow work out of the request | [Background jobs](/docs/developers/jobs/) |
+| Bring listings in from elsewhere | [Importing listings](/docs/developers/importing-listings/) |
 | Understand the schema | [Database model](/docs/developers/database/) |
 | Debug something | [PHP errors](/docs/developers/debug-php-errors/) · [SQL queries](/docs/developers/debug-sql-queries/) |
 | Contribute to core | [Contributing](/docs/developers/contributing/) |
