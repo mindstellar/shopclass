@@ -53,6 +53,7 @@ In development.
 
 ### Fixed
 
+- No more deprecation notices on PHP 8.5 from image resizing, downloads and contact-form attachments.
 - The admin sidebar no longer jumps at the end of opening or closing a group.
 - A refused save no longer moves the admin sidebar's highlight to Dashboard.
 - Saving an email template with a taken internal name no longer saved half of it.
