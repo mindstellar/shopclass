@@ -234,7 +234,8 @@ class ItemActions
             $is_spam = 1;
         }
         $_meta = Field::newInstance()->findByCategory($aItem['catId']);
-        $meta  = Params::getParam('meta');
+        // Custom field values come with the data when there is no form post, as on an import.
+        $meta  = $aItem['meta'] ?? Params::getParam('meta');
         $this->handleMetaField($_meta, $meta, $flash_error);
 
         // hook pre add
@@ -1151,7 +1152,8 @@ class ItemActions
         $flash_error .= $this->validateCommonInput($flash_error, $aItem);
 
         $_meta = Field::newInstance()->findByCategory($aItem['catId']);
-        $meta  = Params::getParam('meta');
+        // Custom field values come with the data when there is no form post, as on an import.
+        $meta  = $aItem['meta'] ?? Params::getParam('meta');
         $this->handleMetaField($_meta, $meta, $flash_error);
 
         // hook pre edit

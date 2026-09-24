@@ -1325,6 +1325,47 @@ osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
 osc_reset_preferences();
 
 /* ----------------------------------------------------------------------------
+ * ItemActions::add(): custom field values handed over with the data are saved.
+ * An importer has no form post, so 'meta' in the data stands in for the posted one.
+ * ------------------------------------------------------------------------- */
+harness_section('ItemActions::add(): custom field values from the data');
+
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hFields.php'; // handleMetaField() -> osc_field_type()
+
+$metaFieldId = seed_exec(
+    $admin,
+    'INSERT INTO ' . DB_TABLE_PREFIX . "t_meta_fields (s_name, e_type, b_required, b_searchable, s_slug, i_position, s_meta)
+     VALUES ('Colour', 'TEXT', 0, 0, 'colour', 0, '')",
+    '',
+    array()
+);
+seed_exec(
+    $admin,
+    'INSERT INTO ' . DB_TABLE_PREFIX . 't_meta_categories (fk_i_category_id, fk_i_field_id) VALUES (?, ?)',
+    'ii',
+    array($chokeCat, $metaFieldId)
+);
+
+$metaUser             = seed_user($admin, 'metadata', 'metadata@example.test');
+$metaAction           = new ItemActions(true);
+$metaAction->data     = $makeChokeItemData($metaUser, $chokeCat, 'Custom field from the data');
+$metaAction->data['meta'] = array($metaFieldId => 'Blue');
+Params::setParam('meta', null);
+$captureWarnings();
+$metaAction->add();
+restore_error_handler();
+
+$metaItemId = (int)$admin->query(
+    'SELECT MAX(pk_i_id) FROM ' . DB_TABLE_PREFIX . 't_item WHERE fk_i_user_id = ' . (int)$metaUser
+)->fetch_row()[0];
+$metaRow = $admin->query(
+    'SELECT s_value FROM ' . DB_TABLE_PREFIX . 't_item_meta WHERE fk_i_item_id = ' . $metaItemId
+    . ' AND fk_i_field_id = ' . (int)$metaFieldId
+)->fetch_row();
+check('the listing was created', $metaItemId > 0);
+pin('the custom field value in the data is saved', 'Blue', $metaRow[0] ?? null);
+
+/* ----------------------------------------------------------------------------
  * Bump: the cooldown IS the item.bump row's own expiry, not a second concept.
  * Billing::spend('item.bump') has to move dt_pub_date and debit together, and
  * a failed apply -- an item that does not exist -- has to roll both back.
