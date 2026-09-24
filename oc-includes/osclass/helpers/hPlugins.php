@@ -421,10 +421,45 @@ function _osc_plugin_icon_asset($plugin)
  */
 function osc_plugin_path($file)
 {
-    // Sanitize windows paths and duplicated slashes
-    $file        = preg_replace('|/+|', '/', str_replace('\\', '/', $file));
     $plugin_path = preg_replace('|/+|', '/', str_replace('\\', '/', osc_plugins_path()));
-    $file        = $plugin_path . preg_replace('#^.*oc-content\/plugins\/#', '', $file);
+
+    return $plugin_path . osc_plugin_relative_path($file);
+}
+
+/**
+ * A plugin file's path inside the plugins folder, e.g. `my-plugin/index.php`.
+ *
+ * `__FILE__` in a plugin symlinked in from elsewhere is its real path, outside the plugins
+ * folder; that is mapped back through the link, so the plugin keeps its own name.
+ *
+ * @param string $file
+ *
+ * @return string
+ */
+function osc_plugin_relative_path($file)
+{
+    // Sanitize windows paths and duplicated slashes
+    $file = preg_replace('|/+|', '/', str_replace('\\', '/', $file));
+    if (preg_match('#oc-content/plugins/(.*)$#', $file, $m)) {
+        return $m[1];
+    }
+
+    static $links = null;
+    if ($links === null) {
+        $links = array();
+        $entries = is_dir(osc_plugins_path()) ? scandir(osc_plugins_path()) : false;
+        foreach ($entries ?: array() as $entry) {
+            $real = $entry[0] === '.' ? false : realpath(osc_plugins_path() . $entry);
+            if ($real !== false && is_link(osc_plugins_path() . $entry)) {
+                $links[str_replace('\\', '/', $real) . '/'] = $entry . '/';
+            }
+        }
+    }
+    foreach ($links as $real => $entry) {
+        if (strpos($file, $real) === 0) {
+            return $entry . substr($file, strlen($real));
+        }
+    }
 
     return $file;
 }
@@ -438,12 +473,7 @@ function osc_plugin_path($file)
  */
 function osc_plugin_url($file)
 {
-    // Sanitize windows paths and duplicated slashes
-    $dir = preg_replace('|/+|', '/', str_replace('\\', '/', dirname($file)));
-    $dir = osc_base_url() . 'oc-content/plugins/'
-        . preg_replace('#^.*oc-content\/plugins\/#', '', $dir) . '/';
-
-    return $dir;
+    return osc_base_url() . 'oc-content/plugins/' . dirname(osc_plugin_relative_path($file)) . '/';
 }
 
 /**
@@ -455,9 +485,5 @@ function osc_plugin_url($file)
  */
 function osc_plugin_folder($file)
 {
-    // Sanitize windows paths and duplicated slashes
-    $dir = preg_replace('|/+|', '/', str_replace('\\', '/', dirname($file)));
-    $dir = preg_replace('#^.*oc-content\/plugins\/#', '', $dir) . '/';
-
-    return $dir;
+    return dirname(osc_plugin_relative_path($file)) . '/';
 }
