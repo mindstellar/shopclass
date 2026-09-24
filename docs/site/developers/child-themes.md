@@ -58,8 +58,8 @@ looks right.
 
 `Parent Theme` is the parent's **directory name**, not its display name: `storefront`, not
 `Storefront`. It must be a bare name — letters, digits, dots, underscores and hyphens only.
-A value with a slash is refused before it reaches the filesystem, and a name that does not
-match an installed theme is skipped.
+A value with a slash, or made only of dots such as `..`, is refused before it reaches the
+filesystem. A name that does not match an installed theme is skipped.
 
 ## The order Shopclass looks in
 
