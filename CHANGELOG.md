@@ -17,6 +17,8 @@ In development.
 - An admin-mode listing edit no longer needs the listing's secret.
 - `Params::withRequest()` runs code against given values in place of the request.
 - A declared form's `persist` callable can return `FormSpec::WRITE_NULL` to store NULL.
+- `mindstellar\security\RateLimit` limits requests per key (an API key, an account), with one counter row per window.
+- `mindstellar\security\AddressGuard` checks that an address someone sent is public before the server fetches it.
 - `LocationImporter::normalizeKey()` is public, so a plugin can match place names the same way.
 - `osc_core_url()` builds any core page's URL from the same table the rewrite rules are
   compiled from, so a link and the rule that answers it cannot drift apart.
