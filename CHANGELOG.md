@@ -11,6 +11,7 @@ In development.
 - `osc-table-stack` gives a plugin's own admin table the phone card layout core lists use.
 - A plugin can add its own `oc-cli.php` commands with the `cli_commands` filter.
 - `ItemActions` takes custom field values from `meta` in its data when there is no form post, so an importer can set them.
+- Admin-mode `ItemActions` takes an `ownerId` param, so a caller names the account instead of core matching the contact e-mail.
 - `LocationImporter::normalizeKey()` is public, so a plugin can match place names the same way.
 - `osc_core_url()` builds any core page's URL from the same table the rewrite rules are
   compiled from, so a link and the rule that answers it cannot drift apart.
