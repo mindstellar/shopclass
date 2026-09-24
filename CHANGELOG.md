@@ -12,6 +12,10 @@ In development.
 - A plugin can add its own `oc-cli.php` commands with the `cli_commands` filter.
 - `ItemActions` takes custom field values from `meta` in its data when there is no form post, so an importer can set them.
 - Admin-mode `ItemActions` takes an `ownerId` param, so a caller names the account instead of core matching the contact e-mail.
+- `ItemActions::prepareDataFrom()` builds a listing from plain data, so a plugin need not fill the request.
+- `ItemActions::asImport()`: no posting wait or e-mails, but listing limits and moderation still apply.
+- An admin-mode listing edit no longer needs the listing's secret.
+- `Params::withRequest()` runs code against given values in place of the request.
 - `LocationImporter::normalizeKey()` is public, so a plugin can match place names the same way.
 - `osc_core_url()` builds any core page's URL from the same table the rewrite rules are
   compiled from, so a link and the rule that answers it cannot drift apart.
