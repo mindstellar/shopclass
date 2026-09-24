@@ -111,7 +111,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         $parentOf = static function ($slug) {
             $i = WebThemes::newInstance()->loadThemeInfo($slug);
             if (!is_array($i) || empty($i['template'])
-                || !preg_match('/^[a-zA-Z0-9._-]+$/', (string) $i['template'])
+                || !preg_match('/^(?!\.+$)[a-zA-Z0-9._-]+$/', (string) $i['template'])
                 || $i['template'] === $slug
             ) {
                 return null;

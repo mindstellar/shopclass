@@ -349,12 +349,19 @@ class CAdminAppearance extends AdminSecBaseModel
                 /* /widget */
             case ('activate'):
                 osc_csrf_check();
-                osc_set_preference('theme', Params::getParam('theme'));
+                // Only an installed theme, the same rule theme:activate applies on the CLI.
+                $theme = Params::getParamString('theme');
+                if (!in_array($theme, WebThemes::newInstance()->getListThemes(), true)) {
+                    osc_add_flash_error_message(_m('That theme is not installed.'), 'admin');
+                    $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
+                    break;
+                }
+                osc_set_preference('theme', $theme);
                 // Clear opcache so the new theme's code runs at once even with
                 // opcache.validate_timestamps=Off (see Plugins::resetOpcache).
                 Plugins::resetOpcache();
                 osc_add_flash_ok_message(_m('Theme activated correctly'), 'admin');
-                osc_run_hook('theme_activate', Params::getParam('theme'));
+                osc_run_hook('theme_activate', $theme);
                 $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
                 break;
             case ('render'):
