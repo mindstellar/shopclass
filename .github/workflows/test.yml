@@ -165,6 +165,8 @@ jobs:
         run: php tests/plugin-path-symlink.php
       - name: Private-network address guard
         run: php tests/address-guard.php
+      - name: Theme list and preview allowlist
+        run: php tests/theme-preview.php
       # A priority outside the old 0-10 loop was stored and never run, with no warning.
       - name: Hook priority
         run: php tests/hook-priority.php

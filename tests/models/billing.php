@@ -1366,6 +1366,83 @@ check('the listing was created', $metaItemId > 0);
 pin('the custom field value in the data is saved', 'Blue', $metaRow[0] ?? null);
 
 /* ----------------------------------------------------------------------------
+ * ItemActions for an importer: asImport() is admin mode that still applies the
+ * listing limit and moderation, an admin edit needs no secret, and
+ * prepareDataFrom() reads plain data with ownerId naming the account.
+ * ------------------------------------------------------------------------- */
+harness_section('ItemActions: import mode, admin edit, data in');
+
+$itemCol = static function (int $id, string $col) use ($admin) {
+    $row = $admin->query('SELECT ' . $col . ' FROM ' . DB_TABLE_PREFIX . 't_item WHERE pk_i_id = ' . $id)->fetch_row();
+
+    return $row[0] ?? null;
+};
+$lastItem = static function (int $userId) use ($admin): int {
+    return (int)$admin->query('SELECT MAX(pk_i_id) FROM ' . DB_TABLE_PREFIX . 't_item WHERE fk_i_user_id = ' . $userId)->fetch_row()[0];
+};
+
+osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');
+osc_set_preference('billing_free_live_listings', '1', 'osclass', 'INTEGER');
+osc_reset_preferences();
+$fullUser = seed_user($admin, 'importfull', 'importfull@example.test');
+
+$captureWarnings();
+$plain       = new ItemActions(true);
+$plain->data = $makeChokeItemData($fullUser, $chokeCat, 'Admin post over the limit');
+$plainResult = $plain->add();
+$import       = (new ItemActions(true))->asImport();
+$import->data = $makeChokeItemData($fullUser, $chokeCat, 'Import over the limit');
+$importResult = $import->add();
+restore_error_handler();
+pin('a plain admin post is not metered, and takes the one slot', 2, $plainResult);
+check('an import is held to the owner\'s listing limit', is_string($importResult) && $importResult !== '');
+
+osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
+osc_set_preference('moderate_admin_post', '1', 'osclass', 'BOOLEAN');
+osc_reset_preferences();
+$modUser = seed_user($admin, 'importmod', 'importmod@example.test');
+$captureWarnings();
+$import       = (new ItemActions(true))->asImport();
+$import->data = $makeChokeItemData($modUser, $chokeCat, 'Import under moderation');
+$import->add();
+$modItem      = $lastItem($modUser);
+$plain        = new ItemActions(true);
+$plain->data  = $makeChokeItemData($modUser, $chokeCat, 'Admin post under moderation');
+$plain->add();
+$plainItem    = $lastItem($modUser);
+restore_error_handler();
+pin('an import waits for moderation', '0', $itemCol($modItem, 'b_enabled'));
+pin('a plain admin post does not', '1', $itemCol($plainItem, 'b_enabled'));
+osc_set_preference('moderate_admin_post', '0', 'osclass', 'BOOLEAN');
+osc_reset_preferences();
+
+$captureWarnings();
+$edit         = new ItemActions(true);
+$edit->data   = array('idItem' => $plainItem, 'secret' => 'not-the-secret', 'price' => 99) + $makeChokeItemData($modUser, $chokeCat, 'Edited');
+$edit->edit();
+restore_error_handler();
+pin('an admin edit saves without the secret', '99', $itemCol($plainItem, 'i_price'));
+
+$seen = Params::withRequest(array(), static function () use ($modUser, $chokeCat) {
+    $in = new ItemActions(true);
+    $in->prepareDataFrom(array(
+        'title'        => array('en_US' => 'From data'),
+        'catId'        => $chokeCat,
+        'contactEmail' => 'someone@example.test',
+        'ownerId'      => $modUser,
+        'photos'       => array('/tmp/a.jpg', 42),
+        'meta'         => array(7 => 'Red'),
+    ), true);
+
+    return array($in->data['title'], (int)$in->data['userId'], $in->data['photos']['tmp_name'], $in->data['meta'], Params::getParam('title'));
+});
+pin('prepareDataFrom reads the plain values', array('en_US' => 'From data'), $seen[0]);
+pin('ownerId names the account, whatever the contact e-mail', $modUser, $seen[1]);
+pin('photos are local paths, and nothing else', array('/tmp/a.jpg'), $seen[2]);
+pin('meta comes with the data', array(7 => 'Red'), $seen[3]);
+pin('and the request is left as it was', '', $seen[4]);
+
+/* ----------------------------------------------------------------------------
  * Bump: the cooldown IS the item.bump row's own expiry, not a second concept.
  * Billing::spend('item.bump') has to move dt_pub_date and debit together, and
  * a failed apply -- an item that does not exist -- has to roll both back.
