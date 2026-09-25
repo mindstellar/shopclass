@@ -37,6 +37,14 @@ function osc_apply_filter($hook, $content, ...$args)
 
     return $content;
 }
+$GLOBALS['tr']      = array();
+$GLOBALS['trCalls'] = 0;
+function __($key, $domain = 'core')
+{
+    $GLOBALS['trCalls']++;
+
+    return $GLOBALS['tr'][$key] ?? $key;
+}
 require_once __DIR__ . '/../oc-includes/osclass/helpers/hSanitize.php';
 // After hSanitize.php, so its real osc_esc_html() is not shadowed by stubs.php's.
 require_once __DIR__ . '/lib/stubs.php';
@@ -90,6 +98,17 @@ check(
 );
 $GLOBALS['dateFormat'] = 'F j, Y';
 $GLOBALS['timeFormat'] = 'g:i a';
+
+harness_section('osc_format_date names');
+
+pin('English names', 'Monday, September 14', osc_format_date('2026-09-14 06:14:00', 'l, F j'));
+$GLOBALS['trCalls'] = 0;
+osc_format_date('2026-09-15 06:14:00', 'l, F j');
+check('a second date in the same language does not translate every name again', $GLOBALS['trCalls'] <= 3,
+    $GLOBALS['trCalls'] . ' calls');
+$GLOBALS['tr'] = array('January' => 'Januar', 'September' => 'September', 'Monday' => 'Montag', 'Mon' => 'Mo');
+pin('a language switch in the same request uses the new names', 'Montag, September 14',
+    osc_format_date('2026-09-14 06:14:00', 'l, F j'));
 
 exit(harness_result());
 

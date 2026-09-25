@@ -304,48 +304,56 @@ function osc_format_date($date, $dateformat = null)
         $dateformat = osc_date_format();
     }
 
-    $month       = array(
-        '',
-        __('January'),
-        __('February'),
-        __('March'),
-        __('April'),
-        __('May'),
-        __('June'),
-        __('July'),
-        __('August'),
-        __('September'),
-        __('October'),
-        __('November'),
-        __('December')
-    );
-    $month_short = array(
-        '',
-        __('Jan'),
-        __('Feb'),
-        __('Mar'),
-        __('Apr'),
-        __('May'),
-        __('Jun'),
-        __('Jul'),
-        __('Aug'),
-        __('Sep'),
-        __('Oct'),
-        __('Nov'),
-        __('Dec')
-    );
-    $day         = array(
-        '',
-        __('Monday'),
-        __('Tuesday'),
-        __('Wednesday'),
-        __('Thursday'),
-        __('Friday'),
-        __('Saturday'),
-        __('Sunday')
-    );
-    $day_short   = array('', __('Mon'), __('Tue'), __('Wed'), __('Thu'), __('Fri'), __('Sat'), __('Sun'));
-    $ampm        = array('AM' => __('AM'), 'PM' => __('PM'), 'am' => __('am'), 'pm' => __('pm'));
+    // The names are translated once per language for the request, not for every date.
+    // Keyed by three translated words, so a switch to the admin or an email language still hits.
+    static $names = array();
+    $locale = __('January') . '|' . __('Mon') . '|' . __('PM');
+    if (!isset($names[$locale])) {
+        $month       = array(
+            '',
+            __('January'),
+            __('February'),
+            __('March'),
+            __('April'),
+            __('May'),
+            __('June'),
+            __('July'),
+            __('August'),
+            __('September'),
+            __('October'),
+            __('November'),
+            __('December')
+        );
+        $month_short = array(
+            '',
+            __('Jan'),
+            __('Feb'),
+            __('Mar'),
+            __('Apr'),
+            __('May'),
+            __('Jun'),
+            __('Jul'),
+            __('Aug'),
+            __('Sep'),
+            __('Oct'),
+            __('Nov'),
+            __('Dec')
+        );
+        $day         = array(
+            '',
+            __('Monday'),
+            __('Tuesday'),
+            __('Wednesday'),
+            __('Thursday'),
+            __('Friday'),
+            __('Saturday'),
+            __('Sunday')
+        );
+        $day_short   = array('', __('Mon'), __('Tue'), __('Wed'), __('Thu'), __('Fri'), __('Sat'), __('Sun'));
+        $ampm        = array('AM' => __('AM'), 'PM' => __('PM'), 'am' => __('am'), 'pm' => __('pm'));
+        $names[$locale] = array($month, $month_short, $day, $day_short, $ampm);
+    }
+    [$month, $month_short, $day, $day_short, $ampm] = $names[$locale];
 
     $time       = strtotime($date);
     $dateformat = preg_replace('|(?<!\\\)F|', osc_escape_string($month[date('n', $time)]), $dateformat);
