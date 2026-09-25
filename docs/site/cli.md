@@ -99,7 +99,7 @@ See [installing locations](/docs/configure/locations/).
 
 | Command | What it does |
 |---|---|
-| `doctor` | Check PHP version, extensions, database, writability, cron freshness and cache. Exits non-zero if any check fails. |
+| `doctor` | Check PHP version, extensions, database, strict SQL mode readiness, writability, cron freshness and cache. Exits non-zero if any check fails. |
 | `cache:flush` | Flush the object cache. |
 | `sitemap:warm` | Pre-generate the XML sitemap into the cache. |
 | `jobs:work [--max-seconds=]` | Drain the background job queue and nothing else. Safe to run every minute. |

@@ -8,6 +8,7 @@ In development.
 
 ### New
 
+- `oc-cli.php doctor` says whether an upgraded site's data is ready for strict SQL mode, and lists columns holding zero dates.
 - `Params::getParamBool()`, `getParamEmail()` and `getParamEnum()` read a typed request value with native checks, and never return an array.
 - `osc-table-stack` gives a plugin's own admin table the phone card layout core lists use.
 - A plugin can add its own `oc-cli.php` commands with the `cli_commands` filter.

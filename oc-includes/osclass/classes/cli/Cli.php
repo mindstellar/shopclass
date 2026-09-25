@@ -1421,6 +1421,27 @@ class Cli
             $check('fail', 'Database', $e->getMessage());
         }
 
+        // Strict SQL mode — new installs run it; an upgraded one can opt in once its data allows.
+        if (defined('OSC_DB_STRICT_MODE') && OSC_DB_STRICT_MODE) {
+            $check('ok', 'Strict SQL mode', 'on');
+        } else {
+            try {
+                $zero = \mindstellar\database\StrictModeReadiness::zeroDates(DB_TABLE_PREFIX);
+                if ($zero === []) {
+                    $check('ok', 'Strict SQL mode', "off; stored data is ready. Add define('OSC_DB_STRICT_MODE', true);"
+                        . ' to config.php, then test your plugins');
+                } else {
+                    $list = [];
+                    foreach ($zero as $column => $rows) {
+                        $list[] = $column . ' (' . $rows . ')';
+                    }
+                    $check('warn', 'Strict SQL mode', 'off; zero dates would block it: ' . implode(', ', $list));
+                }
+            } catch (\Throwable $e) {
+                $check('warn', 'Strict SQL mode', 'off; could not check the data: ' . $e->getMessage());
+            }
+        }
+
         // Base URL resolution — CLI cannot fall back to the Host header.
         defined('WEB_PATH') && WEB_PATH
             ? $check('ok', 'WEB_PATH', (string) WEB_PATH)
