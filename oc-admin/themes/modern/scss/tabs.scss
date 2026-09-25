@@ -69,6 +69,17 @@
   }
 }
 
+// A page opened on a tab's #link focuses that panel; only a keyboard move into it shows a ring.
+[role="tabpanel"]:focus {
+  outline: 0;
+}
+
+[role="tabpanel"]:focus-visible:not(:target) {
+  border-radius: $border-radius;
+  outline: 2px solid var(--osc-bronze);
+  outline-offset: 4px;
+}
+
 // .osc-tabnav — a row of navigation tabs (each an <a> to another URL, one current),
 // styled as a quiet underline strip. The URL-navigation sibling of .osc-tab above,
 // which is the JS-driven in-page panel widget; this one has no script.

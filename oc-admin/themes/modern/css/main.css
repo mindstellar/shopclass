@@ -21159,6 +21159,16 @@ form h3, form .h3 {
   font-weight: 600;
 }
 
+[role=tabpanel]:focus {
+  outline: 0;
+}
+
+[role=tabpanel]:focus-visible:not(:target) {
+  border-radius: 4px;
+  outline: 2px solid var(--osc-bronze);
+  outline-offset: 4px;
+}
+
 .osc-tabnav {
   border-block-end: 1px solid var(--osc-rule);
   display: flex;
