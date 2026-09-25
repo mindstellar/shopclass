@@ -1021,6 +1021,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\market\\Catalog' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/market/Catalog.php',
         'mindstellar\\market\\Compatibility' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/market/Compatibility.php',
         'mindstellar\\market\\Installer' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/market/Installer.php',
+        'mindstellar\\market\\Markdown' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/market/Markdown.php',
         'mindstellar\\market\\PackageIndex' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/market/PackageIndex.php',
         'mindstellar\\market\\PackageReconciler' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/market/PackageReconciler.php',
         'mindstellar\\migration\\MigrationInterface' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/migration/MigrationInterface.php',

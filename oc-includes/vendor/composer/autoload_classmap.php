@@ -894,6 +894,7 @@ return array(
     'mindstellar\\market\\Catalog' => $baseDir . '/oc-includes/osclass/classes/market/Catalog.php',
     'mindstellar\\market\\Compatibility' => $baseDir . '/oc-includes/osclass/classes/market/Compatibility.php',
     'mindstellar\\market\\Installer' => $baseDir . '/oc-includes/osclass/classes/market/Installer.php',
+    'mindstellar\\market\\Markdown' => $baseDir . '/oc-includes/osclass/classes/market/Markdown.php',
     'mindstellar\\market\\PackageIndex' => $baseDir . '/oc-includes/osclass/classes/market/PackageIndex.php',
     'mindstellar\\market\\PackageReconciler' => $baseDir . '/oc-includes/osclass/classes/market/PackageReconciler.php',
     'mindstellar\\migration\\MigrationInterface' => $baseDir . '/oc-includes/osclass/classes/migration/MigrationInterface.php',
