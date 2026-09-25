@@ -231,7 +231,7 @@ function osc_sanitize_html($value)
         if (is_string($host) && $host !== '') {
             $config->set('URI.Host', $host);
         }
-        $config->set('Cache.DefinitionImpl', null);
+        \mindstellar\security\PurifierCache::apply($config);
         $purifier = new HTMLPurifier($config);
     }
 

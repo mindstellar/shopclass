@@ -1805,10 +1805,7 @@ class CAdminAjax extends AdminSecBaseModel
             // Only the two alignment classes renderMarkdownSafe() (tools/ci/build-catalog.php)
             // ever emits are let through -- everything else on a class attribute is stripped.
             $config->set('Attr.AllowedClasses', array('text-center' => true, 'text-end' => true));
-            // Stripping down to a small tag set leaves nothing worth persisting a definition
-            // cache for; the in-memory NullCache avoids writing serializer blobs to disk, same
-            // as Params::purify()'s own HTMLPurifier instance.
-            $config->set('Cache.DefinitionImpl', null);
+            \mindstellar\security\PurifierCache::apply($config);
             self::$marketPurifier = new HTMLPurifier($config);
         }
 

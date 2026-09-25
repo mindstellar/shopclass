@@ -201,6 +201,8 @@ jobs:
         run: php tests/install-config.php
       - name: Params XSS check matches the purifier
         run: php tests/params-purify.php
+      - name: HTMLPurifier definition cache
+        run: php tests/purifier-cache.php
       # The location sitemaps synthesise URLs while the sitemap route's own params are
       # still in the request; one leaking in silently doubles every category-location
       # page into a second, self-canonicalising URL that Google indexes separately.

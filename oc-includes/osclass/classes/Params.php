@@ -181,9 +181,7 @@ class Params
                     $purifier_config = HTMLPurifier_Config::createDefault();
                     $purifier_config->set('HTML.Allowed', '');
                     $purifier_config->set('Output.Newline', "\n");
-                    // Stripping all tags leaves no definition to persist, so use the in-memory
-                    // NullCache instead of writing serializer blobs into the public uploads dir.
-                    $purifier_config->set('Cache.DefinitionImpl', null);
+                    \mindstellar\security\PurifierCache::apply($purifier_config);
                     self::$HTMLPurifier = new HTMLPurifier($purifier_config);
                 }
 
