@@ -1853,15 +1853,7 @@ class CAdminAjax extends AdminSecBaseModel
         $xpath = new DOMXPath($doc);
 
         // A relative path in an installed package's own README names a file in its folder.
-        $local = static function ($url) use ($localBase) {
-            if ($localBase === null || $url === '' || preg_match('#^([a-z][a-z0-9+.-]*:|/|\#)#i', $url) === 1
-                || preg_match('#(^|/)\.\.(/|$)#', $url) === 1
-            ) {
-                return null;
-            }
-
-            return $localBase . preg_replace('#^(\./)+#', '', $url);
-        };
+        $local = static fn ($url) => $localBase === null ? null : \mindstellar\market\Markdown::resolveInPackage($url, $localBase);
         foreach (iterator_to_array($xpath->query('.//a[@href]', $root)) as $a) {
             /** @var DOMElement $a */
             $resolved = $local($a->getAttribute('href'));

@@ -54,18 +54,28 @@ final class Markdown
             return null;
         }
         if (!preg_match('#^[a-zA-Z][a-zA-Z0-9+.-]*:#', $clean)) {
-            // A relative/anchor link: not a protocol-injection vector. A path inside the
-            // package resolves against the base when there is one.
-            if (self::$base !== null && preg_match('#^(\#|/)#', $clean) !== 1 && preg_match('#(^|/)\.\.(/|$)#', $clean) !== 1) {
-                return self::$base . preg_replace('#^(\./)+#', '', $clean);
-            }
-
-            return $clean;
+            // A relative/anchor link: not a protocol-injection vector.
+            return self::$base !== null ? (self::resolveInPackage($clean, self::$base) ?? $clean) : $clean;
         }
         $scheme = strtolower(explode(':', $clean, 2)[0]);
         $allowed = $isImage ? ['http', 'https'] : ['http', 'https', 'mailto'];
 
         return in_array($scheme, $allowed, true) ? $clean : null;
+    }
+
+    /**
+     * A relative path inside a package, as a URL under `$base`; null for anything else: a
+     * scheme, an absolute path, an anchor, or a path that climbs out with `..`.
+     */
+    public static function resolveInPackage(string $url, string $base): ?string
+    {
+        if ($url === '' || preg_match('#^([a-z][a-z0-9+.-]*:|/|\\\\|\#)#i', $url) === 1
+            || preg_match('#(^|[/\\\\])(\.|%2e){2}([/\\\\]|$)#i', $url) === 1
+        ) {
+            return null;
+        }
+
+        return $base . preg_replace('#^(\./)+#', '', $url);
     }
 
     /** A link's or image's escaped URL and title, as the attributes they become. */
@@ -175,6 +185,12 @@ final class Markdown
         }
 
         return trim($out);
+    }
+
+    /** @param string[] $lines */
+    private static function paragraph(array $lines): string
+    {
+        return '<p>' . self::renderInlineMarkdown(self::escapeMd(self::joinLines($lines))) . '</p>';
     }
 
     /**
@@ -298,7 +314,7 @@ final class Markdown
                         break;
                     }
                     if ($para !== null) {
-                        $parts[] = '<p>' . self::renderInlineMarkdown(self::escapeMd(self::joinLines($para))) . '</p>';
+                        $parts[] = self::paragraph($para);
                     }
                     $para = [];
                     $i = $j;
@@ -308,7 +324,7 @@ final class Markdown
                 if ($next !== null) {
                     if ($next['indent'] > $indent && !$atCap) {
                         if ($para !== null && $para !== []) {
-                            $parts[] = '<p>' . self::renderInlineMarkdown(self::escapeMd(self::joinLines($para))) . '</p>';
+                            $parts[] = self::paragraph($para);
                             $para = null;
                         }
                         $parts[] = self::renderListBlock($lines, $i, $n, $next['indent'], $depth + 1);
@@ -318,7 +334,7 @@ final class Markdown
                 }
                 if (self::isFence($line) && self::indentOf($line) > $indent) {
                     if ($para !== null && $para !== []) {
-                        $parts[] = '<p>' . self::renderInlineMarkdown(self::escapeMd(self::joinLines($para))) . '</p>';
+                        $parts[] = self::paragraph($para);
                     }
                     $para = null;
                     $parts[] = self::renderFence($lines, $i, $n);
@@ -339,7 +355,7 @@ final class Markdown
                 $i++;
             }
             if ($para !== null && $para !== []) {
-                $parts[] = '<p>' . self::renderInlineMarkdown(self::escapeMd(self::joinLines($para))) . '</p>';
+                $parts[] = self::paragraph($para);
             }
 
             $items[] = '<li>' . self::renderListItemContent(self::joinLines($text), $parts) . '</li>';
@@ -548,7 +564,7 @@ final class Markdown
                         self::$quoteDepth--;
                     }
                 } else {
-                    $inner = '<p>' . self::renderInlineMarkdown(self::escapeMd(self::joinLines($buf))) . '</p>';
+                    $inner = self::paragraph($buf);
                 }
                 $html[] = '<blockquote>' . $inner . '</blockquote>';
                 continue;
