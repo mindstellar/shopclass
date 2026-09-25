@@ -18,7 +18,7 @@ oc-content/themes/storefront
 oc-content/themes/bender
 oc-content/themes/shopclass
 *.log
-bugs.md
+docs/private
 .remember
 .claude
 docker-compose.yml

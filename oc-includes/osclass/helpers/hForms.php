@@ -9,7 +9,7 @@
  */
 
 /**
- * Forms platform helpers (FORMS.md). A form (a t_meta_group row) is a reusable set
+ * Forms platform helpers. A form (a t_meta_group row) is a reusable set
  * of fields that can be placed anywhere — on item categories (the publish/search
  * flow, unchanged) or, via the core.form widget, into any widget area: a static
  * page, a page-builder canvas, a sidebar.

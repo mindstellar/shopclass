@@ -462,7 +462,7 @@ class Field extends DAO
             return array();
         }
 
-        // Render-time dedup (FORMS.md §9.3): a field reused across several forms/
+        // Render-time dedup: a field reused across several forms/
         // categories reaches the context multiple times; keep the FIRST occurrence
         // (lowest group then field position) so the item form never emits two
         // meta[id] inputs. This also collapses a field's multiple t_item_meta rows
