@@ -60,6 +60,17 @@ class Osclass extends UpgradePackage
     }
 
     /**
+     * Releases ship shopclass_v*.zip wrapped in shopclass/, and osclass_v*.zip wrapped in
+     * osclass/ for installs whose updater knows only that name.
+     *
+     * @return array<string>
+     */
+    public function getFolderNames(): array
+    {
+        return array('shopclass', 'osclass');
+    }
+
+    /**
      * Upgrade Shopclass Database.
      *
      * The migrations are what build the schema. Every change to struct.sql is
@@ -333,33 +344,39 @@ class Osclass extends UpgradePackage
     }
 
     /**
-     * Pick the Shopclass package asset from a GitHub release's assets list. Prefers the
-     * canonical `osclass_v*.zip`, then any `.zip`, so extra release assets do not break
-     * selection. Never take assets[0].
+     * Pick the Shopclass package asset from a GitHub release's assets list. Prefers
+     * `shopclass_v*.zip`, then `osclass_v*.zip`, then any `.zip`, so extra release assets
+     * do not break selection. Never take assets[0].
      *
      * @param array<int,array<string,mixed>> $assets GitHub release "assets" array
      *
      * @return string|null browser_download_url, or null if none suitable
      */
-    private static function selectReleaseAssetUrl($assets)
+    public static function selectReleaseAssetUrl($assets)
     {
         if (!is_array($assets)) {
             return null;
         }
-        $firstZip = null;
+        $found = array();
         foreach ($assets as $asset) {
             if (!isset($asset['name'], $asset['browser_download_url'])) {
                 continue;
             }
-            if (preg_match('/^osclass_v.*\.zip$/i', $asset['name'])) {
-                return $asset['browser_download_url'];
+            $name = (string)$asset['name'];
+            if (preg_match('/^shopclass_v.*\.zip$/i', $name)) {
+                $rank = 0;
+            } elseif (preg_match('/^osclass_v.*\.zip$/i', $name)) {
+                $rank = 1;
+            } elseif (substr(strtolower($name), -4) === '.zip') {
+                $rank = 2;
+            } else {
+                continue;
             }
-            if ($firstZip === null && substr(strtolower($asset['name']), -4) === '.zip') {
-                $firstZip = $asset['browser_download_url'];
-            }
+            $found[$rank] = $found[$rank] ?? $asset['browser_download_url'];
         }
+        ksort($found);
 
-        return $firstZip;
+        return $found === array() ? null : reset($found);
     }
 
     /**

@@ -4,14 +4,14 @@
 ##
 ## Osclass release packager.
 ##
-## Packages the release zip for the version in OSCLASS_VERSION. Assets are built
+## Packages the release zips for the version in OSCLASS_VERSION. Assets are built
 ## in CI (`npm ci && npm run build`) BEFORE this runs; this script does not build.
 ## It layers the freshly built runtime output onto a clean `git archive` base
 ## (so .gitattributes export-ignore stays the single source of exclusions) and
 ## bundles the storefront theme.
 ##
 ## Environment:
-##   OSCLASS_VERSION  version label + zip name (e.g. 5.3.0 or 5.3.0.dev)  [required]
+##   OSCLASS_VERSION  version label + zip names (e.g. 5.3.0 or 5.3.0.dev)  [required]
 ##   OSCLASS_REF      git ref to archive (defaults to OSCLASS_VERSION);
 ##                    set to HEAD for a local dry-run before the tag exists.
 # ------------------------------------------------------------------
@@ -70,6 +70,9 @@ curl -fsSL -o "$DIR/storefront.zip" "$THEME_URL"
 unzip -qq "$DIR/storefront.zip" -d "$DIR/osclass/oc-content/themes/"
 rm -f "$DIR/storefront.zip"
 
-# Package.
+# Package twice from the same tree. shopclass_v*.zip is the download; osclass_v*.zip,
+# wrapped in osclass/, is what updaters older than 6.4.0 look for and can unpack.
 ( cd "$DIR" && zip -qr "osclass_v${VERSION}.zip" osclass )
-echo "Build created successfully in $DIR/osclass_v${VERSION}.zip"
+mv "$DIR/osclass" "$DIR/shopclass"
+( cd "$DIR" && zip -qr "shopclass_v${VERSION}.zip" shopclass )
+echo "Build created successfully in $DIR/shopclass_v${VERSION}.zip and $DIR/osclass_v${VERSION}.zip"

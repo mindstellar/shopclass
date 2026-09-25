@@ -185,7 +185,16 @@ jobs:
           SMOKE_DB_PORT: 3306
           SMOKE_DB_USER: root
           SMOKE_DB_PASS: root
-        run: bash tests/install-smoke.sh "release/osclass_v${OSCLASS_VERSION}.zip"
+        run: bash tests/install-smoke.sh "release/shopclass_v${OSCLASS_VERSION}.zip"
+
+      # The osclass_v zip serves updaters older than 6.4.0. It must hold the same files,
+      # only under osclass/ instead of shopclass/.
+      - name: Both release zips hold the same files
+        run: |
+          test -s "release/shopclass_v${OSCLASS_VERSION}.zip"
+          test -s "release/osclass_v${OSCLASS_VERSION}.zip"
+          diff <(unzip -Z1 "release/shopclass_v${OSCLASS_VERSION}.zip" | sed 's|^shopclass/||' | sort) \
+               <(unzip -Z1 "release/osclass_v${OSCLASS_VERSION}.zip" | sed 's|^osclass/||' | sort)
 
       - name: Extract release notes from CHANGELOG
         run: |
@@ -207,12 +216,13 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          # The zip's name/shape is the self-updater's compatibility contract
-          # with old installs — it is uploaded as-is. deprecated-api.json,
+          # The osclass_v zip's name/shape is the self-updater's compatibility
+          # contract with old installs — never drop it. deprecated-api.json,
           # package-lint.php, Compatibility.php, and the package-ci bundle that
           # re-packages them (plus the rest of tools/ci/) are separate assets
           # alongside it, never merged in.
           files: |
+            release/shopclass_v${{ env.OSCLASS_VERSION }}.zip
             release/osclass_v${{ env.OSCLASS_VERSION }}.zip
             deprecated-api.json
             tools/package-lint.php

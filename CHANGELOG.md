@@ -184,6 +184,7 @@ In development.
 
 ### Changed
 
+- Releases ship as `shopclass_v*.zip`. `osclass_v*.zip` still ships with each release for sites updating from older versions, and the updater accepts either.
 - The search URL builder declares its five subdomain modes, its two canonical place
   URLs, its filter names and its country/region/city lists once each, instead of
   writing each one out in full.
