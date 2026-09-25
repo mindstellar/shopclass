@@ -65,6 +65,7 @@ In development.
 
 ### Fixed
 
+- The site contact form's attachment now works when enabled. It used to be dropped unless the request also carried an `attachment` field.
 - `oc-cli.php install` writes the `--web-url` address to `config.php` instead of `http:///`. The installer now escapes every value it writes there, so a database password with a `"` or `'` works, and writes the file as 0644, not 0666.
 - Pagination puts its navigation landmark on a `<nav>` around the list, not on the `<ul>`.
 - Package READMEs show wrapped list items, code inside lists, links, rules and README images correctly in the details dialog.
@@ -127,7 +128,7 @@ In development.
 
 ### Security
 
-- A listing contact attachment is sent from PHP's upload folder instead of being copied into `oc-content/uploads/` under a guessable name. Both contact forms refuse script files the same way.
+- A listing contact attachment is sent from PHP's upload folder instead of being copied into `oc-content/uploads/` under a guessable name. Both contact forms refuse script files the same way, and send nothing when they do.
 - **Appearance** activates only a theme that is installed.
 - A theme or plugin name made only of dots, such as `..`, is refused, so a child theme cannot name the folder above the themes as its parent.
 - The email template test send needs a CSRF token.

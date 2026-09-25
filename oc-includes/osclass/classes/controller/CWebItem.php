@@ -679,6 +679,11 @@ class CWebItem extends BaseModel
                     $this->redirectTo(osc_item_url());
                 }
 
+                if (osc_item_attachment() && osc_mail_upload_attachment('attachment') === false) {
+                    osc_add_flash_error_message(_m('That type of file cannot be attached.'));
+                    $this->redirectTo(osc_item_url());
+                }
+
                 osc_run_hook('pre_item_contact_post', $item);
 
                 $mItem  = new ItemActions(false);

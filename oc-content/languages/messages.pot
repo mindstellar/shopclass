@@ -1794,6 +1794,11 @@ msgstr ""
 msgid "That theme is not installed."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebContact.php
+#: oc-includes/osclass/classes/controller/CWebItem.php
+msgid "That type of file cannot be attached."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebBilling.php
 msgid "That upgrade is not available"
 msgstr ""
@@ -1918,7 +1923,6 @@ msgid "The field %s is too long"
 msgstr ""
 
 #: oc-includes/osclass/classes/actions/ItemActions.php
-#: oc-includes/osclass/classes/controller/CWebContact.php
 msgid "The file you tried to upload does not have a valid extension"
 msgstr ""
 
@@ -2222,10 +2226,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid "There are no tables to back up"
-msgstr ""
-
-#: oc-includes/osclass/emails.php
-msgid "There has been some errors sending the message"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php

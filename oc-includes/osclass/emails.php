@@ -1015,10 +1015,9 @@ function fn_email_item_inquiry($aItem)
     }
 
     if (osc_item_attachment()) {
+        // CWebItem refuses a bad file before the mail is built.
         $attachment = osc_mail_upload_attachment('attachment');
-        if ($attachment === false) {
-            osc_add_flash_error_message(_m('The file you tried to upload does not have a valid extension'));
-        } elseif ($attachment !== null) {
+        if (is_array($attachment)) {
             $emailParams['attachment'] = $attachment;
         }
     }

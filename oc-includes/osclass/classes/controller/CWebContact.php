@@ -112,7 +112,7 @@ MESSAGE;
                     $error           = $emailAttachment === false;
                 }
                 if ($error) {
-                    osc_add_flash_error_message(_m('The file you tried to upload does not have a valid extension'));
+                    osc_add_flash_error_message(_m('That type of file cannot be attached.'));
                 } else {
                     if (!empty($emailAttachment)) {
                         $params['attachment'] = $emailAttachment;
