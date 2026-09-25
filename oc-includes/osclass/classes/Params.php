@@ -172,7 +172,11 @@ class Params
                 $v = self::purify($v, $html_encode, $xss_check, $quotes_encode); // recursive
             }
         } else {
-            if ($xss_check === true) {
+            if ($xss_check === true && strpbrk((string) $value, '<>&') === false) {
+                // With no tag or entity to parse, the purifier would only normalise newlines
+                // and clean the UTF-8, so do exactly that. tests/params-purify.php pins the match.
+                $value = HTMLPurifier_Encoder::cleanUTF8(str_replace(array("\r\n", "\r"), "\n", (string) $value));
+            } elseif ($xss_check === true) {
                 if (self::$HTMLPurifier === null) {
                     $purifier_config = HTMLPurifier_Config::createDefault();
                     $purifier_config->set('HTML.Allowed', '');

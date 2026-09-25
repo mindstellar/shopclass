@@ -158,6 +158,7 @@ In development.
 
 ### Performance
 
+- A request value with no `<`, `>` or `&` skips HTMLPurifier, which took about 1.5 ms of each item and search page.
 - Dropped `idx_s_content_type` on listing photos. It led on the row's own id, so no query could
   ever use it, while costing a write on every photo added or changed.
 
