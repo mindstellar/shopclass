@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.2
+
+### Changed
+
+- Tested up to Shopclass 6.4.
+
 ## 1.0.1
 
 - First release published from the registry. Adds the packaging metadata a catalog entry

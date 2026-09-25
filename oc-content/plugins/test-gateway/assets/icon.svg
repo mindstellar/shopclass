@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Test payments">
+  <rect width="64" height="64" rx="14" fill="#0b7269"/>
+  <g fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="12" y="18" width="40" height="28" rx="4"/>
+    <path d="M12 26h40M18 38h8"/>
+  </g>
+  <circle cx="44" cy="42" r="9" fill="#fff"/>
+  <path d="M40 42l3 3 5-6" fill="none" stroke="#0b7269" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
