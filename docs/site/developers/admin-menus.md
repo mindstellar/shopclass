@@ -103,3 +103,29 @@ settings. [Declare a settings page](/docs/developers/settings-pages/) instead
 — core adds its menu entry for you. For a screen that edits one record, build
 it from the [editor components](/docs/developers/admin-editors/).
 :::
+
+## The header of your own screen
+
+Core draws the page header before your screen's file runs, so the file cannot add to it.
+Declare it when the plugin loads instead, for a screen on an admin route:
+
+```php
+osc_add_hook('init_admin', function () {
+    osc_admin_plugin_page('myplugin-records', array(
+        'title'   => __('Records', 'myplugin'),
+        'help'    => __('What this screen is for, in a sentence or two.', 'myplugin'),
+        'actions' => array(
+            array('icon' => 'bi-plus-circle-fill', 'url' => osc_route_admin_url('myplugin-records-edit'), 'title' => __('Add', 'myplugin')),
+        ),
+    ));
+});
+```
+
+`title` is the browser title. `help` puts the **?** beside the heading, as core screens
+have; it may be a callable that prints the help. `actions` are the icon buttons beside it.
+
+Group a plugin's entries under Plugins with a divider, as core groups its own:
+
+```php
+osc_add_admin_submenu_divider('plugins', __('My plugin', 'myplugin'), 'myplugin', 'administrator');
+```

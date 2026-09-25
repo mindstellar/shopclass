@@ -65,7 +65,7 @@ $actions->prepareDataFrom(array('id' => $itemId) + $fields, false);
 $result = $actions->edit();
 ```
 
-An admin-mode edit needs no secret.
+An admin-mode edit from `prepareDataFrom()` needs no secret. The admin editor still checks the secret its form carries.
 
 :::caution[The data is trusted]
 `prepareDataFrom()` trusts its input as it would an admin's. `id` edits any listing, and

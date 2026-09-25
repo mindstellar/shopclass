@@ -10,11 +10,12 @@ In development.
 
 - `osc-table-stack` gives a plugin's own admin table the phone card layout core lists use.
 - A plugin can add its own `oc-cli.php` commands with the `cli_commands` filter.
+- `osc_admin_plugin_page()` gives a plugin's own admin screen the title, **?** help and icon actions core screens have.
 - `ItemActions` takes custom field values from `meta` in its data when there is no form post, so an importer can set them.
 - Admin-mode `ItemActions` takes an `ownerId` param, so a caller names the account instead of core matching the contact e-mail.
 - `ItemActions::prepareDataFrom()` builds a listing from plain data, so a plugin need not fill the request.
 - `ItemActions::asImport()`: no posting wait or e-mails, but listing limits and moderation still apply.
-- An admin-mode listing edit no longer needs the listing's secret.
+- An admin-mode listing edit from `prepareDataFrom()` needs no secret; the admin editor still checks the one its form carries.
 - `Params::withRequest()` runs code against given values in place of the request.
 - A declared form's `persist` callable can return `FormSpec::WRITE_NULL` to store NULL.
 - `mindstellar\security\RateLimit` limits requests per key (an API key, an account), with one counter row per window.
