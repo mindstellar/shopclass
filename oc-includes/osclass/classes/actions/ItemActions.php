@@ -39,6 +39,8 @@ class ItemActions
     public $data;
     /** @var bool admin mode that still applies listing limits and moderation */
     private $import = false;
+    /** @var bool the data came through prepareDataFrom(), not a form carrying the secret */
+    private $fromData = false;
     private $manager;
     private $Sanitize;
 
@@ -1236,9 +1238,10 @@ class ItemActions
                 $aUpdate['s_ip'] = $aItem['s_ip'];
             }
 
-            // The secret proves a poster owns the listing; an admin needs no proof.
+            // A form carries the listing's secret, and the save must match it. An admin
+            // caller that passed plain data has no form, so it needs no secret.
             $where = array('pk_i_id' => $aItem['idItem']);
-            if (!$this->is_admin) {
+            if (!($this->is_admin && $this->fromData)) {
                 $where['s_secret'] = $aItem['secret'];
             }
             $result = $this->manager->update($aUpdate, $where);
@@ -1987,8 +1990,8 @@ class ItemActions
      * form posts, plus 'meta' (custom field values by id) and 'photos' (local file paths,
      * which are moved into the listing and deleted). For an edit, 'id' names the listing.
      *
-     * Every value is trusted as an admin's would be: 'id' needs no secret and each photo
-     * path is read and deleted. Check data from outside before it reaches here.
+     * Every value is trusted as an admin's would be: in admin mode 'id' needs no secret,
+     * and each photo path is read and deleted. Check data from outside before it reaches here.
      *
      * @param array<string,mixed> $input
      * @param bool                $isAdd
@@ -2013,6 +2016,7 @@ class ItemActions
         }
         $this->data['photos'] = $files;
         $this->data['meta']   = is_array($input['meta'] ?? null) ? $input['meta'] : array();
+        $this->fromData       = true;
     }
 
     /**

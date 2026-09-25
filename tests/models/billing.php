@@ -1417,11 +1417,20 @@ osc_set_preference('moderate_admin_post', '0', 'osclass', 'BOOLEAN');
 osc_reset_preferences();
 
 $captureWarnings();
-$edit         = new ItemActions(true);
-$edit->data   = array('idItem' => $plainItem, 'secret' => 'not-the-secret', 'price' => 99) + $makeChokeItemData($modUser, $chokeCat, 'Edited');
+$edit = new ItemActions(true);
+Params::withRequest(array(), static function () use ($edit, $plainItem, $chokeCat) {
+    $edit->prepareDataFrom(array(
+        'id'           => $plainItem,
+        'title'        => array('en_US' => 'Edited from data'),
+        'description'  => array('en_US' => 'Edited from data, with a description long enough.'),
+        'catId'        => $chokeCat,
+        'price'        => '99',
+        'contactEmail' => 'importmod@example.test',
+    ), false);
+});
 $edit->edit();
 restore_error_handler();
-pin('an admin edit saves without the secret', '99', $itemCol($plainItem, 'i_price'));
+pin('an admin edit from plain data saves without the secret', '99000000', $itemCol($plainItem, 'i_price'));
 
 $seen = Params::withRequest(array(), static function () use ($modUser, $chokeCat) {
     $in = new ItemActions(true);
