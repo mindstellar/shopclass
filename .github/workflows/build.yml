@@ -223,9 +223,12 @@ jobs:
           # package-lint.php, Compatibility.php, and the package-ci bundle that
           # re-packages them (plus the rest of tools/ci/) are separate assets
           # alongside it, never merged in.
+          # Uploaded one by one, osclass_v first: updaters from 5.2.2 and older take
+          # the release's first asset, whatever its name.
+          preserve_order: true
           files: |
-            release/shopclass_v${{ env.OSCLASS_VERSION }}.zip
             release/osclass_v${{ env.OSCLASS_VERSION }}.zip
+            release/shopclass_v${{ env.OSCLASS_VERSION }}.zip
             deprecated-api.json
             tools/package-lint.php
             oc-includes/osclass/classes/market/Compatibility.php
