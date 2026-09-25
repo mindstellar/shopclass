@@ -34,7 +34,7 @@ pin(
 );
 pin('a size written in capitals still reads', 1920, BrowserResize::resolve(true, false, ' 1920X1080 ')['maxWidth'] ?? null);
 pin('a broken normal size turns it off', null, BrowserResize::resolve(true, false, '640'));
-pin('a zero normal size turns it off', null, BrowserResize::resolve(true, false, '0x480'));
+pin('a zero normal size turns it off', null, BrowserResize::resolve(true, false, '640x0'));
 pin(
     'the config is plain JSON numbers',
     '{"maxWidth":640,"maxHeight":480,"minBytes":1500000,"quality":0.92,"onlyOversize":false}',
