@@ -357,8 +357,13 @@ function osc_widget_config_field($typeId, $field, $value, $disabled)
                 )));
                 break;
             case 'select':
+                // A type may give its options as a callable, resolved only when the form is shown.
+                $declared = $field['options'] ?? array();
+                if (is_callable($declared)) {
+                    $declared = call_user_func($declared);
+                }
                 $options = array();
-                foreach ((isset($field['options']) && is_array($field['options']) ? $field['options'] : array()) as $opt) {
+                foreach ((is_array($declared) ? $declared : array()) as $opt) {
                     $options[$opt['value']] = $opt['label'];
                 }
                 osc_admin_select(array_merge($spec, array('options' => $options, 'selected' => $val, 'width' => 'text')));

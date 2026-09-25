@@ -66,6 +66,7 @@ In development.
 
 ### Fixed
 
+- A widget select whose options come from a function now shows them. The Form widget's picker was empty.
 - The site contact form's attachment now works when enabled. It used to be dropped unless the request also carried an `attachment` field.
 - `oc-cli.php install` writes the `--web-url` address to `config.php` instead of `http:///`. The installer now escapes every value it writes there, so a database password with a `"` or `'` works, and writes the file as 0644, not 0666.
 - Pagination puts its navigation landmark on a `<nav>` around the list, not on the `<ul>`.
@@ -161,6 +162,7 @@ In development.
 
 ### Performance
 
+- Dates in listing loops translate their month and day names once per request, and the Sample Widgets plugin builds its category list only when its form is open.
 - A request value with no `<`, `>` or `&` skips HTMLPurifier, which took about 1.5 ms of each item and search page.
 - HTMLPurifier caches its built rules in signed files under `oc-content/uploads/`, and falls back to no cache when that folder cannot be written.
 - Dropped `idx_s_content_type` on listing photos. It led on the row's own id, so no query could
