@@ -24,6 +24,7 @@ $GLOBALS['failLabels'] = array();
 
 $config = HTMLPurifier_Config::createDefault();
 $config->set('HTML.Allowed', '');
+$config->set('Output.Newline', "\n");
 $config->set('Cache.DefinitionImpl', null);
 $purifier = new HTMLPurifier($config);
 
