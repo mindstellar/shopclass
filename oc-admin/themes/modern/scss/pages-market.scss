@@ -184,7 +184,8 @@
 .market-card-desc {
   color: var(--osc-ink);
   flex: 1 1 auto;
-  font-size: .875rem;
+  font-size: $font-size-label;
+  line-height: 1.45;
   margin: 0;
 }
 

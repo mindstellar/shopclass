@@ -155,6 +155,8 @@
 }
 
 .osc-pkg-desc {
+  font-size: $font-size-label;
+  line-height: 1.45;
   margin: .35rem 0 0;
   max-inline-size: 75ch;
 }
