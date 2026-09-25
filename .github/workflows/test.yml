@@ -97,6 +97,8 @@ jobs:
       # run no build step), so the autoloader is present straight from checkout.
       - name: Params typed accessors
         run: php tests/params-typed-accessors.php
+      - name: Browser photo resize config
+        run: php tests/browser-resize-config.php
       # Storefront -- the default theme -- keeps its chrome in common/, so a probe
       # for a root header.php/footer.php missed on a default install and every
       # core-rendered page dropped to the standalone shell.

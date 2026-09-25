@@ -46,6 +46,16 @@ large photos — see [debugging PHP errors](/docs/developers/debug-php-errors/).
 
 The photo count per listing is set separately, in **Listings → Settings**.
 
+### Browser resize
+
+**Browser resize** (on by default) shrinks a photo to the normal size in the
+visitor's browser before it is uploaded. A large phone photo then uploads fast
+and stays under the maximum size. The browser applies the camera's rotation
+and drops the photo's location data. JPEG, PNG and WebP keep their format.
+
+While **Original size** is on, only photos over the maximum size are shrunk.
+A theme can turn it off with `data-osc-resize="off"` on the uploader.
+
 ## Watermarks
 
 ShopClass can watermark uploaded images with **text** or with an **image**,

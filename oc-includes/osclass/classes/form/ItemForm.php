@@ -1867,6 +1867,7 @@ class ItemForm extends Form
                     maxSizeBytes: <?php echo (int)$maxSize; ?>,
                     allowedExtensions: [<?php echo $allowedExtensions; ?>],
                     showPrimary: <?php echo $isAdd ? 'true' : 'false'; ?>,
+                    resize: <?php echo json_encode(\mindstellar\storage\BrowserResize::config()); ?>,
                     i18n: {
                         confirmDelete: "<?php echo osc_esc_js(__("This action can't be undone. Are you sure you want to continue?")); ?>",
                         typeError: "<?php echo osc_esc_js(__('{file} has an invalid extension. Valid extension(s): {extensions}.')); ?>",

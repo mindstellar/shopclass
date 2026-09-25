@@ -102,6 +102,15 @@ final class MediaSettingsForm
             ->checkbox('keep_original_image', __('Keep the photo at its full size.'), __('Stored alongside the resized copies, so uploads take more space. It is re-saved rather than kept byte for byte, which drops camera metadata.'))
                 ->rowLabel(__('Original size'))
                 ->set('id', 'keep_original_image')
+            ->checkbox(
+                'browser_resize',
+                __('Shrink photos in the browser before upload.'),
+                __('Photos larger than the normal size are shrunk to it first, so large phone photos '
+                   . 'upload quickly and stay under the maximum size. While the full size is kept, '
+                   . 'only photos over the maximum size are shrunk.')
+            )
+                ->rowLabel(__('Browser resize'))
+                ->set('id', 'browser_resize')
             ->group(__('Restrictions'))
             ->checkbox(
                 'force_jpeg',

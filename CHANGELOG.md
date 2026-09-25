@@ -8,6 +8,7 @@ In development.
 
 ### New
 
+- Photos larger than the normal size are shrunk in the browser before upload, so large phone photos no longer fail the size limit. **Media → Settings → Browser resize** turns it off.
 - The `alert_search_params` filter lets a plugin save its own search values with an alert, and `search_conditions` now also gets the search and a context (`'request'` or `'alert'`).
 - `oc-cli.php doctor` says whether an upgraded site's data is ready for strict SQL mode, and lists columns holding zero dates.
 - `Params::getParamBool()`, `getParamEmail()` and `getParamEnum()` read a typed request value with native checks, and never return an array.

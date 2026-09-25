@@ -16,8 +16,13 @@
  * Init: oscPhotoUploader(rootEl, config) where config = {
  *   endpoint, deleteEndpoint, tempBase, fieldName='qqfile',
  *   maxImages=0 (0 = unlimited), maxSizeBytes=0, allowedExtensions=[],
- *   showPrimary=false, i18n={...}
+ *   showPrimary=false, i18n={...},
+ *   resize=null | {maxWidth, maxHeight, minBytes, quality, onlyOversize}
  * }
+ *
+ * With `resize`, a JPEG, PNG or WebP larger than the box is shrunk in the browser before
+ * upload, keeping its format. Any failure sends the original. A theme turns it off with
+ * data-osc-resize="off" on the root.
  *
  * Hooks for theme authors: state classes (is-dragover, is-uploading, is-done,
  * is-primary) plus bubbling CustomEvents on the root — osc-upload:added,
@@ -68,10 +73,104 @@ function oscPhotoUploader(root, cfg) {
         if (exts.length && exts.indexOf(extOf(file.name)) < 0) {
             return fill(t('typeError', '{file} has an invalid extension.'), { file: file.name, extensions: exts.join(', ') });
         }
-        if (maxSize && file.size > maxSize) {
-            return fill(t('sizeError', '{file} is too large.'), { file: file.name });
-        }
         return null;
+    }
+
+    function tooLarge(file) {
+        return maxSize && file.size > maxSize ? fill(t('sizeError', '{file} is too large.'), { file: file.name }) : null;
+    }
+
+    var resize = root.getAttribute('data-osc-resize') === 'off' ? null : cfg.resize;
+    var RESIZABLE = ['image/jpeg', 'image/png', 'image/webp'];
+    var queue = Promise.resolve();
+
+    function wantsResize(file) {
+        if (!resize || RESIZABLE.indexOf(file.type) < 0 || typeof HTMLCanvasElement.prototype.toBlob !== 'function') {
+            return false;
+        }
+        return !resize.onlyOversize || (maxSize && file.size > maxSize);
+    }
+
+    // The size the server would scale to, or null when the image already fits. Rounded as
+    // the server rounds, so the server does not scale it again.
+    function fitBox(w, h) {
+        var bw = resize.maxWidth, bh = resize.maxHeight;
+        if (w <= bw && h <= bh) {
+            return null;
+        }
+        return w / h >= bw / bh ? [bw, Math.ceil(h * bw / w)] : [Math.ceil(w * bh / h), bh];
+    }
+
+    // Decoded upright: the camera's rotation applied, so nothing needs the metadata after.
+    function decode(file) {
+        var viaImg = function () {
+            return new Promise(function (ok, fail) {
+                var url = URL.createObjectURL(file);
+                var img = new Image();
+                img.onload = function () { URL.revokeObjectURL(url); ok(img); };
+                img.onerror = function () { URL.revokeObjectURL(url); fail(new Error('decode')); };
+                img.src = url;
+            });
+        };
+        if (typeof createImageBitmap !== 'function') {
+            return viaImg();
+        }
+        return createImageBitmap(file, { imageOrientation: 'from-image' }).catch(viaImg);
+    }
+
+    function canvasOf(w, h) {
+        var c = document.createElement('canvas');
+        c.width = w;
+        c.height = h;
+        return c;
+    }
+
+    // Halving first keeps a large reduction from aliasing in browsers that draw in one pass.
+    function draw(src, w, h, tw, th) {
+        var cur = src;
+        while (w / 2 >= tw && h / 2 >= th) {
+            w = Math.round(w / 2);
+            h = Math.round(h / 2);
+            var step = canvasOf(w, h);
+            var sctx = step.getContext('2d');
+            sctx.imageSmoothingQuality = 'high';
+            sctx.drawImage(cur, 0, 0, w, h);
+            cur = step;
+        }
+        var out = canvasOf(tw, th);
+        var ctx = out.getContext('2d');
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(cur, 0, 0, tw, th);
+        return out;
+    }
+
+    // Resolves with the file to send: the original whenever shrinking fails or does not help.
+    function shrink(file) {
+        if (!wantsResize(file)) {
+            return Promise.resolve(file);
+        }
+        return decode(file).then(function (src) {
+            var w = src.naturalWidth || src.width;
+            var h = src.naturalHeight || src.height;
+            var box = fitBox(w, h);
+            if (!box && file.size <= resize.minBytes && !tooLarge(file)) {
+                if (src.close) { src.close(); }
+                return file;
+            }
+            var canvas = draw(src, w, h, box ? box[0] : w, box ? box[1] : h);
+            if (src.close) { src.close(); }
+            return new Promise(function (ok) {
+                canvas.toBlob(ok, file.type, resize.quality);
+            }).then(function (blob) {
+                // A browser that cannot write the format hands back a PNG instead.
+                if (!blob || blob.type !== file.type || blob.size >= file.size) {
+                    return file;
+                }
+                return new File([blob], file.name, { type: file.type, lastModified: file.lastModified });
+            });
+        }).catch(function () {
+            return file;
+        });
     }
 
     function refreshPrimary() {
@@ -175,7 +274,7 @@ function oscPhotoUploader(root, cfg) {
 
     function upload(file) {
         clearErrors();
-        var err = validate(file);
+        var err = validate(file) || (wantsResize(file) ? null : tooLarge(file));
         if (err) { showError(err); return; }
         if (maxImages && items().length >= maxImages) {
             showError(fill(t('tooMany', 'Too many images. The limit is {limit}.'), { limit: maxImages }));
@@ -194,6 +293,27 @@ function oscPhotoUploader(root, cfg) {
         grid.appendChild(item);
         refreshPrimary();
 
+        item.classList.add('is-resizing');
+        // One photo at a time: a dozen decoded phone photos at once can exhaust a phone's memory.
+        queue = queue.then(function () { return shrink(file); }).then(function (out) {
+            item.classList.remove('is-resizing');
+            if (!item.isConnected) {
+                URL.revokeObjectURL(objURL);
+                return;
+            }
+            var big = tooLarge(out);
+            if (big) {
+                URL.revokeObjectURL(objURL);
+                item.remove();
+                refreshPrimary();
+                showError(big);
+                return;
+            }
+            send(out, item, prog, bar, objURL);
+        });
+    }
+
+    function send(file, item, prog, bar, objURL) {
         var fd = new FormData();
         fd.append(cfg.fieldName || 'qqfile', file, file.name);
 
