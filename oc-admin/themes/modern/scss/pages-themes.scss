@@ -10,29 +10,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-.current-theme {
-  .card {
-    p {
-      margin-bottom: .2rem;
-    }
-  }
-
-  .card-img {
-    border-bottom-right-radius: 0;
-    border-top-right-radius: 0;
-    height: 100%;
-    width: 100%;
-  }
-
-  .card-title {
-    text-transform: capitalize;
-  }
-
-  .osc-thumb {
-    height: 100%;
-  }
-}
-
 // Wraps osc_theme_screenshot_url()/osc_plugin_icon_url() output so a missing
 // screenshot/icon (osc_theme_has_screenshot()/osc_plugin_has_icon() false)
 // can be tinted and carry the package's initial as a text overlay, instead
@@ -45,8 +22,7 @@
   overflow: hidden;
   position: relative;
 
-  // The art is a square plugin icon or a wide theme screenshot, so it is fitted inside
-  // the box rather than filling it: neither shape is cropped and neither is stretched.
+  // Art is fitted whole by default; a theme card's screenshot fills its box instead.
   img {
     block-size: 100%;
     display: block;
@@ -86,16 +62,6 @@
   text-transform: uppercase;
 }
 
-// The legacy `.theme` card layout is gone — a floated 250px box with a fixed 285px
-// height and an absolutely-positioned `.theme-actions` bar (whose fill was a stray
-// rgba(243,243,243,0.9) that named no token and could not follow dark mode). Both the
-// current-theme and available-theme cards now render as Bootstrap `.card`s (see
-// appearance/index.php); none of the removed selectors matched any admin template or
-// third-party markup under oc-content.
-.theme-stage {
-  position: relative;
-}
-
 // Retained for the `.appearance` scoping only: `.theme` no longer exists so these match
 // nothing today, but `.appearance` is a name shipped themes also define, so it stays in
 // the admin CSS rather than being dropped (restyling is safe, removing a public name is not).
@@ -121,9 +87,4 @@ tr.plugin h3 {
 
 .plugin-actions {
   padding-top: 10px;
-}
-
-.available-theme .card {
-  height: 100%;
-  margin-bottom: .5rem;
 }

@@ -90,14 +90,10 @@
 }
 
 .market-card-thumb-btn {
-  align-self: start;
-  aspect-ratio: var(--osc-pkg-media-ratio);
   background-color: var(--osc-bench-sunk);
   border: 0;
   cursor: pointer;
   display: flex;
-  grid-area: art;
-  inline-size: 100%;
   padding: 0;
   text-align: start;
 
@@ -107,7 +103,14 @@
   }
 }
 
-.market-app[data-type="theme"] .market-card-thumb-btn {
+.market-card .market-card-thumb-btn {
+  align-self: start;
+  aspect-ratio: var(--osc-pkg-media-ratio);
+  grid-area: art;
+  inline-size: 100%;
+}
+
+.market-app[data-type="theme"] .market-card .market-card-thumb-btn {
   border-block-end: 1px solid var(--osc-rule);
 }
 
@@ -127,17 +130,12 @@
 
   .market-card-status {
     flex: 0 0 auto;
-    order: 0;
   }
 }
 
 // The details wrapper lays out nothing itself: its parts are placed on the card's grid.
 .market-card-body {
   display: contents;
-}
-
-.market-card-status {
-  order: -1;
 }
 
 .market-card-title {
@@ -273,7 +271,6 @@
     background-color: var(--osc-bench-warm);
   }
 
-  .market-update-item-thumb,
   .osc-thumb {
     aspect-ratio: var(--osc-pkg-media-ratio);
     background-color: var(--osc-bench-sunk);
@@ -287,12 +284,8 @@
   border-block-start: 1px solid var(--osc-rule);
 }
 
-// .market-card-thumb-btn is written for the Browse grid, where it fills a card's full
-// width; reused here to open the same detail dialog from an Updates row, so it needs its
-// own box model rather than the grid one.
 .market-update-thumb-btn {
   flex: 0 0 auto;
-  inline-size: auto;
 }
 
 .market-update-body {
@@ -308,12 +301,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: .5rem;
-
-  // .market-card-status carries order:-1 for the browse card, where the verdict leads;
-  // in a row the name leads, so the badge takes its place in source order.
-  .market-card-status {
-    order: 0;
-  }
 }
 
 .market-update-title {

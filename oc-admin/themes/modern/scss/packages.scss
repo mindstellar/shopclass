@@ -229,6 +229,7 @@
   @extend %osc-pkg-scroll;
   block-size: 5.35em;
   block-size: calc(3lh + .5rem);
+  min-block-size: 5.5rem;
   font-size: $font-size-label;
   grid-area: desc;
   line-height: 1.45;

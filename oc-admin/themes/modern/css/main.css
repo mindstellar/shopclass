@@ -15391,22 +15391,6 @@ table.table-small td {
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-.current-theme .card p, .current-theme #plugin-hook p, .current-theme .widget-box p {
-  margin-bottom: 0.2rem;
-}
-.current-theme .card-img {
-  border-bottom-right-radius: 0;
-  border-top-right-radius: 0;
-  height: 100%;
-  width: 100%;
-}
-.current-theme .card-title {
-  text-transform: capitalize;
-}
-.current-theme .osc-thumb {
-  height: 100%;
-}
-
 .osc-thumb {
   overflow: hidden;
   position: relative;
@@ -15446,10 +15430,6 @@ table.table-small td {
   text-transform: uppercase;
 }
 
-.theme-stage {
-  position: relative;
-}
-
 .appearance .theme {
   height: 285px;
 }
@@ -15472,11 +15452,6 @@ tr.plugin h3 {
 
 .plugin-actions {
   padding-top: 10px;
-}
-
-.available-theme .card, .available-theme #plugin-hook, .available-theme .widget-box {
-  height: 100%;
-  margin-bottom: 0.5rem;
 }
 
 .flashmessage {
@@ -21435,6 +21410,7 @@ form h3, form .h3 {
 .market-card-desc {
   block-size: 5.35em;
   block-size: calc(3lh + 0.5rem);
+  min-block-size: 5.5rem;
   font-size: 0.8125rem;
   grid-area: desc;
   line-height: 1.45;
@@ -21592,14 +21568,10 @@ form h3, form .h3 {
 }
 
 .market-card-thumb-btn {
-  align-self: start;
-  aspect-ratio: var(--osc-pkg-media-ratio);
   background-color: var(--osc-bench-sunk);
   border: 0;
   cursor: pointer;
   display: flex;
-  grid-area: art;
-  inline-size: 100%;
   padding: 0;
   text-align: start;
 }
@@ -21608,7 +21580,14 @@ form h3, form .h3 {
   outline-offset: -2px;
 }
 
-.market-app[data-type=theme] .market-card-thumb-btn {
+.market-card .market-card-thumb-btn {
+  align-self: start;
+  aspect-ratio: var(--osc-pkg-media-ratio);
+  grid-area: art;
+  inline-size: 100%;
+}
+
+.market-app[data-type=theme] .market-card .market-card-thumb-btn {
   border-block-end: 1px solid var(--osc-rule);
 }
 
@@ -21628,15 +21607,10 @@ form h3, form .h3 {
 }
 .market-card-head .market-card-status {
   flex: 0 0 auto;
-  order: 0;
 }
 
 .market-card-body {
   display: contents;
-}
-
-.market-card-status {
-  order: -1;
 }
 
 .market-card-title {
@@ -21759,7 +21733,6 @@ form h3, form .h3 {
   --osc-pkg-bg: var(--osc-bench-warm);
   background-color: var(--osc-bench-warm);
 }
-.market-update-item .market-update-item-thumb,
 .market-update-item .osc-thumb {
   aspect-ratio: var(--osc-pkg-media-ratio);
   background-color: var(--osc-bench-sunk);
@@ -21774,7 +21747,6 @@ form h3, form .h3 {
 
 .market-update-thumb-btn {
   flex: 0 0 auto;
-  inline-size: auto;
 }
 
 .market-update-body {
@@ -21788,9 +21760,6 @@ form h3, form .h3 {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-}
-.market-update-head .market-card-status {
-  order: 0;
 }
 
 .market-update-title {

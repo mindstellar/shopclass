@@ -51,8 +51,7 @@ if (!function_exists('osc_package_state')) {
 
 if (!function_exists('osc_package_art')) {
     /**
-     * The artwork box. Art is fitted, never cropped: a plugin icon is square and a theme
-     * screenshot is wide, and both have to survive the same box.
+     * The artwork box: a plugin's square icon or a theme's screenshot.
      *
      * @param array  $art  {src:string, has:bool} from osc_market_browse_art()/osc_market_installed_art()
      * @param string $slug Used only for the placeholder tint
