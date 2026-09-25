@@ -640,6 +640,17 @@ pin(
     $model->getNumItems($rootCat)
 );
 
+harness_section('Utils recount writes — bound statements');
+
+$truncateStats();
+\mindstellar\utility\Utils::updateCategoryStatsById($incLeaf);
+pin('a leaf recount writes its own row', '0', ($rowFor($incLeaf) ?? array())['i_num_items'] ?? null);
+pin('... and its parents rows', '0', ($rowFor($incRoot) ?? array())['i_num_items'] ?? null);
+$truncateStats();
+\mindstellar\utility\Utils::updateAllCategoriesStats();
+pin('a full recount writes a row for every category', (int) $admin->query('SELECT COUNT(*) FROM '
+    . DB_TABLE_PREFIX . 't_category')->fetch_row()[0], $rowCount());
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }

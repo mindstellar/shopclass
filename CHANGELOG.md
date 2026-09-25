@@ -66,6 +66,7 @@ In development.
 
 ### Fixed
 
+- A custom-field search sent as a list (`meta[5][]=x`) is ignored instead of failing the whole search, and a numeric value is compared as text. The category recount no longer builds invalid SQL on a site with no categories.
 - A widget select whose options come from a function now shows them. The Form widget's picker was empty.
 - The site contact form's attachment now works when enabled. It used to be dropped unless the request also carried an `attachment` field.
 - `oc-cli.php install` writes the `--web-url` address to `config.php` instead of `http:///`. The installer now escapes every value it writes there, so a database password with a `"` or `'` works, and writes the file as 0644, not 0666.

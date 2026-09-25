@@ -10,7 +10,6 @@
 namespace mindstellar\utility;
 
 use Category;
-use CategoryStats;
 use City;
 use CityStats;
 use Country;
@@ -223,14 +222,23 @@ class Utils
         }
         unset($category);
 
-        $sql     = 'REPLACE INTO ' . DB_TABLE_PREFIX . 't_category_stats (fk_i_category_id, i_num_items) VALUES ';
-        $aValues = array();
-        foreach ($categoryTotal as $k => $v) {
-            $aValues[] = "($k, $v)";
+        // Bound and written in chunks; a site with no categories writes nothing.
+        foreach (array_chunk($categoryTotal, 500, true) as $chunk) {
+            $params = array();
+            foreach ($chunk as $categoryId => $total) {
+                $params[] = (int)$categoryId;
+                $params[] = (int)$total;
+            }
+            try {
+                osc_db_execute(
+                    'REPLACE INTO ' . DB_TABLE_PREFIX . 't_category_stats (fk_i_category_id, i_num_items) VALUES '
+                    . implode(', ', array_fill(0, count($chunk), '(?, ?)')),
+                    $params
+                );
+            } catch (\mindstellar\database\DbException $e) {
+                return;
+            }
         }
-        $sql .= implode(',', $aValues);
-
-        CategoryStats::newInstance()->dao->query($sql);
     }
 
     /**
@@ -285,11 +293,14 @@ class Utils
             $categoryTotal += $total;
         }
 
-        $aSet = [
-            'fk_i_category_id' => $id,
-            'i_num_items' => $categoryTotal
-                     ];
-        CategoryStats::newInstance()->dao->replace(DB_TABLE_PREFIX . 't_category_stats', $aSet);
+        try {
+            osc_db_execute(
+                'REPLACE INTO ' . DB_TABLE_PREFIX . 't_category_stats (fk_i_category_id, i_num_items) VALUES (?, ?)',
+                array((int)$id, (int)$categoryTotal)
+            );
+        } catch (\mindstellar\database\DbException $e) {
+            // A failed write leaves the old count, as the legacy query did; the parents still update.
+        }
 
         if ($category['fk_i_parent_id'] != 0) {
             self::updateCategoryStatsById($category['fk_i_parent_id']);

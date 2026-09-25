@@ -441,10 +441,9 @@ class CWebSearch extends BaseModel
                         case 'TEXTAREA':
                         case 'TEXT':
                         case 'URL':
-                            if ($aux != '') {
-                                $aux         = "%$aux%";
+                            if (is_scalar($aux) && $aux != '') {
                                 $sql         = "SELECT fk_i_item_id FROM $table WHERE ";
-                                $str_escaped = Search::newInstance()->dao->escape($aux);
+                                $str_escaped = self::metaLiteral('%' . $aux . '%');
                                 $sql         .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
                                 $sql         .= $table . '.s_value LIKE ' . $str_escaped;
                                 $this->mSearch->addConditions(DB_TABLE_PREFIX
@@ -453,9 +452,9 @@ class CWebSearch extends BaseModel
                             break;
                         case 'DROPDOWN':
                         case 'RADIO':
-                            if ($aux != '') {
+                            if (is_scalar($aux) && $aux != '') {
                                 $sql         = "SELECT fk_i_item_id FROM $table WHERE ";
-                                $str_escaped = Search::newInstance()->dao->escape($aux);
+                                $str_escaped = self::metaLiteral($aux);
                                 $sql         .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
                                 $sql         .= $table . '.s_value = ' . $str_escaped;
                                 $this->mSearch->addConditions(DB_TABLE_PREFIX
@@ -876,6 +875,18 @@ class CWebSearch extends BaseModel
         }
         $this->redirectTo(osc_search_url(array('sCategory' => $currentSlug)), 301);
     }
-}
 
-/* file end: ./CWebSearch.php */
+    /**
+     * A custom-field search value as a quoted SQL string. Search conditions are kept as SQL
+     * text (saved alerts store them), so they cannot be bound; the value is always quoted,
+     * so a number is compared as the text it is stored as.
+     *
+     * @param string|int|float $value
+     *
+     * @return string
+     */
+    private static function metaLiteral($value)
+    {
+        return "'" . \mindstellar\database\Connection::instance()->escape((string) $value) . "'";
+    }
+}
