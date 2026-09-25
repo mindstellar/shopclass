@@ -67,19 +67,14 @@ class Params
      */
     public static function getParamInt($param, $default = 0)
     {
-        if ($param === '' || !isset(self::$request[$param])) {
-            return $default;
-        }
-        $value = self::$request[$param];
-        if (is_array($value)) {
-            return $default;
-        }
+        $value = self::scalarParam($param);
 
-        return (int)$value;
+        return $value === null ? $default : (int) $value;
     }
 
     /**
-     * Type-safe yes/no accessor: `1/0`, `true/false`, `on/off`, `yes/no` (any case) and ''.
+     * Type-safe yes/no accessor: `1/0`, `true/false`, `on/off`, `yes/no` (any case, surrounding
+     * whitespace ignored) and ''.
      * Anything else, an array, or a missing param yields $default.
      *
      * @param string $param
@@ -99,7 +94,9 @@ class Params
     }
 
     /**
-     * Type-safe email accessor, checked with FILTER_VALIDATE_EMAIL after trimming.
+     * Type-safe email accessor, checked with FILTER_VALIDATE_EMAIL after trimming. Quoted
+     * local parts and IP-literal domains are refused too, so no `"`, `<`, `>` or `\` gets
+     * through. A `'` is legal in an address, so bind the value in SQL and escape it on output.
      * An invalid address, an array, or a missing param yields $default.
      *
      * @param string $param
@@ -114,14 +111,18 @@ class Params
             return $default;
         }
         $email = filter_var(trim($value), FILTER_VALIDATE_EMAIL);
+        if ($email === false || preg_match('/["<>\\\\\[\]\s(),;:]/', $email) === 1) {
+            return $default;
+        }
 
-        return $email === false ? $default : $email;
+        return $email;
     }
 
     /**
      * One value from a fixed list, for sort keys, directions, types and actions. The
-     * match is exact and case-sensitive; the list's own element is returned, so an
-     * int list gives an int. Anything else, an array, or a missing param yields $default.
+     * match is exact and case-sensitive against the list's values, not its keys; the list's
+     * own element is returned, so an int list gives an int. Hard-code the list: one built
+     * from request data guards nothing. Anything else, an array, or a missing param yields $default.
      *
      * @param string $param
      * @param array  $allowed

@@ -89,7 +89,8 @@ set_error_handler(static function ($no, $msg) use (&$warnings) {
 Params::withRequest(array(
     'on' => 'on', 'yes' => 'YES', 'one' => '1', 'off' => 'off', 'zero' => '0', 'empty' => '',
     'junk' => 'maybe', 'arr' => array('1'),
-    'mail' => ' a.b@example.com ', 'badMail' => 'a@b', 'xssMail' => '"<script>"@x.com>', 'mailArr' => array('a@example.com'),
+    'mail' => ' a.b@example.com ', 'badMail' => 'a@b', 'xssMail' => '"<script>alert(1)</script>"@x.com', 'attrMail' => '"a\\"onmouseover=alert(1)"@x.com',
+    'ipMail' => 'a@[127.0.0.1]', 'quoteMail' => "o'brien@example.com", 'mailArr' => array('a@example.com'),
     'dir' => 'desc', 'dirCase' => 'DESC', 'dirBad' => 'desc; DROP', 'type' => '2', 'typeArr' => array('asc'),
 ), static function () {
     pin('bool: on', true, Params::getParamBool('on'));
@@ -104,7 +105,10 @@ Params::withRequest(array(
 
     pin('email: valid, trimmed', 'a.b@example.com', Params::getParamEmail('mail'));
     pin('email: invalid gives the default', 'none', Params::getParamEmail('badMail', 'none'));
-    pin('email: markup is not an address', '', Params::getParamEmail('xssMail'));
+    pin('email: a quoted local part with markup is refused', '', Params::getParamEmail('xssMail'));
+    pin('email: a quoted local part that breaks an attribute is refused', '', Params::getParamEmail('attrMail'));
+    pin('email: an IP-literal domain is refused', '', Params::getParamEmail('ipMail'));
+    pin("email: an apostrophe is a real address", "o'brien@example.com", Params::getParamEmail('quoteMail'));
     pin('email: array gives the default', '', Params::getParamEmail('mailArr'));
     pin('email: missing gives the default', '', Params::getParamEmail('nope'));
 

@@ -118,7 +118,8 @@ assume it.
 ## Reading request values
 
 Read a request value with the `Params` method for its type. The typed ones never return an
-array, so `?id[]=1` cannot sneak an array into SQL or a template. They skip HTMLPurifier.
+array, so `?id[]=1` cannot sneak an array into SQL or a template. `getParamInt()`,
+`getParamBool()`, `getParamEmail()` and `getParamEnum()` skip HTMLPurifier.
 
 | Value | Method | Bad or missing input gives |
 |---|---|---|
@@ -130,7 +131,9 @@ array, so `?id[]=1` cannot sneak an array into SQL or a template. They skip HTML
 | a list | `Params::getParamArray('ids')` | `[]` |
 
 `getParamString()` and `getParamArray()` still strip tags, but that is not your XSS guard.
-Escape every value when you print it, with `osc_esc_html()` or `osc_esc_js()`.
+Escape every value when you print it, with `osc_esc_html()` or `osc_esc_js()`, and bind every
+value in SQL. An email address can legally contain `'`. `getParamEnum()` matches the list's
+values, not its keys, so hard-code the list.
 
 ## Documentation blocks
 
