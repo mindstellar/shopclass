@@ -23,8 +23,8 @@ require ABS_PATH . 'oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/lib/harness.php';
 
 use mindstellar\upgrade\Osclass;
-use mindstellar\upgrade\Upgrade;
 use mindstellar\upgrade\Plugin;
+use mindstellar\upgrade\Upgrade;
 use mindstellar\upgrade\UpgradePackage;
 
 $asset = static function (string $name): array {
