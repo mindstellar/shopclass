@@ -81,7 +81,9 @@ $html = paginate(10, 4); // middle page (0-based 4 => page 5 of 10)
 check('exactly one list-first', substr_count($html, 'list-first') === 1);
 check('exactly one list-last', substr_count($html, 'list-last') === 1);
 check('active page has aria-current', strpos($html, 'aria-current="page"') !== false);
-check('list is a navigation landmark', strpos($html, 'role="navigation"') !== false);
+check('list sits in a labelled nav landmark', strpos($html, '<nav aria-label="Pagination"><ul') === 0
+    && substr($html, -11) === '</ul></nav>');
+check('the list itself carries no role', strpos($html, 'role=') === false);
 check('arrows carry aria-labels', strpos($html, 'aria-label="Next page"') !== false
     && strpos($html, 'aria-label="Previous page"') !== false);
 
