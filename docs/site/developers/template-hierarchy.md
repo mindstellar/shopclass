@@ -120,6 +120,11 @@ one. `osc_item_content_locale()` reports that locale and
 Core loads the uploader and the location combobox from the head on both routes,
 so you no longer enqueue `osc-uploader` or `osc-ui-common` before the form.
 
+The uploader shrinks large photos in the browser before upload, as set under
+**Media → Settings → Browser resize**. To turn it off for your theme only, set
+`data-osc-resize="off"` on `#osc-uploader` from a script placed after
+`ItemForm::ajax_photos()`.
+
 ## The comment block
 
 Comments are on by default, so a theme that draws no comment block ships a

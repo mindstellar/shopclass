@@ -24,8 +24,8 @@
  * upload, keeping its format. Any failure sends the original. A theme turns it off with
  * data-osc-resize="off" on the root.
  *
- * Hooks for theme authors: state classes (is-dragover, is-uploading, is-done,
- * is-primary) plus bubbling CustomEvents on the root — osc-upload:added,
+ * Hooks for theme authors: state classes (is-dragover, is-uploading, is-resizing,
+ * is-done, is-primary) plus bubbling CustomEvents on the root — osc-upload:added,
  * osc-upload:removed, osc-upload:primary, osc-upload:error.
  */
 function oscPhotoUploader(root, cfg) {
@@ -293,7 +293,9 @@ function oscPhotoUploader(root, cfg) {
         grid.appendChild(item);
         refreshPrimary();
 
-        item.classList.add('is-resizing');
+        if (wantsResize(file)) {
+            item.classList.add('is-resizing');
+        }
         // One photo at a time: a dozen decoded phone photos at once can exhaust a phone's memory.
         queue = queue.then(function () { return shrink(file); }).then(function (out) {
             item.classList.remove('is-resizing');

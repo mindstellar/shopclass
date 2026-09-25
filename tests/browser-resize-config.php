@@ -25,7 +25,7 @@ use mindstellar\storage\BrowserResize;
 $on = BrowserResize::resolve(true, false, '640x480');
 pin('the box is the normal size', array(640, 480), array($on['maxWidth'] ?? null, $on['maxHeight'] ?? null));
 pin('every photo over the box is shrunk', false, $on['onlyOversize'] ?? null);
-pin('small files are left alone', BrowserResize::MIN_BYTES, $on['minBytes'] ?? null);
+pin('small files are left alone', 1500000, $on['minBytes'] ?? null);
 pin('switched off, there is no config', null, BrowserResize::resolve(false, false, '640x480'));
 pin(
     'keeping the full size limits it to files over the maximum size',
