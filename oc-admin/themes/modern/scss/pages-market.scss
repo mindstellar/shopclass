@@ -82,29 +82,22 @@
   margin-bottom: 1rem;
 }
 
-// Same shape as an installed tile (packages.scss): art on the start edge, identity beside
-// it, actions along the bottom. A package reads the same whether it is installed or not.
+// The same media card as an installed package (packages.scss), so a package reads the
+// same whether it is installed or not.
 .market-card {
-  block-size: var(--osc-pkg-card-h);
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr) auto;
-  overflow: hidden;
-  padding: 0;
+  --osc-pkg-bg: var(--bs-card-bg);
+  block-size: 100%;
 }
 
 .market-card-thumb-btn {
-  align-items: flex-start;
-  background: none;
+  align-self: start;
+  aspect-ratio: var(--osc-pkg-media-ratio);
+  background-color: var(--osc-bench-sunk);
   border: 0;
   cursor: pointer;
-  background-color: var(--osc-bench-sunk);
-  border-inline-end: 1px solid var(--osc-rule);
   display: flex;
-  flex: 0 0 auto;
-  grid-column: 1;
-  grid-row: 1 / -1;
-  inline-size: var(--osc-pkg-media-w);
+  grid-area: art;
+  inline-size: 100%;
   padding: 0;
   text-align: start;
 
@@ -114,33 +107,33 @@
   }
 }
 
+.market-app[data-type="theme"] .market-card-thumb-btn {
+  border-block-end: 1px solid var(--osc-rule);
+}
+
 .market-card-thumb {
   block-size: 100%;
   border-radius: 0;
   inline-size: 100%;
 }
 
-// Name first, verdict beside it — the reading order every list on these screens uses.
 .market-card-head {
   align-items: center;
   display: flex;
-  flex-wrap: wrap;
   gap: .5rem;
+  grid-area: head;
+  min-inline-size: 0;
+  padding: .85rem 1rem 0;
 
   .market-card-status {
+    flex: 0 0 auto;
     order: 0;
   }
 }
 
+// The details wrapper lays out nothing itself: its parts are placed on the card's grid.
 .market-card-body {
-  @extend %osc-pkg-scroll;
-  display: flex;
-  flex-direction: column;
-  gap: .35rem;
-  grid-column: 2;
-  grid-row: 1;
-  min-inline-size: 0;
-  padding: 1rem 1rem .75rem;
+  display: contents;
 }
 
 .market-card-status {
@@ -150,6 +143,10 @@
 .market-card-title {
   font-size: 1.0625rem; // Title
   margin: 0;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .market-card-title-btn {
@@ -172,7 +169,12 @@
 .market-card-author {
   color: var(--osc-ink-muted);
   font-size: $font-size-label;
-  margin: 0;
+  grid-area: meta;
+  margin: .2rem 0 0;
+  overflow: hidden;
+  padding-inline: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 // Appended to the author line rather than a row of its own, so a card with no count (today's
@@ -183,10 +185,7 @@
 
 .market-card-desc {
   color: var(--osc-ink);
-  flex: 1 1 auto;
-  font-size: $font-size-label;
-  line-height: 1.45;
-  margin: 0;
+  padding-inline: 1rem;
 }
 
 .market-card-reason {
@@ -200,7 +199,9 @@
 .market-card-note {
   color: var(--osc-ink-muted);
   font-size: $font-size-label;
+  grid-area: note;
   margin: .25rem 0 0;
+  padding-inline: 1rem;
 }
 
 .market-card-actions {
@@ -209,8 +210,8 @@
   display: flex;
   flex-wrap: wrap;
   gap: .5rem;
-  grid-column: 2;
-  margin-inline: 1rem;
+  grid-area: actions;
+  margin: .5rem 1rem 0;
   padding-block: .75rem;
 }
 
@@ -259,6 +260,8 @@
 // Same geometry as the installed row (packages.scss): a pending update is the same object
 // in a different state, so it is read the same way.
 .market-update-item {
+  --osc-pkg-bg: var(--osc-bench);
+  --osc-pkg-shade: color-mix(in srgb, var(--osc-ink) 22%, transparent);
   align-items: flex-start;
   border-block-end: 1px solid var(--osc-rule);
   display: flex;
@@ -266,6 +269,7 @@
   padding: 1rem .25rem;
 
   &:hover {
+    --osc-pkg-bg: var(--osc-bench-warm);
     background-color: var(--osc-bench-warm);
   }
 

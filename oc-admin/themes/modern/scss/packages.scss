@@ -11,63 +11,85 @@
 // A grid, not full-width rows: a row leaves its action button an arm's length from the
 // name it belongs to.
 
-// Every package card on the Installed, Browse and Updates tabs is a media card: art of one
-// fixed size for its kind, and details beside it that scroll when they outgrow the card, so
-// cards in a row line up whatever their text says.
+// Every package card on the Installed and Browse tabs is a media card. A plugin shows its
+// square icon flush in the top corner beside its name; a theme shows its screenshot across
+// the top. The description is a fixed three lines that scroll, so cards in a row line up.
 .osc-pkg-list,
 .market-app {
-  --osc-pkg-card-h: 12.5rem;
   --osc-pkg-media-ratio: 1 / 1;
   --osc-pkg-media-w: 4.5rem;
 }
 
 .osc-pkg-list--themes,
 .market-app[data-type="theme"] {
-  --osc-pkg-card-h: 13.5rem;
   --osc-pkg-media-ratio: 4 / 3;
   --osc-pkg-media-w: 8rem;
 }
 
-// The details column of a card: it scrolls, the art and the action strip stay put.
+// A scrolling block that shades its top or bottom edge only while there is more to see.
 %osc-pkg-scroll {
+  background:
+    linear-gradient(var(--osc-pkg-bg) 30%, transparent) center top / 100% 1rem no-repeat local,
+    linear-gradient(transparent, var(--osc-pkg-bg) 70%) center bottom / 100% 1rem no-repeat local,
+    radial-gradient(farthest-side at 50% 0, var(--osc-pkg-shade), transparent) center top / 100% .5rem no-repeat scroll,
+    radial-gradient(farthest-side at 50% 100%, var(--osc-pkg-shade), transparent) center bottom / 100% .5rem no-repeat scroll;
   min-block-size: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding-inline-end: .25rem;
   scrollbar-width: thin;
 }
 
 .osc-pkg-list {
   display: grid;
   gap: 1rem;
-  grid-template-columns: repeat(auto-fill, minmax(22rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(26rem, 1fr));
   list-style: none;
   margin: 0 0 1rem;
   padding: 0;
 }
 
-.osc-pkg {
-  background-color: var(--osc-bench);
+.osc-pkg-list--themes {
+  grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+}
+
+.osc-pkg,
+.market-card {
+  --osc-pkg-bg: var(--osc-bench);
+  --osc-pkg-shade: color-mix(in srgb, var(--osc-ink) 22%, transparent);
+  background-color: var(--osc-pkg-bg);
   border: 1px solid var(--osc-rule);
   border-radius: $border-radius-lg;
-  block-size: var(--osc-pkg-card-h);
   display: grid;
-  // The art runs edge to edge down the start side; the details take what is left above the
-  // action strip, so that strip lands on the same line in every tile.
-  grid-template-columns: auto minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "art head"
+    "art meta"
+    "desc desc"
+    "note note"
+    "actions actions";
+  grid-template-columns: var(--osc-pkg-media-w) minmax(0, 1fr);
+  // A card stretched to its row's height takes the slack under the note, so the action
+  // strip stays on the bottom edge and everything above it starts where its neighbours do.
+  grid-template-rows: auto auto auto 1fr auto;
   overflow: hidden;
+  padding: 0;
 
   &:hover {
     border-color: var(--osc-rule-strong);
   }
 }
 
+// A theme card leads with its screenshot, full width, then the details under it.
+.osc-pkg-list--themes .osc-pkg,
+.market-app[data-type="theme"] .market-card {
+  grid-template-areas: "art" "head" "meta" "desc" "note" "actions";
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto auto auto 1fr auto;
+}
+
 .osc-pkg-art--button {
   appearance: none;
   background: none;
   border: 0;
-  border-radius: var(--bs-border-radius);
   cursor: pointer;
   padding: 0;
   text-align: inherit;
@@ -78,17 +100,16 @@
 
   &:focus-visible {
     outline: 2px solid var(--osc-bronze);
-    outline-offset: 1px;
+    outline-offset: -2px;
   }
 }
 
 .osc-pkg-art {
-  flex: 0 0 auto;
+  align-self: start;
+  aspect-ratio: var(--osc-pkg-media-ratio);
   background-color: var(--osc-bench-sunk);
-  border-inline-end: 1px solid var(--osc-rule);
-  grid-column: 1;
-  grid-row: 1 / -1;
-  inline-size: var(--osc-pkg-media-w);
+  grid-area: art;
+  inline-size: 100%;
 
   .osc-thumb {
     block-size: 100%;
@@ -96,54 +117,103 @@
   }
 }
 
-// A theme screenshot fills its panel; a plugin icon is shown whole.
+.osc-pkg-list--themes .osc-pkg-art {
+  border-block-end: 1px solid var(--osc-rule);
+}
+
+// A theme screenshot fills its panel from the top; a plugin icon is shown whole.
 .osc-pkg-list--themes .osc-thumb img,
 .market-app[data-type="theme"] .market-card-thumb img {
   object-fit: cover;
   object-position: top;
 }
 
+// The details wrapper lays out nothing itself: its parts are placed on the card's grid.
 .osc-pkg-main {
-  @extend %osc-pkg-scroll;
-  grid-column: 2;
-  grid-row: 1;
-  min-inline-size: 0;
-  padding: 1rem 1rem .75rem;
+  display: contents;
 }
 
-// The live theme leads its screen: it spans the grid and shows its screenshot at a size
-// worth looking at, instead of being one tile among equals.
-.osc-pkg--wide {
-  block-size: auto;
+.osc-pkg-head,
+.osc-pkg-meta,
+.osc-pkg-desc,
+.osc-pkg-note {
+  padding-inline: 1rem;
+}
+
+.osc-pkg-head {
+  grid-area: head;
+  padding-block-start: .85rem;
+}
+
+.osc-pkg-meta {
+  grid-area: meta;
+}
+
+.osc-pkg-note {
+  align-self: start;
+  grid-area: note;
+}
+
+// The live theme leads its screen: it spans the grid, screenshot on the start side at a
+// size worth looking at, details beside it.
+.osc-pkg-list--themes .osc-pkg--wide {
   grid-column: 1 / -1;
+  grid-template-areas:
+    "art head"
+    "art meta"
+    "art desc"
+    "art note"
+    "art actions";
+  grid-template-columns: min(22rem, 45%) minmax(0, 1fr);
+  grid-template-rows: auto auto auto auto 1fr;
 
   .osc-pkg-art {
-    inline-size: 18rem;
-    max-inline-size: 45%;
+    border-block-end: 0;
+    border-inline-end: 1px solid var(--osc-rule);
+  }
+
+  .osc-pkg-desc {
+    background: none;
+    block-size: auto;
+    overflow: visible;
+  }
+
+  .osc-pkg-actions {
+    align-self: end;
   }
 }
 
 .osc-pkg-head {
   align-items: center;
   display: flex;
-  flex-wrap: wrap;
   gap: .5rem;
+  min-inline-size: 0;
 }
 
+// Name and meta keep to one line each, so every card's description starts at the same
+// height; the full text is in the details dialog.
 .osc-pkg-name {
   font-size: 1.0625rem; // Title
   font-weight: 600;
   margin: 0;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .osc-pkg-state {
   display: inline-flex;
+  flex: 0 0 auto;
 }
 
 .osc-pkg-meta {
   color: var(--osc-ink-muted);
   font-size: $font-size-label; // Label
   margin: .2rem 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 
   a {
     color: inherit;
@@ -154,11 +224,16 @@
   padding: 0 .1rem;
 }
 
-.osc-pkg-desc {
+.osc-pkg-desc,
+.market-card-desc {
+  @extend %osc-pkg-scroll;
+  block-size: 5.35em;
+  block-size: calc(3lh + .5rem);
   font-size: $font-size-label;
+  grid-area: desc;
   line-height: 1.45;
-  margin: .35rem 0 0;
-  max-inline-size: 75ch;
+  margin: .5rem 0 0;
+  padding-block: .25rem;
 }
 
 .osc-pkg-note {
@@ -190,8 +265,8 @@
   column-gap: 1rem;
   display: flex;
   flex-wrap: wrap;
-  grid-column: 2;
-  margin-inline: 1rem;
+  grid-area: actions;
+  margin: .5rem 1rem 0;
   padding-block: .75rem;
   row-gap: .5rem;
 }
@@ -233,46 +308,21 @@
 }
 
 @include media-breakpoint-down(sm) {
-  .osc-pkg-list {
+  .osc-pkg-list,
+  .osc-pkg-list--themes {
     grid-template-columns: 1fr;
   }
 
-  // The live theme's large screenshot takes the full width, so its details go below it.
-  .osc-pkg--wide {
+  // The live theme's screenshot takes the full width, so its details go below it.
+  .osc-pkg-list--themes .osc-pkg--wide {
+    grid-template-areas: "art" "head" "meta" "desc" "note" "actions";
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto auto;
+    grid-template-rows: auto auto auto auto 1fr auto;
 
     .osc-pkg-art {
-      inline-size: 100%;
-      max-inline-size: none;
-    }
-
-    .osc-pkg-art {
-      aspect-ratio: 4 / 3;
       border-block-end: 1px solid var(--osc-rule);
       border-inline-end: 0;
-      grid-row: 1;
     }
-
-    .osc-pkg-main {
-      grid-column: 1;
-      grid-row: 2;
-    }
-
-    .osc-pkg-actions {
-      grid-column: 1;
-    }
-  }
-
-  // Stacked on a phone, a card is as tall as its text; there is no row to line up with.
-  .osc-pkg,
-  .market-card {
-    block-size: auto;
-  }
-
-  .osc-pkg-main,
-  .market-card-body {
-    overflow-y: visible;
   }
 
   // On a phone the strip stacks, and a destructive link pushed to the end of a wrapped
