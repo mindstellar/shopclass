@@ -193,8 +193,10 @@ jobs:
         run: |
           test -s "release/shopclass_v${OSCLASS_VERSION}.zip"
           test -s "release/osclass_v${OSCLASS_VERSION}.zip"
-          diff <(unzip -Z1 "release/shopclass_v${OSCLASS_VERSION}.zip" | sed 's|^shopclass/||' | sort) \
-               <(unzip -Z1 "release/osclass_v${OSCLASS_VERSION}.zip" | sed 's|^osclass/||' | sort)
+          # Size, CRC and path of every entry, so a file with different bytes fails too.
+          list() { unzip -v "$1" | awk -v p="$2/" 'NF == 8 && $7 ~ /^[0-9a-f]{8}$/ { sub("^" p, "", $8); print $8, $1, $7 }' | sort; }
+          diff <(list "release/shopclass_v${OSCLASS_VERSION}.zip" shopclass) \
+               <(list "release/osclass_v${OSCLASS_VERSION}.zip" osclass)
 
       - name: Extract release notes from CHANGELOG
         run: |

@@ -24,6 +24,8 @@ require_once __DIR__ . '/lib/harness.php';
 
 use mindstellar\upgrade\Osclass;
 use mindstellar\upgrade\Upgrade;
+use mindstellar\upgrade\Plugin;
+use mindstellar\upgrade\UpgradePackage;
 
 $asset = static function (string $name): array {
     return array('name' => $name, 'browser_download_url' => 'https://example.test/' . $name);
@@ -67,7 +69,12 @@ pin('a shopclass/ zip installs from shopclass/', "$dir/new/shopclass", Upgrade::
 pin('an osclass/ zip installs from osclass/', "$dir/old/osclass", Upgrade::packageRoot("$dir/old", $core->getFolderNames()));
 pin('a zip with files at the top installs from the top', "$dir/flat", Upgrade::packageRoot("$dir/flat", $core->getFolderNames()));
 pin('any other folder is refused', null, Upgrade::packageRoot("$dir/other", $core->getFolderNames()));
-pin('a plugin still unpacks only from its own folder', null, Upgrade::packageRoot("$dir/new", array('my-plugin')));
+$plugin = (new ReflectionClass(Plugin::class))->newInstanceWithoutConstructor();
+(new ReflectionProperty(UpgradePackage::class, 's_short_name'))->setValue($plugin, 'my-plugin');
+$make("$dir/plugin/my-plugin/index.php");
+pin('any other package unpacks from its own folder', array('my-plugin'), $plugin->getFolderNames());
+pin('and from no other', null, Upgrade::packageRoot("$dir/new", $plugin->getFolderNames()));
+pin('its own folder is found', "$dir/plugin/my-plugin", Upgrade::packageRoot("$dir/plugin", $plugin->getFolderNames()));
 
 exec('rm -rf ' . escapeshellarg($dir));
 
