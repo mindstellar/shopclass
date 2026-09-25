@@ -147,9 +147,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 
         $clashNote = static function (array $clashes, $parent) {
             return sprintf(
-                __('This theme cannot run with "%1$s": both declare %2$s, and PHP stops the '
-                   . 'request when that happens. The parent has to wrap those in '
-                   . 'function_exists() before a child can replace them.'),
+                __('Cannot run with "%1$s": both declare %2$s.'),
                 $parent,
                 '<code>' . implode('</code>, <code>', array_map('osc_esc_html', $clashes)) . '</code>'
             );

@@ -1797,6 +1797,10 @@ msgstr ""
 msgid "Cannot install new plugin"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/index.php
+msgid "Cannot run with \"%1$s\": both declare %2$s."
+msgstr ""
+
 #: oc-admin/themes/modern/settings/spamNbots.php
 #: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
 msgid "Captcha"
@@ -9654,10 +9658,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
 msgid "This takes %1$s credits back from %2$s. If they have already spent "
-msgstr ""
-
-#: oc-admin/themes/modern/appearance/index.php
-msgid "This theme cannot run with \"%1$s\": both declare %2$s, and PHP stops the "
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/index.php
