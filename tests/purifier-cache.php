@@ -81,6 +81,15 @@ check('a torn file is a miss', cached_definition(cache_config()) === false && !i
 (new HTMLPurifier(cache_config()))->purify('<b>x</b>');
 check('the next purify writes a good one again', is_file($file) && cached_definition(cache_config()) !== false);
 
+$other = HTMLPurifier_Config::createDefault();
+$other->set('HTML.Allowed', 'b,a[href]');
+PurifierCache::apply($other);
+(new HTMLPurifier($other))->purify('<b>x</b>');
+$otherFile = (new SignedDefinitionCache('HTML'))->generateFilePath($other);
+copy($otherFile, $file);
+check("another config's signed file is refused", cached_definition(cache_config()) === false);
+check('so the strip config still drops <a>', (new HTMLPurifier(cache_config()))->purify('<a href="/x">y</a><i>z</i>') === 'yz');
+
 harness_section('unwritable uploads');
 
 $rm = function ($path) use (&$rm) {

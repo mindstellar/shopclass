@@ -64,7 +64,7 @@ class SignedDefinitionCache extends HTMLPurifier_DefinitionCache_Serializer
         }
         $raw = @file_get_contents($file);
         if (!is_string($raw) || strlen($raw) <= 64
-            || !hash_equals(hash_hmac('sha256', substr($raw, 64), $key), substr($raw, 0, 64))) {
+            || !hash_equals($this->sign(substr($raw, 64), $config, $key), substr($raw, 0, 64))) {
             @unlink($file);
 
             return false;
@@ -106,7 +106,7 @@ class SignedDefinitionCache extends HTMLPurifier_DefinitionCache_Serializer
         $data = serialize($def);
         // A leading dot keeps the half-written file out of flush() and cleanup().
         $tmp = $dir . '/.' . bin2hex(random_bytes(6)) . '.tmp';
-        if (@file_put_contents($tmp, hash_hmac('sha256', $data, $key) . $data) === false) {
+        if (@file_put_contents($tmp, $this->sign($data, $config, $key) . $data) === false) {
             @unlink($tmp);
 
             return false;
@@ -119,5 +119,20 @@ class SignedDefinitionCache extends HTMLPurifier_DefinitionCache_Serializer
         }
 
         return true;
+    }
+
+    /**
+     * The signature binds the data to this definition type and config, so a valid file
+     * copied over another config's file is still refused.
+     *
+     * @param string               $data
+     * @param \HTMLPurifier_Config $config
+     * @param string               $key
+     *
+     * @return string
+     */
+    private function sign($data, $config, $key)
+    {
+        return hash_hmac('sha256', $this->type . "\0" . $this->generateKey($config) . "\0" . $data, $key);
     }
 }
