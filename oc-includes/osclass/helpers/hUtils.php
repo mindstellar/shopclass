@@ -305,9 +305,11 @@ function osc_format_date($date, $dateformat = null)
     }
 
     // The names are translated once per language for the request, not for every date.
-    // Keyed by three translated words, so a switch to the admin or an email language still hits.
+    // Keyed by the language plus three translated words, so a translator switched mid-request
+    // (an email in another language) still gets its own names.
     static $names = array();
-    $locale = __('January') . '|' . __('Mon') . '|' . __('PM');
+    $locale = (defined('OC_ADMIN') && OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale())
+        . '|' . __('January') . '|' . __('Mon') . '|' . __('PM');
     if (!isset($names[$locale])) {
         $month       = array(
             '',

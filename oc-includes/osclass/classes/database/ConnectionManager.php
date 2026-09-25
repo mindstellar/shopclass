@@ -227,14 +227,13 @@ class ConnectionManager
             // that error exactly as before.
             $this->dbSelected = false;
             try {
-                $this->connId->real_connect(
+                $this->dbSelected = $this->connId->real_connect(
                     $this->dbHost,
                     $this->dbUser,
                     $this->dbPassword,
                     (string)$this->dbName,
                     $this->dbPort !== null ? $this->dbPort : 0
-                );
-                $this->dbSelected = (string)$this->dbName !== '';
+                ) && (string)$this->dbName !== '';
             } catch (mysqli_sql_exception $e) {
                 if ((string)$this->dbName === '' || !in_array($e->getCode(), array(1044, 1049), true)) {
                     throw $e;
