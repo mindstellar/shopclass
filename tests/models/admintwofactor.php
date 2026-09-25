@@ -66,6 +66,11 @@ pin('after 10 tries a good backup code is refused', false, AdminTwoFactor::check
 $clearTries();
 pin('and passes once the window is clear', true, AdminTwoFactor::check($row, $codes[2]));
 
+$rate = DB_TABLE_PREFIX . 't_rate_counter';
+$admin->query("RENAME TABLE $rate TO {$rate}_gone");
+pin('with no try counter a good backup code is refused', false, AdminTwoFactor::check($row, $codes[3]));
+$admin->query("RENAME TABLE {$rate}_gone TO $rate");
+
 harness_section('turning it off');
 
 $on = AdminTwoFactor::rememberBinding($row);

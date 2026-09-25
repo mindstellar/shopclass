@@ -50,6 +50,7 @@ harness_section('failing open');
 
 $admin->query("RENAME TABLE $table TO {$table}_gone");
 pin('with no table the request is allowed', true, RateLimit::hit('test_api', 'key-one', 1, 3600));
+pin('unless the caller asks to refuse', false, RateLimit::hit('test_api', 'key-one', 1, 3600, false));
 $admin->query("RENAME TABLE {$table}_gone TO $table");
 
 if (!defined('MODELS_RUNNER')) {

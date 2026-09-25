@@ -191,7 +191,8 @@ final class AdminTwoFactor
 
     /**
      * Ten tries per admin every 15 minutes, on its own counter: the password step clears the
-     * login throttle, and this limit holds whether that throttle is on or not.
+     * login throttle, and this limit holds whether that throttle is on or not. A counter that
+     * cannot be reached refuses the try.
      *
      * @param int $adminId
      *
@@ -199,7 +200,7 @@ final class AdminTwoFactor
      */
     private static function allowTry(int $adminId): bool
     {
-        return RateLimit::hit('admin-2fa', (string)$adminId, 10, 900);
+        return RateLimit::hit('admin-2fa', (string)$adminId, 10, 900, false);
     }
 
     /**
@@ -224,7 +225,12 @@ final class AdminTwoFactor
         try {
             $row = osc_db_select_one('SELECT s_2fa FROM ' . DB_TABLE_PREFIX . 't_admin WHERE pk_i_id = ?', array($adminId));
         } catch (DbException $e) {
-            return null;
+            // Only a missing column (MySQL error 1054) reads as off; any other failure must not
+            // let a password alone through.
+            if ($e->getCode() === 1054) {
+                return null;
+            }
+            throw $e;
         }
 
         return isset($row['s_2fa']) ? (string)$row['s_2fa'] : null;

@@ -335,6 +335,9 @@ function osc_is_admin_user_logged_in()
                 \mindstellar\security\AdminTwoFactor::rememberBinding($admin)
             )
         ) {
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_regenerate_id(true);
+            }
             Session::newInstance()->_set('adminId', $admin['pk_i_id']);
             Session::newInstance()->_set('adminUserName', $admin['s_username']);
             Session::newInstance()->_set('adminName', $admin['s_name']);

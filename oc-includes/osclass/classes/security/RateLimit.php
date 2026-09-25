@@ -27,10 +27,12 @@ final class RateLimit
      * @param string $key     who is limited
      * @param int    $max     requests allowed in each window; <= 0 allows all, uncounted
      * @param int    $windowSeconds
+     * @param bool   $failOpen what to answer when the counter cannot be reached: allow, or
+     *                         refuse where a missed count would let guessing through
      *
      * @return bool false when this request is over the limit
      */
-    public static function hit(string $context, string $key, int $max, int $windowSeconds = 60): bool
+    public static function hit(string $context, string $key, int $max, int $windowSeconds = 60, bool $failOpen = true): bool
     {
         if ($max <= 0) {
             return true;
@@ -63,7 +65,7 @@ final class RateLimit
         } catch (\Throwable $e) {
             self::unavailable($e);
 
-            return true;
+            return $failOpen;
         }
 
         return $hits <= $max;

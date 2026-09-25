@@ -74,6 +74,12 @@ works once, in place of an app code, if you lose your phone. **New backup
 codes** replaces them, and **Turn off** removes the second step. Both ask for a
 current code.
 
+After 10 wrong codes in 15 minutes, the code step waits until the 15 minutes
+are up. Someone who knows the password can keep an admin waiting this way, so
+change the password if that happens. Changing the site's signing key
+(`OSC_CSRF_SECRET`) makes every backup code stop working; the app codes still
+work, and **New backup codes** issues fresh ones.
+
 If an admin loses both their phone and their backup codes, a full administrator
 can turn it off on that admin's edit screen, or from the command line:
 
