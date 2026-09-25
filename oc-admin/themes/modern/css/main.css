@@ -21265,6 +21265,23 @@ form h3, form .h3 {
   border-color: var(--osc-rule-strong);
 }
 
+.osc-pkg-art--button {
+  appearance: none;
+  background: none;
+  border: 0;
+  border-radius: var(--bs-border-radius);
+  cursor: pointer;
+  padding: 0;
+  text-align: inherit;
+}
+.osc-pkg-art--button:hover .osc-thumb {
+  filter: brightness(1.06);
+}
+.osc-pkg-art--button:focus-visible {
+  outline: 2px solid var(--osc-bronze);
+  outline-offset: 1px;
+}
+
 .osc-pkg-art {
   flex: 0 0 auto;
   grid-column: 1;

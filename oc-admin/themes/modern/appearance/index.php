@@ -155,6 +155,15 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             );
         };
         ?>
+        <?php
+        // What the detail dialog shows before it loads the rest.
+        $themeDetail = static fn ($i) => array(
+            'name'              => ucfirst((string) ($i['name'] ?? '')),
+            'author'            => (string) ($i['author_name'] ?? ''),
+            'version'           => (string) ($i['version'] ?? ''),
+            'short_description' => (string) ($i['description'] ?? ''),
+        );
+        ?>
         <?php osc_admin_page_head(__('Current theme')); ?>
         <?php osc_package_list_open('osc-pkg-list--themes'); ?>
         <?php osc_package_row(array(
@@ -187,6 +196,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         . osc_esc_html(__('View site')) . '</a>',
                 ),
             ),
+            'detail'      => $themeDetail($info),
         )); ?>
         <?php osc_package_list_close(); ?>
 
@@ -247,6 +257,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                 . osc_esc_html(__('Delete')) . '</a>',
                         ),
                     ),
+                    'detail'      => $themeDetail($tInfo),
                 ));
             endforeach; ?>
             <?php osc_package_list_close(); ?>

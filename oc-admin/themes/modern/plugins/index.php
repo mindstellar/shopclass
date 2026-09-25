@@ -149,6 +149,12 @@ $marketRefreshUrl = osc_admin_base_url(true) . '?page=ajax&action=market_refresh
                     : '',
                 'note_variant' => 'update',
                 'actions'      => array('primary' => $primary, 'links' => $links, 'danger' => $danger),
+                'detail'       => array(
+                    'name'              => $pkg['name'],
+                    'author'            => $pkg['author'],
+                    'version'           => $pkg['version'],
+                    'short_description' => $pkg['description'],
+                ),
             ));
         } ?>
         <?php osc_package_list_close(); ?>

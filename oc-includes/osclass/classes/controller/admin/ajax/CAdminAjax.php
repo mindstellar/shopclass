@@ -1524,12 +1524,20 @@ class CAdminAjax extends AdminSecBaseModel
         }
 
         $slug = trim((string) $slug);
-        if (!preg_match('/^[a-z0-9][a-z0-9-]{1,40}$/', $slug)) {
+        if (!\mindstellar\utility\Validate::packageName($slug)) {
             return array('ok' => false, 'message' => __('Invalid package slug.'), 'detail' => null);
         }
 
-        $raw = self::marketCatalog($type)->detail($slug);
+        // A folder name the catalog could never hold, such as one with an underscore, is local.
+        $inCatalog = preg_match('/^[a-z0-9][a-z0-9-]{1,40}$/', $slug) === 1;
+        $raw       = $inCatalog ? self::marketCatalog($type)->detail($slug) : null;
         if ($raw === null) {
+            // Not in the catalog, as with a private or hand-installed package: what is on disk.
+            $local = self::marketLocalDetail($type, $slug);
+            if ($local !== null) {
+                return array('ok' => true, 'message' => '', 'detail' => $local);
+            }
+
             return array(
                 'ok' => false, 'message' => __('No details are available for this package yet.'),
                 'detail' => null,
@@ -1537,6 +1545,59 @@ class CAdminAjax extends AdminSecBaseModel
         }
 
         return array('ok' => true, 'message' => '', 'detail' => self::marketBuildDetail($slug, $raw));
+    }
+
+    /**
+     * The detail of an installed package, read from its own folder: its header, its README,
+     * the screenshots its shopclass.json lists, and its support links. Null when the slug is
+     * not installed.
+     *
+     * @param string $type 'plugin' or 'theme'
+     * @param string $slug already checked against the slug pattern
+     *
+     * @return array<string,mixed>|null
+     */
+    private static function marketLocalDetail($type, $slug)
+    {
+        $root = ($type === 'theme' ? osc_themes_path() : osc_plugins_path()) . $slug . '/';
+        if (!is_file($root . 'index.php')) {
+            return null;
+        }
+        if ($type === 'theme') {
+            $info   = (array) WebThemes::newInstance()->loadThemeInfo($slug);
+            $name   = (string) ($info['name'] ?? $slug);
+            $author = (string) ($info['author_name'] ?? '');
+        } else {
+            $info   = (array) Plugins::getInfo($slug . '/index.php');
+            $name   = (string) ($info['plugin_name'] ?? $slug);
+            $author = (string) ($info['author'] ?? '');
+        }
+        $manifest = is_file($root . 'shopclass.json') ? json_decode((string) file_get_contents($root . 'shopclass.json'), true) : null;
+        $manifest = is_array($manifest) ? $manifest : array();
+        $readme   = is_file($root . 'README.md') ? (string) file_get_contents($root . 'README.md') : '';
+
+        // Only files that exist in the package's own assets folder; their URL is this site's.
+        $base  = osc_base_url() . 'oc-content/' . ($type === 'theme' ? 'themes/' : 'plugins/') . $slug . '/';
+        $shots = array();
+        foreach ((array) ($manifest['screenshots'] ?? array()) as $shot) {
+            $src = is_array($shot) && is_string($shot['src'] ?? null) ? $shot['src'] : '';
+            if (preg_match('#^assets/screenshot-[A-Za-z0-9._-]+\.(png|jpe?g)$#', $src) === 1 && is_file($root . $src)) {
+                $shots[] = array('src' => $base . $src, 'caption' => is_string($shot['caption'] ?? null) ? $shot['caption'] : '');
+            }
+        }
+
+        return array(
+            'slug'             => $slug,
+            'name'             => $name,
+            'author'           => $author,
+            'description_html' => self::marketPurifyDescription(\mindstellar\market\Markdown::toHtml($readme)),
+            'screenshots'      => $shots,
+            'versions'         => array(),
+            'links'            => self::marketSanitizeLinks(array('links' => (array) ($manifest['support'] ?? array()))),
+            'categories'       => array_values(array_filter((array) ($manifest['categories'] ?? array()), 'is_string')),
+            'tags'             => array_values(array_filter((array) ($manifest['tags'] ?? array()), 'is_string')),
+            'downloads'        => 0,
+        );
     }
 
     /**
