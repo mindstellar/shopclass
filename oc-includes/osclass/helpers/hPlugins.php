@@ -321,6 +321,29 @@ function osc_admin_configure_plugin_url($file = '')
 }
 
 /**
+ * Say what a plugin's own admin screen is, for the page header core draws around it: the
+ * browser title, the help behind the "?" and the icon actions beside the heading. Call it
+ * when the plugin loads; the screen's file runs after the header is drawn.
+ *
+ * Keys: 'title' (browser title), 'help' (string or callable printing the help box),
+ * 'actions' (icon, url, title each; see osc_admin_page_header()).
+ *
+ * @param string              $route the admin route the screen is drawn on
+ * @param array<string,mixed> $opts
+ *
+ * @return array<string,mixed> what the route declared; with no $opts, only reads it
+ */
+function osc_admin_plugin_page($route, array $opts = array())
+{
+    static $pages = array();
+    if ($opts !== array()) {
+        $pages[(string) $route] = $opts;
+    }
+
+    return $pages[(string) $route] ?? array();
+}
+
+/**
  * Gets urls for custom plugin administrations options
  *
  * @param string $file

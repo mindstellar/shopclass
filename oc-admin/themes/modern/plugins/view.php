@@ -14,10 +14,14 @@
  */
 $file = __get('file');
 
-osc_admin_page(array(
+// A plugin screen on a route may have declared its title, help and header actions.
+$declared = osc_admin_plugin_page(Params::getParamString('route'));
+osc_admin_page(array_filter(array(
     'section' => static fn () => osc_apply_filter('custom_plugin_title', __('Plugins')),
-    'title'   => __('Plugins'),
-));
+    'title'   => $declared['title'] ?? __('Plugins'),
+    'help'    => $declared['help'] ?? null,
+    'actions' => $declared['actions'] ?? array(),
+), static fn ($value) => $value !== null && $value !== array()));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
     <!-- theme files -->

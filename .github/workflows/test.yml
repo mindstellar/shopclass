@@ -167,6 +167,8 @@ jobs:
         run: php tests/address-guard.php
       - name: Theme list and preview allowlist
         run: php tests/theme-preview.php
+      - name: Plugin screen headers
+        run: php tests/admin-plugin-page.php
       # A priority outside the old 0-10 loop was stored and never run, with no warning.
       - name: Hook priority
         run: php tests/hook-priority.php
