@@ -872,8 +872,11 @@ function define_install_constants($dbhost, $dbname, $username, $password, $table
  */
 function create_config_file($dbname, $username, $password, $dbhost, $tableprefix)
 {
-    $password    = addslashes($password);
     [$abs_url, $rel_url] = install_urls();
+    [$dbname, $username, $password, $dbhost, $tableprefix, $abs_url, $rel_url] = array_map(
+        'install_config_literal',
+        [$dbname, $username, $password, $dbhost, $tableprefix, $abs_url, $rel_url]
+    );
     $config_text = <<<CONFIG
 <?php
 /**
@@ -910,21 +913,62 @@ defined('WEB_PATH') or define('WEB_PATH', '$abs_url');
 CONFIG;
 
     file_put_contents(ABS_PATH . 'config.php', $config_text);
-    chmod(ABS_PATH . 'config.php', 0644);
+    install_config_chmod(ABS_PATH . 'config.php');
 }
 
 /**
- * Site URL and path for config.php. The CLI installer defines them up front, since
- * a CLI run has no request to derive them from.
+ * Site URL and path for config.php. A CLI run has no request to derive them from,
+ * so the CLI installer defines them up front.
  *
  * @return string[] [absolute URL, relative path]
  */
 function install_urls()
 {
-    return [
-        defined('WEB_PATH') ? WEB_PATH : get_absolute_url(),
-        defined('REL_WEB_URL') ? REL_WEB_URL : get_relative_url(),
-    ];
+    if (PHP_SAPI === 'cli' && defined('WEB_PATH') && defined('REL_WEB_URL')) {
+        return [WEB_PATH, REL_WEB_URL];
+    }
+
+    return [get_absolute_url(), get_relative_url()];
+}
+
+/**
+ * A value made safe to place inside a single-quoted PHP string in config.php.
+ *
+ * @param string $value
+ *
+ * @return string
+ */
+function install_config_literal($value)
+{
+    return addcslashes((string) $value, "'\\");
+}
+
+/**
+ * Whether a site address is a plain http(s) URL that config.php can hold.
+ *
+ * @param string $url
+ *
+ * @return bool
+ */
+function install_web_url_valid($url)
+{
+    return filter_var($url, FILTER_VALIDATE_URL) !== false
+        && preg_match('#^https?://[^\'\\\\?\#]+$#i', (string) $url) === 1;
+}
+
+/**
+ * Make config.php readable by the web server but writable only by its owner.
+ * Skipped when another user owns the file, where chmod() would only warn.
+ *
+ * @param string $path
+ *
+ * @return void
+ */
+function install_config_chmod($path)
+{
+    if (function_exists('getmyuid') && fileowner($path) === getmyuid()) {
+        chmod($path, 0644);
+    }
 }
 
 /**
@@ -942,8 +986,11 @@ function install_urls()
 function copy_config_file($dbname, $username, $password, $dbhost, $tableprefix)
 {
     // Prepare variables
-    $password = addslashes($password);
     [$abs_url, $rel_url] = install_urls();
+    [$dbname, $username, $password, $dbhost, $tableprefix, $abs_url, $rel_url] = array_map(
+        'install_config_literal',
+        [$dbname, $username, $password, $dbhost, $tableprefix, $abs_url, $rel_url]
+    );
 
     // Load config sample
     $config_sample_path = ABS_PATH . 'config-sample.php';
@@ -979,7 +1026,7 @@ function copy_config_file($dbname, $username, $password, $dbhost, $tableprefix)
         return false;
     }
 
-    chmod($config_path, 0644);
+    install_config_chmod($config_path);
 
     return true;
 }

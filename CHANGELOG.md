@@ -65,7 +65,7 @@ In development.
 
 ### Fixed
 
-- `oc-cli.php install` writes the `--web-url` address to `config.php` instead of `http:///`, and the installer writes `config.php` as 0644, not 0666.
+- `oc-cli.php install` writes the `--web-url` address to `config.php` instead of `http:///`. The installer now escapes every value it writes there, so a database password with a `"` or `'` works, and writes the file as 0644, not 0666.
 - Pagination puts its navigation landmark on a `<nav>` around the list, not on the `<ul>`.
 - Package READMEs show wrapped list items, code inside lists, links, rules and README images correctly in the details dialog.
 - The current-theme card no longer runs off the screen on a phone.

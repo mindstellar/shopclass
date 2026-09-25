@@ -197,6 +197,8 @@ jobs:
         run: php tests/item-url-characterization.php
       - name: Pagination
         run: php tests/pagination.php
+      - name: Installer config values
+        run: php tests/install-config.php
       # The location sitemaps synthesise URLs while the sitemap route's own params are
       # still in the request; one leaking in silently doubles every category-location
       # page into a second, self-canonicalising URL that Google indexes separately.

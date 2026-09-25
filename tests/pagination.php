@@ -84,6 +84,8 @@ check('active page has aria-current', strpos($html, 'aria-current="page"') !== f
 check('list sits in a labelled nav landmark', strpos($html, '<nav aria-label="Pagination"><ul') === 0
     && substr($html, -11) === '</ul></nav>');
 check('the list itself carries no role', strpos($html, 'role=') === false);
+check('list_class lands on the <ul>', strpos(paginate(10, 4, array('list_class' => 'pg')),
+    '<nav aria-label="Pagination"><ul class="pg">') === 0);
 check('arrows carry aria-labels', strpos($html, 'aria-label="Next page"') !== false
     && strpos($html, 'aria-label="Previous page"') !== false);
 

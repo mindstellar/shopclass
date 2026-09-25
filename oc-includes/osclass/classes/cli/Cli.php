@@ -263,8 +263,8 @@ class Cli
 
             return 2;
         }
-        if (!filter_var($webUrl, FILTER_VALIDATE_URL) || !preg_match('#^https?://[^\'\\\\]+$#i', (string) $webUrl)) {
-            $this->err("Invalid site URL (an http:// or https:// address).\n");
+        if (!install_web_url_valid($webUrl)) {
+            $this->err("Invalid site URL (an http:// or https:// address, with no query or fragment).\n");
 
             return 2;
         }
