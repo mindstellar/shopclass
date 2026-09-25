@@ -87,15 +87,15 @@ final class Totp
     }
 
     /**
-     * The stored form of a backup code. The codes are random, so a fast hash is enough.
+     * A typed backup code in the form it was issued: upper case, no spaces or dashes.
      *
      * @param string $code
      *
      * @return string
      */
-    public static function hashBackupCode(string $code): string
+    public static function normaliseBackupCode(string $code): string
     {
-        return hash('sha256', strtoupper(preg_replace('/[\s-]+/', '', $code)));
+        return strtoupper(preg_replace('/[\s-]+/', '', $code));
     }
 
     /**

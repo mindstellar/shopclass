@@ -65,8 +65,9 @@ either. See the [caching contract](/docs/developers/caching/).
 
 Each admin can add a second step to their sign-in: a 6-digit code from an
 authenticator app, such as Google Authenticator, Microsoft Authenticator or
-Aegis. Open **Your profile**, find **Two-step sign-in**, choose **Set up**, scan
-the QR code and type the code the app shows.
+Aegis. Open your account menu, top right, and choose **Edit profile**. Under
+**Two-step sign-in**, choose **Set up**, scan the QR code and type the code the
+app shows.
 
 You then get 8 backup codes, shown once. Keep them somewhere safe. Each one
 works once, in place of an app code, if you lose your phone. **New backup

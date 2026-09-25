@@ -361,7 +361,7 @@ class CAdminAdmins extends AdminSecBaseModel
         $back    = osc_admin_base_url(true) . '?page=admins&action=edit' . ($target === $own ? '' : '&id=' . $target);
         $admin   = Admin::newInstance()->findByPrimaryKey($target);
         $session = Session::newInstance();
-        $code    = (string)Params::getParam('code');
+        $code    = Params::getParamString('code');
 
         if (!$admin || ($target !== $own && ($action !== '2fa_off' || $this->isModerator()))) {
             osc_add_flash_error_message(_m("You don't have enough permissions"), 'admin');
@@ -373,7 +373,7 @@ class CAdminAdmins extends AdminSecBaseModel
         if ($enabled && $target === $own && in_array($action, array('2fa_codes', '2fa_off'), true)
             && !AdminTwoFactor::check($admin, $code)
         ) {
-            osc_add_flash_error_message(_m('That code is not right. Try the newest code from your app.'), 'admin');
+            osc_add_flash_error_message(AdminTwoFactor::refusedMessage(), 'admin');
             $this->redirectTo($back);
         }
 
@@ -387,7 +387,7 @@ class CAdminAdmins extends AdminSecBaseModel
                 $secret = (string)$session->_get('admin2faSetup');
                 $codes  = $enabled || $secret === '' ? null : AdminTwoFactor::enable($target, $secret, $code);
                 if ($codes === null) {
-                    osc_add_flash_error_message(_m('That code is not right. Try the newest code from your app.'), 'admin');
+                    osc_add_flash_error_message(AdminTwoFactor::refusedMessage(), 'admin');
                     break;
                 }
                 $session->_drop('admin2faSetup');

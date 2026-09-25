@@ -192,7 +192,7 @@ $row = $model->findByEmail('alice@example.test');
 check('a match returns an array', is_array($row), describe($row));
 pin(
     'the row carries every schema column (SELECT * with no explicit column list)',
-    array('pk_i_id', 's_name', 's_username', 's_password', 's_email', 's_secret', 'b_moderator'),
+    array('pk_i_id', 's_name', 's_username', 's_password', 's_email', 's_secret', 's_2fa', 'b_moderator'),
     array_keys($row)
 );
 pin('pk_i_id round-trips as a string, not an int (C4)', (string) $idAlice, $row['pk_i_id']);

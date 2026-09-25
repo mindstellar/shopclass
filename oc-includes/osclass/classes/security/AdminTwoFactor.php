@@ -68,7 +68,10 @@ final class AdminTwoFactor
      */
     public static function check(array $admin, string $code): bool
     {
-        $id       = (int)$admin['pk_i_id'];
+        $id = (int)$admin['pk_i_id'];
+        if (!self::allowTry($id)) {
+            return false;
+        }
         $stored   = self::read($id);
         $settings = self::decode($stored);
         if ($settings === null) {
@@ -79,7 +82,7 @@ final class AdminTwoFactor
         if ($step !== null) {
             $settings['step'] = $step;
         } else {
-            $index = array_search(Totp::hashBackupCode($code), $settings['backup'], true);
+            $index = array_search(self::backupHash($code), $settings['backup'], true);
             if ($index === false) {
                 return false;
             }
@@ -105,14 +108,14 @@ final class AdminTwoFactor
      */
     public static function enable(int $adminId, string $secret, string $code): ?array
     {
-        $step = Totp::verify($secret, $code);
+        $step = self::allowTry($adminId) ? Totp::verify($secret, $code) : null;
         if ($step === null) {
             return null;
         }
         $codes = Totp::newBackupCodes();
         self::save($adminId, array(
             'secret' => $secret,
-            'backup' => array_map(array(Totp::class, 'hashBackupCode'), $codes),
+            'backup' => array_map(array(self::class, 'backupHash'), $codes),
             'step'   => $step,
         ));
 
@@ -133,7 +136,7 @@ final class AdminTwoFactor
             return array();
         }
         $codes              = Totp::newBackupCodes();
-        $settings['backup'] = array_map(array(Totp::class, 'hashBackupCode'), $codes);
+        $settings['backup'] = array_map(array(self::class, 'backupHash'), $codes);
         self::save((int)$admin['pk_i_id'], $settings);
 
         return $codes;
@@ -146,7 +149,9 @@ final class AdminTwoFactor
      */
     public static function disable(int $adminId): void
     {
-        self::write($adminId, null);
+        // A fresh value rather than NULL, so a remember-me cookie from before 2FA was
+        // first turned on does not become valid again.
+        self::write($adminId, (string)json_encode(array('off' => bin2hex(random_bytes(8)))));
     }
 
     /**
@@ -158,9 +163,9 @@ final class AdminTwoFactor
      */
     public static function rememberBinding(array $admin): string
     {
-        $settings = self::settings($admin);
+        $data = json_decode((string)self::read((int)($admin['pk_i_id'] ?? 0)), true);
 
-        return (string)$admin['s_password'] . ($settings === null ? '' : $settings['secret']);
+        return (string)$admin['s_password'] . (is_array($data) ? (string)($data['secret'] ?? $data['off'] ?? '') : '');
     }
 
     /**
@@ -172,6 +177,41 @@ final class AdminTwoFactor
     private static function save(int $adminId, array $settings): void
     {
         self::write($adminId, (string)json_encode($settings));
+    }
+
+    /**
+     * Why a code was refused, for every screen that asks for one.
+     *
+     * @return string
+     */
+    public static function refusedMessage(): string
+    {
+        return _m('That code is not right. Try the newest code from your app. After 10 tries, wait 15 minutes.');
+    }
+
+    /**
+     * Ten tries per admin every 15 minutes, on its own counter: the password step clears the
+     * login throttle, and this limit holds whether that throttle is on or not.
+     *
+     * @param int $adminId
+     *
+     * @return bool
+     */
+    private static function allowTry(int $adminId): bool
+    {
+        return RateLimit::hit('admin-2fa', (string)$adminId, 10, 900);
+    }
+
+    /**
+     * Keyed like every other one-time code, so a copied database cannot test guesses offline.
+     *
+     * @param string $code
+     *
+     * @return string
+     */
+    private static function backupHash(string $code): string
+    {
+        return ActionToken::hash(Totp::normaliseBackupCode($code));
     }
 
     /**

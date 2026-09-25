@@ -1736,9 +1736,10 @@ msgstr ""
 msgid "That ban rule no longer exists"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
-#: oc-includes/osclass/classes/controller/admin/CAdminLogin.php
-msgid "That code is not right. Try the newest code from your app."
+#: oc-includes/osclass/classes/security/AdminTwoFactor.php
+msgid ""
+"That code is not right. Try the newest code from your app. After 10 tries, "
+"wait 15 minutes."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSitemap.php

@@ -45,11 +45,7 @@ pin('a short code is refused', null, Totp::verify($secret, '12345', 0, $now));
 $codes = Totp::newBackupCodes();
 pin('8 backup codes', 8, count(array_unique($codes)));
 pin('each is 10 base32 characters', 8, count(preg_grep('/^[A-Z2-7]{10}$/', $codes)));
-pin(
-    'a backup code hashes the same typed in lower case with a dash',
-    Totp::hashBackupCode($codes[0]),
-    Totp::hashBackupCode(strtolower(substr($codes[0], 0, 5) . '-' . substr($codes[0], 5)))
-);
+pin('a typed backup code reads as issued', $codes[0], Totp::normaliseBackupCode(' ' . strtolower(substr($codes[0], 0, 5) . '-' . substr($codes[0], 5)) . ' '));
 
 pin(
     'the setup URI',

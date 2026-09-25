@@ -147,17 +147,10 @@ class CAdminLogin extends AdminBaseModel
                     Session::newInstance()->_drop('admin2fa');
                     $this->redirectTo(osc_admin_base_url(true) . '?page=login');
                 }
-                $throttle = \mindstellar\security\LoginThrottle::evaluate('admin-2fa', (string)$admin['pk_i_id']);
-                if ($throttle['status'] === \mindstellar\security\LoginThrottle::BLOCKED) {
-                    osc_add_flash_error_message(osc_login_throttle_message($throttle['retry_after']), 'admin');
+                if (!\mindstellar\security\AdminTwoFactor::check($admin, Params::getParamString('code'))) {
+                    osc_add_flash_error_message(\mindstellar\security\AdminTwoFactor::refusedMessage(), 'admin');
                     $this->redirectTo(osc_admin_base_url(true) . '?page=login&action=2fa');
                 }
-                if (!\mindstellar\security\AdminTwoFactor::check($admin, (string)Params::getParam('code'))) {
-                    \mindstellar\security\LoginThrottle::recordFailure('admin-2fa', (string)$admin['pk_i_id']);
-                    osc_add_flash_error_message(_m('That code is not right. Try the newest code from your app.'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=login&action=2fa');
-                }
-                \mindstellar\security\LoginThrottle::clear('admin-2fa', (string)$admin['pk_i_id']);
                 Session::newInstance()->_drop('admin2fa');
                 $this->signIn(Admin::newInstance()->findByPrimaryKey($pending['id']), $pending['remember'], $pending['locale']);
                 $this->redirectTo($pending['redirect']);
@@ -294,6 +287,10 @@ class CAdminLogin extends AdminBaseModel
      */
     private function signIn(array $admin, bool $remember, string $locale): void
     {
+        // A new session id for the signed-in session, so one planted before sign-in is useless.
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_regenerate_id(true);
+        }
         $is_valid_locale = osc_validate_locale($locale, true);
         if ($remember) {
             Cookie::newInstance()->set_expires(osc_time_cookie());
