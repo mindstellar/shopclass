@@ -85,11 +85,11 @@
 // Same shape as an installed tile (packages.scss): art on the start edge, identity beside
 // it, actions along the bottom. A package reads the same whether it is installed or not.
 .market-card {
-  block-size: 100%;
+  block-size: var(--osc-pkg-card-h);
   column-gap: 1rem;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  grid-template-rows: 1fr auto;
+  grid-template-rows: minmax(0, 1fr) auto;
   padding: 1rem;
   row-gap: .75rem;
 }
@@ -103,7 +103,7 @@
   flex: 0 0 auto;
   grid-column: 1;
   grid-row: 1;
-  inline-size: 4rem;
+  inline-size: var(--osc-pkg-media-w);
   padding: 0;
   text-align: start;
 
@@ -114,7 +114,7 @@
 }
 
 .market-card-thumb {
-  aspect-ratio: 4 / 3;
+  aspect-ratio: var(--osc-pkg-media-ratio);
   background-color: var(--osc-bench-sunk);
   border-radius: $border-radius;
   inline-size: 100%;
@@ -133,6 +133,7 @@
 }
 
 .market-card-body {
+  @extend %osc-pkg-scroll;
   display: flex;
   flex-direction: column;
   gap: .35rem;
@@ -268,11 +269,11 @@
 
   .market-update-item-thumb,
   .osc-thumb {
-    aspect-ratio: 4 / 3;
+    aspect-ratio: var(--osc-pkg-media-ratio);
     background-color: var(--osc-bench-sunk);
     border-radius: $border-radius;
     flex: 0 0 auto;
-    inline-size: 4.5rem;
+    inline-size: var(--osc-pkg-media-w);
   }
 }
 
@@ -289,7 +290,9 @@
 }
 
 .market-update-body {
+  @extend %osc-pkg-scroll;
   flex: 1 1 auto;
+  max-block-size: 10rem;
   min-inline-size: 0;
 }
 

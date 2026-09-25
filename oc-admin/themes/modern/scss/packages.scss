@@ -11,6 +11,32 @@
 // A grid, not full-width rows: a row leaves its action button an arm's length from the
 // name it belongs to.
 
+// Every package card on the Installed, Browse and Updates tabs is a media card: art of one
+// fixed size for its kind, and details beside it that scroll when they outgrow the card, so
+// cards in a row line up whatever their text says.
+.osc-pkg-list,
+.market-app {
+  --osc-pkg-card-h: 12.5rem;
+  --osc-pkg-media-ratio: 1 / 1;
+  --osc-pkg-media-w: 4.5rem;
+}
+
+.osc-pkg-list--themes,
+.market-app[data-type="theme"] {
+  --osc-pkg-card-h: 13.5rem;
+  --osc-pkg-media-ratio: 4 / 3;
+  --osc-pkg-media-w: 8rem;
+}
+
+// The details column of a card: it scrolls, the art and the action strip stay put.
+%osc-pkg-scroll {
+  min-block-size: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-inline-end: .25rem;
+  scrollbar-width: thin;
+}
+
 .osc-pkg-list {
   display: grid;
   gap: 1rem;
@@ -24,11 +50,12 @@
   background-color: var(--osc-bench);
   border: 1px solid var(--osc-rule);
   border-radius: $border-radius-lg;
+  block-size: var(--osc-pkg-card-h);
   column-gap: 1rem;
   display: grid;
-  // Content row stretches so the action strip lands on the same line in every tile.
+  // Content row takes what is left, so the action strip lands on the same line in every tile.
   grid-template-columns: auto minmax(0, 1fr);
-  grid-template-rows: 1fr auto;
+  grid-template-rows: minmax(0, 1fr) auto;
   padding: 1rem;
   row-gap: .75rem;
 
@@ -60,16 +87,17 @@
   flex: 0 0 auto;
   grid-column: 1;
   grid-row: 1;
-  inline-size: 4rem;
+  inline-size: var(--osc-pkg-media-w);
 
   .osc-thumb {
-    aspect-ratio: 4 / 3;
+    aspect-ratio: var(--osc-pkg-media-ratio);
     background-color: var(--osc-bench-sunk);
     border-radius: $border-radius;
   }
 }
 
 .osc-pkg-main {
+  @extend %osc-pkg-scroll;
   grid-column: 2;
   grid-row: 1;
   min-inline-size: 0;
@@ -78,6 +106,7 @@
 // The live theme leads its screen: it spans the grid and shows its screenshot at a size
 // worth looking at, instead of being one tile among equals.
 .osc-pkg--wide {
+  block-size: auto;
   grid-column: 1 / -1;
 
   .osc-pkg-art {
@@ -117,15 +146,9 @@
   padding: 0 .1rem;
 }
 
-// Two lines is what a tile needs: the whole description is one click away in the detail
-// sheet, and a tile that runs to five lines stops being scannable.
 .osc-pkg-desc {
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  display: -webkit-box;
   margin: .35rem 0 0;
   max-inline-size: 75ch;
-  overflow: hidden;
 }
 
 .osc-pkg-note {
@@ -203,9 +226,31 @@
     grid-template-columns: 1fr;
   }
 
-  .osc-pkg--wide .osc-pkg-art {
-    inline-size: 100%;
-    max-inline-size: none;
+  // The live theme's large screenshot takes the full width, so its details go below it.
+  .osc-pkg--wide {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+
+    .osc-pkg-art {
+      inline-size: 100%;
+      max-inline-size: none;
+    }
+
+    .osc-pkg-main {
+      grid-column: 1;
+      grid-row: 2;
+    }
+  }
+
+  // Stacked on a phone, a card is as tall as its text; there is no row to line up with.
+  .osc-pkg,
+  .market-card {
+    block-size: auto;
+  }
+
+  .osc-pkg-main,
+  .market-card-body {
+    overflow-y: visible;
   }
 
   // On a phone the strip stacks, and a destructive link pushed to the end of a wrapped

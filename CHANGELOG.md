@@ -12,6 +12,7 @@ In development.
 - A plugin can add its own `oc-cli.php` commands with the `cli_commands` filter.
 - `osc_admin_plugin_page()` gives a plugin's own admin screen the title, **?** help and icon actions core screens have.
 - Installed plugins and themes have a **Details** link, and their icon opens the same details as in Browse. A package not in the catalog shows its own README and screenshots.
+- Plugin and theme cards have fixed-size art and one height per row; longer details scroll inside the card.
 - `ItemActions` takes custom field values from `meta` in its data when there is no form post, so an importer can set them.
 - Admin-mode `ItemActions` takes an `ownerId` param, so a caller names the account instead of core matching the contact e-mail.
 - `ItemActions::prepareDataFrom()` builds a listing from plain data, so a plugin need not fill the request.
@@ -64,6 +65,7 @@ In development.
 
 ### Fixed
 
+- The current-theme card no longer runs off the screen on a phone.
 - Moving a listing to no country no longer prints a failed database query.
 - No more deprecation notices on PHP 8.5 from image resizing, downloads and contact-form attachments.
 - A job run that ran out of time left the rest of its batch waiting 15 minutes; they now run on the next tick.
