@@ -267,6 +267,38 @@ function osc_phpmailer_limit_smtp_wait($mail)
 }
 
 /**
+ * A visitor's uploaded file, ready to attach to a mail straight from PHP's temporary upload.
+ *
+ * The file is never copied under the web root. Script types are refused.
+ *
+ * @param string $field upload field name
+ *
+ * @return array{path:string,name:string}|false|null null when nothing was uploaded, false when refused
+ */
+function osc_mail_upload_attachment($field)
+{
+    $file = Params::getFiles($field);
+    if (!isset($file['error']) || $file['error'] === UPLOAD_ERR_NO_FILE) {
+        return null;
+    }
+    if ($file['error'] !== UPLOAD_ERR_OK || !is_string($file['tmp_name'] ?? null)
+        || !is_uploaded_file($file['tmp_name'])) {
+        return false;
+    }
+    $refused = array(
+        'text/php', 'text/x-php', 'application/php', 'application/x-php', 'application/x-httpd-php',
+        'application/x-httpd-php-source', 'application/x-javascript', 'text/javascript',
+        'application/javascript', 'text/html', 'application/x-sh', 'text/x-shellscript',
+    );
+    if (in_array(\mindstellar\storage\UploadMimes::detect($file['tmp_name']), $refused, true)) {
+        return false;
+    }
+    $name = trim(preg_replace('/[\x00-\x1F\x7F"\\\\\/]+/', '', basename((string) ($file['name'] ?? ''))));
+
+    return array('path' => $file['tmp_name'], 'name' => $name !== '' ? $name : 'attachment');
+}
+
+/**
  * Send one email through PHPMailer, using the site's configured mail transport.
  *
  * @param array<string,mixed> $params from, to, to_name, subject, body, alt_body and optional attachment/reply-to keys

@@ -127,6 +127,7 @@ In development.
 
 ### Security
 
+- A listing contact attachment is sent from PHP's upload folder instead of being copied into `oc-content/uploads/` under a guessable name. Both contact forms refuse script files the same way.
 - **Appearance** activates only a theme that is installed.
 - A theme or plugin name made only of dots, such as `..`, is refused, so a child theme cannot name the folder above the themes as its parent.
 - The email template test send needs a CSRF token.

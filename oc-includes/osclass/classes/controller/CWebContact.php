@@ -107,67 +107,20 @@ MESSAGE;
                 );
 
                 $error = false;
-                if (osc_contact_attachment() && Params::getParam('attachment')) {
-                    $attachment = Params::getFiles('attachment');
-                    if (isset($attachment['error'])
-                        && $attachment['error'] ==
-                        UPLOAD_ERR_OK
-                    ) {
-                        $mime_array   = array(
-                            'text/php',
-                            'text/x-php',
-                            'application/php',
-                            'application/x-php',
-                            'application/x-httpd-php',
-                            'application/x-httpd-php-source',
-                            'application/x-javascript'
-                        );
-                        $resourceName = $attachment['name'];
-                        $tmpName      = $attachment['tmp_name'];
-                        $resourceType = $attachment['type'];
-
-                        if (function_exists('mime_content_type')) {
-                            $resourceType = mime_content_type($tmpName);
-                        }
-
-                        if (function_exists('finfo_open')) {
-                            $finfo  = finfo_open(FILEINFO_MIME);
-                            $output = finfo_file($finfo, $tmpName);
-                            unset($finfo);
-
-                            $output = explode('; ', $output);
-                            if (is_array($output)) {
-                                $output = $output[0];
-                            }
-                            $resourceType = $output;
-                        }
-
-                        // check mime file
-                        if (in_array($resourceType, $mime_array)) {
-                            $error = true;
-                        } else {
-                            $emailAttachment = array('path' => $tmpName, 'name' => $resourceName);
-                            $error           = false;
-                        }
-                        // --- check mime file
-                    } else {
-                        $error = true;
-                    }
+                if (osc_contact_attachment()) {
+                    $emailAttachment = osc_mail_upload_attachment('attachment');
+                    $error           = $emailAttachment === false;
                 }
                 if ($error) {
                     osc_add_flash_error_message(_m('The file you tried to upload does not have a valid extension'));
                 } else {
-                    if (isset($emailAttachment)) {
+                    if (!empty($emailAttachment)) {
                         $params['attachment'] = $emailAttachment;
                     }
 
                     osc_run_hook('pre_contact_post', $params);
 
                     osc_sendMail(osc_apply_filter('contact_params', $params));
-
-                    if (isset($tmpName)) {
-                        @unlink($tmpName);
-                    }
 
                     osc_add_flash_ok_message(_m('Your email has been sent properly. Thank you for contacting us!'));
                 }

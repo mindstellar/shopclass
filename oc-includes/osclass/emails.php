@@ -1015,27 +1015,15 @@ function fn_email_item_inquiry($aItem)
     }
 
     if (osc_item_attachment()) {
-        $attachment   = Params::getFiles('attachment');
-        $resourceName = $attachment['name'];
-        $tmpName      = $attachment['tmp_name'];
-        $path         = osc_uploads_path() . time() . '_' . $resourceName;
-
-        if (!is_writable(osc_uploads_path())) {
-            osc_add_flash_error_message(_m('There has been some errors sending the message'));
+        $attachment = osc_mail_upload_attachment('attachment');
+        if ($attachment === false) {
+            osc_add_flash_error_message(_m('The file you tried to upload does not have a valid extension'));
+        } elseif ($attachment !== null) {
+            $emailParams['attachment'] = $attachment;
         }
-
-        if (!move_uploaded_file($tmpName, $path)) {
-            unset($path);
-        }
-    }
-
-    if (isset($path)) {
-        $emailParams['attachment'] = $path;
     }
 
     osc_sendMail($emailParams);
-
-    @unlink($path);
 }
 
 osc_add_hook('hook_email_item_inquiry', 'fn_email_item_inquiry');
