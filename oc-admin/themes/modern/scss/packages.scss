@@ -237,6 +237,11 @@
   padding-block: .25rem;
 }
 
+.osc-pkg-list--themes .osc-pkg-desc,
+.market-app[data-type="theme"] .market-card-desc {
+  min-block-size: 6.5rem;
+}
+
 .osc-pkg-note {
   font-size: $font-size-label;
   margin: .35rem 0 0;
