@@ -873,8 +873,7 @@ function define_install_constants($dbhost, $dbname, $username, $password, $table
 function create_config_file($dbname, $username, $password, $dbhost, $tableprefix)
 {
     $password    = addslashes($password);
-    $abs_url     = get_absolute_url();
-    $rel_url     = get_relative_url();
+    [$abs_url, $rel_url] = install_urls();
     $config_text = <<<CONFIG
 <?php
 /**
@@ -911,6 +910,21 @@ defined('WEB_PATH') or define('WEB_PATH', '$abs_url');
 CONFIG;
 
     file_put_contents(ABS_PATH . 'config.php', $config_text);
+    chmod(ABS_PATH . 'config.php', 0644);
+}
+
+/**
+ * Site URL and path for config.php. The CLI installer defines them up front, since
+ * a CLI run has no request to derive them from.
+ *
+ * @return string[] [absolute URL, relative path]
+ */
+function install_urls()
+{
+    return [
+        defined('WEB_PATH') ? WEB_PATH : get_absolute_url(),
+        defined('REL_WEB_URL') ? REL_WEB_URL : get_relative_url(),
+    ];
 }
 
 /**
@@ -929,8 +943,7 @@ function copy_config_file($dbname, $username, $password, $dbhost, $tableprefix)
 {
     // Prepare variables
     $password = addslashes($password);
-    $abs_url = get_absolute_url();
-    $rel_url = get_relative_url();
+    [$abs_url, $rel_url] = install_urls();
 
     // Load config sample
     $config_sample_path = ABS_PATH . 'config-sample.php';
@@ -966,8 +979,7 @@ function copy_config_file($dbname, $username, $password, $dbhost, $tableprefix)
         return false;
     }
 
-    // Set file permissions
-    chmod($config_path, 0666);
+    chmod($config_path, 0644);
 
     return true;
 }

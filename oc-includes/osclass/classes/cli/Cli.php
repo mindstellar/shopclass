@@ -263,6 +263,11 @@ class Cli
 
             return 2;
         }
+        if (!filter_var($webUrl, FILTER_VALIDATE_URL) || !preg_match('#^https?://[^\'\\\\]+$#i', (string) $webUrl)) {
+            $this->err("Invalid site URL (an http:// or https:// address).\n");
+
+            return 2;
+        }
         if (!preg_match('/^[A-Za-z0-9_]+$/', (string) $dbPrefix)) {
             $this->err("Invalid table prefix (letters, numbers and underscore only).\n");
 
