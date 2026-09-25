@@ -79,6 +79,45 @@ try {
 }
 pin('and it is back after a throw too', 'hithere', Params::getParamString('name'));
 
+// ---------------------------------------------------------------- bool / email / enum
+$warnings = array();
+set_error_handler(static function ($no, $msg) use (&$warnings) {
+    $warnings[] = $msg;
+
+    return true;
+});
+Params::withRequest(array(
+    'on' => 'on', 'yes' => 'YES', 'one' => '1', 'off' => 'off', 'zero' => '0', 'empty' => '',
+    'junk' => 'maybe', 'arr' => array('1'),
+    'mail' => ' a.b@example.com ', 'badMail' => 'a@b', 'xssMail' => '"<script>"@x.com>', 'mailArr' => array('a@example.com'),
+    'dir' => 'desc', 'dirCase' => 'DESC', 'dirBad' => 'desc; DROP', 'type' => '2', 'typeArr' => array('asc'),
+), static function () {
+    pin('bool: on', true, Params::getParamBool('on'));
+    pin('bool: YES', true, Params::getParamBool('yes'));
+    pin('bool: 1', true, Params::getParamBool('one'));
+    pin('bool: off', false, Params::getParamBool('off', true));
+    pin('bool: 0', false, Params::getParamBool('zero', true));
+    pin('bool: empty is false', false, Params::getParamBool('empty', true));
+    pin('bool: junk gives the default', true, Params::getParamBool('junk', true));
+    pin('bool: array gives the default', true, Params::getParamBool('arr', true));
+    pin('bool: missing gives the default', true, Params::getParamBool('nope', true));
+
+    pin('email: valid, trimmed', 'a.b@example.com', Params::getParamEmail('mail'));
+    pin('email: invalid gives the default', 'none', Params::getParamEmail('badMail', 'none'));
+    pin('email: markup is not an address', '', Params::getParamEmail('xssMail'));
+    pin('email: array gives the default', '', Params::getParamEmail('mailArr'));
+    pin('email: missing gives the default', '', Params::getParamEmail('nope'));
+
+    pin('enum: exact match', 'desc', Params::getParamEnum('dir', array('asc', 'desc'), 'asc'));
+    pin('enum: case matters', 'asc', Params::getParamEnum('dirCase', array('asc', 'desc'), 'asc'));
+    pin('enum: anything else gives the default', 'asc', Params::getParamEnum('dirBad', array('asc', 'desc'), 'asc'));
+    pin('enum: an int list returns the int', 2, Params::getParamEnum('type', array(0, 1, 2), 0));
+    pin('enum: array gives the default', 'asc', Params::getParamEnum('typeArr', array('asc', 'desc'), 'asc'));
+    pin('enum: missing gives the default', null, Params::getParamEnum('nope', array('asc')));
+});
+restore_error_handler();
+pin('bool / email / enum: no array ever reaches a string cast', array(), $warnings);
+
 $fail = $GLOBALS['failCount'];
 echo "\n" . ($fail === 0
         ? "ALL PASS ({$GLOBALS['okCount']})\n"

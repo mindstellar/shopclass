@@ -79,6 +79,88 @@ class Params
     }
 
     /**
+     * Type-safe yes/no accessor: `1/0`, `true/false`, `on/off`, `yes/no` (any case) and ''.
+     * Anything else, an array, or a missing param yields $default.
+     *
+     * @param string $param
+     * @param bool   $default
+     *
+     * @return bool
+     */
+    public static function getParamBool($param, $default = false)
+    {
+        $value = self::scalarParam($param);
+        if ($value === null) {
+            return $default;
+        }
+        $bool = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+
+        return $bool ?? $default;
+    }
+
+    /**
+     * Type-safe email accessor, checked with FILTER_VALIDATE_EMAIL after trimming.
+     * An invalid address, an array, or a missing param yields $default.
+     *
+     * @param string $param
+     * @param string $default
+     *
+     * @return string
+     */
+    public static function getParamEmail($param, $default = '')
+    {
+        $value = self::scalarParam($param);
+        if ($value === null) {
+            return $default;
+        }
+        $email = filter_var(trim($value), FILTER_VALIDATE_EMAIL);
+
+        return $email === false ? $default : $email;
+    }
+
+    /**
+     * One value from a fixed list, for sort keys, directions, types and actions. The
+     * match is exact and case-sensitive; the list's own element is returned, so an
+     * int list gives an int. Anything else, an array, or a missing param yields $default.
+     *
+     * @param string $param
+     * @param array  $allowed
+     * @param mixed  $default
+     *
+     * @return mixed
+     */
+    public static function getParamEnum($param, array $allowed, $default = null)
+    {
+        $value = self::scalarParam($param);
+        if ($value === null) {
+            return $default;
+        }
+        foreach ($allowed as $option) {
+            if ((string) $option === $value) {
+                return $option;
+            }
+        }
+
+        return $default;
+    }
+
+    /**
+     * The raw request value as a string, or null when it is missing or an array.
+     *
+     * @param string $param
+     *
+     * @return string|null
+     */
+    private static function scalarParam($param)
+    {
+        if ($param === '' || !isset(self::$request[$param]) || is_array(self::$request[$param])) {
+            return null;
+        }
+
+        return (string) self::$request[$param];
+    }
+
+    /**
      * Type-safe string accessor. Same purification as getParam(), but an array-valued param
      * (e.g. `?s_name[]=x`) yields '' instead of an array leaking into string/SQL context. Use at
      * sites that require a scalar string.

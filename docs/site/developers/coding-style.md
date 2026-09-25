@@ -115,6 +115,23 @@ fk_i_category_id     -- foreign key
 Follow it in any table you add — the DAO layer and the schema reconciler both
 assume it.
 
+## Reading request values
+
+Read a request value with the `Params` method for its type. The typed ones never return an
+array, so `?id[]=1` cannot sneak an array into SQL or a template. They skip HTMLPurifier.
+
+| Value | Method | Bad or missing input gives |
+|---|---|---|
+| id, page, count | `Params::getParamInt('id', 0)` | the default |
+| yes/no flag | `Params::getParamBool('b_enabled', false)` | the default |
+| email address | `Params::getParamEmail('email', '')` | the default |
+| one of a fixed list | `Params::getParamEnum('direction', ['asc', 'desc'], 'asc')` | the default |
+| free text | `Params::getParamString('title')` | `''` |
+| a list | `Params::getParamArray('ids')` | `[]` |
+
+`getParamString()` and `getParamArray()` still strip tags, but that is not your XSS guard.
+Escape every value when you print it, with `osc_esc_html()` or `osc_esc_js()`.
+
 ## Documentation blocks
 
 Public functions and classes carry a phpDocumentor-compatible docblock. Say what
