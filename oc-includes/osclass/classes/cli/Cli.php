@@ -1426,14 +1426,18 @@ class Cli
             $check('ok', 'Strict SQL mode', 'on');
         } else {
             try {
-                $zero = \mindstellar\database\StrictModeReadiness::zeroDates(DB_TABLE_PREFIX);
-                if ($zero === []) {
+                $zero     = \mindstellar\database\StrictModeReadiness::zeroDates(DB_TABLE_PREFIX);
+                $defaults = \mindstellar\database\StrictModeReadiness::zeroDefaults(DB_TABLE_PREFIX);
+                if ($zero === [] && $defaults === []) {
                     $check('ok', 'Strict SQL mode', "off; stored data is ready. Add define('OSC_DB_STRICT_MODE', true);"
                         . ' to config.php, then test your plugins');
                 } else {
                     $list = [];
                     foreach ($zero as $column => $rows) {
-                        $list[] = $column . ' (' . $rows . ')';
+                        $list[] = $column . ' (' . $rows . ' rows)';
+                    }
+                    foreach ($defaults as $column) {
+                        $list[] = $column . ' (default)';
                     }
                     $check('warn', 'Strict SQL mode', 'off; zero dates would block it: ' . implode(', ', $list));
                 }
