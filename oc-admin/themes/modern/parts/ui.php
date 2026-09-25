@@ -84,7 +84,7 @@ if (!function_exists('osc_admin_page')) {
 
         if ($help !== null) {
             osc_add_hook('help_box', static function () use ($help) {
-                if (is_callable($help)) {
+                if (!is_string($help) && is_callable($help)) {
                     $help();
 
                     return;
@@ -121,7 +121,7 @@ if (!function_exists('osc_admin_page_header')) {
      */
     function osc_admin_page_header($section, array $opts = array())
     {
-        if (is_callable($section)) {
+        if (!is_string($section) && is_callable($section)) {
             $section = $section();
         } ?>
         <h1><?php echo osc_esc_html((string) $section); ?>

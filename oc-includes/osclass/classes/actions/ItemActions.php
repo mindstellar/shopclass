@@ -2028,6 +2028,7 @@ class ItemActions
      */
     public function prepareData($is_add)
     {
+        $this->fromData = false;
         $aItem = array();
         $data  = array();
 
