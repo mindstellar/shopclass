@@ -76,8 +76,8 @@ current code.
 
 After 10 wrong codes in 15 minutes, the code step waits until the 15 minutes
 are up. Someone who knows the password can keep an admin waiting this way. After
-5 wrong codes the admin gets an e-mail saying so, at most once an hour: change
-the password when it comes. Changing the site's signing key
+5 wrong codes in 15 minutes, or more than 10 in a day, the admin gets an e-mail
+saying so, at most once an hour: change the password when it comes. Changing the site's signing key
 (`OSC_CSRF_SECRET`) makes every backup code stop working; the app codes still
 work, and **New backup codes** issues fresh ones.
 

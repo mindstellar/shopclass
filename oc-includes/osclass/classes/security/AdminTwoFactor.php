@@ -180,8 +180,8 @@ final class AdminTwoFactor
     }
 
     /**
-     * Count a wrong code at sign-in. The fifth in 15 minutes means someone has the password,
-     * so the admin is told by e-mail, at most once an hour.
+     * Count a wrong code at sign-in. Five in 15 minutes, or more than 10 in a day, means
+     * someone has the password, so the admin is told by e-mail, at most once an hour.
      *
      * @param array<string,mixed> $admin
      *
@@ -189,14 +189,14 @@ final class AdminTwoFactor
      */
     public static function noteFailure(array $admin): void
     {
-        $id = (string)$admin['pk_i_id'];
-        if (RateLimit::hit('admin-2fa-fail', $id, 4, 900) || !RateLimit::hit('admin-2fa-mail', $id, 1, 3600)
-            || empty($admin['s_email'])
-        ) {
+        $id    = (string)$admin['pk_i_id'];
+        $short = RateLimit::hit('admin-2fa-fail', $id, 4, 900);
+        $day   = RateLimit::hit('admin-2fa-fail-day', $id, 10, 86400);
+        if (($short && $day) || empty($admin['s_email']) || !RateLimit::hit('admin-2fa-mail', $id, 1, 3600)) {
             return;
         }
         $body = '<p>' . osc_esc_html(sprintf(
-            __('Someone typed your correct password on %1$s, then 5 wrong codes, from the address %2$s. They did not get in.'),
+            __('Someone typed your correct password on %1$s, then several wrong codes, from the address %2$s. They did not get in.'),
             osc_page_title(),
             get_ip()
         )) . '</p><p>' . osc_esc_html(__('If this was not you, change your password now. Until you do, the code step can make you wait.')) . '</p>';

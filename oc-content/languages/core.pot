@@ -8823,8 +8823,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/security/AdminTwoFactor.php
 msgid ""
-"Someone typed your correct password on %1$s, then 5 wrong codes, from the "
-"address %2$s. They did not get in."
+"Someone typed your correct password on %1$s, then several wrong codes, from "
+"the address %2$s. They did not get in."
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install.php
