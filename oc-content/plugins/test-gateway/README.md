@@ -28,4 +28,4 @@ makes. The gateway refuses a bad signature, a callback older than the configured
 a refund or decline whose amount or currency differs from the order. Core refuses a paid
 callback with the wrong amount or currency and never settles an order twice.
 
-Tick *Show the signed callback* to get a `curl` command that posts to the real callback URL.
+Tick **Show the signed callback on the checkout page** to get a `curl` command that posts to the real callback URL.
