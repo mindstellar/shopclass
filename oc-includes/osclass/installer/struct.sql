@@ -132,6 +132,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_admin (
     s_password CHAR(60) NOT NULL,
     s_email VARCHAR(100) NULL,
     s_secret VARCHAR(40) NULL,
+    s_2fa TEXT NULL,
     b_moderator TINYINT(1) NOT NULL DEFAULT 0,
 
         PRIMARY KEY (pk_i_id),

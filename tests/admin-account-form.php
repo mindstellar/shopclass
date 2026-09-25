@@ -494,7 +494,7 @@ if ($res) {
 }
 pin(
     'the table is the shape the page declares',
-    array('pk_i_id', 's_name', 's_username', 's_password', 's_email', 's_secret', 'b_moderator'),
+    array('pk_i_id', 's_name', 's_username', 's_password', 's_email', 's_secret', 's_2fa', 'b_moderator'),
     $columns
 );
 foreach (SettingsPageRegistry::instance()->fields($editId) as $name => $field) {

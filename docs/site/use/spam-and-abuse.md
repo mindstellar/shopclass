@@ -61,6 +61,25 @@ reports all key to the same address. Set the real-IP header before you rely on
 either. See the [caching contract](/docs/developers/caching/).
 :::
 
+## Two-step sign-in for admins
+
+Each admin can add a second step to their sign-in: a 6-digit code from an
+authenticator app, such as Google Authenticator, Microsoft Authenticator or
+Aegis. Open **Your profile**, find **Two-step sign-in**, choose **Set up**, scan
+the QR code and type the code the app shows.
+
+You then get 8 backup codes, shown once. Keep them somewhere safe. Each one
+works once, in place of an app code, if you lose your phone. **New backup
+codes** replaces them, and **Turn off** removes the second step. Both ask for a
+current code.
+
+If an admin loses both their phone and their backup codes, a full administrator
+can turn it off on that admin's edit screen, or from the command line:
+
+```bash
+php oc-cli.php user:2fa-off --user=<username>
+```
+
 ## The keyword blocklist
 
 **Settings → Keyword blocklist** rejects listings containing words you choose.

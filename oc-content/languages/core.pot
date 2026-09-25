@@ -1452,6 +1452,10 @@ msgstr ""
 msgid "Back to plugins"
 msgstr ""
 
+#: oc-admin/gui/two_factor.php
+msgid "Back to the sign-in page"
+msgstr ""
+
 #: oc-admin/themes/modern/appearance/add.php
 msgid "Back to themes"
 msgstr ""
@@ -2241,6 +2245,8 @@ msgstr ""
 msgid "Cloudflare Turnstile"
 msgstr ""
 
+#: oc-admin/gui/two_factor.php
+#: oc-admin/themes/modern/admins/two_factor.php
 #: oc-admin/themes/modern/settings/currencies.php
 #: oc-admin/themes/modern/settings/locations/data.php
 msgid "Code"
@@ -3693,6 +3699,12 @@ msgstr ""
 #: oc-admin/themes/modern/items/frm.php
 #: oc-includes/osclass/classes/form/admin/Item.php
 msgid "Enter price"
+msgstr ""
+
+#: oc-admin/gui/two_factor.php
+msgid ""
+"Enter the 6-digit code from your authenticator app, or one of your backup "
+"codes."
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-database.php
@@ -6204,6 +6216,10 @@ msgstr ""
 msgid "New alerts"
 msgstr ""
 
+#: oc-admin/themes/modern/admins/two_factor.php
+msgid "New backup codes"
+msgstr ""
+
 #: oc-includes/osclass/functions.php
 msgid "New comments"
 msgstr ""
@@ -6792,6 +6808,12 @@ msgid ""
 "on one of the two being available."
 msgstr ""
 
+#: oc-admin/themes/modern/admins/two_factor.php
+msgid ""
+"Off. Turn it on to sign in with your password and a code from an "
+"authenticator app."
+msgstr ""
+
 #: oc-admin/themes/modern/stats/reports.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 msgid "Offensive"
@@ -6815,6 +6837,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/KeywordBlockSettingsForm.php
 msgid "On a match"
+msgstr ""
+
+#: oc-admin/themes/modern/admins/two_factor.php
+msgid "On. You sign in with your password and a code from your authenticator app."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/upgrade.php
@@ -6925,6 +6951,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/fields/iframe.php
 msgid "Options are required."
+msgstr ""
+
+#: oc-admin/themes/modern/admins/two_factor.php
+msgid "Or type this key into the app:"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/index.php
@@ -8038,6 +8068,12 @@ msgstr ""
 msgid "Saving…"
 msgstr ""
 
+#: oc-admin/themes/modern/admins/two_factor.php
+msgid ""
+"Scan this code with an authenticator app, then type the 6-digit code it "
+"shows."
+msgstr ""
+
 #: oc-admin/themes/modern/tools/system-info.php
 msgid "Scheduled tasks (cron)"
 msgstr ""
@@ -8425,6 +8461,10 @@ msgstr ""
 msgid "Set the API key in Settings -> General."
 msgstr ""
 
+#: oc-admin/themes/modern/admins/two_factor.php
+msgid "Set up"
+msgstr ""
+
 #: oc-includes/osclass/installer/gui/install-target.php
 msgid "Set up my site"
 msgstr ""
@@ -8682,6 +8722,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Shrink photos in the browser before upload."
+msgstr ""
+
+#: oc-admin/gui/two_factor.php
+msgid "Sign in"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/header.php
@@ -9531,6 +9575,12 @@ msgstr ""
 msgid "This action cannot be done because it is a demo site"
 msgstr ""
 
+#: oc-admin/themes/modern/admins/two_factor.php
+msgid ""
+"This admin signs in with a code from an app. Turn it off if they have lost "
+"their phone and their backup codes."
+msgstr ""
+
 #: oc-admin/themes/modern/billing/wallet.php
 msgid "This balance is below zero, usually after a refund of credits that had "
 msgstr ""
@@ -9945,6 +9995,14 @@ msgid ""
 "until pruned."
 msgstr ""
 
+#: oc-admin/themes/modern/admins/two_factor.php
+msgid "Turn off"
+msgstr ""
+
+#: oc-admin/themes/modern/admins/two_factor.php
+msgid "Turn on"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/system-info.php
 msgid "Turn on OPcache"
 msgstr ""
@@ -9996,6 +10054,11 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/form.php
 msgid "Two letters, as in IN, DE or MT."
+msgstr ""
+
+#: oc-admin/themes/modern/admins/two_factor.php
+#: oc-includes/osclass/classes/controller/admin/CAdminLogin.php
+msgid "Two-step sign-in"
 msgstr ""
 
 #: oc-admin/themes/modern/fields/iframe.php
@@ -11009,6 +11072,12 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/ui/Field.php
 msgid "Your admin language"
+msgstr ""
+
+#: oc-admin/themes/modern/admins/two_factor.php
+msgid ""
+"Your backup codes. Keep them somewhere safe: each works once, and they are "
+"shown only now."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/PermalinkSettingsForm.php

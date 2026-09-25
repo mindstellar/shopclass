@@ -332,7 +332,7 @@ function osc_is_admin_user_logged_in()
                 'admin',
                 $adminId,
                 Cookie::newInstance()->get_value('oc_adminSecret'),
-                $admin['s_password']
+                \mindstellar\security\AdminTwoFactor::rememberBinding($admin)
             )
         ) {
             Session::newInstance()->_set('adminId', $admin['pk_i_id']);

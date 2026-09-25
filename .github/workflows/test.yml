@@ -99,6 +99,8 @@ jobs:
         run: php tests/params-typed-accessors.php
       - name: Browser photo resize config
         run: php tests/browser-resize-config.php
+      - name: Admin two-step codes
+        run: php tests/totp.php
       # Storefront -- the default theme -- keeps its chrome in common/, so a probe
       # for a root header.php/footer.php missed on a default install and every
       # core-rendered page dropped to the standalone shell.

@@ -22,6 +22,9 @@ use mindstellar\admin\ListPaging;
 /**
  * Class CAdminAdmins
  */
+use mindstellar\security\AdminTwoFactor;
+use mindstellar\security\Totp;
+
 class CAdminAdmins extends AdminSecBaseModel
 {
     //specific for this class
@@ -35,7 +38,7 @@ class CAdminAdmins extends AdminSecBaseModel
         parent::__construct();
 
         if ($this->isModerator()) {
-            if (($this->action !== 'edit' && $this->action !== 'edit_post')
+            if (!in_array($this->action, array('edit', 'edit_post', '2fa_setup', '2fa_enable', '2fa_codes', '2fa_off'), true)
                 || (Params::getParam('id') != ''
                     && Params::getParam('id') != osc_logged_admin_id())
             ) {
@@ -89,6 +92,16 @@ class CAdminAdmins extends AdminSecBaseModel
                     break;
                 }
                 $this->saveAdmin($adminId);
+                break;
+            case ('2fa_setup'):
+            case ('2fa_enable'):
+            case ('2fa_codes'):
+            case ('2fa_off'):
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=admins&action=edit')) {
+                    break;
+                }
+                osc_csrf_check();
+                $this->twoFactor($this->action);
                 break;
             case ('delete'):
                 if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=admins')) {
@@ -331,6 +344,65 @@ class CAdminAdmins extends AdminSecBaseModel
             return;
         }
         $this->redirectTo(osc_admin_base_url(true) . '?page=admins');
+    }
+
+    /**
+     * Two-step sign-in on the profile screen. An admin changes their own; a full admin may
+     * only turn off another admin's, for one who has lost their phone.
+     *
+     * @param string $action
+     *
+     * @return void
+     */
+    private function twoFactor(string $action): void
+    {
+        $own     = osc_logged_admin_id();
+        $target  = Params::getParamInt('id') ?: $own;
+        $back    = osc_admin_base_url(true) . '?page=admins&action=edit' . ($target === $own ? '' : '&id=' . $target);
+        $admin   = Admin::newInstance()->findByPrimaryKey($target);
+        $session = Session::newInstance();
+        $code    = (string)Params::getParam('code');
+
+        if (!$admin || ($target !== $own && ($action !== '2fa_off' || $this->isModerator()))) {
+            osc_add_flash_error_message(_m("You don't have enough permissions"), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=admins');
+        }
+
+        $enabled = AdminTwoFactor::enabled($admin);
+        // Changing your own settings once they are on takes a current code.
+        if ($enabled && $target === $own && in_array($action, array('2fa_codes', '2fa_off'), true)
+            && !AdminTwoFactor::check($admin, $code)
+        ) {
+            osc_add_flash_error_message(_m('That code is not right. Try the newest code from your app.'), 'admin');
+            $this->redirectTo($back);
+        }
+
+        switch ($action) {
+            case '2fa_setup':
+                if (!$enabled) {
+                    $session->_set('admin2faSetup', Totp::newSecret());
+                }
+                break;
+            case '2fa_enable':
+                $secret = (string)$session->_get('admin2faSetup');
+                $codes  = $enabled || $secret === '' ? null : AdminTwoFactor::enable($target, $secret, $code);
+                if ($codes === null) {
+                    osc_add_flash_error_message(_m('That code is not right. Try the newest code from your app.'), 'admin');
+                    break;
+                }
+                $session->_drop('admin2faSetup');
+                $session->_set('admin2faCodes', $codes);
+                osc_add_flash_ok_message(_m('Two-step sign-in is on.'), 'admin');
+                break;
+            case '2fa_codes':
+                $session->_set('admin2faCodes', AdminTwoFactor::renewBackupCodes($admin));
+                break;
+            case '2fa_off':
+                AdminTwoFactor::disable($target);
+                osc_add_flash_ok_message(_m('Two-step sign-in is off.'), 'admin');
+                break;
+        }
+        $this->redirectTo($back);
     }
 
     /**

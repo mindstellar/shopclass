@@ -51,6 +51,7 @@ class Cli
         'sitemap:warm'        => ['cmdSitemapWarm', 'Pre-generate the XML sitemap into the cache'],
         'user:create-admin'   => ['cmdUserCreateAdmin', 'Create an admin (--user= --email= [--password=] [--name=])'],
         'user:reset-password' => ['cmdUserResetPassword', 'Reset an admin password (--user=|--email= [--password=])'],
+        'user:2fa-off'        => ['cmdUserTwoFactorOff', 'Turn off an admin\'s two-step sign-in (--user=)'],
         'plugin:list'         => ['cmdPluginList', 'List plugins and their status'],
         'plugin:activate'     => ['cmdPluginActivate', 'Enable an installed plugin (--plugin=<folder>)'],
         'plugin:deactivate'   => ['cmdPluginDeactivate', 'Disable an active plugin (--plugin=<folder>)'],
@@ -794,6 +795,28 @@ class Cli
         if ($generated) {
             $this->out(sprintf("Generated password: %s\n", $password));
         }
+
+        return 0;
+    }
+
+    /**
+     * Turn off an admin's two-step sign-in, for one locked out of their app and backup codes.
+     *
+     * @param array<string, mixed> $args
+     *
+     * @return int
+     */
+    private function cmdUserTwoFactorOff(array $args): int
+    {
+        $admin = Admin::newInstance()->findByUsername(trim((string) ($args['user'] ?? '')));
+        if (!$admin) {
+            $this->err("Usage: user:2fa-off --user=<username>\nNo matching admin found.\n");
+
+            return 1;
+        }
+
+        \mindstellar\security\AdminTwoFactor::disable((int) $admin['pk_i_id']);
+        $this->out(sprintf("Two-step sign-in turned off for admin '%s'.\n", $admin['s_username']));
 
         return 0;
     }

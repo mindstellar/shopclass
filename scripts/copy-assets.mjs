@@ -30,6 +30,7 @@ const TARGETS = [
   { dest: `${ASSETS}/bootstrap`, flatten: true, src: ['bootstrap/dist/css/bootstrap.min.*', 'bootstrap/dist/js/bootstrap.min.*', 'bootstrap/LICENSE'] },
   { dest: `${ASSETS}/popper`, flatten: true, src: ['@popperjs/core/dist/umd/popper.min.js', '@popperjs/core/LICENSE.md'] },
   { dest: `${ASSETS}/sortablejs`, flatten: true, src: ['sortablejs/Sortable.min.js', 'sortablejs/LICENSE'] },
+  { dest: `${ASSETS}/qrcode-generator`, flatten: true, src: ['qrcode-generator/dist/qrcode.js'] },
   { dest: `${ASSETS}/fonts/open-sans`, flatten: true, src: ['npm-font-open-sans/fonts/Regular/OpenSans-Regular.ttf', 'npm-font-open-sans/LICENSE'] },
 
   { dest: `${ASSETS}/bootstrap-icons`, flatten: true, src: ['bootstrap-icons/LICENSE'] },

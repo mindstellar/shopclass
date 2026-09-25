@@ -1736,6 +1736,11 @@ msgstr ""
 msgid "That ban rule no longer exists"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
+#: oc-includes/osclass/classes/controller/admin/CAdminLogin.php
+msgid "That code is not right. Try the newest code from your app."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSitemap.php
 msgid "That custom URL no longer exists"
 msgstr ""
@@ -2385,6 +2390,14 @@ msgid "Too many failed attempts. Please try again in %d minute."
 msgid_plural "Too many failed attempts. Please try again in %d minutes."
 msgstr[0] ""
 msgstr[1] ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
+msgid "Two-step sign-in is off."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
+msgid "Two-step sign-in is on."
+msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
 msgid "Unknown widget type"

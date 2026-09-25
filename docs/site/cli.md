@@ -62,6 +62,7 @@ php oc-cli.php user:create-admin --user=jane --email=jane@example.com
 |---|---|
 | `user:create-admin --user= --email= [--password=] [--name=]` | Create an admin account. Omit `--password` and a strong one is generated and printed. |
 | `user:reset-password --user=\|--email= [--password=]` | Reset an admin's password. |
+| `user:2fa-off --user=` | Turn off an admin's two-step sign-in. |
 
 ## Plugins and themes
 

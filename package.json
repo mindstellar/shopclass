@@ -44,6 +44,7 @@
     "jquery-validation": "^1.22.1",
     "npm-font-open-sans": "^1.1.0",
     "osclass-legacy-assets": "github:mindstellar/osclass-legacy-assets#master",
+    "qrcode-generator": "^2.0.4",
     "sortablejs": "^1.15.7",
     "tinymce": "^8.8.2"
   }
