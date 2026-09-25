@@ -86,12 +86,11 @@
 // it, actions along the bottom. A package reads the same whether it is installed or not.
 .market-card {
   block-size: var(--osc-pkg-card-h);
-  column-gap: 1rem;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr) auto;
-  padding: 1rem;
-  row-gap: .75rem;
+  overflow: hidden;
+  padding: 0;
 }
 
 .market-card-thumb-btn {
@@ -99,10 +98,12 @@
   background: none;
   border: 0;
   cursor: pointer;
+  background-color: var(--osc-bench-sunk);
+  border-inline-end: 1px solid var(--osc-rule);
   display: flex;
   flex: 0 0 auto;
   grid-column: 1;
-  grid-row: 1;
+  grid-row: 1 / -1;
   inline-size: var(--osc-pkg-media-w);
   padding: 0;
   text-align: start;
@@ -114,9 +115,8 @@
 }
 
 .market-card-thumb {
-  aspect-ratio: var(--osc-pkg-media-ratio);
-  background-color: var(--osc-bench-sunk);
-  border-radius: $border-radius;
+  block-size: 100%;
+  border-radius: 0;
   inline-size: 100%;
 }
 
@@ -140,7 +140,7 @@
   grid-column: 2;
   grid-row: 1;
   min-inline-size: 0;
-  padding: 0;
+  padding: 1rem 1rem .75rem;
 }
 
 .market-card-status {
@@ -208,8 +208,9 @@
   display: flex;
   flex-wrap: wrap;
   gap: .5rem;
-  grid-column: 1 / -1;
-  padding-block-start: .75rem;
+  grid-column: 2;
+  margin-inline: 1rem;
+  padding-block: .75rem;
 }
 
 .market-card-action {

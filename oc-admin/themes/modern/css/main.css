@@ -21277,12 +21277,10 @@ form h3, form .h3 {
   border: 1px solid var(--osc-rule);
   border-radius: 6px;
   block-size: var(--osc-pkg-card-h);
-  column-gap: 1rem;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr) auto;
-  padding: 1rem;
-  row-gap: 0.75rem;
+  overflow: hidden;
 }
 .osc-pkg:hover {
   border-color: var(--osc-rule-strong);
@@ -21307,20 +21305,28 @@ form h3, form .h3 {
 
 .osc-pkg-art {
   flex: 0 0 auto;
+  background-color: var(--osc-bench-sunk);
+  border-inline-end: 1px solid var(--osc-rule);
   grid-column: 1;
-  grid-row: 1;
+  grid-row: 1/-1;
   inline-size: var(--osc-pkg-media-w);
 }
 .osc-pkg-art .osc-thumb {
-  aspect-ratio: var(--osc-pkg-media-ratio);
-  background-color: var(--osc-bench-sunk);
-  border-radius: 4px;
+  block-size: 100%;
+  border-radius: 0;
+}
+
+.osc-pkg-list--themes .osc-thumb img,
+.market-app[data-type=theme] .market-card-thumb img {
+  object-fit: cover;
+  object-position: top;
 }
 
 .osc-pkg-main {
   grid-column: 2;
   grid-row: 1;
   min-inline-size: 0;
+  padding: 1rem 1rem 0.75rem;
 }
 
 .osc-pkg--wide {
@@ -21389,8 +21395,9 @@ form h3, form .h3 {
   column-gap: 1rem;
   display: flex;
   flex-wrap: wrap;
-  grid-column: 1/-1;
-  padding-block-start: 0.75rem;
+  grid-column: 2;
+  margin-inline: 1rem;
+  padding-block: 0.75rem;
   row-gap: 0.5rem;
 }
 
@@ -21436,9 +21443,18 @@ form h3, form .h3 {
     inline-size: 100%;
     max-inline-size: none;
   }
+  .osc-pkg--wide .osc-pkg-art {
+    aspect-ratio: 4/3;
+    border-block-end: 1px solid var(--osc-rule);
+    border-inline-end: 0;
+    grid-row: 1;
+  }
   .osc-pkg--wide .osc-pkg-main {
     grid-column: 1;
     grid-row: 2;
+  }
+  .osc-pkg--wide .osc-pkg-actions {
+    grid-column: 1;
   }
   .osc-pkg,
   .market-card {
@@ -21522,12 +21538,11 @@ form h3, form .h3 {
 
 .market-card {
   block-size: var(--osc-pkg-card-h);
-  column-gap: 1rem;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr) auto;
-  padding: 1rem;
-  row-gap: 0.75rem;
+  overflow: hidden;
+  padding: 0;
 }
 
 .market-card-thumb-btn {
@@ -21535,10 +21550,12 @@ form h3, form .h3 {
   background: none;
   border: 0;
   cursor: pointer;
+  background-color: var(--osc-bench-sunk);
+  border-inline-end: 1px solid var(--osc-rule);
   display: flex;
   flex: 0 0 auto;
   grid-column: 1;
-  grid-row: 1;
+  grid-row: 1/-1;
   inline-size: var(--osc-pkg-media-w);
   padding: 0;
   text-align: start;
@@ -21549,9 +21566,8 @@ form h3, form .h3 {
 }
 
 .market-card-thumb {
-  aspect-ratio: var(--osc-pkg-media-ratio);
-  background-color: var(--osc-bench-sunk);
-  border-radius: 4px;
+  block-size: 100%;
+  border-radius: 0;
   inline-size: 100%;
 }
 
@@ -21572,7 +21588,7 @@ form h3, form .h3 {
   grid-column: 2;
   grid-row: 1;
   min-inline-size: 0;
-  padding: 0;
+  padding: 1rem 1rem 0.75rem;
 }
 
 .market-card-status {
@@ -21634,8 +21650,9 @@ form h3, form .h3 {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  grid-column: 1/-1;
-  padding-block-start: 0.75rem;
+  grid-column: 2;
+  margin-inline: 1rem;
+  padding-block: 0.75rem;
 }
 
 .market-card-action {
