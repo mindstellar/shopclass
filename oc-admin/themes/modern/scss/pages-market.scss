@@ -564,6 +564,29 @@
     margin: 1.1em 0 .4em;
   }
 
+  h1 {
+    font-size: 1.25rem;
+  }
+
+  h2 {
+    font-size: 1.125rem;
+  }
+
+  hr {
+    border: 0;
+    border-block-start: 1px solid var(--osc-rule);
+    margin: 1.25em 0;
+    opacity: 1;
+  }
+
+  li > p {
+    margin: .35em 0 0;
+  }
+
+  li > pre {
+    margin: .35em 0 .5em;
+  }
+
   p, ul, ol, pre, blockquote {
     margin: 0 0 .75em;
   }
@@ -590,6 +613,7 @@
     border-collapse: collapse;
     display: block;
     font-size: .875em;
+    inline-size: fit-content;
     margin: 0 0 .75em;
     max-inline-size: 100%;
     overflow-x: auto;

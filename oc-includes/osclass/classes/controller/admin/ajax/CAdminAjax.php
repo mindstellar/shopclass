@@ -1544,7 +1544,17 @@ class CAdminAjax extends AdminSecBaseModel
             );
         }
 
-        return array('ok' => true, 'message' => '', 'detail' => self::marketBuildDetail($slug, $raw));
+        $detail = self::marketBuildDetail($slug, $raw);
+        // An installed copy that is up to date shows its own README, read with this site's renderer.
+        $newest = (string) ($detail['versions'][0]['version'] ?? '');
+        $local  = self::marketLocalDetail($type, $slug);
+        if ($local !== null && $local['description_html'] !== '' && $newest !== ''
+            && version_compare((string) $local['version'], $newest, '>=')
+        ) {
+            $detail['description_html'] = $local['description_html'];
+        }
+
+        return array('ok' => true, 'message' => '', 'detail' => $detail);
     }
 
     /**
@@ -1572,6 +1582,7 @@ class CAdminAjax extends AdminSecBaseModel
             $name   = (string) ($info['plugin_name'] ?? $slug);
             $author = (string) ($info['author'] ?? '');
         }
+        $version = (string) ($info['version'] ?? '');
         $manifest = is_file($root . 'shopclass.json') ? json_decode((string) file_get_contents($root . 'shopclass.json'), true) : null;
         $manifest = is_array($manifest) ? $manifest : array();
         $readme   = is_file($root . 'README.md') ? (string) file_get_contents($root . 'README.md') : '';
@@ -1590,6 +1601,7 @@ class CAdminAjax extends AdminSecBaseModel
             'slug'             => $slug,
             'name'             => $name,
             'author'           => $author,
+            'version'          => $version,
             'description_html' => self::marketPurifyDescription(\mindstellar\market\Markdown::toHtml($readme), $base),
             'screenshots'      => $shots,
             'versions'         => array(),
@@ -1783,8 +1795,8 @@ class CAdminAjax extends AdminSecBaseModel
             $config = HTMLPurifier_Config::createDefault();
             $config->set(
                 'HTML.Allowed',
-                'h1,h2,h3,h4,h5,h6,p,br,blockquote,ul,ol,li,strong,b,em,i,code,pre,a[href],img[src|alt|loading],'
-                . 'table,thead,tbody,tr,th[class],td[class]'
+                'h1,h2,h3,h4,h5,h6,p,br,hr,blockquote,ul,ol[start],li,strong,b,em,i,del,code,pre,a[href|title],'
+                . 'img[src|alt|loading|title],table,thead,tbody,tr,th[class],td[class]'
             );
             $config->set('HTML.TargetBlank', true);
             $config->set('HTML.TargetNoopener', true);

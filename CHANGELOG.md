@@ -65,6 +65,7 @@ In development.
 
 ### Fixed
 
+- Package READMEs show wrapped list items, code inside lists, links, rules and README images correctly in the details dialog.
 - The current-theme card no longer runs off the screen on a phone.
 - Moving a listing to no country no longer prints a failed database query.
 - No more deprecation notices on PHP 8.5 from image resizing, downloads and contact-form attachments.

@@ -569,9 +569,36 @@ if ($markdownClass === null) {
 }
 require_once $markdownClass;
 
-function renderMarkdownSafe(?string $markdown): string
+function renderMarkdownSafe(?string $markdown, ?string $baseUrl = null): string
 {
-    return \mindstellar\market\Markdown::toHtml($markdown);
+    return \mindstellar\market\Markdown::toHtml($markdown, $baseUrl);
+}
+
+/**
+ * Where a README's relative images and links point: the package's folder in its repository,
+ * at the released tag (external) or at the commit being built (in-repo). Null when unknown.
+ */
+function readmeBaseUrl(string $source, array $manifest, array $versions, ?string $localDir): ?string
+{
+    if ($source === 'external') {
+        $repo = (string) ($manifest['source']['repo'] ?? '');
+        $tag = (string) ($versions[0]['tag'] ?? '');
+
+        return preg_match('#^[\w.-]+/[\w.-]+$#', $repo) === 1 && $tag !== ''
+            ? 'https://raw.githubusercontent.com/' . $repo . '/' . rawurlencode($tag) . '/'
+            : null;
+    }
+    $repo = (string) getenv('GITHUB_REPOSITORY');
+    $sha = (string) getenv('GITHUB_SHA');
+    $root = realpath((string) (getenv('GITHUB_WORKSPACE') ?: getcwd()));
+    $dir = $localDir !== null ? realpath($localDir) : false;
+    if (preg_match('#^[\w.-]+/[\w.-]+$#', $repo) !== 1 || preg_match('/^[0-9a-f]{7,40}$/', $sha) !== 1
+        || $root === false || $dir === false || !str_starts_with($dir, $root . '/')) {
+        return null;
+    }
+
+    return 'https://raw.githubusercontent.com/' . $repo . '/' . $sha . '/'
+        . implode('/', array_map('rawurlencode', explode('/', substr($dir, strlen($root) + 1)))) . '/';
 }
 
 /** Splits a CHANGELOG.md by `## <version>` headings, per this project's own load-bearing format. */
@@ -876,6 +903,7 @@ function resolveExternalVersions(string $slug, string $type, array $manifest, bo
         // External packages ship no CHANGELOG.md of their own (§7 note in buildPackageEntry) —
         // the release body is the only per-version changelog source available for them.
         $resolved['entry']['release_body'] = $release['body'] ?? null;
+        $resolved['entry']['tag'] = $tag;
         $versions[] = $resolved['entry'];
         if ($artwork['bytes'] === null) {
             $artwork = ['bytes' => $resolved['artwork_zip_bytes'], 'slug_dir' => $resolved['artwork_slug_dir']];
@@ -1038,7 +1066,7 @@ function buildPackageEntry(
     if ($readmeMd === false && $resolution['artwork']['bytes'] !== null && $resolution['artwork']['slug_dir'] !== null) {
         $readmeMd = readZipTextFile($resolution['artwork']['bytes'], $resolution['artwork']['slug_dir'], 'README.md') ?? false;
     }
-    $readmeHtml = renderMarkdownSafe($readmeMd === false ? null : $readmeMd);
+    $readmeHtml = renderMarkdownSafe($readmeMd === false ? null : $readmeMd, readmeBaseUrl($source, $manifest, $versions, $localDir));
 
     // Changelog. In-repo splits the package's own CHANGELOG.md by version heading; an
     // external package's zip may or may not carry one of its own (unlike README.md this

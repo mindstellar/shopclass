@@ -21420,7 +21420,7 @@ form h3, form .h3 {
 
 .osc-pkg-list--themes .osc-pkg-desc,
 .market-app[data-type=theme] .market-card-desc {
-  min-block-size: 6.5rem;
+  min-block-size: fit-content;
 }
 
 .osc-pkg-note {
@@ -22003,6 +22003,24 @@ form h3, form .h3 {
   font-weight: 600;
   margin: 1.1em 0 0.4em;
 }
+.market-detail-readme h1, .market-detail-readme .h1 {
+  font-size: 1.25rem;
+}
+.market-detail-readme h2, .market-detail-readme .h2 {
+  font-size: 1.125rem;
+}
+.market-detail-readme hr {
+  border: 0;
+  border-block-start: 1px solid var(--osc-rule);
+  margin: 1.25em 0;
+  opacity: 1;
+}
+.market-detail-readme li > p {
+  margin: 0.35em 0 0;
+}
+.market-detail-readme li > pre {
+  margin: 0.35em 0 0.5em;
+}
 .market-detail-readme p, .market-detail-readme ul, .market-detail-readme ol, .market-detail-readme pre, .market-detail-readme blockquote {
   margin: 0 0 0.75em;
 }
@@ -22018,6 +22036,7 @@ form h3, form .h3 {
   border-collapse: collapse;
   display: block;
   font-size: 0.875em;
+  inline-size: fit-content;
   margin: 0 0 0.75em;
   max-inline-size: 100%;
   overflow-x: auto;
