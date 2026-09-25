@@ -207,71 +207,14 @@ class CWebSearch extends BaseModel
         ////////////////////////////////
         //GETTING AND FIXING SENT DATA//
         ////////////////////////////////
-        $p_sCategory = Params::getParam('sCategory');
-        if (!is_array($p_sCategory)) {
-            if ($p_sCategory == '') {
-                $p_sCategory = array();
-            } else {
-                $p_sCategory = explode(',', $p_sCategory);
-            }
-        }
+        $criteria = \mindstellar\search\SearchCriteria::fromRequest($uriParams);
 
-        $p_sCityArea = Params::getParam('sCityArea');
-        if (!is_array($p_sCityArea)) {
-            if ($p_sCityArea == '') {
-                $p_sCityArea = array();
-            } else {
-                $p_sCityArea = explode(',', $p_sCityArea);
-            }
-        }
-
-        $p_sCity = Params::getParam('sCity');
-        if (!is_array($p_sCity)) {
-            if ($p_sCity == '') {
-                $p_sCity = array();
-            } else {
-                $p_sCity = explode(',', $p_sCity);
-            }
-        }
-
-        $p_sRegion = Params::getParam('sRegion');
-        if (!is_array($p_sRegion)) {
-            if ($p_sRegion == '') {
-                $p_sRegion = array();
-            } else {
-                $p_sRegion = explode(',', $p_sRegion);
-            }
-        }
-
-        $p_sCountry = Params::getParam('sCountry');
-        if (!is_array($p_sCountry)) {
-            if ($p_sCountry == '') {
-                $p_sCountry = array();
-            } else {
-                $p_sCountry = explode(',', $p_sCountry);
-            }
-        }
-
-        $p_sUser = Params::getParam('sUser');
-        if (!is_array($p_sUser)) {
-            if ($p_sUser == '') {
-                $p_sUser = '';
-            } else {
-                $p_sUser = explode(',', $p_sUser);
-            }
-        }
-
-        $p_sLocale = Params::getParam('sLocale');
-        if (!is_array($p_sLocale)) {
-            if ($p_sLocale == '') {
-                $p_sLocale = '';
-            } else {
-                $p_sLocale = explode(',', $p_sLocale);
-            }
-        }
-
-        $p_sPattern =
-            osc_apply_filter('search_pattern', trim(strip_tags(Params::getParam('sPattern'))));
+        $p_sCategory = $criteria->categories();
+        $p_sCity     = implode(', ', $criteria->cities());
+        $p_sRegion   = implode(', ', $criteria->regions());
+        $p_sCountry  = implode(', ', $criteria->countries());
+        $p_sUser     = $criteria->users();
+        $p_sPattern  = $criteria->pattern();
 
         // ADD TO THE LIST OF LAST SEARCHES
         if (osc_save_latest_searches()
@@ -287,14 +230,11 @@ class CWebSearch extends BaseModel
             }
         }
 
-        $p_bPic = Params::getParam('bPic');
-        $p_bPic = ($p_bPic == 1) ? 1 : 0;
+        $p_bPic     = $criteria->withPicture() ? 1 : 0;
+        $p_bPremium = $criteria->onlyPremium() ? 1 : 0;
 
-        $p_bPremium = Params::getParam('bPremium');
-        $p_bPremium = ($p_bPremium == 1) ? 1 : 0;
-
-        $p_sPriceMin = Params::getParam('sPriceMin');
-        $p_sPriceMax = Params::getParam('sPriceMax');
+        $p_sPriceMin = $criteria->priceMin();
+        $p_sPriceMax = $criteria->priceMax();
 
         //WE CAN ONLY USE THE FIELDS RETURNED BY Search::getAllowedColumnsForSorting()
         $p_sOrder = Params::getParam('sOrder');
@@ -341,50 +281,10 @@ class CWebSearch extends BaseModel
             $p_iPageSize = osc_default_results_per_page_at_search();
         }
 
-        //FILTERING CATEGORY
-        $bAllCategoriesChecked = false;
-        $successCat            = false;
-        if (count($p_sCategory) > 0) {
-            foreach ($p_sCategory as $category) {
-                try {
-                    $successCat = ($this->mSearch->addCategory($category) || $successCat);
-                } catch (Exception $e) {
-                    trigger_error($e->getMessage(), E_USER_WARNING);
-                }
-            }
-        } else {
-            $bAllCategoriesChecked = true;
-        }
-
-        //FILTERING CITY_AREA
-        foreach ($p_sCityArea as $city_area) {
-            $this->mSearch->addCityArea($city_area);
-        }
-        $p_sCityArea = implode(', ', $p_sCityArea);
-
-        //FILTERING CITY
-        foreach ($p_sCity as $city) {
-            $this->mSearch->addCity($city);
-        }
-        $p_sCity = implode(', ', $p_sCity);
-
-        //FILTERING REGION
-        foreach ($p_sRegion as $region) {
-            $this->mSearch->addRegion($region);
-        }
-        $p_sRegion = implode(', ', $p_sRegion);
-
-        //FILTERING COUNTRY
-        foreach ($p_sCountry as $country) {
-            $this->mSearch->addCountry($country);
-        }
-        $p_sCountry = implode(', ', $p_sCountry);
-
-        // FILTERING PATTERN
-        if ($p_sPattern != '') {
-            $this->mSearch->addPattern($p_sPattern);
-            $osc_request['sPattern'] = $p_sPattern;
-        } elseif ($p_sOrder === 'relevance') {
+        // A pattern-less "relevance" sort falls back to newest-first; needs to run
+        // before order() below either way, so it is settled from the criteria object
+        // rather than from inside the addPattern()/no-pattern branch it used to share.
+        if (!$criteria->hasPattern() && $p_sOrder === 'relevance') {
             $p_sOrder = 'dt_pub_date';
             foreach ($allowedTypesForSorting as $k => $v) {
                 if ($p_iOrderType === 'desc') {
@@ -395,26 +295,7 @@ class CWebSearch extends BaseModel
             $p_iOrderType = $orderType;
         }
 
-        // FILTERING USER
-        if ($p_sUser != '') {
-            $this->mSearch->fromUser($p_sUser);
-        }
-
-        // FILTERING LOCALE
-        $this->mSearch->addLocale($p_sLocale);
-
-        // FILTERING IF WE ONLY WANT ITEMS WITH PICS
-        if ($p_bPic) {
-            $this->mSearch->withPicture(true);
-        }
-
-        // FILTERING IF WE ONLY WANT PREMIUM ITEMS
-        if ($p_bPremium) {
-            $this->mSearch->onlyPremium(true);
-        }
-
-        //FILTERING BY RANGE PRICE
-        $this->mSearch->priceRange($p_sPriceMin, $p_sPriceMax);
+        \mindstellar\search\SearchBuilder::apply($criteria, $this->mSearch);
 
         //ORDERING THE SEARCH RESULTS
         $this->mSearch->order($p_sOrder, $allowedTypesForSorting[$p_iOrderType]);
@@ -427,110 +308,7 @@ class CWebSearch extends BaseModel
             $this->mSearch->page($p_iPage, $p_iPageSize);
         }
 
-        // CUSTOM FIELDS
-        $custom_fields = Params::getParam('meta');
-
-        $fields = Field::newInstance()->findIDSearchableByCategories($p_sCategory);
-
-        $table = DB_TABLE_PREFIX . 't_item_meta';
-        if (is_array($custom_fields)) {
-            foreach ($custom_fields as $key => $aux) {
-                if (in_array($key, $fields)) {
-                    $field = Field::newInstance()->findByPrimaryKey($key);
-                    switch ($field['e_type']) {
-                        case 'TEXTAREA':
-                        case 'TEXT':
-                        case 'URL':
-                            if (is_scalar($aux) && $aux != '') {
-                                $sql         = "SELECT fk_i_item_id FROM $table WHERE ";
-                                $str_escaped = self::metaLiteral('%' . $aux . '%');
-                                $sql         .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
-                                $sql         .= $table . '.s_value LIKE ' . $str_escaped;
-                                $this->mSearch->addConditions(DB_TABLE_PREFIX
-                                    . 't_item.pk_i_id IN (' . $sql . ')');
-                            }
-                            break;
-                        case 'DROPDOWN':
-                        case 'RADIO':
-                            if (is_scalar($aux) && $aux != '') {
-                                $sql         = "SELECT fk_i_item_id FROM $table WHERE ";
-                                $str_escaped = self::metaLiteral($aux);
-                                $sql         .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
-                                $sql         .= $table . '.s_value = ' . $str_escaped;
-                                $this->mSearch->addConditions(DB_TABLE_PREFIX
-                                    . 't_item.pk_i_id IN (' . $sql . ')');
-                            }
-                            break;
-                        case 'CHECKBOX':
-                            if ($aux != '') {
-                                $sql = "SELECT fk_i_item_id FROM $table WHERE ";
-                                $sql .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
-                                $sql .= $table . '.s_value = 1';
-                                $this->mSearch->addConditions(DB_TABLE_PREFIX
-                                    . 't_item.pk_i_id IN (' . $sql . ')');
-                            }
-                            break;
-                        case 'DATE':
-                            if (is_numeric($aux)) {
-                                $y     = (int)date('Y', $aux);
-                                $m     = (int)date('n', $aux);
-                                $d     = (int)date('j', $aux);
-                                $start = mktime('0', '0', '0', $m, $d, $y);
-                                $end   = mktime('23', '59', '59', $m, $d, $y);
-                                $sql   = "SELECT fk_i_item_id FROM $table WHERE ";
-                                $sql   .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
-                                $sql   .= $table . '.s_value >= ' . $start . ' AND ';
-                                $sql   .= $table . '.s_value <= ' . $end;
-                                $this->mSearch->addConditions(DB_TABLE_PREFIX
-                                    . 't_item.pk_i_id IN (' . $sql . ')');
-                            }
-                            break;
-                        case 'DATEINTERVAL':
-                            if (is_array($aux) && (!empty($aux['from']) && !empty($aux['to']))
-                                && is_numeric($aux['from']) && is_numeric($aux['to'])
-                            ) {
-                                // s_value stores unix timestamps for DATEINTERVAL fields
-                                $from         = (int)$aux['from'];
-                                $to           = (int)$aux['to'];
-                                $start        = $from;
-                                $end          = $to;
-                                $sql          = "SELECT fk_i_item_id FROM $table WHERE ";
-                                $sql          .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
-                                $sql          .= $start . ' >= ' . $table
-                                    . ".s_value AND s_multi = 'from'";
-                                $sql1         = "SELECT fk_i_item_id FROM $table WHERE ";
-                                $sql1         .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
-                                $sql1         .= $end . ' <= ' . $table
-                                    . ".s_value AND s_multi = 'to'";
-                                $sql_interval = 'select a.fk_i_item_id from (' . $sql
-                                    . ') a where a.fk_i_item_id IN (' . $sql1 . ')';
-                                $this->mSearch->addConditions(DB_TABLE_PREFIX
-                                    . 't_item.pk_i_id IN (' . $sql_interval . ')');
-                            }
-                            break;
-                        case 'NUMBER':
-                            if (is_array($aux) && (!empty($aux['from']) && !empty($aux['to']))
-                                && is_numeric($aux['from']) && is_numeric($aux['to'])
-                                && is_finite((float)$aux['from']) && is_finite((float)$aux['to'])
-                            ) {
-                                $min   = (float)$aux['from'];
-                                $max   = (float)$aux['to'];
-                                $sql   = "SELECT fk_i_item_id FROM $table WHERE ";
-                                $sql   .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
-                                $sql   .= $table . '.s_value >= ' . $min . ' AND ';
-                                $sql   .= $table . '.s_value <= ' . $max;
-                                $this->mSearch->addConditions(DB_TABLE_PREFIX
-                                    . 't_item.pk_i_id IN (' . $sql . ')');
-                            }
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
-        }
-
-        osc_run_hook('search_conditions', Params::getParamsAsArray());
+        \mindstellar\search\SearchBuilder::fireConditions($criteria, $this->mSearch);
 
         // RETRIEVE ITEMS AND TOTAL
         // A search backend may answer the query itself: a listener on 'search_results' receives
@@ -875,19 +653,5 @@ class CWebSearch extends BaseModel
             return; // loop guard
         }
         $this->redirectTo(osc_search_url(array('sCategory' => $currentSlug)), 301);
-    }
-
-    /**
-     * A custom-field search value as a quoted SQL string. Search conditions are kept as SQL
-     * text (saved alerts store them), so they cannot be bound; the value is always quoted,
-     * so a number is compared as the text it is stored as.
-     *
-     * @param string|int|float $value
-     *
-     * @return string
-     */
-    private static function metaLiteral($value)
-    {
-        return "'" . \mindstellar\database\Connection::instance()->escape((string) $value) . "'";
     }
 }

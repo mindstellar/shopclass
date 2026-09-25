@@ -67,6 +67,7 @@ In development.
 
 ### Fixed
 
+- A search sent with list values where one value is expected (`sPattern[]`, nested `sCategory`, an empty `sUser[]`) or a date field set to `1e20` no longer breaks the page.
 - A date custom-field search with a non-numeric value, or a number range of `1e400`, no longer breaks the search page.
 - A custom-field search sent as a list (`meta[5][]=x`) is ignored instead of failing the whole search, and a numeric value is compared as text. The category recount no longer builds invalid SQL on a site with no categories.
 - A widget select whose options come from a function now shows them. The Form widget's picker was empty.
@@ -133,6 +134,7 @@ In development.
 
 ### Security
 
+- A search's `sLocale` value reached SQL unescaped, an injection open to anonymous visitors. Only locale codes are accepted now, and they are escaped; two locales also no longer build invalid SQL.
 - Search-alert tokens from before 6.2.0 are refused. Their format could be edited without detection, and a saved alert's conditions run as SQL.
 - A saved alert's categories, sort and paging are held to their own shape when the alert runs.
 - A listing contact attachment is sent from PHP's upload folder instead of being copied into `oc-content/uploads/` under a guessable name. Both contact forms refuse script files the same way, and send nothing when they do.

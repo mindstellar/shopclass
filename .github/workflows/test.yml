@@ -234,6 +234,11 @@ jobs:
       # two different result sets at the same canonical, de-indexing one of them.
       - name: Canonical params
         run: php tests/canonical-params.php
+      # The request normalisation CWebSearch::doModel() used to do inline, now a builder
+      # both the live controller and (later) alert replay share -- splitting, arrays,
+      # empty values, strip_tags, the search_pattern filter, bPic/bPremium coercion.
+      - name: Search criteria normalisation
+        run: php tests/search-criteria.php
       # Resolving sCategory by slug alone 404s a category that exists whenever the value
       # is an id -- which is what osc_search_url() emits and what a category <select> submits.
       - name: Search category resolution

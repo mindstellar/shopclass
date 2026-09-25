@@ -629,8 +629,8 @@ Core fires 512 names. Generated from the source; do not edit by hand.
 | `before_search` | action | — | `oc-includes/osclass/classes/controller/CWebSearch.php` |
 | `save_latest_searches_pattern` | filter | `$p_sPattern` | `oc-includes/osclass/classes/controller/CWebSearch.php` |
 | `search` | action | `$this->mSearch` | `oc-includes/osclass/classes/controller/CWebSearch.php` |
-| `search_conditions` | action | `Params::getParamsAsArray()` | `oc-includes/osclass/classes/controller/CWebSearch.php` |
-| `search_pattern` | filter | `trim(strip_tags(Params::getParam('sPattern')))` | `oc-includes/osclass/classes/controller/CWebSearch.php` |
+| `search_conditions` | action | `\Params::getParamsAsArray()` | `oc-includes/osclass/classes/search/SearchBuilder.php` |
+| `search_pattern` | filter | `trim(strip_tags($params['sPattern'] ?? ''))` | `oc-includes/osclass/classes/search/SearchCriteria.php` |
 | `search_results` | filter | `null, $this->mSearch, Params::getParamsAsArray()` | `oc-includes/osclass/classes/controller/CWebSearch.php` |
 | `sql_search_conditions` | filter | `$this->conditions` | `oc-includes/osclass/classes/model/Search.php` |
 | `sql_search_fields` | filter | `$this->search_fields` | `oc-includes/osclass/classes/model/Search.php` |
