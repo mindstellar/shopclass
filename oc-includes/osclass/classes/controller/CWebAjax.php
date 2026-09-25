@@ -220,12 +220,11 @@ class CWebAjax extends BaseModel
 
                     return false;
                 }
-                $encoded_alert = Params::getParam('alert');
-                $alert         = osc_decrypt_alert(base64_decode($encoded_alert));
-
                 // A token carries an authentication tag, so a forgery or a tampered token
-                // fails to decrypt at all and arrives here as ''.
-                if ($alert === '' || !is_array(json_decode($alert, true))) {
+                // fails to decrypt at all. Only the current format, search values rather
+                // than SQL, is accepted.
+                $alert = \mindstellar\search\AlertEnvelope::fromToken(Params::getParamString('alert'));
+                if ($alert === null) {
                     echo '-2';
 
                     return false;

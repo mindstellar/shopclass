@@ -8,6 +8,7 @@ In development.
 
 ### New
 
+- The `alert_search_params` filter lets a plugin save its own search values with an alert, and `search_conditions` now also gets the search and a context (`'request'` or `'alert'`).
 - `oc-cli.php doctor` says whether an upgraded site's data is ready for strict SQL mode, and lists columns holding zero dates.
 - `Params::getParamBool()`, `getParamEmail()` and `getParamEnum()` read a typed request value with native checks, and never return an array.
 - `osc-table-stack` gives a plugin's own admin table the phone card layout core lists use.
@@ -134,6 +135,7 @@ In development.
 
 ### Security
 
+- A new search alert stores the search's values, not SQL, and runs through the same builder as the search page. Existing alerts are converted by a later step of this release.
 - A search's `sLocale` value reached SQL unescaped, an injection open to anonymous visitors. Only locale codes are accepted now, and they are escaped; two locales also no longer build invalid SQL.
 - Search-alert tokens from before 6.2.0 are refused. Their format could be edited without detection, and a saved alert's conditions run as SQL.
 - A saved alert's categories, sort and paging are held to their own shape when the alert runs.

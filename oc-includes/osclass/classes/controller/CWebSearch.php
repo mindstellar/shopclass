@@ -418,8 +418,8 @@ class CWebSearch extends BaseModel
         // build a fresh core Search, which on a delegated page is the wrong engine.
         $this->_exportVariableToView('search', $searchModel);
 
-        // json
-        $json          = $this->mSearch->toJson();
+        // The alert stores the search values in canonical form, not the SQL of toJson().
+        $json          = \mindstellar\search\AlertEnvelope::build($criteria, Params::getParamsAsArray());
         // The alert is encrypted with a persistent per-install key, so it is a self-contained
         // server-issued token: verifiable and decryptable on the later subscribe request
         // without stashing anything in the session (which would force a cookie on every search

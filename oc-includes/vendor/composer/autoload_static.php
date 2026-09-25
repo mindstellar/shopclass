@@ -1033,6 +1033,8 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\pages\\PageTemplateRegistry' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/pages/PageTemplateRegistry.php',
         'mindstellar\\privacy\\PersonalData' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/privacy/PersonalData.php',
         'mindstellar\\routing\\CoreRoutes' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/routing/CoreRoutes.php',
+        'mindstellar\\search\\AlertEnvelope' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/search/AlertEnvelope.php',
+        'mindstellar\\search\\AlertReplay' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/search/AlertReplay.php',
         'mindstellar\\search\\SearchBuilder' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/search/SearchBuilder.php',
         'mindstellar\\search\\SearchCriteria' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/search/SearchCriteria.php',
         'mindstellar\\security\\ActionThrottle' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/ActionThrottle.php',

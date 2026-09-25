@@ -119,13 +119,24 @@ names do not follow the rules below.
 - A filter returns its value, always.
 - One name is never both.
 
+## Hooks that also run outside a page request
+
+`search_conditions` fires on the search page and again whenever a saved alert runs: in the
+alert cron, on the user's alerts page and on the admin user screen. Its third argument says
+which: `'request'` or `'alert'`. During an alert, `Params::getParam()` returns the alert's saved
+values and `Search::newInstance()` is the alert's search. A callback that sends headers, reads
+the session or prints must return early when the context is `'alert'`.
+
+To store your own filter with an alert, add it with the `alert_search_params` filter, then read
+it back with `Params::getParam()` in your `search_conditions` callback.
+
 ## Reference
 
 Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 512 names. Generated from the source; do not edit by hand.
+Core fires 513 names. Generated from the source; do not edit by hand.
 
 ### Admin (77)
 
@@ -621,15 +632,16 @@ Core fires 512 names. Generated from the source; do not edit by hand.
 | `plugin_icon_url` | filter | `$url, $plugin` | `oc-includes/osclass/helpers/hPlugins.php` |
 | `renderplugin_controller` | action | — | `oc-includes/osclass/classes/controller/admin/CAdminPlugins.php` |
 
-### Search (9)
+### Search (10)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
 | `after_search` | action | — | `oc-includes/osclass/classes/controller/CWebSearch.php` |
+| `alert_search_params` | filter | `$params, $request` | `oc-includes/osclass/classes/search/AlertEnvelope.php` |
 | `before_search` | action | — | `oc-includes/osclass/classes/controller/CWebSearch.php` |
 | `save_latest_searches_pattern` | filter | `$p_sPattern` | `oc-includes/osclass/classes/controller/CWebSearch.php` |
 | `search` | action | `$this->mSearch` | `oc-includes/osclass/classes/controller/CWebSearch.php` |
-| `search_conditions` | action | `\Params::getParamsAsArray()` | `oc-includes/osclass/classes/search/SearchBuilder.php` |
+| `search_conditions` | action | `\Params::getParamsAsArray(), $search, $context` | `oc-includes/osclass/classes/search/SearchBuilder.php` |
 | `search_pattern` | filter | `trim(strip_tags($params['sPattern'] ?? ''))` | `oc-includes/osclass/classes/search/SearchCriteria.php` |
 | `search_results` | filter | `null, $this->mSearch, Params::getParamsAsArray()` | `oc-includes/osclass/classes/controller/CWebSearch.php` |
 | `sql_search_conditions` | filter | `$this->conditions` | `oc-includes/osclass/classes/model/Search.php` |

@@ -906,6 +906,8 @@ return array(
     'mindstellar\\pages\\PageTemplateRegistry' => $baseDir . '/oc-includes/osclass/classes/pages/PageTemplateRegistry.php',
     'mindstellar\\privacy\\PersonalData' => $baseDir . '/oc-includes/osclass/classes/privacy/PersonalData.php',
     'mindstellar\\routing\\CoreRoutes' => $baseDir . '/oc-includes/osclass/classes/routing/CoreRoutes.php',
+    'mindstellar\\search\\AlertEnvelope' => $baseDir . '/oc-includes/osclass/classes/search/AlertEnvelope.php',
+    'mindstellar\\search\\AlertReplay' => $baseDir . '/oc-includes/osclass/classes/search/AlertReplay.php',
     'mindstellar\\search\\SearchBuilder' => $baseDir . '/oc-includes/osclass/classes/search/SearchBuilder.php',
     'mindstellar\\search\\SearchCriteria' => $baseDir . '/oc-includes/osclass/classes/search/SearchCriteria.php',
     'mindstellar\\security\\ActionThrottle' => $baseDir . '/oc-includes/osclass/classes/security/ActionThrottle.php',

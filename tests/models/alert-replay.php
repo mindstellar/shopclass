@@ -44,6 +44,10 @@
  *     baked in (addCategory() expanded it before toJson() ran), but a
  *     hand-shaped blob that lists only the parent id matches the parent alone.
  *
+ * Section (d) replays the same searches stored as v2 envelopes (search values, no SQL)
+ * through mindstellar\search\AlertReplay and pins the same ids, except where v2 fixes one
+ * of the quirks above; each of those pins names the quirk it fixes.
+ *
  * Usage:  php tests/models/alert-replay.php          (standalone, own scratch database)
  *         php tests/run-models.php alert-replay      (as part of the suite)
  */
@@ -958,6 +962,281 @@ $v['no_catched_conditions'] = array(
     $metaCondition('NUMBER', $fNumber, array('from' => 3000, 'to' => 20000)),
 );
 pin('a four-meta-type search serialises one condition string per filter, in call order', $expectedToJson($v), $s->toJson());
+
+/* ----------------------------------------------------------------------------
+ * (d) The same searches stored as v2 envelopes, replayed through AlertReplay.
+ * ------------------------------------------------------------------------- */
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hSearch.php';
+
+use mindstellar\search\AlertEnvelope;
+use mindstellar\search\AlertReplay;
+use mindstellar\search\SearchCriteria;
+
+/** The envelope the search page would mint for these request params. */
+$envelope = static function (array $request): string {
+    return AlertEnvelope::build(SearchCriteria::fromRequest($request), $request);
+};
+/** Replay a v2 row the way the cron does: AlertReplay::search(), then doSearch(). */
+$replayV2 = static function (string $json) use ($ids, $sorted): array {
+    $s = AlertReplay::search(array('s_search' => $json));
+
+    return $s === null ? array('not replayed') : $sorted($ids($s->doSearch()));
+};
+
+harness_section('alert-replay: (d) v2 — envelope shape');
+
+pin('a category is stored as its id', '{"v":2,"params":{"sCategory":[' . $catCars . ']}}', $envelope(array('sCategory' => (string)$catCars)));
+pin('a category slug is stored as its id', '{"v":2,"params":{"sCategory":[' . $catCars . ']}}', $envelope(array('sCategory' => 'cars')));
+pin(
+    'a child chosen with its parent is reduced to the parent',
+    '{"v":2,"params":{"sCategory":[' . $catCars . ']}}',
+    $envelope(array('sCategory' => array((string)$catCarsSport, (string)$catCars)))
+);
+pin(
+    'a child chosen alone stays',
+    '{"v":2,"params":{"sCategory":[' . $catCarsSport . ']}}',
+    $envelope(array('sCategory' => (string)$catCarsSport))
+);
+pin('an unknown slug is dropped, as the page drops it', '{"v":2,"params":{}}', $envelope(array('sCategory' => 'no-such')));
+
+// A custom field linked to the child only: which fields are searchable depends on every
+// chosen category, so with a meta filter the child must survive the round trip.
+$fTrim = $seedMetaField('Trim', 'DROPDOWN');
+$linkFieldToCategory($fTrim, $catCarsSport);
+$seedItemMeta($i7, $fTrim, 'gt');
+$trimRequest = array('sCategory' => array((string)$catCars, (string)$catCarsSport), 'meta' => array($fTrim => 'gt'));
+pin(
+    'with a meta filter, parent and child are both kept',
+    '{"v":2,"params":{"meta":{"' . $fTrim . '":"gt"},"sCategory":[' . $catCars . ',' . $catCarsSport . ']}}',
+    $envelope($trimRequest)
+);
+$pageSearch = new Search();
+\mindstellar\search\SearchBuilder::apply(SearchCriteria::fromRequest($trimRequest), $pageSearch);
+pin(
+    'the page applies the child-only field: only the Sports Car carrying it matches',
+    array($i7),
+    $sorted($ids($pageSearch->doSearch()))
+);
+pin('and the replayed alert applies it too', array($i7), $replayV2($envelope($trimRequest)));
+
+harness_section('alert-replay: (d) v2 — same ids as the v1 pins');
+
+$v2Cases = array(
+    array('category', array('sCategory' => (string)$catCars), array($i1, $i2, $i3, $i6, $i7)),
+    array('country by code', array('sCountry' => 'us'), array($i1, $i2, $i3, $i4, $i5, $i7)),
+    array('country by name', array('sCountry' => 'United States'), array($i1, $i2, $i3, $i4, $i5, $i7)),
+    array('region by id', array('sRegion' => (string)$regionAlpha), array($i1, $i2, $i7)),
+    array('region by name', array('sRegion' => 'Alpha'), array($i1, $i2, $i7)),
+    array('city by id', array('sCity' => (string)$cityAville), array($i1, $i2, $i7)),
+    array('city by name', array('sCity' => 'Aville'), array($i1, $i2, $i7)),
+    array('city area by id', array('sCityArea' => (string)$areaA1), array($i1, $i2)),
+    array('city area by name', array('sCityArea' => 'Downtown'), array($i1, $i2)),
+    array('price range', array('sPriceMin' => '1000', 'sPriceMax' => '10000'), array($i1, $i3, $i5)),
+    array('pattern', array('sPattern' => 'vintage'), array($i1, $i3, $i6)),
+    array('with picture', array('bPic' => '1'), array($i1, $i2, $i3)),
+    // Custom fields are only searchable inside a category that carries them, so the
+    // category comes along; every matching item is a Cars item.
+    array('meta TEXT', array('sCategory' => (string)$catCars, 'meta' => array($fText => 'mileage')), array($i2)),
+    array('meta DROPDOWN', array('sCategory' => (string)$catCars, 'meta' => array($fDropdown => 'red')), array($i1, $i3)),
+    array('meta RADIO', array('sCategory' => (string)$catCars, 'meta' => array($fRadio => 'used')), array($i1, $i3)),
+    array('meta CHECKBOX', array('sCategory' => (string)$catCars, 'meta' => array($fCheckbox => '1')), array($i1)),
+    array(
+        'meta DATE',
+        array('sCategory' => (string)$catCars, 'meta' => array($fDate => (string)strtotime('2026-03-15 12:00:00'))),
+        array($i1)
+    ),
+    array(
+        'meta DATEINTERVAL',
+        array('sCategory' => (string)$catCars, 'meta' => array($fDateInterval => array(
+            'from' => (string)strtotime('2026-10-15 00:00:00'),
+            'to'   => (string)strtotime('2026-10-20 23:59:59'),
+        ))),
+        array($i1, $i2)
+    ),
+    array(
+        'meta NUMBER',
+        array('sCategory' => (string)$catCars, 'meta' => array($fNumber => array('from' => '3000', 'to' => '20000'))),
+        array($i1, $i2)
+    ),
+    array('meta value with an apostrophe', array('sCategory' => (string)$catCars, 'meta' => array($fDropdown => "red's pick")), array($i6)),
+    array(
+        'meta DATE (the hand-written v1 day)',
+        array('sCategory' => (string)$catCars, 'meta' => array($fDate => (string)strtotime('2026-06-01 00:00:00'))),
+        array($i2)
+    ),
+    array(
+        'meta DATEINTERVAL (the hand-written v1 range)',
+        array('sCategory' => (string)$catCars, 'meta' => array($fDateInterval => array(
+            'from' => (string)strtotime('2026-11-01 00:00:00'),
+            'to'   => (string)strtotime('2026-11-15 23:59:59'),
+        ))),
+        array($i1, $i2)
+    ),
+    array(
+        'meta NUMBER (the hand-written v1 bound)',
+        array('sCategory' => (string)$catCars, 'meta' => array($fNumber => array('from' => '40000', 'to' => '50000'))),
+        array($i3)
+    ),
+);
+foreach ($v2Cases as $case) {
+    list($label, $request, $want) = $case;
+    pin('v2 ' . $label, $sorted($want), $replayV2($envelope($request)));
+}
+
+harness_section('alert-replay: (d) v2 — quirks v1 has, fixed');
+
+pin(
+    'QUIRK FIXED (user_ids ignored): a from-these-users alert matches only those users\' items',
+    $sorted(array($i1, $i2, $i3, $i4, $i7)),
+    $replayV2($envelope(array('sUser' => array((string)$userSeller1, 'seller2'))))
+);
+pin(
+    'QUIRK FIXED (categories not re-expanded): the parent id alone matches its Sports Cars child too,'
+        . ' and the user filter applies',
+    array($i6),
+    $replayV2($envelope(array('sCategory' => (string)$catCars, 'sUser' => (string)$userSeller3)))
+);
+pin(
+    'QUIRK FIXED (unquoted dropdown matched nothing): the value is always quoted, so red matches',
+    $sorted(array($i1, $i3)),
+    $replayV2($envelope(array('sCategory' => (string)$catCars, 'meta' => array($fDropdown => 'red'))))
+);
+
+harness_section('alert-replay: (d) v2 — rows that are not replayed');
+
+$logFile = tempnam(sys_get_temp_dir(), 'alert-replay-log');
+$oldLog  = ini_set('error_log', $logFile);
+pin('a held row is skipped', null, AlertReplay::search(array('pk_i_id' => 77, 's_search' => '{"v":2,"held":"unknown SQL"}')));
+ini_set('error_log', (string)$oldLog);
+$logged = (string)file_get_contents($logFile);
+unlink($logFile);
+pin('and logs one line naming the alert', 1, substr_count($logged, 'skipped alert #77'));
+pin(
+    'an oversize v2 row is skipped before it is decoded',
+    array('not replayed'),
+    $replayV2('{"v":2,"params":{"sPattern":"' . str_repeat('a', AlertEnvelope::MAX_BYTES) . '"}}')
+);
+pin(
+    'a v2 row nested deeper than any valid one is skipped',
+    array('not replayed'),
+    $replayV2('{"v":2,"params":{"meta":{"3":{"from":[[[[[["x"]]]]]]}}}}')
+);
+pin(
+    'a v2 row that is not canonical is skipped too (re-validated before replay)',
+    array('not replayed'),
+    $replayV2('{"v":2,"params":{"sPattern":"a","bPic":1}}')
+);
+pin('a v2 row carrying a v1 SQL key is skipped', array('not replayed'), $replayV2('{"v":2,"params":{"no_catched_conditions":["1=1"]}}'));
+pin('a row that is not JSON is skipped', null, AlertReplay::search(array('s_search' => 'nope')));
+$v1Row = array('s_search' => json_encode($buildBlob(static function (Search $s) use ($regionAlpha) {
+    $s->addRegion($regionAlpha);
+})));
+pin('a v1 row still replays through setJsonAlert()', $sorted(array($i1, $i2, $i7)), $sorted($ids(AlertReplay::search($v1Row)->doSearch())));
+
+harness_section('alert-replay: (d) v2 — setJsonAlert() delegates');
+
+$s = new Search();
+$s->setJsonAlert(json_decode($envelope(array('sRegion' => 'Alpha')), true));
+pin('setJsonAlert() with a v2 envelope matches what AlertReplay does', $sorted(array($i1, $i2, $i7)), $sorted($ids($s->doSearch())));
+$s = new Search();
+$s->setJsonAlert(array('v' => 2, 'params' => array('no_catched_conditions' => array('1=1'))));
+pin('setJsonAlert() with an invalid v2 envelope matches nothing, not everything', array(), $ids($s->doSearch()));
+
+harness_section('alert-replay: (d) v2 — search_conditions at replay');
+
+$seen     = array();
+$listener = static function ($params, $search = null, $context = null) use (&$seen, $prefix, $i2) {
+    $seen[] = array(
+        'params'   => $params,
+        'search'   => $search,
+        'context'  => $context,
+        'getParam' => Params::getParam('sRegion'),
+        'shared'   => Search::newInstance(),
+    );
+    // The classic plugin pattern: reach the search through the shared instance.
+    Search::newInstance()->addConditions(sprintf('%st_item.pk_i_id = %d', $prefix, $i2));
+};
+osc_add_hook('search_conditions', $listener);
+
+Params::setParam('sRegion', 'outer');
+$sharedBefore = Search::newInstance();
+$replayed     = AlertReplay::search(array('s_search' => $envelope(array('sRegion' => 'Alpha'))));
+$result       = $sorted($ids($replayed->doSearch()));
+osc_remove_hook('search_conditions', $listener);
+
+pin('the listener ran once', 1, count($seen));
+pin('its condition, added through Search::newInstance(), landed on the replayed search', array($i2), $result);
+check('it was handed the replayed Search', $seen[0]['search'] === $replayed);
+check('Search::newInstance() was the replayed Search while it ran', $seen[0]['shared'] === $replayed);
+pin('the context is alert', 'alert', $seen[0]['context']);
+pin('Params::getParam() read the stored params', 'Alpha', $seen[0]['getParam']);
+pin('the params argument is the stored params, shaped as a request', array('sRegion' => 'Alpha'), $seen[0]['params']);
+pin('the request params are restored afterwards', 'outer', Params::getParam('sRegion'));
+check('the shared Search is restored afterwards', Search::newInstance() === $sharedBefore);
+Params::unsetParam('sRegion');
+
+harness_section('alert-replay: (d) v2 — display');
+
+$v2Display = json_decode($envelope(array(
+    'sPattern'  => 'vintage',
+    'sCategory' => (string)$catCars,
+    'sCity'     => array((string)$cityAville, 'Bville'),
+    'sCountry'  => 'US',
+    'sPriceMin' => '1000',
+)), true);
+$raw = osc_get_raw_search($v2Display);
+pin('osc_get_raw_search(): pattern', 'vintage', $raw['sPattern'] ?? null);
+pin('osc_get_raw_search(): category names', array('Cars'), $raw['aCategories'] ?? null);
+pin('osc_get_raw_search(): city ids resolved to names, names as given', array('Aville', 'Bville'), $raw['cities'] ?? null);
+pin('osc_get_raw_search(): country code resolved to its name', array('United States'), $raw['countries'] ?? null);
+pin('osc_get_raw_search(): price unscaled, empty bounds left out', array(1000, false), array($raw['price_min'] ?? null, isset($raw['price_max'])));
+pin('osc_get_raw_search(): the stored params come along', $v2Display['params'], $raw['params'] ?? null);
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hUtils.php';
+$alertSearchFor = static function (array $row): string {
+    View::newInstance()->_exportVariableToView('alerts', array($row));
+    View::newInstance()->_reset('alerts');
+    View::newInstance()->_next('alerts');
+
+    return osc_alert_search();
+};
+$v2Row = $envelope(array('sPattern' => 'vintage', 'sCategory' => (string)$catCars, 'sCity' => (string)$cityAville, 'sPriceMax' => '5000'));
+pin(
+    'osc_alert_search(): a v2 row gives the legacy display keys plus params',
+    array(
+        'sPattern'    => 'vintage',
+        'aCategories' => array($catCars),
+        'city_areas'  => array(),
+        'cities'      => array('Aville'),
+        'regions'     => array(),
+        'countries'   => array(),
+        'price_min'   => 0,
+        'price_max'   => 5000,
+        'params'      => json_decode($v2Row, true)['params'],
+    ),
+    json_decode($alertSearchFor(array('pk_i_id' => 1, 's_search' => $v2Row)), true)
+);
+$v1Json = json_encode($legacyBase);
+pin('osc_alert_search(): a v1 row comes back as stored', $v1Json, $alertSearchFor(array('pk_i_id' => 2, 's_search' => $v1Json)));
+
+harness_section('alert-replay: (d) v2 — page size');
+
+$rpp = new ReflectionProperty('Search', 'results_per_page');
+$rpp->setAccessible(true);
+pin('the limit option sets the page size', 7, $rpp->getValue(AlertReplay::search(array('s_search' => $v2Row), array('limit' => 7))));
+pin('without it the page size is 10', 10, $rpp->getValue(AlertReplay::search(array('s_search' => $v2Row))));
+check(
+    'the alert cron replays with the search page size',
+    strpos(
+        (string)file_get_contents(ABS_PATH . 'oc-includes/osclass/alerts.php'),
+        "array('limit' => osc_default_results_per_page_at_search())"
+    ) !== false
+);
+
+pin(
+    'legacyFields(): categories stay ids for theme code that looks them up',
+    array($catCars),
+    AlertEnvelope::legacyFields($v2Display['params'])['aCategories']
+);
 
 // addCategory() populates the object cache keyed by category id (toSubTree() and
 // friends). This file runs early in the suite, so those ids are the *first* ones

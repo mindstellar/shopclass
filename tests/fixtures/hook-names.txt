@@ -291,6 +291,7 @@ filter alert_email_weekly_description
 filter alert_email_weekly_description_after
 filter alert_email_weekly_title
 filter alert_email_weekly_title_after
+filter alert_search_params
 filter alerts_processing_row
 filter ban_rule_bulk_filter
 filter base_url

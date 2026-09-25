@@ -239,6 +239,10 @@ jobs:
       # empty values, strip_tags, the search_pattern filter, bPic/bPremium coercion.
       - name: Search criteria normalisation
         run: php tests/search-criteria.php
+      # A saved alert is stored as search values in one canonical string (it is also the
+      # de-duplication key); anything else, SQL included, must fail validation.
+      - name: Alert envelope
+        run: php tests/alert-envelope.php
       # Resolving sCategory by slug alone 404s a category that exists whenever the value
       # is an id -- which is what osc_search_url() emits and what a category <select> submits.
       - name: Search category resolution

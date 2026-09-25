@@ -321,6 +321,22 @@ class Search extends DAO
     }
 
     /**
+     * Replace the shared Search instance; null clears it, so the next newInstance()
+     * builds a fresh one.
+     *
+     * @param \Search|null $instance
+     *
+     * @return \Search|null the instance it replaced
+     */
+    public static function resetInstance($instance = null)
+    {
+        $previous       = self::$instance;
+        self::$instance = $instance instanceof self ? $instance : null;
+
+        return $previous;
+    }
+
+    /**
      * Return an array with columns allowed for sorting
      *
      * @return string[]
@@ -2172,6 +2188,21 @@ class Search extends DAO
      */
     public function setJsonAlert($aData)
     {
+        // A v2 alert holds search values, not SQL: rebuild it the way the search page does.
+        // One that does not validate matches nothing rather than everything.
+        if (\mindstellar\search\AlertEnvelope::isEnvelope($aData)) {
+            $params = \mindstellar\search\AlertEnvelope::validateDecoded($aData);
+            if ($params === null) {
+                error_log('Search::setJsonAlert(): not a valid v2 envelope, matching nothing');
+                $this->addConditions('1 = 0');
+
+                return;
+            }
+            \mindstellar\search\AlertReplay::apply($this, $params);
+
+            return;
+        }
+
         // Restore a whole search from JSON, so clear any pattern left by a previous
         // restore first: newInstance() hands back one shared Search, and the alert cron
         // reuses it per alert. addPattern() only runs when a keyword is present, so

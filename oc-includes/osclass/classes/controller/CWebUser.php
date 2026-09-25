@@ -113,10 +113,11 @@ class CWebUser extends WebSecBaseModel
                 $user    =
                     User::newInstance()->findByPrimaryKey(Session::newInstance()->_get('userId'));
                 foreach ($aAlerts as $k => $a) {
-                    $array_conditions = (array)json_decode($a['s_search'], true);
-
-                    $search = new Search();
-                    $search->setJsonAlert($array_conditions);
+                    $search = \mindstellar\search\AlertReplay::search($a);
+                    if ($search === null) {
+                        $aAlerts[$k]['items'] = array();
+                        continue;
+                    }
                     $search->notFromUser(Session::newInstance()->_get('userId'));
                     $search->limit(0, 3);
 

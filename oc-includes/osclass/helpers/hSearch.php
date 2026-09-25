@@ -1029,7 +1029,8 @@ function osc_get_canonical()
 
 /**
  * Strip a search condition set down to the filters a visitor actually chose, with
- * category ids resolved to names.
+ * category ids resolved to names. Takes a decoded t_alerts.s_search; for an alert stored
+ * as search values the result also carries `params`, the stored values.
  *
  * @param array<string,mixed> $conditions
  *
@@ -1037,6 +1038,26 @@ function osc_get_canonical()
  */
 function osc_get_raw_search($conditions)
 {
+    if (\mindstellar\search\AlertEnvelope::isEnvelope($conditions)) {
+        $params = \mindstellar\search\AlertEnvelope::validateDecoded($conditions);
+        if ($params === null) {
+            return array();
+        }
+        $raw = array_filter(
+            \mindstellar\search\AlertEnvelope::legacyFields($params),
+            static fn ($v) => $v !== '' && $v !== array() && $v !== 0
+        );
+        if (isset($raw['aCategories'])) {
+            $mCategory = Category::newInstance();
+            foreach ($raw['aCategories'] as $k => $id) {
+                $raw['aCategories'][$k] = $mCategory->findNameByPrimaryKey($id);
+            }
+        }
+        $raw['params'] = $params;
+
+        return $raw;
+    }
+
     $keys      = array('aCategories', 'countries', 'regions', 'cities', 'city_areas');
     $mCategory = Category::newInstance();
     foreach ($keys as $key) {

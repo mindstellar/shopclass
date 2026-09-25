@@ -129,6 +129,11 @@ check(
     'a filter that turns empty into non-empty flips hasPattern() too',
     SearchCriteria::fromRequest(array())->hasPattern() === true
 );
+pin(
+    'rawPattern() is the value before the filter, so a saved alert does not filter twice',
+    'hi',
+    SearchCriteria::fromRequest(array('sPattern' => '  <i>hi</i>  '))->rawPattern()
+);
 $GLOBALS['__filterMode'] = 'identity';
 
 pin('an array-valued sPattern is dropped instead of crashing strip_tags()', '',

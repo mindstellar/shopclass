@@ -33,9 +33,31 @@ if (!defined('ABS_PATH')) {
                     echo osc_esc_html(_m('Browse listings')); ?></a>
             </div>
         <?php } else {
-            while (osc_has_alerts()) { ?>
+            while (osc_has_alerts()) {
+                // A readable summary of the saved search. Locations only for alerts stored
+                // as search values; older ones hold them as SQL.
+                $alertRaw   = osc_get_raw_search((array)json_decode((string)osc_alert_field('s_search'), true));
+                $alertParts = array();
+                if (!empty($alertRaw['sPattern'])) {
+                    $alertParts[] = '"' . $alertRaw['sPattern'] . '"';
+                }
+                $alertKeys = isset($alertRaw['params'])
+                    ? array('aCategories', 'city_areas', 'cities', 'regions', 'countries')
+                    : array('aCategories');
+                foreach ($alertKeys as $alertKey) {
+                    if (!empty($alertRaw[$alertKey])) {
+                        $alertParts[] = implode(', ', (array)$alertRaw[$alertKey]);
+                    }
+                }
+                $alertMin = !empty($alertRaw['price_min']) ? $alertRaw['price_min'] : null;
+                $alertMax = !empty($alertRaw['price_max']) ? $alertRaw['price_max'] : null;
+                if ($alertMin !== null || $alertMax !== null) {
+                    $alertParts[] = _m('Price') . ': ' . ($alertMax === null ? '≥ ' . $alertMin
+                        : ($alertMin === null ? '≤ ' . $alertMax : $alertMin . ' - ' . $alertMax));
+                }
+                ?>
                 <section class="oe-panel">
-                    <h2><?php echo osc_esc_html(osc_alert_search()); ?></h2>
+                    <h2><?php echo osc_esc_html($alertParts ? implode(' · ', $alertParts) : _m('All listings')); ?></h2>
                     <p class="oe-meta">
                         <?php if (osc_alert_is_active()) { ?>
                             <span class="oe-badge paid"><?php echo osc_esc_html(_m('Active')); ?></span>

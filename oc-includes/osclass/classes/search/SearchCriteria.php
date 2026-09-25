@@ -46,6 +46,9 @@ class SearchCriteria
     /** @var string */
     private $pattern;
 
+    /** @var string */
+    private $rawPattern;
+
     /** @var bool */
     private $withPicture;
 
@@ -70,6 +73,7 @@ class SearchCriteria
      * @param array<int,mixed>|string $users
      * @param array<int,mixed>|string $locale
      * @param string                  $pattern
+     * @param string                  $rawPattern
      * @param bool                    $withPicture
      * @param bool                    $onlyPremium
      * @param mixed                   $priceMin
@@ -85,6 +89,7 @@ class SearchCriteria
         $users,
         $locale,
         string $pattern,
+        string $rawPattern,
         bool $withPicture,
         bool $onlyPremium,
         $priceMin,
@@ -99,6 +104,7 @@ class SearchCriteria
         $this->users       = $users;
         $this->locale      = $locale;
         $this->pattern     = $pattern;
+        $this->rawPattern  = $rawPattern;
         $this->withPicture = $withPicture;
         $this->onlyPremium = $onlyPremium;
         $this->priceMin    = $priceMin;
@@ -115,6 +121,9 @@ class SearchCriteria
      */
     public static function fromRequest(array $params): self
     {
+        $params['sPattern'] = self::scalar($params['sPattern'] ?? '');
+        $rawPattern         = trim(strip_tags($params['sPattern']));
+
         return new self(
             self::splitOrKeep($params['sCategory'] ?? ''),
             self::splitOrKeep($params['sCityArea'] ?? ''),
@@ -123,7 +132,8 @@ class SearchCriteria
             self::splitOrKeep($params['sCountry'] ?? ''),
             self::splitOrKeepScalarEmpty($params['sUser'] ?? ''),
             self::splitOrKeepScalarEmpty($params['sLocale'] ?? ''),
-            osc_apply_filter('search_pattern', trim(strip_tags(self::scalar($params['sPattern'] ?? '')))),
+            osc_apply_filter('search_pattern', trim(strip_tags($params['sPattern'] ?? ''))),
+            $rawPattern,
             ($params['bPic'] ?? '') == 1,
             ($params['bPremium'] ?? '') == 1,
             self::scalar($params['sPriceMin'] ?? ''),
@@ -244,6 +254,15 @@ class SearchCriteria
     public function pattern(): string
     {
         return $this->pattern;
+    }
+
+    /**
+     * The pattern before the `search_pattern` filter, which a saved alert stores so that
+     * replaying it runs the filter once, as the page does.
+     */
+    public function rawPattern(): string
+    {
+        return $this->rawPattern;
     }
 
     public function hasPattern(): bool

@@ -89,17 +89,18 @@ class SearchBuilder
 
     /**
      * Fire `search_conditions`, after the caller has set sort and paging, so a plugin that
-     * changes either inside the hook keeps its change.
+     * changes either inside the hook keeps its change. Listeners get the request params,
+     * the Search being built and the context.
      *
      * @param SearchCriteria $criteria
      * @param \Search        $search
-     * @param string         $context 'request' for the search page
+     * @param string         $context 'request' for the search page, 'alert' for a saved alert
      *
      * @return void
      */
     public static function fireConditions(SearchCriteria $criteria, \Search $search, string $context = 'request'): void
     {
-        osc_run_hook('search_conditions', \Params::getParamsAsArray());
+        osc_run_hook('search_conditions', \Params::getParamsAsArray(), $search, $context);
     }
 
     /**

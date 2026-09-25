@@ -56,12 +56,15 @@ function osc_runAlert($type = null, $last_exec = null)
         // calling this, so an uncaught throw here would drop every remaining subscriber's
         // alert for good. One bad search should cost one alert, not the rest of the run.
         try {
-            // Get if there're new ads on this search
-            $json             = $s_search['s_search'];
-            $array_conditions = json_decode($json, true);
-
-            $new_search = Search::newInstance();
-            $new_search->setJsonAlert($array_conditions);
+            // Get if there're new ads on this search. Each alert gets a fresh Search, so
+            // nothing one alert set carries over to the next.
+            $new_search = \mindstellar\search\AlertReplay::search(
+                $s_search,
+                array('limit' => osc_default_results_per_page_at_search())
+            );
+            if ($new_search === null) {
+                continue;
+            }
 
             $new_search->addConditions(sprintf(" %st_item.dt_pub_date > '%s' ", DB_TABLE_PREFIX, $last_exec));
 

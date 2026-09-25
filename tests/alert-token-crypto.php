@@ -94,6 +94,29 @@ $forged = substr($forged, 0, $at) . (substr($forged, $at, strlen($known)) ^ $kno
 pin('the edit really changes a legacy token', '{' . $chosen . '}', osc_decrypt_alert_legacy($forged));
 pin('so an edited legacy token is refused', '', osc_decrypt_alert($forged));
 
+harness_section('a v2 envelope survives the round trip');
+// The subscribe endpoint only accepts a token whose plaintext is a valid v2 envelope.
+require_once __DIR__ . '/../oc-includes/vendor/autoload.php';
+if (!function_exists('osc_apply_filter')) {
+    function osc_apply_filter($hook, $content = '', ...$args)
+    {
+        return $content;
+    }
+}
+$v2      = '{"v":2,"params":{"meta":{"4":"red"},"sCategory":[12,13],"sPattern":"road bike é","sRegion":["Kent"]}}';
+$v2Token = osc_encrypt_alert($v2);
+pin('decrypts to the envelope', $v2, osc_decrypt_alert($v2Token));
+pin(
+    'which validates to its params',
+    array('meta' => array(4 => 'red'), 'sCategory' => array(12, 13), 'sPattern' => 'road bike é', 'sRegion' => array('Kent')),
+    \mindstellar\search\AlertEnvelope::validate(osc_decrypt_alert($v2Token))
+);
+pin('fromToken(): a v2 token gives the envelope', $v2, \mindstellar\search\AlertEnvelope::fromToken(base64_encode($v2Token)));
+pin('fromToken(): a v1 payload is refused', null, \mindstellar\search\AlertEnvelope::fromToken(base64_encode($token)));
+pin('fromToken(): garbage is refused', null, \mindstellar\search\AlertEnvelope::fromToken('not a token'));
+pin('fromToken(): an empty token is refused', null, \mindstellar\search\AlertEnvelope::fromToken(''));
+pin('a v1 payload decrypts but does not validate', null, \mindstellar\search\AlertEnvelope::validate(osc_decrypt_alert($token)));
+
 harness_section('a wrong key never yields the payload');
 $GLOBALS['__alert_key'] = str_repeat('z', 40);
 pin('new token under wrong key', '', osc_decrypt_alert($token));

@@ -755,13 +755,26 @@ function osc_alert()
 }
 
 /**
- * Gets search field of current alert
+ * Gets search field of current alert.
+ *
+ * For an alert stored as search values, a JSON object with the fields the old stored
+ * format had (sPattern, aCategories, city_areas, cities, regions, countries, price_min,
+ * price_max) plus `params`, the stored values. The raw column stays readable through
+ * osc_alert_field('s_search').
  *
  * @return string
  */
 function osc_alert_search()
 {
-    return (string)osc_alert_field('s_search');
+    $search = (string)osc_alert_field('s_search');
+    $params = \mindstellar\search\AlertEnvelope::validate($search);
+    if ($params === null) {
+        return $search;
+    }
+    $display           = \mindstellar\search\AlertEnvelope::legacyFields($params);
+    $display['params'] = (object)$params;
+
+    return (string)json_encode($display, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 }
 
 /**

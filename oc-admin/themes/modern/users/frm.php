@@ -328,10 +328,12 @@ $aux = customFrmText();
                                     <?php for ($k = 0, $kMax = count($aux['alerts']); $k < $kMax; $k++) {
                                         $array_conditions = (array)json_decode($aux['alerts'][$k]['s_search'], true);
                                         $raw_data         = osc_get_raw_search($array_conditions);
-                                        $new_search       = new Search();
-                                        $new_search->setJsonAlert($array_conditions);
-                                        $new_search->limit(0, 2);
-                                        $results = $new_search->doSearch();
+                                        $new_search       = \mindstellar\search\AlertReplay::search($aux['alerts'][$k]);
+                                        $results          = array();
+                                        if ($new_search !== null) {
+                                            $new_search->limit(0, 2);
+                                            $results = $new_search->doSearch();
+                                        }
                                         ob_start();
                                         ?>
                                             <?php echo sprintf(__('Alert #%d'), ($k + 1)); ?>
@@ -344,7 +346,7 @@ $aux = customFrmText();
                                                 $l         = min(count($raw_data['aCategories']), 2);
                                                 $cat_array = array();
                                                 for ($c = 0; $c < $l; $c++) {
-                                                    $cat_array[] = $raw_data['aCategories'][$c];
+                                                    $cat_array[] = osc_esc_html($raw_data['aCategories'][$c]);
                                                 }
                                                 if (count($raw_data['aCategories']) > $l) {
                                                     $cat_array[] =
