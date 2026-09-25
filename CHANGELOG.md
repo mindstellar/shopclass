@@ -162,6 +162,7 @@ In development.
 
 ### Performance
 
+- A new database connection needs 2 round trips after the login instead of 5 (3 on new installs), which matters most when the database is on another server.
 - Dates in listing loops translate their month and day names once per request, and the Sample Widgets plugin builds its category list only when its form is open.
 - A request value with no `<`, `>` or `&` skips HTMLPurifier, which took about 1.5 ms of each item and search page.
 - HTMLPurifier caches its built rules in signed files under `oc-content/uploads/`, and falls back to no cache when that folder cannot be written.

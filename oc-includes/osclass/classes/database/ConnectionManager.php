@@ -16,6 +16,7 @@ namespace mindstellar\database;
 
 use Exception;
 use mysqli;
+use mysqli_sql_exception;
 
 /**
  * Manages the physical mysqli connection: opens it (with a bounded connect
@@ -91,6 +92,12 @@ class ConnectionManager
      * @var mysqli|null
      */
     private $connId;
+    /**
+     * Whether the login already selected $dbName.
+     *
+     * @var bool
+     */
+    private $dbSelected = false;
 
     /**
      * Database error number
@@ -178,7 +185,7 @@ class ConnectionManager
 
         $this->setCharset('utf8mb4');
 
-        if (!$this->dbName) {
+        if (!$this->dbName || $this->dbSelected) {
             return true;
         }
 
@@ -215,13 +222,33 @@ class ConnectionManager
             // a PHP worker indefinitely (this matters most for the installer's
             // "Test connection" probe, which dials an arbitrary host:port).
             $this->connId->options(MYSQLI_OPT_CONNECT_TIMEOUT, 10);
-            $this->connId->real_connect(
-                $this->dbHost,
-                $this->dbUser,
-                $this->dbPassword,
-                '',
-                $this->dbPort !== null ? $this->dbPort : 0
-            );
+            // Naming the database in the login saves a select_db() round trip. When the
+            // database is missing or refused, log in without it, so select_db() reports
+            // that error exactly as before.
+            $this->dbSelected = false;
+            try {
+                $this->connId->real_connect(
+                    $this->dbHost,
+                    $this->dbUser,
+                    $this->dbPassword,
+                    (string)$this->dbName,
+                    $this->dbPort !== null ? $this->dbPort : 0
+                );
+                $this->dbSelected = (string)$this->dbName !== '';
+            } catch (mysqli_sql_exception $e) {
+                if ((string)$this->dbName === '' || !in_array($e->getCode(), array(1044, 1049), true)) {
+                    throw $e;
+                }
+                $this->connId = mysqli_init();
+                $this->connId->options(MYSQLI_OPT_CONNECT_TIMEOUT, 10);
+                $this->connId->real_connect(
+                    $this->dbHost,
+                    $this->dbUser,
+                    $this->dbPassword,
+                    '',
+                    $this->dbPort !== null ? $this->dbPort : 0
+                );
+            }
         } catch (Exception $e) {
             $this->errorDesc = $e->getMessage();
             $this->errorLevel = $e->getCode();
@@ -244,8 +271,10 @@ class ConnectionManager
         }
         // Start every connection in a known-clean autocommit state, so no write can be
         // silently swallowed by a transaction state carried over from anywhere else.
-        $this->connId->autocommit(true);
-        $this->setSQLMode();
+        // setSQLMode() sets it in the same statement when it runs.
+        if (!$this->setSQLMode()) {
+            $this->connId->autocommit(true);
+        }
 
         return true;
     }
@@ -289,53 +318,36 @@ class ConnectionManager
      *
      * @param array<int,string> $modes modes to apply; read from the session when empty
      *
-     * @return void
+     * @return bool true when the statement ran, which also set autocommit
      */
     private function setSQLMode($modes = [])
     {
         if (defined('OSC_DB_STRICT_MODE') && OSC_DB_STRICT_MODE) {
-            return;
+            return false;
         }
-        if (empty($modes)) {
-            try {
-                $res = $this->connId->query('SELECT @@SESSION.sql_mode');
-            } catch (Exception $e) {
-                $this->errorReport();
-
-                return;
+        if (!empty($modes)) {
+            $modes = array_values(array_diff(array_map('strtoupper', $modes), $this->incompatible_modes));
+            $mode  = "'" . $this->connId->real_escape_string(implode(',', $modes)) . "'";
+        } else {
+            // Strip the modes from the session's own value on the server, so reading it
+            // first costs no extra round trip. Each name is wrapped in commas to match
+            // whole names only.
+            $mode = "CONCAT(',', @@SESSION.sql_mode, ',')";
+            foreach ($this->incompatible_modes as $incompatible) {
+                $mode = "REPLACE($mode, '," . $incompatible . ",', ',')";
             }
-
-            if (empty($res)) {
-                return;
-            }
-
-            $modes_array = $res->fetch_array();
-            if (empty($modes_array[0])) {
-                return;
-            }
-            $modes_str = $modes_array[0];
-
-            if (empty($modes_str)) {
-                return;
-            }
-
-            $modes = explode(',', $modes_str);
+            $mode = "TRIM(BOTH ',' FROM $mode)";
         }
 
-        $modes              = array_change_key_case($modes, CASE_UPPER);
-        $incompatible_modes = $this->incompatible_modes;
-        foreach ($modes as $i => $mode) {
-            if (in_array($mode, $incompatible_modes)) {
-                unset($modes[$i]);
-            }
-        }
-
-        $modes_str = implode(',', $modes);
         try {
-            $this->connId->query("SET SESSION sql_mode='$modes_str'");
+            $this->connId->query("SET autocommit = 1, SESSION sql_mode = $mode");
         } catch (Exception $e) {
             $this->errorReport();
+
+            return false;
         }
+
+        return true;
     }
 
     /**

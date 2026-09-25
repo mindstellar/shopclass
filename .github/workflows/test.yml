@@ -509,6 +509,8 @@ jobs:
       # ONLY_FULL_GROUP_BY entirely and the file would otherwise pass without testing it.
       - name: Strict SQL mode
         run: php tests/db-strict-mode.php
+      - name: Connection setup
+        run: php tests/db-connect-setup.php
       # DAO::insertGetId() answers 0 on a rejected write and DAO::update() answers
       # false, so an unchecked return turned a refused registration into "check your
       # inbox" for an account that was never created. Nothing throws, nothing logs,
