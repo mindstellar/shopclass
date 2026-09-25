@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - master
+      - develop
     paths:
       - 'docs/site/**'
   # A manual run republishes without touching a page, e.g. after a change to the
@@ -17,7 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # The published docs at mindstellar.com/docs are built by Cloudflare Pages,
-      # which clones docs/site from master when it builds. Pages rebuilds only
+      # which clones docs/site from master (/docs/) and develop (/docs/next/) when
+      # it builds. Pages rebuilds only
       # when its own repository is pushed, so a docs change landing here stays
       # invisible until something asks for a build. This is that ask.
       - name: Rebuild the documentation site
