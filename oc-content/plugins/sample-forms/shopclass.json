@@ -8,7 +8,7 @@
   "icon": "assets/icon.svg",
   "license": "GPL-3.0-or-later",
   "support": {
-    "issues": "https://github.com/mindstellar/osclass/issues",
-    "docs": "https://github.com/mindstellar/osclass/blob/develop/docs/PACKAGE-SPEC.md"
+    "issues": "https://github.com/mindstellar/shopclass/issues",
+    "docs": "https://github.com/mindstellar/shopclass/blob/develop/docs/PACKAGE-SPEC.md"
   }
 }

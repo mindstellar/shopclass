@@ -13,12 +13,12 @@ See `docs/site/developers/payment-gateways.md` in the Shopclass repository.
 ## Use
 
 1. Turn billing on and add a credit package (**Billing**).
-2. Install and enable this plugin, then open **Plugins → Test payments** and tick *Test mode*.
+2. Install and enable this plugin, then open **Plugins → Test payments** and tick **Offer test payments at checkout**.
 3. As a user, buy a package and choose the test payment method.
 4. On the test checkout page press **Pay**, **Decline**, **Leave pending** or **Fail with error**.
    A paid order can be refunded from the same page.
 
-In *auto* mode the chosen outcome is applied at once, with no checkout page.
+With **Checkout** set to **Instant, no page**, the outcome is applied at once, with no checkout page.
 
 ## How it verifies
 

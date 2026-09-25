@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: Sample Widgets
-Plugin URI: https://github.com/mindstellar/Osclass
+Plugin URI: https://github.com/mindstellar/shopclass-plugins
 Description: Reference plugin showing how to register functional widgets through the widget-type registry: a static notice, a live "recent listings" list, a category-filtered list, and a super-admin-gated raw embed.
 Version: 1.0.2
 Author: Navjot Tomer (Mindstellar)
