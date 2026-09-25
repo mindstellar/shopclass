@@ -2203,46 +2203,35 @@ class Search extends DAO
             return;
         }
 
-        // Restore a whole search from JSON, so clear any pattern left by a previous
-        // restore first: newInstance() hands back one shared Search, and the alert cron
-        // reuses it per alert. addPattern() only runs when a keyword is present, so
-        // without this reset a keyword-less alert keeps the prior alert's pattern and
-        // silently matches nothing.
+        // An old-format alert carries SQL fragments (locations, users, conditions, tables,
+        // sort). None of them is applied any more: only the fields that hold plain values
+        // are, and every SQL-bearing field is cleared, as a whole-search restore would.
+        // newInstance() hands back one shared Search, so clear the pattern too: without
+        // that a keyword-less alert keeps the previous one's keyword and matches nothing.
         $this->withPattern = false;
         $this->sPattern    = null;
         $this->sPatternRaw = null;
+        $this->city_areas  = array();
+        $this->cities      = array();
+        $this->regions     = array();
+        $this->countries   = array();
+        $this->user_ids    = null;
+        $this->withUserId  = false;
+        $this->tables_join = array();
+        $this->tables      = array();
+        $this->conditions  = array();
 
-        $this->priceRange($aData['price_min'], $aData['price_max']);
+        $price = static function ($value) {
+            return is_int($value) || is_float($value) || (is_string($value) && is_numeric($value)) ? $value : 0;
+        };
+        $this->priceRange($price($aData['price_min'] ?? 0), $price($aData['price_max'] ?? 0));
 
-        // Stored alerts are replayed as SQL, so every field that has a fixed shape is
-        // held to it here; the location, user and condition fields are SQL fragments.
-        $this->categories = array_values(array_filter(array_map('intval', (array)($aData['aCategories'] ?? array()))));
-        // locations
-        $this->city_areas = $aData['city_areas'];
-        $this->cities     = $aData['cities'];
-        $this->regions    = $aData['regions'];
-        $this->countries  = $aData['countries'];
+        $this->categories = array_values(array_filter(array_map('intval', array_filter(
+            (array)($aData['aCategories'] ?? array()),
+            'is_scalar'
+        ))));
 
-        $this->user_ids = $aData['user_ids'];
-
-        $this->tables_join = $aData['tables_join'];
-        $this->tables      = $aData['no_catched_tables'];
-        $this->conditions  = $aData['no_catched_conditions'];
-
-        // get order & limit
-        $column = (string)($aData['order_column'] ?? '');
-        if (!preg_match('/^[A-Za-z0-9_.]+$/', $column)
-            && !preg_match('/^ISNULL\(([A-Za-z0-9_.]+)\), \1$/', $column)
-        ) {
-            $column = 'dt_pub_date';
-        }
-        $this->order_column     = $column;
-        $this->order_direction  = strtoupper((string)($aData['order_direction'] ?? '')) === 'ASC' ? 'ASC' : 'DESC';
-        $this->limit_init       = max(0, (int)($aData['limit_init'] ?? 0));
-        $this->results_per_page = max(1, (int)($aData['results_per_page'] ?? 10));
-
-        // pattern
-        if (isset($aData['sPattern'])) {
+        if (isset($aData['sPattern']) && is_scalar($aData['sPattern'])) {
             $this->addPattern($this->unescapeLegacyAlertPattern($aData['sPattern']));
         }
         if (isset($aData['withPicture'])) {

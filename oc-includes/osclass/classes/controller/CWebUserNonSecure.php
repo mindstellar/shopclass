@@ -109,6 +109,13 @@ class CWebUserNonSecure extends BaseModel
 
                 $alert  = Alerts::newInstance()->findByPrimaryKey($id);
                 $result = 0;
+                // A held alert has no search left to send, so its link no longer works.
+                if (!empty($alert)
+                    && \mindstellar\search\AlertEnvelope::heldReason((string)$alert['s_search']) !== null
+                ) {
+                    osc_add_flash_error_message(_m('Sorry, the link is not valid'));
+                    $this->redirectTo(osc_base_url());
+                }
                 if (!empty($alert) && $email == $alert['s_email']
                     && $secret == $alert['s_secret']
                 ) {

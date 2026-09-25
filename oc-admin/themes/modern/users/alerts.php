@@ -24,9 +24,33 @@ $direction = Params::getParam('direction');
 
 $columns = $aData['aColumns'];
 $rows    = $aData['aRows'];
+
+// Alerts the upgrade could not convert from the old stored format: they no longer send email.
+$heldCount = \mindstellar\search\AlertStore::countHeld();
+$heldOnly  = Params::getParam('held') === '1';
+$alertsUrl = osc_admin_base_url(true) . '?page=users&action=alerts';
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
     <?php osc_admin_page_head(__('Manage alerts')); ?>
+    <?php if ($heldCount > 0 || $heldOnly) { ?>
+        <div class="callout-warning callout-block">
+            <span>
+                <?php echo osc_esc_html(sprintf(
+                    _n(
+                        '%d alert needs attention: it could not be converted when Shopclass was upgraded, so it no longer sends email.',
+                        '%d alerts need attention: they could not be converted when Shopclass was upgraded, so they no longer send email.',
+                        $heldCount
+                    ),
+                    $heldCount
+                )); ?>
+                <?php if ($heldOnly) { ?>
+                    <a href="<?php echo osc_esc_html($alertsUrl); ?>"><?php _e('Show all alerts'); ?></a>
+                <?php } else { ?>
+                    <a href="<?php echo osc_esc_html($alertsUrl . '&held=1'); ?>"><?php _e('Show them'); ?></a>
+                <?php } ?>
+            </span>
+        </div>
+    <?php } ?>
     <div class="relative">
         <div id="users-toolbar" class="table-toolbar">
             <div class="float-right">
@@ -34,6 +58,9 @@ $rows    = $aData['aRows'];
                       class="inline">
                     <input type="hidden" name="page" value="users"/>
                     <input type="hidden" name="action" value="alerts"/>
+                    <?php if ($heldOnly) { ?>
+                        <input type="hidden" name="held" value="1"/>
+                    <?php } ?>
                     <div class="btn-group btn-group-sm">
                         <input
                                 id="fPattern" type="text" name="sSearch"
@@ -97,7 +124,7 @@ $rows    = $aData['aRows'];
                                 <?php } ?>
                             </tr>
                         <?php } ?>
-                    <?php } elseif (Params::getParam('sSearch') !== '') { ?>
+                    <?php } elseif (Params::getParam('sSearch') !== '' || $heldOnly) { ?>
                         <?php osc_admin_table_empty(count($columns), array(
                             'icon'  => 'bi-bell',
                             'title' => __('No results for this filter'),

@@ -59,6 +59,7 @@ In development.
 
 ### Breaking
 
+- `Search::setJsonAlert()` with an old-format alert applies only its categories, price, pattern, picture and premium flags; its SQL fragments, sort and paging are ignored.
 - Route values captured on friendly URLs now arrive decoded, as query values do; a plugin that decoded them itself must stop.
 - Removed the admin CSS kept one release for compatibility with the old Locations screen:
   `.locations`, `#l_countries`, `#i_regions`, `#i_cities`.
@@ -135,7 +136,8 @@ In development.
 
 ### Security
 
-- A new search alert stores the search's values, not SQL, and runs through the same builder as the search page. Existing alerts are converted by a later step of this release.
+- A new search alert stores the search's values, not SQL, and runs through the same builder as the search page.
+- The upgrade converts every saved alert to its search values and discards its stored SQL, so back up `t_alerts` first if you may need it. An alert holding anything core did not write is paused and listed under **Users → Alerts**; on a large site `php oc-cli.php jobs:work` finishes the conversion at once.
 - A search's `sLocale` value reached SQL unescaped, an injection open to anonymous visitors. Only locale codes are accepted now, and they are escaped; two locales also no longer build invalid SQL.
 - Search-alert tokens from before 6.2.0 are refused. Their format could be edited without detection, and a saved alert's conditions run as SQL.
 - A saved alert's categories, sort and paging are held to their own shape when the alert runs.

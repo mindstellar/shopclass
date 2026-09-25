@@ -52,14 +52,24 @@ class AlertsDataTable extends DataTable
         $this->addTableHeader();
         $this->getDBParams($params);
 
-        $alerts = Alerts::newInstance()
-            ->search(
-                $this->start,
-                $this->limit,
-                $this->order_by['column_name'],
-                $this->order_by['type'],
-                $this->search
+        if ((string)($params['held'] ?? '') === '1') {
+            $alerts = \mindstellar\search\AlertStore::searchHeld(
+                (int)$this->start,
+                (int)$this->limit,
+                (string)$this->order_by['column_name'],
+                (string)$this->order_by['type'],
+                (string)$this->search
             );
+        } else {
+            $alerts = Alerts::newInstance()
+                ->search(
+                    $this->start,
+                    $this->limit,
+                    $this->order_by['column_name'],
+                    $this->order_by['type'],
+                    $this->search
+                );
+        }
         $this->processData($alerts);
         $this->total          = $alerts['rows'];
         $this->total_filtered = $alerts['total_results'];
@@ -132,11 +142,13 @@ class AlertsDataTable extends DataTable
                 $options[] =
                     '<a onclick="return delete_alert(\'' . $aRow['pk_i_id'] . '\');" href="#">' . __('Delete') . '</a>';
 
-                if ($aRow['b_active'] == 1) {
+                // A held alert has no search to switch back on, so it offers only Delete.
+                $held = \mindstellar\search\AlertEnvelope::heldReason((string)$aRow['s_search']);
+                if ($held === null && $aRow['b_active'] == 1) {
                     $options[] =
                         '<a href="' . osc_admin_base_url(true) . '?page=users&action=status_alerts&amp;alert_id[]='
                         . $aRow['pk_i_id'] . '&amp;' . $csrf_token_url . '&amp;status=0" >' . __('Deactivate') . '</a>';
-                } else {
+                } elseif ($held === null) {
                     $options[] =
                         '<a href="' . osc_admin_base_url(true) . '?page=users&action=status_alerts&amp;alert_id[]='
                         . $aRow['pk_i_id'] . '&amp;' . $csrf_token_url . '&amp;status=1" >' . __('Activate') . '</a>';
@@ -159,7 +171,13 @@ class AlertsDataTable extends DataTable
                 // third row
 
                 $pieces     = array();
-                $conditions = osc_get_raw_search((array)json_decode($aRow['s_search'], true));
+                $conditions = osc_get_raw_search((array)json_decode((string)$aRow['s_search'], true));
+                if ($held !== null) {
+                    $pieces[] = '<span class="osc-status status-spam">' . osc_esc_html(__('Needs attention'))
+                        . '</span> '
+                        . osc_esc_html(\mindstellar\search\AlertStore::reasonText($held)) . ' '
+                        . osc_esc_html(__('It no longer sends email. Ask the user to save the search again.'));
+                }
                 if (isset($conditions['sPattern']) && $conditions['sPattern'] != '') {
                     $pieces[] = sprintf(__('<b>Pattern:</b> %s'), osc_esc_html($conditions['sPattern']));
                 }

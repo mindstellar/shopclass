@@ -243,6 +243,10 @@ jobs:
       # de-duplication key); anything else, SQL included, must fail validation.
       - name: Alert envelope
         run: php tests/alert-envelope.php
+      # Old alerts held SQL fragments. The upgrade reads back only the exact fragments core
+      # wrote; anything else must be held, never guessed into a search.
+      - name: Legacy alert parser
+        run: php tests/alert-legacy-parser.php
       # Resolving sCategory by slug alone 404s a category that exists whenever the value
       # is an id -- which is what osc_search_url() emits and what a category <select> submits.
       - name: Search category resolution

@@ -9,13 +9,12 @@
  */
 
 /**
- * Characterization pins for replaying a stored alert (t_alerts.s_search) the way
- * the cron does it: osc_runAlert() json_decode()s the column, calls
- * Search::newInstance()->setJsonAlert() on it, then doSearch() (oc-includes/osclass/alerts.php:60-69).
- * s_search is SQL fragments, not bound parameters, so whatever conversion the
- * search assembler goes through next must keep replaying every one of these
- * blobs to the exact same matched-item set. That is what is pinned here, before
- * any conversion starts.
+ * Pins for replaying a stored alert (t_alerts.s_search). An old-format (v1) row holds
+ * SQL fragments; it is no longer replayed as written. The upgrade converts it to its
+ * search values (mindstellar\search\LegacyAlertParser, migration 0044) and the v2 row
+ * replays through mindstellar\search\AlertReplay. Sections (a) and (b) convert each v1
+ * blob and replay the result: the matched ids are the ones the v1 replay matched,
+ * pinned before the conversion existed, except for the quirks named below.
  *
  * Two blob families:
  *  (a) built by calling today's code — the same Search mutators
@@ -27,22 +26,15 @@
  *      user_ids) but that setJsonAlert() must still be able to revive, because
  *      rows already saved in that shape are sitting in real installs.
  *
- * Every replay uses a FRESH Search() rather than the cron's shared
- * Search::newInstance() singleton — cross-alert singleton state (a keyword left
- * over from a previous alert in the same loop) is already characterized in
- * tests/models/search.php and is not this file's concern.
- *
- * Two quirks in today's code surface while building these fixtures and are
- * pinned deliberately, not fixed:
- *   - setJsonAlert() never sets $this->withUserId, so a stored alert's
- *     "user_ids" field — array or scalar, however it got there — has NO effect
- *     on replay. Every alert with a "from these users" filter has been
- *     replaying as if that filter were never set.
- *   - setJsonAlert() assigns $aData['aCategories'] straight into $this->categories
- *     with no addCategory()/toSubTree() call, so it never re-expands a category
- *     id to its subtree. A blob saved by today's code already has the subtree
- *     baked in (addCategory() expanded it before toJson() ran), but a
- *     hand-shaped blob that lists only the parent id matches the parent alone.
+ * Three quirks of the v1 replay are fixed by the conversion; each pin says which:
+ *   - the v1 replay never applied "user_ids", so a "from these users" alert matched
+ *     every user's listings;
+ *   - it took aCategories literally, so a hand-shaped blob listing only a parent id
+ *     missed the parent's subcategories;
+ *   - an unquoted custom-field value was read as a column name, so the alert
+ *     matched nothing.
+ * A custom-field filter only applies inside a category carrying the field, so the
+ * meta blobs below carry the category, as every blob the search page saved does.
  *
  * Section (d) replays the same searches stored as v2 envelopes (search values, no SQL)
  * through mindstellar\search\AlertReplay and pins the same ids, except where v2 fixes one
@@ -417,12 +409,18 @@ $sorted = static function (array $a): array {
     return $a;
 };
 
-/** setJsonAlert() on a FRESH Search, then doSearch() — the cron's replay shape. */
-$replay = static function (array $blob) use ($ids, $sorted): array {
-    $s = new Search();
-    $s->setJsonAlert($blob);
+/** Every v1 blob replayed below, to check afterwards that none replays as written. */
+$v1Blobs = array();
+/** Convert a v1 blob as the upgrade does, then replay the v2 row as the cron does. */
+$replay = static function (array $blob) use ($ids, $sorted, &$v1Blobs): array {
+    $v1Blobs[] = $blob;
+    $row       = \mindstellar\search\LegacyAlertParser::convert(json_encode($blob));
+    if ($row['held'] !== null) {
+        return array('held: ' . $row['held']);
+    }
+    $s = \mindstellar\search\AlertReplay::search(array('s_search' => $row['json']));
 
-    return $sorted($ids($s->doSearch()));
+    return $s === null ? array('not replayed') : $sorted($ids($s->doSearch()));
 };
 
 /** Build a v1 blob the way today's code does: mutate a fresh Search, toJson() it. */
@@ -592,15 +590,15 @@ $blob = $buildBlob(static function (Search $s) {
 });
 pin('a city-area-name alert matches the same set as the id', $sorted(array($i1, $i2)), $replay($blob));
 
-harness_section('alert-replay: (a) fromUser(array) — QUIRK, ignored on replay');
+harness_section('alert-replay: (a) fromUser(array) — QUIRK FIXED');
 
 $blob = $buildBlob(static function (Search $s) use ($userSeller1) {
     $s->fromUser(array($userSeller1, 'seller2'));
 });
 pin(
-    'a from-these-users alert matches EVERY live item — setJsonAlert() never sets withUserId,'
-        . ' so the stored user_ids never reaches the WHERE clause on replay',
-    $sorted(array($i1, $i2, $i3, $i4, $i5, $i6, $i7)),
+    'QUIRK FIXED (user_ids ignored): the v1 replay matched every live item; converted, the'
+        . ' alert matches only those users\' items',
+    $sorted(array($i1, $i2, $i3, $i4, $i7)),
     $replay($blob)
 );
 
@@ -627,42 +625,48 @@ pin('a has-picture alert matches only items with a resource row', $sorted(array(
 
 harness_section('alert-replay: (a) meta — TEXT');
 
-$blob = $buildBlob(static function (Search $s) use ($metaCondition, $fText) {
+$blob = $buildBlob(static function (Search $s) use ($catCars, $metaCondition, $fText) {
+    $s->addCategory($catCars);
     $s->addConditions($metaCondition('TEXT', $fText, 'mileage'));
 });
 pin('a TEXT meta alert LIKE-matches the field value', array($i2), $replay($blob));
 
 harness_section('alert-replay: (a) meta — DROPDOWN');
 
-$blob = $buildBlob(static function (Search $s) use ($metaCondition, $fDropdown) {
+$blob = $buildBlob(static function (Search $s) use ($catCars, $metaCondition, $fDropdown) {
+    $s->addCategory($catCars);
     $s->addConditions($metaCondition('DROPDOWN', $fDropdown, 'red'));
 });
 pin('a DROPDOWN meta alert exact-matches the field value', $sorted(array($i1, $i3)), $replay($blob));
 
 harness_section('alert-replay: (a) meta — RADIO');
 
-$blob = $buildBlob(static function (Search $s) use ($metaCondition, $fRadio) {
+$blob = $buildBlob(static function (Search $s) use ($catCars, $metaCondition, $fRadio) {
+    $s->addCategory($catCars);
     $s->addConditions($metaCondition('RADIO', $fRadio, 'used'));
 });
 pin('a RADIO meta alert exact-matches the field value', $sorted(array($i1, $i3)), $replay($blob));
 
 harness_section('alert-replay: (a) meta — CHECKBOX');
 
-$blob = $buildBlob(static function (Search $s) use ($metaCondition, $fCheckbox) {
+$blob = $buildBlob(static function (Search $s) use ($catCars, $metaCondition, $fCheckbox) {
+    $s->addCategory($catCars);
     $s->addConditions($metaCondition('CHECKBOX', $fCheckbox, '1'));
 });
 pin('a CHECKBOX meta alert matches only a checked row', array($i1), $replay($blob));
 
 harness_section('alert-replay: (a) meta — DATE');
 
-$blob = $buildBlob(static function (Search $s) use ($metaCondition, $fDate) {
+$blob = $buildBlob(static function (Search $s) use ($catCars, $metaCondition, $fDate) {
+    $s->addCategory($catCars);
     $s->addConditions($metaCondition('DATE', $fDate, strtotime('2026-03-15 12:00:00')));
 });
 pin('a DATE meta alert matches the item stored on that day', array($i1), $replay($blob));
 
 harness_section('alert-replay: (a) meta — DATEINTERVAL');
 
-$blob = $buildBlob(static function (Search $s) use ($metaCondition, $fDateInterval) {
+$blob = $buildBlob(static function (Search $s) use ($catCars, $metaCondition, $fDateInterval) {
+    $s->addCategory($catCars);
     $s->addConditions($metaCondition('DATEINTERVAL', $fDateInterval, array(
         'from' => strtotime('2026-10-15 00:00:00'),
         'to'   => strtotime('2026-10-20 23:59:59'),
@@ -676,7 +680,8 @@ pin(
 
 harness_section('alert-replay: (a) meta — NUMBER');
 
-$blob = $buildBlob(static function (Search $s) use ($metaCondition, $fNumber) {
+$blob = $buildBlob(static function (Search $s) use ($catCars, $metaCondition, $fNumber) {
+    $s->addCategory($catCars);
     $s->addConditions($metaCondition('NUMBER', $fNumber, array('from' => 3000, 'to' => 20000)));
 });
 pin('a NUMBER meta alert matches items whose value is inside the bound', $sorted(array($i1, $i2)), $replay($blob));
@@ -685,6 +690,10 @@ pin('a NUMBER meta alert matches items whose value is inside the bound', $sorted
  * (b) Hand-written legacy shapes.
  * ------------------------------------------------------------------------- */
 harness_section('alert-replay: (b) pattern stored quoted+escaped (pre-fix shape)');
+
+// The meta blobs carry the Cars category as saved: addCategory() had expanded it.
+$legacyMeta                = $legacyBase;
+$legacyMeta['aCategories'] = array($catCars, (string)$catCarsSport);
 
 $blob             = $legacyBase;
 $blob['sPattern'] = "'se'";
@@ -698,7 +707,7 @@ harness_section('alert-replay: (b) meta value quoted with doubled single quotes'
 
 $cond             = $prefix . 't_item.pk_i_id IN (SELECT fk_i_item_id FROM ' . $metaTable . ' WHERE '
     . $metaTable . '.fk_i_field_id = ' . $fDropdown . " AND " . $metaTable . ".s_value = 'red''s pick')";
-$blob                          = $legacyBase;
+$blob                          = $legacyMeta;
 $blob['no_catched_conditions'] = array($cond);
 pin('a doubled-single-quote meta value matches the item with the literal apostrophe', array($i6), $replay($blob));
 
@@ -707,32 +716,32 @@ harness_section('alert-replay: (b) meta value quoted with backslash escaping');
 $bs   = chr(92);
 $cond = $prefix . 't_item.pk_i_id IN (SELECT fk_i_item_id FROM ' . $metaTable . ' WHERE '
     . $metaTable . '.fk_i_field_id = ' . $fDropdown . " AND " . $metaTable . ".s_value = 'red" . $bs . "'s pick')";
-$blob                          = $legacyBase;
+$blob                          = $legacyMeta;
 $blob['no_catched_conditions'] = array($cond);
 pin('a backslash-escaped meta value matches the same item as the doubled-quote form', array($i6), $replay($blob));
 
-harness_section('alert-replay: (b) unquoted DROPDOWN value — pre-2026-09 shape, QUIRK');
+harness_section('alert-replay: (b) unquoted DROPDOWN value — pre-2026-09 shape, QUIRK FIXED');
 
 $cond = $prefix . 't_item.pk_i_id IN (SELECT fk_i_item_id FROM ' . $metaTable . ' WHERE '
     . $metaTable . '.fk_i_field_id = ' . $fDropdown . ' AND ' . $metaTable . '.s_value = red)';
-$blob                          = $legacyBase;
+$blob                          = $legacyMeta;
 $blob['no_catched_conditions'] = array($cond);
 pin(
-    'an unquoted meta value is invalid SQL (red is read as a column, not a string) —'
-        . ' the query errors, doSearch() catches it, and the alert silently matches nothing',
-    array(),
+    'QUIRK FIXED (unquoted dropdown matched nothing): v1 read red as a column and the query'
+        . ' failed; converted, the value is quoted and red matches',
+    $sorted(array($i1, $i3)),
     $replay($blob)
 );
 
-harness_section('alert-replay: (b) scalar user_ids + a literal (unexpanded) category — QUIRK');
+harness_section('alert-replay: (b) scalar user_ids + a literal (unexpanded) category — QUIRKS FIXED');
 
 $blob                 = $legacyBase;
 $blob['aCategories']  = array($catCars);
 $blob['user_ids']     = $userSeller3;
 pin(
-    'aCategories is taken literally (no subtree re-expansion on replay, so the Sports Cars'
-        . ' child is excluded) and the scalar user_ids is ignored exactly like the array form',
-    $sorted(array($i1, $i2, $i3, $i6)),
+    'QUIRKS FIXED (categories not re-expanded, user_ids ignored): v1 matched every Cars item'
+        . ' but the Sports Car; converted, the parent covers its child and the user filter applies',
+    array($i6),
     $replay($blob)
 );
 
@@ -744,7 +753,7 @@ $end   = mktime(23, 59, 59, (int)date('n', $day), (int)date('j', $day), (int)dat
 $cond  = $prefix . 't_item.pk_i_id IN (SELECT fk_i_item_id FROM ' . $metaTable . ' WHERE '
     . $metaTable . '.fk_i_field_id = ' . $fDate . ' AND ' . $metaTable . '.s_value >= ' . $start
     . ' AND ' . $metaTable . '.s_value <= ' . $end . ')';
-$blob                          = $legacyBase;
+$blob                          = $legacyMeta;
 $blob['no_catched_conditions'] = array($cond);
 pin('a hand-written DATE condition matches the item stored on that day', array($i2), $replay($blob));
 
@@ -758,7 +767,7 @@ $sub1   = 'SELECT fk_i_item_id FROM ' . $metaTable . ' WHERE ' . $metaTable . '.
     . ' AND ' . $qEnd . ' <= ' . $metaTable . ".s_value AND s_multi = 'to'";
 $cond   = $prefix . 't_item.pk_i_id IN (select a.fk_i_item_id from (' . $sub . ') a where a.fk_i_item_id IN ('
     . $sub1 . '))';
-$blob                          = $legacyBase;
+$blob                          = $legacyMeta;
 $blob['no_catched_conditions'] = array($cond);
 pin(
     'a hand-written DATEINTERVAL condition matches items whose stored range contains the query range',
@@ -771,9 +780,20 @@ harness_section('alert-replay: (b) meta — NUMBER (hand-written)');
 $cond = $prefix . 't_item.pk_i_id IN (SELECT fk_i_item_id FROM ' . $metaTable . ' WHERE '
     . $metaTable . '.fk_i_field_id = ' . $fNumber . ' AND ' . $metaTable . '.s_value >= 40000 AND '
     . $metaTable . '.s_value <= 50000)';
-$blob                          = $legacyBase;
+$blob                          = $legacyMeta;
 $blob['no_catched_conditions'] = array($cond);
 pin('a hand-written NUMBER condition matches the item inside the bound', array($i3), $replay($blob));
+
+harness_section('alert-replay: (b) no v1 row replays as written');
+
+$refused = 0;
+foreach ($v1Blobs as $v1Blob) {
+    if (\mindstellar\search\AlertReplay::search(array('pk_i_id' => 1, 's_search' => json_encode($v1Blob))) === null) {
+        $refused++;
+    }
+}
+pin('AlertReplay refuses every v1 blob above; only its converted row replays', count($v1Blobs), $refused);
+check('and there were blobs to check', count($v1Blobs) >= 25);
 
 /* ----------------------------------------------------------------------------
  * (c) Search::toJson() pinned byte-for-byte, for searches built the way
@@ -970,6 +990,7 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hSearch.php';
 
 use mindstellar\search\AlertEnvelope;
 use mindstellar\search\AlertReplay;
+use mindstellar\search\AlertStore;
 use mindstellar\search\SearchCriteria;
 
 /** The envelope the search page would mint for these request params. */
@@ -1131,7 +1152,7 @@ pin('a row that is not JSON is skipped', null, AlertReplay::search(array('s_sear
 $v1Row = array('s_search' => json_encode($buildBlob(static function (Search $s) use ($regionAlpha) {
     $s->addRegion($regionAlpha);
 })));
-pin('a v1 row still replays through setJsonAlert()', $sorted(array($i1, $i2, $i7)), $sorted($ids(AlertReplay::search($v1Row)->doSearch())));
+pin('a v1 row is not replayed', null, AlertReplay::search($v1Row));
 
 harness_section('alert-replay: (d) v2 — setJsonAlert() delegates');
 
@@ -1217,6 +1238,35 @@ pin(
 );
 $v1Json = json_encode($legacyBase);
 pin('osc_alert_search(): a v1 row comes back as stored', $v1Json, $alertSearchFor(array('pk_i_id' => 2, 's_search' => $v1Json)));
+pin(
+    'osc_alert_search(): a held row gives the display keys empty, plus the reason',
+    array(
+        'sPattern'    => '',
+        'aCategories' => array(),
+        'city_areas'  => array(),
+        'cities'      => array(),
+        'regions'     => array(),
+        'countries'   => array(),
+        'price_min'   => 0,
+        'price_max'   => 0,
+        'held'        => 'extra_tables',
+    ),
+    json_decode($alertSearchFor(array('pk_i_id' => 3, 's_search' => '{"v":2,"held":"extra_tables"}')), true)
+);
+pin('osc_get_raw_search(): a held row gives only the reason', array('held' => 'extra_tables'), osc_get_raw_search(array('v' => 2, 'held' => 'extra_tables')));
+$planted                = $legacyBase;
+$planted['aCategories'] = array(array('x'), (string)$catCars);
+$planted['cities']      = array(array(array('y')), $prefix . 't_item_location.fk_i_city_id = 12 ');
+$planted['sPattern']    = array('z');
+pin(
+    'osc_get_raw_search(): a v1 row with nested arrays drops them instead of throwing',
+    array(array('Cars'), array('12'), false),
+    (static function () use ($planted) {
+        $raw = osc_get_raw_search($planted);
+
+        return array($raw['aCategories'] ?? null, $raw['cities'] ?? null, isset($raw['sPattern']));
+    })()
+);
 
 harness_section('alert-replay: (d) v2 — page size');
 
@@ -1237,6 +1287,210 @@ pin(
     array($catCars),
     AlertEnvelope::legacyFields($v2Display['params'])['aCategories']
 );
+
+/* ----------------------------------------------------------------------------
+ * (e) The upgrade: migration 0044 over a seeded t_alerts table.
+ * ------------------------------------------------------------------------- */
+harness_section('alert-replay: (e) migration — converts, holds, resumes');
+
+$conn        = \mindstellar\database\Connection::instance();
+$alertsTable = $prefix . 't_alerts';
+$migration   = require ABS_PATH . 'oc-includes/osclass/installer/migrations/0044_alerts_search_values.php';
+$jobQueue    = \mindstellar\job\JobQueue::instance();
+$convertType = \mindstellar\search\AlertJobs::TYPE;
+
+$seedAlert = static function (?string $search, int $active = 1) use ($admin, $alertsTable): int {
+    return seed_exec(
+        $admin,
+        "INSERT INTO {$alertsTable} (s_email, fk_i_user_id, s_search, s_secret, b_active, e_type, dt_date)
+         VALUES ('a@example.test', 0, ?, 'secret', ?, 'DAILY', NOW())",
+        'si',
+        array($search, $active)
+    );
+};
+$alertRows = static function () use ($conn, $alertsTable): array {
+    $out = array();
+    foreach ($conn->select('SELECT pk_i_id, s_search, b_active FROM ' . $alertsTable . ' ORDER BY pk_i_id') as $r) {
+        $out[(int)$r['pk_i_id']] = array($r['s_search'], (int)$r['b_active']);
+    }
+
+    return $out;
+};
+$replayRow = static function (string $json) use ($ids, $sorted) {
+    $s = AlertReplay::search(array('pk_i_id' => 0, 's_search' => $json));
+
+    return $s === null ? null : $sorted($ids($s->doSearch()));
+};
+$v1 = static function (callable $mutate) use ($buildBlob): string {
+    return json_encode($buildBlob($mutate));
+};
+
+$pluginBlob                          = $legacyBase;
+$pluginBlob['no_catched_conditions'] = array($prefix . 't_item.i_price > 0');
+$hostileBlob                         = $legacyBase;
+$hostileBlob['cities']               = array($prefix . 't_item_location.fk_i_city_id = 1 OR 1=1 ');
+$joinBlob                            = $legacyBase;
+$joinBlob['tables_join']             = array(array($prefix . 't_item_car c', 'c.fk_i_item_id = 1', 'LEFT'));
+$metaBlob                            = $legacyMeta;
+$metaBlob['no_catched_conditions']   = array($metaCondition('DROPDOWN', $fDropdown, 'red'));
+$quotedPattern                       = $legacyBase;
+$quotedPattern['sPattern']           = "'se'";
+$v2Already                           = $envelope(array('sCity' => 'Aville'));
+
+// pk => array(stored s_search, expected s_search after, expected b_active after, expected replay ids)
+$cases = array();
+$add   = static function (?string $search, ?string $want, int $active, $wantIds, int $activeAfter = -1) use (&$cases, $seedAlert) {
+    $cases[$seedAlert($search, $active)] = array($want, $activeAfter < 0 ? $active : $activeAfter, $wantIds);
+};
+$add($v1(static function (Search $s) use ($regionAlpha) {
+    $s->addRegion($regionAlpha);
+}), $envelope(array('sRegion' => (string)$regionAlpha)), 1, array($i1, $i2, $i7));
+$add($v1(static function (Search $s) use ($catCars) {
+    $s->addCategory($catCars);
+}), $envelope(array('sCategory' => (string)$catCars)), 1, array($i1, $i2, $i3, $i6, $i7));
+$add($v1(static function (Search $s) {
+    $s->addCountry('us');
+}), $envelope(array('sCountry' => 'us')), 1, array($i1, $i2, $i3, $i4, $i5, $i7));
+$add(json_encode($pluginBlob), '{"v":2,"held":"unknown_condition"}', 1, null, 0);
+$add($v1(static function (Search $s) {
+    $s->priceRange(1000, 10000);
+}), $envelope(array('sPriceMin' => '1000', 'sPriceMax' => '10000')), 0, array($i1, $i3, $i5));
+$add($v1(static function (Search $s) {
+    $s->addPattern('vintage');
+    $s->withPicture(true);
+}), $envelope(array('sPattern' => 'vintage', 'bPic' => '1')), 1, array($i1, $i3));
+$add(json_encode($hostileBlob), '{"v":2,"held":"unknown_filter"}', 1, null, 0);
+$add(json_encode($joinBlob), '{"v":2,"held":"extra_tables"}', 1, null, 0);
+$add(json_encode($quotedPattern), $envelope(array('sPattern' => 'se')), 1, array($i2));
+$add(
+    json_encode($metaBlob),
+    '{"v":2,"params":{"meta":{"' . $fDropdown . '":"red"},"sCategory":[' . $catCars . ',' . $catCarsSport . ']}}',
+    1,
+    array($i1, $i3)
+);
+$add('not json', '{"v":2,"held":"not_json"}', 1, null, 0);
+$add(null, '{"v":2,"held":"not_json"}', 1, null, 0);
+$add($v2Already, $v2Already, 1, array($i1, $i2, $i7));
+// Rows that start like a v2 envelope but are not one are converted or held too.
+$add('{"v":2,"params":{"no_catched_conditions":["1=1"]}}', '{"v":2,"held":"invalid_envelope"}', 1, null, 0);
+$add('{"v":2,"params":{"sPattern":"vintage","bPic":1}}', $envelope(array('sPattern' => 'vintage', 'bPic' => '1')), 1, array($i1, $i3));
+$add('{"v":2,"held":"extra_tables","x":1}', '{"v":2,"held":"invalid_envelope"}', 1, null, 0);
+$add('{"v":2,"held":"extra_tables"}', '{"v":2,"held":"extra_tables"}', 0, null);
+
+// Interrupted after three rows: the first batch stopped early.
+$before  = $alertRows();
+$partial = AlertStore::convertBatch($conn, 0, 3);
+$after   = $alertRows();
+$pks     = array_keys($cases);
+pin('an interrupted run converted its three rows', array(3, $pks[2]), array($partial['converted'] + $partial['held'], $partial['last']));
+pin('and left the rest as they were', array_slice($before, 3, null, true), array_slice($after, 3, null, true));
+
+$migration->up($conn);
+$rowsNow = $alertRows();
+foreach ($cases as $pk => list($want, $wantActive, $wantIds)) {
+    $label = 'row ' . array_search($pk, $pks, true);
+    pin($label . ': stored as', array($want, $wantActive), $rowsNow[$pk]);
+    pin($label . ': replays to', $wantIds === null ? null : $sorted($wantIds), $replayRow((string)$rowsNow[$pk][0]));
+}
+pin('nothing was queued: the run finished inside its budget', 0, $jobQueue->count('pending', $convertType));
+pin('held rows are counted for the admin', 8, AlertStore::countHeld());
+$heldPage = AlertStore::searchHeld(0, 2, 'dt_date', 'DESC');
+pin('and listed, two to a page', array(count($rowsNow), 8, 2), array($heldPage['rows'], $heldPage['total_results'], count($heldPage['alerts'])));
+
+harness_section('alert-replay: (e) a held alert cannot be switched back on');
+
+$heldPk  = $pks[3];
+$plainPk = $pks[4];
+pin('activate() leaves a held row inactive', array(0, 0), array((int)Alerts::newInstance()->activate($heldPk), $alertRows()[$heldPk][1]));
+pin('and still activates an ordinary one', array(1, 1), array((int)Alerts::newInstance()->activate($plainPk), $alertRows()[$plainPk][1]));
+Alerts::newInstance()->deactivate($plainPk);
+pin('heldIds() names the held ones among the ids given', array($heldPk), AlertStore::heldIds(array($heldPk, $plainPk, 'x')));
+$rowsNow = $alertRows();
+
+// "Already subscribed" compares the stored string, so a converted row must be byte-identical
+// to what the search page mints for the same search (checked above for rows 0-2, 4-5, 8).
+// With a custom-field filter the stored, expanded category list is kept, so it differs.
+pin(
+    'a converted row with a custom-field filter keeps the expanded category list',
+    false,
+    $rowsNow[$pks[9]][0] === $envelope(array('sCategory' => (string)$catCars, 'meta' => array($fDropdown => 'red')))
+);
+
+harness_section('alert-replay: (e) migration — a second run changes nothing');
+
+$migration->up($conn);
+pin('every row is as the first run left it', $rowsNow, $alertRows());
+pin('and still nothing is queued', 0, $jobQueue->count('pending', $convertType));
+
+harness_section('alert-replay: (e) migration — out of time, the job queue finishes');
+
+$admin->query('DELETE FROM ' . $alertsTable);
+$tuples = array();
+for ($n = 0; $n < 1200; $n++) {
+    $tuples[] = "('b@example.test', 0, '" . $admin->real_escape_string(json_encode($legacyBase)) . "', 's', 1, 'DAILY', NOW())";
+}
+for ($n = 0; $n < 3; $n++) {
+    $tuples[] = "('b@example.test', 0, '" . $admin->real_escape_string(json_encode($pluginBlob)) . "', 's', 1, 'DAILY', NOW())";
+}
+$admin->query(
+    'INSERT INTO ' . $alertsTable . ' (s_email, fk_i_user_id, s_search, s_secret, b_active, e_type, dt_date) VALUES '
+    . implode(', ', $tuples)
+);
+
+$migration->budget = 0.0;
+$migration->up($conn);
+pin(
+    'with no time left nothing was converted',
+    0,
+    (int)$conn->scalar('SELECT COUNT(*) FROM ' . $alertsTable . ' WHERE s_search LIKE ?', array('{"v":2%'))
+);
+pin('one conversion job is queued', 1, $jobQueue->count('pending', $convertType));
+$migration->up($conn);
+pin('running the upgrade again does not queue a second', 1, $jobQueue->count('pending', $convertType));
+
+// Run the queued job's handler the way the worker does, until it stops asking to repeat.
+\mindstellar\search\AlertJobs::register();
+$handler = \mindstellar\job\JobRegistry::handler($convertType);
+$jobRow  = $conn->selectOne('SELECT * FROM ' . $prefix . 't_job_queue WHERE s_type = ?', array($convertType));
+$payload = json_decode((string)$jobRow['s_payload'], true);
+$runs    = 0;
+do {
+    $job = new \mindstellar\job\Job($jobRow, $payload);
+    $handler($job);
+    $runs++;
+    $payload = $job->repeatRequest()['payload'] ?? null;
+} while ($payload !== null && $runs < 10);
+$jobQueue->forget((int)$jobRow['pk_i_id']);
+pin('the job ran in batches of 500: three runs for 1203 rows', 3, $runs);
+pin(
+    'no old-format row is left',
+    0,
+    (int)$conn->scalar('SELECT COUNT(*) FROM ' . $alertsTable . ' WHERE s_search NOT LIKE ?', array('{"v":2%'))
+);
+pin('the plugin rows are held', 3, AlertStore::countHeld());
+pin(
+    'the rest are converted',
+    1200,
+    (int)$conn->scalar('SELECT COUNT(*) FROM ' . $alertsTable . ' WHERE s_search = ?', array('{"v":2,"params":{}}'))
+);
+$admin->query('DELETE FROM ' . $alertsTable);
+
+harness_section('alert-replay: (e) a row changed while it is converted is left for the next pass');
+
+$raced   = $seedAlert(json_encode($pluginBlob));
+$changed = json_encode($quotedPattern);
+$result  = AlertStore::convertBatch($conn, 0, 500, INF, static function (int $pk) use ($admin, $alertsTable, $changed) {
+    $stmt = $admin->prepare('UPDATE ' . $alertsTable . ' SET s_search = ? WHERE pk_i_id = ?');
+    $stmt->bind_param('si', $changed, $pk);
+    $stmt->execute();
+});
+pin('the write is skipped and counted as missed', array(1, 0, 0), array($result['missed'], $result['converted'], $result['held']));
+pin('the row keeps what was written meanwhile, still active', array($changed, 1), $alertRows()[$raced]);
+$result = AlertStore::convertBatch($conn, 0);
+pin('the next pass converts it', array(0, 1), array($result['missed'], $result['converted']));
+pin('to the row as it now is', array($envelope(array('sPattern' => 'se')), 1), $alertRows()[$raced]);
+$admin->query('DELETE FROM ' . $alertsTable);
+$admin->query('DELETE FROM ' . $prefix . "t_job_queue WHERE s_type = '" . $convertType . "'");
 
 // addCategory() populates the object cache keyed by category id (toSubTree() and
 // friends). This file runs early in the suite, so those ids are the *first* ones

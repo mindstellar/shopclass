@@ -191,6 +191,7 @@ if (!function_exists('osc_job_dead_letters')) {
 osc_add_hook('register_jobs', static function () {
     \mindstellar\storage\StorageJobs::register();
     \mindstellar\job\CategoryJobs::register();
+    \mindstellar\search\AlertJobs::register();
 });
 
 // A job queued by a web request would otherwise wait for the next cron tick. The worker

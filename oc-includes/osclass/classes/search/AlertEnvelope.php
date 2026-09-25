@@ -54,10 +54,8 @@ class AlertEnvelope
      */
     public static function build(SearchCriteria $criteria, array $request): string
     {
-        $params = array(
-            // With a custom-field filter the full list is kept: which fields are searchable
-            // depends on every chosen category, not only the roots.
-            'sCategory' => self::categoryIds($criteria->categories(), self::meta($criteria->meta()) === array()),
+        $values = array(
+            'sCategory' => $criteria->categories(),
             'sCityArea' => $criteria->cityAreas(),
             'sCity'     => $criteria->cities(),
             'sRegion'   => $criteria->regions(),
@@ -72,7 +70,29 @@ class AlertEnvelope
             'meta'      => $criteria->meta(),
         );
 
-        return self::encode(self::normalise($params, $request));
+        return self::fromValues($values, $request);
+    }
+
+    /**
+     * The envelope for search values already in the request's key names (sCategory,
+     * sCity, meta, ...). build() goes through here, so any caller gets the same bytes the
+     * search page would store for the same search.
+     *
+     * @param array<string,mixed> $values
+     * @param array<string,mixed> $request handed to `alert_search_params`
+     *
+     * @return string
+     */
+    public static function fromValues(array $values, array $request): string
+    {
+        // With a custom-field filter the full list is kept: which fields are searchable
+        // depends on every chosen category, not only the roots.
+        $values['sCategory'] = self::categoryIds(
+            is_array($values['sCategory'] ?? null) ? $values['sCategory'] : array(),
+            self::meta($values['meta'] ?? array()) === array()
+        );
+
+        return self::encode(self::normalise($values, $request));
     }
 
     /**
@@ -138,6 +158,42 @@ class AlertEnvelope
         }
 
         return self::validate(self::encode($data['params']));
+    }
+
+    /**
+     * The stored form of an alert that could not be converted from the old format:
+     * `{"v":2,"held":"<reason>"}`. It carries no search, so it never replays.
+     *
+     * @param string $reason a short code, e.g. 'unknown_condition'
+     *
+     * @return string
+     */
+    public static function held(string $reason): string
+    {
+        return (string)json_encode(
+            array('v' => self::VERSION, 'held' => $reason),
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+        );
+    }
+
+    /**
+     * Why a stored alert is held, or null when it is not a held row.
+     *
+     * @param string $json the t_alerts.s_search column
+     *
+     * @return string|null
+     */
+    public static function heldReason(string $json): ?string
+    {
+        if (strncmp($json, '{"v":2,"held":', 14) !== 0 || strlen($json) > self::MAX_BYTES) {
+            return null;
+        }
+        $data = json_decode($json, true);
+        if (!is_array($data) || array_keys($data) !== array('v', 'held') || !is_string($data['held'])) {
+            return null;
+        }
+
+        return $data['held'];
     }
 
     /**

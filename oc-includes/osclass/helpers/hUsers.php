@@ -759,8 +759,8 @@ function osc_alert()
  *
  * For an alert stored as search values, a JSON object with the fields the old stored
  * format had (sPattern, aCategories, city_areas, cities, regions, countries, price_min,
- * price_max) plus `params`, the stored values. The raw column stays readable through
- * osc_alert_field('s_search').
+ * price_max) plus `params`, the stored values; for a held alert, the same fields empty
+ * plus `held`, the reason. The raw column stays readable through osc_alert_field('s_search').
  *
  * @return string
  */
@@ -769,7 +769,15 @@ function osc_alert_search()
     $search = (string)osc_alert_field('s_search');
     $params = \mindstellar\search\AlertEnvelope::validate($search);
     if ($params === null) {
-        return $search;
+        $held = \mindstellar\search\AlertEnvelope::heldReason($search);
+        if ($held === null) {
+            return $search;
+        }
+        // A held alert has no search: the display keys empty, plus the reason.
+        $display         = \mindstellar\search\AlertEnvelope::legacyFields(array());
+        $display['held'] = $held;
+
+        return (string)json_encode($display, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
     $display           = \mindstellar\search\AlertEnvelope::legacyFields($params);
     $display['params'] = (object)$params;

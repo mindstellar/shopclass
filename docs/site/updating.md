@@ -25,6 +25,24 @@ easier to undo when you can put them back.
 
 That is the whole procedure on a healthy install.
 
+## Upgrading to 6.4.0 specifically
+
+Saved search alerts used to store SQL, and it ran as written. The upgrade rewrites
+each alert as the plain search values it stands for.
+
+- **Back up `t_alerts` if you might need the old alerts.** The stored SQL is thrown
+  away as each alert is converted.
+- **An alert holding anything Shopclass did not write** — usually a plugin's own
+  filter — is paused, not deleted. **Users → Alerts** lists them under a notice.
+  The user has to save the search again.
+- **A large site finishes in the background.** The upgrade converts for about ten
+  seconds, then queues the rest for the next cron runs. Alerts not converted yet
+  send no email until they are. To finish at once:
+
+  ```bash
+  php oc-cli.php jobs:work
+  ```
+
 ## Upgrading to 6.3.0 specifically
 
 Nothing is required. One setting is worth knowing about.

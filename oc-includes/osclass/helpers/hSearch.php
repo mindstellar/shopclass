@@ -1030,7 +1030,8 @@ function osc_get_canonical()
 /**
  * Strip a search condition set down to the filters a visitor actually chose, with
  * category ids resolved to names. Takes a decoded t_alerts.s_search; for an alert stored
- * as search values the result also carries `params`, the stored values.
+ * as search values the result also carries `params`, the stored values, and for a held
+ * alert it is only `held`, the reason.
  *
  * @param array<string,mixed> $conditions
  *
@@ -1041,7 +1042,10 @@ function osc_get_raw_search($conditions)
     if (\mindstellar\search\AlertEnvelope::isEnvelope($conditions)) {
         $params = \mindstellar\search\AlertEnvelope::validateDecoded($conditions);
         if ($params === null) {
-            return array();
+            // A held alert: no search, only the reason it was held.
+            return isset($conditions['held']) && is_string($conditions['held'])
+                ? array('held' => $conditions['held'])
+                : array();
         }
         $raw = array_filter(
             \mindstellar\search\AlertEnvelope::legacyFields($params),
@@ -1063,7 +1067,12 @@ function osc_get_raw_search($conditions)
     foreach ($keys as $key) {
         if (isset($conditions[$key]) && is_array($conditions[$key]) && !empty($conditions[$key])) {
             foreach ($conditions[$key] as $k => $v) {
-                if (preg_match('|([0-9]+)|', $v, $match)) {
+                // A stored row is not trusted to hold only strings here.
+                if (!is_string($v) && !is_int($v)) {
+                    unset($conditions[$key][$k]);
+                    continue;
+                }
+                if (preg_match('|([0-9]+)|', (string)$v, $match)) {
                     if ($key === 'aCategories') {
                         $conditions[$key][$k] = $mCategory->findNameByPrimaryKey($match[1]);
                     } else {
@@ -1071,6 +1080,7 @@ function osc_get_raw_search($conditions)
                     }
                 }
             }
+            $conditions[$key] = array_values($conditions[$key]);
         } else {
             unset($conditions[$key]);
         }
@@ -1084,7 +1094,7 @@ function osc_get_raw_search($conditions)
         unset($conditions['price_max']);
     }
 
-    if (!isset($conditions['sPattern']) || $conditions['sPattern'] == '') {
+    if (!isset($conditions['sPattern']) || !is_scalar($conditions['sPattern']) || $conditions['sPattern'] == '') {
         unset($conditions['sPattern']);
     }
 

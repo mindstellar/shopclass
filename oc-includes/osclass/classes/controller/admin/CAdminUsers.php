@@ -321,6 +321,14 @@ class CAdminUsers extends AdminSecBaseModel
 
                 $mAlerts   = new Alerts();
                 $activating = $status == 1;
+                if ($activating && is_array($alertId)
+                    && \mindstellar\search\AlertStore::heldIds($alertId) !== array()
+                ) {
+                    osc_add_flash_error_message(
+                        _m('A held alert cannot be activated. Ask the user to save the search again.'),
+                        'admin'
+                    );
+                }
                 BulkAction::apply(
                     static fn ($id) => (bool)($activating ? $mAlerts->activate($id) : $mAlerts->deactivate($id)),
                     $activating ? 'One alert has been activated' : 'One alert has been deactivated',

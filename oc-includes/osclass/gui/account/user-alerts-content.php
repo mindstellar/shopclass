@@ -55,9 +55,13 @@ if (!defined('ABS_PATH')) {
                     $alertParts[] = _m('Price') . ': ' . ($alertMax === null ? '≥ ' . $alertMin
                         : ($alertMin === null ? '≤ ' . $alertMax : $alertMin . ' - ' . $alertMax));
                 }
+                $alertTitle = $alertParts ? implode(' · ', $alertParts) : _m('All listings');
+                if (isset($alertRaw['held'])) {
+                    $alertTitle = _m('This alert is paused: it could not be kept after an update. Save the search again.');
+                }
                 ?>
                 <section class="oe-panel">
-                    <h2><?php echo osc_esc_html($alertParts ? implode(' · ', $alertParts) : _m('All listings')); ?></h2>
+                    <h2><?php echo osc_esc_html($alertTitle); ?></h2>
                     <p class="oe-meta">
                         <?php if (osc_alert_is_active()) { ?>
                             <span class="oe-badge paid"><?php echo osc_esc_html(_m('Active')); ?></span>

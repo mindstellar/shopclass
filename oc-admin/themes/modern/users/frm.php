@@ -338,6 +338,10 @@ $aux = customFrmText();
                                         ?>
                                             <?php echo sprintf(__('Alert #%d'), ($k + 1)); ?>
                                             <br/>
+                                            <?php if (isset($raw_data['held'])) { ?>
+                                                <?php osc_admin_status('spam', __('Needs attention')); ?>
+                                                <?php echo osc_esc_html(\mindstellar\search\AlertStore::reasonText((string)$raw_data['held'])); ?><br/>
+                                            <?php } ?>
                                             <?php if (isset($raw_data['sPattern']) && $raw_data['sPattern'] != '') { ?>
                                                 <?php echo sprintf(__('<b>Pattern:</b> %s'), osc_esc_html($raw_data['sPattern'])); ?><br/>
                                             <?php } ?>

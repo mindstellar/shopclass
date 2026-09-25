@@ -14,8 +14,8 @@ namespace mindstellar\search;
  * Turns a stored alert back into a Search.
  *
  * A v2 row is rebuilt from its params through the same SearchBuilder the search page
- * uses, so `search_conditions` fires for it with context 'alert'. A v1 row still goes
- * through Search::setJsonAlert().
+ * uses, so `search_conditions` fires for it with context 'alert'. Any other row -- the
+ * old SQL-fragment format, a held row, an invalid envelope -- is skipped.
  */
 class AlertReplay
 {
@@ -30,8 +30,7 @@ class AlertReplay
     public static function search(array $alertRow, array $options = array()): ?\Search
     {
         $json = (string)($alertRow['s_search'] ?? '');
-        // v1 rows have no size limit (an expanded category list can be long); a v2 one does.
-        if (strlen($json) > AlertEnvelope::MAX_BYTES && strncmp($json, '{"v":', 5) === 0) {
+        if (strlen($json) > AlertEnvelope::MAX_BYTES) {
             self::logSkip($alertRow);
 
             return null;
@@ -41,19 +40,15 @@ class AlertReplay
             return null;
         }
 
-        $search = new \Search();
-        if (!AlertEnvelope::isEnvelope($data)) {
-            $search->setJsonAlert($data);
-
-            return $search;
-        }
-
+        // Only a valid v2 envelope replays. A row still in the old SQL-fragment format is
+        // converted by the upgrade and skipped until then; a held row never replays.
         $params = AlertEnvelope::validate($json);
         if ($params === null) {
             self::logSkip($alertRow);
 
             return null;
         }
+        $search = new \Search();
         self::apply($search, $params, (int)($options['limit'] ?? 10));
 
         return $search;

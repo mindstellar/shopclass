@@ -387,7 +387,7 @@ class Alerts extends DAO
     }
 
     /**
-     * Activate an alert
+     * Activate an alert. One held by the upgrade (it has no search) stays inactive.
      *
      * @param int $id
      *
@@ -398,6 +398,7 @@ class Alerts extends DAO
         try {
             return osc_db_table($this->getTableName())
                 ->where('pk_i_id', $id)
+                ->whereRaw('(s_search IS NULL OR s_search NOT LIKE ?)', array('{"v":2,"held":%'))
                 ->update(array('b_active' => 1));
         } catch (\mindstellar\database\DbException $e) {
             return false;

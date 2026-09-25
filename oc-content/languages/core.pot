@@ -123,6 +123,16 @@ msgstr ""
 msgid "%d Users"
 msgstr ""
 
+#: oc-admin/themes/modern/users/alerts.php
+msgid ""
+"%d alert needs attention: it could not be converted when Shopclass was "
+"upgraded, so it no longer sends email."
+msgid_plural ""
+"%d alerts need attention: they could not be converted when Shopclass was "
+"upgraded, so they no longer send email."
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-admin/themes/modern/fields/index.php
 msgid "%d cats · no form"
 msgstr ""
@@ -497,6 +507,10 @@ msgstr ""
 msgid ""
 "A country in the catalog can be imported with its regions and cities "
 "instead."
+msgstr ""
+
+#: oc-includes/osclass/classes/search/AlertStore.php
+msgid "A custom field it filtered on has changed type."
 msgstr ""
 
 #: oc-admin/themes/modern/fields/index.php
@@ -4837,8 +4851,16 @@ msgstr ""
 msgid "It always appear before the category, region or city url."
 msgstr ""
 
+#: oc-includes/osclass/classes/search/AlertStore.php
+msgid "It filtered on a condition added by a plugin or theme."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "It has to be a .PNG image"
+msgstr ""
+
+#: oc-includes/osclass/classes/search/AlertStore.php
+msgid "It held a value that could not be read safely."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MainSettingsForm.php
@@ -4849,6 +4871,14 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/LatestSearchSettingsForm.php
 msgid "It may be useful to know what queries users make."
+msgstr ""
+
+#: oc-includes/osclass/classes/datatables/AlertsDataTable.php
+msgid "It no longer sends email. Ask the user to save the search again."
+msgstr ""
+
+#: oc-includes/osclass/classes/search/AlertStore.php
+msgid "It searched tables added by a plugin or theme."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
@@ -4866,6 +4896,14 @@ msgstr ""
 #: oc-admin/themes/modern/stats/items.php
 #: oc-includes/osclass/classes/datatables/UsersDataTable.php
 msgid "Items"
+msgstr ""
+
+#: oc-includes/osclass/classes/search/AlertStore.php
+msgid "Its location or user filter was in an unknown form."
+msgstr ""
+
+#: oc-includes/osclass/classes/search/AlertStore.php
+msgid "Its saved search could not be read."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
@@ -6120,6 +6158,8 @@ msgid ""
 msgstr ""
 
 #: oc-admin/themes/modern/comments/index.php
+#: oc-admin/themes/modern/users/frm.php
+#: oc-includes/osclass/classes/datatables/AlertsDataTable.php
 msgid "Needs attention"
 msgstr ""
 
@@ -8560,6 +8600,10 @@ msgstr ""
 msgid "Show a link in the footer"
 msgstr ""
 
+#: oc-admin/themes/modern/users/alerts.php
+msgid "Show all alerts"
+msgstr ""
+
 #: oc-includes/osclass/functions.php
 msgid "Show all listings"
 msgstr ""
@@ -8597,6 +8641,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/categories/iframe.php
 msgid "Show the price field on listings in this category"
+msgstr ""
+
+#: oc-admin/themes/modern/users/alerts.php
+msgid "Show them"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations.php

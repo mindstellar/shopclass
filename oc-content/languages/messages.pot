@@ -149,6 +149,10 @@ msgstr ""
 msgid "<a href=\"%s\">Click here to sign-in</a>"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
+msgid "A held alert cannot be activated. Ask the user to save the search again."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 msgid "A new listing has been added"
 msgstr ""
@@ -2313,6 +2317,12 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
 msgid "This admin doesn't exist"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-alerts-content.php
+msgid ""
+"This alert is paused: it could not be kept after an update. Save the search "
+"again."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebBilling.php

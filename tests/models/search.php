@@ -550,7 +550,7 @@ pin('non-int ids are dropped, only real ids hydrate', array($hydIds[0]), $ids($s
 $s = new Search();
 check('fromPrimaryKeys returns $this (chainable)', $s->fromPrimaryKeys($hydIds) instanceof Search);
 
-harness_section('Search: setJsonAlert holds fixed-shape fields to their shape');
+harness_section('Search: setJsonAlert applies only the plain-value fields of an old-format blob');
 
 $prop = static function (Search $search, string $name) {
     $p = new ReflectionProperty('Search', $name);
@@ -558,31 +558,55 @@ $prop = static function (Search $search, string $name) {
 
     return $p->getValue($search);
 };
-$hostile                     = $decoded;
-$hostile['aCategories']      = array($catCars, '1) OR SLEEP(1) -- ', 'x');
-$hostile['order_column']     = 'dt_pub_date, SLEEP(1)';
-$hostile['order_direction']  = 'DESC; DROP TABLE x';
-$hostile['limit_init']       = '0 UNION SELECT 1';
-$hostile['results_per_page'] = '10; --';
+$hostile                          = $decoded;
+$hostile['aCategories']           = array($catCars, '1) OR SLEEP(1) -- ', 'x');
+$hostile['order_column']          = 'dt_pub_date, SLEEP(1)';
+$hostile['order_direction']       = 'ASC; DROP TABLE x';
+$hostile['limit_init']            = '0 UNION SELECT 1';
+$hostile['results_per_page']      = '3';
+$hostile['cities']                = array('1=1 ');
+$hostile['user_ids']              = array('1=1 ');
+$hostile['tables_join']           = array(array('oc_t_user u', '1=1', 'LEFT'));
+$hostile['no_catched_tables']     = array('oc_t_user');
+$hostile['no_catched_conditions'] = array('SLEEP(1)');
 $safe = new Search();
 $safe->setJsonAlert($hostile);
 pin('categories become whole numbers only', array((int)$catCars, 1), $prop($safe, 'categories'));
-pin('an order column that is not a name falls back', 'dt_pub_date', $prop($safe, 'order_column'));
-pin('an order direction is ASC or DESC', 'DESC', $prop($safe, 'order_direction'));
-pin('paging is numeric', array(0, 10), array($prop($safe, 'limit_init'), $prop($safe, 'results_per_page')));
-$userSort = $decoded;
-$userSort['order_column'] = 'ISNULL(oc_t_user.i_items), oc_t_user.i_items';
-$kept = new Search();
-$kept->setJsonAlert($userSort);
-pin("core's ISNULL sort form is kept", 'ISNULL(oc_t_user.i_items), oc_t_user.i_items', $prop($kept, 'order_column'));
-pin('a stored lowercase direction still sorts', 'ASC', (function () use ($decoded, $prop) {
-    $d                    = $decoded;
-    $d['order_direction'] = 'asc';
-    $x                    = new Search();
-    $x->setJsonAlert($d);
-
-    return $prop($x, 'order_direction');
-})());
+pin(
+    'no SQL-bearing field is taken: locations, users, tables, joins, conditions',
+    array(array(), null, array(), array(), array()),
+    array(
+        $prop($safe, 'cities'),
+        $prop($safe, 'user_ids'),
+        $prop($safe, 'tables_join'),
+        $prop($safe, 'tables'),
+        $prop($safe, 'conditions'),
+    )
+);
+pin(
+    'nor sort or paging: the Search keeps its own',
+    array('dt_pub_date', 'DESC', 0, 10),
+    array(
+        $prop($safe, 'order_column'),
+        $prop($safe, 'order_direction'),
+        $prop($safe, 'limit_init'),
+        $prop($safe, 'results_per_page'),
+    )
+);
+pin(
+    'the price range still applies',
+    array(1000 * 1000000, 20000 * 1000000),
+    array($prop($safe, 'price_min'), $prop($safe, 'price_max'))
+);
+$reused = new Search();
+$reused->addCity('Aville');
+$reused->addConditions('1 = 1');
+$reused->setJsonAlert($decoded);
+pin(
+    'restoring onto a used Search clears what it carried',
+    array(array(), array()),
+    array($prop($reused, 'cities'), $prop($reused, 'conditions'))
+);
 
 harness_section('Search: locale codes never reach SQL unchecked');
 
