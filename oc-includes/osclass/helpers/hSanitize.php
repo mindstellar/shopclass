@@ -184,9 +184,7 @@ function osc_sanitize_text($value)
  *
  * Arrays are walked, so a per-locale description map can be passed straight in.
  *
- * The definition cache is deliberately off: a cached one is written to disk, the existing
- * purifier avoids that for the same reason, and this runs when a listing is saved rather
- * than when one is read.
+ * The built definition is cached by PurifierCache, or rebuilt each time when it cannot be.
  *
  * @param array|string $value
  *
