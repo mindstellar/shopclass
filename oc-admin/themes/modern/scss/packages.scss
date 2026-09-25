@@ -239,7 +239,7 @@
 
 .osc-pkg-list--themes .osc-pkg-desc,
 .market-app[data-type="theme"] .market-card-desc {
-  min-block-size: 6.5rem;
+  min-block-size: fit-content;
 }
 
 .osc-pkg-note {
