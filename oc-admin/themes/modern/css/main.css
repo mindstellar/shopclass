@@ -21163,7 +21163,7 @@ form h3, form .h3 {
   outline: 0;
 }
 
-[role=tabpanel]:focus-visible:not(:target) {
+[role=tabpanel]:focus-visible {
   border-radius: 4px;
   outline: 2px solid var(--osc-bronze);
   outline-offset: 4px;

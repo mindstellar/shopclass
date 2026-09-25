@@ -103,6 +103,17 @@ function oscInitTabs(root) {
 
             select(linkForHash() || serverActive || linkArr[0], false);
 
+            // A page opened on a tab's #link has the browser focus that panel, which draws a ring
+            // nobody asked for; nothing has been used yet, so the focus is let go.
+            function dropFragmentFocus() {
+                var active = document.activeElement;
+                if (active && active.getAttribute('role') === 'tabpanel' && '#' + active.id === window.location.hash) {
+                    active.blur();
+                }
+            }
+            dropFragmentFocus();
+            window.addEventListener('load', dropFragmentFocus, {once: true});
+
             // No hash means the entry before the first tab click, so the default tab returns.
             window.addEventListener('popstate', function () {
                 select(linkForHash() || serverActive || linkArr[0], false);
