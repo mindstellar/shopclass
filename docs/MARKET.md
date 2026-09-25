@@ -237,7 +237,7 @@ changes structurally:
 
 ```
 Requires Shopclass: 6.0.0     # minimum core version — hard gate
-Tested up to: 6.1             # highest core version verified — soft warning
+Tested up to: 6.4             # highest core version verified — soft warning
 Requires PHP: 8.0             # hard gate
 ```
 

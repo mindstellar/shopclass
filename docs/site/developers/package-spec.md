@@ -30,7 +30,7 @@ Author: Mindstellar
 Author URI: https://github.com/mindstellar
 Short Name: digital-goods
 Requires Shopclass: 6.0.0
-Tested up to: 6.3
+Tested up to: 6.4
 Requires PHP: 8.0
 Support URI: https://github.com/mindstellar/shopclass-plugin-digital-goods/issues
 */
@@ -100,7 +100,7 @@ The checks run in this order, and the first one that matches wins:
 |---|---|---|
 | **Needs 6.5 or newer** | `Requires Shopclass` is above this install | nothing — the site must upgrade first |
 | **Needs PHP 8.2** | Core is fine, but `Requires PHP` is above this server | nothing — the server must upgrade first |
-| **Tested up to 6.2** | It runs here, but your `Tested up to` minor is behind core's | check it on the new release, then raise `Tested up to` |
+| **Tested up to 6.3** | It runs here, but your `Tested up to` minor is behind core's | check it on the new release, then raise `Tested up to` |
 | **Works with 6.4** | It runs here and nothing is behind | nothing — this is the goal |
 | **No version declared** | You declared none of the three headers | declare at least `Requires Shopclass` |
 

@@ -56,7 +56,7 @@ ignored:
 {
   "s_source_file": "https://example.com/downloads/myplugin-2.1.0.zip",
   "s_version": "2.1.0",
-  "s_compatible": "6.0.0,6.1.0,6.2.0"
+  "s_compatible": "6.2.0,6.3.0,6.4.0"
 }
 ```
 

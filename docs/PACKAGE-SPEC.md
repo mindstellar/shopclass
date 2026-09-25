@@ -99,7 +99,7 @@ Author: Mindstellar
 Author URI: https://github.com/mindstellar
 Short Name: digital-goods
 Requires Shopclass: 6.0.0
-Tested up to: 6.1
+Tested up to: 6.4
 Requires PHP: 8.0
 Support URI: https://github.com/mindstellar/shopclass-plugin-digital-goods/issues
 */
@@ -187,7 +187,7 @@ are the only reason core can offer a *safe* update rather than the newest one.
 
 ```
 Requires Shopclass: 6.0.0     minimum core version — a hard gate
-Tested up to: 6.1             highest core version verified — a soft warning
+Tested up to: 6.4             highest core version verified — a soft warning
 Requires PHP: 8.0             minimum PHP — a hard gate
 ```
 

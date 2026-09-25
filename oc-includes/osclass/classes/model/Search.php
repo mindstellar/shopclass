@@ -61,10 +61,9 @@ class Search extends DAO
      *
      * Search composes SQL as text rather than as bound parameters, and that is a
      * compatibility boundary rather than an oversight: the condition fragments are
-     * serialized verbatim into t_alerts, handed to the sql_search_* plugin filters,
-     * and parsed back by getConditions() with regexes that match their exact
-     * spelling. Alerts already stored by earlier versions must keep round-tripping,
-     * so the emitted text -- including its whitespace -- is preserved exactly.
+     * handed to the sql_search_* plugin filters, exposed through toJson(), and parsed
+     * by the upgrade that converts alerts stored by earlier versions, with regexes that
+     * match their exact spelling -- so the emitted text, whitespace included, is kept.
      *
      * Cleared by resetQuery() once a statement has been compiled. notFromUser()
      * writes here before makeSQL() runs, so the state deliberately outlives a
@@ -1935,240 +1934,46 @@ class Search extends DAO
     }
 
     /**
-     * Return json with all search attributes
+     * The search's attributes as JSON. It is the key of core's result cache, and themes
+     * and search backends read it; saved alerts no longer store it.
      *
-     * @param bool $convert
+     * @param bool $convert ignored since 6.4.0; kept so existing callers still work
      *
      * @return string
      */
     public function toJson($convert = false)
     {
-        if ($convert) {
-            $aData = $this->getConditions();
-        } else {
-            $aData['price_min']   = $this->price_min / 1000000;
-            $aData['price_max']   = $this->price_max / 1000000;
-            $aData['aCategories'] = $this->categories;
-            // locations
-            $aData['city_areas'] = $this->city_areas;
-            $aData['cities']     = $this->cities;
-            $aData['regions']    = $this->regions;
-            $aData['countries']  = $this->countries;
-            // pattern
-            $aData['withPattern'] = $this->withPattern;
-            // Serialise the raw pattern, not the escaped/quoted sPattern: this record is
-            // search criteria, and setJsonAlert() re-escapes it through addPattern() on
-            // replay. Storing the escaped form escaped it twice each round trip, which
-            // shifted the matched set (visible on the short-term LIKE path where the stray
-            // quotes survive into LIKE '%…%').
-            $aData['sPattern']    = $this->sPatternRaw !== null ? $this->sPatternRaw : $this->sPattern;
-            if ($this->withPicture) {
-                $aData['withPicture'] = $this->withPicture;
-            }
-
-            if ($this->onlyPremium) {
-                $aData['onlyPremium'] = $this->onlyPremium;
-            }
-
-            $aData['tables']      = $this->tables;
-            $aData['tables_join'] = $this->tables_join;
-
-            $aData['no_catched_tables']     = $this->tables;
-            $aData['no_catched_conditions'] = $this->conditions;
-
-            $aData['user_ids'] = $this->user_ids;
-
-            // get order & limit
-            $aData['order_column']     = $this->order_column;
-            $aData['order_direction']  = $this->order_direction;
-            $aData['limit_init']       = $this->limit_init;
-            $aData['results_per_page'] = $this->results_per_page;
+        $aData['price_min']   = $this->price_min / 1000000;
+        $aData['price_max']   = $this->price_max / 1000000;
+        $aData['aCategories'] = $this->categories;
+        // locations
+        $aData['city_areas'] = $this->city_areas;
+        $aData['cities']     = $this->cities;
+        $aData['regions']    = $this->regions;
+        $aData['countries']  = $this->countries;
+        // pattern
+        $aData['withPattern'] = $this->withPattern;
+        // Serialise the raw pattern, not the escaped/quoted sPattern: this record is
+        // search criteria, and setJsonAlert() re-escapes it through addPattern() on
+        // replay. Storing the escaped form escaped it twice each round trip, which
+        // shifted the matched set (visible on the short-term LIKE path where the stray
+        // quotes survive into LIKE '%…%').
+        $aData['sPattern']    = $this->sPatternRaw !== null ? $this->sPatternRaw : $this->sPattern;
+        if ($this->withPicture) {
+            $aData['withPicture'] = $this->withPicture;
         }
 
-        return json_encode($aData);
-    }
-
-    /**
-     * Given the current search object, extract search parameters & conditions
-     * as array.
-     *
-     * @return array<string,mixed>
-     */
-    private function getConditions()
-    {
-        $aData = array();
-
-        $item_id             = DB_TABLE_PREFIX . 't_item.pk_i_id';
-        $item_category_id    = DB_TABLE_PREFIX . 't_item.fk_i_category_id';
-        $item_description_id = 'd.fk_i_item_id';
-        $category_id         = DB_TABLE_PREFIX . 't_category.pk_i_id';
-        $item_location_id    = DB_TABLE_PREFIX . 't_item_location.fk_i_item_id';
-        $item_resource_id    = DB_TABLE_PREFIX . 't_item_resource.fk_i_item_id';
-
-        // get item conditions
-        foreach ($this->conditions as $condition) {
-            // item table
-            if (preg_match('/' . DB_TABLE_PREFIX . 't_item\.b_active/', $condition, $matches)) {
-                $aData['itemConditions'][] = $condition;
-            } elseif (preg_match('/' . DB_TABLE_PREFIX . 't_item\.b_spam/', $condition, $matches)) {
-                $aData['itemConditions'][] = $condition;
-            } elseif (preg_match(
-                '/' . DB_TABLE_PREFIX . 't_item\.b_enabled/',
-                $condition,
-                $matches
-            )
-            ) {
-                $aData['itemConditions'][] = $condition;
-            } elseif (preg_match(
-                '/' . DB_TABLE_PREFIX . 't_item\.b_premium/',
-                $condition,
-                $matches
-            )
-            ) {
-                $aData['itemConditions'][] = $condition;
-            } elseif (preg_match(
-                '/(' . DB_TABLE_PREFIX . 't_item\.)?f_price >= (.*)/',
-                $condition,
-                $matches
-            )
-            ) {
-                $aData['price_min'] = (int)$matches[2];
-            } elseif (preg_match(
-                '/(' . DB_TABLE_PREFIX . 't_item\.)?f_price <= (.*)/',
-                $condition,
-                $matches
-            )
-            ) {
-                $aData['price_max'] = (int)$matches[2];
-            } elseif (preg_match(
-                '/(' . DB_TABLE_PREFIX . 't_item\.)?i_price >= (.*)/',
-                $condition,
-                $matches
-            )
-            ) {
-                $aData['price_min'] = ((float)$matches[2] / 1000000);
-            } elseif (preg_match(
-                '/(' . DB_TABLE_PREFIX . 't_item\.)?i_price <= (.*)/',
-                $condition,
-                $matches
-            )
-            ) {
-                $aData['price_max'] = ((float)$matches[2] / 1000000);
-            } elseif (preg_match_all(
-                '/(' . DB_TABLE_PREFIX
-                . 't_item_location.s_city_area\s*LIKE\s*\'%([\s\p{L}\p{N}]*)%\'\s*)/u',
-                $condition,
-                $matches
-            )
-            ) { // OJO
-                // Comprobar: si ( s_name existe ) then get location id,
-                $aData['s_city_area'][] =
-                    DB_TABLE_PREFIX . 't_item_location.s_city_area LIKE \'%' . $matches[2][0]
-                    . '%\'';
-            } elseif (preg_match('/' . DB_TABLE_PREFIX
-                                 . 't_item_location.fk_i_city_area_id = (.*)/', $condition, $matches)
-            ) {
-                $aData['fk_i_city_area_id'][] =
-                    DB_TABLE_PREFIX . 't_item_location.fk_i_city_area_id = ' . $matches[1];
-            } elseif (preg_match_all(
-                '/(' . DB_TABLE_PREFIX
-                . 't_item_location.s_city\s*LIKE\s*\'%([\s\p{L}\p{N}]*)%\'\s*)/u',
-                $condition,
-                $matches
-            )
-            ) { // OJO
-                // Comprobar: si ( s_name existe ) then get location id,
-                $aData['cities'][] =
-                    DB_TABLE_PREFIX . 't_item_location.s_city LIKE \'%' . $matches[2][0] . '%\'';
-            } elseif (preg_match(
-                '/' . DB_TABLE_PREFIX . 't_item_location.fk_i_city_id = (.*)/',
-                $condition,
-                $matches
-            )
-            ) {
-                $aData['cities'][] =
-                    DB_TABLE_PREFIX . 't_item_location.fk_i_city_id = ' . $matches[1];
-            } elseif (preg_match_all(
-                '/(' . DB_TABLE_PREFIX
-                . 't_item_location.s_region\s*LIKE\s*\'%([\s\p{L}\p{N}]*)%\'\s*)/u',
-                $condition,
-                $matches
-            )
-            ) { // OJO
-                // Comprobar: si ( s_name existe ) then get location id,
-                $aData['s_region'][] =
-                    DB_TABLE_PREFIX . 't_item_location.s_region LIKE \'%' . $matches[2][0] . '%\'';
-            } elseif (preg_match(
-                '/' . DB_TABLE_PREFIX . 't_item_location.fk_i_region_id = (.*)/',
-                $condition,
-                $matches
-            )
-            ) {
-                $aData['fk_i_region_id'] =
-                    DB_TABLE_PREFIX . 't_item_location.fk_i_region_id = ' . $matches[1];
-            } elseif (preg_match_all(
-                '/(' . DB_TABLE_PREFIX
-                . 't_item_location.s_country\s*LIKE\s*\'%([\s\p{L}\p{N}]*)%\'\s*)/u',
-                $condition,
-                $matches
-            )
-            ) { // OJO
-                // Comprobar: si ( s_name existe ) then get location id,
-                $aData['s_country'][] =
-                    DB_TABLE_PREFIX . 't_item_location.s_country LIKE \'%' . $matches[2][0] . '%\'';
-            } elseif (preg_match(
-                '/' . DB_TABLE_PREFIX
-                                                                                      . 't_item_location.fk_c_country_code = \'?(.*)\'?/',
-                $condition,
-                $matches
-            )
-            ) {
-                $aData['fk_c_country_code'][] =
-                    DB_TABLE_PREFIX . 't_item_location.fk_c_country_code = ' . $matches[1];
-            } elseif (preg_match(
-                '/d\.s_title\s*LIKE\s*\'%([\s\p{L}\p{N}]*)%\'/u',
-                $condition,
-                $matches
-            )
-            ) {  // OJO
-                $aData['sPattern']    = $matches[1];
-                $aData['withPattern'] = true;
-            } elseif (preg_match(
-                '/MATCH\(d\.s_title, d\.s_description\) AGAINST\(\'([\s\p{L}\p{N}]*)\' IN BOOLEAN MODE\)/u',
-                $condition,
-                $matches
-            )
-            ) { // OJO
-                $aData['sPattern']    = $matches[1];
-                $aData['withPattern'] = true;
-            } elseif (preg_match_all(
-                '/(' . DB_TABLE_PREFIX . 't_item\.fk_i_category_id = (\d*))/',
-                $condition,
-                $matches
-            )
-            ) {
-                $aData['aCategories'] = $matches[2];
-            } else {
-                $aData['no_catched_conditions'][] = $condition;
-            }
+        if ($this->onlyPremium) {
+            $aData['onlyPremium'] = $this->onlyPremium;
         }
 
-        // get tables
-        foreach ($this->tables as $table) {
-            if (preg_match(
-                '/(' . DB_TABLE_PREFIX . 't_category_description( as cd)?)/',
-                $table,
-                $matches
-            )
-            ) {
-                // t_item_description
-                $aData['tables'][] = $matches[1];
-            } elseif (preg_match('/(' . DB_TABLE_PREFIX . 't_item_resource)/', $table, $matches)) {
-                $aData['withPicture'] = true;
-            } else {
-                $aData['no_catched_tables'][] = $table;
-            }
-        }
+        $aData['tables']      = $this->tables;
+        $aData['tables_join'] = $this->tables_join;
+
+        $aData['no_catched_tables']     = $this->tables;
+        $aData['no_catched_conditions'] = $this->conditions;
+
+        $aData['user_ids'] = $this->user_ids;
 
         // get order & limit
         $aData['order_column']     = $this->order_column;
@@ -2176,7 +1981,7 @@ class Search extends DAO
         $aData['limit_init']       = $this->limit_init;
         $aData['results_per_page'] = $this->results_per_page;
 
-        return $aData;
+        return json_encode($aData);
     }
 
     /**

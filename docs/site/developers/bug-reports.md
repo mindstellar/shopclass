@@ -59,7 +59,7 @@ Ten minutes here saves days of back-and-forth:
 
 > **Publishing a listing with more than 4 photos fails silently**
 >
-> ShopClass 6.1.0, PHP 8.2, shared hosting (SiteGround), Storefront theme, no
+> ShopClass 6.4.0, PHP 8.2, shared hosting (SiteGround), Storefront theme, no
 > plugins active.
 >
 > 1. Go to /item/new, fill in the form, attach 5 JPEGs of ~3MB each

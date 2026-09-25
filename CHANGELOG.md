@@ -59,6 +59,7 @@ In development.
 
 ### Breaking
 
+- `Search::toJson(true)` returns the same JSON as `toJson()`; the parsed-conditions form it used to return is gone.
 - `Search::setJsonAlert()` with an old-format alert applies only its categories, price, pattern, picture and premium flags; its SQL fragments, sort and paging are ignored.
 - Route values captured on friendly URLs now arrive decoded, as query values do; a plugin that decoded them itself must stop.
 - Removed the admin CSS kept one release for compatibility with the old Locations screen:
