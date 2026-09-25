@@ -50,4 +50,22 @@ define('WEB_PATH', 'http://127.0.0.1:8101/');
 define('REL_WEB_URL', '/');
 check('uses the address the CLI defined', install_urls() === array('http://127.0.0.1:8101/', '/'));
 
+harness_section('copy_config_file');
+
+$dir = sys_get_temp_dir() . '/osc-install-config-' . getmypid() . '/';
+@mkdir($dir);
+copy(__DIR__ . '/../config-sample.php', $dir . 'config-sample.php');
+define('ABS_PATH', $dir);
+$want = array('my_oc_db', "u'*/x", "*/ echo 'PWNED'; /* oc_ \\", 'db_host', 'xy_');
+check('writes config.php', copy_config_file($want[0], $want[1], $want[2], $want[3], $want[4]) === true);
+$read = shell_exec(escapeshellarg(PHP_BINARY) . ' -r ' . escapeshellarg(
+    'foreach (["DB_NAME","DB_USER","DB_PASSWORD","DB_HOST","DB_TABLE_PREFIX"] as $k) putenv($k);'
+    . 'require ' . var_export($dir . 'config.php', true) . ';'
+    . 'echo json_encode([DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_TABLE_PREFIX, REL_WEB_URL, WEB_PATH]);'
+));
+check('every value reads back unchanged, and nothing runs', json_decode((string) $read, true)
+    === array_merge($want, array('/', 'http://127.0.0.1:8101/')), (string) $read);
+array_map('unlink', glob($dir . '*'));
+rmdir($dir);
+
 exit(harness_result());

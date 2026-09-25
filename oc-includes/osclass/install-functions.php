@@ -912,8 +912,9 @@ defined('WEB_PATH') or define('WEB_PATH', '$abs_url');
 
 CONFIG;
 
-    file_put_contents(ABS_PATH . 'config.php', $config_text);
-    install_config_chmod(ABS_PATH . 'config.php');
+    if (file_put_contents(ABS_PATH . 'config.php', $config_text) !== false) {
+        install_config_chmod(ABS_PATH . 'config.php');
+    }
 }
 
 /**
@@ -958,7 +959,7 @@ function install_web_url_valid($url)
 
 /**
  * Make config.php readable by the web server but writable only by its owner.
- * Skipped when another user owns the file, where chmod() would only warn.
+ * Skipped when another user owns the file, where chmod() cannot work.
  *
  * @param string $path
  *
@@ -966,8 +967,9 @@ function install_web_url_valid($url)
  */
 function install_config_chmod($path)
 {
-    if (function_exists('getmyuid') && fileowner($path) === getmyuid()) {
-        chmod($path, 0644);
+    $owner = @fileowner($path);
+    if ($owner !== false && (!function_exists('posix_geteuid') || $owner === posix_geteuid())) {
+        @chmod($path, 0644);
     }
 }
 
@@ -1000,27 +1002,21 @@ function copy_config_file($dbname, $username, $password, $dbhost, $tableprefix)
         return false;
     }
 
-    // Define replacements
-    $replacements = array(
-        'database_name' => $dbname,
-        'username' => $username,
-        'password' => $password,
-        'db_host' => $dbhost,
-        'oc_' => $tableprefix,
-        'rel_here' => $rel_url,
-        'web_path_here' => $abs_url,
-    );
-
-    // Perform replacements
-    foreach ($config_sample as &$line) {
-        foreach ($replacements as $search => $replace) {
-            $line = str_replace($search, $replace, $line);
-        }
-    }
+    // Only the quoted placeholders, in one pass: the bare words also appear in the
+    // sample's comments, and a value already written must not be replaced again.
+    $config_text = strtr(implode('', $config_sample), array(
+        "'database_name'" => "'$dbname'",
+        "'username'"      => "'$username'",
+        "'password'"      => "'$password'",
+        "'db_host'"       => "'$dbhost'",
+        "'oc_'"           => "'$tableprefix'",
+        "'rel_here'"      => "'$rel_url'",
+        "'web_path_here'" => "'$abs_url'",
+    ));
 
     // Write to config.php
     $config_path = ABS_PATH . 'config.php';
-    $write_success = file_put_contents($config_path, implode('', $config_sample));
+    $write_success = file_put_contents($config_path, $config_text);
     if (!$write_success) {
         // Handle write error
         return false;
