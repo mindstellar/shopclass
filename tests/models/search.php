@@ -550,6 +550,40 @@ pin('non-int ids are dropped, only real ids hydrate', array($hydIds[0]), $ids($s
 $s = new Search();
 check('fromPrimaryKeys returns $this (chainable)', $s->fromPrimaryKeys($hydIds) instanceof Search);
 
+harness_section('Search: setJsonAlert holds fixed-shape fields to their shape');
+
+$prop = static function (Search $search, string $name) {
+    $p = new ReflectionProperty('Search', $name);
+    $p->setAccessible(true);
+
+    return $p->getValue($search);
+};
+$hostile                     = $decoded;
+$hostile['aCategories']      = array($catCars, '1) OR SLEEP(1) -- ', 'x');
+$hostile['order_column']     = 'dt_pub_date, SLEEP(1)';
+$hostile['order_direction']  = 'DESC; DROP TABLE x';
+$hostile['limit_init']       = '0 UNION SELECT 1';
+$hostile['results_per_page'] = '10; --';
+$safe = new Search();
+$safe->setJsonAlert($hostile);
+pin('categories become whole numbers only', array((int)$catCars, 1), $prop($safe, 'categories'));
+pin('an order column that is not a name falls back', 'dt_pub_date', $prop($safe, 'order_column'));
+pin('an order direction is ASC or DESC', 'DESC', $prop($safe, 'order_direction'));
+pin('paging is numeric', array(0, 10), array($prop($safe, 'limit_init'), $prop($safe, 'results_per_page')));
+$userSort = $decoded;
+$userSort['order_column'] = 'ISNULL(oc_t_user.i_items), oc_t_user.i_items';
+$kept = new Search();
+$kept->setJsonAlert($userSort);
+pin("core's ISNULL sort form is kept", 'ISNULL(oc_t_user.i_items), oc_t_user.i_items', $prop($kept, 'order_column'));
+pin('a stored lowercase direction still sorts', 'ASC', (function () use ($decoded, $prop) {
+    $d                    = $decoded;
+    $d['order_direction'] = 'asc';
+    $x                    = new Search();
+    $x->setJsonAlert($d);
+
+    return $prop($x, 'order_direction');
+})());
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }

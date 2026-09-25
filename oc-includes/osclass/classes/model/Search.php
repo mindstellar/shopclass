@@ -2176,7 +2176,9 @@ class Search extends DAO
 
         $this->priceRange($aData['price_min'], $aData['price_max']);
 
-        $this->categories = $aData['aCategories'];
+        // Stored alerts are replayed as SQL, so every field that has a fixed shape is
+        // held to it here; the location, user and condition fields are SQL fragments.
+        $this->categories = array_values(array_filter(array_map('intval', (array)($aData['aCategories'] ?? array()))));
         // locations
         $this->city_areas = $aData['city_areas'];
         $this->cities     = $aData['cities'];
@@ -2190,10 +2192,16 @@ class Search extends DAO
         $this->conditions  = $aData['no_catched_conditions'];
 
         // get order & limit
-        $this->order_column     = $aData['order_column'];
-        $this->order_direction  = $aData['order_direction'];
-        $this->limit_init       = $aData['limit_init'];
-        $this->results_per_page = $aData['results_per_page'];
+        $column = (string)($aData['order_column'] ?? '');
+        if (!preg_match('/^[A-Za-z0-9_.]+$/', $column)
+            && !preg_match('/^ISNULL\(([A-Za-z0-9_.]+)\), \1$/', $column)
+        ) {
+            $column = 'dt_pub_date';
+        }
+        $this->order_column     = $column;
+        $this->order_direction  = strtoupper((string)($aData['order_direction'] ?? '')) === 'ASC' ? 'ASC' : 'DESC';
+        $this->limit_init       = max(0, (int)($aData['limit_init'] ?? 0));
+        $this->results_per_page = max(1, (int)($aData['results_per_page'] ?? 10));
 
         // pattern
         if (isset($aData['sPattern'])) {

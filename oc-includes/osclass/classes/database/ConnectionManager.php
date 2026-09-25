@@ -300,8 +300,8 @@ class ConnectionManager
      * inserts and non-aggregated GROUP BY.
      *
      * Define the optional constant OSC_DB_STRICT_MODE (truthy) to opt out of that
-     * loosening: when set, the server's own sql_mode is kept, except that
-     * NO_BACKSLASH_ESCAPES is always removed. The installer writes that constant into
+     * loosening: when set, the server's own sql_mode is left exactly as configured
+     * (early return, connection untouched). The installer writes that constant into
      * a new install's config.php, so a fresh site runs strict; an install upgraded
      * from an earlier release defines nothing and keeps the historic behaviour
      * byte-for-byte until an operator adds the line.
@@ -321,22 +321,19 @@ class ConnectionManager
      */
     private function setSQLMode($modes = [])
     {
-        // NO_BACKSLASH_ESCAPES changes how escaped strings are read. Saved alerts replay
-        // SQL escaped earlier, so every connection reads it the same way.
-        $strip = array('NO_BACKSLASH_ESCAPES');
-        if (!(defined('OSC_DB_STRICT_MODE') && OSC_DB_STRICT_MODE)) {
-            $strip = array_merge($this->incompatible_modes, $strip);
+        if (defined('OSC_DB_STRICT_MODE') && OSC_DB_STRICT_MODE) {
+            return false;
         }
         if (!empty($modes)) {
-            $modes = array_values(array_diff(array_map('strtoupper', $modes), $strip));
+            $modes = array_values(array_diff(array_map('strtoupper', $modes), $this->incompatible_modes));
             $mode  = "'" . $this->connId->real_escape_string(implode(',', $modes)) . "'";
         } else {
             // Strip the modes from the session's own value on the server, so reading it
             // first costs no extra round trip. Each name is wrapped in commas to match
             // whole names only.
             $mode = "CONCAT(',', @@SESSION.sql_mode, ',')";
-            foreach ($strip as $name) {
-                $mode = "REPLACE($mode, '," . $name . ",', ',')";
+            foreach ($this->incompatible_modes as $incompatible) {
+                $mode = "REPLACE($mode, '," . $incompatible . ",', ',')";
             }
             $mode = "TRIM(BOTH ',' FROM $mode)";
         }

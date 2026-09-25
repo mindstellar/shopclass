@@ -133,7 +133,7 @@ In development.
 ### Security
 
 - Search-alert tokens from before 6.2.0 are refused. Their format could be edited without detection, and a saved alert's conditions run as SQL.
-- Every database connection turns off `NO_BACKSLASH_ESCAPES`, so escaped text in saved alerts always reads the same way.
+- A saved alert's categories, sort and paging are held to their own shape when the alert runs.
 - A listing contact attachment is sent from PHP's upload folder instead of being copied into `oc-content/uploads/` under a guessable name. Both contact forms refuse script files the same way, and send nothing when they do.
 - **Appearance** activates only a theme that is installed.
 - A theme or plugin name made only of dots, such as `..`, is refused, so a child theme cannot name the folder above the themes as its parent.
