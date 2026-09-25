@@ -1,6 +1,7 @@
 # Published documentation
 
-These pages are the source for **https://mindstellar.com/docs/**. The site pulls
+These pages are the source for **https://mindstellar.com/docs/** (from `master`) and
+**https://mindstellar.com/docs/next/** (from `develop`, not indexed by search engines). The site pulls
 this directory at build time, so a merge here reaches the published docs on the
 next deploy — there is no second copy to keep in sync.
 
@@ -18,6 +19,8 @@ change the page describing it in the same commit.
   **Renaming a file changes a public URL** — say so in the pull request so a
   redirect can be added.
 - Link between pages with absolute site paths: `/docs/configure/cron/`.
+- Write `%SHOPCLASS_VERSION%` where a page names the version it documents. The site
+  replaces it with `OSCLASS_VERSION` from the same branch at build time.
 
 Callouts use the `:::note`, `:::tip`, `:::caution` and `:::danger` syntax:
 
