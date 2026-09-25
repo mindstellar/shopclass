@@ -584,6 +584,16 @@ pin('a stored lowercase direction still sorts', 'ASC', (function () use ($decode
     return $prop($x, 'order_direction');
 })());
 
+harness_section('Search: locale codes never reach SQL unchecked');
+
+$loc = new Search();
+$loc->addLocale(array("zz_ZZ' OR 'a'='a", 'en_US', array('x')));
+pin('only a locale-code shape is kept', array('en_US' => 'en_US'), $prop($loc, 'locale_code'));
+$twoLocales = new Search();
+$twoLocales->addPattern('se');
+$twoLocales->addLocale(array('en_US', 'es_ES'));
+check('two locales build valid SQL (they used to lack an OR)', count($twoLocales->doSearch()) > 0);
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }

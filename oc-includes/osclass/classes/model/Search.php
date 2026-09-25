@@ -374,15 +374,28 @@ class Search extends DAO
      */
     public function addLocale($locales)
     {
-        if (is_array($locales)) {
-            foreach ($locales as $locale) {
-                if ($locale) {
-                    $this->locale_code[$locale] = $locale;
-                }
+        // Only a locale code's shape (en_US) is kept: the codes end up inside SQL.
+        foreach ((array)$locales as $locale) {
+            if (is_string($locale) && preg_match('/^[A-Za-z]{2,3}_[A-Za-z]{2}$/', $locale)) {
+                $this->locale_code[$locale] = $locale;
             }
-        } elseif ($locales) {
-            $this->locale_code[$locales] = $locales;
         }
+    }
+
+    /**
+     * The WHERE clause matching any of the search's locale codes.
+     *
+     * @return string
+     */
+    private function localeCondition()
+    {
+        $parts = array();
+        foreach ($this->locale_code as $locale) {
+            $parts[] = "d.fk_c_locale_code LIKE '"
+                . \mindstellar\database\Connection::instance()->escape((string)$locale) . "'";
+        }
+
+        return '( ' . implode(' OR ', $parts) . ' )';
     }
 
     /**
@@ -742,10 +755,7 @@ class Search extends DAO
                 if (empty($this->locale_code)) {
                     $this->locale_code[$this->userLocaleCode] = $this->userLocaleCode;
                 }
-                $this->addWhere(sprintf(
-                    "( d.fk_c_locale_code LIKE '%s' )",
-                    implode("' d.fk_c_locale_code LIKE '", $this->locale_code)
-                ));
+                $this->addWhere($this->localeCondition());
             }
 
             // item conditions
@@ -1417,10 +1427,7 @@ class Search extends DAO
                     $this->locale_code[osc_current_user_locale()] = osc_current_user_locale();
                 }
             }
-            $this->addWhere(sprintf(
-                "( d.fk_c_locale_code LIKE '%s' )",
-                implode("' d.fk_c_locale_code LIKE '", $this->locale_code)
-            ));
+            $this->addWhere($this->localeCondition());
 
             $subSelect = $this->compileQuery();
             $this->resetQuery();
