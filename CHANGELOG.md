@@ -66,6 +66,7 @@ In development.
 
 ### Fixed
 
+- A date custom-field search with a non-numeric value, or a number range of `1e400`, no longer breaks the search page.
 - A custom-field search sent as a list (`meta[5][]=x`) is ignored instead of failing the whole search, and a numeric value is compared as text. The category recount no longer builds invalid SQL on a site with no categories.
 - A widget select whose options come from a function now shows them. The Form widget's picker was empty.
 - The site contact form's attachment now works when enabled. It used to be dropped unless the request also carried an `attachment` field.
@@ -131,6 +132,8 @@ In development.
 
 ### Security
 
+- Search-alert tokens from before 6.2.0 are refused. Their format could be edited without detection, and a saved alert's conditions run as SQL.
+- Every database connection turns off `NO_BACKSLASH_ESCAPES`, so escaped text in saved alerts always reads the same way.
 - A listing contact attachment is sent from PHP's upload folder instead of being copied into `oc-content/uploads/` under a guessable name. Both contact forms refuse script files the same way, and send nothing when they do.
 - **Appearance** activates only a theme that is installed.
 - A theme or plugin name made only of dots, such as `..`, is refused, so a child theme cannot name the folder above the themes as its parent.

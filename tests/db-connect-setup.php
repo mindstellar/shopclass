@@ -10,7 +10,8 @@
 
 /**
  * Pins what ConnectionManager does after the login: the database is selected, autocommit
- * is on, the relaxed sql_mode drops exactly its five modes, and all of it costs two round
+ * is on, the relaxed sql_mode drops exactly its five modes, NO_BACKSLASH_ESCAPES is always
+ * dropped, and all of it costs two round
  * trips. A missing database or a bad password still reports the same error codes.
  *
  * Runs itself a second time with OSC_DB_STRICT_MODE, the branch a new install takes.
@@ -55,7 +56,7 @@ register_shutdown_function(static function () use ($admin, $previousMode) {
     $admin->query("SET GLOBAL sql_mode = '" . $admin->real_escape_string($previousMode) . "'");
 });
 $admin->query("SET GLOBAL sql_mode = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,"
-    . "ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'");
+    . "ERROR_FOR_DIVISION_BY_ZERO,NO_BACKSLASH_ESCAPES,NO_ENGINE_SUBSTITUTION'");
 
 harness_section($strict ? 'strict install' : 'relaxed install');
 
@@ -77,6 +78,8 @@ pin('sql_mode', $strict
     ? 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'
     : 'NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION', $row[2]);
 check('setup after the login takes at most two round trips', $trips <= 2, "$trips round trips");
+pin('a backslash escape reads the same on every install', 'a\'b',
+    $cm->getHandle()->query("SELECT '" . $cm->getHandle()->real_escape_string("a'b") . "'")->fetch_row()[0]);
 
 $missing = new ConnectionManager($host, $user, $pass, $name . '_missing', $port);
 pin('a missing database still reports 1049', 1049, (int) $missing->getErrorLevel());

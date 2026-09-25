@@ -471,7 +471,7 @@ class CWebSearch extends BaseModel
                             }
                             break;
                         case 'DATE':
-                            if ($aux != '') {
+                            if (is_numeric($aux)) {
                                 $y     = (int)date('Y', $aux);
                                 $m     = (int)date('n', $aux);
                                 $d     = (int)date('j', $aux);
@@ -511,6 +511,7 @@ class CWebSearch extends BaseModel
                         case 'NUMBER':
                             if (is_array($aux) && (!empty($aux['from']) && !empty($aux['to']))
                                 && is_numeric($aux['from']) && is_numeric($aux['to'])
+                                && is_finite((float)$aux['from']) && is_finite((float)$aux['to'])
                             ) {
                                 $min   = (float)$aux['from'];
                                 $max   = (float)$aux['to'];

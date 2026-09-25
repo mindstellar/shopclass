@@ -363,7 +363,8 @@ function osc_encrypt_alert($alert)
 }
 
 /**
- * Decrypt an alert token, falling back to the legacy unauthenticated format.
+ * Decrypt an alert token. Only the authenticated format is accepted: the legacy CTR one
+ * can be edited without detection, and its search conditions are run as SQL by the alert cron.
  *
  * @param string $string
  *
@@ -386,15 +387,12 @@ function osc_decrypt_alert($string)
             substr($string, $ivLen, $tagLen)
         );
 
-        // A failed tag is the signal that this is not a token of this format --
-        // either an older one, or a forgery. Both fall through to the legacy read,
-        // which is itself checked by the caller.
         if ($plain !== false) {
             return $plain;
         }
     }
 
-    return osc_decrypt_alert_legacy($string);
+    return '';
 }
 
 /**
@@ -405,8 +403,9 @@ function osc_decrypt_alert($string)
  * malleable, so tampering with one of these produces a controlled change to the
  * plaintext rather than the garbage the surrounding code assumed -- the JSON parse
  * on the result is what actually rejects a forgery here, and it is a weaker check
- * than a tag. Kept only so a token already in a rendered page still resolves after
- * an upgrade; nothing mints this format any more.
+ * than a tag. Core no longer reads this format; the function stays for callers outside core.
+ *
+ * @deprecated since 6.4.0; a token of this format is not trustworthy
  *
  * @param string $string
  *

@@ -223,11 +223,8 @@ class CWebAjax extends BaseModel
                 $encoded_alert = Params::getParam('alert');
                 $alert         = osc_decrypt_alert(base64_decode($encoded_alert));
 
-                // A token of the current format carries an authentication tag, so a forgery
-                // or a tampered token fails to decrypt at all and arrives here as ''. The
-                // JSON test below is what still covers a token minted by the previous
-                // release, whose format has no tag to check — it is the weaker of the two
-                // and the reason nothing mints that format any more.
+                // A token carries an authentication tag, so a forgery or a tampered token
+                // fails to decrypt at all and arrives here as ''.
                 if ($alert === '' || !is_array(json_decode($alert, true))) {
                     echo '-2';
 

@@ -72,7 +72,7 @@ pin('truncated token rejected', '', osc_decrypt_alert(substr($token, 0, 20)));
 pin('empty token rejected', '', osc_decrypt_alert(''));
 pin('random bytes rejected', '', osc_decrypt_alert(random_bytes(80)));
 
-harness_section('a token from the previous release still reads');
+harness_section('a token from before 6.2.0 is refused');
 // Mint one exactly the way the old code did: 32 random chars prepended to the
 // payload, AES-256-CTR, IV in front, key hashed the way Cryptor hashed it.
 $legacyPlain = str_repeat('a', 32) . $payload;
@@ -80,7 +80,19 @@ $legacyIv    = random_bytes(16);
 $legacyKey   = openssl_digest(hash('sha256', osc_get_alert_private_key(), true), 'sha256', true);
 $legacyToken = $legacyIv . openssl_encrypt($legacyPlain, 'aes-256-ctr', $legacyKey, OPENSSL_RAW_DATA, $legacyIv);
 
-pin('legacy token decrypts', $payload, osc_decrypt_alert($legacyToken));
+pin('legacy token is refused', '', osc_decrypt_alert($legacyToken));
+
+// CTR is malleable: with the plaintext known, XOR swaps a same-length part for chosen text.
+$known  = '"no_catched_conditions":["1=1"]';
+$chosen = '"no_catched_conditions":["1=2"]';
+$plain  = str_repeat('a', 32) . '{' . $known . '}';
+$iv     = random_bytes(16);
+$forged = $iv . openssl_encrypt($plain, 'aes-256-ctr', $legacyKey, OPENSSL_RAW_DATA, $iv);
+$at     = 16 + 32 + 1;
+$forged = substr($forged, 0, $at) . (substr($forged, $at, strlen($known)) ^ $known ^ $chosen)
+    . substr($forged, $at + strlen($known));
+pin('the edit really changes a legacy token', '{' . $chosen . '}', osc_decrypt_alert_legacy($forged));
+pin('so an edited legacy token is refused', '', osc_decrypt_alert($forged));
 
 harness_section('a wrong key never yields the payload');
 $GLOBALS['__alert_key'] = str_repeat('z', 40);
