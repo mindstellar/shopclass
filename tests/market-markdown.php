@@ -51,6 +51,10 @@ check('a javascript: link loses its address', strpos(Markdown::toHtml('[x](javas
 check('an http link keeps it', strpos(Markdown::toHtml('[x](https://example.com)'), 'href="https://example.com"') !== false);
 check('an image keeps only http(s)', strpos(Markdown::toHtml('![a](data:image/png;base64,AAA)'), '<img') === false);
 check('a title cannot leave its attribute', strpos(Markdown::toHtml('[x](https://x.com "a\" onmouseover=\"b")'), 'onmouseover="') === false);
+$t = microtime(true);
+Markdown::toHtml('http://a' . str_repeat('.', 200000));
+check('a long run after an address renders fast', microtime(true) - $t < 1);
+check('a line break in a title stays out of it', strpos(Markdown::toHtml("[a](http://x \"foo\\\nbar\")"), 'title="foo bar"') !== false);
 check('placeholder bytes in the text are dropped', strpos(Markdown::toHtml("`c` ![a\x010\x02](https://x.com/i.png)"), 'alt="a0"') !== false);
 
 exit(harness_result());

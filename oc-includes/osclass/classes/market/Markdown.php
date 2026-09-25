@@ -24,6 +24,10 @@ final class Markdown
     /** Blockquotes nested deeper than this render their text flat. */
     private const MAX_QUOTE_DEPTH = 4;
 
+    /** Bytes of one paragraph and of one document that are rendered, so crafted input cannot stall it. */
+    private const MAX_INLINE = 20000;
+    private const MAX_DOCUMENT = 524288;
+
     /** Where a relative link or image points, when the caller gave one. */
     private static ?string $base = null;
 
@@ -86,7 +90,7 @@ final class Markdown
             return null;
         }
 
-        $title = preg_replace('/\x01\d+\x02/', '', $escapedTitle);
+        $title = str_replace("\x03", ' ', preg_replace('/\x01\d+\x02/', '', $escapedTitle));
 
         return ($isImage ? 'src' : 'href') . '="' . htmlspecialchars($url, ENT_QUOTES) . '"'
             . ($title !== '' ? ' title="' . $title . '"' : '');
@@ -94,6 +98,7 @@ final class Markdown
 
     private static function renderInlineMarkdown(string $escaped): string
     {
+        $escaped = self::cut($escaped, self::MAX_INLINE);
         // Anything already rendered is stashed behind a placeholder, so later patterns cannot
         // reach inside a code span, a URL or a tag.
         $stash = [];
@@ -117,7 +122,7 @@ final class Markdown
         $escaped = preg_replace_callback('/!\[([^\]]*)\]\(([^)\s]+)' . $title . '\)/', static function ($m) use ($keep) {
             $attrs = self::linkAttrs($m[2], $m[3] ?? '', true);
 
-            return $attrs === null ? $m[1] : $keep('<img ' . $attrs . ' alt="' . preg_replace('/\x01\d+\x02/', '', $m[1]) . '" loading="lazy">');
+            return $attrs === null ? $m[1] : $keep('<img ' . $attrs . ' alt="' . str_replace("\x03", ' ', preg_replace('/\x01\d+\x02/', '', $m[1])) . '" loading="lazy">');
         }, $escaped);
 
         $escaped = preg_replace_callback('/\[((?:[^\[\]]|\x01\d+\x02)+)\]\(([^)\s]+)' . $title . '\)/', static function ($m) use ($keep) {
@@ -132,12 +137,24 @@ final class Markdown
 
             return $attrs === null ? $m[0] : $keep('<a ' . $attrs . ' rel="nofollow noopener noreferrer" target="_blank">' . $m[1] . '</a>');
         }, $escaped);
-        $escaped = preg_replace_callback('/(?<![\w\/"=;])https?:\/\/[^\s\x01]+/i', static function ($m) use ($keep) {
+        $escaped = preg_replace_callback('/(?<![\w\/"=;])https?:\/\/[^\s\x01]{1,2048}/i', static function ($m) use ($keep) {
             $url = $m[0];
             $tail = '';
-            while (preg_match('/(?:[.,;:!?)\]*_]|&(?:gt|lt|quot|#039);)$/', $url, $t)) {
-                $tail = $t[0] . $tail;
-                $url = substr($url, 0, -strlen($t[0]));
+            while ($url !== '') {
+                $cut = 0;
+                foreach (['&gt;', '&lt;', '&quot;', '&#039;'] as $entity) {
+                    if (str_ends_with($url, $entity)) {
+                        $cut = strlen($entity);
+                    }
+                }
+                if ($cut === 0 && str_contains('.,;:!?)]*_', substr($url, -1))) {
+                    $cut = 1;
+                }
+                if ($cut === 0) {
+                    break;
+                }
+                $tail = substr($url, -$cut) . $tail;
+                $url = substr($url, 0, -$cut);
             }
             $attrs = self::linkAttrs($url, '', false);
 
@@ -152,6 +169,16 @@ final class Markdown
         }
 
         return str_replace("\x03", '<br>', $escaped);
+    }
+
+    /** The first `$max` bytes, never ending inside a UTF-8 character or an HTML entity. */
+    private static function cut(string $s, int $max): string
+    {
+        if (strlen($s) <= $max) {
+            return $s;
+        }
+
+        return preg_replace(['/[\xC0-\xFF][\x80-\xBF]*$/', '/&[#\w]*$/'], '', substr($s, 0, $max)) ?? '';
     }
 
     /** Bold, italic and struck-through text. */
@@ -478,7 +505,7 @@ final class Markdown
             return '';
         }
         // The renderer's own placeholder bytes are never text.
-        $lines = preg_split('/\r\n|\r|\n/', str_replace(["\x01", "\x02", "\x03"], '', $markdown));
+        $lines = preg_split('/\r\n|\r|\n/', str_replace(["\x01", "\x02", "\x03"], '', self::cut($markdown, self::MAX_DOCUMENT)));
         $html = [];
         $i = 0;
         $n = count($lines);
