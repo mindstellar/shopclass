@@ -159,7 +159,7 @@ if (!function_exists('osc_package_row')) {
         ?>
         <li class="osc-pkg osc-pkg--<?php echo osc_esc_html($size); ?> <?php
             echo osc_esc_html(isset($pkg['class']) ? $pkg['class'] : ''); ?>"<?php if ($detail !== null) : ?>
-            data-market-item="<?php echo osc_esc_html(json_encode($detail)); ?>"<?php endif; ?>>
+            data-market-item="<?php echo htmlspecialchars((string) json_encode($detail, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT), ENT_QUOTES); ?>"<?php endif; ?>>
             <?php osc_package_art($pkg['art'], $pkg['slug'], $pkg['name'], $size, $detail !== null); ?>
             <div class="osc-pkg-main">
                 <div class="osc-pkg-head">

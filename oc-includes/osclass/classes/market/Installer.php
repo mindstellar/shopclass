@@ -32,7 +32,7 @@ use Throwable;
  */
 final class Installer
 {
-    private const SLUG_PATTERN = '/^[a-z0-9][a-z0-9-]{1,40}$/';
+    public const SLUG_PATTERN = '/^[a-z0-9][a-z0-9-]{1,40}$/';
 
     private string $basePath;
 

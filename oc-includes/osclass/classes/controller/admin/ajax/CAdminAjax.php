@@ -1425,7 +1425,7 @@ class CAdminAjax extends AdminSecBaseModel
             );
         }
 
-        if (!preg_match('/^[a-z0-9][a-z0-9-]{1,40}$/', $slug)) {
+        if (!preg_match(Installer::SLUG_PATTERN, $slug)) {
             return array(
                 'ok' => false, 'message' => __('Invalid package slug.'),
                 'slug' => $slug, 'version' => null, 'rolled_back' => false,
@@ -1529,7 +1529,7 @@ class CAdminAjax extends AdminSecBaseModel
         }
 
         // A folder name the catalog could never hold, such as one with an underscore, is local.
-        $inCatalog = preg_match('/^[a-z0-9][a-z0-9-]{1,40}$/', $slug) === 1;
+        $inCatalog = preg_match(Installer::SLUG_PATTERN, $slug) === 1;
         $raw       = $inCatalog ? self::marketCatalog($type)->detail($slug) : null;
         if ($raw === null) {
             // Not in the catalog, as with a private or hand-installed package: what is on disk.
@@ -1590,7 +1590,7 @@ class CAdminAjax extends AdminSecBaseModel
             'slug'             => $slug,
             'name'             => $name,
             'author'           => $author,
-            'description_html' => self::marketPurifyDescription(\mindstellar\market\Markdown::toHtml($readme)),
+            'description_html' => self::marketPurifyDescription(\mindstellar\market\Markdown::toHtml($readme), $base),
             'screenshots'      => $shots,
             'versions'         => array(),
             'links'            => self::marketSanitizeLinks(array('links' => (array) ($manifest['support'] ?? array()))),
@@ -1767,11 +1767,13 @@ class CAdminAjax extends AdminSecBaseModel
      * every `<img>` that survives purification is re-checked against the same package host
      * allowlist that governs `screenshots[].src` and the support links (marketDropUnallowedHostUrls()).
      *
-     * @param mixed $html
+     * @param mixed       $html
+     * @param string|null $localBase an installed package's own URL: its README's relative
+     *                               images and links resolve inside it
      *
      * @return string
      */
-    private static function marketPurifyDescription($html)
+    private static function marketPurifyDescription($html, $localBase = null)
     {
         if (!is_string($html) || $html === '') {
             return '';
@@ -1798,7 +1800,7 @@ class CAdminAjax extends AdminSecBaseModel
             self::$marketPurifier = new HTMLPurifier($config);
         }
 
-        return self::marketDropUnallowedHostUrls(self::$marketPurifier->purify($html));
+        return self::marketDropUnallowedHostUrls(self::$marketPurifier->purify($html), $localBase);
     }
 
     /**
@@ -1810,11 +1812,12 @@ class CAdminAjax extends AdminSecBaseModel
      * attribute/scheme rules let it through. A malformed fragment DOMDocument can't parse is
      * returned as an empty string rather than passed through.
      *
-     * @param string $html already-purified, well-formed (small allowlist) HTML fragment
+     * @param string      $html      already-purified, well-formed (small allowlist) HTML fragment
+     * @param string|null $localBase an installed package's own URL, for its relative paths
      *
      * @return string
      */
-    private static function marketDropUnallowedHostUrls($html)
+    private static function marketDropUnallowedHostUrls($html, $localBase = null)
     {
         if ($html === '') {
             return '';
@@ -1837,9 +1840,29 @@ class CAdminAjax extends AdminSecBaseModel
 
         $xpath = new DOMXPath($doc);
 
+        // A relative path in an installed package's own README names a file in its folder.
+        $local = static function ($url) use ($localBase) {
+            if ($localBase === null || $url === '' || preg_match('#^([a-z][a-z0-9+.-]*:|/|\#)#i', $url) === 1
+                || preg_match('#(^|/)\.\.(/|$)#', $url) === 1
+            ) {
+                return null;
+            }
+
+            return $localBase . preg_replace('#^(\./)+#', '', $url);
+        };
+        foreach (iterator_to_array($xpath->query('.//a[@href]', $root)) as $a) {
+            /** @var DOMElement $a */
+            $resolved = $local($a->getAttribute('href'));
+            if ($resolved !== null) {
+                $a->setAttribute('href', $resolved);
+            }
+        }
         foreach (iterator_to_array($xpath->query('.//img[@src]', $root)) as $img) {
             /** @var DOMElement $img */
-            if (!FileSystem::isAllowedPackageHost($img->getAttribute('src'))) {
+            $resolved = $local($img->getAttribute('src'));
+            if ($resolved !== null) {
+                $img->setAttribute('src', $resolved);
+            } elseif (!FileSystem::isAllowedPackageHost($img->getAttribute('src'))) {
                 $img->parentNode->removeChild($img);
             }
         }

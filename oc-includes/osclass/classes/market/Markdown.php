@@ -11,9 +11,10 @@
 namespace mindstellar\market;
 
 /**
- * A package README or CHANGELOG as safe HTML: a small Markdown subset, everything escaped
- * first, links and images limited to http(s). Shared by the catalog builder, which runs on
- * a bare `php` with this file beside it, and by the admin's detail dialog.
+ * A package README or CHANGELOG as HTML: a small Markdown subset, everything escaped first,
+ * links and images limited to http(s). Shared by the catalog builder, which runs on a bare
+ * `php` with this file beside it, and by the admin's detail dialog. The markup is not
+ * guaranteed well-formed, so pass it through an HTML purifier before showing it.
  */
 final class Markdown
 {
