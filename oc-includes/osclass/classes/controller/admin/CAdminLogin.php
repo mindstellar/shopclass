@@ -148,6 +148,7 @@ class CAdminLogin extends AdminBaseModel
                     $this->redirectTo(osc_admin_base_url(true) . '?page=login');
                 }
                 if (!\mindstellar\security\AdminTwoFactor::check($admin, Params::getParamString('code'))) {
+                    \mindstellar\security\AdminTwoFactor::noteFailure($admin);
                     osc_add_flash_error_message(\mindstellar\security\AdminTwoFactor::refusedMessage(), 'admin');
                     $this->redirectTo(osc_admin_base_url(true) . '?page=login&action=2fa');
                 }

@@ -4496,6 +4496,12 @@ msgstr ""
 msgid "If the value is zero, it means that each listing must be validated"
 msgstr ""
 
+#: oc-includes/osclass/classes/security/AdminTwoFactor.php
+msgid ""
+"If this was not you, change your password now. Until you do, the code step "
+"can make you wait."
+msgstr ""
+
 #: oc-admin/themes/modern/tools/backup.php
 msgid ""
 "If you don't specify a backup folder, the backup files will be created in "
@@ -8815,6 +8821,12 @@ msgstr ""
 msgid "Some sample content couldn't be added. Your site will still work fine."
 msgstr ""
 
+#: oc-includes/osclass/classes/security/AdminTwoFactor.php
+msgid ""
+"Someone typed your correct password on %1$s, then 5 wrong codes, from the "
+"address %2$s. They did not get in."
+msgstr ""
+
 #: oc-includes/osclass/installer/gui/install.php
 msgid "Something went wrong. Check your connection and try again."
 msgstr ""
@@ -11196,6 +11208,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/users/frm.php
 msgid "Zip code"
+msgstr ""
+
+#: oc-includes/osclass/classes/security/AdminTwoFactor.php
+msgid "[%s] Your admin password is known to someone else"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info.php

@@ -180,6 +180,36 @@ final class AdminTwoFactor
     }
 
     /**
+     * Count a wrong code at sign-in. The fifth in 15 minutes means someone has the password,
+     * so the admin is told by e-mail, at most once an hour.
+     *
+     * @param array<string,mixed> $admin
+     *
+     * @return void
+     */
+    public static function noteFailure(array $admin): void
+    {
+        $id = (string)$admin['pk_i_id'];
+        if (RateLimit::hit('admin-2fa-fail', $id, 4, 900) || !RateLimit::hit('admin-2fa-mail', $id, 1, 3600)
+            || empty($admin['s_email'])
+        ) {
+            return;
+        }
+        $body = '<p>' . osc_esc_html(sprintf(
+            __('Someone typed your correct password on %1$s, then 5 wrong codes, from the address %2$s. They did not get in.'),
+            osc_page_title(),
+            get_ip()
+        )) . '</p><p>' . osc_esc_html(__('If this was not you, change your password now. Until you do, the code step can make you wait.')) . '</p>';
+        osc_sendMail(array(
+            'from'    => _osc_from_email_aux(),
+            'to'      => $admin['s_email'],
+            'to_name' => $admin['s_name'] ?? '',
+            'subject' => sprintf(__('[%s] Your admin password is known to someone else'), osc_page_title()),
+            'body'    => $body,
+        ));
+    }
+
+    /**
      * Why a code was refused, for every screen that asks for one.
      *
      * @return string
