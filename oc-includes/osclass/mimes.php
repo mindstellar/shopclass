@@ -90,6 +90,7 @@ $mimes = array(
     'png'   => array('image/png', 'image/x-png'),
     'tiff'  => 'image/tiff',
     'tif'   => 'image/tiff',
+    'webp'  => 'image/webp',
     'css'   => 'text/css',
     'html'  => 'text/html',
     'htm'   => 'text/html',

@@ -87,6 +87,7 @@ This is a beta. Please try it on a copy of your site first, and tell us what you
 
 ### Fixed
 
+- WebP photos can be uploaded. They were refused even when `webp` was an allowed extension, and it is now allowed by default.
 - Page titles no longer carry a double space when a part such as the city is empty.
 - The plugin and theme catalogue refreshes once a day again; before, it only changed when an admin chose **Check now**, so new updates went unseen.
 - The toolbar's update counts match the Updates tabs.

@@ -28,7 +28,7 @@ require_once __DIR__ . '/lib/stubs.php';
 
 function osc_allowed_extension()
 {
-    return 'png, gif,jpg,jpeg';
+    return 'png, gif,jpg,jpeg,webp';
 }
 
 function _m($s)
@@ -47,6 +47,8 @@ $tmpDir = sys_get_temp_dir() . '/osc-upload-checks-' . getmypid();
 
 $png = $tmpDir . '/real.png';
 file_put_contents($png, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg=='));
+$webp = $tmpDir . '/real.webp';
+file_put_contents($webp, base64_decode('UklGRh4AAABXRUJQVlA4TBEAAAAvAAAAAAdQiirUo/+BiOh/AAA='));
 $text = $tmpDir . '/fake.png';
 file_put_contents($text, "<?php echo 'not an image';");
 
@@ -95,6 +97,7 @@ harness_section('AjaxUploader extension check');
 pin('photo.png is accepted', 'ok', $attempt('photo.png', $png));
 pin('upper-case PHOTO.PNG is accepted', 'ok', $attempt('PHOTO.PNG', $png));
 pin('an entry with a space in the list still matches (gif)', 'ok', $attempt('photo.gif', $png));
+pin('photo.webp is accepted', 'ok', $attempt('photo.webp', $webp));
 pin('a partial extension "pn" is refused', 'bad-ext', $attempt('photo.pn', $png));
 pin('a partial extension "jp" is refused', 'bad-ext', $attempt('photo.jp', $png));
 pin('a name with no extension is refused', 'bad-ext', $attempt('photo', $png));
@@ -130,6 +133,8 @@ pin('a file that is not there has no type', '', UploadMimes::detect('/no/such/fi
 pin('an empty path has no type', '', UploadMimes::detect(''));
 
 check('a real PNG is allowed', UploadMimes::isAllowed($png));
+pin('a real WebP is read as image/webp from its bytes', 'image/webp', UploadMimes::detect($webp));
+check('and is allowed as an image', UploadMimes::isAllowedImage($webp));
 
 // The browser-supplied type is the one thing about an upload nobody should trust, and
 // detect() never reads it -- a PHP script keeps its own type whatever it is named.
