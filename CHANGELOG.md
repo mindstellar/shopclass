@@ -8,6 +8,8 @@ In development.
 
 ### New
 
+- An update channel (stable, release candidates or betas) replaces the prerelease switch, and security releases can install themselves, with an e-mail to the admin. Off by default.
+- The core updater checks each download against GitHub's checksum.
 - Admins can turn on two-step sign-in with a code from an authenticator app, with one-time backup codes. `oc-cli.php user:2fa-off` turns it off for an admin who is locked out.
 - Photos larger than the normal size are shrunk in the browser before upload, so large phone photos no longer fail the size limit. **Media → Settings → Browser resize** turns it off.
 - The `alert_search_params` filter lets a plugin save its own search values with an alert, and `search_conditions` now also gets the search and a context (`'request'` or `'alert'`).

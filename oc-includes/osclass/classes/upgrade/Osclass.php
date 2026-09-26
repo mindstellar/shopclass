@@ -48,15 +48,7 @@ class Osclass extends UpgradePackage
         array $package_info,
         bool  $force_upgrade = false
     ) {
-        $enable_prerelease = false;
-        if (osc_get_preference('allow_update_prerelease')) {
-            $enable_prerelease = true;
-        }
-        if (defined('ENABLE_PRERELEASE') && ENABLE_PRERELEASE === true) {
-            $enable_prerelease = true;
-        }
-
-        parent::__construct($package_info, $force_upgrade, $enable_prerelease);
+        parent::__construct($package_info, $force_upgrade, ReleaseChannel::current() !== ReleaseChannel::STABLE);
     }
 
     /**
@@ -274,44 +266,12 @@ class Osclass extends UpgradePackage
                 !$preference->get('update_core_json') && (time() - $preference->get('last_version_check')) > (24 * 3600)
             )
         ) {
-            if ((defined('ENABLE_PRERELEASE') && ENABLE_PRERELEASE === true) || osc_get_bool_preference('allow_update_prerelease')) {
-                $json_url                  = 'https://api.github.com/repos/mindstellar/shopclass/releases';
-                $osclass_package_info_json = (new FileSystem())->getContents($json_url);
-                if ($osclass_package_info_json) {
-                    $releases = json_decode($osclass_package_info_json, true);
-                    if (is_array($releases)) {
-                        // GitHub's /releases list is NOT guaranteed newest-first — it has
-                        // returned e.g. beta10 *below* beta9 — so taking the first non-draft
-                        // could pin an older release than one further down the list and never
-                        // offer the real newest. Scan them all and keep the highest version by
-                        // version_compare (drafts skipped; prereleases kept, since this branch
-                        // only runs when prerelease updates are opted in).
-                        foreach ($releases as $release) {
-                            // A GitHub error body (404, rate limit) decodes to an associative
-                            // array of strings, not a list of release objects — is_array()
-                            // guards the offset reads below against those non-array entries.
-                            if (!is_array($release) || !empty($release['draft']) || empty($release['tag_name'])) {
-                                continue;
-                            }
-                            if (
-                                !isset($aSelfPackage)
-                                || version_compare(
-                                    ltrim(trim($release['tag_name']), 'v'),
-                                    ltrim(trim($aSelfPackage['tag_name']), 'v'),
-                                    'gt'
-                                )
-                            ) {
-                                $aSelfPackage = $release;
-                            }
-                        }
-                    }
-                }
-            } else {
-                $json_url                  = 'https://api.github.com/repos/mindstellar/shopclass/releases/latest';
-                $osclass_package_info_json = (new FileSystem())->getContents($json_url);
-                if ($osclass_package_info_json) {
-                    $aSelfPackage = json_decode($osclass_package_info_json, true);
-                }
+            // The whole list, not /releases/latest: that is the newest stable release only, and
+            // the list is not in version order, so the channel picks the highest it allows.
+            $json = (new FileSystem())->getContents('https://api.github.com/repos/mindstellar/shopclass/releases');
+            $list = $json ? json_decode($json, true) : null;
+            if (is_array($list)) {
+                $aSelfPackage = ReleaseChannel::pick($list, ReleaseChannel::current());
             }
 
             // Require a real release payload: a GitHub error body (404 "Not Found", a rate-limit
@@ -321,9 +281,18 @@ class Osclass extends UpgradePackage
                 if (isset($aSelfPackage['name'])) {
                     $package_info['s_title'] = $aSelfPackage['name'];
                 }
-                $s_source_url = self::selectReleaseAssetUrl($aSelfPackage['assets'] ?? array());
-                if ($s_source_url !== null) {
-                    $package_info['s_source_url'] = $s_source_url;
+                foreach ($aSelfPackage['assets'] ?? array() as $file) {
+                    if (($file['name'] ?? '') === 'release.json' && !empty($file['browser_download_url'])) {
+                        $package_info['s_manifest_url'] = $file['browser_download_url'];
+                    }
+                }
+                $asset = self::selectReleaseAsset($aSelfPackage['assets'] ?? array());
+                if ($asset !== null) {
+                    $package_info['s_source_url'] = $asset['browser_download_url'];
+                    // GitHub's own digest of the file; the download is refused if it differs.
+                    if (preg_match('/^sha256:([a-f0-9]{64})$/i', (string) ($asset['digest'] ?? ''), $digest)) {
+                        $package_info['s_sha256'] = strtolower($digest[1]);
+                    }
                 }
                 if (isset($aSelfPackage['tag_name'])) {
                     $package_info['s_new_version'] = ltrim(trim($aSelfPackage['tag_name']), 'v');
@@ -354,6 +323,20 @@ class Osclass extends UpgradePackage
      */
     public static function selectReleaseAssetUrl($assets)
     {
+        $asset = self::selectReleaseAsset($assets);
+
+        return $asset === null ? null : $asset['browser_download_url'];
+    }
+
+    /**
+     * The release asset selectReleaseAssetUrl() names, with its digest.
+     *
+     * @param array<int,array<string,mixed>> $assets
+     *
+     * @return array<string,mixed>|null
+     */
+    public static function selectReleaseAsset($assets): ?array
+    {
         if (!is_array($assets)) {
             return null;
         }
@@ -372,7 +355,7 @@ class Osclass extends UpgradePackage
             } else {
                 continue;
             }
-            $found[$rank] = $found[$rank] ?? $asset['browser_download_url'];
+            $found[$rank] = $found[$rank] ?? $asset;
         }
         ksort($found);
 

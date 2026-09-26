@@ -16,6 +16,8 @@ INSERT INTO /*TABLE_PREFIX*/t_preference VALUES
     ,('osclass', 'dimNormal', '640x480', 'STRING')
     ,('osclass', 'keep_original_image', '1', 'BOOLEAN')
     ,('osclass', 'browser_resize', '1', 'BOOLEAN')
+    ,('osclass', 'update_channel', 'stable', 'STRING')
+    ,('osclass', 'auto_security_updates', '0', 'BOOLEAN')
     ,('osclass', 'enabled_user_avatars', '1', 'BOOLEAN')
     ,('osclass', 'avatar_dimensions', '200x200', 'STRING')
     ,('osclass', 'dateFormat', 'F j, Y', 'STRING')

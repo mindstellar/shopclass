@@ -215,6 +215,17 @@ jobs:
           # exactly this release.
           printf '\n\nFull changelog: https://github.com/mindstellar/shopclass/blob/%s/CHANGELOG.md\n' "${OSCLASS_VERSION}" >> release_notes.md
 
+      # Read by the core updater to decide an automatic security install. A release is a
+      # security release when its CHANGELOG section has a "### Security" group.
+      - name: Release manifest
+        run: |
+          SECURITY=false
+          if awk 'BEGIN{n=0} /^## [^#]/{n++; if (n==2) exit} n>=1' CHANGELOG.md | grep -q '^### Security'; then
+            SECURITY=true
+          fi
+          printf '{"version":"%s","security":%s}\n' "${OSCLASS_VERSION}" "${SECURITY}" > release.json
+          cat release.json
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
@@ -229,6 +240,7 @@ jobs:
           files: |
             release/osclass_v${{ env.OSCLASS_VERSION }}.zip
             release/shopclass_v${{ env.OSCLASS_VERSION }}.zip
+            release.json
             deprecated-api.json
             tools/package-lint.php
             oc-includes/osclass/classes/market/Compatibility.php

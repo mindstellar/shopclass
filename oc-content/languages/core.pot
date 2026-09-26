@@ -533,6 +533,12 @@ msgstr ""
 msgid "A record of admin and listing activity — who did what, and when. "
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/MainSettingsForm.php
+msgid ""
+"A security fix for the version you run is installed the day it is found, "
+"and the contact e-mail is told how it went. Off by default."
+msgstr ""
+
 #: oc-includes/osclass/helpers/hUtils.php
 msgid "AM"
 msgstr ""
@@ -1007,10 +1013,6 @@ msgid "All submissions for this form have been deleted"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MainSettingsForm.php
-msgid "Allow Prerelease"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/MainSettingsForm.php
 msgid ""
 "Allow Shopclass to run a built-in <a href=\"%s\" target=\"_blank\" "
 "rel=\"noopener\">cron</a>"
@@ -1030,10 +1032,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/CommentSettingsForm.php
 msgid "Allow people to post comments on listings"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/MainSettingsForm.php
-msgid "Allow prerelease update"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MainSettingsForm.php
@@ -4766,6 +4764,10 @@ msgid ""
 "cases, "
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/MainSettingsForm.php
+msgid "Install security updates by themselves."
+msgstr ""
+
 #: oc-admin/themes/modern/tools/system-info.php
 msgid ""
 "Install the OS package (for example %1$s or %2$s), make sure an %3$s line "
@@ -8245,6 +8247,10 @@ msgstr ""
 msgid "Sections"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/MainSettingsForm.php
+msgid "Security updates"
+msgstr ""
+
 #: oc-admin/themes/modern/stats/comments.php
 msgid "See how many comments the listings published on your site have received."
 msgstr ""
@@ -8616,6 +8622,12 @@ msgstr ""
 msgid "Shopclass health"
 msgstr ""
 
+#: oc-includes/osclass/classes/upgrade/AutoSecurityUpdate.php
+msgid ""
+"Shopclass installed security update %2$s on %1$s, replacing %3$s. Nothing "
+"needs doing."
+msgstr ""
+
 #: oc-includes/osclass/installer/gui/install.php
 msgid "Shopclass is already installed here."
 msgstr ""
@@ -8640,6 +8652,12 @@ msgstr ""
 msgid ""
 "Shopclass runs, but PHP 7.x is past end of life and no longer gets security "
 "fixes. Shopclass targets PHP 8.0 and up — move to PHP 8."
+msgstr ""
+
+#: oc-includes/osclass/classes/upgrade/AutoSecurityUpdate.php
+msgid ""
+"Shopclass tried to install security update %2$s on %1$s and stopped: %3$s. "
+"The site still runs %4$s. Install the update from the admin when you can."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
@@ -8909,6 +8927,18 @@ msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
 msgid "Sporting Goods - Bicycles"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MainSettingsForm.php
+msgid "Stable and release candidates"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MainSettingsForm.php
+msgid "Stable releases only"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MainSettingsForm.php
+msgid "Stable, release candidates and betas"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/jobs.php
@@ -10275,6 +10305,10 @@ msgstr ""
 msgid "Update available"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/MainSettingsForm.php
+msgid "Update channel"
+msgstr ""
+
 #: oc-admin/themes/modern/comments/frm.php
 msgid "Update comment"
 msgstr ""
@@ -10955,6 +10989,12 @@ msgstr ""
 msgid "Where to match"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/MainSettingsForm.php
+msgid ""
+"Which new versions this site is offered. Betas and release candidates are "
+"for testing."
+msgstr ""
+
 #: oc-admin/themes/modern/tools/maintenance.php
 msgid ""
 "While maintenance mode is on, signed-in admins can still use the site. "
@@ -11245,6 +11285,14 @@ msgstr ""
 
 #: oc-admin/themes/modern/users/frm.php
 msgid "Zip code"
+msgstr ""
+
+#: oc-includes/osclass/classes/upgrade/AutoSecurityUpdate.php
+msgid "[%1$s] Security update %2$s could not be installed"
+msgstr ""
+
+#: oc-includes/osclass/classes/upgrade/AutoSecurityUpdate.php
+msgid "[%1$s] Security update %2$s installed"
 msgstr ""
 
 #: oc-includes/osclass/classes/security/AdminTwoFactor.php

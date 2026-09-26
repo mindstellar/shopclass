@@ -25,6 +25,21 @@ easier to undo when you can put them back.
 
 That is the whole procedure on a healthy install.
 
+The updater checks each download against the checksum GitHub publishes for it, and
+refuses a file that does not match.
+
+## Update channel and automatic security updates
+
+**Settings → General → Software updates** has two choices:
+
+- **Update channel.** *Stable releases only* is the default. *Stable and release
+  candidates* and *Stable, release candidates and betas* are for testing a release
+  before it ships.
+- **Security updates.** Off by default. When on, the daily cron installs a
+  security release for the version you run (6.4.1 on a 6.4.0 site, never 6.5.0) and
+  e-mails the contact address whether it worked. A failed attempt is not repeated;
+  update from the admin instead.
+
 ## Upgrading to 6.4.0 specifically
 
 Saved search alerts used to store SQL, and it ran as written. The upgrade rewrites

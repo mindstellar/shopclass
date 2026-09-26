@@ -547,6 +547,8 @@ jobs:
         run: php tests/upgrade-payload-contract.php
       - name: Upgrade release zip
         run: php tests/upgrade-release-zip.php
+      - name: Update channel and automatic security install
+        run: php tests/update-channel.php
       # Needs no database or network: the catalog's pointer and its manifest both carry a
       # `countries` key, and telling them apart on presence rather than type has broken
       # the catalog twice, both times hidden by a warm cache.

@@ -487,7 +487,8 @@ pin(
         'auto_cron'                    => 'osclass/auto_cron',
         'googlemaps_api_key'           => 'osclass/googlemaps_api_key',
         'openstreet_api_key'           => 'osclass/openstreet_api_key',
-        'allow_update_prerelease'      => 'osclass/allow_update_prerelease',
+        'update_channel'               => 'osclass/update_channel',
+        'auto_security_updates'        => 'osclass/auto_security_updates',
     ),
     keymap(MainSettingsForm::register())
 );
@@ -715,7 +716,7 @@ $main = array(
     'auto_cron'                    => '1',
     'googlemaps_api_key'           => ' gmk ',
     'openstreet_api_key'           => 'osm',
-    'allow_update_prerelease'      => '1',
+    'update_channel'               => 'beta',
 );
 $run = drive('CAdminSettingsMain', 'update', $main);
 
@@ -728,6 +729,7 @@ pin('the latest-listings count lands under the key readers use', array('9', 'INT
 pin('and the search page size under its own', array('20', 'INTEGER'), pref($admin, 'defaultResultsPerPage@search'));
 pin('the attachment switch under contact_attachment', array('1', 'BOOLEAN'), pref($admin, 'contact_attachment'));
 check('and not under the name of its control', pref($admin, 'enabled_attachment') === null);
+pin('the update channel is stored as chosen', array('beta', 'STRING'), pref($admin, 'update_channel'));
 pin('a hidden date format is stored like any other value', array('Y/m/d', 'STRING'), pref($admin, 'dateFormat'));
 pin('and the time format is stored beside it', array('H:i', 'STRING'), pref($admin, 'timeFormat'));
 pin('a key is trimmed', array('gmk', 'STRING'), pref($admin, 'googlemaps_api_key'));

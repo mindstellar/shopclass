@@ -1078,6 +1078,7 @@ function osc_run_cleanup()
     return $total;
 }
 osc_add_hook('cron_daily', 'osc_run_cleanup');
+osc_add_hook('cron_daily', array(\mindstellar\upgrade\AutoSecurityUpdate::class, 'run'));
 
 /**
  * End time-limited premium upgrades whose date has passed, returning how many were ended.
