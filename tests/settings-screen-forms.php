@@ -655,6 +655,7 @@ pin(
         'keep_original_image'   => 'osclass/keep_original_image',
         'browser_resize'        => 'osclass/browser_resize',
         'force_jpeg'            => 'osclass/force_jpeg',
+        'save_webp'             => 'osclass/save_webp',
         'jpeg_quality'          => 'osclass/jpeg_quality',
         'force_aspect_image'    => 'osclass/force_aspect_image',
         'maxSizeKb'             => 'osclass/maxSizeKb',

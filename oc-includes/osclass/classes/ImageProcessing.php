@@ -94,6 +94,14 @@ class ImageProcessing
                 $this->ext  = 'png';
                 $this->mime = 'image/png';
                 break;
+            case 'image/webp':
+                // Stays WebP, transparency and all, where the server can write it; else JPEG below.
+                if (self::canWriteWebp($this->use_imagick)) {
+                    $this->ext  = 'webp';
+                    $this->mime = 'image/webp';
+                    break;
+                }
+                // no break
             default:
                 $this->ext  = 'jpg';
                 $this->mime = 'image/jpeg';
@@ -117,6 +125,22 @@ class ImageProcessing
      * @return \ImageProcessing
      * @throws RuntimeException when the file is missing, unreadable or empty
      */
+    /**
+     * Whether this server can write WebP with the image library in use.
+     *
+     * @param bool $imagick
+     *
+     * @return bool
+     */
+    public static function canWriteWebp($imagick)
+    {
+        if ($imagick) {
+            return class_exists('Imagick') && in_array('WEBP', Imagick::queryFormats('WEBP'), true);
+        }
+
+        return function_exists('imagewebp');
+    }
+
     public static function fromFile($imagePath)
     {
         return new ImageProcessing($imagePath);
@@ -274,7 +298,10 @@ class ImageProcessing
             $ext = $this->ext;
         }
 
-        if ($ext !== 'png' && $ext !== 'gif') {
+        if ($ext === 'webp' && !self::canWriteWebp($this->use_imagick)) {
+            $ext = 'jpeg';
+        }
+        if ($ext !== 'png' && $ext !== 'gif' && $ext !== 'webp') {
             $ext = 'jpeg';
         }
 
@@ -316,6 +343,10 @@ class ImageProcessing
                 case 'gif':
                 case 'png':
                     imagepng($this->im, $imagePath, $png_compression);
+                    break;
+                case 'webp':
+                    imagesavealpha($this->im, true);
+                    imagewebp($this->im, $imagePath, $jpeg_quality);
                     break;
                 default:
                     if (($ext === 'jpeg' && ($this->ext !== 'jpeg' && $this->ext !== 'jpg')) || $this->watermarked) {

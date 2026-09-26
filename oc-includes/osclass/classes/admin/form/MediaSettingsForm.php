@@ -120,10 +120,19 @@ final class MediaSettingsForm
             )
                 ->rowLabel(__('Force JPEG'))
                 ->set('id', 'force_jpeg')
+            ->checkbox(
+                'save_webp',
+                __('Save new photos as WebP.'),
+                __('WebP files are about a third smaller at the same quality, so pages load faster. '
+                   . 'Photos already uploaded keep their format. Force JPEG takes precedence.')
+            )
+                ->rowLabel(__('WebP'))
+                ->set('id', 'save_webp')
+                ->disabled(!\ImageProcessing::canWriteWebp($imagick && osc_use_imagick()))
             ->number(
                 'jpeg_quality',
                 __('JPEG quality'),
-                __('Compression quality for saved JPEGs, from 1 (smallest file) to '
+                __('Compression quality for saved JPEG and WebP photos, from 1 (smallest file) to '
                    . '100 (best quality). 82 is a good balance.')
             )
                 ->set('min', 1)

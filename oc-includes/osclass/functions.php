@@ -1233,4 +1233,7 @@ if (osc_force_jpeg()) {
 
     osc_add_filter('upload_image_extension', 'osc_force_jpeg_extension');
     osc_add_filter('upload_image_mime', 'osc_force_jpeg_mime');
+} elseif (osc_save_webp()) {
+    osc_add_filter('upload_image_extension', static fn ($content) => 'webp');
+    osc_add_filter('upload_image_mime', static fn ($content) => 'image/webp');
 }

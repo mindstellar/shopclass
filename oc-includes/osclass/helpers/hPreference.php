@@ -51,6 +51,17 @@ function osc_force_jpeg()
 }
 
 /**
+ * Whether new photos are stored as WebP. Only when the server can write WebP and Force JPEG is off.
+ *
+ * @return boolean
+ */
+function osc_save_webp()
+{
+    return getBoolPreference('save_webp') && !osc_force_jpeg()
+           && ImageProcessing::canWriteWebp(extension_loaded('imagick') && osc_use_imagick());
+}
+
+/**
  * Gets comments per page
  *
  * @return int

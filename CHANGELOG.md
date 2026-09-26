@@ -20,6 +20,7 @@ This is a beta. Please try it on a copy of your site first, and tell us what you
 
 ### New
 
+- **Media → Settings → Save new photos as WebP** stores new uploads as WebP, about a third smaller. A WebP upload now stays WebP, transparency included. Off by default.
 - Public profiles and the contact page have a meta description.
 - An update channel (stable, release candidates or betas) replaces the prerelease switch, and security releases can install themselves, with an e-mail to the admin. Off by default.
 - The core updater checks each download against GitHub's checksum.
