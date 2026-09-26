@@ -136,7 +136,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 513 names. Generated from the source; do not edit by hand.
+Core fires 514 names. Generated from the source; do not edit by hand.
 
 ### Admin (77)
 
@@ -426,7 +426,7 @@ Core fires 513 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/osclass/classes/model/Search.php` |
 
-### Other (184)
+### Other (185)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -524,6 +524,7 @@ Core fires 513 names. Generated from the source; do not edit by hand.
 | `header` | action | — | `oc-includes/osclass/helpers/hTheme.php` |
 | `help_box` | action | — | `oc-admin/themes/modern/parts/header.php` |
 | `image_jpeg_quality` | filter | `$qualityPref` | `oc-includes/osclass/classes/ImageProcessing.php` |
+| `image_max_pixels` | filter | `50000000` | `oc-includes/osclass/classes/ImageProcessing.php` |
 | `image_png_compression` | filter | `6` | `oc-includes/osclass/classes/ImageProcessing.php` |
 | `init` | action | — | `oc-includes/osclass/classes/controller/base/abstract/BaseModel.php` |
 | `init_ajax` | action | — | `oc-includes/osclass/classes/controller/CWebAjax.php` |
