@@ -51,14 +51,13 @@ $identity = array(
     'sLocale'   => 'fr_FR',
 );
 foreach ($identity as $key => $value) {
-    $out = canonical_params(array($key => $value, 'iPage' => '3'));
+    $out = canonical_params(array($key => $value, 'iPagesize' => '3'));
     pin("$key survives", array($key => $value), $out);
 }
 
 harness_section('what only slices or narrows the same set is dropped');
 
 $noise = array(
-    'iPage'      => '4',
     'iPagesize'  => '50',
     'sOrder'     => 'i_price',
     'iOrderType' => 'asc',
@@ -77,6 +76,12 @@ foreach ($noise as $key => $value) {
     pin("$key dropped", array('sCategory' => '54'), $out);
 }
 
+harness_section('each page of results is its own page');
+
+pin('page 3 keeps its number', array('sCategory' => '54', 'iPage' => 3), canonical_params(array('sCategory' => '54', 'iPage' => '3')));
+pin('page 1 has none', array('sCategory' => '54'), canonical_params(array('sCategory' => '54', 'iPage' => '1')));
+pin('a page number that is not one is dropped', array('sCategory' => '54'), canonical_params(array('sCategory' => '54', 'iPage' => 'x')));
+
 // meta[] is the custom-field facet: an array, and the widest multiplier of them all.
 pin(
     'custom-field facets dropped',
@@ -93,7 +98,7 @@ pin(
 );
 pin(
     'a category-city page keeps both, so it stays its own page',
-    array('sCategory' => '54', 'sCity' => '278393'),
+    array('sCategory' => '54', 'sCity' => '278393', 'iPage' => 2),
     canonical_params(array('sCategory' => '54', 'sCity' => '278393', 'iPage' => '2', 'sOrder' => 'dt_pub_date'))
 );
 pin(
@@ -107,7 +112,7 @@ harness_section('no surprises');
 pin('an empty request stays empty', array(), canonical_params(array()));
 pin(
     'an unknown param is left alone rather than guessed at',
-    array('sCategory' => '54', 'sSomethingAPluginAdded' => 'x'),
+    array('sCategory' => '54', 'sSomethingAPluginAdded' => 'x', 'iPage' => 2),
     canonical_params(array('sCategory' => '54', 'sSomethingAPluginAdded' => 'x', 'iPage' => '2'))
 );
 

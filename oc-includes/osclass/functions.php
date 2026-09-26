@@ -261,6 +261,9 @@ function meta_title()
             break;
     }
 
+    // Parts such as the city are often empty and leave doubled or trailing spaces behind.
+    $text = trim((string) preg_replace('/\s+/u', ' ', (string) $text));
+
     if (!osc_is_home_page()) {
         if ($text != '') {
             $text .= ' - ' . osc_page_title();
@@ -359,6 +362,14 @@ function meta_description()
         }
     } elseif (osc_is_search_page()) {
         $text = osc_search_meta_description();
+    } elseif (osc_is_public_profile()) {
+        // What the seller says about themselves, else who they are and where.
+        $text = osc_highlight(osc_user_info(), OSC_META_DESCRIPTION_LENGTH, '', '');
+        if ($text === '') {
+            $text = sprintf(__('Listings by %1$s on %2$s.'), osc_user_name(), osc_page_title());
+        }
+    } elseif (osc_is_contact_page()) {
+        $text = sprintf(__('Send a message to %s.'), osc_page_title());
     }
 
     return osc_apply_filter('meta_description_filter', $text);

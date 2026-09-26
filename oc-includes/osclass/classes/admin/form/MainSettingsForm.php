@@ -70,7 +70,7 @@ final class MainSettingsForm
             ->text('pageTitle', __('Page title'))
                 ->required()
                 ->validate(static fn ($value) => osc_validate_text($value) ? null : _m('Page title field is required'))
-            ->text('pageDesc', __('Page description'))
+            ->text('pageDesc', __('Page description'), __('Search engines show it under your home page. Left empty, the home page has no description.'))
             ->email('contactEmail', __('Contact e-mail'))
                 ->required();
 

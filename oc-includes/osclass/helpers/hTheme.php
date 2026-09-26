@@ -761,17 +761,16 @@ function osc_head(): void
         }
     }
     if ($want('pagination') && osc_is_search_page()) {
-        // Page 0 is the first page. Bing still reads these; Google stopped in 2019 and works
-        // the sequence out on its own, so this is cheap insurance rather than a fix.
+        // osc_search_page() counts from 0, the iPage in a URL from 1, and page 1 has no iPage.
+        // Bing still reads these; Google works the sequence out on its own.
         $page  = (int) osc_search_page();
         $total = (int) osc_search_total_pages();
+        $link  = static fn (int $number) => osc_update_search_url(array('iPage' => $number > 1 ? $number : ''));
         if ($page > 0) {
-            echo '<link rel="prev" href="'
-                . osc_esc_html((string) osc_update_search_url(array('iPage' => $page - 1))) . '">' . PHP_EOL;
+            echo '<link rel="prev" href="' . osc_esc_html((string) $link($page)) . '">' . PHP_EOL;
         }
         if ($total > 0 && $page < $total - 1) {
-            echo '<link rel="next" href="'
-                . osc_esc_html((string) osc_update_search_url(array('iPage' => $page + 1))) . '">' . PHP_EOL;
+            echo '<link rel="next" href="' . osc_esc_html((string) $link($page + 2)) . '">' . PHP_EOL;
         }
     }
     if ($want('feed')) {

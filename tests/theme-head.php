@@ -152,8 +152,11 @@ function osc_search_url($params = array())
 function osc_update_search_url($params = array())
 {
     // Echoes the page it was asked for, so a pin can tell rel=prev from rel=next.
-    if (isset($params['iPage'])) {
+    if (isset($params['iPage']) && $params['iPage'] !== '') {
         return 'https://example.test/search/cars/p' . (int)$params['iPage'];
+    }
+    if (isset($params['iPage'])) {
+        return 'https://example.test/search/cars';
     }
 
     return 'https://example.test/search/cars/sFeed,rss';
@@ -275,16 +278,16 @@ $GLOBALS['searchPage']  = 0;
 $GLOBALS['searchTotal'] = 3;
 $h                      = $head();
 check('the first page has no rel=prev', strpos($h, 'rel="prev"') === false);
-check('...but does have rel=next', strpos($h, '<link rel="next" href="https://example.test/search/cars/p1">') !== false);
+check('...but does have rel=next, to page 2', strpos($h, '<link rel="next" href="https://example.test/search/cars/p2">') !== false);
 
 $GLOBALS['searchPage'] = 1;
 $h                     = $head();
-check('a middle page points back', strpos($h, '<link rel="prev" href="https://example.test/search/cars/p0">') !== false);
-check('...and forward', strpos($h, '<link rel="next" href="https://example.test/search/cars/p2">') !== false);
+check('page 2 points back to page 1, which has no page number', strpos($h, '<link rel="prev" href="https://example.test/search/cars">') !== false);
+check('...and forward to page 3', strpos($h, '<link rel="next" href="https://example.test/search/cars/p3">') !== false);
 
 $GLOBALS['searchPage'] = 2;
 $h                     = $head();
-check('the last page points back', strpos($h, 'rel="prev"') !== false);
+check('the last page points back to page 2', strpos($h, '<link rel="prev" href="https://example.test/search/cars/p2">') !== false);
 check('...and nowhere forward', strpos($h, 'rel="next"') === false);
 
 // One page of results is not a sequence.

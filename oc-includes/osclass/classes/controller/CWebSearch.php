@@ -196,10 +196,8 @@ class CWebSearch extends BaseModel
             }
         }
 
-        // Self-referential canonical for every search/category page — the unsorted, page-1
-        // friendly URL for this result set. Dropping the paging and sort/order params
-        // consolidates paginated and sort permutations of the same set onto one indexable
-        // URL, and gives page 1 a canonical it previously lacked (SEO CORE-1/CORE-2).
+        // Self-referential canonical for every search/category page: this page of the result
+        // set, unsorted, so sort and order permutations of the same page share one URL.
         if ($this->uri !== 'feed' && !Params::existParam('sFeed')) {
             $this->_exportVariableToView('canonical', osc_search_url(self::canonicalParams($uriParams)));
         }
@@ -603,16 +601,22 @@ class CWebSearch extends BaseModel
      */
     public static function canonicalParams(array $params)
     {
+        // Each page of results is its own page to index, so a page after the first keeps its
+        // number; pointing every page at page 1 hides the listings only deeper pages show.
+        $page = isset($params['iPage']) && is_numeric($params['iPage']) ? (int) $params['iPage'] : 0;
         $drop = array(
             // routing
             'page', 'action', 'sParams', 'sFeed',
-            // same set, different slice or order
+            // same set, different order or size
             'iPage', 'iPagesize', 'sOrder', 'iOrderType', 'sShowAs',
             // same set, narrowed
             'sPriceMin', 'sPriceMax', 'meta', 'bPic', 'bPremium',
         );
         foreach ($drop as $key) {
             unset($params[$key]);
+        }
+        if ($page > 1) {
+            $params['iPage'] = $page;
         }
 
         return $params;

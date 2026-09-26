@@ -20,6 +20,7 @@ This is a beta. Please try it on a copy of your site first, and tell us what you
 
 ### New
 
+- Public profiles and the contact page have a meta description.
 - An update channel (stable, release candidates or betas) replaces the prerelease switch, and security releases can install themselves, with an e-mail to the admin. Off by default.
 - The core updater checks each download against GitHub's checksum.
 - Admins can turn on two-step sign-in with a code from an authenticator app, with one-time backup codes. `oc-cli.php user:2fa-off` turns it off for an admin who is locked out.
@@ -86,6 +87,7 @@ This is a beta. Please try it on a copy of your site first, and tell us what you
 
 ### Fixed
 
+- Page titles no longer carry a double space when a part such as the city is empty.
 - The plugin and theme catalogue refreshes once a day again; before, it only changed when an admin chose **Check now**, so new updates went unseen.
 - The toolbar's update counts match the Updates tabs.
 - A failed update says the previous version was put back; a search with no results has a **Clear search** button.
@@ -198,6 +200,7 @@ This is a beta. Please try it on a copy of your site first, and tell us what you
 
 ### Changed
 
+- Each page of search results points its canonical link at itself, not at page 1, so listings that only deeper pages show can be found.
 - Releases ship as `shopclass_v*.zip`. `osclass_v*.zip` still ships with each release for sites updating from older versions, and the updater accepts either.
 - The search URL builder declares its five subdomain modes, its two canonical place
   URLs, its filter names and its country/region/city lists once each, instead of
