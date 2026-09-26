@@ -55,9 +55,6 @@ walks through the history, what carries over, and the upgrade path from a 3.x or
 | Services marketplace | tutors, trades, cleaners | rate, service area |
 | Product catalogue | products | size, colour, stock |
 
-Visitors contact the poster through the site. Shopclass has no shopping cart,
-checkout or booking calendar.
-
 ## Features
 
 - 🗂️ Listings with photos, categories, and hierarchical locations
