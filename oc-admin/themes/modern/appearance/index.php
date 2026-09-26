@@ -263,7 +263,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             <?php osc_admin_empty(array(
                 'icon'  => 'bi-palette',
                 'title' => __('No other themes installed'),
-                'text'  => __('Find one in Browse, or upload a theme package.'),
+                'text'  => __('Find one in Browse, or upload its zip file.'),
                 'action' => array(
                     'label'   => __('Add theme'),
                     'url'     => osc_admin_base_url(true) . '?page=appearance&amp;action=add',

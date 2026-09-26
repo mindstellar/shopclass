@@ -171,6 +171,19 @@
         if (search) {
             search.addEventListener('input', applyFilters);
         }
+        var clearSearch = app.querySelector('.market-clear-search');
+        if (clearSearch) {
+            clearSearch.addEventListener('click', function () {
+                if (search) {
+                    search.value = '';
+                    search.focus();
+                }
+                if (categoryFilter) {
+                    categoryFilter.value = '';
+                }
+                applyFilters();
+            });
+        }
         if (categoryFilter) {
             categoryFilter.addEventListener('change', applyFilters);
         }

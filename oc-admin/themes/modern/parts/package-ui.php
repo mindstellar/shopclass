@@ -162,14 +162,14 @@ if (!function_exists('osc_package_row')) {
             <?php osc_package_art($pkg['art'], $pkg['slug'], $pkg['name'], $size, $detail !== null); ?>
             <div class="osc-pkg-main">
                 <div class="osc-pkg-head">
-                    <h3 class="osc-pkg-name"><?php echo osc_esc_html($pkg['name']); ?></h3>
+                    <h3 class="osc-pkg-name" dir="auto"><?php echo osc_esc_html($pkg['name']); ?></h3>
                     <?php osc_package_state($pkg['state'], isset($pkg['state_word']) ? $pkg['state_word'] : ''); ?>
                 </div>
                 <?php if ($meta) : ?>
                     <p class="osc-pkg-meta"><?php echo implode(' <span class="osc-pkg-sep">·</span> ', $meta); ?></p>
                 <?php endif; ?>
                 <?php if (!empty($pkg['description'])) : ?>
-                    <p class="osc-pkg-desc"><?php echo osc_esc_html($pkg['description']); ?></p>
+                    <p class="osc-pkg-desc" dir="auto"><?php echo osc_esc_html($pkg['description']); ?></p>
                 <?php endif; ?>
                 <?php if (!empty($pkg['note'])) : ?>
                     <p class="osc-pkg-note osc-pkg-note--<?php

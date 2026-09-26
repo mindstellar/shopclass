@@ -218,7 +218,8 @@ $sidebar-gutter: 2.35rem;
     margin-block: .1rem;
     // Indented to the icon gutter so the label sits under the parent's label; the
     // dot marker below rides in that gutter, on the parent icon's spine.
-    padding: .3rem .6rem .3rem $sidebar-gutter;
+    padding-block: .3rem;
+    padding-inline: $sidebar-gutter .6rem;
     position: relative;
 
     // Leading dot, sitting in the icon gutter under the parent's icon spine. It is a

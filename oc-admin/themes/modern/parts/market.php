@@ -262,7 +262,7 @@ function osc_market_blocked_reason($meta, $compat)
         return (string) $compat['reason'];
     }
     if (empty($meta['writable'])) {
-        return __("This directory isn't writable, so packages can't be installed from here.");
+        return __("This folder isn't writable, so nothing can be installed from here.");
     }
     if (!empty($meta['disabled'])) {
         return __('In-app installs are disabled on this deployment.');
@@ -322,7 +322,9 @@ function osc_market_render_meta_notices($meta, $type)
     if (!empty($meta['disabled'])) {
         ?>
         <div class="callout-warning callout-block">
-            <?php echo osc_esc_html(__('In-app updates are disabled on this deployment. Install and update by deploying a new image or file set; this screen is read-only.')); ?>
+            <?php echo osc_esc_html(defined('DEMO')
+                ? __('This is a demo site, so nothing can be installed or updated here.')
+                : __('In-app updates are disabled on this deployment. Install and update by deploying a new image or file set; this screen is read-only.')); ?>
         </div>
         <?php
     }
@@ -330,7 +332,7 @@ function osc_market_render_meta_notices($meta, $type)
     if (empty($meta['writable'])) {
         ?>
         <div class="callout-warning callout-block">
-            <?php echo osc_esc_html(sprintf(__("The %s directory isn't writable, so packages can't be installed from here. Make it writable and reload this page."), $noun)); ?>
+            <?php echo osc_esc_html(sprintf(__("The %s folder isn't writable, so nothing can be installed from here. Make it writable and reload this page."), $noun)); ?>
         </div>
         <?php
     }
@@ -424,7 +426,9 @@ function osc_market_render_browse($rows, $meta, $type)
                 'title' => $type === 'theme'
                     ? __('Every published theme is already installed')
                     : __('Every published plugin is already installed'),
-                'text'  => __('New packages show up here as they are published. You can also upload one yourself.'),
+                'text'  => $type === 'theme'
+                    ? __('New themes show up here as they are published. You can also upload one yourself.')
+                    : __('New plugins show up here as they are published. You can also upload one yourself.'),
             )); ?>
         <?php else : ?>
             <?php osc_admin_empty(array(
@@ -464,7 +468,7 @@ function osc_market_render_browse($rows, $meta, $type)
                                     </span>
                                 <?php endif; ?>
                             </p>
-                            <p class="market-card-desc"><?php echo osc_esc_html($row['short_description']); ?></p>
+                            <p class="market-card-desc" dir="auto"><?php echo osc_esc_html($row['short_description']); ?></p>
                             <?php osc_market_render_untested_note($row['compat']); ?>
                             <div class="market-card-actions">
                                 <?php osc_market_render_action($row, $meta, 'install', __('Install')); ?>
@@ -479,7 +483,10 @@ function osc_market_render_browse($rows, $meta, $type)
             <?php endforeach; ?>
         </div>
     <?php endif; ?>
-    <p class="market-no-results" hidden><?php _e('No packages match your search.'); ?></p>
+    <div class="market-no-results" hidden>
+        <p><?php echo osc_esc_html($type === 'theme' ? __('No themes match your search.') : __('No plugins match your search.')); ?></p>
+        <button type="button" class="btn btn-dim btn-sm market-clear-search"><?php _e('Clear search'); ?></button>
+    </div>
     <?php
 }
 
@@ -682,7 +689,7 @@ function osc_market_i18n($type)
         'updateAllRunning' => __('Updating…'),
         'updateAllDone'    => $type === 'theme' ? __('Themes updated.') : __('Plugins updated.'),
         'checking'         => __('Checking…'),
-        'noResults'        => __('No packages match your search.'),
+        'noResults'        => $type === 'theme' ? __('No themes match your search.') : __('No plugins match your search.'),
         'byAuthor'         => __('by %s'),
         'requiresCore'     => __('Shopclass %s or newer'),
         'requiresPhp'      => __('PHP %s or newer'),
@@ -691,7 +698,7 @@ function osc_market_i18n($type)
         'linkRepo'         => __('Repository'),
         'linkIssues'       => __('Issue tracker'),
         'linkDocs'         => __('Documentation'),
-        'detailError'      => __("Couldn't load details for this package."),
+        'detailError'      => $type === 'theme' ? __("Couldn't load details for this theme.") : __("Couldn't load details for this plugin."),
         'downloadsCount'   => __('%s downloads'),
     );
 }

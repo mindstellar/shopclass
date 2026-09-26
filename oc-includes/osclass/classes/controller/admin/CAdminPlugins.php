@@ -611,6 +611,12 @@ class CAdminPlugins extends AdminSecBaseModel
             'catalog_available' => $index !== array() || $updates !== array(),
         );
 
+        // The toolbar count is saved once a day; recount when it disagrees with this list,
+        // so the header drawn next shows the same number as the Updates tab.
+        if ((int) osc_get_preference('plugins_update_count') !== count($marketUpdates)) {
+            osc_admin_toolbar_update_plugins(true);
+        }
+
         return array($browse, $marketUpdates, $meta);
     }
 }

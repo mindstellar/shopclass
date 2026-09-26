@@ -939,10 +939,12 @@ class CAdminAjax extends AdminSecBaseModel
                 AjaxResponse::json(array('msg' => __('Checked updates'), 'total' => $total));
                 break;
             case 'check_themes':
+                $this->refreshCatalogIfDue('theme');
                 $total = _osc_check_themes_update();
                 AjaxResponse::json(array('msg' => __('Checked updates'), 'total' => $total));
                 break;
             case 'check_plugins':
+                $this->refreshCatalogIfDue('plugin');
                 $total = _osc_check_plugins_update();
                 AjaxResponse::json(array('msg' => __('Checked updates'), 'total' => $total));
                 break;
@@ -1341,6 +1343,26 @@ class CAdminAjax extends AdminSecBaseModel
             ),
             'admin'
         );
+    }
+
+    /**
+     * Fetch the catalog when its last check is over a day old. The daily update check in the
+     * admin footer calls this; without it the catalog only changed on "Check now".
+     *
+     * @param string $type 'plugin' or 'theme'
+     *
+     * @return void
+     */
+    private function refreshCatalogIfDue($type)
+    {
+        if (defined('DEMO') || osc_package_installs_disabled()) {
+            return;
+        }
+        $catalog = self::marketCatalog($type);
+        if (time() - $catalog->lastChecked() > 24 * 3600) {
+            $catalog->updates(true);
+            $catalog->index(true);
+        }
     }
 
     /**

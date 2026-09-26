@@ -385,7 +385,15 @@ final class Installer
 
             $this->refreshUpdateCount();
 
-            return $this->result(true, __('Package installed.'), $slug, $newVersion, false);
+            return $this->result(
+                true,
+                $hadExisting
+                    ? ($this->isTheme ? __('Theme updated.') : __('Plugin updated.'))
+                    : ($this->isTheme ? __('Theme installed.') : __('Plugin installed.')),
+                $slug,
+                $newVersion,
+                false
+            );
         } catch (Throwable $e) {
             $rolledBack = false;
             if ($hadExisting && $backupZipPath !== null) {
@@ -397,7 +405,9 @@ final class Installer
 
             return $this->result(
                 false,
-                sprintf(__('Install failed: %s'), $e->getMessage()),
+                $rolledBack
+                    ? sprintf(__('Update failed: %s. The previous version is back in place, so nothing changed.'), rtrim($e->getMessage(), '.'))
+                    : sprintf(__('Install failed: %s'), $e->getMessage()),
                 $slug,
                 null,
                 $rolledBack

@@ -13704,7 +13704,8 @@ div.widget-box-content-no-wrapp li a {
   font-size: 0.875rem;
   min-height: 2rem;
   margin-block: 0.1rem;
-  padding: 0.3rem 0.6rem 0.3rem 2.35rem;
+  padding-block: 0.3rem;
+  padding-inline: 2.35rem 0.6rem;
   position: relative;
 }
 .dashboard-sidebar .sidebar-submenu a::before {
@@ -21561,6 +21562,10 @@ form h3, form .h3 {
   color: var(--osc-ink-muted);
   padding: 2rem 0;
   text-align: center;
+}
+
+.market-no-results p {
+  margin: 0 0 0.75rem;
 }
 
 .market-grid-item {

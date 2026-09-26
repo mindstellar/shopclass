@@ -72,6 +72,10 @@ In development.
 
 ### Fixed
 
+- The plugin and theme catalogue refreshes once a day again; before, it only changed when an admin chose **Check now**, so new updates went unseen.
+- The toolbar's update counts match the Updates tabs.
+- A failed update says the previous version was put back; a search with no results has a **Clear search** button.
+- Submenu dots no longer overlap their labels in right-to-left languages.
 - A search sent with list values where one value is expected (`sPattern[]`, nested `sCategory`, an empty `sUser[]`) or a date field set to `1e20` no longer breaks the page.
 - A date custom-field search with a non-numeric value, or a number range of `1e400`, no longer breaks the search page.
 - A custom-field search sent as a list (`meta[5][]=x`) is ignored instead of failing the whole search, and a numeric value is compared as text. The category recount no longer builds invalid SQL on a site with no categories.

@@ -162,7 +162,7 @@ $marketRefreshUrl = osc_admin_base_url(true) . '?page=ajax&action=market_refresh
         osc_admin_empty(array(
             'icon'   => 'bi-plug',
             'title'  => __('No plugins installed'),
-            'text'   => __('Plugins extend what the panel and your site can do. Install one from Browse, or upload a package.'),
+            'text'   => __('Plugins extend what the panel and your site can do. Install one from Browse, or upload its zip file.'),
             'action' => array(
                 'label'   => __('Add plugin'),
                 'url'     => osc_admin_base_url(true) . '?page=plugins&amp;action=add',
