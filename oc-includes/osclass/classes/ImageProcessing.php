@@ -50,6 +50,9 @@ class ImageProcessing
         }
 
         $this->image_info = getimagesize($imagePath);
+        if (is_array($this->image_info) && $this->image_info[0] * $this->image_info[1] > self::maxPixels()) {
+            throw new RuntimeException(sprintf(__('%s has too many pixels to process.'), $imagePath));
+        }
 
         if (extension_loaded('imagick') && osc_use_imagick()) {
             $this->use_imagick = true;
@@ -118,15 +121,18 @@ class ImageProcessing
     }
 
     /**
-     * Load an image from disk.
+     * The most pixels an image may have before it is opened. The image_max_pixels filter
+     * changes it.
      *
-     * @param string $imagePath
-     *
-     * @return \ImageProcessing
-     * @throws RuntimeException when the file is missing, unreadable or empty
+     * @return int
      */
+    public static function maxPixels()
+    {
+        return max(1, (int)Plugins::applyFilter('image_max_pixels', 50000000));
+    }
+
     /**
-     * Whether this server can write WebP with the image library in use.
+     * Whether this server can write WebP with the given engine.
      *
      * @param bool $imagick
      *
@@ -141,6 +147,14 @@ class ImageProcessing
         return function_exists('imagewebp');
     }
 
+    /**
+     * Load an image from disk.
+     *
+     * @param string $imagePath
+     *
+     * @return \ImageProcessing
+     * @throws RuntimeException when the file is missing, unreadable, empty or too large
+     */
     public static function fromFile($imagePath)
     {
         return new ImageProcessing($imagePath);

@@ -86,6 +86,11 @@ class AjaxUploader
         }
 
         if ($this->file->save($uploadFilename)) {
+            if (\mindstellar\storage\UploadMimes::tooManyPixels($uploadFilename)) {
+                @unlink($uploadFilename);
+
+                throw new Exception(\mindstellar\storage\UploadMimes::tooManyPixelsMessage());
+            }
             $result = $this->checkAllowedExt($uploadFilename);
             if (!$result) {
                 @unlink($uploadFilename); // Wrong extension, remove it for security reasons

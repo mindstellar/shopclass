@@ -269,6 +269,10 @@ msgstr ""
 msgid "%s downloads"
 msgstr ""
 
+#: oc-includes/osclass/classes/ImageProcessing.php
+msgid "%s has too many pixels to process."
+msgstr ""
+
 #: oc-admin/themes/modern/settings/locations.php
 msgid "%s is already installed. Update it from the Data tab."
 msgstr ""
@@ -9513,6 +9517,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/market/Installer.php
 msgid "The package's top-level directory must be named \"%s\"."
+msgstr ""
+
+#: oc-includes/osclass/classes/storage/UploadMimes.php
+msgid "The photo is too large. It can have at most %s megapixels."
 msgstr ""
 
 #: oc-admin/themes/modern/plugins/add.php

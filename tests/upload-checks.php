@@ -86,6 +86,10 @@ $attempt = static function (string $name, string $source) use ($tmpDir): string 
 
         return 'ok';
     } catch (Exception $e) {
+        if (strpos($e->getMessage(), 'too large') !== false) {
+            return 'too-big';
+        }
+
         return strpos($e->getMessage(), 'invalid extension') !== false ? 'bad-ext' : 'error';
     } finally {
         @unlink($target);
@@ -158,6 +162,25 @@ check('random bytes are not an allowed image', !UploadMimes::isAllowedImage($blo
 @unlink($blob);
 
 check('a real PNG still is', UploadMimes::isAllowedImage($png));
+
+// A few hundred bytes whose header claims 8000 x 8000: decoding it would take hundreds of MB.
+$bomb = $tmpDir . '/bomb.png';
+$ihdr = 'IHDR' . pack('NNCCCCC', 8000, 8000, 8, 6, 0, 0, 0);
+file_put_contents($bomb, "\x89PNG\r\n\x1a\n" . pack('N', 13) . $ihdr . pack('N', crc32($ihdr)) . str_repeat("\0", 200));
+check('an image over the pixel limit is caught from its header', UploadMimes::tooManyPixels($bomb));
+check('and is not an allowed image', !UploadMimes::isAllowedImage($bomb));
+check('a normal PNG is under the limit', !UploadMimes::tooManyPixels($png));
+pin('the uploader refuses it with the size message', 'too-big', $attempt('bomb.png', $bomb));
+$GLOBALS['flashes'] = array();
+check('the listing photo check refuses it', !$check->invoke($actions, $files($bomb, 'image/png')));
+check('and says why', strpos((string) end($GLOBALS['flashes']), 'megapixels') !== false);
+$threw = false;
+try {
+    ImageProcessing::fromFile($bomb);
+} catch (RuntimeException $e) {
+    $threw = true;
+}
+check('the image class will not open it either', $threw);
 
 array_map('unlink', glob($tmpDir . '/*'));
 @rmdir($tmpDir);

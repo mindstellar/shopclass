@@ -125,6 +125,34 @@ final class UploadMimes
             return false;
         }
 
-        return function_exists('getimagesize') && is_array(@getimagesize($path));
+        return function_exists('getimagesize') && is_array(@getimagesize($path)) && !self::tooManyPixels($path);
+    }
+
+    /**
+     * Whether an image has more pixels than the server may open. Its header says so before
+     * anything is decoded, so a small file cannot expand into gigabytes of memory.
+     *
+     * @param string $path
+     *
+     * @return bool
+     */
+    public static function tooManyPixels(string $path): bool
+    {
+        $info = @getimagesize($path);
+
+        return is_array($info) && $info[0] * $info[1] > \ImageProcessing::maxPixels();
+    }
+
+    /**
+     * The refusal shown for an image over the pixel limit.
+     *
+     * @return string
+     */
+    public static function tooManyPixelsMessage(): string
+    {
+        return sprintf(
+            __('The photo is too large. It can have at most %s megapixels.'),
+            round(\ImageProcessing::maxPixels() / 1000000)
+        );
     }
 }

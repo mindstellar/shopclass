@@ -448,6 +448,11 @@ class ItemActions
                 if ($error !== UPLOAD_ERR_OK) {
                     continue;
                 }
+                if (\mindstellar\storage\UploadMimes::tooManyPixels((string)$aResources['tmp_name'][$key])) {
+                    osc_add_flash_error_message(\mindstellar\storage\UploadMimes::tooManyPixelsMessage());
+
+                    return false;
+                }
                 if (!\mindstellar\storage\UploadMimes::isAllowedImage((string)$aResources['tmp_name'][$key])) {
                     $success = false;
                 }

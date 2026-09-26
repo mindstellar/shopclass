@@ -95,6 +95,7 @@ This is the second beta. Please try it on a copy of your site first, and tell us
 
 - WebP photos can be uploaded. They were refused even when `webp` was an allowed extension, and it is now allowed by default.
 - A photo whose files cannot be saved shows an error instead of staying as a broken image.
+- A photo over 50 megapixels is refused before it is opened, so a small crafted file cannot use up the server's memory. The `image_max_pixels` filter changes the limit.
 - The installer works on a site served on a port other than 80 or 443; the site address no longer loses the port.
 - Installing into a database that already holds a Shopclass site stops before it creates any table.
 - **Test connection** catches a user that cannot write, a bad table prefix and an unknown host.
