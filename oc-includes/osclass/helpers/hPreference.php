@@ -48,6 +48,10 @@ function osc_comments_enabled()
 function osc_image_format()
 {
     $format = (string) osc_get_preference('image_format');
+    // Until the database update adds image_format, the old Force JPEG switch still counts.
+    if ($format === '' && getBoolPreference('force_jpeg')) {
+        return 'jpeg';
+    }
 
     return in_array($format, array('jpeg', 'webp'), true) ? $format : 'original';
 }
