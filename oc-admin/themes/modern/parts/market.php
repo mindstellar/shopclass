@@ -689,7 +689,6 @@ function osc_market_i18n($type)
         'updateAllRunning' => __('Updating…'),
         'updateAllDone'    => $type === 'theme' ? __('Themes updated.') : __('Plugins updated.'),
         'checking'         => __('Checking…'),
-        'noResults'        => $type === 'theme' ? __('No themes match your search.') : __('No plugins match your search.'),
         'byAuthor'         => __('by %s'),
         'requiresCore'     => __('Shopclass %s or newer'),
         'requiresPhp'      => __('PHP %s or newer'),

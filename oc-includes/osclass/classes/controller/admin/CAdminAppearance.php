@@ -512,7 +512,7 @@ class CAdminAppearance extends AdminSecBaseModel
             'last_checked'      => $catalog->lastChecked(),
             'error'             => $catalog->lastError(),
             'writable'          => is_writable(osc_themes_path()),
-            'disabled'          => osc_package_installs_disabled() || defined('DEMO'),
+            'disabled'          => osc_market_changes_blocked(),
             'categories'        => $categories,
             'catalog_available' => $index !== array() || $updates !== array(),
         );

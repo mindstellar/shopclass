@@ -1140,6 +1140,17 @@ function osc_package_installs_disabled()
 }
 
 /**
+ * Whether the admin may change plugins and themes from the market at all: not on a demo site,
+ * and not where package installs are disabled.
+ *
+ * @return bool
+ */
+function osc_market_changes_blocked()
+{
+    return defined('DEMO') || osc_package_installs_disabled();
+}
+
+/**
  * Strip backslashes from a string, or from every value of an array, recursively.
  *
  * @param string|array<mixed> $array

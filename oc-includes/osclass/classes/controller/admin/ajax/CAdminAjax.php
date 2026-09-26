@@ -1355,7 +1355,7 @@ class CAdminAjax extends AdminSecBaseModel
      */
     private function refreshCatalogIfDue($type)
     {
-        if (defined('DEMO') || osc_package_installs_disabled()) {
+        if (osc_market_changes_blocked()) {
             return;
         }
         $catalog = self::marketCatalog($type);
