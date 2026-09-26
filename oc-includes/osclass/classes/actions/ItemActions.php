@@ -992,9 +992,30 @@ class ItemActions
                         if (!is_dir($folder) && !mkdir($folder, 0755, true) && !is_dir($folder)) {
                             return 3; // PATH CAN NOT BE CREATED
                         }
-                        osc_copy($tmpName . '_normal', $folder . $resourceId . '.' . $extension);
-                        osc_copy($tmpName . '_preview', $folder . $resourceId . '_preview.' . $extension);
-                        osc_copy($tmpName . '_thumbnail', $folder . $resourceId . '_thumbnail.' . $extension);
+                        $copies = array(
+                            $tmpName . '_normal'    => $folder . $resourceId . '.' . $extension,
+                            $tmpName . '_preview'   => $folder . $resourceId . '_preview.' . $extension,
+                            $tmpName . '_thumbnail' => $folder . $resourceId . '_thumbnail.' . $extension,
+                        );
+                        $copied = true;
+                        foreach ($copies as $from => $to) {
+                            $copied = $copied && osc_copy($from, $to);
+                        }
+                        // A photo row without its files shows as a broken image, so undo it.
+                        if (!$copied) {
+                            foreach ($copies as $from => $to) {
+                                @unlink($from);
+                                @unlink($to);
+                            }
+                            @unlink($tmpName);
+                            $itemResourceManager->deleteResourcesIds(array($resourceId));
+                            $totalItemImages--;
+                            osc_add_flash_error_message(
+                                _m('A photo could not be saved. Check that the uploads folder can be written to.'),
+                                $this->is_admin ? 'admin' : 'pubMessages'
+                            );
+                            continue;
+                        }
                         if (osc_keep_original_image()) {
                             // Re-encoded, not copied. A copy stores the upload byte for byte, so
                             // anything appended after the image survives under an image extension.

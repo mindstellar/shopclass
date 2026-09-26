@@ -139,9 +139,20 @@ final class ResourceUploader
             return false;
         }
 
-        osc_copy($normalTmp, $folder . $id . '.' . $extension);
+        $copies = array($normalTmp => $folder . $id . '.' . $extension);
         foreach ($secondary as $suffix => $vtmp) {
-            osc_copy($vtmp, $folder . $id . $suffix . '.' . $extension);
+            $copies[$vtmp] = $folder . $id . $suffix . '.' . $extension;
+        }
+        $copied = true;
+        foreach ($copies as $from => $to) {
+            $copied = $copied && osc_copy($from, $to);
+        }
+        if (!$copied) {
+            array_map(static fn ($to) => @unlink($to), $copies);
+            Resource::newInstance()->deleteResourcesIds(array($id));
+            $this->cleanupTemps($tmpFile, $normalTmp, $secondary);
+
+            return false;
         }
         if ($keepOriginal) {
             // Re-encoded, not copied. A copy stores the upload byte for byte, so anything

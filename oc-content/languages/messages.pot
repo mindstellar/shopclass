@@ -165,6 +165,10 @@ msgstr ""
 msgid "A page needs a title in at least one language."
 msgstr ""
 
+#: oc-includes/osclass/classes/actions/ItemActions.php
+msgid "A photo could not be saved. Check that the uploads folder can be written to."
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-alerts-content.php
 msgid "A saved search that emails you when a new listing matches it."
 msgstr ""
