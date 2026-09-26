@@ -16,7 +16,11 @@ upgrade converts your existing alerts for you. Large phone photos shrink in the 
 before they upload, so they no longer fail the size limit. The listing and page editors
 share one tidy layout, and plugins get a shared queue for slow work.
 
-This is a beta. Please try it on a copy of your site first, and tell us what you find.
+Photos can now be saved as WebP, which makes them about a third smaller. The installer can
+clean up an install that stopped halfway and start again, and it gives clearer help when the
+database details are wrong.
+
+This is the second beta. Please try it on a copy of your site first, and tell us what you find.
 
 ### New
 
