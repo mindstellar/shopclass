@@ -51,7 +51,7 @@ function mediaOwnerUrl($ownerType, $ownerId)
 {
     switch ($ownerType) {
         case 'item':
-            return osc_admin_base_url(true) . '?page=items&action=edit&id=' . (int) $ownerId;
+            return osc_item_admin_edit_url((int) $ownerId);
         case 'user':
             return osc_admin_base_url(true) . '?page=users&action=edit&id=' . (int) $ownerId;
         case 'page':
