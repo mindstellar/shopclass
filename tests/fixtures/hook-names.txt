@@ -397,6 +397,7 @@ filter form_submit_veto
 filter form_validation_errors
 filter gettext
 filter image_jpeg_quality
+filter image_max_pixels
 filter image_png_compression
 filter init_send_mail
 filter item_add_prepare_data

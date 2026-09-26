@@ -3759,6 +3759,10 @@ msgid ""
 "your host's control panel or welcome email usually has them."
 msgstr ""
 
+#: oc-includes/osclass/install-functions.php
+msgid "Enter the database settings this site is configured with in its environment."
+msgstr ""
+
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/pages/frm.php
 #: oc-includes/osclass/classes/form/PageForm.php
@@ -9948,6 +9952,12 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/widgets.php
 msgid "This removes the widget from its section immediately and cannot be undone."
+msgstr ""
+
+#: oc-includes/osclass/install-functions.php
+msgid ""
+"This site already has database settings in config.php. Enter the same ones, "
+"or delete config.php to use a different database."
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php

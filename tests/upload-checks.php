@@ -31,6 +31,17 @@ function osc_allowed_extension()
     return 'png, gif,jpg,jpeg,webp';
 }
 
+function osc_plugins_path()
+{
+    return ABS_PATH . 'oc-content/plugins/';
+}
+
+$GLOBALS['imagick'] = false;
+function osc_use_imagick()
+{
+    return $GLOBALS['imagick'];
+}
+
 function _m($s)
 {
     return $s;
@@ -181,6 +192,37 @@ try {
     $threw = true;
 }
 check('the image class will not open it either', $threw);
+
+// A GIF whose header says 1 x 1 but whose frame is 2000 x 2000. Only ImageMagick decodes the
+// frame, so only it can tell; the limit is lowered so the file stays small.
+if (extension_loaded('imagick')) {
+    $gif = new Imagick();
+    $gif->newImage(2000, 2000, 'white');
+    $gif->setImageFormat('gif');
+    $bytes = $gif->getImageBlob();
+    $bytes = substr_replace($bytes, pack('vv', 1, 1), 6, 4);
+    file_put_contents($tmpDir . '/liar.gif', $bytes);
+    Plugins::addHook('image_max_pixels', static fn () => 1000000);
+    $GLOBALS['imagick'] = true;
+    check('with ImageMagick on, a GIF frame larger than its header is caught', UploadMimes::tooManyPixels($tmpDir . '/liar.gif'));
+    $threw = false;
+    try {
+        ImageProcessing::fromFile($tmpDir . '/liar.gif');
+    } catch (RuntimeException $e) {
+        $threw = true;
+    }
+    check('and the image class will not open it', $threw);
+    $GLOBALS['imagick'] = false;
+    check('with GD the header size is what counts', !UploadMimes::tooManyPixels($tmpDir . '/liar.gif'));
+}
+file_put_contents($tmpDir . '/drawing.svg', '<svg xmlns="http://www.w3.org/2000/svg" width="9000" height="9000"/>');
+$threw = false;
+try {
+    ImageProcessing::fromFile($tmpDir . '/drawing.svg');
+} catch (RuntimeException $e) {
+    $threw = true;
+}
+check('an SVG is not opened as a photo', $threw);
 
 array_map('unlink', glob($tmpDir . '/*'));
 @rmdir($tmpDir);

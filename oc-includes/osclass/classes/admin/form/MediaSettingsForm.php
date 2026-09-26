@@ -564,10 +564,13 @@ final class MediaSettingsForm
         }
 
         $info = @getimagesize($file['tmp_name']);
+        if ($info === false || $info['mime'] !== 'image/png') {
+            return _m('The watermark image has to be a .PNG file');
+        }
 
-        return $info !== false && $info['mime'] === 'image/png'
-            ? null
-            : _m('The watermark image has to be a .PNG file');
+        return \mindstellar\storage\UploadMimes::tooManyPixels($file['tmp_name'])
+            ? \mindstellar\storage\UploadMimes::tooManyPixelsMessage()
+            : null;
     }
 
     /**

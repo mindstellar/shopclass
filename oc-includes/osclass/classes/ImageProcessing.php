@@ -50,30 +50,22 @@ class ImageProcessing
         }
 
         $this->image_info = getimagesize($imagePath);
-        if (is_array($this->image_info) && $this->image_info[0] * $this->image_info[1] > self::maxPixels()) {
-            throw new RuntimeException(sprintf(__('%s has too many pixels to process.'), $imagePath));
+        if (!is_array($this->image_info)) {
+            throw new RuntimeException(sprintf(__('%s is corrupt or broken!'), $imagePath));
         }
-
         if (extension_loaded('imagick') && osc_use_imagick()) {
             $this->use_imagick = true;
         }
+        if (self::pixelCount($imagePath) > self::maxPixels()) {
+            throw new RuntimeException(sprintf(__('%s has too many pixels to process.'), $imagePath));
+        }
 
         if ($this->use_imagick) {
+            // Only the first frame of an animation is read.
             try {
-                $this->im = new Imagick($imagePath);
+                $this->im = new Imagick($imagePath . '[0]');
             } catch (ImagickException $e) {
-                trigger_error($e->getMessage(), E_USER_WARNING);
-            }
-            /**
-             * Check if image have more frames and get the first frame if it has.
-             */
-            if ($this->im->getNumberImages() > 1) {
-                $this->im->destroy();
-                try {
-                    $this->im = new Imagick($imagePath . '[0]');
-                } catch (ImagickException $e) {
-                    trigger_error($e->getMessage(), E_USER_WARNING);
-                }
+                throw new RuntimeException(sprintf(__('%s is corrupt or broken!'), $imagePath));
             }
 
             $geometry     = $this->im->getImageGeometry();
@@ -129,6 +121,35 @@ class ImageProcessing
     public static function maxPixels()
     {
         return max(1, (int)Plugins::applyFilter('image_max_pixels', 50000000));
+    }
+
+    /**
+     * How many pixels opening the image would decode. ImageMagick is asked too when it is in
+     * use, because a GIF frame can be larger than the size its header states.
+     *
+     * @param string $imagePath
+     *
+     * @return int 0 when the file is not an image
+     */
+    public static function pixelCount($imagePath)
+    {
+        $info = @getimagesize($imagePath);
+        if (!is_array($info)) {
+            return 0;
+        }
+        $pixels = $info[0] * $info[1];
+        if (extension_loaded('imagick') && osc_use_imagick()) {
+            try {
+                $ping = new Imagick();
+                $ping->pingImage($imagePath . '[0]');
+                $pixels = max($pixels, $ping->getImageWidth() * $ping->getImageHeight());
+                $ping->clear();
+            } catch (ImagickException $e) {
+                return PHP_INT_MAX;
+            }
+        }
+
+        return $pixels;
     }
 
     /**

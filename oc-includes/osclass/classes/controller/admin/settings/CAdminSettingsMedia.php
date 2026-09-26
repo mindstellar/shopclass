@@ -80,12 +80,21 @@ class CAdminSettingsMedia extends AdminSecBaseModel
 
                 if (\mindstellar\storage\StorageManager::instance()->remote() === null) {
                     // No remote storage configured: regenerate every resource inline, exactly as before.
-                    $aResources = ItemResource::newInstance()->getAllResources();
-                    foreach ($aResources as $resource) {
-                        ItemActions::regenerateResourceImages($resource);
+                    // One photo that cannot be opened, such as one over the pixel limit, is skipped.
+                    $skipped = 0;
+                    foreach (ItemResource::newInstance()->getAllResources() as $resource) {
+                        try {
+                            ItemActions::regenerateResourceImages($resource);
+                        } catch (Throwable $e) {
+                            $skipped++;
+                        }
                     }
 
-                    osc_add_flash_ok_message(_m('Re-generation complete'), 'admin');
+                    if ($skipped > 0) {
+                        osc_add_flash_warning_message(sprintf(_m('Re-generation complete. %d photos could not be opened and were left as they were.'), $skipped), 'admin');
+                    } else {
+                        osc_add_flash_ok_message(_m('Re-generation complete'), 'admin');
+                    }
                 } else {
                     // A remote adapter is active: regenerating inline would mean one synchronous
                     // download per resource, so page through resource ids (never loading full rows)

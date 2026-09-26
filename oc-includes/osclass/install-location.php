@@ -51,7 +51,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 // State-changing request: require the installer nonce (osc_csrf_check() cannot
 // work yet — no preferences exist).
-if (!install_nonce_check()) {
+if (!install_nonce_check() || !Session::newInstance()->_get('install_db_done')) {
     echo json_encode(array(
         'status' => false,
         'error'  => __('Your session expired. Reload the page and start again.'),

@@ -633,6 +633,19 @@ function oc_install()
         );
     }
 
+    // A site that already has database settings installs only into that database. Without
+    // this, a visitor who reached the form on a live site could point config.php at theirs.
+    if (osc_is_configured() && !($dbhost === DB_HOST && $dbname === DB_NAME && $username === DB_USER
+        && $tableprefix === DB_TABLE_PREFIX && hash_equals((string)DB_PASSWORD, (string)$password))
+    ) {
+        return array(
+            'error' => defined('OSC_CONFIG_FROM_ENV') && OSC_CONFIG_FROM_ENV
+                ? __('Enter the database settings this site is configured with in its environment.')
+                : __('This site already has database settings in config.php. Enter the same ones, or delete config.php to use a different database.'),
+            'field' => 'dbname',
+        );
+    }
+
     if (Params::getParam('createdb') != '') {
         $createdb = true;
     }
@@ -864,6 +877,8 @@ function oc_install()
     if ($writesConfig) {
         copy_config_file($dbname, $username, $password, $dbhost, $tableprefix);
     }
+    // The site step creates the admin; it runs only after this session installed the database.
+    Session::newInstance()->_set('install_db_done', 1);
 
     return false;
 }
@@ -1184,15 +1199,15 @@ function is_osclass_installed()
     }
 
     try {
-        // Establish the shared connection, then ask through the parameterized
-        // API. Any failure — no server, missing table, wrong credentials —
-        // means "not installed", exactly as the previous raw query behaved.
-        // The table prefix is a config constant, never request input.
-        \mindstellar\database\ConnectionManager::newInstance(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
-        $count = osc_db_scalar(
-            'SELECT COUNT(*) FROM ' . DB_TABLE_PREFIX . 't_preference WHERE s_name = ?',
-            array('osclass_installed')
-        );
+        // Its own connection, never the shared one: a failed check must not leave a broken
+        // connection behind for the install that may follow. The prefix is a config constant.
+        $probe = new \mindstellar\database\ConnectionManager(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+        if ($probe->getErrorConnectionLevel() > 0 || $probe->getErrorLevel() > 0) {
+            return false;
+        }
+        $count = $probe->getHandle()->query(
+            'SELECT COUNT(*) FROM `' . DB_TABLE_PREFIX . "t_preference` WHERE s_name = 'osclass_installed'"
+        )->fetch_row()[0];
     } catch (\Throwable $e) {
         return false;
     }

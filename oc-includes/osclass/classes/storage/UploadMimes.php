@@ -138,9 +138,7 @@ final class UploadMimes
      */
     public static function tooManyPixels(string $path): bool
     {
-        $info = @getimagesize($path);
-
-        return is_array($info) && $info[0] * $info[1] > \ImageProcessing::maxPixels();
+        return \ImageProcessing::pixelCount($path) > \ImageProcessing::maxPixels();
     }
 
     /**
