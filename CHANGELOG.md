@@ -4,7 +4,19 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 ## Shopclass 6.4.0
 
-In development.
+This release makes your site safer to run and easier to keep up to date.
+
+You can now add a second step to the admin sign-in: a code from an authenticator app on
+your phone. Shopclass can also install security fixes by itself when you switch it on. It
+waits a day after a fix comes out, installs it at night, and e-mails you how it went. You
+choose whether you get stable releases only, or release candidates and betas too.
+
+Saved search alerts now keep only what a visitor searched for, never database code, and the
+upgrade converts your existing alerts for you. Large phone photos shrink in the browser
+before they upload, so they no longer fail the size limit. The listing and page editors
+share one tidy layout, and plugins get a shared queue for slow work.
+
+This is a beta. Please try it on a copy of your site first, and tell us what you find.
 
 ### New
 
@@ -89,8 +101,6 @@ In development.
 - The current-theme card no longer runs off the screen on a phone.
 - Moving a listing to no country no longer prints a failed database query.
 - No more deprecation notices on PHP 8.5 from image resizing, downloads and contact-form attachments.
-- A job run that ran out of time left the rest of its batch waiting 15 minutes; they now run on the next tick.
-- `osc_job_enqueue()` refuses a payload larger than 64 KB instead of storing it cut off.
 - A theme in a folder with a dot in its name, such as `my.theme`, now shows under Appearance.
 - A plugin symlinked into `oc-content/plugins/` gets its own hook names, so install and uninstall run.
 - The admin sidebar no longer jumps at the end of opening or closing a group.
@@ -110,8 +120,6 @@ In development.
 - A refused page save no longer stores the page template, the bodies or the modified date
   before refusing.
 - A page title or internal name of nothing but spaces is refused rather than stored.
-- With the photo limit set to zero, meaning unlimited, a listing saved only its first photo.
-- Both editors counted one refused title as several and listed it twice.
 - The listing editor posted a `cityAreaId` nothing read, and wired an autocomplete to
   elements it never drew.
 - The page editor's rich-text body drew near-black text on a dark sheet, at 1.31:1.
@@ -130,7 +138,6 @@ In development.
 - On the user editor, choosing a country did not reload the regions: the script was emitted
   in the page head, so it never found the field it was meant to watch.
 - Suggestions under a field inside a dialog were drawn behind it.
-- Picking a suggestion inside a dialog closed the dialog instead of filling the field.
 - Deleting a category with thousands of listings timed out and rolled back, leaving a category
   that could not be deleted. A large one is now hidden immediately and emptied in the
   background.
