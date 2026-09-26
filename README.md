@@ -5,8 +5,8 @@
 </p>
 
 <p align="center">
-  <strong>Open-source, self-hosted classifieds — by Mindstellar.</strong><br>
-  Build and run your own ads marketplace: real estate, jobs, vehicles, anything.
+  <strong>Open-source, self-hosted listing CMS — by Mindstellar.</strong><br>
+  Run classifieds, a job board, a property portal, a directory: any site built on listings.
 </p>
 
 <p align="center">
@@ -27,11 +27,12 @@
 
 ## What is Shopclass?
 
-Shopclass is a PHP application that lets you launch a full classifieds website on
-your own hosting — listings with photos, categories and locations, user accounts,
-comments, search and filtering, multi-language support, and an admin panel to run
-it all. It ships as a zip you install on ordinary shared or VPS hosting; there is
-no build step or bundler to run on the server.
+Shopclass is a PHP application for running a listing site on your own hosting —
+listings with photos, categories and locations, custom fields per category, user
+accounts, search and filtering, paid plans, pages, multi-language support, and an
+admin panel to run it all. Classifieds is where it started; the same parts fit any
+site where people post and browse listings. It ships as a zip you install on
+ordinary shared or VPS hosting; there is no build step or bundler to run on the server.
 
 Shopclass is the modernised, maintained successor to **Osclass**. It
 keeps Osclass's plugin and theme APIs (the `osc_*` helpers, hook names, and asset
@@ -42,15 +43,34 @@ first-class maintenance/cleanup toolset built in.
 **Coming from Osclass?** [What happened to Osclass, and how to upgrade](https://mindstellar.com/osclass/)
 walks through the history, what carries over, and the upgrade path from a 3.x or 5.x install.
 
+## What you can build
+
+| Site | Listings are | Custom fields, for example |
+|---|---|---|
+| Classifieds | items for sale | condition, price, brand |
+| Job board | job openings | salary, job type, company |
+| Property portal | homes and rentals | rooms, rent or buy, area |
+| Vehicle marketplace | cars and bikes | make, model, year, mileage |
+| Business directory | local businesses | phone, opening hours, website |
+| Services marketplace | tutors, trades, cleaners | rate, service area |
+| Product catalogue | products | size, colour, stock |
+
+Visitors contact the poster through the site. Shopclass has no shopping cart,
+checkout or booking calendar.
+
 ## Features
 
 - 🗂️ Listings with photos, categories, and hierarchical locations
+- 🧾 Custom fields per category, with inheritance, groups, and conditional logic
+- 💳 Paid plans and listing upgrades: listing fees, photo limits, premium, bump, highlight
+- 📄 Static pages with a page editor and page templates
 - 🔍 Search, filtering, and SEO-friendly URLs
 - 👥 User registration, accounts, and moderation
 - 🎨 Themeable frontend + a modern, accessible (WCAG-checked) admin panel
 - 🧩 Plugin & theme system — compatible with the Osclass extension API
 - 🌎 Multi-language / i18n support
-- 🔒 CSRF protection, CAPTCHA, and hardened sessions
+- 🔒 CSRF protection, CAPTCHA, admin two-step sign-in, and hardened sessions
+- ☁️ Photo storage on disk or S3-compatible object storage
 - 🧹 Built-in Tools → Cleanup for expired, spam, blocked, and unactivated content
 - ♻️ One-click self-updater that pulls release packages
 
