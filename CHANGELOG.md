@@ -21,6 +21,7 @@ This is a beta. Please try it on a copy of your site first, and tell us what you
 ### New
 
 - **Media → Settings → Photo format** replaces Force JPEG: keep the original format (default), save as JPEG, or save as WebP (about a third smaller). A WebP upload now stays WebP.
+- The installer can remove an install that did not finish and start again.
 - Public profiles and the contact page have a meta description.
 - An update channel (stable, release candidates or betas) replaces the prerelease switch, and security releases can install themselves, with an e-mail to the admin. Off by default.
 - The core updater checks each download against GitHub's checksum.
@@ -90,6 +91,9 @@ This is a beta. Please try it on a copy of your site first, and tell us what you
 
 - WebP photos can be uploaded. They were refused even when `webp` was an allowed extension, and it is now allowed by default.
 - A photo whose files cannot be saved shows an error instead of staying as a broken image.
+- The installer works on a site served on a port other than 80 or 443; the site address no longer loses the port.
+- Installing into a database that already holds a Shopclass site stops before it creates any table.
+- **Test connection** catches a user that cannot write, a bad table prefix and an unknown host.
 - Page titles no longer carry a double space when a part such as the city is empty.
 - The plugin and theme catalogue refreshes once a day again; before, it only changed when an admin chose **Check now**, so new updates went unseen.
 - The toolbar's update counts match the Updates tabs.

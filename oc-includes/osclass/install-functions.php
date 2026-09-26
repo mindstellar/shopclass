@@ -79,7 +79,7 @@ function get_absolute_url()
     $pos      = strpos(getServerParam('REQUEST_URI'), 'oc-includes');
     $URI      = rtrim(substr(getServerParam('REQUEST_URI'), 0, $pos), '/') . '/';
 
-    return $protocol . '://' . getServerParam('HTTP_HOST') . $URI;
+    return $protocol . '://' . osc_request_host() . $URI;
 }
 
 /**
@@ -310,8 +310,8 @@ function install_db_error_message($code, array $ctx = array())
         case 1044:
             return array(
                 'error' => sprintf(
-                    __("That user connected, but isn't allowed to use the database %s. In your hosting "
-                        . 'panel, give the user access to this database.'),
+                    __("That user connected, but the database %s does not exist or the user isn't allowed "
+                        . 'to use it. In your hosting panel, create the database and give the user access to it.'),
                     $dbname
                 ),
                 'field' => 'dbname',
@@ -357,6 +357,73 @@ function install_db_error_message($code, array $ctx = array())
 }
 
 /**
+ * Whether the database already has Shopclass tables with this prefix. The prefix is escaped so
+ * it cannot act as a LIKE wildcard.
+ *
+ * @param mysqli $db
+ * @param string $prefix
+ *
+ * @return bool
+ */
+function install_prefix_in_use(mysqli $db, string $prefix): bool
+{
+    $like = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), $prefix) . 't\\_%';
+    $res  = $db->query("SHOW TABLES LIKE '" . $db->real_escape_string($like) . "'");
+
+    return $res instanceof mysqli_result && $res->num_rows > 0;
+}
+
+/**
+ * Whether the Shopclass tables under this prefix are an install that never finished: the
+ * sentinel row the last step writes is missing.
+ *
+ * @param mysqli $db
+ * @param string $prefix a validated table prefix
+ *
+ * @return bool
+ */
+function install_is_unfinished(mysqli $db, string $prefix): bool
+{
+    try {
+        $res = $db->query('SELECT COUNT(*) FROM `' . $prefix . "t_preference` WHERE s_name = 'osclass_installed'");
+    } catch (mysqli_sql_exception $e) {
+        return true;
+    }
+
+    return !($res instanceof mysqli_result) || (int) $res->fetch_row()[0] === 0;
+}
+
+/**
+ * Drop the tables of an unfinished install: only the tables the installer creates.
+ *
+ * @param mysqli $db
+ * @param string $prefix a validated table prefix
+ *
+ * @return void
+ */
+function install_drop_unfinished(mysqli $db, string $prefix): void
+{
+    preg_match_all('/CREATE TABLE \/\*TABLE_PREFIX\*\/(\w+)/', (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/installer/struct.sql'), $m);
+    $db->query('SET FOREIGN_KEY_CHECKS = 0');
+    foreach (array_merge($m[1], array('t_migration')) as $table) {
+        $db->query('DROP TABLE IF EXISTS `' . $prefix . $table . '`');
+    }
+    $db->query('SET FOREIGN_KEY_CHECKS = 1');
+}
+
+/**
+ * @return array{error: string, field: string}
+ */
+function install_unfinished_message(): array
+{
+    return array(
+        'error' => __('This database has a Shopclass install that did not finish. Turn on "Remove the '
+            . 'unfinished install" under More options to start again.'),
+        'field' => 'reset_unfinished',
+    );
+}
+
+/**
  * Try the database settings entered on step 2 without committing to them, so the
  * owner can confirm the connection works before running the real install. This
  * is the installer's biggest fear-reducer.
@@ -388,6 +455,14 @@ function install_test_db_connection()
             'level'   => 'error',
             'message' => __('Fill in the host, database name and username first.'),
             'field'   => $dbhost === '' ? 'dbhost' : ($dbname === '' ? 'dbname' : 'username'),
+        );
+    }
+    if (!preg_match('/^[A-Za-z0-9_]+$/', $tableprefix)) {
+        return array(
+            'ok'      => false,
+            'level'   => 'error',
+            'message' => __('The table prefix can only contain letters, numbers and underscores.'),
+            'field'   => 'tableprefix',
         );
     }
 
@@ -427,14 +502,24 @@ function install_test_db_connection()
         return array('ok' => false, 'level' => 'error', 'message' => $msg['error'], 'field' => $msg['field']);
     }
 
-    // Connected. Warn early if this prefix already has Shopclass tables — the
-    // 1050 collision the real install would otherwise hit halfway through. The
-    // LIKE pattern is escaped so a literal prefix can't act as a wildcard.
+    // Connected. Warn early if this prefix already has Shopclass tables.
     $db = $probe->getHandle();
     if ($db instanceof mysqli) {
-        $like = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), $tableprefix) . 't_preference';
-        $res  = $db->query("SHOW TABLES LIKE '" . $db->real_escape_string($like) . "'");
-        if ($res instanceof mysqli_result && $res->num_rows > 0) {
+        if (install_prefix_in_use($db, $tableprefix) && install_is_unfinished($db, $tableprefix)) {
+            if (Params::getParam('reset_unfinished') == '') {
+                $msg = install_unfinished_message();
+
+                return array('ok' => false, 'level' => 'warning', 'message' => $msg['error'], 'field' => $msg['field']);
+            }
+
+            return array(
+                'ok'      => true,
+                'level'   => 'success',
+                'message' => sprintf(__('Connected to %s. The unfinished install will be removed when you continue.'), $dbname),
+                'field'   => null,
+            );
+        }
+        if (install_prefix_in_use($db, $tableprefix)) {
             return array(
                 'ok'      => false,
                 'level'   => 'warning',
@@ -442,6 +527,16 @@ function install_test_db_connection()
                     . 'prefix. Choose a different table prefix under More options, or use an empty database.'),
                 'field'   => 'tableprefix',
             );
+        }
+        // Connecting is not enough: the install creates tables, so try one.
+        $table = '`' . $tableprefix . 'install_probe`';
+        try {
+            $db->query('CREATE TABLE ' . $table . ' (i INT)');
+            $db->query('DROP TABLE ' . $table);
+        } catch (mysqli_sql_exception $e) {
+            $msg = install_db_error_message($e->getCode(), $ctx);
+
+            return array('ok' => false, 'level' => 'error', 'message' => $msg['error'], 'field' => $msg['field']);
         }
     }
 
@@ -568,7 +663,10 @@ function oc_install()
                 $quotedDbName
             ));
         } catch (\mindstellar\database\DbException $e) {
-            return install_db_error_message($e->getCode(), array('dbhost' => $dbhost, 'dbname' => $dbname));
+            // MySQL reports a refused CREATE DATABASE as 1044, access denied to that database.
+            $code = (int) $e->getCode() === 1044 ? 1006 : $e->getCode();
+
+            return install_db_error_message($code, array('dbhost' => $dbhost, 'dbname' => $dbname));
         }
 
         unset($dbInstance, $adminDb, $adminInstance);
@@ -584,6 +682,17 @@ function oc_install()
 
     if ($error_num > 0) {
         return install_db_error_message($error_num, array('dbhost' => $dbhost, 'dbname' => $dbname));
+    }
+    // Stop before anything is created, so an existing site's database is left as it was.
+    $handle = $dbInstance->getHandle();
+    if ($handle instanceof mysqli && install_prefix_in_use($handle, $tableprefix)) {
+        if (!install_is_unfinished($handle, $tableprefix)) {
+            return install_db_error_message(1050, array('dbhost' => $dbhost, 'dbname' => $dbname));
+        }
+        if (Params::getParam('reset_unfinished') == '') {
+            return install_unfinished_message();
+        }
+        install_drop_unfinished($handle, $tableprefix);
     }
 
     // When the configuration comes from the environment there is no config.php

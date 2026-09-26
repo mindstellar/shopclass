@@ -227,7 +227,8 @@ class ConnectionManager
             // that error exactly as before.
             $this->dbSelected = false;
             try {
-                $this->dbSelected = $this->connId->real_connect(
+                // An unknown host also raises a PHP warning; the exception carries the same error.
+                $this->dbSelected = @$this->connId->real_connect(
                     $this->dbHost,
                     $this->dbUser,
                     $this->dbPassword,
@@ -240,7 +241,7 @@ class ConnectionManager
                 }
                 $this->connId = mysqli_init();
                 $this->connId->options(MYSQLI_OPT_CONNECT_TIMEOUT, 10);
-                $this->connId->real_connect(
+                @$this->connId->real_connect(
                     $this->dbHost,
                     $this->dbUser,
                     $this->dbPassword,

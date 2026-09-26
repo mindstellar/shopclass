@@ -120,6 +120,26 @@ function strip_slashes_extended_e($array)
 }
 
 /**
+ * The request's host, with the port when the site runs on one other than 80 or 443.
+ * Some nginx packages pass the host without its port; it is added back unless a proxy is in front.
+ *
+ * @return string
+ */
+function osc_request_host()
+{
+    $host = (string) getErrorParam('HTTP_HOST');
+    $port = (string) getErrorParam('SERVER_PORT');
+    if ($host !== '' && strpos($host, ':') === false && ctype_digit($port) && !in_array($port, array('80', '443'), true)
+        && getErrorParam('HTTP_X_FORWARDED_FOR') === '' && getErrorParam('HTTP_X_FORWARDED_HOST') === ''
+        && getErrorParam('HTTP_X_FORWARDED_PROTO') === ''
+    ) {
+        $host .= ':' . $port;
+    }
+
+    return $host;
+}
+
+/**
  * Best-effort base URL of the install, derived from the current request.
  *
  * @return string
@@ -129,7 +149,7 @@ function osc_get_absolute_url()
     $protocol = (getErrorParam('HTTPS') === 'on' || getErrorParam('HTTPS') == 1
         || getErrorParam('HTTP_X_FORWARDED_PROTO') === 'https') ? 'https' : 'http';
 
-    return $protocol . '://' . getErrorParam('HTTP_HOST')
+    return $protocol . '://' . osc_request_host()
         . preg_replace(
             '/((oc-admin)|(oc-includes)|(oc-content)|([a-z]+\.php)|(\?.*)).*/i',
             '',

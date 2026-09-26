@@ -241,6 +241,7 @@
             'password',
             'tableprefix',
             'createdb',
+            'reset_unfinished',
             'admin_username',
             'admin_password',
         ];

@@ -149,6 +149,10 @@ class OsclassErrors
      */
     public function logErrors(int $type = E_USER_NOTICE, string $message = '', string $file = __FILE__, int $line = __LINE__): bool
     {
+        // Honour the @ operator: under it, error_reporting() leaves this type out.
+        if (!(error_reporting() & $type)) {
+            return false;
+        }
         $this->log($type, $message, $file, $line);
 
         return true;

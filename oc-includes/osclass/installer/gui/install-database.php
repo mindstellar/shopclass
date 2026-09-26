@@ -67,7 +67,7 @@ $ins_field_error = (is_array($error) && !empty($error['field'])) ? $error['field
         <div class="ins-help"><?php _e('Your MySQL password.'); ?></div>
     </div>
 
-    <details class="ins-disclosure" <?php echo Params::getParam('createdb') == '1' ? 'open' : ''; ?>>
+    <details class="ins-disclosure" <?php echo Params::getParam('createdb') == '1' || in_array($ins_field_error, array('tableprefix', 'createdb', 'reset_unfinished'), true) ? 'open' : ''; ?>>
         <summary><?php _e('More options'); ?></summary>
         <div class="ins-disclosure-body">
             <div class="ins-field">
@@ -81,6 +81,14 @@ $ins_field_error = (is_array($error) && !empty($error['field'])) ? $error['field
                 <div>
                     <label for="createdb"><?php _e('Create the database'); ?></label>
                     <div class="ins-help"><?php _e("Turn this on if the database doesn't exist yet and you want Shopclass to create it."); ?></div>
+                </div>
+            </div>
+
+            <div class="ins-field ins-checkbox-row">
+                <input type="checkbox" id="reset_unfinished" name="reset_unfinished" value="1" <?php echo Params::getParam('reset_unfinished') == '1' ? 'checked="checked"' : ''; ?> <?php echo $ins_field_error === 'reset_unfinished' ? 'aria-invalid="true"' : ''; ?> />
+                <div>
+                    <label for="reset_unfinished"><?php _e('Remove the unfinished install'); ?></label>
+                    <div class="ins-help"><?php _e('Turn this on to delete the tables of a Shopclass install that did not finish, and start again. A finished site is never touched.'); ?></div>
                 </div>
             </div>
 

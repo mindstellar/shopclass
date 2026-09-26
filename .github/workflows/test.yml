@@ -205,6 +205,8 @@ jobs:
         run: php tests/pagination.php
       - name: Installer config values
         run: php tests/install-config.php
+      - name: Request host keeps its port
+        run: php tests/request-host.php
       - name: Params XSS check matches the purifier
         run: php tests/params-purify.php
       - name: HTMLPurifier definition cache

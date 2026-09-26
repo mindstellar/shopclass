@@ -20,6 +20,7 @@ define('LIB_PATH', ABS_PATH . 'oc-includes/');
 // when present, otherwise from the environment. Requiring config.php directly
 // here broke an environment-only install (no config.php / OSC_IGNORE_CONFIG_FILE)
 // — this AJAX endpoint would connect to the wrong host and fail with a 503.
+require_once LIB_PATH . 'osclass/helpers/hErrors.php';
 require_once LIB_PATH . 'osclass/config-loader.php';
 require_once LIB_PATH . 'vendor/autoload.php';
 
