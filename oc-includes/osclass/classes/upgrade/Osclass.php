@@ -291,6 +291,7 @@ class Osclass extends UpgradePackage
                 }
                 if (isset($aSelfPackage['tag_name'])) {
                     $package_info['s_new_version'] = ReleaseChannel::version($aSelfPackage);
+                    $package_info['s_published_at'] = (string) ($aSelfPackage['published_at'] ?? '');
                 }
                 $package_info['s_installed_version'] = OSCLASS_VERSION;
                 $package_info['s_short_name']        = 'osclass';

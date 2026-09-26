@@ -169,7 +169,7 @@ final class MainSettingsForm
             ->checkbox(
                 'auto_security_updates',
                 __('Install security updates by themselves.'),
-                __('A security fix for the version you run is installed the day it is found, and the contact e-mail is told how it went. Off by default.')
+                __('A security fix for the version you run (6.4.0 to 6.4.1) is installed at night once it is a day old, and the contact e-mail is told how it went. Off by default.')
             )
                 ->rowLabel(__('Security updates'))
             ->custom('layout_clear', static function () {

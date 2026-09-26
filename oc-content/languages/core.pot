@@ -535,8 +535,9 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MainSettingsForm.php
 msgid ""
-"A security fix for the version you run is installed the day it is found, "
-"and the contact e-mail is told how it went. Off by default."
+"A security fix for the version you run (6.4.0 to 6.4.1) is installed at "
+"night once it is a day old, and the contact e-mail is told how it went. Off "
+"by default."
 msgstr ""
 
 #: oc-includes/osclass/helpers/hUtils.php
@@ -8626,6 +8627,12 @@ msgstr ""
 msgid ""
 "Shopclass installed security update %2$s on %1$s, replacing %3$s. Nothing "
 "needs doing."
+msgstr ""
+
+#: oc-includes/osclass/classes/upgrade/AutoSecurityUpdate.php
+msgid ""
+"Shopclass installed security update %2$s on %1$s, replacing %3$s. Restart "
+"PHP (PHP-FPM) so the site runs the new files."
 msgstr ""
 
 #: oc-includes/osclass/classes/upgrade/AutoSecurityUpdate.php

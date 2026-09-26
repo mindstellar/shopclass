@@ -45,7 +45,7 @@ pin(
 pin('an object in the list is skipped', '6.3.0', ReleaseChannel::pick(array((object) array('tag_name' => '9.9.9'), $release('6.3.0')), ReleaseChannel::STABLE)['tag_name'] ?? null);
 pin('a GitHub error body picks nothing', null, ReleaseChannel::pick(array('message' => 'API rate limit exceeded'), ReleaseChannel::STABLE));
 
-$info = array('s_new_version' => '6.4.2', 's_sha256' => str_repeat('a', 64));
+$info = array('s_new_version' => '6.4.2', 's_sha256' => str_repeat('a', 64), 's_published_at' => '2026-09-01T10:00:00Z');
 pin('a last-number rise installs', null, AutoSecurityUpdate::refusal($info, '6.4.1', ''));
 pin('from a dev build of the same version too', null, AutoSecurityUpdate::refusal($info, '6.4.0.dev', ''));
 pin('not when already on it', 'not a security release for this version', AutoSecurityUpdate::refusal($info, '6.4.2', ''));
@@ -58,5 +58,9 @@ pin('not rc to its stable release', 'not a security release for this version', A
 pin('not without a checksum', 'no checksum', AutoSecurityUpdate::refusal(array('s_new_version' => '6.4.2'), '6.4.1', ''));
 pin('not with a checksum that is not one', 'no checksum', AutoSecurityUpdate::refusal(array('s_sha256' => 'x') + $info, '6.4.1', ''));
 pin('not twice', 'already tried', AutoSecurityUpdate::refusal($info, '6.4.1', '6.4.2'));
+$published = strtotime('2026-09-01T10:00:00Z');
+pin('not within a day of its release', 'less than a day old', AutoSecurityUpdate::refusal($info, '6.4.1', '', $published + 86399));
+pin('from a day after it', null, AutoSecurityUpdate::refusal($info, '6.4.1', '', $published + 86400));
+pin('not without a release time', 'less than a day old', AutoSecurityUpdate::refusal(array('s_published_at' => '') + $info, '6.4.1', ''));
 
 exit(harness_result());

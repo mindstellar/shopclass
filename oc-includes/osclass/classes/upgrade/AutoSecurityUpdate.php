@@ -24,10 +24,11 @@ final class AutoSecurityUpdate
      * @param array<string,mixed>|null $info      Osclass::getPackageInfo()
      * @param string                   $installed the version this site runs
      * @param string                   $lastTried the last version an automatic install tried
+     * @param int|null                 $now       unix time, now when null
      *
      * @return string|null
      */
-    public static function refusal(?array $info, string $installed, string $lastTried): ?string
+    public static function refusal(?array $info, string $installed, string $lastTried, ?int $now = null): ?string
     {
         $new = (string) ($info['s_new_version'] ?? '');
         if (!preg_match('/^(\d+)\.(\d+)\.(\d+)$/', $new, $to)
@@ -43,6 +44,11 @@ final class AutoSecurityUpdate
         }
         if ($lastTried === $new) {
             return 'already tried';
+        }
+        // A day to pull a broken release before sites install it with nobody watching.
+        $published = strtotime((string) ($info['s_published_at'] ?? ''));
+        if ($published === false || ($now ?? time()) - $published < 86400) {
+            return 'less than a day old';
         }
 
         return null;
@@ -128,7 +134,9 @@ final class AutoSecurityUpdate
         $reason = rtrim($reason, '. ');
         if ($stage === 'done') {
             $subject = sprintf(__('[%1$s] Security update %2$s installed'), $site, $to);
-            $body    = sprintf(__('Shopclass installed security update %2$s on %1$s, replacing %3$s. Nothing needs doing.'), $site, $to, $from);
+            $body    = PHP_SAPI === 'cli'
+                ? sprintf(__('Shopclass installed security update %2$s on %1$s, replacing %3$s. Restart PHP (PHP-FPM) so the site runs the new files.'), $site, $to, $from)
+                : sprintf(__('Shopclass installed security update %2$s on %1$s, replacing %3$s. Nothing needs doing.'), $site, $to, $from);
         } else {
             $subject = sprintf(__('[%1$s] Security update %2$s could not be installed'), $site, $to);
             $body    = $stage === 'files'

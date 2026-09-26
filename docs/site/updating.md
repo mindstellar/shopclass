@@ -35,10 +35,11 @@ refuses a file that does not match.
 - **Update channel.** *Stable releases only* is the default. *Stable and release
   candidates* and *Stable, release candidates and betas* are for testing a release
   before it ships.
-- **Security updates.** Off by default. When on, the daily cron installs a
-  security release for the version you run (6.4.1 on a 6.4.0 site, never 6.5.0) and
-  e-mails the contact address whether it worked. A failed attempt is not repeated;
-  update from the admin instead.
+- **Security updates.** Off by default. When on, the nightly cron installs a
+  security release for the version you run (6.4.1 on a 6.4.0 site, never 6.5.0) once
+  it is a day old, and e-mails the contact address whether it worked. A failed
+  attempt is not repeated; update from the admin instead. If your cron runs from the
+  command line, restart PHP-FPM after the e-mail arrives.
 
 ## Upgrading to 6.4.0 specifically
 

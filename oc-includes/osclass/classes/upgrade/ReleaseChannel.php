@@ -12,7 +12,7 @@ namespace mindstellar\upgrade;
 
 /**
  * Which core releases a site is offered: stable only, or also release candidates, or also betas.
- * Read from the release tag (6.4.0, 6.4.0.rc1, 6.4.0.beta2), not from GitHub's prerelease flag.
+ * Read from the release tag (6.4.0, 6.4.0.rc1, 6.4.0.beta2); the stable channel also skips GitHub prereleases.
  */
 final class ReleaseChannel
 {
