@@ -717,6 +717,7 @@ $main = array(
     'googlemaps_api_key'           => ' gmk ',
     'openstreet_api_key'           => 'osm',
     'update_channel'               => 'beta',
+    'auto_security_updates'        => '1',
 );
 $run = drive('CAdminSettingsMain', 'update', $main);
 
@@ -730,6 +731,7 @@ pin('and the search page size under its own', array('20', 'INTEGER'), pref($admi
 pin('the attachment switch under contact_attachment', array('1', 'BOOLEAN'), pref($admin, 'contact_attachment'));
 check('and not under the name of its control', pref($admin, 'enabled_attachment') === null);
 pin('the update channel is stored as chosen', array('beta', 'STRING'), pref($admin, 'update_channel'));
+pin('the security updates switch is stored as a boolean', array('1', 'BOOLEAN'), pref($admin, 'auto_security_updates'));
 pin('a hidden date format is stored like any other value', array('Y/m/d', 'STRING'), pref($admin, 'dateFormat'));
 pin('and the time format is stored beside it', array('H:i', 'STRING'), pref($admin, 'timeFormat'));
 pin('a key is trimmed', array('gmk', 'STRING'), pref($admin, 'googlemaps_api_key'));

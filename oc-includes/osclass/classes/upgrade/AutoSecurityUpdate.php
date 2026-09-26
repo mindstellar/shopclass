@@ -10,13 +10,11 @@
 
 namespace mindstellar\upgrade;
 
-use mindstellar\utility\FileSystem;
 use Throwable;
 
 /**
- * Installs a security release on its own, once a day from the cron, when the admin has
- * switched it on. Only a release on the site's channel, for the same X.Y it runs, with a
- * checksum, and marked security in its release.json. The contact address is e-mailed the result.
+ * Installs a security release on its own from the daily cron when switched on, and e-mails the
+ * contact address. A security release raises only the last number of the running version (6.4.0 to 6.4.1).
  */
 final class AutoSecurityUpdate
 {
@@ -24,29 +22,27 @@ final class AutoSecurityUpdate
      * Why a release must not be installed on its own, or null when it may be.
      *
      * @param array<string,mixed>|null $info      Osclass::getPackageInfo()
-     * @param array<string,mixed>|null $manifest  the release's release.json
      * @param string                   $installed the version this site runs
      * @param string                   $lastTried the last version an automatic install tried
      *
      * @return string|null
      */
-    public static function refusal(?array $info, ?array $manifest, string $installed, string $lastTried): ?string
+    public static function refusal(?array $info, string $installed, string $lastTried): ?string
     {
         $new = (string) ($info['s_new_version'] ?? '');
-        if ($new === '' || !version_compare($new, $installed, '>')) {
-            return 'no newer release';
+        if (!preg_match('/^(\d+)\.(\d+)\.(\d+)$/', $new, $to)
+            || !preg_match('/^(\d+)\.(\d+)\.(\d+)/', $installed, $from)
+        ) {
+            return 'not a stable release';
         }
-        if (self::line($new) !== self::line($installed)) {
-            return 'a newer X.Y, which is never installed on its own';
+        if ($to[1] !== $from[1] || $to[2] !== $from[2] || (int) $to[3] <= (int) $from[3]) {
+            return 'not a security release for this version';
         }
-        if (empty($info['s_sha256'])) {
+        if (!preg_match('/^[a-f0-9]{64}$/', (string) ($info['s_sha256'] ?? ''))) {
             return 'no checksum';
         }
         if ($lastTried === $new) {
             return 'already tried';
-        }
-        if (($manifest['version'] ?? null) !== $new || ($manifest['security'] ?? null) !== true) {
-            return 'not a security release';
         }
 
         return null;
@@ -66,73 +62,79 @@ final class AutoSecurityUpdate
         if (!$fresh || !is_array($info)) {
             return;
         }
-        $manifest  = self::manifest((string) ($info['s_manifest_url'] ?? ''));
         $installed = OSCLASS_VERSION;
-        if (self::refusal($info, $manifest, $installed, (string) osc_get_preference('auto_update_tried')) !== null) {
+        $new       = (string) ($info['s_new_version'] ?? '');
+        if (self::refusal($info, $installed, (string) osc_get_preference('auto_update_tried')) !== null
+            || !self::claim($new)
+        ) {
             return;
         }
 
-        $new = (string) $info['s_new_version'];
-        // Recorded first, so a run that dies half-way is not repeated every day.
-        osc_set_preference('auto_update_tried', $new);
         @set_time_limit(0);
         ignore_user_abort(true);
 
+        $stage = 'files';
         try {
             (new Upgrade(new Osclass($info)))->doUpgrade();
-            $db      = json_decode((string) Osclass::upgradeDB(), true);
-            $ok      = (int) ($db['error'] ?? 1) === 0;
-            $message = $ok ? '' : (string) ($db['message'] ?? '');
+            if (Osclass::newVersionOnDisk() !== $new) {
+                throw new \RuntimeException(__('The new files did not arrive.'));
+            }
+            $stage = 'database';
+            $db    = json_decode((string) Osclass::upgradeDB(), true);
+            if ((int) ($db['error'] ?? 1) !== 0) {
+                throw new \RuntimeException((string) ($db['message'] ?? __('The database update failed.')));
+            }
+            $stage = 'done';
+            $reason = '';
         } catch (Throwable $e) {
-            $ok      = false;
-            $message = $e->getMessage();
+            $reason = $e->getMessage();
         }
 
-        self::mail($ok, $installed, $new, $message);
+        self::mail($stage, $installed, $new, $reason);
     }
 
     /**
-     * @param string $url the release.json download address
+     * Mark the version as tried, if no other run has. One row changes for exactly one run, so two
+     * cron runs at once cannot both install.
      *
-     * @return array<string,mixed>|null
-     */
-    private static function manifest(string $url): ?array
-    {
-        if ($url === '' || !FileSystem::isAllowedPackageHost($url)) {
-            return null;
-        }
-        $data = json_decode((string) (new FileSystem())->getContents($url), true);
-
-        return is_array($data) ? $data : null;
-    }
-
-    /**
      * @param string $version
      *
-     * @return string X.Y
+     * @return bool
      */
-    private static function line(string $version): string
+    private static function claim(string $version): bool
     {
-        return implode('.', array_slice(explode('.', $version), 0, 2));
+        $table = DB_TABLE_PREFIX . 't_preference';
+        osc_db_execute(
+            'INSERT IGNORE INTO ' . $table . " (s_section, s_name, s_value, e_type) VALUES ('osclass', 'auto_update_tried', '', 'STRING')"
+        );
+
+        return osc_db_execute(
+            'UPDATE ' . $table . " SET s_value = ? WHERE s_section = 'osclass' AND s_name = 'auto_update_tried' AND s_value <> ?",
+            array($version, $version)
+        ) === 1;
     }
 
     /**
-     * @param bool   $ok
+     * @param string $stage  done, or where it stopped: files or database
      * @param string $from
      * @param string $to
      * @param string $reason
      *
      * @return void
      */
-    private static function mail(bool $ok, string $from, string $to, string $reason): void
+    private static function mail(string $stage, string $from, string $to, string $reason): void
     {
-        $site    = osc_page_title();
-        $subject = $ok
-            ? sprintf(__('[%1$s] Security update %2$s installed'), $site, $to)
-            : sprintf(__('[%1$s] Security update %2$s could not be installed'), $site, $to);
-        $body    = $ok
-            ? sprintf(__('Shopclass installed security update %2$s on %1$s, replacing %3$s. Nothing needs doing.'), $site, $to, $from)
-            : sprintf(__('Shopclass tried to install security update %2$s on %1$s and stopped: %3$s. The site still runs %4$s. Install the update from the admin when you can.'), $site, $to, $reason, $from);
+        $site   = osc_page_title();
+        $reason = rtrim($reason, '. ');
+        if ($stage === 'done') {
+            $subject = sprintf(__('[%1$s] Security update %2$s installed'), $site, $to);
+            $body    = sprintf(__('Shopclass installed security update %2$s on %1$s, replacing %3$s. Nothing needs doing.'), $site, $to, $from);
+        } else {
+            $subject = sprintf(__('[%1$s] Security update %2$s could not be installed'), $site, $to);
+            $body    = $stage === 'files'
+                ? sprintf(__('Shopclass tried to install security update %2$s on %1$s and stopped: %3$s. Open Tools, then Update, in the admin to install it.'), $site, $to, $reason)
+                : sprintf(__('Shopclass installed the files of security update %2$s on %1$s, but the database step failed: %3$s. Open Tools, then Update, in the admin to finish it.'), $site, $to, $reason);
+        }
 
         osc_sendMail(array(
             'from'    => _osc_from_email_aux(),

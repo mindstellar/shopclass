@@ -148,7 +148,7 @@ class Upgrade
     {
         $extracted_package_path = $this->downloadPackageAndExtract();
         if (!$extracted_package_path) {
-            return;
+            throw new RuntimeException(__('The download failed, or did not match its checksum. Nothing was changed.'));
         }
 
         try {
@@ -170,6 +170,10 @@ class Upgrade
                     null,
                     $this->objPackage->getFilteredFiles() //Don't overwrite these files or directory while upgrading
                 );
+                // A server that caches compiled PHP would otherwise keep running the old files.
+                if (function_exists('opcache_reset')) {
+                    @opcache_reset();
+                }
             } else {
                 throw new RuntimeException(
                     $originDir . ' '

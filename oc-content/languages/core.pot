@@ -8628,6 +8628,13 @@ msgid ""
 "needs doing."
 msgstr ""
 
+#: oc-includes/osclass/classes/upgrade/AutoSecurityUpdate.php
+msgid ""
+"Shopclass installed the files of security update %2$s on %1$s, but the "
+"database step failed: %3$s. Open Tools, then Update, in the admin to finish "
+"it."
+msgstr ""
+
 #: oc-includes/osclass/installer/gui/install.php
 msgid "Shopclass is already installed here."
 msgstr ""
@@ -8657,7 +8664,7 @@ msgstr ""
 #: oc-includes/osclass/classes/upgrade/AutoSecurityUpdate.php
 msgid ""
 "Shopclass tried to install security update %2$s on %1$s and stopped: %3$s. "
-"The site still runs %4$s. Install the update from the admin when you can."
+"Open Tools, then Update, in the admin to install it."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
@@ -9333,6 +9340,14 @@ msgstr ""
 msgid "The database server rejected that username and password. Re-copy them from "
 msgstr ""
 
+#: oc-includes/osclass/classes/upgrade/AutoSecurityUpdate.php
+msgid "The database update failed."
+msgstr ""
+
+#: oc-includes/osclass/classes/upgrade/Upgrade.php
+msgid "The download failed, or did not match its checksum. Nothing was changed."
+msgstr ""
+
 #: oc-includes/osclass/classes/market/Installer.php
 msgid "The downloads directory could not be created."
 msgstr ""
@@ -9394,6 +9409,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/preview.php
 msgid "The name or address of %s itself changes."
+msgstr ""
+
+#: oc-includes/osclass/classes/upgrade/AutoSecurityUpdate.php
+msgid "The new files did not arrive."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/data.php

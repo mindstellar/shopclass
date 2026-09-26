@@ -69,8 +69,10 @@ final class ReleaseChannel
     {
         $best = null;
         foreach ($releases as $release) {
+            // GitHub's prerelease flag also keeps a release off the stable channel.
             if (!is_array($release) || !empty($release['draft']) || empty($release['tag_name'])
                 || !self::allows($channel, (string) $release['tag_name'])
+                || ($channel === self::STABLE && !empty($release['prerelease']))
             ) {
                 continue;
             }

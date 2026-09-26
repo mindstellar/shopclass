@@ -217,7 +217,7 @@ class Osclass extends UpgradePackage
      *
      * @return string
      */
-    private static function newVersionOnDisk(): string
+    public static function newVersionOnDisk(): string
     {
         $file = osc_lib_path() . 'osclass/default-constants.php';
         if (is_readable($file)) {
@@ -281,11 +281,6 @@ class Osclass extends UpgradePackage
                 if (isset($aSelfPackage['name'])) {
                     $package_info['s_title'] = $aSelfPackage['name'];
                 }
-                foreach ($aSelfPackage['assets'] ?? array() as $file) {
-                    if (($file['name'] ?? '') === 'release.json' && !empty($file['browser_download_url'])) {
-                        $package_info['s_manifest_url'] = $file['browser_download_url'];
-                    }
-                }
                 $asset = self::selectReleaseAsset($aSelfPackage['assets'] ?? array());
                 if ($asset !== null) {
                     $package_info['s_source_url'] = $asset['browser_download_url'];
@@ -295,7 +290,7 @@ class Osclass extends UpgradePackage
                     }
                 }
                 if (isset($aSelfPackage['tag_name'])) {
-                    $package_info['s_new_version'] = ltrim(trim($aSelfPackage['tag_name']), 'v');
+                    $package_info['s_new_version'] = ReleaseChannel::version($aSelfPackage);
                 }
                 $package_info['s_installed_version'] = OSCLASS_VERSION;
                 $package_info['s_short_name']        = 'osclass';
