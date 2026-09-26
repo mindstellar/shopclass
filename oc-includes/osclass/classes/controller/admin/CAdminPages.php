@@ -241,6 +241,8 @@ class CAdminPages extends AdminSecBaseModel
     {
         $formId = StaticPageForm::register($id);
         $result = osc_settings_save($formId, $id);
+        // The form store writes the page tables directly, not through the Page model.
+        \mindstellar\cache\CacheGroup::invalidate('page');
 
         $values = $result['values'];
         $titles = is_array($values['s_title'] ?? null) ? $values['s_title'] : array();

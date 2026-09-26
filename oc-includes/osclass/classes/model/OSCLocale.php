@@ -158,6 +158,8 @@ class OSCLocale extends DAO
     public function deleteLocale($locale)
     {
         try {
+            // Its page titles go with it.
+            \mindstellar\cache\CacheGroup::invalidate('page');
             osc_run_hook('delete_locale', $locale);
 
             if ($locale === null) {

@@ -270,6 +270,7 @@ class CAdminAppearance extends AdminSecBaseModel
                 } catch (Throwable $e) {
                     $newId = 0;
                 }
+                \mindstellar\cache\CacheGroup::invalidate('widget');
 
                 AjaxResponse::json($newId > 0
                     ? array(
@@ -306,6 +307,7 @@ class CAdminAppearance extends AdminSecBaseModel
                     osc_db_table(DB_TABLE_PREFIX . 't_widget')
                         ->where('pk_i_id', $moved)
                         ->update(array('s_location' => $location));
+                    \mindstellar\cache\CacheGroup::invalidate('widget');
                     // Only ids that live in the target section after the move.
                     $validIds = array();
                     foreach (Widget::newInstance()->findByLocation($location) as $widget) {

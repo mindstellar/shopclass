@@ -163,6 +163,7 @@ pin('an unknown code costs no second query either', 0, $missCost);
 $model->insert(array('pk_c_code' => 'GBP', 's_name' => 'Pound Sterling', 's_description' => 'Pound Sterling description', 'b_enabled' => 1));
 $nowFound = $model->findByPrimaryKey('GBP');
 check('a currency added through the model after a failed lookup is then found', is_array($nowFound) && $nowFound['pk_c_code'] === 'GBP');
+pin('a lower-case code finds its currency, as the case-insensitive query did', 'GBP', $model->findByPrimaryKey('gbp')['pk_c_code'] ?? null);
 
 /* The cache is not invalidated by writes through the model — a stale row is
  * served for the rest of the process. Pinned as the existing contract. */

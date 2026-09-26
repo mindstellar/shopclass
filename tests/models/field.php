@@ -87,6 +87,12 @@ if (!function_exists('osc_cache_get')) {
         return false;
     }
 }
+if (!function_exists('osc_cache_category_generation')) {
+    function osc_cache_category_generation()
+    {
+        return 0;
+    }
+}
 if (!function_exists('osc_cache_set')) {
     function osc_cache_set($key, $value, $expiration = 0)
     {

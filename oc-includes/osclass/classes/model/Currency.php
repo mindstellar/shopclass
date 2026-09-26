@@ -78,14 +78,16 @@ class Currency extends DAO
                 return null;
             }
 
-            return array_column(osc_db_stringify_rows($rows), null, $this->getPrimaryKey());
+            // Upper-cased keys: the old lookup went through a case-insensitive collation.
+            return array_change_key_case(array_column(osc_db_stringify_rows($rows), null, $this->getPrimaryKey()), CASE_UPPER);
         }) ?? array();
 
         // A miss is left out of the map, so a currency added later in the same request is found.
-        if (!isset($all[$value])) {
+        $code = strtoupper((string)$value);
+        if (!isset($all[$code])) {
             return false;
         }
-        self::$_currencies[$value] = $all[$value];
+        self::$_currencies[$value] = $all[$code];
 
         return self::$_currencies[$value];
     }
