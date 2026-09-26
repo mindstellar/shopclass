@@ -91,7 +91,9 @@ if (function_exists('osc_register_widget')) {
                 'label'   => 'Category',
                 'type'    => 'select',
                 'default' => '',
-                'options' => 'sample_widgets_category_options',
+                // Shopclass 6.4 fills the list when the form is drawn; older cores need it now.
+                'options' => version_compare(OSCLASS_VERSION, '6.4.0.beta1', '>=')
+                    ? 'sample_widgets_category_options' : sample_widgets_category_options(),
             ),
         ),
         'render'      => 'sample_widgets_render_category_listings',
