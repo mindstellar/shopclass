@@ -79,3 +79,128 @@ table.table-small td {
   font-weight: 500;
   margin-block-end: .35rem;
 }
+
+// ---- Two-step sign-in (admins/two_factor.php) --------------------------------
+.two-factor {
+  margin-block-start: 24px;
+
+  .help-box {
+    color: var(--osc-ink-muted);
+  }
+}
+
+.two-factor-status {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-block: 0 16px;
+  max-width: 68ch;
+
+  > span:last-child {
+    flex: 1 1 20rem;
+  }
+}
+
+.two-factor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block-start: 12px;
+}
+
+.two-factor-field {
+  display: grid;
+  gap: 6px;
+  max-width: 36rem;
+
+  label {
+    font-weight: 600;
+  }
+}
+
+.two-factor-code {
+  font-family: $font-family-monospace;
+  font-size: 1.125rem;
+  letter-spacing: .15em;
+  max-width: 12rem;
+}
+
+// The QR code keeps a white quiet zone in dark mode too, or phone cameras cannot read it.
+.two-factor-setup {
+  align-items: start;
+  display: grid;
+  gap: 24px;
+  grid-template-columns: 196px minmax(0, 1fr);
+
+  @media (max-width: 575.98px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.two-factor-qr {
+  aspect-ratio: 1;
+  background: #fff;
+  border: 1px solid var(--osc-rule);
+  border-radius: $border-radius;
+  max-width: 196px;
+  padding: 8px;
+
+  svg {
+    display: block;
+    height: 100%;
+    width: 100%;
+  }
+}
+
+.two-factor-steps {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+  max-width: 60ch;
+  padding-inline-start: 1.25rem;
+
+  > li::marker {
+    color: var(--osc-bronze);
+    font-weight: 600;
+  }
+}
+
+.two-factor-key {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block-start: 6px;
+
+  code {
+    background: var(--osc-bench-sunk);
+    border-radius: $border-radius;
+    color: var(--osc-ink);
+    padding: 4px 8px;
+  }
+}
+
+.two-factor-backup {
+  margin-block-end: 20px;
+  max-width: 40rem;
+}
+
+.two-factor-codes {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+
+  code {
+    background: var(--osc-bench-sunk);
+    border: 1px solid var(--osc-rule);
+    border-radius: $border-radius;
+    color: var(--osc-ink);
+    display: block;
+    padding: 6px 10px;
+    text-align: center;
+  }
+}
