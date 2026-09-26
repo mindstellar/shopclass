@@ -903,7 +903,6 @@ function osc_admin_toolbar_update_themes($force = false)
     }
 }
 
-// languages todo
 /**
  * Number of languages with an update available, from the cached count unless forced.
  * Without $force it schedules a background re-check once the cached count is a day old.

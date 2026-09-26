@@ -248,8 +248,6 @@ class Alerts extends DAO
         return osc_db_stringify_rows($rows);
     }
 
-    // a.s_email, a.fk_i_user_id @TODO
-
     /**
      * Searches for users, given a type group and a s_search.
      * If type don't match return empty array.

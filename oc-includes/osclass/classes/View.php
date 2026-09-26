@@ -209,7 +209,7 @@ class View
     }
 
     /**
-     * How many elements an exported array holds, or -1 when it is not an array.
+     * How many elements an exported array holds, or 0 when it is not an array.
      *
      * @param string $key
      *
@@ -221,7 +221,7 @@ class View
             return count($this->aExported[$key]);
         }
 
-        return -1; // @TOFIX @FIXME ?? why ? why not 0 ?
+        return 0;
     }
 
     /**

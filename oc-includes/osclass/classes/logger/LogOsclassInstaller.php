@@ -12,22 +12,12 @@
  */
 
 /**
- * Class LogOsclassInstaller
+ * The installer's logger. Its messages used to go to osclass.org; they now go nowhere, and the
+ * class stays so plugins that call it keep working.
  */
 class LogOsclassInstaller extends Logger
 {
     private static $instance;
-
-    private $os;
-    private $component = 'INSTALLER';
-
-    /**
-     * Records the host operating system reported with each message.
-     */
-    public function __construct()
-    {
-        $this->os = PHP_OS;
-    }
 
     /**
      * The shared installer logger.
@@ -53,35 +43,6 @@ class LogOsclassInstaller extends Logger
      */
     public function info($message = '', $caller = null)
     {
-        $this->sendOsclass('INFO', $message, $caller);
-    }
-
-    /**
-     * Ship one message to the remote installer log. Currently a no-op stub.
-     *
-     * @param string      $type    level name, e.g. 'INFO'
-     * @param string      $message
-     * @param string|null $caller
-     *
-     * @return bool
-     * @todo Creating another target to receive logs.
-     */
-    private function sendOsclass($type, $message, $caller)
-    {
-        return true;
-        /** TODO
-         * osc_doRequest(
-         * 'http://admin.osclass.org/logger.php',
-         * array(
-         * 'type' => $type
-         * ,'component' => $this->component
-         * ,'os' => $this->os
-         * ,'message' => base64_encode($message)
-         * ,'fileLine' => base64_encode($caller)
-         * )
-         * );
-         *
-         */
     }
 
     /**
@@ -94,7 +55,6 @@ class LogOsclassInstaller extends Logger
      */
     public function warn($message = '', $caller = null)
     {
-        $this->sendOsclass('WARN', $message, $caller);
     }
 
     /**
@@ -107,7 +67,6 @@ class LogOsclassInstaller extends Logger
      */
     public function error($message = '', $caller = null)
     {
-        $this->sendOsclass('ERROR', $message, $caller);
     }
 
     /**
@@ -120,7 +79,6 @@ class LogOsclassInstaller extends Logger
      */
     public function debug($message = '', $caller = null)
     {
-        $this->sendOsclass('DEBUG', $message, $caller);
     }
 
     /**
@@ -133,7 +91,6 @@ class LogOsclassInstaller extends Logger
      */
     public function fatal($message = '', $caller = null)
     {
-        $this->sendOsclass('FATAL', $message, $caller);
     }
 }
 

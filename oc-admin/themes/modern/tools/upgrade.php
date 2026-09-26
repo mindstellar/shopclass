@@ -181,8 +181,6 @@ function customHead()
     <?php
 }
 
-
-//TODO Not using it right now
 osc_add_hook('admin_footer', 'customHead', 10);
 
 /**
@@ -194,7 +192,6 @@ function render_offset()
 {
     return 'row-offset';
 }
-
 
 osc_admin_page(array(
     'section' => __('Tools'),
