@@ -15,6 +15,7 @@ INSERT INTO /*TABLE_PREFIX*/t_preference VALUES
     ,('osclass', 'dimPreview', '480x340', 'STRING')
     ,('osclass', 'dimNormal', '640x480', 'STRING')
     ,('osclass', 'keep_original_image', '1', 'BOOLEAN')
+    ,('osclass', 'image_format', 'original', 'STRING')
     ,('osclass', 'browser_resize', '1', 'BOOLEAN')
     ,('osclass', 'update_channel', 'stable', 'STRING')
     ,('osclass', 'auto_security_updates', '0', 'BOOLEAN')

@@ -41,23 +41,35 @@ function osc_comments_enabled()
 }
 
 /**
+ * How new photos are saved: original, jpeg or webp.
+ *
+ * @return string
+ */
+function osc_image_format()
+{
+    $format = (string) osc_get_preference('image_format');
+
+    return in_array($format, array('jpeg', 'webp'), true) ? $format : 'original';
+}
+
+/**
  * Force uploaded images to be JPEG
  *
  * @return boolean
  */
 function osc_force_jpeg()
 {
-    return getBoolPreference('force_jpeg');
+    return osc_image_format() === 'jpeg';
 }
 
 /**
- * Whether new photos are stored as WebP. Only when the server can write WebP and Force JPEG is off.
+ * Whether new photos are stored as WebP. Only when the server can write WebP.
  *
  * @return boolean
  */
 function osc_save_webp()
 {
-    return getBoolPreference('save_webp') && !osc_force_jpeg()
+    return osc_image_format() === 'webp'
            && ImageProcessing::canWriteWebp(extension_loaded('imagick') && osc_use_imagick());
 }
 

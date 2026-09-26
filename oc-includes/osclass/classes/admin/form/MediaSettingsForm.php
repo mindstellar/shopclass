@@ -112,23 +112,10 @@ final class MediaSettingsForm
                 ->rowLabel(__('Browser resize'))
                 ->set('id', 'browser_resize')
             ->group(__('Restrictions'))
-            ->checkbox(
-                'force_jpeg',
-                __('Force JPEG extension.'),
-                __('Uploaded images will be saved in JPG/JPEG format, '
-                   . 'it saves space but images will not have transparent background.')
-            )
-                ->rowLabel(__('Force JPEG'))
-                ->set('id', 'force_jpeg')
-            ->checkbox(
-                'save_webp',
-                __('Save new photos as WebP.'),
-                __('WebP files are about a third smaller at the same quality, so pages load faster. '
-                   . 'Photos already uploaded keep their format. Force JPEG takes precedence.')
-            )
-                ->rowLabel(__('WebP'))
-                ->set('id', 'save_webp')
-                ->disabled(!\ImageProcessing::canWriteWebp($imagick && osc_use_imagick()))
+            ->select('image_format', __('Photo format'), self::formats($imagick), __('How new photos are saved. '
+                   . 'JPEG is small but has no transparent background. WebP is about a third smaller than JPEG and '
+                   . 'keeps transparency. Photos already uploaded keep their format.'))
+                ->default('original')
             ->number(
                 'jpeg_quality',
                 __('JPEG quality'),
@@ -362,6 +349,23 @@ final class MediaSettingsForm
     public static function uploadFailed(): bool
     {
         return self::$uploadFailed;
+    }
+
+    /**
+     * The photo formats offered. WebP only where PHP can write it.
+     *
+     * @param bool $imagick whether ImageMagick is loaded
+     *
+     * @return array<string,string>
+     */
+    private static function formats(bool $imagick): array
+    {
+        $formats = array('original' => __('Keep the original format'), 'jpeg' => __('Save as JPEG'));
+        if (\ImageProcessing::canWriteWebp($imagick && osc_use_imagick())) {
+            $formats['webp'] = __('Save as WebP');
+        }
+
+        return $formats;
     }
 
     /**

@@ -654,8 +654,7 @@ pin(
         'dimNormal'             => 'osclass/dimNormal',
         'keep_original_image'   => 'osclass/keep_original_image',
         'browser_resize'        => 'osclass/browser_resize',
-        'force_jpeg'            => 'osclass/force_jpeg',
-        'save_webp'             => 'osclass/save_webp',
+        'image_format'          => 'osclass/image_format',
         'jpeg_quality'          => 'osclass/jpeg_quality',
         'force_aspect_image'    => 'osclass/force_aspect_image',
         'maxSizeKb'             => 'osclass/maxSizeKb',
@@ -1299,6 +1298,7 @@ $media = array(
     'dimPreview'           => '480x340',
     'dimNormal'            => ' 640x480 ',
     'keep_original_image'  => '1',
+    'image_format'         => 'jpeg',
     'jpeg_quality'         => '70',
     'maxSizeKb'            => '1024',
     'use_imagick'          => '1',
@@ -1321,7 +1321,8 @@ pin('and goes back to the screen', array('https://example.test/oc-admin/index.ph
 pin('an image size is lower-cased', array('240x200', 'STRING'), pref($admin, 'dimThumbnail'));
 pin('and trimmed', array('640x480', 'STRING'), pref($admin, 'dimNormal'));
 pin('a ticked switch is a boolean', array('1', 'BOOLEAN'), pref($admin, 'keep_original_image'));
-pin('an unticked one stores a zero', array('0', 'BOOLEAN'), pref($admin, 'force_jpeg'));
+pin('an unticked one stores a zero', array('0', 'BOOLEAN'), pref($admin, 'browser_resize'));
+pin('the photo format is stored', array('jpeg', 'STRING'), pref($admin, 'image_format'));
 pin(
     'ImageMagick is on only where the library is loaded',
     array(extension_loaded('imagick') ? '1' : '0', 'STRING'),

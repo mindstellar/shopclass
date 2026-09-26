@@ -4047,14 +4047,6 @@ msgid "For security, type <b>your current password</b>"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
-msgid "Force JPEG"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
-msgid "Force JPEG extension."
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Force aspect"
 msgstr ""
 
@@ -4449,6 +4441,10 @@ msgstr ""
 msgid ""
 "How much memory one request may use. Resizing a big photo is the hungriest "
 "thing Shopclass does."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
+msgid "How new photos are saved. "
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info.php
@@ -5006,6 +5002,10 @@ msgstr ""
 msgid ""
 "Keep spammers from publishing on your site by configuring reCAPTCHA and "
 "Akismet. "
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
+msgid "Keep the original format"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
@@ -7264,6 +7264,10 @@ msgstr ""
 msgid "Photo count, the posting wait, and listing runtime are global limits by "
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
+msgid "Photo format"
+msgstr ""
+
 #: oc-admin/themes/modern/items/frm.php
 #: oc-includes/osclass/classes/admin/ui/PhotoGrid.php
 msgid "Photos"
@@ -8026,6 +8030,14 @@ msgid ""
 "configuration."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
+msgid "Save as JPEG"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
+msgid "Save as WebP"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/BillingSettingsForm.php
 msgid "Save bank transfer settings"
 msgstr ""
@@ -8049,10 +8061,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsForm.php
 msgid "Save limits"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
-msgid "Save new photos as WebP."
 msgstr ""
 
 #: oc-admin/themes/modern/billing/package.php
@@ -10494,10 +10502,6 @@ msgstr ""
 msgid "Uploaded"
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
-msgid "Uploaded images will be saved in JPG/JPEG format, "
-msgstr ""
-
 #: oc-admin/themes/modern/tools/system-info.php
 msgid "Uploads &amp; storage"
 msgstr ""
@@ -10947,16 +10951,6 @@ msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-target.php
 msgid "Web title"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
-msgid "WebP"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
-msgid ""
-"WebP files are about a third smaller at the same quality, so pages load "
-"faster. "
 msgstr ""
 
 #: oc-admin/themes/modern/plugins/index.php

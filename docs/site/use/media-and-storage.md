@@ -42,13 +42,16 @@ and drops the photo's location data. JPEG, PNG and WebP keep their format.
 While **Original size** is on, only photos over the maximum size are shrunk.
 A theme can turn it off with `data-osc-resize="off"` on the uploader.
 
-## WebP
+## Photo format
 
-Sellers can upload WebP photos, and a WebP photo is stored as WebP. **Save new photos
-as WebP** (off by default) also stores new JPEG and PNG uploads as WebP, which makes
-them about a third smaller. Photos already uploaded keep their format. The setting
-is greyed out when your server's PHP cannot write WebP, and **Force JPEG** takes
-precedence over it.
+**Photo format** says how new photos are saved:
+
+- **Keep the original format** (default): JPEG, PNG, GIF and WebP stay as they are.
+- **Save as JPEG**: the smallest choice for old browsers. Transparent parts turn white.
+- **Save as WebP**: about a third smaller than JPEG, and keeps transparency. Shown only
+  when your server's PHP can write WebP.
+
+Photos already uploaded keep their format.
 
 ## Upload restrictions
 
