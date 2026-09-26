@@ -10,16 +10,10 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         '6e3fae29631ef280660b3cdad06f25a8' => __DIR__ . '/..' . '/symfony/deprecation-contracts/function.php',
         '0d59ee240a4cd96ddbb4ff164fccea4d' => __DIR__ . '/..' . '/symfony/polyfill-php73/bootstrap.php',
         'a4a119a56e50fbb293281d9a48007e0e' => __DIR__ . '/..' . '/symfony/polyfill-php80/bootstrap.php',
-        'decc78cc4436b1292c6c0d151b19445c' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/bootstrap.php',
         '2cffec82183ee1cea088009cef9a6fc3' => __DIR__ . '/..' . '/ezyang/htmlpurifier/library/HTMLPurifier.composer.php',
-        'aa75ea0761a2f40c1f3b32ad314f86c4' => __DIR__ . '/..' . '/phpseclib/mcrypt_compat/lib/mcrypt.php',
     );
 
     public static $prefixLengthsPsr4 = array (
-        'p' =>
-        array (
-            'phpseclib\\' => 10,
-        ),
         'm' =>
         array (
             'mindstellar\\' => 12,
@@ -56,10 +50,6 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
     );
 
     public static $prefixDirsPsr4 = array (
-        'phpseclib\\' =>
-        array (
-            0 => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib',
-        ),
         'mindstellar\\' =>
         array (
             0 => __DIR__ . '/../../..' . '/oc-includes/osclass/classes',
@@ -1043,6 +1033,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\security\\ActionThrottle' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/ActionThrottle.php',
         'mindstellar\\security\\ActionToken' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/ActionToken.php',
         'mindstellar\\security\\AddressGuard' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/AddressGuard.php',
+        'mindstellar\\security\\AdminTwoFactor' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/AdminTwoFactor.php',
         'mindstellar\\security\\FailOpen' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/FailOpen.php',
         'mindstellar\\security\\LoginThrottle' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/LoginThrottle.php',
         'mindstellar\\security\\PluginAjaxFile' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/PluginAjaxFile.php',
@@ -1051,9 +1042,11 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\security\\RememberMe' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/RememberMe.php',
         'mindstellar\\security\\SignedDefinitionCache' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/SignedDefinitionCache.php',
         'mindstellar\\security\\SigningKey' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/SigningKey.php',
+        'mindstellar\\security\\Totp' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/security/Totp.php',
         'mindstellar\\settings\\SettingsImage' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/settings/SettingsImage.php',
         'mindstellar\\settings\\SettingsPageRegistry' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/settings/SettingsPageRegistry.php',
         'mindstellar\\storage\\AvatarUpload' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/storage/AvatarUpload.php',
+        'mindstellar\\storage\\BrowserResize' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/storage/BrowserResize.php',
         'mindstellar\\storage\\LocalStorage' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/storage/LocalStorage.php',
         'mindstellar\\storage\\ProviderPresets' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/storage/ProviderPresets.php',
         'mindstellar\\storage\\ResourceLocator' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/storage/ResourceLocator.php',
@@ -1068,8 +1061,10 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\theme\\ThemeFunctions' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/theme/ThemeFunctions.php',
         'mindstellar\\theme\\ThemeSupports' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/theme/ThemeSupports.php',
         'mindstellar\\theme\\ThemeViews' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/theme/ThemeViews.php',
+        'mindstellar\\upgrade\\AutoSecurityUpdate' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/upgrade/AutoSecurityUpdate.php',
         'mindstellar\\upgrade\\Osclass' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/upgrade/Osclass.php',
         'mindstellar\\upgrade\\Plugin' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/upgrade/Plugin.php',
+        'mindstellar\\upgrade\\ReleaseChannel' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/upgrade/ReleaseChannel.php',
         'mindstellar\\upgrade\\Theme' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/upgrade/Theme.php',
         'mindstellar\\upgrade\\Upgrade' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/upgrade/Upgrade.php',
         'mindstellar\\upgrade\\UpgradePackage' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/upgrade/UpgradePackage.php',
@@ -1084,30 +1079,6 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\utility\\Validate' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/utility/Validate.php',
         'mindstellar\\utility\\Zip' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/utility/Zip.php',
         'mindstellar\\widgets\\WidgetRegistry' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/widgets/WidgetRegistry.php',
-        'phpseclib\\Crypt\\AES' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/AES.php',
-        'phpseclib\\Crypt\\Base' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Base.php',
-        'phpseclib\\Crypt\\Blowfish' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Blowfish.php',
-        'phpseclib\\Crypt\\DES' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/DES.php',
-        'phpseclib\\Crypt\\Hash' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Hash.php',
-        'phpseclib\\Crypt\\RC2' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/RC2.php',
-        'phpseclib\\Crypt\\RC4' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/RC4.php',
-        'phpseclib\\Crypt\\RSA' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/RSA.php',
-        'phpseclib\\Crypt\\Random' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Random.php',
-        'phpseclib\\Crypt\\Rijndael' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Rijndael.php',
-        'phpseclib\\Crypt\\TripleDES' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/TripleDES.php',
-        'phpseclib\\Crypt\\Twofish' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Twofish.php',
-        'phpseclib\\File\\ANSI' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ANSI.php',
-        'phpseclib\\File\\ASN1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1.php',
-        'phpseclib\\File\\ASN1\\Element' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1/Element.php',
-        'phpseclib\\File\\X509' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/X509.php',
-        'phpseclib\\Math\\BigInteger' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Math/BigInteger.php',
-        'phpseclib\\Net\\SCP' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Net/SCP.php',
-        'phpseclib\\Net\\SFTP' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Net/SFTP.php',
-        'phpseclib\\Net\\SFTP\\Stream' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Net/SFTP/Stream.php',
-        'phpseclib\\Net\\SSH1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Net/SSH1.php',
-        'phpseclib\\Net\\SSH2' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Net/SSH2.php',
-        'phpseclib\\System\\SSH\\Agent' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/System/SSH/Agent.php',
-        'phpseclib\\System\\SSH\\Agent\\Identity' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/System/SSH/Agent/Identity.php',
     );
 
     public static function getInitializer(ClassLoader $loader)

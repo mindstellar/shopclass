@@ -82,6 +82,7 @@ This is the second beta. Please try it on a copy of your site first, and tell us
 
 ### Breaking
 
+- The `phpseclib` and `mcrypt_compat` libraries are gone. Nothing in Shopclass used them; a plugin that still calls `mcrypt_*()` needs its own copy.
 - `Search::toJson(true)` returns the same JSON as `toJson()`; the parsed-conditions form it used to return is gone.
 - `Search::setJsonAlert()` with an old-format alert applies only its categories, price, pattern, picture and premium flags; its SQL fragments, sort and paging are ignored.
 - Route values captured on friendly URLs now arrive decoded, as query values do; a plugin that decoded them itself must stop.
@@ -206,6 +207,7 @@ This is the second beta. Please try it on a copy of your site first, and tell us
 
 ### Performance
 
+- The unpacked release is about 2.7 MB smaller, and each page no longer loads two unused libraries. An unused Bootstrap stylesheet, TinyMCE's dark skins and build-only files no longer ship.
 - A new database connection needs 2 round trips after the login instead of 5 (3 on new installs), which matters most when the database is on another server.
 - Dates in listing loops translate their month and day names once per request, and the Sample Widgets plugin builds its category list only when its form is open.
 - A request value with no `<`, `>` or `&` skips HTMLPurifier, which took about 1.5 ms of each item and search page.
