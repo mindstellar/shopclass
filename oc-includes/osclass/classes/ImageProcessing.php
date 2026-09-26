@@ -239,12 +239,9 @@ class ImageProcessing
         }
 
         if ($this->use_imagick) {
+            // Padding stays transparent; saving as JPEG turns it white.
             $bg = new Imagick();
-            if ($this->ext === 'jpg') {
-                $bg->newImage($width, $height, 'white');
-            } else {
-                $bg->newImage($width, $height, 'none');
-            }
+            $bg->newImage($width, $height, 'none');
             $this->im->thumbnailImage($width, $height, true);
             $bg->compositeImage(
                 $this->im,
@@ -316,7 +313,7 @@ class ImageProcessing
 
         if ($this->use_imagick) {
             try {
-                if ($ext === 'jpeg' && ($this->ext !== 'jpeg' && $this->ext !== 'jpg')) {
+                if ($ext === 'jpeg') {
                     $bg = new Imagick();
                     $bg->newImage($this->width, $this->height, 'white');
                     $this->im->thumbnailImage($this->width, $this->height, true);

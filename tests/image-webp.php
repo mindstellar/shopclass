@@ -94,6 +94,13 @@ foreach ($engines as $engine => $imagick) {
     ImageProcessing::fromFile($dir . '/photo.jpg')->saveToFile($dir . "/jpg-$engine.webp", 'webp');
     pin('a JPEG can be written as WebP', 'image/webp', $read($dir . "/jpg-$engine.webp")[0]);
 
+    // Resized to a square without Force aspect, a wide photo gets bands above and below.
+    ImageProcessing::fromFile($dir . '/photo.jpg')->resizeTo(100, 100)->saveToFile($dir . "/pad-$engine.webp", 'webp');
+    pin('a JPEG resized into WebP gets transparent bands', array('image/webp', '100x100', 'transparent corner'), $read($dir . "/pad-$engine.webp"));
+    ImageProcessing::fromFile($dir . '/photo.jpg')->resizeTo(100, 100)->saveToFile($dir . "/pad-$engine.jpg", 'jpeg');
+    $pad = imagecreatefromjpeg($dir . "/pad-$engine.jpg");
+    pin('and into JPEG white ones', 'white', (imagecolorat($pad, 2, 2) & 0xFFFFFF) > 0xF0F0F0 ? 'white' : sprintf('%06x', imagecolorat($pad, 2, 2)));
+
     ImageProcessing::fromFile($dir . '/alpha.webp')->saveToFile($dir . "/back-$engine.jpg", 'jpeg');
     pin('and a WebP can still be written as JPEG', 'image/jpeg', $read($dir . "/back-$engine.jpg")[0]);
 }
