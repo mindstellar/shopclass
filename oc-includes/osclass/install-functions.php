@@ -1138,6 +1138,36 @@ function copy_config_file($dbname, $username, $password, $dbhost, $tableprefix)
 }
 
 /**
+ * Whether the site has database settings but its database cannot be used right now: the
+ * server is down, the password is wrong, or a table is damaged. A missing database or
+ * missing tables is a site to install, not an outage.
+ *
+ * @return bool
+ */
+function install_database_unreachable(): bool
+{
+    require_once LIB_PATH . 'osclass/config-loader.php';
+    if (!osc_is_configured()) {
+        return false;
+    }
+
+    try {
+        $probe = new \mindstellar\database\ConnectionManager(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+        $code  = $probe->getErrorConnectionLevel() ?: $probe->getErrorLevel();
+        if ($code > 0) {
+            return $code !== 1049;
+        }
+        $probe->getHandle()->query('SELECT 1 FROM `' . DB_TABLE_PREFIX . 't_preference` LIMIT 1');
+    } catch (mysqli_sql_exception $e) {
+        return (int) $e->getCode() !== 1146;
+    } catch (\Throwable $e) {
+        return true;
+    }
+
+    return false;
+}
+
+/**
  * Whether a usable database configuration exists and carries the installed sentinel.
  * Any configuration, connection or query failure counts as not installed.
  *

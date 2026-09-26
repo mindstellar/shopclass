@@ -43,7 +43,7 @@ require_once LIB_PATH . 'osclass/helpers/hDatabase.php';
 Params::init();
 Session::newInstance()->session_start();
 
-if (is_osclass_installed()) {
+if (is_osclass_installed() || install_database_unreachable()) {
     die();
 }
 

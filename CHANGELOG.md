@@ -98,6 +98,7 @@ This is the second beta. Please try it on a copy of your site first, and tell us
 - A photo over 50 megapixels is refused before it is opened, so a small crafted file cannot use up the server's memory. The `image_max_pixels` filter changes the limit.
 - The installer works on a site served on a port other than 80 or 443; the site address no longer loses the port.
 - Installing into a database that already holds a Shopclass site stops before it creates any table.
+- While the database is down, the installer shows a notice instead of the install form, so no visitor can set the site up again.
 - **Test connection** catches a user that cannot write, a bad table prefix and an unknown host.
 - Page titles no longer carry a double space when a part such as the city is empty.
 - The plugin and theme catalogue refreshes once a day again; before, it only changed when an admin chose **Check now**, so new updates went unseen.

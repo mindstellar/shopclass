@@ -2049,6 +2049,19 @@ msgstr ""
 msgid "Check server"
 msgstr ""
 
+#: oc-includes/osclass/installer/gui/install.php
+msgid ""
+"Check that the database server is running and that the database settings in "
+"the environment are right, then reload this page."
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install.php
+msgid ""
+"Check that the database server is running and that the settings in "
+"config.php are right, then reload this page. To install from scratch, "
+"delete config.php first."
+msgstr ""
+
 #: oc-admin/themes/modern/tools/upgrade.php
 msgid ""
 "Check to see if you're using the latest version of Shopclass. If you're "
@@ -8661,6 +8674,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info.php
 msgid "Shopclass can write to %s."
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install.php
+msgid "Shopclass can't reach its database."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info.php

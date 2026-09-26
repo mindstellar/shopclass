@@ -64,7 +64,20 @@ $ins_i18n = array(
             <img src="<?php echo get_absolute_url(); ?>oc-includes/images/shopclass-logo.svg" alt="Shopclass" />
         </div>
 
-        <?php if ($already_installed) { ?>
+        <?php if (!empty($db_unreachable)) { ?>
+            <div class="ins-card">
+                <div class="ins-card-main">
+                    <div class="ins-content ins-simple-card">
+                        <h1 class="ins-headline"><?php _e("Shopclass can't reach its database."); ?></h1>
+                        <p class="ins-body">
+                            <?php echo defined('OSC_CONFIG_FROM_ENV') && OSC_CONFIG_FROM_ENV
+                                ? osc_esc_html(__('Check that the database server is running and that the database settings in the environment are right, then reload this page.'))
+                                : osc_esc_html(__('Check that the database server is running and that the settings in config.php are right, then reload this page. To install from scratch, delete config.php first.')); ?>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        <?php } elseif ($already_installed) { ?>
             <div class="ins-card">
                 <div class="ins-card-main">
                     <div class="ins-content ins-simple-card">
