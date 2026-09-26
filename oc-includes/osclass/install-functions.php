@@ -635,7 +635,8 @@ function oc_install()
 
     // A site that already has database settings installs only into that database. Without
     // this, a visitor who reached the form on a live site could point config.php at theirs.
-    if (osc_is_configured() && !($dbhost === DB_HOST && $dbname === DB_NAME && $username === DB_USER
+    if (osc_is_configured() && !(($dbhost === DB_HOST || (defined('DB_PORT') && $dbhost === DB_HOST . ':' . DB_PORT))
+        && $dbname === DB_NAME && $username === DB_USER
         && $tableprefix === DB_TABLE_PREFIX && hash_equals((string)DB_PASSWORD, (string)$password))
     ) {
         return array(

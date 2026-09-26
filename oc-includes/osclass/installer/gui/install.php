@@ -208,7 +208,7 @@ $ins_i18n = array(
                                 );
                                 display_database_config($form_data, $error);
                             }
-                        } elseif ($step === 4 && install_nonce_check()) {
+                        } elseif ($step === 4 && install_nonce_check() && Session::newInstance()->_get('install_db_done')) {
                             if (!headers_sent()) {
                                 setcookie('osclass_save_stats', '', time() - 3600);
                                 setcookie('osclass_ping_engines', '', time() - 3600);
