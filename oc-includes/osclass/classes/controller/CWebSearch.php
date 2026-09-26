@@ -208,6 +208,12 @@ class CWebSearch extends BaseModel
         $criteria = \mindstellar\search\SearchCriteria::fromRequest($uriParams);
 
         $p_sCategory = $criteria->categories();
+        // A category that does not exist is a missing page, not every listing on the site.
+        if ($p_sCategory !== array()
+            && array_filter($p_sCategory, static fn ($c) => self::findCategory((string)$c) !== array()) === array()
+        ) {
+            $this->do404();
+        }
         $p_sCity     = implode(', ', $criteria->cities());
         $p_sRegion   = implode(', ', $criteria->regions());
         $p_sCountry  = implode(', ', $criteria->countries());

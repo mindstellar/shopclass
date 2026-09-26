@@ -514,9 +514,8 @@ function osc_search_url($params = null)
                 }
                 $url = \mindstellar\routing\CoreRoutes::expand('category', $values);
             } else {
-                // Search by a category which does not exists (by form)
-                // TODO CHANGE TO NEW ROUTES!!
-                return $base_url . 'index.php?page=search&sCategory='
+                // No such category: the search page answers it with a 404.
+                return $url . '/' . osc_get_preference('rewrite_search_category') . ','
                     . urlencode($params['sCategory']);
             }
             if (isset($params['iPage']) && $params['iPage'] != '' && $params['iPage'] != 1) {

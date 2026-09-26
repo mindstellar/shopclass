@@ -106,6 +106,7 @@ This is the second beta. Please try it on a copy of your site first, and tell us
 - On a site that already has database settings, the installer only accepts those same settings, so it can never be pointed at another database.
 - **Test connection** catches a user that cannot write, a bad table prefix and an unknown host.
 - Page titles no longer carry a double space when a part such as the city is empty.
+- A search for a category that does not exist answers 404 instead of listing every ad on the site, and its link uses the friendly search address.
 - The plugin and theme catalogue refreshes once a day again; before, it only changed when an admin chose **Check now**, so new updates went unseen.
 - The toolbar's update counts match the Updates tabs.
 - A failed update says the previous version was put back; a search with no results has a **Clear search** button.
