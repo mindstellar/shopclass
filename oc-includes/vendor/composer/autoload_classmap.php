@@ -864,6 +864,7 @@ return array(
     'mindstellar\\billing\\Premium' => $baseDir . '/oc-includes/osclass/classes/billing/Premium.php',
     'mindstellar\\billing\\Wallet' => $baseDir . '/oc-includes/osclass/classes/billing/Wallet.php',
     'mindstellar\\billing\\gateway\\OfflineGateway' => $baseDir . '/oc-includes/osclass/classes/billing/gateway/OfflineGateway.php',
+    'mindstellar\\cache\\CacheGroup' => $baseDir . '/oc-includes/osclass/classes/cache/CacheGroup.php',
     'mindstellar\\cli\\Cli' => $baseDir . '/oc-includes/osclass/classes/cli/Cli.php',
     'mindstellar\\database\\Connection' => $baseDir . '/oc-includes/osclass/classes/database/Connection.php',
     'mindstellar\\database\\ConnectionManager' => $baseDir . '/oc-includes/osclass/classes/database/ConnectionManager.php',

@@ -42,9 +42,8 @@ $admin = scratchdb_session('osc_models_currency');
  * below that depends on a cold cache resets it first.
  */
 $resetCache = static function (): void {
-    $prop = new ReflectionProperty('Currency', '_currencies');
-    $prop->setAccessible(true);
-    $prop->setValue(null, null);
+    (new ReflectionProperty('Currency', '_currencies'))->setValue(null, null);
+    \mindstellar\cache\CacheGroup::invalidate('currency');
 };
 
 $seedCurrency = static function (string $code, string $name, int $enabled = 1) use ($admin): void {
@@ -145,27 +144,25 @@ $a = $model->findByPrimaryKey('USD');
 $b = $model->findByPrimaryKey('USD');
 check('the cached value is identical to the first result', $a === $b);
 
-/* The cache is keyed per code, so one warm entry must not serve another. */
+/* The whole table is cached at once, so a warm lookup serves every code. */
 $resetCache();
 $model->findByPrimaryKey('USD');
 $eurCost = harness_query_count(static function () use ($model) {
     $model->findByPrimaryKey('EUR');
 });
-pin('a different code still costs its own query', 1, $eurCost);
+pin('a different code is served from the same cached table', 0, $eurCost);
 
-/* A miss is deliberately not cached: a repeat lookup queries again, so a row
- * inserted later in the same request becomes visible rather than being masked
- * by a cached negative. */
 $resetCache();
 $model->findByPrimaryKey('GBP');
 $missCost = harness_query_count(static function () use ($model) {
     $model->findByPrimaryKey('GBP');
 });
-pin('a miss is not cached — the second lookup queries again', 1, $missCost);
+pin('an unknown code costs no second query either', 0, $missCost);
 
-$seedCurrency('GBP', 'Pound Sterling');
+/* A write through the model drops the cached table, so the new row is found. */
+$model->insert(array('pk_c_code' => 'GBP', 's_name' => 'Pound Sterling', 's_description' => 'Pound Sterling description', 'b_enabled' => 1));
 $nowFound = $model->findByPrimaryKey('GBP');
-check('a currency added after a failed lookup is then found', is_array($nowFound) && $nowFound['pk_c_code'] === 'GBP');
+check('a currency added through the model after a failed lookup is then found', is_array($nowFound) && $nowFound['pk_c_code'] === 'GBP');
 
 /* The cache is not invalidated by writes through the model — a stale row is
  * served for the rest of the process. Pinned as the existing contract. */

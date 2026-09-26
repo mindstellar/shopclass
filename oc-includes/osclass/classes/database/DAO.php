@@ -81,6 +81,12 @@ class DAO
      * @var array
      */
     public $fields;
+    /**
+     * The cache group a successful write drops, for a model whose reads are cached.
+     *
+     * @var string|null
+     */
+    protected $cacheGroup = null;
 
     /**
      * Driver error number from this object's most recent operation, 0 when it
@@ -457,6 +463,7 @@ class DAO
                 array_values($values)
             );
             $this->clearError();
+            $this->cacheChanged();
 
             return (int) $id;
         } catch (\mindstellar\database\DbException $e) {
@@ -593,6 +600,7 @@ class DAO
         try {
             $affected = osc_db_execute($sql, $params);
             $this->clearError();
+            $this->cacheChanged();
         } catch (\mindstellar\database\DbException $e) {
             $this->recordError($e);
 
@@ -600,6 +608,18 @@ class DAO
         }
 
         return $affected;
+    }
+
+    /**
+     * Drop the model's cached reads after a write.
+     *
+     * @return void
+     */
+    protected function cacheChanged()
+    {
+        if ($this->cacheGroup !== null) {
+            \mindstellar\cache\CacheGroup::invalidate($this->cacheGroup);
+        }
     }
 
     /**

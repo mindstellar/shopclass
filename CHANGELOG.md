@@ -210,6 +210,7 @@ This is the second beta. Please try it on a copy of your site first, and tell us
 
 ### Performance
 
+- With memcached or APCu, a cached page runs 4 to 9 database queries instead of 11 to 16: the language list, widgets, form groups, currencies and footer pages are cached, and saving any of them clears it.
 - The unpacked release is about 4.7 MB smaller, and each page no longer loads two unused libraries. jQuery, an unused Bootstrap stylesheet, TinyMCE's dark skins, source maps and the admin theme's Sass source no longer ship.
 - A new database connection needs 2 round trips after the login instead of 5 (3 on new installs), which matters most when the database is on another server.
 - Dates in listing loops translate their month and day names once per request, and the Sample Widgets plugin builds its category list only when its form is open.

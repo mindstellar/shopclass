@@ -209,22 +209,23 @@ class Field extends DAO
             return array();
         }
 
+        // Every category's parent in one cached query; category edits clear the group.
+        $parents = \mindstellar\cache\CacheGroup::remember('category', 'parents', static function () {
+            try {
+                $rows = osc_db_select('SELECT pk_i_id, fk_i_parent_id FROM ' . DB_TABLE_PREFIX . 't_category');
+            } catch (\mindstellar\database\DbException $e) {
+                return null;
+            }
+
+            return array_map('intval', array_column($rows, 'fk_i_parent_id', 'pk_i_id'));
+        }) ?? array();
+
         $path    = array();
         $current = $catId;
         $guard   = 0;
         while ($current > 0 && $guard < 100) {
             $path[]  = $current;
-            // $current is (int)-cast and bound; the table name is the
-            // DB_TABLE_PREFIX constant plus a literal suffix.
-            try {
-                $row = osc_db_select_one(
-                    'SELECT fk_i_parent_id FROM ' . DB_TABLE_PREFIX . 't_category WHERE pk_i_id = ?',
-                    array($current)
-                );
-            } catch (\mindstellar\database\DbException $e) {
-                break;
-            }
-            $current = isset($row['fk_i_parent_id']) ? (int)$row['fk_i_parent_id'] : 0;
+            $current = $parents[$current] ?? 0;
             // defensive: a parent chain that points back at a category already seen
             // would loop; break instead of spinning to the guard.
             if (in_array($current, $path, true)) {

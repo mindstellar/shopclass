@@ -188,6 +188,7 @@ if (!function_exists('scratchdb_truncate_all')) {
      */
     function scratchdb_truncate_all(mysqli $admin): void
     {
+        scratchdb_forget_cache();
         $admin->query('SET FOREIGN_KEY_CHECKS = 0');
         $res = $admin->query('SHOW TABLES');
         if (!$res) {
@@ -317,6 +318,17 @@ if (!function_exists('seed_exec')) {
      *
      * @return int
      */
+    /**
+     * Forget cached model reads after a raw write the models did not see: emptied tables
+     * reuse ids, and a seeded row would otherwise hide behind a cached list.
+     */
+    function scratchdb_forget_cache(): void
+    {
+        if (class_exists('Object_Cache_Factory')) {
+            Object_Cache_Factory::newInstance()->flush();
+        }
+    }
+
     function seed_exec(mysqli $admin, string $sql, string $types, array $vals): int
     {
         $stmt = $admin->prepare($sql);
@@ -333,6 +345,7 @@ if (!function_exists('seed_exec')) {
         }
         $id = $admin->insert_id;
         $stmt->close();
+        scratchdb_forget_cache();
 
         return $id;
     }

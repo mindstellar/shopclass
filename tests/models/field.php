@@ -351,16 +351,17 @@ pin('category 0 returns an empty array without a query', array(), $model->catego
 pin('a negative category returns an empty array', array(), $model->categoryPath(-5));
 pin('a non-numeric category returns an empty array', array(), $model->categoryPath('not a number'));
 
-harness_section('Field::categoryPath — the F8 re-walk cost (baseline, not a fix)');
+harness_section('Field::categoryPath — one cached parent map, whatever the depth');
 
-pin('a root path costs one query (depth 1)', 1, harness_query_count(static function () use ($model, $cRoot) {
+scratchdb_forget_cache();
+pin('a cold walk costs one query, the parent map', 1, harness_query_count(static function () use ($model, $cLeaf) {
+    $model->categoryPath($cLeaf);
+}));
+pin('a warm three-deep walk costs no query', 0, harness_query_count(static function () use ($model, $cLeaf) {
+    $model->categoryPath($cLeaf);
+}));
+pin('repeated walks cost no query either', 0, harness_query_count(static function () use ($model, $cRoot, $cLeaf) {
     $model->categoryPath($cRoot);
-}));
-pin('a three-deep path costs three queries — one per ancestor level', 3, harness_query_count(static function () use ($model, $cLeaf) {
-    $model->categoryPath($cLeaf);
-}));
-pin('the walk is repeated in full on every call — two calls cost double', 6, harness_query_count(static function () use ($model, $cLeaf) {
-    $model->categoryPath($cLeaf);
     $model->categoryPath($cLeaf);
 }));
 
@@ -880,13 +881,13 @@ pin('findByGroup costs one query', 1, harness_query_count(static function () use
 pin('findByItem costs one query', 1, harness_query_count(static function () use ($model, $costItem) {
     $model->findByItem($costItem);
 }));
-pin('findByCategory on a two-deep category costs the 2-level walk plus one union query', 3, harness_query_count(static function () use ($model, $costChild) {
+pin('findByCategory on a two-deep category costs the category lookup plus one union query', 2, harness_query_count(static function () use ($model, $costChild) {
     $model->findByCategory($costChild);
 }));
-pin('findByCategoryItem on a two-deep category costs the 2-level walk plus one union query', 3, harness_query_count(static function () use ($model, $costChild, $costItem) {
+pin('findByCategoryItem on a two-deep category costs one union query', 1, harness_query_count(static function () use ($model, $costChild, $costItem) {
     $model->findByCategoryItem($costChild, $costItem);
 }));
-pin('findIDSearchableByCategories on a two-deep category costs the walk plus one union query', 3, harness_query_count(static function () use ($model, $costChild) {
+pin('findIDSearchableByCategories on a two-deep category costs one union query', 1, harness_query_count(static function () use ($model, $costChild) {
     $model->findIDSearchableByCategories($costChild);
 }));
 

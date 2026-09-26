@@ -17,6 +17,8 @@
  */
 class Widget extends DAO
 {
+    protected $cacheGroup = 'widget';
+
     /**
      *
      * @var \Widget
@@ -57,20 +59,20 @@ class Widget extends DAO
      */
     public function findByLocation($location)
     {
-        try {
-            $rows = osc_db_table($this->getTableName())
-                ->select(...$this->getFields())
-                ->where('s_location', $location)
-                // i_order ascending, then primary key ascending as a tiebreak so
-                // legacy rows (all i_order = 0) keep their current relative order.
-                ->orderBy('i_order', 'ASC')
-                ->orderBy($this->getPrimaryKey(), 'ASC')
-                ->get();
-        } catch (\mindstellar\database\DbException $e) {
-            return array();
-        }
-
-        return osc_db_stringify_rows($rows);
+        return \mindstellar\cache\CacheGroup::remember('widget', 'location:' . $location, function () use ($location) {
+            try {
+                return osc_db_stringify_rows(osc_db_table($this->getTableName())
+                    ->select(...$this->getFields())
+                    ->where('s_location', $location)
+                    // i_order ascending, then primary key ascending as a tiebreak so
+                    // legacy rows (all i_order = 0) keep their current relative order.
+                    ->orderBy('i_order', 'ASC')
+                    ->orderBy($this->getPrimaryKey(), 'ASC')
+                    ->get());
+            } catch (\mindstellar\database\DbException $e) {
+                return null;
+            }
+        }) ?? array();
     }
 
     /**
@@ -113,22 +115,27 @@ class Widget extends DAO
      */
     public function reorder(array $orderedIds)
     {
-        $table = DB_TABLE_PREFIX . 't_widget';
         try {
-            osc_db_transaction(static function () use ($orderedIds, $table) {
-                $position = 0;
-                foreach ($orderedIds as $id) {
-                    osc_db_table($table)
-                        ->where('pk_i_id', (int) $id)
-                        ->update(array('i_order' => $position));
-                    $position++;
-                }
-            });
-        } catch (Throwable $e) {
-            return false;
-        }
+            $table = DB_TABLE_PREFIX . 't_widget';
+            try {
+                osc_db_transaction(static function () use ($orderedIds, $table) {
+                    $position = 0;
+                    foreach ($orderedIds as $id) {
+                        osc_db_table($table)
+                            ->where('pk_i_id', (int) $id)
+                            ->update(array('i_order' => $position));
+                        $position++;
+                    }
+                });
+            } catch (Throwable $e) {
+                return false;
+            }
 
-        return true;
+            return true;
+        } finally {
+            // After the write, so a read inside it cannot put the old row back.
+            $this->cacheChanged();
+        }
     }
 
     /**

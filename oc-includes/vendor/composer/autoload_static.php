@@ -981,6 +981,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\billing\\Premium' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/billing/Premium.php',
         'mindstellar\\billing\\Wallet' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/billing/Wallet.php',
         'mindstellar\\billing\\gateway\\OfflineGateway' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/billing/gateway/OfflineGateway.php',
+        'mindstellar\\cache\\CacheGroup' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/cache/CacheGroup.php',
         'mindstellar\\cli\\Cli' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/cli/Cli.php',
         'mindstellar\\database\\Connection' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/database/Connection.php',
         'mindstellar\\database\\ConnectionManager' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/database/ConnectionManager.php',

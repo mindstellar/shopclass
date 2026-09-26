@@ -17,6 +17,8 @@
  */
 class OSCLocale extends DAO
 {
+    protected $cacheGroup = 'locale';
+
     /**
      *
      * @var \OSCLocale
@@ -101,18 +103,17 @@ class OSCLocale extends DAO
      */
     public function listAllEnabled($isBo = false, $indexedByPk = false)
     {
-        $query = osc_db_table($this->getTableName())
-            ->select(...$this->getFields())
-            ->where($isBo ? 'b_enabled_bo' : 'b_enabled', 1)
-            ->orderBy('s_name', 'ASC');
-
-        try {
-            $rows = $query->get();
-        } catch (\mindstellar\database\DbException $e) {
-            return array();
-        }
-
-        $rows = osc_db_stringify_rows($rows);
+        $rows = \mindstellar\cache\CacheGroup::remember('locale', 'enabled:' . (int)$isBo, function () use ($isBo) {
+            try {
+                return osc_db_stringify_rows(osc_db_table($this->getTableName())
+                    ->select(...$this->getFields())
+                    ->where($isBo ? 'b_enabled_bo' : 'b_enabled', 1)
+                    ->orderBy('s_name', 'ASC')
+                    ->get());
+            } catch (\mindstellar\database\DbException $e) {
+                return null;
+            }
+        }) ?? array();
 
         if ($indexedByPk) {
             $aTmp = array();
@@ -156,48 +157,53 @@ class OSCLocale extends DAO
      */
     public function deleteLocale($locale)
     {
-        osc_run_hook('delete_locale', $locale);
-
-        if ($locale === null) {
-            // A null value used to build a bare comparison with no
-            // right-hand side, a SQL error every delete below absorbed into
-            // a false return. A real code that simply matches no rows
-            // succeeds and reports 0, so the two outcomes are not
-            // interchangeable and null keeps its own explicit branch.
-            return false;
-        }
-
-        // Each cascading delete's own outcome was discarded here even
-        // before this conversion, so a failure on any one of them must not
-        // stop the rest from running.
-        foreach (
-            array(
-                DB_TABLE_PREFIX . 't_category_description',
-                DB_TABLE_PREFIX . 't_item_description',
-                DB_TABLE_PREFIX . 't_user_description',
-                DB_TABLE_PREFIX . 't_pages_description',
-            ) as $table
-        ) {
-            try {
-                osc_db_table($table)->where('fk_c_locale_code', $locale)->delete();
-            } catch (\mindstellar\database\DbException $e) {
-                // Discarded, as above.
-            }
-        }
-
         try {
-            $deleted = osc_db_table($this->getTableName())->where('pk_c_code', $locale)->delete();
-        } catch (\mindstellar\database\DbException $e) {
-            $deleted = false;
-        }
+            osc_run_hook('delete_locale', $locale);
 
-        // The enabled-locale list is memoised per request, so anything drawn after this
-        // would still offer the locale that has just gone.
-        if (function_exists('osc_invalidate_locale_cache')) {
-            osc_invalidate_locale_cache();
-        }
+            if ($locale === null) {
+                // A null value used to build a bare comparison with no
+                // right-hand side, a SQL error every delete below absorbed into
+                // a false return. A real code that simply matches no rows
+                // succeeds and reports 0, so the two outcomes are not
+                // interchangeable and null keeps its own explicit branch.
+                return false;
+            }
 
-        return $deleted;
+            // Each cascading delete's own outcome was discarded here even
+            // before this conversion, so a failure on any one of them must not
+            // stop the rest from running.
+            foreach (
+                array(
+                    DB_TABLE_PREFIX . 't_category_description',
+                    DB_TABLE_PREFIX . 't_item_description',
+                    DB_TABLE_PREFIX . 't_user_description',
+                    DB_TABLE_PREFIX . 't_pages_description',
+                ) as $table
+            ) {
+                try {
+                    osc_db_table($table)->where('fk_c_locale_code', $locale)->delete();
+                } catch (\mindstellar\database\DbException $e) {
+                    // Discarded, as above.
+                }
+            }
+
+            try {
+                $deleted = osc_db_table($this->getTableName())->where('pk_c_code', $locale)->delete();
+            } catch (\mindstellar\database\DbException $e) {
+                $deleted = false;
+            }
+
+            // The enabled-locale list is memoised per request, so anything drawn after this
+            // would still offer the locale that has just gone.
+            if (function_exists('osc_invalidate_locale_cache')) {
+                osc_invalidate_locale_cache();
+            }
+
+            return $deleted;
+        } finally {
+            // After the write, so a read inside it cannot put the old row back.
+            $this->cacheChanged();
+        }
     }
     /**
      * Insert or update location info in database
@@ -210,48 +216,53 @@ class OSCLocale extends DAO
      */
     public function insertLocaleInfo($aLocale, $localeCode = '')
     {
-        if (is_array($aLocale)) {
-            if ($localeCode === '') {
-                $localeCode = $aLocale['locale_code'];
-            }
-            $values         = array(
-                'pk_c_code'         => $aLocale['locale_code'],
-                's_name'            => $aLocale['name'],
-                's_short_name'      => $aLocale['short_name'],
-                's_description'     => $aLocale['description'],
-                's_version'         => $aLocale['version'],
-                's_direction'       => $aLocale['direction'],
-                's_author_name'     => $aLocale['author_name'],
-                's_author_url'      => $aLocale['author_url'],
-                's_currency_format' => $aLocale['currency_format'],
-                's_date_format'     => $aLocale['date_format'],
-                'b_enabled'         => 0,
-                'b_enabled_bo'      => 1
-            );
-            // findByCode() returns a LIST of rows, so take the first before
-            // merging; merging the list itself injected a numeric key that
-            // checkFieldKeys() rejected, which is why the update branch never
-            // ran. array_merge keeps the existing values (they win on a key
-            // clash) and lets only the new s_version through, since it is unset
-            // from the existing row.
-            $existing = $this->findByCode($localeCode);
-            if (!empty($existing)) {
-                $existingRow = $existing[0];
-                unset($existingRow['s_version']);
-                $values = array_merge($values, $existingRow);
-                $result = $this->update($values, ['pk_c_code' => $localeCode]);
-            } else {
-                $result = $this->insert($values);
-            }
+        try {
+            if (is_array($aLocale)) {
+                if ($localeCode === '') {
+                    $localeCode = $aLocale['locale_code'];
+                }
+                $values         = array(
+                    'pk_c_code'         => $aLocale['locale_code'],
+                    's_name'            => $aLocale['name'],
+                    's_short_name'      => $aLocale['short_name'],
+                    's_description'     => $aLocale['description'],
+                    's_version'         => $aLocale['version'],
+                    's_direction'       => $aLocale['direction'],
+                    's_author_name'     => $aLocale['author_name'],
+                    's_author_url'      => $aLocale['author_url'],
+                    's_currency_format' => $aLocale['currency_format'],
+                    's_date_format'     => $aLocale['date_format'],
+                    'b_enabled'         => 0,
+                    'b_enabled_bo'      => 1
+                );
+                // findByCode() returns a LIST of rows, so take the first before
+                // merging; merging the list itself injected a numeric key that
+                // checkFieldKeys() rejected, which is why the update branch never
+                // ran. array_merge keeps the existing values (they win on a key
+                // clash) and lets only the new s_version through, since it is unset
+                // from the existing row.
+                $existing = $this->findByCode($localeCode);
+                if (!empty($existing)) {
+                    $existingRow = $existing[0];
+                    unset($existingRow['s_version']);
+                    $values = array_merge($values, $existingRow);
+                    $result = $this->update($values, ['pk_c_code' => $localeCode]);
+                } else {
+                    $result = $this->insert($values);
+                }
 
-            // As deleteLocale(): the memoised enabled-locale list predates this write.
-            if (function_exists('osc_invalidate_locale_cache')) {
-                osc_invalidate_locale_cache();
-            }
+                // As deleteLocale(): the memoised enabled-locale list predates this write.
+                if (function_exists('osc_invalidate_locale_cache')) {
+                    osc_invalidate_locale_cache();
+                }
 
-            return $result;
+                return $result;
+            }
+            return false;
+        } finally {
+            // After the write, so a read inside it cannot put the old row back.
+            $this->cacheChanged();
         }
-        return false;
     }
 }
 
