@@ -32,6 +32,7 @@ if (!osc_is_configured()) {
         . 'Run the installer to get started.',
         array(
             'tone'    => 'info',
+            'status'  => 503,
             'actions' => array(
                 array(
                     'label'   => 'Run the installer',
@@ -65,6 +66,7 @@ if (!Preference::newInstance()->get('osclass_installed')) {
         'Your settings are in place, but the database hasn\'t been set up yet. Run the installer to finish.',
         array(
             'tone'    => 'info',
+            'status'  => 503,
             'actions' => array(
                 array(
                     'label'   => 'Run the installer',
