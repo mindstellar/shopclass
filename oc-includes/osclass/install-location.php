@@ -26,7 +26,6 @@ require_once LIB_PATH . 'vendor/autoload.php';
 
 require_once LIB_PATH . 'osclass/helpers/hDatabaseInfo.php';
 require_once LIB_PATH . 'osclass/helpers/hDefines.php';
-require_once LIB_PATH . 'osclass/helpers/hErrors.php';
 require_once LIB_PATH . 'osclass/helpers/hLocale.php';
 require_once LIB_PATH . 'osclass/helpers/hLocation.php';
 require_once LIB_PATH . 'osclass/helpers/hPreference.php';

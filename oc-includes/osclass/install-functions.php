@@ -387,10 +387,11 @@ function install_is_unfinished(mysqli $db, string $prefix): bool
     try {
         $res = $db->query('SELECT COUNT(*) FROM `' . $prefix . "t_preference` WHERE s_name = 'osclass_installed'");
     } catch (mysqli_sql_exception $e) {
-        return true;
+        // Only a missing table means unfinished; a damaged or locked one may be a real site.
+        return (int) $e->getCode() === 1146;
     }
 
-    return !($res instanceof mysqli_result) || (int) $res->fetch_row()[0] === 0;
+    return $res instanceof mysqli_result && (int) $res->fetch_row()[0] === 0;
 }
 
 /**
