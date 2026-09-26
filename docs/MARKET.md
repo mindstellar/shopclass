@@ -723,11 +723,9 @@ Kept as a record of what was decided and why. Only item 4 is still open.
 
 1. **Do bundled plugins leave core? — resolved: mirrored, not moved.**
    `sample-forms` and `sample-widgets` are registered in `shopclass-plugins`
-   (both released, currently at `1.0.1`) and still ship in the core zip —
-   neither was removed from `oc-content/plugins/`; the `.gitignore` allowlist
-   there (`!oc-content/plugins/sample-widgets/`, `!…/sample-forms/`) still
-   tracks them explicitly. No other bundled plugin was mirrored. Revisit moving
-   more of them at 7.0, as originally proposed.
+   and installed from the market. Since 6.4.0 the core zip ships no plugins:
+   `.gitattributes` keeps `sample-forms`, `sample-widgets` and `test-gateway`
+   out of the release, and they stay in `oc-content/plugins/` for development.
 2. **Review capacity — resolved as proposed.** `external/*.json` registration
    is the pattern actually used for both live themes (`bender`, `storefront`,
    §3.2); neither theme's source lives in the registry, so review is "does this

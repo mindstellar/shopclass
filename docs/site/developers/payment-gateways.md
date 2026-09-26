@@ -1,6 +1,6 @@
 ---
 title: Payment gateways
-description: Take payments in ShopClass by registering a gateway, and give it a declared settings page — walked through with the bundled Test Payments plugin.
+description: Take payments in ShopClass by registering a gateway, and give it a declared settings page — walked through with the Test Payments plugin.
 sidebar:
   order: 23
 ---
@@ -9,7 +9,7 @@ Core sells credits, keeps the wallet and applies upgrades. It never touches mone
 A **gateway plugin** does one job: take the payment and report back "this order
 is paid". Core then mints the credits.
 
-The bundled **Test Payments** plugin (`oc-content/plugins/test-gateway/`) is a
+The **Test Payments** plugin (`oc-content/plugins/test-gateway/` in the core repository) is a
 complete gateway that moves no money. Read it next to this page. It has three
 files that matter:
 
@@ -194,7 +194,8 @@ osc_add_hook(osc_plugin_path(__FILE__) . '_uninstall', static function () {
 ## Trying it
 
 1. Turn billing on and add a credit package under **Billing → Packages**.
-2. Install **Test Payments**, open **Plugins → Test payments** and tick *Test mode*.
+2. Copy `oc-content/plugins/test-gateway/` from the core repository into your site, install
+   **Test Payments**, open **Plugins → Test payments** and tick *Test mode*.
 3. As a user, buy a package with the test payment method.
 4. Press **Pay**, **Decline**, **Leave pending** or **Fail with error**. A paid order
    shows **Refund** on the same page.

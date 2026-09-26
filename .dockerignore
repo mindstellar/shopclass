@@ -24,3 +24,7 @@ docs/private
 docker-compose.yml
 Dockerfile
 .dockerignore
+# Development plugins never ship in the image.
+oc-content/plugins/sample-forms
+oc-content/plugins/sample-widgets
+oc-content/plugins/test-gateway

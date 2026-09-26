@@ -44,7 +44,7 @@ That is the whole page. It:
 - saves to `t_preference` under the section `acme.delivery`
 - redirects with a flash message
 
-For a complete plugin built this way, see the bundled Test Payments plugin in
+For a complete plugin built this way, see the Test Payments plugin in
 [Payment gateways](/docs/developers/payment-gateways/#declaring-its-settings-page).
 
 Read the values back anywhere:

@@ -30,3 +30,7 @@
 /docker-compose.dev.yml export-ignore
 /docker-compose.local.yml export-ignore
 /docker-compose.prod.yml export-ignore
+# Development plugins: kept in the repository, not shipped. The samples are in the market.
+/oc-content/plugins/sample-forms export-ignore
+/oc-content/plugins/sample-widgets export-ignore
+/oc-content/plugins/test-gateway export-ignore

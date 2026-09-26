@@ -207,6 +207,7 @@ This is a beta. Please try it on a copy of your site first, and tell us what you
 
 ### Changed
 
+- The release no longer ships the Sample Forms, Sample Widgets and Test Payments plugins. The two samples install from the market; sites that have them keep them.
 - Each page of search results points its canonical link at itself, not at page 1, so listings that only deeper pages show can be found.
 - Releases ship as `shopclass_v*.zip`. `osclass_v*.zip` still ships with each release for sites updating from older versions, and the updater accepts either.
 - The search URL builder declares its five subdomain modes, its two canonical place
