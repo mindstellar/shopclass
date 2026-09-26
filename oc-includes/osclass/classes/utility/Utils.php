@@ -503,28 +503,14 @@ class Utils
     }
 
     /**
-     * Get Current Client IP Address
+     * The client's IP address: REMOTE_ADDR only. Forwarded-for headers are written by the
+     * client, so a site behind a proxy has the proxy set REMOTE_ADDR instead.
      *
      * @return string
      */
     public static function getClientIp()
     {
-        if (($http_client_ip = (Params::getServerParam('HTTP_CLIENT_IP') !== ''))
-            && filter_var($http_client_ip, FILTER_VALIDATE_IP)
-        ) {
-            return $http_client_ip;
-        }
-
-        if ($http_x_forward_for = (Params::getServerParam('HTTP_X_FORWARDED_FOR') !== '')) {
-            $ip_array = explode(',', $http_x_forward_for);
-            $ip       = trim($ip_array[0]);
-            if (filter_var($ip, FILTER_VALIDATE_IP)) {
-                return $ip;
-            }
-        }
-
-        //Most Reliable
-        return Params::getServerParam('REMOTE_ADDR');
+        return (string)Params::getServerParam('REMOTE_ADDR');
     }
 
     /**
