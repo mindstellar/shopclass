@@ -28,3 +28,8 @@ Dockerfile
 oc-content/plugins/sample-forms
 oc-content/plugins/sample-widgets
 oc-content/plugins/test-gateway
+# Source maps and the admin theme's Sass are debug and build input only.
+**/*.map
+oc-admin/themes/modern/scss
+oc-includes/assets/bootstrap-icons/*.scss
+oc-includes/assets/bootstrap-icons/*.json

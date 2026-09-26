@@ -153,14 +153,6 @@ Scripts::init();
 Styles::init();
 
 // register scripts
-//
-// jQuery is no longer used anywhere in core — the admin and every core form are vanilla.
-// These three stay registered because legacy third-party themes and plugins may still
-// enqueue them. Nothing in core enqueues them, so they cost nothing until a theme asks.
-osc_register_script('jquery', osc_assets_url('jquery/jquery.min.js'));
-osc_register_script('jquery-ui', osc_assets_url('jquery-ui/jquery-ui.min.js'), 'jquery');
-osc_register_script('jquery-validate', osc_assets_url('jquery-validation/jquery.validate.min.js'), 'jquery');
-
 osc_register_script('tiny_mce', osc_assets_url('tinymce/tinymce.min.js'));
 
 // Shared vanilla UI helpers (oscAutocomplete, …) — no jQuery. Used by the admin

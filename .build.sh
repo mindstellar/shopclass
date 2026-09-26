@@ -46,7 +46,6 @@ copy_built_file() {
 }
 copy_built_file oc-admin/themes/modern/css/main.css
 copy_built_file oc-admin/themes/modern/js/location.min.js
-copy_built_file oc-admin/themes/modern/js/location.min.js.map
 
 if [ ! -d oc-includes/assets ]; then
   echo "expected built assets dir missing: oc-includes/assets (did 'npm run build' run?)" >&2

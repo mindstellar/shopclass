@@ -59,6 +59,9 @@ osc_add_hook('init_admin', 'myplugin_assets');  // admin panel
 
 This is the change that catches ported Osclass plugins.
 
+Since 6.4, core no longer ships or registers `jquery`, `jquery-ui` or `jquery-validate`.
+A theme or plugin that uses them must ship its own copy.
+
 The front end loads **nothing** by default, and the admin panel registers
 Bootstrap 5, not jQuery:
 

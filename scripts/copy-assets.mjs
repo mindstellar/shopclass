@@ -23,10 +23,6 @@ const TARGETS = [
   // jQuery is dead weight for core — nothing in the admin or in any core form uses it. It
   // ships only because the bundled `bender` front theme still enqueues these three, and
   // that theme lives in its own repository. Delete them here once bender is vanilla.
-  { dest: `${ASSETS}/jquery`, flatten: true, src: ['jquery/dist/jquery.min.js', 'jquery/LICENSE.txt'] },
-  { dest: `${ASSETS}/jquery-ui`, flatten: true, src: ['jquery-ui-dist/*.min.js', 'jquery-ui-dist/*.min.css', 'jquery-ui-dist/LICENSE.txt'] },
-  { dest: `${ASSETS}/jquery-ui/images`, flatten: true, src: ['jquery-ui-dist/images/*'] },
-  { dest: `${ASSETS}/jquery-validation`, flatten: true, src: ['jquery-validation/dist/jquery.validate.min.js', 'jquery-validation/LICENSE.md'] },
   { dest: `${ASSETS}/bootstrap`, flatten: true, src: ['bootstrap/dist/js/bootstrap.min.*', 'bootstrap/LICENSE'] },
   { dest: `${ASSETS}/popper`, flatten: true, src: ['@popperjs/core/dist/umd/popper.min.js', '@popperjs/core/LICENSE.md'] },
   { dest: `${ASSETS}/sortablejs`, flatten: true, src: ['sortablejs/Sortable.min.js', 'sortablejs/LICENSE'] },

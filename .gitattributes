@@ -41,3 +41,8 @@
 /oc-includes/vendor/async-aws/core/src/Test export-ignore
 /oc-includes/vendor/symfony/http-client-contracts/Test export-ignore
 /oc-includes/vendor/symfony/service-contracts/Test export-ignore
+# Debug and build input only: source maps and the admin theme's Sass.
+*.map export-ignore
+/oc-admin/themes/modern/scss export-ignore
+/oc-includes/assets/bootstrap-icons/*.scss export-ignore
+/oc-includes/assets/bootstrap-icons/*.json export-ignore
