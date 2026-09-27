@@ -95,16 +95,17 @@ class BanRule extends DAO
             $orderSql = $order_column . $direction;
         }
 
-        $params = array();
-        $sql    = 'SELECT SQL_CALC_FOUND_ROWS * FROM ' . $this->getTableName();
+        $params   = array();
+        $whereSql = '';
         if ($name != '') {
             // Mirrors like()'s own escapeStr($v, true): % and _ are escaped in the
             // payload before the wildcard boundaries are added, so a literal
             // wildcard character typed by the caller stays literal.
-            $escaped  = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), (string)$name);
-            $sql     .= ' WHERE s_name LIKE ?';
-            $params[] = '%' . $escaped . '%';
+            $escaped   = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), (string)$name);
+            $whereSql  = ' WHERE s_name LIKE ?';
+            $params[]  = '%' . $escaped . '%';
         }
+        $sql = 'SELECT * FROM ' . $this->getTableName() . $whereSql;
         $sql .= ' ORDER BY ' . $orderSql;
 
         // Mirrors DBCommandClass::limit($start, $end): the clause is omitted
@@ -128,15 +129,13 @@ class BanRule extends DAO
 
         $rules['rules'] = osc_db_stringify_rows($rows);
 
-        // FOUND_ROWS() must run immediately after the SQL_CALC_FOUND_ROWS select
-        // above, on the same connection, with nothing else in between -- it
-        // reports on whichever query last ran with that hint. Both this and the
-        // COUNT(*) below run through osc_db_select_one() with no params, which
-        // shares the singleton connection the main select just used and (like
-        // the legacy dao->query() path) returns plain strings.
-        $total = osc_db_select_one('SELECT FOUND_ROWS() as total');
+        // Same WHERE and bound params as the data query above, counted separately
+        // instead of via the deprecated SQL_CALC_FOUND_ROWS/FOUND_ROWS() pair.
+        $total = osc_db_select_one('SELECT COUNT(*) as total FROM ' . $this->getTableName() . $whereSql, $params);
         if ($total !== null && $total['total']) {
-            $rules['total_results'] = $total['total'];
+            // A bound COUNT(*) comes back as a native int; cast to match the
+            // string FOUND_ROWS() used to return.
+            $rules['total_results'] = (string) $total['total'];
         }
 
         // Unconditional: this always counts the WHOLE table, ignoring the

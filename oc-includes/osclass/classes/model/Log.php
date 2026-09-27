@@ -111,10 +111,8 @@ class Log extends DAO
     /**
      * Paginated, filterable list for the admin activity-log datatable.
      *
-     * Hand-written SELECT (SQL_CALC_FOUND_ROWS is not a column identifier the
-     * query builder's allowlist will pass), with every value bound and the
-     * ORDER BY column checked against the known column set. Mirrors
-     * KeywordBlock::search().
+     * Hand-written SELECT, with every value bound and the ORDER BY column
+     * checked against the known column set. Mirrors KeywordBlock::search().
      *
      * @param int    $start
      * @param int    $end
@@ -160,10 +158,12 @@ class Log extends DAO
             $params[] = $pattern;
         }
 
-        $sql = 'SELECT SQL_CALC_FOUND_ROWS * FROM ' . $table;
+        $whereSql = '';
         if (!empty($where)) {
-            $sql .= ' WHERE ' . implode(' AND ', $where);
+            $whereSql = ' WHERE ' . implode(' AND ', $where);
         }
+
+        $sql = 'SELECT * FROM ' . $table . $whereSql;
         // $order_column and $direction are both validated against fixed allowlists
         // above; only those literals ever reach the SQL text.
         $sql .= ' ORDER BY ' . $order_column . ' ' . $direction;
@@ -182,11 +182,13 @@ class Log extends DAO
 
         $result['logs'] = osc_db_stringify_rows($rows);
 
-        // FOUND_ROWS() reads off the SQL_CALC_FOUND_ROWS query just run, on the
-        // same connection with nothing in between.
-        $total = osc_db_scalar('SELECT FOUND_ROWS() as total');
+        // Same WHERE and bound params as the data query above, counted separately
+        // instead of via the deprecated SQL_CALC_FOUND_ROWS/FOUND_ROWS() pair.
+        $total = osc_db_scalar('SELECT COUNT(*) as total FROM ' . $table . $whereSql, $params);
         if ($total) {
-            $result['total_results'] = $total;
+            // A bound COUNT(*) comes back as a native int; cast to match the
+            // string FOUND_ROWS() used to return.
+            $result['total_results'] = (string) $total;
         }
 
         // $table is fixed in the constructor, never runtime input.

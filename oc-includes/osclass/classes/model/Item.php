@@ -753,7 +753,13 @@ class Item extends DAO
      */
     public function findByHourExpiration($hours = 24)
     {
-        $conditions = ['TIMESTAMPDIFF(HOUR, NOW(), dt_expiration) = ' . (int)$hours, 'b_active = 1', 'b_spam = 0'];
+        // Same rows as TIMESTAMPDIFF(HOUR, NOW(), dt_expiration) = $hours, as a range an index can use.
+        $hours      = (int)$hours;
+        $conditions = [
+            'dt_expiration >= NOW() + INTERVAL ' . $hours . ' HOUR AND dt_expiration < NOW() + INTERVAL ' . ($hours + 1) . ' HOUR',
+            'b_active = 1',
+            'b_spam = 0'
+        ];
 
         return $this->findItemByTypes($conditions);
     }
@@ -768,7 +774,12 @@ class Item extends DAO
      */
     public function findByDayExpiration($days = 1)
     {
-        $conditions = ['TIMESTAMPDIFF(DAY, NOW(), dt_expiration) = ' . (int)$days, 'b_active = 1', 'b_spam = 0'];
+        $days       = (int)$days;
+        $conditions = [
+            'dt_expiration >= NOW() + INTERVAL ' . $days . ' DAY AND dt_expiration < NOW() + INTERVAL ' . ($days + 1) . ' DAY',
+            'b_active = 1',
+            'b_spam = 0'
+        ];
 
         return $this->findItemByTypes($conditions);
     }

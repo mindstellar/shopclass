@@ -14,13 +14,11 @@
  * Written against the legacy implementation and required to pass UNCHANGED once
  * search()/countRules() move to the parameterized query layer.
  *
- * search() is a SQL_CALC_FOUND_ROWS/FOUND_ROWS() paging pattern: the main
- * SELECT, the FOUND_ROWS() read and the unconditional COUNT(*) are three
- * separate statements on the legacy dao->query() path that must keep running
- * in that exact order on the same connection, or FOUND_ROWS() reports the
- * wrong query's count. 'rows' (COUNT(*)) always reflects the WHOLE table,
- * while 'total_results' (FOUND_ROWS()) honours the s_name filter but ignores
- * LIMIT — the two numbers are not the same thing even when there is no filter.
+ * search() runs three statements: the main SELECT, a COUNT(*) with the same
+ * WHERE (for 'total_results'), and an unconditional COUNT(*) (for 'rows').
+ * 'rows' always reflects the WHOLE table, while 'total_results' honours the
+ * s_name filter but ignores LIMIT — the two numbers are not the same thing
+ * even when there is no filter.
  *
  * search()'s pagination has its own quirk, independent of the general
  * LIMIT/OFFSET inversion: dao->limit($start, $end) only ever emits a LIMIT at
@@ -108,7 +106,7 @@ harness_section('BanRule::search — empty table');
 $empty = $model->search();
 check('an empty table returns an array', is_array($empty), describe($empty));
 pin('rows keys are exactly rows/total_results/rules', array('rows', 'total_results', 'rules'), array_keys($empty));
-pin('rows is int 0, not string "0" (FOUND_ROWS/COUNT are falsy-gated)', 0, $empty['rows']);
+pin('rows is int 0, not string "0" (the COUNT queries are falsy-gated)', 0, $empty['rows']);
 pin('total_results is int 0, not string "0"', 0, $empty['total_results']);
 pin('rules is an empty array', array(), $empty['rules']);
 
@@ -252,13 +250,13 @@ check('countRules is really a string', is_string($model->countRules()), describe
  * ------------------------------------------------------------------------- */
 harness_section('BanRule: query cost');
 
-pin('a normal search() costs exactly 3 statements (select, FOUND_ROWS, COUNT)', 3, harness_query_count(static function () use ($model) {
+pin('a normal search() costs exactly 3 statements (select, filtered COUNT, whole-table COUNT)', 3, harness_query_count(static function () use ($model) {
     $model->search(0, 3);
 }));
 
 $prevLevel = error_reporting(E_ALL & ~E_WARNING);
 pin(
-    'a search() that fails at the driver costs exactly 1 statement -- FOUND_ROWS/COUNT are never reached',
+    'a search() that fails at the driver costs exactly 1 statement -- the COUNT queries are never reached',
     1,
     harness_query_count(static function () use ($model) {
         $model->search(0, 10, 'pk_i_id', '0');

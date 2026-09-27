@@ -271,7 +271,7 @@ harness_section('KeywordBlock: query cost');
 
 $seedKeyword('cost-probe', 'all', 0, '2026-01-10 00:00:00');
 
-pin('one search() call costs three statements (list + FOUND_ROWS + COUNT)', 3, harness_query_count(static function () use ($model) {
+pin('one search() call costs three statements (list, filtered COUNT, whole-table COUNT)', 3, harness_query_count(static function () use ($model) {
     $model->search();
 }));
 pin('one countKeywords() call costs one statement', 1, harness_query_count(static function () use ($model) {
