@@ -33,7 +33,8 @@ osc_admin_page(array(
     'title'   => __('Database'),
     'help'    => __('Compares your database with the structure this version of Shopclass declares. '
                     . 'Repair adds missing tables, columns, indexes and foreign keys, and corrects '
-                    . 'column types and defaults. It never drops anything.'),
+                    . 'column types and defaults. It never removes a table, column or index, but it may rebuild '
+                    . 'a core key to correct it, so take a backup first.'),
 ));
 
 osc_current_admin_theme_path('parts/header.php'); ?>

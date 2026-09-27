@@ -101,6 +101,7 @@ the one exception: it locks out everything except a signed-in admin.
 | **Spam listings** | Marked as spam |
 | **Unactivated listings** | Never activated from the confirmation e-mail |
 | **Unactivated users** | Never activated from the confirmation e-mail |
+| **Avatars of deleted users** | Profile pictures left behind by deleted accounts |
 
 Tick which groups to clean, and set **Older than** (in days) for each one. For
 Reported listings the age counts from the listing's last change, so an owner who
@@ -188,7 +189,7 @@ Run it after any change to the server, and put it in your monitoring.
 
 **Tools → Database** lists where the database differs from what ShopClass
 declares. **Repair** adds missing tables, columns, indexes and foreign keys,
-corrects column types and defaults, and shows what it ran. It never drops anything, so a column or index a plugin added stays. From
+corrects column types and defaults, and shows what it ran. It never removes a table, column or index, so anything a plugin added stays. It may rebuild a core primary or foreign key to correct it, so take a backup first. From
 a shell: `php oc-cli.php db:doctor` reports, `php oc-cli.php db:repair` repairs.
 
 ## A maintenance routine
