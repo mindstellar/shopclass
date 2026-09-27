@@ -32,26 +32,30 @@ if (!defined('ABS_PATH')) {
         <div class="oe-field">
             <label class="oe-label" for="oe-contact-name"><?php echo osc_esc_html(_m('Your name')); ?></label>
             <input class="oe-input" id="oe-contact-name" type="text" name="yourName" autocomplete="name" required
-                   value="<?php echo osc_esc_html(osc_logged_user_name()); ?>" />
+                   value="<?php echo osc_esc_html(osc_gui_kept('yourName', osc_logged_user_name())); ?>" />
         </div>
         <div class="oe-field">
             <label class="oe-label" for="oe-contact-email"><?php echo osc_esc_html(_m('Your email address')); ?></label>
             <input class="oe-input" id="oe-contact-email" type="email" name="yourEmail" autocomplete="email" required
-                   value="<?php echo osc_esc_html(osc_logged_user_email()); ?>"
+                   value="<?php echo osc_esc_html(osc_gui_kept('yourEmail', osc_logged_user_email())); ?>"
                    aria-describedby="oe-contact-email-hint" />
             <span class="oe-hint" id="oe-contact-email-hint"><?php
                 echo osc_esc_html(_m('We reply to this address.')); ?></span>
         </div>
         <div class="oe-field">
             <label class="oe-label" for="oe-contact-subject"><?php echo osc_esc_html(_m('Subject')); ?></label>
-            <input class="oe-input" id="oe-contact-subject" type="text" name="subject" required />
+            <input class="oe-input" id="oe-contact-subject" type="text" name="subject" required
+                   value="<?php echo osc_esc_html(osc_gui_kept('subject')); ?>" />
         </div>
         <div class="oe-field">
             <label class="oe-label" for="oe-contact-message"><?php echo osc_esc_html(_m('Message')); ?></label>
             <textarea class="oe-input" id="oe-contact-message" name="message" rows="6" required
-                      minlength="10"></textarea>
+                      minlength="10"><?php echo osc_esc_html(osc_gui_kept('message_body')); ?></textarea>
         </div>
 
+        <?php if (osc_captcha_enabled()) { ?>
+            <div class="oe-field"><?php osc_show_captcha('contact'); ?></div>
+        <?php } ?>
         <?php osc_run_hook('contact_form'); ?>
         <?php osc_run_hook('admin_contact_form'); ?>
 

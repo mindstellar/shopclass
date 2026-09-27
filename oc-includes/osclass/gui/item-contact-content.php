@@ -37,23 +37,25 @@ if (!defined('ABS_PATH')) {
         <div class="oe-field">
             <label class="oe-label" for="oe-your-name"><?php echo osc_esc_html(_m('Your name')); ?></label>
             <input class="oe-input" id="oe-your-name" type="text" name="yourName" autocomplete="name" required
-                   value="<?php echo osc_esc_html(osc_logged_user_name()); ?>" />
+                   value="<?php echo osc_esc_html(osc_gui_kept('yourName', osc_logged_user_name())); ?>" />
         </div>
         <div class="oe-field">
             <label class="oe-label" for="oe-your-email"><?php echo osc_esc_html(_m('Your email address')); ?></label>
             <input class="oe-input" id="oe-your-email" type="email" name="yourEmail" autocomplete="email" required
-                   value="<?php echo osc_esc_html(osc_logged_user_email()); ?>"
+                   value="<?php echo osc_esc_html(osc_gui_kept('yourEmail', osc_logged_user_email())); ?>"
                    aria-describedby="oe-your-email-hint" />
             <span class="oe-hint" id="oe-your-email-hint"><?php
                 echo osc_esc_html(_m('The seller replies to this address.')); ?></span>
         </div>
         <div class="oe-field">
             <label class="oe-label" for="oe-your-phone"><?php echo osc_esc_html(_m('Phone number')); ?></label>
-            <input class="oe-input" id="oe-your-phone" type="tel" name="phoneNumber" autocomplete="tel" />
+            <input class="oe-input" id="oe-your-phone" type="tel" name="phoneNumber" autocomplete="tel"
+                   value="<?php echo osc_esc_html(osc_gui_kept('phoneNumber')); ?>" />
         </div>
         <div class="oe-field">
             <label class="oe-label" for="oe-message"><?php echo osc_esc_html(_m('Message')); ?></label>
-            <textarea class="oe-input" id="oe-message" name="message" rows="6" required minlength="10"></textarea>
+            <textarea class="oe-input" id="oe-message" name="message" rows="6" required minlength="10"><?php
+                echo osc_esc_html(osc_gui_kept('message_body')); ?></textarea>
         </div>
 
         <?php if (osc_item_attachment()) { ?>
@@ -63,6 +65,9 @@ if (!defined('ABS_PATH')) {
             </div>
         <?php } ?>
 
+        <?php if (osc_captcha_enabled()) { ?>
+            <div class="oe-field"><?php osc_show_captcha('contact_seller'); ?></div>
+        <?php } ?>
         <?php osc_run_hook('item_contact_form'); ?>
 
         <div class="oe-actions">

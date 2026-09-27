@@ -2175,6 +2175,11 @@ msgstr ""
 msgid "The translation folder is not writable"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-forgot_password-content.php
+#: oc-includes/osclass/gui/account/user-signin-content.php
+msgid "The two passwords do not match."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebLogin.php
 #: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
 msgid "The user doesn't exist"
@@ -2774,6 +2779,7 @@ msgid "Your name"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebBilling.php
+#: oc-includes/osclass/gui/billing/wallet-content.php
 msgid "Your orders"
 msgstr ""
 
@@ -2811,6 +2817,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/billing/wallet-content.php
 msgid "credits available"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/wallet-content.php
+msgid "listings used"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/PermalinkSettingsForm.php

@@ -94,6 +94,23 @@ if (!function_exists('osc_gui_tone_icon')) {
     }
 }
 
+if (!function_exists('osc_gui_kept')) {
+    /**
+     * What the visitor typed into a field before a failed submit, else $default.
+     *
+     * @param string $key
+     * @param string $default
+     *
+     * @return string
+     */
+    function osc_gui_kept($key, $default = '')
+    {
+        $kept = (string)Session::newInstance()->_getForm($key);
+
+        return $kept !== '' ? $kept : (string)$default;
+    }
+}
+
 if (!function_exists('osc_gui_print_style')) {
     /**
      * Print the shared stylesheet for core-rendered pages, once per request.
