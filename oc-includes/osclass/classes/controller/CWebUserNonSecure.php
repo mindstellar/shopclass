@@ -261,16 +261,24 @@ class CWebUserNonSecure extends BaseModel
 
                 if (osc_captcha_enabled() && !osc_check_captcha()) {
                     $fail(_m('Please complete the security check.'));
+
+                    return;
                 }
                 if ($yourName === '' || trim($message) === '' || !osc_validate_email($yourEmail)) {
                     $fail(_m('Please enter your name, a valid email address and a message.'));
+
+                    return;
                 }
 
                 $banned = osc_is_banned($yourEmail);
                 if ($banned == 1) {
                     $fail(_m('Your current email is not allowed'));
+
+                    return;
                 } elseif ($banned == 2) {
                     $fail(_m('Your current IP is not allowed'));
+
+                    return;
                 }
 
                 if (\mindstellar\security\ActionThrottle::exceeded(
@@ -279,6 +287,8 @@ class CWebUserNonSecure extends BaseModel
                     (int) osc_apply_filter('user_contact_throttle_window', 3600)
                 )) {
                     $fail(_m("You've sent too many messages recently. Please try again later."));
+
+                    return;
                 }
 
                 osc_run_hook(
