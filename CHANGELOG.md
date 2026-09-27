@@ -20,7 +20,11 @@ Photos can now be saved as WebP, which makes them about a third smaller. The ins
 clean up an install that stopped halfway and start again, and it gives clearer help when the
 database details are wrong.
 
-This is the second beta. Please try it on a copy of your site first, and tell us what you find.
+Pages load faster on sites with memcached or APCu: a cached page now asks the database
+far less. The download is smaller too, because libraries nothing used anymore are gone,
+jQuery among them. If your theme or a plugin still needs jQuery, it has to bring its own.
+
+This is the third beta. Please try it on a copy of your site first, and tell us what you find.
 
 ### New
 
@@ -98,8 +102,7 @@ This is the second beta. Please try it on a copy of your site first, and tell us
 - WebP photos can be uploaded. They were refused even when `webp` was an allowed extension, and it is now allowed by default.
 - A photo whose files cannot be saved shows an error instead of staying as a broken image.
 - Count helpers such as `osc_count_comments()` return 0, not -1, when nothing was loaded, so `if (osc_count_comments())` no longer passes on an empty page.
-- A photo over 50 megapixels is refused before it is opened, so a small crafted file cannot use up the server's memory. The `image_max_pixels` filter changes the limit.
-- **Regenerate images** skips a photo it cannot open and says how many, instead of stopping.
+- A photo over 50 megapixels is refused before it is opened, so a small crafted file cannot use up the server's memory. The `image_max_pixels` filter changes the limit, and **Regenerate images** skips such a photo and says how many.
 - The installer works on a site served on a port other than 80 or 443; the site address no longer loses the port.
 - Installing into a database that already holds a Shopclass site stops before it creates any table.
 - While the database is down, the installer shows a notice instead of the install form, so no visitor can set the site up again.
