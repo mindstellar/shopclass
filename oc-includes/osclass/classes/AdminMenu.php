@@ -478,6 +478,13 @@ class AdminMenu
         );
         $this->add_submenu(
             'tools',
+            __('Database'),
+            osc_admin_base_url(true) . '?page=tools&action=database',
+            'tools_database',
+            'administrator'
+        );
+        $this->add_submenu(
+            'tools',
             __('System info'),
             osc_admin_base_url(true) . '?page=tools&action=system_info',
             'tools_system_info',

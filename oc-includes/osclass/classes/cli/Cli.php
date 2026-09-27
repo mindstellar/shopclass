@@ -40,8 +40,9 @@ class Cli
     private array $commands = [
         'install'             => ['cmdInstall', 'Headless install from env/flags (--unattended)'],
         'cron'                => ['cmdCron', 'Run due scheduled tasks (--type=hourly|daily|weekly|all)'],
-        'db:upgrade'          => ['cmdDbUpgrade', 'Run pending migrations, repairing a drifted schema first (--skip-db, --skip-reconcile)'],
+        'db:upgrade'          => ['cmdDbUpgrade', 'Run pending migrations'],
         'db:doctor'           => ['cmdDbDoctor', 'Report where this database differs from struct.sql; changes nothing'],
+        'db:repair'           => ['cmdDbRepair', 'Bring the schema back in line with struct.sql; never drops anything (--dry-run)'],
         'package:reconcile'   => ['cmdPackageReconcile', 'Install/refresh bundled plugins & themes onto a persistent oc-content (no-op outside a container image)'],
         'cache:flush'         => ['cmdCacheFlush', 'Flush the object cache'],
         'jobs:work'           => ['cmdJobsWork', 'Drain the job queue and nothing else (--max-seconds=)'],
@@ -392,7 +393,7 @@ class Cli
     }
 
     /**
-     * Repair a drifted schema, then run the pending migrations.
+     * Run the pending migrations. The --skip-db and --skip-reconcile flags are accepted and ignored.
      *
      * @param array<string, mixed> $args
      *
@@ -400,54 +401,81 @@ class Cli
      */
     private function cmdDbUpgrade(array $args): int
     {
-        $skipReconcile = array_key_exists('skip-reconcile', $args);
-
-        $result  = \mindstellar\upgrade\Osclass::upgradeDB(
-            array_key_exists('skip-db', $args),
-            $skipReconcile
-        );
+        $result  = \mindstellar\upgrade\Osclass::upgradeDB();
         $decoded = json_decode((string) $result, true);
         $error   = is_array($decoded) ? (int) ($decoded['error'] ?? 1) : 1;
         $message = is_array($decoded) ? (string) ($decoded['message'] ?? $result) : (string) $result;
-        $repairs = is_array($decoded) && isset($decoded['repairs']) ? (array) $decoded['repairs'] : [];
 
         // upgradeDB() builds messages for the admin screen, so strip the markup
         // and collapse whitespace for a terminal.
         $message = trim(preg_replace('/\s+/', ' ', strip_tags($message)));
 
         if ($error === 0) {
-            // The repair pass is expected to find nothing: the migrations build the
-            // schema and a release cannot ship unless they reproduce it on their own.
-            // So anything here describes an install that had drifted by some other
-            // route, and saying so is more use than applying it quietly.
-            if ($repairs !== []) {
-                $this->out(sprintf("Repaired %d schema difference(s):\n", count($repairs)));
-                foreach ($repairs as $query) {
-                    $this->out('  ' . trim(preg_replace('/\s+/', ' ', (string) $query)) . "\n");
-                }
-            } elseif (!$skipReconcile) {
-                $this->out("Schema already matched — nothing to repair.\n");
-            }
-
             $this->out($message . "\n");
 
             return 0;
         }
 
         $this->err($message . "\n");
-        if ($error === 2) {
-            $this->err("Re-run with --skip-db to continue past false-positive query errors.\n");
-        }
 
         return 1;
     }
 
     /**
+     * Add what struct.sql declares and this database lacks. With --dry-run, print the
+     * db:doctor findings and change nothing.
+     *
+     * @param array<string, mixed> $args
+     *
+     * @return int 0 when nothing failed
+     */
+    private function cmdDbRepair(array $args): int
+    {
+        if (array_key_exists('dry-run', $args)) {
+            $this->cmdDbDoctor($args);
+            $this->out("\nDry run: nothing was changed.\n");
+
+            return 0;
+        }
+
+        try {
+            $result = (new \mindstellar\database\SchemaReconciler(Connection::instance()))->repair();
+        } catch (\Throwable $e) {
+            $this->err('Could not read the schema: ' . $e->getMessage() . "\n");
+
+            return 1;
+        }
+
+        if ($result['ran'] === [] && $result['failed'] === []) {
+            $this->out("Schema already matches struct.sql — nothing to repair.\n");
+
+            return 0;
+        }
+
+        if ($result['ran'] !== []) {
+            $this->out(sprintf("Ran %d statement(s):\n", count($result['ran'])));
+            foreach ($result['ran'] as $query) {
+                $this->out('  ' . trim(preg_replace('/\s+/', ' ', (string) $query)) . "\n");
+            }
+        }
+
+        if ($result['failed'] !== []) {
+            $this->err(sprintf("%d statement(s) failed:\n", count($result['failed'])));
+            foreach ($result['failed'] as $query) {
+                $this->err('  ' . trim(preg_replace('/\s+/', ' ', (string) $query)) . "\n");
+            }
+
+            return 1;
+        }
+
+        return 0;
+    }
+
+    /**
      * Report where this database differs from struct.sql. Reads only; changes nothing.
      *
-     * The upgrade's own repair pass is additive and cannot see a nullability difference, a
-     * column core stopped declaring, or an index whose columns are in the wrong order. Those
-     * survive every upgrade in silence, which is why they need asking for rather than fixing.
+     * db:repair is additive and cannot fix a nullability difference, a column core stopped
+     * declaring, or an index whose columns are in the wrong order. Those need asking for.
      *
      * @param array<string, mixed> $args
      *
@@ -520,7 +548,7 @@ class Cli
         }
 
         $this->out("Nothing was changed, and not every line above is a fault.\n");
-        $this->out("  A missing table, column or index is repaired by db:upgrade.\n");
+        $this->out("  A missing table, column or index is repaired by db:repair.\n");
         $this->out("  An undeclared index or column is usually something this site added on purpose;\n");
         $this->out("  core leaves it alone. It is worth a look only if nobody remembers adding it.\n");
         $this->out("  A nullability or type difference is the one core cannot repair on its own.\n");

@@ -171,8 +171,9 @@ admin panel, which offers the migration as a button, or run it from a shell:
 php oc-cli.php db:upgrade
 ```
 
-`db:upgrade` reconciles a drifted schema before applying pending migrations, so
-it is also the repair tool when an interrupted update leaves a site half-way.
+`db:upgrade` runs the pending migrations and nothing else. Run it again to finish
+an interrupted update. If the database is still missing a table, column or index
+afterwards, `php oc-cli.php db:repair` (or **Tools → Database**) adds it.
 
 ### 4. Check the site
 

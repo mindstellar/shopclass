@@ -525,6 +525,9 @@ jobs:
         run: php tests/test-gateway.php
       - name: Delete cascades
         run: php tests/delete-cascade.php
+      # Upgrades run migrations only; db:repair is the opt-in reconciler.
+      - name: Schema repair
+        run: php tests/schema-repair.php
       # ONLY_FULL_GROUP_BY rejects a grouped query outright, and every one of them is
       # wrapped in a catch that returns an empty array — so a site that turns the strict
       # modes on loses its alert emails, its custom fields and its statistics charts with

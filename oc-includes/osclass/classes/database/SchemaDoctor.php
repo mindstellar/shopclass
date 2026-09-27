@@ -14,7 +14,7 @@ namespace mindstellar\database;
 /**
  * Compares a live database against `struct.sql` and reports what differs. Reads only.
  *
- * SchemaReconciler repairs a drifted schema during an upgrade, but it is additive by design and
+ * SchemaReconciler repairs a drifted schema on request (db:repair), but it is additive by design and
  * blind to a whole class of drift: it compares a column's type with a one-token regex, so NULL
  * against NOT NULL never registers; it never drops a column core stopped declaring; and it only
  * ever adds an index, never redefines one. Drift it cannot see produces no statement, so nothing

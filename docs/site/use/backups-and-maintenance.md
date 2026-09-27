@@ -184,6 +184,13 @@ php oc-cli.php doctor
 
 Run it after any change to the server, and put it in your monitoring.
 
+## Database
+
+**Tools → Database** lists where the database differs from what ShopClass
+declares. **Repair** adds missing tables, columns, indexes and foreign keys,
+corrects column types and defaults, and shows what it ran. It never drops anything, so a column or index a plugin added stays. From
+a shell: `php oc-cli.php db:doctor` reports, `php oc-cli.php db:repair` repairs.
+
 ## A maintenance routine
 
 **Weekly** — check reported listings and the moderation queue; skim new users

@@ -39,12 +39,8 @@ osc_add_filter('admin_title', 'customPageTitle');
  */
 function customHead()
 {
-    // The screen reports back in the owner's terms, not the database's. Two things
-    // can happen during an upgrade and both are worth naming: updates that bring the
-    // data in line with the new version, and repairs where the database did not match
-    // what Shopclass expected. Neither is a normal thing for a site owner to reason
-    // about, so each gets a plain sentence saying what it means for them, and the
-    // statements themselves sit behind a disclosure for whoever does want them.
+    // The screen reports back in the owner's terms, not the database's: a plain sentence
+    // per outcome, with the statements behind a disclosure for whoever wants them.
     $strings = array(
         'titleDone'     => __('Your database is up to date'),
         'titleFailed'   => __('The upgrade did not finish'),
@@ -55,9 +51,6 @@ function customHead()
         'updatesOne'    => __('Applied one update.'),
         'updatesMany'   => __('Applied %s updates.'),
         'updatesNote'   => __('These bring your existing data in line with the new version.'),
-        'repairsOne'    => __('Repaired one difference.'),
-        'repairsMany'   => __('Repaired %s differences.'),
-        'repairsNote'   => __('Parts of your database did not match what Shopclass expected, and have been put right. This usually follows a plugin change or an upgrade that was interrupted.'),
         'failedNote'    => __('Your site has not been changed. Nothing was left half-done.'),
         'detail'        => __('Show technical detail'),
         'runningTitle'  => __('Updating your database'),
@@ -107,7 +100,7 @@ function customHead()
                 return li;
             }
 
-            fetch('<?php echo osc_admin_base_url(true); ?>?page=ajax&action=upgrade_db&skipdb=<?php echo osc_esc_js(Params::getParam('skipdb')); ?>&<?php echo osc_csrf_token_url(); ?>', {
+            fetch('<?php echo osc_admin_base_url(true); ?>?page=ajax&action=upgrade_db&<?php echo osc_csrf_token_url(); ?>', {
                 credentials: 'same-origin',
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             }).then(function (r) {
@@ -118,7 +111,6 @@ function customHead()
 
                 var failed = Number(data.error) !== 0;
                 var applied = Array.isArray(data.applied) ? data.applied : [];
-                var repairs = Array.isArray(data.repairs) ? data.repairs : [];
 
                 // Whether the answer came from a version of upgradeDB() that itemises
                 // its work at all. During a deploy this page can be the new one while
@@ -126,8 +118,7 @@ function customHead()
                 // cache, and that older one answers with a message and nothing else.
                 // Absent is not the same as empty: an upgrade that applied twenty
                 // updates would otherwise be reported as having changed nothing.
-                var itemised = Object.prototype.hasOwnProperty.call(data, 'applied')
-                    || Object.prototype.hasOwnProperty.call(data, 'repairs');
+                var itemised = Object.prototype.hasOwnProperty.call(data, 'applied');
 
                 var section = el('section', 'upgrade-report' + (failed ? ' upgrade-report-failed' : ''));
                 section.setAttribute('aria-labelledby', 'upgrade-report-title');
@@ -147,8 +138,7 @@ function customHead()
                     var li = el('li', 'upgrade-report-item upgrade-report-item-failed');
                     li.appendChild(el('span', 'upgrade-report-icon')).setAttribute('aria-hidden', 'true');
                     var body = el('div', 'upgrade-report-body');
-                    /* Server-composed, and for error 2 it carries the markup that
-                       offers to continue past a false positive — same trust as before. */
+                    /* Server-composed; an older build's answer can carry markup. */
                     var msg = el('div', 'upgrade-report-line');
                     msg.innerHTML = String(data.message || '').replace(/\n/g, '<br />');
                     body.appendChild(msg);
@@ -168,19 +158,11 @@ function customHead()
                             applied
                         ));
                     }
-                    if (repairs.length) {
-                        list.appendChild(row(
-                            'repaired',
-                            count(repairs.length, T.repairsOne, T.repairsMany),
-                            T.repairsNote,
-                            repairs
-                        ));
-                    }
                     if (!itemised) {
                         // Nothing to enumerate, so pass on what the server did say
                         // rather than asserting an outcome we were not told.
                         list.appendChild(row('done', String(data.message || T.titleDone), null, null));
-                    } else if (!applied.length && !repairs.length) {
+                    } else if (!applied.length) {
                         list.appendChild(row('done', T.nothing, T.nothingNote, null));
                     }
                 }

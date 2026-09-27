@@ -1001,13 +1001,11 @@ class CAdminAjax extends AdminSecBaseModel
                     $upgradeOsclass = new Upgrade($osclassUpgradeObj);
                     try {
                         $upgradeOsclass->doUpgrade();
-                        $db_upgrade_result = json_decode($osclassUpgradeObj::upgradeDB(Params::getParam('skipdb')), true);
+                        $db_upgrade_result = json_decode($osclassUpgradeObj::upgradeDB(), true);
                         $result            = [
                             'error'   => $db_upgrade_result['error'],
                             'message' => $db_upgrade_result['message'],
-                            'repairs' => $db_upgrade_result['repairs'] ?? [],
                         ];
-                        $this->flashSchemaRepairs($result['repairs']);
                     } catch (Exception $e) {
                         $result = ['error' => 1, 'message' => $e->getMessage()];
                         osc_add_flash_error_message($e->getMessage(), 'admin');
@@ -1038,9 +1036,7 @@ class CAdminAjax extends AdminSecBaseModel
                         $result            = [
                             'error'   => 0,
                             'message' => __('Shopclass upgraded successfully.'),
-                            'repairs' => $db_upgrade_result['repairs'] ?? [],
                         ];
-                        $this->flashSchemaRepairs($result['repairs']);
                     } catch (Exception $e) {
                         $result = ['error' => 1, 'message' => $e->getMessage()];
                         osc_add_flash_error_message($e->getMessage(), 'admin');
@@ -1061,7 +1057,7 @@ class CAdminAjax extends AdminSecBaseModel
                     break;
                 }
                 $this->ajax     = true;
-                $upgrade_result = Osclass::upgradeDB(Params::getParam('skipdb'));
+                $upgrade_result = Osclass::upgradeDB();
                 echo $upgrade_result;
                 break;
             case 'location_stats':
@@ -1315,34 +1311,6 @@ class CAdminAjax extends AdminSecBaseModel
     private static function marketInstaller($type)
     {
         return $type === 'theme' ? Installer::forThemes() : Installer::forPlugins();
-    }
-
-    /**
-     * Say so when the upgrade had to repair the schema on its way through.
-     *
-     * The migrations build the schema and a release cannot ship unless they reproduce
-     * it on their own, so this list is empty on an install in good order. A non-empty
-     * one means the database had drifted by some other route -- a hand-edited column, a
-     * plugin's leftovers, an upgrade interrupted half way -- and the site owner is
-     * better off knowing that happened than having it fixed silently.
-     *
-     * @param array<int,string> $repairs statements the repair pass applied
-     *
-     * @return void
-     */
-    private function flashSchemaRepairs($repairs)
-    {
-        if (!is_array($repairs) || $repairs === array()) {
-            return;
-        }
-
-        osc_add_flash_warning_message(
-            sprintf(
-                __('The database schema had drifted and %d difference(s) were repaired during the upgrade.'),
-                count($repairs)
-            ),
-            'admin'
-        );
     }
 
     /**

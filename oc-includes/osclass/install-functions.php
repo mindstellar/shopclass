@@ -192,6 +192,18 @@ function get_requirements()
         ),
     );
 
+    // Only when a database is already configured (config.php or environment); otherwise
+    // there is nothing to connect to until step 2.
+    $serverInfo = install_configured_server_info();
+    if ($serverInfo !== '') {
+        $array['Database server version'] = array(
+            'requirement' => sprintf(__('MySQL 5.7+ or MariaDB 10.2+ (found %s)'), osc_esc_html($serverInfo)),
+            'fn'          => install_db_version_supported($serverInfo),
+            'solution'    => __('Shopclass needs MySQL 5.7 or newer, or MariaDB 10.2 or newer. '
+                . 'Ask your hosting to upgrade the database server.')
+        );
+    }
+
     $config_writable = false;
     $root_writable   = false;
     $config_sample   = false;
@@ -231,6 +243,53 @@ function get_requirements()
     }
 
     return $array;
+}
+
+/**
+ * The server version string of the configured database, or '' when none is configured or
+ * it cannot be reached.
+ *
+ * @return string
+ * @since 6.4.0
+ */
+function install_configured_server_info(): string
+{
+    require_once LIB_PATH . 'osclass/config-loader.php';
+    if (!osc_is_configured()) {
+        return '';
+    }
+
+    try {
+        $probe = new \mindstellar\database\ConnectionManager(DB_HOST, DB_USER, DB_PASSWORD, '');
+        if ($probe->getErrorConnectionLevel() > 0 || !$probe->getHandle() instanceof mysqli) {
+            return '';
+        }
+
+        return (new \mindstellar\database\Connection($probe->getHandle()))->serverInfo();
+    } catch (\Throwable $e) {
+        return '';
+    }
+}
+
+/**
+ * Whether a database server version string meets the floor: MySQL 5.7+ or MariaDB 10.2+.
+ *
+ * @param string $serverInfo as reported by the server, e.g. "8.0.36" or "5.5.5-10.11.6-MariaDB"
+ *
+ * @return bool
+ * @since 6.4.0
+ */
+function install_db_version_supported(string $serverInfo): bool
+{
+    // Older MariaDB clients see a "5.5.5-" prefix in front of the real version.
+    $info = preg_replace('/^5\.5\.5-/', '', trim($serverInfo));
+    if (!preg_match('/^(\d+\.\d+(?:\.\d+)?)/', $info, $m)) {
+        return false;
+    }
+
+    $floor = stripos($info, 'mariadb') !== false ? '10.2.0' : '5.7.0';
+
+    return version_compare($m[1], $floor, '>=');
 }
 
 /**

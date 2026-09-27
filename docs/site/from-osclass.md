@@ -31,15 +31,16 @@ all of them.
 
 If your install has been stuck on an old version for a long time and you would
 rather not chain several updates, unpack the ShopClass release over the site
-the way [Updating ShopClass](/docs/updating/) describes. Then reconcile the
+the way [Updating ShopClass](/docs/updating/) describes. Then migrate the
 schema (bring the database's table structure up to date):
 
 ```bash
 php oc-cli.php db:upgrade
 ```
 
-This is the same migration the updater runs. It repairs a drifted schema first,
-which matters on old installs where a plugin once added or dropped a column.
+This is the same migration the updater runs. Old installs where a plugin once
+added or dropped a column can still differ afterwards: check with
+`php oc-cli.php db:doctor` and fix what is missing with `db:repair`.
 
 ## What carries over untouched
 

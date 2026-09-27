@@ -123,7 +123,9 @@ php oc-cli.php help          # list every command
 | Command | What it does |
 |---|---|
 | `cron [--type=hourly\|daily\|weekly\|all]` | Run due scheduled tasks (alerts, cleanup, sitemap warm). Default runs all three. |
-| `db:upgrade [--skip-db]` | Reconcile the schema and run pending migrations after an update. `--skip-db` continues past false-positive query errors. |
+| `db:upgrade` | Run pending migrations after an update. |
+| `db:doctor` | Report where the database differs from what Shopclass declares. Changes nothing. |
+| `db:repair [--dry-run]` | Add missing tables, columns, indexes and foreign keys, and correct column types and defaults. `--dry-run` only reports. |
 | `package:reconcile` | Install/refresh bundled plugins & themes onto a persistent `oc-content` — a no-op outside a container image. |
 | `cache:flush` | Flush the object cache. |
 | `sitemap:warm` | Pre-generate the XML sitemap into the cache. |

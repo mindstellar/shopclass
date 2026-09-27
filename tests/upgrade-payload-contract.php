@@ -79,7 +79,7 @@ check(
 
 // The keys the report is built from. Losing one silently empties a section of the
 // screen rather than breaking it, which is why they are named here explicitly.
-foreach (array('error', 'message', 'applied', 'repairs') as $key) {
+foreach (array('error', 'message', 'applied') as $key) {
     check("upgradeDB() returns '$key'", in_array($key, $emitted, true));
 }
 
@@ -88,7 +88,7 @@ foreach (array('error', 'message', 'applied', 'repairs') as $key) {
 check(
     'the screen tests whether the answer itemises its work',
     strpos($viewSrc, 'hasOwnProperty') !== false && preg_match('/\bitemised\b/', $viewSrc) === 1,
-    'expected a presence test for applied/repairs, not a truthiness test'
+    'expected a presence test for applied, not a truthiness test'
 );
 check(
     'and falls back to the server message when it does not',
@@ -99,7 +99,7 @@ check(
 // Absent and empty must not collapse into the same branch.
 check(
     'an empty list is still reported as nothing changed',
-    preg_match('/else if \(!applied\.length && !repairs\.length\)/', $viewSrc) === 1
+    preg_match('/else if \(!applied\.length\)/', $viewSrc) === 1
 );
 
 /* ----------------------------------------------------------------------------

@@ -78,11 +78,7 @@ class AdminSecBaseModel extends SecBaseModel
      * is already complete the version is written here and the request continues to the page
      * that was asked for.
      *
-     * Anything with real work waiting still goes to the screen. So does the schema
-     * reconcile, deliberately: it is the slow half of an upgrade, and meeting a drifted
-     * schema unattended, part-way through somebody's page load, is the wrong way to find
-     * out. An install carried across by this path has therefore not been reconciled --
-     * running the upgrade screen by hand is still what does that.
+     * Anything with real work waiting still goes to the screen.
      *
      * @param string $configVersion the version the code on disk declares
      *

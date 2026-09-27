@@ -564,11 +564,46 @@ class CAdminTools extends AdminSecBaseModel
                 );
                 $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=logs');
                 break;
+            case 'database':
+                // Repair posts back to this URL so the result renders here, under the right menu entry.
+                if (Params::getServerParam('REQUEST_METHOD') === 'POST' && Params::getParam('repair') !== '') {
+                    if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=database')) {
+                        break;
+                    }
+                    osc_csrf_check();
+                    try {
+                        $repair = (new \mindstellar\database\SchemaReconciler(\mindstellar\database\Connection::instance()))->repair();
+                    } catch (Throwable $e) {
+                        $repair = array('ran' => array(), 'failed' => array($e->getMessage()));
+                    }
+                    $this->_exportVariableToView('db_repair', $repair);
+                }
+                $this->exportSchemaFindings();
+                $this->doView('tools/database.php');
+                break;
             case 'system_info':
             default:
                 $this->doView('tools/system-info.php');
                 break;
         }
+    }
+
+    /**
+     * Hand the SchemaDoctor findings to the Database view, or the error that stopped them.
+     *
+     * @return void
+     */
+    private function exportSchemaFindings(): void
+    {
+        try {
+            $findings = (new \mindstellar\database\SchemaDoctor(\mindstellar\database\Connection::instance()))->diagnose();
+            $error    = '';
+        } catch (Throwable $e) {
+            $findings = array();
+            $error    = $e->getMessage();
+        }
+        $this->_exportVariableToView('db_findings', $findings);
+        $this->_exportVariableToView('db_findings_error', $error);
     }
 
     /**

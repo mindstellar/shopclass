@@ -22,7 +22,6 @@
 namespace mindstellar\upgrade;
 
 use mindstellar\database\Connection;
-use mindstellar\database\SchemaReconciler;
 use mindstellar\migration\MigrationRunner;
 use mindstellar\utility\FileSystem;
 use mindstellar\utility\Utils;
@@ -63,29 +62,13 @@ class Osclass extends UpgradePackage
     }
 
     /**
-     * Upgrade Shopclass Database.
+     * Upgrade Shopclass Database by running the pending migrations.
      *
-     * The migrations are what build the schema. Every change to struct.sql is
-     * required to have a migration behind it, and tests/schema-drift.php holds each
-     * release to that by rebuilding the schema from migrations alone and refusing to
-     * pass if the reconciler is left with anything to do.
+     * Migrations alone build the schema; tests/schema-drift.php holds every release to that.
+     * Repairing a drifted install is opt-in: `db:repair` or Tools > Database.
      *
-     * The reconciler still runs first, and still repairs. What it is for is an install
-     * that has drifted by some route the migrations cannot know about -- a
-     * hand-edited column, a plugin's leftovers, an upgrade interrupted half way -- and
-     * on an install in good order it now finds nothing and issues nothing. Anything it
-     * does apply is reported back in `repairs` rather than being applied silently,
-     * because on a healthy install that list is expected to be empty and a non-empty
-     * one is worth seeing.
-     *
-     * It runs before the migrations rather than after, which is the order this has
-     * always used: an install coming from a much older release runs the whole
-     * migration sequence in one go, and repairing the schema first is what has made
-     * that work. The drift check covers the last release only, so there is no evidence
-     * to justify reversing it.
-     *
-     * @param bool $skip_db        continue even when the reconciler reports failed statements
-     * @param bool $skip_reconcile run the migrations alone, without the repair pass
+     * @param bool $skip_db        deprecated since 6.4.0, ignored
+     * @param bool $skip_reconcile deprecated since 6.4.0, ignored
      *
      * @return false|string
      */
@@ -102,44 +85,7 @@ class Osclass extends UpgradePackage
         // tab closed halfway through leaves the schema mid-migration for no reason.
         ignore_user_abort(true);
 
-        $repairs = array();
-
-        if (file_exists(osc_lib_path() . 'osclass/installer/struct.sql')) {
-            if ($skip_reconcile) {
-                $status       = true;
-                $message      = array();
-                $errorQueries = array();
-            } else {
-                $sql = file_get_contents(osc_lib_path() . 'osclass/installer/struct.sql');
-
-                $result = (new SchemaReconciler(Connection::instance()))
-                    ->reconcile(str_replace('/*TABLE_PREFIX*/', DB_TABLE_PREFIX, $sql));
-                list($status, $message, $errorQueries) = $result;
-
-                // The second element is every statement the pass ran, keyed by table
-                // where it creates one. Only the ones that succeeded are a repair.
-                $repairs = array_values(array_diff(array_values($message), $errorQueries));
-            }
-        }
-        if (isset($status, $message, $errorQueries)) {
-            if (!$skip_db && count($errorQueries) > 0) {
-                $skip_db_link = osc_admin_base_url(true) . '?page=upgrade&confirm=true&skipdb=true';
-                $message      = '<p>';
-                $message      .= __('Shopclass &raquo; Has some errors') . PHP_EOL;
-                $message      .= __('We\'ve encountered some problems while updating the database structure. The following queries failed:');
-                $message      .= '</p>' . PHP_EOL;
-                $message      .= '<pre>';
-                $message      .= implode(PHP_EOL, $errorQueries) . PHP_EOL;
-                $message      .= '</pre>';
-                $message      .= __('These errors could be false-positive errors.');
-                $message      .= __(" If you're sure that is the case, you can continue with the upgrade.");
-                $message      .= '<a class="btn btn-sm btn-primary" href="' . $skip_db_link . '">' . __('Continue with upgrade') . '</a>';
-                $message      .= __(" Or you can ask for help in our community discussions");
-                $message      .= ': <a class="btn btn-sm btn-info" href="https://github.com/mindstellar/shopclass/discussions">' . __('Community discussions') . '</a>';
-
-                return json_encode(['error' => 2, 'message' => $message]);
-            }
-
+        if (is_dir(osc_lib_path() . 'osclass/installer/migrations')) {
             // Legacy installs store the version as an MMN integer (3.9.0 => 390); modern ones
             // store a dotted string (5.3.0.dev). Only the former can predate 3.9.0, so restrict
             // the numeric comparison to numeric values — a dotted string is always newer.
@@ -190,11 +136,9 @@ class Osclass extends UpgradePackage
             return json_encode([
                 'error'   => 0,
                 'message' => __('Shopclass DB Upgraded Successfully'),
-                // What the upgrade actually did, for the screen to report back. Both
-                // are normally empty on a site that is already current, which is worth
-                // saying out loud rather than leaving the owner to guess.
+                // What the upgrade actually did, for the screen to report back. Empty on a
+                // site that is already current.
                 'applied' => array_values($migrated['applied']),
-                'repairs' => $repairs,
                 'version' => self::newVersionOnDisk(),
             ]);
         }
@@ -210,9 +154,8 @@ class Osclass extends UpgradePackage
      * has already replaced default-constants.php on disk, but OSCLASS_VERSION was
      * defined at the start of the request from the OLD code and cannot be
      * redefined — so recording it would write the pre-upgrade version into the
-     * `version` preference, which then never catches up. This upgrade reconciled
-     * the schema against the struct.sql and migrations already on disk, so the
-     * version it records must come from disk too. Falls back to the constant when
+     * `version` preference, which then never catches up. This upgrade ran the
+     * migrations already on disk, so the version it records must come from disk too. Falls back to the constant when
      * the file can't be read (e.g. a plain in-process db:upgrade, where they match).
      *
      * @return string

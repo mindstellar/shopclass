@@ -42,6 +42,15 @@ foreach (array('', '127.0.0.1:8101', 'ftp://ex.com/', 'javascript://x', "http://
     check('refuses ' . json_encode($url), !install_web_url_valid($url));
 }
 
+harness_section('install_db_version_supported');
+
+foreach (array('5.7.44-log', '8.0.36', '5.5.5-10.2.0-MariaDB', '5.5.5-10.11.6-MariaDB-1:10.11.6', '11.4.2-MariaDB') as $v) {
+    check('accepts ' . $v, install_db_version_supported($v));
+}
+foreach (array('5.6.51', '10.1.48-MariaDB', '5.5.5-10.1.48-MariaDB', 'garbage', '') as $v) {
+    check('refuses ' . json_encode($v), !install_db_version_supported($v));
+}
+
 harness_section('install_urls under the CLI');
 
 $_SERVER['HTTP_HOST']   = '';

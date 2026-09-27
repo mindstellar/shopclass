@@ -100,4 +100,4 @@ $table = DB_TABLE_PREFIX . 't_myplugin_data';
 ```
 
 Do not add columns to core tables. A migration will not know about them, and the
-next `db:upgrade` reconciles the schema against what core expects.
+next `db:repair` brings the schema back to what core expects.

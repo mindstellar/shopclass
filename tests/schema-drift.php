@@ -31,10 +31,8 @@
  * the same property stated from the other side, and it fails with the exact ALTER
  * statements the missing migration should contain rather than with a schema diff.
  *
- * The reconciler itself is unchanged and still runs on a real upgrade, where it stays
- * useful for repairing an install that has drifted by other means -- a hand-edited
- * column, a plugin's leftovers, an upgrade interrupted half way. What it no longer is
- * is load-bearing.
+ * A real upgrade runs migrations only too. The reconciler is an opt-in repair
+ * (db:repair, Tools > Database) for an install that drifted by other means.
  *
  * Usage:  php tests/schema-drift.php <baseline-struct.sql>
  * Env:    DRIFT_DB_HOST DRIFT_DB_PORT DRIFT_DB_USER DRIFT_DB_PASS
