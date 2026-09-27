@@ -441,6 +441,35 @@ try {
 }
 check('a key longer than the column is refused', $threw);
 
+foreach (array('has space', "caf\u{e9}") as $badKey) {
+    $threw = false;
+    try {
+        $queue->enqueue('test.index', array(), array('unique_key' => $badKey));
+    } catch (InvalidArgumentException $e) {
+        $threw = true;
+    }
+    check('a key that is not plain ASCII is refused: ' . $badKey, $threw);
+}
+$truncate();
+$lower = $queue->enqueue('test.case', array(), array('unique_key' => 'k1'));
+$upper = $queue->enqueue('test.case', array(), array('unique_key' => 'K1'));
+check('keys differing only in case are different jobs', $lower !== $upper);
+
+$threw = false;
+try {
+    $queue->enqueueMany('test.index', array(array('a' => 1)), array('unique_key' => 'current'));
+} catch (\Throwable $e) {
+    $threw = true;
+}
+pin('a string key is a key, not a function name', 'current', $threw ? 'threw' : $admin->query("SELECT s_unique FROM $table WHERE s_type = 'test.index'")->fetch_row()[0]);
+
+$truncate();
+$gaveUp = $queue->enqueue('test.fail', array(), array('unique_key' => 'x'));
+$admin->query("UPDATE $table SET i_attempts = " . (JobQueue::MAX_ATTEMPTS - 1) . " WHERE pk_i_id = $gaveUp");
+$queue->fail($gaveUp, 'boom');
+pin('a job that gives up loses its key', null, $column($gaveUp, 's_unique'));
+check('...so the next enqueue with that key is a new job', $queue->enqueue('test.fail', array(), array('unique_key' => 'x')) !== $gaveUp);
+
 /* ---------------------------------------------------------------------------
  * Bulk enqueue, ensure and stats
  * ------------------------------------------------------------------------ */
@@ -459,6 +488,14 @@ pin('...and the per-row keys fold duplicates across chunks', 300, $queue->count(
 pin('without a key every payload is its own job', 3, $queue->enqueueMany('test.plain', array(array(), array(), array())));
 pin('an empty list queues nothing', 0, $queue->enqueueMany('test.plain', array()));
 
+$truncate();
+$big = array();
+for ($i = 0; $i < 40; $i++) {
+    $big[] = array('blob' => str_repeat('x', 60000));
+}
+pin('a bulk insert larger than a packet is split and all go in', 40, $queue->enqueueMany('test.big', $big));
+pin('...and all are stored', 40, $queue->count(JobQueue::STATUS_PENDING, 'test.big'));
+
 harness_section('Ensure');
 
 $truncate();
@@ -468,6 +505,24 @@ pin('...but queues no second job', 1, $queue->count(JobQueue::STATUS_PENDING, 't
 $queue->claim(10);
 check('ensure while one is running is true', $queue->ensure('test.sweep'));
 pin('...and queues nothing new', 0, $queue->count(JobQueue::STATUS_PENDING, 'test.sweep'));
+
+harness_section('Before migration 0050');
+
+// An earlier migration can queue a job while s_unique does not exist yet.
+$truncate();
+$admin->query("ALTER TABLE $table DROP INDEX uk_type_unique, DROP COLUMN s_unique");
+check('a plain enqueue works without the column', $queue->enqueue('test.early', array('a' => 1)) > 0);
+check('ensure works without the column', $queue->ensure('test.early2'));
+pin('bulk enqueue without keys works without the column', 2, $queue->enqueueMany('test.early', array(array(), array())));
+pin('a claim works without the column', 4, count($queue->claim(10)));
+$admin->query("ALTER TABLE $table ADD COLUMN s_unique VARCHAR(100) CHARACTER SET ascii COLLATE ascii_bin NULL AFTER s_type, ADD UNIQUE KEY uk_type_unique (s_type, s_unique)");
+
+$truncate();
+$mixed = $queue->enqueueMany('test.mixed', array(array('k' => 1), array('k' => 0), array('k' => 1)), array(
+    'unique_key' => static fn (array $p) => $p['k'] ? 'same' : null,
+));
+pin('a key function may return null for some rows', 3, $mixed);
+pin('...keyed rows fold, the rest do not', 2, $queue->count(JobQueue::STATUS_PENDING, 'test.mixed'));
 
 harness_section('Stats');
 

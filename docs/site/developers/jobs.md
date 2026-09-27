@@ -72,10 +72,12 @@ retries start over, instead of a second job being added:
 osc_job_enqueue('acme.reindex', array('item_id' => $id), array('unique_key' => 'item:' . $id));
 ```
 
-The key is at most 100 characters, and it is unique per type. A worker clears it
-when it picks the job up, so a change that arrives during the run queues a new job.
-`osc_job_enqueue_many()` takes the same option, or a function that builds each
-row's key:
+The key is up to 100 characters of printable ASCII with no spaces, compared
+exactly. Hash anything else first, such as `sha1($email)`. It is unique per type.
+A worker clears it when it picks the job up, so a change that arrives during the run
+queues a new job. Each fold also resets the job's start time, so a job queued with a
+`delay` waits that long after the last change. `osc_job_enqueue_many()` takes the same
+option, or a closure that builds each row's key:
 
 ```php
 osc_job_enqueue_many('acme.reindex', $payloads, array(

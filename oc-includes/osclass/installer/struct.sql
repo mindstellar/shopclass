@@ -377,7 +377,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_resource (
 CREATE TABLE /*TABLE_PREFIX*/t_job_queue (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     s_type VARCHAR(60) NOT NULL,
-    s_unique VARCHAR(100) NULL,
+    s_unique VARCHAR(100) CHARACTER SET ascii COLLATE ascii_bin NULL,
     s_storage VARCHAR(30) NULL,
     s_payload TEXT NOT NULL,
     s_status VARCHAR(10) NOT NULL DEFAULT 'pending',

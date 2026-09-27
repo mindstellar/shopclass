@@ -72,6 +72,9 @@ final class JobQueue
     /** Rows per INSERT in enqueueMany(). */
     private const BULK_CHUNK = 200;
 
+    /** Payload bytes per INSERT in enqueueMany(), well under a 4 MB max_allowed_packet. */
+    private const BULK_BYTES = 1048576;
+
     /** The longest de-duplication key s_unique holds. */
     public const MAX_UNIQUE_LENGTH = 100;
 
@@ -106,12 +109,11 @@ final class JobQueue
             }
 
             // LAST_INSERT_ID(pk_i_id) makes a matched row's id the insert id.
-            return osc_db_insert_id(
-                'INSERT INTO ' . $this->table() . ' (' . implode(', ', array_keys($row)) . ')'
+            $sql = 'INSERT INTO ' . $this->table() . ' (' . implode(', ', array_keys($row)) . ')'
                 . ' VALUES (' . implode(', ', array_fill(0, count($row), '?')) . ')'
-                . self::onDuplicate() . ', pk_i_id = LAST_INSERT_ID(pk_i_id)',
-                array_values($row)
-            );
+                . self::onDuplicate() . ', pk_i_id = LAST_INSERT_ID(pk_i_id)';
+
+            return (int) self::retryOnce(static fn () => osc_db_insert_id($sql, array_values($row)));
         } catch (DbException $e) {
             return 0;
         }
@@ -120,7 +122,7 @@ final class JobQueue
     /**
      * Put many jobs of one type on the queue, in chunked multi-row inserts.
      *
-     * $options are enqueue()'s; unique_key may also be a callable fn(array $payload): ?string
+     * $options are enqueue()'s; unique_key may also be a Closure fn(array $payload): ?string
      * that names each row's key. Rows with a matching waiting job update it, as enqueue() does.
      *
      * @param string                        $type
@@ -137,7 +139,7 @@ final class JobQueue
         $keyOf = $options['unique_key'] ?? null;
         $rows  = array();
         foreach ($payloads as $payload) {
-            $key    = is_callable($keyOf) ? $keyOf((array) $payload) : $keyOf;
+            $key    = $keyOf instanceof \Closure ? $keyOf((array) $payload) : $keyOf;
             $rows[] = $this->row(
                 $type,
                 self::encode((array) $payload, 'Job payload for "' . $type . '"'),
@@ -146,8 +148,31 @@ final class JobQueue
             );
         }
 
+        // One statement needs one column list, so if any row is keyed, all name s_unique.
+        if (in_array(true, array_map(static fn ($row) => isset($row['s_unique']), $rows), true)) {
+            foreach ($rows as $i => $row) {
+                $rows[$i] = $row + array('s_unique' => null);
+            }
+        }
+
+        $chunks = array();
+        $chunk  = array();
+        $bytes  = 0;
+        foreach ($rows as $row) {
+            if ($chunk !== array() && (count($chunk) >= self::BULK_CHUNK || $bytes + strlen($row['s_payload']) > self::BULK_BYTES)) {
+                $chunks[] = $chunk;
+                $chunk    = array();
+                $bytes    = 0;
+            }
+            $chunk[] = $row;
+            $bytes  += strlen($row['s_payload']);
+        }
+        if ($chunk !== array()) {
+            $chunks[] = $chunk;
+        }
+
         $queued = 0;
-        foreach (array_chunk($rows, self::BULK_CHUNK) as $chunk) {
+        foreach ($chunks as $chunk) {
             $columns = array_keys($chunk[0]);
             $params  = array();
             foreach ($chunk as $row) {
@@ -155,13 +180,11 @@ final class JobQueue
             }
             $tuple = '(' . implode(', ', array_fill(0, count($columns), '?')) . ')';
 
+            $sql = 'INSERT INTO ' . $this->table() . ' (' . implode(', ', $columns) . ')'
+                . ' VALUES ' . implode(', ', array_fill(0, count($chunk), $tuple))
+                . self::onDuplicate();
             try {
-                osc_db_execute(
-                    'INSERT INTO ' . $this->table() . ' (' . implode(', ', $columns) . ')'
-                    . ' VALUES ' . implode(', ', array_fill(0, count($chunk), $tuple))
-                    . self::onDuplicate(),
-                    $params
-                );
+                self::retryOnce(static fn () => osc_db_execute($sql, $params));
                 $queued += count($chunk);
             } catch (DbException $e) {
                 // A failed chunk is not counted; the others still go in.
@@ -176,7 +199,8 @@ final class JobQueue
      *
      * @param string              $type
      * @param array<string,mixed> $payload
-     * @param array<string,mixed> $options as enqueue(); unique_key defaults to one per type
+     * @param array<string,mixed> $options as enqueue(); a unique_key also closes the gap
+     *                                     between the check and the insert
      *
      * @return bool true when a job of $type is now queued or running
      */
@@ -185,9 +209,6 @@ final class JobQueue
         if ($this->count(self::STATUS_PENDING, $type) > 0 || $this->count(self::STATUS_RUNNING, $type) > 0) {
             return true;
         }
-
-        // The key closes the gap between the count and the insert: two callers fold into one job.
-        $options += array('unique_key' => 'ensure');
 
         return $this->enqueue($type, $payload, $options) > 0;
     }
@@ -245,15 +266,41 @@ final class JobQueue
         $delay   = max(0, (int) ($options['delay'] ?? 0));
         $storage = $options['storage'] ?? null;
 
-        return array(
+        $row = array(
             's_type'      => $type,
-            's_unique'    => $unique,
             's_storage'   => ($storage === null || $storage === '') ? null : (string) $storage,
             's_payload'   => $encoded,
             's_status'    => self::STATUS_PENDING,
             'dt_next_run' => date('Y-m-d H:i:s', time() + $delay),
             'dt_created'  => date('Y-m-d H:i:s'),
         );
+        // Only a keyed job names s_unique, so a plain one still inserts on a schema that
+        // migration 0050 has not reached yet -- as an earlier migration's job does.
+        if ($unique !== null) {
+            $row['s_unique'] = $unique;
+        }
+
+        return $row;
+    }
+
+    /**
+     * Run $fn, and once more if it fails: a keyed insert can lose a lock race (deadlock)
+     * with another insert or a claim, and the second try almost always goes through.
+     *
+     * @param callable $fn
+     *
+     * @return mixed
+     * @throws DbException when both tries fail
+     */
+    private static function retryOnce(callable $fn)
+    {
+        try {
+            return $fn();
+        } catch (DbException $e) {
+            usleep(50000);
+
+            return $fn();
+        }
     }
 
     /**
@@ -280,8 +327,9 @@ final class JobQueue
         if ($key === null || $key === '') {
             return null;
         }
-        if (!is_string($key) || strlen($key) > self::MAX_UNIQUE_LENGTH) {
-            throw new InvalidArgumentException('A job unique_key must be a string of at most '
+        // Compared byte for byte in the column, so only printable ASCII: hash anything else.
+        if (!is_string($key) || strlen($key) > self::MAX_UNIQUE_LENGTH || !preg_match('/^[\x21-\x7e]+$/', $key)) {
+            throw new InvalidArgumentException('A job unique_key must be printable ASCII without spaces, at most '
                 . self::MAX_UNIQUE_LENGTH . ' characters');
         }
 
@@ -323,11 +371,23 @@ final class JobQueue
         // a bound '?', and the limit is cast to int.
         try {
             osc_db_execute(
-                'UPDATE ' . $table . ' SET s_status = ?, s_worker = ?, dt_locked = ?, s_unique = NULL'
+                'UPDATE ' . $table . ' SET s_status = ?, s_worker = ?, dt_locked = ?'
                 . ' WHERE s_status = ? AND dt_next_run <= ?'
                 . ' ORDER BY pk_i_id LIMIT ' . (int) max(1, $batch),
                 array(self::STATUS_RUNNING, $token, $now, self::STATUS_PENDING, $now)
             );
+
+            // A claimed job gives up its key, so a change that arrives mid-run queues a new job.
+            // Its own statement: before migration 0050 the column is missing, and the claim
+            // must still work.
+            try {
+                osc_db_execute(
+                    'UPDATE ' . $table . ' SET s_unique = NULL WHERE s_worker = ? AND s_unique IS NOT NULL',
+                    array($token)
+                );
+            } catch (DbException $e) {
+                // absorbed
+            }
 
             $rows = osc_db_select(
                 'SELECT * FROM ' . $table . ' WHERE s_worker = ? AND s_status = ?'
@@ -479,6 +539,16 @@ final class JobQueue
             osc_db_table($this->table())->where('pk_i_id', $id)->update($values);
         } catch (DbException $e) {
             // absorbed
+        }
+
+        // A job that gave up must not keep its key, or later work would fold into a job
+        // that never runs. Its own statement, as in claim().
+        if ($values['s_status'] === self::STATUS_ERROR) {
+            try {
+                osc_db_execute('UPDATE ' . $this->table() . ' SET s_unique = NULL WHERE pk_i_id = ?', array($id));
+            } catch (DbException $e) {
+                // absorbed
+            }
         }
     }
 
