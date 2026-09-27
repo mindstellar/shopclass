@@ -1477,6 +1477,10 @@ msgstr ""
 msgid "Please enter a correct email"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebContact.php
+msgid "Please enter your name, a subject and a message."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebUserNonSecure.php
 msgid "Please enter your name, a valid email address and a message."
 msgstr ""

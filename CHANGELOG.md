@@ -113,6 +113,11 @@ This is the fourth beta. Please try it on a copy of your site first, and tell us
 
 ### Fixed
 
+- Saving a profile no longer clears its stored map position.
+- Editing "About you" checks its size, as registration does.
+- The contact page refuses an empty name, subject or message. A failed send on any contact form shows the reason in the form, with what was typed.
+- The seller contact form's "Invalid email address" message can be translated again.
+- The admin alerts list shows the whole saved search, not only its keywords and categories.
 - A page that shows a flash message or a refilled form is no longer sent as publicly cacheable.
 - Saving core's profile form reset the account type and neighbourhood, and it loaded every city when no region was set.
 - **Your listings** showed a blocked or spam listing as Published, and hid blocked, expired and pending ones unless a status was asked for. It now shows them all, in themes with their own list too.

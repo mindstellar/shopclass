@@ -155,7 +155,6 @@ osc_admin_pagination($aData);
         'confirm_id' => 'deleteSubmit',
     )); ?>
 <?php osc_admin_bulk_confirm_dialog(); ?>
-    <div id="more-tooltip"></div>
     <script>
 
         function delete_alert(id) {

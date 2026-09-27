@@ -849,15 +849,18 @@ function osc_alert_is_active()
 }
 
 /**
- * What the current alert searches for, as labelled parts: each entry is
- * ['label', 'value']. Empty for an alert on all listings. A paused alert (one the
- * upgrade could not keep) returns one 'held' entry.
+ * What an alert searches for, as labelled parts: each entry is ['label', 'value'].
+ * Empty for an alert on all listings. A paused alert (one the upgrade could not
+ * keep) returns one 'held' entry. Defaults to the current alert in the loop.
+ *
+ * @param array<string,mixed>|null $alert an alert row
  *
  * @return array<string,array{label:string,value:string}>
  */
-function osc_alert_criteria(): array
+function osc_alert_criteria(?array $alert = null): array
 {
-    $raw = osc_get_raw_search((array) json_decode((string) osc_alert_field('s_search'), true));
+    $search = $alert !== null ? ($alert['s_search'] ?? '') : osc_alert_field('s_search');
+    $raw    = osc_get_raw_search((array) json_decode((string) $search, true));
     if (isset($raw['held'])) {
         return array('held' => array(
             'label' => _m('Paused'),

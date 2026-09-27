@@ -392,7 +392,6 @@ msgid "(twice, required)"
 msgstr ""
 
 #: oc-admin/themes/modern/users/frm.php
-#: oc-includes/osclass/classes/datatables/AlertsDataTable.php
 msgid "...More"
 msgstr ""
 
@@ -418,12 +417,10 @@ msgid "1 widget"
 msgstr ""
 
 #: oc-admin/themes/modern/users/frm.php
-#: oc-includes/osclass/classes/datatables/AlertsDataTable.php
 msgid "<b>Categories:</b> %s"
 msgstr ""
 
 #: oc-admin/themes/modern/users/frm.php
-#: oc-includes/osclass/classes/datatables/AlertsDataTable.php
 msgid "<b>Pattern:</b> %s"
 msgstr ""
 

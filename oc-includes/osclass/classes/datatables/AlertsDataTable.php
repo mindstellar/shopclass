@@ -171,32 +171,16 @@ class AlertsDataTable extends DataTable
                 // third row
 
                 $pieces     = array();
-                $conditions = osc_get_raw_search((array)json_decode((string)$aRow['s_search'], true));
                 if ($held !== null) {
                     $pieces[] = '<span class="osc-status status-spam">' . osc_esc_html(__('Needs attention'))
                         . '</span> '
                         . osc_esc_html(\mindstellar\search\AlertStore::reasonText($held)) . ' '
                         . osc_esc_html(__('It no longer sends email. Ask the user to save the search again.'));
-                }
-                if (isset($conditions['sPattern']) && $conditions['sPattern'] != '') {
-                    $pieces[] = sprintf(__('<b>Pattern:</b> %s'), osc_esc_html($conditions['sPattern']));
-                }
-                if (isset($conditions['aCategories']) && !empty($conditions['aCategories'])) {
-                    $l         = min(count($conditions['aCategories']), 4);
-                    $cat_array = array();
-                    for ($c = 0; $c < $l; $c++) {
-                        $cat_array[] = osc_esc_html($conditions['aCategories'][$c]);
+                } else {
+                    foreach (osc_alert_criteria($aRow) as $part) {
+                        $pieces[] = '<b>' . osc_esc_html($part['label']) . ':</b> ' . osc_esc_html($part['value']);
                     }
-                    if (count($conditions['aCategories']) > $l) {
-                        $cat_array[] = '<a href="#" class="more-tooltip" categories="' . osc_esc_html(implode(
-                            ', ',
-                            $conditions['aCategories']
-                        )) . '" >' . __('...More') . '</a>';
-                    }
-
-                    $pieces[] = sprintf(__('<b>Categories:</b> %s'), implode(', ', $cat_array));
                 }
-
                 $row['alert'] = implode(', ', $pieces);
                 // fourth row
                 $row['date'] = osc_admin_date($aRow['dt_date'], true);
