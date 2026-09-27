@@ -45,6 +45,8 @@ on a copy of your site and tell us what you find.
 
 ### New
 
+- **Tools > Database** lists where the database differs from what Shopclass expects, and **Repair** fixes it. `oc-cli.php db:repair` does the same.
+- Tools > Cleanup can remove the profile pictures of deleted accounts.
 - **Media → Settings → Photo format** replaces Force JPEG: keep the original format (default), save as JPEG, or save as WebP (about a third smaller). A WebP upload now stays WebP.
 - The installer can remove an install that did not finish and start again.
 - The listing form takes HEIC photos while Browser resize is on: the browser turns them into JPEG before upload.
@@ -123,6 +125,9 @@ on a copy of your site and tell us what you find.
 
 ### Breaking
 
+- Usernames made only of digits are refused.
+- Guest alerts store `fk_i_user_id` as `NULL`, not `0`.
+- The `delete_user` hook no longer removes avatars; deleting the user does, after the delete succeeds.
 - The `phpseclib` and `mcrypt_compat` libraries are gone. Nothing in Shopclass used them; a plugin that still calls `mcrypt_*()` needs its own copy.
 - jQuery, jQuery UI and jQuery Validate no longer ship, and the `jquery`, `jquery-ui` and `jquery-validate` script ids are gone. An old theme or plugin that uses them must ship its own copy and register it.
 - `Search::toJson(true)` returns the same JSON as `toJson()`; the parsed-conditions form it used to return is gone.
@@ -136,6 +141,8 @@ on a copy of your site and tell us what you find.
 
 ### Fixed
 
+- Two sign-ups at the same moment can no longer end with the same username.
+- The daily sweep of orphaned uploads now works through all of them, not only the first 500.
 - The account menu marks Credits as the current page on the credits page.
 - Saving a profile no longer clears its stored map position.
 - Editing "About you" checks its size, as registration does.
@@ -267,6 +274,8 @@ on a copy of your site and tell us what you find.
 
 ### Performance
 
+- The admin user, alert, log, ban rule and keyword lists no longer use `SQL_CALC_FOUND_ROWS`.
+- The expiry reminder e-mails find listings with a query an index can serve.
 - With memcached or APCu, a cached page runs 4 to 9 database queries instead of 11 to 16: the language list, widgets, form groups, currencies and footer pages are cached, and saving any of them clears it.
 - The unpacked release is about 4.7 MB smaller, and each page no longer loads two unused libraries. jQuery, an unused Bootstrap stylesheet, TinyMCE's dark skins, source maps and the admin theme's Sass source no longer ship.
 - A new database connection needs 2 round trips after the login instead of 5 (3 on new installs), which matters most when the database is on another server.
@@ -278,6 +287,9 @@ on a copy of your site and tell us what you find.
 
 ### Changed
 
+- Upgrades run the database migrations only, so the "some queries failed" screen is gone.
+- The installer checks for MySQL 5.7+ or MariaDB 10.2+.
+- Pending e-mail address changes expire after 7 days.
 - Tools > Cleanup runs in the background, a batch at a time, until nothing matches, so a large backlog no longer times out **Run cleanup now**.
 - Cleanup's Reported listings rule has an age, counted from the listing's last change (30 days until you set it). The Cleanup and Background jobs screens match the rest of the admin.
 - A theme that declares its chrome with `'account' => true` gets core's credits pages inside it, ahead of its `user-custom.php`.

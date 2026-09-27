@@ -2350,10 +2350,12 @@ msgstr ""
 msgid "The specified e-mail is not valid"
 msgstr ""
 
+#: oc-includes/osclass/classes/actions/UserActions.php
 #: oc-includes/osclass/classes/controller/CWebUser.php
 msgid "The specified username could not be empty"
 msgstr ""
 
+#: oc-includes/osclass/classes/actions/UserActions.php
 #: oc-includes/osclass/classes/controller/CWebUser.php
 msgid "The specified username is already in use"
 msgstr ""
@@ -2417,6 +2419,10 @@ msgstr ""
 msgid ""
 "The user has not been validated yet. Would you like to re-send your <a "
 "href=\"%s\">activation?</a>"
+msgstr ""
+
+#: oc-includes/osclass/classes/actions/UserActions.php
+msgid "The username cannot be only numbers. Please add at least one letter."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminLogin.php
@@ -3031,6 +3037,7 @@ msgid "Your profile"
 msgstr ""
 
 #: oc-includes/osclass/classes/actions/UserActions.php
+#: oc-includes/osclass/classes/controller/CWebUser.php
 msgid "Your profile could not be saved. Please try again."
 msgstr ""
 
