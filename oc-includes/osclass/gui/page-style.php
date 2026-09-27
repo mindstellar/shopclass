@@ -154,6 +154,14 @@ if (!defined('ABS_PATH')) {
   }
   .oe-page .oe-num,.oe-page .oe-bill-num{text-align:right;font-variant-numeric:tabular-nums;}
   .oe-page .oe-scroll{overflow-x:auto;}
+  /* On a phone a billing row stacks into label/value pairs instead of scrolling sideways. */
+  @media (max-width:40rem){
+    .oe-page .oe-bill thead{position:absolute;inline-size:1px;block-size:1px;overflow:hidden;clip-path:inset(50%);}
+    .oe-page .oe-bill :is(table,tbody,tr,td){display:block;}
+    .oe-page .oe-bill tr{padding-block:8px;border-block-end:1px solid var(--oe-rule);}
+    .oe-page .oe-bill td{display:flex;justify-content:space-between;gap:16px;padding:4px 0;border:0;text-align:end;}
+    .oe-page .oe-bill td[data-label]::before{content:attr(data-label);color:var(--oe-ink-muted);font-size:.8125rem;text-align:start;}
+  }
 
   /* Un-scoped: the alert form uses .oe-muted for its subscribed notice. */
   .oe-muted,.oe-bill-sub{color:var(--oe-ink-muted);margin:4px 0 0;font-size:.875rem;}

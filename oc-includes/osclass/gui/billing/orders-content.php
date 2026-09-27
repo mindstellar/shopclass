@@ -89,13 +89,13 @@ $formatMoney = static function (int $micros, string $currency): string {
                 <tbody>
                 <?php foreach ($orders as $order) { ?>
                     <tr>
-                        <td><?php echo osc_esc_html(osc_format_date($order->getDate())); ?></td>
-                        <td><?php echo osc_esc_html(osc_billing_gateway_name($order->getGateway())); ?></td>
-                        <td class="oe-num oe-bill-num">
+                        <td data-label="<?php echo osc_esc_html(_m('Date')); ?>"><?php echo osc_esc_html(osc_format_date($order->getDate())); ?></td>
+                        <td data-label="<?php echo osc_esc_html(_m('Payment method')); ?>"><?php echo osc_esc_html(osc_billing_gateway_name($order->getGateway())); ?></td>
+                        <td class="oe-num oe-bill-num" data-label="<?php echo osc_esc_html(_m('Amount')); ?>">
                             <?php echo osc_esc_html($formatMoney($order->getAmount(), $order->getCurrency())); ?>
                         </td>
-                        <td class="oe-num oe-bill-num"><?php echo osc_esc_html(number_format($order->getCredits())); ?></td>
-                        <td>
+                        <td class="oe-num oe-bill-num" data-label="<?php echo osc_esc_html(_m('Credits')); ?>"><?php echo osc_esc_html(number_format($order->getCredits())); ?></td>
+                        <td data-label="<?php echo osc_esc_html(_m('Status')); ?>">
                             <span class="oe-badge oe-bill-badge <?php echo osc_esc_html($order->getStatus()); ?>">
                                 <?php echo osc_esc_html($statusWords[$order->getStatus()] ?? $order->getStatus()); ?>
                             </span>

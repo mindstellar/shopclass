@@ -409,9 +409,9 @@ class CWebBilling extends WebSecBaseModel
      * Three-step resolution, in order:
      *   1. the active theme ships $file itself (e.g. user-billing-wallet.php) --
      *      it fully owns the page;
-     *   2. else the active theme ships user-custom.php -- the theme's account
-     *      chrome renders the registered billing render target, the same way it
-     *      already renders a plugin's page (see CWebCustom::doModel());
+     *   2. else, unless the theme declares a chrome pair, the theme's user-custom.php
+     *      renders the registered billing render target, the same way it already
+     *      renders a plugin's page (see CWebCustom::doModel());
      *   3. else osc_gui_view(): the theme's own chrome around core's content
      *      partial when the theme exposes a chrome pair, otherwise core's shell.
      *      The bundled theme is an external repository (see
@@ -429,7 +429,7 @@ class CWebBilling extends WebSecBaseModel
         if (isset(self::FALLBACK_VIEWS[$file])) {
             if ($this->themeProvides($file)) {
                 osc_current_web_theme_path($file);
-            } elseif ($this->themeProvides('user-custom.php')) {
+            } elseif (!is_array(osc_theme_supports('chrome')) && $this->themeProvides('user-custom.php')) {
                 $this->_exportVariableToView('file', self::RENDER_TARGETS[$file]);
                 Params::setParam('in_user_menu', true);
                 osc_current_web_theme_path('user-custom.php');
