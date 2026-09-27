@@ -44,14 +44,7 @@ final class AlertJobs
      */
     public static function ensureQueued(int $after): bool
     {
-        $queue = JobQueue::instance();
-        if ($queue->count(JobQueue::STATUS_PENDING, self::TYPE) > 0
-            || $queue->count(JobQueue::STATUS_RUNNING, self::TYPE) > 0
-        ) {
-            return true;
-        }
-
-        return $queue->enqueue(self::TYPE, array('after' => $after)) > 0;
+        return JobQueue::instance()->ensure(self::TYPE, array('after' => $after));
     }
 
     /**

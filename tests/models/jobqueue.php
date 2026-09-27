@@ -406,6 +406,82 @@ pin('repeat records the payload and the delay', array('payload' => array('b' => 
 $job = new Job(array('s_storage' => ''), array());
 pin('an empty storage reads as none', null, $job->storage());
 
+/* ---------------------------------------------------------------------------
+ * A unique key folds repeated work into one waiting job.
+ * ------------------------------------------------------------------------ */
+harness_section('Unique keys');
+
+$truncate();
+$first  = $queue->enqueue('test.index', array('v' => 1), array('unique_key' => 'item:5'));
+$second = $queue->enqueue('test.index', array('v' => 2), array('unique_key' => 'item:5'));
+pin('a second enqueue with the same key returns the same id', $first, $second);
+pin('...and there is still one job', 1, $queue->count(JobQueue::STATUS_PENDING, 'test.index'));
+pin('...carrying the newer payload', '{"v":2}', $column($first, 's_payload'));
+
+$other = $queue->enqueue('test.other', array(), array('unique_key' => 'item:5'));
+check('the same key under another type is its own job', $other !== $first);
+
+$admin->query("UPDATE $table SET i_attempts = 3, s_last_error = 'boom' WHERE pk_i_id = $first");
+$queue->enqueue('test.index', array('v' => 3), array('unique_key' => 'item:5'));
+pin('a fold resets the attempts', 'pending:a0:wNULL:lkNULL', $rowState($first));
+pin('...and clears the last error', null, $column($first, 's_last_error'));
+
+$truncate();
+$waiting = $queue->enqueue('test.index', array('v' => 1), array('unique_key' => 'item:9'));
+$claimed = $queue->claim(10);
+pin('a claim clears the key', null, $column($waiting, 's_unique'));
+$fresh = $queue->enqueue('test.index', array('v' => 2), array('unique_key' => 'item:9'));
+check('an event during the run queues a fresh job', $fresh > 0 && $fresh !== $waiting);
+
+$threw = false;
+try {
+    $queue->enqueue('test.index', array(), array('unique_key' => str_repeat('k', 101)));
+} catch (InvalidArgumentException $e) {
+    $threw = true;
+}
+check('a key longer than the column is refused', $threw);
+
+/* ---------------------------------------------------------------------------
+ * Bulk enqueue, ensure and stats
+ * ------------------------------------------------------------------------ */
+harness_section('Bulk enqueue');
+
+$truncate();
+$payloads = array();
+for ($i = 1; $i <= 450; $i++) {
+    $payloads[] = array('id' => $i % 300);
+}
+$n = $queue->enqueueMany('test.index', $payloads, array('unique_key' => static function (array $p): string {
+    return 'item:' . $p['id'];
+}));
+pin('enqueue_many reports every payload it took', 450, $n);
+pin('...and the per-row keys fold duplicates across chunks', 300, $queue->count(JobQueue::STATUS_PENDING, 'test.index'));
+pin('without a key every payload is its own job', 3, $queue->enqueueMany('test.plain', array(array(), array(), array())));
+pin('an empty list queues nothing', 0, $queue->enqueueMany('test.plain', array()));
+
+harness_section('Ensure');
+
+$truncate();
+check('ensure queues when nothing is waiting', $queue->ensure('test.sweep', array('after' => 0)));
+check('ensure again is still true', $queue->ensure('test.sweep', array('after' => 9)));
+pin('...but queues no second job', 1, $queue->count(JobQueue::STATUS_PENDING, 'test.sweep'));
+$queue->claim(10);
+check('ensure while one is running is true', $queue->ensure('test.sweep'));
+pin('...and queues nothing new', 0, $queue->count(JobQueue::STATUS_PENDING, 'test.sweep'));
+
+harness_section('Stats');
+
+$truncate();
+$seed('test.s', 'pending');
+$seed('test.s', 'pending');
+$seed('test.s', 'error');
+$seed('test.t', 'running', '2000-01-01 00:00:00', date('Y-m-d H:i:s'));
+$admin->query("UPDATE $table SET dt_created = '2001-02-03 04:05:06' WHERE s_type = 'test.s' AND s_status = 'pending' LIMIT 1");
+pin('stats counts one type', array('pending' => 2, 'running' => 0, 'error' => 1, 'oldest' => '2001-02-03 04:05:06'), $queue->stats('test.s'));
+$all = $queue->stats();
+pin('stats without a type counts all', array(2, 1, 1), array($all['pending'], $all['running'], $all['error']));
+pin('an empty queue has no oldest', null, $queue->stats('test.none')['oldest']);
+
 $truncate();
 
 if (!defined('MODELS_RUNNER')) {

@@ -62,6 +62,27 @@ Use your plugin's own prefix: `acme.send_digest`, `acme.mail.retry`. Core uses
 
 An invalid type throws at the call site, not hours later in a cron run.
 
+## One job per thing, not one per change
+
+When the same thing can change many times before cron runs, give the job a
+`unique_key`. A waiting job of the same type and key takes the new payload, and its
+retries start over, instead of a second job being added:
+
+```php
+osc_job_enqueue('acme.reindex', array('item_id' => $id), array('unique_key' => 'item:' . $id));
+```
+
+The key is at most 100 characters, and it is unique per type. A worker clears it
+when it picks the job up, so a change that arrives during the run queues a new job.
+`osc_job_enqueue_many()` takes the same option, or a function that builds each
+row's key:
+
+```php
+osc_job_enqueue_many('acme.reindex', $payloads, array(
+    'unique_key' => fn (array $p) => 'item:' . $p['item_id'],
+));
+```
+
 ## Work that is too big for one run
 
 A handler that cannot finish in one tick does one batch, says where to carry on from, and
@@ -112,7 +133,10 @@ deactivated with work still queued, and reactivating it is enough to let the job
 
 | Function | What it does |
 |---|---|
-| `osc_job_enqueue($type, $payload, $options)` | queue a job; `$options['delay']` holds it back that many seconds |
+| `osc_job_enqueue($type, $payload, $options)` | queue a job; `$options['delay']` holds it back that many seconds, `$options['unique_key']` folds it into a waiting job |
+| `osc_job_enqueue_many($type, $payloads, $options)` | queue many jobs in a few inserts; returns how many |
+| `osc_job_ensure($type, $payload, $options)` | queue a job only when none of that type is waiting or running |
+| `osc_job_stats($type)` | `pending`, `running` and `error` counts, and `oldest`, when the oldest pending job was created |
 | `osc_job_register_handler($type, $handler)` | say which callable runs a type |
 | `osc_job_has_handler($type)` | whether anything registered for a type |
 | `osc_job_registered_types()` | every registered type, sorted |

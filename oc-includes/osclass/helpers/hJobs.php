@@ -50,7 +50,9 @@ if (!function_exists('osc_job_enqueue')) {
      *
      * @param string              $type    namespaced, e.g. 'acme.send_digest'
      * @param array<string,mixed> $payload everything the handler will need, as plain data
-     * @param array<string,mixed> $options delay: hold the job back this many seconds
+     * @param array<string,mixed> $options delay: hold the job back this many seconds.
+     *                                     unique_key: fold into a waiting job of the same
+     *                                     type and key instead of adding another.
      *
      * @return int the job id, or 0 when it could not be queued
      * @throws InvalidArgumentException on a malformed type or an unencodable payload
@@ -58,6 +60,54 @@ if (!function_exists('osc_job_enqueue')) {
     function osc_job_enqueue(string $type, array $payload = array(), array $options = array()): int
     {
         return JobQueue::instance()->enqueue($type, $payload, $options);
+    }
+}
+
+if (!function_exists('osc_job_enqueue_many')) {
+    /**
+     * Put many jobs of one type on the queue in a few inserts.
+     *
+     * @param string                         $type
+     * @param array<int,array<string,mixed>> $payloads
+     * @param array<string,mixed>            $options as osc_job_enqueue(); unique_key may be
+     *                                                a callable fn(array $payload): ?string
+     *
+     * @return int how many were queued
+     * @throws InvalidArgumentException on a malformed type, key or payload
+     */
+    function osc_job_enqueue_many(string $type, array $payloads, array $options = array()): int
+    {
+        return JobQueue::instance()->enqueueMany($type, $payloads, $options);
+    }
+}
+
+if (!function_exists('osc_job_ensure')) {
+    /**
+     * Queue a job of $type only when none is pending or running.
+     *
+     * @param string              $type
+     * @param array<string,mixed> $payload
+     * @param array<string,mixed> $options as osc_job_enqueue()
+     *
+     * @return bool true when a job of $type is now queued or running
+     */
+    function osc_job_ensure(string $type, array $payload = array(), array $options = array()): bool
+    {
+        return JobQueue::instance()->ensure($type, $payload, $options);
+    }
+}
+
+if (!function_exists('osc_job_stats')) {
+    /**
+     * Pending, running and failed counts, and when the oldest pending job was created.
+     *
+     * @param string|null $type narrow to one type
+     *
+     * @return array{pending:int,running:int,error:int,oldest:?string}
+     */
+    function osc_job_stats(?string $type = null): array
+    {
+        return JobQueue::instance()->stats($type);
     }
 }
 
