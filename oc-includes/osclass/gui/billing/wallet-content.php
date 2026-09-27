@@ -47,7 +47,7 @@ if (!osc_is_web_user_logged_in()) {
     $entries = is_array($entries) ? $entries : array();
     $total   = Wallet::historyCount($userId);
     $limit   = osc_user_listing_limit($userId);
-    $canBuy  = osc_billing_packages() !== array();
+    $canBuy  = osc_billing_can_buy();
 }
 
 $reasonWords = array(
@@ -56,6 +56,14 @@ $reasonWords = array(
     Wallet::REASON_REFUND   => _m('Refund'),
     Wallet::REASON_GRANT    => _m('Added by admin'),
     Wallet::REASON_REVOKE   => _m('Removed by admin'),
+);
+
+// Column headings, also each cell's label when a row stacks on a phone.
+$col = array(
+    'what'   => _m('What happened'),
+    'change' => _m('Change'),
+    'after'  => _m('Balance after'),
+    'date'   => _m('Date'),
 );
 ?>
 <div class="oe-account">
@@ -80,7 +88,6 @@ $reasonWords = array(
             <p class="oe-muted oe-bill-sub"><?php echo osc_esc_html(_m('listings used')); ?></p>
         <?php } ?>
         <div class="oe-bill-actions">
-            <?php // A site that bills only to cap listings has no packages, so no dead Buy button. ?>
             <?php if ($canBuy) { ?>
                 <a class="oe-btn oe-bill-btn" href="<?php echo osc_esc_html(osc_billing_buy_url()); ?>">
                     <?php echo osc_esc_html(_m('Buy more credits')); ?>
@@ -101,10 +108,10 @@ $reasonWords = array(
             <table>
                 <thead>
                 <tr>
-                    <th scope="col"><?php echo osc_esc_html(_m('What happened')); ?></th>
-                    <th scope="col" class="oe-num oe-bill-num"><?php echo osc_esc_html(_m('Change')); ?></th>
-                    <th scope="col" class="oe-num oe-bill-num"><?php echo osc_esc_html(_m('Balance after')); ?></th>
-                    <th scope="col"><?php echo osc_esc_html(_m('Date')); ?></th>
+                    <th scope="col"><?php echo osc_esc_html($col['what']); ?></th>
+                    <th scope="col" class="oe-num oe-bill-num"><?php echo osc_esc_html($col['change']); ?></th>
+                    <th scope="col" class="oe-num oe-bill-num"><?php echo osc_esc_html($col['after']); ?></th>
+                    <th scope="col"><?php echo osc_esc_html($col['date']); ?></th>
                 </tr>
                 </thead>
                 <tbody>
@@ -112,12 +119,12 @@ $reasonWords = array(
                     $amount = (int) $entry['i_amount'];
                     $reason = (string) $entry['s_reason']; ?>
                     <tr>
-                        <td data-label="<?php echo osc_esc_html(_m('What happened')); ?>"><?php echo osc_esc_html($reasonWords[$reason] ?? $reason); ?></td>
-                        <td class="oe-num oe-bill-num" data-label="<?php echo osc_esc_html(_m('Change')); ?>">
+                        <td data-label="<?php echo osc_esc_html($col['what']); ?>"><?php echo osc_esc_html($reasonWords[$reason] ?? $reason); ?></td>
+                        <td class="oe-num oe-bill-num" data-label="<?php echo osc_esc_html($col['change']); ?>">
                             <?php echo osc_esc_html(($amount > 0 ? '+' : '') . number_format($amount)); ?>
                         </td>
-                        <td class="oe-num oe-bill-num" data-label="<?php echo osc_esc_html(_m('Balance after')); ?>"><?php echo osc_esc_html(number_format((int) $entry['i_balance_after'])); ?></td>
-                        <td data-label="<?php echo osc_esc_html(_m('Date')); ?>"><?php echo osc_esc_html(osc_format_date($entry['dt_date'])); ?></td>
+                        <td class="oe-num oe-bill-num" data-label="<?php echo osc_esc_html($col['after']); ?>"><?php echo osc_esc_html(number_format((int) $entry['i_balance_after'])); ?></td>
+                        <td data-label="<?php echo osc_esc_html($col['date']); ?>"><?php echo osc_esc_html(osc_format_date($entry['dt_date'])); ?></td>
                     </tr>
                 <?php } ?>
                 </tbody>

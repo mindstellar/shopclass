@@ -429,7 +429,7 @@ class CWebBilling extends WebSecBaseModel
         if (isset(self::FALLBACK_VIEWS[$file])) {
             if ($this->themeProvides($file)) {
                 osc_current_web_theme_path($file);
-            } elseif (!is_array(osc_theme_supports('chrome')) && $this->themeProvides('user-custom.php')) {
+            } elseif (!$this->themeDeclaresChrome() && $this->themeProvides('user-custom.php')) {
                 $this->_exportVariableToView('file', self::RENDER_TARGETS[$file]);
                 Params::setParam('in_user_menu', true);
                 osc_current_web_theme_path('user-custom.php');
@@ -462,6 +462,17 @@ class CWebBilling extends WebSecBaseModel
     private function themeProvides(string $file): bool
     {
         return file_exists(WebThemes::newInstance()->getCurrentThemePath() . $file);
+    }
+
+    /**
+     * A theme that declares its chrome asks for core's pages inside it. A header.php and
+     * footer.php found by probing are not that request: they may not open the document.
+     *
+     * @return bool
+     */
+    private function themeDeclaresChrome(): bool
+    {
+        return is_array(osc_theme_supports('chrome')) && osc_theme_has_chrome();
     }
 
     /**
