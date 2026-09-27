@@ -17,6 +17,35 @@ docker pull ghcr.io/mindstellar/shopclass:latest
 Tags are published per release, with `:latest` tracking the newest **stable**
 release. The published image runs **PHP 8.5**.
 
+## One-command install
+
+On a server with Docker, one command sets up a site with its own database:
+
+```bash
+curl -fsSL https://github.com/mindstellar/shopclass/releases/latest/download/install.sh | sh
+```
+
+It asks for a domain and an admin e-mail, writes a stack into `./shopclass`, starts
+it, and prints the admin password. With a domain, the site gets a free HTTPS
+certificate, see [built-in HTTPS](#built-in-https). The domain must point at the
+server, and ports 80 and 443 must be open. It can also send `www.` to the bare
+domain, or the other way round.
+
+To skip the questions:
+
+```bash
+curl -fsSL https://github.com/mindstellar/shopclass/releases/latest/download/install.sh \
+  | sh -s -- --domain=shop.example.com --email=you@example.com --yes
+```
+
+Run `sh install.sh --help` for every option. To read the script before you run it,
+download it, check it against `install.sh.sha256` on the same release, then run it.
+
+**Upgrade:** run the command again in the same place. It moves the stack to the new
+release, and keeps `.env` and the passwords in it. Settings such as mail (`SMTP_*`)
+are in `shopclass/.env`; after you change them, run `docker compose up -d` in that
+folder.
+
 ## Bringing it up
 
 `docker-compose.prod.yml` in the repository brings up the image with a database:
@@ -46,6 +75,7 @@ Everything is set from environment variables:
 | `OSC_CACHE` / `OSC_CACHE_HOST` / `OSC_CACHE_PORT` | [Object cache](/docs/configure/cache/) |
 | `OSC_MICROCACHE` | Set to `1` to cache public pages in nginx — see [page caching](/docs/configure/page-cache/). The image already carries the purge module (lets a cached page be removed early), so the nginx Cache plugin works with nothing further to configure |
 | `OSC_RATE_LIMIT` / `OSC_RATE_LIMIT_BURST` | Requests per second per client IP, e.g. `10r/s`. Unset is off |
+| `OSC_TLS_DOMAIN` / `OSC_TLS_REDIRECT_FROM` / `OSC_TLS_EMAIL` | [Built-in HTTPS](#built-in-https): the domain, other names to send to it (comma-separated), and the e-mail for expiry notices (default `OSC_ADMIN_EMAIL`) |
 
 For a real deployment: point `DB_HOST` at a managed database, set `WEB_PATH` to
 the public URL, set a strong admin password, and
@@ -122,12 +152,41 @@ On Kubernetes, a `CronJob` running the same command is the equivalent. Without
 it, alerts never send and listings never expire — see
 [setting up cron](/docs/configure/cron/).
 
+## Built-in HTTPS
+
+For a single server, the image can serve HTTPS itself. Set the domain, publish
+ports 80 and 443, and keep the certificate on a volume:
+
+```yaml
+services:
+  app:
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      WEB_PATH: https://example.com/
+      OSC_TLS_DOMAIN: example.com
+      OSC_TLS_REDIRECT_FROM: www.example.com
+    volumes:
+      - tls:/var/lib/shopclass-tls
+```
+
+On first start the site answers on port 80 while [acme.sh](https://github.com/acmesh-official/acme.sh)
+gets a Let's Encrypt certificate. Then port 80 sends visitors to HTTPS, and
+`OSC_TLS_REDIRECT_FROM` names are sent to the domain. The certificate renews by
+itself 30 days before it runs out. If a redirect name does not point at the server
+yet, the domain still gets HTTPS and the log says which name failed. Follow it with
+`docker compose logs -f app | grep tls:`.
+
+Without the `tls` volume, every new container asks for a new certificate, and Let's
+Encrypt limits how many you can get in a week.
+
 ## Putting it behind TLS
 
-The image speaks plain HTTP on port 80 and is built to sit behind something that
-terminates TLS. Keep it that way: a certificate is renewing state, and this
-container is meant to be replaceable at any moment. Terminate on the host with
-nginx, and let certbot own the certificate.
+With more than one instance, or a proxy you already run, leave `OSC_TLS_DOMAIN`
+unset. The image then speaks plain HTTP on port 80 and sits behind something that
+terminates TLS. Terminate on the host with nginx, and let certbot own the
+certificate.
 
 Start by taking the container off the public interface, so the only way in is
 through the proxy:
@@ -232,9 +291,9 @@ the contract is the three settings above plus a proxy that sends
 
 ### With page caching on
 
-Nothing changes. The container's nginx still sees `http` as its own scheme and
-keys its cache on that, which is correct — and it is what the nginx Cache
-plugin's purge endpoint follows, so that stays `http://127.0.0.1/purge`. The
+Nothing changes. The container's cache key does not include the scheme, so the
+nginx Cache plugin's purge endpoint stays `http://127.0.0.1/purge`, with or without
+built-in HTTPS. The
 plugin's host list is the **public** hostname, because that is the `Host`
 visitors send and therefore what the cache is keyed on. See
 [page caching](/docs/configure/page-cache/).

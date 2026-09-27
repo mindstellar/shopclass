@@ -191,7 +191,7 @@ if (!$oscHasConfigFile && defined('DB_NAME')
 
 // A command line has no request to take the address from. OSC_CLI_URL gives it
 // one without fixing the address for web requests, which WEB_PATH would do.
-if (PHP_SAPI === 'cli' && (!defined('WEB_PATH') || !defined('REL_WEB_URL')) && $oscEnv('OSC_CLI_URL') !== null) {
+if (PHP_SAPI === 'cli' && !defined('WEB_PATH') && $oscEnv('OSC_CLI_URL') !== null) {
     $oscCliUrl = parse_url((string)$oscEnv('OSC_CLI_URL'));
     if (is_array($oscCliUrl) && isset($oscCliUrl['scheme'], $oscCliUrl['host'])
         && in_array(strtolower($oscCliUrl['scheme']), array('http', 'https'), true)
@@ -210,6 +210,11 @@ if (PHP_SAPI === 'cli' && (!defined('WEB_PATH') || !defined('REL_WEB_URL')) && $
         unset($oscCliPath);
     }
     unset($oscCliUrl);
+}
+
+// WEB_PATH alone is enough: its path is the site's base path.
+if (defined('WEB_PATH') && !defined('REL_WEB_URL')) {
+    define('REL_WEB_URL', '/' . ltrim(rtrim((string)parse_url(WEB_PATH, PHP_URL_PATH), '/') . '/', '/'));
 }
 
 // True when the database configuration came from the environment (no config.php

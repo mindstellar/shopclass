@@ -108,6 +108,8 @@ This is the fifth beta. Please try it on a copy of your site first, and tell us 
 - **Your profile** has the account type, the neighbourhood, an About field for each language and a Download your data link. New hook `user_avatar_form`; the location fields carry `data-location-cascade`.
 - The profile form is grouped into Photo, Your details, Contact, Location and About you, with the picture first. New classes `.oe-group`, `.oe-grid`, `.oe-avatar-field` and `.oe-avatar-empty`.
 - The dashboard's greeting, buttons, heading and See all line carry classes a theme can hide. The credits pages fire `account_page_before` and `account_page_after`. The contact page marks name and subject optional.
+- `install.sh`, attached to each release, sets up a Docker site in one command, with free HTTPS and a www redirect when given a domain.
+- The Docker image serves HTTPS itself when `OSC_TLS_DOMAIN` is set: it gets and renews a Let's Encrypt certificate and redirects `OSC_TLS_REDIRECT_FROM` names.
 
 ### Breaking
 

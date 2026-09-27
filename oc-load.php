@@ -49,7 +49,7 @@ if (!osc_is_configured()) {
 }
 
 // A command line has no request to take the site address from.
-if (PHP_SAPI === 'cli' && (!defined('WEB_PATH') || !defined('REL_WEB_URL'))) {
+if (PHP_SAPI === 'cli' && !defined('WEB_PATH')) {
     fwrite(STDERR, "Set OSC_CLI_URL to the site's address, e.g. OSC_CLI_URL=http://localhost:8000/ (or WEB_PATH, which also fixes it for web requests)\n");
     exit(1);
 }
