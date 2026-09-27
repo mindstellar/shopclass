@@ -137,3 +137,49 @@ if (!function_exists('osc_gui_print_style')) {
         require ABS_PATH . 'oc-includes/osclass/gui/page-style.php';
     }
 }
+
+if (!function_exists('osc_gui_listing_list')) {
+    /**
+     * Print the current `items` loop as core's listing list, unless a theme or plugin
+     * returns its own markup from the listing_list_html filter.
+     *
+     * @param string $context dashboard, user_items, public_profile or alert
+     * @param bool   $owned   show the owner's status badges and actions
+     */
+    function osc_gui_listing_list(string $context, bool $owned): void
+    {
+        $html = osc_apply_filter('listing_list_html', null, (array) View::newInstance()->_get('items'), $context);
+        if (is_string($html)) {
+            echo $html;
+
+            return;
+        }
+
+        $rowOwned   = $owned;
+        $rowContext = $context;
+        echo '<ul class="oe-list">';
+        while (osc_has_items()) {
+            require ABS_PATH . 'oc-includes/osclass/gui/account/parts/item-row.php';
+        }
+        echo '</ul>';
+        osc_gui_print_confirm_script();
+    }
+}
+
+if (!function_exists('osc_gui_print_confirm_script')) {
+    /**
+     * Ask before following a link marked data-osc-confirm. Printed once per request.
+     */
+    function osc_gui_print_confirm_script(): void
+    {
+        static $printed = false;
+        if ($printed) {
+            return;
+        }
+        $printed = true;
+
+        echo '<script>document.addEventListener("click",function(e){'
+            . 'var a=e.target.closest&&e.target.closest("[data-osc-confirm]");'
+            . 'if(a&&!window.confirm(a.getAttribute("data-osc-confirm"))){e.preventDefault();}});</script>';
+    }
+}

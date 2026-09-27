@@ -45,6 +45,7 @@ $signinFocus = static function (string $section) use ($folioSignin): string {
 <div class="oe-account">
     <div class="oe-account-main">
         <?php osc_show_flash_message(); ?>
+        <?php osc_run_hook('account_page_before', 'user-signin'); ?>
 
         <section id="email" class="oe-panel">
             <h2><?php echo osc_esc_html(_m('Email address')); ?></h2>
@@ -128,6 +129,8 @@ $signinFocus = static function (string $section) use ($folioSignin): string {
                 </div>
             </form>
         </section>
+
+        <?php osc_run_hook('account_page_after', 'user-signin'); ?>
     </div>
 
     <?php require __DIR__ . '/nav.php'; ?>

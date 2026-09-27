@@ -39,6 +39,12 @@ msgid_plural "%d log entries have been removed"
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-includes/osclass/gui/account/parts/item-row.php
+msgid "%d view"
+msgid_plural "%d views"
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
 msgid "%s already was in the database"
 msgstr ""
@@ -233,6 +239,10 @@ msgstr ""
 msgid "Alerts"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-items-content.php
+msgid "All"
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-alerts-content.php
 msgid "All listings"
 msgstr ""
@@ -264,6 +274,7 @@ msgid "Attachment"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/parts/item-row.php
+#: oc-includes/osclass/gui/account/user-items-content.php
 msgid "Awaiting validation"
 msgstr ""
 
@@ -311,6 +322,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsBilling.php
 msgid "Billing settings have been updated"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/parts/item-row.php
+msgid "Blocked"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BanRuleForm.php
@@ -570,8 +585,13 @@ msgstr ""
 msgid "Date"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/parts/item-row.php
 #: oc-includes/osclass/gui/item-comments-content.php
 msgid "Delete"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/parts/item-row.php
+msgid "Delete \"%s\"? This cannot be undone."
 msgstr ""
 
 #: oc-includes/osclass/gui/user-delete_account-content.php
@@ -722,11 +742,16 @@ msgid "Existing username"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/parts/item-row.php
+#: oc-includes/osclass/gui/account/user-items-content.php
 msgid "Expired"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/orders-content.php
 msgid "Failed"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/parts/item-row.php
+msgid "Featured"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/PermalinkSettingsForm.php
@@ -739,6 +764,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
 msgid "File uploaded but unable to activate the language"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-items-content.php
+msgid "Filter by status"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-login-content.php
@@ -791,6 +820,10 @@ msgid ""
 "Here's the content you have to add to the <b>.htaccess</b> file. If you "
 "can't modify the file or experience some problems with the URLs, please "
 "deactivate the <em>Friendly URLs</em> option."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/parts/item-row.php
+msgid "Highlighted"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/wallet-content.php
@@ -954,6 +987,10 @@ msgstr ""
 msgid "Maintenance settings saved"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/parts/item-row.php
+msgid "Marked as spam"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsMedia.php
 msgid "Media config has been updated"
 msgstr ""
@@ -1062,6 +1099,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsKeywordBlock.php
 msgid "No keywords have been deleted"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-items-content.php
+msgid "No listings with this status."
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/buy-content.php
@@ -1457,6 +1498,7 @@ msgid "Publish a listing"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/parts/item-row.php
+#: oc-includes/osclass/gui/account/user-items-content.php
 msgid "Published"
 msgstr ""
 
@@ -2460,6 +2502,10 @@ msgstr ""
 msgid "Upgrade settings have been updated"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/parts/item-row.php
+msgid "Urgent"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
 msgid "User id isn't in the correct format"
 msgstr ""
@@ -2603,6 +2649,10 @@ msgstr ""
 msgid "You are subscribed to this search."
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-items-content.php
+msgid "You are using %1$d of your %2$d listings."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebItem.php
 msgid "You can't contact the seller, only registered users can"
 msgstr ""
@@ -2626,6 +2676,10 @@ msgstr ""
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsCustom.php
 #: oc-includes/osclass/classes/controller/base/AdminSecBaseModel.php
 msgid "You don't have enough permissions"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-items-content.php
+msgid "You have %1$d live listings, which is over your limit of %2$d."
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-alerts-content.php

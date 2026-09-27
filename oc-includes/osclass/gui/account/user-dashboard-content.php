@@ -21,6 +21,7 @@ if (!defined('ABS_PATH')) {
 <div class="oe-account">
     <div class="oe-account-main">
         <?php osc_show_flash_message(); ?>
+        <?php osc_run_hook('account_page_before', 'user-dashboard'); ?>
 
         <p><?php printf(osc_esc_html(_m('Signed in as %s.')), osc_esc_html(osc_logged_user_name())); ?></p>
 
@@ -35,11 +36,7 @@ if (!defined('ABS_PATH')) {
         <?php if (osc_count_items() === 0) { ?>
             <p class="oe-empty"><?php echo osc_esc_html(_m('You have not published anything yet.')); ?></p>
         <?php } else { ?>
-            <ul class="oe-list">
-                <?php while (osc_has_items()) {
-                    require __DIR__ . '/parts/item-row.php';
-                } ?>
-            </ul>
+            <?php osc_gui_listing_list('dashboard', true); ?>
             <p class="oe-muted">
                 <a href="<?php echo osc_esc_html(osc_user_list_items_url()); ?>"><?php
                     echo osc_esc_html(_m('See all of your listings')); ?></a>
@@ -47,6 +44,8 @@ if (!defined('ABS_PATH')) {
         <?php } ?>
 
         <?php osc_run_hook('user_dashboard'); ?>
+
+        <?php osc_run_hook('account_page_after', 'user-dashboard'); ?>
     </div>
 
     <?php require __DIR__ . '/nav.php'; ?>

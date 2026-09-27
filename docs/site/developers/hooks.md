@@ -136,7 +136,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 519 names. Generated from the source; do not edit by hand.
+Core fires 525 names. Generated from the source; do not edit by hand.
 
 ### Admin (77)
 
@@ -426,10 +426,12 @@ Core fires 519 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/osclass/classes/model/Search.php` |
 
-### Other (187)
+### Other (193)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
+| `account_page_after` | action | `'user-alerts'` | `oc-includes/osclass/gui/account/user-alerts-content.php` |
+| `account_page_before` | action | `'user-alerts'` | `oc-includes/osclass/gui/account/user-alerts-content.php` |
 | `actions_manage_alerts` | filter | `$options, $aRow` | `oc-includes/osclass/classes/datatables/AlertsDataTable.php` |
 | `actions_manage_keyword_block` | filter | `$options, $aRow` | `oc-includes/osclass/classes/datatables/KeywordBlocksDataTable.php` |
 | `actions_manage_rules` | filter | `$options, $aRow` | `oc-includes/osclass/classes/datatables/BanRulesDataTable.php` |
@@ -545,6 +547,10 @@ Core fires 519 names. Generated from the source; do not edit by hand.
 | `keyword_block_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/KeywordBlocksDataTable.php` |
 | `language_attributes` | filter | `$attrs` | `oc-includes/osclass/helpers/hTheme.php` |
 | `language_bulk_filter` | filter | `$bulk_options` | `oc-includes/osclass/classes/controller/admin/CAdminLanguages.php` |
+| `listing_list_html` | filter | `null, (array) View::newInstance()->_get('items'), $context` | `oc-includes/osclass/gui/page-fn.php` |
+| `listing_row_actions` | filter | `$rowActions, $rowItem, $rowContext` | `oc-includes/osclass/gui/account/parts/item-row.php` |
+| `listing_row_badges` | filter | `$rowBadges, $rowItem, $rowContext` | `oc-includes/osclass/gui/account/parts/item-row.php` |
+| `listing_row_meta` | filter | `$rowMeta, $rowItem, $rowContext` | `oc-includes/osclass/gui/account/parts/item-row.php` |
 | `locations_json_url` | filter | `'https://geo.mindstellar.com/releases/latest.json'` | `oc-includes/osclass/helpers/hUtils.php` |
 | `login_admin` | action | `$admin` | `oc-includes/osclass/classes/controller/admin/CAdminLogin.php` |
 | `login_admin_form` | action | — | `oc-admin/gui/login.php` |

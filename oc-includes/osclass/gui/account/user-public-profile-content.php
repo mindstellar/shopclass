@@ -47,13 +47,7 @@ $publicInfo = osc_user_info();
 <?php if (osc_count_items() === 0) { ?>
     <p class="oe-empty"><?php echo osc_esc_html(_m('Nothing published.')); ?></p>
 <?php } else { ?>
-    <ul class="oe-list">
-        <?php $rowOwned = false;
-        while (osc_has_items()) {
-            require __DIR__ . '/parts/item-row.php';
-        }
-        unset($rowOwned); ?>
-    </ul>
+    <?php osc_gui_listing_list('public_profile', false); ?>
     <?php $publicPager = osc_pagination_items();
     if ($publicPager !== '') { ?>
         <nav class="oe-pager" aria-label="<?php echo osc_esc_html(_m('Pages')); ?>"><?php

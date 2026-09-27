@@ -264,7 +264,8 @@ class CWebUser extends WebSecBaseModel
                     (Params::getParam('itemsPerPage') != '') ? Params::getParam('itemsPerPage')
                         : 10;
                 $page         = (Params::getParam('iPage') > 0) ? Params::getParam('iPage') - 1 : 0;
-                $itemType     = Params::getParam('itemType');
+                // The owner sees every listing they hold unless a status tab narrows it.
+                $itemType     = Params::getParamString('itemType') ?: 'all';
                 $total_items  =
                     Item::newInstance()->countItemTypesByUserID(osc_logged_user_id(), $itemType);
                 $total_pages  = ceil($total_items / $itemsPerPage);
@@ -276,6 +277,7 @@ class CWebUser extends WebSecBaseModel
                         $itemType
                     );
 
+                osc_prime_item_upgrades($items);
                 $this->_exportVariableToView('items', $items);
                 $this->_exportVariableToView('search_total_pages', $total_pages);
                 $this->_exportVariableToView('search_total_items', $total_items);

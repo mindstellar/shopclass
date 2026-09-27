@@ -21,6 +21,7 @@ if (!defined('ABS_PATH')) {
 <div class="oe-account">
     <div class="oe-account-main">
         <?php osc_show_flash_message(); ?>
+        <?php osc_run_hook('account_page_before', 'user-alerts'); ?>
 
         <p class="oe-muted"><?php echo osc_esc_html(
             _m('A saved search that emails you when a new listing matches it.')
@@ -75,17 +76,13 @@ if (!defined('ABS_PATH')) {
                     <?php if (osc_count_items() === 0) { ?>
                         <p class="oe-empty"><?php echo osc_esc_html(_m('Nothing matches it yet.')); ?></p>
                     <?php } else { ?>
-                        <ul class="oe-list">
-                            <?php $rowOwned = false;
-                            while (osc_has_items()) {
-                                require __DIR__ . '/parts/item-row.php';
-                            }
-                            unset($rowOwned); ?>
-                        </ul>
+                        <?php osc_gui_listing_list('alert', false); ?>
                     <?php } ?>
                 </section>
             <?php }
         } ?>
+
+        <?php osc_run_hook('account_page_after', 'user-alerts'); ?>
     </div>
 
     <?php require __DIR__ . '/nav.php'; ?>

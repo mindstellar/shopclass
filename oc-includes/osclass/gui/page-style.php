@@ -251,6 +251,13 @@ if (!defined('ABS_PATH')) {
     display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px;
     color:var(--oe-ink-muted); font-size:.875rem; margin:6px 0 0;
   }
+  .oe-page .oe-row-actions{margin-block-start:4px;}
+  .oe-page .oe-danger-link{color:var(--oe-danger);}
+  /* Status filter over a list. aria-current carries the state; the look follows it. */
+  .oe-page .oe-tabs{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 16px;border-block-end:1px solid var(--oe-rule);}
+  .oe-page .oe-tabs a{padding:8px 12px;text-decoration:none;color:var(--oe-ink-muted);border-block-end:2px solid transparent;margin-block-end:-1px;}
+  .oe-page .oe-tabs a:hover{color:inherit;}
+  .oe-page .oe-tabs [aria-current]{color:inherit;font-weight:600;border-block-end-color:currentColor;}
   /* Set apart from everything routine above it, not decorated. */
   .oe-page .oe-danger{margin-block-start:3rem;padding-block-start:1.5rem;border-block-start:1px solid var(--oe-rule);}
   .oe-page .oe-danger h2{color:var(--oe-danger);}

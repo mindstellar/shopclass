@@ -65,6 +65,8 @@ you override — a bare `.oe-list-item {}` loses to core's `.oe-page .oe-list-it
 | `.oe-list-item` | one record | an `<li>`; holds a thumb, an `.oe-list-body` and an `.oe-price` |
 | `.oe-list-body` | the middle column of a record | holds the `<h3>` title and `.oe-meta` |
 | `.oe-meta` | a record's secondary line | date, status, category, row actions; wraps freely |
+| `.oe-row-actions` | a record's action links | also carries `.oe-meta`; `.oe-danger-link` marks the destructive one |
+| `.oe-tabs` | a status filter over a list | a `<nav>` of links; the current one carries `aria-current="page"` |
 | `.oe-thumb` | a record's image | fixed 6/5 ratio; also on the placeholder |
 | `.oe-thumb-empty` | the no-image placeholder | carries `.oe-thumb` too |
 | `.oe-price` | a listing's price | one already-formatted string, currency included |
@@ -152,10 +154,10 @@ Controllers call it; a plugin serving its own account route can too.
 
 ## What core's pages do not do
 
-- **No JavaScript**, with one exception: the profile form calls
+- **Almost no JavaScript.** The profile form calls
   `UserForm::location_javascript()` so the region list follows the country
-  without a reload. The form works without it — choose a country, save, and the
-  page comes back with that country's regions.
+  without a reload. A listing list prints one line that asks before a link
+  marked `data-osc-confirm` is followed. Both pages work without them.
 - **No assets.** One small stylesheet, printed inline once per request through
   the `header` hook. Nothing to enqueue, nothing to cache-bust.
 - **No layout opinions you cannot undo.** Every rule is one class deep.
@@ -179,6 +181,48 @@ osc_add_filter('user_menu_filter', function ($options) {
 ```
 
 The `opt_logout` entry is always moved last, whatever the filter returns.
+
+## Adding to a page
+
+Every account page fires two actions inside its content column. The argument is
+the page: `user-dashboard`, `user-items`, `user-alerts`, `user-profile`,
+`user-signin`, `user-custom` or `user-delete_account`.
+
+```php
+osc_add_hook('account_page_before', function ($page) {
+    if ($page === 'user-items') {
+        echo '<p class="oe-muted">Listings renew for free for 30 days.</p>';
+    }
+});
+```
+
+`account_page_after` is the same, at the foot of the column.
+
+## Changing the listing rows
+
+Listing lists pass a context: `dashboard`, `user_items`, `public_profile` or
+`alert`. Three filters change a row; each gets the list, the item and the context.
+
+| Filter | Entries |
+|---|---|
+| `listing_row_badges` | `['label' => …, 'class' => …]`; the class is an `.oe-badge` modifier. Core's keys: `status`, `premium`, `highlight`, `urgent` |
+| `listing_row_meta` | `['text' => …]`, plus `'url'` for a link or `'datetime'` for a `<time>`. Core's keys: `category`, `date`, `views` |
+| `listing_row_actions` | `['label' => …, 'url' => …, 'class' => …, 'confirm' => …]`. Core's keys: `edit`, `delete` |
+
+Core escapes every value. Add a Renew link on expired listings:
+
+```php
+osc_add_filter('listing_row_actions', function ($actions, $item, $context) {
+    if ($context === 'user_items' && osc_item_is_expired()) {
+        $actions['renew'] = array('label' => __('Renew', 'my-theme'), 'url' => my_renew_url($item['pk_i_id']));
+    }
+
+    return $actions;
+});
+```
+
+To draw the whole list yourself, return a string from `listing_list_html`. It
+gets `null`, the item rows and the context; anything but a string keeps core's list.
 
 ## Rendering your own page in the theme's chrome
 

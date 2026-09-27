@@ -35,6 +35,7 @@ $profileInfo   = isset($profileUser['locale'][$profileLocale]['s_info'])
 <div class="oe-account">
     <div class="oe-account-main">
         <?php osc_show_flash_message(); ?>
+        <?php osc_run_hook('account_page_before', 'user-profile'); ?>
 
         <form action="<?php echo osc_esc_html(osc_base_url(true)); ?>" method="post"
               enctype="multipart/form-data">
@@ -147,6 +148,8 @@ $profileInfo   = isset($profileUser['locale'][$profileLocale]['s_info'])
                     echo osc_esc_html(_m('Delete your account')); ?></a>
             </section>
         <?php } ?>
+
+        <?php osc_run_hook('account_page_after', 'user-profile'); ?>
     </div>
 
     <?php require __DIR__ . '/nav.php'; ?>

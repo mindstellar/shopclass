@@ -171,4 +171,35 @@ check(
 check('the flashmessage-<type> class is still emitted', strpos($messages, "strtolower(\$class) . '-'") !== false);
 check('the flash_js mount is printed once, not once per message', substr_count($messages, "<div id=\"flash_js\"></div>") === 1);
 
+harness_section('extension points');
+
+$slotPages = array(
+    'user-dashboard'      => $accountIn . 'user-dashboard-content.php',
+    'user-items'          => $accountIn . 'user-items-content.php',
+    'user-alerts'         => $accountIn . 'user-alerts-content.php',
+    'user-profile'        => $accountIn . 'user-profile-content.php',
+    'user-signin'         => $accountIn . 'user-signin-content.php',
+    'user-custom'         => $accountIn . 'user-custom-content.php',
+    'user-delete_account' => $guiDir . 'user-delete_account-content.php',
+);
+foreach ($slotPages as $slug => $file) {
+    $src = (string) file_get_contents($file);
+    check("{$slug} fires account_page_before", strpos($src, "osc_run_hook('account_page_before', '{$slug}')") !== false);
+    check("{$slug} fires account_page_after", strpos($src, "osc_run_hook('account_page_after', '{$slug}')") !== false);
+}
+
+$row = (string) file_get_contents($accountIn . 'parts/item-row.php');
+foreach (array('listing_row_badges', 'listing_row_meta', 'listing_row_actions') as $filter) {
+    check("the row applies {$filter}", strpos($row, "osc_apply_filter('{$filter}'") !== false);
+}
+// A blocked listing read "Published" when the row never asked whether it was enabled.
+check('the row checks the blocked state before Published', strpos($row, 'osc_item_is_enabled()') !== false
+    && strpos($row, 'osc_item_is_enabled()') < strpos($row, "_m('Published')"));
+
+foreach (array('user-dashboard', 'user-items', 'user-alerts', 'user-public-profile') as $page) {
+    $src = (string) file_get_contents($accountIn . $page . '-content.php');
+    check("{$page} draws its list through osc_gui_listing_list()", strpos($src, 'osc_gui_listing_list(') !== false
+        && strpos($src, 'parts/item-row.php') === false);
+}
+
 exit(harness_result());

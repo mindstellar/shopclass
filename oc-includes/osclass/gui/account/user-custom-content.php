@@ -20,7 +20,10 @@ if (!defined('ABS_PATH')) {
 <div class="oe-account">
     <div class="oe-account-main">
         <?php osc_show_flash_message(); ?>
+        <?php osc_run_hook('account_page_before', 'user-custom'); ?>
         <?php osc_render_file(); ?>
+
+        <?php osc_run_hook('account_page_after', 'user-custom'); ?>
     </div>
 
     <?php require __DIR__ . '/nav.php'; ?>

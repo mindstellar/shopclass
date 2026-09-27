@@ -1,3 +1,5 @@
+action account_page_after
+action account_page_before
 action activate_comment
 action activate_item
 action activate_user
@@ -426,6 +428,10 @@ filter keyword_block_bulk_filter
 filter keyword_block_processing_row
 filter language_attributes
 filter language_bulk_filter
+filter listing_list_html
+filter listing_row_actions
+filter listing_row_badges
+filter listing_row_meta
 filter locations_json_url
 filter login_admin_image
 filter login_admin_title

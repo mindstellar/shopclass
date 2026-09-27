@@ -90,6 +90,7 @@ This is the fourth beta. Please try it on a copy of your site first, and tell us
   reports it. `storage:work` still works as an alias.
 - The credits page shows listings used against the limit and links to your orders.
 - New hooks `user_login_form` (inside the sign-in form), `user_login_form_after` and `user_register_form_after` (after each form), for extra fields and social sign-in buttons. The username field on the sign-in details page carries `data-username-check` for a live availability check.
+- **Your listings** has status tabs, shows the listing limit, each listing's views, and a Delete link that asks first. New hooks `account_page_before` and `account_page_after` on every account page, and filters `listing_row_badges`, `listing_row_meta`, `listing_row_actions` and `listing_list_html` for listing lists.
 
 ### Breaking
 
@@ -106,6 +107,7 @@ This is the fourth beta. Please try it on a copy of your site first, and tell us
 
 ### Fixed
 
+- **Your listings** showed a blocked or spam listing as Published, and hid blocked, expired and pending ones unless a status was asked for.
 - WebP photos can be uploaded. They were refused even when `webp` was an allowed extension, and it is now allowed by default.
 - A photo whose files cannot be saved shows an error instead of staying as a broken image.
 - Count helpers such as `osc_count_comments()` return 0, not -1, when nothing was loaded, so `if (osc_count_comments())` no longer passes on an empty page.
