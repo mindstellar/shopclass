@@ -860,6 +860,44 @@ function osc_item_can_bump(?array $item = null): bool
 }
 
 /**
+ * The paid upgrades the logged-in owner can buy for an item right now, as data:
+ * each entry is ['feature', 'label', 'credits']. Empty unless the item is the
+ * owner's own and is live (enabled, active, not expired).
+ *
+ * @param array<string,mixed>|null $item
+ *
+ * @return array<int,array{feature:string,label:string,credits:int}>
+ */
+function osc_item_upgrade_offers(?array $item = null): array
+{
+    $item   = $item ?? osc_item();
+    $userId = (int) osc_logged_user_id();
+    if (!osc_billing_enabled() || !is_array($item) || empty($item['pk_i_id']) || $userId === 0
+        || (int) ($item['fk_i_user_id'] ?? 0) !== $userId
+        || empty($item['b_enabled']) || empty($item['b_active'])
+        || (empty($item['b_premium']) && osc_isExpired((string) ($item['dt_expiration'] ?? '')))
+    ) {
+        return array();
+    }
+
+    $offers = array();
+    if (osc_item_can_bump($item)) {
+        $offers[] = array('feature' => 'item.bump', 'label' => _m('Bump'), 'credits' => osc_billing_bump_credits());
+    }
+    if (osc_item_can_be_featured($item)) {
+        $offers[] = array('feature' => 'listing.premium', 'label' => _m('Feature'), 'credits' => osc_billing_premium_credits());
+    }
+    if (osc_billing_highlight_enabled() && !osc_item_is_highlighted($item)) {
+        $offers[] = array('feature' => 'item.highlight', 'label' => _m('Highlight'), 'credits' => osc_billing_highlight_credits());
+    }
+    if (osc_billing_urgent_enabled() && !osc_item_is_urgent($item)) {
+        $offers[] = array('feature' => 'item.urgent', 'label' => _m('Urgent'), 'credits' => osc_billing_urgent_credits());
+    }
+
+    return $offers;
+}
+
+/**
  * The POST target for applying $feature to $itemId. Generalises
  * osc_billing_upgrade_url() to any item-scoped feature; that one is kept, unchanged,
  * for the listing.premium links already out there.

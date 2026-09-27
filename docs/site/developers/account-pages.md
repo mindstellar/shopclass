@@ -66,6 +66,9 @@ you override — a bare `.oe-list-item {}` loses to core's `.oe-page .oe-list-it
 | `.oe-list-body` | the middle column of a record | holds the `<h3>` title and `.oe-meta` |
 | `.oe-meta` | a record's secondary line | date, status, category, row actions; wraps freely |
 | `.oe-row-actions` | a record's action links | also carries `.oe-meta`; `.oe-danger-link` marks the destructive one |
+| `.oe-row-promote` | the paid-upgrades line under a listing | also carries `.oe-row-actions` |
+| `.oe-link-btn` | a button that looks like a link | inside an `.oe-inline-form` |
+| `.oe-inline-form` | a one-button form in a line of links | `display: inline` |
 | `.oe-tabs` | a status filter over a list | a `<nav>` of links; the current one carries `aria-current="page"` |
 | `.oe-thumb` | a record's image | fixed 6/5 ratio; also on the placeholder |
 | `.oe-thumb-empty` | the no-image placeholder | carries `.oe-thumb` too |
@@ -207,14 +210,19 @@ Listing lists pass a context: `dashboard`, `user_items`, `public_profile` or
 |---|---|
 | `listing_row_badges` | `['label' => …, 'class' => …]`; the class is an `.oe-badge` modifier. Core's keys: `status`, `premium`, `highlight`, `urgent` |
 | `listing_row_meta` | `['text' => …]`, plus `'url'` for a link or `'datetime'` for a `<time>`. Core's keys: `category`, `date`, `views` |
-| `listing_row_actions` | `['label' => …, 'url' => …, 'class' => …, 'confirm' => …]`. Core's keys: `edit`, `delete` |
+| `listing_row_actions` | `['label' => …, 'url' => …, 'class' => …, 'confirm' => …]`. Add `'method' => 'post'` and `'fields' => [name => value]` for a button in a form with the CSRF token. `'group' => 'promote'` puts it on the paid-upgrades line. Core's keys: `edit`, `delete`, and `upgrade_<feature>` for each upgrade the owner can buy |
 
 Core escapes every value. Add a Renew link on expired listings:
 
 ```php
 osc_add_filter('listing_row_actions', function ($actions, $item, $context) {
     if ($context === 'user_items' && osc_item_is_expired()) {
-        $actions['renew'] = array('label' => __('Renew', 'my-theme'), 'url' => my_renew_url($item['pk_i_id']));
+        $actions['renew'] = array(
+            'label'  => __('Renew', 'my-theme'),
+            'url'    => my_renew_url(),
+            'method' => 'post',
+            'fields' => array('id' => $item['pk_i_id']),
+        );
     }
 
     return $actions;

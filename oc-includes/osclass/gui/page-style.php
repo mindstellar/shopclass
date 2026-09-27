@@ -68,7 +68,7 @@ if (!defined('ABS_PATH')) {
      set only on the standalone shell. Inside a theme the page's links are the
      theme's links, which is what makes a core-rendered page read as part of the
      site rather than as a panel dropped into it. */
-  body.oe-page a{color:var(--oe-teal);}
+  body.oe-page a,body.oe-page .oe-link-btn{color:var(--oe-teal);}
   /* Headings carry user text -- a member's name, a listing title -- so one
      long token must wrap rather than widen the page. */
   .oe-page .oe-h1{font-size:1.5rem;font-weight:600;letter-spacing:-.01em;margin:0 0 20px;overflow-wrap:anywhere;}
@@ -253,6 +253,10 @@ if (!defined('ABS_PATH')) {
   }
   .oe-page .oe-row-actions{margin-block-start:4px;}
   .oe-page .oe-danger-link{color:var(--oe-danger);}
+  .oe-page .oe-row-promote{font-size:.8125rem;}
+  .oe-page .oe-inline-form{display:inline;margin:0;}
+  .oe-page .oe-link-btn{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;}
+  .oe-page .oe-link-btn.oe-danger-link{color:var(--oe-danger);}
   /* Status filter over a list. aria-current carries the state; the look follows it. */
   .oe-page .oe-tabs{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 16px;border-block-end:1px solid var(--oe-rule);}
   .oe-page .oe-tabs a{padding:8px 12px;text-decoration:none;color:var(--oe-ink-muted);border-block-end:2px solid transparent;margin-block-end:-1px;}

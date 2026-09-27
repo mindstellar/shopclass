@@ -13,6 +13,12 @@ msgstr ""
 msgid "\"%1$s\" extends this theme. Delete it first, or switch it to "
 msgstr ""
 
+#: oc-includes/osclass/gui/account/parts/item-row.php
+msgid "%1$s (%2$d credit)"
+msgid_plural "%1$s (%2$d credits)"
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
 msgid "%d credits added"
 msgstr ""
@@ -44,6 +50,10 @@ msgid "%d view"
 msgid_plural "%d views"
 msgstr[0] ""
 msgstr[1] ""
+
+#: oc-includes/osclass/gui/account/parts/item-row.php
+msgid "%s (free)"
+msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
 msgid "%s already was in the database"
@@ -334,6 +344,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/account/user-alerts-content.php
 msgid "Browse listings"
+msgstr ""
+
+#: oc-includes/osclass/helpers/hBilling.php
+msgid "Bump"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebBilling.php
@@ -750,6 +764,10 @@ msgstr ""
 msgid "Failed"
 msgstr ""
 
+#: oc-includes/osclass/helpers/hBilling.php
+msgid "Feature"
+msgstr ""
+
 #: oc-includes/osclass/gui/account/parts/item-row.php
 msgid "Featured"
 msgstr ""
@@ -820,6 +838,10 @@ msgid ""
 "Here's the content you have to add to the <b>.htaccess</b> file. If you "
 "can't modify the file or experience some problems with the URLs, please "
 "deactivate the <em>Friendly URLs</em> option."
+msgstr ""
+
+#: oc-includes/osclass/helpers/hBilling.php
+msgid "Highlight"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/parts/item-row.php
@@ -1486,6 +1508,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/account/nav.php
 msgid "Profile"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/parts/item-row.php
+msgid "Promote:"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/nav.php
@@ -2503,6 +2529,7 @@ msgid "Upgrade settings have been updated"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/parts/item-row.php
+#: oc-includes/osclass/helpers/hBilling.php
 msgid "Urgent"
 msgstr ""
 

@@ -91,6 +91,7 @@ This is the fourth beta. Please try it on a copy of your site first, and tell us
 - The credits page shows listings used against the limit and links to your orders.
 - New hooks `user_login_form` (inside the sign-in form), `user_login_form_after` and `user_register_form_after` (after each form), for extra fields and social sign-in buttons. The username field on the sign-in details page carries `data-username-check` for a live availability check.
 - **Your listings** has status tabs, shows the listing limit, each listing's views, and a Delete link that asks first. New hooks `account_page_before` and `account_page_after` on every account page, and filters `listing_row_badges`, `listing_row_meta`, `listing_row_actions` and `listing_list_html` for listing lists.
+- **Your listings** offers the paid upgrades the seller can buy for each live listing. A `listing_row_actions` entry can be a POST button with the CSRF token. New helper `osc_item_upgrade_offers()`.
 - A plugin's account page takes its heading from the title its route was registered with.
 
 ### Breaking

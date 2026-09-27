@@ -135,6 +135,7 @@ foreach ($partials as $file) {
 
     preg_match_all('/class="([^"]*)"/', $src, $cm);
     foreach ($cm[1] as $attr) {
+        $attr = (string) preg_replace('/<\?php.*?\?>/s', ' ', $attr);
         foreach (preg_split('/\s+/', trim($attr)) as $token) {
             if (strpos($token, 'oe-') === 0) {
                 $emitted[$token] = true;
@@ -201,5 +202,11 @@ foreach (array('user-dashboard', 'user-items', 'user-alerts', 'user-public-profi
     check("{$page} draws its list through osc_gui_listing_list()", strpos($src, 'osc_gui_listing_list(') !== false
         && strpos($src, 'parts/item-row.php') === false);
 }
+
+check('a POST row action carries the CSRF token', strpos($row, "osc_csrf_token_form()") !== false
+    && strpos($row, "'method'] ?? 'get') === 'post'") !== false);
+check('the row offers paid upgrades on the owner list', strpos($row, 'osc_item_upgrade_offers(') !== false);
+// A <form> inside a <p> closes the paragraph, so action lines must not be one.
+check('action lines are not paragraphs', strpos($row, '<p class="oe-meta oe-row-actions') === false);
 
 exit(harness_result());

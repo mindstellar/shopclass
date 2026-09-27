@@ -18,8 +18,9 @@ if (!defined('ABS_PATH')) {
  * $rowOwned (bool, default true) -- show the owner's status badges and actions.
  * $rowContext (string) -- passed to the listing_row_* filters.
  *
- * Badges and actions are ['label', 'class'] and ['label', 'url', 'class', 'confirm']
- * lists; meta entries are ['text'] with an optional 'url' or 'datetime'.
+ * Badges are ['label', 'class']; meta entries are ['text'] with an optional 'url' or
+ * 'datetime'; actions are ['label', 'url', 'class', 'confirm'], plus 'method' => 'post'
+ * with 'fields' for a form, and 'group' => 'promote' for the paid upgrades line.
  */
 
 $rowOwned   = isset($rowOwned) ? (bool) $rowOwned : true;
@@ -75,7 +76,26 @@ if ($rowOwned) {
         'confirm' => sprintf(_m('Delete "%s"? This cannot be undone.'), osc_item_title()),
     );
 }
+if ($rowOwned && $rowContext === 'user_items') {
+    foreach (osc_item_upgrade_offers($rowItem) as $offer) {
+        $rowActions['upgrade_' . $offer['feature']] = array(
+            'label'  => $offer['credits'] > 0
+                ? sprintf(_mn('%1$s (%2$d credit)', '%1$s (%2$d credits)', $offer['credits']), $offer['label'], $offer['credits'])
+                : sprintf(_m('%s (free)'), $offer['label']),
+            'url'    => osc_item_upgrade_url((int) osc_item_id(), $offer['feature']),
+            'method' => 'post',
+            'group'  => 'promote',
+        );
+    }
+}
 $rowActions = (array) osc_apply_filter('listing_row_actions', $rowActions, $rowItem, $rowContext);
+
+$rowGroups = array('' => array(), 'promote' => array());
+foreach ($rowActions as $action) {
+    if (is_array($action) && isset($action['label'], $action['url'])) {
+        $rowGroups[($action['group'] ?? '') === 'promote' ? 'promote' : ''][] = $action;
+    }
+}
 ?>
 <li class="oe-list-item">
     <?php if (osc_images_enabled_at_items() && osc_has_item_resources()) { ?>
@@ -111,18 +131,35 @@ $rowActions = (array) osc_apply_filter('listing_row_actions', $rowActions, $rowI
                 <?php }
             } ?>
         </p>
-        <?php if ($rowActions !== array()) { ?>
-            <p class="oe-meta oe-row-actions">
-                <?php foreach ($rowActions as $action) {
-                    if (!is_array($action) || !isset($action['label'], $action['url'])) {
-                        continue;
-                    } ?>
-                    <a href="<?php echo osc_esc_html((string) $action['url']); ?>"<?php
-                        echo !empty($action['class']) ? ' class="' . osc_esc_html((string) $action['class']) . '"' : '';
-                        echo !empty($action['confirm']) ? ' data-osc-confirm="' . osc_esc_html((string) $action['confirm']) . '"' : '';
-                    ?>><?php echo osc_esc_html((string) $action['label']); ?></a>
-                <?php } ?>
-            </p>
+        <?php foreach ($rowGroups as $group => $actions) {
+            if ($actions === array()) {
+                continue;
+            } ?>
+            <div class="oe-meta oe-row-actions<?php echo $group === 'promote' ? ' oe-row-promote' : ''; ?>">
+                <?php if ($group === 'promote') { ?>
+                    <span><?php echo osc_esc_html(_m('Promote:')); ?></span>
+                <?php }
+                foreach ($actions as $action) {
+                    $actionClass   = !empty($action['class']) ? ' ' . osc_esc_html((string) $action['class']) : '';
+                    $actionConfirm = !empty($action['confirm'])
+                        ? ' data-osc-confirm="' . osc_esc_html((string) $action['confirm']) . '"' : '';
+                    if (($action['method'] ?? 'get') === 'post') { ?>
+                        <form class="oe-inline-form nocsrf" method="post" action="<?php echo osc_esc_html((string) $action['url']); ?>">
+                            <?php echo osc_csrf_token_form();
+                            foreach ((array) ($action['fields'] ?? array()) as $fieldName => $fieldValue) { ?>
+                                <input type="hidden" name="<?php echo osc_esc_html((string) $fieldName); ?>" value="<?php
+                                    echo osc_esc_html((string) $fieldValue); ?>">
+                            <?php } ?>
+                            <button type="submit" class="oe-link-btn<?php echo $actionClass; ?>"<?php echo $actionConfirm; ?>><?php
+                                echo osc_esc_html((string) $action['label']); ?></button>
+                        </form>
+                    <?php } else { ?>
+                        <a href="<?php echo osc_esc_html((string) $action['url']); ?>"<?php
+                            echo $actionClass !== '' ? ' class="' . trim($actionClass) . '"' : '';
+                            echo $actionConfirm; ?>><?php echo osc_esc_html((string) $action['label']); ?></a>
+                    <?php }
+                } ?>
+            </div>
         <?php } ?>
     </div>
 
