@@ -103,12 +103,12 @@ the one exception: it locks out everything except a signed-in admin.
 | **Unactivated users** | Never activated from the confirmation e-mail |
 
 Tick which groups to clean, and set **Older than** (in days) for each one
-except Reported listings, which has no age limit. **Maximum items removed per
-run** caps each run so it cannot time out on a large backlog — run it again to
-work through the rest.
+except Reported listings, which has no age limit.
 
 Run it on demand with **Run cleanup now**, or save the settings and let the
-**daily cron** do it.
+**daily cron** do it. Either way it runs in the background, a batch at a time, until
+nothing matches, so a large backlog never times out a page. **Items removed per
+batch** sets the batch size. The background work runs on [cron](/docs/configure/cron/).
 
 On an established site this is what keeps the database fast — dead rows cost you
 on every search. Back up before the first run, and think about expired listings

@@ -451,15 +451,15 @@ msgid "City too short."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
-msgid "Cleanup ran, but nothing matched the enabled rules."
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
-msgid "Cleanup removed %d item(s). Run again to clear any remaining backlog."
+msgid "Cleanup is already running in the background."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid "Cleanup settings saved"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "Cleanup started. It runs in the background until nothing matches."
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-public-profile-content.php
@@ -1254,6 +1254,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/account/user-alerts-content.php
 msgid "Nothing matches it yet."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "Nothing matches the enabled rules."
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-public-profile-content.php

@@ -2174,6 +2174,16 @@ msgstr ""
 msgid "Cleanup"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/cleanup.php
+msgid ""
+"Cleanup is running in the background. Reload this page to see the counts go "
+"down."
+msgstr ""
+
+#: oc-admin/themes/modern/tools/cleanup.php
+msgid "Cleanup runs in the background, one batch at a time, until nothing matches."
+msgstr ""
+
 #: oc-admin/themes/modern/items/reported.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 msgid "Clear All"
@@ -4967,6 +4977,10 @@ msgstr ""
 msgid "Items"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/cleanup.php
+msgid "Items removed per batch"
+msgstr ""
+
 #: oc-includes/osclass/classes/search/AlertStore.php
 msgid "Its location or user filter was in an unknown form."
 msgstr ""
@@ -5055,12 +5069,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/cache.php
 msgid "Keeps data between requests"
-msgstr ""
-
-#: oc-admin/themes/modern/tools/cleanup.php
-msgid ""
-"Keeps each run bounded so it never times out; run again to clear a larger "
-"backlog."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/cache.php
@@ -5875,10 +5883,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/fields/iframe.php
 msgid "Maximum"
-msgstr ""
-
-#: oc-admin/themes/modern/tools/cleanup.php
-msgid "Maximum items removed per run"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
@@ -9906,7 +9910,7 @@ msgstr ""
 #: oc-admin/themes/modern/tools/cleanup.php
 msgid ""
 "This permanently deletes the matching listings and users for every enabled "
-"rule (up to the per-run limit). This can't be undone."
+"rule. It runs in the background. This can't be undone."
 msgstr ""
 
 #: oc-admin/themes/modern/fields/submissions.php

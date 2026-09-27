@@ -1001,6 +1001,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\forms\\FormContextRegistry' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/forms/FormContextRegistry.php',
         'mindstellar\\forms\\FormService' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/forms/FormService.php',
         'mindstellar\\job\\CategoryJobs' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/job/CategoryJobs.php',
+        'mindstellar\\job\\CleanupJobs' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/job/CleanupJobs.php',
         'mindstellar\\job\\Job' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/job/Job.php',
         'mindstellar\\job\\JobQueue' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/job/JobQueue.php',
         'mindstellar\\job\\JobRegistry' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/job/JobRegistry.php',

@@ -450,12 +450,12 @@ class CAdminTools extends AdminSecBaseModel
                 }
                 osc_csrf_check();
                 $limit = Params::getParamInt('batch_limit');
-                osc_set_preference('batch_limit', $limit > 0 ? $limit : 250, 'osclass', 'INTEGER');
+                osc_set_preference('batch_limit', $limit > 0 ? $limit : Cleanup::DEFAULT_BATCH, 'osclass', 'INTEGER');
                 foreach (Cleanup::RULES as $rule) {
                     osc_set_preference('enabled_' . $rule, Params::getParam('enabled_' . $rule) ? '1' : '0', 'osclass', 'BOOLEAN');
                     if ($rule !== 'reported') {
                         $days = Params::getParamInt('days_' . $rule);
-                        osc_set_preference('days_' . $rule, $days > 0 ? $days : 30, 'osclass', 'INTEGER');
+                        osc_set_preference('days_' . $rule, $days > 0 ? $days : Cleanup::DEFAULT_DAYS, 'osclass', 'INTEGER');
                     }
                 }
                 osc_set_preference(
@@ -485,11 +485,14 @@ class CAdminTools extends AdminSecBaseModel
                     break;
                 }
                 osc_csrf_check();
-                $total = osc_run_cleanup();
-                if ($total > 0) {
-                    osc_add_flash_ok_message(sprintf(_m('Cleanup removed %d item(s). Run again to clear any remaining backlog.'), $total), 'admin');
+                if (\mindstellar\job\CleanupJobs::isRunning()) {
+                    osc_add_flash_warning_message(_m('Cleanup is already running in the background.'), 'admin');
+                } elseif (\mindstellar\job\CleanupJobs::queue() > 0) {
+                    // Start now, so the first batches do not wait for cron. Cron does the rest.
+                    \mindstellar\job\JobWorker::run(10);
+                    osc_add_flash_ok_message(_m('Cleanup started. It runs in the background until nothing matches.'), 'admin');
                 } else {
-                    osc_add_flash_warning_message(_m('Cleanup ran, but nothing matched the enabled rules.'), 'admin');
+                    osc_add_flash_warning_message(_m('Nothing matches the enabled rules.'), 'admin');
                 }
                 $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=cleanup');
                 break;

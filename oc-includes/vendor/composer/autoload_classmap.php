@@ -884,6 +884,7 @@ return array(
     'mindstellar\\forms\\FormContextRegistry' => $baseDir . '/oc-includes/osclass/classes/forms/FormContextRegistry.php',
     'mindstellar\\forms\\FormService' => $baseDir . '/oc-includes/osclass/classes/forms/FormService.php',
     'mindstellar\\job\\CategoryJobs' => $baseDir . '/oc-includes/osclass/classes/job/CategoryJobs.php',
+    'mindstellar\\job\\CleanupJobs' => $baseDir . '/oc-includes/osclass/classes/job/CleanupJobs.php',
     'mindstellar\\job\\Job' => $baseDir . '/oc-includes/osclass/classes/job/Job.php',
     'mindstellar\\job\\JobQueue' => $baseDir . '/oc-includes/osclass/classes/job/JobQueue.php',
     'mindstellar\\job\\JobRegistry' => $baseDir . '/oc-includes/osclass/classes/job/JobRegistry.php',

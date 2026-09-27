@@ -29,10 +29,7 @@ $cleanup_rules = array(
 );
 
 $engine      = Cleanup::newInstance();
-$batch_limit = (int)osc_get_preference('batch_limit', 'osclass');
-if ($batch_limit < 1) {
-    $batch_limit = 250;
-}
+$batch_limit = Cleanup::batchLimit();
 
 osc_current_admin_theme_path('parts/header.php'); ?>
     <?php osc_admin_page_head(__('Cleanup')); ?>
@@ -51,12 +48,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             </thead>
             <tbody>
             <?php foreach ($cleanup_rules as $rule => $meta) {
-                $enabled = osc_get_preference('enabled_' . $rule, 'osclass') == 1;
-                $days    = (int)osc_get_preference('days_' . $rule, 'osclass');
-                if ($days < 1) {
-                    $days = 30;
-                }
-                $matching = $engine->countFor($rule, $meta['days'] ? $days : 0); ?>
+                $enabled  = Cleanup::isEnabled($rule);
+                $days     = Cleanup::days($rule);
+                $matching = $engine->countFor($rule, $days); ?>
                 <tr>
                     <td>
                         <input type="checkbox" id="enabled_<?php echo $rule; ?>"
@@ -86,14 +80,14 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         </table>
         </div>
 
-        <?php osc_admin_form_row_open(__('Maximum items removed per run'), array('for' => 'batch_limit')); ?>
+        <?php osc_admin_form_row_open(__('Items removed per batch'), array('for' => 'batch_limit')); ?>
             <?php osc_admin_number(array(
                 'row'   => false,
                 'id'    => 'batch_limit',
                 'name'  => 'batch_limit',
                 'value' => $batch_limit,
                 'min'   => 1,
-                'help'  => __('Keeps each run bounded so it never times out; run again to clear a larger backlog.'),
+                'help'  => __('Cleanup runs in the background, one batch at a time, until nothing matches.'),
             )); ?>
         <?php osc_admin_form_row_close(); ?>
 
@@ -148,7 +142,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 
     <p class="text-muted mt-2">
         <i class="bi bi-clock-history"></i>
-        <?php _e('Enabled rules also run automatically once a day.'); ?>
+        <?php if (\mindstellar\job\CleanupJobs::isRunning()) {
+            _e('Cleanup is running in the background. Reload this page to see the counts go down.');
+        } else {
+            _e('Enabled rules also run automatically once a day.');
+        } ?>
     </p>
 
     <?php osc_admin_confirm_dialog(array(
@@ -156,7 +154,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             'method'  => 'post',
             'fields'  => array('page' => 'tools', 'action' => 'cleanup_run'),
             'title'   => __('Run cleanup now?'),
-            'text'    => __("This permanently deletes the matching listings and users for every enabled rule (up to the per-run limit). This can't be undone."),
+            'text'    => __("This permanently deletes the matching listings and users for every enabled rule. It runs in the background. This can't be undone."),
             'confirm' => __('Delete matching items'),
         )); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

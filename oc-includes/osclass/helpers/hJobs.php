@@ -241,6 +241,7 @@ if (!function_exists('osc_job_dead_letters')) {
 osc_add_hook('register_jobs', static function () {
     \mindstellar\storage\StorageJobs::register();
     \mindstellar\job\CategoryJobs::register();
+    \mindstellar\job\CleanupJobs::register();
     \mindstellar\search\AlertJobs::register();
 });
 

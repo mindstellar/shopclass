@@ -25,6 +25,12 @@ class Cleanup extends DAO
         'inactive_users',
     );
 
+    /** Age threshold, in days, when a rule has none saved. */
+    public const DEFAULT_DAYS = 30;
+
+    /** Rows per batch when none is saved. */
+    public const DEFAULT_BATCH = 250;
+
     private static $instance;
 
     /**
@@ -39,6 +45,47 @@ class Cleanup extends DAO
         }
 
         return self::$instance;
+    }
+
+    /**
+     * Whether a rule is switched on in Tools > Cleanup.
+     *
+     * @param string $rule
+     *
+     * @return bool
+     */
+    public static function isEnabled($rule)
+    {
+        return osc_get_preference('enabled_' . $rule, 'osclass') == 1;
+    }
+
+    /**
+     * The age threshold for a rule, in days. The reported rule has none.
+     *
+     * @param string $rule
+     *
+     * @return int
+     */
+    public static function days($rule)
+    {
+        if ($rule === 'reported') {
+            return 0;
+        }
+        $days = (int)osc_get_preference('days_' . $rule, 'osclass');
+
+        return $days > 0 ? $days : self::DEFAULT_DAYS;
+    }
+
+    /**
+     * How many rows one batch removes.
+     *
+     * @return int
+     */
+    public static function batchLimit()
+    {
+        $limit = (int)osc_get_preference('batch_limit', 'osclass');
+
+        return $limit > 0 ? $limit : self::DEFAULT_BATCH;
     }
 
     /**
