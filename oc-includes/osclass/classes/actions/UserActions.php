@@ -292,10 +292,10 @@ class UserActions
         $input['s_zip']             = $this->Sanitize->string(Params::getParam('zip'));
 
         // No user form posts coordinates, so a save without them keeps the stored ones.
-        foreach (array('d_coord_lat', 'd_coord_long') as $coord) {
+        foreach (array('d_coord_lat' => 90, 'd_coord_long' => 180) as $coord => $limit) {
             if (Params::existParam($coord)) {
                 $value         = Params::getParamString($coord);
-                $input[$coord] = is_numeric($value) ? (float) $value : null;
+                $input[$coord] = is_numeric($value) && abs((float) $value) <= $limit ? (float) $value : null;
             }
         }
 
@@ -343,7 +343,7 @@ class UserActions
         }
 
         // s_info is TEXT, so its limit is 65535 bytes, not characters.
-        foreach ((array) Params::getParam('s_info') as $key => $value) {
+        foreach (Params::getParamArray('s_info') as $key => $value) {
             if (strlen(is_string($value) ? $value : '') > 65535) {
                 $flash_error .= sprintf(_m('The field %s is too long'), osc_esc_html((string) $key)) . PHP_EOL;
             }

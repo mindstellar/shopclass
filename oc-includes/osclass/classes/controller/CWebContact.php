@@ -57,8 +57,9 @@ class CWebContact extends BaseModel
 
                     return false;
                 }
-                if (trim($yourName) === '' || trim($subject) === '' || trim($message) === '') {
-                    $fail(_m('Please enter your name, a subject and a message.'));
+                // Themes label name and subject optional, so only the message is required.
+                if (trim($message) === '') {
+                    $fail(_m('Please enter a message.'));
 
                     return false;
                 }

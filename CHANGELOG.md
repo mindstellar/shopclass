@@ -115,7 +115,7 @@ This is the fourth beta. Please try it on a copy of your site first, and tell us
 
 - Saving a profile no longer clears its stored map position.
 - Editing "About you" checks its size, as registration does.
-- The contact page refuses an empty name, subject or message. A failed send on any contact form shows the reason in the form, with what was typed.
+- The contact page refuses an empty message. A failed send on any contact form shows the reason in the form, with what was typed.
 - The seller contact form's "Invalid email address" message can be translated again.
 - The admin alerts list shows the whole saved search, not only its keywords and categories.
 - A page that shows a flash message or a refilled form is no longer sent as publicly cacheable.

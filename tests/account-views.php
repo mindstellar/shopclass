@@ -255,7 +255,7 @@ foreach (array('CWebUserNonSecure', 'CWebContact', 'CWebItem') as $controller) {
     check("{$controller} keeps a failed contact send through osc_keep_form()", strpos($src, 'osc_keep_form(') !== false);
 }
 $contactCtl = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebContact.php');
-check('the contact page refuses an empty name, subject or message',
-    strpos($contactCtl, 'trim($yourName) === \'\' || trim($subject) === \'\' || trim($message) === \'\'') !== false);
+check('the contact page refuses an empty message, and only that', strpos($contactCtl, 'if (trim($message) === \'\') {') !== false
+    && strpos($contactCtl, 'trim($subject) === ') === false);
 
 exit(harness_result());
