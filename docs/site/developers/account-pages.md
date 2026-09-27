@@ -291,11 +291,13 @@ dangerous should sit a misclick away from changing an email address.
 | `item-contact.php` | writing to a seller about one listing |
 | `item-send-friend.php` | passing a listing on to someone else |
 
-Both contact forms and the share form fire `contact_form` and then
-`admin_contact_form`, in the places the bundled themes put them, so a plugin that
-adds a field to one contact form gets it on all of them.
+The contact page and the share form fire `contact_form` and then
+`admin_contact_form` inside the form. The seller contact form fires
+`item_contact_form`. The contact page also fires `contact_form_after` below the
+form, for a side note or a map.
 
 Ship either view and yours wins, exactly as with the account pages. The
 save-this-search field `osc_alert_form()` prints falls back the same way, so a
 theme that calls it without shipping `alert-form.php` gets core's field rather
-than nothing.
+than nothing. Core's form carries `data-osc-alert-form`, so a theme script can find it
+without depending on its class.

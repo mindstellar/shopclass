@@ -94,6 +94,7 @@ action billing_order_refunded
 action change_email_confirm
 action comment_form
 action contact_form
+action contact_form_after
 action cron
 action cron_daily
 action cron_hourly

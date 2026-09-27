@@ -63,4 +63,5 @@ if (!defined('ABS_PATH')) {
             <button class="oe-btn" type="submit"><?php echo osc_esc_html(_m('Send message')); ?></button>
         </div>
     </form>
+    <?php osc_run_hook('contact_form_after'); ?>
 </div>

@@ -28,7 +28,7 @@ if (!defined('ABS_PATH')) {
 <?php if (function_exists('osc_search_alert_subscribed') && osc_search_alert_subscribed()) { ?>
     <p class="oe-muted"><?php echo osc_esc_html(_m('You are subscribed to this search.')); ?></p>
 <?php } else { ?>
-    <form class="oe-alert-form nocsrf" action="<?php echo osc_esc_html(osc_base_url(true)); ?>" method="post">
+    <form class="oe-alert-form nocsrf" data-osc-alert-form action="<?php echo osc_esc_html(osc_base_url(true)); ?>" method="post">
         <input type="hidden" name="page" value="search" />
         <input type="hidden" name="action" value="alert_post" />
         <?php AlertForm::alert_hidden(); ?>
