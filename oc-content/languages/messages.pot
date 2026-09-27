@@ -358,6 +358,10 @@ msgstr ""
 msgid "Changes saved correctly"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebSearch.php
+msgid "Check your email to confirm the alert."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebItem.php
 msgid "Check your inbox to validate your listing"
 msgstr ""
@@ -669,6 +673,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
 msgid "Enter a valid amount, 0 or more"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebSearch.php
+msgid "Enter a valid email address."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
@@ -1645,6 +1653,10 @@ msgstr ""
 msgid "Sign in to buy credits."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebSearch.php
+msgid "Sign in to save a search."
+msgstr ""
+
 #: oc-includes/osclass/gui/billing/wallet-content.php
 msgid "Sign in to see your credits."
 msgstr ""
@@ -2368,6 +2380,14 @@ msgstr ""
 msgid "This page has not deleted the account yet. Enter your password and click "
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebSearch.php
+msgid "This search could not be saved."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebSearch.php
+msgid "This search could not be saved. Search again and try once more."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebLogin.php
 msgid "This should never happen"
 msgstr ""
@@ -2574,6 +2594,7 @@ msgstr ""
 msgid "You are not allowed to add this widget type"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebSearch.php
 #: oc-includes/osclass/gui/alert-form-content.php
 msgid "You are subscribed to this search."
 msgstr ""

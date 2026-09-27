@@ -116,6 +116,7 @@ This is the fourth beta. Please try it on a copy of your site first, and tell us
 - **Test connection** catches a user that cannot write, a bad table prefix and an unknown host.
 - Page titles no longer carry a double space when a part such as the city is empty.
 - With a captcha on, the contact, contact-seller and send-to-friend forms show it, so they can be sent; after a failed send they keep what was typed.
+- The save-this-search form on core's search page saves the alert and says so, without JavaScript; before, it saved nothing.
 - On **Media**, a photo's listing link opens the listing editor instead of the listings screen.
 - A search for a category that does not exist answers 404 instead of listing every ad on the site, and its link uses the friendly search address.
 - The plugin and theme catalogue refreshes once a day again; before, it only changed when an admin chose **Check now**, so new updates went unseen.

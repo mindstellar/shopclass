@@ -417,6 +417,61 @@ function osc_search_alert()
 }
 
 /**
+ * Subscribe an email to a saved search. The owner is the signed-in user, never the caller:
+ * a guest gets a confirmation email, a signed-in active user is subscribed at once.
+ *
+ * @param string $token the alert token from osc_search_alert()
+ * @param string $email ignored when a user is signed in
+ *
+ * @return int 1 done, 0 not saved, -1 bad email or inactive user, -2 bad alert, -4 sign-in required
+ */
+function osc_subscribe_alert(string $token, string $email): int
+{
+    // Anonymous subscriptions can be switched off, against email harvesting and abuse.
+    if (osc_get_preference('alerts_require_login') && !osc_is_web_user_logged_in()) {
+        return -4;
+    }
+    // A token carries an authentication tag, so a forged or tampered one does not decrypt.
+    $alert = \mindstellar\search\AlertEnvelope::fromToken($token);
+    if ($alert === null) {
+        return -2;
+    }
+
+    $userid = 0;
+    if (osc_is_web_user_logged_in()) {
+        $userid = osc_logged_user_id();
+        $user   = User::newInstance()->findByPrimaryKey($userid);
+        $email  = (string)$user['s_email'];
+    }
+    if ($alert == '' || $email === '') {
+        return 0;
+    }
+    if (!osc_validate_email($email)) {
+        return -1;
+    }
+
+    $secret  = osc_genRandomPassword();
+    $alertID = Alerts::newInstance()->createAlert($userid, $email, $alert, $secret);
+    if (!$alertID) {
+        return 0;
+    }
+    if ((int)$userid > 0) {
+        $user = User::newInstance()->findByPrimaryKey($userid);
+        if ($user['b_active'] == 1 && $user['b_enabled'] == 1) {
+            Alerts::newInstance()->activate($alertID);
+
+            return 1;
+        }
+
+        return -1;
+    }
+
+    osc_run_hook('hook_email_alert_validation', Alerts::newInstance()->findByPrimaryKey($alertID), $email, $secret);
+
+    return 1;
+}
+
+/**
  * Gets for a default search (all categories, noother option)
  *
  * @param array $params

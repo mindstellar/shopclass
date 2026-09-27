@@ -213,80 +213,9 @@ class CWebAjax extends BaseModel
                 return true;
                 break;
             case 'alerts': // Allow to register to an alert given (not sure it's used on admin)
-                // Optionally require a logged-in user before creating a subscription, to stop
-                // anonymous email harvesting / confirmation-email abuse through this endpoint.
-                if (osc_get_preference('alerts_require_login') && !osc_is_web_user_logged_in()) {
-                    echo '-4';
+                echo (string)osc_subscribe_alert(Params::getParamString('alert'), (string)Params::getParam('email'));
 
-                    return false;
-                }
-                // A token carries an authentication tag, so a forgery or a tampered token
-                // fails to decrypt at all. Only the current format, search values rather
-                // than SQL, is accepted.
-                $alert = \mindstellar\search\AlertEnvelope::fromToken(Params::getParamString('alert'));
-                if ($alert === null) {
-                    echo '-2';
-
-                    return false;
-                }
-
-                $email  = Params::getParam('email');
-                // Owner id comes from the session, never the request: a caller-supplied
-                // userid would let an anonymous request attach the alert to a live user,
-                // whose active/enabled state then activates it immediately and skips the
-                // confirmation email. Anonymous always means 0 -> the double-opt-in path.
-                $userid = 0;
-
-                if (osc_is_web_user_logged_in()) {
-                    $userid = osc_logged_user_id();
-                    $user   = User::newInstance()->findByPrimaryKey($userid);
-                    $email  = $user['s_email'];
-                }
-
-                if ($alert != '' && $email != '') {
-                    if (osc_validate_email($email)) {
-                        $secret = osc_genRandomPassword();
-
-                        if ($alertID =
-                            Alerts::newInstance()->createAlert($userid, $email, $alert, $secret)
-                        ) {
-                            if ((int)$userid > 0) {
-                                $user = User::newInstance()->findByPrimaryKey($userid);
-                                if ($user['b_active'] == 1 && $user['b_enabled'] == 1) {
-                                    Alerts::newInstance()->activate($alertID);
-                                    echo '1';
-
-                                    return true;
-                                }
-
-                                echo '-1';
-
-                                return false;
-                            }
-
-                            $aAlert = Alerts::newInstance()->findByPrimaryKey($alertID);
-                            osc_run_hook(
-                                'hook_email_alert_validation',
-                                $aAlert,
-                                $email,
-                                $secret
-                            );
-
-                            echo '1';
-                        } else {
-                            echo '0';
-                        }
-
-                        return true;
-                    }
-
-                    echo '-1';
-
-                    return false;
-                }
-                echo '0';
-
-                return false;
+                return true;
                 break;
             case 'runhook': // run hooks
                 $hook = Params::getParam('hook');

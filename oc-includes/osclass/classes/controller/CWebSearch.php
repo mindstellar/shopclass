@@ -128,6 +128,9 @@ class CWebSearch extends BaseModel
      */
     public function doModel()
     {
+        if ($this->action === 'alert_post') {
+            $this->saveAlert();
+        }
         osc_run_hook('before_search');
 
         if (osc_rewrite_enabled()) {
@@ -565,6 +568,31 @@ class CWebSearch extends BaseModel
         osc_current_web_theme_path($file);
         Session::newInstance()->_clearVariables();
         osc_run_hook('after_html');
+    }
+
+    /**
+     * The alert form without JavaScript: save the search, say how it went, and go back.
+     *
+     * @return void
+     */
+    private function saveAlert(): void
+    {
+        $code = osc_subscribe_alert(Params::getParamString('alert'), Params::getParamString('alert_email'));
+        if ($code === 1) {
+            osc_add_flash_ok_message(osc_is_web_user_logged_in()
+                ? _m('You are subscribed to this search.')
+                : _m('Check your email to confirm the alert.'));
+        } else {
+            $messages = array(
+                -1 => _m('Enter a valid email address.'),
+                -2 => _m('This search could not be saved. Search again and try once more.'),
+                -4 => _m('Sign in to save a search.'),
+            );
+            osc_add_flash_error_message($messages[$code] ?? _m('This search could not be saved.'));
+        }
+        // Back to the search it came from; anything off-site goes to the search page.
+        $back = (string)Params::getServerParam('HTTP_REFERER', false, false);
+        $this->redirectTo(strpos($back, osc_base_url()) === 0 ? $back : osc_search_url());
     }
 
     /**
