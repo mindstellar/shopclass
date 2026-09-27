@@ -63,6 +63,12 @@ class LoginThrottle
     public const BLOCKED = 'blocked';
 
     /**
+     * What this limiter counts. The same ledger also holds contact-form and listing-post
+     * events for other limits; those must neither block a sign-in nor be cleared by one.
+     */
+    public const CONTEXTS = array('admin', 'web', 'admin-recover', 'web-recover');
+
+    /**
      * Decide what to do with an attempt, before any password is checked.
      *
      * Call it after the form's own captcha check, and pass whether that check
@@ -92,10 +98,11 @@ class LoginThrottle
         try {
             $model = LoginAttempt::newInstance();
 
-            if ($ip !== '' && $model->countByIp($ip, $since) >= osc_login_throttle_max_ip()) {
+            $byIp = $ip !== '' ? self::ipWindow($ip, $since) : array('n' => 0, 'oldest' => null);
+            if ($byIp['n'] >= osc_login_throttle_max_ip()) {
                 return array(
                     'status'      => self::BLOCKED,
-                    'retry_after' => self::retryAfter($model->oldestByIp($ip, $since), $window),
+                    'retry_after' => self::retryAfter($byIp['oldest'], $window),
                 );
             }
 
@@ -164,7 +171,7 @@ class LoginThrottle
             }
             $ip = self::ip();
             if ($ip !== '') {
-                $model->clearIp($ip);
+                self::clearSignInIp($ip);
             }
         } catch (\Throwable $e) {
             self::unavailable($e);
@@ -191,7 +198,8 @@ class LoginThrottle
             $rows = osc_db_table($table)
                 ->select('s_ip')
                 ->selectRaw('COUNT(*) AS n, MIN(dt_date) AS oldest')
-                ->where('dt_date', '>=', $since)
+                ->where('dt_date', '>', $since)
+                ->whereIn('s_context', self::CONTEXTS)
                 ->where('s_ip', '!=', '')
                 ->groupBy('s_ip')
                 ->orderBy('n', 'DESC')
@@ -207,7 +215,8 @@ class LoginThrottle
             $rows = osc_db_table($table)
                 ->select('s_context', 's_account')
                 ->selectRaw('COUNT(*) AS n, MIN(dt_date) AS oldest')
-                ->where('dt_date', '>=', $since)
+                ->where('dt_date', '>', $since)
+                ->whereIn('s_context', self::CONTEXTS)
                 ->where('s_account', '!=', '')
                 ->groupBy('s_context', 's_account')
                 ->orderBy('n', 'DESC')
@@ -241,10 +250,50 @@ class LoginThrottle
     public static function unblockIp($ip)
     {
         try {
-            LoginAttempt::newInstance()->clearIp((string)$ip);
+            self::clearSignInIp((string)$ip);
         } catch (\Throwable $e) {
             self::unavailable($e);
         }
+    }
+
+    /**
+     * Sign-in failures from one address inside the window, and the oldest of them.
+     *
+     * @param string $ip
+     * @param string $since
+     *
+     * @return array{n:int,oldest:?string}
+     * @throws \mindstellar\database\DbException
+     */
+    private static function ipWindow($ip, $since)
+    {
+        $row = osc_db_table(DB_TABLE_PREFIX . 't_login_attempt')
+            ->selectRaw('COUNT(*) AS n, MIN(dt_date) AS oldest')
+            ->where('s_ip', (string)$ip)
+            ->whereIn('s_context', self::CONTEXTS)
+            ->where('dt_date', '>', $since)
+            ->first();
+
+        return array(
+            'n'      => (int)($row['n'] ?? 0),
+            'oldest' => isset($row['oldest']) ? (string)$row['oldest'] : null,
+        );
+    }
+
+    /**
+     * Forget one address's sign-in failures, and nothing else it did.
+     *
+     * @param string $ip
+     *
+     * @return void
+     * @throws \mindstellar\database\DbException
+     */
+    private static function clearSignInIp($ip)
+    {
+        osc_db_table(DB_TABLE_PREFIX . 't_login_attempt')
+            ->where('s_ip', (string)$ip)
+            ->whereIn('s_context', self::CONTEXTS)
+            ->delete();
     }
 
     /**

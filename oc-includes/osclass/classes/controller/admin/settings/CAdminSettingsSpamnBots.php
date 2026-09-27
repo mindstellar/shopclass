@@ -111,11 +111,11 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
                 $ip      = Params::getParamString('ip');
                 $context = Params::getParamString('context');
                 // Raw: it must match the stored name exactly. It is bound in SQL and escaped below.
-                $account = Params::getParamString('account', false, false, false);
+                $account = trim(Params::getParamString('account', false, false, false));
                 if ($ip !== '' && filter_var($ip, FILTER_VALIDATE_IP)) {
                     \mindstellar\security\LoginThrottle::unblockIp($ip);
                     osc_add_flash_ok_message(sprintf(_m('%s can sign in again.'), osc_esc_html($ip)), 'admin');
-                } elseif ($account !== '' && in_array($context, array('admin', 'web'), true)) {
+                } elseif ($account !== '' && in_array($context, \mindstellar\security\LoginThrottle::CONTEXTS, true)) {
                     \mindstellar\security\LoginThrottle::unblockAccount($context, $account);
                     osc_add_flash_ok_message(sprintf(_m('%s can sign in again.'), osc_esc_html($account)), 'admin');
                 }

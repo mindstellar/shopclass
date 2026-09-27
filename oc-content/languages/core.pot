@@ -902,6 +902,10 @@ msgstr ""
 msgid "Admin panel"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/spamNbots.php
+msgid "Admin password reset"
+msgstr ""
+
 #: oc-admin/themes/modern/parts/header.php
 msgid "Admin sections"
 msgstr ""
@@ -11181,6 +11185,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info.php
 msgid "Website URL"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/spamNbots.php
+msgid "Website password reset"
 msgstr ""
 
 #: oc-includes/osclass/helpers/hUtils.php

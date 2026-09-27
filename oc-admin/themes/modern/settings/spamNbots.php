@@ -68,7 +68,12 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 
         <?php
         $throttle = __get('login_throttle_activity') ?: array('aRows' => array());
-        $contexts = array('admin' => __('Admin panel'), 'web' => __('Website'));
+        $contexts = array(
+            'admin'         => __('Admin panel'),
+            'web'           => __('Website'),
+            'admin-recover' => __('Admin password reset'),
+            'web-recover'   => __('Website password reset'),
+        );
         $rows     = $throttle['aRows'];
 
         osc_admin_form_section(__('Failed sign-ins right now'), array(
