@@ -202,6 +202,15 @@ osc_add_hook('account_page_before', function ($page) {
 
 `account_page_after` is the same, at the foot of the column.
 
+## The profile form
+
+Core's profile form has the account type (`b_company`), the neighbourhood
+(`cityArea`) and an About field for each language. Other languages sit in a
+`<details>` under the current one. The country, region, city and neighbourhood
+fields are wrapped in `<div data-location-cascade>`, so a theme script can find
+them. `user_avatar_form($user)` fires inside the picture field. A "Your data"
+panel links to `osc_user_export_url()`.
+
 ## The public profile contact form
 
 The public profile has a contact form, unless the visitor owns the profile, or

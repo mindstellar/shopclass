@@ -197,9 +197,21 @@ msgstr ""
 msgid "About you"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-profile-content.php
+msgid "About you (%s)"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-profile-content.php
+msgid "About you in other languages"
+msgstr ""
+
 #: oc-includes/osclass/gui/item-contact-content.php
 #: oc-includes/osclass/gui/item-send-friend-content.php
 msgid "About “%s”"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-profile-content.php
+msgid "Account type"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebRegister.php
@@ -350,6 +362,7 @@ msgstr ""
 msgid "Bump"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-profile-content.php
 #: oc-includes/osclass/gui/account/user-public-profile-content.php
 msgid "Business"
 msgstr ""
@@ -663,6 +676,14 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
 msgid "Directory '%s' couldn't be removed;)"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-profile-content.php
+msgid "Download a copy of the data this site holds about you."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-profile-content.php
+msgid "Download your data"
 msgstr ""
 
 #: oc-includes/osclass/classes/actions/UserActions.php
@@ -1078,6 +1099,7 @@ msgstr ""
 msgid "Name too long."
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-profile-content.php
 #: oc-includes/osclass/helpers/hUsers.php
 msgid "Neighbourhood"
 msgstr ""
@@ -1541,6 +1563,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsBilling.php
 msgid "Pricing settings have been updated"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-profile-content.php
+msgid "Private seller"
 msgstr ""
 
 #: oc-includes/osclass/classes/Csrf.php
@@ -2880,6 +2906,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/account/user-profile-content.php
 msgid "Your current picture"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-profile-content.php
+msgid "Your data"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebUser.php

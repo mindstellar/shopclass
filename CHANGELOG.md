@@ -96,6 +96,7 @@ This is the fourth beta. Please try it on a copy of your site first, and tell us
 - The public profile shows the member's picture, place, a Business badge, an Edit link on your own profile, and a contact form with the captcha. New hooks `user_contact_form` and `user_contact_form_after`.
 - **Alerts** lists each saved search's keywords, category, place, price and filters, and asks before it stops an alert. New helpers `osc_alert_criteria()` and `osc_alert_summary()`, and filter `alert_row_actions`.
 - New hook `contact_form_after` below the contact page's form. Core's save-this-search form carries `data-osc-alert-form`.
+- **Your profile** has the account type, the neighbourhood, an About field for each language and a Download your data link. New hook `user_avatar_form`; the location fields carry `data-location-cascade`.
 
 ### Breaking
 
@@ -112,6 +113,7 @@ This is the fourth beta. Please try it on a copy of your site first, and tell us
 
 ### Fixed
 
+- Saving core's profile form reset the account type and neighbourhood, and it loaded every city when no region was set.
 - **Your listings** showed a blocked or spam listing as Published, and hid blocked, expired and pending ones unless a status was asked for.
 - WebP photos can be uploaded. They were refused even when `webp` was an allowed extension, and it is now allowed by default.
 - A photo whose files cannot be saved shows an error instead of staying as a broken image.

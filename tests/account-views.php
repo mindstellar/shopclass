@@ -224,4 +224,12 @@ $alertsSrc = (string) file_get_contents($accountIn . 'user-alerts-content.php');
 check('alerts apply alert_row_actions', strpos($alertsSrc, "osc_apply_filter('alert_row_actions'") !== false);
 check('alerts draw actions through the shared row-actions part', strpos($alertsSrc, "parts/row-actions.php") !== false);
 
+$profileForm = (string) file_get_contents($accountIn . 'user-profile-content.php');
+// Without these fields, profile_post saved b_company = 0 and an empty city area.
+check('the profile form posts b_company', strpos($profileForm, 'UserForm::is_company_select(') !== false);
+check('the profile form posts cityArea', strpos($profileForm, 'UserForm::city_area_text(') !== false);
+check('the profile form fires user_avatar_form', strpos($profileForm, "osc_run_hook('user_avatar_form', ") !== false);
+check('the profile form never lists every city', strpos($profileForm, "osc_get_cities(osc_user_field('fk_i_region_id'))") === false
+    || strpos($profileForm, "osc_user_field('fk_i_region_id') ? osc_get_cities(") !== false);
+
 exit(harness_result());

@@ -136,7 +136,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 531 names. Generated from the source; do not edit by hand.
+Core fires 532 names. Generated from the source; do not edit by hand.
 
 ### Admin (77)
 
@@ -671,7 +671,7 @@ Core fires 531 names. Generated from the source; do not edit by hand.
 | `theme_screenshot_url` | filter | `$url, $theme` | `oc-includes/osclass/helpers/hTheme.php` |
 | `theme_url` | filter | `$script` | `oc-includes/osclass/classes/Scripts.php` |
 
-### User (43)
+### User (44)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -696,6 +696,7 @@ Core fires 531 names. Generated from the source; do not edit by hand.
 | `more_actions_manage_users` | filter | `$options_more, $aRow` | `oc-includes/osclass/classes/datatables/UsersDataTable.php` |
 | `pre_user_post` | action | — | `oc-includes/osclass/classes/actions/UserActions.php` |
 | `user_add_flash_error` | filter | `$flash_error` | `oc-includes/osclass/classes/actions/UserActions.php` |
+| `user_avatar_form` | action | `$profileUser` | `oc-includes/osclass/gui/account/user-profile-content.php` |
 | `user_bulk_filter` | filter | `$bulk_options` | `oc-includes/osclass/classes/controller/admin/CAdminUsers.php` |
 | `user_contact_form` | action | `$publicUser` | `oc-includes/osclass/gui/account/user-public-profile-content.php` |
 | `user_contact_form_after` | action | `$publicUser` | `oc-includes/osclass/gui/account/user-public-profile-content.php` |

@@ -254,6 +254,7 @@ action show_item
 action theme_activate
 action uploaded_file
 action uploaded_resource
+action user_avatar_form
 action user_contact_form
 action user_contact_form_after
 action user_dashboard
