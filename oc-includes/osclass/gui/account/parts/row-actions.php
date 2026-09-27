@@ -40,7 +40,10 @@ foreach ((array) $rowActions as $action) {
                     <?php
                     // The token goes only to this site, never to a URL a plugin points elsewhere.
                     $actionUrl = (string) $action['url'];
-                    if (strpos($actionUrl, osc_base_url()) === 0 || (($actionUrl[0] ?? '') === '/' && ($actionUrl[1] ?? '') !== '/')) {
+                    $siteRoot  = rtrim(osc_base_url(), '/') . '/';
+                    if (!preg_match('/[\x00-\x20\\\\]/', $actionUrl)
+                        && (strpos($actionUrl, $siteRoot) === 0 || preg_match('#^/(?!/)#', $actionUrl))
+                    ) {
                         echo osc_csrf_token_form();
                     }
                     foreach ((array) ($action['fields'] ?? array()) as $fieldName => $fieldValue) { ?>

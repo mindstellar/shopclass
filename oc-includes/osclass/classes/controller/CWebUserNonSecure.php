@@ -184,7 +184,7 @@ class CWebUserNonSecure extends BaseModel
 
                 $itemsPerPage = Params::getParam('itemsPerPage');
                 if (is_numeric($itemsPerPage) && (int)$itemsPerPage > 0) {
-                    $itemsPerPage = (int)$itemsPerPage;
+                    $itemsPerPage = min((int)$itemsPerPage, 100);
                 } else {
                     $itemsPerPage = 10;
                 }

@@ -241,6 +241,6 @@ check('the profile form never lists every city', strpos(
 
 // A token in a delete URL lands in logs, so core's own Delete posts a form.
 check("core's Delete is a POST action", (bool) preg_match("/'delete'\\] = array\\(.*?'method'\\s*=> 'post'/s", $row));
-check('the CSRF token is posted only to this site', strpos($rowParts, 'strpos($actionUrl, osc_base_url()) === 0') !== false);
+check('the CSRF token is posted only to this site', strpos($rowParts, 'strpos($actionUrl, $siteRoot) === 0') !== false);
 
 exit(harness_result());
