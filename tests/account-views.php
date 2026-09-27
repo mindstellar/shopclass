@@ -246,4 +246,7 @@ check('the CSRF token is posted only to this site', strpos($rowParts, 'strpos($a
 check('the profile contact form is a dialog the head button opens', strpos($profile, 'id="oe-contact-dialog"') !== false
     && strpos($profile, 'data-osc-dialog-open="oe-contact-dialog"') !== false);
 
+check('a failed profile send keeps its reason for the form', strpos($nonSecure, "_setForm('contact_error'") !== false
+    && strpos($contactPart, "osc_gui_kept('contact_error')") !== false);
+
 exit(harness_result());

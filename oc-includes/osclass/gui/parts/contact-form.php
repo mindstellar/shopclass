@@ -36,7 +36,11 @@ $cfPrefix = osc_esc_html((string) $cf['prefix']);
 <form action="<?php echo osc_esc_html(osc_base_url(true)); ?>" method="post"<?php
     echo !empty($cf['name']) ? ' name="' . osc_esc_html((string) $cf['name']) . '"' : '';
     echo !empty($cf['attachment']) ? ' enctype="multipart/form-data"' : ''; ?>>
-    <?php foreach ((array) $cf['hidden'] as $cfName => $cfValue) { ?>
+    <?php $cfError = osc_gui_kept('contact_error');
+    if ($cfError !== '') { ?>
+        <p class="oe-form-error" role="alert"><?php echo osc_esc_html($cfError); ?></p>
+    <?php }
+    foreach ((array) $cf['hidden'] as $cfName => $cfValue) { ?>
         <input type="hidden" name="<?php echo osc_esc_html((string) $cfName); ?>" value="<?php
             echo osc_esc_html((string) $cfValue); ?>" />
     <?php } ?>

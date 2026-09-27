@@ -247,32 +247,30 @@ class CWebUserNonSecure extends BaseModel
                 $yourName  = Params::getParamString('yourName');
                 $phone     = Params::getParamString('phoneNumber');
                 $message   = Params::getParamString('message');
-                $keep      = static function () use ($yourEmail, $yourName, $phone, $message) {
+                // A failed send keeps what was typed and the reason, so the form can show both.
+                $fail = function (string $error) use ($yourEmail, $yourName, $phone, $message, $back) {
                     $session = Session::newInstance();
                     $session->_setForm('yourEmail', $yourEmail);
                     $session->_setForm('yourName', $yourName);
                     $session->_setForm('phoneNumber', $phone);
                     $session->_setForm('message_body', $message);
+                    $session->_setForm('contact_error', $error);
+                    osc_add_flash_error_message($error);
+                    $this->redirectTo($back);
                 };
 
                 if (osc_captcha_enabled() && !osc_check_captcha()) {
-                    $keep();
-                    osc_add_flash_error_message(_m('Please complete the security check.'));
-                    $this->redirectTo($back);
+                    $fail(_m('Please complete the security check.'));
                 }
                 if ($yourName === '' || trim($message) === '' || !osc_validate_email($yourEmail)) {
-                    $keep();
-                    osc_add_flash_error_message(_m('Please enter your name, a valid email address and a message.'));
-                    $this->redirectTo($back);
+                    $fail(_m('Please enter your name, a valid email address and a message.'));
                 }
 
                 $banned = osc_is_banned($yourEmail);
                 if ($banned == 1) {
-                    osc_add_flash_error_message(_m('Your current email is not allowed'));
-                    $this->redirectTo($back);
+                    $fail(_m('Your current email is not allowed'));
                 } elseif ($banned == 2) {
-                    osc_add_flash_error_message(_m('Your current IP is not allowed'));
-                    $this->redirectTo($back);
+                    $fail(_m('Your current IP is not allowed'));
                 }
 
                 if (\mindstellar\security\ActionThrottle::exceeded(
@@ -280,9 +278,7 @@ class CWebUserNonSecure extends BaseModel
                     (int) osc_apply_filter('user_contact_throttle_max', 15),
                     (int) osc_apply_filter('user_contact_throttle_window', 3600)
                 )) {
-                    $keep();
-                    osc_add_flash_error_message(_m("You've sent too many messages recently. Please try again later."));
-                    $this->redirectTo($back);
+                    $fail(_m("You've sent too many messages recently. Please try again later."));
                 }
 
                 osc_run_hook(

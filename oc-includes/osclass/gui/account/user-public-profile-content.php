@@ -80,7 +80,7 @@ $contactOpen = !$publicOwn && (!osc_reg_user_can_contact() || osc_is_web_user_lo
 
 <?php if ($contactOpen) {
     // A failed send comes back with what was typed, so the dialog opens again.
-    $contactShow = Session::newInstance()->_getForm('message_body') !== '';
+    $contactShow = osc_gui_kept('contact_error') !== '';
     ?>
     <dialog id="oe-contact-dialog" class="oe-dialog" data-osc-dialog<?php echo $contactShow ? ' data-osc-dialog-show' : ''; ?>
             aria-labelledby="oe-contact-title">
