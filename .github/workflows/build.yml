@@ -322,6 +322,16 @@ jobs:
             org.opencontainers.image.version=${{ env.OSCLASS_VERSION }}
             org.opencontainers.image.revision=${{ github.sha }}
 
+      - name: Update the Docker Hub description
+        if: env.DOCKERHUB_ENABLED == 'true'
+        uses: peter-evans/dockerhub-description@v5
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ${{ vars.DOCKERHUB_NAMESPACE || secrets.DOCKERHUB_USERNAME }}/shopclass
+          short-description: Self-hosted classifieds website. One image with nginx, PHP and free HTTPS. Installs on start.
+          readme-filepath: .docker/hub/README.md
+
   # Pre-release image channel: publish a moving :edge tag WITHOUT cutting a
   # versioned release. This is opt-in per push — it runs only when the head
   # commit message contains the marker [publish-edge] — so ordinary develop
