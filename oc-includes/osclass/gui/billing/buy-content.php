@@ -54,6 +54,7 @@ $formatMoney = static function (int $micros, string $currency): string {
 ?>
 <div class="oe-account">
 <div class="oe-account-main">
+<?php osc_run_hook('account_page_before', 'billing-buy'); ?>
 <div class="oe-bill">
 
 
@@ -134,6 +135,7 @@ $formatMoney = static function (int $micros, string $currency): string {
     </p>
 <?php } ?>
 </div>
+<?php osc_run_hook('account_page_after', 'billing-buy'); ?>
 </div>
 
 <?php require ABS_PATH . 'oc-includes/osclass/gui/account/nav.php'; ?>

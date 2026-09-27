@@ -252,6 +252,15 @@ if (!defined('ABS_PATH')) {
     color:var(--oe-ink-muted); font-size:.875rem; margin:6px 0 0;
   }
   .oe-page .oe-row-actions{margin-block-start:4px;}
+  .oe-page .oe-dashboard-intro{margin-block-end:12px;}
+  .oe-page .oe-dashboard-actions{margin-block-end:24px;}
+  /* A titled group of form fields; .oe-grid lays its fields two to a row where there is room. */
+  .oe-page .oe-group{border:0;padding:0;margin:0 0 28px;min-inline-size:0;}
+  .oe-page .oe-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,14rem),1fr));gap:0 16px;}
+  .oe-page .oe-avatar-field{display:flex;flex-wrap:wrap;align-items:flex-start;gap:16px;}
+  .oe-page .oe-avatar-empty{opacity:.7;}
+  .oe-page .oe-dashboard-title{margin-block-start:8px;}
+  .oe-page .oe-dashboard-more{margin-block-start:12px;}
   .oe-page .oe-danger-link{color:var(--oe-danger);}
   .oe-page .oe-row-promote{font-size:.8125rem;}
   .oe-page .oe-inline-form{display:inline;margin:0;}

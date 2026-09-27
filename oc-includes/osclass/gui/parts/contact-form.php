@@ -26,6 +26,7 @@ if (!defined('ABS_PATH')) {
  *  - top      (callable) runs before Subject and Message, optional
  *  - hooks    (callable) runs before the button, optional
  *  - name     (string) the form's name attribute, optional
+ *  - optional (bool)   name and subject may be left empty (the contact page)
  *
  * CSRF is injected on shutdown into any form not marked nocsrf.
  */
@@ -46,8 +47,10 @@ $cfPrefix = osc_esc_html((string) $cf['prefix']);
     <?php } ?>
 
     <div class="oe-field">
-        <label class="oe-label" for="<?php echo $cfPrefix; ?>-name"><?php echo osc_esc_html(_m('Your name')); ?></label>
-        <input class="oe-input" id="<?php echo $cfPrefix; ?>-name" type="text" name="yourName" autocomplete="name" required
+        <label class="oe-label" for="<?php echo $cfPrefix; ?>-name"><?php
+            echo osc_esc_html(empty($cf['optional']) ? _m('Your name') : _m('Your name (optional)')); ?></label>
+        <input class="oe-input" id="<?php echo $cfPrefix; ?>-name" type="text" name="yourName" autocomplete="name"<?php
+            echo empty($cf['optional']) ? ' required' : ''; ?>
                value="<?php echo osc_esc_html(osc_gui_kept('yourName', osc_logged_user_name())); ?>" />
     </div>
     <div class="oe-field">
@@ -71,8 +74,10 @@ $cfPrefix = osc_esc_html((string) $cf['prefix']);
     }
     if (!empty($cf['subject'])) { ?>
         <div class="oe-field">
-            <label class="oe-label" for="<?php echo $cfPrefix; ?>-subject"><?php echo osc_esc_html(_m('Subject')); ?></label>
-            <input class="oe-input" id="<?php echo $cfPrefix; ?>-subject" type="text" name="subject" required
+            <label class="oe-label" for="<?php echo $cfPrefix; ?>-subject"><?php
+                echo osc_esc_html(empty($cf['optional']) ? _m('Subject') : _m('Subject (optional)')); ?></label>
+            <input class="oe-input" id="<?php echo $cfPrefix; ?>-subject" type="text" name="subject"<?php
+                echo empty($cf['optional']) ? ' required' : ''; ?>
                    value="<?php echo osc_esc_html(osc_gui_kept('subject')); ?>" />
         </div>
     <?php } ?>

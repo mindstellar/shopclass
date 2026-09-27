@@ -400,6 +400,10 @@ msgstr ""
 msgid "Change"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-profile-content.php
+msgid "Change picture"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 msgid "Changes have been applied"
 msgstr ""
@@ -494,6 +498,7 @@ msgstr ""
 msgid "Connection test succeeded"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-profile-content.php
 #: oc-includes/osclass/helpers/hTheme.php
 msgid "Contact"
 msgstr ""
@@ -642,6 +647,10 @@ msgstr ""
 #: oc-includes/osclass/gui/account/user-profile-content.php
 #: oc-includes/osclass/helpers/hTheme.php
 msgid "Delete your account"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-profile-content.php
+msgid "Description"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
@@ -1027,6 +1036,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 msgid "Listings' settings have been updated"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-profile-content.php
+msgid "Location"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/nav.php
@@ -1456,12 +1469,12 @@ msgstr ""
 msgid "Phone too long."
 msgstr ""
 
-#: oc-includes/osclass/helpers/hUsers.php
-msgid "Photos"
+#: oc-includes/osclass/gui/account/user-profile-content.php
+msgid "Photo"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-profile-content.php
-msgid "Picture"
+#: oc-includes/osclass/helpers/hUsers.php
+msgid "Photos"
 msgstr ""
 
 #: oc-includes/osclass/classes/actions/UserActions.php
@@ -1891,6 +1904,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/parts/contact-form.php
 msgid "Subject"
+msgstr ""
+
+#: oc-includes/osclass/gui/parts/contact-form.php
+msgid "Subject (optional)"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminMain.php
@@ -2617,6 +2634,10 @@ msgstr ""
 msgid "Upgrade settings have been updated"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-profile-content.php
+msgid "Upload a picture"
+msgstr ""
+
 #: oc-includes/osclass/gui/account/parts/item-row.php
 #: oc-includes/osclass/helpers/hBilling.php
 msgid "Urgent"
@@ -2926,6 +2947,10 @@ msgstr ""
 msgid "Your data could not be prepared"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-profile-content.php
+msgid "Your details"
+msgstr ""
+
 #: oc-includes/osclass/gui/item-comments-content.php
 #: oc-includes/osclass/gui/item-send-friend-content.php
 #: oc-includes/osclass/gui/parts/contact-form.php
@@ -2982,6 +3007,10 @@ msgstr ""
 #: oc-includes/osclass/gui/item-send-friend-content.php
 #: oc-includes/osclass/gui/parts/contact-form.php
 msgid "Your name"
+msgstr ""
+
+#: oc-includes/osclass/gui/parts/contact-form.php
+msgid "Your name (optional)"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebBilling.php

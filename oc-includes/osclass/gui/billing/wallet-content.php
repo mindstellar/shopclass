@@ -68,6 +68,7 @@ $col = array(
 ?>
 <div class="oe-account">
 <div class="oe-account-main">
+<?php osc_run_hook('account_page_before', 'billing-wallet'); ?>
 <div class="oe-bill">
 
 
@@ -152,6 +153,7 @@ $col = array(
     </div>
 <?php } ?>
 </div>
+<?php osc_run_hook('account_page_after', 'billing-wallet'); ?>
 </div>
 
 <?php require ABS_PATH . 'oc-includes/osclass/gui/account/nav.php'; ?>

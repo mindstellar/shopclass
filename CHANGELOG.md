@@ -105,6 +105,8 @@ This is the fifth beta. Please try it on a copy of your site first, and tell us 
 - Jobs can carry a `unique_key` that folds repeated work into one waiting job. New `osc_job_enqueue_many()`, `osc_job_ensure()` and `osc_job_stats()`.
 - `php oc-cli.php jobs:status` shows pending, running, gave-up and the oldest pending job per type, and takes `--type=`.
 - **Your profile** has the account type, the neighbourhood, an About field for each language and a Download your data link. New hook `user_avatar_form`; the location fields carry `data-location-cascade`.
+- The profile form is grouped into Photo, Your details, Contact, Location and About you, with the picture first. New classes `.oe-group`, `.oe-grid`, `.oe-avatar-field` and `.oe-avatar-empty`.
+- The dashboard's greeting, buttons, heading and See all line carry classes a theme can hide. The credits pages fire `account_page_before` and `account_page_after`. The contact page marks name and subject optional.
 
 ### Breaking
 

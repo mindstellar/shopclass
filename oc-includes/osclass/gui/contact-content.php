@@ -36,7 +36,8 @@ $contactAside = trim((string) ob_get_clean());
             'prefix'  => 'oe-contact',
             'name'    => 'contact_form',
             'hint'    => _m('We reply to this address.'),
-            'subject' => true,
+            'subject'  => true,
+            'optional' => true,
             'captcha' => 'contact',
             'top'     => static function () {
                 osc_run_hook('contact_form_top');

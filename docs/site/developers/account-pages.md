@@ -66,6 +66,10 @@ you override — a bare `.oe-list-item {}` loses to core's `.oe-page .oe-list-it
 | `.oe-list-item` | one record | an `<li>`; holds a thumb, an `.oe-list-body` and an `.oe-price` |
 | `.oe-list-body` | the middle column of a record | holds the `<h3>` title and `.oe-meta` |
 | `.oe-meta` | a record's secondary line | date, status, category, row actions; wraps freely |
+| `.oe-dashboard-intro` | the dashboard's "Signed in as" line | a `<p>` |
+| `.oe-dashboard-actions` | the dashboard's two buttons under it | also carries `.oe-actions` |
+| `.oe-dashboard-title` | the dashboard's "Your latest listings" heading | an `<h2>` |
+| `.oe-dashboard-more` | the dashboard's "See all" link line | also carries `.oe-muted` |
 | `.oe-row-actions` | a record's action links | also carries `.oe-meta`; `.oe-danger-link` marks the destructive one |
 | `.oe-row-promote` | the paid-upgrades line under a listing | also carries `.oe-row-actions` |
 | `.oe-link-btn` | a button that looks like a link | inside an `.oe-inline-form` |
@@ -93,6 +97,10 @@ you override — a bare `.oe-list-item {}` loses to core's `.oe-page .oe-list-it
 | `.oe-contact-open` | the profile head's Message button | a link to `#oe-contact-dialog` |
 | `.oe-form-error` | why a contact form's send failed, inside the form | `role="alert"`; the same text is also a flash message |
 | `.oe-dialog` | a `<dialog>` core opens as a modal | holds `.oe-dialog-head` and `.oe-dialog-body`; shows in place without JavaScript |
+| `.oe-group` | a titled group of form fields | a `<fieldset>` with a `<legend>` |
+| `.oe-grid` | fields laid out two to a row where there is room | inside an `.oe-group` |
+| `.oe-avatar-field` | the profile picture and its upload control | holds the `.oe-avatar` and the file input |
+| `.oe-avatar-empty` | the placeholder picture when the member has none | also carries `.oe-avatar` |
 | `.oe-avatar` | the account holder's current picture on the profile page | a square image; core sizes and rounds it |
 | `.oe-danger` | the destructive block at the foot of a page | separated by a rule; holds a heading, a line of copy and one danger button |
 | `.oe-check` | a checkbox and its label on one line | the `<label>` wraps the control |
@@ -195,7 +203,8 @@ The `opt_logout` entry is always moved last, whatever the filter returns.
 
 Every account page fires two actions inside its content column. The argument is
 the page: `user-dashboard`, `user-items`, `user-alerts`, `user-profile`,
-`user-signin`, `user-custom` or `user-delete_account`.
+`user-signin`, `user-custom`, `user-delete_account`, and on the credits pages
+`billing-wallet`, `billing-buy` or `billing-orders`.
 
 ```php
 osc_add_hook('account_page_before', function ($page) {
@@ -211,8 +220,9 @@ osc_add_hook('account_page_before', function ($page) {
 
 Core's profile form has the account type (`b_company`), the neighbourhood
 (`cityArea`) and an About field for each language. Other languages sit in a
-`<details>` under the current one. The address fields, from country to postcode,
-are wrapped in `<div data-location-cascade>`, so a theme script can find them.
+`<details>` under the current one. The form is grouped in `<fieldset class="oe-group">`s: Photo, Your details,
+Contact, Location and About you. The Location group carries `data-location-cascade`,
+so a theme script can find the address fields.
 `user_avatar_form($user)` fires after the picture field and its Remove box. A
 "Your data" panel links to `osc_user_export_url()`.
 

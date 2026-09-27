@@ -182,6 +182,9 @@ $slotPages = array(
     'user-signin'         => $accountIn . 'user-signin-content.php',
     'user-custom'         => $accountIn . 'user-custom-content.php',
     'user-delete_account' => $guiDir . 'user-delete_account-content.php',
+    'billing-wallet'      => $guiDir . 'billing/wallet-content.php',
+    'billing-buy'         => $guiDir . 'billing/buy-content.php',
+    'billing-orders'      => $guiDir . 'billing/orders-content.php',
 );
 foreach ($slotPages as $slug => $file) {
     $src = (string) file_get_contents($file);
