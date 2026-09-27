@@ -1376,8 +1376,7 @@ msgstr ""
 msgid "Page title field is required"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-items-content.php
-#: oc-includes/osclass/gui/account/user-public-profile-content.php
+#: oc-includes/osclass/gui/page-fn.php
 msgid "Pages"
 msgstr ""
 

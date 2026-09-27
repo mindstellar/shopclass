@@ -260,10 +260,8 @@ class CWebUser extends WebSecBaseModel
                 $this->redirectTo(osc_user_profile_url());
                 break;
             case 'items':                   // view items user
-                $itemsPerPage =
-                    (Params::getParam('itemsPerPage') != '') ? Params::getParam('itemsPerPage')
-                        : 10;
-                $page         = (Params::getParam('iPage') > 0) ? Params::getParam('iPage') - 1 : 0;
+                $itemsPerPage = Params::getParamInt('itemsPerPage') > 0 ? Params::getParamInt('itemsPerPage') : 10;
+                $page         = Params::getParamInt('iPage') > 0 ? Params::getParamInt('iPage') - 1 : 0;
                 // The owner sees every listing they hold unless a status tab narrows it.
                 $itemType     = Params::getParamString('itemType') ?: 'all';
                 $total_items  =

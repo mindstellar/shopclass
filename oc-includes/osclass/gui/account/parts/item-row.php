@@ -71,7 +71,9 @@ if ($rowOwned) {
     $rowActions['edit']   = array('label' => _m('Edit'), 'url' => osc_item_edit_url());
     $rowActions['delete'] = array(
         'label'   => _m('Delete'),
-        'url'     => osc_item_delete_url(),
+        'url'     => osc_base_url(true),
+        'method'  => 'post',
+        'fields'  => array('page' => 'item', 'action' => 'item_delete', 'id' => (int) osc_item_id()),
         'class'   => 'oe-danger-link',
         'confirm' => sprintf(_m('Delete "%s"? This cannot be undone.'), osc_item_title()),
     );

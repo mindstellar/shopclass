@@ -77,6 +77,10 @@ an alert stored as values it also returns `countries`, `regions`, `cities` and
 
 `osc_get_raw_search()` has existed since Osclass 3, so the same code works on older cores.
 
+From 6.4.0, `osc_alert_criteria()` gives the same search as labelled
+`['label', 'value']` parts, and `osc_alert_summary()` gives it as one line. Both
+handle paused alerts.
+
 ## Paused alerts
 
 Upgrading to 6.4.0 converts every older alert to the stored form above. An alert holding

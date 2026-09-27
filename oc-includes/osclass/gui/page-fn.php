@@ -182,3 +182,16 @@ if (!function_exists('osc_gui_print_confirm_script')) {
             . 'if(a&&!window.confirm(a.getAttribute("data-osc-confirm"))){e.preventDefault();}});</script>';
     }
 }
+
+if (!function_exists('osc_gui_print_pager')) {
+    /**
+     * Print core's pager for the current item list, only when it leads to another page.
+     */
+    function osc_gui_print_pager(): void
+    {
+        $pager = osc_pagination_items();
+        if (strpos($pager, '<a') !== false) {
+            echo '<nav class="oe-pager" aria-label="' . osc_esc_html(_m('Pages')) . '">' . $pager . '</nav>';
+        }
+    }
+}

@@ -62,14 +62,7 @@ $listingLimit = osc_user_listing_limit();
         <?php } else {
             osc_gui_listing_list('user_items', true);
 
-            // osc_pagination_items() still returns markup when everything fits on
-            // one page -- a lone "1" with nothing to click. Render the pager only
-            // when it actually leads somewhere.
-            $itemsPager = osc_pagination_items();
-            if ($itemsPager !== '' && strpos($itemsPager, '<a') !== false) { ?>
-                <nav class="oe-pager" aria-label="<?php echo osc_esc_html(_m('Pages')); ?>"><?php
-                    echo $itemsPager; ?></nav>
-            <?php }
+            osc_gui_print_pager();
         } ?>
 
         <?php osc_run_hook('account_page_after', 'user-items'); ?>

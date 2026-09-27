@@ -229,7 +229,13 @@ $profileForm = (string) file_get_contents($accountIn . 'user-profile-content.php
 check('the profile form posts b_company', strpos($profileForm, 'UserForm::is_company_select(') !== false);
 check('the profile form posts cityArea', strpos($profileForm, 'UserForm::city_area_text(') !== false);
 check('the profile form fires user_avatar_form', strpos($profileForm, "osc_run_hook('user_avatar_form', ") !== false);
-check('the profile form never lists every city', strpos($profileForm, "osc_get_cities(osc_user_field('fk_i_region_id'))") === false
-    || strpos($profileForm, "osc_user_field('fk_i_region_id') ? osc_get_cities(") !== false);
+check('the profile form never lists every city', strpos(
+    $profileForm,
+    "osc_user_field('fk_i_region_id') ? osc_get_cities(osc_user_field('fk_i_region_id')) : array()"
+) !== false);
+
+// A token in a delete URL lands in logs, so core's own Delete posts a form.
+check("core's Delete is a POST action", (bool) preg_match("/'delete'\\] = array\\(.*?'method'\\s*=> 'post'/s", $row));
+check('the CSRF token is posted only to this site', strpos($rowParts, 'strpos($actionUrl, osc_base_url()) === 0') !== false);
 
 exit(harness_result());

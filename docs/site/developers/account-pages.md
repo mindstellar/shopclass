@@ -206,10 +206,10 @@ osc_add_hook('account_page_before', function ($page) {
 
 Core's profile form has the account type (`b_company`), the neighbourhood
 (`cityArea`) and an About field for each language. Other languages sit in a
-`<details>` under the current one. The country, region, city and neighbourhood
-fields are wrapped in `<div data-location-cascade>`, so a theme script can find
-them. `user_avatar_form($user)` fires inside the picture field. A "Your data"
-panel links to `osc_user_export_url()`.
+`<details>` under the current one. The address fields, from country to postcode,
+are wrapped in `<div data-location-cascade>`, so a theme script can find them.
+`user_avatar_form($user)` fires after the picture field and its Remove box. A
+"Your data" panel links to `osc_user_export_url()`.
 
 ## The public profile contact form
 
@@ -232,7 +232,7 @@ Listing lists pass a context: `dashboard`, `user_items`, `public_profile` or
 |---|---|
 | `listing_row_badges` | `['label' => …, 'class' => …]`; the class is an `.oe-badge` modifier. Core's keys: `status`, `premium`, `highlight`, `urgent` |
 | `listing_row_meta` | `['text' => …]`, plus `'url'` for a link or `'datetime'` for a `<time>`. Core's keys: `category`, `date`, `views` |
-| `listing_row_actions` | `['label' => …, 'url' => …, 'class' => …, 'confirm' => …]`. Add `'method' => 'post'` and `'fields' => [name => value]` for a button in a form with the CSRF token. `'group' => 'promote'` puts it on the paid-upgrades line. Core's keys: `edit`, `delete`, and `upgrade_<feature>` for each upgrade the owner can buy |
+| `listing_row_actions` | `['label' => …, 'url' => …, 'class' => …, 'confirm' => …]`. Add `'method' => 'post'` and `'fields' => [name => value]` for a button in a form with the CSRF token. `'group' => 'promote'` puts it on the paid-upgrades line. Core's keys: `edit`, `delete`, and on `user_items` only `upgrade_<feature>` for each upgrade the owner can buy |
 
 Core escapes every value. Add a Renew link on expired listings:
 
@@ -255,6 +255,10 @@ Each saved alert has its own actions through `alert_row_actions($actions, $alert
 in the same entry shape. Core's key is `unsubscribe`. To show an alert yourself,
 `osc_alert_criteria()` gives its search as `['label', 'value']` parts and
 `osc_alert_summary()` gives it as one line.
+
+`osc_item_upgrade_offers($item)` gives the upgrades as `['feature', 'label', 'credits']`
+data, for a list you draw yourself. `osc_gui_listing_list($context, $owned)` prints
+core's list for the current `items` loop, filters included.
 
 To draw the whole list yourself, return a string from `listing_list_html`. It
 gets `null`, the item rows and the context; anything but a string keeps core's list.

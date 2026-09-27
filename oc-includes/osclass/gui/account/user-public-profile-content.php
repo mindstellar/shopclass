@@ -69,12 +69,7 @@ $contactOpen = !$publicOwn && (!osc_reg_user_can_contact() || osc_is_web_user_lo
     <p class="oe-empty"><?php echo osc_esc_html(_m('Nothing published.')); ?></p>
 <?php } else { ?>
     <?php osc_gui_listing_list('public_profile', false); ?>
-    <?php $publicPager = osc_pagination_items();
-    // A lone "1" leads nowhere, so the pager shows only when it has a link.
-    if (strpos($publicPager, '<a') !== false) { ?>
-        <nav class="oe-pager" aria-label="<?php echo osc_esc_html(_m('Pages')); ?>"><?php
-            echo $publicPager; ?></nav>
-    <?php } ?>
+    <?php osc_gui_print_pager(); ?>
 <?php } ?>
 
 <?php if ($contactOpen) { ?>

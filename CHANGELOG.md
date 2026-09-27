@@ -113,8 +113,9 @@ This is the fourth beta. Please try it on a copy of your site first, and tell us
 
 ### Fixed
 
+- A page that shows a flash message or a refilled form is no longer sent as publicly cacheable.
 - Saving core's profile form reset the account type and neighbourhood, and it loaded every city when no region was set.
-- **Your listings** showed a blocked or spam listing as Published, and hid blocked, expired and pending ones unless a status was asked for.
+- **Your listings** showed a blocked or spam listing as Published, and hid blocked, expired and pending ones unless a status was asked for. It now shows them all, in themes with their own list too.
 - WebP photos can be uploaded. They were refused even when `webp` was an allowed extension, and it is now allowed by default.
 - A photo whose files cannot be saved shows an error instead of staying as a broken image.
 - Count helpers such as `osc_count_comments()` return 0, not -1, when nothing was loaded, so `if (osc_count_comments())` no longer passes on an empty page.

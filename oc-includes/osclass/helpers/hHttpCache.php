@@ -103,6 +103,10 @@ function osc_response_is_cacheable()
     // doesn't know the cookie list: a stale/tampered identity cookie, or a chosen locale (which
     // rendered this page in another language), makes the response per-visitor. Third-party
     // cookies are deliberately absent from this list and never downgrade the response.
+    // A flash message or a refilled form shows this visitor's own input.
+    if (!empty($_COOKIE['oc_flash']) || !empty($_COOKIE['oc_form'])) {
+        return false;
+    }
     foreach (osc_cache_relevant_cookies() as $name) {
         if (isset($_COOKIE[$name]) && $_COOKIE[$name] !== '') {
             return false;

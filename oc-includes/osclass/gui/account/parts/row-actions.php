@@ -37,7 +37,12 @@ foreach ((array) $rowActions as $action) {
                 ? ' data-osc-confirm="' . osc_esc_html((string) $action['confirm']) . '"' : '';
             if (($action['method'] ?? 'get') === 'post') { ?>
                 <form class="oe-inline-form nocsrf" method="post" action="<?php echo osc_esc_html((string) $action['url']); ?>">
-                    <?php echo osc_csrf_token_form();
+                    <?php
+                    // The token goes only to this site, never to a URL a plugin points elsewhere.
+                    $actionUrl = (string) $action['url'];
+                    if (strpos($actionUrl, osc_base_url()) === 0 || (($actionUrl[0] ?? '') === '/' && ($actionUrl[1] ?? '') !== '/')) {
+                        echo osc_csrf_token_form();
+                    }
                     foreach ((array) ($action['fields'] ?? array()) as $fieldName => $fieldValue) { ?>
                         <input type="hidden" name="<?php echo osc_esc_html((string) $fieldName); ?>" value="<?php
                             echo osc_esc_html((string) $fieldValue); ?>">
