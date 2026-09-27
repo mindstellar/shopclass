@@ -253,6 +253,8 @@ action show_item
 action theme_activate
 action uploaded_file
 action uploaded_resource
+action user_contact_form
+action user_contact_form_after
 action user_dashboard
 action user_edit_completed
 action user_form
@@ -514,6 +516,8 @@ filter upload_image_extension
 filter upload_image_mime
 filter user_add_flash_error
 filter user_bulk_filter
+filter user_contact_throttle_max
+filter user_contact_throttle_window
 filter user_edit_flash_error
 filter user_info
 filter user_menu_filter

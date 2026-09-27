@@ -87,6 +87,7 @@ you override — a bare `.oe-list-item {}` loses to core's `.oe-page .oe-list-it
 | `.oe-label` | the field's `<label>` | `for` always matches a real control id |
 | `.oe-input` | a control core renders itself | absent on controls `UserForm` renders — see below |
 | `.oe-hint` | help text under a field | bound with `aria-describedby` |
+| `.oe-profile-head` | the top of a public profile | holds the `.oe-avatar`, an `.oe-meta` line, and the owner's Edit button |
 | `.oe-avatar` | the account holder's current picture on the profile page | a square image; core sizes and rounds it |
 | `.oe-danger` | the destructive block at the foot of a page | separated by a rule; holds a heading, a line of copy and one danger button |
 | `.oe-check` | a checkbox and its label on one line | the `<label>` wraps the control |
@@ -200,6 +201,18 @@ osc_add_hook('account_page_before', function ($page) {
 ```
 
 `account_page_after` is the same, at the foot of the column.
+
+## The public profile contact form
+
+The public profile has a contact form, unless the visitor owns the profile, or
+only registered users may write and the visitor is signed out. It posts
+`page=user&action=contact_post` with `yourName`, `yourEmail`, `phoneNumber` and
+`message`. After a failed send, `osc_gui_kept()` gives back what was typed.
+
+`user_contact_form($user)` fires inside the form, before the button, and
+`user_contact_form_after($user)` after it. Sends are limited per visitor by the
+`user_contact_throttle_max` (15) and `user_contact_throttle_window` (3600
+seconds) filters.
 
 ## Changing the listing rows
 

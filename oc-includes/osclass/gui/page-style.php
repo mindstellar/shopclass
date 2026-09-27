@@ -265,6 +265,7 @@ if (!defined('ABS_PATH')) {
   /* Set apart from everything routine above it, not decorated. */
   .oe-page .oe-danger{margin-block-start:3rem;padding-block-start:1.5rem;border-block-start:1px solid var(--oe-rule);}
   .oe-page .oe-danger h2{color:var(--oe-danger);}
+  .oe-page .oe-profile-head{margin-block-end:1.5rem;}
   .oe-page .oe-avatar{display:block;inline-size:96px;block-size:96px;object-fit:cover;border-radius:50%;background:var(--oe-bench-sunk);margin-block-end:.6rem;}
   .oe-page .oe-thumb{
     flex:none; display:block; inline-size:5.5rem; block-size:auto; aspect-ratio:6/5;

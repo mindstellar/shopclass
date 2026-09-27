@@ -209,4 +209,14 @@ check('the row offers paid upgrades on the owner list', strpos($row, 'osc_item_u
 // A <form> inside a <p> closes the paragraph, so action lines must not be one.
 check('action lines are not paragraphs', strpos($row, '<p class="oe-meta oe-row-actions') === false);
 
+$profile = (string) file_get_contents($accountIn . 'user-public-profile-content.php');
+check('the public profile posts user contact_post', strpos($profile, 'value="contact_post"') !== false
+    && strpos($profile, 'name="page" value="user"') !== false);
+check('the public profile form fires user_contact_form', strpos($profile, "osc_run_hook('user_contact_form', ") !== false);
+check('the public profile form refills after a failed send', strpos($profile, "osc_gui_kept('message_body')") !== false);
+$nonSecure = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebUserNonSecure.php');
+preg_match("/case 'contact_post':.*?break;/s", $nonSecure, $contactCase);
+check('user contact_post checks the CSRF token', isset($contactCase[0]) && strpos($contactCase[0], 'osc_csrf_check()') !== false);
+check('user contact_post is throttled', isset($contactCase[0]) && strpos($contactCase[0], "ActionThrottle::exceeded(\n                    'user_contact'") !== false);
+
 exit(harness_result());

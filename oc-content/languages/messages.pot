@@ -350,6 +350,10 @@ msgstr ""
 msgid "Bump"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-public-profile-content.php
+msgid "Business"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebBilling.php
 #: oc-includes/osclass/helpers/hBilling.php
 msgid "Buy credits"
@@ -665,6 +669,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/account/parts/item-row.php
 msgid "Edit"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-public-profile-content.php
+msgid "Edit your profile"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-recover-content.php
@@ -1021,6 +1029,7 @@ msgstr ""
 msgid "Member since %s"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-public-profile-content.php
 #: oc-includes/osclass/gui/contact-content.php
 #: oc-includes/osclass/gui/item-contact-content.php
 #: oc-includes/osclass/gui/item-send-friend-content.php
@@ -1262,6 +1271,10 @@ msgstr ""
 msgid "Only registered users are allowed to post listings"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebUserNonSecure.php
+msgid "Only registered users can send a message."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebItem.php
 msgid "Only registered users can share listings"
 msgstr ""
@@ -1389,6 +1402,7 @@ msgstr ""
 msgid "Phone invalid."
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-public-profile-content.php
 #: oc-includes/osclass/gui/item-contact-content.php
 msgid "Phone number"
 msgstr ""
@@ -1412,6 +1426,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebContact.php
 msgid "Please enter a correct email"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebUserNonSecure.php
+msgid "Please enter your name, a valid email address and a message."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebItem.php
@@ -1685,6 +1703,7 @@ msgstr ""
 msgid "Send"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-public-profile-content.php
 #: oc-includes/osclass/gui/contact-content.php
 #: oc-includes/osclass/gui/item-contact-content.php
 msgid "Send message"
@@ -1731,6 +1750,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/billing/orders-content.php
 msgid "Sign in to see your orders."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-public-profile-content.php
+msgid "Sign in to write to this member."
 msgstr ""
 
 #: oc-includes/osclass/gui/account/nav.php
@@ -2661,6 +2684,10 @@ msgstr ""
 msgid "Widget updated correctly"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-public-profile-content.php
+msgid "Write to %s"
+msgstr ""
+
 #: oc-includes/osclass/helpers/hBilling.php
 msgid ""
 "You are at your listing limit. Free up a listing -- delete one or let one "
@@ -2747,6 +2774,7 @@ msgid "You're already subscribed"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebItem.php
+#: oc-includes/osclass/classes/controller/CWebUserNonSecure.php
 msgid "You've sent too many messages recently. Please try again later."
 msgstr ""
 
@@ -2824,6 +2852,7 @@ msgstr ""
 msgid "Your data could not be prepared"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-public-profile-content.php
 #: oc-includes/osclass/gui/contact-content.php
 #: oc-includes/osclass/gui/item-comments-content.php
 #: oc-includes/osclass/gui/item-contact-content.php
@@ -2877,6 +2906,7 @@ msgstr ""
 msgid "Your listings and messages are removed with it. This cannot be undone."
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-public-profile-content.php
 #: oc-includes/osclass/gui/contact-content.php
 #: oc-includes/osclass/gui/item-comments-content.php
 #: oc-includes/osclass/gui/item-contact-content.php

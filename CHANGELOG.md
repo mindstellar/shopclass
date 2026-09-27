@@ -93,6 +93,7 @@ This is the fourth beta. Please try it on a copy of your site first, and tell us
 - **Your listings** has status tabs, shows the listing limit, each listing's views, and a Delete link that asks first. New hooks `account_page_before` and `account_page_after` on every account page, and filters `listing_row_badges`, `listing_row_meta`, `listing_row_actions` and `listing_list_html` for listing lists.
 - **Your listings** offers the paid upgrades the seller can buy for each live listing. A `listing_row_actions` entry can be a POST button with the CSRF token. New helper `osc_item_upgrade_offers()`.
 - A plugin's account page takes its heading from the title its route was registered with.
+- The public profile shows the member's picture, a Business badge, an Edit link on your own profile, and a contact form with the captcha. New hooks `user_contact_form` and `user_contact_form_after`.
 
 ### Breaking
 
@@ -192,6 +193,7 @@ This is the fourth beta. Please try it on a copy of your site first, and tell us
 
 ### Security
 
+- The public profile's contact form checks the CSRF token, the sender's fields and the member's status, and limits how many messages one visitor sends.
 - Deleting your own listing needs a CSRF token, so another site can no longer delete it through a link. `osc_item_delete_url()` adds the token; e-mailed delete links keep working through the listing's secret.
 - A new search alert stores the search's values, not SQL, and runs through the same builder as the search page.
 - The upgrade converts every saved alert to its search values and discards its stored SQL, so back up `t_alerts` first if you may need it. An alert holding anything core did not write is paused and listed under **Users → Alerts**; on a large site `php oc-cli.php jobs:work` finishes the conversion at once.

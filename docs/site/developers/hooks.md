@@ -136,7 +136,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 525 names. Generated from the source; do not edit by hand.
+Core fires 529 names. Generated from the source; do not edit by hand.
 
 ### Admin (77)
 
@@ -330,7 +330,7 @@ Core fires 525 names. Generated from the source; do not edit by hand.
 | `hook_email_admin_new_user` | action | `$user` | `oc-includes/osclass/classes/actions/UserActions.php` |
 | `hook_email_alert_validation` | action | `Alerts::newInstance()->findByPrimaryKey($alertID), $email, $secret` | `oc-includes/osclass/helpers/hSearch.php` |
 | `hook_email_comment_validated` | action | `$aComment` | `oc-includes/osclass/classes/controller/admin/CAdminItemComments.php` |
-| `hook_email_contact_user` | action | `Params::getParam('id'), Params::getParam('yourEmail'), Params::getParam('yourName'), Params::getParam('phoneNumber'), Params::getParam('message')` | `oc-includes/osclass/classes/controller/CWebUserNonSecure.php` |
+| `hook_email_contact_user` | action | `(int) $user['pk_i_id'], $yourEmail, $yourName, $phone, $message` | `oc-includes/osclass/classes/controller/CWebUserNonSecure.php` |
 | `hook_email_item_inquiry` | action | `$aItem` | `oc-includes/osclass/classes/actions/ItemActions.php` |
 | `hook_email_item_validation` | action | `$item` | `oc-includes/osclass/classes/actions/ItemActions.php` |
 | `hook_email_item_validation_non_register_user` | action | `$item` | `oc-includes/osclass/classes/actions/ItemActions.php` |
@@ -669,7 +669,7 @@ Core fires 525 names. Generated from the source; do not edit by hand.
 | `theme_screenshot_url` | filter | `$url, $theme` | `oc-includes/osclass/helpers/hTheme.php` |
 | `theme_url` | filter | `$script` | `oc-includes/osclass/classes/Scripts.php` |
 
-### User (39)
+### User (43)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -695,6 +695,10 @@ Core fires 525 names. Generated from the source; do not edit by hand.
 | `pre_user_post` | action | — | `oc-includes/osclass/classes/actions/UserActions.php` |
 | `user_add_flash_error` | filter | `$flash_error` | `oc-includes/osclass/classes/actions/UserActions.php` |
 | `user_bulk_filter` | filter | `$bulk_options` | `oc-includes/osclass/classes/controller/admin/CAdminUsers.php` |
+| `user_contact_form` | action | `$publicUser` | `oc-includes/osclass/gui/account/user-public-profile-content.php` |
+| `user_contact_form_after` | action | `$publicUser` | `oc-includes/osclass/gui/account/user-public-profile-content.php` |
+| `user_contact_throttle_max` | filter | `15` | `oc-includes/osclass/classes/controller/CWebUserNonSecure.php` |
+| `user_contact_throttle_window` | filter | `3600` | `oc-includes/osclass/classes/controller/CWebUserNonSecure.php` |
 | `user_dashboard` | action | — | `oc-includes/osclass/gui/account/user-dashboard-content.php` |
 | `user_edit_completed` | action | `$userId` | `oc-includes/osclass/classes/actions/UserActions.php` |
 | `user_edit_flash_error` | filter | `$flash_error, $userId` | `oc-includes/osclass/classes/actions/UserActions.php` |

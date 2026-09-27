@@ -228,40 +228,74 @@ class CWebUserNonSecure extends BaseModel
                 $this->doView(osc_locate_template(array('user-public-profile.php'), 'user-public-profile'));
                 break;
             case 'contact_post':
-                $user = User::newInstance()->findByPrimaryKey(Params::getParam('id'));
-                View::newInstance()->_exportVariableToView('user', $user);
-                if (osc_captcha_enabled() && !osc_check_captcha()) {
-                    osc_add_flash_error_message(_m('Please complete the security check.'));
-                    Session::newInstance()
-                        ->_setForm('yourEmail', Params::getParam('yourEmail'));
-                    Session::newInstance()->_setForm('yourName', Params::getParam('yourName'));
-                    Session::newInstance()
-                        ->_setForm('phoneNumber', Params::getParam('phoneNumber'));
-                    Session::newInstance()
-                        ->_setForm('message_body', Params::getParam('message'));
-                    $this->redirectTo(osc_user_public_profile_url());
+                osc_csrf_check();
+                $user = User::newInstance()->findByPrimaryKey(Params::getParamInt('id'));
+                if (!$user || !$user['b_active'] || !$user['b_enabled']) {
+                    $this->do404();
 
-                    return false; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
+                    return;
                 }
-                $banned = osc_is_banned(Params::getParam('yourEmail'));
+                View::newInstance()->_exportVariableToView('user', $user);
+                $back = osc_user_public_profile_url((int) $user['pk_i_id']);
+
+                if (osc_reg_user_can_contact() && !osc_is_web_user_logged_in()) {
+                    osc_add_flash_warning_message(_m('Only registered users can send a message.'));
+                    $this->redirectTo($back);
+                }
+
+                $yourEmail = Params::getParamString('yourEmail');
+                $yourName  = Params::getParamString('yourName');
+                $phone     = Params::getParamString('phoneNumber');
+                $message   = Params::getParamString('message');
+                $keep      = static function () use ($yourEmail, $yourName, $phone, $message) {
+                    $session = Session::newInstance();
+                    $session->_setForm('yourEmail', $yourEmail);
+                    $session->_setForm('yourName', $yourName);
+                    $session->_setForm('phoneNumber', $phone);
+                    $session->_setForm('message_body', $message);
+                };
+
+                if (osc_captcha_enabled() && !osc_check_captcha()) {
+                    $keep();
+                    osc_add_flash_error_message(_m('Please complete the security check.'));
+                    $this->redirectTo($back);
+                }
+                if ($yourName === '' || trim($message) === '' || !osc_validate_email($yourEmail)) {
+                    $keep();
+                    osc_add_flash_error_message(_m('Please enter your name, a valid email address and a message.'));
+                    $this->redirectTo($back);
+                }
+
+                $banned = osc_is_banned($yourEmail);
                 if ($banned == 1) {
                     osc_add_flash_error_message(_m('Your current email is not allowed'));
-                    $this->redirectTo(osc_user_public_profile_url());
+                    $this->redirectTo($back);
                 } elseif ($banned == 2) {
                     osc_add_flash_error_message(_m('Your current IP is not allowed'));
-                    $this->redirectTo(osc_user_public_profile_url());
+                    $this->redirectTo($back);
+                }
+
+                if (\mindstellar\security\ActionThrottle::exceeded(
+                    'user_contact',
+                    (int) osc_apply_filter('user_contact_throttle_max', 15),
+                    (int) osc_apply_filter('user_contact_throttle_window', 3600)
+                )) {
+                    $keep();
+                    osc_add_flash_error_message(_m("You've sent too many messages recently. Please try again later."));
+                    $this->redirectTo($back);
                 }
 
                 osc_run_hook(
                     'hook_email_contact_user',
-                    Params::getParam('id'),
-                    Params::getParam('yourEmail'),
-                    Params::getParam('yourName'),
-                    Params::getParam('phoneNumber'),
-                    Params::getParam('message')
+                    (int) $user['pk_i_id'],
+                    $yourEmail,
+                    $yourName,
+                    $phone,
+                    $message
                 );
+                \mindstellar\security\ActionThrottle::record('user_contact');
                 osc_add_flash_ok_message(_m('Your email has been sent properly.'));
-                $this->redirectTo(osc_user_public_profile_url());
+                $this->redirectTo($back);
                 break;
             default:
                 $this->redirectTo(osc_user_login_url());
