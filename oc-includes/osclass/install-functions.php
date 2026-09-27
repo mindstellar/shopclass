@@ -814,6 +814,10 @@ function oc_install()
 
     try {
         $db->executeScript($sql);
+        // ImageMagick keeps photo colours and reads HEIC, so a new site uses it where it is loaded.
+        if (extension_loaded('imagick')) {
+            $db->execute('UPDATE ' . DB_TABLE_PREFIX . "t_preference SET s_value = '1' WHERE s_section = 'osclass' AND s_name = 'use_imagick'");
+        }
     } catch (\mindstellar\database\DbException $e) {
         return install_db_error_message($e->getCode(), array('dbhost' => $dbhost, 'dbname' => $dbname));
     }

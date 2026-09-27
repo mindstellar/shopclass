@@ -1817,6 +1817,10 @@ class ItemForm extends Form
         $aExt              = explode(',', osc_allowed_extension());
         $allowedExtensions = "'" . implode("','", $aExt) . "'";
         $acceptAttr        = '.' . implode(',.', $aExt);
+        // The browser turns HEIC into JPEG before upload, so it is offered only while it can.
+        if (\mindstellar\storage\BrowserResize::config() !== null) {
+            $acceptAttr .= ',.heic,.heif,image/heic,image/heif';
+        }
         $maxSize           = osc_max_size_kb() * 1024;
         $maxImages         = self::maxImagesForForm();
         $isAdd             = Params::getParam('action') === 'item_add';
@@ -1874,6 +1878,7 @@ class ItemForm extends Form
                         sizeError: "<?php echo osc_esc_js(__('{file} is too large.')); ?>",
                         tooMany: "<?php echo osc_esc_js(__('Too many images. The limit is {limit}.')); ?>",
                         failUpload: "<?php echo osc_esc_js(__('{file} could not be uploaded.')); ?>",
+                        heicError: "<?php echo osc_esc_js(__('{file} is a HEIC photo this browser cannot convert. Save it as JPEG and try again.')); ?>",
                         primary: "<?php echo osc_esc_js(__('Primary')); ?>",
                         makePrimary: "<?php echo osc_esc_js(__('Make primary image')); ?>",
                         "delete": "<?php echo osc_esc_js(__('Delete')); ?>",

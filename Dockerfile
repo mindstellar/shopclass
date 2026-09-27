@@ -27,13 +27,22 @@ LABEL org.opencontainers.image.title="Shopclass" \
 RUN apk add --no-cache nginx nginx-mod-http-cache-purge supervisor curl unzip tzdata msmtp ca-certificates
 
 # PHP extensions Shopclass uses in production (superset of composer's ext-*
-# requires, plus opcache and the memcached object-cache driver). imagick is left
-# out to keep the image lean — the app's image handling works on gd.
+# requires, plus opcache and the memcached object-cache driver). imagick keeps photo
+# colours; its policy allows only photo formats, with size limits.
 ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
 RUN chmod +x /usr/local/bin/install-php-extensions \
     && install-php-extensions \
-        bcmath curl exif fileinfo gd gettext intl mbstring memcached mysqli opcache zip \
-    && rm /usr/local/bin/install-php-extensions
+        bcmath curl exif fileinfo gd gettext imagick intl mbstring memcached mysqli opcache zip \
+    && rm /usr/local/bin/install-php-extensions \
+    # Only the JPEG, WebP, PNG and GIF coders are used. The other coders install themselves
+    # with ImageMagick, so they are forbidden; their libraries then go, and apk keeps any
+    # library something still needs.
+    && apk add --no-cache '!imagemagick-heic' '!imagemagick-jp2' '!imagemagick-jxl' '!imagemagick-pango' \
+        '!imagemagick-pdf' '!imagemagick-raw' '!imagemagick-svg' '!imagemagick-tiff' \
+    && apk del --no-cache ghostscript jbig2dec librsvg glycin-svg glycin-image-rs libglycin gdk-pixbuf \
+        libjxl libhwy libraw libheif libheif-aom libheif-dav1d libheif-jpeg libheif-libde265 \
+        libheif-openjpeg libheif-x265 libde265 x265-libs openjpeg tiff pango cairo shared-mime-info
+COPY .docker/prod/imagemagick-policy.xml /etc/ImageMagick-7/policy.xml
 
 # Runtime PHP config: production OPcache + a larger upload ceiling. clear_env=no
 # lets php-fpm workers see the container environment (DB_*, WEB_PATH, ...) via

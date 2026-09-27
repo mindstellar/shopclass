@@ -70,6 +70,10 @@ function oscPhotoUploader(root, cfg) {
     }
 
     function validate(file) {
+        // HEIC reaches the server only as the JPEG the browser makes of it.
+        if (isHeic(file)) {
+            return canConvert() ? null : fill(t('heicError', '{file} is a HEIC photo this browser cannot convert. Save it as JPEG and try again.'), { file: file.name });
+        }
         if (exts.length && exts.indexOf(extOf(file.name)) < 0) {
             return fill(t('typeError', '{file} has an invalid extension.'), { file: file.name, extensions: exts.join(', ') });
         }
@@ -82,9 +86,15 @@ function oscPhotoUploader(root, cfg) {
 
     var resize = root.getAttribute('data-osc-resize') === 'off' ? null : cfg.resize;
     var RESIZABLE = ['image/jpeg', 'image/png', 'image/webp'];
+
+    function isHeic(file) { return /^(heic|heif)$/.test(extOf(file.name)) || /^image\/hei[cf]/.test(file.type); }
+    function canConvert() { return !!resize && typeof HTMLCanvasElement.prototype.toBlob === 'function'; }
     var queue = Promise.resolve();
 
     function wantsResize(file) {
+        if (isHeic(file)) {
+            return canConvert();
+        }
         if (!resize || RESIZABLE.indexOf(file.type) < 0 || typeof HTMLCanvasElement.prototype.toBlob !== 'function') {
             return false;
         }
@@ -144,8 +154,28 @@ function oscPhotoUploader(root, cfg) {
         return out;
     }
 
+    // A HEIC photo always becomes a JPEG, shrunk to the box; rejects when the browser cannot decode it.
+    function toJpeg(file) {
+        return decode(file).then(function (src) {
+            var w = src.naturalWidth || src.width;
+            var h = src.naturalHeight || src.height;
+            var box = fitBox(w, h) || [w, h];
+            var canvas = draw(src, w, h, box[0], box[1]);
+            if (src.close) { src.close(); }
+            return new Promise(function (ok) { canvas.toBlob(ok, 'image/jpeg', resize.quality); });
+        }).then(function (blob) {
+            if (!blob || blob.type !== 'image/jpeg') {
+                throw new Error('encode');
+            }
+            return new File([blob], file.name.replace(/\.(heic|heif)$/i, '') + '.jpg', { type: 'image/jpeg', lastModified: file.lastModified });
+        });
+    }
+
     // Resolves with the file to send: the original whenever shrinking fails or does not help.
     function shrink(file) {
+        if (isHeic(file)) {
+            return toJpeg(file);
+        }
         if (!wantsResize(file)) {
             return Promise.resolve(file);
         }
@@ -312,6 +342,12 @@ function oscPhotoUploader(root, cfg) {
                 return;
             }
             send(out, item, prog, bar, objURL);
+        }).catch(function () {
+            // Only a HEIC photo can fail here: the browser could not decode it.
+            URL.revokeObjectURL(objURL);
+            item.remove();
+            refreshPrimary();
+            showError(fill(t('heicError', '{file} is a HEIC photo this browser cannot convert. Save it as JPEG and try again.'), { file: file.name }));
         });
     }
 

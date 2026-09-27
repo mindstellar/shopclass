@@ -30,6 +30,7 @@ This is the third beta. Please try it on a copy of your site first, and tell us 
 
 - **Media → Settings → Photo format** replaces Force JPEG: keep the original format (default), save as JPEG, or save as WebP (about a third smaller). A WebP upload now stays WebP.
 - The installer can remove an install that did not finish and start again.
+- The listing form takes HEIC photos while Browser resize is on: the browser turns them into JPEG before upload.
 - Public profiles and the contact page have a meta description.
 - An update channel (stable, release candidates or betas) replaces the prerelease switch, and security releases can install themselves, with an e-mail to the admin. Off by default.
 - The core updater checks each download against GitHub's checksum.
@@ -225,6 +226,7 @@ This is the third beta. Please try it on a copy of your site first, and tell us 
 
 ### Changed
 
+- The Docker image includes ImageMagick, locked to photo formats and about 30 MB larger, and new installs use it where it is loaded. With ImageMagick, wide-colour and CMYK photos keep their colours. **JPEG quality** is now **Photo quality**, since it sets WebP quality too.
 - The release no longer ships the Sample Forms, Sample Widgets and Test Payments plugins. The two samples install from the market; sites that have them keep them.
 - Each page of search results points its canonical link at itself, not at page 1, so listings that only deeper pages show can be found.
 - Releases ship as `shopclass_v*.zip`. `osclass_v*.zip` still ships with each release for sites updating from older versions, and the updater accepts either.

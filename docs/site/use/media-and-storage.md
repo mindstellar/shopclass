@@ -42,6 +42,10 @@ and drops the photo's location data. JPEG, PNG and WebP keep their format.
 While **Original size** is on, only photos over the maximum size are shrunk.
 A theme can turn it off with `data-osc-resize="off"` on the uploader.
 
+While Browser resize is on, the listing form also takes **HEIC** photos, the iPhone's
+format. The browser turns them into JPEG before upload, so the server never sees HEIC.
+Safari can do this; a browser that cannot read HEIC says so and uploads nothing.
+
 ## Photo format
 
 **Photo format** says how new photos are saved:

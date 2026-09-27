@@ -118,7 +118,7 @@ final class MediaSettingsForm
                 ->default('original')
             ->number(
                 'jpeg_quality',
-                __('JPEG quality'),
+                __('Photo quality'),
                 __('Compression quality for saved JPEG and WebP photos, from 1 (smallest file) to '
                    . '100 (best quality). 82 is a good balance.')
             )

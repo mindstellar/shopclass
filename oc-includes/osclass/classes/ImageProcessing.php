@@ -49,7 +49,7 @@ class ImageProcessing
             throw new RuntimeException(sprintf(__('%s is corrupt or broken!'), $imagePath));
         }
 
-        $this->image_info = getimagesize($imagePath);
+        $this->image_info = self::imageInfo($imagePath);
         if (!is_array($this->image_info)) {
             throw new RuntimeException(sprintf(__('%s is corrupt or broken!'), $imagePath));
         }
@@ -67,6 +67,7 @@ class ImageProcessing
             } catch (ImagickException $e) {
                 throw new RuntimeException(sprintf(__('%s is corrupt or broken!'), $imagePath));
             }
+            $this->toSrgb();
 
             $geometry     = $this->im->getImageGeometry();
             $this->width  = $geometry['width'];
@@ -133,7 +134,7 @@ class ImageProcessing
      */
     public static function pixelCount($imagePath)
     {
-        $info = @getimagesize($imagePath);
+        $info = self::imageInfo($imagePath);
         if (!is_array($info)) {
             return 0;
         }
@@ -150,6 +151,39 @@ class ImageProcessing
         }
 
         return $pixels;
+    }
+
+    /**
+     * The image's width, height and type, as getimagesize() gives them.
+     *
+     * @param string $imagePath
+     *
+     * @return array<int|string,mixed>|null null when the file is not an image
+     */
+    public static function imageInfo($imagePath)
+    {
+        $info = @getimagesize($imagePath);
+
+        return is_array($info) ? $info : null;
+    }
+
+    /**
+     * Convert to standard sRGB before the colour profile is stripped on save, so a wide-gamut
+     * phone photo or a CMYK one keeps its colours. The profile is CC0, from Compact-ICC-Profiles.
+     *
+     * @return void
+     */
+    private function toSrgb()
+    {
+        try {
+            if ($this->im->getImageProfiles('icc', false) !== array()) {
+                $this->im->profileImage('icc', (string)file_get_contents(dirname(__DIR__) . '/icc/sRGB-v2-micro.icc'));
+            } elseif ($this->im->getImageColorspace() === Imagick::COLORSPACE_CMYK) {
+                $this->im->transformImageColorspace(Imagick::COLORSPACE_SRGB);
+            }
+        } catch (ImagickException $e) {
+            // Colours stay as they were; the photo itself is still usable.
+        }
     }
 
     /**

@@ -125,7 +125,7 @@ final class UploadMimes
             return false;
         }
 
-        return function_exists('getimagesize') && is_array(@getimagesize($path)) && !self::tooManyPixels($path);
+        return \ImageProcessing::imageInfo($path) !== null && !self::tooManyPixels($path);
     }
 
     /**

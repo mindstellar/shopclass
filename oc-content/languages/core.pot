@@ -4978,10 +4978,6 @@ msgstr ""
 msgid "Its saved search could not be read."
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
-msgid "JPEG quality"
-msgstr ""
-
 #: oc-admin/themes/modern/tools/system-info.php
 msgid "JSON"
 msgstr ""
@@ -7305,6 +7301,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Photo format"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
+msgid "Photo quality"
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
@@ -11807,6 +11807,12 @@ msgstr ""
 
 #: oc-includes/osclass/classes/form/ItemForm.php
 msgid "{file} has an invalid extension. Valid extension(s): {extensions}."
+msgstr ""
+
+#: oc-includes/osclass/classes/form/ItemForm.php
+msgid ""
+"{file} is a HEIC photo this browser cannot convert. Save it as JPEG and try "
+"again."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/ui/PhotoGrid.php
