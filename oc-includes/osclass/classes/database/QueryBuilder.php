@@ -558,9 +558,16 @@ class QueryBuilder
 
         // Grouped: count the number of groups by wrapping the grouped query in a
         // derived table, so count() honours GROUP BY (and HAVING) instead of
-        // silently dropping them.
-        $inner = 'SELECT 1 FROM ' . $this->quoteTable($this->table);
-        $bindings = [];
+        // silently dropping them. A selectRaw() stays in, since HAVING may name it.
+        $selectSql = '1';
+        $bindings  = [];
+        foreach ($this->columns as $column) {
+            if (is_array($column)) {
+                $selectSql .= ', ' . $column['sql'];
+                $bindings   = array_merge($bindings, $column['params']);
+            }
+        }
+        $inner = 'SELECT ' . $selectSql . ' FROM ' . $this->quoteTable($this->table);
         $inner .= $this->compileJoins();
         [$whereSql, $whereBindings] = $this->compileWheres();
         $inner .= $whereSql;
@@ -903,15 +910,14 @@ class QueryBuilder
     }
 
     /**
-     * Shared whereGroup()/orWhereGroup() implementation. Runs the callback
-     * against a fresh builder for the same table and captures its where
-     * descriptors as a nested, parenthesised group.
+     * Shared whereNull() family implementation.
      *
-     * @param callable $fn
-     * @param string   $boolean 'AND' or 'OR'
+     * @param string $column
+     * @param bool   $null    true for IS NULL, false for IS NOT NULL
+     * @param string $boolean 'AND' or 'OR'
      *
      * @return self
-     * @throws DbException when the callback does not return a QueryBuilder
+     * @throws DbException on an invalid identifier
      */
     private function addNull(string $column, bool $null, string $boolean): self
     {
@@ -923,10 +929,15 @@ class QueryBuilder
     }
 
     /**
+     * Shared whereGroup()/orWhereGroup() implementation. Runs the callback
+     * against a fresh builder for the same table and captures its where
+     * descriptors as a nested, parenthesised group.
+     *
      * @param callable $fn
-     * @param string   $boolean
+     * @param string   $boolean 'AND' or 'OR'
      *
      * @return self
+     * @throws DbException when the callback does not return a QueryBuilder
      */
     private function addGroup(callable $fn, string $boolean): self
     {

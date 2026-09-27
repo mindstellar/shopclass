@@ -92,6 +92,13 @@ pin('selectRaw counts per listing through an aliased join', array('1' => '2', '2
     'pk_i_id'
 ));
 
+$grouped = $items()
+    ->selectRaw('COUNT(r.pk_i_id) AS n_pic')
+    ->leftJoin('qb_res AS r', 'r.fk_i_item_id', '=', 'i.pk_i_id')
+    ->groupBy('i.pk_i_id');
+pin('count() of a grouped query counts the groups', 3, $grouped->count());
+pin('...and a HAVING on a selectRaw name still counts', 1, $grouped->having('n_pic', '>', 1)->count());
+
 // A selectRaw placeholder binds before the where's, in the order they appear.
 $q = $items()->selectRaw('i.pk_i_id + ? AS shifted', array(100))->where('i.pk_i_id', 2);
 pin('selectRaw bindings come before where bindings', array(100, 2), $q->getBindings());
