@@ -228,6 +228,18 @@ try {
 }
 check('an SVG is not opened as a photo', $threw);
 
+// A format getimagesize() reads but no photo needs must never reach a decoder.
+imagebmp(imagecreatetruecolor(4, 4), $tmpDir . '/image.jpg');
+pin('a BMP, even named .jpg, is not a photo', null, ImageProcessing::imageInfo($tmpDir . '/image.jpg'));
+$threw = false;
+try {
+    ImageProcessing::fromFile($tmpDir . '/image.jpg');
+} catch (RuntimeException $e) {
+    $threw = true;
+}
+check('and the image class will not open it', $threw);
+check('nor is it an allowed image', !UploadMimes::isAllowedImage($tmpDir . '/image.jpg'));
+
 array_map('unlink', glob($tmpDir . '/*'));
 @rmdir($tmpDir);
 

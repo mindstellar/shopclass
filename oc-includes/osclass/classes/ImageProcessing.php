@@ -28,6 +28,14 @@ class ImageProcessing
     private $watermarked = false;
     private $use_imagick = false;
 
+    /** The photo formats read, by getimagesize() type, with their ImageMagick coder. */
+    private const PHOTO_CODERS = array(
+        IMAGETYPE_JPEG => 'jpeg',
+        IMAGETYPE_PNG  => 'png',
+        IMAGETYPE_GIF  => 'gif',
+        IMAGETYPE_WEBP => 'webp',
+    );
+
     /**
      * ImageProcessing constructor.
      *
@@ -63,7 +71,7 @@ class ImageProcessing
         if ($this->use_imagick) {
             // Only the first frame of an animation is read.
             try {
-                $this->im = new Imagick($imagePath . '[0]');
+                $this->im = new Imagick(self::coder($this->image_info) . ':' . $imagePath . '[0]');
             } catch (ImagickException $e) {
                 throw new RuntimeException(sprintf(__('%s is corrupt or broken!'), $imagePath));
             }
@@ -142,7 +150,7 @@ class ImageProcessing
         if (extension_loaded('imagick') && osc_use_imagick()) {
             try {
                 $ping = new Imagick();
-                $ping->pingImage($imagePath . '[0]');
+                $ping->pingImage(self::coder($info) . ':' . $imagePath . '[0]');
                 $pixels = max($pixels, $ping->getImageWidth() * $ping->getImageHeight());
                 $ping->clear();
             } catch (ImagickException $e) {
@@ -164,7 +172,21 @@ class ImageProcessing
     {
         $info = @getimagesize($imagePath);
 
-        return is_array($info) ? $info : null;
+        // Only photo formats; anything else would reach a decoder no photo ever needs.
+        return is_array($info) && isset(self::PHOTO_CODERS[$info[2]]) ? $info : null;
+    }
+
+    /**
+     * The ImageMagick coder for an image imageInfo() accepted. Named on every read, so
+     * ImageMagick cannot pick another decoder from the file's contents.
+     *
+     * @param array<int|string,mixed> $info
+     *
+     * @return string
+     */
+    private static function coder(array $info)
+    {
+        return self::PHOTO_CODERS[$info[2]];
     }
 
     /**
@@ -176,7 +198,9 @@ class ImageProcessing
     private function toSrgb()
     {
         try {
-            if ($this->im->getImageProfiles('icc', false) !== array()) {
+            $icc = $this->im->getImageProfiles('icc', true)['icc'] ?? '';
+            // A real colour profile is a few KB, a CMYK one about 0.5 MB; a larger one is not parsed.
+            if ($icc !== '' && strlen($icc) <= 1048576 && $this->im->getImageColorspace() !== Imagick::COLORSPACE_GRAY) {
                 $this->im->profileImage('icc', (string)file_get_contents(dirname(__DIR__) . '/icc/sRGB-v2-micro.icc'));
             } elseif ($this->im->getImageColorspace() === Imagick::COLORSPACE_CMYK) {
                 $this->im->transformImageColorspace(Imagick::COLORSPACE_SRGB);
@@ -594,7 +618,7 @@ class ImageProcessing
         }
 
         if ($this->use_imagick) {
-            $wm                 = new Imagick($path_watermark);
+            $wm                 = new Imagick('png:' . $path_watermark);
             $watermark_geometry = $wm->getImageGeometry();
             $watermark_height   = $watermark_geometry['height'];
             $watermark_width    = $watermark_geometry['width'];
