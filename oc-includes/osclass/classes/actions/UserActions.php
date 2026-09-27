@@ -838,25 +838,25 @@ class UserActions
 
         $status = 'failed';
         try {
-            osc_db_transaction(static function () use ($manager, $userId, $stored, $new, &$status) {
+            osc_db_transaction(static function () use ($userId, $stored, $new, &$status) {
                 // Matching on the code as well makes the link single-use under a double click.
-                $switched = $manager->update(
-                    array('s_email' => $new, 's_pass_code' => null, 's_pass_date' => null),
-                    array('pk_i_id' => $userId, 's_pass_code' => $stored)
-                );
+                try {
+                    $switched = osc_db_table(DB_TABLE_PREFIX . 't_user')
+                        ->where('pk_i_id', $userId)
+                        ->where('s_pass_code', $stored)
+                        ->update(array('s_email' => $new, 's_pass_code' => null, 's_pass_date' => null));
+                } catch (\mindstellar\database\DbException $e) {
+                    $status = (int) $e->getCode() === 1062 ? 'taken' : 'failed';
+                    throw $e;
+                }
                 if ($switched !== 1) {
-                    $status = $switched === 0 ? 'invalid' : ((int) $manager->getErrorLevel() === 1062 ? 'taken' : 'failed');
+                    $status = 'invalid';
                     throw new \RuntimeException('E-mail change not applied.');
                 }
-                $writes = array(
-                    Item::newInstance()->update(array('s_contact_email' => $new), array('fk_i_user_id' => $userId)),
-                    ItemComment::newInstance()->update(array('s_author_email' => $new), array('fk_i_user_id' => $userId)),
-                    Alerts::newInstance()->update(array('s_email' => $new), array('fk_i_user_id' => $userId)),
-                    UserEmailTmp::newInstance()->delete(array('s_new_email' => $new)),
-                );
-                if (in_array(false, $writes, true)) {
-                    throw new \RuntimeException('E-mail change not applied.');
-                }
+                osc_db_table(DB_TABLE_PREFIX . 't_item')->where('fk_i_user_id', $userId)->update(array('s_contact_email' => $new));
+                osc_db_table(DB_TABLE_PREFIX . 't_item_comment')->where('fk_i_user_id', $userId)->update(array('s_author_email' => $new));
+                osc_db_table(DB_TABLE_PREFIX . 't_alerts')->where('fk_i_user_id', $userId)->update(array('s_email' => $new));
+                osc_db_table(DB_TABLE_PREFIX . 't_user_email_tmp')->where('s_new_email', $new)->delete();
             });
         } catch (\Throwable $e) {
             $result['status'] = $status;

@@ -494,7 +494,7 @@ Core fires 534 names. Generated from the source; do not edit by hand.
 | `billing_order_refunded` | action | `$order->getId(), $order->getUserId(), $order->getCredits()` | `oc-includes/osclass/classes/billing/Billing.php` |
 | `body_class` | filter | `$classes, $class` | `oc-includes/osclass/helpers/hTheme.php` |
 | `cache_relevant_cookies` | filter | `array_values(array_unique(array( session_name() ?: 'osclass', 'osclass', 'oc_cache_bypass', 'oc_userLocale', )))` | `oc-includes/osclass/helpers/hHttpCache.php` |
-| `change_email_confirm` | action | `Params::getParam('userId'), $userOldEmail, $userEmailTmp['s_new_email']` | `oc-includes/osclass/classes/controller/CWebUserNonSecure.php` |
+| `change_email_confirm` | action | `Params::getParam('userId'), $change['old'], $change['new']` | `oc-includes/osclass/classes/controller/CWebUserNonSecure.php` |
 | `cli_commands` | filter | `array()` | `oc-includes/osclass/classes/cli/Cli.php` |
 | `contact_form` | action | — | `oc-includes/osclass/gui/contact-content.php` |
 | `contact_form_after` | action | — | `oc-includes/osclass/gui/contact-content.php` |
