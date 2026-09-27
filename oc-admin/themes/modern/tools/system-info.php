@@ -71,36 +71,6 @@ if (!function_exists('oscsi_size')) {
     }
 }
 
-if (!function_exists('oscsi_ago')) {
-    /**
-     * A compact "how long ago" for a UNIX timestamp: "3 min", "5 hours", "2 days".
-     *
-     * @param int $seconds elapsed seconds
-     *
-     * @return string
-     */
-    function oscsi_ago($seconds)
-    {
-        $seconds = (int)$seconds;
-        if ($seconds < 60) {
-            return __('just now');
-        }
-        if ($seconds < 3600) {
-            $n = (int)floor($seconds / 60);
-
-            return sprintf(_n('%d minute', '%d minutes', $n), $n);
-        }
-        if ($seconds < 86400) {
-            $n = (int)floor($seconds / 3600);
-
-            return sprintf(_n('%d hour', '%d hours', $n), $n);
-        }
-        $n = (int)floor($seconds / 86400);
-
-        return sprintf(_n('%d day', '%d days', $n), $n);
-    }
-}
-
 if (!function_exists('oscsi_row')) {
     /**
      * One ledger row: a verdict word, the fact, a note (may hold <code>/<strong>), a value,
@@ -329,17 +299,7 @@ define('OSC_DEBUG_LOG', true);</pre>
                 || (class_exists($cacheClass) && call_user_func(array($cacheClass, 'is_supported')));
 
             // Latest cron run across all schedules — the signal for "is cron.php actually firing".
-            $cronLast = 0;
-            try {
-                foreach ((array)Cron::newInstance()->listAll() as $c) {
-                    $t = isset($c['d_last_exec']) ? strtotime($c['d_last_exec']) : 0;
-                    if ($t > $cronLast) {
-                        $cronLast = $t;
-                    }
-                }
-            } catch (Throwable $e) {
-                $cronLast = 0;
-            }
+            $cronLast = osc_cron_last_run();
             $cronAge = $cronLast > 0 ? (time() - $cronLast) : -1;
 
             $dbServer = '';
@@ -545,15 +505,15 @@ define('OSC_DEBUG_LOG', true);</pre>
                         oscsi_row(
                             'warn', $CHECK,
                             __('Scheduled tasks (cron)'),
-                            sprintf(__('The last cron run was %s ago — longer than a day, so it is probably no longer scheduled. Update checks, alerts and cleanup have stopped until it runs again.'), '<strong>' . osc_esc_html(oscsi_ago($cronAge)) . '</strong>'),
-                            sprintf(__('%s ago'), oscsi_ago($cronAge))
+                            sprintf(__('The last cron run was %s ago — longer than a day, so it is probably no longer scheduled. Update checks, alerts and cleanup have stopped until it runs again.'), '<strong>' . osc_esc_html(osc_admin_duration($cronAge)) . '</strong>'),
+                            sprintf(__('%s ago'), osc_admin_duration($cronAge))
                         );
                     } else {
                         oscsi_row(
                             'ok', $OK,
                             __('Scheduled tasks (cron)'),
                             __('Cron has run recently — update checks, alerts and cleanup are firing.'),
-                            sprintf(__('%s ago'), oscsi_ago($cronAge))
+                            sprintf(__('%s ago'), osc_admin_duration($cronAge))
                         );
                     }
 

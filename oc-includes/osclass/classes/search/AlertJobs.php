@@ -33,6 +33,7 @@ final class AlertJobs
     public static function register(): void
     {
         JobRegistry::register(self::TYPE, static fn (Job $job) => self::convert($job));
+        JobRegistry::describe(self::TYPE, __('Convert saved-search alerts'));
     }
 
     /**

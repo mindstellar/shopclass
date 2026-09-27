@@ -374,6 +374,7 @@ class CAdminTools extends AdminSecBaseModel
                 $this->doView('tools/maintenance.php');
                 break;
             case 'cleanup':
+                $this->_exportVariableToView('cleanup_history', $this->jobLog(array('cleanup'), 10));
                 $this->doView('tools/cleanup.php');
                 break;
             case 'jobs':
@@ -390,6 +391,7 @@ class CAdminTools extends AdminSecBaseModel
                 $this->_exportVariableToView('jobs_rows', $queue->page($status ?: null, null, 100));
                 $this->_exportVariableToView('jobs_queued_types', $queue->queuedTypes());
                 $this->_exportVariableToView('jobs_registered_types', \mindstellar\job\JobRegistry::types());
+                $this->_exportVariableToView('jobs_history', $this->jobLog(array(), 20));
                 $this->doView('tools/jobs.php');
                 break;
             case 'jobs_run':
@@ -453,10 +455,8 @@ class CAdminTools extends AdminSecBaseModel
                 osc_set_preference('batch_limit', $limit > 0 ? $limit : Cleanup::DEFAULT_BATCH, 'osclass', 'INTEGER');
                 foreach (Cleanup::RULES as $rule) {
                     osc_set_preference('enabled_' . $rule, Params::getParam('enabled_' . $rule) ? '1' : '0', 'osclass', 'BOOLEAN');
-                    if ($rule !== 'reported') {
-                        $days = Params::getParamInt('days_' . $rule);
-                        osc_set_preference('days_' . $rule, $days > 0 ? $days : Cleanup::DEFAULT_DAYS, 'osclass', 'INTEGER');
-                    }
+                    $days = Params::getParamInt('days_' . $rule);
+                    osc_set_preference('days_' . $rule, $days > 0 ? $days : Cleanup::DEFAULT_DAYS, 'osclass', 'INTEGER');
                 }
                 osc_set_preference(
                     'item_views_enabled',
@@ -568,6 +568,30 @@ class CAdminTools extends AdminSecBaseModel
             default:
                 $this->doView('tools/system-info.php');
                 break;
+        }
+    }
+
+    /**
+     * The latest background-job rows from the activity log, newest first.
+     *
+     * @param array<int,string> $actions narrow to these actions; empty for all
+     * @param int               $limit
+     *
+     * @return array<int,array<string,string>>
+     */
+    private function jobLog(array $actions, int $limit): array
+    {
+        try {
+            $query = osc_db_table(DB_TABLE_PREFIX . 't_log')
+                ->select('dt_date', 's_action', 'fk_i_id', 's_data')
+                ->where('s_section', 'jobs');
+            if ($actions !== array()) {
+                $query = $query->whereIn('s_action', $actions);
+            }
+
+            return $query->orderBy('dt_date', 'DESC')->limit($limit)->get();
+        } catch (\mindstellar\database\DbException $e) {
+            return array();
         }
     }
 

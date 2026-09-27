@@ -47,6 +47,14 @@ final class CategoryJobs
     public static function register(): void
     {
         JobRegistry::register(self::TYPE, static fn (Job $job) => self::delete($job));
+        JobRegistry::describe(self::TYPE, __('Empty and delete a category'), static function (array $p): string {
+            $id  = (int) ($p['category_id'] ?? 0);
+            $row = $id > 0 ? \Category::newInstance()->findByPrimaryKey($id) : null;
+
+            return is_array($row) && !empty($row['s_name'])
+                ? sprintf('%s (#%d)', $row['s_name'], $id)
+                : sprintf('#%d', $id);
+        });
     }
 
     /**

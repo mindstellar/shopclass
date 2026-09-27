@@ -128,6 +128,23 @@ if (!function_exists('osc_job_register_handler')) {
     }
 }
 
+if (!function_exists('osc_job_describe')) {
+    /**
+     * Name a job type for the admin's Background jobs screen and activity log.
+     *
+     * @param string        $type   namespaced
+     * @param string        $name   e.g. "Send the weekly digest"
+     * @param callable|null $detail fn(array $payload): string, e.g. the user it is for
+     *
+     * @return void
+     * @throws InvalidArgumentException on a malformed type
+     */
+    function osc_job_describe(string $type, string $name, ?callable $detail = null): void
+    {
+        JobRegistry::describe($type, $name, $detail);
+    }
+}
+
 if (!function_exists('osc_job_has_handler')) {
     /**
      * @param string $type

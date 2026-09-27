@@ -847,6 +847,65 @@ if (!function_exists('osc_admin_panel_close')) {
     }
 }
 
+if (!function_exists('osc_admin_duration')) {
+    /**
+     * A short length of time: "just now", "5 minutes", "3 hours", "2 days".
+     *
+     * @param int $seconds
+     *
+     * @return string
+     */
+    function osc_admin_duration($seconds)
+    {
+        $seconds = abs((int)$seconds);
+        if ($seconds < 60) {
+            return __('just now');
+        }
+        if ($seconds < 3600) {
+            $n = (int)floor($seconds / 60);
+
+            return sprintf(_n('%d minute', '%d minutes', $n), $n);
+        }
+        if ($seconds < 86400) {
+            $n = (int)floor($seconds / 3600);
+
+            return sprintf(_n('%d hour', '%d hours', $n), $n);
+        }
+        $n = (int)floor($seconds / 86400);
+
+        return sprintf(_n('%d day', '%d days', $n), $n);
+    }
+}
+
+if (!function_exists('osc_admin_when')) {
+    /**
+     * A date as "5 minutes ago" or "in 5 minutes", with the full date as a tooltip.
+     *
+     * @param string|null $datetime a MySQL DATETIME; empty prints a dash
+     *
+     * @return string HTML
+     */
+    function osc_admin_when($datetime)
+    {
+        $time = $datetime ? strtotime((string)$datetime) : false;
+        if ($time === false) {
+            return '<span class="text-muted">&mdash;</span>';
+        }
+        $delta = $time - time();
+        if (abs($delta) < 60) {
+            $text = __('just now');
+        } elseif ($delta > 0) {
+            $text = sprintf(__('in %s'), osc_admin_duration($delta));
+        } else {
+            $text = sprintf(__('%s ago'), osc_admin_duration($delta));
+        }
+
+        return '<time datetime="' . osc_esc_html(date('c', $time)) . '" title="'
+            . osc_esc_html(osc_format_date(date('Y-m-d H:i:s', $time), osc_date_format() . ' ' . osc_time_format()))
+            . '">' . osc_esc_html($text) . '</time>';
+    }
+}
+
 if (!function_exists('osc_admin_status')) {
     /**
      * A status pill: a tint, a shape, and the word. An unmapped state still renders, in

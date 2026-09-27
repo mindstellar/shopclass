@@ -506,17 +506,17 @@ final class JobQueue
      * @param int    $id
      * @param string $error
      *
-     * @return void
+     * @return bool true when the job gave up for good
      */
-    public function fail(int $id, string $error): void
+    public function fail(int $id, string $error): bool
     {
         try {
             $row = osc_db_table($this->table())->where('pk_i_id', $id)->first();
         } catch (DbException $e) {
-            return;
+            return false;
         }
         if ($row === null) {
-            return;
+            return false;
         }
 
         $attempts = (int) $row['i_attempts'] + 1;
@@ -550,6 +550,8 @@ final class JobQueue
                 // absorbed
             }
         }
+
+        return $values['s_status'] === self::STATUS_ERROR;
     }
 
     /**

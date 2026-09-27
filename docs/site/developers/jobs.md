@@ -21,6 +21,10 @@ osc_add_hook('register_jobs', function () {
     osc_job_register_handler('acme.send_digest', function ($job) {
         acme_send_digest((int) $job->get('user_id'));
     });
+    // Optional: how the admin's Background jobs screen and activity log name it.
+    osc_job_describe('acme.send_digest', __('Send the weekly digest'), function (array $payload) {
+        return sprintf(__('User #%d'), $payload['user_id'] ?? 0);
+    });
 });
 
 // Anywhere. Queue the work and return immediately.
@@ -140,6 +144,7 @@ deactivated with work still queued, and reactivating it is enough to let the job
 | `osc_job_ensure($type, $payload, $options)` | queue a job only when none of that type is waiting or running |
 | `osc_job_stats($type)` | `pending`, `running` and `error` counts, and `oldest`, when the oldest pending job was created |
 | `osc_job_register_handler($type, $handler)` | say which callable runs a type |
+| `osc_job_describe($type, $name, $detail)` | name a type for the admin; `$detail` is an optional `fn(array $payload): string` for one job |
 | `osc_job_has_handler($type)` | whether anything registered for a type |
 | `osc_job_registered_types()` | every registered type, sorted |
 | `osc_job_count($status, $type)` | how many jobs are `pending`, `running` or `error` |

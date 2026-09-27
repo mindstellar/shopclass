@@ -31,6 +31,9 @@ final class JobRegistry
     /** @var array<string,callable> type => handler */
     private static $handlers = array();
 
+    /** @var array<string,array{name:string,detail:?callable}> type => how the admin names it */
+    private static $names = array();
+
     /**
      * Route $type to $handler.
      *
@@ -80,6 +83,56 @@ final class JobRegistry
     public static function handler(string $type): ?callable
     {
         return self::$handlers[$type] ?? null;
+    }
+
+    /**
+     * Give $type a name the admin can read, e.g. "Empty a category", and optionally
+     * fn(array $payload): string for the one job's details, e.g. "Cars (#12)".
+     *
+     * @param string        $type
+     * @param string        $name
+     * @param callable|null $detail
+     *
+     * @return void
+     * @throws InvalidArgumentException on a malformed type
+     */
+    public static function describe(string $type, string $name, ?callable $detail = null): void
+    {
+        self::assertType($type);
+        self::$names[$type] = array('name' => $name, 'detail' => $detail);
+    }
+
+    /**
+     * The readable name of $type, or the type itself when none was given.
+     *
+     * @param string $type
+     *
+     * @return string
+     */
+    public static function name(string $type): string
+    {
+        return self::$names[$type]['name'] ?? $type;
+    }
+
+    /**
+     * The details of one job, or '' when its type gives none.
+     *
+     * @param string              $type
+     * @param array<string,mixed> $payload
+     *
+     * @return string
+     */
+    public static function detail(string $type, array $payload): string
+    {
+        $detail = self::$names[$type]['detail'] ?? null;
+        if ($detail === null) {
+            return '';
+        }
+        try {
+            return (string) $detail($payload);
+        } catch (\Throwable $e) {
+            return '';
+        }
     }
 
     /**

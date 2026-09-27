@@ -1368,3 +1368,23 @@ function osc_local_referer($fallback)
 
     return (string)$fallback;
 }
+
+/**
+ * When cron last ran, on any schedule, as a UNIX time. 0 when it never has.
+ *
+ * @return int
+ */
+function osc_cron_last_run()
+{
+    $last = 0;
+    try {
+        foreach ((array)Cron::newInstance()->listAll() as $row) {
+            $time = !empty($row['d_last_exec']) ? (int)strtotime($row['d_last_exec']) : 0;
+            $last = max($last, $time);
+        }
+    } catch (Throwable $e) {
+        return 0;
+    }
+
+    return $last;
+}

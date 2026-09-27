@@ -57,6 +57,16 @@ final class StorageJobs
         JobRegistry::register('storage.adopt', static fn (Job $job) => self::adopt($job));
         JobRegistry::register('storage.regenerate', static fn (Job $job) => self::regenerate($job));
         JobRegistry::register('storage.seed', static fn (Job $job) => self::seed($job));
+
+        $photo = static fn (array $p): string => !empty($p['fk_i_item_id'])
+            ? sprintf(__('Photo #%1$d of listing #%2$d'), (int) ($p['pk_i_id'] ?? 0), (int) $p['fk_i_item_id'])
+            : sprintf(__('File #%d'), (int) ($p['pk_i_id'] ?? 0));
+        JobRegistry::describe('storage.delete', __('Delete a file from storage'), $photo);
+        JobRegistry::describe('storage.offload', __('Move a file to remote storage'), $photo);
+        JobRegistry::describe('storage.restore', __('Bring a file back to this server'), $photo);
+        JobRegistry::describe('storage.adopt', __('Adopt a file already in remote storage'), $photo);
+        JobRegistry::describe('storage.regenerate', __('Rebuild photo sizes'), $photo);
+        JobRegistry::describe('storage.seed', __('Queue files for a storage move'));
     }
 
     /**

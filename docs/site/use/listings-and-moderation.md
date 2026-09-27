@@ -118,7 +118,7 @@ them, check cron before anything else — see
 
 | Group | What it removes |
 |---|---|
-| **Reported listings** | Listings visitors have flagged as spam. |
+| **Reported listings** | Listings visitors have flagged as spam, unchanged for the chosen number of days. |
 | **Expired listings** | Listings past their expiration date. |
 | **Unactivated listings** | Listings never activated from the confirmation e-mail. |
 | **Spam listings** | Listings marked as spam. |

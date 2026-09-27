@@ -12,7 +12,6 @@
 namespace mindstellar\cli;
 
 use Admin;
-use Cron;
 use mindstellar\database\Connection;
 use mindstellar\market\Catalog;
 use mindstellar\market\Compatibility;
@@ -1492,13 +1491,7 @@ class Cli
             : $check('fail', 'Uploads writable', $uploads . ' is not writable');
 
         // Cron freshness — the daily schedule should have run within ~25h.
-        $cronLast = 0;
-        foreach (['HOURLY', 'DAILY', 'WEEKLY'] as $type) {
-            $row = Cron::newInstance()->getCronByType($type);
-            if (is_array($row) && !empty($row['d_last_exec'])) {
-                $cronLast = max($cronLast, (int) strtotime($row['d_last_exec']));
-            }
-        }
+        $cronLast = osc_cron_last_run();
         if ($cronLast === 0) {
             $check('warn', 'Cron', 'no run recorded yet');
         } elseif ((time() - $cronLast) > 25 * 3600) {

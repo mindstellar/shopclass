@@ -45,8 +45,10 @@ final class JobWorker
             return 0;
         }
 
-        $start = time();
-        $ran   = 0;
+        $start    = time();
+        $ran      = 0;
+        $outcomes = array();
+        $types    = array();
 
         while ((time() - $start) < $maxSeconds) {
             $rows = $queue->claim($batch);
@@ -55,7 +57,10 @@ final class JobWorker
             }
 
             foreach ($rows as $i => $row) {
-                self::process($queue, $row);
+                $outcome            = self::process($queue, $row);
+                $outcomes[$outcome] = ($outcomes[$outcome] ?? 0) + 1;
+                $type               = (string) $row['s_type'];
+                $types[$type]       = ($types[$type] ?? 0) + 1;
                 $ran++;
 
                 // A single job can outlast the budget -- a category batch, a large
@@ -67,7 +72,56 @@ final class JobWorker
             }
         }
 
+        if ($ran > 0) {
+            self::logRun($outcomes, $types);
+        }
+
         return $ran;
+    }
+
+    /**
+     * One activity-log row per worker pass that did anything, so there is a history of
+     * the work after the finished jobs have left the queue.
+     *
+     * @param array<string,int> $outcomes outcome => count
+     * @param array<string,int> $types    type => count
+     *
+     * @return void
+     */
+    private static function logRun(array $outcomes, array $types): void
+    {
+        $words = array(
+            'done'    => __('%d done'),
+            'repeat'  => __('%d continuing'),
+            'retry'   => __('%d to retry'),
+            'gave_up' => __('%d gave up'),
+        );
+        $parts = array();
+        foreach ($words as $outcome => $word) {
+            if (!empty($outcomes[$outcome])) {
+                $parts[] = sprintf($word, $outcomes[$outcome]);
+            }
+        }
+        $names = array();
+        foreach ($types as $type => $count) {
+            $names[] = JobRegistry::name($type) . ' (' . $count . ')';
+        }
+
+        self::log('run', 0, implode(', ', $parts) . ': ' . implode(', ', $names));
+    }
+
+    /**
+     * Write a row in the activity log under the Jobs section.
+     *
+     * @param string $action
+     * @param int    $id
+     * @param string $text
+     *
+     * @return void
+     */
+    public static function log(string $action, int $id, string $text): void
+    {
+        \Log::newInstance()->insertLog('jobs', $action, $id, mb_substr($text, 0, 250), 'system', 0);
     }
 
     /**
@@ -92,9 +146,9 @@ final class JobWorker
      * @param JobQueue                  $queue
      * @param array<string,string|null> $row a t_job_queue row
      *
-     * @return void
+     * @return string done|repeat|retry|gave_up
      */
-    private static function process(JobQueue $queue, array $row): void
+    private static function process(JobQueue $queue, array $row): string
     {
         $id   = (int) $row['pk_i_id'];
         $type = (string) $row['s_type'];
@@ -105,9 +159,7 @@ final class JobWorker
             // that names the type, because the usual cause is a plugin that was
             // deactivated with its jobs still queued -- and reactivating it should be
             // enough to let them run.
-            $queue->fail($id, 'No handler registered for job type "' . $type . '"');
-
-            return;
+            return self::failed($queue, $id, $type, array(), 'No handler registered for job type "' . $type . '"');
         }
 
         $payload = json_decode((string) $row['s_payload'], true);
@@ -120,19 +172,42 @@ final class JobWorker
         try {
             $handler($job);
         } catch (Throwable $e) {
-            $queue->fail($id, $e->getMessage());
-
-            return;
+            return self::failed($queue, $id, $type, $payload, $e->getMessage());
         }
 
         $repeat = $job->repeatRequest();
         if ($repeat !== null) {
             $queue->repeat($id, $repeat['payload'], $repeat['delay']);
 
-            return;
+            return 'repeat';
         }
 
         $queue->complete($id);
+
+        return 'done';
+    }
+
+    /**
+     * Record a failure. A job that has used its last try is logged, because it now
+     * waits for someone.
+     *
+     * @param JobQueue            $queue
+     * @param int                 $id
+     * @param string              $type
+     * @param array<string,mixed> $payload
+     * @param string              $error
+     *
+     * @return string retry|gave_up
+     */
+    private static function failed(JobQueue $queue, int $id, string $type, array $payload, string $error): string
+    {
+        if (!$queue->fail($id, $error)) {
+            return 'retry';
+        }
+        $detail = JobRegistry::detail($type, $payload);
+        self::log('gave_up', $id, JobRegistry::name($type) . ($detail !== '' ? ' - ' . $detail : '') . ': ' . $error);
+
+        return 'gave_up';
     }
 
     /**

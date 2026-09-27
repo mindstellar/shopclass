@@ -21,10 +21,6 @@ msgstr ""
 msgid " is available"
 msgstr ""
 
-#: oc-admin/themes/modern/tools/jobs.php
-msgid "#"
-msgstr ""
-
 #: oc-admin/themes/modern/parts/ui.php
 msgid "%1$s &raquo; %2$s"
 msgstr ""
@@ -143,7 +139,11 @@ msgid_plural "%d changes"
 msgstr[0] ""
 msgstr[1] ""
 
-#: oc-admin/themes/modern/tools/system-info.php
+#: oc-includes/osclass/classes/job/JobWorker.php
+msgid "%d continuing"
+msgstr ""
+
+#: oc-includes/osclass/helpers/hAdminUi.php
 msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
@@ -151,6 +151,10 @@ msgstr[1] ""
 
 #: oc-admin/themes/modern/functions.php
 msgid "%d days"
+msgstr ""
+
+#: oc-includes/osclass/classes/job/JobWorker.php
+msgid "%d done"
 msgstr ""
 
 #: oc-admin/themes/modern/fields/index.php
@@ -161,7 +165,11 @@ msgstr ""
 msgid "%d files"
 msgstr ""
 
-#: oc-admin/themes/modern/tools/system-info.php
+#: oc-includes/osclass/classes/job/JobWorker.php
+msgid "%d gave up"
+msgstr ""
+
+#: oc-includes/osclass/helpers/hAdminUi.php
 msgid "%d hour"
 msgid_plural "%d hours"
 msgstr[0] ""
@@ -174,7 +182,7 @@ msgid_plural "%d listings"
 msgstr[0] ""
 msgstr[1] ""
 
-#: oc-admin/themes/modern/tools/system-info.php
+#: oc-includes/osclass/helpers/hAdminUi.php
 msgid "%d minute"
 msgid_plural "%d minutes"
 msgstr[0] ""
@@ -204,6 +212,10 @@ msgstr ""
 msgid "%d things need fixing before this can be saved."
 msgstr ""
 
+#: oc-includes/osclass/classes/job/JobWorker.php
+msgid "%d to retry"
+msgstr ""
+
 #: oc-admin/themes/modern/parts/ui.php
 #: oc-includes/osclass/helpers/hAdminUi.php
 msgid "%d unsaved changes"
@@ -220,6 +232,7 @@ msgid "%s (plugin not installed)"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info.php
+#: oc-includes/osclass/helpers/hAdminUi.php
 msgid "%s ago"
 msgstr ""
 
@@ -897,6 +910,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/admins/index.php
 msgid "Admins manage the whole panel; moderators only handle listings and stats."
+msgstr ""
+
+#: oc-includes/osclass/classes/storage/StorageJobs.php
+msgid "Adopt a file already in remote storage"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/storage.php
@@ -1632,7 +1649,7 @@ msgstr ""
 msgid "Blocked keywords"
 msgstr ""
 
-#: oc-admin/themes/modern/tools/cleanup.php
+#: oc-includes/osclass/classes/Cleanup.php
 msgid "Blocked listings"
 msgstr ""
 
@@ -1660,6 +1677,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/CommentSettingsForm.php
 msgid "Break comments into pages with"
+msgstr ""
+
+#: oc-includes/osclass/classes/storage/StorageJobs.php
+msgid "Bring a file back to this server"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/storage.php
@@ -2170,7 +2191,9 @@ msgid "Classified ads in %s"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/cleanup.php
+#: oc-admin/themes/modern/tools/jobs.php
 #: oc-includes/osclass/classes/AdminMenu.php
+#: oc-includes/osclass/classes/job/CleanupJobs.php
 msgid "Cleanup"
 msgstr ""
 
@@ -2178,6 +2201,10 @@ msgstr ""
 msgid ""
 "Cleanup is running in the background. Reload this page to see the counts go "
 "down."
+msgstr ""
+
+#: oc-includes/osclass/classes/job/CleanupJobs.php
+msgid "Cleanup removed %1$d: %2$s"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/cleanup.php
@@ -2540,6 +2567,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/upgrade/Osclass.php
 msgid "Continue with upgrade"
+msgstr ""
+
+#: oc-includes/osclass/classes/search/AlertJobs.php
+msgid "Convert saved-search alerts"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsForm.php
@@ -3066,6 +3097,10 @@ msgstr ""
 msgid "Delete Plugin"
 msgstr ""
 
+#: oc-includes/osclass/classes/storage/StorageJobs.php
+msgid "Delete a file from storage"
+msgstr ""
+
 #: oc-admin/themes/modern/admins/index.php
 msgid "Delete admin"
 msgstr ""
@@ -3263,6 +3298,8 @@ msgstr ""
 #: oc-admin/themes/modern/parts/market.php
 #: oc-admin/themes/modern/parts/package-ui.php
 #: oc-admin/themes/modern/settings/locations/form.php
+#: oc-admin/themes/modern/tools/cleanup.php
+#: oc-admin/themes/modern/tools/jobs.php
 #: oc-includes/osclass/classes/datatables/LogsDataTable.php
 msgid "Details"
 msgstr ""
@@ -3639,6 +3676,10 @@ msgstr ""
 msgid "Emails templates"
 msgstr ""
 
+#: oc-includes/osclass/classes/job/CategoryJobs.php
+msgid "Empty and delete a category"
+msgstr ""
+
 #: oc-admin/themes/modern/categories/index.php
 #: oc-admin/themes/modern/plugins/index.php
 #: oc-admin/themes/modern/users/frm.php
@@ -3706,7 +3747,11 @@ msgid "Enabled for the public website"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/cleanup.php
-msgid "Enabled rules also run automatically once a day."
+msgid "Enabled rules run once a day."
+msgstr ""
+
+#: oc-admin/themes/modern/tools/cleanup.php
+msgid "Enabled rules run once a day. The last cleanup finished %s."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsForm.php
@@ -3909,7 +3954,7 @@ msgstr ""
 msgid "Expired"
 msgstr ""
 
-#: oc-admin/themes/modern/tools/cleanup.php
+#: oc-includes/osclass/classes/Cleanup.php
 msgid "Expired listings"
 msgstr ""
 
@@ -4010,6 +4055,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/datatables/MediaDataTable.php
 msgid "File"
+msgstr ""
+
+#: oc-includes/osclass/classes/storage/StorageJobs.php
+msgid "File #%d"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/import.php
@@ -5009,6 +5058,10 @@ msgstr ""
 msgid "Jewelry - Watches"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/jobs.php
+msgid "Job"
+msgstr ""
+
 #: oc-includes/osclass/installer/basic_data.php
 msgid "Jobs"
 msgstr ""
@@ -5515,7 +5568,7 @@ msgid "Listings that are disabled/blocked."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/cleanup.php
-msgid "Listings visitors have flagged as spam."
+msgid "Listings visitors have flagged as spam, unchanged since."
 msgstr ""
 
 #: oc-admin/themes/modern/stats/items.php
@@ -6070,6 +6123,10 @@ msgstr ""
 msgid "Motorcycles"
 msgstr ""
 
+#: oc-includes/osclass/classes/storage/StorageJobs.php
+msgid "Move a file to remote storage"
+msgstr ""
+
 #: oc-admin/themes/modern/fields/index.php
 msgid "Move into forms"
 msgstr ""
@@ -6376,6 +6433,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/users/alerts.php
 msgid "No alerts yet"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/jobs.php
+msgid "No background work has run yet."
 msgstr ""
 
 #: oc-includes/osclass/classes/market/Installer.php
@@ -6737,6 +6798,10 @@ msgid ""
 "you have now."
 msgstr ""
 
+#: oc-admin/themes/modern/tools/cleanup.php
+msgid "Nothing has been cleaned up yet."
+msgstr ""
+
 #: oc-admin/themes/modern/media/index.php
 msgid "Nothing has been uploaded under this filter yet."
 msgstr ""
@@ -6750,7 +6815,7 @@ msgid "Nothing here yet"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/jobs.php
-msgid "Nothing here."
+msgid "Nothing is waiting. Finished work is listed under Recent activity."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/list.php
@@ -7292,6 +7357,10 @@ msgstr ""
 msgid "Phone"
 msgstr ""
 
+#: oc-includes/osclass/classes/storage/StorageJobs.php
+msgid "Photo #%1$d of listing #%2$d"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/BillingSettingsForm.php
 msgid "Photo cap"
 msgstr ""
@@ -7571,12 +7640,20 @@ msgstr ""
 msgid "Question about your listing"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/jobs.php
+msgid "Queue"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/storage.php
 msgid "Queue downloads"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/storage.php
 msgid "Queue every local image for upload?"
+msgstr ""
+
+#: oc-includes/osclass/classes/storage/StorageJobs.php
+msgid "Queue files for a storage move"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/storage.php
@@ -7651,6 +7728,10 @@ msgstr ""
 msgid "Real estate"
 msgstr ""
 
+#: oc-includes/osclass/classes/storage/StorageJobs.php
+msgid "Rebuild photo sizes"
+msgstr ""
+
 #: oc-includes/osclass/classes/AdminMenu.php
 msgid "Recalculate category stats"
 msgstr ""
@@ -7663,8 +7744,13 @@ msgstr ""
 msgid "Received"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/jobs.php
 #: oc-admin/themes/modern/tools/logs.php
 msgid "Recent activity"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/cleanup.php
+msgid "Recent cleanups"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
@@ -7909,8 +7995,8 @@ msgstr ""
 
 #: oc-admin/themes/modern/items/reported.php
 #: oc-admin/themes/modern/main/index.php
-#: oc-admin/themes/modern/tools/cleanup.php
 #: oc-includes/osclass/classes/AdminMenu.php
+#: oc-includes/osclass/classes/Cleanup.php
 msgid "Reported listings"
 msgstr ""
 
@@ -8037,6 +8123,7 @@ msgstr ""
 msgid "Run waiting jobs now"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/cleanup.php
 #: oc-admin/themes/modern/tools/jobs.php
 msgid "Running"
 msgstr ""
@@ -9010,7 +9097,7 @@ msgstr ""
 msgid "Spam and bots"
 msgstr ""
 
-#: oc-admin/themes/modern/tools/cleanup.php
+#: oc-includes/osclass/classes/Cleanup.php
 msgid "Spam listings"
 msgstr ""
 
@@ -10014,6 +10101,12 @@ msgstr ""
 msgid "Tick to open links in new tab"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/cleanup.php
+msgid ""
+"Tick what to clean and how old it must be. Everything removed is gone for "
+"good."
+msgstr ""
+
 #: oc-includes/osclass/installer/basic_data.php
 msgid "Tickets"
 msgstr ""
@@ -10329,11 +10422,11 @@ msgstr ""
 msgid "Unable to upgrade Database"
 msgstr ""
 
-#: oc-admin/themes/modern/tools/cleanup.php
+#: oc-includes/osclass/classes/Cleanup.php
 msgid "Unactivated listings"
 msgstr ""
 
-#: oc-admin/themes/modern/tools/cleanup.php
+#: oc-includes/osclass/classes/Cleanup.php
 msgid "Unactivated users"
 msgstr ""
 
@@ -10968,7 +11061,11 @@ msgid "Waiting"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/jobs.php
-msgid "Waiting jobs also run on every cron tick."
+msgid "Waiting jobs run on every cron tick, but cron has not run yet."
+msgstr ""
+
+#: oc-admin/themes/modern/tools/jobs.php
+msgid "Waiting jobs run on every cron tick. Cron last ran %s."
 msgstr ""
 
 #: oc-admin/themes/modern/items/settings.php
@@ -11081,6 +11178,12 @@ msgstr ""
 msgid "What a buyer can choose at checkout — a price, a currency and how many "
 msgstr ""
 
+#: oc-admin/themes/modern/tools/jobs.php
+msgid ""
+"What background work did, newest first. The full history is in the <a "
+"href=\"%s\">activity log</a>."
+msgstr ""
+
 #: oc-admin/themes/modern/billing/order.php
 #: oc-admin/themes/modern/billing/wallet.php
 msgid "What happened"
@@ -11108,6 +11211,11 @@ msgstr ""
 
 #: oc-admin/themes/modern/upgrade/index.php
 msgid "What's new"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/cleanup.php
+#: oc-admin/themes/modern/tools/jobs.php
+msgid "When"
 msgstr ""
 
 #: oc-admin/themes/modern/users/settings.php
@@ -11187,6 +11295,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/jobs.php
 msgid "Work that is too slow to do while somebody waits — emptying a large "
+msgstr ""
+
+#: oc-admin/themes/modern/tools/jobs.php
+msgid "Worker run"
 msgstr ""
 
 #: oc-includes/osclass/classes/market/Compatibility.php
@@ -11560,6 +11672,10 @@ msgstr ""
 msgid "images per listing"
 msgstr ""
 
+#: oc-includes/osclass/helpers/hAdminUi.php
+msgid "in %s"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/system-info.php
 msgid "installed"
 msgstr ""
@@ -11584,7 +11700,7 @@ msgstr ""
 msgid "is not"
 msgstr ""
 
-#: oc-admin/themes/modern/tools/system-info.php
+#: oc-includes/osclass/helpers/hAdminUi.php
 msgid "just now"
 msgstr ""
 

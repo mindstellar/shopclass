@@ -48,6 +48,23 @@ class Cleanup extends DAO
     }
 
     /**
+     * Each rule's name, translated, in run order.
+     *
+     * @return array<string,string>
+     */
+    public static function ruleLabels()
+    {
+        return array(
+            'reported'          => __('Reported listings'),
+            'expired'           => __('Expired listings'),
+            'inactive_listings' => __('Unactivated listings'),
+            'spam'              => __('Spam listings'),
+            'blocked'           => __('Blocked listings'),
+            'inactive_users'    => __('Unactivated users'),
+        );
+    }
+
+    /**
      * Whether a rule is switched on in Tools > Cleanup.
      *
      * @param string $rule
@@ -60,7 +77,7 @@ class Cleanup extends DAO
     }
 
     /**
-     * The age threshold for a rule, in days. The reported rule has none.
+     * The age threshold for a rule, in days.
      *
      * @param string $rule
      *
@@ -68,9 +85,6 @@ class Cleanup extends DAO
      */
     public static function days($rule)
     {
-        if ($rule === 'reported') {
-            return 0;
-        }
         $days = (int)osc_get_preference('days_' . $rule, 'osclass');
 
         return $days > 0 ? $days : self::DEFAULT_DAYS;
@@ -179,11 +193,13 @@ class Cleanup extends DAO
                 // per listing, so the join cannot multiply a listing out — it could
                 // when the table was keyed by date as well, and a listing reported on
                 // several days was then counted and offered for deletion once per day.
+                // Aged by the listing's last change, so the owner's fix after a report
+                // gives it more time. A listing never edited uses its publish date.
                 return array(
                     $item . ' AS i INNER JOIN ' . DB_TABLE_PREFIX . 't_item_stats AS s'
                         . ' ON s.fk_i_item_id = i.pk_i_id',
-                    's.i_num_spam > 0',
-                    array(),
+                    's.i_num_spam > 0 AND COALESCE(i.dt_mod_date, i.dt_pub_date) < ?',
+                    array($before),
                     'i.pk_i_id AS pk_i_id, i.s_secret AS s_secret'
                 );
             case 'inactive_users':

@@ -28,6 +28,11 @@ final class CleanupJobs
     public static function register(): void
     {
         JobRegistry::register(self::TYPE, static fn (Job $job) => self::purge($job));
+        JobRegistry::describe(
+            self::TYPE,
+            __('Cleanup'),
+            static fn (array $p): string => Cleanup::ruleLabels()[(string) ($p['rule'] ?? '')] ?? ''
+        );
     }
 
     /**
@@ -87,8 +92,17 @@ final class CleanupJobs
         $engine  = Cleanup::newInstance();
         $days    = Cleanup::days($rule);
         $removed = $engine->purge($rule, $days, Cleanup::batchLimit());
+        $total   = (int) $job->get('removed', 0) + $removed;
         $left    = $engine->countFor($rule, $days);
         if ($left === 0) {
+            if ($total > 0) {
+                JobWorker::log(
+                    'cleanup',
+                    0,
+                    sprintf(__('Cleanup removed %1$d: %2$s'), $total, Cleanup::ruleLabels()[$rule])
+                );
+            }
+
             return;
         }
 
@@ -100,6 +114,6 @@ final class CleanupJobs
             );
         }
 
-        $job->repeat(array('rule' => $rule));
+        $job->repeat(array('rule' => $rule, 'removed' => $total));
     }
 }
