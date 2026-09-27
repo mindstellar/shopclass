@@ -37,7 +37,13 @@ $contactOpen = !$publicOwn && (!osc_reg_user_can_contact() || osc_is_web_user_lo
             osc_esc_html(_m('Member since %s')),
             osc_esc_html(osc_format_date(osc_user_regdate()))
         ); ?></span>
-        <?php if (osc_user_website() !== '') { ?>
+        <?php $publicPlace = implode(', ', array_filter(array(
+            (string) osc_user_city(), (string) osc_user_region(), (string) osc_user_country(),
+        ), 'strlen'));
+        if ($publicPlace !== '') { ?>
+            <span><?php echo osc_esc_html($publicPlace); ?></span>
+        <?php }
+        if (osc_user_website() !== '') { ?>
             <a href="<?php echo osc_esc_html(osc_user_website()); ?>" rel="nofollow noopener ugc"><?php
                 echo osc_esc_html(osc_user_website()); ?></a>
         <?php } ?>
@@ -64,7 +70,8 @@ $contactOpen = !$publicOwn && (!osc_reg_user_can_contact() || osc_is_web_user_lo
 <?php } else { ?>
     <?php osc_gui_listing_list('public_profile', false); ?>
     <?php $publicPager = osc_pagination_items();
-    if ($publicPager !== '') { ?>
+    // A lone "1" leads nowhere, so the pager shows only when it has a link.
+    if (strpos($publicPager, '<a') !== false) { ?>
         <nav class="oe-pager" aria-label="<?php echo osc_esc_html(_m('Pages')); ?>"><?php
             echo $publicPager; ?></nav>
     <?php } ?>
