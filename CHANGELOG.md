@@ -34,9 +34,10 @@ and a member's profile has a Message button. Plugins get a stronger query builde
 job queue.
 
 A new server can now get a site with one command, with free HTTPS: the Docker image gets
-and renews its own certificate.
+and renews its own certificate. The image is now also on Docker Hub as
+`mindstellar/shopclass`.
 
-This is the sixth beta. Please try it on a copy of your site first, and tell us what you find.
+This is the seventh beta. Please try it on a copy of your site first, and tell us what you find.
 
 ### New
 
