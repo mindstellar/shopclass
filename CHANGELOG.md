@@ -37,7 +37,11 @@ A new server can now get a site with one command, with free HTTPS: the Docker im
 and renews its own certificate. The image is now also on Docker Hub as
 `mindstellar/shopclass`.
 
-This is the seventh beta. Please try it on a copy of your site first, and tell us what you find.
+Cleanup and other slow work run in the background, with a history on Tools → Background
+jobs. Sign-in protection lists who is blocked right now and lets you unblock them.
+
+This is the first release candidate. Nothing more is planned before 6.4.0, so please try it
+on a copy of your site and tell us what you find.
 
 ### New
 
