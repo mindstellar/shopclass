@@ -80,12 +80,12 @@ if (osc_is_user_dashboard()) {
 } elseif (osc_is_current_page('user', 'delete')) {
     // No entry of its own; it hangs off the profile page that links to it.
     $navCurrent = 'opt_account';
-} elseif (osc_is_current_page('billing', 'wallet') || osc_is_current_page('billing', 'orders')) {
-    // Orders hang off the wallet -- there is no nav entry of their own, and
-    // marking nothing on that page would read as having left the account.
-    $navCurrent = 'opt_billing_wallet';
 } elseif (osc_is_current_page('billing', 'buy') || osc_is_current_page('billing', 'checkout')) {
     $navCurrent = 'opt_billing_buy';
+} elseif (osc_get_osclass_location() === 'billing') {
+    // The wallet has no action of its own: CWebBilling shows it for anything else.
+    // Orders hang off it too, since they have no nav entry.
+    $navCurrent = 'opt_billing_wallet';
 }
 ?>
 <nav class="oe-account-nav" aria-label="<?php echo osc_esc_html(_m('Your account')); ?>">

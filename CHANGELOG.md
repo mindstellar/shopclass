@@ -113,6 +113,7 @@ This is the fourth beta. Please try it on a copy of your site first, and tell us
 
 ### Fixed
 
+- The account menu marks Credits as the current page on the credits page.
 - Saving a profile no longer clears its stored map position.
 - Editing "About you" checks its size, as registration does.
 - The contact page refuses an empty message. A failed send on any contact form shows the reason in the form, with what was typed.
