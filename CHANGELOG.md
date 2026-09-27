@@ -33,7 +33,10 @@ hooks a theme can use to add to them. Your listings shows each listing's real st
 and a member's profile has a Message button. Plugins get a stronger query builder and
 job queue.
 
-This is the fifth beta. Please try it on a copy of your site first, and tell us what you find.
+A new server can now get a site with one command, with free HTTPS: the Docker image gets
+and renews its own certificate.
+
+This is the sixth beta. Please try it on a copy of your site first, and tell us what you find.
 
 ### New
 
