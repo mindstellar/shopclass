@@ -379,16 +379,15 @@ class CWebItem extends BaseModel
                 $this->redirectTo(osc_item_url());
                 break;
             case 'item_delete':
-                $secret = Params::getParam('secret');
-                $id     = Params::getParam('id');
-                $item   =
-                    $this->itemManager->listWhere(
-                        'i.pk_i_id = %d AND ((i.s_secret = %s) OR (i.fk_i_user_id = %d))',
-                        (int)$id,
-                        $secret,
-                        (int)$this->userId
-                    );
-                if (count($item) == 1) {
+                $secret = Params::getParamString('secret');
+                $item   = $this->itemManager->listWhere('i.pk_i_id = %d', Params::getParamInt('id'));
+                $bySecret = count($item) === 1 && $secret !== '' && hash_equals((string) $item[0]['s_secret'], $secret);
+                $byOwner  = count($item) === 1 && $this->userId && (int) $item[0]['fk_i_user_id'] === (int) $this->userId;
+                if (!$bySecret && $byOwner) {
+                    // The owner's link carries no secret, so it must carry a CSRF token.
+                    osc_csrf_check();
+                }
+                if ($bySecret || $byOwner) {
                     $mItems  = new ItemActions(false);
                     $success = $mItems->delete($item[0]['s_secret'], $item[0]['pk_i_id']);
                     if ($success) {

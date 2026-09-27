@@ -51,6 +51,10 @@ function osc_category_id()
 {
     return 7;
 }
+function osc_csrf_token_url()
+{
+    return 'CSRFName=N&CSRFToken=T';
+}
 function osc_alert_id()
 {
     return 3;
@@ -188,7 +192,7 @@ $EXPECTED_OFF = array(
     'item edit'                => 'http://example.com/index.php?page=item&action=item_edit&id=42&secret=SEC',
     'item edit no secret'      => 'http://example.com/index.php?page=item&action=item_edit&id=42',
     'item delete'              => 'http://example.com/index.php?page=item&action=item_delete&id=42&secret=SEC',
-    'item delete no secret'    => 'http://example.com/index.php?page=item&action=item_delete&id=42',
+    'item delete no secret'    => 'http://example.com/index.php?page=item&action=item_delete&id=42&CSRFName=N&CSRFToken=T',
     'item activate'            => 'http://example.com/index.php?page=item&action=activate&id=42&secret=SEC',
     'item activate no secret'  => 'http://example.com/index.php?page=item&action=activate&id=42',
     'resource delete'          => 'http://example.com/index.php?page=item&action=deleteResource'
@@ -231,7 +235,7 @@ $EXPECTED_ON = array(
     'item edit'                => 'http://example.com/item/edit/42/SEC',
     'item edit no secret'      => 'http://example.com/item/edit/42/',
     'item delete'              => 'http://example.com/item/delete/42/SEC',
-    'item delete no secret'    => 'http://example.com/item/delete/42/',
+    'item delete no secret'    => 'http://example.com/item/delete/42/?CSRFName=N&CSRFToken=T',
     'item activate'            => 'http://example.com/item/activate/42/SEC',
     'item activate no secret'  => 'http://example.com/item/activate/42/',
     'resource delete'          => 'http://example.com/resource/delete/8/42/CD/SEC',

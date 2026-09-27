@@ -192,6 +192,7 @@ This is the fourth beta. Please try it on a copy of your site first, and tell us
 
 ### Security
 
+- Deleting your own listing needs a CSRF token, so another site can no longer delete it through a link. `osc_item_delete_url()` adds the token; e-mailed delete links keep working through the listing's secret.
 - A new search alert stores the search's values, not SQL, and runs through the same builder as the search page.
 - The upgrade converts every saved alert to its search values and discards its stored SQL, so back up `t_alerts` first if you may need it. An alert holding anything core did not write is paused and listed under **Users → Alerts**; on a large site `php oc-cli.php jobs:work` finishes the conversion at once.
 - A search's `sLocale` value reached SQL unescaped, an injection open to anonymous visitors. Only locale codes are accepted now, and they are escaped; two locales also no longer build invalid SQL.

@@ -852,7 +852,8 @@ function osc_item_edit_url($secret = '', $id = '')
 }
 
 /**
- * Gets url for delete an item
+ * Gets url for delete an item. Without $secret the link is for the signed-in owner
+ * and carries a CSRF token, which the delete action requires.
  *
  * @param string     $secret
  * @param int|string $id
@@ -864,7 +865,12 @@ function osc_item_delete_url($secret = '', $id = '')
     if ($id == '') {
         $id = osc_item_id();
     }
-    return osc_core_url('item_delete', array('id' => $id, 'secret' => $secret));
+    $url = osc_core_url('item_delete', array('id' => $id, 'secret' => $secret));
+    if ($secret === '' || $secret === null) {
+        $url .= (strpos($url, '?') === false ? '?' : '&') . osc_csrf_token_url();
+    }
+
+    return $url;
 }
 
 /**
