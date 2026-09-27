@@ -28,7 +28,12 @@ Photos keep truer colours: new sites and the Docker image use ImageMagick where 
 available, and iPhone HEIC photos can be added from the listing form. **JPEG quality** is now
 called **Photo quality**, because it sets WebP quality too.
 
-This is the fourth beta. Please try it on a copy of your site first, and tell us what you find.
+Core now draws every account page, the public profile and the contact page itself, with
+hooks a theme can use to add to them. Your listings shows each listing's real status,
+and a member's profile has a Message button. Plugins get a stronger query builder and
+job queue.
+
+This is the fifth beta. Please try it on a copy of your site first, and tell us what you find.
 
 ### New
 
