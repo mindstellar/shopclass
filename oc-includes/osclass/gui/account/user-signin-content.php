@@ -118,7 +118,8 @@ $signinFocus = static function (string $section) use ($folioSignin): string {
                     <label class="oe-label" for="oe-new-password2"><?php
                         echo osc_esc_html(_m('Repeat the new password')); ?></label>
                     <input class="oe-input" id="oe-new-password2" type="password" name="new_password2"
-                           autocomplete="new-password" required minlength="6" />
+                           autocomplete="new-password" required minlength="6" data-match="new_password"
+                           data-match-message="<?php echo osc_esc_html(_m('The two passwords do not match.')); ?>" />
                 </div>
                 <div class="oe-actions">
                     <button class="oe-btn" type="submit"><?php echo osc_esc_html(_m('Save')); ?></button>
