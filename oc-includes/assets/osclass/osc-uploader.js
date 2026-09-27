@@ -343,11 +343,12 @@ function oscPhotoUploader(root, cfg) {
             }
             send(out, item, prog, bar, objURL);
         }).catch(function () {
-            // Only a HEIC photo can fail here: the browser could not decode it.
             URL.revokeObjectURL(objURL);
             item.remove();
             refreshPrimary();
-            showError(fill(t('heicError', '{file} is a HEIC photo this browser cannot convert. Save it as JPEG and try again.'), { file: file.name }));
+            showError(isHeic(file)
+                ? fill(t('heicError', '{file} is a HEIC photo this browser cannot convert. Save it as JPEG and try again.'), { file: file.name })
+                : fill(t('failUpload', '{file} could not be uploaded.'), { file: file.name }));
         });
     }
 
