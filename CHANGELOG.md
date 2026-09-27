@@ -113,6 +113,7 @@ This is the seventh beta. Please try it on a copy of your site first, and tell u
 - The profile form is grouped into Photo, Your details, Contact, Location and About you, with the picture first. New classes `.oe-group`, `.oe-grid`, `.oe-avatar-field` and `.oe-avatar-empty`.
 - The dashboard's greeting, buttons, heading and See all line carry classes a theme can hide. The credits pages fire `account_page_before` and `account_page_after`. The contact page marks name and subject optional.
 - Background jobs write to the activity log: one line per worker run, one when a job gives up, and what each cleanup removed. **Tools → Background jobs** lists them under Recent activity, with readable job names. New `osc_job_describe()`, and `osc_admin_when()`, `osc_admin_duration()` and `osc_cron_last_run()`.
+- **Sign-in protection** lists the addresses and accounts with recent failed sign-ins, marks the blocked ones and unblocks one at a time.
 - `install.sh`, attached to each release, sets up a Docker site in one command, with free HTTPS and a www redirect when given a domain.
 - The Docker image serves HTTPS itself when `OSC_TLS_DOMAIN` is set: it gets and renews a Let's Encrypt certificate and redirects `OSC_TLS_REDIRECT_FROM` names.
 
@@ -273,7 +274,7 @@ This is the seventh beta. Please try it on a copy of your site first, and tell u
 ### Changed
 
 - Tools > Cleanup runs in the background, a batch at a time, until nothing matches, so a large backlog no longer times out **Run cleanup now**.
-- Cleanup's Reported listings rule has an age, counted from the listing's last change. The Cleanup and Background jobs screens match the rest of the admin.
+- Cleanup's Reported listings rule has an age, counted from the listing's last change (30 days until you set it). The Cleanup and Background jobs screens match the rest of the admin.
 - A theme that declares its chrome with `'account' => true` gets core's credits pages inside it, ahead of its `user-custom.php`.
 - The credits page hides Buy when there is no package or payment method (`osc_billing_can_buy()`), and billing tables stack on a phone.
 - The Docker image includes ImageMagick, locked to photo formats and about 30 MB larger, and new installs use it where it is loaded. With ImageMagick, wide-colour and CMYK photos keep their colours. **JPEG quality** is now **Photo quality**, since it sets WebP quality too.

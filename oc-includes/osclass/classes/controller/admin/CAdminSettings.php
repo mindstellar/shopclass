@@ -61,6 +61,7 @@ class CAdminSettings
             case ('alerts_post'):
             case ('login_throttle_post'):
             case ('login_throttle_reset'):
+            case ('login_throttle_unblock'):
                 $do = new CAdminSettingsSpamnBots();
                 break;
             case ('sitemap'):

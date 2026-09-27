@@ -43,15 +43,21 @@ repository or a support post.
 Repeated failed logins are throttled per IP and per account, so a password
 guesser is slowed to uselessness without locking out a real user who mistyped.
 
+The settings are in **Settings → Spam and bots → Sign-in protection**:
+
 | Setting | Default |
 |---|---|
-| Window | 15 minutes |
-| Maximum attempts per IP | 20 |
-| Maximum attempts per account | 10 |
-| Attempt log retention | 7 days |
+| Count failures from the last | 15 minutes |
+| Failures per IP address | 20 |
+| Failures per account | 10 |
+| Keep records for | 7 days |
 
 The per-account limit is the one that matters against a targeted attack; the
 per-IP limit catches broad scanning.
+
+**Failed sign-ins right now**, on the same page, lists every address and account with
+recent failures and says which are blocked. **Unblock** lets one of them try again at
+once; **Unblock everyone** clears them all.
 
 :::danger[Behind a proxy, throttling needs the real client IP]
 If your site sits behind Cloudflare, a tunnel or any reverse proxy and the real

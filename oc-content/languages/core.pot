@@ -507,6 +507,14 @@ msgstr ""
 msgid "A 3-letter ISO 4217 code, e.g. USD."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
+msgid "A block ends once the failures are older than this."
+msgstr ""
+
+#: oc-admin/themes/modern/settings/spamNbots.php
+msgid "A captcha is set up above, so the per-account limit is off. "
+msgstr ""
+
 #: oc-admin/themes/modern/tools/system-info.php
 msgid ""
 "A checked view of the environment Shopclass is running on: what it needs, "
@@ -580,6 +588,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/Breadcrumb.php
 msgid "Account"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/spamNbots.php
+msgid "Account, %s"
 msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
@@ -868,6 +880,12 @@ msgstr ""
 msgid "Address: no more than 100 characters"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/spamNbots.php
+msgid ""
+"Addresses and accounts with failures in the last %d minutes. Unblock one to "
+"let it try again at once."
+msgstr ""
+
 #: oc-includes/osclass/emails.php
 msgid "Admin"
 msgstr ""
@@ -878,6 +896,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/users/settings.php
 msgid "Admin notifications"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/spamNbots.php
+msgid "Admin panel"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/header.php
@@ -945,6 +967,12 @@ msgstr ""
 
 #: oc-admin/themes/modern/items/settings.php
 msgid "After"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/spamNbots.php
+msgid ""
+"After too many failed sign-ins, Shopclass blocks that address or account "
+"for a "
 msgstr ""
 
 #: oc-admin/themes/modern/fields/index.php
@@ -1363,14 +1391,6 @@ msgstr ""
 msgid "Attachments"
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
-msgid "Attempts per account"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
-msgid "Attempts per address"
-msgstr ""
-
 #: oc-includes/osclass/helpers/hUtils.php
 msgid "Aug"
 msgstr ""
@@ -1625,8 +1645,16 @@ msgstr ""
 msgid "Block"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/spamNbots.php
+msgid "Block ends"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 msgid "Block listing"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
+msgid "Block sign-ins after too many failures"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/maintenance.php
@@ -1638,6 +1666,7 @@ msgid "Block this listing?"
 msgstr ""
 
 #: oc-admin/themes/modern/comments/frm.php
+#: oc-admin/themes/modern/settings/spamNbots.php
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 #: oc-includes/osclass/classes/datatables/CommentsDataTable.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
@@ -2256,14 +2285,6 @@ msgstr ""
 msgid "Clear log"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/spamNbots.php
-msgid "Clear now"
-msgstr ""
-
-#: oc-admin/themes/modern/settings/spamNbots.php
-msgid "Clear recorded attempts"
-msgstr ""
-
 #: oc-admin/themes/modern/items/reported.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 msgid "Clear reports"
@@ -2644,11 +2665,15 @@ msgid "Count crawler visits as views"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
-msgid "Count failed attempts and refuse further ones past the limits below"
+msgid "Count failures from the last"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/cleanup.php
 msgid "Count listing views"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/spamNbots.php
+msgid "Counting"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations.php
@@ -3245,6 +3270,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/index.php
 msgid "Deleted user"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/spamNbots.php
+msgid "Deletes every recorded failure, yours too."
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
@@ -3988,19 +4017,19 @@ msgid "Failed"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/spamNbots.php
-msgid ""
-"Failed sign-ins and password-reset requests are counted per visitor address "
-"and per account "
+msgid "Failed sign-ins right now"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/spamNbots.php
+msgid "Failures"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
-msgid ""
-"Failures against one account name, from anywhere. This is what catches "
-"guessing "
+msgid "Failures per IP address"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
-msgid "Failures from one visitor address, across every account it tried. Keep this "
+msgid "Failures per account"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsForm.php
@@ -4231,6 +4260,10 @@ msgstr ""
 
 #: oc-includes/osclass/helpers/hItems.php
 msgid "From"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
+msgid "From any address. This catches guessing spread over many addresses."
 msgstr ""
 
 #: oc-admin/themes/modern/items/reported.php
@@ -4497,10 +4530,6 @@ msgstr ""
 msgid "How Shopclass talks to the database — the site cannot run without it."
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
-msgid "How far back failures are counted, and so how long a refusal lasts."
-msgstr ""
-
 #: oc-includes/osclass/classes/admin/form/BillingSettingsForm.php
 msgid "How long a listing must wait before it can be bumped again."
 msgstr ""
@@ -4565,7 +4594,12 @@ msgid "IP Address: %s"
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
+#: oc-admin/themes/modern/settings/spamNbots.php
 msgid "IP address"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/spamNbots.php
+msgid "IP address or account"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BanRuleForm.php
@@ -5116,6 +5150,10 @@ msgstr ""
 msgid "Keep the photo at its full size."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
+msgid "Keep this high: many people can share one address at an office or on mobile."
+msgstr ""
+
 #: oc-admin/themes/modern/tools/system-info.php
 msgid "Keeps compiled PHP in memory instead of recompiling every request."
 msgstr ""
@@ -5344,20 +5382,12 @@ msgstr ""
 msgid "Let long jobs finish"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/spamNbots.php
-msgid "Lets anyone currently refused try again straight away, including you."
-msgstr ""
-
 #: oc-admin/themes/modern/settings/locations/preview.php
 msgid "Level"
 msgstr ""
 
 #: oc-includes/osclass/classes/AdminMenu.php
 msgid "Library"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
-msgid "Limit sign-in attempts"
 msgstr ""
 
 #: oc-includes/osclass/classes/EmailVariables.php
@@ -6519,6 +6549,10 @@ msgstr ""
 msgid "No entries match your filter."
 msgstr ""
 
+#: oc-admin/themes/modern/settings/spamNbots.php
+msgid "No failed sign-ins. Nobody is blocked."
+msgstr ""
+
 #: oc-admin/themes/modern/fields/index.php
 msgid "No fields yet. Create one to get started."
 msgstr ""
@@ -7588,12 +7622,6 @@ msgstr ""
 msgid "Provider"
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
-msgid ""
-"Pruned by the daily cron. Only the window above affects the limits; the "
-"rest is "
-msgstr ""
-
 #: oc-includes/osclass/helpers/hUtils.php
 msgid "Public Profile"
 msgstr ""
@@ -8057,6 +8085,7 @@ msgid "Resend the activation to"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/ui.php
+#: oc-admin/themes/modern/settings/spamNbots.php
 #: oc-admin/themes/modern/tools/logs.php
 msgid "Reset"
 msgstr ""
@@ -8960,6 +8989,10 @@ msgstr ""
 msgid "Sign-in details"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
+msgid "Sign-in limits"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/spamNbots.php
 #: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
 msgid "Sign-in protection"
@@ -9122,6 +9155,7 @@ msgstr ""
 msgid "Stable, release candidates and betas"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/spamNbots.php
 #: oc-admin/themes/modern/tools/jobs.php
 msgid "State"
 msgstr ""
@@ -9410,12 +9444,6 @@ msgid ""
 "before turning on "
 msgstr ""
 
-#: oc-admin/themes/modern/settings/spamNbots.php
-msgid ""
-"The account limit is skipped while a captcha provider is configured above, "
-"because every "
-msgstr ""
-
 #: oc-admin/themes/modern/appearance/index.php
 msgid "The active theme extends this one. Deleting it would leave "
 msgstr ""
@@ -9492,6 +9520,10 @@ msgstr ""
 msgid ""
 "The daily task deletes entries older than this. Set to 0 to keep them "
 "forever."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
+msgid "The daily task deletes older records. 0 keeps them forever."
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-database.php
@@ -10431,6 +10463,7 @@ msgid "Unactivated users"
 msgstr ""
 
 #: oc-admin/themes/modern/comments/frm.php
+#: oc-admin/themes/modern/settings/spamNbots.php
 #: oc-includes/osclass/classes/controller/admin/CAdminItemComments.php
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 #: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
@@ -10438,6 +10471,10 @@ msgstr ""
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 #: oc-includes/osclass/classes/datatables/UsersDataTable.php
 msgid "Unblock"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/spamNbots.php
+msgid "Unblock everyone"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
@@ -11137,6 +11174,7 @@ msgid "Web title"
 msgstr ""
 
 #: oc-admin/themes/modern/plugins/index.php
+#: oc-admin/themes/modern/settings/spamNbots.php
 #: oc-admin/themes/modern/users/frm.php
 msgid "Website"
 msgstr ""
@@ -11269,10 +11307,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/pages/frm.php
 msgid "Widgets"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
-msgid "Window"
 msgstr ""
 
 #: oc-admin/themes/modern/pages/index.php

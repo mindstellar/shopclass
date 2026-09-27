@@ -56,26 +56,92 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         <?php osc_admin_settings_form($forms['alerts']['id'], $forms['alerts']); ?>
     </div>
     <div id="login-throttle-settings" class="separate-top">
-        <?php osc_admin_form_section(__('Sign-in protection')); ?>
-        <p><?php _e('Failed sign-ins and password-reset requests are counted per visitor address and per account '
-                    . 'name. Passing a limit refuses further attempts until the older ones age out of the window, '
-                    . 'which is what stops a stolen password list being tried one guess at a time.'); ?></p>
-        <p><?php _e('The account limit is skipped while a captcha provider is configured above, because every '
-                    . 'attempt already has to solve one. Without that, an attacker could hold someone else\'s '
-                    . 'account shut simply by failing against it.'); ?></p>
+        <?php osc_admin_form_section(__('Sign-in protection'), array(
+            'intro' => __('After too many failed sign-ins, Shopclass blocks that address or account for a '
+                          . 'while. This stops password guessing on the site and the admin panel.'),
+        )); ?>
+        <?php if (osc_captcha_enabled()) { ?>
+            <p class="text-muted"><?php _e('A captcha is set up above, so the per-account limit is off. '
+                                           . 'Nobody can lock another person out of their account.'); ?></p>
+        <?php } ?>
         <?php osc_admin_settings_form($forms['login_throttle']['id'], $forms['login_throttle']); ?>
-        <?php osc_admin_form_open(array(
+
+        <?php
+        $throttle = __get('login_throttle_activity') ?: array('aRows' => array());
+        $contexts = array('admin' => __('Admin panel'), 'web' => __('Website'));
+        $rows     = $throttle['aRows'];
+
+        osc_admin_form_section(__('Failed sign-ins right now'), array(
+            'spaced' => true,
+            'intro'  => sprintf(
+                __('Addresses and accounts with failures in the last %d minutes. Unblock one to let it try again at once.'),
+                osc_login_throttle_window()
+            ),
+        ));
+        if ($rows === array()) { ?>
+            <p class="text-muted"><?php _e('No failed sign-ins. Nobody is blocked.'); ?></p>
+        <?php } else { ?>
+            <div class="table-responsive">
+                <table class="table" style="min-width:40rem">
+                    <thead>
+                    <tr>
+                        <th class="col-status"><?php _e('State'); ?></th>
+                        <th><?php _e('IP address or account'); ?></th>
+                        <th class="text-end"><?php _e('Failures'); ?></th>
+                        <th><?php _e('Block ends'); ?></th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($rows as $row) {
+                        $isIp   = $row['kind'] === 'ip';
+                        $fields = $isIp
+                            ? array('ip' => $row['ip'])
+                            : array('context' => $row['context'], 'account' => $row['account']); ?>
+                        <tr>
+                            <td class="col-status"><?php $row['blocked']
+                                ? osc_admin_status('failed', __('Blocked'))
+                                : osc_admin_status('pending', __('Counting')); ?></td>
+                            <td>
+                                <?php echo osc_esc_html($isIp ? $row['ip'] : $row['account']); ?>
+                                <div class="text-muted small"><?php echo osc_esc_html($isIp
+                                    ? __('IP address')
+                                    : sprintf(__('Account, %s'), $contexts[$row['context']] ?? $row['context'])); ?></div>
+                            </td>
+                            <td class="text-end"><?php echo (int) $row['failures']; ?></td>
+                            <td><?php echo $row['blocked'] ? osc_admin_when($row['until']) : '<span class="text-muted">&mdash;</span>'; ?></td>
+                            <td class="text-end">
+                                <?php osc_admin_form_open(array(
+                                    'page'       => 'settings',
+                                    'action'     => 'login_throttle_unblock',
+                                    'horizontal' => false,
+                                    'class'      => 'd-inline',
+                                    'fields'     => $fields,
+                                )); ?>
+                                    <button type="submit" class="btn btn-sm btn-secondary"><?php
+                                        echo $row['blocked'] ? __('Unblock') : __('Reset'); ?></button>
+                                <?php osc_admin_form_close(null, array('horizontal' => false)); ?>
+                            </td>
+                        </tr>
+                    <?php } ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php osc_admin_pagination($throttle);
+        }
+
+        osc_admin_form_open(array(
             'name'   => 'settings_form',
             'page'   => 'settings',
             'action' => 'login_throttle_reset',
         )); ?>
                 <?php osc_admin_field(array(
                     'type'   => 'custom',
-                    'label'  => __('Clear recorded attempts'),
-                    'help'   => __('Lets anyone currently refused try again straight away, including you.'),
+                    'label'  => __('Unblock everyone'),
+                    'help'   => __('Deletes every recorded failure, yours too.'),
                     'render' => static function () {
                         osc_admin_action_button(array(
-                            'label' => __('Clear now'),
+                            'label' => __('Unblock everyone'),
                             'type'  => 'submit',
                             'attrs' => array('id' => 'submit_login_throttle_reset'),
                         ));

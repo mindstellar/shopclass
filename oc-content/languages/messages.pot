@@ -63,6 +63,10 @@ msgstr ""
 msgid "%s applied to this listing"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSpamnBots.php
+msgid "%s can sign in again."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
 msgid "%s can't be disabled because it's the default language"
 msgstr ""

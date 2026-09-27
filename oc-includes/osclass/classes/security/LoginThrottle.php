@@ -172,6 +172,117 @@ class LoginThrottle
     }
 
     /**
+     * Who has failed to sign in within the window, for the admin: addresses and accounts
+     * in one list, blocked first, then by most failures.
+     *
+     * @param int $limit rows read per kind
+     *
+     * @return array<int,array<string,mixed>> each with kind (ip|account), ip or context and
+     *         account, failures, blocked and until
+     */
+    public static function activity($limit = 1000)
+    {
+        $window = self::windowSeconds();
+        $since  = self::since($window);
+        $table  = DB_TABLE_PREFIX . 't_login_attempt';
+        $out    = array();
+
+        try {
+            $rows = osc_db_table($table)
+                ->select('s_ip')
+                ->selectRaw('COUNT(*) AS n, MIN(dt_date) AS oldest')
+                ->where('dt_date', '>=', $since)
+                ->where('s_ip', '!=', '')
+                ->groupBy('s_ip')
+                ->orderBy('n', 'DESC')
+                ->limit((int)$limit)
+                ->get();
+            foreach ($rows as $row) {
+                $out[] = self::activityRow($row, osc_login_throttle_max_ip(), $window) + array(
+                    'kind' => 'ip',
+                    'ip'   => (string)$row['s_ip'],
+                );
+            }
+
+            $rows = osc_db_table($table)
+                ->select('s_context', 's_account')
+                ->selectRaw('COUNT(*) AS n, MIN(dt_date) AS oldest')
+                ->where('dt_date', '>=', $since)
+                ->where('s_account', '!=', '')
+                ->groupBy('s_context', 's_account')
+                ->orderBy('n', 'DESC')
+                ->limit((int)$limit)
+                ->get();
+            foreach ($rows as $row) {
+                // With a captcha, the account limit is off, so no account is blocked.
+                $max   = osc_captcha_enabled() ? PHP_INT_MAX : osc_login_throttle_max_account();
+                $out[] = self::activityRow($row, $max, $window) + array(
+                    'kind'    => 'account',
+                    'context' => (string)$row['s_context'],
+                    'account' => (string)$row['s_account'],
+                );
+            }
+        } catch (\Throwable $e) {
+            self::unavailable($e);
+        }
+
+        usort($out, static fn ($a, $b) => array($b['blocked'], $b['failures']) <=> array($a['blocked'], $a['failures']));
+
+        return $out;
+    }
+
+    /**
+     * Let one address sign in again straight away.
+     *
+     * @param string $ip
+     *
+     * @return void
+     */
+    public static function unblockIp($ip)
+    {
+        try {
+            LoginAttempt::newInstance()->clearIp((string)$ip);
+        } catch (\Throwable $e) {
+            self::unavailable($e);
+        }
+    }
+
+    /**
+     * Let one account be tried again straight away.
+     *
+     * @param string $context
+     * @param string $account the name exactly as activity() listed it
+     *
+     * @return void
+     */
+    public static function unblockAccount($context, $account)
+    {
+        try {
+            LoginAttempt::newInstance()->clearAccount((string)$context, (string)$account);
+        } catch (\Throwable $e) {
+            self::unavailable($e);
+        }
+    }
+
+    /**
+     * @param array<string,mixed> $row    with n and oldest
+     * @param int                 $max    the limit that applies
+     * @param int                 $window seconds
+     *
+     * @return array{failures:int,blocked:bool,until:string}
+     */
+    private static function activityRow(array $row, $max, $window)
+    {
+        $failures = (int)$row['n'];
+
+        return array(
+            'failures' => $failures,
+            'blocked'  => $failures >= $max,
+            'until'    => date('Y-m-d H:i:s', time() + self::retryAfter((string)$row['oldest'], $window)),
+        );
+    }
+
+    /**
      * Drop attempts past the retention window. Called from the daily cron.
      *
      * @return int rows removed

@@ -193,39 +193,36 @@ final class SpamSettingsForm
         CoreSettings::page(self::PAGE_LOGIN_THROTTLE, __('Sign-in protection'), self::SECURITY_SECTION)
             ->checkbox(
                 'login_throttle_enabled',
-                __('Count failed attempts and refuse further ones past the limits below')
+                __('Block sign-ins after too many failures')
             )
-                ->rowLabel(__('Limit sign-in attempts'))
+                ->rowLabel(__('Sign-in limits'))
                 ->default(true)
             ->number(
                 'login_throttle_window',
-                __('Window'),
-                __('How far back failures are counted, and so how long a refusal lasts.')
+                __('Count failures from the last'),
+                __('A block ends once the failures are older than this.')
             )
                 ->clampMin(1)
                 ->suffix(__('minutes'))
                 ->default(15)
             ->number(
                 'login_throttle_max_ip',
-                __('Attempts per address'),
-                __('Failures from one visitor address, across every account it tried. Keep this '
-                   . 'generous: an office or mobile network is many people behind one address.')
+                __('Failures per IP address'),
+                __('Keep this high: many people can share one address at an office or on mobile.')
             )
                 ->clampMin(1)
                 ->default(20)
             ->number(
                 'login_throttle_max_account',
-                __('Attempts per account'),
-                __('Failures against one account name, from anywhere. This is what catches guessing '
-                   . 'spread across many addresses.')
+                __('Failures per account'),
+                __('From any address. This catches guessing spread over many addresses.')
             )
                 ->clampMin(1)
                 ->default(10)
             ->number(
                 'login_attempt_retention_days',
                 __('Keep records for'),
-                __('Pruned by the daily cron. Only the window above affects the limits; the rest is '
-                   . 'history. 0 keeps everything.')
+                __('The daily task deletes older records. 0 keeps them forever.')
             )
                 ->clampMin(0)
                 ->suffix(__('days'))

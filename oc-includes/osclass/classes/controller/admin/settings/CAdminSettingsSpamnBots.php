@@ -106,6 +106,21 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
                 osc_add_flash_ok_message(_m('Sign-in protection settings have been updated'), 'admin');
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
                 break;
+            case ('login_throttle_unblock'):
+                osc_csrf_check();
+                $ip      = Params::getParamString('ip');
+                $context = Params::getParamString('context');
+                // Raw: it must match the stored name exactly. It is bound in SQL and escaped below.
+                $account = Params::getParamString('account', false, false, false);
+                if ($ip !== '' && filter_var($ip, FILTER_VALIDATE_IP)) {
+                    \mindstellar\security\LoginThrottle::unblockIp($ip);
+                    osc_add_flash_ok_message(sprintf(_m('%s can sign in again.'), osc_esc_html($ip)), 'admin');
+                } elseif ($account !== '' && in_array($context, array('admin', 'web'), true)) {
+                    \mindstellar\security\LoginThrottle::unblockAccount($context, $account);
+                    osc_add_flash_ok_message(sprintf(_m('%s can sign in again.'), osc_esc_html($account)), 'admin');
+                }
+                $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots#login-throttle-settings');
+                break;
             case ('login_throttle_reset'):
                 // clearing every recorded attempt, so an operator can let a
                 // locked-out visitor (or themselves) back in immediately
@@ -143,6 +158,16 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
         // reads as "no key configured" rather than as anything being wrong.
         $this->_exportVariableToView('akismet_status', $akismetStatus);
         $this->_exportVariableToView('spam_forms', SpamSettingsForm::formVars($akismetStatus, $rejected, $values));
+        // Failed sign-ins, a page at a time.
+        $activity = \mindstellar\security\LoginThrottle::activity();
+        $length   = \mindstellar\admin\ListPaging::length(20);
+        $page     = \mindstellar\admin\ListPaging::page();
+        $rows     = array_slice($activity, \mindstellar\admin\ListPaging::start($page, $length), $length);
+        $this->_exportVariableToView('login_throttle_activity', array(
+            'aRows'                => $rows,
+            'iTotalDisplayRecords' => count($activity),
+            'iDisplayLength'       => $length,
+        ));
         $this->doView('settings/spamNbots.php');
     }
 }
