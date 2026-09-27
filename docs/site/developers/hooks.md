@@ -136,7 +136,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 514 names. Generated from the source; do not edit by hand.
+Core fires 517 names. Generated from the source; do not edit by hand.
 
 ### Admin (77)
 
@@ -328,7 +328,7 @@ Core fires 514 names. Generated from the source; do not edit by hand.
 | `email_warn_expiration_title_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_title', osc_apply_filter('email_warn_expiration_title', $content['s_title'], $aItem) ), $words ), $aItem` | `oc-includes/osclass/emails.php` |
 | `hook_email_admin_new_item` | action | `$item` | `oc-includes/osclass/classes/actions/ItemActions.php` |
 | `hook_email_admin_new_user` | action | `$user` | `oc-includes/osclass/classes/actions/UserActions.php` |
-| `hook_email_alert_validation` | action | `$aAlert, $email, $secret` | `oc-includes/osclass/classes/controller/CWebAjax.php` |
+| `hook_email_alert_validation` | action | `Alerts::newInstance()->findByPrimaryKey($alertID), $email, $secret` | `oc-includes/osclass/helpers/hSearch.php` |
 | `hook_email_comment_validated` | action | `$aComment` | `oc-includes/osclass/classes/controller/admin/CAdminItemComments.php` |
 | `hook_email_contact_user` | action | `Params::getParam('id'), Params::getParam('yourEmail'), Params::getParam('yourName'), Params::getParam('phoneNumber'), Params::getParam('message')` | `oc-includes/osclass/classes/controller/CWebUserNonSecure.php` |
 | `hook_email_item_inquiry` | action | `$aItem` | `oc-includes/osclass/classes/actions/ItemActions.php` |
@@ -661,7 +661,7 @@ Core fires 514 names. Generated from the source; do not edit by hand.
 | `theme_screenshot_url` | filter | `$url, $theme` | `oc-includes/osclass/helpers/hTheme.php` |
 | `theme_url` | filter | `$script` | `oc-includes/osclass/classes/Scripts.php` |
 
-### User (36)
+### User (39)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -692,6 +692,8 @@ Core fires 514 names. Generated from the source; do not edit by hand.
 | `user_edit_flash_error` | filter | `$flash_error, $userId` | `oc-includes/osclass/classes/actions/UserActions.php` |
 | `user_form` | action | `$user` | `oc-admin/themes/modern/users/frm.php` |
 | `user_info` | filter | `$info, $userId, $locale` | `oc-includes/osclass/helpers/hUsers.php` |
+| `user_login_form` | action | — | `oc-includes/osclass/gui/account/user-login-content.php` |
+| `user_login_form_after` | action | — | `oc-includes/osclass/gui/account/user-login-content.php` |
 | `user_menu` | action | — | `oc-includes/osclass/gui/account/nav.php` |
 | `user_menu_filter` | filter | `$navItems` | `oc-includes/osclass/gui/account/nav.php` |
 | `user_profile_form` | action | `$user` | `oc-admin/themes/modern/users/frm.php` |
@@ -699,6 +701,7 @@ Core fires 514 names. Generated from the source; do not edit by hand.
 | `user_register_completed` | action | `$userId` | `oc-includes/osclass/classes/actions/UserActions.php` |
 | `user_register_failed` | action | `$error` | `oc-includes/osclass/classes/actions/UserActions.php` |
 | `user_register_form` | action | — | `oc-admin/themes/modern/users/frm.php` |
+| `user_register_form_after` | action | — | `oc-includes/osclass/gui/account/user-register-content.php` |
 | `users_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/UsersDataTable.php` |
 | `validate_user` | action | `$user` | `oc-includes/osclass/classes/controller/CWebRegister.php` |
 

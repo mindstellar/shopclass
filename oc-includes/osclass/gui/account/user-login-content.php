@@ -43,7 +43,7 @@ if (!defined('ABS_PATH')) {
         <?php if (osc_captcha_enabled()) {
             osc_show_captcha('login');
         } ?>
-        <?php osc_run_hook('user_form'); ?>
+        <?php osc_run_hook('user_login_form'); ?>
 
         <div class="oe-actions">
             <button class="oe-btn" type="submit"><?php echo osc_esc_html(_m('Sign in')); ?></button>
@@ -51,6 +51,7 @@ if (!defined('ABS_PATH')) {
                 echo osc_esc_html(_m('Forgotten your password?')); ?></a>
         </div>
     </form>
+    <?php osc_run_hook('user_login_form_after'); ?>
 
     <?php if (osc_users_enabled() && osc_user_registration_enabled()) { ?>
         <p class="oe-muted"><?php echo osc_esc_html(_m('No account yet?')); ?>

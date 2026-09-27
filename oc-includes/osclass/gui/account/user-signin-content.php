@@ -81,10 +81,12 @@ $signinFocus = static function (string $section) use ($folioSignin): string {
                     <label class="oe-label" for="oe-username"><?php
                         echo osc_esc_html(_m('Username')); ?></label>
                     <input class="oe-input" id="oe-username" type="text" name="s_username"
-                           autocomplete="username" required aria-describedby="oe-username-hint"<?php echo $signinFocus('username'); ?> />
+                           autocomplete="username" required aria-describedby="oe-username-hint oe-username-status"
+                           data-username-check="<?php echo osc_esc_html(osc_base_url(true) . '?page=ajax&action=check_username_availability'); ?>"<?php echo $signinFocus('username'); ?> />
                     <span class="oe-hint" id="oe-username-hint"><?php echo osc_esc_html(
                         _m('It appears on your public profile and in the address of your listings.')
                     ); ?></span>
+                    <span class="oe-hint" id="oe-username-status" role="status" aria-live="polite"></span>
                 </div>
                 <div class="oe-actions">
                     <button class="oe-btn" type="submit"><?php echo osc_esc_html(_m('Save')); ?></button>

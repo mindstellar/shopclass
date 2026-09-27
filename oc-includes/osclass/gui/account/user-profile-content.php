@@ -118,6 +118,7 @@ $profileInfo   = isset($profileUser['locale'][$profileLocale]['s_info'])
             <?php } ?>
 
             <?php osc_run_hook('user_profile_form', $profileUser); ?>
+            <?php osc_run_hook('user_form', $profileUser); ?>
 
             <div class="oe-actions">
                 <button class="oe-btn" type="submit"><?php echo osc_esc_html(_m('Save changes')); ?></button>

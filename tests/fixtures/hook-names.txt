@@ -254,11 +254,14 @@ action uploaded_resource
 action user_dashboard
 action user_edit_completed
 action user_form
+action user_login_form
+action user_login_form_after
 action user_menu
 action user_profile_form
 action user_register_completed
 action user_register_failed
 action user_register_form
+action user_register_form_after
 action validate_user
 filter actions_manage_alerts
 filter actions_manage_items

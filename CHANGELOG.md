@@ -89,6 +89,7 @@ This is the fourth beta. Please try it on a copy of your site first, and tell us
 - `php oc-cli.php jobs:work` drains the queue on its own schedule, and `jobs:status`
   reports it. `storage:work` still works as an alias.
 - The credits page shows listings used against the limit and links to your orders.
+- New hooks `user_login_form` (inside the sign-in form), `user_login_form_after` and `user_register_form_after` (after each form), for extra fields and social sign-in buttons. The username field on the sign-in details page carries `data-username-check` for a live availability check.
 
 ### Breaking
 
@@ -117,6 +118,7 @@ This is the fourth beta. Please try it on a copy of your site first, and tell us
 - Page titles no longer carry a double space when a part such as the city is empty.
 - With a captcha on, the contact, contact-seller and send-to-friend forms show it, so they can be sent; after a failed send they keep what was typed.
 - The save-this-search form on core's search page saves the alert and says so, without JavaScript; before, it saved nothing.
+- The sign-in form no longer fires `user_form`, so profile-field plugins stop drawing inside it; the profile form fires `user_form` again, as older themes did.
 - On **Media**, a photo's listing link opens the listing editor instead of the listings screen.
 - A search for a category that does not exist answers 404 instead of listing every ad on the site, and its link uses the friendly search address.
 - The plugin and theme catalogue refreshes once a day again; before, it only changed when an admin chose **Check now**, so new updates went unseen.
