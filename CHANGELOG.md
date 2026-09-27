@@ -24,7 +24,11 @@ Pages load faster on sites with memcached or APCu: a cached page now asks the da
 far less. The download is smaller too, because libraries nothing used anymore are gone,
 jQuery among them. If your theme or a plugin still needs jQuery, it has to bring its own.
 
-This is the third beta. Please try it on a copy of your site first, and tell us what you find.
+Photos keep truer colours: new sites and the Docker image use ImageMagick where it is
+available, and iPhone HEIC photos can be added from the listing form. **JPEG quality** is now
+called **Photo quality**, because it sets WebP quality too.
+
+This is the fourth beta. Please try it on a copy of your site first, and tell us what you find.
 
 ### New
 
