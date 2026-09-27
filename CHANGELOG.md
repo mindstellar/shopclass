@@ -231,7 +231,7 @@ This is the fourth beta. Please try it on a copy of your site first, and tell us
 
 ### Changed
 
-- A theme that declares its chrome gets core's credits pages inside it, ahead of its `user-custom.php`.
+- A theme that declares its chrome with `'account' => true` gets core's credits pages inside it, ahead of its `user-custom.php`.
 - The credits page hides Buy when there is no package or payment method (`osc_billing_can_buy()`), and billing tables stack on a phone.
 - The Docker image includes ImageMagick, locked to photo formats and about 30 MB larger, and new installs use it where it is loaded. With ImageMagick, wide-colour and CMYK photos keep their colours. **JPEG quality** is now **Photo quality**, since it sets WebP quality too.
 - The release no longer ships the Sample Forms, Sample Widgets and Test Payments plugins. The two samples install from the market; sites that have them keep them.

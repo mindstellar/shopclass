@@ -48,6 +48,18 @@ osc_add_theme_support('chrome', array(
 Both paths are **relative to your theme directory**. An absolute path, or one
 containing `..`, is refused and core falls back to the probes.
 
+Add `'account' => true` when your chrome also draws the account area, so core's
+credits pages (wallet, buy, orders) render inside it rather than through your
+`user-custom.php`:
+
+```php
+osc_add_theme_support('chrome', array(
+    'header'  => 'parts/site-header.php',
+    'footer'  => 'parts/site-footer.php',
+    'account' => true,
+));
+```
+
 ## Rendering chrome yourself
 
 ```php

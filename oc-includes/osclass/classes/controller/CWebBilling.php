@@ -465,14 +465,17 @@ class CWebBilling extends WebSecBaseModel
     }
 
     /**
-     * A theme that declares its chrome asks for core's pages inside it. A header.php and
-     * footer.php found by probing are not that request: they may not open the document.
+     * Whether the theme asks for the credits pages inside its chrome rather than its
+     * user-custom.php: it declares chrome with 'account' => true. A probed header.php and
+     * footer.php are not that request, and neither is chrome declared for other pages.
      *
      * @return bool
      */
     private function themeDeclaresChrome(): bool
     {
-        return is_array(osc_theme_supports('chrome')) && osc_theme_has_chrome();
+        $declared = osc_theme_supports('chrome');
+
+        return is_array($declared) && !empty($declared['account']) && osc_theme_has_chrome();
     }
 
     /**
