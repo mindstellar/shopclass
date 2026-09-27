@@ -39,29 +39,44 @@ class CWebContact extends BaseModel
         switch ($this->action) {
             case ('contact_post'):   //contact_post
                 osc_csrf_check();
-                $yourName  = Params::getParam('yourName');
-                $yourEmail = Params::getParam('yourEmail');
-                $subject   = Params::getParam('subject');
-                $message   = Params::getParam('message');
+                $yourName  = Params::getParamString('yourName');
+                $yourEmail = Params::getParamString('yourEmail');
+                $subject   = Params::getParamString('subject');
+                $message   = Params::getParamString('message');
+                // A failed send keeps what was typed and the reason, so the form can show both.
+                $fail = function (string $error) use ($yourName, $yourEmail, $subject, $message) {
+                    osc_keep_form(array(
+                        'yourName' => $yourName, 'yourEmail' => $yourEmail,
+                        'subject'  => $subject, 'message_body' => $message,
+                    ), $error);
+                    $this->redirectTo(osc_contact_url());
+                };
 
                 if (osc_captcha_enabled() && !osc_check_captcha()) {
-                    osc_add_flash_error_message(_m('Please complete the security check.'));
-                    Session::newInstance()->_setForm('yourName', $yourName);
-                    Session::newInstance()->_setForm('yourEmail', $yourEmail);
-                    Session::newInstance()->_setForm('subject', $subject);
-                    Session::newInstance()->_setForm('message_body', $message);
-                    $this->redirectTo(osc_contact_url());
+                    $fail(_m('Please complete the security check.'));
 
-                    return false; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
+                    return false;
+                }
+                if (trim($yourName) === '' || trim($subject) === '' || trim($message) === '') {
+                    $fail(_m('Please enter your name, a subject and a message.'));
+
+                    return false;
+                }
+                if (!osc_validate_email($yourEmail)) {
+                    $fail(_m('Please enter a correct email'));
+
+                    return false;
                 }
 
                 $banned = osc_is_banned($yourEmail);
                 if ($banned == 1) {
-                    osc_add_flash_error_message(_m('Your current email is not allowed'));
-                    $this->redirectTo(osc_contact_url());
+                    $fail(_m('Your current email is not allowed'));
+
+                    return false;
                 } elseif ($banned == 2) {
-                    osc_add_flash_error_message(_m('Your current IP is not allowed'));
-                    $this->redirectTo(osc_contact_url());
+                    $fail(_m('Your current IP is not allowed'));
+
+                    return false;
                 }
 
                 $user = User::newInstance()->findByEmail($yourEmail);
@@ -69,16 +84,9 @@ class CWebContact extends BaseModel
                     && ($user['b_active'] == 0
                         || $user['b_enabled'] == 0)
                 ) {
-                    osc_add_flash_error_message(_m('Your current email is not allowed'));
-                    $this->redirectTo(osc_contact_url());
-                }
+                    $fail(_m('Your current email is not allowed'));
 
-                if (!osc_validate_email($yourEmail)) {
-                    osc_add_flash_error_message(_m('Please enter a correct email'));
-                    Session::newInstance()->_setForm('yourName', $yourName);
-                    Session::newInstance()->_setForm('subject', $subject);
-                    Session::newInstance()->_setForm('message_body', $message);
-                    $this->redirectTo(osc_contact_url());
+                    return false;
                 }
 
                 $message_name    = sprintf(__('Name: %s'), $yourName);

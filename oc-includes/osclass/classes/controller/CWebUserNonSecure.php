@@ -249,13 +249,10 @@ class CWebUserNonSecure extends BaseModel
                 $message   = Params::getParamString('message');
                 // A failed send keeps what was typed and the reason, so the form can show both.
                 $fail = function (string $error) use ($yourEmail, $yourName, $phone, $message, $back) {
-                    $session = Session::newInstance();
-                    $session->_setForm('yourEmail', $yourEmail);
-                    $session->_setForm('yourName', $yourName);
-                    $session->_setForm('phoneNumber', $phone);
-                    $session->_setForm('message_body', $message);
-                    $session->_setForm('contact_error', $error);
-                    osc_add_flash_error_message($error);
+                    osc_keep_form(array(
+                        'yourEmail'   => $yourEmail, 'yourName' => $yourName,
+                        'phoneNumber' => $phone, 'message_body' => $message,
+                    ), $error);
                     $this->redirectTo($back);
                 };
 

@@ -246,7 +246,16 @@ check('the CSRF token is posted only to this site', strpos($rowParts, 'strpos($a
 check('the profile contact form is a dialog the head button opens', strpos($profile, 'id="oe-contact-dialog"') !== false
     && strpos($profile, 'data-osc-dialog-open="oe-contact-dialog"') !== false);
 
-check('a failed profile send keeps its reason for the form', strpos($nonSecure, "_setForm('contact_error'") !== false
+// Every contact form's controller keeps the typed values and the reason through one helper.
+$hUtils = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/helpers/hUtils.php');
+check('osc_keep_form() stores the reason the form reads', strpos($hUtils, '_setForm(\'contact_error\', $error)') !== false
     && strpos($contactPart, "osc_gui_kept('contact_error')") !== false);
+foreach (array('CWebUserNonSecure', 'CWebContact', 'CWebItem') as $controller) {
+    $src = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/' . $controller . '.php');
+    check("{$controller} keeps a failed contact send through osc_keep_form()", strpos($src, 'osc_keep_form(') !== false);
+}
+$contactCtl = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebContact.php');
+check('the contact page refuses an empty name, subject or message',
+    strpos($contactCtl, 'trim($yourName) === \'\' || trim($subject) === \'\' || trim($message) === \'\'') !== false);
 
 exit(harness_result());

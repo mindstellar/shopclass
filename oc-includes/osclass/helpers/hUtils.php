@@ -1329,6 +1329,25 @@ if (!function_exists('osc_server_rewrite_rules')) {
 }
 
 /**
+ * Keep a failed form's values for the next page, plus the reason as 'contact_error',
+ * and show the reason as a flash message. Read them back with osc_gui_kept().
+ *
+ * @param array<string,string> $values field => value
+ * @param string               $error
+ *
+ * @return void
+ */
+function osc_keep_form(array $values, string $error): void
+{
+    $session = Session::newInstance();
+    foreach ($values as $key => $value) {
+        $session->_setForm($key, (string) $value);
+    }
+    $session->_setForm('contact_error', $error);
+    osc_add_flash_error_message($error);
+}
+
+/**
  * The page the request came from when it is on this site, else $fallback. The host is
  * compared, not a prefix, so a look-alike host cannot pass.
  *

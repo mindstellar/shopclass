@@ -634,19 +634,18 @@ class CWebItem extends BaseModel
 
                 $item = $this->itemManager->findByPrimaryKey(Params::getParam('id'));
                 $this->_exportVariableToView('item', $item);
+                // A failed check goes back to the form it came from, with what was typed.
+                $contactValues = array(
+                    'yourEmail'    => Params::getParamString('yourEmail'),
+                    'yourName'     => Params::getParamString('yourName'),
+                    'phoneNumber'  => Params::getParamString('phoneNumber'),
+                    'message_body' => Params::getParamString('message'),
+                );
                 if (osc_captcha_enabled() && !osc_check_captcha()) {
-                    osc_add_flash_error_message(_m('Please complete the security check.'));
-                    Session::newInstance()
-                        ->_setForm('yourEmail', Params::getParam('yourEmail'));
-                    Session::newInstance()->_setForm('yourName', Params::getParam('yourName'));
-                    Session::newInstance()
-                        ->_setForm('phoneNumber', Params::getParam('phoneNumber'));
-                    Session::newInstance()
-                        ->_setForm('message_body', Params::getParam('message'));
-                    // Back to the form it was sent from, so it can show what was typed.
+                    osc_keep_form($contactValues, _m('Please complete the security check.'));
                     $this->redirectTo(osc_local_referer(osc_item_url()));
 
-                    return false; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
+                    return false;
                 }
 
                 $banned = osc_is_banned(Params::getParam('yourEmail'));
@@ -691,7 +690,10 @@ class CWebItem extends BaseModel
 
                 osc_run_hook('post_item_contact_post', $item);
                 if (is_string($result)) {
-                    osc_add_flash_error_message($result);
+                    osc_keep_form($contactValues, trim($result));
+                    $this->redirectTo(osc_local_referer(osc_item_url()));
+
+                    return false;
                 } else {
                     // Count the accepted enquiry toward the window.
                     \mindstellar\security\ActionThrottle::record('item_contact');

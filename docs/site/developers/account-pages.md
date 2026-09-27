@@ -91,7 +91,7 @@ you override — a bare `.oe-list-item {}` loses to core's `.oe-page .oe-list-it
 | `.oe-profile-head` | the top of a public profile | holds the `.oe-avatar`, an `.oe-meta` line, and the owner's Edit button |
 | `.oe-dialog-close` | a dialog's close button | carries `data-osc-dialog-close` |
 | `.oe-contact-open` | the profile head's Message button | a link to `#oe-contact-dialog` |
-| `.oe-form-error` | why a send failed, inside the form | `role="alert"`; the same text is also a flash message |
+| `.oe-form-error` | why a contact form's send failed, inside the form | `role="alert"`; the same text is also a flash message |
 | `.oe-dialog` | a `<dialog>` core opens as a modal | holds `.oe-dialog-head` and `.oe-dialog-body`; shows in place without JavaScript |
 | `.oe-avatar` | the account holder's current picture on the profile page | a square image; core sizes and rounds it |
 | `.oe-danger` | the destructive block at the foot of a page | separated by a rule; holds a heading, a line of copy and one danger button |
@@ -316,6 +316,11 @@ dangerous should sit a misclick away from changing an email address.
 | `contact.php` | writing to whoever runs the site |
 | `item-contact.php` | writing to a seller about one listing |
 | `item-send-friend.php` | passing a listing on to someone else |
+
+The contact page, the seller contact page and the public profile draw one shared
+form. After a failed send, each shows the reason in `.oe-form-error` and refills what
+was typed. A plugin handling its own contact-style form can do the same with
+`osc_keep_form($values, $error)` before it redirects back.
 
 The contact page and the share form fire `contact_form` and then
 `admin_contact_form` inside the form. The seller contact form fires

@@ -1856,7 +1856,7 @@ class ItemActions
             $flash_error = __('Your name: this field is required') . PHP_EOL;
         }
         if (!osc_validate_email($aItem['yourEmail'])) {
-            $flash_error .= __('Invalid email address' . $aItem['yourEmail']) . PHP_EOL;
+            $flash_error .= __('Invalid email address') . PHP_EOL;
         }
         if (!osc_validate_text($aItem['message'])) {
             $flash_error .= __('Message: this field is required') . PHP_EOL;
