@@ -72,7 +72,9 @@ $bucket = $ref->getConstant('ISSUE_BUCKET');
 $life   = $ref->getConstant('TOKEN_LIFETIME');
 $skew   = $ref->getConstant('CLOCK_SKEW');
 $issued = $ref->getMethod('issuedAt');
-$issued->setAccessible(true);
+if (PHP_VERSION_ID < 80100) {
+    $issued->setAccessible(true);
+}
 
 check('a bucket is configured', is_int($bucket) && $bucket > 0);
 pin('the stamp is a multiple of the bucket', 0, $issued->invoke(null) % $bucket);

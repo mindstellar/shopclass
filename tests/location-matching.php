@@ -39,13 +39,17 @@ use mindstellar\location\LocationImporter;
 $class = new ReflectionClass(LocationImporter::class);
 
 $normalize = $class->getMethod('normalizeKey');
-$normalize->setAccessible(true);
+if (PHP_VERSION_ID < 80100) {
+    $normalize->setAccessible(true);
+}
 $key = static function (string $value) use ($normalize): string {
     return $normalize->invoke(null, $value);
 };
 
 $keysOf = $class->getMethod('comparisonKeys');
-$keysOf->setAccessible(true);
+if (PHP_VERSION_ID < 80100) {
+    $keysOf->setAccessible(true);
+}
 
 /* ---------------------------------------------------------------- *
  * What two names have to have in common to be the same place.
@@ -87,7 +91,9 @@ check('an absent slug contributes nothing', $blank === array('delhi'));
  * ---------------------------------------------------------------- */
 
 $match = $class->getMethod('matchRow');
-$match->setAccessible(true);
+if (PHP_VERSION_ID < 80100) {
+    $match->setAccessible(true);
+}
 $importer = $class->newInstanceWithoutConstructor();
 
 $stored = static function (int $id, ?int $sourceId, string $name, string $slug): array {
@@ -99,7 +105,9 @@ $stored = static function (int $id, ?int $sourceId, string $name, string $slug):
 
 $index = static function (array $rows) use ($class, $importer): array {
     $indexRow = $class->getMethod('indexRow');
-    $indexRow->setAccessible(true);
+    if (PHP_VERSION_ID < 80100) {
+        $indexRow->setAccessible(true);
+    }
     $all = $bySource = $bySlug = $byName = array();
     foreach ($rows as $row) {
         $indexRow->invokeArgs($importer, array($row, &$all, &$bySource, &$bySlug, &$byName));
@@ -246,7 +254,9 @@ check('accents do not stop a match', $result !== null && (int) $result[0]['pk_i_
  * came back, saw a difference, and wrote the row again — on every run, for ever.
  */
 $tooLong = $class->getMethod('nameTooLong');
-$tooLong->setAccessible(true);
+if (PHP_VERSION_ID < 80100) {
+    $tooLong->setAccessible(true);
+}
 $long = static function (string $name) use ($tooLong): bool {
     return $tooLong->invoke(null, $name);
 };

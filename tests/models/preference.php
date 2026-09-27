@@ -104,7 +104,9 @@ $rowCount = static function () use ($admin, $table): int {
  * a prior file seeding the shared osclass section would otherwise break. */
 $admin->query("TRUNCATE TABLE $table");
 $prefInstance = new ReflectionProperty('Preference', 'instance');
-$prefInstance->setAccessible(true);
+if (PHP_VERSION_ID < 80100) {
+    $prefInstance->setAccessible(true);
+}
 $prefInstance->setValue(null, null);
 
 $model = Preference::newInstance();

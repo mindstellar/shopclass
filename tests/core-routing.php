@@ -517,11 +517,15 @@ function resolve(string $uri): array
     global $REF, $RULES;
     $inst = $REF->newInstanceWithoutConstructor();
     $prop = $REF->getProperty('rules');
-    $prop->setAccessible(true);
+    if (PHP_VERSION_ID < 80100) {
+        $prop->setAccessible(true);
+    }
     $prop->setValue($inst, $RULES);
 
     $m = $REF->getMethod('resolveRewrite');
-    $m->setAccessible(true);
+    if (PHP_VERSION_ID < 80100) {
+        $m->setAccessible(true);
+    }
     $out = $m->invoke($inst, $uri);
     $p   = $out['params'];
     ksort($p);

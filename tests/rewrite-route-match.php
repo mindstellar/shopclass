@@ -36,7 +36,9 @@ function rw_with_routes(array $routes)
     global $REF;
     $rw   = $REF->newInstanceWithoutConstructor();
     $prop = $REF->getProperty('routes');
-    $prop->setAccessible(true);
+    if (PHP_VERSION_ID < 80100) {
+        $prop->setAccessible(true);
+    }
     $prop->setValue($rw, $routes);
 
     return $rw;
@@ -47,7 +49,9 @@ function rw_invoke($rw, string $method, ...$args)
 {
     global $REF;
     $m = $REF->getMethod($method);
-    $m->setAccessible(true);
+    if (PHP_VERSION_ID < 80100) {
+        $m->setAccessible(true);
+    }
 
     return $m->invoke($rw, ...$args);
 }
@@ -57,7 +61,9 @@ function rw_prop($rw, string $name)
 {
     global $REF;
     $p = $REF->getProperty($name);
-    $p->setAccessible(true);
+    if (PHP_VERSION_ID < 80100) {
+        $p->setAccessible(true);
+    }
 
     return $p->getValue($rw);
 }

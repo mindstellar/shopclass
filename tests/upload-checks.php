@@ -89,7 +89,9 @@ final class FakeUploadedFile
 $attempt = static function (string $name, string $source) use ($tmpDir): string {
     $uploader = new AjaxUploader(null, 1024 * 1024);
     $prop     = new ReflectionProperty(AjaxUploader::class, 'file');
-    $prop->setAccessible(true);
+    if (PHP_VERSION_ID < 80100) {
+        $prop->setAccessible(true);
+    }
     $prop->setValue($uploader, new FakeUploadedFile($name, $source));
     $target = $tmpDir . '/' . uniqid('up_', true);
     try {
@@ -122,7 +124,9 @@ harness_section('ItemActions reads the image type from the file');
 
 $actions = (new ReflectionClass(ItemActions::class))->newInstanceWithoutConstructor();
 $check   = new ReflectionMethod(ItemActions::class, 'checkAllowedExt');
-$check->setAccessible(true);
+if (PHP_VERSION_ID < 80100) {
+    $check->setAccessible(true);
+}
 $files = static fn (string $path, string $type): array => array(
     'error'    => array(UPLOAD_ERR_OK),
     'type'     => array($type),

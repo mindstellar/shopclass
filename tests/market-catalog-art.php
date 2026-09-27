@@ -30,7 +30,9 @@ use mindstellar\market\Catalog;
 $art = static function ($value, string $type = 'plugins') {
     $catalog = $type === 'plugins' ? Catalog::forPlugins() : Catalog::forThemes();
     $method  = new ReflectionMethod(Catalog::class, 'artUrl');
-    $method->setAccessible(true);
+    if (PHP_VERSION_ID < 80100) {
+        $method->setAccessible(true);
+    }
 
     return $method->invoke($catalog, $value);
 };

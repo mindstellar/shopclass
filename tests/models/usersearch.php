@@ -107,7 +107,9 @@ $found = static function (array $conditions) use ($model): string {
 $fromRequest = static function (array $params): array {
     $table  = new UsersDataTable();
     $method = new ReflectionMethod('UsersDataTable', 'getDBParams');
-    $method->setAccessible(true);
+    if (PHP_VERSION_ID < 80100) {
+        $method->setAccessible(true);
+    }
     $method->invoke($table, $params);
 
     return $table->conditions;
@@ -245,7 +247,9 @@ harness_section('The screen reports that a filter is on');
 
 $table = new UsersDataTable();
 $method = new ReflectionMethod('UsersDataTable', 'getDBParams');
-$method->setAccessible(true);
+if (PHP_VERSION_ID < 80100) {
+    $method->setAccessible(true);
+}
 $method->invoke($table, array('user' => 'sarah'));
 pin('a search sets withFilters', true, $table->withFilters);
 

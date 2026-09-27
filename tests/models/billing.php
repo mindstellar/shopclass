@@ -687,7 +687,9 @@ date_default_timezone_set('America/New_York');
 // raw seconds span one hour less of wall-clock offset than 30 calendar days
 // actually cover once the clocks spring forward partway through.
 $addDays = new ReflectionMethod(Entitlements::class, 'addDays');
-$addDays->setAccessible(true);
+if (PHP_VERSION_ID < 80100) {
+    $addDays->setAccessible(true);
+}
 pin(
     'Entitlements::addDays() preserves wall-clock time across a DST boundary',
     '2024-03-10 10:00:00',
@@ -695,7 +697,9 @@ pin(
 );
 
 $nextExpiration = new ReflectionMethod(ItemUpgrades::class, 'nextExpiration');
-$nextExpiration->setAccessible(true);
+if (PHP_VERSION_ID < 80100) {
+    $nextExpiration->setAccessible(true);
+}
 pin(
     'ItemUpgrades::nextExpiration() days offset preserves wall-clock time across the same boundary',
     '2024-03-10 10:00:00',

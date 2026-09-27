@@ -280,7 +280,9 @@ function viewReset()
 {
     $ref  = new ReflectionClass('View');
     $prop = $ref->getProperty('instance');
-    $prop->setAccessible(true);
+    if (PHP_VERSION_ID < 80100) {
+        $prop->setAccessible(true);
+    }
     $prop->setValue(null, null);
     $GLOBALS['__loads'] = array();
 }

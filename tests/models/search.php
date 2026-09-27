@@ -153,7 +153,9 @@ if (class_exists('Object_Cache_Factory')) {
     Object_Cache_Factory::newInstance()->flush();
 }
 $searchCategoryReset = new ReflectionProperty('Category', 'instance');
-$searchCategoryReset->setAccessible(true);
+if (PHP_VERSION_ID < 80100) {
+    $searchCategoryReset->setAccessible(true);
+}
 $searchCategoryReset->setValue(null, null);
 
 /** Collect the pk_i_id column from a doSearch result. */
@@ -554,7 +556,9 @@ harness_section('Search: setJsonAlert applies only the plain-value fields of an 
 
 $prop = static function (Search $search, string $name) {
     $p = new ReflectionProperty('Search', $name);
-    $p->setAccessible(true);
+    if (PHP_VERSION_ID < 80100) {
+        $p->setAccessible(true);
+    }
 
     return $p->getValue($search);
 };

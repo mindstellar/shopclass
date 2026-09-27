@@ -1676,7 +1676,9 @@ pin('lifetime', array(60, 604800, 900, 900), array(StorageSettingsForm::ttl('59'
 // The Better S3 adoption writes the endpoint through the controller's own guard, which has to
 // answer exactly as the declared one does.
 $guard = new ReflectionMethod('CAdminSettingsStorage', '_httpUrlOrEmpty');
-$guard->setAccessible(true);
+if (PHP_VERSION_ID < 80100) {
+    $guard->setAccessible(true);
+}
 foreach (array('https://a.example.test', 'javascript:alert(1)', 'data:text/plain,x', 'https://' . 'x y.test', '') as $url) {
     pin(
         'the adoption guard and the declared one agree on "' . $url . '"',

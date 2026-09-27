@@ -397,7 +397,9 @@ if (class_exists('Object_Cache_Factory')) {
     Object_Cache_Factory::newInstance()->flush();
 }
 $categoryReset = new ReflectionProperty('Category', 'instance');
-$categoryReset->setAccessible(true);
+if (PHP_VERSION_ID < 80100) {
+    $categoryReset->setAccessible(true);
+}
 $categoryReset->setValue(null, null);
 
 /** Collect the pk_i_id column from a doSearch result. */
@@ -1271,7 +1273,9 @@ pin(
 harness_section('alert-replay: (d) v2 — page size');
 
 $rpp = new ReflectionProperty('Search', 'results_per_page');
-$rpp->setAccessible(true);
+if (PHP_VERSION_ID < 80100) {
+    $rpp->setAccessible(true);
+}
 pin('the limit option sets the page size', 7, $rpp->getValue(AlertReplay::search(array('s_search' => $v2Row), array('limit' => 7))));
 pin('without it the page size is 10', 10, $rpp->getValue(AlertReplay::search(array('s_search' => $v2Row))));
 check(

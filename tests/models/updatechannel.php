@@ -52,7 +52,9 @@ pin('a re-run keeps the channel an admin chose', 'rc', $pref('update_channel'));
 harness_section('the automatic update claim');
 
 $claim = new ReflectionMethod(AutoSecurityUpdate::class, 'claim');
-$claim->setAccessible(true);
+if (PHP_VERSION_ID < 80100) {
+    $claim->setAccessible(true);
+}
 $admin->query("DELETE FROM $table WHERE s_name = 'auto_update_tried'");
 pin('the first run claims 6.4.2', true, $claim->invoke(null, '6.4.2'));
 pin('a second run for 6.4.2 does not', false, $claim->invoke(null, '6.4.2'));
