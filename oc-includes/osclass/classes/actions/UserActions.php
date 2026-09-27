@@ -112,14 +112,20 @@ class UserActions
         }
 
         if ($input['s_username'] != '') {
-            $username_taken = $this->manager->findByUsername($input['s_username']);
-            if (!$error && $username_taken != false) {
-                $flash_error .= _m('Username is already taken') . PHP_EOL;
-                $error[]     = 8;
-            }
-            if (osc_is_username_blacklisted($input['s_username'])) {
-                $flash_error .= _m('The specified username is not valid, it contains some invalid words') . PHP_EOL;
-                $error[]     = 9;
+            $numeric = self::numericUsernameError($input['s_username']);
+            if ($numeric !== '') {
+                $flash_error .= $numeric . PHP_EOL;
+                $error[]     = 13;
+            } else {
+                $username_taken = $this->manager->findByUsername($input['s_username']);
+                if (!$error && $username_taken != false) {
+                    $flash_error .= _m('Username is already taken') . PHP_EOL;
+                    $error[]     = 8;
+                }
+                if (osc_is_username_blacklisted($input['s_username'])) {
+                    $flash_error .= _m('The specified username is not valid, it contains some invalid words') . PHP_EOL;
+                    $error[]     = 9;
+                }
             }
         }
 
@@ -146,6 +152,12 @@ class UserActions
             $input['s_secret'] = \mindstellar\security\ActionToken::hash($activation_plain);
         }
 
+        // A unique placeholder until the id-based name is set below, so blank names never collide.
+        $needs_username = $input['s_username'] == '';
+        if ($needs_username) {
+            $input['s_username'] = '_' . bin2hex(random_bytes(10));
+        }
+
         $userId = $this->manager->insertGetId($input);
 
         // insertGetId() swallows the database error and answers 0, so an unchecked call
@@ -159,11 +171,8 @@ class UserActions
             return _m('Your account could not be created. Please try again.') . PHP_EOL;
         }
 
-        if ($input['s_username'] == '') {
-            $this->manager->update(
-                array('s_username' => $userId),
-                array('pk_i_id' => $userId)
-            );
+        if ($needs_username) {
+            $input['s_username'] = self::assignDefaultUsername((int) $userId);
         }
 
         if (is_array(Params::getParam('s_info'))) {
@@ -399,9 +408,36 @@ class UserActions
             $error[]     = 11;
         }
 
+        // Only an admin edit carries s_username. A missing or unchanged name is left alone,
+        // so an old id-based username still saves.
+        $new_username = null;
+        if (isset($input['s_username']) && Params::existParam('s_username')) {
+            $current = $this->manager->findByPrimaryKey($userId);
+            if (isset($current['s_username']) && $input['s_username'] !== $current['s_username']) {
+                $new_username = $input['s_username'];
+                $numeric      = self::numericUsernameError($new_username);
+                if ($new_username === '') {
+                    $flash_error .= _m('The specified username could not be empty') . PHP_EOL;
+                    $error[]     = 14;
+                } elseif ($numeric !== '') {
+                    $flash_error .= $numeric . PHP_EOL;
+                    $error[]     = 13;
+                }
+            }
+        }
+        unset($input['s_username']);
+
         $flash_error = osc_apply_filter('user_edit_flash_error', $flash_error, $userId);
         if ($flash_error != '') {
             return $flash_error;
+        }
+
+        $claim = $new_username !== null ? self::claimUsername((int) $userId, $new_username) : 'ok';
+        if ($claim === 'taken') {
+            return _m('The specified username is already in use') . PHP_EOL;
+        }
+        if ($claim !== 'ok') {
+            return _m('Your profile could not be saved. Please try again.') . PHP_EOL;
         }
 
         if ($this->manager->update($input, array('pk_i_id' => $userId)) === false) {
@@ -747,5 +783,96 @@ class UserActions
         osc_web_user_login($user);
 
         return 3;
+    }
+
+    /**
+     * The error for a username made only of digits, or '' when it has a letter or symbol.
+     * Digit-only names are kept for the id-based name a blank registration gets.
+     *
+     * @param string $username Already sanitised
+     *
+     * @return string
+     */
+    public static function numericUsernameError(string $username): string
+    {
+        if ($username === '' || !ctype_digit($username)) {
+            return '';
+        }
+
+        return _m('The username cannot be only numbers. Please add at least one letter.');
+    }
+
+    /**
+     * Give a user a username unless another account already holds it.
+     *
+     * The check and the write run under a named lock. A duplicate-key error from a unique
+     * index on s_username counts as taken.
+     *
+     * @param int    $userId
+     * @param string $username
+     *
+     * @return string 'ok', 'taken' or 'failed'
+     */
+    public static function claimUsername(int $userId, string $username): string
+    {
+        $table  = DB_TABLE_PREFIX . 't_user';
+        $lock   = 'osc_username_' . md5((defined('DB_NAME') ? DB_NAME : '') . $table);
+        $locked = false;
+        try {
+            $locked = (int) osc_db_scalar('SELECT GET_LOCK(?, 5)', array($lock)) === 1;
+        } catch (\mindstellar\database\DbException $e) {
+            $locked = false;
+        }
+
+        try {
+            $taken = osc_db_table($table)
+                ->where('s_username', $username)
+                ->where('pk_i_id', '!=', $userId)
+                ->count() > 0;
+            if ($taken) {
+                return 'taken';
+            }
+            osc_db_table($table)->where('pk_i_id', $userId)->update(array('s_username' => $username));
+        } catch (\mindstellar\database\DbException $e) {
+            return (int) $e->getCode() === 1062 ? 'taken' : 'failed';
+        } finally {
+            if ($locked) {
+                try {
+                    osc_db_scalar('SELECT RELEASE_LOCK(?)', array($lock));
+                } catch (\mindstellar\database\DbException $e) {
+                    // The lock is dropped with the connection anyway.
+                }
+            }
+            if (function_exists('osc_invalidate_user_cache')) {
+                osc_invalidate_user_cache($userId);
+            }
+        }
+
+        return 'ok';
+    }
+
+    /**
+     * Set the username a registration without one gets: the user id, or the id with a
+     * suffix (_2, _3, ...) when an older account already holds it.
+     *
+     * @param int $userId
+     *
+     * @return string The name set, or '' when none could be written
+     */
+    private static function assignDefaultUsername(int $userId): string
+    {
+        for ($n = 1; $n <= 20; $n++) {
+            $name   = $n === 1 ? (string) $userId : $userId . '_' . $n;
+            $result = self::claimUsername($userId, $name);
+            if ($result === 'ok') {
+                return $name;
+            }
+            if ($result === 'failed') {
+                break;
+            }
+        }
+        trigger_error('No default username could be set for user ' . $userId . '.', E_USER_WARNING);
+
+        return '';
     }
 }

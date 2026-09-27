@@ -239,6 +239,30 @@ final class ResourceUploader
     }
 
     /**
+     * Remove the stored files of rows already deleted from t_resource. Call it after the
+     * delete has committed: local files are unlinked, remote ones queued for removal.
+     *
+     * @param array<int,array<string,mixed>> $rows t_resource rows
+     *
+     * @return void
+     */
+    public function purgeDeleted(array $rows): void
+    {
+        $owners = array();
+        foreach ($rows as $row) {
+            $this->purgeFiles($row);
+            osc_run_hook('delete_resource', $row);
+            $owners[($row['s_owner_type'] ?? '') . ':' . ($row['i_owner_id'] ?? 0)] = $row;
+        }
+        foreach ($owners as $row) {
+            Resource::newInstance()->invalidateOwnerCache(
+                (string) ($row['s_owner_type'] ?? ''),
+                (int) ($row['i_owner_id'] ?? 0)
+            );
+        }
+    }
+
+    /**
      * Remove a resource's files, or queue their removal when the row lives on (or
      * an install has configured) a remote adapter. Never touches the database.
      *

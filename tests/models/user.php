@@ -58,6 +58,12 @@ if (!function_exists('osc_cache_get')) {
 
         return true;
     }
+    function osc_cache_delete($key)
+    {
+        unset($GLOBALS['__user_test_cache'][$key]);
+
+        return true;
+    }
 }
 
 /*
@@ -95,6 +101,14 @@ if (!function_exists('osc_verify_password')) {
     function osc_verify_password($password, $hash)
     {
         return $hash === 'KNOWN-GOOD-HASH' && $password === 'the-password';
+    }
+}
+
+if (!function_exists('osc_base_path')) {
+    // ResourceLocator builds local file paths from it.
+    function osc_base_path()
+    {
+        return ABS_PATH;
     }
 }
 
@@ -239,7 +253,7 @@ check('it also matches on the email prefix', count($byEmail) === 1 && $byEmail[0
 pin('an unmatched prefix returns an empty array', array(), $model->ajax('zzzz'));
 
 /* ----------------------------------------------------------------------------
- * search (SQL_CALC_FOUND_ROWS, paged) — note the offset/count order.
+ * search (paged, with a separate COUNT(*)) — note the offset/count order.
  * ------------------------------------------------------------------------- */
 harness_section('User::search and its by-name/by-email wrappers');
 
@@ -260,6 +274,21 @@ pin('and it is the second user by id', (string)$other, $paged['users'][0]['pk_i_
 
 $bogusOrder = $model->search(0, 10, 'nonsense; DROP', 'ASC');
 check('a non-allowlisted order column falls back rather than injecting', count($bogusOrder['users']) === 2);
+
+/* The total is a COUNT(*) with the data query's WHERE, so it ignores the page window. */
+$like      = array('mail' => array('columns' => array('s_email'), 'op' => 'LIKE', 'value' => '%@example.test'));
+$likeFull  = $model->search(0, 10, 'pk_i_id', 'ASC', $like);
+$likePage  = $model->search(1, 1, 'pk_i_id', 'ASC', $like);
+$likeCount = (string)$rawCount("SELECT COUNT(*) c FROM {$prefix}t_user WHERE s_email LIKE '%@example.test'");
+pin('a filtered search reports the raw COUNT(*) as its total', $likeCount, $likeFull['total_results']);
+pin('a later page of it reports the same total', $likeCount, $likePage['total_results']);
+pin('a filter that matches nothing reports int 0', 0, $model->searchByName(0, 10, 'pk_i_id', 'ASC', 'no-such-name')['total_results']);
+
+/* Equal sort keys break on the id, so two pages never repeat a row. */
+$admin->query("UPDATE {$prefix}t_user SET dt_reg_date = '2026-01-01 00:00:00'");
+$first  = $model->search(0, 1, 'dt_reg_date', 'DESC')['users'][0]['pk_i_id'];
+$second = $model->search(1, 1, 'dt_reg_date', 'DESC')['users'][0]['pk_i_id'];
+check('pages of a search sorted on a tied column do not overlap', $first !== $second, $first . ' / ' . $second);
 
 /* ----------------------------------------------------------------------------
  * countUsers — the raw-condition API.
@@ -333,6 +362,26 @@ seed_exec(
     array($doomed, 'new@example.test')
 );
 
+/* Avatars are t_resource rows owned by the user: the rows go with the user, and the
+ * local files are unlinked after the delete commits. */
+$avatarDir = 'tests/tmp-avatar-' . getmypid() . '/';
+@mkdir(ABS_PATH . $avatarDir, 0777, true);
+$seedAvatar = static function (int $uid) use ($admin, $prefix, $avatarDir): int {
+    return seed_exec(
+        $admin,
+        "INSERT INTO {$prefix}t_resource (s_owner_type, i_owner_id, s_name, s_extension, s_path, s_storage, dt_created)
+         VALUES ('user', ?, 'avatar', 'jpg', ?, 'local', NOW())",
+        'is',
+        array($uid, $avatarDir)
+    );
+};
+$doomedAvatar = $seedAvatar($doomed);
+$victimAvatar = $seedAvatar($victim);
+$doomedFile   = ABS_PATH . $avatarDir . $doomedAvatar . '.jpg';
+$victimFile   = ABS_PATH . $avatarDir . $victimAvatar . '.jpg';
+file_put_contents($doomedFile, 'x');
+file_put_contents($victimFile, 'x');
+
 pin('deleteUser(null) is a no-op returning false', false, $model->deleteUser(null));
 pin('deleting a user reports true', true, $model->deleteUser($doomed));
 pin('the user row is gone', 0, $rawCount("SELECT COUNT(*) c FROM {$prefix}t_user WHERE pk_i_id = $doomed"));
@@ -340,6 +389,13 @@ pin('its description rows are gone', 0, $rawCount("SELECT COUNT(*) c FROM {$pref
 pin('its pending email-change row is gone', 0, $rawCount("SELECT COUNT(*) c FROM {$prefix}t_user_email_tmp WHERE fk_i_user_id = $doomed"));
 pin('the victim survives untouched', 1, $rawCount("SELECT COUNT(*) c FROM {$prefix}t_user WHERE pk_i_id = $victim"));
 pin('deleting a missing id returns false', false, $model->deleteUser(999999));
+pin('its avatar row is gone', 0, $rawCount("SELECT COUNT(*) c FROM {$prefix}t_resource WHERE s_owner_type = 'user' AND i_owner_id = $doomed"));
+check('its avatar file is gone', !file_exists($doomedFile));
+pin('another user\'s avatar row survives', 1, $rawCount("SELECT COUNT(*) c FROM {$prefix}t_resource WHERE pk_i_id = $victimAvatar"));
+check('another user\'s avatar file survives', file_exists($victimFile));
+@unlink($victimFile);
+@unlink($doomedFile);
+@rmdir(ABS_PATH . $avatarDir);
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

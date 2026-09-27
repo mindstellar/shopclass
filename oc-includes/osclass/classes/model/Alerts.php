@@ -358,9 +358,11 @@ class Alerts extends DAO
             ->where('s_search', $alert)
             ->whereRaw('dt_unsub_date IS NULL');
 
-        if ($userid == 0 || $userid == null) {
+        // A guest alert has no user. Rows written before 6.4 hold 0 instead of NULL.
+        $guest = $userid == 0 || $userid == null;
+        if ($guest) {
             $query = $query
-                ->where('fk_i_user_id', 0)
+                ->whereRaw('(fk_i_user_id IS NULL OR fk_i_user_id = 0)')
                 ->where('s_email', $email);
         } else {
             $query = $query->where('fk_i_user_id', $userid);
@@ -372,7 +374,7 @@ class Alerts extends DAO
         // the legacy PHP clock (date()), which was never a MySQL NOW() sentinel.
         if (count($query->get()) === 0) {
             return osc_db_table($this->getTableName())->insert(array(
-                'fk_i_user_id' => $userid,
+                'fk_i_user_id' => $guest ? null : $userid,
                 's_email'      => $email,
                 's_search'     => $alert,
                 'e_type'       => $type,
@@ -483,20 +485,23 @@ class Alerts extends DAO
         } else {
             $orderSql = $order_column . $direction;
         }
+        // Ties break on the id, so pages of a sorted list never overlap.
+        if (strtolower($direction) !== 'random' && $order_column !== 'pk_i_id') {
+            $orderSql .= ', pk_i_id' . (strtoupper(trim($direction)) === 'DESC' ? ' DESC' : ' ASC');
+        }
 
-        // SQL_CALC_FOUND_ROWS + FOUND_ROWS() cannot be expressed through the query
-        // builder, so this stays hand-written SQL with every value bound.
+        // Hand-written with every value bound; the total comes from a COUNT(*) with the same WHERE.
         $params = array();
-        $sql    = 'SELECT SQL_CALC_FOUND_ROWS * FROM ' . $this->getTableName();
+        $where  = '';
         if ($name != '') {
             // Mirrors like()'s own escapeStr($v, true): % and _ are escaped in the
             // payload before the wildcard boundaries are added, so a literal
             // wildcard character typed by the caller stays literal.
             $escaped  = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), (string)$name);
-            $sql     .= ' WHERE s_email LIKE ?';
+            $where    = ' WHERE s_email LIKE ?';
             $params[] = '%' . $escaped . '%';
         }
-        $sql .= ' ORDER BY ' . $orderSql;
+        $sql = 'SELECT * FROM ' . $this->getTableName() . $where . ' ORDER BY ' . $orderSql;
 
         // Mirrors DBCommandClass::limit($start, $end): MySQL's two-argument LIMIT
         // reads the first number as the OFFSET and the second as the COUNT -- the
@@ -510,28 +515,20 @@ class Alerts extends DAO
         }
 
         try {
-            $rows = osc_db_select($sql, $params);
+            $rows  = osc_db_select($sql, $params);
+            $total = osc_db_scalar('SELECT COUNT(*) FROM ' . $this->getTableName() . $where, $params);
+            // Always the WHOLE table, ignoring the s_email filter, as the legacy query did.
+            $all   = osc_db_scalar('SELECT COUNT(*) FROM ' . $this->getTableName());
         } catch (\mindstellar\database\DbException $e) {
             return $alerts;
         }
 
         $alerts['alerts'] = osc_db_stringify_rows($rows);
-
-        // FOUND_ROWS() must run immediately after the SQL_CALC_FOUND_ROWS select
-        // above, on the same connection, with nothing in between -- it reports on
-        // whichever query last carried that hint. Both this and the COUNT(*) below
-        // run with no params, which shares the singleton connection and (like the
-        // legacy dao->query() path) returns plain strings.
-        $data = osc_db_select_one('SELECT FOUND_ROWS() as total');
-        if ($data !== null && $data['total']) {
-            $alerts['total_results'] = $data['total'];
+        if ($total) {
+            $alerts['total_results'] = (string)$total;
         }
-
-        // Unconditional: this always counts the WHOLE table, ignoring the s_email
-        // filter above -- that is what the legacy query did too.
-        $data = osc_db_select_one('SELECT COUNT(*) as total FROM ' . $this->getTableName());
-        if ($data !== null && $data['total']) {
-            $alerts['rows'] = $data['total'];
+        if ($all) {
+            $alerts['rows'] = (string)$all;
         }
 
         return $alerts;

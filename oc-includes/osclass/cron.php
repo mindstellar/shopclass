@@ -124,6 +124,15 @@ if (is_array($cron)) {
         \mindstellar\security\LoginThrottle::prune();
         \mindstellar\security\RateLimit::prune();
 
+        // Pending e-mail changes are dropped after 7 days; their confirmation link then stops working.
+        try {
+            osc_db_table(DB_TABLE_PREFIX . 't_user_email_tmp')
+                ->where('dt_date', '<', date('Y-m-d H:i:s', time() - (7 * 24 * 3600)))
+                ->delete();
+        } catch (\mindstellar\database\DbException $e) {
+            error_log('Pending e-mail change prune failed: ' . $e->getMessage());
+        }
+
         // Pre-generate the XML sitemap into the object cache so bots never trigger
         // the (potentially heavy) location scans on the request path. Regeneration
         // is otherwise lazy-on-request; this closes that gap.

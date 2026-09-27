@@ -10,8 +10,8 @@
 
 /**
  * Core maintenance engine: finds and removes stale content — expired, unactivated, spam,
- * blocked and reported listings, and unactivated users. Powers the Tools > Cleanup screen
- * and the scheduled (cron) cleanup. The vanilla, first-class replacement for the Butler plugin.
+ * blocked and reported listings, unactivated users and avatars left by deleted users.
+ * Powers the Tools > Cleanup screen and the scheduled (cron) cleanup. The vanilla, first-class replacement for the Butler plugin.
  */
 class Cleanup extends DAO
 {
@@ -23,6 +23,7 @@ class Cleanup extends DAO
         'spam',
         'blocked',
         'inactive_users',
+        'orphan_avatars',
     );
 
     /** Age threshold, in days, when a rule has none saved. */
@@ -61,6 +62,7 @@ class Cleanup extends DAO
             'spam'              => __('Spam listings'),
             'blocked'           => __('Blocked listings'),
             'inactive_users'    => __('Unactivated users'),
+            'orphan_avatars'    => __('Avatars of deleted users'),
         );
     }
 
@@ -115,6 +117,18 @@ class Cleanup extends DAO
     }
 
     /**
+     * Whether a rule targets t_resource rows (vs listings or users).
+     *
+     * @param string $rule
+     *
+     * @return bool
+     */
+    public static function isResourceRule($rule)
+    {
+        return $rule === 'orphan_avatars';
+    }
+
+    /**
      * How many rows a rule currently matches — for the preview counts on the screen.
      *
      * @param string $rule
@@ -135,7 +149,7 @@ class Cleanup extends DAO
 
     /**
      * The next batch of rows a rule matches: [{pk_i_id, s_secret}] for listings,
-     * [{pk_i_id}] for users.
+     * [{pk_i_id}] for users, whole t_resource rows for orphan avatars.
      *
      * @param string $rule
      * @param int    $days
@@ -209,6 +223,15 @@ class Cleanup extends DAO
                     array($before),
                     'pk_i_id'
                 );
+            case 'orphan_avatars':
+                // User-owned resources whose user row is gone, aged by upload date.
+                return array(
+                    DB_TABLE_PREFIX . 't_resource AS r LEFT JOIN ' . DB_TABLE_PREFIX . 't_user AS u'
+                        . ' ON u.pk_i_id = r.i_owner_id',
+                    'r.s_owner_type = ? AND u.pk_i_id IS NULL AND r.dt_created < ?',
+                    array(\mindstellar\model\Resource::OWNER_USER, $before),
+                    'r.*'
+                );
             default:
                 // Unknown rule: an impossible condition, so nothing is ever matched/deleted.
                 return array($item, '1 = 0', array(), $cols);
@@ -231,7 +254,17 @@ class Cleanup extends DAO
             return 0;
         }
         $deleted = 0;
-        if (self::isUserRule($rule)) {
+        if (self::isResourceRule($rule)) {
+            $ids     = array_map('intval', array_column($rows, 'pk_i_id'));
+            $deleted = (int)\mindstellar\model\Resource::newInstance()->deleteResourcesIds($ids);
+            if ($deleted > 0) {
+                try {
+                    (new \mindstellar\storage\ResourceUploader())->purgeDeleted($rows);
+                } catch (\Throwable $e) {
+                    error_log('Cleanup: stored avatar files not removed: ' . $e->getMessage());
+                }
+            }
+        } elseif (self::isUserRule($rule)) {
             $users = User::newInstance();
             foreach ($rows as $row) {
                 if ($users->deleteUser($row['pk_i_id'])) {

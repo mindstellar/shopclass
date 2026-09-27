@@ -185,16 +185,24 @@ class CWebUser extends WebSecBaseModel
                     $username
                 );
                 if ($username != '') {
-                    $user = User::newInstance()->findByUsername($username);
-                    if (isset($user['s_username'])) {
+                    $user    = User::newInstance()->findByUsername($username);
+                    $numeric = UserActions::numericUsernameError($username);
+                    $claim   = '';
+                    if ($numeric !== '') {
+                        osc_add_flash_error_message($numeric);
+                    } elseif (isset($user['s_username'])) {
                         osc_add_flash_error_message(_m('The specified username is already in use'));
                     } elseif (osc_is_username_blacklisted($username)) {
                         osc_add_flash_error_message(_m('The specified username is not valid, it contains some invalid words'));
                     } else {
-                        User::newInstance()->update(
-                            array('s_username' => $username),
-                            array('pk_i_id' => Session::newInstance()->_get('userId'))
-                        );
+                        $claim = UserActions::claimUsername((int) Session::newInstance()->_get('userId'), $username);
+                        if ($claim === 'taken') {
+                            osc_add_flash_error_message(_m('The specified username is already in use'));
+                        } elseif ($claim !== 'ok') {
+                            osc_add_flash_error_message(_m('Your profile could not be saved. Please try again.'));
+                        }
+                    }
+                    if ($claim === 'ok') {
                         osc_add_flash_ok_message(_m('The username was updated'));
                         osc_run_hook(
                             'after_username_change',

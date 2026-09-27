@@ -57,6 +57,11 @@ class CWebUserNonSecure extends BaseModel
                         $userOldEmail = $user['s_email'];
                         $userEmailTmp = UserEmailTmp::newInstance()
                             ->findByPrimaryKey(Params::getParam('userId'));
+                        // The pending change may have expired and been pruned.
+                        if (empty($userEmailTmp['s_new_email'])) {
+                            osc_add_flash_error_message(_m('Sorry, the link is not valid'));
+                            $this->redirectTo(osc_base_url());
+                        }
                         $code         = osc_genRandomPassword(50);
                         $userManager->update(
                             array('s_email' => $userEmailTmp['s_new_email']),

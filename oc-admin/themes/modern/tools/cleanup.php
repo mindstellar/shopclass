@@ -26,6 +26,7 @@ $cleanup_rules = array(
     'spam'              => __('Listings marked as spam.'),
     'blocked'           => __('Listings that are disabled/blocked.'),
     'inactive_users'    => __('Accounts never activated from the confirmation email.'),
+    'orphan_avatars'    => __('Profile pictures left behind by deleted accounts.'),
 );
 $rule_labels = Cleanup::ruleLabels();
 
@@ -185,7 +186,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             'method'  => 'post',
             'fields'  => array('page' => 'tools', 'action' => 'cleanup_run'),
             'title'   => __('Run cleanup now?'),
-            'text'    => __("This permanently deletes the matching listings and users for every enabled rule. It runs in the background. This can't be undone."),
+            'text'    => __("This permanently deletes the matching listings, users and profile pictures for every enabled rule. It runs in the background. This can't be undone."),
             'confirm' => __('Delete matching items'),
         )); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

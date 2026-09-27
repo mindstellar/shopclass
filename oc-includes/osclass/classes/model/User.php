@@ -381,11 +381,27 @@ class User extends DAO
             // outlive the account, which is why neither has a foreign key either.
             $dependents = array('t_user_email_tmp', 't_user_description', 't_alerts');
 
+            // The user's own t_resource rows (avatars) go in the same transaction; their
+            // stored files are removed only after it commits.
+            $ownerType = \mindstellar\model\Resource::OWNER_USER;
             try {
-                $deleted = osc_db_transaction(function () use ($id, $dependents) {
+                $resources = osc_db_table(DB_TABLE_PREFIX . 't_resource')
+                    ->where('s_owner_type', $ownerType)
+                    ->where('i_owner_id', (int)$id)
+                    ->get();
+            } catch (\mindstellar\database\DbException $e) {
+                $resources = array();
+            }
+
+            try {
+                $deleted = osc_db_transaction(function () use ($id, $dependents, $ownerType) {
                     foreach ($dependents as $depTable) {
                         osc_db_table(DB_TABLE_PREFIX . $depTable)->where('fk_i_user_id', $id)->delete();
                     }
+                    osc_db_table(DB_TABLE_PREFIX . 't_resource')
+                        ->where('s_owner_type', $ownerType)
+                        ->where('i_owner_id', (int)$id)
+                        ->delete();
 
                     return osc_db_table($this->getTableName())->where('pk_i_id', $id)->delete();
                 });
@@ -396,6 +412,11 @@ class User extends DAO
             }
 
             if ($deleted === 1) {
+                try {
+                    (new \mindstellar\storage\ResourceUploader())->purgeDeleted($resources);
+                } catch (\Throwable $e) {
+                    error_log('deleteUser: stored files of user ' . (int)$id . ' not removed: ' . $e->getMessage());
+                }
                 osc_run_hook('after_delete_user', $id);
 
                 return true;
@@ -532,8 +553,7 @@ class User extends DAO
 
         // $order_column is allowlisted; $order_direction reproduces the legacy
         // ASC/DESC/RAND() handling. The where values are bound. LIMIT $start,$end
-        // is offset $start, count $end (the emitted comma form). SQL_CALC_FOUND_ROWS
-        // and the aliased select keep this hand-written.
+        // is offset $start, count $end (the emitted comma form).
         if (!preg_match('/^[A-Za-z0-9_.]+$/', (string)$order_column)) {
             $order_column = 'pk_i_id';
         }
@@ -546,9 +566,13 @@ class User extends DAO
         } else {
             $orderSql = $order_column . $direction;
         }
+        // Ties break on the id, so pages of a sorted list never overlap.
+        if (strtolower($direction) !== 'random' && $order_column !== 'pk_i_id') {
+            $orderSql .= ', pk_i_id' . (strtoupper(trim($direction)) === 'DESC' ? ' DESC' : ' ASC');
+        }
 
         $params = array();
-        $sql    = 'SELECT SQL_CALC_FOUND_ROWS * FROM ' . $this->getTableName();
+        $where  = '';
         if (is_array($fields) && count($fields) > 0) {
             $clauses = array();
             foreach ($fields as $k => $v) {
@@ -589,24 +613,24 @@ class User extends DAO
                 $params[]  = $v;
             }
             if (count($clauses) > 0) {
-                $sql .= ' WHERE ' . implode(' AND ', $clauses);
+                $where = ' WHERE ' . implode(' AND ', $clauses);
             }
         }
-        $sql .= ' ORDER BY ' . $orderSql;
-        $sql .= ' LIMIT ' . (int)$start . ', ' . (int)$end;
+        $sql = 'SELECT * FROM ' . $this->getTableName() . $where
+            . ' ORDER BY ' . $orderSql
+            . ' LIMIT ' . (int)$start . ', ' . (int)$end;
 
         try {
             $users['users'] = osc_db_stringify_rows(osc_db_select($sql, $params));
+            $total          = osc_db_scalar('SELECT COUNT(*) FROM ' . $this->getTableName() . $where, $params);
+            $rows           = osc_db_scalar('SELECT COUNT(*) FROM ' . $this->getTableName());
         } catch (\mindstellar\database\DbException $e) {
             return $users;
         }
 
-        $total = osc_db_scalar('SELECT FOUND_ROWS() as total');
         if ($total) {
             $users['total_results'] = (string)$total;
         }
-
-        $rows = osc_db_scalar('SELECT COUNT(*) as total FROM ' . $this->getTableName());
         if ($rows) {
             $users['rows'] = (string)$rows;
         }
