@@ -849,6 +849,77 @@ function osc_alert_is_active()
 }
 
 /**
+ * What the current alert searches for, as labelled parts: each entry is
+ * ['label', 'value']. Empty for an alert on all listings. A paused alert (one the
+ * upgrade could not keep) returns one 'held' entry.
+ *
+ * @return array<string,array{label:string,value:string}>
+ */
+function osc_alert_criteria(): array
+{
+    $raw = osc_get_raw_search((array) json_decode((string) osc_alert_field('s_search'), true));
+    if (isset($raw['held'])) {
+        return array('held' => array(
+            'label' => _m('Paused'),
+            'value' => _m('This alert could not be kept after an update. Save the search again.'),
+        ));
+    }
+
+    $parts = array();
+    if (!empty($raw['sPattern'])) {
+        $parts['pattern'] = array('label' => _m('Keywords'), 'value' => (string) $raw['sPattern']);
+    }
+    $lists = array('aCategories' => _m('Category'));
+    // Alerts older than the search-values format store locations as SQL.
+    if (isset($raw['params'])) {
+        $lists += array('city_areas' => _m('Neighbourhood'), 'cities' => _m('City'),
+                        'regions' => _m('Region'), 'countries' => _m('Country'));
+    }
+    foreach ($lists as $key => $label) {
+        if (!empty($raw[$key])) {
+            $parts[$key] = array('label' => $label, 'value' => implode(', ', array_map('strval', (array) $raw[$key])));
+        }
+    }
+    $min = !empty($raw['price_min']) ? (string) $raw['price_min'] : '';
+    $max = !empty($raw['price_max']) ? (string) $raw['price_max'] : '';
+    if ($min !== '' || $max !== '') {
+        $parts['price'] = array('label' => _m('Price'), 'value' => $max === '' ? '≥ ' . $min
+            : ($min === '' ? '≤ ' . $max : $min . ' – ' . $max));
+    }
+    if (!empty($raw['withPicture'])) {
+        $parts['picture'] = array('label' => _m('Photos'), 'value' => _m('With photos only'));
+    }
+    if (!empty($raw['onlyPremium'])) {
+        $parts['premium'] = array('label' => _m('Featured'), 'value' => _m('Featured listings only'));
+    }
+
+    return $parts;
+}
+
+/**
+ * One line naming what the current alert searches for, e.g. "bike · Cycling · Leeds".
+ *
+ * @return string
+ */
+function osc_alert_summary(): string
+{
+    $parts = osc_alert_criteria();
+    if (isset($parts['held'])) {
+        return $parts['held']['value'];
+    }
+    unset($parts['picture'], $parts['premium']);
+    $values = array_map(static fn ($p) => $p['value'], $parts);
+    if (isset($parts['pattern'])) {
+        $values['pattern'] = '"' . $parts['pattern']['value'] . '"';
+    }
+    if (isset($parts['price'])) {
+        $values['price'] = $parts['price']['label'] . ': ' . $parts['price']['value'];
+    }
+
+    return $values !== array() ? implode(' · ', $values) : _m('All listings');
+}
+
+/**
  * Public URL of a user's avatar, or a bundled placeholder when they have none.
  *
  * Resolves the user's single 'user'-owned resource through the polymorphic

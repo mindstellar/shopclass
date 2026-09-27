@@ -162,7 +162,6 @@ if (!function_exists('osc_gui_listing_list')) {
             require ABS_PATH . 'oc-includes/osclass/gui/account/parts/item-row.php';
         }
         echo '</ul>';
-        osc_gui_print_confirm_script();
     }
 }
 

@@ -35,43 +35,33 @@ if (!defined('ABS_PATH')) {
             </div>
         <?php } else {
             while (osc_has_alerts()) {
-                // A readable summary of the saved search. Locations only for alerts stored
-                // as search values; older ones hold them as SQL.
-                $alertRaw   = osc_get_raw_search((array)json_decode((string)osc_alert_field('s_search'), true));
-                $alertParts = array();
-                if (!empty($alertRaw['sPattern'])) {
-                    $alertParts[] = '"' . $alertRaw['sPattern'] . '"';
+                $alertParts   = osc_alert_criteria();
+                $alertActions = array();
+                if (osc_alert_is_active()) {
+                    $alertActions['unsubscribe'] = array(
+                        'label'   => _m('Stop this alert'),
+                        'url'     => osc_user_unsubscribe_alert_url('', (string) osc_alert_field('s_email')),
+                        'class'   => 'oe-danger-link',
+                        'confirm' => _m('Stop this alert? You will get no more emails for this search.'),
+                    );
                 }
-                $alertKeys = isset($alertRaw['params'])
-                    ? array('aCategories', 'city_areas', 'cities', 'regions', 'countries')
-                    : array('aCategories');
-                foreach ($alertKeys as $alertKey) {
-                    if (!empty($alertRaw[$alertKey])) {
-                        $alertParts[] = implode(', ', (array)$alertRaw[$alertKey]);
-                    }
-                }
-                $alertMin = !empty($alertRaw['price_min']) ? $alertRaw['price_min'] : null;
-                $alertMax = !empty($alertRaw['price_max']) ? $alertRaw['price_max'] : null;
-                if ($alertMin !== null || $alertMax !== null) {
-                    $alertParts[] = _m('Price') . ': ' . ($alertMax === null ? '≥ ' . $alertMin
-                        : ($alertMin === null ? '≤ ' . $alertMax : $alertMin . ' - ' . $alertMax));
-                }
-                $alertTitle = $alertParts ? implode(' · ', $alertParts) : _m('All listings');
-                if (isset($alertRaw['held'])) {
-                    $alertTitle = _m('This alert is paused: it could not be kept after an update. Save the search again.');
-                }
+                $rowActions = (array) osc_apply_filter('alert_row_actions', $alertActions, osc_alert());
                 ?>
                 <section class="oe-panel">
-                    <h2><?php echo osc_esc_html($alertTitle); ?></h2>
+                    <h2><?php echo osc_esc_html(osc_alert_summary()); ?></h2>
                     <p class="oe-meta">
                         <?php if (osc_alert_is_active()) { ?>
                             <span class="oe-badge paid"><?php echo osc_esc_html(_m('Active')); ?></span>
                         <?php } else { ?>
-                            <span class="oe-badge refunded"><?php echo osc_esc_html(_m('Unsubscribed')); ?></span>
-                        <?php } ?>
-                        <a href="<?php echo osc_esc_html(osc_user_unsubscribe_alert_url()); ?>"><?php
-                            echo osc_esc_html(_m('Delete this alert')); ?></a>
+                            <span class="oe-badge refunded"><?php echo osc_esc_html(_m('Stopped')); ?></span>
+                        <?php }
+                        if (!isset($alertParts['held'])) {
+                            foreach ($alertParts as $part) { ?>
+                                <span><?php echo osc_esc_html($part['label'] . ': ' . $part['value']); ?></span>
+                            <?php }
+                        } ?>
                     </p>
+                    <?php require __DIR__ . '/parts/row-actions.php'; ?>
 
                     <?php if (osc_count_items() === 0) { ?>
                         <p class="oe-empty"><?php echo osc_esc_html(_m('Nothing matches it yet.')); ?></p>

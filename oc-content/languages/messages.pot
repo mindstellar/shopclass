@@ -253,7 +253,7 @@ msgstr ""
 msgid "All"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-alerts-content.php
+#: oc-includes/osclass/helpers/hUsers.php
 msgid "All listings"
 msgstr ""
 
@@ -375,6 +375,10 @@ msgstr ""
 msgid "Cancelled"
 msgstr ""
 
+#: oc-includes/osclass/helpers/hUsers.php
+msgid "Category"
+msgstr ""
+
 #: oc-includes/osclass/classes/actions/ItemActions.php
 msgid "Category invalid."
 msgstr ""
@@ -413,6 +417,7 @@ msgstr ""
 
 #: oc-includes/osclass/classes/actions/UserActions.php
 #: oc-includes/osclass/gui/account/user-profile-content.php
+#: oc-includes/osclass/helpers/hUsers.php
 msgid "City"
 msgstr ""
 
@@ -504,6 +509,7 @@ msgstr ""
 
 #: oc-includes/osclass/classes/actions/UserActions.php
 #: oc-includes/osclass/gui/account/user-profile-content.php
+#: oc-includes/osclass/helpers/hUsers.php
 msgid "Country"
 msgstr ""
 
@@ -614,10 +620,6 @@ msgstr ""
 
 #: oc-includes/osclass/gui/user-delete_account-content.php
 msgid "Delete my account"
-msgstr ""
-
-#: oc-includes/osclass/gui/account/user-alerts-content.php
-msgid "Delete this alert"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-profile-content.php
@@ -777,7 +779,12 @@ msgid "Feature"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/parts/item-row.php
+#: oc-includes/osclass/helpers/hUsers.php
 msgid "Featured"
+msgstr ""
+
+#: oc-includes/osclass/helpers/hUsers.php
+msgid "Featured listings only"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/PermalinkSettingsForm.php
@@ -933,6 +940,10 @@ msgstr ""
 msgid "Keyword updated correctly"
 msgstr ""
 
+#: oc-includes/osclass/helpers/hUsers.php
+msgid "Keywords"
+msgstr ""
+
 #: oc-includes/osclass/classes/actions/UserActions.php
 msgid "Landline"
 msgstr ""
@@ -1065,6 +1076,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/actions/ItemActions.php
 msgid "Name too long."
+msgstr ""
+
+#: oc-includes/osclass/helpers/hUsers.php
+msgid "Neighbourhood"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
@@ -1377,6 +1392,10 @@ msgstr ""
 msgid "Path is empty"
 msgstr ""
 
+#: oc-includes/osclass/helpers/hUsers.php
+msgid "Paused"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebBilling.php
 msgid "Payment is unavailable right now. Please try again later."
 msgstr ""
@@ -1409,6 +1428,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/actions/ItemActions.php
 msgid "Phone too long."
+msgstr ""
+
+#: oc-includes/osclass/helpers/hUsers.php
+msgid "Photos"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-profile-content.php
@@ -1500,7 +1523,7 @@ msgstr ""
 msgid "Postcode"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-alerts-content.php
+#: oc-includes/osclass/helpers/hUsers.php
 msgid "Price"
 msgstr ""
 
@@ -1528,7 +1551,7 @@ msgstr ""
 msgid "Profile"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/parts/item-row.php
+#: oc-includes/osclass/gui/account/parts/row-actions.php
 msgid "Promote:"
 msgstr ""
 
@@ -1592,6 +1615,7 @@ msgstr ""
 
 #: oc-includes/osclass/classes/actions/UserActions.php
 #: oc-includes/osclass/gui/account/user-profile-content.php
+#: oc-includes/osclass/helpers/hUsers.php
 msgid "Region"
 msgstr ""
 
@@ -1811,6 +1835,18 @@ msgstr ""
 
 #: oc-includes/osclass/gui/billing/orders-content.php
 msgid "Status"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-alerts-content.php
+msgid "Stop this alert"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-alerts-content.php
+msgid "Stop this alert? You will get no more emails for this search."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-alerts-content.php
+msgid "Stopped"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsStorage.php
@@ -2443,10 +2479,8 @@ msgstr ""
 msgid "This admin doesn't exist"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-alerts-content.php
-msgid ""
-"This alert is paused: it could not be kept after an update. Save the search "
-"again."
+#: oc-includes/osclass/helpers/hUsers.php
+msgid "This alert could not be kept after an update. Save the search again."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebBilling.php
@@ -2532,10 +2566,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
 msgid "Unknown widget type"
-msgstr ""
-
-#: oc-includes/osclass/gui/account/user-alerts-content.php
-msgid "Unsubscribed"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebUser.php
@@ -2682,6 +2712,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
 msgid "Widget updated correctly"
+msgstr ""
+
+#: oc-includes/osclass/helpers/hUsers.php
+msgid "With photos only"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-public-profile-content.php

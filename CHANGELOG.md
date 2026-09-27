@@ -94,6 +94,7 @@ This is the fourth beta. Please try it on a copy of your site first, and tell us
 - **Your listings** offers the paid upgrades the seller can buy for each live listing. A `listing_row_actions` entry can be a POST button with the CSRF token. New helper `osc_item_upgrade_offers()`.
 - A plugin's account page takes its heading from the title its route was registered with.
 - The public profile shows the member's picture, a Business badge, an Edit link on your own profile, and a contact form with the captcha. New hooks `user_contact_form` and `user_contact_form_after`.
+- **Alerts** lists each saved search's keywords, category, place, price and filters, and asks before it stops an alert. New helpers `osc_alert_criteria()` and `osc_alert_summary()`, and filter `alert_row_actions`.
 
 ### Breaking
 

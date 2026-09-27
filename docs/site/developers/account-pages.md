@@ -242,6 +242,11 @@ osc_add_filter('listing_row_actions', function ($actions, $item, $context) {
 });
 ```
 
+Each saved alert has its own actions through `alert_row_actions($actions, $alert)`,
+in the same entry shape. Core's key is `unsubscribe`. To show an alert yourself,
+`osc_alert_criteria()` gives its search as `['label', 'value']` parts and
+`osc_alert_summary()` gives it as one line.
+
 To draw the whole list yourself, return a string from `listing_list_html`. It
 gets `null`, the item rows and the context; anything but a string keeps core's list.
 

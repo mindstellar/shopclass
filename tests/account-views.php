@@ -203,11 +203,12 @@ foreach (array('user-dashboard', 'user-items', 'user-alerts', 'user-public-profi
         && strpos($src, 'parts/item-row.php') === false);
 }
 
-check('a POST row action carries the CSRF token', strpos($row, "osc_csrf_token_form()") !== false
-    && strpos($row, "'method'] ?? 'get') === 'post'") !== false);
+$rowParts = $row . (string) file_get_contents($accountIn . 'parts/row-actions.php');
+check('a POST row action carries the CSRF token', strpos($rowParts, "osc_csrf_token_form()") !== false
+    && strpos($rowParts, "'method'] ?? 'get') === 'post'") !== false);
 check('the row offers paid upgrades on the owner list', strpos($row, 'osc_item_upgrade_offers(') !== false);
 // A <form> inside a <p> closes the paragraph, so action lines must not be one.
-check('action lines are not paragraphs', strpos($row, '<p class="oe-meta oe-row-actions') === false);
+check('action lines are not paragraphs', strpos($rowParts, '<p class="oe-meta oe-row-actions') === false);
 
 $profile = (string) file_get_contents($accountIn . 'user-public-profile-content.php');
 check('the public profile posts user contact_post', strpos($profile, 'value="contact_post"') !== false
@@ -218,5 +219,9 @@ $nonSecure = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/
 preg_match("/case 'contact_post':.*?break;/s", $nonSecure, $contactCase);
 check('user contact_post checks the CSRF token', isset($contactCase[0]) && strpos($contactCase[0], 'osc_csrf_check()') !== false);
 check('user contact_post is throttled', isset($contactCase[0]) && strpos($contactCase[0], "ActionThrottle::exceeded(\n                    'user_contact'") !== false);
+
+$alertsSrc = (string) file_get_contents($accountIn . 'user-alerts-content.php');
+check('alerts apply alert_row_actions', strpos($alertsSrc, "osc_apply_filter('alert_row_actions'") !== false);
+check('alerts draw actions through the shared row-actions part', strpos($alertsSrc, "parts/row-actions.php") !== false);
 
 exit(harness_result());

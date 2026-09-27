@@ -90,12 +90,6 @@ if ($rowOwned && $rowContext === 'user_items') {
 }
 $rowActions = (array) osc_apply_filter('listing_row_actions', $rowActions, $rowItem, $rowContext);
 
-$rowGroups = array('' => array(), 'promote' => array());
-foreach ($rowActions as $action) {
-    if (is_array($action) && isset($action['label'], $action['url'])) {
-        $rowGroups[($action['group'] ?? '') === 'promote' ? 'promote' : ''][] = $action;
-    }
-}
 ?>
 <li class="oe-list-item">
     <?php if (osc_images_enabled_at_items() && osc_has_item_resources()) { ?>
@@ -131,36 +125,7 @@ foreach ($rowActions as $action) {
                 <?php }
             } ?>
         </p>
-        <?php foreach ($rowGroups as $group => $actions) {
-            if ($actions === array()) {
-                continue;
-            } ?>
-            <div class="oe-meta oe-row-actions<?php echo $group === 'promote' ? ' oe-row-promote' : ''; ?>">
-                <?php if ($group === 'promote') { ?>
-                    <span><?php echo osc_esc_html(_m('Promote:')); ?></span>
-                <?php }
-                foreach ($actions as $action) {
-                    $actionClass   = !empty($action['class']) ? ' ' . osc_esc_html((string) $action['class']) : '';
-                    $actionConfirm = !empty($action['confirm'])
-                        ? ' data-osc-confirm="' . osc_esc_html((string) $action['confirm']) . '"' : '';
-                    if (($action['method'] ?? 'get') === 'post') { ?>
-                        <form class="oe-inline-form nocsrf" method="post" action="<?php echo osc_esc_html((string) $action['url']); ?>">
-                            <?php echo osc_csrf_token_form();
-                            foreach ((array) ($action['fields'] ?? array()) as $fieldName => $fieldValue) { ?>
-                                <input type="hidden" name="<?php echo osc_esc_html((string) $fieldName); ?>" value="<?php
-                                    echo osc_esc_html((string) $fieldValue); ?>">
-                            <?php } ?>
-                            <button type="submit" class="oe-link-btn<?php echo $actionClass; ?>"<?php echo $actionConfirm; ?>><?php
-                                echo osc_esc_html((string) $action['label']); ?></button>
-                        </form>
-                    <?php } else { ?>
-                        <a href="<?php echo osc_esc_html((string) $action['url']); ?>"<?php
-                            echo $actionClass !== '' ? ' class="' . trim($actionClass) . '"' : '';
-                            echo $actionConfirm; ?>><?php echo osc_esc_html((string) $action['label']); ?></a>
-                    <?php }
-                } ?>
-            </div>
-        <?php } ?>
+        <?php require __DIR__ . '/row-actions.php'; ?>
     </div>
 
     <p class="oe-price"><?php echo osc_esc_html(osc_item_formatted_price()); ?></p>
