@@ -104,7 +104,7 @@ See [installing locations](/docs/configure/locations/).
 | `cache:flush` | Flush the object cache. |
 | `sitemap:warm` | Pre-generate the XML sitemap into the cache. |
 | `jobs:work [--max-seconds=]` | Drain the background job queue and nothing else. Safe to run every minute. |
-| `jobs:status` | Show what is waiting and name anything that gave up. |
+| `jobs:status` | Show pending, running and gave-up jobs, and the oldest pending one, per type; name anything that gave up. `--type=` narrows it to one type. |
 
 Slow work — moving photos to remote storage, emptying a large category, whatever a
 plugin queues — is done in the background rather than during a page load. Every

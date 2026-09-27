@@ -98,6 +98,7 @@ This is the fourth beta. Please try it on a copy of your site first, and tell us
 - The contact page has new hooks `contact_form_top`, `contact_form_after` and `contact_page_aside`, which fills a column beside the form. Core's save-this-search form carries `data-osc-alert-form`.
 - The query builder takes table aliases (`'t_item AS i'`) in reads and joins, and gains `selectRaw()`, `whereNull()`, `whereNotNull()`, `orWhereNull()` and `orWhereNotNull()`.
 - Jobs can carry a `unique_key` that folds repeated work into one waiting job. New `osc_job_enqueue_many()`, `osc_job_ensure()` and `osc_job_stats()`.
+- `php oc-cli.php jobs:status` shows pending, running, gave-up and the oldest pending job per type, and takes `--type=`.
 - **Your profile** has the account type, the neighbourhood, an About field for each language and a Download your data link. New hook `user_avatar_form`; the location fields carry `data-location-cascade`.
 
 ### Breaking

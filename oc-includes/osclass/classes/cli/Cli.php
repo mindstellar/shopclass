@@ -46,7 +46,7 @@ class Cli
         'package:reconcile'   => ['cmdPackageReconcile', 'Install/refresh bundled plugins & themes onto a persistent oc-content (no-op outside a container image)'],
         'cache:flush'         => ['cmdCacheFlush', 'Flush the object cache'],
         'jobs:work'           => ['cmdJobsWork', 'Drain the job queue and nothing else (--max-seconds=)'],
-        'jobs:status'         => ['cmdJobsStatus', 'Show what is on the job queue, and what stopped retrying'],
+        'jobs:status'         => ['cmdJobsStatus', 'Show what is on the job queue per type, and what stopped retrying (--type=)'],
         'storage:work'        => ['cmdJobsWork', 'Deprecated alias for jobs:work'],
         'sitemap:warm'        => ['cmdSitemapWarm', 'Pre-generate the XML sitemap into the cache'],
         'user:create-admin'   => ['cmdUserCreateAdmin', 'Create an admin (--user= --email= [--password=] [--name=])'],
@@ -639,29 +639,40 @@ class Cli
      */
     private function cmdJobsStatus(array $args): int
     {
-        unset($args);
-
-        $queue   = \mindstellar\job\JobQueue::instance();
-        $summary = $queue->summary();
+        $queue = \mindstellar\job\JobQueue::instance();
+        $only  = trim((string) ($args['type'] ?? ''));
+        $all   = $queue->stats($only === '' ? null : $only);
 
         $this->out(sprintf(
-            "pending %d   running %d   gave up %d\n",
-            $summary[\mindstellar\job\JobQueue::STATUS_PENDING],
-            $summary[\mindstellar\job\JobQueue::STATUS_RUNNING],
-            $summary[\mindstellar\job\JobQueue::STATUS_ERROR]
+            "pending %d   running %d   gave up %d   oldest pending %s\n",
+            $all['pending'],
+            $all['running'],
+            $all['error'],
+            $all['oldest'] ?? '-'
         ));
 
         \mindstellar\job\JobWorker::registerHandlers();
-        foreach ($queue->queuedTypes() as $type) {
+        $types = $only === '' ? $queue->queuedTypes() : array($only);
+        if ($types !== array()) {
+            $this->out(sprintf("\n  %-40s %8s %8s %8s  %s\n", 'type', 'pending', 'running', 'gave up', 'oldest pending'));
+        }
+        foreach ($types as $type) {
+            $stats = $queue->stats($type);
             $this->out(sprintf(
-                "  %-40s %5d pending%s\n",
+                "  %-40s %8d %8d %8d  %s%s\n",
                 $type,
-                $queue->count(\mindstellar\job\JobQueue::STATUS_PENDING, $type),
+                $stats['pending'],
+                $stats['running'],
+                $stats['error'],
+                $stats['oldest'] ?? '-',
                 \mindstellar\job\JobRegistry::has($type) ? '' : '   [no handler registered]'
             ));
         }
 
         $dead = $queue->deadLetters(20);
+        if ($only !== '') {
+            $dead = array_values(array_filter($dead, static fn ($row) => $row['s_type'] === $only));
+        }
         if ($dead !== array()) {
             $this->out("\nGave up:\n");
             foreach ($dead as $row) {
@@ -674,7 +685,7 @@ class Cli
             }
         }
 
-        return $summary[\mindstellar\job\JobQueue::STATUS_ERROR] > 0 ? 1 : 0;
+        return $all['error'] > 0 ? 1 : 0;
     }
 
     /**
