@@ -234,6 +234,7 @@ on a copy of your site and tell us what you find.
 
 ### Security
 
+- The link that confirms an e-mail address change works once, expires after 24 hours, and can no longer be used as a password-reset code.
 - Contact-form and listing-post events no longer count toward the sign-in limit, and signing in no longer resets the contact-form and posting limits for that address.
 - The public profile's contact form checks the CSRF token, the sender's fields and the member's status, and limits how many messages one visitor sends.
 - Deleting your own listing needs a CSRF token, so another site can no longer delete it through a link. `osc_item_delete_url()` adds the token; e-mailed delete links keep working through the listing's secret.

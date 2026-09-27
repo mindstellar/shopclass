@@ -47,61 +47,31 @@ class CWebUserNonSecure extends BaseModel
     {
         switch ($this->action) {
             case 'change_email_confirm':    //change email confirm
-                if (Params::getParam('userId') && Params::getParam('code')) {
-                    $userManager = new User();
-                    $user        = $userManager->findByPrimaryKey(Params::getParam('userId'));
+                $change = UserActions::confirmEmailChange(
+                    Params::getParamInt('userId'),
+                    Params::getParamString('code')
+                );
+                if ($change['status'] === 'ok') {
+                    // Request-scoped refresh only — the next request re-resolves the
+                    // email from the database via the signed identity cookie, so no
+                    // physical session is started for this logged-in user.
+                    Session::newInstance()->_setEphemeral('userEmail', $change['new']);
 
-                    if ($user['s_pass_code'] == Params::getParam('code')
-                        && $user['b_enabled'] == 1
-                    ) {
-                        $userOldEmail = $user['s_email'];
-                        $userEmailTmp = UserEmailTmp::newInstance()
-                            ->findByPrimaryKey(Params::getParam('userId'));
-                        // The pending change may have expired and been pruned.
-                        if (empty($userEmailTmp['s_new_email'])) {
-                            osc_add_flash_error_message(_m('Sorry, the link is not valid'));
-                            $this->redirectTo(osc_base_url());
-                        }
-                        $code         = osc_genRandomPassword(50);
-                        $userManager->update(
-                            array('s_email' => $userEmailTmp['s_new_email']),
-                            array('pk_i_id' => $userEmailTmp['fk_i_user_id'])
-                        );
-                        Item::newInstance()
-                            ->update(
-                                array('s_contact_email' => $userEmailTmp['s_new_email']),
-                                array('fk_i_user_id' => $userEmailTmp['fk_i_user_id'])
-                            );
-                        ItemComment::newInstance()
-                            ->update(
-                                array('s_author_email' => $userEmailTmp['s_new_email']),
-                                array('fk_i_user_id' => $userEmailTmp['fk_i_user_id'])
-                            );
-                        Alerts::newInstance()
-                            ->update(
-                                array('s_email' => $userEmailTmp['s_new_email']),
-                                array('fk_i_user_id' => $userEmailTmp['fk_i_user_id'])
-                            );
-                        // Request-scoped refresh only — the next request re-resolves the
-                        // email from the database via the signed identity cookie, so no
-                        // physical session is started for this logged-in user.
-                        Session::newInstance()->_setEphemeral('userEmail', $userEmailTmp['s_new_email']);
-                        UserEmailTmp::newInstance()
-                            ->delete(array('s_new_email' => $userEmailTmp['s_new_email']));
+                    osc_run_hook(
+                        'change_email_confirm',
+                        Params::getParam('userId'),
+                        $change['old'],
+                        $change['new']
+                    );
 
-                        osc_run_hook(
-                            'change_email_confirm',
-                            Params::getParam('userId'),
-                            $userOldEmail,
-                            $userEmailTmp['s_new_email']
-                        );
-
-                        osc_add_flash_ok_message(_m('Your email has been changed successfully'));
-                        $this->redirectTo(osc_user_profile_url());
-                    } else {
-                        osc_add_flash_error_message(_m('Sorry, the link is not valid'));
-                        $this->redirectTo(osc_base_url());
-                    }
+                    osc_add_flash_ok_message(_m('Your email has been changed successfully'));
+                    $this->redirectTo(osc_user_profile_url());
+                } elseif ($change['status'] === 'taken') {
+                    osc_add_flash_error_message(_m('The specified e-mail is already in use'));
+                    $this->redirectTo(osc_base_url());
+                } elseif ($change['status'] === 'failed') {
+                    osc_add_flash_error_message(_m('Your email could not be changed. Please try again.'));
+                    $this->redirectTo(osc_base_url());
                 } else {
                     osc_add_flash_error_message(_m('Sorry, the link is not valid'));
                     $this->redirectTo(osc_base_url());

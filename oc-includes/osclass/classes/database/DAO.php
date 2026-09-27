@@ -623,6 +623,24 @@ class DAO
     }
 
     /**
+     * The ", pk_i_id ASC|DESC" to append to an ORDER BY so ties break on the id and
+     * pages of a sorted list never overlap. Empty for a random or an id-ordered list.
+     *
+     * @param string $orderColumn
+     * @param string $direction
+     *
+     * @return string
+     */
+    protected function idTieBreak(string $orderColumn, string $direction): string
+    {
+        if (strtolower($direction) === 'random' || $orderColumn === 'pk_i_id') {
+            return '';
+        }
+
+        return ', pk_i_id' . (strtoupper(trim($direction)) === 'DESC' ? ' DESC' : ' ASC');
+    }
+
+    /**
      * Reset this object's recorded error to "last operation succeeded".
      *
      * @return void

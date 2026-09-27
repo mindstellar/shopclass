@@ -70,6 +70,28 @@ if (!function_exists('osc_db_scalar')) {
     }
 }
 
+if (!function_exists('osc_db_count')) {
+    /**
+     * Count the rows of $table that match a raw WHERE fragment.
+     *
+     * $where is trusted SQL without the WHERE keyword, using '?' placeholders for
+     * every value in $params. An empty $where counts the whole table.
+     *
+     * @param string $table
+     * @param string $where
+     * @param array  $params
+     *
+     * @return int
+     * @throws \mindstellar\database\DbException on a failed query
+     */
+    function osc_db_count(string $table, string $where = '', array $params = []): int
+    {
+        $sql = 'SELECT COUNT(*) FROM ' . $table . ($where !== '' ? ' WHERE ' . $where : '');
+
+        return (int) \mindstellar\database\Connection::instance()->scalar($sql, $params);
+    }
+}
+
 if (!function_exists('osc_db_execute')) {
     /**
      * Run a parameterized INSERT/UPDATE/DELETE and return affected rows.

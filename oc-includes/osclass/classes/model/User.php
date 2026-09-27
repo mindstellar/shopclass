@@ -17,6 +17,9 @@
  */
 class User extends DAO
 {
+    /** Seconds an s_pass_code stays valid, for both password reset and e-mail change. */
+    public const PASS_CODE_TTL = 86400;
+
     /**
      *
      * @var \User
@@ -323,7 +326,7 @@ class User extends DAO
         if ($secret == '') {
             return null;
         }
-        $date = date('Y-m-d H:i:s', time() - (24 * 3600));
+        $date = date('Y-m-d H:i:s', time() - self::PASS_CODE_TTL);
 
         // Same string comparison as findByIdSecret: the reset code is a VARCHAR,
         // and comparing it numerically let "0" match any code beginning with a
@@ -566,10 +569,7 @@ class User extends DAO
         } else {
             $orderSql = $order_column . $direction;
         }
-        // Ties break on the id, so pages of a sorted list never overlap.
-        if (strtolower($direction) !== 'random' && $order_column !== 'pk_i_id') {
-            $orderSql .= ', pk_i_id' . (strtoupper(trim($direction)) === 'DESC' ? ' DESC' : ' ASC');
-        }
+        $orderSql .= $this->idTieBreak($order_column, $direction);
 
         $params = array();
         $where  = '';
@@ -613,27 +613,23 @@ class User extends DAO
                 $params[]  = $v;
             }
             if (count($clauses) > 0) {
-                $where = ' WHERE ' . implode(' AND ', $clauses);
+                $where = implode(' AND ', $clauses);
             }
         }
-        $sql = 'SELECT * FROM ' . $this->getTableName() . $where
+        $sql = 'SELECT * FROM ' . $this->getTableName() . ($where !== '' ? ' WHERE ' . $where : '')
             . ' ORDER BY ' . $orderSql
             . ' LIMIT ' . (int)$start . ', ' . (int)$end;
 
         try {
             $users['users'] = osc_db_stringify_rows(osc_db_select($sql, $params));
-            $total          = osc_db_scalar('SELECT COUNT(*) FROM ' . $this->getTableName() . $where, $params);
-            $rows           = osc_db_scalar('SELECT COUNT(*) FROM ' . $this->getTableName());
+            $total          = osc_db_count($this->getTableName(), $where, $params);
+            $rows           = osc_db_count($this->getTableName());
         } catch (\mindstellar\database\DbException $e) {
             return $users;
         }
 
-        if ($total) {
-            $users['total_results'] = (string)$total;
-        }
-        if ($rows) {
-            $users['rows'] = (string)$rows;
-        }
+        $users['total_results'] = $total > 0 ? (string)$total : 0;
+        $users['rows']          = $rows > 0 ? (string)$rows : 0;
 
         return $users;
     }

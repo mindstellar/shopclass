@@ -2339,6 +2339,7 @@ msgstr ""
 
 #: oc-includes/osclass/classes/actions/UserActions.php
 #: oc-includes/osclass/classes/controller/CWebUser.php
+#: oc-includes/osclass/classes/controller/CWebUserNonSecure.php
 msgid "The specified e-mail is already in use"
 msgstr ""
 
@@ -2969,6 +2970,10 @@ msgstr ""
 #: oc-includes/osclass/gui/item-send-friend-content.php
 #: oc-includes/osclass/gui/parts/contact-form.php
 msgid "Your email address"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebUserNonSecure.php
+msgid "Your email could not be changed. Please try again."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebUserNonSecure.php

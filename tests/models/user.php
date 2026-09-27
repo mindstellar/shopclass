@@ -275,13 +275,18 @@ pin('and it is the second user by id', (string)$other, $paged['users'][0]['pk_i_
 $bogusOrder = $model->search(0, 10, 'nonsense; DROP', 'ASC');
 check('a non-allowlisted order column falls back rather than injecting', count($bogusOrder['users']) === 2);
 
-/* The total is a COUNT(*) with the data query's WHERE, so it ignores the page window. */
+/* The total is a COUNT(*) with the data query's WHERE, so it ignores the page window.
+ * The outsider does not match, so a COUNT that drops the WHERE reports one too many. */
+$outsider  = seed_user($admin, 'outsider', 'outsider@elsewhere.test');
 $like      = array('mail' => array('columns' => array('s_email'), 'op' => 'LIKE', 'value' => '%@example.test'));
 $likeFull  = $model->search(0, 10, 'pk_i_id', 'ASC', $like);
 $likePage  = $model->search(1, 1, 'pk_i_id', 'ASC', $like);
 $likeCount = (string)$rawCount("SELECT COUNT(*) c FROM {$prefix}t_user WHERE s_email LIKE '%@example.test'");
+pin('the raw filtered count leaves the outsider out', '2', $likeCount);
 pin('a filtered search reports the raw COUNT(*) as its total', $likeCount, $likeFull['total_results']);
 pin('a later page of it reports the same total', $likeCount, $likePage['total_results']);
+pin('rows still counts the whole table', '3', $likeFull['rows']);
+$admin->query("DELETE FROM {$prefix}t_user WHERE pk_i_id = $outsider");
 pin('a filter that matches nothing reports int 0', 0, $model->searchByName(0, 10, 'pk_i_id', 'ASC', 'no-such-name')['total_results']);
 
 /* Equal sort keys break on the id, so two pages never repeat a row. */

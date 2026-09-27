@@ -485,10 +485,7 @@ class Alerts extends DAO
         } else {
             $orderSql = $order_column . $direction;
         }
-        // Ties break on the id, so pages of a sorted list never overlap.
-        if (strtolower($direction) !== 'random' && $order_column !== 'pk_i_id') {
-            $orderSql .= ', pk_i_id' . (strtoupper(trim($direction)) === 'DESC' ? ' DESC' : ' ASC');
-        }
+        $orderSql .= $this->idTieBreak($order_column, $direction);
 
         // Hand-written with every value bound; the total comes from a COUNT(*) with the same WHERE.
         $params = array();
@@ -498,10 +495,11 @@ class Alerts extends DAO
             // payload before the wildcard boundaries are added, so a literal
             // wildcard character typed by the caller stays literal.
             $escaped  = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), (string)$name);
-            $where    = ' WHERE s_email LIKE ?';
+            $where    = 's_email LIKE ?';
             $params[] = '%' . $escaped . '%';
         }
-        $sql = 'SELECT * FROM ' . $this->getTableName() . $where . ' ORDER BY ' . $orderSql;
+        $sql = 'SELECT * FROM ' . $this->getTableName() . ($where !== '' ? ' WHERE ' . $where : '')
+            . ' ORDER BY ' . $orderSql;
 
         // Mirrors DBCommandClass::limit($start, $end): MySQL's two-argument LIMIT
         // reads the first number as the OFFSET and the second as the COUNT -- the
@@ -516,20 +514,16 @@ class Alerts extends DAO
 
         try {
             $rows  = osc_db_select($sql, $params);
-            $total = osc_db_scalar('SELECT COUNT(*) FROM ' . $this->getTableName() . $where, $params);
+            $total = osc_db_count($this->getTableName(), $where, $params);
             // Always the WHOLE table, ignoring the s_email filter, as the legacy query did.
-            $all   = osc_db_scalar('SELECT COUNT(*) FROM ' . $this->getTableName());
+            $all   = osc_db_count($this->getTableName());
         } catch (\mindstellar\database\DbException $e) {
             return $alerts;
         }
 
         $alerts['alerts'] = osc_db_stringify_rows($rows);
-        if ($total) {
-            $alerts['total_results'] = (string)$total;
-        }
-        if ($all) {
-            $alerts['rows'] = (string)$all;
-        }
+        $alerts['total_results'] = $total > 0 ? (string)$total : 0;
+        $alerts['rows']          = $all > 0 ? (string)$all : 0;
 
         return $alerts;
     }

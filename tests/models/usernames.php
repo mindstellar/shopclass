@@ -9,8 +9,9 @@
  */
 
 /**
- * Pins the username rules in UserActions: digit-only names are refused, and the
- * username writes stay unique with and without a unique key on s_username.
+ * Pins the username rules in UserActions: digit-only names are refused, the
+ * username writes stay unique with and without a unique key on s_username, and a
+ * claim that cannot get the lock writes nothing.
  *
  * Usage:  php tests/models/usernames.php          (standalone, own scratch database)
  *         php tests/run-models.php usernames      (as part of the suite)
@@ -87,6 +88,63 @@ $fourth = seed_user($admin, '_placeholder4', 'fourth@example.test');
 pin('the fallback suffix still works under the key', $fourth . '_2', $assignDefault($fourth));
 
 $admin->query("ALTER TABLE {$prefix}t_user DROP KEY uk_test_username");
+
+harness_section('claimUsername fails closed when the lock is held elsewhere');
+
+// The admin connection is its own session, so it can hold the lock the model connection waits on.
+$lockName = 'osc_username_' . md5((defined('DB_NAME') ? DB_NAME : '') . $prefix . 't_user');
+$holdLock = static function () use ($admin, $lockName): bool {
+    return (int)$admin->query("SELECT GET_LOCK('" . $admin->real_escape_string($lockName) . "', 0) l")->fetch_assoc()['l'] === 1;
+};
+$dropLock = static function () use ($admin, $lockName): void {
+    $admin->query("SELECT RELEASE_LOCK('" . $admin->real_escape_string($lockName) . "')");
+};
+
+check('the test holds the username lock', $holdLock());
+pin('a claim that cannot get the lock fails', 'failed', UserActions::claimUsername($bob, 'bobby'));
+pin('and writes nothing', 'robert', $usernameOf($bob));
+$dropLock();
+pin('with the lock free the same claim goes through', 'ok', UserActions::claimUsername($bob, 'bobby'));
+
+harness_section('Registration with a chosen username claims it under the lock');
+
+require_once __DIR__ . '/../lib/action-standins.php';
+
+seed_locale($admin);
+
+$userCount = static function () use ($admin, $prefix): int {
+    return (int)$admin->query("SELECT COUNT(*) c FROM {$prefix}t_user")->fetch_assoc()['c'];
+};
+$register = static function (string $username, string $email) {
+    foreach (array('s_name', 's_email', 's_username', 's_password', 's_password2', 's_website', 's_info') as $stale) {
+        Params::unsetParam($stale);
+    }
+    Params::setParam('s_name', 'Reg User');
+    Params::setParam('s_email', $email);
+    Params::setParam('s_username', $username);
+    Params::setParam('s_password', 'correct horse battery');
+    Params::setParam('s_password2', 'correct horse battery');
+
+    return (new UserActions(false))->add();
+};
+
+pin('a free chosen name registers', 2, $register('newcomer', 'newcomer@example.test'));
+pin('and the account holds that name', 'newcomer', (string)(User::newInstance()->findByEmail('newcomer@example.test')['s_username'] ?? ''));
+
+$before = $userCount();
+pin('a name another account holds is refused', "Username is already taken\n", $register('newcomer', 'second@example.test'));
+pin('the half-created account is removed', $before, $userCount());
+pin('the refused e-mail has no account', array(), User::newInstance()->findByEmail('second@example.test'));
+
+check('the test holds the username lock again', $holdLock());
+$before = $userCount();
+pin(
+    'a registration that cannot get the lock fails',
+    "Your account could not be created. Please try again.\n",
+    $register('lockedout', 'lockedout@example.test')
+);
+pin('and leaves no account behind', $before, $userCount());
+$dropLock();
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

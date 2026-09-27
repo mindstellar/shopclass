@@ -116,16 +116,9 @@ class UserActions
             if ($numeric !== '') {
                 $flash_error .= $numeric . PHP_EOL;
                 $error[]     = 13;
-            } else {
-                $username_taken = $this->manager->findByUsername($input['s_username']);
-                if (!$error && $username_taken != false) {
-                    $flash_error .= _m('Username is already taken') . PHP_EOL;
-                    $error[]     = 8;
-                }
-                if (osc_is_username_blacklisted($input['s_username'])) {
-                    $flash_error .= _m('The specified username is not valid, it contains some invalid words') . PHP_EOL;
-                    $error[]     = 9;
-                }
+            } elseif (osc_is_username_blacklisted($input['s_username'])) {
+                $flash_error .= _m('The specified username is not valid, it contains some invalid words') . PHP_EOL;
+                $error[]     = 9;
             }
         }
 
@@ -152,11 +145,9 @@ class UserActions
             $input['s_secret'] = \mindstellar\security\ActionToken::hash($activation_plain);
         }
 
-        // A unique placeholder until the id-based name is set below, so blank names never collide.
-        $needs_username = $input['s_username'] == '';
-        if ($needs_username) {
-            $input['s_username'] = '_' . bin2hex(random_bytes(10));
-        }
+        // Insert with a unique placeholder, then claim the real name under the username lock.
+        $chosen_username     = (string) $input['s_username'];
+        $input['s_username'] = '_' . bin2hex(random_bytes(10));
 
         $userId = $this->manager->insertGetId($input);
 
@@ -171,8 +162,24 @@ class UserActions
             return _m('Your account could not be created. Please try again.') . PHP_EOL;
         }
 
-        if ($needs_username) {
+        if ($chosen_username === '') {
             $input['s_username'] = self::assignDefaultUsername((int) $userId);
+        } else {
+            $claim = self::claimUsername((int) $userId, $chosen_username);
+            if ($claim !== 'ok') {
+                $this->manager->deleteByPrimaryKey($userId);
+                Session::newInstance()->_setForm('user_s_name', $input['s_name']);
+                Session::newInstance()->_setForm('user_s_username', $chosen_username);
+                Session::newInstance()->_setForm('user_s_email', $input['s_email']);
+                Session::newInstance()->_setForm('user_s_phone_land', $input['s_phone_land']);
+                Session::newInstance()->_setForm('user_s_phone_mobile', $input['s_phone_mobile']);
+                osc_run_hook('user_register_failed', array($claim === 'taken' ? 8 : 12));
+
+                return $claim === 'taken'
+                    ? _m('Username is already taken') . PHP_EOL
+                    : _m('Your account could not be created. Please try again.') . PHP_EOL;
+            }
+            $input['s_username'] = $chosen_username;
         }
 
         if (is_array(Params::getParam('s_info'))) {
@@ -786,6 +793,83 @@ class UserActions
     }
 
     /**
+     * Apply a pending e-mail change once its confirmation code checks out.
+     *
+     * The code must match and be younger than User::PASS_CODE_TTL, and it is cleared on use.
+     * The user row, their listings, comments and alerts switch in one transaction.
+     *
+     * @param int    $userId
+     * @param string $code
+     *
+     * @return array{status:string,old:string,new:string} status is 'ok', 'invalid', 'taken' or 'failed'
+     */
+    public static function confirmEmailChange(int $userId, string $code): array
+    {
+        $result  = array('status' => 'invalid', 'old' => '', 'new' => '');
+        $manager = User::newInstance();
+        $user    = $userId > 0 && $code !== '' ? $manager->findByPrimaryKey($userId) : false;
+        if (empty($user['pk_i_id'])) {
+            return $result;
+        }
+
+        $stored = (string) ($user['s_pass_code'] ?? '');
+        $issued = strtotime((string) ($user['s_pass_date'] ?? ''));
+        if ($stored === '' || !hash_equals($stored, $code)
+            || (int) $user['b_enabled'] !== 1
+            || $issued === false || $issued < time() - User::PASS_CODE_TTL
+        ) {
+            return $result;
+        }
+
+        $pending = UserEmailTmp::newInstance()->findByPrimaryKey($userId);
+        $new     = (string) ($pending['s_new_email'] ?? '');
+        if ($new === '') {
+            return $result;
+        }
+        $result['old'] = (string) $user['s_email'];
+        $result['new'] = $new;
+
+        $holder = $manager->findByEmail($new);
+        if (!empty($holder['pk_i_id']) && (int) $holder['pk_i_id'] !== $userId) {
+            $result['status'] = 'taken';
+
+            return $result;
+        }
+
+        $status = 'failed';
+        try {
+            osc_db_transaction(static function () use ($manager, $userId, $stored, $new, &$status) {
+                // Matching on the code as well makes the link single-use under a double click.
+                $switched = $manager->update(
+                    array('s_email' => $new, 's_pass_code' => null, 's_pass_date' => null),
+                    array('pk_i_id' => $userId, 's_pass_code' => $stored)
+                );
+                if ($switched !== 1) {
+                    $status = $switched === 0 ? 'invalid' : ((int) $manager->getErrorLevel() === 1062 ? 'taken' : 'failed');
+                    throw new \RuntimeException('E-mail change not applied.');
+                }
+                $writes = array(
+                    Item::newInstance()->update(array('s_contact_email' => $new), array('fk_i_user_id' => $userId)),
+                    ItemComment::newInstance()->update(array('s_author_email' => $new), array('fk_i_user_id' => $userId)),
+                    Alerts::newInstance()->update(array('s_email' => $new), array('fk_i_user_id' => $userId)),
+                    UserEmailTmp::newInstance()->delete(array('s_new_email' => $new)),
+                );
+                if (in_array(false, $writes, true)) {
+                    throw new \RuntimeException('E-mail change not applied.');
+                }
+            });
+        } catch (\Throwable $e) {
+            $result['status'] = $status;
+
+            return $result;
+        }
+
+        $result['status'] = 'ok';
+
+        return $result;
+    }
+
+    /**
      * The error for a username made only of digits, or '' when it has a letter or symbol.
      * Digit-only names are kept for the id-based name a blank registration gets.
      *
@@ -805,8 +889,9 @@ class UserActions
     /**
      * Give a user a username unless another account already holds it.
      *
-     * The check and the write run under a named lock. A duplicate-key error from a unique
-     * index on s_username counts as taken.
+     * The check and the write run under a named lock; if the lock is not had within 5
+     * seconds nothing is written. A duplicate-key error from a unique index on s_username
+     * counts as taken.
      *
      * @param int    $userId
      * @param string $username
@@ -823,6 +908,9 @@ class UserActions
         } catch (\mindstellar\database\DbException $e) {
             $locked = false;
         }
+        if (!$locked) {
+            return 'failed';
+        }
 
         try {
             $taken = osc_db_table($table)
@@ -836,12 +924,10 @@ class UserActions
         } catch (\mindstellar\database\DbException $e) {
             return (int) $e->getCode() === 1062 ? 'taken' : 'failed';
         } finally {
-            if ($locked) {
-                try {
-                    osc_db_scalar('SELECT RELEASE_LOCK(?)', array($lock));
-                } catch (\mindstellar\database\DbException $e) {
-                    // The lock is dropped with the connection anyway.
-                }
+            try {
+                osc_db_scalar('SELECT RELEASE_LOCK(?)', array($lock));
+            } catch (\mindstellar\database\DbException $e) {
+                // The lock is dropped with the connection anyway.
             }
             if (function_exists('osc_invalidate_user_cache')) {
                 osc_invalidate_user_cache($userId);

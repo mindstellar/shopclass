@@ -182,20 +182,11 @@ class Log extends DAO
 
         $result['logs'] = osc_db_stringify_rows($rows);
 
-        // Same WHERE and bound params as the data query above, counted separately
-        // instead of via the deprecated SQL_CALC_FOUND_ROWS/FOUND_ROWS() pair.
-        $total = osc_db_scalar('SELECT COUNT(*) as total FROM ' . $table . $whereSql, $params);
-        if ($total) {
-            // A bound COUNT(*) comes back as a native int; cast to match the
-            // string FOUND_ROWS() used to return.
-            $result['total_results'] = (string) $total;
-        }
-
-        // $table is fixed in the constructor, never runtime input.
-        $rowsTotal = osc_db_scalar('SELECT COUNT(*) as total FROM ' . $table);
-        if ($rowsTotal) {
-            $result['rows'] = $rowsTotal;
-        }
+        // Counts are strings, as FOUND_ROWS() returned; zero stays int 0.
+        $total                   = osc_db_count($table, implode(' AND ', $where), $params);
+        $result['total_results'] = $total > 0 ? (string) $total : 0;
+        $rowsTotal               = osc_db_count($table);
+        $result['rows']          = $rowsTotal > 0 ? (string) $rowsTotal : 0;
 
         return $result;
     }
