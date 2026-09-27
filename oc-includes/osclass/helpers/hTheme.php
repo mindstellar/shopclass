@@ -485,6 +485,19 @@ function osc_gui_view(string $themeView, string $contentFile, array $opts = arra
 }
 
 /**
+ * The heading of a plugin's account page: the title its route was registered with,
+ * or "Your account" when the route gave none.
+ *
+ * @return string
+ */
+function osc_gui_custom_heading(): string
+{
+    $title = trim((string) Rewrite::newInstance()->get_title());
+
+    return ($title === '' || $title === 'Custom') ? _m('Your account') : $title;
+}
+
+/**
  * Render core's own fallback page for one of the account and auth views.
  *
  * Core has a content partial for every view the account section routes to, so a
@@ -523,7 +536,7 @@ function osc_gui_account_view(string $themeView): bool
         'user-recover.php'         => array('heading' => _m('Reset your password')),
         'user-forgot_password.php' => array('heading' => _m('Choose a new password')),
         'user-public-profile.php'  => array('heading' => (string) osc_user_name()),
-        'user-custom.php'          => array('heading' => _m('Your account')),
+        'user-custom.php'          => array('heading' => osc_gui_custom_heading()),
         'user-delete_account.php'  => array(
             'heading' => _m('Delete your account'),
             'tone'    => 'danger',
