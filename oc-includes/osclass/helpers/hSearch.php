@@ -423,7 +423,8 @@ function osc_search_alert()
  * @param string $token the alert token from osc_search_alert()
  * @param string $email ignored when a user is signed in
  *
- * @return int 1 done, 0 not saved, -1 bad email or inactive user, -2 bad alert, -4 sign-in required
+ * @return int 1 done, 0 not saved, -1 bad email or inactive user, -2 bad alert, -4 sign-in required,
+ *             -5 too many from this address
  */
 function osc_subscribe_alert(string $token, string $email): int
 {
@@ -449,6 +450,19 @@ function osc_subscribe_alert(string $token, string $email): int
     if (!osc_validate_email($email)) {
         return -1;
     }
+    // A guest's alert mails a confirmation to any address, so it is limited and ban-checked.
+    if ((int)$userid === 0) {
+        if (osc_is_banned($email) !== 0) {
+            return -1;
+        }
+        if (\mindstellar\security\ActionThrottle::exceeded(
+            'alert_subscribe',
+            (int)osc_apply_filter('alert_subscribe_throttle_max', 10),
+            (int)osc_apply_filter('alert_subscribe_throttle_window', 3600)
+        )) {
+            return -5;
+        }
+    }
 
     $secret  = osc_genRandomPassword();
     $alertID = Alerts::newInstance()->createAlert($userid, $email, $alert, $secret);
@@ -466,6 +480,7 @@ function osc_subscribe_alert(string $token, string $email): int
         return -1;
     }
 
+    \mindstellar\security\ActionThrottle::record('alert_subscribe');
     osc_run_hook('hook_email_alert_validation', Alerts::newInstance()->findByPrimaryKey($alertID), $email, $secret);
 
     return 1;

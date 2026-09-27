@@ -173,16 +173,7 @@ class CWebForm extends BaseModel
      */
     private function safeReturnUrl()
     {
-        $referer = isset($_SERVER['HTTP_REFERER']) ? (string) $_SERVER['HTTP_REFERER'] : '';
-        if ($referer !== '') {
-            $refHost  = parse_url($referer, PHP_URL_HOST);
-            $baseHost = parse_url(osc_base_url(), PHP_URL_HOST);
-            if ($refHost !== null && $baseHost !== null && strcasecmp($refHost, $baseHost) === 0) {
-                return $referer;
-            }
-        }
-
-        return osc_base_url();
+        return osc_local_referer(osc_base_url());
     }
 
     /**

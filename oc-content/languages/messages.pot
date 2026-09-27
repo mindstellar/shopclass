@@ -2421,6 +2421,10 @@ msgstr ""
 msgid "Too fast. You should wait a little to publish your ad."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebSearch.php
+msgid "Too many alerts were saved from here. Please try again later."
+msgstr ""
+
 #: oc-includes/osclass/helpers/hSecurity.php
 msgid "Too many failed attempts. Please try again in %d minute."
 msgid_plural "Too many failed attempts. Please try again in %d minutes."

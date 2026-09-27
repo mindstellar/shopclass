@@ -118,6 +118,7 @@ This is the fourth beta. Please try it on a copy of your site first, and tell us
 - Page titles no longer carry a double space when a part such as the city is empty.
 - With a captcha on, the contact, contact-seller and send-to-friend forms show it, so they can be sent; after a failed send they keep what was typed.
 - The save-this-search form on core's search page saves the alert and says so, without JavaScript; before, it saved nothing.
+- Guest alert sign-ups are limited to 10 an hour per address and refuse banned emails, so the form cannot be used to flood someone with confirmation mails. The `alert_subscribe_throttle_max` and `_window` filters change the limit.
 - The sign-in form no longer fires `user_form`, so profile-field plugins stop drawing inside it; the profile form fires `user_form` again, as older themes did.
 - On **Media**, a photo's listing link opens the listing editor instead of the listings screen.
 - A search for a category that does not exist answers 404 instead of listing every ad on the site, and its link uses the friendly search address.

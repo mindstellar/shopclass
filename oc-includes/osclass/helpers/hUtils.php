@@ -1327,3 +1327,25 @@ if (!function_exists('osc_server_rewrite_rules')) {
                . '</IfModule>';
     }
 }
+
+/**
+ * The page the request came from when it is on this site, else $fallback. The host is
+ * compared, not a prefix, so a look-alike host cannot pass.
+ *
+ * @param string $fallback
+ *
+ * @return string
+ */
+function osc_local_referer($fallback)
+{
+    $referer = (string)Params::getServerParam('HTTP_REFERER', false, false);
+    if ($referer !== '') {
+        $refHost  = parse_url($referer, PHP_URL_HOST);
+        $baseHost = parse_url(osc_base_url(), PHP_URL_HOST);
+        if (is_string($refHost) && is_string($baseHost) && strcasecmp($refHost, $baseHost) === 0) {
+            return $referer;
+        }
+    }
+
+    return (string)$fallback;
+}

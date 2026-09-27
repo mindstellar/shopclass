@@ -644,7 +644,8 @@ class CWebItem extends BaseModel
                         ->_setForm('phoneNumber', Params::getParam('phoneNumber'));
                     Session::newInstance()
                         ->_setForm('message_body', Params::getParam('message'));
-                    $this->redirectTo(osc_item_url());
+                    // Back to the form it was sent from, so it can show what was typed.
+                    $this->redirectTo(osc_local_referer(osc_item_url()));
 
                     return false; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
                 }

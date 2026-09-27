@@ -136,7 +136,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 517 names. Generated from the source; do not edit by hand.
+Core fires 519 names. Generated from the source; do not edit by hand.
 
 ### Admin (77)
 
@@ -426,7 +426,7 @@ Core fires 517 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/osclass/classes/model/Search.php` |
 
-### Other (185)
+### Other (187)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -460,6 +460,8 @@ Core fires 517 names. Generated from the source; do not edit by hand.
 | `alert_email_weekly_description_after` | filter | `osc_mailBeauty($_body, $htmlWords), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
 | `alert_email_weekly_title` | filter | `$template['s_title'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
 | `alert_email_weekly_title_after` | filter | `osc_mailBeauty($_title, $words), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
+| `alert_subscribe_throttle_max` | filter | `10` | `oc-includes/osclass/helpers/hSearch.php` |
+| `alert_subscribe_throttle_window` | filter | `3600` | `oc-includes/osclass/helpers/hSearch.php` |
 | `alerts_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/AlertsDataTable.php` |
 | `ban_rule_bulk_filter` | filter | `$bulk_options` | `oc-includes/osclass/classes/controller/admin/CAdminUsers.php` |
 | `base_url` | filter | `$path, $with_index` | `oc-includes/osclass/helpers/hDefines.php` |

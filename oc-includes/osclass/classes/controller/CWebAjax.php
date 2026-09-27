@@ -213,7 +213,7 @@ class CWebAjax extends BaseModel
                 return true;
                 break;
             case 'alerts': // Allow to register to an alert given (not sure it's used on admin)
-                echo (string)osc_subscribe_alert(Params::getParamString('alert'), (string)Params::getParam('email'));
+                echo (string)osc_subscribe_alert(Params::getParamString('alert'), Params::getParamString('email'));
 
                 return true;
                 break;
