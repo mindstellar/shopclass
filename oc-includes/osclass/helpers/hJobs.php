@@ -134,7 +134,8 @@ if (!function_exists('osc_job_describe')) {
      *
      * @param string        $type   namespaced
      * @param string        $name   e.g. "Send the weekly digest"
-     * @param callable|null $detail fn(array $payload): string, e.g. the user it is for
+     * @param callable|null $detail fn(array $payload): string, e.g. the user it is for. Plain
+     *                              text: it is escaped where it is shown.
      *
      * @return void
      * @throws InvalidArgumentException on a malformed type
