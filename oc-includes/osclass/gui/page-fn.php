@@ -195,3 +195,30 @@ if (!function_exists('osc_gui_print_pager')) {
         }
     }
 }
+
+if (!function_exists('osc_gui_print_dialog_script')) {
+    /**
+     * Turn each dialog[data-osc-dialog] into a modal: [data-osc-dialog-open="id"] opens
+     * it, [data-osc-dialog-close] closes it. Without the script a dialog shows in place.
+     */
+    function osc_gui_print_dialog_script(): void
+    {
+        static $printed = false;
+        if ($printed) {
+            return;
+        }
+        $printed = true;
+
+        echo '<script>(function(){var ds=document.querySelectorAll("dialog[data-osc-dialog]");'
+            . 'if(!ds.length||!ds[0].showModal){return;}'
+            . 'ds.forEach(function(d){d.setAttribute("data-osc-dialog-ready","");'
+            . 'if(d.hasAttribute("data-osc-dialog-show")){d.showModal();}'
+            . 'd.addEventListener("click",function(e){if(e.target===d){d.close();}});});'
+            . 'document.addEventListener("click",function(e){'
+            . 'var o=e.target.closest("[data-osc-dialog-open]");'
+            . 'if(o){var d=document.getElementById(o.getAttribute("data-osc-dialog-open"));'
+            . 'if(d&&d.hasAttribute("data-osc-dialog-ready")){e.preventDefault();d.showModal();}return;}'
+            . 'var c=e.target.closest("[data-osc-dialog-close]");if(c&&c.closest("dialog")){c.closest("dialog").close();}});'
+            . '})();</script>';
+    }
+}

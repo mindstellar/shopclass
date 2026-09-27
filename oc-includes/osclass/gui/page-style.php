@@ -266,6 +266,16 @@ if (!defined('ABS_PATH')) {
   .oe-page .oe-danger{margin-block-start:3rem;padding-block-start:1.5rem;border-block-start:1px solid var(--oe-rule);}
   .oe-page .oe-danger h2{color:var(--oe-danger);}
   .oe-page .oe-profile-head{margin-block-end:1.5rem;}
+  .oe-page .oe-contact-open{white-space:nowrap;}
+  /* Without the dialog script a dialog shows in place, so the page still works. */
+  .oe-page .oe-dialog:not([data-osc-dialog-ready]){display:block;position:static;inset:auto;margin:1.5rem 0 0;padding:0;border:0;max-inline-size:none;background:none;color:inherit;}
+  .oe-page .oe-dialog:not([data-osc-dialog-ready]) .oe-dialog-close{display:none;}
+  .oe-dialog[data-osc-dialog-ready]{inline-size:min(34rem,calc(100% - 32px));padding:0;border:1px solid var(--oe-rule);border-radius:8px;background:var(--oe-bench,#fff);color:inherit;}
+  .oe-dialog[data-osc-dialog-ready]::backdrop{background:rgba(0,0,0,.45);}
+  .oe-dialog-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;border-block-end:1px solid var(--oe-rule);}
+  .oe-dialog-head h2{margin:0;font-size:1.0625rem;}
+  .oe-dialog-close{font:inherit;font-size:1.5rem;line-height:1;background:none;border:0;padding:4px;cursor:pointer;color:inherit;}
+  .oe-dialog-body{padding:16px 20px 20px;}
   .oe-page .oe-avatar{display:block;inline-size:96px;block-size:96px;object-fit:cover;border-radius:50%;background:var(--oe-bench-sunk);margin-block-end:.6rem;}
   .oe-page .oe-thumb{
     flex:none; display:block; inline-size:5.5rem; block-size:auto; aspect-ratio:6/5;

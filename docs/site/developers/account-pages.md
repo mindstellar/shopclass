@@ -89,6 +89,9 @@ you override — a bare `.oe-list-item {}` loses to core's `.oe-page .oe-list-it
 | `.oe-input` | a control core renders itself | absent on controls `UserForm` renders — see below |
 | `.oe-hint` | help text under a field | bound with `aria-describedby` |
 | `.oe-profile-head` | the top of a public profile | holds the `.oe-avatar`, an `.oe-meta` line, and the owner's Edit button |
+| `.oe-dialog-close` | a dialog's close button | carries `data-osc-dialog-close` |
+| `.oe-contact-open` | the profile head's Message button | a link to `#oe-contact-dialog` |
+| `.oe-dialog` | a `<dialog>` core opens as a modal | holds `.oe-dialog-head` and `.oe-dialog-body`; shows in place without JavaScript |
 | `.oe-avatar` | the account holder's current picture on the profile page | a square image; core sizes and rounds it |
 | `.oe-danger` | the destructive block at the foot of a page | separated by a rule; holds a heading, a line of copy and one danger button |
 | `.oe-check` | a checkbox and its label on one line | the `<label>` wraps the control |
@@ -215,9 +218,16 @@ are wrapped in `<div data-location-cascade>`, so a theme script can find them.
 ## The public profile contact form
 
 The public profile has a contact form, unless the visitor owns the profile, or
-only registered users may write and the visitor is signed out. It posts
-`page=user&action=contact_post` with `yourName`, `yourEmail`, `phoneNumber` and
-`message`. After a failed send, `osc_gui_kept()` gives back what was typed.
+only registered users may write and the visitor is signed out; then the head shows
+a "Sign in to message" link. It posts `page=user&action=contact_post` with
+`yourName`, `yourEmail`, `phoneNumber` and `message`. After a failed send,
+`osc_gui_kept()` gives back what was typed.
+
+The form sits in `<dialog id="oe-contact-dialog" class="oe-dialog">`, with
+`.oe-dialog-head` (the `<h2>` and a close button marked `data-osc-dialog-close`)
+and `.oe-dialog-body`. The `.oe-contact-open` button in the profile head opens it
+through `data-osc-dialog-open="oe-contact-dialog"`. The dialog opens by itself after
+a failed send. Without JavaScript it shows in place and the button jumps to it.
 
 `user_contact_form($user)` fires inside the form, before the button, and
 `user_contact_form_after($user)` after it. Sends are limited per visitor by the

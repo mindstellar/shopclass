@@ -243,4 +243,7 @@ check('the profile form never lists every city', strpos(
 check("core's Delete is a POST action", (bool) preg_match("/'delete'\\] = array\\(.*?'method'\\s*=> 'post'/s", $row));
 check('the CSRF token is posted only to this site', strpos($rowParts, 'strpos($actionUrl, $siteRoot) === 0') !== false);
 
+check('the profile contact form is a dialog the head button opens', strpos($profile, 'id="oe-contact-dialog"') !== false
+    && strpos($profile, 'data-osc-dialog-open="oe-contact-dialog"') !== false);
+
 exit(harness_result());
