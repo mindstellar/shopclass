@@ -25,7 +25,8 @@
  *
  * Recognised variables: DB_HOST (accepts "host:port"), DB_PORT, DB_NAME,
  * DB_USER, DB_PASSWORD, DB_TABLE_PREFIX, OSC_DB_STRICT_MODE, optionally
- * REL_WEB_URL / WEB_PATH, and the object cache — OSC_CACHE (driver name) plus
+ * REL_WEB_URL / WEB_PATH (or OSC_CLI_URL, the address for the command line
+ * only), and the object cache — OSC_CACHE (driver name) plus
  * OSC_CACHE_HOST / OSC_CACHE_PORT for the memcached/memcache server.
  *
  * Safe to include more than once.
@@ -186,6 +187,29 @@ if (!$oscHasConfigFile && defined('DB_NAME')
         unset($oscScheme, $oscBasePath, $oscScriptName, $oscScriptFile, $oscAppRoot);
     }
     unset($oscHost);
+}
+
+// A command line has no request to take the address from. OSC_CLI_URL gives it
+// one without fixing the address for web requests, which WEB_PATH would do.
+if (PHP_SAPI === 'cli' && (!defined('WEB_PATH') || !defined('REL_WEB_URL')) && $oscEnv('OSC_CLI_URL') !== null) {
+    $oscCliUrl = parse_url((string)$oscEnv('OSC_CLI_URL'));
+    if (is_array($oscCliUrl) && isset($oscCliUrl['scheme'], $oscCliUrl['host'])
+        && in_array(strtolower($oscCliUrl['scheme']), array('http', 'https'), true)
+        && preg_match('/^[A-Za-z0-9.\-]+$/', $oscCliUrl['host'])
+        && preg_match('#^[A-Za-z0-9._~/\-]*$#', $oscCliUrl['path'] ?? '')
+        && strpos($oscCliUrl['path'] ?? '', '..') === false
+    ) {
+        $oscCliPath = '/' . trim((string)($oscCliUrl['path'] ?? ''), '/') . '/';
+        $oscCliPath = $oscCliPath === '//' ? '/' : $oscCliPath;
+        defined('REL_WEB_URL') or define('REL_WEB_URL', $oscCliPath);
+        defined('WEB_PATH') or define(
+            'WEB_PATH',
+            strtolower($oscCliUrl['scheme']) . '://' . $oscCliUrl['host']
+            . (isset($oscCliUrl['port']) ? ':' . $oscCliUrl['port'] : '') . $oscCliPath
+        );
+        unset($oscCliPath);
+    }
+    unset($oscCliUrl);
 }
 
 // True when the database configuration came from the environment (no config.php

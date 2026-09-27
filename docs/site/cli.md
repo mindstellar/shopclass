@@ -22,6 +22,11 @@ below needs a shell (a command-line session) on the server — which is also why
 these commands can do things the admin panel will not.
 :::
 
+A site configured from the environment with no `config.php` needs its address for
+the command line: set `WEB_PATH`, or `OSC_CLI_URL` to give the address to the
+command line only. Use the exact address visitors use, or the command line clears
+the wrong cache.
+
 Every command ends with an **exit code**: `0` means it worked, anything else
 means it failed. Schedulers and monitoring tools can read this directly, with
 no wrapper script needed.
