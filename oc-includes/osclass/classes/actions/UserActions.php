@@ -104,19 +104,6 @@ class UserActions
             $error[]     = 11;
         }
 
-        if (is_array(Params::getParam('s_info'))) {
-            foreach (Params::getParam('s_info') as $key => $value) {
-                // s_info is TEXT, so the limit is 65535 *bytes*, not characters.
-                // osc_validate_text() is a minimum-length gate: at 256 it demanded
-                // 256 consecutive alphanumerics, which no prose containing a space
-                // can satisfy, and reported the failure as "too long".
-                if (strlen((string) $value) > 65535) {
-                    $flash_error .= sprintf(_m('The field %s is too long'), osc_esc_html($key)) . PHP_EOL;
-                    $error[]     = 11;
-                }
-            }
-        }
-
         $email_taken = $this->manager->findByEmail($input['s_email']);
         if ($email_taken != false) {
             osc_run_hook('register_email_taken', $input['s_email']);
@@ -304,10 +291,13 @@ class UserActions
         $input['s_address']         = $this->Sanitize->string(Params::getParam('address'));
         $input['s_zip']             = $this->Sanitize->string(Params::getParam('zip'));
 
-        $latitude = $this->Sanitize->string(Params::getParam('d_coord_lat'));
-        $input['d_coord_lat']       = ($latitude) ?: null;
-        $longitude = $this->Sanitize->string(Params::getParam('d_coord_long'));
-        $input['d_coord_long']      = ($longitude) ?: null;
+        // No user form posts coordinates, so a save without them keeps the stored ones.
+        foreach (array('d_coord_lat', 'd_coord_long') as $coord) {
+            if (Params::existParam($coord)) {
+                $value         = Params::getParamString($coord);
+                $input[$coord] = is_numeric($value) ? (float) $value : null;
+            }
+        }
 
         $input['b_company']         = (Params::getParam('b_company')) ? 1 : 0;
 
@@ -350,6 +340,13 @@ class UserActions
             }
             $flash_error .= sprintf(_m('%s is too long, the maximum is %d characters'), $labels[$column], $width)
                 . PHP_EOL;
+        }
+
+        // s_info is TEXT, so its limit is 65535 bytes, not characters.
+        foreach ((array) Params::getParam('s_info') as $key => $value) {
+            if (strlen(is_string($value) ? $value : '') > 65535) {
+                $flash_error .= sprintf(_m('The field %s is too long'), osc_esc_html((string) $key)) . PHP_EOL;
+            }
         }
 
         return $flash_error;
