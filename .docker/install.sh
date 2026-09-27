@@ -70,8 +70,38 @@ port_busy() {
 }
 
 stack_exists() {
-    [ -n "$(docker volume ls -q --filter "name=^${1}_db-data\$")" ] \
-        || [ -n "$(docker ps -aq --filter "label=com.docker.compose.project=$1")" ]
+    [ -n "$(dk volume ls -q --filter "name=^${1}_db-data\$")" ] \
+        || [ -n "$(dk ps -aq --filter "label=com.docker.compose.project=$1")" ]
+}
+
+# dk ARGS: docker, through sudo when this user needs it.
+dk() {
+    $SUDO docker "$@"
+}
+
+# Install Docker with Docker's own script, which supports the common Linux systems.
+install_docker() {
+    if [ "$(uname -s)" != Linux ]; then
+        fail "Docker is not installed. Install Docker Desktop from https://docs.docker.com/desktop/, then run this again."
+    fi
+    if [ "$(id -u)" -ne 0 ] && [ -z "$SUDO" ]; then
+        fail "Docker is not installed, and installing it needs root. Run this as root, or install sudo."
+    fi
+    if [ -z "$TTY" ] && [ "$ASSUME_YES" -eq 0 ]; then
+        fail "Docker is not installed. Run this again with --yes to install it, or see https://docs.docker.com/engine/install/"
+    fi
+    yes_docker=yes
+    ask yes_docker "Docker is not installed. Install it now with Docker's official script? (yes/no)" "yes"
+    case "$yes_docker" in
+        y|Y|yes|YES|Yes) ;;
+        *) fail "Docker is needed. See https://docs.docker.com/engine/install/" ;;
+    esac
+    [ -z "$SUDO" ] || say "Installing Docker. sudo may ask for your password."
+    curl -fsSL https://get.docker.com | $SUDO sh || fail "Docker did not install. See https://docs.docker.com/engine/install/"
+    if command -v systemctl >/dev/null 2>&1; then
+        $SUDO systemctl enable --now docker >/dev/null 2>&1 || true
+    fi
+    command -v docker >/dev/null 2>&1 || fail "Docker did not install. See https://docs.docker.com/engine/install/"
 }
 
 # older A B: true when version A is older than B.
@@ -114,9 +144,23 @@ main() {
 
     # --- Checks ----------------------------------------------------------------
 
-    command -v docker >/dev/null 2>&1 || fail "Docker is not installed. See https://docs.docker.com/engine/install/"
-    docker compose version >/dev/null 2>&1 || fail "Docker Compose v2 is not installed. See https://docs.docker.com/compose/install/"
-    docker info >/dev/null 2>&1 || fail "cannot talk to Docker. Start Docker, add your user to the docker group, or run this as root."
+    SUDO=""
+    if [ "$(id -u)" -ne 0 ] && command -v sudo >/dev/null 2>&1; then
+        SUDO=sudo
+    fi
+    command -v docker >/dev/null 2>&1 || install_docker
+    # Use sudo for Docker only when this user cannot reach it directly.
+    if docker info >/dev/null 2>&1; then
+        SUDO=""
+    elif [ "$(uname -s)" != Linux ]; then
+        fail "cannot talk to Docker. Start Docker Desktop, then run this again."
+    else
+        [ -z "$SUDO" ] || say "Using sudo for Docker. sudo may ask for your password."
+        if [ -z "$SUDO" ] || ! $SUDO docker info >/dev/null 2>&1; then
+            fail "cannot talk to Docker. Start it (sudo systemctl start docker), or run this as root."
+        fi
+    fi
+    dk compose version >/dev/null 2>&1 || fail "Docker Compose v2 is missing. See https://docs.docker.com/compose/install/"
 
     if [ -z "$VERSION" ]; then
         case "$RELEASE_VERSION" in
@@ -139,8 +183,8 @@ main() {
         else
             say "Shopclass $current is already set up in $(pwd). Starting it."
         fi
-        docker compose pull
-        docker compose up -d
+        dk compose pull
+        dk compose up -d
         say "Done. The stack in $(pwd) is running."
         return 0
     fi
@@ -152,9 +196,9 @@ main() {
     if stack_exists "$PROJECT"; then
         n=2
         while stack_exists "$PROJECT-$n"; do n=$((n + 1)); done
-        where=$(docker ps -a --filter "label=com.docker.compose.project=$PROJECT" \
+        where=$(dk ps -a --filter "label=com.docker.compose.project=$PROJECT" \
             --format '{{.Label "com.docker.compose.project.working_dir"}}' | sort -u | head -n 1)
-        running=$(docker ps -q --filter "label=com.docker.compose.project=$PROJECT")
+        running=$(dk ps -q --filter "label=com.docker.compose.project=$PROJECT")
         choice=1
         if [ -n "$TTY" ]; then
             say "Docker already has a stack named '$PROJECT'${where:+, set up in $where}."
@@ -172,12 +216,12 @@ main() {
                 confirm=""
                 ask confirm "Type '$PROJECT' to delete it" ""
                 [ "$confirm" = "$PROJECT" ] || fail "not confirmed; nothing was deleted."
-                ids=$(docker ps -aq --filter "label=com.docker.compose.project=$PROJECT")
+                ids=$(dk ps -aq --filter "label=com.docker.compose.project=$PROJECT")
                 # shellcheck disable=SC2086
-                [ -z "$ids" ] || docker rm $ids >/dev/null
-                vols=$(docker volume ls -q --filter "label=com.docker.compose.project=$PROJECT")
+                [ -z "$ids" ] || dk rm $ids >/dev/null
+                vols=$(dk volume ls -q --filter "label=com.docker.compose.project=$PROJECT")
                 # shellcheck disable=SC2086
-                [ -z "$vols" ] || docker volume rm $vols >/dev/null
+                [ -z "$vols" ] || dk volume rm $vols >/dev/null
                 stack_exists "$PROJECT" && fail "could not delete all of '$PROJECT'. Remove it by hand, or pick option 1."
                 say "Deleted the old '$PROJECT' stack."
                 ;;
@@ -360,15 +404,15 @@ YAML
     done
 
     say "Starting Shopclass $VERSION in $(pwd)..."
-    docker compose pull
-    docker compose up -d
+    dk compose pull
+    dk compose up -d
 
     say "Waiting for the site to finish its first start..."
-    app=$(docker compose ps -q app)
+    app=$(dk compose ps -q app)
     tries=0
-    until [ "$(docker inspect -f '{{.State.Health.Status}}' "$app" 2>/dev/null)" = "healthy" ]; do
+    until [ "$(dk inspect -f '{{.State.Health.Status}}' "$app" 2>/dev/null)" = "healthy" ]; do
         tries=$((tries + 1))
-        [ "$tries" -le 60 ] || fail "the site did not become ready in 5 minutes. See the log: docker compose logs app"
+        [ "$tries" -le 60 ] || fail "the site did not become ready in 5 minutes. See the log: ${SUDO:+sudo }docker compose logs app"
         sleep 5
     done
 
@@ -385,7 +429,7 @@ Sign in and change this password now. It is also in $(pwd)/.env.
 DONE
     if [ -n "$DOMAIN" ]; then
         say "HTTPS turns on within a minute or two, once Let's Encrypt has checked $DOMAIN."
-        say "Progress: docker compose logs -f app | grep tls:"
+        say "Progress: ${SUDO:+sudo }docker compose logs -f app | grep tls:"
     fi
     say "To upgrade later, run the same install command again in $(dirname "$(pwd)")."
 }

@@ -19,7 +19,8 @@ release. The published image runs **PHP 8.5**.
 
 ## One-command install
 
-On a server with Docker, one command sets up a site with its own database:
+On a Linux server, one command sets up a site with its own database. If Docker is
+missing, it offers to install it with Docker's official script:
 
 ```bash
 curl -fsSL https://github.com/mindstellar/shopclass/releases/latest/download/install.sh | sh
