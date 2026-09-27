@@ -285,6 +285,9 @@ if (!defined('ABS_PATH')) {
   /* A page that is one form: sign in, register, reset a password. Bounded so a
      single column of fields still reads as one object at any window width. */
   .oe-page .oe-form-page{max-inline-size:30rem;}
+  /* The contact form, and an aside beside it when a theme or plugin fills one. */
+  .oe-page .oe-contact{display:grid;gap:32px;align-items:start;grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr));}
+  .oe-page .oe-contact-main{max-inline-size:30rem;min-inline-size:0;}
   /* Core's register validator writes <li> into #error_list and never changes its
      visibility, so the box is its own switch: nothing at all until it has one. */
   .oe-page #error_list{list-style:none;margin:0;padding:0;}

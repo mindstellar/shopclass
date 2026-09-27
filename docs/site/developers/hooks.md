@@ -136,7 +136,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 532 names. Generated from the source; do not edit by hand.
+Core fires 534 names. Generated from the source; do not edit by hand.
 
 ### Admin (77)
 
@@ -426,7 +426,7 @@ Core fires 532 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/osclass/classes/model/Search.php` |
 
-### Other (195)
+### Other (197)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -498,6 +498,8 @@ Core fires 532 names. Generated from the source; do not edit by hand.
 | `cli_commands` | filter | `array()` | `oc-includes/osclass/classes/cli/Cli.php` |
 | `contact_form` | action | — | `oc-includes/osclass/gui/contact-content.php` |
 | `contact_form_after` | action | — | `oc-includes/osclass/gui/contact-content.php` |
+| `contact_form_top` | action | — | `oc-includes/osclass/gui/contact-content.php` |
+| `contact_page_aside` | action | — | `oc-includes/osclass/gui/contact-content.php` |
 | `contact_params` | filter | `$params` | `oc-includes/osclass/classes/controller/CWebContact.php` |
 | `correct_login_url_redirect` | filter | `$url_redirect` | `oc-includes/osclass/classes/controller/CWebLogin.php` |
 | `count_view_on_beacon` | filter | `osc_request_counts_as_view(), $id` | `oc-includes/osclass/classes/controller/CWebItem.php` |

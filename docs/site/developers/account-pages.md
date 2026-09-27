@@ -56,6 +56,7 @@ you override — a bare `.oe-list-item {}` loses to core's `.oe-page .oe-list-it
 | `.oe-account-main` | the content column of `.oe-account` | the page's own markup, nothing else |
 | `.oe-account-nav` | the account section nav | a `<nav>` holding an `<h2>` and one `<ul>`; the current entry carries `aria-current="page"` |
 | `.oe-form-page` | a page that is one form — sign in, register, reset | no nav beside it |
+| `.oe-contact` | the contact page | holds `.oe-contact-main` and, when filled, `.oe-contact-aside` |
 
 ### Records
 
@@ -306,8 +307,12 @@ dangerous should sit a misclick away from changing an email address.
 
 The contact page and the share form fire `contact_form` and then
 `admin_contact_form` inside the form. The seller contact form fires
-`item_contact_form`. The contact page also fires `contact_form_after` below the
-form, for a side note or a map.
+`item_contact_form`. The contact page also fires `contact_form_top` before the
+Subject field and `contact_form_after` below the form.
+
+The contact page is `<div class="oe-contact">`, holding `.oe-contact-main` with the
+form. Whatever `contact_page_aside` prints goes in an `<aside class="oe-contact-aside">`
+beside it, for an address or links; the aside is left out when nothing prints.
 
 Ship either view and yours wins, exactly as with the account pages. The
 save-this-search field `osc_alert_form()` prints falls back the same way, so a

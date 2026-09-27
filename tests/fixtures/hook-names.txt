@@ -95,6 +95,8 @@ action change_email_confirm
 action comment_form
 action contact_form
 action contact_form_after
+action contact_form_top
+action contact_page_aside
 action cron
 action cron_daily
 action cron_hourly
