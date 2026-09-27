@@ -546,6 +546,8 @@ jobs:
       # A balance read and written back loses a concurrent top-up; increment() cannot.
       - name: QueryBuilder writes
         run: php tests/querybuilder-writes.php
+      - name: QueryBuilder reads
+        run: php tests/querybuilder-reads.php
       # The upgrade screen and upgradeDB() are replaced at different moments — an
       # opcode cache can serve the previous class behind the new template — so the
       # screen has to stay truthful when the answer predates it.

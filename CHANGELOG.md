@@ -96,6 +96,7 @@ This is the fourth beta. Please try it on a copy of your site first, and tell us
 - The public profile shows the member's picture, place, a Business badge, an Edit link on your own profile, and a Message button that opens a contact form with the captcha; a failed send reopens it with the reason. New hooks `user_contact_form` and `user_contact_form_after`.
 - **Alerts** lists each saved search's keywords, category, place, price and filters, and asks before it stops an alert. New helpers `osc_alert_criteria()` and `osc_alert_summary()`, and filter `alert_row_actions`.
 - The contact page has new hooks `contact_form_top`, `contact_form_after` and `contact_page_aside`, which fills a column beside the form. Core's save-this-search form carries `data-osc-alert-form`.
+- The query builder takes table aliases (`'t_item AS i'`) in reads and joins, and gains `selectRaw()`, `whereNull()`, `whereNotNull()`, `orWhereNull()` and `orWhereNotNull()`.
 - **Your profile** has the account type, the neighbourhood, an About field for each language and a Download your data link. New hook `user_avatar_form`; the location fields carry `data-location-cascade`.
 
 ### Breaking
