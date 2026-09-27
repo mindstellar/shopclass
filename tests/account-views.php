@@ -211,10 +211,15 @@ check('the row offers paid upgrades on the owner list', strpos($row, 'osc_item_u
 check('action lines are not paragraphs', strpos($rowParts, '<p class="oe-meta oe-row-actions') === false);
 
 $profile = (string) file_get_contents($accountIn . 'user-public-profile-content.php');
-check('the public profile posts user contact_post', strpos($profile, 'value="contact_post"') !== false
-    && strpos($profile, 'name="page" value="user"') !== false);
+check('the public profile posts user contact_post', strpos($profile, "'hidden'  => array('page' => 'user', 'action' => 'contact_post'") !== false);
 check('the public profile form fires user_contact_form', strpos($profile, "osc_run_hook('user_contact_form', ") !== false);
-check('the public profile form refills after a failed send', strpos($profile, "osc_gui_kept('message_body')") !== false);
+$contactPart = (string) file_get_contents($guiDir . 'parts/contact-form.php');
+check('the shared contact form refills after a failed send', strpos($contactPart, "osc_gui_kept('message_body')") !== false);
+foreach (array($guiDir . 'contact-content.php', $guiDir . 'item-contact-content.php', $accountIn . 'user-public-profile-content.php') as $file) {
+    $src = (string) file_get_contents($file);
+    check(basename($file) . ' uses the shared contact form', strpos($src, "parts/contact-form.php'") !== false
+        && strpos($src, 'name="yourName"') === false);
+}
 $nonSecure = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebUserNonSecure.php');
 preg_match("/case 'contact_post':.*?break;/s", $nonSecure, $contactCase);
 check('user contact_post checks the CSRF token', isset($contactCase[0]) && strpos($contactCase[0], 'osc_csrf_check()') !== false);

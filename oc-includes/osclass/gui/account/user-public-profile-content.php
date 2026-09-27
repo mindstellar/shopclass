@@ -75,41 +75,19 @@ $contactOpen = !$publicOwn && (!osc_reg_user_can_contact() || osc_is_web_user_lo
 <?php if ($contactOpen) { ?>
     <section class="oe-panel" id="contact">
         <h2><?php printf(osc_esc_html(_m('Write to %s')), osc_esc_html(osc_user_name())); ?></h2>
-        <form action="<?php echo osc_esc_html(osc_base_url(true)); ?>" method="post">
-            <input type="hidden" name="page" value="user" />
-            <input type="hidden" name="action" value="contact_post" />
-            <input type="hidden" name="id" value="<?php echo $publicId; ?>" />
-
-            <div class="oe-field">
-                <label class="oe-label" for="oe-your-name"><?php echo osc_esc_html(_m('Your name')); ?></label>
-                <input class="oe-input" id="oe-your-name" type="text" name="yourName" autocomplete="name" required
-                       value="<?php echo osc_esc_html(osc_gui_kept('yourName', osc_logged_user_name())); ?>" />
-            </div>
-            <div class="oe-field">
-                <label class="oe-label" for="oe-your-email"><?php echo osc_esc_html(_m('Your email address')); ?></label>
-                <input class="oe-input" id="oe-your-email" type="email" name="yourEmail" autocomplete="email" required
-                       value="<?php echo osc_esc_html(osc_gui_kept('yourEmail', osc_logged_user_email())); ?>" />
-            </div>
-            <div class="oe-field">
-                <label class="oe-label" for="oe-your-phone"><?php echo osc_esc_html(_m('Phone number')); ?></label>
-                <input class="oe-input" id="oe-your-phone" type="tel" name="phoneNumber" autocomplete="tel"
-                       value="<?php echo osc_esc_html(osc_gui_kept('phoneNumber')); ?>" />
-            </div>
-            <div class="oe-field">
-                <label class="oe-label" for="oe-message"><?php echo osc_esc_html(_m('Message')); ?></label>
-                <textarea class="oe-input" id="oe-message" name="message" rows="6" required><?php
-                    echo osc_esc_html(osc_gui_kept('message_body')); ?></textarea>
-            </div>
-
-            <?php if (osc_captcha_enabled()) { ?>
-                <div class="oe-field"><?php osc_show_captcha('contact_user'); ?></div>
-            <?php } ?>
-            <?php osc_run_hook('user_contact_form', $publicUser); ?>
-
-            <div class="oe-actions">
-                <button class="oe-btn" type="submit"><?php echo osc_esc_html(_m('Send message')); ?></button>
-            </div>
-        </form>
+        <?php
+        $contactForm = array(
+            'hidden'  => array('page' => 'user', 'action' => 'contact_post', 'id' => $publicId),
+            'prefix'  => 'oe-your',
+            'hint'    => _m('The member replies to this address.'),
+            'phone'   => true,
+            'captcha' => 'contact_user',
+            'hooks'   => static function () use ($publicUser) {
+                osc_run_hook('user_contact_form', $publicUser);
+            },
+        );
+        require dirname(__DIR__) . '/parts/contact-form.php';
+        ?>
         <?php osc_run_hook('user_contact_form_after', $publicUser); ?>
     </section>
 <?php } elseif (!$publicOwn) { ?>

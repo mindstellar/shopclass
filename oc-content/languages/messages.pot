@@ -291,7 +291,7 @@ msgstr ""
 msgid "At least six characters."
 msgstr ""
 
-#: oc-includes/osclass/gui/item-contact-content.php
+#: oc-includes/osclass/gui/parts/contact-form.php
 msgid "Attachment"
 msgstr ""
 
@@ -1061,10 +1061,8 @@ msgstr ""
 msgid "Member since %s"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-public-profile-content.php
-#: oc-includes/osclass/gui/contact-content.php
-#: oc-includes/osclass/gui/item-contact-content.php
 #: oc-includes/osclass/gui/item-send-friend-content.php
+#: oc-includes/osclass/gui/parts/contact-form.php
 msgid "Message"
 msgstr ""
 
@@ -1442,8 +1440,7 @@ msgstr ""
 msgid "Phone invalid."
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-public-profile-content.php
-#: oc-includes/osclass/gui/item-contact-content.php
+#: oc-includes/osclass/gui/parts/contact-form.php
 msgid "Phone number"
 msgstr ""
 
@@ -1752,9 +1749,7 @@ msgstr ""
 msgid "Send"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-public-profile-content.php
-#: oc-includes/osclass/gui/contact-content.php
-#: oc-includes/osclass/gui/item-contact-content.php
+#: oc-includes/osclass/gui/parts/contact-form.php
 msgid "Send message"
 msgstr ""
 
@@ -1882,7 +1877,7 @@ msgstr ""
 msgid "Storage settings updated"
 msgstr ""
 
-#: oc-includes/osclass/gui/contact-content.php
+#: oc-includes/osclass/gui/parts/contact-form.php
 msgid "Subject"
 msgstr ""
 
@@ -2220,6 +2215,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
 msgid "The location catalog could not be reached. Try again in a few minutes."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-public-profile-content.php
+msgid "The member replies to this address."
 msgstr ""
 
 #: oc-includes/osclass/classes/actions/UserActions.php
@@ -2915,11 +2914,9 @@ msgstr ""
 msgid "Your data could not be prepared"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-public-profile-content.php
-#: oc-includes/osclass/gui/contact-content.php
 #: oc-includes/osclass/gui/item-comments-content.php
-#: oc-includes/osclass/gui/item-contact-content.php
 #: oc-includes/osclass/gui/item-send-friend-content.php
+#: oc-includes/osclass/gui/parts/contact-form.php
 msgid "Your email address"
 msgstr ""
 
@@ -2969,11 +2966,9 @@ msgstr ""
 msgid "Your listings and messages are removed with it. This cannot be undone."
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-public-profile-content.php
-#: oc-includes/osclass/gui/contact-content.php
 #: oc-includes/osclass/gui/item-comments-content.php
-#: oc-includes/osclass/gui/item-contact-content.php
 #: oc-includes/osclass/gui/item-send-friend-content.php
+#: oc-includes/osclass/gui/parts/contact-form.php
 msgid "Your name"
 msgstr ""
 
