@@ -10,6 +10,7 @@
 
 use mindstellar\database\Connection;
 use mindstellar\migration\MigrationInterface;
+use mindstellar\migration\MigrationRunner;
 use mindstellar\migration\SchemaProbes;
 
 /**
@@ -46,7 +47,7 @@ return new class () implements MigrationInterface {
     {
         // The lock MigrationRunner takes; taken here only for a direct call, since re-taking it
         // inside the runner's session would release it on MySQL before 5.7.5.
-        $lock = 'osc_migrate_' . md5((string) $conn->scalar('SELECT DATABASE()') . '|' . DB_TABLE_PREFIX);
+        $lock = (new MigrationRunner($conn, __DIR__))->lockName();
         $held = (int) $conn->scalar('SELECT IS_USED_LOCK(?) = CONNECTION_ID()', array($lock)) === 1;
         if (!$held && (int) $conn->scalar('SELECT GET_LOCK(?, 60)', array($lock)) !== 1) {
             throw new \RuntimeException('Another upgrade is already running.');
