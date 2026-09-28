@@ -133,9 +133,6 @@ trait SchemaProbes
         return (int)$conn->scalar($sql, $params) > 0;
     }
 
-    /** Orphan values cleared per statement, in clearOrphans(). */
-    private const SCHEMA_PROBES_CHUNK = 500;
-
     /**
      * Delete, or set to NULL, every child row whose parent is missing. The missing values
      * are read without locking, then each batch is re-checked as it is written.
@@ -164,7 +161,7 @@ trait SchemaProbes
         );
         $values = array_map(static fn ($row) => $row['v'], $rows);
 
-        foreach (array_chunk($values, self::SCHEMA_PROBES_CHUNK) as $chunk) {
+        foreach (array_chunk($values, 500) as $chunk) {
             $where = ' WHERE ' . $column . ' IN (' . implode(', ', array_fill(0, count($chunk), '?')) . ')'
                 . ' AND NOT EXISTS (SELECT 1 FROM ' . $parent . ' p WHERE p.' . $parentColumn . ' = ' . $child . '.' . $column . ')';
             $conn->execute(
