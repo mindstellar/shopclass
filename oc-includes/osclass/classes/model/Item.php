@@ -1202,10 +1202,9 @@ class Item extends DAO
         $resources = ItemResource::newInstance()->getAllResourcesFromItem($id);
 
         // t_item_moderation_log and t_item_report_log carry no foreign key to the
-        // item, so nothing blocked the delete and nothing removed them either: an
-        // id reused by a later listing would inherit the old listing's report and
-        // moderation history. The rest are covered by ON DELETE CASCADE as well,
-        // and stay listed for installs whose foreign keys were never created.
+        // item, so only this removes them. t_item_comment and t_item_resource are
+        // RESTRICT and must go first; the rest cascade, and stay listed for installs
+        // whose foreign keys were never created.
         $dependents = array(
             't_item_description',
             't_item_comment',

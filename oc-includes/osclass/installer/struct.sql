@@ -178,7 +178,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_user (
         PRIMARY KEY (pk_i_id),
         UNIQUE KEY uk_user_email (s_email),
         INDEX idx_s_name (s_name(6)),
-        INDEX idx_s_username (s_username),
+        UNIQUE KEY uk_user_username (s_username),
         INDEX idx_reg_date (dt_reg_date),
         FOREIGN KEY (fk_c_country_code) REFERENCES /*TABLE_PREFIX*/t_country (pk_c_code),
         FOREIGN KEY (fk_i_region_id) REFERENCES /*TABLE_PREFIX*/t_region (pk_i_id),
@@ -307,7 +307,9 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_description (
     s_description MEDIUMTEXT NOT NULL,
         PRIMARY KEY (fk_i_item_id, fk_c_locale_code),
         FULLTEXT s_description (s_description, s_title),
-        FULLTEXT s_title (s_title)
+        FULLTEXT s_title (s_title),
+        FOREIGN KEY (fk_i_item_id) REFERENCES /*TABLE_PREFIX*/t_item (pk_i_id) ON DELETE CASCADE,
+        FOREIGN KEY (fk_c_locale_code) REFERENCES /*TABLE_PREFIX*/t_locale (pk_c_code) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 
@@ -497,7 +499,8 @@ CREATE TABLE /*TABLE_PREFIX*/t_alerts (
     PRIMARY KEY (pk_i_id),
     INDEX idx_type (e_type, b_active, dt_unsub_date),
     INDEX idx_user (fk_i_user_id),
-    INDEX idx_email (s_email)
+    INDEX idx_email (s_email),
+    FOREIGN KEY (fk_i_user_id) REFERENCES /*TABLE_PREFIX*/t_user (pk_i_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_alerts_sent (
@@ -536,7 +539,8 @@ CREATE TABLE /*TABLE_PREFIX*/t_meta_fields (
     i_position INT(2) UNSIGNED NOT NULL DEFAULT 0,
     fk_i_group_id INT UNSIGNED NULL DEFAULT NULL,
 
-        PRIMARY KEY (pk_i_id)
+        PRIMARY KEY (pk_i_id),
+        FOREIGN KEY (fk_i_group_id) REFERENCES /*TABLE_PREFIX*/t_meta_group (pk_i_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_meta_group_categories (
@@ -573,7 +577,8 @@ CREATE TABLE /*TABLE_PREFIX*/t_form_submission (
         PRIMARY KEY (pk_i_id),
         INDEX idx_form (fk_i_group_id, dt_created),
         INDEX idx_context (s_context_type, i_context_id),
-        INDEX idx_status (s_status)
+        INDEX idx_status (s_status),
+        FOREIGN KEY (fk_i_group_id) REFERENCES /*TABLE_PREFIX*/t_meta_group (pk_i_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_form_submission_value (

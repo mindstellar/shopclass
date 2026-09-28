@@ -6264,7 +6264,7 @@ msgid "My profile"
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
-msgid "MySQL 5.7+ or MariaDB 10.2+ (found %s)"
+msgid "MySQL 5.7.5+ or MariaDB 10.2+ (found %s)"
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
@@ -8916,7 +8916,7 @@ msgid ""
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
-msgid "Shopclass needs MySQL 5.7 or newer, or MariaDB 10.2 or newer. "
+msgid "Shopclass needs MySQL 5.7.5 or newer, or MariaDB 10.2 or newer. "
 msgstr ""
 
 #: oc-admin/themes/modern/settings/billing.php

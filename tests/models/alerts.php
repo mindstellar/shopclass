@@ -45,6 +45,12 @@ require_once __DIR__ . '/../lib/harness.php';
 $admin = scratchdb_session('osc_models_alerts');
 $table = DB_TABLE_PREFIX . 't_alerts';
 
+// fk_i_user_id is a foreign key to t_user, so every user id the fixtures name exists.
+foreach (array(11, 22, 33, 44, 55, 66, 77, 99) as $uid) {
+    $admin->query('INSERT INTO ' . DB_TABLE_PREFIX . "t_user (pk_i_id, dt_reg_date, s_name, s_username, s_password, s_email)"
+        . " VALUES ($uid, NOW(), 'u$uid', 'u$uid', '', 'u$uid@example.test')");
+}
+
 /**
  * Insert one alert row with raw mysqli, never through the code under test.
  * scratchdb.php has no seed helper for this table, so it lives here. A null
@@ -187,8 +193,8 @@ $idA2 = $seedAlert('alice@example.test', $uAlice, '{"q":"cars"}', 'secretA2', 'W
 $idB1 = $seedAlert('bob@example.test', $uBob, '{"q":"boats"}', 'secretB1', 'DAILY', 1, '2026-01-03 10:00:00');
 // An unsubscribed row: dt_unsub_date is set, so the default (unsub=false) filter hides it.
 $idB2 = $seedAlert('bob@example.test', $uBob, '{"q":"planes"}', 'secretB2', 'DAILY', 1, '2026-01-04 10:00:00', '2026-02-01 00:00:00');
-// An anonymous alert (fk_i_user_id = 0), the createAlert no-user branch shape.
-$idAnon = $seedAlert('anon@example.test', 0, '{"q":"anon"}', 'secretAnon', 'DAILY', 1, '2026-01-05 10:00:00');
+// An anonymous alert (fk_i_user_id NULL), the createAlert no-user branch shape.
+$idAnon = $seedAlert('anon@example.test', null, '{"q":"anon"}', 'secretAnon', 'DAILY', 1, '2026-01-05 10:00:00');
 // A row whose email contains a literal % so the search() LIKE-escaping is testable.
 $idPct = $seedAlert('a%b@example.test', 33, '{"q":"pct"}', 'secretPct', 'DAILY', 1, '2026-01-06 10:00:00');
 
@@ -390,10 +396,7 @@ pin('the anonymous alert defaulted e_type to DAILY', 'DAILY', $rawColFor((int)$a
 // no anonymous row already matches; a repeat of the exact anon pair dedups.
 pin('a repeat anonymous pair (email+search) dedups to false', false, $model->createAlert(0, 'newanon@example.test', '{"q":"newanon"}', 'anonSecret2'));
 
-// A guest row written before 6.4 holds 0; the dedup must still see it until it is converted.
-$seedAlert('legacy@example.test', 0, '{"q":"legacy"}', 'legacySecret', 'DAILY', 1, '2025-05-01 00:00:00');
-pin('a guest alert dedups against a legacy fk_i_user_id = 0 row', false, $model->createAlert(0, 'legacy@example.test', '{"q":"legacy"}', 'x'));
-pin('...and a null user id is a guest too', false, $model->createAlert(null, 'legacy@example.test', '{"q":"legacy"}', 'x'));
+pin('a null user id is a guest too', false, $model->createAlert(null, 'newanon@example.test', '{"q":"newanon"}', 'x'));
 $seedAlert('nullguest@example.test', null, '{"q":"nullguest"}', 'nullSecret', 'DAILY', 1, '2025-05-02 00:00:00');
 pin('a guest alert dedups against a NULL-user row', false, $model->createAlert(0, 'nullguest@example.test', '{"q":"nullguest"}', 'x'));
 $memberId = $model->createAlert(77, 'nullguest@example.test', '{"q":"nullguest"}', 'x');

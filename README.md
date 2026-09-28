@@ -75,7 +75,7 @@ walks through the history, what carries over, and the upgrade path from a 3.x or
 
 - PHP **8.0+** with `mysqli`, `gd`, `curl`, `mbstring`, `openssl`, `zip`, `json`,
   `ctype`, `fileinfo`, and `posix`
-- MySQL 5.7+ / MariaDB 10.2+
+- MySQL 5.7.5+ / MariaDB 10.2+
 - Any web server (Apache or nginx)
 
 ## Install

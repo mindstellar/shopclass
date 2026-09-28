@@ -166,6 +166,28 @@ pin('...which is all repair() ran', array('ALTER TABLE oc_t_alerts ADD INDEX idx
 $admin->query('ALTER TABLE oc_t_item DROP INDEX dt_expiration, ADD INDEX idx_expiration (dt_expiration)');
 $admin->query('ALTER TABLE oc_t_alerts DROP INDEX s_email_prefix');
 
+harness_section('repair() and a unique key under another name');
+
+/** Whether $table has a UNIQUE index named $name (PRIMARY counts as unique). */
+$hasUnique = static function (string $table, string $name) use ($admin): bool {
+    $res = $admin->query("SHOW INDEX FROM `$table` WHERE Key_name = '" . $admin->real_escape_string($name) . "' AND Non_unique = 0");
+
+    return $res !== false && $res->num_rows > 0;
+};
+
+// Same columns, renamed: struct.sql's uk_preference_section_name must not be re-added under its own name.
+$admin->query('ALTER TABLE oc_t_preference DROP INDEX uk_preference_section_name, ADD UNIQUE KEY uk_pref_renamed (s_section, s_name)');
+$repaired = (new SchemaReconciler($conn))->repair();
+check('a unique key under another name is not duplicated', !$hasUnique('oc_t_preference', 'uk_preference_section_name'), $flat($repaired['ran']));
+check('...and the renamed key is untouched', $hasUnique('oc_t_preference', 'uk_pref_renamed'));
+$admin->query('ALTER TABLE oc_t_preference DROP INDEX uk_pref_renamed, ADD UNIQUE KEY uk_preference_section_name (s_section, s_name)');
+
+// Same columns, but only a plain index: it does not enforce uniqueness, so repair still adds the unique key.
+$admin->query('ALTER TABLE oc_t_preference DROP INDEX uk_preference_section_name, ADD INDEX idx_pref_section_name (s_section, s_name)');
+$repaired = (new SchemaReconciler($conn))->repair();
+check('a plain index does not stand in for a declared unique key', $hasUnique('oc_t_preference', 'uk_preference_section_name'), $flat($repaired['ran']));
+$admin->query('ALTER TABLE oc_t_preference DROP INDEX idx_pref_section_name');
+
 exit(harness_result());
 
 /* file end: ./tests/schema-repair.php */

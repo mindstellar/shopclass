@@ -125,6 +125,8 @@ on a copy of your site and tell us what you find.
 
 ### Breaking
 
+- `t_alerts`, `t_item_description`, `t_meta_fields` and `t_form_submission` have foreign keys: a row whose parent is missing, or a guest alert with `fk_i_user_id = 0`, is refused.
+- `t_user.s_username` is unique (`uk_user_username` replaces `idx_s_username`). The upgrade gives empty usernames the user id and renames duplicates to `<name>_<id>`.
 - Usernames made only of digits are refused.
 - Guest alerts store `fk_i_user_id` as `NULL`, not `0`.
 - The `delete_user` hook no longer removes avatars; deleting the user does, after the delete succeeds.
@@ -141,6 +143,7 @@ on a copy of your site and tell us what you find.
 
 ### Fixed
 
+- **Repair** no longer adds a unique key a second time when the site already has one on the same columns.
 - Two upgrades started at once no longer run side by side; the second one waits and reports that an upgrade is already running.
 - `t_cron` and `t_plugin_category` get a primary key, so duplicate rows can no longer appear; a missing cron row is restored.
 - **Repair** no longer adds an index a second time when the site already has one on the same columns under another name.
@@ -294,7 +297,7 @@ on a copy of your site and tell us what you find.
 ### Changed
 
 - Upgrades run the database migrations only, so the "some queries failed" screen is gone.
-- The installer checks for MySQL 5.7+ or MariaDB 10.2+.
+- The installer checks for MySQL 5.7.5+ or MariaDB 10.2+.
 - Pending e-mail address changes expire after 7 days.
 - Tools > Cleanup runs in the background, a batch at a time, until nothing matches, so a large backlog no longer times out **Run cleanup now**.
 - Cleanup's Reported listings rule has an age, counted from the listing's last change (30 days until you set it). The Cleanup and Background jobs screens match the rest of the admin.

@@ -15,7 +15,7 @@ There is no build step and no command line needed on the server.
 |---|---|
 | PHP | **8.0 or newer** |
 | PHP extensions | `mysqli`, `gd`, `curl`, `mbstring`, `openssl`, `zip`, `json`, `ctype`, `fileinfo`, `posix` |
-| Database | MySQL 5.7+ or MariaDB 10.2+ |
+| Database | MySQL 5.7.5+ or MariaDB 10.2+ |
 | Web server | Apache or nginx |
 
 Almost every shared host meets this today. If you are not sure, run the

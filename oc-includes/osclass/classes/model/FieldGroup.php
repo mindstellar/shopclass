@@ -196,10 +196,8 @@ class FieldGroup extends DAO
                         osc_db_table(DB_TABLE_PREFIX . $table)->where('fk_i_group_id', $id)->delete();
                     }
 
-                    // Submissions carry no foreign key to the form, so nothing would
-                    // stop the delete and nothing would clean them up either: they would
-                    // sit in the submissions list for ever, attributed to a form that no
-                    // longer exists. Their values follow by cascade.
+                    // The foreign keys cascade submissions and loosen fields too; both
+                    // stay here for installs whose foreign keys were never created.
                     osc_db_table(DB_TABLE_PREFIX . 't_form_submission')
                         ->where('fk_i_group_id', $id)
                         ->delete();

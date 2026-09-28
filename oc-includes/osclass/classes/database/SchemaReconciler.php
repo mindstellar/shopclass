@@ -488,14 +488,20 @@ class SchemaReconciler
         // when the two canonical forms differ only in formatting (a sub-part
         // length, fulltext column order). Skipping by name keeps the reconcile
         // clean where before it surfaced a false-positive error.
-        $existingNames = array();
-        $liveColumns   = array();
+        $existingNames      = array();
+        $liveColumns        = array();
+        $liveUniqueColumns  = array();
         if ($tbl_indexes) {
             foreach ($tbl_indexes as $tbl_index) {
                 $existingNames[strtolower($tbl_index['Key_name'])] = true;
                 if (strtoupper((string) $tbl_index['Index_type']) !== 'FULLTEXT') {
-                    $liveColumns[$tbl_index['Key_name']][] = strtolower($tbl_index['Column_name'])
+                    $column = strtolower($tbl_index['Column_name'])
                         . ((string) $tbl_index['Sub_part'] !== '' ? '(' . $tbl_index['Sub_part'] . ')' : '');
+                    $liveColumns[$tbl_index['Key_name']][] = $column;
+                    // PRIMARY is unique too (Non_unique = 0), and already covers its columns.
+                    if ((int) $tbl_index['Non_unique'] === 0) {
+                        $liveUniqueColumns[$tbl_index['Key_name']][] = $column;
+                    }
                 }
             }
         }
@@ -517,6 +523,12 @@ class SchemaReconciler
                 && in_array(self::indexDefColumns($v), $liveColumns, true)
             ) {
                 // A plain index on the same ordered columns under another name serves the same queries.
+                continue;
+            }
+            if (preg_match('/^\s*UNIQUE\b/i', $v)
+                && in_array(self::indexDefColumns($v), $liveUniqueColumns, true)
+            ) {
+                // A unique index (or the primary key) already enforces uniqueness on these columns.
                 continue;
             }
             $struct_queries[] = 'ALTER TABLE ' . $table . ' ADD ' . $v;

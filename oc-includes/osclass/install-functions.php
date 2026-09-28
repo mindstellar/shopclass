@@ -197,9 +197,9 @@ function get_requirements()
     $serverInfo = install_configured_server_info();
     if ($serverInfo !== '') {
         $array['Database server version'] = array(
-            'requirement' => sprintf(__('MySQL 5.7+ or MariaDB 10.2+ (found %s)'), osc_esc_html($serverInfo)),
+            'requirement' => sprintf(__('MySQL 5.7.5+ or MariaDB 10.2+ (found %s)'), osc_esc_html($serverInfo)),
             'fn'          => install_db_version_supported($serverInfo),
-            'solution'    => __('Shopclass needs MySQL 5.7 or newer, or MariaDB 10.2 or newer. '
+            'solution'    => __('Shopclass needs MySQL 5.7.5 or newer, or MariaDB 10.2 or newer. '
                 . 'Ask your hosting to upgrade the database server.')
         );
     }
@@ -272,7 +272,8 @@ function install_configured_server_info(): string
 }
 
 /**
- * Whether a database server version string meets the floor: MySQL 5.7+ or MariaDB 10.2+.
+ * Whether a database server version string meets the floor: MySQL 5.7.5+ or MariaDB 10.2+.
+ * 5.7.5 is where GET_LOCK() became reentrant per-connection, which the migration runner relies on.
  *
  * @param string $serverInfo as reported by the server, e.g. "8.0.36" or "5.5.5-10.11.6-MariaDB"
  *
@@ -287,7 +288,7 @@ function install_db_version_supported(string $serverInfo): bool
         return false;
     }
 
-    $floor = stripos($info, 'mariadb') !== false ? '10.2.0' : '5.7.0';
+    $floor = stripos($info, 'mariadb') !== false ? '10.2.0' : '5.7.5';
 
     return version_compare($m[1], $floor, '>=');
 }

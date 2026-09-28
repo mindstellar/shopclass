@@ -358,11 +358,11 @@ class Alerts extends DAO
             ->where('s_search', $alert)
             ->whereRaw('dt_unsub_date IS NULL');
 
-        // A guest alert has no user. Rows written before 6.4 hold 0 instead of NULL.
+        // A guest alert has no user.
         $guest = $userid == 0 || $userid == null;
         if ($guest) {
             $query = $query
-                ->whereRaw('(fk_i_user_id IS NULL OR fk_i_user_id = 0)')
+                ->whereRaw('fk_i_user_id IS NULL')
                 ->where('s_email', $email);
         } else {
             $query = $query->where('fk_i_user_id', $userid);
