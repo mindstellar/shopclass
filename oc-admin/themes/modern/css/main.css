@@ -17858,11 +17858,6 @@ body .tox .tox-notification--info svg {
   content: "\f26a";
 }
 
-.upgrade-report-item-repaired .upgrade-report-icon::before {
-  color: var(--osc-warning-deep);
-  content: "\f33a";
-}
-
 .upgrade-report-item-failed .upgrade-report-icon::before {
   color: var(--osc-danger);
   content: "\f336";

@@ -102,7 +102,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_city (
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_city_area (
-    pk_i_id INT UNSIGNED NOT NULL,
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     fk_i_city_id INT UNSIGNED NOT NULL,
     s_name VARCHAR(255) NOT NULL,
 
@@ -265,6 +265,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_item (
     -- unrecoverable once dt_pub_date moves.
     dt_first_pub_date DATETIME NULL,
     dt_mod_date DATETIME NULL,
+    -- No longer written by core -- i_price holds the price. Kept for readers.
     f_price FLOAT NULL,
     i_price BIGINT(20) NULL,
     fk_c_currency_code CHAR(3) NULL,
@@ -688,8 +689,6 @@ CREATE TABLE /*TABLE_PREFIX*/t_keyword_block (
         PRIMARY KEY (pk_i_id)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
--- Charset kept at UTF8 to stay byte-compatible with the report-log table an
--- already installed classifieds theme creates via its own IF NOT EXISTS import.
 CREATE TABLE /*TABLE_PREFIX*/t_item_report_log (
     fk_i_item_id INT UNSIGNED NOT NULL,
     s_reporter   VARCHAR(70) NOT NULL,

@@ -9,10 +9,11 @@
  */
 
 /**
- * Migrations 0054-0055: orphans are cleared before a foreign key is added, legacy guest
- * alerts become NULL, empty and duplicate usernames are renamed before the unique key, and
- * each migration is a no-op on a second run and safe when runs overlap. The schema is put
- * back to struct.sql at the end.
+ * Migrations 0054-0056: orphans are cleared before a foreign key is added, legacy guest
+ * alerts become NULL, empty and duplicate usernames are renamed before the unique key,
+ * t_city_area.pk_i_id gains AUTO_INCREMENT without disturbing the keys that reference it,
+ * and each migration is a no-op on a second run and safe when runs overlap. The schema is
+ * put back to struct.sql at the end.
  */
 
 require_once __DIR__ . '/../lib/scratchdb.php';
@@ -282,9 +283,53 @@ array_shift($rounds);
 pin('every overlapping run succeeds', array_fill(0, 12, '0'), $exits);
 pin('each round ends renamed, with only the unique key', array_fill(0, 3, array($expected, array('uk_user_username:0'))), $rounds);
 
+harness_section('migration 0056');
+
+$cityAreaTable = "{$p}t_city_area";
+$extra = static function () use ($admin, $p): string {
+    return (string) $admin->query(
+        "SELECT EXTRA FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE()"
+        . " AND TABLE_NAME = '{$p}t_city_area' AND COLUMN_NAME = 'pk_i_id'"
+    )->fetch_row()[0];
+};
+$cityAreaFks = static function () use ($column, $p): array {
+    return $column(
+        "SELECT CONCAT(TABLE_NAME, '.', CONSTRAINT_NAME) FROM information_schema.KEY_COLUMN_USAGE"
+        . " WHERE TABLE_SCHEMA = DATABASE() AND REFERENCED_TABLE_NAME = '{$p}t_city_area' ORDER BY 1"
+    );
+};
+
+$cityAreaRegion = seed_region($admin, 'US');
+$cityAreaCity   = seed_city($admin, $cityAreaRegion);
+
+// struct.sql already declares AUTO_INCREMENT; drop it to fixture the pre-migration state
+// an upgrading install is in. t_user and t_item_location reference the column, so the
+// MODIFY needs foreign_key_checks off, same as the migration itself.
+$admin->query('SET FOREIGN_KEY_CHECKS = 0');
+$admin->query("ALTER TABLE $cityAreaTable MODIFY pk_i_id INT UNSIGNED NOT NULL");
+$admin->query('SET FOREIGN_KEY_CHECKS = 1');
+$admin->query("INSERT INTO $cityAreaTable (pk_i_id, fk_i_city_id, s_name) VALUES (1, $cityAreaCity, 'Downtown'), (2, $cityAreaCity, 'Uptown')");
+pin('fixture: no AUTO_INCREMENT yet', '', $extra());
+$fksBefore = $cityAreaFks();
+
+$migrate('0056_city_area_auto_increment.php');
+$migrate('0056_city_area_auto_increment.php');
+
+pin('AUTO_INCREMENT is set', 'auto_increment', $extra());
+pin('the referencing foreign keys are unchanged', $fksBefore, $cityAreaFks());
+
+$newId = seed_exec(
+    $admin,
+    "INSERT INTO $cityAreaTable (fk_i_city_id, s_name) VALUES (?, ?)",
+    'is',
+    array($cityAreaCity, 'New Area')
+);
+pin('a city area inserted with no id gets one past the existing rows', true, $newId > 2);
+pin('the new row is there', array('New Area'), $column("SELECT s_name FROM $cityAreaTable WHERE pk_i_id = $newId"));
+
 // Back to struct.sql for the model tests that follow.
 $admin->query('SET FOREIGN_KEY_CHECKS = 0');
-foreach (array('t_item_description', 't_meta_fields', 't_meta_group', 't_form_submission', 't_form_submission_value', 't_alerts', 't_item', 't_user', 't_locale', 't_category', 't_category_description') as $t) {
+foreach (array('t_item_description', 't_meta_fields', 't_meta_group', 't_form_submission', 't_form_submission_value', 't_alerts', 't_item', 't_user', 't_locale', 't_category', 't_category_description', 't_city_area', 't_city', 't_region') as $t) {
     $admin->query("DELETE FROM $p$t");
 }
 $admin->query('SET FOREIGN_KEY_CHECKS = 1');

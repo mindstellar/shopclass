@@ -102,13 +102,6 @@
   content: "\f26a"; // check-circle-fill
 }
 
-// A repair is not a failure and not a routine success: something had drifted and was
-// corrected. Warning tokens, so it reads as worth noticing without alarming anyone.
-.upgrade-report-item-repaired .upgrade-report-icon::before {
-  color: var(--osc-warning-deep);
-  content: "\f33a"; // exclamation-triangle-fill
-}
-
 .upgrade-report-item-failed .upgrade-report-icon::before {
   color: var(--osc-danger);
   content: "\f336"; // exclamation-octagon-fill

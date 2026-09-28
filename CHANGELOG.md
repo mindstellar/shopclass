@@ -143,6 +143,7 @@ on a copy of your site and tell us what you find.
 
 ### Fixed
 
+- `t_city_area.pk_i_id` is AUTO_INCREMENT, so a city area can be added without choosing its id.
 - **Repair** no longer adds a unique key a second time when the site already has one on the same columns.
 - Two upgrades started at once no longer run side by side; the second one waits and reports that an upgrade is already running.
 - `t_cron` and `t_plugin_category` get a primary key, so duplicate rows can no longer appear; a missing cron row is restored.
