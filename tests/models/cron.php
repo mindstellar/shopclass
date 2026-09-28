@@ -90,16 +90,20 @@ pin('an e_type with no row returns bool false', false, $cron->getCronByType('WEE
 pin('a value outside the enum returns bool false', false, $cron->getCronByType('NOT_A_TYPE'));
 pin('the empty string returns bool false', false, $cron->getCronByType(''));
 
-harness_section('Cron::getCronByType — duplicate rows');
+harness_section('Cron::getCronByType — one row per type');
 
-/* t_cron declares no primary key, so the same type can appear twice. The legacy
- * body takes row() off the recordset, which is the first row in result order. */
+/* e_type is the primary key, so a second row for a type is refused. */
 seed_cron($admin, 'CUSTOM', '2026-02-01 00:00:00', '2026-02-01 06:00:00');
-seed_cron($admin, 'CUSTOM', '2026-03-01 00:00:00', '2026-03-01 06:00:00');
+try {
+    seed_cron($admin, 'CUSTOM', '2026-03-01 00:00:00', '2026-03-01 06:00:00');
+    $refused = false;
+} catch (mysqli_sql_exception $e) {
+    $refused = $e->getCode() === 1062;
+}
+check('a second row for the same type is refused', $refused);
 
 $dup = $cron->getCronByType('CUSTOM');
-check('a duplicated type still returns a single row, not a list', is_array($dup) && isset($dup['e_type']));
-pin('the first inserted row wins', '2026-02-01 00:00:00', $dup['d_last_exec']);
+pin('the one row is returned', '2026-02-01 00:00:00', $dup['d_last_exec']);
 
 harness_section('Cron::getCronByType — malformed lookup');
 

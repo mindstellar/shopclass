@@ -77,6 +77,50 @@ trait SchemaProbes
     }
 
     /**
+     * Names of the indexes on $table over exactly $columns, in that order and with no
+     * prefix length, whatever they are called. PRIMARY is included.
+     *
+     * @param Connection        $conn
+     * @param string            $table
+     * @param array<int,string> $columns
+     *
+     * @return array<int,string>
+     */
+    private function indexesOnColumns(Connection $conn, string $table, array $columns): array
+    {
+        $rows = $conn->select(
+            'SELECT INDEX_NAME,'
+            . " GROUP_CONCAT(CONCAT(COLUMN_NAME, IF(SUB_PART IS NULL, '', CONCAT('(', SUB_PART, ')')))"
+            . ' ORDER BY SEQ_IN_INDEX) AS cols'
+            . ' FROM information_schema.STATISTICS'
+            . ' WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?'
+            . ' GROUP BY INDEX_NAME',
+            array($table)
+        );
+
+        $wanted = implode(',', $columns);
+        $names  = array();
+        foreach ($rows as $row) {
+            if (($row['cols'] ?? '') === $wanted) {
+                $names[] = (string)$row['INDEX_NAME'];
+            }
+        }
+
+        return $names;
+    }
+
+    /**
+     * @param Connection $conn
+     * @param string     $table
+     *
+     * @return bool
+     */
+    private function hasPrimaryKey(Connection $conn, string $table): bool
+    {
+        return $this->indexExists($conn, $table, 'PRIMARY');
+    }
+
+    /**
      * @param Connection        $conn
      * @param string            $sql
      * @param array<int,string> $params

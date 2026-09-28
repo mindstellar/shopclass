@@ -103,6 +103,12 @@ class Osclass extends UpgradePackage
             $runner = new MigrationRunner(Connection::instance(), osc_lib_path() . 'osclass/installer/migrations');
             $runner->ensureLedger();
             $migrated = $runner->run();
+            if (!$migrated['ok'] && !empty($migrated['busy'])) {
+                return json_encode([
+                    'error'   => 3,
+                    'message' => __('Another upgrade is already running. Wait for it to finish, then try again.'),
+                ]);
+            }
             if (!$migrated['ok']) {
                 return json_encode([
                     'error'   => 3,

@@ -179,6 +179,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_user (
         UNIQUE KEY uk_user_email (s_email),
         INDEX idx_s_name (s_name(6)),
         INDEX idx_s_username (s_username),
+        INDEX idx_reg_date (dt_reg_date),
         FOREIGN KEY (fk_c_country_code) REFERENCES /*TABLE_PREFIX*/t_country (pk_c_code),
         FOREIGN KEY (fk_i_region_id) REFERENCES /*TABLE_PREFIX*/t_region (pk_i_id),
         FOREIGN KEY (fk_i_city_id) REFERENCES /*TABLE_PREFIX*/t_city (pk_i_id),
@@ -293,7 +294,10 @@ CREATE TABLE /*TABLE_PREFIX*/t_item (
         INDEX idx_pub_date (dt_pub_date),
         INDEX idx_price (i_price),
         -- What Entitlements::liveListings() filters on: a seller's rows not yet expired.
-        INDEX idx_user_expiration (fk_i_user_id, dt_expiration)
+        INDEX idx_user_expiration (fk_i_user_id, dt_expiration),
+        INDEX idx_expiration (dt_expiration),
+        -- Search::makeSQL() by category: live listings in a category, newest first, and their count.
+        INDEX idx_category_live (fk_i_category_id, b_enabled, b_active, b_spam, dt_pub_date, dt_expiration, b_premium)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_item_description (
@@ -466,6 +470,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_plugin_category (
     s_plugin_name VARCHAR(40) NOT NULL,
     fk_i_category_id INT UNSIGNED NOT NULL,
 
+        PRIMARY KEY (s_plugin_name, fk_i_category_id),
         INDEX fk_i_category_id (fk_i_category_id),
         FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
@@ -473,7 +478,9 @@ CREATE TABLE /*TABLE_PREFIX*/t_plugin_category (
 CREATE TABLE /*TABLE_PREFIX*/t_cron (
   e_type enum('INSTANT','HOURLY','DAILY','WEEKLY','CUSTOM') NOT NULL,
   d_last_exec DATETIME NOT NULL DEFAULT  '1000-01-01 00:00:00',
-  d_next_exec DATETIME NOT NULL DEFAULT  '1000-01-01 00:00:00'
+  d_next_exec DATETIME NOT NULL DEFAULT  '1000-01-01 00:00:00',
+
+  PRIMARY KEY (e_type)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_alerts (
@@ -487,7 +494,10 @@ CREATE TABLE /*TABLE_PREFIX*/t_alerts (
     dt_date DATETIME NULL,
     dt_unsub_date DATETIME NULL DEFAULT NULL,
 
-    PRIMARY KEY (pk_i_id)
+    PRIMARY KEY (pk_i_id),
+    INDEX idx_type (e_type, b_active, dt_unsub_date),
+    INDEX idx_user (fk_i_user_id),
+    INDEX idx_email (s_email)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_alerts_sent (
@@ -499,7 +509,9 @@ CREATE TABLE /*TABLE_PREFIX*/t_alerts_sent (
 
 CREATE TABLE /*TABLE_PREFIX*/t_latest_searches (
   d_date DATETIME NOT NULL,
-  s_search VARCHAR(255) NOT NULL
+  s_search VARCHAR(255) NOT NULL,
+
+  INDEX idx_date (d_date)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_meta_group (
@@ -605,7 +617,9 @@ CREATE TABLE /*TABLE_PREFIX*/t_log (
     s_data VARCHAR(250) NOT NULL,
     s_ip VARCHAR(50) NOT NULL,
     s_who VARCHAR(50) NOT NULL,
-    fk_i_who_id INT UNSIGNED NOT NULL
+    fk_i_who_id INT UNSIGNED NOT NULL,
+
+        INDEX idx_date (dt_date)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_city_stats (

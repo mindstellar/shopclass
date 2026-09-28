@@ -141,6 +141,9 @@ on a copy of your site and tell us what you find.
 
 ### Fixed
 
+- Two upgrades started at once no longer run side by side; the second one waits and reports that an upgrade is already running.
+- `t_cron` and `t_plugin_category` get a primary key, so duplicate rows can no longer appear; a missing cron row is restored.
+- **Repair** no longer adds an index a second time when the site already has one on the same columns under another name.
 - Two sign-ups at the same moment can no longer end with the same username.
 - The daily sweep of orphaned uploads now works through all of them, not only the first 500.
 - The account menu marks Credits as the current page on the credits page.
@@ -275,6 +278,8 @@ on a copy of your site and tell us what you find.
 
 ### Performance
 
+- Category searches and their page counts use a new index: on a 230,000-listing site the count drops from about 38 ms to 6 ms.
+- New indexes for the admin log, alerts, latest searches, the user list and the expiry reminders.
 - The admin user, alert, log, ban rule and keyword lists no longer use `SQL_CALC_FOUND_ROWS`.
 - The expiry reminder e-mails find listings with a query an index can serve.
 - With memcached or APCu, a cached page runs 4 to 9 database queries instead of 11 to 16: the language list, widgets, form groups, currencies and footer pages are cached, and saving any of them clears it.

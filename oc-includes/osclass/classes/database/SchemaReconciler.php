@@ -489,9 +489,14 @@ class SchemaReconciler
         // length, fulltext column order). Skipping by name keeps the reconcile
         // clean where before it surfaced a false-positive error.
         $existingNames = array();
+        $liveColumns   = array();
         if ($tbl_indexes) {
             foreach ($tbl_indexes as $tbl_index) {
                 $existingNames[strtolower($tbl_index['Key_name'])] = true;
+                if (strtoupper((string) $tbl_index['Index_type']) !== 'FULLTEXT') {
+                    $liveColumns[$tbl_index['Key_name']][] = strtolower($tbl_index['Column_name'])
+                        . ((string) $tbl_index['Sub_part'] !== '' ? '(' . $tbl_index['Sub_part'] . ')' : '');
+                }
             }
         }
 
@@ -508,8 +513,37 @@ class SchemaReconciler
                 // genuine definition change is carried by a migration, not here.
                 continue;
             }
+            if (preg_match('/^\s*(INDEX|KEY)\b/i', $v)
+                && in_array(self::indexDefColumns($v), $liveColumns, true)
+            ) {
+                // A plain index on the same ordered columns under another name serves the same queries.
+                continue;
+            }
             $struct_queries[] = 'ALTER TABLE ' . $table . ' ADD ' . $v;
         }
+    }
+
+    /**
+     * The ordered column list of a struct.sql index definition, lower-cased, with any
+     * prefix length kept: "INDEX idx (a, B(10))" -> ['a', 'b(10)'].
+     *
+     * @param string $def
+     *
+     * @return array<int,string>
+     */
+    private static function indexDefColumns($def)
+    {
+        $open  = strpos($def, '(');
+        $close = strrpos($def, ')');
+        if ($open === false || $close === false || $close <= $open) {
+            return array();
+        }
+        $columns = array();
+        foreach (explode(',', substr($def, $open + 1, $close - $open - 1)) as $column) {
+            $columns[] = strtolower(preg_replace('/[\s`]+/', '', $column));
+        }
+
+        return $columns;
     }
 
     /**

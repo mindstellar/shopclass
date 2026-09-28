@@ -119,6 +119,32 @@ pin('upgradeDB() succeeds', 0, (int) ($result['error'] ?? -1));
 check('upgradeDB() leaves the dropped index missing', !$hasIndex('oc_t_country', 'idx_s_name'));
 check('upgradeDB() no longer reports repairs', is_array($result) && !array_key_exists('repairs', $result));
 
+harness_section('MigrationRunner: one run at a time');
+
+$tmpDir = sys_get_temp_dir() . '/osc_runner_lock_' . getmypid();
+@mkdir($tmpDir);
+file_put_contents($tmpDir . '/0001_lock_probe.sql', 'CREATE TABLE /*TABLE_PREFIX*/t_lock_probe (i INT) ENGINE=InnoDB;');
+$probeRunner = new MigrationRunner($conn, $tmpDir);
+$probeRunner->ensureLedger();
+
+// Another upgrade holds the lock on its own connection.
+$admin->query("SELECT GET_LOCK('" . $admin->real_escape_string($probeRunner->lockName()) . "', 0)");
+$busy = $probeRunner->run();
+pin('run() is refused while another run holds the lock', array(false, true, array(), null), array($busy['ok'], $busy['busy'] ?? false, $busy['applied'], $busy['failed']));
+check('...and applies nothing', !in_array('0001_lock_probe.sql', $probeRunner->applied(), true)
+    && $admin->query("SHOW TABLES LIKE 'oc_t_lock_probe'")->num_rows === 0);
+$result = json_decode((string) \mindstellar\upgrade\Osclass::upgradeDB(), true);
+pin('upgradeDB() reports the other upgrade', array(3, 'Another upgrade is already running. Wait for it to finish, then try again.'), array((int) ($result['error'] ?? 0), $result['message'] ?? ''));
+
+$admin->query("SELECT RELEASE_LOCK('" . $admin->real_escape_string($probeRunner->lockName()) . "')");
+$done = $probeRunner->run();
+pin('run() applies it once the lock is free', array(true, array('0001_lock_probe.sql')), array($done['ok'], $done['applied']));
+pin('...and releases the lock afterwards', '1', (string) $admin->query("SELECT IS_FREE_LOCK('" . $admin->real_escape_string($probeRunner->lockName()) . "')")->fetch_row()[0]);
+$admin->query('DROP TABLE oc_t_lock_probe');
+$admin->query("DELETE FROM oc_t_migration WHERE s_migration = '0001_lock_probe.sql'");
+unlink($tmpDir . '/0001_lock_probe.sql');
+rmdir($tmpDir);
+
 harness_section('db:repair');
 
 pin('db:repair --dry-run exits 0', 0, \mindstellar\cli\Cli::run(array('db:repair', '--dry-run')));
@@ -128,6 +154,17 @@ pin('db:repair exits 0', 0, \mindstellar\cli\Cli::run(array('db:repair')));
 check('db:repair restores the dropped index', $hasIndex('oc_t_country', 'idx_s_name'));
 
 pin('db:doctor is clean afterwards', 0, \mindstellar\cli\Cli::run(array('db:doctor')));
+
+harness_section('repair() and an index under another name');
+
+$admin->query('ALTER TABLE oc_t_item DROP INDEX idx_expiration, ADD INDEX dt_expiration (dt_expiration)');
+$admin->query('ALTER TABLE oc_t_alerts DROP INDEX idx_email, ADD INDEX s_email_prefix (s_email(10))');
+$repaired = (new SchemaReconciler($conn))->repair();
+check('a same-column index is not duplicated', !$hasIndex('oc_t_item', 'idx_expiration'), $flat($repaired['ran']));
+check('a prefix index does not stand in for the full-column one', $hasIndex('oc_t_alerts', 'idx_email'), $flat($repaired['ran']));
+pin('...which is all repair() ran', array('ALTER TABLE oc_t_alerts ADD INDEX idx_email (s_email)'), array_map(static fn ($q) => preg_replace('/\s+/', ' ', trim((string) $q)), $repaired['ran']));
+$admin->query('ALTER TABLE oc_t_item DROP INDEX dt_expiration, ADD INDEX idx_expiration (dt_expiration)');
+$admin->query('ALTER TABLE oc_t_alerts DROP INDEX s_email_prefix');
 
 exit(harness_result());
 
