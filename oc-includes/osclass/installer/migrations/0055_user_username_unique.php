@@ -36,9 +36,12 @@ return new class () implements MigrationInterface {
             return;
         }
 
-        // The lock UserActions::claimUsername() takes, so a sign-up cannot claim a name mid-way.
-        $lock = 'osc_username_' . md5((defined('DB_NAME') ? DB_NAME : '') . $table);
-        if ((int) $conn->scalar('SELECT GET_LOCK(?, 30)', array($lock)) !== 1) {
+        // The lock UserActions::claimUsername() takes, so a sign-up cannot claim a name mid-way. MySQL
+        // before 5.7.5 holds one named lock per session, so there it would drop the runner's lock; skip it.
+        $lock    = 'osc_username_' . md5((defined('DB_NAME') ? DB_NAME : '') . $table);
+        $version = (string) $conn->scalar('SELECT VERSION()');
+        $nested  = stripos($version, 'mariadb') !== false || version_compare(preg_replace('/[^0-9.].*$/', '', $version), '5.7.5', '>=');
+        if ($nested && (int) $conn->scalar('SELECT GET_LOCK(?, 30)', array($lock)) !== 1) {
             throw new \RuntimeException('Could not take the username lock; run the upgrade again.');
         }
         try {
@@ -53,7 +56,9 @@ return new class () implements MigrationInterface {
                 $conn->execute('ALTER TABLE ' . $table . ' DROP INDEX idx_s_username, ALGORITHM=INPLACE, LOCK=NONE');
             }
         } finally {
-            $conn->scalar('SELECT RELEASE_LOCK(?)', array($lock));
+            if ($nested) {
+                $conn->scalar('SELECT RELEASE_LOCK(?)', array($lock));
+            }
         }
     }
 

@@ -44,15 +44,19 @@ return new class () implements MigrationInterface {
      */
     public function up(Connection $conn): void
     {
-        // The lock MigrationRunner takes, held again here so a direct call is serialised too.
+        // The lock MigrationRunner takes; taken here only for a direct call, since re-taking it
+        // inside the runner's session would release it on MySQL before 5.7.5.
         $lock = 'osc_migrate_' . md5((string) $conn->scalar('SELECT DATABASE()') . '|' . DB_TABLE_PREFIX);
-        if ((int) $conn->scalar('SELECT GET_LOCK(?, 60)', array($lock)) !== 1) {
+        $held = (int) $conn->scalar('SELECT IS_USED_LOCK(?) = CONNECTION_ID()', array($lock)) === 1;
+        if (!$held && (int) $conn->scalar('SELECT GET_LOCK(?, 60)', array($lock)) !== 1) {
             throw new \RuntimeException('Another upgrade is already running.');
         }
         try {
             $this->addKeys($conn);
         } finally {
-            $conn->scalar('SELECT RELEASE_LOCK(?)', array($lock));
+            if (!$held) {
+                $conn->scalar('SELECT RELEASE_LOCK(?)', array($lock));
+            }
         }
     }
 
