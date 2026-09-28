@@ -398,6 +398,19 @@ seed_exec(
     'i',
     array($owner)
 );
+$ownerGroup = seed_exec(
+    $admin,
+    "INSERT INTO {$prefix}t_meta_group (s_name, s_slug, i_position) VALUES ('Owner form', 'owner-form', 0)",
+    '',
+    array()
+);
+$ownerSubmission = seed_exec(
+    $admin,
+    "INSERT INTO {$prefix}t_form_submission (fk_i_group_id, s_context_type, i_context_id, fk_i_user_id, s_status, dt_created)
+     VALUES (?, 'test', 0, ?, 'new', NOW())",
+    'ii',
+    array($ownerGroup, $owner)
+);
 seed_exec(
     $admin,
     "INSERT INTO {$prefix}t_user_description (fk_i_user_id, fk_c_locale_code, s_info) VALUES (?, 'en_US', 'Bio')",
@@ -453,6 +466,8 @@ pin('the user delete reports success', true, $ok);
 pin('the user is gone', 0, $rows('t_user', "pk_i_id = $owner"));
 pin('their listings went with them', 0, $rows('t_item', "pk_i_id = $owned"));
 pin('their alerts went with them', 0, $rows('t_alerts', "fk_i_user_id = $owner"));
+pin('their form submissions went with them', 0, $rows('t_form_submission', "fk_i_user_id = $owner"));
+pin('and their submission id is gone', 0, $rows('t_form_submission', "pk_i_id = $ownerSubmission"));
 pin('their profile went with them', 0, $rows('t_user_description', "fk_i_user_id = $owner"));
 pin('their pending email change went with them', 0, $rows('t_user_email_tmp', "fk_i_user_id = $owner"));
 pin('their wallet went with them', 0, $rows('t_billing_wallet', "fk_i_user_id = $owner"));
@@ -542,8 +557,9 @@ $added = array(
     "{$prefix}t_meta_fields.fk_i_group_id",
     "{$prefix}t_form_submission.fk_i_group_id",
     "{$prefix}t_alerts.fk_i_user_id",
+    "{$prefix}t_form_submission.fk_i_user_id",
 );
-pin('the sweep covers the keys 0054 added', $added, array_values(array_intersect($added, $swept)));
+pin('the sweep covers the keys 0054-0057 added', $added, array_values(array_intersect($added, $swept)));
 
 /* The foreign-key-free tables the sweep cannot reach, checked by hand. */
 pin('no report log for a missing item', 0, $count(

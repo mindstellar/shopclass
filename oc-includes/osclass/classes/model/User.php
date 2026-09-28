@@ -377,11 +377,11 @@ class User extends DAO
 
             ItemComment::newInstance()->delete(array('fk_i_user_id' => $id));
 
-            // All three cascade, and stay listed for installs whose foreign keys were
+            // All four cascade, and stay listed for installs whose foreign keys were
             // never created. t_billing_ledger and t_billing_order are deliberately left
             // alone: the accounting record has to outlive the account, so neither has a
             // foreign key.
-            $dependents = array('t_user_email_tmp', 't_user_description', 't_alerts');
+            $dependents = array('t_user_email_tmp', 't_user_description', 't_alerts', 't_form_submission');
 
             // The user's own t_resource rows (avatars) go in the same transaction; their
             // stored files are removed only after it commits.

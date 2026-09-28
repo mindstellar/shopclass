@@ -579,7 +579,8 @@ CREATE TABLE /*TABLE_PREFIX*/t_form_submission (
         INDEX idx_form (fk_i_group_id, dt_created),
         INDEX idx_context (s_context_type, i_context_id),
         INDEX idx_status (s_status),
-        FOREIGN KEY (fk_i_group_id) REFERENCES /*TABLE_PREFIX*/t_meta_group (pk_i_id) ON DELETE CASCADE
+        FOREIGN KEY (fk_i_group_id) REFERENCES /*TABLE_PREFIX*/t_meta_group (pk_i_id) ON DELETE CASCADE,
+        FOREIGN KEY (fk_i_user_id) REFERENCES /*TABLE_PREFIX*/t_user (pk_i_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_form_submission_value (

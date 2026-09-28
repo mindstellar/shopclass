@@ -327,6 +327,89 @@ $newId = seed_exec(
 pin('a city area inserted with no id gets one past the existing rows', true, $newId > 2);
 pin('the new row is there', array('New Area'), $column("SELECT s_name FROM $cityAreaTable WHERE pk_i_id = $newId"));
 
+harness_section('migration 0057');
+
+$formUser  = seed_user($admin, 'formkeeper', 'formkeeper@example.test');
+$formGroup = seed_exec(
+    $admin,
+    "INSERT INTO {$p}t_meta_group (s_name, s_slug, i_position) VALUES ('Contact', 'contact-2', 0)",
+    '',
+    array()
+);
+
+$dropFormUserKey = static function () use ($admin, $p): void {
+    $res = $admin->query(
+        "SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = '{$p}t_form_submission' AND COLUMN_NAME = 'fk_i_user_id' AND REFERENCED_TABLE_NAME = '{$p}t_user'"
+    );
+    while ($row = $res->fetch_row()) {
+        $admin->query("ALTER TABLE {$p}t_form_submission DROP FOREIGN KEY `{$row[0]}`");
+    }
+};
+$formUserFkRule = static function () use ($admin, $p): ?string {
+    $row = $admin->query(
+        "SELECT rc.DELETE_RULE FROM information_schema.KEY_COLUMN_USAGE k
+           JOIN information_schema.REFERENTIAL_CONSTRAINTS rc
+             ON rc.CONSTRAINT_SCHEMA = k.TABLE_SCHEMA AND rc.CONSTRAINT_NAME = k.CONSTRAINT_NAME AND rc.TABLE_NAME = k.TABLE_NAME
+          WHERE k.TABLE_SCHEMA = DATABASE() AND k.TABLE_NAME = '{$p}t_form_submission' AND k.COLUMN_NAME = 'fk_i_user_id'
+            AND k.REFERENCED_TABLE_NAME = '{$p}t_user'"
+    )->fetch_row();
+
+    return $row ? $row[0] : null;
+};
+$formUserOrphans = static function () use ($count, $p): int {
+    return $count(
+        "SELECT COUNT(*) FROM {$p}t_form_submission c LEFT JOIN {$p}t_user x ON c.fk_i_user_id = x.pk_i_id"
+        . ' WHERE c.fk_i_user_id IS NOT NULL AND x.pk_i_id IS NULL'
+    );
+};
+
+// Fixture: an install that predates the key, with a signed column and an orphan row.
+// Also drops leftover rows earlier sections left behind (pk_i_id set explicitly there).
+$dropFormUserKey();
+$admin->query('SET FOREIGN_KEY_CHECKS = 0');
+$admin->query("DELETE FROM {$p}t_form_submission_value");
+$admin->query("DELETE FROM {$p}t_form_submission");
+$admin->query("ALTER TABLE {$p}t_form_submission MODIFY fk_i_user_id INT NULL DEFAULT NULL");
+$submission1 = seed_exec(
+    $admin,
+    "INSERT INTO {$p}t_form_submission (fk_i_group_id, s_context_type, fk_i_user_id, dt_created) VALUES (?, 'page', ?, NOW())",
+    'ii',
+    array($formGroup, $formUser)
+);
+$submission2 = seed_exec(
+    $admin,
+    "INSERT INTO {$p}t_form_submission (fk_i_group_id, s_context_type, fk_i_user_id, dt_created) VALUES (?, 'page', 999006, NOW())",
+    'i',
+    array($formGroup)
+);
+$admin->query('SET FOREIGN_KEY_CHECKS = 1');
+seed_exec(
+    $admin,
+    "INSERT INTO {$p}t_form_submission_value (fk_i_submission_id, fk_i_field_id, s_value) VALUES (?, 1, 'x')",
+    'i',
+    array($submission2)
+);
+pin('fixture: one orphan submission with a value attached', 1, $formUserOrphans());
+
+$migrate('0057_form_submission_user_fk.php');
+$migrate('0057_form_submission_user_fk.php');
+
+pin('the key exists with CASCADE', 'CASCADE', $formUserFkRule());
+pin('column type matches the parent', 'int unsigned - YES', $colType('t_form_submission', 'fk_i_user_id'));
+pin('an orphan submission is removed together with its values', array(array((string)$submission1), array()), array(
+    $column("SELECT pk_i_id FROM {$p}t_form_submission"),
+    $column("SELECT fk_i_submission_id FROM {$p}t_form_submission_value WHERE fk_i_submission_id = $submission2"),
+));
+pin('foreign_key_checks is restored', '1', (string)$conn->scalar('SELECT @@SESSION.foreign_key_checks'));
+
+$beforeRerun = $column("SELECT CONSTRAINT_NAME FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() ORDER BY 1");
+$migrate('0057_form_submission_user_fk.php');
+pin('a re-run changes nothing', $beforeRerun, $column("SELECT CONSTRAINT_NAME FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() ORDER BY 1"));
+
+$admin->query("DELETE FROM {$p}t_user WHERE pk_i_id = $formUser");
+pin('deleting a user removes their submissions', 0, $count("SELECT COUNT(*) FROM {$p}t_form_submission WHERE pk_i_id = $submission1"));
+
 // Back to struct.sql for the model tests that follow.
 $admin->query('SET FOREIGN_KEY_CHECKS = 0');
 foreach (array('t_item_description', 't_meta_fields', 't_meta_group', 't_form_submission', 't_form_submission_value', 't_alerts', 't_item', 't_user', 't_locale', 't_category', 't_category_description', 't_city_area', 't_city', 't_region') as $t) {
