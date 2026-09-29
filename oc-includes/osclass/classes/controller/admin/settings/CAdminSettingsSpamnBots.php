@@ -107,6 +107,9 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
                 break;
             case ('login_throttle_unblock'):
+                if ($this->refuseOnDemo(self::securityUrl())) {
+                    break;
+                }
                 osc_csrf_check();
                 $ip      = Params::getParamString('ip');
                 $context = Params::getParamString('context');
@@ -119,17 +122,30 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
                     \mindstellar\security\LoginThrottle::unblockAccount($context, $account);
                     osc_add_flash_ok_message(sprintf(_m('%s can sign in again.'), osc_esc_html($account)), 'admin');
                 }
-                $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots#login-throttle-settings');
+                $this->redirectTo(self::securityUrl());
                 break;
             case ('login_throttle_reset'):
                 // clearing every recorded attempt, so an operator can let a
                 // locked-out visitor (or themselves) back in immediately
+                if ($this->refuseOnDemo(self::securityUrl())) {
+                    break;
+                }
                 osc_csrf_check();
                 LoginAttempt::newInstance()->pruneBefore(date('Y-m-d H:i:s'));
                 osc_add_flash_ok_message(_m('Recorded sign-in attempts have been cleared'), 'admin');
-                $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
+                $this->redirectTo(self::securityUrl());
                 break;
         }
+    }
+
+    /**
+     * System info > Security, where the list of failed sign-ins lives.
+     *
+     * @return string
+     */
+    private static function securityUrl(): string
+    {
+        return osc_admin_base_url(true) . '?page=tools&action=system-info&tab=security#signin-activity';
     }
 
     /**
@@ -158,7 +174,8 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
         // reads as "no key configured" rather than as anything being wrong.
         $this->_exportVariableToView('akismet_status', $akismetStatus);
         $this->_exportVariableToView('spam_forms', SpamSettingsForm::formVars($akismetStatus, $rejected, $values));
-        // Failed sign-ins, a page at a time.
+        // Failed sign-ins, a page at a time. The list is on System info > Security now; a
+        // replaced admin theme's own view may still read it here.
         $activity = \mindstellar\security\LoginThrottle::activity();
         $length   = \mindstellar\admin\ListPaging::length(20);
         $page     = \mindstellar\admin\ListPaging::page();

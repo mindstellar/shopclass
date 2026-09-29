@@ -51,6 +51,122 @@
   min-width: 44rem;
 }
 
+// Lists on the Jobs and Security tabs: plain words, no pills. A phone reads each row as a card.
+.sysinfo-list {
+  td {
+    vertical-align: top;
+  }
+
+  .sysinfo-list-sub {
+    color: var(--osc-ink-muted);
+    display: block;
+    font-size: $font-size-label;
+    overflow-wrap: anywhere;
+  }
+
+  .sysinfo-list-meta {
+    color: var(--osc-ink-emphasis);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .sysinfo-list-reason {
+    color: var(--osc-ink-emphasis);
+    min-inline-size: 14rem;
+    overflow-wrap: anywhere;
+  }
+
+  .sysinfo-list-actions {
+    white-space: nowrap;
+    width: 1%;
+  }
+
+  @media (max-width: 575.98px) {
+    thead {
+      display: none;
+    }
+
+    tr {
+      background-color: var(--osc-bench);
+      border-block-end: 1px solid var(--osc-rule);
+      display: block;
+      padding-block: .75rem;
+    }
+
+    td {
+      background-color: transparent;
+      border: 0;
+      box-shadow: none;
+      display: block;
+      padding: 0 .75rem;
+      text-align: start !important;
+      width: auto;
+    }
+
+    .sysinfo-list-main {
+      padding-block-end: .25rem;
+    }
+
+    .sysinfo-list-meta {
+      color: var(--osc-ink-muted);
+      display: inline;
+      padding-inline: 0;
+
+      & + .sysinfo-list-meta::before {
+        content: " · ";
+      }
+    }
+
+    .sysinfo-list-meta {
+      padding-inline-start: .75rem;
+    }
+
+    .sysinfo-list-meta + .sysinfo-list-meta {
+      padding-inline-start: 0;
+    }
+
+    .sysinfo-list-reason {
+      min-inline-size: 0;
+      padding-block-start: .25rem;
+    }
+
+    .sysinfo-list-actions {
+      padding-block-start: .5rem;
+    }
+  }
+}
+
+// A section's own buttons, under its list. The destructive one keeps its distance.
+.sysinfo-bulk {
+  align-items: center;
+  clear: both;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem 1rem;
+  margin-block-start: .75rem;
+
+  form {
+    display: inline;
+  }
+}
+
+.sysinfo-bulk-danger {
+  margin-inline-start: auto;
+}
+
+.sysinfo-bulk-note {
+  color: var(--osc-ink-muted);
+  font-size: $font-size-label;
+}
+
+.sysinfo-aside {
+  margin-block-start: 1.75rem;
+
+  code {
+    overflow-wrap: anywhere;
+  }
+}
+
 // A quiet disclosure: the full extension list and the settings help.
 .sysinfo-details {
   border-block-start: 1px solid var(--osc-rule);

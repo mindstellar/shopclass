@@ -153,8 +153,8 @@ Run it on demand with **Run cleanup now**, or save the settings and let the
 **daily cron** do it. Either way it runs in the background, a batch at a time, until
 nothing matches, so a large backlog never times out a page. **Items removed per
 batch** sets the batch size. The background work runs on [cron](/docs/configure/cron/).
-**Recent cleanups** lists what each finished run removed, and **Tools → Background
-jobs** shows what is still waiting.
+**Recent cleanups** lists what each finished run removed, and **Tools → System info
+→ Jobs** shows what is still waiting.
 
 On an established site this is what keeps the database fast — dead rows cost you
 on every search. Back up before the first run, and think about expired listings
@@ -217,10 +217,11 @@ files over `oc-content/`.
 
 ## Cache
 
-**Tools → Cache** shows which object-cache driver is running (in-request only
+**Tools → System info → Cache** shows which object-cache driver is running (in-request only
 by default, or APCu, Memcached or Memcache if installed), whether it keeps
 data between requests, and stats such as entries, hit rate and memory use when
-the driver reports them.
+the driver reports them. It warns when the driver config.php asks for is not
+installed, or does not answer.
 
 The default driver holds nothing between requests, so there is nothing to
 clear, and the **Clear cache** button is greyed out. To cache between requests,
@@ -244,9 +245,22 @@ anything needs doing, one line per problem with a button to fix it, then the key
 facts — versions, web server, last backup, cron, photo storage. It asks for a
 backup when none was saved on the server in the last 30 days.
 
-**Server** lists PHP, its limits and extensions, the uploads and backups
-folders, cron, the object cache and the site's paths — the details every bug
-report should include — with a short guide to changing them.
+The Overview shows one line for the worst problem on each of the other tabs.
+
+**Jobs** shows the background queue: what is waiting, running or failed, when
+cron last ran, and recent activity. Failed jobs can be tried again or thrown away.
+
+**Security** shows sign-in protection and who is blocked right now (with
+**Unblock**), which admins use two-step sign-in, whether visitor addresses are
+read correctly behind a proxy, whether the backups folder is closed to the web,
+whether restore and plugin installs are allowed from the admin, and whether
+config.php is read-only.
+
+**Cache** is described above.
+
+**Server** lists PHP, its limits and extensions, the uploads folder, debug and
+maintenance mode and the site's paths — the details every bug report should
+include — with a short guide to changing them.
 
 The same ground, from a shell, with pass/fail verdicts and a non-zero exit code
 when something is wrong:

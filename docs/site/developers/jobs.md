@@ -117,7 +117,7 @@ makes the work survivable on a shared host.
 
 Throw. The queue catches it, records the message, and retries with a growing delay: 1, 2,
 4 minutes and so on up to an hour. After 8 attempts it stops retrying and the job sits in
-`error` with its last message, where **Tools → Background jobs** shows it. Nothing is ever
+`error` with its last message, where **Tools → System info → Jobs** shows it. Nothing is ever
 dropped silently.
 
 A job whose type nothing registered is treated the same way. The usual cause is a plugin
@@ -175,7 +175,7 @@ exit non-zero when a job has stopped retrying, so a cron log can notice.
 
 ## Seeing what is happening
 
-**Tools → Background jobs** lists what is waiting, what is running and what gave up, with
+**Tools → System info → Jobs** lists what is waiting, what is running and what gave up, with
 the reason. It can run the queue now, retry a failed job, or throw it away. It also warns
 when queued work has no handler.
 

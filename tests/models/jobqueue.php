@@ -584,6 +584,18 @@ $all = $queue->stats();
 pin('stats without a type counts all', array(2, 1, 1), array($all['pending'], $all['running'], $all['error']));
 pin('an empty queue has no oldest', null, $queue->stats('test.none')['oldest']);
 
+harness_section('Health');
+
+$truncate();
+pin('an empty queue is healthy', array('stuck' => 0, 'overdue' => null), $queue->health());
+$seed('test.h', 'pending', '2001-01-01 00:00:00');
+$seed('test.h', 'pending', '2030-01-01 00:00:00');
+$seed('test.h', 'running', '2000-01-01 00:00:00', date('Y-m-d H:i:s', time() - JobQueue::STALE_LOCK_SECONDS - 60));
+$seed('test.h', 'running', '2000-01-01 00:00:00', date('Y-m-d H:i:s'));
+$seed('test.h', 'error', '1999-01-01 00:00:00');
+pin('a run locked past a stale lock is stuck, a fresh one is not', 1, $queue->health()['stuck']);
+pin('overdue is the waiting job due longest, failed ones aside', '2001-01-01 00:00:00', $queue->health()['overdue']);
+
 $truncate();
 
 if (!defined('MODELS_RUNNER')) {

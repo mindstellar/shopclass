@@ -319,6 +319,7 @@ you find.
 
 ### Changed
 
+- **Tools → System info** gains Jobs, Security and Cache tabs. Background jobs, Cache and the blocked sign-in list moved there, and their old links still work.
 - **Upgrade Shopclass**, **Backup and restore** and **System info** share one look: one box that says what needs doing, and quiet lines instead of big empty blocks.
 - **Tools → System info** has Overview, Database and Server tabs. One box at the top of each says what needs doing. Tools now opens on it.
 - Check and repair moved into System info → Database. The old Database link still works.

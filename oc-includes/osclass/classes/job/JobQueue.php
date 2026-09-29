@@ -613,6 +613,32 @@ final class JobQueue
     }
 
     /**
+     * Signs the queue is not moving: running jobs locked for longer than a stale lock, and
+     * when the job that has been due longest was due.
+     *
+     * @return array{stuck:int,overdue:?string}
+     */
+    public function health(): array
+    {
+        $health = array('stuck' => 0, 'overdue' => null);
+        try {
+            $health['stuck'] = osc_db_table($this->table())
+                ->where('s_status', self::STATUS_RUNNING)
+                ->where('dt_locked', '<', date('Y-m-d H:i:s', time() - self::STALE_LOCK_SECONDS))
+                ->count();
+            $row = osc_db_select_one(
+                'SELECT MIN(dt_next_run) AS dt_due FROM ' . $this->table() . ' WHERE s_status = ?',
+                array(self::STATUS_PENDING)
+            );
+            $health['overdue'] = isset($row['dt_due']) ? (string) $row['dt_due'] : null;
+        } catch (DbException $e) {
+            return $health;
+        }
+
+        return $health;
+    }
+
+    /**
      * A page of jobs for the admin screen, newest first.
      *
      * @param string|null $status

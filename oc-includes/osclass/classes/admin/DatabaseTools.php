@@ -38,6 +38,8 @@ final class DatabaseTools
     public const MOVED = array(
         'import'   => 'backup#restore',
         'database' => 'system-info&tab=database',
+        'jobs'     => 'system-info&tab=jobs',
+        'cache'    => 'system-info&tab=cache',
     );
 
     /**

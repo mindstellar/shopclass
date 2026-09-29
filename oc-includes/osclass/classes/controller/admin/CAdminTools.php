@@ -152,16 +152,21 @@ class CAdminTools extends AdminSecBaseModel
                 $this->doView('tools/version.php');
                 break;
             case ('cache'):
-                $this->doView('tools/cache.php');
+            case 'jobs':
+                // These pages are now tabs of System info.
+                $this->redirectTo(osc_admin_base_url(true) . DatabaseTools::movedTo($this->action));
                 break;
             case ('cache_clear'):
+                if ($this->refuseOnDemo(self::cacheUrl())) {
+                    break;
+                }
                 osc_csrf_check();
                 if (osc_cache_flush()) {
                     osc_add_flash_ok_message(_m('The cache has been cleared'), 'admin');
                 } else {
                     osc_add_flash_error_message(_m('The cache could not be cleared'), 'admin');
                 }
-                $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=cache');
+                $this->redirectTo(self::cacheUrl());
                 break;
             case ('backup'):
             case ('backup_post'):
@@ -307,25 +312,8 @@ class CAdminTools extends AdminSecBaseModel
                 $this->_exportVariableToView('cleanup_history', $this->jobLog(array('cleanup'), 10));
                 $this->doView('tools/cleanup.php');
                 break;
-            case 'jobs':
-                $queue = \mindstellar\job\JobQueue::instance();
-                \mindstellar\job\JobWorker::registerHandlers();
-
-                $status = Params::getParamString('status');
-                if (!in_array($status, array('pending', 'running', 'error'), true)) {
-                    $status = '';
-                }
-
-                $this->_exportVariableToView('jobs_summary', $queue->summary());
-                $this->_exportVariableToView('jobs_status', $status);
-                $this->_exportVariableToView('jobs_rows', $queue->page($status ?: null, null, 100));
-                $this->_exportVariableToView('jobs_queued_types', $queue->queuedTypes());
-                $this->_exportVariableToView('jobs_registered_types', \mindstellar\job\JobRegistry::types());
-                $this->_exportVariableToView('jobs_history', $this->jobLog(array(), 20));
-                $this->doView('tools/jobs.php');
-                break;
             case 'jobs_run':
-                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=jobs')) {
+                if ($this->refuseOnDemo(self::jobsUrl())) {
                     break;
                 }
                 osc_csrf_check();
@@ -338,10 +326,10 @@ class CAdminTools extends AdminSecBaseModel
                 } else {
                     osc_add_flash_warning_message(_m('Nothing was waiting to run.'), 'admin');
                 }
-                $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=jobs');
+                $this->redirectTo(self::jobsUrl());
                 break;
             case 'jobs_retry':
-                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=jobs')) {
+                if ($this->refuseOnDemo(self::jobsUrl())) {
                     break;
                 }
                 osc_csrf_check();
@@ -356,10 +344,10 @@ class CAdminTools extends AdminSecBaseModel
                 } else {
                     osc_add_flash_warning_message(_m('Nothing to queue again.'), 'admin');
                 }
-                $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=jobs');
+                $this->redirectTo(self::jobsUrl());
                 break;
             case 'jobs_forget':
-                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=jobs')) {
+                if ($this->refuseOnDemo(self::jobsUrl())) {
                     break;
                 }
                 osc_csrf_check();
@@ -374,7 +362,7 @@ class CAdminTools extends AdminSecBaseModel
                 } else {
                     osc_add_flash_warning_message(_m('Nothing to throw away.'), 'admin');
                 }
-                $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=jobs');
+                $this->redirectTo(self::jobsUrl());
                 break;
             case 'cleanup_post':
                 if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=cleanup')) {
@@ -840,6 +828,26 @@ class CAdminTools extends AdminSecBaseModel
     }
 
     /**
+     * System info > Jobs.
+     *
+     * @return string
+     */
+    private static function jobsUrl(): string
+    {
+        return osc_admin_base_url(true) . DatabaseTools::movedTo('jobs');
+    }
+
+    /**
+     * System info > Cache.
+     *
+     * @return string
+     */
+    private static function cacheUrl(): string
+    {
+        return osc_admin_base_url(true) . DatabaseTools::movedTo('cache');
+    }
+
+    /**
      * System info > Database.
      *
      * @return string
@@ -850,8 +858,8 @@ class CAdminTools extends AdminSecBaseModel
     }
 
     /**
-     * Tools > System info: Overview, Database and Server tabs. The database update and
-     * Repair post to the Database tab so their result renders in place.
+     * Tools > System info and its tabs. The database update and Repair post to the
+     * Database tab so their result renders in place.
      *
      * @return void
      */
@@ -863,6 +871,16 @@ class CAdminTools extends AdminSecBaseModel
             if (!$this->databasePost($env)) {
                 return;
             }
+        }
+
+        if ($tab === 'jobs') {
+            $queue = \mindstellar\job\JobQueue::instance();
+            $this->_exportVariableToView('jobs_failed', $queue->page(\mindstellar\job\JobQueue::STATUS_ERROR, null, 50));
+            $this->_exportVariableToView('jobs_active', array_merge(
+                $queue->page(\mindstellar\job\JobQueue::STATUS_RUNNING, null, 50),
+                $queue->page(\mindstellar\job\JobQueue::STATUS_PENDING, null, 50)
+            ));
+            $this->_exportVariableToView('jobs_history', $this->jobLog(array(), 20));
         }
 
         $this->_exportVariableToView('sysinfo_tab', $tab);
@@ -962,13 +980,21 @@ class CAdminTools extends AdminSecBaseModel
             $server = '';
         }
         $cacheDriver = defined('OSC_CACHE') ? (string) OSC_CACHE : 'default';
-        $cacheClass  = 'Object_Cache_' . $cacheDriver;
         $maintenance = '';
         if (file_exists(ABS_PATH . '.maintenance')) {
             $maintenance = osc_maintenance_lockout_enabled() ? 'locked' : 'banner';
         }
         $uploads = osc_uploads_path();
         $free    = function_exists('disk_free_space') ? @disk_free_space($uploads) : false;
+        $queue   = \mindstellar\job\JobQueue::instance();
+        \mindstellar\job\JobWorker::registerHandlers();
+        $stats    = $queue->stats();
+        $signins  = \mindstellar\security\LoginThrottle::activity();
+        $drivers  = array();
+        foreach (SystemChecks::CACHE_DRIVERS as $name) {
+            $drivers[$name] = self::cacheSupported($name);
+        }
+        $cacheOn  = $cacheDriver === 'default' || self::cacheSupported($cacheDriver);
         $prefs   = Preference::newInstance()->listAll();
         $last    = json_decode((string) osc_get_preference('backup_last'), true);
 
@@ -1010,8 +1036,32 @@ class CAdminTools extends AdminSecBaseModel
             'debug'            => defined('OSC_DEBUG') && OSC_DEBUG,
             'maintenance'      => $maintenance,
             'cache_driver'     => $cacheDriver,
-            'cache_supported'  => $cacheDriver === 'default'
-                || (class_exists($cacheClass) && call_user_func(array($cacheClass, 'is_supported'))),
+            'cache_supported'  => $cacheOn,
+            'cache_working'    => $cacheDriver !== 'default' && $cacheOn ? self::cacheAnswers() : null,
+            'cache_stats'      => $cacheOn ? osc_cache_stats() : null,
+            'cache_drivers'    => $drivers,
+            'jobs'             => array(
+                'pending' => (int) $stats['pending'],
+                'running' => (int) $stats['running'],
+                'error'   => (int) $stats['error'],
+                'oldest'  => $stats['oldest'],
+                'orphans' => array_values(array_diff($queue->queuedTypes(), \mindstellar\job\JobRegistry::types())),
+            ) + $queue->health(),
+            'me'               => (int) osc_logged_admin_id(),
+            'admins'           => \mindstellar\security\AdminTwoFactor::admins(),
+            'throttle'         => array(
+                'enabled'     => (bool) osc_login_throttle_enabled(),
+                'window'      => (int) osc_login_throttle_window(),
+                'max_ip'      => (int) osc_login_throttle_max_ip(),
+                'max_account' => (int) osc_login_throttle_max_account(),
+                'captcha'     => (bool) osc_captcha_enabled(),
+                'blocked'     => count(array_filter($signins, static function ($row) {
+                    return !empty($row['blocked']);
+                })),
+            ),
+            'signins'          => $signins,
+            'web_restore_off'  => (bool) osc_web_restore_disabled(),
+            'package_installs_off' => (bool) osc_package_installs_disabled(),
             'cron_last'        => osc_cron_last_run(),
             // This request came through the same proxy every visitor does.
             'proxy'            => osc_proxy_ip_mismatch(),
@@ -1034,6 +1084,45 @@ class CAdminTools extends AdminSecBaseModel
         }
 
         return $env;
+    }
+
+    /**
+     * Whether an object-cache driver has a class here and says this server can run it.
+     *
+     * @param string $driver
+     *
+     * @return bool
+     */
+    private static function cacheSupported(string $driver): bool
+    {
+        $class = 'Object_Cache_' . $driver;
+
+        return class_exists($class) && method_exists($class, 'is_supported') && call_user_func(array($class, 'is_supported'));
+    }
+
+    /**
+     * Whether the cache keeps a value: write a probe key, read it back, remove it. The
+     * write's own answer counts, because a driver may serve the read from its in-request copy.
+     *
+     * @return bool
+     */
+    private static function cacheAnswers(): bool
+    {
+        $cache = \Object_Cache_Factory::newInstance();
+        $key   = 'osc_sysinfo_probe';
+        $value = bin2hex(random_bytes(8));
+        try {
+            if ($cache->set($key, $value, 60) === false) {
+                return false;
+            }
+            $found = null;
+            $read  = $cache->get($key, $found);
+            $cache->delete($key);
+        } catch (Throwable $e) {
+            return false;
+        }
+
+        return $found !== false && $read === $value;
     }
 
     /**

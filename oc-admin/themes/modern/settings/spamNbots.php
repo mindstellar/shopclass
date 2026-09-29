@@ -16,8 +16,7 @@
 /**
  * The chrome around the four declared spam-and-bots forms. Each form -- its route, its
  * fields, their values and the submit row -- is core's, drawn from the declaration the
- * controller saves through. The button that clears recorded sign-in attempts stores
- * nothing and is still its own little form here.
+ * controller saves through.
  */
 
 $forms = __get('spam_forms');
@@ -66,94 +65,10 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         <?php } ?>
         <?php osc_admin_settings_form($forms['login_throttle']['id'], $forms['login_throttle']); ?>
 
-        <?php
-        $throttle = __get('login_throttle_activity') ?: array('aRows' => array());
-        $contexts = array(
-            'admin'          => __('Admin panel'),
-            'web'            => __('Website'),
-            'admin-recover'  => __('Admin password reset'),
-            'web-recover'    => __('Website password reset'),
-            'restore_reauth' => __('Password check before a restore'),
-        );
-        $rows     = $throttle['aRows'];
-
-        osc_admin_form_section(__('Failed sign-ins right now'), array(
-            'spaced' => true,
-            'intro'  => sprintf(
-                __('Addresses and accounts with failures in the last %d minutes. Unblock one to let it try again at once.'),
-                osc_login_throttle_window()
-            ),
-        ));
-        if ($rows === array()) { ?>
-            <p class="text-muted"><?php _e('No failed sign-ins. Nobody is blocked.'); ?></p>
-        <?php } else { ?>
-            <div class="table-responsive">
-                <table class="table" style="min-width:40rem">
-                    <thead>
-                    <tr>
-                        <th class="col-status"><?php _e('State'); ?></th>
-                        <th><?php _e('IP address or account'); ?></th>
-                        <th class="text-end"><?php _e('Failures'); ?></th>
-                        <th><?php _e('Block ends'); ?></th>
-                        <th></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <?php foreach ($rows as $row) {
-                        $isIp   = $row['kind'] === 'ip';
-                        $fields = $isIp
-                            ? array('ip' => $row['ip'])
-                            : array('context' => $row['context'], 'account' => $row['account']); ?>
-                        <tr>
-                            <td class="col-status"><?php $row['blocked']
-                                ? osc_admin_status('failed', __('Blocked'))
-                                : osc_admin_status('pending', __('Counting')); ?></td>
-                            <td>
-                                <?php echo osc_esc_html($isIp ? $row['ip'] : $row['account']); ?>
-                                <div class="text-muted small"><?php echo osc_esc_html($isIp
-                                    ? __('IP address')
-                                    : sprintf(__('Account, %s'), $contexts[$row['context']] ?? $row['context'])); ?></div>
-                            </td>
-                            <td class="text-end"><?php echo (int) $row['failures']; ?></td>
-                            <td><?php echo $row['blocked'] ? osc_admin_when($row['until']) : '<span class="text-muted">&mdash;</span>'; ?></td>
-                            <td class="text-end">
-                                <?php osc_admin_form_open(array(
-                                    'page'       => 'settings',
-                                    'action'     => 'login_throttle_unblock',
-                                    'horizontal' => false,
-                                    'class'      => 'd-inline',
-                                    'fields'     => $fields,
-                                )); ?>
-                                    <button type="submit" class="btn btn-sm btn-secondary"><?php
-                                        echo $row['blocked'] ? __('Unblock') : __('Reset'); ?></button>
-                                <?php osc_admin_form_close(null, array('horizontal' => false)); ?>
-                            </td>
-                        </tr>
-                    <?php } ?>
-                    </tbody>
-                </table>
-            </div>
-            <?php osc_admin_pagination($throttle);
-        }
-
-        osc_admin_form_open(array(
-            'name'   => 'settings_form',
-            'page'   => 'settings',
-            'action' => 'login_throttle_reset',
-        )); ?>
-                <?php osc_admin_field(array(
-                    'type'   => 'custom',
-                    'label'  => __('Unblock everyone'),
-                    'help'   => __('Deletes every recorded failure, yours too.'),
-                    'render' => static function () {
-                        osc_admin_action_button(array(
-                            'label' => __('Unblock everyone'),
-                            'type'  => 'submit',
-                            'attrs' => array('id' => 'submit_login_throttle_reset'),
-                        ));
-                    },
-                )); ?>
-            <?php osc_admin_form_close(); ?>
+        <p class="text-muted"><?php printf(
+            __('See who is blocked right now, and unblock them, under <a href="%s">Tools > System info > Security</a>.'),
+            osc_esc_html(osc_admin_base_url(true) . '?page=tools&action=system-info&tab=security#signin-activity')
+        ); ?></p>
     </div>
 </div>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

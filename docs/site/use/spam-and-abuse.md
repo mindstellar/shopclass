@@ -55,8 +55,8 @@ The settings are in **Settings → Spam and bots → Sign-in protection**:
 The per-account limit is the one that matters against a targeted attack; the
 per-IP limit catches broad scanning.
 
-**Failed sign-ins right now**, on the same page, lists every address and account with
-recent failures and says which are blocked. **Unblock** lets one of them try again at
+**Failed sign-ins right now**, under **Tools → System info → Security**, lists every
+address and account with recent failures and says which are blocked. **Unblock** lets one of them try again at
 once; **Unblock everyone** clears them all.
 
 :::danger[Behind a proxy, throttling needs the real client IP]

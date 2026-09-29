@@ -113,16 +113,12 @@ $view   = View::newInstance();
 $tab    = (string) $view->_get('sysinfo_tab');
 $env    = (array) $view->_get('sysinfo_env');
 $report = (array) $view->_get('sysinfo_report');
-$tabs   = array(
-    'overview' => __('Overview'),
-    'database' => __('Database'),
-    'server'   => __('Server'),
-);
+$tabs   = SystemChecks::labels();
 
 osc_admin_page(array(
     'section' => __('Tools'),
     'title'   => __('System info'),
-    'help'    => __('A checked view of your site: what needs doing, the database, and the server it runs on.'),
+    'help'    => __('A checked view of your site: what needs doing, background jobs, security, the cache, the database, and the server it runs on.'),
 ));
 
 // Backup and restore left the old Database page; links to those parts follow. Remove in 7.0.
@@ -170,7 +166,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 
         <?php foreach (($report['groups'] ?? array()) as $group) { ?>
             <section class="sysinfo-group">
-                <?php osc_admin_form_section($group['title']); ?>
+                <?php osc_admin_form_section($group['title'], isset($group['link']) ? array(
+                    'intro_html' => '<a href="' . osc_esc_html($group['link']['url']) . '">' . osc_esc_html($group['link']['label']) . '</a>',
+                ) : array()); ?>
                 <?php osc_admin_panel_open('', array('class' => 'sysinfo-facts')); ?>
                 <?php osc_admin_definition($group['rows']); ?>
                 <?php osc_admin_panel_close(); ?>

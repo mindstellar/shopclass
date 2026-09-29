@@ -71,11 +71,25 @@ $admin->query("RENAME TABLE $rate TO {$rate}_gone");
 pin('with no try counter a good backup code is refused', false, AdminTwoFactor::check($row, $codes[3]));
 $admin->query("RENAME TABLE {$rate}_gone TO $rate");
 
+harness_section('the list for System info');
+
+$admin->query("INSERT INTO $table (pk_i_id, s_name, s_username, s_password, s_email, b_moderator) VALUES (8, 'Mod', 'mod', 'hash', 'm@example.test', 1)");
+$mine = static function (): array {
+    return array_values(array_filter(AdminTwoFactor::admins(), static function ($a) {
+        return in_array($a['id'], array(7, 8), true);
+    }));
+};
+pin('each admin, on or off, and nothing else', array(
+    array('id' => 7, 'name' => 'A', 'username' => 'a', 'moderator' => false, 'two_factor' => true),
+    array('id' => 8, 'name' => 'Mod', 'username' => 'mod', 'moderator' => true, 'two_factor' => false),
+), $mine());
+
 harness_section('turning it off');
 
 $on = AdminTwoFactor::rememberBinding($row);
 AdminTwoFactor::disable(7);
 pin('off again', false, AdminTwoFactor::enabled($row));
+pin('the list says so', array(false, false), array_column($mine(), 'two_factor'));
 $afterOff = AdminTwoFactor::rememberBinding($row);
 check('the binding differs from while on', $afterOff !== $on);
 check('and from before it was first turned on', $afterOff !== $off);
@@ -86,7 +100,9 @@ harness_section('a database not yet upgraded');
 
 $admin->query("ALTER TABLE $table DROP COLUMN s_2fa");
 pin('reads as off', array(false, 'hash'), array(AdminTwoFactor::enabled($row), AdminTwoFactor::rememberBinding($row)));
+pin('the list still reads, everyone off', array(false, false), array_column($mine(), 'two_factor'));
 $admin->query("ALTER TABLE $table ADD COLUMN s_2fa TEXT NULL AFTER s_secret");
+$admin->query("DELETE FROM $table WHERE pk_i_id = 8");
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

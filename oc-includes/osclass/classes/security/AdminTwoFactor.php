@@ -49,6 +49,35 @@ final class AdminTwoFactor
     }
 
     /**
+     * Every admin and whether two-step sign-in is on, for System info. No secret leaves here.
+     *
+     * @return array<int,array{id:int,name:string,username:string,moderator:bool,two_factor:bool}>
+     */
+    public static function admins(): array
+    {
+        $table = DB_TABLE_PREFIX . 't_admin';
+        try {
+            $rows = osc_db_select('SELECT pk_i_id, s_name, s_username, b_moderator, s_2fa FROM ' . $table . ' ORDER BY pk_i_id');
+        } catch (DbException $e) {
+            if ($e->getCode() !== 1054) {
+                return array();
+            }
+            // A database not upgraded yet has no s_2fa column: everyone is off.
+            $rows = osc_db_select('SELECT pk_i_id, s_name, s_username, b_moderator FROM ' . $table . ' ORDER BY pk_i_id');
+        }
+
+        return array_map(static function (array $row): array {
+            return array(
+                'id'         => (int) $row['pk_i_id'],
+                'name'       => (string) $row['s_name'],
+                'username'   => (string) $row['s_username'],
+                'moderator'  => (bool) $row['b_moderator'],
+                'two_factor' => self::decode(isset($row['s_2fa']) ? (string) $row['s_2fa'] : null) !== null,
+            );
+        }, $rows);
+    }
+
+    /**
      * @param array<string,mixed> $admin
      *
      * @return bool

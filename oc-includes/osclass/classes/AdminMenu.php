@@ -443,13 +443,6 @@ class AdminMenu
         );
         $this->add_submenu(
             'tools',
-            __('Cache'),
-            osc_admin_base_url(true) . '?page=tools&action=cache',
-            'tools_cache',
-            'administrator'
-        );
-        $this->add_submenu(
-            'tools',
             __('Cleanup'),
             osc_admin_base_url(true) . '?page=tools&action=cleanup',
             'tools_cleanup',
@@ -460,13 +453,6 @@ class AdminMenu
             __('Maintenance mode'),
             osc_admin_base_url(true) . '?page=tools&action=maintenance',
             'tools_maintenance',
-            'administrator'
-        );
-        $this->add_submenu(
-            'tools',
-            __('Background jobs'),
-            osc_admin_base_url(true) . '?page=tools&action=jobs',
-            'tools_jobs',
             'administrator'
         );
         $this->add_submenu(

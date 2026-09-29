@@ -21062,6 +21062,102 @@ form h3, form .h3 {
   min-width: 44rem;
 }
 
+.sysinfo-list td {
+  vertical-align: top;
+}
+.sysinfo-list .sysinfo-list-sub {
+  color: var(--osc-ink-muted);
+  display: block;
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+}
+.sysinfo-list .sysinfo-list-meta {
+  color: var(--osc-ink-emphasis);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.sysinfo-list .sysinfo-list-reason {
+  color: var(--osc-ink-emphasis);
+  min-inline-size: 14rem;
+  overflow-wrap: anywhere;
+}
+.sysinfo-list .sysinfo-list-actions {
+  white-space: nowrap;
+  width: 1%;
+}
+@media (max-width: 575.98px) {
+  .sysinfo-list thead {
+    display: none;
+  }
+  .sysinfo-list tr {
+    background-color: var(--osc-bench);
+    border-block-end: 1px solid var(--osc-rule);
+    display: block;
+    padding-block: 0.75rem;
+  }
+  .sysinfo-list td {
+    background-color: transparent;
+    border: 0;
+    box-shadow: none;
+    display: block;
+    padding: 0 0.75rem;
+    text-align: start !important;
+    width: auto;
+  }
+  .sysinfo-list .sysinfo-list-main {
+    padding-block-end: 0.25rem;
+  }
+  .sysinfo-list .sysinfo-list-meta {
+    color: var(--osc-ink-muted);
+    display: inline;
+    padding-inline: 0;
+  }
+  .sysinfo-list .sysinfo-list-meta + .sysinfo-list-meta::before {
+    content: " · ";
+  }
+  .sysinfo-list .sysinfo-list-meta {
+    padding-inline-start: 0.75rem;
+  }
+  .sysinfo-list .sysinfo-list-meta + .sysinfo-list-meta {
+    padding-inline-start: 0;
+  }
+  .sysinfo-list .sysinfo-list-reason {
+    min-inline-size: 0;
+    padding-block-start: 0.25rem;
+  }
+  .sysinfo-list .sysinfo-list-actions {
+    padding-block-start: 0.5rem;
+  }
+}
+
+.sysinfo-bulk {
+  align-items: center;
+  clear: both;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin-block-start: 0.75rem;
+}
+.sysinfo-bulk form {
+  display: inline;
+}
+
+.sysinfo-bulk-danger {
+  margin-inline-start: auto;
+}
+
+.sysinfo-bulk-note {
+  color: var(--osc-ink-muted);
+  font-size: 0.8125rem;
+}
+
+.sysinfo-aside {
+  margin-block-start: 1.75rem;
+}
+.sysinfo-aside code {
+  overflow-wrap: anywhere;
+}
+
 .sysinfo-details {
   border-block-start: 1px solid var(--osc-rule);
   margin-block-start: 1.75rem;

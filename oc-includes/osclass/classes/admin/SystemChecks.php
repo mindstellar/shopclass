@@ -20,7 +20,7 @@ use mindstellar\database\SchemaDoctor;
  */
 final class SystemChecks
 {
-    public const TABS = array('overview', 'database', 'server');
+    public const TABS = array('overview', 'database', 'server', 'jobs', 'security', 'cache');
 
     /** How old the last saved backup may be before the Overview asks for a new one. */
     public const BACKUP_MAX_AGE = 30 * 86400;
@@ -40,6 +40,12 @@ final class SystemChecks
     public const DOCS_PROXY = 'https://mindstellar.com/docs/deploy/security/#login-throttling-and-the-real-client-ip';
 
     public const DOCS_BACKUPS = 'https://mindstellar.com/docs/deploy/security/#the-backups-folder';
+
+    /** How long a due job may wait while cron runs before the queue counts as stuck. */
+    public const JOBS_OVERDUE = 3600;
+
+    /** The object-cache drivers Shopclass ships, in the order the Cache tab lists them. */
+    public const CACHE_DRIVERS = array('apcu', 'memcached', 'memcache');
 
     private const RANK = array('danger' => 0, 'warning' => 1, 'info' => 2);
 
@@ -99,6 +105,23 @@ final class SystemChecks
     }
 
     /**
+     * Each tab's name, in the order the tab strip shows them.
+     *
+     * @return array<string,string>
+     */
+    public static function labels(): array
+    {
+        return array(
+            'overview' => __('Overview'),
+            'jobs'     => __('Jobs'),
+            'security' => __('Security'),
+            'cache'    => __('Cache'),
+            'database' => __('Database'),
+            'server'   => __('Server'),
+        );
+    }
+
+    /**
      * The sentence a tab shows when nothing needs doing.
      *
      * @param string $tab
@@ -112,6 +135,12 @@ final class SystemChecks
                 return __('Your database is up to date and healthy.');
             case 'server':
                 return __('The server meets what Shopclass needs.');
+            case 'jobs':
+                return __('Background jobs are running normally.');
+            case 'security':
+                return __('All the checks below pass.');
+            case 'cache':
+                return __('The cache is working.');
             default:
                 return __('Everything looks fine.');
         }
@@ -134,9 +163,25 @@ final class SystemChecks
             case 'server':
                 $report = array('issues' => self::serverIssues($env, true), 'groups' => self::serverFacts($env));
                 break;
+            case 'jobs':
+                $report = array('issues' => self::jobsIssues($env, true), 'groups' => self::jobsFacts($env));
+                break;
+            case 'security':
+                $report = array('issues' => self::securityIssues($env, true), 'groups' => self::securityFacts($env));
+                break;
+            case 'cache':
+                $report = array('issues' => self::cacheIssues($env), 'groups' => self::cacheFacts($env));
+                break;
             default:
                 $report = array(
-                    'issues' => array_merge(self::databaseIssues($env, false), self::serverIssues($env, false), self::backupIssues($env)),
+                    'issues' => array_merge(
+                        self::databaseIssues($env, false),
+                        self::serverIssues($env, false),
+                        self::backupIssues($env),
+                        self::summary($env, 'jobs', self::jobsIssues($env, false)),
+                        self::summary($env, 'security', self::securityIssues($env, false)),
+                        self::summary($env, 'cache', self::cacheIssues($env))
+                    ),
                     'groups' => self::overviewFacts($env),
                 );
         }
@@ -221,8 +266,8 @@ final class SystemChecks
     }
 
     /**
-     * The server's issues: PHP, extensions, the image library, limits, folders, cron,
-     * the object cache, debug mode, visitor addresses, maintenance mode and the backups folder.
+     * The server's issues: PHP, extensions, the image library, limits, folders, debug mode
+     * and maintenance mode. Cron, the cache and the security checks have their own tabs.
      *
      * @param array<string,mixed> $env
      * @param bool                $here true on the Server tab, where the help is on the page
@@ -255,16 +300,6 @@ final class SystemChecks
         if (array_key_exists('uploads_writable', $env) && !$env['uploads_writable']) {
             $issues[] = self::issue('uploads_read_only', 'danger', __('The uploads folder cannot be written to. Photos cannot be saved.'), $here ? array() : $details);
         }
-        if (!empty($env['proxy'])) {
-            $issues[] = self::issue('proxy_mismatch', 'danger', sprintf(
-                __('Visitor addresses look wrong: the site is behind a proxy (%1$s), so every visitor seems to come from %2$s. Sign-in protection and IP bans cannot tell visitors apart.'),
-                (string) ($env['proxy']['header'] ?? ''),
-                (string) ($env['proxy']['proxy'] ?? '')
-            ), array('label' => __('Set up real-IP forwarding'), 'url' => self::DOCS_PROXY));
-        }
-        if (($env['backup_probe'] ?? null) === true) {
-            $issues[] = self::issue('backups_open', 'danger', __('Your backups folder is open to the web. Anyone who guesses a file name could download a backup.'), array('label' => __('How to close it'), 'url' => self::DOCS_BACKUPS));
-        }
 
         $memory = (int) ($env['memory'] ?? -1);
         if ($memory !== -1 && $memory > 0 && $memory < self::MEMORY_FLOOR) {
@@ -291,18 +326,8 @@ final class SystemChecks
         if (array_key_exists('opcache', $env) && !$env['opcache']) {
             $issues[] = self::issue('opcache_off', 'warning', __('OPcache is off, so PHP recompiles every file on every request.'), $help);
         }
-        $issues = array_merge($issues, self::cronIssues($env));
-        if (($env['cache_driver'] ?? 'default') !== 'default' && empty($env['cache_supported'])) {
-            $issues[] = self::issue('cache_unsupported', 'warning', sprintf(
-                __('config.php asks for the %s object cache, but that driver is not installed, so nothing is cached.'),
-                (string) $env['cache_driver']
-            ), $help);
-        }
         if (!empty($env['debug'])) {
             $issues[] = self::issue('debug_on', 'warning', __('Debug mode is on. On a live site it shows internal details and slows pages.'), $help);
-        }
-        if (!empty($env['config_writable'])) {
-            $issues[] = self::issue('config_writable', 'warning', __('config.php can be written by the web server. It holds your database password; make it read-only.'), $help);
         }
         $disk = $env['free_disk'] ?? null;
         if (is_numeric($disk) && $disk > 0 && $disk < self::DISK_FLOOR) {
@@ -364,6 +389,173 @@ final class SystemChecks
         }
 
         return array();
+    }
+
+    /**
+     * The queue's issues: jobs that gave up, a queue that is not moving, work with no
+     * handler, and cron.
+     *
+     * @param array<string,mixed> $env
+     * @param bool                $here true on the Jobs tab, where the lists are on the page
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public static function jobsIssues(array $env, bool $here): array
+    {
+        $jobs   = (array) ($env['jobs'] ?? array());
+        $issues = array();
+
+        $failed = (int) ($jobs['error'] ?? 0);
+        if ($failed > 0) {
+            $issues[] = self::issue('jobs_failed', 'warning', sprintf(
+                _n('%d background job stopped after failing again and again.', '%d background jobs stopped after failing again and again.', $failed),
+                $failed
+            ), array('label' => __('See why'), 'url' => $here ? '#jobs-failed' : self::url($env, 'jobs', 'jobs-failed')));
+        }
+
+        $cron = self::cronIssues($env);
+        // With cron stopped, its line already says why nothing moves.
+        if ($cron === array()) {
+            $run     = $here
+                ? array('label' => __('Run them now'), 'type' => 'submit', 'attrs' => array('form' => 'jobs-run-form'))
+                : array('label' => __('See the queue'), 'url' => self::url($env, 'jobs', 'jobs-queue'));
+            $overdue = strtotime((string) ($jobs['overdue'] ?? ''));
+            if ((int) ($jobs['stuck'] ?? 0) > 0) {
+                $issues[] = self::issue('jobs_stuck', 'warning', __('A job has been running for more than 15 minutes. The run that took it may have stopped partway.'), $run);
+            } elseif ($overdue !== false && self::now($env) - $overdue > self::JOBS_OVERDUE) {
+                $issues[] = self::issue('jobs_stuck', 'warning', sprintf(
+                    __('Jobs have been waiting for %s although cron runs.'),
+                    osc_admin_duration(self::now($env) - $overdue)
+                ), $run);
+            }
+        }
+
+        $orphans = array_values(array_map('strval', (array) ($jobs['orphans'] ?? array())));
+        if ($orphans !== array()) {
+            $issues[] = self::issue('jobs_orphans', 'warning', sprintf(
+                __('Queued work has nothing to run it: %s. A plugin was probably turned off with jobs still waiting.'),
+                implode(', ', $orphans)
+            ));
+        }
+
+        return array_merge($issues, $cron);
+    }
+
+    /**
+     * The security issues: visitor addresses behind a proxy, an open backups folder,
+     * sign-in protection, admins without two-step sign-in, blocked sign-ins and config.php.
+     *
+     * @param array<string,mixed> $env
+     * @param bool                $here true on the Security tab
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public static function securityIssues(array $env, bool $here): array
+    {
+        $admin    = (string) ($env['admin_url'] ?? '');
+        $throttle = (array) ($env['throttle'] ?? array());
+        $issues   = array();
+
+        if (!empty($env['proxy'])) {
+            $issues[] = self::issue('proxy_mismatch', 'danger', sprintf(
+                __('Visitor addresses look wrong: the site is behind a proxy (%1$s), so every visitor seems to come from %2$s. Sign-in protection and IP bans cannot tell visitors apart.'),
+                (string) ($env['proxy']['header'] ?? ''),
+                (string) ($env['proxy']['proxy'] ?? '')
+            ), array('label' => __('Set up real-IP forwarding'), 'url' => self::DOCS_PROXY));
+        }
+        if (($env['backup_probe'] ?? null) === true) {
+            $issues[] = self::issue('backups_open', 'danger', __('Your backups folder is open to the web. Anyone who guesses a file name could download a backup.'), array('label' => __('How to close it'), 'url' => self::DOCS_BACKUPS));
+        }
+        if (array_key_exists('enabled', $throttle) && !$throttle['enabled']) {
+            $issues[] = self::issue('signin_protection_off', 'warning', __('Sign-in protection is off, so nothing slows down password guessing.'), array('label' => __('Settings'), 'url' => self::spamSettingsUrl($env)));
+        }
+
+        $without = array_values(array_filter((array) ($env['admins'] ?? array()), static function ($a) {
+            return empty($a['two_factor']);
+        }));
+        if ($without !== array()) {
+            $mine = in_array((int) ($env['me'] ?? 0), array_map('intval', array_column($without, 'id')), true);
+            $issues[] = self::issue('admins_no_2fa', 'warning', sprintf(
+                _n('%1$d admin signs in with a password only: %2$s.', '%1$d admins sign in with a password only: %2$s.', count($without)),
+                count($without),
+                implode(', ', array_map(static function ($a) {
+                    return (string) ($a['username'] ?? '');
+                }, $without))
+            ), $mine
+                ? array('label' => __('Turn on yours'), 'url' => $admin . '?page=admins&action=edit')
+                : array('label' => __('Admins'), 'url' => $admin . '?page=admins'));
+        }
+
+        $blocked = (int) ($throttle['blocked'] ?? 0);
+        if ($blocked > 0) {
+            $issues[] = self::issue('signin_blocked', 'info', sprintf(
+                _n('%d address or account is blocked from signing in right now.', '%d addresses or accounts are blocked from signing in right now.', $blocked),
+                $blocked
+            ), array('label' => __('See the list'), 'url' => $here ? '#signin-activity' : self::url($env, 'security', 'signin-activity')));
+        }
+        if (!empty($env['config_writable'])) {
+            $issues[] = self::issue('config_writable', 'warning', __('config.php can be written by the web server. It holds your database password; make it read-only.'));
+        }
+
+        return $issues;
+    }
+
+    /**
+     * An object cache that config.php asks for but that is not installed or does not answer.
+     *
+     * @param array<string,mixed> $env
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public static function cacheIssues(array $env): array
+    {
+        $driver = (string) ($env['cache_driver'] ?? 'default');
+        if ($driver === 'default') {
+            return array();
+        }
+        $help = array('label' => __('How to change it'), 'url' => self::url($env, 'server', 'server-help'));
+        if (empty($env['cache_supported'])) {
+            return array(self::issue('cache_unsupported', 'warning', sprintf(
+                __('config.php asks for the %s object cache, but that driver is not installed, so nothing is cached.'),
+                $driver
+            ), $help));
+        }
+        if (($env['cache_working'] ?? null) === false) {
+            return array(self::issue('cache_unreachable', 'warning', sprintf(
+                __('The %s object cache is installed but did not answer, so nothing is cached. Check that its server is running.'),
+                $driver
+            )));
+        }
+
+        return array();
+    }
+
+    /**
+     * One Overview line for a tab: its worst amber or red issue, pointing at the tab.
+     *
+     * @param array<string,mixed>            $env
+     * @param string                         $tab
+     * @param array<int,array<string,mixed>> $issues that tab's issues
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public static function summary(array $env, string $tab, array $issues): array
+    {
+        $issues = array_values(array_filter(self::rank($issues), static function ($i) {
+            return in_array($i['tone'] ?? '', array('danger', 'warning'), true);
+        }));
+        if ($issues === array()) {
+            return array();
+        }
+        $text = (string) $issues[0]['text'];
+        if (count($issues) > 1) {
+            $text .= ' ' . sprintf(_n('And %d more.', 'And %d more.', count($issues) - 1), count($issues) - 1);
+        }
+
+        return array(self::issue($tab . '_summary', (string) $issues[0]['tone'], $text, array(
+            'label' => sprintf(__('Open %s'), self::labels()[$tab] ?? $tab),
+            'url'   => self::url($env, $tab),
+        )));
     }
 
     /**
@@ -499,7 +691,6 @@ final class SystemChecks
             array('label' => __('Remote downloads (allow_url_fopen)'), 'value' => !empty($env['allow_url_fopen']) ? $on : $off),
         );
 
-        $probe = $env['backup_probe'] ?? null;
         $files = array(
             array(
                 'label' => __('Uploads folder'),
@@ -507,24 +698,11 @@ final class SystemChecks
             ),
             array('label' => __('Free space'), 'value' => self::size(is_numeric($env['free_disk'] ?? null) ? (int) $env['free_disk'] : 0)),
             array('label' => __('Photo storage'), 'value' => self::storageWords($env)),
-            array('label' => __('Backups folder'), 'value' => BackupStore::FOLDER . ' · ' . ($probe === true
-                ? __('reachable from the web')
-                : ($probe === false ? __('not reachable from the web') : __('not checked yet')))),
-            array('label' => __('config.php'), 'value' => !empty($env['config_writable']) ? __('writable') : __('read-only')),
         );
 
-        $driver      = (string) ($env['cache_driver'] ?? 'default');
         $maintenance = (string) ($env['maintenance'] ?? '');
-        $proxy       = $env['proxy'] ?? null;
-        $tasks       = array(
-            array('label' => __('Cron'), 'value' => self::cronWords($env)),
-            array('label' => __('Object cache'), 'value' => $driver === 'default'
-                ? __('none (worked out on every request)')
-                : ($env['cache_supported'] ?? false ? $driver : sprintf(__('%s (not installed)'), $driver))),
+        $modes       = array(
             array('label' => __('Debug mode'), 'value' => !empty($env['debug']) ? $on : $off),
-            array('label' => __('Visitor addresses'), 'value' => !empty($proxy)
-                ? sprintf(__('all seen as %s (behind a proxy)'), (string) ($proxy['proxy'] ?? ''))
-                : __('as reported')),
             array('label' => __('Maintenance mode'), 'value' => $maintenance === ''
                 ? $off
                 : ($maintenance === 'locked' ? __('on, site closed') : __('on, banner only'))),
@@ -547,9 +725,200 @@ final class SystemChecks
         return array(
             array('title' => __('PHP and web server'), 'rows' => $php),
             array('title' => __('Files and storage'), 'rows' => $files),
-            array('title' => __('Scheduled tasks and cache'), 'rows' => $tasks),
+            array('title' => __('Debug and maintenance'), 'rows' => $modes),
             array('title' => __('Paths'), 'rows' => $paths),
         );
+    }
+
+    /**
+     * @param array<string,mixed> $env
+     *
+     * @return array<int,array{title:string,rows:array}>
+     */
+    private static function jobsFacts(array $env): array
+    {
+        $jobs    = (array) ($env['jobs'] ?? array());
+        $pending = (int) ($jobs['pending'] ?? 0);
+        $oldest  = strtotime((string) ($jobs['oldest'] ?? ''));
+        $waiting = number_format($pending);
+        if ($pending > 0 && $oldest !== false) {
+            $waiting .= ' · ' . sprintf(__('the oldest for %s'), osc_admin_duration(max(0, self::now($env) - $oldest)));
+        }
+
+        return array(array('title' => '', 'rows' => array(
+            array('label' => __('Waiting'), 'value' => $waiting),
+            array('label' => __('Running'), 'value' => number_format((int) ($jobs['running'] ?? 0))),
+            array('label' => __('Gave up'), 'value' => number_format((int) ($jobs['error'] ?? 0))),
+            array('label' => __('Cron'), 'value' => self::cronWords($env)),
+        )));
+    }
+
+    /**
+     * @param array<string,mixed> $env
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private static function securityFacts(array $env): array
+    {
+        $throttle = (array) ($env['throttle'] ?? array());
+        $on       = !empty($throttle['enabled']);
+        $blocked  = (int) ($throttle['blocked'] ?? 0);
+        $signin   = array(array('label' => __('Status'), 'value' => $on ? __('on') : __('off')));
+        if ($on) {
+            $signin[] = array(
+                'label' => __('Limits'),
+                'value' => sprintf(__('%1$d failures per address in %2$d minutes'), (int) ($throttle['max_ip'] ?? 0), (int) ($throttle['window'] ?? 0)),
+                'note'  => !empty($throttle['captcha'])
+                    ? __('A captcha is set up, so there is no limit per account.')
+                    : sprintf(__('And %d per account.'), (int) ($throttle['max_account'] ?? 0)),
+            );
+        }
+        $signin[] = array('label' => __('Blocked right now'), 'value' => $blocked === 0
+            ? __('nobody')
+            : sprintf(_n('%d address or account', '%d addresses or accounts', $blocked), $blocked));
+
+        $admins = array();
+        foreach ((array) ($env['admins'] ?? array()) as $a) {
+            $admins[] = array(
+                'label' => (string) ($a['username'] ?? ''),
+                'value' => !empty($a['two_factor']) ? __('two-step sign-in') : __('password only'),
+                'note'  => trim((string) ($a['name'] ?? '') . (!empty($a['moderator']) ? ' · ' . __('moderator') : '')),
+            );
+        }
+
+        $proxy = $env['proxy'] ?? null;
+        $probe = $env['backup_probe'] ?? null;
+        $site  = array(
+            array('label' => __('Visitor addresses'), 'value' => !empty($proxy)
+                ? sprintf(__('all seen as %s (behind a proxy)'), (string) ($proxy['proxy'] ?? ''))
+                : __('as reported')),
+            array('label' => __('Backups folder'), 'value' => BackupStore::FOLDER . ' · ' . ($probe === true
+                ? __('reachable from the web')
+                : ($probe === false ? __('not reachable from the web') : __('not checked yet')))),
+            array('label' => __('Restore from the admin'), 'value' => !empty($env['web_restore_off'])
+                ? __('off, command line only')
+                : __('allowed, after a password check')),
+            array('label' => __('Plugin and theme installs'), 'value' => !empty($env['package_installs_off'])
+                ? __('off')
+                : __('allowed from the admin')),
+            array('label' => __('config.php'), 'value' => !empty($env['config_writable']) ? __('writable') : __('read-only')),
+        );
+
+        return array(
+            array('title' => __('Sign-in protection'), 'rows' => $signin, 'link' => array(
+                'label' => __('Change it in Settings > Spam and bots'),
+                'url'   => self::spamSettingsUrl($env),
+            )),
+            array('title' => __('Admins'), 'rows' => $admins),
+            array('title' => __('Site'), 'rows' => $site),
+        );
+    }
+
+    /**
+     * @param array<string,mixed> $env
+     *
+     * @return array<int,array{title:string,rows:array}>
+     */
+    private static function cacheFacts(array $env): array
+    {
+        $driver  = (string) ($env['cache_driver'] ?? 'default');
+        $working = $env['cache_working'] ?? null;
+        if ($driver === 'default') {
+            $state = __('yes, for one request at a time');
+        } elseif (empty($env['cache_supported'])) {
+            $state = __('no, the driver is not installed');
+        } else {
+            $state = $working === false ? __('no, it did not answer') : __('yes');
+        }
+        $rows = array(
+            array('label' => __('Driver'), 'value' => self::cacheName($driver)),
+            array('label' => __('Keeps data between requests'), 'value' => $driver === 'default' ? __('no') : __('yes')),
+            array('label' => __('Working'), 'value' => $state),
+        );
+        $rows = array_merge($rows, self::cacheStatRows((array) ($env['cache_stats'] ?? array())));
+
+        $drivers   = array();
+        $available = (array) ($env['cache_drivers'] ?? array());
+        foreach (self::CACHE_DRIVERS as $name) {
+            $drivers[] = array(
+                'label' => self::cacheName($name),
+                'value' => (!empty($available[$name]) ? __('installed') : __('not installed'))
+                    . ($name === $driver ? ' · ' . __('in use') : ''),
+            );
+        }
+
+        return array(
+            array('title' => '', 'rows' => $rows),
+            array('title' => __('Drivers on this server'), 'rows' => $drivers),
+        );
+    }
+
+    /**
+     * The readings a cache driver reports, as fact rows; a reading it does not give is left out.
+     *
+     * @param array<string,mixed> $stats osc_cache_stats()
+     *
+     * @return array<int,array<string,string>>
+     */
+    public static function cacheStatRows(array $stats): array
+    {
+        $number = static function ($v) {
+            return $v === null ? null : number_format((int) $v);
+        };
+        $hits   = $stats['hits'] ?? null;
+        $misses = $stats['misses'] ?? null;
+        $total  = (int) $hits + (int) $misses;
+        $memory = isset($stats['memory_used']) ? DatabaseTools::bytes((int) $stats['memory_used']) : null;
+        if ($memory !== null && isset($stats['memory_total'])) {
+            $memory = sprintf(__('%1$s of %2$s'), $memory, DatabaseTools::bytes((int) $stats['memory_total']));
+        }
+        $cells = array(
+            __('Hit rate')  => $hits !== null && $misses !== null && $total > 0
+                ? sprintf(__('%1$s%% (%2$s hits, %3$s misses)'), round($hits / $total * 100, 1), number_format((int) $hits), number_format((int) $misses))
+                : null,
+            __('Entries')   => $number($stats['entries'] ?? null),
+            __('Memory')    => $memory,
+            __('Evictions') => $number($stats['evictions'] ?? null),
+            __('Uptime')    => isset($stats['uptime']) ? osc_admin_duration((int) $stats['uptime']) : null,
+            __('Server')    => isset($stats['server']) && $stats['server'] !== '' ? (string) $stats['server'] : null,
+        );
+        $rows = array();
+        foreach ($cells as $label => $value) {
+            if ($value !== null) {
+                $rows[] = array('label' => $label, 'value' => $value);
+            }
+        }
+
+        return $rows;
+    }
+
+    /**
+     * A cache driver's name as the owner reads it.
+     *
+     * @param string $driver
+     *
+     * @return string
+     */
+    public static function cacheName(string $driver): string
+    {
+        $names = array(
+            'default'   => __('In-request only (default)'),
+            'apcu'      => 'APCu',
+            'memcached' => 'Memcached',
+            'memcache'  => 'Memcache',
+        );
+
+        return $names[$driver] ?? $driver;
+    }
+
+    /**
+     * @param array<string,mixed> $env
+     *
+     * @return string
+     */
+    private static function spamSettingsUrl(array $env): string
+    {
+        return (string) ($env['admin_url'] ?? '') . '?page=settings&action=spamNbots#login-throttle-settings';
     }
 
     /**
