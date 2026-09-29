@@ -390,7 +390,7 @@ if (!function_exists('osc_admin_definition')) {
      *
      * Each row is an array with 'label' and 'value'. A row may set 'html' => true to pass
      * markup through (for a status pill or a link), which is why the default escapes:
-     * the unsafe path has to be asked for by name.
+     * the unsafe path has to be asked for by name. 'note' adds a muted line under the value.
      *
      * @param array<int,array<string,mixed>> $rows
      *
@@ -408,11 +408,88 @@ if (!function_exists('osc_admin_definition')) {
                             echo $row['value'];
                         } else {
                             echo osc_esc_html((string) ($row['value'] ?? ''));
-                        } ?>
+                        }
+                        if (!empty($row['note'])) { ?>
+                            <p class="osc-deflist-note"><?php echo osc_esc_html($row['note']); ?></p>
+                        <?php } ?>
                     </dd>
                 </div>
             <?php } ?>
         </dl>
+        <?php
+    }
+}
+
+if (!function_exists('osc_admin_verdict')) {
+    /**
+     * One box that says whether anything needs doing: one line per issue, each with its
+     * own button, the worst tone for the box, red lines first. With no issues it says
+     * $healthyText, or nothing when that is empty.
+     *
+     * Each issue: 'tone' (danger|warning|info), 'text', and an optional 'action' spec
+     * (see osc_admin_action_button()).
+     *
+     * @param array<int,array<string,mixed>> $issues
+     * @param string                         $healthyText
+     *
+     * @return void
+     */
+    function osc_admin_verdict(array $issues, $healthyText = '')
+    {
+        if ($issues === array()) {
+            if ($healthyText !== '') {
+                echo '<div class="callout-success callout-block osc-verdict">' . osc_esc_html($healthyText) . '</div>';
+            }
+
+            return;
+        }
+        $rank = array('danger' => 0, 'warning' => 1, 'info' => 2);
+        usort($issues, static function ($a, $b) use ($rank) {
+            return ($rank[$a['tone'] ?? 'info'] ?? 2) <=> ($rank[$b['tone'] ?? 'info'] ?? 2);
+        });
+        $tone = $issues[0]['tone'] ?? 'info';
+        $tone = isset($rank[$tone]) ? $tone : 'info'; ?>
+        <div class="callout-<?php echo $tone; ?> callout-block osc-verdict">
+            <ul class="osc-verdict-list">
+                <?php foreach ($issues as $issue) { ?>
+                    <li class="osc-verdict-line">
+                        <span class="osc-verdict-text"><?php echo osc_esc_html($issue['text'] ?? ''); ?></span>
+                        <?php if (!empty($issue['action'])) {
+                            osc_admin_action_button($issue['action']);
+                        } ?>
+                    </li>
+                <?php } ?>
+            </ul>
+        </div>
+        <?php
+    }
+}
+
+if (!function_exists('osc_admin_progress')) {
+    /**
+     * Work running in the background: a bar, a line saying where it is (read out by
+     * screen readers as it changes), and an optional cancel button.
+     *
+     * Keys: id, value (0-100, or null when the end is not known), label (names the bar),
+     * status (the line), cancel (an action spec).
+     *
+     * @param array<string,mixed> $opts
+     *
+     * @return void
+     */
+    function osc_admin_progress(array $opts)
+    {
+        $value = $opts['value'] ?? null; ?>
+        <div class="osc-progress"<?php echo !empty($opts['id']) ? ' id="' . osc_esc_html($opts['id']) . '"' : ''; ?>>
+            <div class="osc-progress-main">
+                <progress max="100"<?php echo $value === null ? '' : ' value="' . (int) $value . '"'; ?>
+                          aria-label="<?php echo osc_esc_html($opts['label'] ?? ''); ?>"></progress>
+                <p class="osc-progress-status" aria-live="polite"><?php echo osc_esc_html($opts['status'] ?? ''); ?></p>
+            </div>
+            <?php if (!empty($opts['cancel'])) { ?>
+                <div class="osc-progress-cancel"><?php osc_admin_action_button($opts['cancel']); ?></div>
+            <?php } ?>
+        </div>
         <?php
     }
 }

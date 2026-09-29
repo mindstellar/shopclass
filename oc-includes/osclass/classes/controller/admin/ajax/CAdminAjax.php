@@ -1071,6 +1071,15 @@ class CAdminAjax extends AdminSecBaseModel
                 }
                 AjaxResponse::json($array);
                 break;
+            case 'backup_status':
+                osc_csrf_check();
+                // The poll may run a backup step; it must not hold the session meanwhile.
+                if (session_status() === PHP_SESSION_ACTIVE) {
+                    session_write_close();
+                }
+                header('Cache-Control: no-store');
+                AjaxResponse::json(\mindstellar\backup\BackupManager::poll());
+                break;
             case 'country_slug':
                 $exists = Country::newInstance()->findBySlug(Params::getParam('slug'));
                 if (isset($exists['s_slug'])) {

@@ -130,8 +130,8 @@ serves it cannot send your install to another site.
 ## Importing your own data
 
 You may have places of your own: a country the catalog covers badly, or your own
-service areas. Import them as SQL through **Admin → Tools → Database**, under
-**Restore from a backup**, or with any MySQL program.
+service areas. Import them as SQL through **Admin → Tools → Backup and restore**,
+under **Restore from a file**, or with any MySQL program.
 
 Two rules:
 

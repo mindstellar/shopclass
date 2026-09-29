@@ -50,6 +50,8 @@ you find.
 
 ### New
 
+- **Tools → Backup and restore** makes a database, files or everything backup as one zip, downloaded or saved on the server, in the background.
+- Restoring a backup runs in the background behind the maintenance page, saves a safety copy first, and puts it back if loading fails. The confirm can put back only the database or only the files.
 - **Tools > Database** lists where the database differs from what Shopclass expects, and **Repair** fixes it. `oc-cli.php db:repair` does the same.
 - Tools > Cleanup can remove the profile pictures of deleted accounts.
 - **Media → Settings → Photo format** replaces Force JPEG: keep the original format (default), save as JPEG, or save as WebP (about a third smaller). A WebP upload now stays WebP.
@@ -250,6 +252,7 @@ you find.
 
 ### Security
 
+- Server backups live in `oc-content/downloads/backups/`, closed to the web and named so no one can guess them. The page warns if the folder is open to the web. The browser can no longer choose the folder.
 - Backups can no longer be saved inside the site folder, where anyone could download them. They go to a private folder, get names no one can guess, and only the owner can read them.
 - Tools > System info warns when visitor addresses look wrong because the site sits behind a proxy that does not pass on the real IP.
 - Deleting an account now also deletes the messages it sent through custom forms.

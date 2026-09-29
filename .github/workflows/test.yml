@@ -595,3 +595,16 @@ jobs:
       # A script is split statement by statement from a stream, quoted values intact.
       - name: SQL stream
         run: php tests/sql-stream.php
+      # A backup zip survives a stop between runs, never follows a link out of the site,
+      # and a restore writes only under oc-content.
+      - name: Backup archive
+        run: php tests/backup-archive.php
+      # A newer backup, or an old dump with another table prefix, is refused before anything changes.
+      - name: Backup manifest
+        run: php tests/backup-manifest.php
+      # Backups run in batches and can be cancelled; a failed restore puts the safety copy back.
+      - name: Backup jobs
+        run: php tests/backup-jobs.php
+      # Old backup URLs route, the demo refuses first, and downloads take listed names only.
+      - name: Admin backup page
+        run: php tests/admin-backup-page.php

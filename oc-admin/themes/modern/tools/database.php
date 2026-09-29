@@ -24,7 +24,6 @@ $server     = (string) $view->_get('db_server');
 $hasPending = $pending !== array();
 $repairable = DatabaseTools::repairable($findings);
 $canRepair  = DatabaseTools::repairAllowed($findings, $pending);
-$uploadMax  = DatabaseTools::uploadLimit();
 $self       = osc_admin_base_url(true) . '?page=tools&action=database';
 
 $labels = array(
@@ -133,8 +132,17 @@ osc_admin_page(array(
     'section' => __('Tools'),
     'title'   => __('Database'),
     'help'    => __('Everything about your database in one place: its state, waiting updates, '
-                    . 'a check against what Shopclass expects, backups and restores.'),
+                    . 'and a check against what Shopclass expects. Backups are under Tools > Backup and restore.'),
 ));
+
+// Backup and restore moved to their own page; old links to those parts follow them. Remove in 7.0.
+osc_add_hook('admin_footer', static function () { ?>
+    <script>
+        if (location.hash === '#backup' || location.hash === '#restore') {
+            location.replace(<?php echo json_encode(osc_admin_base_url(true) . '?page=tools&action=backup'); ?> + location.hash);
+        }
+    </script>
+<?php });
 
 osc_current_admin_theme_path('parts/header.php'); ?>
     <?php osc_admin_page_head(__('Database')); ?>
@@ -175,8 +183,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         <div id="db-update">
             <?php osc_admin_form_section(__('Database update'), array(
                 'spaced' => true,
-                'intro'  => __('New Shopclass files are in place, but the database has not caught up yet. '
-                               . 'Run these updates to finish. Take a backup first.'),
+                'intro_html' => osc_esc_html(__('New Shopclass files are in place, but the database has not caught up yet. Run these updates to finish.'))
+                . ' <a href="' . osc_esc_html(osc_admin_base_url(true) . '?page=tools&action=backup') . '">'
+                . osc_esc_html(__('Take a backup first.')) . '</a>',
             )); ?>
             <div class="table-responsive">
                 <table class="table">
@@ -306,84 +315,6 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             <?php } ?>
         <?php } ?>
     </div>
-
-    <div id="backup">
-        <?php osc_admin_form_section(__('Backup'), array(
-            'spaced'     => true,
-            'intro_html' => osc_esc_html(__('Save a copy of the database: listings, users, categories and settings. Take one before an update or a repair.'))
-                . ' ' . sprintf(
-                    __('Photos, plugins and themes are files, not database: back them up on %s.'),
-                    '<a href="' . osc_esc_html(osc_admin_base_url(true) . '?page=tools&action=upgrade#backup-files') . '">'
-                    . osc_esc_html(__('Upgrade Shopclass')) . '</a>'
-                ),
-        )); ?>
-        <?php osc_admin_form_open(array('page' => 'tools', 'id' => 'backup_form', 'name' => 'backup_form')); ?>
-            <?php osc_admin_select(array(
-                'name'     => 'action',
-                'label'    => __('Backup'),
-                'width'    => 'text',
-                'selected' => 'backup-sql_file',
-                'options'  => array(
-                    'backup-sql_file' => __('Download to this computer'),
-                    'backup-sql'      => __('Save in a folder on the server'),
-                ),
-            )); ?>
-            <?php osc_admin_text(array(
-                'name'          => 'bck_dir',
-                'label'         => __('Server folder'),
-                'value'         => DatabaseTools::defaultBackupDir(osc_base_path()),
-                'width'         => 'key',
-                'depends'       => 'action',
-                'depends_value' => array('backup-sql'),
-                'help'          => __('It must be outside the site folder, so the public cannot download it.'),
-            )); ?>
-        <?php osc_admin_form_close(array(
-            array('label' => __('Back up the database'), 'icon' => 'bi-download', 'type' => 'submit', 'variant' => 'secondary'),
-        )); ?>
-    </div>
-
-    <div id="restore">
-        <?php osc_admin_form_section(__('Restore from a backup'), array(
-            'spaced' => true,
-            'intro'  => __('Run an .sql backup file against this database, such as one saved above.'),
-        )); ?>
-        <div class="callout-danger callout-block mb-3">
-            <?php _e('This overwrites data. The file can change or delete anything in your database, and it cannot be undone. Take a backup first.'); ?>
-        </div>
-        <?php osc_admin_form_open(array(
-            'page'   => 'tools',
-            'action' => 'import_post',
-            'id'     => 'db-restore-form',
-            'upload' => true,
-        )); ?>
-            <?php osc_admin_field(array(
-                'type'  => 'file',
-                'id'    => 'sql',
-                'name'  => 'sql',
-                'label' => __('Backup file (.sql)'),
-                'attrs' => array('accept' => '.sql'),
-                'help'  => $uploadMax < PHP_INT_MAX
-                    ? sprintf(__('This server accepts files up to %s. Restore a larger file from the command line.'), DatabaseTools::bytes($uploadMax))
-                    : '',
-            )); ?>
-        <?php osc_admin_form_close(array(
-            array(
-                'label'   => __('Restore from this file'),
-                'icon'    => 'bi-upload',
-                'type'    => 'submit',
-                'variant' => 'danger',
-                'attrs'   => array('data-osc-dialog-open' => '#db-restore-dialog'),
-            ),
-        )); ?>
-    </div>
-
-    <?php osc_admin_confirm_dialog(array(
-        'id'           => 'db-restore-dialog',
-        'title'        => __('Restore from this file?'),
-        'text'         => __('Every statement in the file runs against your live database. It can change or delete what is there now, and it cannot be undone.'),
-        'confirm'      => __('Restore'),
-        'confirm_form' => 'db-restore-form',
-    )); ?>
 
     <?php if ($hasPending) { ?>
         <?php osc_admin_confirm_dialog(array(

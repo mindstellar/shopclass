@@ -95,12 +95,12 @@ pin(
 );
 pin(
     'table_structure signature is unchanged',
-    'public table_structure($path, $table)',
+    'public table_structure($path, $table, $prefixToken = false)',
     harness_method_signature('Dump', 'table_structure')
 );
 pin(
     'table_data signature is unchanged',
-    'public table_data($path, $table)',
+    'public table_data($path, $table, $prefixToken = false)',
     harness_method_signature('Dump', 'table_data')
 );
 pin(

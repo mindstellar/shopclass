@@ -126,7 +126,7 @@ class Zip
      *
      * @return string|false absolute target path, or false if the entry is unsafe
      */
-    private function resolveEntryTarget(string $rawName, string $destinationRealPath)
+    public static function resolveEntryTarget(string $rawName, string $destinationRealPath)
     {
         $name = str_replace('\\', '/', $rawName);
 

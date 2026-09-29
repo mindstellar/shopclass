@@ -183,6 +183,15 @@ function customHead()
 
 osc_add_hook('admin_footer', 'customHead', 10);
 
+// The files backup moved to Tools > Backup and restore; old links to it follow. Remove in 7.0.
+osc_add_hook('admin_footer', static function () { ?>
+    <script>
+        if (location.hash === '#backup-files') {
+            location.replace(<?php echo json_encode(osc_admin_base_url(true) . '?page=tools&action=backup'); ?>);
+        }
+    </script>
+<?php });
+
 /**
  * Filter callback for `render-wrapper`: the CSS class the page wrapper renders with.
  *
@@ -212,11 +221,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         <p class="form-intro">
                             <?php
                             printf(
-                                __('Your Shopclass installation can be auto-upgraded.
-                                        Please, back up your database and the folder oc-content before attempting to
-                                        upgrade your Shopclass installation.
-                                        You can also upgrade Shopclass manually, more information in the %s'),
-                                '<a href="https://docs.mindstellar.com/">Documentation</a>'
+                                osc_esc_html(__('Your Shopclass installation can be auto-upgraded. %1$s: the database and oc-content. You can also upgrade Shopclass manually, more information in the %2$s.')),
+                                '<a href="' . osc_esc_html(osc_admin_base_url(true) . '?page=tools&action=backup') . '">' . osc_esc_html(__('Back up first')) . '</a>',
+                                '<a href="https://docs.mindstellar.com/">' . osc_esc_html(__('Documentation')) . '</a>'
                             );
                             ?>
                         </p>
@@ -231,27 +238,5 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         </form>
     </div>
     <!-- /settings form -->
-</div>
-<div id="backup-files">
-    <?php osc_admin_form_section(__('Back up site files'), array(
-        'spaced'     => true,
-        'intro_html' => osc_esc_html(__('An upgrade replaces the core files. Save a zip of the whole site folder first: photos, plugins, themes and the core.'))
-            . ' ' . sprintf(
-                __('The database is backed up on %s.'),
-                '<a href="' . osc_esc_html(osc_admin_base_url(true) . '?page=tools&action=database#backup') . '">'
-                . osc_esc_html(__('Tools » Database')) . '</a>'
-            ),
-    )); ?>
-    <?php osc_admin_form_open(array('page' => 'tools', 'action' => 'backup-zip')); ?>
-        <?php osc_admin_text(array(
-            'name'  => 'bck_dir',
-            'label' => __('Server folder'),
-            'value' => mindstellar\admin\DatabaseTools::defaultBackupDir(osc_base_path()),
-            'width' => 'key',
-            'help'  => __('The zip is saved here. It must be outside the site folder, so the public cannot download it. A large site can run out of time: then use the command line.'),
-        )); ?>
-    <?php osc_admin_form_close(array(
-        array('label' => __('Back up site files'), 'icon' => 'bi-file-zip', 'type' => 'submit', 'variant' => 'secondary'),
-    )); ?>
 </div>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

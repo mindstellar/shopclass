@@ -62,7 +62,23 @@ should not be readable:
 - `debug.log`, `queries.log`, `explain_queries.log` — see
   [debugging](/docs/developers/debug-php-errors/). Delete them when you are done
   and deny `*.log` in your server config.
-- Database dumps. Never leave a backup in the web root.
+- Database dumps. Never leave a backup in the web root, except in the backups
+  folder below.
+
+### The backups folder
+
+**Tools → Backup and restore** saves backups in `oc-content/downloads/backups/`.
+On Apache the `.htaccess` it writes there closes it. nginx ignores `.htaccess`, so
+add this to your server block and reload nginx:
+
+```nginx
+location ^~ /oc-content/downloads/ {
+    deny all;
+}
+```
+
+The Backup and restore page checks once a day and warns when the folder answers
+on the web.
 
 Turn `OSC_DEBUG` **off** in production. Displayed errors leak file paths,
 database structure and sometimes credentials to anyone who can trigger one.

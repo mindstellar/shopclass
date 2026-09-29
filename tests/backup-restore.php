@@ -12,6 +12,7 @@
  * A backup is written and restored in streams: a table several times larger than the
  * memory headroom dumps in INSERTs of about 1 MB, restores, and comes back with the same
  * rows. Also: an old one-INSERT backup still restores, foreign keys do not block a restore,
+ * a dump with the prefix token restores onto another prefix, a restore replaces tables,
  * Restore and Repair wait for a running upgrade, and a failed statement is logged short.
  *
  * Needs a database (the scratch container by default). Usage:  php tests/backup-restore.php
@@ -149,6 +150,51 @@ pin('...with its rows', 2, $count);
 pin('...and its foreign key', 1, (int) $admin->query("SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS"
     . " WHERE CONSTRAINT_SCHEMA = DATABASE() AND CONSTRAINT_NAME = 'fk_backup_child'")->fetch_row()[0]);
 pin('foreign key checks are on again', '1', (string) Connection::instance()->scalar('SELECT @@FOREIGN_KEY_CHECKS'));
+
+harness_section('Prefix token');
+
+$tok = tempnam(sys_get_temp_dir(), 'osc_backup_tok_');
+file_put_contents($tok, '');
+Dump::newInstance()->table_structure($tok, $table, true);
+Dump::newInstance()->table_data($tok, $table, true);
+$head = (string) file_get_contents($tok, false, null, 0, 4096);
+check('a backup dump names the table by the prefix token', strpos($head, 'CREATE TABLE IF NOT EXISTS `/*TABLE_PREFIX*/t_backup_probe`') !== false
+    && strpos($head, "insert into `/*TABLE_PREFIX*/t_backup_probe` values\n") !== false, $head);
+
+// A site with another prefix restores it, in its own process: the prefix is a constant.
+$child = tempnam(sys_get_temp_dir(), 'osc_backup_child_') . '.php';
+file_put_contents($child, '<?php
+define("DB_TABLE_PREFIX", "sc_");
+require ' . var_export(__DIR__ . '/lib/scratchdb.php', true) . ';
+scratchdb_bootstrap($argv[1]);
+$handle = fopen($argv[2], "rb");
+echo \mindstellar\admin\DatabaseTools::restore(\mindstellar\database\Connection::instance(), $handle, null, true);
+');
+$ran = trim((string) shell_exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($child) . ' ' . escapeshellarg($scratch) . ' ' . escapeshellarg($tok) . ' 2>&1'));
+unlink($child);
+check('it restores onto another prefix', ctype_digit($ran) && (int) $ran > 1, $ran);
+try {
+    $moved = (int) $admin->query('SELECT COUNT(*) FROM `sc_t_backup_probe`')->fetch_row()[0];
+    $same  = (string) $admin->query('CHECKSUM TABLE `sc_t_backup_probe`')->fetch_assoc()['Checksum'] === $before;
+} catch (Throwable $e) {
+    $moved = -1;
+    $same  = false;
+}
+pin('...as sc_t_backup_probe with every row', $rows, $moved);
+pin('...and the same contents', true, $same);
+
+$handle = fopen($tok, 'rb');
+try {
+    DatabaseTools::restore(Connection::instance(), $handle, null, true);
+    $replaced = true;
+} catch (\mindstellar\database\DbException $e) {
+    $replaced = false;
+}
+fclose($handle);
+pin('restoring over a table that has its rows replaces it', true, $replaced);
+pin('...without doubling a row', $rows, (int) $admin->query("SELECT COUNT(*) FROM `$table`")->fetch_row()[0]);
+pin('only a table with this site\'s prefix is dropped', null, DatabaseTools::createdTable('CREATE TABLE `wp_users` (id int)'));
+unlink($tok);
 
 harness_section('Upgrade lock');
 

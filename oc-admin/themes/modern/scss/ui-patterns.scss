@@ -155,6 +155,101 @@
   }
 }
 
+// A muted line under a value: the context a number needs.
+.osc-deflist-note {
+  color: var(--osc-ink-muted);
+  font-size: $font-size-label;
+  margin: .15rem 0 0;
+}
+
+// ---- Verdict ----------------------------------------------------------------
+// One callout that says whether anything needs doing, one line per issue with its own
+// button. The callout supplies the tint and the icon; this lays out the lines.
+.osc-verdict {
+  font-size: 1rem;
+}
+
+.osc-verdict-list {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: .5rem;
+  list-style: none;
+  margin: 0;
+  min-width: 0;
+  padding: 0;
+}
+
+.osc-verdict-line {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem 1rem;
+  justify-content: space-between;
+}
+
+.osc-verdict-text {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+// ---- Progress ---------------------------------------------------------------
+// Work running in the background: the bar, the line under it, and a cancel button
+// that drops under the text on a narrow screen.
+.osc-progress {
+  align-items: flex-end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem 1rem;
+  inline-size: 100%;
+}
+
+.osc-progress-main {
+  flex: 1 1 18rem;
+  min-width: 0;
+
+  progress {
+    appearance: none;
+    background-color: var(--osc-rule);
+    block-size: .5rem;
+    border: 0;
+    border-radius: $border-radius-pill;
+    display: block;
+    inline-size: 100%;
+    overflow: hidden;
+
+    &::-webkit-progress-bar {
+      background-color: var(--osc-rule);
+    }
+
+    &::-webkit-progress-value {
+      background-color: var(--osc-bronze);
+      transition: inline-size 250ms ease-out;
+    }
+
+    &::-moz-progress-bar {
+      background-color: var(--osc-bronze);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      &::-webkit-progress-value {
+        transition: none;
+      }
+    }
+  }
+}
+
+.osc-progress-status {
+  color: var(--osc-ink);
+  font-size: .875rem;
+  font-variant-numeric: tabular-nums;
+  margin: .45rem 0 0;
+}
+
+.osc-progress-cancel {
+  flex: 0 0 auto;
+}
+
 // Gateway references, transaction ids, keys — values you compare character by
 // character rather than read.
 .osc-mono {

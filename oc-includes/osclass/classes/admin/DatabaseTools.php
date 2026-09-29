@@ -35,13 +35,8 @@ final class DatabaseTools
 
     /** Old Tools actions whose screen is now a part of another page, with where they land. */
     public const MOVED = array(
-        'backup'      => 'database#backup',
-        'backup_post' => 'database#backup',
-        'import'      => 'database#restore',
+        'import' => 'backup#restore',
     );
-
-    /** The backup folder offered by default, next to the site folder. */
-    public const BACKUP_FOLDER = 'shopclass-backups';
 
     /**
      * The findings Repair can fix.
@@ -174,27 +169,56 @@ final class DatabaseTools
      * Run an SQL backup against the database one statement at a time, reading it from a
      * stream so a large file is never held in memory.
      *
-     * @param Connection $conn
-     * @param resource   $handle
+     * With $replace, each of this site's tables the file creates is dropped first, so the
+     * backup replaces it instead of clashing with the rows already there.
+     *
+     * @param Connection    $conn
+     * @param resource      $handle
+     * @param callable|null $each    fn(int $ran): void after each statement
+     * @param bool          $replace
      *
      * @return int statements run
      * @throws \mindstellar\database\DbException on the first statement that fails
      */
-    public static function restore(Connection $conn, $handle): int
+    public static function restore(Connection $conn, $handle, ?callable $each = null, bool $replace = false): int
     {
         // A backup lists tables in its own order, so a key may point at a table not made yet.
         $conn->execute('SET FOREIGN_KEY_CHECKS = 0');
         try {
             $ran = 0;
             foreach (SqlStream::statements($handle) as $statement) {
+                $table = $replace ? self::createdTable($statement) : null;
+                if ($table !== null) {
+                    $conn->execute('DROP TABLE IF EXISTS `' . $table . '`');
+                }
                 $conn->execute($statement);
                 $ran++;
+                if ($each !== null) {
+                    $each($ran);
+                }
             }
         } finally {
             $conn->execute('SET FOREIGN_KEY_CHECKS = 1');
         }
 
         return $ran;
+    }
+
+    /**
+     * The table a CREATE TABLE statement makes, when it is one of this site's; else null.
+     *
+     * @param string $statement
+     *
+     * @return string|null
+     */
+    public static function createdTable(string $statement): ?string
+    {
+        if (!preg_match('/^CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?`([A-Za-z0-9_]+)`/i', $statement, $m)) {
+            return null;
+        }
+        $prefix = defined('DB_TABLE_PREFIX') ? (string) DB_TABLE_PREFIX : '';
+
+        return $prefix === '' || strpos($m[1], $prefix) === 0 ? $m[1] : null;
     }
 
     /**
@@ -225,110 +249,6 @@ final class DatabaseTools
                 // The server drops the lock with the session anyway.
             }
         };
-    }
-
-    /**
-     * The folder offered for server backups: `shopclass-backups` beside the site folder,
-     * or '' when it cannot be made there.
-     *
-     * @param string $webRoot the site folder
-     *
-     * @return string
-     */
-    public static function defaultBackupDir(string $webRoot): string
-    {
-        $root = realpath($webRoot);
-        if ($root === false) {
-            return '';
-        }
-        $parent = dirname($root);
-        $dir    = rtrim($parent, '/\\') . DIRECTORY_SEPARATOR . self::BACKUP_FOLDER;
-        if (is_dir($dir) ? is_writable($dir) : is_writable($parent)) {
-            return $dir;
-        }
-
-        return '';
-    }
-
-    /**
-     * Check a folder for server backups. It must exist, be writable, and sit outside the
-     * site folder, where the web server could hand the file to anyone.
-     *
-     * @param string $dir     the folder asked for
-     * @param string $webRoot the site folder
-     *
-     * @return array{dir:string,error:string} the real path with a trailing separator, or the reason it is refused
-     */
-    public static function checkBackupDir(string $dir, string $webRoot): array
-    {
-        $dir = trim($dir);
-        if ($dir === '') {
-            return array('dir' => '', 'error' => __('Enter a server folder for the backup.'));
-        }
-        $real = realpath($dir);
-        if ($real === false || !is_dir($real)) {
-            return array('dir' => '', 'error' => __('The backup folder does not exist.'));
-        }
-        $root = realpath($webRoot);
-        if ($root === false || self::isInside($real, $root)) {
-            return array(
-                'dir'   => '',
-                'error' => __('This folder is inside the site, so anyone could download the backup. Pick a folder outside it.'),
-            );
-        }
-        if (!is_writable($real)) {
-            return array('dir' => '', 'error' => __('The backup folder is not writable.'));
-        }
-
-        return array('dir' => rtrim($real, '/\\') . DIRECTORY_SEPARATOR, 'error' => '');
-    }
-
-    /**
-     * Whether a real path is the folder $root or anything below it.
-     *
-     * @param string $path
-     * @param string $root
-     *
-     * @return bool
-     */
-    private static function isInside(string $path, string $root): bool
-    {
-        $root = rtrim($root, '/\\');
-
-        return $root === '' || $path === $root || strpos($path, $root . DIRECTORY_SEPARATOR) === 0;
-    }
-
-    /**
-     * A backup file name nobody can guess: prefix, time and 16 random hex characters.
-     *
-     * @param string $prefix e.g. Osclass_mysqlbackup
-     * @param string $ext    e.g. sql
-     *
-     * @return string
-     */
-    public static function backupName(string $prefix, string $ext): string
-    {
-        return $prefix . '.' . date('YmdHis') . '.' . bin2hex(random_bytes(8)) . '.' . $ext;
-    }
-
-    /**
-     * Create an empty file only its owner can read, failing if it already exists.
-     *
-     * @param string $path
-     *
-     * @return bool
-     */
-    public static function createPrivateFile(string $path): bool
-    {
-        $umask  = umask(0077);
-        $handle = @fopen($path, 'xb');
-        umask($umask);
-        if ($handle === false) {
-            return false;
-        }
-        fclose($handle);
-
-        return chmod($path, 0600);
     }
 
     /**

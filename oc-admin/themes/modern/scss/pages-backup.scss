@@ -1,0 +1,179 @@
+// Tools > Backup and restore.
+
+// The running, failed and ready callouts hold several lines and their buttons.
+.backup-callout {
+  font-size: 1rem;
+  margin-block-end: 1rem;
+}
+
+.backup-callout-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: .5rem;
+  min-width: 0;
+
+  p {
+    margin: 0;
+  }
+}
+
+.backup-callout-title {
+  font-weight: 600;
+}
+
+.backup-callout-note {
+  color: var(--osc-ink-muted);
+  font-size: .875rem;
+}
+
+.backup-callout-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  justify-content: flex-end;
+
+  form {
+    display: inline;
+  }
+}
+
+.backup-form-note {
+  color: var(--osc-ink-muted);
+  font-size: .875rem;
+  margin: .5rem 0 0;
+}
+
+// The line beside a choice that says what it holds; under it on a phone.
+.backup-choice-note {
+  color: var(--osc-ink-muted);
+  font-size: $font-size-label;
+  margin-inline-start: .5rem;
+}
+
+@media (max-width: 575.98px) {
+  #backup-form .field-choice {
+    flex-wrap: wrap;
+  }
+
+  #backup-form .backup-choice-note {
+    flex-basis: 100%;
+    margin-block-start: -.35rem;
+    margin-inline-start: 1.6rem;
+  }
+}
+
+#backup-list {
+  td {
+    vertical-align: middle;
+  }
+
+  .backup-when {
+    white-space: nowrap;
+  }
+
+  .backup-sub {
+    color: var(--osc-ink-muted);
+    display: block;
+    font-size: $font-size-label;
+  }
+
+  .backup-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+
+    form {
+      display: inline;
+    }
+  }
+
+  // Delete sits at the far end, away from Download and Restore.
+  .backup-delete {
+    padding-inline-start: 2rem;
+    text-align: end;
+    width: 1%;
+  }
+
+  .btn-link.backup-delete-btn {
+    color: var(--osc-danger);
+    padding-inline: 0;
+  }
+
+  // One card per backup on a phone: date, then what · where · size, then the actions.
+  @media (max-width: 575.98px) {
+    thead {
+      display: none;
+    }
+
+    tr,
+    td {
+      display: block;
+      width: 100%;
+    }
+
+    tr {
+      background-color: var(--osc-bench);
+      border-block-end: 1px solid var(--osc-rule);
+      padding-block: .75rem;
+    }
+
+    .backup-sub {
+      display: inline;
+
+      &::before {
+        content: " (";
+      }
+
+      &::after {
+        content: ")";
+      }
+    }
+
+    td {
+      border: 0;
+      padding: .15rem .75rem;
+    }
+
+    .backup-meta-cell {
+      display: inline;
+      padding-inline: 0;
+      width: auto;
+
+      & + .backup-meta-cell::before {
+        color: var(--osc-ink-muted);
+        content: " · ";
+      }
+    }
+
+    .backup-meta-first {
+      padding-inline-start: .75rem;
+    }
+
+    .backup-actions {
+      padding-block-start: .5rem;
+    }
+
+    .backup-delete {
+      padding-inline-start: .75rem;
+      width: 100%;
+    }
+  }
+}
+
+.backup-restore-parts {
+  margin-block: .75rem;
+
+  label {
+    align-items: center;
+    display: flex;
+    gap: .5rem;
+    margin-block-end: .25rem;
+  }
+}
+
+.backup-restore-note {
+  color: var(--osc-ink-muted);
+  font-size: .875rem;
+  margin: .5rem 0 0;
+}

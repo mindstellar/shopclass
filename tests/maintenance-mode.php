@@ -79,6 +79,20 @@ check('marker file is an upgrade', osc_maintenance_is_upgrading($markerFile) ===
 unlink($markerFile);
 check('missing file is not an upgrade', osc_maintenance_is_upgrading($markerFile) === false);
 
+harness_section('restore marker');
+$restoreFile = tempnam(sys_get_temp_dir(), 'osc-maint');
+file_put_contents($restoreFile, OSC_MAINTENANCE_RESTORE_MARKER);
+check('marker file is a restore', osc_maintenance_is_restoring($restoreFile) === true);
+check('...not an upgrade', osc_maintenance_is_upgrading($restoreFile) === false);
+$locks = osc_maintenance_locks_everyone($restoreFile);
+check('restore 503s visitors even with lockout off', osc_maintenance_should_lockout_request(true, false, false, false, $locks) === true);
+check('restore 503s CLI too', osc_maintenance_should_lockout_request(true, false, false, true, $locks) === true);
+check('admins pass during a restore', osc_maintenance_should_lockout_request(true, true, true, false, $locks) === false);
+file_put_contents($restoreFile, '');
+check('a plain maintenance file does not lock out CLI', osc_maintenance_should_lockout_request(true, true, false, true, osc_maintenance_locks_everyone($restoreFile)) === false);
+unlink($restoreFile);
+check('index.php locks out on either marker', strpos((string) file_get_contents(__DIR__ . '/../index.php'), "osc_maintenance_locks_everyone(ABS_PATH . '.maintenance')") !== false);
+
 harness_section('message sanitizer');
 pin('plain text kept', 'Back soon', osc_sanitize_maintenance_message('  Back soon  '));
 pin('tags stripped', 'Back soon', osc_sanitize_maintenance_message('<b>Back soon</b>'));

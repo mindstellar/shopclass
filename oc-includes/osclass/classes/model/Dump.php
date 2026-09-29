@@ -37,6 +37,9 @@ class Dump extends DAO
     /** Bytes of values per INSERT statement, kept well under max_allowed_packet. */
     private const INSERT_BYTES = 1048576;
 
+    /** Stands for the table prefix in a dump, so it restores onto any prefix. */
+    private const PREFIX_TOKEN = '/*TABLE_PREFIX*/';
+
     /**
      * Return the shared Dump model instance, creating it on first use.
      *
@@ -69,6 +72,18 @@ class Dump extends DAO
     }
 
     /**
+     * Whether a table name carries this site's prefix.
+     *
+     * @param string $table
+     *
+     * @return bool
+     */
+    private function hasPrefix($table)
+    {
+        return DB_TABLE_PREFIX !== '' && strpos($table, DB_TABLE_PREFIX) === 0;
+    }
+
+    /**
      * Return all tables from database
      *
      * @return array<int,array<string,string>> One single-column row per table
@@ -91,10 +106,11 @@ class Dump extends DAO
      *
      * @param string $path
      * @param string $table
+     * @param bool   $prefixToken write the prefix token in place of this site's table prefix
      *
      * @return bool
      */
-    public function table_structure($path, $table)
+    public function table_structure($path, $table, $prefixToken = false)
     {
         if (!is_writable($path)) {
             return false;
@@ -116,8 +132,15 @@ class Dump extends DAO
         }
 
         foreach ($result as $_line) {
-            $_str .= str_replace('CREATE TABLE', 'CREATE TABLE IF NOT EXISTS', $_line['Create Table'] . ';');
-            $_str .= "\n\n";
+            $create = str_replace('CREATE TABLE', 'CREATE TABLE IF NOT EXISTS', $_line['Create Table'] . ';');
+            if ($prefixToken && $this->hasPrefix($table)) {
+                $create = (string) preg_replace(
+                    '/(CREATE TABLE IF NOT EXISTS |REFERENCES )`' . preg_quote(DB_TABLE_PREFIX, '/') . '/',
+                    '$1`' . self::PREFIX_TOKEN,
+                    $create
+                );
+            }
+            $_str .= $create . "\n\n";
         }
         $this->appendFile($path, $_str);
 
@@ -133,10 +156,11 @@ class Dump extends DAO
      *
      * @param string $path
      * @param string $table
+     * @param bool   $prefixToken write the prefix token in place of this site's table prefix
      *
      * @return bool
      */
-    public function table_data($path, $table)
+    public function table_data($path, $table, $prefixToken = false)
     {
         if (!is_writable($path)) {
             return false;
@@ -167,14 +191,17 @@ class Dump extends DAO
         $buffer = '';
         if ($res instanceof mysqli_result) {
             $fields = $res->fetch_fields();
+            $target = $prefixToken && $this->hasPrefix($table)
+                ? self::PREFIX_TOKEN . substr($table, strlen(DB_TABLE_PREFIX))
+                : $table;
             $count  = 0;
             $batch  = 0;
             $bytes  = 0;
-            $write  = function (array $row) use ($table, $fields, $handle, &$buffer, &$count, &$batch, &$bytes) {
+            $write  = function (array $row) use ($table, $target, $fields, $handle, &$buffer, &$count, &$batch, &$bytes) {
                 if ($count === 0) {
                     $buffer .= '/* dumping data for table `' . $table . "` */\n";
                 }
-                $buffer .= $batch === 0 ? 'insert into `' . $table . "` values\n" : ",\n";
+                $buffer .= $batch === 0 ? 'insert into `' . $target . "` values\n" : ",\n";
                 $values  = $this->rowValues($row, $fields);
                 $buffer .= $values;
                 $count++;

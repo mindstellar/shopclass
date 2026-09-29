@@ -13,6 +13,12 @@ msgstr ""
 msgid "\"%1$s\" extends this theme. Delete it first, or switch it to "
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "%1$d linked folder was skipped: %2$s (it points outside the site)."
+msgid_plural "%1$d linked folders were skipped: %2$s (they point outside the site)."
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-includes/osclass/gui/account/parts/item-row.php
 msgid "%1$s (%2$d credit)"
 msgid_plural "%1$s (%2$d credits)"
@@ -317,7 +323,11 @@ msgid "Back to your wallet"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
-msgid "Backup saved as %s"
+msgid "Backup cancelled. Nothing was saved."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "Backup saved: %1$s, %2$s, %3$s."
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/wallet-content.php
@@ -428,6 +438,10 @@ msgstr ""
 msgid "Check your inbox to validate your listing"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "Choose a .zip or .sql backup file."
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-profile-content.php
 msgid "Choose a country and save; the regions for it load on the next screen."
 msgstr ""
@@ -517,10 +531,6 @@ msgstr ""
 
 #: oc-includes/osclass/gui/billing/buy-content.php
 msgid "Continue"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
-msgid "Could not connect with the database"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
@@ -783,10 +793,6 @@ msgstr ""
 msgid "Error, the passwords don't match"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
-msgid "Error, the zip file was not created in the specified directory"
-msgstr ""
-
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsCurrencies.php
 msgid "Error: the currency code is not in the correct format"
 msgstr ""
@@ -924,10 +930,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 msgid "Images per listing must only contain numeric characters"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
-msgid "Import complete"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebLogin.php
@@ -1436,10 +1438,6 @@ msgstr ""
 msgid "Passwords don't match"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
-msgid "Path is empty"
-msgstr ""
-
 #: oc-includes/osclass/helpers/hUsers.php
 msgid "Paused"
 msgstr ""
@@ -1938,6 +1936,10 @@ msgstr ""
 msgid "Thanks! That's very helpful"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "That backup is not in the list any more."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
 msgid "That ban rule no longer exists"
 msgstr ""
@@ -2060,6 +2062,22 @@ msgid "The avatar you tried to upload is not a valid image"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "The backup folder cannot be written: %s"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "The backup from %s is restored."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "The backup is deleted."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "The backup is restored."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid "The cache could not be cleared"
 msgstr ""
 
@@ -2152,10 +2170,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 msgid "The files were deleted"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
-msgid "The folder is not writable"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsKeywordBlock.php
@@ -2337,6 +2351,10 @@ msgstr ""
 msgid "The seller replies to this address."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "The site is open again. Check the database below."
+msgstr ""
+
 #: oc-includes/osclass/classes/actions/UserActions.php
 #: oc-includes/osclass/classes/controller/CWebUser.php
 #: oc-includes/osclass/classes/controller/CWebUserNonSecure.php
@@ -2381,6 +2399,10 @@ msgstr ""
 #: oc-includes/osclass/gui/account/user-forgot_password-content.php
 #: oc-includes/osclass/gui/account/user-signin-content.php
 msgid "The two passwords do not match."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "The upload failed. Try again."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebLogin.php
@@ -2464,10 +2486,6 @@ msgstr ""
 msgid "There are no credit packages for sale right now."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
-msgid "There are no tables to back up"
-msgstr ""
-
 #: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
 msgid "There is no admin with this id"
 msgstr ""
@@ -2486,10 +2504,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
 msgid "There was a problem deleting locations"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
-msgid "There was a problem importing data to the database"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php

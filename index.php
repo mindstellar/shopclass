@@ -50,13 +50,13 @@ if (file_exists(ABS_PATH . '.maintenance')) {
     // Default is a public 503 (same as before this option existed). Unchecking
     // lockout in Tools → Maintenance leaves the site up and shows a banner.
     // CLI is not 503'd, so `php index.php -p cron` still runs, except while a
-    // package upgrade is replacing files. Admins always get through.
+    // package upgrade or a restore is replacing things. Admins always get through.
     if (osc_maintenance_should_lockout_request(
         true,
         osc_maintenance_lockout_enabled(),
         osc_is_admin_user_logged_in(),
         CLI,
-        osc_maintenance_is_upgrading(ABS_PATH . '.maintenance')
+        osc_maintenance_locks_everyone(ABS_PATH . '.maintenance')
     )) {
         header('HTTP/1.1 503 Service Temporarily Unavailable');
         header('Status: 503 Service Temporarily Unavailable');

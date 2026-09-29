@@ -1,6 +1,6 @@
 ---
 title: Backups & maintenance
-description: Back up a ShopClass site, put it in maintenance mode, clean up dead content, read the activity log and import data.
+description: Back up and restore a ShopClass site, put it in maintenance mode, clean up dead content and read the activity log.
 sidebar:
   order: 14
 ---
@@ -9,26 +9,28 @@ Everything here lives under **Tools** in the admin panel.
 
 ## Backups
 
-A complete backup needs two parts:
+**Tools → Backup and restore** makes a backup of:
 
-1. **The database** — listings, users, categories, settings, everything.
-   **Tools → Database**, under **Backup**: download the dump, or save it in a
-   folder on the server.
-2. **The site files** — a zip of the whole install folder: the application
-   code plus `oc-content/` (uploads, installed plugins and themes).
-   **Tools → Upgrade Shopclass**, under **Back up site files**. The zip is
-   always written to a folder on the server.
+- **Database** — listings, users, categories, settings.
+- **Files** — `oc-content/`: photos, plugins, themes, languages. Core files are
+  not included; the release zip is their backup.
+- **Everything** — both.
 
-A server folder must be outside the install folder, or anyone could download the
-backup. Both screens offer `shopclass-backups` next to the install folder, and
-refuse a folder inside it. Backup files are readable by their owner only.
+Download it to your computer, or save it on the server in
+`oc-content/downloads/backups/`. That folder is closed to the web by an
+`.htaccess` file; on nginx add the rule in
+[security](/docs/deploy/security/#the-backups-folder). The last 5 server backups are
+kept. Every backup is one `.zip` with a `manifest.json` that records the
+Shopclass version and what it holds.
 
-A database dump without the uploads restores a site whose every photo is
-missing.
+The backup runs in the background, so a large site does not time out. It keeps
+going while the page is open, and with [cron](/docs/configure/cron/) set up it
+also carries on after you close it. One backup runs at a time, and it can be
+cancelled.
 
-On a large site the zip is the part that fails first: it is built in one request,
-so a big uploads directory can exhaust the memory limit or the execution time.
-When that happens, use the command line below instead — it has neither limit.
+A linked folder that points outside the site (a theme symlinked from elsewhere)
+is skipped and named on the page. With photos offloaded to S3, the photos stay
+in the bucket and are not copied; turn on versioning in the bucket.
 
 ### From the command line
 
@@ -140,18 +142,20 @@ front of yours), the logged IP is only meaningful if the real client IP is
 being passed through — see the
 [caching contract](/docs/developers/caching/).
 
-## Restore and import
+## Restore
 
-**Tools → Database**, under **Restore from a backup**, runs a `.sql` file
-against your database: a backup saved on the same page, location data, or
-anything prepared outside the admin. It reads the file one statement at a time,
-so a large backup does not need a large PHP memory limit.
+**Tools → Backup and restore** puts a backup back: **Restore…** on a saved
+backup, or **Restore from a file** for a `.zip` or an old `.sql` backup, up to
+the server's upload limit.
 
-It substitutes the `/*TABLE_PREFIX*/` placeholder for your actual table
-prefix, which is why SQL prepared for it should keep the placeholder rather
-than a hard-coded `oc_`.
+Before anything changes, the page refuses a backup made by a newer Shopclass, or
+an old `.sql` file whose tables use another prefix. The confirm lets you put back
+only the database or only the files of an "Everything" backup.
 
-Back up first. A restore runs whatever SQL you give it and can overwrite data.
+While it runs, visitors see the maintenance page. A safety copy of the database
+is saved first, and if loading the backup fails the safety copy is put back.
+Database updates run after an older backup. Files are written over; files added
+since the backup are left in place.
 
 ## Cache
 
@@ -192,7 +196,7 @@ Run it after any change to the server, and put it in your monitoring.
 
 ## Database
 
-**Tools → Database** holds all database work, in five parts:
+**Tools → Database** holds the database checks, in three parts:
 
 - **Status** — one line saying whether anything needs doing, then the
   Shopclass and database versions, the server, and the table count and size.
@@ -204,9 +208,6 @@ Run it after any change to the server, and put it in your monitoring.
   wrong type. Take a backup first. An extra column or index is left alone; a
   nullability difference or an index with the wrong columns needs a person to
   look at it.
-- **Backup** — the database dump described above.
-- **Restore from a backup** — runs a `.sql` file, as described under
-  [Restore and import](#restore-and-import).
 
 From a shell: `php oc-cli.php db:doctor` reports, `php oc-cli.php db:repair`
 repairs.

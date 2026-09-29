@@ -751,52 +751,11 @@ function osc_dbdump($path, $file)
 
     $tables = array();
     foreach ($result as $_table) {
-        $tableName          = current($_table);
-        $tables[$tableName] = $tableName;
+        $tables[] = current($_table);
     }
 
-    $tables_order = array(
-        't_locale',
-        't_country',
-        't_currency',
-        't_region',
-        't_city',
-        't_city_area',
-        't_widget',
-        't_admin',
-        't_user',
-        't_user_description',
-        't_category',
-        't_category_description',
-        't_category_stats',
-        't_item',
-        't_item_description',
-        't_item_location',
-        't_item_stats',
-        't_item_stats_daily',
-        't_item_resource',
-        't_item_comment',
-        't_preference',
-        't_pages',
-        't_pages_description',
-        't_plugin_category',
-        't_cron',
-        't_alerts',
-        't_meta_fields',
-        't_meta_categories',
-        't_item_meta'
-    );
-    // Backup default Shopclass tables in order, so no problem when importing them back
-    foreach ($tables_order as $table) {
-        if (array_key_exists(DB_TABLE_PREFIX . $table, $tables)) {
-            $dump->table_structure($path, DB_TABLE_PREFIX . $table);
-            $dump->table_data($path, DB_TABLE_PREFIX . $table);
-            unset($tables[DB_TABLE_PREFIX . $table]);
-        }
-    }
-
-    // Backup the rest of tables
-    foreach ($tables as $table) {
+    // Default Shopclass tables first, in order, so no problem when importing them back.
+    foreach (\mindstellar\backup\DatabaseDump::order($tables, DB_TABLE_PREFIX) as $table) {
         $dump->table_structure($path, $table);
         $dump->table_data($path, $table);
     }
