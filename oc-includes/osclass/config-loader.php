@@ -182,7 +182,11 @@ if (!$oscHasConfigFile && defined('DB_NAME')
         }
 
         defined('REL_WEB_URL') or define('REL_WEB_URL', $oscBasePath);
-        defined('WEB_PATH')    or define('WEB_PATH', $oscScheme . '://' . $oscHost . $oscBasePath);
+        if (!defined('WEB_PATH')) {
+            define('WEB_PATH', $oscScheme . '://' . $oscHost . $oscBasePath);
+            // Code that must not trust the Host header, such as backups in a bucket, checks this.
+            define('OSC_WEB_PATH_FROM_REQUEST', true);
+        }
 
         unset($oscScheme, $oscBasePath, $oscScriptName, $oscScriptFile, $oscAppRoot);
     }
@@ -207,6 +211,7 @@ if (PHP_SAPI === 'cli' && !defined('WEB_PATH') && $oscEnv('OSC_CLI_URL') !== nul
             strtolower($oscCliUrl['scheme']) . '://' . $oscCliUrl['host']
             . (isset($oscCliUrl['port']) ? ':' . $oscCliUrl['port'] : '') . $oscCliPath
         );
+        defined('OSC_WEB_PATH_FROM_CLI_URL') or define('OSC_WEB_PATH_FROM_CLI_URL', true);
         unset($oscCliPath);
     }
     unset($oscCliUrl);

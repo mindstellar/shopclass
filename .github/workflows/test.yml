@@ -533,6 +533,9 @@ jobs:
       # A backup is written and restored without holding a table in memory.
       - name: Backup and restore
         run: php tests/backup-restore.php
+      # backup:create, list and restore run the real engine; a restore asks first and waits for an upgrade.
+      - name: Backup commands
+        run: php tests/cli-backup.php
       # ONLY_FULL_GROUP_BY rejects a grouped query outright, and every one of them is
       # wrapped in a catch that returns an empty array — so a site that turns the strict
       # modes on loses its alert emails, its custom fields and its statistics charts with
@@ -617,6 +620,9 @@ jobs:
       # Bucket backup keys carry a random name and a manifest; the prune keeps N per kind there too.
       - name: Backup S3 keys
         run: php tests/backup-s3-keys.php
+      # A site address taken from the Host header is flagged, and the backup bucket refuses it.
+      - name: Site address from the request
+        run: php tests/web-path-from-request.php
       # A large upload resumes at the next part, never sends an ACL, and is checked by size.
       - name: S3 multipart resume
         run: php tests/s3-multipart-resume.php

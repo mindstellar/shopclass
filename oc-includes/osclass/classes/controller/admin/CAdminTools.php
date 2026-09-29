@@ -577,6 +577,7 @@ class CAdminTools extends AdminSecBaseModel
             'exposed'  => BackupBucket::exposed(),
             'readable' => $bucketRows !== null,
         ) : null);
+        $this->_exportVariableToView('backup_bucket_address', BackupBucket::addressProblem());
         $this->_exportVariableToView('backup_confirm', $confirm);
         $this->_exportVariableToView('backup_reauth_error', $confirm !== null ? $reauth : '');
         $me = $confirm !== null ? Admin::newInstance()->findByPrimaryKey(osc_logged_admin_id()) : null;

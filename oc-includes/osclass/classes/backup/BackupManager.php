@@ -33,7 +33,8 @@ final class BackupManager
     public const STALE = 120;
 
     /**
-     * Whether a backup or restore job is waiting or running.
+     * Whether a backup or restore job is waiting or running, or one run from the command
+     * line reported in the last STALE seconds.
      *
      * @return bool
      */
@@ -46,7 +47,21 @@ final class BackupManager
             }
         }
 
-        return false;
+        return self::liveState(BackupStore::site()->state(), time());
+    }
+
+    /**
+     * Whether a state belongs to a run that is going and reported in the last STALE seconds.
+     *
+     * @param array<string,mixed> $state
+     * @param int                 $now
+     *
+     * @return bool
+     */
+    public static function liveState(array $state, int $now): bool
+    {
+        return in_array($state['status'] ?? '', array('queued', 'running'), true)
+            && $now - (int) ($state['updated'] ?? 0) < self::STALE;
     }
 
     /**
@@ -66,7 +81,7 @@ final class BackupManager
             return __('One backup at a time. Wait for the one running to finish.');
         }
         if ($where === 'bucket' && BackupBucket::adapter() === null) {
-            return __('Saving to a bucket needs S3 storage turned on in Settings > Storage.');
+            return self::noBucket();
         }
         if ($where === 'bucket' && BackupBucket::insecure()) {
             return __('Your S3 endpoint uses plain http, so a backup and its download link would travel unencrypted. Use an https endpoint.');
@@ -175,7 +190,7 @@ final class BackupManager
         $gone   = array('reason' => __('That backup is not in the list any more.')) + $out;
         $bucket = BackupBucket::adapter();
         if ($bucket === null) {
-            return array('reason' => __('Saving to a bucket needs S3 storage turned on in Settings > Storage.')) + $out;
+            return array('reason' => self::noBucket()) + $out;
         }
         if ($name !== basename($name) || !preg_match(BackupStore::NAME, $name)) {
             return $gone;
@@ -213,6 +228,18 @@ final class BackupManager
         }
 
         return $out;
+    }
+
+    /**
+     * Why the bucket is not on offer, in words.
+     *
+     * @return string
+     */
+    public static function noBucket(): string
+    {
+        $problem = BackupBucket::addressProblem();
+
+        return $problem !== '' ? $problem : __('Saving to a bucket needs S3 storage turned on in Settings > Storage.');
     }
 
     /**
@@ -590,7 +617,7 @@ final class BackupManager
      *
      * @return bool
      */
-    private static function lockFree(): bool
+    public static function lockFree(): bool
     {
         try {
             $conn    = Connection::instance();

@@ -49,9 +49,11 @@ a public ACL, but a public bucket or a custom domain in front of it serves every
 object in it. After each upload the site asks for the backup without signing, and
 the page warns if anyone can read it.
 
-Each site saves in its own folder, named from the site address in `config.php`:
-`https://www.example.com/shop/` saves under `backups/www.example.com-shop/`. The
-page lists, downloads, restores and prunes only that folder, so a staging copy
+Each site saves in its own folder, named from the site address and a short code
+made from it: `https://www.example.com/shop/` saves under
+`backups/www.example.com-shop-<code>/`. The address must be `WEB_PATH` in
+`config.php` or the environment. An address taken from the request is not used,
+so on a site without `WEB_PATH` the bucket is not offered. The page lists, downloads, restores and prunes only that folder, so a staging copy
 restored from production never touches production's backups. After a move to a
 new address, older backups stay under the old folder. Use one backups bucket per
 site, or leave it to the per-site folder.
@@ -71,11 +73,13 @@ A plugin storage adapter without the bucket methods does not offer this choice.
 
 ### From the command line
 
-More reliable on a large site, because there is no web-server timeout to hit:
+On a large site, use the [command line](/docs/cli/#backups). It runs the same
+backup with no web-server timeout, and it can save to a folder outside the site:
 
 ```bash
-mysqldump -u USER -p DATABASE | gzip > backup-$(date +%F).sql.gz
-tar -czf uploads-$(date +%F).tar.gz oc-content/
+php oc-cli.php backup:create --what=everything --to=server
+php oc-cli.php backup:create --to=/var/backups/shop
+php oc-cli.php backup:list
 ```
 
 ### Rules that make a backup real
@@ -183,7 +187,8 @@ being passed through — see the
 
 **Tools → Backup and restore** puts a backup back: **Restore…** on a saved
 backup, or **Restore from a file** for a `.zip` or an old `.sql` backup, up to
-the server's upload limit.
+the server's upload limit. For a file bigger than that, copy it to the server and
+use `backup:restore` from the [command line](/docs/cli/#backups).
 
 Before anything changes, the page refuses a backup made by a newer Shopclass, or
 an old `.sql` file whose tables use another prefix. The confirm lets you put back
@@ -212,8 +217,13 @@ define('OSC_DISABLE_WEB_RESTORE', true);
 ```
 
 The page then hides the restore buttons and says restore is turned off. Backups
-still work. A restore that was already started before you set it still finishes. To restore by hand, load the `.sql` file with `mysql` and unzip the
-files over `oc-content/`.
+still work. A restore that was already started before you set it still finishes.
+Restore from a shell with the [command line](/docs/cli/#backups), which runs the
+same checks and safety copy:
+
+```bash
+php oc-cli.php backup:restore 2026-09-29-140213-everything-k7f3q9abcdefghij.zip
+```
 
 ## Cache
 

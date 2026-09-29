@@ -9192,6 +9192,10 @@ msgstr ""
 msgid "Session timed out"
 msgstr ""
 
+#: oc-includes/osclass/classes/backup/BackupBucket.php
+msgid "Set WEB_PATH in config.php or the environment to use the bucket."
+msgstr ""
+
 #: oc-admin/themes/modern/tools/backup.php
 msgid "Set a backups bucket"
 msgstr ""

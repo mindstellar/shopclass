@@ -55,6 +55,7 @@ function osc_job_stats($type = null)
 }
 
 BackupBucket::useBase('https://www.example.com/');
+$ownFolder = 'www.example.com-2a0b0c8e';
 
 $client = new FakeS3Client();
 $bucket = new S3Storage(array('endpoint' => 'https://s3.example', 'bucket' => 'shop-backups', 'access_key' => 'k', 'secret_key' => 's', 'client' => $client));
@@ -65,8 +66,8 @@ harness_section('Keys');
 $name = BackupStore::newName('everything');
 pin('a backup name is date, time, what and 16 random base32 characters', 1, preg_match('/^\d{4}-\d{2}-\d{2}-\d{6}-everything-[a-z2-7]{16}\.zip$/', $name));
 check('...so two made in the same second differ', BackupStore::newName('database') !== BackupStore::newName('database'));
-pin('its key is under backups/ in the site folder', 'backups/www.example.com/' . $name, BackupBucket::key($name));
-pin('...with the manifest beside it', 'backups/www.example.com/' . substr($name, 0, -4) . '.json', BackupBucket::sidecarKey($name));
+pin('its key is under backups/ in the site folder', 'backups/' . $ownFolder . '/' . $name, BackupBucket::key($name));
+pin('...with the manifest beside it', 'backups/' . $ownFolder . '/' . substr($name, 0, -4) . '.json', BackupBucket::sidecarKey($name));
 
 harness_section('The site folder comes from the site address');
 
@@ -78,8 +79,18 @@ foreach (array(
     'https://example.com/../x/'             => 'example.com-x',
     'example.com'                           => 'example.com',
     ''                                      => 'site',
-) as $url => $folder) {
-    pin("'$url' saves under $folder", $folder, BackupBucket::siteFolder($url));
+) as $url => $readable) {
+    check("'$url' saves under $readable plus a hash", (bool) preg_match('/^' . preg_quote($readable, '/') . '-[0-9a-f]{8}$/', BackupBucket::siteFolder($url)), BackupBucket::siteFolder($url));
+}
+pin('the same address always gives the same folder', BackupBucket::siteFolder('https://www.example.com/'), BackupBucket::siteFolder('https://www.example.com'));
+pin('...host case does not matter', BackupBucket::siteFolder('https://www.example.com/'), BackupBucket::siteFolder('https://WWW.EXAMPLE.COM/'));
+foreach (array(
+    array('https://a.com/b/', 'https://a.com-b/'),
+    array('https://a.com:8080/', 'https://a.com-8080/'),
+    array('https://a.com/shop_x/', 'https://a.com/shop-x/'),
+    array('https://a.com/Shop/', 'https://a.com/shop/'),
+) as $pair) {
+    check("$pair[0] and $pair[1] get different folders", BackupBucket::siteFolder($pair[0]) !== BackupBucket::siteFolder($pair[1]), BackupBucket::siteFolder($pair[0]));
 }
 $long = BackupBucket::siteFolder('https://example.com/' . str_repeat('very-long-path/', 10));
 pin('a long address is cut to 60 characters', 60, strlen($long));
@@ -119,7 +130,7 @@ pin('...with its size from the listing', 150, $rows[1]['size']);
 pin('...and what it holds from its name', 'everything', $rows[1]['what']);
 pin('...and its date from its name', date('c', strtotime(substr($older, 0, 10) . ' ' . implode(':', str_split(substr($older, 11, 6), 2)))), $rows[1]['created']);
 pin('...from one request', 1, count($client->calls('listObjectsV2')));
-pin('...under the site folder', 'backups/www.example.com/', $client->calls('listObjectsV2')[0]['params']['Prefix']);
+pin('...under the site folder', 'backups/' . $ownFolder . '/', $client->calls('listObjectsV2')[0]['params']['Prefix']);
 
 $broken = new FakeS3Client();
 $broken->before = static function (): void {
@@ -379,6 +390,22 @@ pin('the photo adapter is public', true, $photos->isPublic());
 pin('...its backups copy is not', false, $copy->isPublic());
 check('...and has no public URL', strpos($copy->url('backups/x.zip'), 'cdn.example') === false);
 pin('...while the photo adapter is left as it was', 'https://cdn.example/x.jpg', $photos->url('x.jpg'));
+
+harness_section('The bucket needs a site address that is set, not taken from the request');
+
+$fake = new S3Storage(array('endpoint' => 'https://s3.example', 'bucket' => 'b', 'client' => new FakeS3Client()));
+BackupBucket::use($fake);
+BackupBucket::useBase(null);
+pin('with no WEB_PATH there is no bucket', null, BackupBucket::adapter());
+pin('...and the page and the command line say why', 'Set WEB_PATH in config.php or the environment to use the bucket.', BackupBucket::addressProblem());
+pin('...as does a backup started for the bucket', BackupBucket::addressMessage(), \mindstellar\backup\BackupManager::startBackup('database', 'bucket'));
+define('WEB_PATH', 'https://shop.example.com/');
+pin('a WEB_PATH from config.php gives the bucket', $fake, BackupBucket::adapter());
+pin('...with nothing to complain about', '', BackupBucket::addressProblem());
+define('OSC_WEB_PATH_FROM_REQUEST', true);
+pin('a WEB_PATH taken from the Host header gives none', null, BackupBucket::adapter());
+BackupBucket::use(false);
+BackupBucket::useBase('https://www.example.com/');
 
 exit(harness_result());
 

@@ -1,6 +1,6 @@
 ---
 title: Command-line interface
-description: The oc-cli.php reference for ShopClass — cron, database migrations, admin recovery, plugin and theme management, health checks.
+description: The oc-cli.php reference for ShopClass — cron, database migrations, backups, admin recovery, plugin and theme management, health checks.
 sidebar:
   order: 4
 ---
@@ -101,6 +101,40 @@ without opening the admin panel:
 | `location:update --country=IN\|--all [--dry-run]` | Install or update country locations. `--all` means *every country already installed here*, not all 250 in the catalog. |
 
 See [installing locations](/docs/configure/locations/).
+
+## Backups
+
+The same backups as **Tools → Backup and restore**, run in the shell with no time
+limit. Use them for a large site, for a backup file too big to upload, and on a
+site with [web restore turned off](/docs/use/backups-and-maintenance/#turning-web-restore-off).
+
+| Command | What it does |
+|---|---|
+| `backup:create [--what=database\|files\|everything] [--to=server\|s3\|<folder>]` | Make a backup. Defaults to everything, on the server. Prints the file name, size and where it is. |
+| `backup:list [--to=server\|s3\|<folder>]` | List backups: date, what, where, size, name. |
+| `backup:restore <name\|file> [--from=server\|s3] [--only=database\|files] [--yes]` | Restore a backup by name, or a `.zip` or `.sql` file by path. |
+| `backup:delete <name> [--from=server\|s3] [--yes]` | Delete a backup. |
+
+```bash
+php oc-cli.php backup:create --what=database
+php oc-cli.php backup:create --to=/var/backups/shop
+php oc-cli.php backup:create --to=s3
+php oc-cli.php backup:list --to=s3
+php oc-cli.php backup:restore 2026-09-29-140213-everything-k7f3q9abcdefghij.zip
+php oc-cli.php backup:restore /home/me/old-site.sql --yes
+```
+
+`--to=<folder>` saves outside the site. The folder must exist and be writable, and
+a folder inside the site is refused, since anyone could download from it.
+`--to=s3` needs [S3 offload](/docs/use/media-and-storage/#offloading-to-s3-compatible-storage)
+and `WEB_PATH` set in `config.php` or the environment.
+
+A restore runs the same checks as the admin: it refuses a backup from a newer
+Shopclass or with another table prefix, saves a safety copy first, shows the
+maintenance page while it runs, and puts the safety copy back if loading fails. It
+waits for a database update that is running. It asks you to type `restore` first;
+`--yes` skips the question, and without a terminal to ask, `--yes` is required.
+Shell access is the permission here, so no admin password is asked.
 
 ## Maintenance and health
 

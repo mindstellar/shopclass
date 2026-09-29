@@ -25,6 +25,7 @@ $notice  = is_array($view->_get('backup_notice')) ? $view->_get('backup_notice')
 $skipped = (string) $view->_get('backup_skipped');
 $probe   = $view->_get('backup_probe');
 $bucket  = is_array($view->_get('backup_bucket')) ? $view->_get('backup_bucket') : null;
+$address = (string) $view->_get('backup_bucket_address');
 $plain   = $bucket !== null && BackupBucket::insecure();
 $open    = $bucket !== null && BackupBucket::flaggedPublic();
 $demo    = defined('DEMO');
@@ -137,6 +138,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             'text'   => __('Your backups folder is open to the web. Anyone who guesses a file name could download a backup.'),
             'action' => array('label' => __('How to close it'), 'url' => 'https://mindstellar.com/docs/deploy/security/#the-backups-folder'),
         );
+    }
+    if ($address !== '') {
+        $issues[] = array('tone' => 'warning', 'text' => $address);
     }
     if ($bucket !== null && $bucket['exposed']) {
         $issues[] = array(

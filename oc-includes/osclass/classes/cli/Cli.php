@@ -49,6 +49,10 @@ class Cli
         'jobs:status'         => ['cmdJobsStatus', 'Show what is on the job queue per type, and what stopped retrying (--type=)'],
         'storage:work'        => ['cmdJobsWork', 'Deprecated alias for jobs:work'],
         'sitemap:warm'        => ['cmdSitemapWarm', 'Pre-generate the XML sitemap into the cache'],
+        'backup:create'       => ['cmdBackupCreate', 'Make a backup ([--what=database|files|everything] [--to=server|s3|<folder>])'],
+        'backup:list'         => ['cmdBackupList', 'List backups ([--to=server|s3|<folder>])'],
+        'backup:restore'      => ['cmdBackupRestore', 'Restore a backup (<name|file.zip|file.sql> [--from=server|s3] [--only=database|files] [--yes])'],
+        'backup:delete'       => ['cmdBackupDelete', 'Delete a backup (<name> [--from=server|s3] [--yes])'],
         'user:create-admin'   => ['cmdUserCreateAdmin', 'Create an admin (--user= --email= [--password=] [--name=])'],
         'user:reset-password' => ['cmdUserResetPassword', 'Reset an admin password (--user=|--email= [--password=])'],
         'user:2fa-off'        => ['cmdUserTwoFactorOff', 'Turn off an admin\'s two-step sign-in (--user=)'],
@@ -740,6 +744,63 @@ class Cli
         }
 
         return $all['error'] > 0 ? 1 : 0;
+    }
+
+    /**
+     * The backup:* commands, run by BackupCommands.
+     *
+     * @return BackupCommands
+     */
+    private function backups(): BackupCommands
+    {
+        return new BackupCommands(
+            function (string $text): void {
+                $this->out($text);
+            },
+            function (string $text): void {
+                $this->err($text);
+            }
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $args
+     *
+     * @return int
+     */
+    private function cmdBackupCreate(array $args): int
+    {
+        return $this->backups()->create($args);
+    }
+
+    /**
+     * @param array<string, mixed> $args
+     *
+     * @return int
+     */
+    private function cmdBackupList(array $args): int
+    {
+        return $this->backups()->list($args);
+    }
+
+    /**
+     * @param array<string, mixed> $args
+     *
+     * @return int
+     */
+    private function cmdBackupRestore(array $args): int
+    {
+        return $this->backups()->restore($args);
+    }
+
+    /**
+     * @param array<string, mixed> $args
+     *
+     * @return int
+     */
+    private function cmdBackupDelete(array $args): int
+    {
+        return $this->backups()->delete($args);
     }
 
     /**

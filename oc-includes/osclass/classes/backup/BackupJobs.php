@@ -141,7 +141,7 @@ final class BackupJobs
         $store->saveState(self::state($p, 'running'));
         try {
             if ($bucket === null) {
-                throw new BackupFailure(__('Saving to the bucket is not set up any more.'), 'upload');
+                throw new BackupFailure(BackupBucket::addressProblem() ?: __('Saving to the bucket is not set up any more.'), 'upload');
             }
             if ($store->cancelRequested((string) $p['run'])) {
                 throw BackupFailure::cancelled('upload');
@@ -280,7 +280,7 @@ final class BackupJobs
         $store->saveState(self::state($p, 'running'));
         try {
             if ($bucket === null) {
-                throw new BackupFailure(__('Saving to the bucket is not set up any more.'), 'fetch');
+                throw new BackupFailure(BackupBucket::addressProblem() ?: __('Saving to the bucket is not set up any more.'), 'fetch');
             }
             if (!preg_match(BackupStore::UPLOAD, (string) $p['source']) || !preg_match(BackupStore::NAME, (string) $p['bucket_name'])) {
                 throw new BackupFailure(__('That backup is not in the list any more.'), 'fetch');
@@ -397,15 +397,20 @@ final class BackupJobs
     }
 
     /**
-     * A Builder wired to this site.
+     * A Builder wired to this site. $opts replaces any of its options, and 'content'
+     * points it at another oc-content.
      *
-     * @param BackupStore $store
+     * @param BackupStore         $store
+     * @param array<string,mixed> $opts
      *
      * @return Builder
      */
-    public static function builder(BackupStore $store): Builder
+    public static function builder(BackupStore $store, array $opts = array()): Builder
     {
-        return new Builder($store, ABS_PATH . 'oc-content', array(
+        $content = (string) ($opts['content'] ?? ABS_PATH . 'oc-content');
+        unset($opts['content']);
+
+        return new Builder($store, $content, $opts + array(
             'db_bytes' => static function (): int {
                 $size = DatabaseTools::size(Connection::instance(), DB_TABLE_PREFIX);
 
@@ -418,18 +423,24 @@ final class BackupJobs
     }
 
     /**
-     * A Restorer wired to this site.
+     * A Restorer wired to this site. $opts replaces any of its options; 'content' and
+     * 'site' point it at another site, and 'builder' holds options for the safety copy.
      *
-     * @param BackupStore $store
-     * @param int         $jobId the job running it
+     * @param BackupStore         $store
+     * @param int                 $jobId the job running it
+     * @param array<string,mixed> $opts
      *
      * @return Restorer
      */
-    public static function restorer(BackupStore $store, int $jobId): Restorer
+    public static function restorer(BackupStore $store, int $jobId, array $opts = array()): Restorer
     {
-        $conn = Connection::instance();
+        $conn    = Connection::instance();
+        $content = (string) ($opts['content'] ?? ABS_PATH . 'oc-content');
+        $site    = (string) ($opts['site'] ?? ABS_PATH);
+        $builder = self::builder($store, array('content' => $content) + (array) ($opts['builder'] ?? array()));
+        unset($opts['content'], $opts['site'], $opts['builder']);
 
-        return new Restorer($store, self::builder($store), ABS_PATH . 'oc-content', ABS_PATH, array(
+        return new Restorer($store, $builder, $content, $site, $opts + array(
             'load'     => static function ($handle, callable $each) use ($conn): int {
                 return self::load($conn, $handle, $each);
             },

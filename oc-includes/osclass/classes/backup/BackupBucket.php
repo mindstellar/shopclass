@@ -82,8 +82,8 @@ final class BackupBucket
     }
 
     /**
-     * The per-site folder name for a site address: host, port and path, lower-cased, in
-     * a-z 0-9 . and -, cut to SITE_MAX with a hash of the whole when longer.
+     * The per-site folder name for a site address: host, port and path in a-z 0-9 . and -
+     * for people to read, then a hash of the exact address so two sites never share one.
      *
      * @param string $baseUrl
      *
@@ -91,22 +91,60 @@ final class BackupBucket
      */
     public static function siteFolder(string $baseUrl): string
     {
-        $url  = strtolower(trim($baseUrl));
-        $url  = preg_match('#^[a-z][a-z0-9+.-]*://#', $url) ? $url : 'http://' . $url;
-        $part = parse_url($url);
-        $part = is_array($part) ? $part : array();
-        $raw  = ($part['host'] ?? '') . (isset($part['port']) ? '-' . $part['port'] : '') . '/' . ($part['path'] ?? '');
-        $raw  = (string) preg_replace('#(?<=/)\.+(?=/|$)#', '', $raw);
-        $name = (string) preg_replace('/[^a-z0-9.]+/', '-', $raw);
-        $name = trim((string) preg_replace('/\.{2,}/', '.', $name), '.-');
-        if ($name === '') {
-            return 'site';
-        }
-        if (strlen($name) > self::SITE_MAX) {
-            $name = rtrim(substr($name, 0, self::SITE_MAX - 9), '.-') . '-' . substr(sha1($name), 0, 8);
+        $url   = trim($baseUrl);
+        $url   = preg_match('#^[a-z][a-z0-9+.-]*://#i', $url) ? $url : 'http://' . $url;
+        $part  = parse_url($url);
+        $part  = is_array($part) ? $part : array();
+        $path  = (string) preg_replace('#(?<=/)\.+(?=/|$)#', '', '/' . ($part['path'] ?? ''));
+        $path  = rtrim((string) preg_replace('#/+#', '/', $path), '/') . '/';
+        $exact = strtolower($part['host'] ?? '') . (isset($part['port']) ? ':' . $part['port'] : '') . $path;
+        $name  = (string) preg_replace('/[^a-z0-9.]+/', '-', strtolower($exact));
+        $name  = trim((string) preg_replace('/\.{2,}/', '.', $name), '.-');
+        $name  = rtrim(substr($name !== '' ? $name : 'site', 0, self::SITE_MAX - 9), '.-');
+
+        return $name . '-' . substr(sha1($exact), 0, 8);
+    }
+
+    /**
+     * Whether WEB_PATH is set in config.php or the environment. One taken from the
+     * request's Host header is not, as a visitor could pick another site's folder, and
+     * neither is OSC_CLI_URL, which the web side never sees.
+     *
+     * @return bool
+     */
+    public static function addressKnown(): bool
+    {
+        if (self::$base !== null) {
+            return self::$base !== '';
         }
 
-        return $name;
+        return defined('WEB_PATH') && (string) WEB_PATH !== ''
+            && !(defined('OSC_WEB_PATH_FROM_REQUEST') && OSC_WEB_PATH_FROM_REQUEST)
+            && !(defined('OSC_WEB_PATH_FROM_CLI_URL') && OSC_WEB_PATH_FROM_CLI_URL);
+    }
+
+    /**
+     * Why the bucket cannot be used though storage offers one: the site address is not
+     * set. '' when that is not the problem.
+     *
+     * @return string
+     */
+    public static function addressProblem(): string
+    {
+        if (self::addressKnown()) {
+            return '';
+        }
+        $remote = self::$adapter !== false ? self::$adapter : self::remote();
+
+        return $remote !== null && self::supports($remote) ? self::addressMessage() : '';
+    }
+
+    /**
+     * @return string
+     */
+    public static function addressMessage(): string
+    {
+        return __('Set WEB_PATH in config.php or the environment to use the bucket.');
     }
 
     /**
@@ -210,12 +248,16 @@ final class BackupBucket
     }
 
     /**
-     * The adapter backups go to, or null when saving to a bucket is not on offer.
+     * The adapter backups go to, or null when saving to a bucket is not on offer or the
+     * site address is not set.
      *
      * @return object|null
      */
     public static function adapter(): ?object
     {
+        if (!self::addressKnown()) {
+            return null;
+        }
         if (self::$adapter !== false) {
             return self::$adapter;
         }

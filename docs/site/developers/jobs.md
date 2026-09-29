@@ -21,7 +21,7 @@ osc_add_hook('register_jobs', function () {
     osc_job_register_handler('acme.send_digest', function ($job) {
         acme_send_digest((int) $job->get('user_id'));
     });
-    // Optional: how the admin's Background jobs screen and activity log name it.
+    // Optional: how System info > Jobs and the activity log name it.
     osc_job_describe('acme.send_digest', __('Send the weekly digest'), function (array $payload) {
         return sprintf(__('User #%d'), $payload['user_id'] ?? 0);
     });

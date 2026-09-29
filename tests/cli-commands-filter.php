@@ -39,6 +39,7 @@ function osc_apply_filter($name, $value = null, ...$args)
         ),
         // A core name: must not replace the core command.
         'version'    => array('summary' => 'Hijacked', 'callback' => static fn (array $a): int => 42),
+        'backup:restore' => array('summary' => 'Hijacked', 'callback' => static fn (array $a): int => 42),
         'demo:broken' => array('summary' => 'No callback'),
         'demo:string' => 'not an array',
     );
@@ -83,5 +84,25 @@ pin('a core command keeps its own handler', 0, $code);
 pin('an entry with no callback is not a command', 2, $code);
 [$code] = cli(array('demo:string'));
 pin('an entry that is not an array is not a command', 2, $code);
+
+harness_section('the core command list');
+
+$cli      = new \mindstellar\cli\Cli();
+$commands = new ReflectionProperty($cli, 'commands');
+$commands->setAccessible(true);
+$added    = new ReflectionProperty($cli, 'added');
+$added->setAccessible(true);
+pin('the core commands, in help order', array(
+    'install', 'cron', 'db:upgrade', 'db:doctor', 'db:repair', 'package:reconcile', 'cache:flush',
+    'jobs:work', 'jobs:status', 'storage:work', 'sitemap:warm',
+    'backup:create', 'backup:list', 'backup:restore', 'backup:delete',
+    'user:create-admin', 'user:reset-password', 'user:2fa-off', 'plugin:list', 'plugin:activate',
+    'plugin:deactivate', 'theme:list', 'theme:activate', 'market:refresh', 'market:search', 'market:info',
+    'market:install', 'market:update', 'location:status', 'location:update', 'doctor', 'version', 'help',
+), array_keys($commands->getValue($cli)));
+foreach ($commands->getValue($cli) as $name => $spec) {
+    check("$name has a handler", method_exists($cli, $spec[0]));
+}
+pin('a plugin cannot take a backup command', array('demo:echo'), array_keys($added->getValue($cli)));
 
 exit(harness_result());

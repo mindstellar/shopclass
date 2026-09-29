@@ -50,6 +50,7 @@ you find.
 
 ### New
 
+- `oc-cli.php backup:create`, `backup:list`, `backup:restore` and `backup:delete` do the same backups from a shell: no time limit, a folder outside the site, big files, and restore when web restore is off.
 - Backups can be saved to your S3 bucket. A separate private **Backups bucket** in Settings → Storage keeps them away from your photos. Download and restore work from the bucket too, and **Backups kept** applies there.
 - System info reminds you to make a backup when none was saved on the server in the last 30 days.
 - **Tools → Backup and restore** makes a database, files or everything backup as one zip, downloaded or saved on the server, in the background.
@@ -257,6 +258,7 @@ you find.
 
 ### Security
 
+- In a shared bucket, each site's backup folder carries a fingerprint of the full site address, so similar addresses never share a folder. Bucket backups need `WEB_PATH` set in config.php or the environment.
 - The upgrade no longer starts from a link. It asks first, and starts only after you confirm.
 - Restoring a backup from the admin asks for your password again, and your 2FA code when 2FA is on. `OSC_DISABLE_WEB_RESTORE` turns web restore off.
 - Server backups live in `oc-content/downloads/backups/`, closed to the web and named so no one can guess them. The page warns if the folder is open to the web. The browser can no longer choose the folder.

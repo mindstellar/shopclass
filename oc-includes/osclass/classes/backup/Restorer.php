@@ -47,7 +47,7 @@ final class Restorer
      * @param array<string,mixed> $opts    callables: load fn($handle, callable $each): int, lock fn(): ?callable,
      *                                     migrate fn(): void, after fn(): void, requeue fn(): bool,
      *                                     progress fn(array $p): void; maintenance (the .maintenance path);
-     *                                     batch, seconds
+     *                                     batch, seconds; source_path, a backup file outside the store
      */
     public function __construct(BackupStore $store, Builder $builder, string $content, string $site, array $opts)
     {
@@ -60,6 +60,7 @@ final class Restorer
             'maintenance' => rtrim($site, '/') . '/.maintenance',
             'batch'       => Builder::BATCH,
             'seconds'     => Builder::SECONDS,
+            'source_path' => null,
         );
     }
 
@@ -208,7 +209,7 @@ final class Restorer
      */
     private function start(array $p): array
     {
-        $path = $this->store->path((string) $p['source']);
+        $path = $this->source($p);
         if ($path === null) {
             throw new BackupFailure(__('The backup file is gone.'), 'start');
         }
@@ -290,7 +291,7 @@ final class Restorer
         }
         try {
             try {
-                $this->load((string) $p['source'], $p);
+                $this->load($this->source($p), $p);
             } catch (Throwable $e) {
                 $reason = BackupFailure::clean($e->getMessage());
                 throw new BackupFailure($reason, 'database', $this->rollback($p));
@@ -316,16 +317,32 @@ final class Restorer
     }
 
     /**
+     * The backup file being restored: one in the store, or the file given by path.
+     *
+     * @param array<string,mixed> $p
+     *
+     * @return string|null
+     */
+    private function source(array $p): ?string
+    {
+        $given = $this->opts['source_path'];
+        if (is_string($given)) {
+            return is_file($given) ? $given : null;
+        }
+
+        return $this->store->path((string) $p['source']);
+    }
+
+    /**
      * Run a backup's database: a zip's database.sql or a bare .sql file.
      *
-     * @param string              $name
+     * @param string|null         $path
      * @param array<string,mixed> $p
      *
      * @return void
      */
-    private function load(string $name, array &$p): void
+    private function load(?string $path, array &$p): void
     {
-        $path = $this->store->path($name);
         if ($path === null) {
             throw new RuntimeException(__('The backup file is gone.'));
         }
@@ -367,7 +384,7 @@ final class Restorer
             return false;
         }
         try {
-            $this->load((string) $p['safety_name'], $p);
+            $this->load($this->store->path((string) $p['safety_name']), $p);
 
             return true;
         } catch (Throwable $e) {
@@ -384,7 +401,7 @@ final class Restorer
      */
     private function files(array $p): array
     {
-        $path = $this->store->path((string) $p['source']);
+        $path = $this->source($p);
         if ($path === null) {
             throw new BackupFailure(__('The backup file is gone.'), 'files');
         }
@@ -419,7 +436,7 @@ final class Restorer
     private function finish(array $p): array
     {
         ($this->opts['after'])();
-        if (preg_match(BackupStore::UPLOAD, (string) $p['source'])) {
+        if ($this->opts['source_path'] === null && preg_match(BackupStore::UPLOAD, (string) $p['source'])) {
             @unlink($this->store->dir() . $p['source']);
         }
         $this->reopen($p);

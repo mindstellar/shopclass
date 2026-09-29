@@ -34,6 +34,7 @@ use mindstellar\storage\StorageManager;
 
 $GLOBALS['prefs'] = array();
 BackupBucket::useBase('https://www.example.com/');
+$ownFolder = 'www.example.com-2a0b0c8e';
 function osc_get_preference($key, $section = 'osclass')
 {
     return $GLOBALS['prefs'][$key] ?? '';
@@ -184,13 +185,13 @@ $GLOBALS['prefs']['storage_s3_bucket']        = 'photos';
 $GLOBALS['prefs']['storage_s3_public_url']    = 'https://cdn.example';
 $GLOBALS['prefs']['storage_s3_backup_bucket'] = '';
 pin('the core S3 adapter with no backups bucket uses the photo bucket', true, BackupBucket::shared());
-pin('...under backups/ in the site folder', 'photos/backups/www.example.com/', BackupBucket::label());
+pin('...under backups/ in the site folder', 'photos/backups/' . $ownFolder . '/', BackupBucket::label());
 pin('...and warns while it has a public URL', true, BackupBucket::exposed());
 $GLOBALS['prefs']['storage_s3_public_url'] = '';
 pin('...and while it serves photos without signed links', true, BackupBucket::exposed());
 $GLOBALS['prefs']['storage_s3_backup_bucket'] = 'private-backups';
 pin('a backups bucket is used when set', false, BackupBucket::shared());
-pin('...shown by name', 'private-backups/backups/www.example.com/', BackupBucket::label());
+pin('...shown by name', 'private-backups/backups/' . $ownFolder . '/', BackupBucket::label());
 pin('...with no warning', false, BackupBucket::exposed());
 $adapter = BackupBucket::adapter();
 $state   = array();
