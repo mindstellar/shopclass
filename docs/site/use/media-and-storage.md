@@ -125,6 +125,9 @@ Two fields deserve attention:
 - **Local copies** — **Keep local copies** or **Delete after upload**. Keeping
   a copy costs disk, and buys you a working site if the bucket becomes
   unreachable.
+- **Backups bucket** and **Backups kept** — where
+  [backups saved to S3](/docs/use/backups-and-maintenance/#saving-to-your-s3-bucket)
+  go, and how many are kept.
 
 :::note[The secret key is write-only]
 Leaving the secret key field blank keeps the saved one. The admin says so:

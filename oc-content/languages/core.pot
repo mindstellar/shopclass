@@ -603,6 +603,12 @@ msgid ""
 "it."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
+msgid ""
+"A private bucket for Tools > Backup and restore, reached with the keys "
+"above. "
+msgstr ""
+
 #: oc-admin/themes/modern/tools/logs.php
 msgid "A record of admin and listing activity — who did what, and when. "
 msgstr ""
@@ -1658,12 +1664,30 @@ msgstr ""
 msgid "Backup saved: %1$s, %2$s, %3$s."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
+msgid "Backups"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
+msgid "Backups bucket"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "Backups folder"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
+msgid "Backups kept"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/backup.php
 msgid "Backups you save on the server are listed here. Downloads are not kept."
+msgstr ""
+
+#: oc-admin/themes/modern/tools/backup.php
+msgid ""
+"Backups you save on the server or in the bucket are listed here. Downloads "
+"are not kept."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/server.php
@@ -1848,6 +1872,7 @@ msgstr ""
 msgid "Browser resize"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/backup.php
 #: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
 msgid "Bucket"
 msgstr ""
@@ -3587,6 +3612,14 @@ msgstr ""
 msgid "Download to this computer"
 msgstr ""
 
+#: oc-includes/osclass/classes/backup/BackupManager.php
+msgid "Downloading it from the bucket"
+msgstr ""
+
+#: oc-includes/osclass/classes/backup/BackupManager.php
+msgid "Downloading it from the bucket: %1$s of %2$s"
+msgstr ""
+
 #: oc-admin/themes/modern/parts/market.php
 msgid "Downloads"
 msgstr ""
@@ -4726,6 +4759,12 @@ msgstr ""
 msgid "How long queries are stored"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
+msgid ""
+"How many backups to keep on the server, and in the bucket. Older ones are "
+"removed after each new backup."
+msgstr ""
+
 #: oc-admin/themes/modern/billing/wallet.php
 msgid "How many credits"
 msgstr ""
@@ -5176,6 +5215,10 @@ msgstr ""
 msgid ""
 "It is <b>recommended</b> to have this option enabled, because some features "
 "require it."
+msgstr ""
+
+#: oc-admin/themes/modern/tools/backup.php
+msgid "It is downloaded from the bucket first (%s)."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
@@ -6609,6 +6652,12 @@ msgid "New users"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
+msgid ""
+"Newest first. Kept: the last %1$d on the server and the last %1$d in the "
+"bucket."
+msgstr ""
+
+#: oc-admin/themes/modern/tools/backup.php
 msgid "Newest first. Kept: the last %d on the server."
 msgstr ""
 
@@ -6973,6 +7022,10 @@ msgstr ""
 #: oc-admin/themes/modern/parts/package-ui.php
 #: oc-includes/osclass/classes/market/Compatibility.php
 msgid "Not compatible"
+msgstr ""
+
+#: oc-includes/osclass/classes/backup/BackupManager.php
+msgid "Not enough space on the server to download it: needs about %1$s, %2$s free."
 msgstr ""
 
 #: oc-includes/osclass/classes/backup/Builder.php
@@ -8602,6 +8655,10 @@ msgstr ""
 msgid "Save this password now — it won't be shown again. We also emailed it to %s."
 msgstr ""
 
+#: oc-admin/themes/modern/tools/backup.php
+msgid "Save to your S3 bucket"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/BillingSettingsForm.php
 msgid "Save upgrade settings"
 msgstr ""
@@ -8622,6 +8679,14 @@ msgstr ""
 
 #: oc-includes/osclass/classes/backup/BackupManager.php
 msgid "Saving the database (table %1$d of %2$d)"
+msgstr ""
+
+#: oc-includes/osclass/classes/backup/BackupManager.php
+msgid "Saving to a bucket needs S3 storage turned on in Settings > Storage."
+msgstr ""
+
+#: oc-includes/osclass/classes/backup/BackupJobs.php
+msgid "Saving to the bucket is not set up any more."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/widgets.php
@@ -9039,6 +9104,10 @@ msgstr ""
 #: oc-includes/osclass/classes/controller/base/AdminSecBaseModel.php
 #: oc-includes/osclass/classes/controller/base/WebSecBaseModel.php
 msgid "Session timed out"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/backup.php
+msgid "Set a backups bucket"
 msgstr ""
 
 #: oc-admin/themes/modern/items/settings.php
@@ -9780,6 +9849,7 @@ msgstr ""
 msgid "Thank you for using <a href=\"%s\" target=\"_blank\">Shopclass</a>"
 msgstr ""
 
+#: oc-includes/osclass/classes/backup/BackupJobs.php
 #: oc-includes/osclass/classes/backup/BackupManager.php
 msgid "That backup is not in the list any more."
 msgstr ""
@@ -9874,9 +9944,14 @@ msgid "The backup failed while saving the database."
 msgstr ""
 
 #: oc-includes/osclass/classes/backup/BackupManager.php
+msgid "The backup failed while uploading to the bucket."
+msgstr ""
+
+#: oc-includes/osclass/classes/backup/BackupManager.php
 msgid "The backup failed."
 msgstr ""
 
+#: oc-includes/osclass/classes/backup/BackupJobs.php
 #: oc-includes/osclass/classes/backup/Restorer.php
 msgid "The backup file is gone."
 msgstr ""
@@ -9885,6 +9960,7 @@ msgstr ""
 msgid "The backup folder cannot be written."
 msgstr ""
 
+#: oc-includes/osclass/classes/backup/BackupJobs.php
 #: oc-includes/osclass/classes/backup/BackupManager.php
 msgid "The backup folder cannot be written: %s"
 msgstr ""
@@ -9903,6 +9979,17 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid "The backup is restored."
+msgstr ""
+
+#: oc-includes/osclass/classes/backup/BackupJobs.php
+#: oc-includes/osclass/classes/backup/BackupManager.php
+msgid "The backup was kept on the server instead."
+msgstr ""
+
+#: oc-admin/themes/modern/tools/backup.php
+msgid ""
+"The bucket could not be read, so backups saved there are not listed. Check "
+"the connection in Settings > Storage."
 msgstr ""
 
 #: oc-includes/osclass/classes/market/Installer.php
@@ -10278,6 +10365,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/upgrade.php
 msgid "The upgrade finished, with some errors."
+msgstr ""
+
+#: oc-includes/osclass/classes/backup/BackupJobs.php
+msgid "The upload could not be started."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/DatabaseTools.php
@@ -11274,6 +11365,10 @@ msgstr ""
 msgid "Upload"
 msgstr ""
 
+#: oc-includes/osclass/classes/backup/BackupJobs.php
+msgid "Upload a backup to the bucket"
+msgstr ""
+
 #: oc-admin/themes/modern/languages/index.php
 msgid "Upload language"
 msgstr ""
@@ -11288,6 +11383,14 @@ msgstr ""
 
 #: oc-admin/themes/modern/media/index.php
 msgid "Uploaded"
+msgstr ""
+
+#: oc-includes/osclass/classes/backup/BackupManager.php
+msgid "Uploading to the bucket"
+msgstr ""
+
+#: oc-includes/osclass/classes/backup/BackupManager.php
+msgid "Uploading to the bucket: %1$s of %2$s"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
@@ -12122,6 +12225,12 @@ msgstr ""
 msgid "Your password"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/backup.php
+msgid ""
+"Your photo bucket is public. Anyone with the link could download a backup "
+"saved there. Use a separate private bucket."
+msgstr ""
+
 #: oc-admin/themes/modern/fields/index.php
 msgid ""
 "Your reusable fields. Drag one into a form on the left, or use a form’s "
@@ -12321,6 +12430,11 @@ msgstr ""
 
 #: oc-includes/osclass/helpers/hAdminUi.php
 msgid "in %s"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/SystemChecks.php
+#: oc-includes/osclass/classes/backup/BackupJobs.php
+msgid "in the bucket"
 msgstr ""
 
 #: oc-admin/themes/modern/fields/iframe.php
@@ -12528,6 +12642,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/upgrade/UpgradePackage.php
 msgid "s_source_file is not a valid url"
+msgstr ""
+
+#: oc-includes/osclass/classes/backup/BackupManager.php
+msgid "saved in your S3 bucket"
 msgstr ""
 
 #: oc-includes/osclass/classes/backup/BackupManager.php

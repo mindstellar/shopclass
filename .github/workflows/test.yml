@@ -614,3 +614,12 @@ jobs:
       # Old backup URLs route, the demo refuses first, and downloads take listed names only.
       - name: Admin backup page
         run: php tests/admin-backup-page.php
+      # Bucket backup keys carry a random name and a manifest; the prune keeps N per kind there too.
+      - name: Backup S3 keys
+        run: php tests/backup-s3-keys.php
+      # A large upload resumes at the next part, never sends an ACL, and is checked by size.
+      - name: S3 multipart resume
+        run: php tests/s3-multipart-resume.php
+      # An adapter without the bucket methods hides the bucket option; the interface is unchanged.
+      - name: Storage adapter optional methods
+        run: php tests/storage-adapter-optional-methods.php

@@ -12,7 +12,9 @@
  * Backups and restores as jobs: a backup adds 2,000 files per run and queues itself again
  * with where it stopped; a cancel stops the next run and leaves nothing behind; a restore
  * runs its steps in order, replaces each table, closes and reopens the site, and puts the
- * safety copy back when loading the database fails.
+ * safety copy back when loading the database fails. A bucket backup is uploaded after it is
+ * built and only then removed here; a failed upload keeps it here; a bucket backup is
+ * downloaded before it is restored.
  *
  * No database: the connection is a fake that can be told to fail.
  * Usage:  php tests/backup-jobs.php
@@ -26,9 +28,11 @@ define('DB_TABLE_PREFIX', 'sc_');
 
 require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/lib/stubs.php';
+require_once __DIR__ . '/lib/fake-s3.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hMaintenance.php';
 require_once ABS_PATH . 'oc-includes/vendor/autoload.php';
 
+use mindstellar\backup\BackupBucket;
 use mindstellar\backup\BackupJobs;
 use mindstellar\backup\BackupStore;
 use mindstellar\backup\Builder;
@@ -36,6 +40,7 @@ use mindstellar\backup\Restorer;
 use mindstellar\database\Connection;
 use mindstellar\database\DbException;
 use mindstellar\job\Job;
+use mindstellar\storage\S3Storage;
 
 /** Records what would run, and fails on the statements it is told to. */
 final class FakeConnection extends Connection
@@ -309,6 +314,159 @@ foreach ($shapes as $label => $state) {
     check($label . ': the backup survives', is_file($saved0) && is_file($json0)
         && in_array($source, array_column($store->all(), 'name'), true));
 }
+
+harness_section('A backup to the bucket');
+
+$s3      = new FakeS3Client();
+$bucket  = new S3Storage(array('endpoint' => 'https://s3.example', 'bucket' => 'shop-backups', 'access_key' => 'k', 'secret_key' => 's', 'client' => $s3));
+$uploads = array();
+$effects = array(
+    'saved'    => static function (array $p) use (&$saved) {
+        $saved[] = $p;
+
+        return true;
+    },
+    'upload'   => static function (array $p) use (&$uploads) {
+        $uploads[] = $p;
+
+        return true;
+    },
+    'restored' => static function () {
+        return true;
+    },
+    'log'      => static function (string $text) use (&$logs) {
+        $logs[] = $text;
+
+        return true;
+    },
+);
+BackupJobs::effects($effects);
+$uploadJob = static function (Job $job) use ($store, $bucket) {
+    BackupJobs::upload($job, $store, $bucket);
+};
+$before = array_column($store->all(), 'name');
+$saved  = array();
+list($stages, $built) = $runJob(static function (Job $job) use ($store, $builder) {
+    BackupJobs::create($job, $store, $builder);
+}, Builder::begin('database', 'bucket'));
+$name = $built['name'];
+pin('the build hands over to one upload job', 1, count($uploads));
+pin('...at the upload stage', 'upload', $uploads[0]['stage']);
+pin('...and nothing is reported saved yet', array(), $saved);
+pin('...while the page says it is uploading', array('running', 'upload'), array($store->state()['status'], $store->state()['stage']));
+pin('...and the copy here is not listed as a saved backup', $before, array_column($store->all(), 'name'));
+pin('...since its manifest here says it is waiting to upload', 'upload', $store->manifest($name)['kind']);
+$zipBytes = (string) file_get_contents($store->dir() . $name);
+$innerZip = new ZipArchive();
+$innerZip->open($store->dir() . $name);
+pin('...while the manifest inside the zip says backup', 'backup', json_decode((string) $innerZip->getFromName('manifest.json'), true)['kind']);
+$innerZip->close();
+
+list($stages) = $runJob($uploadJob, $uploads[0]);
+pin('the upload finishes', 'done', $store->state()['status']);
+pin('the bucket holds the zip byte for byte', $zipBytes, $s3->objects[BackupBucket::key($name)] ?? null);
+pin('...with its manifest beside it, saying backup', 'backup', json_decode($s3->objects[BackupBucket::sidecarKey($name)] ?? '{}', true)['kind'] ?? null);
+check('...uploaded after the zip', array_search(BackupBucket::sidecarKey($name), array_column(array_column($s3->calls('putObject'), 'params'), 'Key'), true)
+    > array_search(BackupBucket::key($name), array_column(array_column($s3->calls('putObject'), 'params'), 'Key'), true));
+pin('...each checked by size', 2, count($s3->calls('headObject')));
+pin('the copy here is removed', array(), glob($store->dir() . substr($name, 0, -4) . '*'));
+pin('...and the backup is reported saved in the bucket', array(1, 'bucket'), array(count($saved), $saved[0]['where'] ?? null));
+pin('the bucket lists it', array($name), array_column((array) $store->bucketAll($bucket), 'name'));
+
+harness_section('A failed upload keeps the backup here');
+
+$uploads = array();
+list(, $built) = $runJob(static function (Job $job) use ($store, $builder) {
+    BackupJobs::create($job, $store, $builder);
+}, Builder::begin('database', 'bucket'));
+$failName = $built['name'];
+$s3->before = static function (string $op, array $p) use ($failName): void {
+    if ($op === 'putObject' && strpos($p['Key'], $failName) !== false) {
+        throw new RuntimeException("Access Denied\nhttps://s3.example/shop-backups?X-Amz-Credential=AKIA");
+    }
+};
+$runJob($uploadJob, $uploads[0]);
+$s3->before = null;
+$state = $store->state();
+pin('the run is reported failed at the upload', array('failed', 'upload'), array($state['status'], $state['stage']));
+pin('...saying the backup was kept', 'Access Denied The backup was kept on the server instead.', $state['message']);
+pin('...and it is listed here as a saved backup', 'backup', $store->manifest($failName)['kind']);
+check('...among the saved backups', in_array($failName, array_column($store->all(), 'name'), true));
+pin('...with no half of it in the bucket', array(), array_values(array_filter(array_keys($s3->objects), static function ($k) use ($failName) {
+    return strpos($k, substr($failName, 0, -4)) !== false;
+})));
+$words = \mindstellar\backup\BackupManager::failure($state);
+check('...and the page does not say nothing was saved', !in_array('Nothing was saved.', $words['lines'], true), implode(' | ', $words['lines']));
+$store->delete($failName);
+
+harness_section('A cancelled upload leaves nothing');
+
+$uploads = array();
+list(, $built) = $runJob(static function (Job $job) use ($store, $builder) {
+    BackupJobs::create($job, $store, $builder);
+}, Builder::begin('database', 'bucket'));
+$store->requestCancel($built['run']);
+$runJob($uploadJob, $uploads[0]);
+pin('a cancelled upload says so', 'cancelled', $store->state()['status']);
+pin('...and removes the copy here', array(), glob($store->dir() . substr($built['name'], 0, -4) . '*'));
+check('...with nothing in the bucket', !isset($s3->objects[BackupBucket::key($built['name'])]));
+$store->clearState();
+
+harness_section('A restore from the bucket');
+
+$conn->ran    = array();
+$conn->failOn = array();
+@unlink($site . '/.maintenance');
+$p = Restorer::begin(BackupStore::uploadName('zip'), true, false);
+$p['stage']       = 'fetch';
+$p['bucket_name'] = $name;
+$local            = $store->dir() . $p['source'];
+$job = new Job(array('pk_i_id' => '11'), $p);
+BackupJobs::restore($job, $store, $make(), $bucket);
+$next = $job->repeatRequest()['payload'] ?? array();
+pin('the first step downloads the backup', array('start', $zipBytes), array($next['stage'] ?? '', (string) @file_get_contents($local)));
+pin('...into a private upload file', '600', substr(sprintf('%o', fileperms($local)), -3));
+pin('...and the page is told of it', array('running', true), array($store->state()['status'], $store->state()['from_bucket']));
+list($stages) = $runJob(static function (Job $job) use ($store, $make, $bucket) {
+    BackupJobs::restore($job, $store, $make(), $bucket);
+}, $next);
+pin('then the normal restore runs', array('start', 'safety', 'database', 'finish'), array_values(array_unique($stages)));
+pin('...and finishes', 'done', $store->state()['status']);
+check('...loading the database from the bucket copy', in_array('DROP TABLE IF EXISTS `sc_t_probe`', $conn->ran, true));
+check('...and the downloaded copy is removed', !is_file($local));
+
+$p = Restorer::begin(BackupStore::uploadName('zip'), true, false);
+$p['stage']       = 'fetch';
+$p['bucket_name'] = '2026-01-01-000000-database-aaaaaaaaaaaaaaaa.zip';
+$runJob(static function (Job $job) use ($store, $make, $bucket) {
+    BackupJobs::restore($job, $store, $make(), $bucket);
+}, $p);
+$state = $store->state();
+pin('a backup gone from the bucket fails the download', array('failed', 'fetch', true), array($state['status'], $state['stage'], $state['untouched']));
+check('...leaving no partial file', !is_file($store->dir() . $p['source']));
+$p['bucket_name'] = '../photos/1.jpg';
+$runJob(static function (Job $job) use ($store, $make, $bucket) {
+    BackupJobs::restore($job, $store, $make(), $bucket);
+}, $p);
+pin('a name that is not a backup is refused', 'That backup is not in the list any more.', $store->state()['message']);
+$store->clearState();
+
+harness_section('Pruning in the bucket');
+
+BackupJobs::effects($effects);
+$pruneBucket = new FakeS3Client();
+$pruneS3     = new S3Storage(array('bucket' => 'shop-backups', 'client' => $pruneBucket));
+$inBucket    = array();
+for ($i = 0; $i < BackupJobs::KEEP + 3; $i++) {
+    $n = date('Y-m-d-His', time() - 600 * ($i + 1)) . '-everything-' . BackupStore::random(16) . '.zip';
+    $pruneBucket->objects[BackupBucket::key($n)]        = 'zip';
+    $pruneBucket->objects[BackupBucket::sidecarKey($n)] = '{}';
+    $inBucket[] = $n;
+}
+pin('the bucket keeps the newest KEEP', 3, $store->bucketPrune($pruneS3, BackupJobs::KEEP));
+pin('...exactly those', array_slice($inBucket, 0, BackupJobs::KEEP), array_column((array) $store->bucketAll($pruneS3), 'name'));
+pin('...with no manifest left behind', BackupJobs::KEEP * 2, count($pruneBucket->objects));
+check('the prune job prunes the bucket too', strpos((string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/backup/BackupJobs.php'), '$store->bucketPrune($bucket, $keep);') !== false);
 
 harness_section('Pruning');
 

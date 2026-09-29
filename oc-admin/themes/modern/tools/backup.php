@@ -23,13 +23,13 @@ $confirm = is_array($view->_get('backup_confirm')) ? $view->_get('backup_confirm
 $notice  = is_array($view->_get('backup_notice')) ? $view->_get('backup_notice') : null;
 $skipped = (string) $view->_get('backup_skipped');
 $probe   = $view->_get('backup_probe');
+$bucket  = is_array($view->_get('backup_bucket')) ? $view->_get('backup_bucket') : null;
 $demo    = defined('DEMO');
 $status  = (string) ($state['status'] ?? '');
 $live    = in_array($status, array('queued', 'running'), true);
 $locked  = $demo || $busy || $live;
 $offload = osc_get_preference('storage_active') === 's3';
-$keep    = (int) osc_get_preference('backup_keep');
-$keep    = $keep > 0 ? $keep : BackupJobs::KEEP;
+$keep    = BackupJobs::keepCount();
 $max     = DatabaseTools::uploadLimit();
 $poll    = osc_admin_base_url(true) . '?page=ajax&action=backup_status&' . osc_csrf_token_url();
 $noWeb   = osc_web_restore_disabled();
@@ -44,6 +44,11 @@ $describe = static function (array $row): array {
         'what' => $row['kind'] === 'safety' ? __('Safety copy') : BackupJobs::whatWord($row['what']),
         'size' => DatabaseTools::bytes($row['size']),
     );
+};
+
+/** The fields that name a listed backup in a post. */
+$names = static function (array $row): array {
+    return ($row['where'] ?? '') === 'bucket' ? array('name' => $row['name'], 'from' => 'bucket') : array('name' => $row['name']);
 };
 
 /** A button that posts one action from its own small form. */
@@ -121,13 +126,24 @@ osc_admin_page(array(
 osc_current_admin_theme_path('parts/header.php'); ?>
     <?php osc_admin_page_head(__('Backup and restore')); ?>
 
-    <?php if ($probe === true) {
-        osc_admin_verdict(array(array(
+    <?php
+    $issues = array();
+    if ($probe === true) {
+        $issues[] = array(
             'tone'   => 'danger',
             'text'   => __('Your backups folder is open to the web. Anyone who guesses a file name could download a backup.'),
             'action' => array('label' => __('How to close it'), 'url' => 'https://mindstellar.com/docs/deploy/security/#the-backups-folder'),
-        )));
-    } ?>
+        );
+    }
+    if ($bucket !== null && $bucket['exposed']) {
+        $issues[] = array(
+            'tone'   => 'warning',
+            'text'   => __('Your photo bucket is public. Anyone with the link could download a backup saved there. Use a separate private bucket.'),
+            'action' => array('label' => __('Set a backups bucket'), 'url' => osc_admin_base_url(true) . '?page=settings&action=storage'),
+        );
+    }
+    osc_admin_verdict($issues);
+    ?>
 
     <?php if ($live) {
         $words   = BackupManager::progress($state);
@@ -237,18 +253,25 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 'everything' => array('label' => __('Everything'), 'custom_html' => $note(__('Database and files'))),
             ),
         ));
+        $places = array(
+            'download' => __('Download to this computer'),
+            'server'   => array(
+                'label'       => __('Save on the server'),
+                'custom_html' => '<code class="backup-choice-note">' . osc_esc_html(BackupStore::FOLDER) . '</code>',
+            ),
+        );
+        if ($bucket !== null) {
+            $places['bucket'] = array(
+                'label'       => __('Save to your S3 bucket'),
+                'custom_html' => '<code class="backup-choice-note">' . osc_esc_html($bucket['label']) . '</code>',
+            );
+        }
         osc_admin_radio_group(array(
             'name'     => 'where',
             'label'    => __('Where'),
             'selected' => 'download',
             'disabled' => $locked,
-            'options'  => array(
-                'download' => __('Download to this computer'),
-                'server'   => array(
-                    'label'       => __('Save on the server'),
-                    'custom_html' => '<code class="backup-choice-note">' . osc_esc_html(BackupStore::FOLDER) . '</code>',
-                ),
-            ),
+            'options'  => $places,
         ));
         ?>
         <?php if ($offload) { ?>
@@ -274,11 +297,18 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 
     <?php osc_admin_form_section(__('Saved backups'), array(
         'spaced'     => true,
-        'intro_html' => $list === array() ? '' : osc_esc_html(sprintf(__('Newest first. Kept: the last %d on the server.'), $keep))
+        'intro_html' => $list === array() ? '' : osc_esc_html($bucket !== null
+            ? sprintf(__('Newest first. Kept: the last %1$d on the server and the last %1$d in the bucket.'), $keep)
+            : sprintf(__('Newest first. Kept: the last %d on the server.'), $keep))
             . ' ' . osc_esc_html(__("A backup holds your users' password hashes and your site's keys. Keep it as private as your database.")),
     )); ?>
+    <?php if ($bucket !== null && !$bucket['readable']) { ?>
+        <p class="text-muted" id="backup-bucket-unread"><?php _e('The bucket could not be read, so backups saved there are not listed. Check the connection in Settings > Storage.'); ?></p>
+    <?php } ?>
     <?php if ($list === array()) { ?>
-        <p class="text-muted mb-0" id="backup-list-empty"><?php echo osc_esc_html(__('No saved backups yet.') . ' ' . __('Backups you save on the server are listed here. Downloads are not kept.')); ?></p>
+        <p class="text-muted mb-0" id="backup-list-empty"><?php echo osc_esc_html(__('No saved backups yet.') . ' ' . ($bucket !== null
+            ? __('Backups you save on the server or in the bucket are listed here. Downloads are not kept.')
+            : __('Backups you save on the server are listed here. Downloads are not kept.'))); ?></p>
     <?php } else { ?>
         <div class="table-responsive">
             <table class="table" id="backup-list">
@@ -302,18 +332,19 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                 <span class="backup-sub"><?php _e('made before a restore'); ?></span>
                             <?php } ?>
                         </td>
-                        <td class="backup-meta-cell"><?php _e('Server'); ?></td>
+                        <td class="backup-meta-cell"><?php echo ($row['where'] ?? '') === 'bucket' ? osc_esc_html(__('Bucket')) : osc_esc_html(__('Server')); ?></td>
                         <td class="backup-meta-cell"><?php echo osc_esc_html($words['size']); ?></td>
                         <td>
                             <div class="backup-actions">
                                 <?php
-                                $postButton('backup_download', __('Download'), array('name' => $row['name']));
+                                $postButton('backup_download', __('Download'), $names($row));
                                 if ($locked && !$noWeb) {
                                     osc_admin_action_button(array('label' => __('Restore…'), 'attrs' => array('disabled' => 'disabled')));
                                 } elseif (!$noWeb) {
                                     osc_admin_action_button(array(
                                         'label' => __('Restore…'),
-                                        'url'   => osc_admin_base_url(true) . '?page=tools&action=backup&confirm=' . rawurlencode($row['name']),
+                                        'url'   => osc_admin_base_url(true) . '?page=tools&action=backup&confirm=' . rawurlencode($row['name'])
+                                            . (($row['where'] ?? '') === 'bucket' ? '&from=bucket' : ''),
                                     ));
                                 } ?>
                             </div>
@@ -334,7 +365,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 'title'   => __('Delete this backup?'),
                 'text'    => sprintf(__('%1$s, %2$s, %3$s. This only removes the backup file.'), $words['when'], $words['what'], $words['size']),
                 'confirm' => __('Delete'),
-                'fields'  => array('page' => 'tools', 'action' => 'backup_delete', 'name' => $row['name']),
+                'fields'  => array('page' => 'tools', 'action' => 'backup_delete') + $names($row),
             ));
         } ?>
     <?php } ?>
@@ -400,6 +431,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 . osc_esc_html(sprintf(__('Files (%s)'), DatabaseTools::bytes($fBytes))) . '</label>'
                 . '</div>';
         }
+        if ($confirm['from'] === 'bucket') {
+            $body .= '<p class="backup-restore-note">' . osc_esc_html(sprintf(__('It is downloaded from the bucket first (%s).'), DatabaseTools::bytes((int) $confirm['size']))) . '</p>';
+        }
         if ($confirm['note'] !== '') {
             $body .= '<p class="backup-restore-note">' . osc_esc_html($confirm['note']) . '</p>';
         }
@@ -447,7 +481,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             'text'      => $text,
             'body_html' => $body,
             'confirm'   => __('Restore'),
-            'fields'    => array('page' => 'tools', 'action' => 'backup_restore', 'name' => $confirm['name']),
+            'fields'    => array('page' => 'tools', 'action' => 'backup_restore') + $names(array('name' => $confirm['name'], 'where' => $confirm['from'])),
         ));
     } ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

@@ -969,6 +969,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\admin\\ui\\Picker' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/admin/ui/Picker.php',
         'mindstellar\\admin\\ui\\SettingsForm' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/admin/ui/SettingsForm.php',
         'mindstellar\\backup\\BackupArchive' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/backup/BackupArchive.php',
+        'mindstellar\\backup\\BackupBucket' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/backup/BackupBucket.php',
         'mindstellar\\backup\\BackupFailure' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/backup/BackupFailure.php',
         'mindstellar\\backup\\BackupJobs' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/backup/BackupJobs.php',
         'mindstellar\\backup\\BackupManager' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/backup/BackupManager.php',

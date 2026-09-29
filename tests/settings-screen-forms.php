@@ -690,6 +690,8 @@ pin(
         'storage_s3_signed_urls' => 'osclass/storage_s3_signed_urls',
         'storage_s3_signed_ttl'  => 'osclass/storage_s3_signed_ttl',
         'storage_keep_local'     => 'osclass/storage_keep_local',
+        'storage_s3_backup_bucket' => 'osclass/storage_s3_backup_bucket',
+        'backup_keep'            => 'osclass/backup_keep',
     ),
     keymap(StorageSettingsForm::register())
 );
@@ -1628,6 +1630,16 @@ foreach (array(
     array('storage_s3_signed_ttl', '', '900', 'and a blank one'),
     array('storage_s3_signed_ttl', 'soon', '900', 'and one with no number in it'),
     array('storage_s3_signed_ttl', array('3600'), '900', 'and one posted as a list'),
+    array('storage_s3_backup_bucket', 'shop-backups', 'shop-backups', 'a backups bucket name is kept'),
+    array('storage_s3_backup_bucket', ' Shop-Backups ', 'shop-backups', 'trimmed and lowercased'),
+    array('storage_s3_backup_bucket', 'shop/backups', '', 'one with a slash is blank'),
+    array('storage_s3_backup_bucket', 'ab', '', 'and one too short'),
+    array('storage_s3_backup_bucket', '', '', 'a blank one stays blank, meaning the bucket above'),
+    array('storage_s3_backup_bucket', array('x'), '', 'and one posted as a list'),
+    array('backup_keep', '7', '7', 'a number of backups kept is kept'),
+    array('backup_keep', '0', '5', 'zero keeps 5'),
+    array('backup_keep', '1000', '100', 'past 100 is held to 100'),
+    array('backup_keep', 'many', '5', 'and one with no number in it keeps 5'),
 ) as $case) {
     $run = drive('CAdminSettingsStorage', 'storage_post', array($case[0] => $case[1]) + $storage);
     pin($case[3], $case[2], pref($admin, $case[0])[0] ?? null);

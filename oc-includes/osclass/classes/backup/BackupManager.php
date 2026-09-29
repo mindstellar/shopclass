@@ -24,7 +24,10 @@ use Throwable;
 final class BackupManager
 {
     public const WHAT  = array('database', 'files', 'everything');
-    public const WHERE = array('download', 'server');
+    public const WHERE = array('download', 'server', 'bucket');
+
+    /** The job types that make one run: only one at a time. */
+    public const JOBS = array(BackupJobs::CREATE, BackupJobs::UPLOAD, BackupJobs::RESTORE);
 
     /** A run with no job and no news for this long has stopped. */
     public const STALE = 120;
@@ -36,7 +39,7 @@ final class BackupManager
      */
     public static function busy(): bool
     {
-        foreach (array(BackupJobs::CREATE, BackupJobs::RESTORE) as $type) {
+        foreach (self::JOBS as $type) {
             $stats = osc_job_stats($type);
             if ($stats['pending'] + $stats['running'] > 0) {
                 return true;
@@ -62,6 +65,9 @@ final class BackupManager
         if (self::busy()) {
             return __('One backup at a time. Wait for the one running to finish.');
         }
+        if ($where === 'bucket' && BackupBucket::adapter() === null) {
+            return __('Saving to a bucket needs S3 storage turned on in Settings > Storage.');
+        }
         $store = BackupStore::site();
         if (!$store->protect()) {
             return sprintf(__('The backup folder cannot be written: %s'), BackupStore::FOLDER);
@@ -77,20 +83,22 @@ final class BackupManager
     }
 
     /**
-     * Queue a restore of a saved backup or an uploaded file.
+     * Queue a restore of a saved backup, a backup in the bucket, or an uploaded file. A
+     * bucket backup is downloaded here first, by the same job.
      *
      * @param string $name
      * @param bool   $db
      * @param bool   $files
+     * @param bool   $bucket whether $name is in the bucket
      *
      * @return string '' when queued, else why not
      */
-    public static function startRestore(string $name, bool $db, bool $files): string
+    public static function startRestore(string $name, bool $db, bool $files, bool $bucket = false): string
     {
         if (self::busy()) {
             return __('One backup at a time. Wait for the one running to finish.');
         }
-        $check = self::check($name);
+        $check = $bucket ? self::checkBucket($name) : self::check($name);
         if ($check['reason'] !== '') {
             return $check['reason'];
         }
@@ -102,7 +110,17 @@ final class BackupManager
         if ($db && !self::lockFree()) {
             return __('A database update is running. Try again in a few minutes.');
         }
-        $p = Restorer::begin($name, $db, $files);
+        if ($bucket) {
+            if (!BackupStore::site()->protect()) {
+                return sprintf(__('The backup folder cannot be written: %s'), BackupStore::FOLDER);
+            }
+            $p = Restorer::begin(BackupStore::uploadName('zip'), $db, $files);
+            $p['stage']       = 'fetch';
+            $p['bucket_name'] = $name;
+            $p['fetch']       = array();
+        } else {
+            $p = Restorer::begin($name, $db, $files);
+        }
         $p['source_created'] = (string) ($check['manifest']['created'] ?? '');
         if (osc_job_enqueue(BackupJobs::RESTORE, $p) === 0) {
             return __('The restore could not be started. Try again.');
@@ -138,6 +156,60 @@ final class BackupManager
             'db_bytes'    => $info['db_bytes'],
             'files_bytes' => $info['files_bytes'],
         );
+    }
+
+    /**
+     * Whether a backup in the bucket may be restored here, and what it holds, from the
+     * manifest beside it. The file itself is checked again once it is downloaded.
+     *
+     * @param string $name
+     *
+     * @return array{reason:string,note:string,manifest:?array,database:bool,files:int,size:int,db_bytes:int,files_bytes:int}
+     */
+    public static function checkBucket(string $name): array
+    {
+        $out    = array('reason' => '', 'note' => '', 'manifest' => null, 'database' => false, 'files' => 0, 'size' => 0, 'db_bytes' => 0, 'files_bytes' => 0);
+        $gone   = array('reason' => __('That backup is not in the list any more.')) + $out;
+        $bucket = BackupBucket::adapter();
+        if ($bucket === null) {
+            return array('reason' => __('Saving to a bucket needs S3 storage turned on in Settings > Storage.')) + $out;
+        }
+        if ($name !== basename($name) || !preg_match(BackupStore::NAME, $name)) {
+            return $gone;
+        }
+        $size = null;
+        foreach ((array) $bucket->list(BackupBucket::key($name)) as $object) {
+            if (($object['key'] ?? '') === BackupBucket::key($name)) {
+                $size = (int) $object['size'];
+            }
+        }
+        $json     = $size !== null ? $bucket->get(BackupBucket::sidecarKey($name)) : false;
+        $manifest = is_string($json) ? Manifest::parse($json) : null;
+        if ($size === null || $manifest === null) {
+            return $gone;
+        }
+        $check    = Manifest::check($manifest, OSCLASS_VERSION, DB_TABLE_PREFIX);
+        $contents = (array) ($manifest['contents'] ?? array());
+        $out      = array(
+            'reason'      => $check['ok'] ? '' : $check['reason'],
+            'note'        => $check['note'],
+            'manifest'    => $manifest,
+            'database'    => isset($contents['database']),
+            'files'       => (int) ($contents['files']['count'] ?? 0),
+            'size'        => $size,
+            'db_bytes'    => (int) ($contents['database']['bytes'] ?? 0),
+            'files_bytes' => (int) ($contents['files']['bytes'] ?? 0),
+        );
+        $free = BackupStore::site()->freeSpace();
+        if ($out['reason'] === '' && $free !== null && $free < $size + 200 * 1048576) {
+            $out['reason'] = sprintf(
+                __('Not enough space on the server to download it: needs about %1$s, %2$s free.'),
+                DatabaseTools::bytes($size + 200 * 1048576),
+                DatabaseTools::bytes($free)
+            );
+        }
+
+        return $out;
     }
 
     /**
@@ -186,7 +258,7 @@ final class BackupManager
         $live  = in_array($state['status'] ?? '', array('queued', 'running'), true);
         if ($live) {
             $pending = 0;
-            foreach (array(BackupJobs::CREATE, BackupJobs::RESTORE) as $type) {
+            foreach (self::JOBS as $type) {
                 $pending += osc_job_stats($type)['pending'];
             }
             if ($pending > 0) {
@@ -230,7 +302,7 @@ final class BackupManager
             : __('It stopped and did not finish. Nothing was saved.');
         if (($state['kind'] ?? '') === 'restore') {
             $state['rolled_back'] = ($state['stage'] ?? '') === 'database' ? false : null;
-            $state['untouched']   = in_array($state['stage'] ?? '', array('start', 'safety'), true);
+            $state['untouched']   = in_array($state['stage'] ?? '', array('fetch', 'start', 'safety'), true);
         }
 
         return $state;
@@ -248,8 +320,11 @@ final class BackupManager
         if (($s['kind'] ?? '') === 'restore') {
             return self::restoreProgress($s);
         }
-        $where = ($s['where'] ?? '') === 'download' ? __('to download') : __('saved on the server');
-        $title = sprintf(__('Making a backup: %1$s, %2$s.'), BackupJobs::whatWord((string) ($s['what'] ?? '')), $where);
+        $places = array('download' => __('to download'), 'bucket' => __('saved in your S3 bucket'));
+        $where  = $places[$s['where'] ?? ''] ?? __('saved on the server');
+        $title  = sprintf(__('Making a backup: %1$s, %2$s.'), BackupJobs::whatWord((string) ($s['what'] ?? '')), $where);
+        // A bucket backup is built in the first 60% of the bar and uploaded in the rest.
+        $scale  = ($s['where'] ?? '') === 'bucket' ? .6 : 1;
         $hasDb    = ($s['what'] ?? '') !== 'files';
         $hasFiles = ($s['what'] ?? '') !== 'database';
         $dbShare  = $hasDb ? ($hasFiles ? 20 : 95) : 0;
@@ -257,6 +332,20 @@ final class BackupManager
             return array('title' => $title, 'line' => __('Waiting to start'), 'percent' => 0);
         }
         switch ($s['stage'] ?? '') {
+            case 'upload':
+                $total = max(1, (int) ($s['upload_total'] ?? 0));
+
+                return array(
+                    'title'   => $title,
+                    'line'    => (int) ($s['upload_total'] ?? 0) > 0
+                        ? sprintf(
+                            __('Uploading to the bucket: %1$s of %2$s'),
+                            DatabaseTools::bytes((int) $s['upload_done']),
+                            DatabaseTools::bytes((int) $s['upload_total'])
+                        )
+                        : __('Uploading to the bucket'),
+                    'percent' => (int) min(99, 60 + floor(39 * (int) ($s['upload_done'] ?? 0) / $total)),
+                );
             case 'start':
                 return array('title' => $title, 'line' => $hasFiles ? __('Counting files') : __('Starting'), 'percent' => 0);
             case 'database':
@@ -268,7 +357,7 @@ final class BackupManager
                     'line'    => (int) $s['db_tables'] > 0
                         ? sprintf(__('Saving the database (table %1$d of %2$d)'), $done, $tables)
                         : __('Saving the database'),
-                    'percent' => (int) floor($dbShare * ((int) $s['db_done']) / $tables),
+                    'percent' => (int) floor($scale * $dbShare * ((int) $s['db_done']) / $tables),
                 );
             case 'files':
                 $total = max(1, (int) $s['files_total']);
@@ -281,11 +370,11 @@ final class BackupManager
                         number_format((int) $s['files_total']),
                         DatabaseTools::bytes((int) $s['bytes_done'])
                     ),
-                    'percent' => (int) min(97, $dbShare + floor((97 - $dbShare) * (int) $s['files_done'] / $total)),
+                    'percent' => (int) floor($scale * min(97, $dbShare + floor((97 - $dbShare) * (int) $s['files_done'] / $total))),
                 );
         }
 
-        return array('title' => $title, 'line' => __('Finishing'), 'percent' => 98);
+        return array('title' => $title, 'line' => __('Finishing'), 'percent' => (int) floor($scale * 98));
     }
 
     /**
@@ -301,6 +390,18 @@ final class BackupManager
             return array('title' => $title, 'line' => __('Waiting to start'), 'percent' => 0);
         }
         switch ($s['stage'] ?? '') {
+            case 'fetch':
+                return array(
+                    'title'   => $title,
+                    'line'    => (int) ($s['fetch_total'] ?? 0) > 0
+                        ? sprintf(
+                            __('Downloading it from the bucket: %1$s of %2$s'),
+                            DatabaseTools::bytes((int) $s['fetch_done']),
+                            DatabaseTools::bytes((int) $s['fetch_total'])
+                        )
+                        : __('Downloading it from the bucket'),
+                    'percent' => 0,
+                );
             case 'start':
             case 'safety':
                 return array('title' => $title, 'line' => __('Step 1 of 4: Saving a safety copy'), 'percent' => 5);
@@ -344,9 +445,12 @@ final class BackupManager
                 'database' => __('The backup failed while saving the database.'),
                 'files'    => __('The backup failed while copying files.'),
                 'finish'   => __('The backup failed while finishing.'),
+                'upload'   => __('The backup failed while uploading to the bucket.'),
             );
             $lines = array($words[$stage] ?? __('The backup failed.'), $reason);
-            if (strpos($reason, __('Nothing was saved.')) === false) {
+            if (strpos($reason, __('Nothing was saved.')) === false
+                && strpos($reason, __('The backup was kept on the server instead.')) === false
+            ) {
                 $lines[] = __('Nothing was saved.');
             }
 

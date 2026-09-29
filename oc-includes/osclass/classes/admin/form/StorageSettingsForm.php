@@ -33,6 +33,11 @@ final class StorageSettingsForm
     /** What storage_s3_signed_ttl holds when nothing above zero was given. */
     public const DEFAULT_TTL = 900;
 
+    /** Backups kept in each place when nothing above zero was given. */
+    public const DEFAULT_KEEP = 5;
+
+    public const MAX_KEEP = 100;
+
     /** The range S3 signs a URL for, in seconds. */
     public const MIN_TTL = 60;
 
@@ -162,6 +167,33 @@ final class StorageSettingsForm
                 ->persist(static function ($value) {
                     return self::keepLocal($value);
                 })
+            ->group(__('Backups'))
+            ->text(
+                'storage_s3_backup_bucket',
+                __('Backups bucket'),
+                __('A private bucket for Tools > Backup and restore, reached with the keys above. '
+                   . 'Leave empty to use the bucket above, under backups/.')
+            )
+                ->sanitize(static function ($value) {
+                    return self::bucketName($value);
+                })
+                ->persist(static function ($value) {
+                    return self::bucketName($value);
+                })
+            ->number(
+                'backup_keep',
+                __('Backups kept'),
+                __('How many backups to keep on the server, and in the bucket. Older ones are removed after each new backup.')
+            )
+                ->set('min', 1)
+                ->set('max', self::MAX_KEEP)
+                ->default(self::DEFAULT_KEEP)
+                ->sanitize(static function ($value) {
+                    return self::keep($value);
+                })
+                ->persist(static function ($value) {
+                    return self::keep($value);
+                })
             ->custom('storage_clear', static function () {
                 echo '<div class="clear"></div>';
             })
@@ -190,6 +222,7 @@ final class StorageSettingsForm
             $values['storage_active']        = self::backend($values['storage_active']);
             $values['storage_keep_local']    = self::keepLocal($values['storage_keep_local']);
             $values['storage_s3_signed_ttl'] = (int)($values['storage_s3_signed_ttl'] ?: self::DEFAULT_TTL);
+            $values['backup_keep']           = self::keep($values['backup_keep'] ?? null);
         }
         // A refused save hands back what was typed, and a secret is not drawn back even then.
         unset($values[self::SECRET]);
@@ -265,6 +298,35 @@ final class StorageSettingsForm
         }
 
         return $region;
+    }
+
+    /**
+     * A bucket name as S3 allows it (3-63 lowercase letters, digits, dots and dashes), or
+     * blank for anything else.
+     *
+     * @param mixed $value
+     *
+     * @return string
+     */
+    public static function bucketName($value): string
+    {
+        $value = is_string($value) ? strtolower(trim($value)) : '';
+
+        return preg_match('/^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/', $value) ? $value : '';
+    }
+
+    /**
+     * How many backups to keep: above zero is held to 1-100, anything else is 5.
+     *
+     * @param mixed $value
+     *
+     * @return int
+     */
+    public static function keep($value): int
+    {
+        $keep = is_scalar($value) ? (int)$value : 0;
+
+        return $keep > 0 ? min(self::MAX_KEEP, $keep) : self::DEFAULT_KEEP;
     }
 
     /**

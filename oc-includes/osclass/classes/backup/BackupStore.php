@@ -156,7 +156,7 @@ final class BackupStore
      * The saved backups with their manifests, newest first. Downloads waiting to be
      * fetched are not listed.
      *
-     * @return array<int,array{name:string,size:int,created:string,what:string,kind:string,manifest:array<string,mixed>}>
+     * @return array<int,array{name:string,size:int,created:string,what:string,kind:string,where:string,manifest:array<string,mixed>}>
      */
     public function all(): array
     {
@@ -176,6 +176,7 @@ final class BackupStore
                 'created'  => (string) $manifest['created'],
                 'what'     => (string) $manifest['what'],
                 'kind'     => (string) ($manifest['kind'] ?? 'backup'),
+                'where'    => 'server',
                 'manifest' => $manifest,
             );
         }
@@ -243,7 +244,7 @@ final class BackupStore
      */
     private static function isSaved(?array $manifest): bool
     {
-        return $manifest !== null && ($manifest['kind'] ?? '') !== 'download';
+        return $manifest !== null && !in_array($manifest['kind'] ?? '', array('download', 'upload'), true);
     }
 
     /**
@@ -259,7 +260,7 @@ final class BackupStore
         if (!preg_match(self::NAME, $name) || self::isSaved($this->manifest($name))) {
             return;
         }
-        foreach (array('.part', '.part.cdir', '.sql') as $suffix) {
+        foreach (array('.part', '.part.cdir', '.sql', '.upart') as $suffix) {
             @unlink($this->dir . $name . $suffix);
         }
         @unlink($this->dir . substr($name, 0, -4) . '.json');
@@ -277,17 +278,141 @@ final class BackupStore
     public function prune(string $kind, int $keep): int
     {
         $deleted = 0;
-        $seen    = 0;
-        foreach ($this->all() as $row) {
-            if ($row['kind'] !== $kind) {
-                continue;
-            }
-            if (++$seen > max(1, $keep) && $this->delete($row['name'])) {
+        foreach (self::pruneNames($this->all(), $kind, $keep) as $name) {
+            if ($this->delete($name)) {
                 $deleted++;
             }
         }
 
         return $deleted;
+    }
+
+    /**
+     * The backups of one kind past the newest $keep, from rows listed newest first.
+     *
+     * @param array<int,array{name:string,kind:string}> $rows
+     * @param string                                    $kind
+     * @param int                                       $keep at least 1
+     *
+     * @return string[]
+     */
+    public static function pruneNames(array $rows, string $kind, int $keep): array
+    {
+        $names = array();
+        $seen  = 0;
+        foreach ($rows as $row) {
+            if ($row['kind'] === $kind && ++$seen > max(1, $keep)) {
+                $names[] = $row['name'];
+            }
+        }
+
+        return $names;
+    }
+
+    /**
+     * The backups in a bucket, newest first, from one listing: a backup counts only with
+     * its manifest beside it. Null when the bucket cannot be read.
+     *
+     * @param object $bucket a BackupBucket adapter
+     *
+     * @return array<int,array{name:string,size:int,created:string,what:string,kind:string,where:string,manifest:null}>|null
+     */
+    public function bucketAll(object $bucket): ?array
+    {
+        $objects = $bucket->list(BackupBucket::PREFIX);
+        if (!is_array($objects)) {
+            return null;
+        }
+        $keys = array();
+        foreach ($objects as $object) {
+            $keys[(string) $object['key']] = (int) $object['size'];
+        }
+        $rows = array();
+        foreach ($keys as $key => $size) {
+            $name = substr($key, strlen(BackupBucket::PREFIX));
+            if (strpos($key, BackupBucket::PREFIX) !== 0 || !preg_match(self::NAME, $name, $m)
+                || !isset($keys[BackupBucket::sidecarKey($name)])
+            ) {
+                continue;
+            }
+            $ts     = \DateTime::createFromFormat('Y-m-d-His', $m[1]);
+            $rows[] = array(
+                'name'     => $name,
+                'size'     => $size,
+                'created'  => $ts !== false ? $ts->format('c') : '',
+                'what'     => $m[2],
+                'kind'     => 'backup',
+                'where'    => 'bucket',
+                'manifest' => null,
+            );
+        }
+        usort($rows, static function (array $a, array $b): int {
+            return strcmp($b['name'], $a['name']);
+        });
+
+        return $rows;
+    }
+
+    /**
+     * Delete a backup and its manifest from the bucket.
+     *
+     * @param object $bucket
+     * @param string $name
+     *
+     * @return bool
+     */
+    public function bucketDelete(object $bucket, string $name): bool
+    {
+        if ($name !== basename($name) || !preg_match(self::NAME, $name)) {
+            return false;
+        }
+
+        return (bool) $bucket->deleteMany(array(BackupBucket::key($name), BackupBucket::sidecarKey($name)));
+    }
+
+    /**
+     * Keep the newest $keep backups in the bucket and delete the rest.
+     *
+     * @param object $bucket
+     * @param int    $keep
+     *
+     * @return int how many were deleted; 0 when the bucket cannot be read
+     */
+    public function bucketPrune(object $bucket, int $keep): int
+    {
+        $rows = $this->bucketAll($bucket);
+        if ($rows === null) {
+            return 0;
+        }
+        $keys  = array();
+        $names = self::pruneNames($rows, 'backup', $keep);
+        foreach ($names as $name) {
+            $keys[] = BackupBucket::key($name);
+            $keys[] = BackupBucket::sidecarKey($name);
+        }
+        if ($keys === array() || !$bucket->deleteMany($keys)) {
+            return 0;
+        }
+
+        return count($names);
+    }
+
+    /**
+     * A short-lived download link for a backup in the bucket, for a redirect only; '' when
+     * the name is not a backup that is there.
+     *
+     * @param object $bucket
+     * @param string $name
+     *
+     * @return string
+     */
+    public function bucketLink(object $bucket, string $name): string
+    {
+        if ($name !== basename($name) || !preg_match(self::NAME, $name) || !$bucket->exists(BackupBucket::key($name))) {
+            return '';
+        }
+
+        return (string) $bucket->downloadUrl(BackupBucket::key($name), BackupBucket::LINK_TTL, $name);
     }
 
     /**
@@ -314,13 +439,13 @@ final class BackupStore
                 continue;
             }
             if (preg_match(self::NAME, $name)) {
-                $manifest = $this->manifest($name);
-                if ($manifest !== null && ($manifest['kind'] ?? '') === 'download' && filemtime($file) < $old) {
+                $kind = (string) ($this->manifest($name)['kind'] ?? '');
+                if (($kind === 'download' || ($kind === 'upload' && !$running)) && filemtime($file) < $old) {
                     $this->delete($name);
                 }
                 continue;
             }
-            if (!$running && preg_match('/^\d{4}-\d{2}-\d{2}-\d{6}-[a-z]+-[a-z2-7]{16}\.zip\.(part|part\.cdir|sql)$/', $name)) {
+            if (!$running && preg_match('/^\d{4}-\d{2}-\d{2}-\d{6}-[a-z]+-[a-z2-7]{16}\.zip\.(part|part\.cdir|sql|upart)$/', $name)) {
                 @unlink($file);
             }
         }

@@ -19,9 +19,11 @@ Everything here lives under **Tools** in the admin panel.
 Download it to your computer, or save it on the server in
 `oc-content/downloads/backups/`. That folder is closed to the web by an
 `.htaccess` file; on nginx add the rule in
-[security](/docs/deploy/security/#the-backups-folder). The last 5 server backups are
-kept. Every backup is one `.zip` with a `manifest.json` that records the
-Shopclass version and what it holds.
+[security](/docs/deploy/security/#the-backups-folder). With photos offloaded to
+S3 you can also save it to your bucket; see below. The last 5 backups are kept in
+each place; change the number under **Backups kept** in **Settings → Storage**.
+Every backup is one `.zip` with a `manifest.json` that records the Shopclass
+version and what it holds.
 
 The backup runs in the background, so a large site does not time out. It keeps
 going while the page is open, and with [cron](/docs/configure/cron/) set up it
@@ -31,6 +33,26 @@ cancelled.
 A linked folder that points outside `oc-content` (a theme symlinked from elsewhere)
 is skipped and named on the page. With photos offloaded to S3, the photos stay
 in the bucket and are not copied; turn on versioning in the bucket.
+
+### Saving to your S3 bucket
+
+With [S3 offload](/docs/use/media-and-storage/#offloading-to-s3-compatible-storage)
+on, the page offers **Save to your S3 bucket**. The backup is built on the server,
+uploaded, checked by size, and then removed from the server. If the upload fails,
+the backup stays on the server and the page says so.
+
+Backups go to the **Backups bucket** set in **Settings → Storage**, with the same
+keys as the photos. Leave it empty and they go to the photo bucket under
+`backups/`. A backup holds password hashes and site keys, so use a separate
+private bucket: when the photo bucket is public, the page warns. Uploads never set
+a public ACL, but a public bucket or a custom domain in front of it serves every
+object in it.
+
+Bucket backups are listed with **Where: Bucket**. **Download** sends you to a link
+that works for 15 minutes; it is never shown on the page. **Restore…** downloads
+the backup to the server first, then restores it the usual way.
+
+A plugin storage adapter without the bucket methods does not offer this choice.
 
 ### From the command line
 

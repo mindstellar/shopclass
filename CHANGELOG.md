@@ -50,6 +50,7 @@ you find.
 
 ### New
 
+- Backups can be saved to your S3 bucket. A separate private **Backups bucket** in Settings → Storage keeps them away from your photos. Download and restore work from the bucket too, and **Backups kept** applies there.
 - System info reminds you to make a backup when none was saved on the server in the last 30 days.
 - **Tools → Backup and restore** makes a database, files or everything backup as one zip, downloaded or saved on the server, in the background.
 - Restoring a backup runs in the background behind the maintenance page, saves a safety copy first, and puts it back if loading fails. The confirm can put back only the database or only the files.

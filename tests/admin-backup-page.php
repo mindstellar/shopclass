@@ -12,8 +12,9 @@
  * Tools > Backup and restore: every old backup URL still routes, each action refuses on
  * the demo before it checks the token, a visit forgets nothing until Dismiss is posted,
  * a download takes only a listed name, the browser can no longer name a server folder,
- * the folder is closed on Apache 2.4 and 2.2, a restore asks for the password first, and
- * OSC_DISABLE_WEB_RESTORE hides and refuses restores.
+ * the folder is closed on Apache 2.4 and 2.2, a restore asks for the password first,
+ * OSC_DISABLE_WEB_RESTORE hides and refuses restores, and a bucket download is a redirect
+ * to a short-lived link that is never written into the page.
  *
  * No database. Usage:  php tests/admin-backup-page.php
  */
@@ -222,6 +223,36 @@ check('...and the upload form, showing the off line instead', (bool) preg_match(
     $view
 ));
 check('...in the owner\'s words', strpos($view, "__('Restore is turned off on this site. Use the command line.')") !== false);
+
+harness_section('Bucket backups');
+
+$download = $body('backupDownload');
+$bucketDl = $body('bucketDownload');
+$token    = strpos($download, 'osc_csrf_check()');
+$branch   = strpos($download, '$this->bucketDownload($store, $name)');
+check('a bucket download is taken after the demo refusal and the token', $token !== false && $branch !== false && $token < $branch);
+check('...and sends the browser on with a redirect', (bool) preg_match('/\$link\s*=\s*\$bucket !== null \? \$store->bucketLink\(\$bucket, \$name\) : \'\';.*\$this->redirectTo\(\$link, 303\);/s', $bucketDl));
+check('...that is not cached and sends no referrer', strpos($bucketDl, "header('Cache-Control: no-store')") !== false
+    && strpos($bucketDl, "header('Referrer-Policy: no-referrer')") !== false);
+check('...and writes nothing into a page', !preg_match('/\becho\b|print|_exportVariableToView|osc_add_flash_(ok|info)/', $bucketDl));
+pin('the link is made in one place only', 1, substr_count($controller, 'bucketLink('));
+foreach (array('bucketLink', 'downloadUrl', 'presign', 'X-Amz') as $needle) {
+    check("the page never makes a link: no $needle in the view", stripos($view, $needle) === false);
+}
+check('the page learns only the label, the warning and whether the bucket could be read', (bool) preg_match(
+    "/'backup_bucket', \\\$bucket !== null \\? array\\(\\s*'label'\\s*=> BackupBucket::label\\(\\),\\s*'exposed'\\s*=> BackupBucket::exposed\\(\\),\\s*'readable' => \\\$bucketRows !== null,\\s*\\) : null\\)/",
+    $controller
+));
+check('a bucket row downloads by posting its name, not by a link', strpos($view, "\$postButton('backup_download', __('Download'), \$names(\$row))") !== false
+    && strpos($view, "'from' => 'bucket'") !== false);
+$delete = $body('backup_delete');
+check('a bucket delete comes after the token', strpos($delete, 'osc_csrf_check()') < strpos($delete, 'bucketDelete('));
+check('...and deletes nothing here when no bucket is set', strpos($delete, "\$bucket === false ? BackupStore::site()->delete(\$name) : \$bucket !== null && BackupStore::site()->bucketDelete(\$bucket, \$name)") !== false);
+check('a bucket restore goes through the same password check, the one startRestore call', (bool) preg_match('/BackupManager::startRestore\(\s*\$name,.*?\$fromBucket\s*\);/s', $restore));
+check('...and a refusal reopens the bucket dialog', strpos($restore, "(\$fromBucket ? '&from=bucket' : '')") !== false);
+check('the Where column says Bucket for a bucket backup', strpos($view, "=== 'bucket' ? osc_esc_html(__('Bucket')) : osc_esc_html(__('Server'))") !== false);
+check('the public photo bucket warning is part of the one verdict', (bool) preg_match("/\\\$issues\\[\\] = array\\(\\s*'tone'\\s*=> 'warning',\\s*'text'\\s*=> __\\('Your photo bucket is public\\./", $view)
+    && substr_count($view, 'osc_admin_verdict(') === 1);
 
 $nginx = (string) file_get_contents(ABS_PATH . '.docker/prod/nginx.conf');
 check('the production nginx closes the downloads folder', (bool) preg_match('#location \^~ /oc-content/downloads/ \{\s*deny all;#', $nginx));

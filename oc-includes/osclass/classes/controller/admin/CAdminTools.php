@@ -22,6 +22,7 @@ if (!defined('ABS_PATH')) {
 use mindstellar\admin\DatabaseTools;
 use mindstellar\admin\ListPaging;
 use mindstellar\admin\SystemChecks;
+use mindstellar\backup\BackupBucket;
 use mindstellar\backup\BackupJobs;
 use mindstellar\backup\BackupManager;
 use mindstellar\backup\BackupStore;
@@ -189,7 +190,9 @@ class CAdminTools extends AdminSecBaseModel
                     break;
                 }
                 osc_csrf_check();
-                if (BackupStore::site()->delete(Params::getParamString('name', false, false))) {
+                $name   = Params::getParamString('name', false, false);
+                $bucket = Params::getParamString('from') === 'bucket' ? BackupBucket::adapter() : false;
+                if ($bucket === false ? BackupStore::site()->delete($name) : $bucket !== null && BackupStore::site()->bucketDelete($bucket, $name)) {
                     osc_add_flash_ok_message(_m('The backup is deleted.'), 'admin');
                 } else {
                     osc_add_flash_error_message(_m('That backup is not in the list any more.'), 'admin');
@@ -204,7 +207,8 @@ class CAdminTools extends AdminSecBaseModel
                 if ($this->refuseRestoreOff()) {
                     break;
                 }
-                $name = Params::getParamString('name', false, false);
+                $name       = Params::getParamString('name', false, false);
+                $fromBucket = Params::getParamString('from') === 'bucket';
                 $admin  = Admin::newInstance()->findByPrimaryKey(osc_logged_admin_id());
                 $reauth = is_array($admin) ? AdminReauth::verify(
                     $admin,
@@ -213,7 +217,7 @@ class CAdminTools extends AdminSecBaseModel
                 ) : _m("You don't have enough permissions");
                 if ($reauth !== '') {
                     Session::newInstance()->_set('backupReauthError', $reauth);
-                    $this->redirectTo(self::backupUrl() . '&confirm=' . rawurlencode($name));
+                    $this->redirectTo(self::backupUrl() . '&confirm=' . rawurlencode($name) . ($fromBucket ? '&from=bucket' : ''));
                     break;
                 }
                 $parts  = Params::getParamArray('parts');
@@ -221,7 +225,8 @@ class CAdminTools extends AdminSecBaseModel
                 $error  = BackupManager::startRestore(
                     $name,
                     !$choose || in_array('database', $parts, true),
-                    !$choose || in_array('files', $parts, true)
+                    !$choose || in_array('files', $parts, true),
+                    $fromBucket
                 );
                 if ($error !== '') {
                     osc_add_flash_error_message(osc_esc_html($error), 'admin');
@@ -551,17 +556,26 @@ class CAdminTools extends AdminSecBaseModel
             $store->sweep(false, $keep);
         }
 
-        $list    = $store->all();
-        $confirm = null;
-        $name    = Params::getParamString('confirm', false, false);
-        $reauth  = (string) Session::newInstance()->_get('backupReauthError');
+        $list       = $store->all();
+        $bucket     = BackupBucket::adapter();
+        $bucketRows = $bucket !== null ? $store->bucketAll($bucket) : array();
+        if ($bucketRows !== null && $bucketRows !== array()) {
+            $list = array_merge($list, $bucketRows);
+            usort($list, static function (array $a, array $b): int {
+                return strcmp($b['name'], $a['name']);
+            });
+        }
+        $confirm    = null;
+        $name       = Params::getParamString('confirm', false, false);
+        $fromBucket = $bucket !== null && Params::getParamString('from') === 'bucket';
+        $reauth     = (string) Session::newInstance()->_get('backupReauthError');
         Session::newInstance()->_drop('backupReauthError');
         if ($name !== '' && !$busy && !osc_web_restore_disabled()) {
-            $check = BackupManager::check($name);
+            $check = $fromBucket ? BackupManager::checkBucket($name) : BackupManager::check($name);
             if ($check['reason'] !== '') {
                 osc_add_flash_error_message(osc_esc_html($check['reason']), 'admin');
             } else {
-                $confirm = array('name' => $name) + $check;
+                $confirm = array('name' => $name, 'from' => $fromBucket ? 'bucket' : 'server') + $check;
             }
         }
 
@@ -570,6 +584,11 @@ class CAdminTools extends AdminSecBaseModel
         $this->_exportVariableToView('backup_skipped', $keep !== '' ? self::skippedLine($state) : '');
         $this->_exportVariableToView('backup_busy', $busy);
         $this->_exportVariableToView('backup_list', $list);
+        $this->_exportVariableToView('backup_bucket', $bucket !== null ? array(
+            'label'    => BackupBucket::label(),
+            'exposed'  => BackupBucket::exposed(),
+            'readable' => $bucketRows !== null,
+        ) : null);
         $this->_exportVariableToView('backup_confirm', $confirm);
         $this->_exportVariableToView('backup_reauth_error', $confirm !== null ? $reauth : '');
         $me = $confirm !== null ? Admin::newInstance()->findByPrimaryKey(osc_logged_admin_id()) : null;
@@ -662,6 +681,11 @@ class CAdminTools extends AdminSecBaseModel
         osc_csrf_check();
         $store    = BackupStore::site();
         $name     = Params::getParamString('name', false, false);
+        if (Params::getParamString('from') === 'bucket') {
+            $this->bucketDownload($store, $name);
+
+            return;
+        }
         $path     = preg_match(BackupStore::NAME, $name) ? $store->path($name) : null;
         $manifest = $path !== null ? $store->manifest($name) : null;
         if ($manifest === null) {
@@ -681,6 +705,30 @@ class CAdminTools extends AdminSecBaseModel
             });
         }
         $this->sendFile($path, $name);
+    }
+
+    /**
+     * Send the browser to a short-lived link for a backup in the bucket. The link is only
+     * ever in this redirect, never in a page.
+     *
+     * @param BackupStore $store
+     * @param string      $name
+     *
+     * @return void
+     */
+    private function bucketDownload(BackupStore $store, string $name): void
+    {
+        $bucket = BackupBucket::adapter();
+        $link   = $bucket !== null ? $store->bucketLink($bucket, $name) : '';
+        if ($link === '') {
+            osc_add_flash_error_message(_m('That backup is not in the list any more.'), 'admin');
+            $this->redirectTo(self::backupUrl());
+
+            return;
+        }
+        header('Cache-Control: no-store');
+        header('Referrer-Policy: no-referrer');
+        $this->redirectTo($link, 303);
     }
 
     /**

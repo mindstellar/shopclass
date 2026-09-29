@@ -852,6 +852,7 @@ return array(
     'mindstellar\\admin\\ui\\Picker' => $baseDir . '/oc-includes/osclass/classes/admin/ui/Picker.php',
     'mindstellar\\admin\\ui\\SettingsForm' => $baseDir . '/oc-includes/osclass/classes/admin/ui/SettingsForm.php',
     'mindstellar\\backup\\BackupArchive' => $baseDir . '/oc-includes/osclass/classes/backup/BackupArchive.php',
+    'mindstellar\\backup\\BackupBucket' => $baseDir . '/oc-includes/osclass/classes/backup/BackupBucket.php',
     'mindstellar\\backup\\BackupFailure' => $baseDir . '/oc-includes/osclass/classes/backup/BackupFailure.php',
     'mindstellar\\backup\\BackupJobs' => $baseDir . '/oc-includes/osclass/classes/backup/BackupJobs.php',
     'mindstellar\\backup\\BackupManager' => $baseDir . '/oc-includes/osclass/classes/backup/BackupManager.php',

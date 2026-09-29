@@ -76,7 +76,7 @@ final class Builder
      * The payload of a new backup.
      *
      * @param string $what  database|files|everything
-     * @param string $where server|download
+     * @param string $where server|download|bucket
      * @param string $kind  backup|safety
      *
      * @return array<string,mixed>
@@ -307,7 +307,8 @@ final class Builder
         if (!@rename($this->partPath($p), $this->store->dir() . $p['name'])) {
             throw new RuntimeException('Could not save the backup');
         }
-        $this->store->saveManifest((string) $p['name'], $manifest);
+        // Until it is in the bucket, the copy here is not a saved backup.
+        $this->store->saveManifest((string) $p['name'], $p['where'] === 'bucket' ? array('kind' => 'upload') + $manifest : $manifest);
         clearstatcache();
         $p['size']  = (int) filesize($this->store->dir() . $p['name']);
         $p['zip']   = array();

@@ -196,7 +196,7 @@ final class Restorer
      */
     public static function untouched(BackupFailure $e): bool
     {
-        return $e->rolledBack === null && in_array($e->stage, array('start', 'safety', 'database'), true);
+        return $e->rolledBack === null && in_array($e->stage, array('fetch', 'start', 'safety', 'database'), true);
     }
 
     /**

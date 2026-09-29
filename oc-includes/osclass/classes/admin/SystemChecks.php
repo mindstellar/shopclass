@@ -602,7 +602,7 @@ final class SystemChecks
 
         return sprintf(__('%s ago'), osc_admin_duration(self::now($env) - $when))
             . ' · ' . BackupJobs::whatWord((string) ($env['backup_last']['what'] ?? ''))
-            . ' · ' . __('on the server');
+            . ' · ' . ((string) ($env['backup_last']['where'] ?? '') === 'bucket' ? __('in the bucket') : __('on the server'));
     }
 
     /**

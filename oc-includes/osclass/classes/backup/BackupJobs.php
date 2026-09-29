@@ -28,16 +28,17 @@ use RuntimeException;
 final class BackupJobs
 {
     public const CREATE  = 'backup.create';
+    public const UPLOAD  = 'backup.upload';
     public const RESTORE = 'backup.restore';
     public const PRUNE   = 'backup.prune';
 
-    /** Backups kept on the server, unless the backup_keep preference says otherwise. */
+    /** Backups kept on the server and in the bucket, unless the backup_keep preference says otherwise. */
     public const KEEP = 5;
 
     /** Safety copies kept. */
     public const SAFETY_KEEP = 2;
 
-    /** @var array<string,callable> side effects a test replaces: saved, restored, log, requeue */
+    /** @var array<string,callable> side effects a test replaces: saved, upload, restored, log, requeue */
     private static $effects = array();
 
     /**
@@ -47,6 +48,9 @@ final class BackupJobs
     {
         JobRegistry::register(self::CREATE, static function (Job $job): void {
             self::create($job);
+        });
+        JobRegistry::register(self::UPLOAD, static function (Job $job): void {
+            self::upload($job);
         });
         JobRegistry::register(self::RESTORE, static function (Job $job): void {
             self::restore($job);
@@ -58,6 +62,7 @@ final class BackupJobs
             return self::whatWord((string) ($p['what'] ?? ''));
         };
         JobRegistry::describe(self::CREATE, __('Make a backup'), $what);
+        JobRegistry::describe(self::UPLOAD, __('Upload a backup to the bucket'), $what);
         JobRegistry::describe(self::RESTORE, __('Restore a backup'));
         JobRegistry::describe(self::PRUNE, __('Remove old backups'));
     }
@@ -102,8 +107,119 @@ final class BackupJobs
 
             return;
         }
+        if ($p['where'] === 'bucket') {
+            $p['stage']  = 'upload';
+            $p['upload'] = array();
+            $store->saveState(self::state($p, 'running'));
+            if (!self::effect('upload', $p)) {
+                self::ended($store, $p, self::keep($store, $p, new BackupFailure(__('The upload could not be started.'), 'upload')));
+            }
+
+            return;
+        }
         $store->saveState(self::state($p, 'done'));
         self::effect('saved', $p);
+    }
+
+    /**
+     * One step of the upload of a finished backup to the bucket. Once the bucket holds it
+     * at the right size, with its manifest beside it, the copy here is removed.
+     *
+     * @param Job              $job
+     * @param BackupStore|null $store
+     * @param object|null      $bucket a BackupBucket adapter
+     *
+     * @return void
+     */
+    public static function upload(Job $job, ?BackupStore $store = null, ?object $bucket = null): void
+    {
+        $store  = $store ?? BackupStore::site();
+        $bucket = $bucket ?? BackupBucket::adapter();
+        $p      = $job->payload();
+        $name   = (string) $p['name'];
+        $state  = (array) ($p['upload'] ?? array());
+        $store->saveState(self::state($p, 'running'));
+        try {
+            if ($bucket === null) {
+                throw new BackupFailure(__('Saving to the bucket is not set up any more.'), 'upload');
+            }
+            if ($store->cancelRequested((string) $p['run'])) {
+                throw BackupFailure::cancelled('upload');
+            }
+            if ($store->path($name) === null) {
+                throw new BackupFailure(__('The backup file is gone.'), 'upload');
+            }
+            $deadline = microtime(true) + Builder::SECONDS;
+            $ok = $bucket->putLarge($store->dir() . $name, BackupBucket::key($name), static function (int $done, int $total) use (&$p, $store, $deadline): bool {
+                $p['upload_done']  = $done;
+                $p['upload_total'] = $total;
+                $store->saveState(self::state($p, 'running'));
+
+                return microtime(true) < $deadline && !$store->cancelRequested((string) $p['run']);
+            }, $state);
+            $p['upload'] = $state;
+            if (!$ok) {
+                throw new BackupFailure(BackupFailure::clean((string) ($state['error'] ?? '')), 'upload');
+            }
+            if (empty($state['done'])) {
+                if ($store->cancelRequested((string) $p['run'])) {
+                    throw BackupFailure::cancelled('upload');
+                }
+                $store->saveState(self::state($p, 'running'));
+                $job->repeat($p);
+
+                return;
+            }
+            // The manifest goes up last: a backup in the bucket counts only with it beside it.
+            $manifest = (array) $store->manifest($name);
+            $manifest['kind'] = 'backup';
+            $store->saveManifest($name, $manifest);
+            $side = array();
+            if (!$bucket->putLarge($store->dir() . substr($name, 0, -4) . '.json', BackupBucket::sidecarKey($name), static function (): bool {
+                return true;
+            }, $side) || empty($side['done'])) {
+                $bucket->deleteMany(array(BackupBucket::key($name)));
+                throw new BackupFailure(BackupFailure::clean((string) ($side['error'] ?? '')), 'upload');
+            }
+        } catch (BackupFailure $e) {
+            if ($bucket !== null) {
+                $bucket->abortLarge(BackupBucket::key($name), $state);
+            }
+            if ($e->cancelled) {
+                $store->discard($name);
+            } else {
+                $e = self::keep($store, $p, $e);
+            }
+            self::ended($store, $p, $e);
+
+            return;
+        }
+        $store->delete($name);
+        $p['stage'] = 'done';
+        $store->saveState(self::state($p, 'done'));
+        self::effect('saved', $p);
+    }
+
+    /**
+     * An upload that failed: keep the backup here as a saved server backup, and say so.
+     *
+     * @param BackupStore         $store
+     * @param array<string,mixed> $p
+     * @param BackupFailure       $e
+     *
+     * @return BackupFailure
+     */
+    private static function keep(BackupStore $store, array $p, BackupFailure $e): BackupFailure
+    {
+        $name     = (string) $p['name'];
+        $manifest = $store->manifest($name);
+        if ($manifest === null || $store->path($name) === null) {
+            return $e;
+        }
+        $manifest['kind'] = 'backup';
+        $store->saveManifest($name, $manifest);
+
+        return new BackupFailure(trim($e->getMessage() . ' ' . __('The backup was kept on the server instead.')), 'upload');
     }
 
     /**
@@ -115,11 +231,16 @@ final class BackupJobs
      *
      * @return void
      */
-    public static function restore(Job $job, ?BackupStore $store = null, ?Restorer $restorer = null): void
+    public static function restore(Job $job, ?BackupStore $store = null, ?Restorer $restorer = null, ?object $bucket = null): void
     {
-        $store    = $store ?? BackupStore::site();
+        $store = $store ?? BackupStore::site();
+        $p     = $job->payload();
+        if (($p['stage'] ?? '') === 'fetch') {
+            self::fetch($job, $store, $bucket ?? BackupBucket::adapter());
+
+            return;
+        }
         $restorer = $restorer ?? self::restorer($store, $job->id());
-        $p        = $job->payload();
         $store->saveState(self::state($p, 'running'));
         try {
             $p = $restorer->step($p);
@@ -139,6 +260,57 @@ final class BackupJobs
     }
 
     /**
+     * One step of the download of a bucket backup into the backup folder, as an upload
+     * would arrive. The restore then starts from it.
+     *
+     * @param Job         $job
+     * @param BackupStore $store
+     * @param object|null $bucket
+     *
+     * @return void
+     */
+    private static function fetch(Job $job, BackupStore $store, ?object $bucket): void
+    {
+        $p     = $job->payload();
+        $local = $store->dir() . $p['source'];
+        $state = (array) ($p['fetch'] ?? array());
+        $store->saveState(self::state($p, 'running'));
+        try {
+            if ($bucket === null) {
+                throw new BackupFailure(__('Saving to the bucket is not set up any more.'), 'fetch');
+            }
+            if (!preg_match(BackupStore::UPLOAD, (string) $p['source']) || !preg_match(BackupStore::NAME, (string) $p['bucket_name'])) {
+                throw new BackupFailure(__('That backup is not in the list any more.'), 'fetch');
+            }
+            if (!$store->protect()) {
+                throw new BackupFailure(sprintf(__('The backup folder cannot be written: %s'), BackupStore::FOLDER), 'fetch');
+            }
+            $deadline = microtime(true) + Builder::SECONDS;
+            $ok = $bucket->getLarge(BackupBucket::key((string) $p['bucket_name']), $local, static function (int $done, int $total) use (&$p, $store, $deadline): bool {
+                $p['fetch_done']  = $done;
+                $p['fetch_total'] = $total;
+                $store->saveState(self::state($p, 'running'));
+
+                return microtime(true) < $deadline;
+            }, $state);
+            $p['fetch'] = $state;
+            if (!$ok) {
+                throw new BackupFailure(BackupFailure::clean((string) ($state['error'] ?? '')), 'fetch');
+            }
+        } catch (BackupFailure $e) {
+            @unlink($local);
+            self::ended($store, $p, $e);
+
+            return;
+        }
+        if (!empty($state['done'])) {
+            $p['stage'] = 'start';
+        }
+        $store->saveState(self::state($p, 'running'));
+        $job->repeat($p);
+    }
+
+    /**
      * Remove backups past the number kept.
      *
      * @param Job $job
@@ -148,9 +320,25 @@ final class BackupJobs
     public static function prune(Job $job): void
     {
         $store = BackupStore::site();
-        $keep  = (int) osc_get_preference('backup_keep');
-        $store->prune('backup', $keep > 0 ? $keep : self::KEEP);
+        $keep  = self::keepCount();
+        $store->prune('backup', $keep);
         $store->prune('safety', self::SAFETY_KEEP);
+        $bucket = BackupBucket::adapter();
+        if ($bucket !== null) {
+            $store->bucketPrune($bucket, $keep);
+        }
+    }
+
+    /**
+     * How many backups are kept in each place.
+     *
+     * @return int
+     */
+    public static function keepCount(): int
+    {
+        $keep = (int) osc_get_preference('backup_keep');
+
+        return $keep > 0 ? $keep : self::KEEP;
     }
 
     /**
@@ -183,6 +371,9 @@ final class BackupJobs
                 'safety_name'    => (string) ($p['safety_name'] ?? ''),
                 'safety_stage'   => (string) ($safety['stage'] ?? ''),
                 'safety_files'   => !empty($p['safety_files']),
+                'from_bucket'    => (string) ($p['bucket_name'] ?? '') !== '',
+                'fetch_done'     => (int) ($p['fetch_done'] ?? 0),
+                'fetch_total'    => (int) ($p['fetch_total'] ?? 0),
             );
         }
 
@@ -196,6 +387,8 @@ final class BackupJobs
             'files_done'  => (int) ($p['files']['done'] ?? 0),
             'files_total' => (int) ($p['files']['total'] ?? 0),
             'bytes_done'  => (int) ($p['files']['bytes_done'] ?? 0),
+            'upload_done'  => (int) ($p['upload_done'] ?? 0),
+            'upload_total' => (int) ($p['upload_total'] ?? 0),
             'skipped'     => array_values((array) ($p['skipped'] ?? array())),
         );
     }
@@ -335,6 +528,8 @@ final class BackupJobs
                 return true;
             case 'saved':
                 return self::saved($arg);
+            case 'upload':
+                return osc_job_enqueue(self::UPLOAD, $arg, array('unique_key' => self::UPLOAD)) > 0;
             case 'restored':
                 $when = self::when((string) ($arg['source_created'] ?? ''));
                 JobWorker::log('backup', 0, $when !== '' ? sprintf(__('Restore finished from the backup of %s'), $when) : __('Restore finished'));
@@ -357,7 +552,8 @@ final class BackupJobs
      */
     private static function saved(array $p): bool
     {
-        $where = $p['where'] === 'download' ? __('to download') : __('on the server');
+        $words = array('download' => __('to download'), 'bucket' => __('in the bucket'));
+        $where = $words[$p['where']] ?? __('on the server');
         $line  = sprintf(
             __('Backup saved: %1$s, %2$s, %3$s, %4$s'),
             self::when(date('c', (int) $p['started'])),
@@ -366,7 +562,7 @@ final class BackupJobs
             $where
         );
         JobWorker::log('backup', 0, $line);
-        if ($p['where'] === 'server' && ($p['kind'] ?? 'backup') === 'backup') {
+        if (in_array($p['where'], array('server', 'bucket'), true) && ($p['kind'] ?? 'backup') === 'backup') {
             osc_set_preference('backup_last', (string) json_encode(array(
                 'date'  => date('c', (int) $p['started']),
                 'what'  => $p['what'],
