@@ -180,7 +180,7 @@ $restore = $body('backup_restore');
 $verify  = strpos($restore, 'AdminReauth::verify(');
 $start   = strpos($restore, 'BackupManager::startRestore(');
 check('backup_restore checks the password before it starts anything', $verify !== false && $start !== false && $verify < $start);
-check('...with the posted password and code', strpos($restore, "Params::getParam('password', false, false)") !== false
+check('...with the posted password and code', strpos($restore, "Params::getParamString('password', false, false)") !== false
     && strpos($restore, "Params::getParamString('code')") !== false);
 check('...and a refusal leaves before startRestore', (bool) preg_match(
     '/if \(\$reauth !== \'\'\) \{[^}]*redirectTo\([^}]*break;\s*\}/s',
