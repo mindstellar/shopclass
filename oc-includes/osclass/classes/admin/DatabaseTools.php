@@ -320,7 +320,9 @@ final class DatabaseTools
      */
     public static function createPrivateFile(string $path): bool
     {
+        $umask  = umask(0077);
         $handle = @fopen($path, 'xb');
+        umask($umask);
         if ($handle === false) {
             return false;
         }
