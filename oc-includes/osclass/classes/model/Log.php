@@ -88,14 +88,17 @@ class Log extends DAO
             $_SERVER['REMOTE_ADDR'] = $ip;
         }
 
+        // Cut each text to its column width: strict SQL mode refuses an over-long value
+        // and would lose the whole row.
+        $fit       = static fn ($value, int $max): ?string => $value === null ? null : mb_substr((string) $value, 0, $max, 'UTF-8');
         $array_set = array(
             'dt_date'     => date('Y-m-d H:i:s'),
-            's_section'   => $section,
-            's_action'    => $action,
+            's_section'   => $fit($section, 50),
+            's_action'    => $fit($action, 50),
             'fk_i_id'     => $id,
-            's_data'      => $data,
-            's_ip'        => $ip,
-            's_who'       => $who,
+            's_data'      => $fit($data, 250),
+            's_ip'        => $fit($ip, 50),
+            's_who'       => $fit($who, 50),
             'fk_i_who_id' => $whoId
         );
 

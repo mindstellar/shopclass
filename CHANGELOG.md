@@ -148,6 +148,7 @@ you find.
 
 ### Fixed
 
+- The activity log no longer loses an entry under strict SQL mode when its text is too long; it is cut to fit.
 - `t_city_area.pk_i_id` is AUTO_INCREMENT, so a city area can be added without choosing its id.
 - **Repair** no longer adds a unique key a second time when the site already has one on the same columns.
 - Two upgrades started at once no longer run side by side; the second one waits and reports that an upgrade is already running.
