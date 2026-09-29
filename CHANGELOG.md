@@ -50,6 +50,7 @@ you find.
 
 ### New
 
+- System info reminds you to make a backup when none was saved on the server in the last 30 days.
 - **Tools → Backup and restore** makes a database, files or everything backup as one zip, downloaded or saved on the server, in the background.
 - Restoring a backup runs in the background behind the maintenance page, saves a safety copy first, and puts it back if loading fails. The confirm can put back only the database or only the files.
 - **Tools > Database** lists where the database differs from what Shopclass expects, and **Repair** fixes it. `oc-cli.php db:repair` does the same.
@@ -314,6 +315,8 @@ you find.
 
 ### Changed
 
+- **Tools → System info** has Overview, Database and Server tabs. One box at the top of each says what needs doing. Tools now opens on it.
+- Check and repair moved into System info → Database. The old Database link still works.
 - **Tools → Database** holds all database work: status, waiting updates, check and repair, backup and restore. Backup data and Import data are gone from the menu; their old links still work. The site-files backup moved to Upgrade Shopclass.
 - **Tools → Database** sorts what it finds by what to do: what Repair can fix, extra items to leave alone, and what needs a closer look. Repair waits while an upgrade is pending.
 - Upgrades run the database migrations only, so the "some queries failed" screen is gone.

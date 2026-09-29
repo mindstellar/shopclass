@@ -592,6 +592,12 @@ jobs:
       # Repair is offered and run only when something is fixable, and old Tools URLs resolve.
       - name: Admin database page
         run: php tests/admin-database-page.php
+      # System info: the verdict's tone and order, each issue's action, the backup and cron rules.
+      - name: System checks
+        run: php tests/system-checks.php
+      # System info tabs, the old Database URL redirect, the menu, and the update and Repair posts.
+      - name: Admin system info page
+        run: php tests/admin-system-info-page.php
       # A script is split statement by statement from a stream, quoted values intact.
       - name: SQL stream
         run: php tests/sql-stream.php

@@ -11,20 +11,17 @@
  */
 
 use mindstellar\admin\DatabaseTools;
+use mindstellar\admin\SystemChecks;
 use mindstellar\database\SchemaDoctor;
 
-$view       = View::newInstance();
-$findings   = $view->_get('db_findings') ?: array();
-$error      = (string) $view->_get('db_findings_error');
-$repair     = $view->_get('db_repair');
-$upgrade    = $view->_get('db_upgrade');
-$pending    = $view->_get('db_pending') ?: array();
-$size       = $view->_get('db_size');
-$server     = (string) $view->_get('db_server');
+// System info > Database, below the verdict and the facts: waiting updates and check and repair.
+$findings   = (array) ($env['findings'] ?? array());
+$error      = (string) ($env['findings_error'] ?? '');
+$pending    = (array) ($env['pending'] ?? array());
+$repair     = View::newInstance()->_get('db_repair');
 $hasPending = $pending !== array();
-$repairable = DatabaseTools::repairable($findings);
 $canRepair  = DatabaseTools::repairAllowed($findings, $pending);
-$self       = osc_admin_base_url(true) . '?page=tools&action=database';
+$self       = SystemChecks::url($env, 'database');
 
 $labels = array(
     SchemaDoctor::MISSING_TABLE  => __('Missing table'),
@@ -74,111 +71,7 @@ $groups = array(
         'show_expected' => true,
     ),
 );
-
-$serverInfo = DatabaseTools::server($server);
-$closer     = array_filter($findings, static function ($f) {
-    return in_array($f['kind'], array(SchemaDoctor::INDEX_COLUMNS, SchemaDoctor::NULLABILITY), true);
-});
-
-// The verdict: one line per thing to act on, or one healthy line.
-$issues = array();
-if ($error !== '') {
-    $issues[] = array('tone' => 'danger', 'action' => null, 'text' => sprintf(__('Could not read the database structure: %s'), $error));
-}
-if (!$serverInfo['supported']) {
-    $issues[] = array('tone' => 'danger', 'action' => null, 'text' => sprintf(
-        __('%1$s is older than Shopclass supports. Ask your host for MySQL %2$s or MariaDB %3$s or newer.'),
-        $serverInfo['label'],
-        DatabaseTools::SERVER_FLOOR['MySQL'],
-        DatabaseTools::SERVER_FLOOR['MariaDB']
-    ));
-}
-if ($hasPending) {
-    $issues[] = array(
-        'tone'   => 'warning',
-        'text'   => sprintf(_n('%d database update is waiting.', '%d database updates are waiting.', count($pending)), count($pending)),
-        'action' => array('label' => __('Run it'), 'attrs' => array('data-osc-dialog-open' => '#db-update-dialog')),
-    );
-} elseif ($repairable !== array()) {
-    $issues[] = array(
-        'tone'   => 'warning',
-        'text'   => sprintf(_n('%d difference Repair can fix.', '%d differences Repair can fix.', count($repairable)), count($repairable)),
-        'action' => array('label' => __('See the list'), 'url' => '#db-check'),
-    );
-}
-if ($closer !== array()) {
-    $issues[] = array(
-        'tone'   => 'warning',
-        'text'   => sprintf(_n('%d difference needs a closer look.', '%d differences need a closer look.', count($closer)), count($closer)),
-        'action' => array('label' => __('See the list'), 'url' => '#db-check'),
-    );
-}
-
-$facts = array(
-    array('label' => __('Shopclass version'), 'value' => OSCLASS_VERSION),
-    array('label' => __('Database version'), 'value' => (string) osc_version()),
-);
-if ($serverInfo['label'] !== '') {
-    $facts[] = array('label' => __('Server'), 'value' => $serverInfo['label']);
-}
-if (is_array($size)) {
-    $facts[] = array(
-        'label' => __('Size'),
-        'value' => sprintf(_n('%d table', '%d tables', $size['tables']), $size['tables']) . ' · ' . DatabaseTools::bytes($size['bytes']),
-    );
-}
-
-osc_admin_page(array(
-    'section' => __('Tools'),
-    'title'   => __('Database'),
-    'help'    => __('Everything about your database in one place: its state, waiting updates, '
-                    . 'and a check against what Shopclass expects. Backups are under Tools > Backup and restore.'),
-));
-
-// Backup and restore moved to their own page; old links to those parts follow them. Remove in 7.0.
-osc_add_hook('admin_footer', static function () { ?>
-    <script>
-        if (location.hash === '#backup' || location.hash === '#restore') {
-            location.replace(<?php echo json_encode(osc_admin_base_url(true) . '?page=tools&action=backup'); ?> + location.hash);
-        }
-    </script>
-<?php });
-
-osc_current_admin_theme_path('parts/header.php'); ?>
-    <?php osc_admin_page_head(__('Database')); ?>
-
-    <?php if (is_array($upgrade)) { ?>
-        <?php if ($upgrade['error'] === 0) { ?>
-            <div class="callout-success callout-block mb-3">
-                <?php echo osc_esc_html($upgrade['applied'] === array()
-                    ? __('Nothing was waiting. The database is up to date.')
-                    : sprintf(_n('The database is updated. %d update ran.', 'The database is updated. %d updates ran.', count($upgrade['applied'])), count($upgrade['applied']))); ?>
-            </div>
-        <?php } else { ?>
-            <div class="flashmessage flashmessage-error">
-                <p class="mb-0"><?php echo osc_esc_html($upgrade['message'] !== '' ? $upgrade['message'] : __('The database update failed.')); ?></p>
-            </div>
-        <?php } ?>
-    <?php } ?>
-
-    <?php osc_admin_form_section(__('Status')); ?>
-    <?php foreach ($issues as $issue) { ?>
-        <div class="callout-<?php echo $issue['tone']; ?> callout-block align-items-center mb-2">
-            <span class="flex-grow-1"><?php echo osc_esc_html($issue['text']); ?></span>
-            <?php if ($issue['action'] !== null) {
-                osc_admin_action_button($issue['action']);
-            } ?>
-        </div>
-    <?php } ?>
-    <?php if ($issues === array()) { ?>
-        <div class="callout-success callout-block mb-2"><?php _e('Your database is up to date and healthy.'); ?></div>
-    <?php } ?>
-    <div class="mt-3">
-        <?php osc_admin_panel_open(); ?>
-        <?php osc_admin_definition($facts); ?>
-        <?php osc_admin_panel_close(); ?>
-    </div>
-
+?>
     <?php if ($hasPending) { ?>
         <div id="db-update">
             <?php osc_admin_form_section(__('Database update'), array(
@@ -223,7 +116,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             <p class="text-muted"><?php _e('Nothing needed repairing.'); ?></p>
         <?php } else { ?>
             <div class="table-responsive">
-                <table class="table" style="min-width:34rem">
+                <table class="table sysinfo-table-wide">
                     <thead>
                     <tr>
                         <th class="col-status"><?php _e('Result'); ?></th>
@@ -272,7 +165,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 } ?>
                 <?php osc_admin_form_section($group['title'], array('intro' => $group['intro'], 'spaced' => true)); ?>
                 <div class="table-responsive">
-                    <table class="table" style="min-width:44rem">
+                    <table class="table sysinfo-table-findings">
                         <thead>
                         <tr>
                             <th><?php _e('Table'); ?></th>
@@ -316,18 +209,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         <?php } ?>
     </div>
 
-    <?php if ($hasPending) { ?>
-        <?php osc_admin_confirm_dialog(array(
-            'id'      => 'db-update-dialog',
-            'tone'    => 'plain',
-            'method'  => 'post',
-            'url'     => $self . '#db-update',
-            'fields'  => array('upgrade' => '1'),
-            'title'   => __('Run the database update?'),
-            'text'    => __('This applies the waiting updates in order. Keep the page open until it finishes. Take a backup first.'),
-            'confirm' => __('Run database update'),
-        )); ?>
-    <?php } elseif ($canRepair) { ?>
+    <?php if (!$hasPending && $canRepair) { ?>
         <?php osc_admin_confirm_dialog(array(
             'id'      => 'db-repair-dialog',
             'tone'    => 'plain',
@@ -339,4 +221,3 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             'confirm' => __('Repair'),
         )); ?>
     <?php } ?>
-<?php osc_current_admin_theme_path('parts/footer.php'); ?>

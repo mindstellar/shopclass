@@ -443,12 +443,8 @@ if (!function_exists('osc_admin_verdict')) {
 
             return;
         }
-        $rank = array('danger' => 0, 'warning' => 1, 'info' => 2);
-        usort($issues, static function ($a, $b) use ($rank) {
-            return ($rank[$a['tone'] ?? 'info'] ?? 2) <=> ($rank[$b['tone'] ?? 'info'] ?? 2);
-        });
-        $tone = $issues[0]['tone'] ?? 'info';
-        $tone = isset($rank[$tone]) ? $tone : 'info'; ?>
+        $issues = \mindstellar\admin\SystemChecks::rank($issues);
+        $tone   = \mindstellar\admin\SystemChecks::tone($issues); ?>
         <div class="callout-<?php echo $tone; ?> callout-block osc-verdict">
             <ul class="osc-verdict-list">
                 <?php foreach ($issues as $issue) { ?>

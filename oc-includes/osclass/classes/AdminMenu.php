@@ -419,7 +419,14 @@ class AdminMenu
             'administrator'
         );
 
-        $this->add_menu(__('Tools'), osc_admin_base_url(true) . '?page=tools&action=database', 'tools', 'administrator', 'bi bi-tools');
+        $this->add_menu(__('Tools'), osc_admin_base_url(true) . '?page=tools&action=system-info', 'tools', 'administrator', 'bi bi-tools');
+        $this->add_submenu(
+            'tools',
+            __('System info'),
+            osc_admin_base_url(true) . '?page=tools&action=system-info',
+            'tools_system_info',
+            'administrator'
+        );
         $this->add_submenu(
             'tools',
             __('Backup and restore'),
@@ -467,20 +474,6 @@ class AdminMenu
             __('Activity log'),
             osc_admin_base_url(true) . '?page=tools&action=logs',
             'tools_logs',
-            'administrator'
-        );
-        $this->add_submenu(
-            'tools',
-            __('Database'),
-            osc_admin_base_url(true) . '?page=tools&action=database',
-            'tools_database',
-            'administrator'
-        );
-        $this->add_submenu(
-            'tools',
-            __('System info'),
-            osc_admin_base_url(true) . '?page=tools&action=system_info',
-            'tools_system_info',
             'administrator'
         );
         // Snapshot what core registered, so the renderer can tell a plugin's or a theme's

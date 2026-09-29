@@ -185,9 +185,14 @@ See [object caching](/docs/configure/cache/).
 
 ## System info and health
 
-**Tools → System info** reports the PHP version, memory limit, upload limits,
-extensions, database server details and free disk space — the details every
-bug report should include.
+**Tools → System info** opens on **Overview**: one box that says whether
+anything needs doing, one line per problem with a button to fix it, then the key
+facts — versions, web server, last backup, cron, photo storage. It asks for a
+backup when none was saved on the server in the last 30 days.
+
+**Server** lists PHP, its limits and extensions, the uploads and backups
+folders, cron, the object cache and the site's paths — the details every bug
+report should include — with a short guide to changing them.
 
 The same ground, from a shell, with pass/fail verdicts and a non-zero exit code
 when something is wrong:
@@ -200,10 +205,11 @@ Run it after any change to the server, and put it in your monitoring.
 
 ## Database
 
-**Tools → Database** holds the database checks, in three parts:
+The **Database** tab of **Tools → System info** holds the database checks:
 
-- **Status** — one line saying whether anything needs doing, then the
-  Shopclass and database versions, the server, and the table count and size.
+- **Status** — one box saying whether anything needs doing, then the
+  Shopclass and database versions, the server, the table count and size, and
+  the table prefix.
 - **Database update** — shown only when updates are waiting. **Run database
   update** runs them, the same as `php oc-cli.php db:upgrade`.
 - **Check and repair** — where the database differs from what ShopClass

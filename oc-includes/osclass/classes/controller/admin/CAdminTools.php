@@ -21,6 +21,7 @@ if (!defined('ABS_PATH')) {
  */
 use mindstellar\admin\DatabaseTools;
 use mindstellar\admin\ListPaging;
+use mindstellar\admin\SystemChecks;
 use mindstellar\backup\BackupJobs;
 use mindstellar\backup\BackupManager;
 use mindstellar\backup\BackupStore;
@@ -217,7 +218,7 @@ class CAdminTools extends AdminSecBaseModel
                 osc_csrf_check();
                 if (BackupManager::reopen()) {
                     osc_add_flash_ok_message(_m('The site is open again. Check the database below.'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=database');
+                    $this->redirectTo(self::databaseUrl());
                     break;
                 }
                 $this->redirectTo(self::backupUrl());
@@ -467,11 +468,13 @@ class CAdminTools extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=logs');
                 break;
             case 'database':
-                $this->databasePage();
+                // The Database page is now a tab of System info.
+                $this->redirectTo(self::databaseUrl());
                 break;
             case 'system_info':
+            case 'system-info':
             default:
-                $this->doView('tools/system-info.php');
+                $this->systemInfoPage();
                 break;
         }
     }
@@ -746,36 +749,70 @@ class CAdminTools extends AdminSecBaseModel
     }
 
     /**
-     * Tools > Database: status, waiting updates, check and repair, and backup. The update
-     * and Repair post back here so their result renders in place.
+     * System info > Database.
+     *
+     * @return string
+     */
+    private static function databaseUrl(): string
+    {
+        return osc_admin_base_url(true) . DatabaseTools::movedTo('database');
+    }
+
+    /**
+     * Tools > System info: Overview, Database and Server tabs. The database update and
+     * Repair post to the Database tab so their result renders in place.
      *
      * @return void
      */
-    private function databasePage(): void
+    private function systemInfoPage(): void
     {
-        $self    = osc_admin_base_url(true) . '?page=tools&action=database';
-        $conn    = \mindstellar\database\Connection::instance();
-        $dir     = osc_lib_path() . 'osclass/installer/migrations';
-        $pending = DatabaseTools::pending($conn, $dir);
-        $isPost  = Params::getServerParam('REQUEST_METHOD') === 'POST';
-
-        if ($isPost && Params::getParam('upgrade') !== '') {
-            if ($this->refuseOnDemo($self)) {
+        $tab = SystemChecks::tab(Params::getParamString('tab'), Params::getParamString('info-type'));
+        $env = $this->systemEnvironment($tab !== 'server');
+        if ($tab === 'database' && Params::getServerParam('REQUEST_METHOD') === 'POST') {
+            if (!$this->databasePost($env)) {
                 return;
+            }
+        }
+
+        $this->_exportVariableToView('sysinfo_tab', $tab);
+        $this->_exportVariableToView('sysinfo_env', $env);
+        $this->_exportVariableToView('sysinfo_report', SystemChecks::report($tab, $env));
+        $this->doView('tools/system-info.php');
+    }
+
+    /**
+     * Run a posted database update or Repair, and refresh $env with what it changed.
+     * Returns false when the request was answered with a redirect.
+     *
+     * @param array<string,mixed> $env
+     *
+     * @return bool
+     */
+    private function databasePost(array &$env): bool
+    {
+        $self = self::databaseUrl();
+        $conn = \mindstellar\database\Connection::instance();
+        $dir  = osc_lib_path() . 'osclass/installer/migrations';
+
+        if (Params::getParam('upgrade') !== '') {
+            if ($this->refuseOnDemo($self)) {
+                return false;
             }
             osc_csrf_check();
             $this->_exportVariableToView('db_upgrade', DatabaseTools::upgrade());
             osc_reset_preferences();
-            $pending = DatabaseTools::pending($conn, $dir);
+            $env['pending']    = DatabaseTools::pending($conn, $dir);
+            $env['db_version'] = (string) osc_version();
+            list($env['findings'], $env['findings_error']) = $this->schemaFindings();
         }
 
-        list($findings, $error) = $this->schemaFindings();
-
-        if ($isPost && Params::getParam('repair') !== '') {
+        if (Params::getParam('repair') !== '') {
             if ($this->refuseOnDemo($self)) {
-                return;
+                return false;
             }
             osc_csrf_check();
+            $pending  = $env['pending'];
+            $findings = $env['findings'];
             if ($pending !== array()) {
                 osc_add_flash_error_message(
                     _m('An update is waiting. Run it first: it fixes most of these safely.'),
@@ -783,13 +820,13 @@ class CAdminTools extends AdminSecBaseModel
                 );
                 $this->redirectTo($self);
 
-                return;
+                return false;
             }
-            if ($error === '' && !DatabaseTools::repairAllowed($findings, $pending)) {
+            if ($env['findings_error'] === '' && !DatabaseTools::repairAllowed($findings, $pending)) {
                 osc_add_flash_info_message(_m('Nothing needs repairing.'), 'admin');
                 $this->redirectTo($self);
 
-                return;
+                return false;
             }
             try {
                 $release = DatabaseTools::upgradeLock($conn);
@@ -800,7 +837,7 @@ class CAdminTools extends AdminSecBaseModel
                 osc_add_flash_error_message(_m('An upgrade is running. Try again when it has finished.'), 'admin');
                 $this->redirectTo($self);
 
-                return;
+                return false;
             }
             try {
                 $repair = (new \mindstellar\database\SchemaReconciler($conn))->repair();
@@ -810,20 +847,102 @@ class CAdminTools extends AdminSecBaseModel
                 $release();
             }
             $this->_exportVariableToView('db_repair', $repair);
-            list($findings, $error) = $this->schemaFindings();
+            list($env['findings'], $env['findings_error']) = $this->schemaFindings();
+            $env['db_size'] = DatabaseTools::size($conn, DB_TABLE_PREFIX);
         }
 
-        $this->_exportVariableToView('db_pending', $pending);
-        $this->_exportVariableToView('db_findings', $findings);
-        $this->_exportVariableToView('db_findings_error', $error);
-        $this->_exportVariableToView('db_size', DatabaseTools::size($conn, DB_TABLE_PREFIX));
+        return true;
+    }
+
+    /**
+     * What System info checks, read once. Every read is defensive: this is the page an
+     * owner opens when something is already wrong.
+     *
+     * @param bool $withDatabase also read the schema check, which the Server tab skips
+     *
+     * @return array<string,mixed>
+     */
+    private function systemEnvironment(bool $withDatabase): array
+    {
+        $conn = \mindstellar\database\Connection::instance();
         try {
             $server = $conn->serverInfo();
         } catch (Throwable $e) {
             $server = '';
         }
-        $this->_exportVariableToView('db_server', $server);
-        $this->doView('tools/database.php');
+        $cacheDriver = defined('OSC_CACHE') ? (string) OSC_CACHE : 'default';
+        $cacheClass  = 'Object_Cache_' . $cacheDriver;
+        $maintenance = '';
+        if (file_exists(ABS_PATH . '.maintenance')) {
+            $maintenance = osc_maintenance_lockout_enabled() ? 'locked' : 'banner';
+        }
+        $uploads = osc_uploads_path();
+        $free    = function_exists('disk_free_space') ? @disk_free_space($uploads) : false;
+        $prefs   = Preference::newInstance()->listAll();
+        $last    = json_decode((string) osc_get_preference('backup_last'), true);
+
+        $env = array(
+            'admin_url'        => osc_admin_base_url(true),
+            'now'              => time(),
+            'version'          => OSCLASS_VERSION,
+            'db_version'       => (string) osc_version(),
+            'php'              => PHP_VERSION,
+            'os'               => PHP_OS . ' (' . php_uname('m') . ')',
+            'web_server'       => (string) Params::getServerParam('SERVER_SOFTWARE'),
+            'db_server'        => $server,
+            'prefix'           => DB_TABLE_PREFIX,
+            'site_url'         => osc_base_url(),
+            'content_path'     => osc_content_path(),
+            'uploads_path'     => $uploads,
+            'plugins_path'     => osc_plugins_path(),
+            'themes_path'      => osc_themes_path(),
+            'ini_file'         => (string) php_ini_loaded_file(),
+            'prefs_count'      => count($prefs),
+            'prefs_bytes'      => strlen(serialize($prefs)),
+            'memory'           => SystemChecks::iniBytes((string) ini_get('memory_limit')),
+            'upload'           => SystemChecks::iniBytes((string) ini_get('upload_max_filesize')),
+            'post'             => SystemChecks::iniBytes((string) ini_get('post_max_size')),
+            'max_files'        => (int) ini_get('max_file_uploads'),
+            'max_exec'         => (int) ini_get('max_execution_time'),
+            'max_input_vars'   => (string) ini_get('max_input_vars'),
+            'timezone'         => (string) ini_get('date.timezone'),
+            'photos'           => (int) osc_max_images_per_item(),
+            'extensions'       => get_loaded_extensions(),
+            'imagick'          => extension_loaded('imagick'),
+            'imagick_on'       => extension_loaded('imagick') && osc_use_imagick(),
+            'gd'               => extension_loaded('gd'),
+            'opcache'          => function_exists('opcache_get_status') && ini_get('opcache.enable'),
+            'allow_url_fopen'  => (bool) ini_get('allow_url_fopen'),
+            'uploads_writable' => @is_writable($uploads),
+            'free_disk'        => is_numeric($free) ? (int) $free : null,
+            'config_writable'  => @is_writable(ABS_PATH . 'config.php'),
+            'debug'            => defined('OSC_DEBUG') && OSC_DEBUG,
+            'maintenance'      => $maintenance,
+            'cache_driver'     => $cacheDriver,
+            'cache_supported'  => $cacheDriver === 'default'
+                || (class_exists($cacheClass) && call_user_func(array($cacheClass, 'is_supported'))),
+            'cron_last'        => osc_cron_last_run(),
+            // This request came through the same proxy every visitor does.
+            'proxy'            => osc_proxy_ip_mismatch(),
+            'backup_last'      => is_array($last) ? $last : null,
+            'backup_probe'     => BackupManager::probe(),
+            'storage'          => array(
+                'active'     => (string) osc_get_preference('storage_active'),
+                'bucket'     => (string) osc_get_preference('storage_s3_bucket'),
+                'keep_local' => (string) osc_get_preference('storage_keep_local'),
+            ),
+            'pending'          => array(),
+            'findings'         => array(),
+            'findings_error'   => '',
+            'db_size'          => null,
+        );
+        if ($withDatabase) {
+            $env['pending'] = DatabaseTools::pending($conn, osc_lib_path() . 'osclass/installer/migrations');
+            list($env['findings'], $env['findings_error']) = $this->schemaFindings();
+            $env['db_size'] = DatabaseTools::size($conn, DB_TABLE_PREFIX);
+        }
+
+        return $env;
     }
 
     /**

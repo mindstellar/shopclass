@@ -165,8 +165,16 @@
 // ---- Verdict ----------------------------------------------------------------
 // One callout that says whether anything needs doing, one line per issue with its own
 // button. The callout supplies the tint and the icon; this lays out the lines.
-.osc-verdict {
+// Two classes, so the body size wins over the callout's label size. Each line is as tall
+// as a small button, and the icon's line matches it, so the icon sits level with line one.
+.callout-block.osc-verdict {
   font-size: 1rem;
+  gap: .6rem;
+  padding: .75rem 1rem;
+
+  &::before {
+    line-height: 1.95rem;
+  }
 }
 
 .osc-verdict-list {
@@ -182,6 +190,7 @@
 
 .osc-verdict-line {
   align-items: center;
+  min-block-size: 1.95rem;
   display: flex;
   flex-wrap: wrap;
   gap: .35rem 1rem;

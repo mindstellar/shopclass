@@ -21,7 +21,7 @@ use mindstellar\upgrade\Osclass;
 use Throwable;
 
 /**
- * The work behind Tools > Database: waiting updates, what Repair can fix, and the table
+ * The work behind System info > Database: waiting updates, what Repair can fix, and the table
  * summary. Kept apart from the controller so it can be tested without an admin session.
  */
 final class DatabaseTools
@@ -36,7 +36,8 @@ final class DatabaseTools
 
     /** Old Tools actions whose screen is now a part of another page, with where they land. */
     public const MOVED = array(
-        'import' => 'backup#restore',
+        'import'   => 'backup#restore',
+        'database' => 'system-info&tab=database',
     );
 
     /**

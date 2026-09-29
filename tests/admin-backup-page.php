@@ -30,7 +30,8 @@ use mindstellar\backup\BackupStore;
 
 $controller = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php');
 $view       = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/tools/backup.php');
-$database   = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/tools/database.php');
+$database   = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/tools/system-info/database.php');
+$sysinfo    = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/tools/system-info.php');
 $upgrade    = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/tools/upgrade.php');
 $menu       = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/AdminMenu.php');
 
@@ -61,7 +62,7 @@ check('the old backup actions run the new engine', (bool) preg_match(
     $controller
 ));
 check('import_post still takes the old sql field', strpos($controller, "\$this->backupUpload(\$this->action === 'import_post' ? 'sql' : 'backup_file')") !== false);
-check('old links to #backup and #restore on the Database page follow', strpos($database, "location.hash === '#backup' || location.hash === '#restore'") !== false);
+check('old links to #backup and #restore on the Database page follow', strpos($sysinfo, "location.hash === '#backup' || location.hash === '#restore'") !== false);
 check('old links to #backup-files on the Upgrade page follow', strpos($upgrade, "location.hash === '#backup-files'") !== false);
 
 harness_section('Demo first, then the token');
@@ -120,11 +121,11 @@ harness_section('One fixed folder');
 
 check('the browser can no longer name a folder', strpos($controller, 'bck_dir') === false && strpos($view, 'bck_dir') === false
     && strpos($database, 'bck_dir') === false && strpos($upgrade, 'bck_dir') === false);
-check('the Database page has no backup form left', strpos($database, 'backup_form') === false && strpos($database, 'import_post') === false);
+check('the Database tab has no backup form', strpos($database, 'backup_form') === false && strpos($database, 'import_post') === false);
 check('the Upgrade page has no files backup left', strpos($upgrade, "'backup-zip'") === false);
 check('the page names the fixed folder', strpos($view, 'BackupStore::FOLDER') !== false);
 check('the menu has Backup and restore', strpos($menu, "'tools_backup'") !== false);
-check('...and keeps tools_database and tools_upgrade', strpos($menu, "'tools_database'") !== false && strpos($menu, "'tools_upgrade'") !== false);
+check('...and keeps tools_upgrade', strpos($menu, "'tools_upgrade'") !== false);
 
 $base = sys_get_temp_dir() . '/osc_backup_dir_' . getmypid();
 $site = $base . '/site';

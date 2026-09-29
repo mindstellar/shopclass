@@ -165,7 +165,7 @@ Upload the new files over the old ones, replacing:
 ### 3. Run the database migration
 
 Core files alone are not an update — the schema has to catch up. Either open the
-admin panel, which offers the migration as a button (**Tools → Database** has it
+admin panel, which offers the migration as a button (**Tools → System info → Database** has it
 too, as **Run database update**), or run it from a shell:
 
 ```bash
@@ -174,7 +174,7 @@ php oc-cli.php db:upgrade
 
 `db:upgrade` runs the pending migrations and nothing else. Run it again to finish
 an interrupted update. If the database is still missing a table, column or index
-afterwards, `php oc-cli.php db:repair` (or **Tools → Database**) adds it.
+afterwards, `php oc-cli.php db:repair` (or **Tools → System info → Database**) adds it.
 
 ### 4. Check the site
 

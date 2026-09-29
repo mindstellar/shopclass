@@ -9,8 +9,8 @@
  */
 
 /**
- * Tools > Database: Repair only offers and runs when something is fixable, and the old
- * Tools URLs (upgrade, backup, database) still resolve.
+ * System info > Database: Repair only offers and runs when something is fixable, and the
+ * old Tools URLs (upgrade, backup, database) still resolve.
  *
  * No database. Usage:  php tests/admin-database-page.php
  */
@@ -48,7 +48,7 @@ foreach (array(SchemaDoctor::MISSING_TABLE, SchemaDoctor::MISSING_COLUMN, Schema
 }
 
 $controller = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php');
-$view       = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/tools/database.php');
+$view       = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/tools/system-info/database.php');
 
 pin('Repair allowed: something fixable, nothing waiting', true, DatabaseTools::repairAllowed(array($finding(SchemaDoctor::MISSING_INDEX)), array()));
 pin('Repair refused: nothing found', false, DatabaseTools::repairAllowed(array(), array()));
@@ -61,7 +61,7 @@ check('the server checks repairAllowed() before running Repair', (static functio
     return $refuse !== false && $run !== false && $refuse < $run;
 })($controller));
 check('the Repair dialog renders only when something is fixable', (bool) preg_match(
-    '/elseif \(\$canRepair\) \{ \?>\s*<\?php osc_admin_confirm_dialog\(array\(\s*\'id\'\s*=> \'db-repair-dialog\'/',
+    '/if \(!\$hasPending && \$canRepair\) \{ \?>\s*<\?php osc_admin_confirm_dialog\(array\(\s*\'id\'\s*=> \'db-repair-dialog\'/',
     $view
 ));
 check('the Repair button sits in the "Repair can fix these" group only', substr_count($view, "'confirm' => '#db-repair-dialog'") === 1
@@ -71,7 +71,7 @@ harness_section('Old URLs');
 
 pin('import lands on the Backup and restore page', '?page=tools&action=backup#restore', DatabaseTools::movedTo('import'));
 pin('upgrade keeps its own screen', null, DatabaseTools::movedTo('upgrade'));
-pin('database keeps its own screen', null, DatabaseTools::movedTo('database'));
+pin('database lands on the System info Database tab', '?page=tools&action=system-info&tab=database', DatabaseTools::movedTo('database'));
 
 foreach (array('upgrade', 'database', 'backup', 'backup_post', 'backup-sql', 'backup-sql_file', 'backup-zip', 'backup-zip_file', 'import', 'import_post') as $action) {
     check("the controller still routes action=$action", (bool) preg_match("/case \\(?'" . preg_quote($action, '/') . "'\\)?:/", $controller));
@@ -79,11 +79,11 @@ foreach (array('upgrade', 'database', 'backup', 'backup_post', 'backup-sql', 'ba
 
 $menu = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/AdminMenu.php');
 check('the menu keeps tools_upgrade', strpos($menu, "'tools_upgrade'") !== false);
-check('the menu keeps tools_database', strpos($menu, "'tools_database'") !== false);
+check('the menu no longer lists Database', strpos($menu, "'tools_database'") === false);
 check('the menu no longer lists Import data', strpos($menu, "'tools_import'") === false);
 check('a restore replaces tables through the streamed path', strpos((string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/backup/BackupJobs.php'), 'DatabaseTools::restore($conn, $handle, $each, true)') !== false
     && strpos($controller, 'executeScript(') === false);
-check('the Database page no longer backs up or restores', strpos($view, "'import_post'") === false && strpos($view, 'id="backup"') === false);
+check('the Database tab does not back up or restore', strpos($view, "'import_post'") === false && strpos($view, 'id="backup"') === false);
 
 harness_section('Restore upload');
 

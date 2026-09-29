@@ -65,7 +65,7 @@ class Osclass extends UpgradePackage
      * Upgrade Shopclass Database by running the pending migrations.
      *
      * Migrations alone build the schema; tests/schema-drift.php holds every release to that.
-     * Repairing a drifted install is opt-in: `db:repair` or Tools > Database.
+     * Repairing a drifted install is opt-in: `db:repair` or System info > Database.
      *
      * @param bool $skip_db        deprecated since 6.4.0, ignored
      * @param bool $skip_reconcile deprecated since 6.4.0, ignored

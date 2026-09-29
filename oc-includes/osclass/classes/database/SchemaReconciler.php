@@ -18,7 +18,7 @@ namespace mindstellar\database;
  *
  * Diffs struct.sql against the live schema and applies what is missing. Upgrades
  * run migrations only; this is the opt-in repair behind `db:repair` and
- * Tools > Database.
+ * System info > Database.
  *
  * The diffing itself is string work over the parsed struct.sql; only the
  * introspection (SHOW TABLES / DESCRIBE / SHOW INDEX / SHOW CREATE TABLE) and
