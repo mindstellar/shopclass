@@ -92,13 +92,45 @@ If your site sits behind Cloudflare, a tunnel, a load balancer or any reverse
 proxy (a server in front of yours that passes requests through) and the real
 client IP is not passed through, **every visitor arrives as the proxy**. The
 per-IP limit then treats your entire audience as one person, and abuse reports
-all key to the same address.
-
-In the container image, set `OSC_REAL_IP_HEADER` to the header your proxy sets —
-`CF-Connecting-IP` behind Cloudflare. Behind a self-hosted proxy, restrict which
-peers are trusted to set it; a header anyone can send is worse than no header,
-because it lets an attacker forge a different IP on every attempt.
+all key to the same address, and stored IPs and IP bans stop meaning anything.
 :::
+
+ShopClass reads the visitor IP only from `REMOTE_ADDR` — it never trusts a
+forwarding header from the request itself, because an unauthenticated visitor
+could set one to fake any address they like. `Tools → System info` warns when
+`REMOTE_ADDR` does not match a forwarding header your proxy is sending, which
+usually means this is not set up yet.
+
+The fix is at the web server, not in ShopClass: rewrite `REMOTE_ADDR` to the
+real client address, and only for connections that actually come from your
+proxy.
+
+**nginx** (the `ngx_http_realip_module`, built in on most distributions):
+
+```nginx
+# Only trust the header when the connection itself comes from the proxy.
+set_real_ip_from 173.245.48.0/20;   # your proxy's / Cloudflare's IP range
+real_ip_header    CF-Connecting-IP; # or X-Real-IP, X-Forwarded-For, ...
+```
+
+The container image does this for you — set `OSC_REAL_IP_HEADER` (and
+`OSC_REAL_IP_TRUSTED` for the CIDR ranges) and it writes the block above; see
+[Docker](/docs/deploy/docker/#putting-it-behind-tls).
+
+**Apache** (`mod_remoteip`):
+
+```apache
+RemoteIPHeader CF-Connecting-IP
+RemoteIPTrustedProxy 173.245.48.0/20
+```
+
+**Cloudflare**: use the `CF-Connecting-IP` header, and trust it only from
+[Cloudflare's published IP ranges](https://www.cloudflare.com/ips/) — list
+every range in `set_real_ip_from` / `RemoteIPTrustedProxy`, not just one.
+
+Whichever proxy you use, trust the narrowest set of peers that can actually
+reach your server. A header anyone can send is worse than no header at all,
+because it lets an attacker forge a different IP on every login attempt.
 
 Tune the limits in **Settings → Spam and bots**.
 

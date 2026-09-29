@@ -302,6 +302,11 @@ define('OSC_DEBUG_LOG', true);</pre>
             $cronLast = osc_cron_last_run();
             $cronAge = $cronLast > 0 ? (time() - $cronLast) : -1;
 
+            // This request came through the same proxy every visitor does, so it is the
+            // signal: a forwarding header disagreeing with REMOTE_ADDR here means every
+            // visitor's REMOTE_ADDR is the proxy's address, not their own.
+            $proxyMismatch = osc_proxy_ip_mismatch();
+
             $dbServer = '';
             try {
                 $dbServer = \mindstellar\database\Connection::instance()->serverInfo();
@@ -514,6 +519,30 @@ define('OSC_DEBUG_LOG', true);</pre>
                             __('Scheduled tasks (cron)'),
                             __('Cron has run recently — update checks, alerts and cleanup are firing.'),
                             sprintf(__('%s ago'), osc_admin_duration($cronAge))
+                        );
+                    }
+
+                    // A forwarding header disagreeing with REMOTE_ADDR on this very request
+                    // means every visitor's REMOTE_ADDR is the proxy's address, breaking
+                    // sign-in throttling, IP bans, spam checks and the stored IPs.
+                    if ($proxyMismatch !== null) {
+                        oscsi_row(
+                            'danger', $PROBLEM,
+                            __('Visitor addresses'),
+                            sprintf(
+                                __('Visitor addresses look wrong. Your site seems to be behind a proxy (%1$s), so every visitor appears to come from %2$s. Sign-in protection and IP bans cannot tell visitors apart. Ask your host to set up real-IP forwarding.'),
+                                '<code>' . osc_esc_html($proxyMismatch['header']) . '</code>',
+                                '<strong>' . osc_esc_html($proxyMismatch['proxy']) . '</strong>'
+                            ),
+                            __('behind a proxy'),
+                            array('label' => __('Set up real-IP forwarding'), 'url' => 'https://mindstellar.com/docs/deploy/security/#login-throttling-and-the-real-client-ip')
+                        );
+                    } else {
+                        oscsi_row(
+                            'ok', $OK,
+                            __('Visitor addresses'),
+                            __('This request\'s address matches every forwarding header sent with it — no proxy misconfiguration detected.'),
+                            __('as reported')
                         );
                     }
 

@@ -96,6 +96,23 @@ function osc_csrf_check()
 }
 
 /**
+ * Whether the current request's REMOTE_ADDR looks like a proxy's address instead of the
+ * visitor's — a forwarding header disagrees with it. Detection only; core still reads the
+ * visitor IP from REMOTE_ADDR alone, see osc_is_banned() and osc_validate_spam_delay().
+ *
+ * @return array{header: string, proxy: string}|null the triggering header and REMOTE_ADDR, or null when nothing disagrees
+ */
+function osc_proxy_ip_mismatch()
+{
+    $headers = array();
+    foreach (array('HTTP_CF_CONNECTING_IP', 'HTTP_TRUE_CLIENT_IP', 'HTTP_X_REAL_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_FORWARDED') as $key) {
+        $headers[$key] = Params::getServerParam($key);
+    }
+
+    return \mindstellar\security\ProxyIpMismatch::detect(Params::getServerParam('REMOTE_ADDR'), $headers);
+}
+
+/**
  * Check if an email and/or IP are banned
  *
  * @param string      $email

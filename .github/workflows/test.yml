@@ -173,6 +173,8 @@ jobs:
         run: php tests/plugin-path-symlink.php
       - name: Private-network address guard
         run: php tests/address-guard.php
+      - name: Proxy IP mismatch detection
+        run: php tests/proxy-ip-mismatch.php
       - name: Theme list and preview allowlist
         run: php tests/theme-preview.php
       - name: Plugin screen headers
