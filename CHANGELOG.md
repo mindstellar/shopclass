@@ -40,8 +40,13 @@ and renews its own certificate. The image is now also on Docker Hub as
 Cleanup and other slow work run in the background, with a history on Tools → Background
 jobs. Sign-in protection lists who is blocked right now and lets you unblock them.
 
-This is the first release candidate. Nothing more is planned before 6.4.0, so please try it
-on a copy of your site and tell us what you find.
+The database is tidier and safer: related rows are now linked, so nothing is left behind when
+you delete a listing, a user or a form, and usernames are unique. Category searches are faster,
+and upgrades no longer show a "some queries failed" screen. **Tools → Database** checks your
+database and can repair it. Usernames made only of digits are no longer allowed.
+
+This is the second release candidate. Please try it on a copy of your site and tell us what
+you find.
 
 ### New
 
