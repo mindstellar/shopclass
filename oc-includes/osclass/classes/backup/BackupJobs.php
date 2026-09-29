@@ -182,6 +182,7 @@ final class BackupJobs
                 throw new BackupFailure(BackupFailure::clean((string) ($side['error'] ?? '')), 'upload');
             }
         } catch (BackupFailure $e) {
+            $store->forgetBucketList();
             if ($bucket !== null) {
                 $bucket->abortLarge(BackupBucket::key($name), $state);
             }
@@ -194,6 +195,8 @@ final class BackupJobs
 
             return;
         }
+        $store->forgetBucketList();
+        BackupBucket::checkPublic($bucket, BackupBucket::key($name));
         $store->delete($name);
         $p['stage'] = 'done';
         $store->saveState(self::state($p, 'done'));

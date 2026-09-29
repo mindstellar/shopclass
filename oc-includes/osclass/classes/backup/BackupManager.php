@@ -68,6 +68,9 @@ final class BackupManager
         if ($where === 'bucket' && BackupBucket::adapter() === null) {
             return __('Saving to a bucket needs S3 storage turned on in Settings > Storage.');
         }
+        if ($where === 'bucket' && BackupBucket::insecure()) {
+            return __('Your S3 endpoint uses plain http, so a backup and its download link would travel unencrypted. Use an https endpoint.');
+        }
         $store = BackupStore::site();
         if (!$store->protect()) {
             return sprintf(__('The backup folder cannot be written: %s'), BackupStore::FOLDER);

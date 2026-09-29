@@ -86,7 +86,9 @@ Backups saved to S3 are uploaded without an ACL, so they are as private as the
 bucket. Set a separate private **Backups bucket** in **Settings → Storage**; a
 photo bucket is usually public, and a public bucket or a custom domain serves
 every key in it. Give it no public access and no custom domain. Downloads use a
-signed link that lasts 15 minutes and is never written into the page.
+signed link that lasts 15 minutes and is never written into the page. After each
+upload the site asks for the backup without signing; if the bucket answers, the
+Backup page warns that anyone can read it.
 
 Turn `OSC_DEBUG` **off** in production. Displayed errors leak file paths,
 database structure and sometimes credentials to anyone who can trigger one.

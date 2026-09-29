@@ -46,7 +46,22 @@ keys as the photos. Leave it empty and they go to the photo bucket under
 `backups/`. A backup holds password hashes and site keys, so use a separate
 private bucket: when the photo bucket is public, the page warns. Uploads never set
 a public ACL, but a public bucket or a custom domain in front of it serves every
-object in it.
+object in it. After each upload the site asks for the backup without signing, and
+the page warns if anyone can read it.
+
+Each site saves in its own folder, named from the site address in `config.php`:
+`https://www.example.com/shop/` saves under `backups/www.example.com-shop/`. The
+page lists, downloads, restores and prunes only that folder, so a staging copy
+restored from production never touches production's backups. After a move to a
+new address, older backups stay under the old folder. Use one backups bucket per
+site, or leave it to the per-site folder.
+
+An endpoint on plain `http://` is refused, except on this machine or a private
+network: the backup and its download link would travel unencrypted.
+
+Add a lifecycle rule to the bucket that aborts incomplete multipart uploads after a
+few days. An upload stopped halfway otherwise leaves parts that are billed but never
+shown.
 
 Bucket backups are listed with **Where: Bucket**. **Download** sends you to a link
 that works for 15 minutes; it is never shown on the page. **Restore…** downloads

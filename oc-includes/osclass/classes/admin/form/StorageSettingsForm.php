@@ -172,7 +172,9 @@ final class StorageSettingsForm
                 'storage_s3_backup_bucket',
                 __('Backups bucket'),
                 __('A private bucket for Tools > Backup and restore, reached with the keys above. '
-                   . 'Leave empty to use the bucket above, under backups/.')
+                   . 'Leave empty to use the bucket above, under backups/. '
+                   . 'Each site saves in its own folder named from its address. '
+                   . 'Use one backups bucket per site, or leave it to the per-site folder.')
             )
                 ->sanitize(static function ($value) {
                     return self::bucketName($value);

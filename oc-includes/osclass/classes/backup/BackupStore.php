@@ -310,27 +310,74 @@ final class BackupStore
     }
 
     /**
-     * The backups in a bucket, newest first, from one listing: a backup counts only with
-     * its manifest beside it. Null when the bucket cannot be read.
+     * The backups in this site's folder of the bucket, newest first: a backup counts only
+     * with its manifest beside it. Null when the bucket cannot be read.
+     *
+     * The Backup page lists with a short timeout and keeps the result for LIST_TTL
+     * seconds; $fresh asks the bucket now, with the adapter's own timeout.
      *
      * @param object $bucket a BackupBucket adapter
+     * @param bool   $fresh
      *
      * @return array<int,array{name:string,size:int,created:string,what:string,kind:string,where:string,manifest:null}>|null
      */
-    public function bucketAll(object $bucket): ?array
+    public function bucketAll(object $bucket, bool $fresh = false): ?array
     {
-        $objects = $bucket->list(BackupBucket::PREFIX);
-        if (!is_array($objects)) {
-            return null;
+        $prefix = BackupBucket::prefix();
+        $cache  = $this->dir . '.bucket-list.json';
+        $id     = BackupBucket::label() . '|' . $prefix;
+        if (!$fresh) {
+            $json = @file_get_contents($cache);
+            $held = is_string($json) ? json_decode($json, true) : null;
+            if (is_array($held) && ($held['id'] ?? '') === $id && (int) ($held['at'] ?? 0) > time() - BackupBucket::LIST_TTL) {
+                BackupBucket::listed((string) ($held['failure'] ?? ''));
+
+                return is_array($held['rows'] ?? null) ? $held['rows'] : null;
+            }
         }
+        $lister  = !$fresh && method_exists($bucket, 'withTimeout') ? $bucket->withTimeout(BackupBucket::PAGE_TIMEOUT) : $bucket;
+        $objects = $lister->list($prefix);
+        $rows    = is_array($objects) ? self::bucketRows($objects, $prefix) : null;
+        $failure = '';
+        if ($rows === null) {
+            $failure = method_exists($lister, 'timedOut') && $lister->timedOut() ? 'timeout' : 'error';
+        }
+        BackupBucket::listed($failure);
+        if (!$fresh && is_dir($this->dir)) {
+            $this->writePrivate($cache, (string) json_encode(array('id' => $id, 'at' => time(), 'rows' => $rows, 'failure' => $failure)));
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Forget the Backup page's copy of the bucket listing.
+     *
+     * @return void
+     */
+    public function forgetBucketList(): void
+    {
+        @unlink($this->dir . '.bucket-list.json');
+    }
+
+    /**
+     * The backup rows in one listing of a site folder.
+     *
+     * @param array<int,array{key:string,size:int}> $objects
+     * @param string                                $prefix
+     *
+     * @return array<int,array{name:string,size:int,created:string,what:string,kind:string,where:string,manifest:null}>
+     */
+    private static function bucketRows(array $objects, string $prefix): array
+    {
         $keys = array();
         foreach ($objects as $object) {
             $keys[(string) $object['key']] = (int) $object['size'];
         }
         $rows = array();
         foreach ($keys as $key => $size) {
-            $name = substr($key, strlen(BackupBucket::PREFIX));
-            if (strpos($key, BackupBucket::PREFIX) !== 0 || !preg_match(self::NAME, $name, $m)
+            $name = substr($key, strlen($prefix));
+            if (strpos($key, $prefix) !== 0 || !preg_match(self::NAME, $name, $m)
                 || !isset($keys[BackupBucket::sidecarKey($name)])
             ) {
                 continue;
@@ -366,6 +413,7 @@ final class BackupStore
         if ($name !== basename($name) || !preg_match(self::NAME, $name)) {
             return false;
         }
+        $this->forgetBucketList();
 
         return (bool) $bucket->deleteMany(array(BackupBucket::key($name), BackupBucket::sidecarKey($name)));
     }
@@ -380,10 +428,11 @@ final class BackupStore
      */
     public function bucketPrune(object $bucket, int $keep): int
     {
-        $rows = $this->bucketAll($bucket);
+        $rows = $this->bucketAll($bucket, true);
         if ($rows === null) {
             return 0;
         }
+        $this->forgetBucketList();
         $keys  = array();
         $names = self::pruneNames($rows, 'backup', $keep);
         foreach ($names as $name) {

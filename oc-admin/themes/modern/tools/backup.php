@@ -11,6 +11,7 @@
  */
 
 use mindstellar\admin\DatabaseTools;
+use mindstellar\backup\BackupBucket;
 use mindstellar\backup\BackupJobs;
 use mindstellar\backup\BackupManager;
 use mindstellar\backup\BackupStore;
@@ -24,6 +25,8 @@ $notice  = is_array($view->_get('backup_notice')) ? $view->_get('backup_notice')
 $skipped = (string) $view->_get('backup_skipped');
 $probe   = $view->_get('backup_probe');
 $bucket  = is_array($view->_get('backup_bucket')) ? $view->_get('backup_bucket') : null;
+$plain   = $bucket !== null && BackupBucket::insecure();
+$open    = $bucket !== null && BackupBucket::flaggedPublic();
 $demo    = defined('DEMO');
 $status  = (string) ($state['status'] ?? '');
 $live    = in_array($status, array('queued', 'running'), true);
@@ -142,6 +145,20 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             'action' => array('label' => __('Set a backups bucket'), 'url' => osc_admin_base_url(true) . '?page=settings&action=storage'),
         );
     }
+    if ($open) {
+        $issues[] = array(
+            'tone'   => 'danger',
+            'text'   => __('Anyone can read your backups in this bucket. Make the bucket private.'),
+            'action' => array('label' => __('How to close it'), 'url' => 'https://mindstellar.com/docs/deploy/security/#backups-in-a-bucket'),
+        );
+    }
+    if ($plain) {
+        $issues[] = array(
+            'tone'   => 'warning',
+            'text'   => __('Your S3 endpoint uses plain http, so a backup and its download link would travel unencrypted. Saving to the bucket is off until the endpoint uses https.'),
+            'action' => array('label' => __('Open storage settings'), 'url' => osc_admin_base_url(true) . '?page=settings&action=storage'),
+        );
+    }
     osc_admin_verdict($issues);
     ?>
 
@@ -187,7 +204,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 <div class="backup-callout-actions">
                     <?php if ($failure['reopen']) {
                         $postButton('backup_reopen', __('Open the site again'), array(), 'primary');
-                        osc_admin_action_button(array('label' => __('See the job'), 'url' => osc_admin_base_url(true) . '?page=tools&action=jobs'));
+                        osc_admin_action_button(array('label' => __('See the job'), 'url' => osc_admin_base_url(true) . '?page=tools&action=system-info&tab=jobs'));
                     } else {
                         if ($state['kind'] === 'backup') {
                             $postButton('backup_start', __('Try again'), array('what' => $state['what'], 'where' => $state['where']));
@@ -260,7 +277,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 'custom_html' => '<code class="backup-choice-note">' . osc_esc_html(BackupStore::FOLDER) . '</code>',
             ),
         );
-        if ($bucket !== null) {
+        if ($bucket !== null && !$plain) {
             $places['bucket'] = array(
                 'label'       => __('Save to your S3 bucket'),
                 'custom_html' => '<code class="backup-choice-note">' . osc_esc_html($bucket['label']) . '</code>',
@@ -303,7 +320,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             . ' ' . osc_esc_html(__("A backup holds your users' password hashes and your site's keys. Keep it as private as your database.")),
     )); ?>
     <?php if ($bucket !== null && !$bucket['readable']) { ?>
-        <p class="text-muted" id="backup-bucket-unread"><?php _e('The bucket could not be read, so backups saved there are not listed. Check the connection in Settings > Storage.'); ?></p>
+        <p class="text-muted" id="backup-bucket-unread"><?php echo osc_esc_html(BackupBucket::listFailure() === 'timeout'
+            ? __('The bucket did not answer; its backups are not listed right now.')
+            : __('The bucket could not be read, so backups saved there are not listed. Check the connection in Settings > Storage.')); ?></p>
     <?php } ?>
     <?php if ($list === array()) { ?>
         <p class="text-muted mb-0" id="backup-list-empty"><?php echo osc_esc_html(__('No saved backups yet.') . ' ' . ($bucket !== null

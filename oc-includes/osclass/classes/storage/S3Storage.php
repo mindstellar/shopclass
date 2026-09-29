@@ -14,6 +14,8 @@ namespace mindstellar\storage;
 use AsyncAws\S3\Input\GetObjectRequest;
 use AsyncAws\S3\S3Client;
 use DateTimeImmutable;
+use Symfony\Component\HttpClient\HttpClient;
+use Symfony\Contracts\HttpClient\Exception\TimeoutExceptionInterface;
 use Throwable;
 
 /**
@@ -55,6 +57,18 @@ class S3Storage implements StorageAdapter
     /** @var S3Client|object|null an S3Client, or a stand-in with the same methods */
     private ?object $client = null;
 
+    /** Whether the client was handed in, so a copy keeps it. */
+    private bool $injected = false;
+
+    /** @var object|null an HttpClientInterface for the unsigned check, for tests */
+    private ?object $http = null;
+
+    /** Seconds a request may take; 0 leaves the client's own limits. */
+    private float $timeout = 0.0;
+
+    /** Whether the last list() failed on a timeout. */
+    private bool $timedOut = false;
+
     /**
      * @param array<string,mixed> $config connection settings:
      *     endpoint: string,
@@ -66,7 +80,8 @@ class S3Storage implements StorageAdapter
      *     public_url_base?: string,
      *     signed_urls?: bool,
      *     signed_ttl?: int (clamped to 60..604800 seconds),
-     *     client?: object (a ready client, for tests)
+     *     client?: object (a ready client, for tests),
+     *     http?: object (an HttpClientInterface for unsigned requests, for tests)
      */
     public function __construct(array $config)
     {
@@ -80,6 +95,8 @@ class S3Storage implements StorageAdapter
         $this->signedUrls = (bool) ($config['signed_urls'] ?? false);
         $this->signedTtl = max(60, min(604800, (int) ($config['signed_ttl'] ?? 900)));
         $this->client = isset($config['client']) && is_object($config['client']) ? $config['client'] : null;
+        $this->injected = $this->client !== null;
+        $this->http = isset($config['http']) && is_object($config['http']) ? $config['http'] : null;
     }
 
     /**
@@ -207,6 +224,18 @@ class S3Storage implements StorageAdapter
             return rtrim($this->publicUrlBase, '/') . '/' . ltrim($key, '/');
         }
 
+        return $this->endpointUrl($key);
+    }
+
+    /**
+     * The object's plain URL on the endpoint, in path or virtual-host style.
+     *
+     * @param string $key
+     *
+     * @return string
+     */
+    private function endpointUrl(string $key): string
+    {
         $scheme = $this->endpointScheme();
         $host = $this->endpointHost();
 
@@ -254,6 +283,81 @@ class S3Storage implements StorageAdapter
         $copy->signedUrls = true;
 
         return $copy;
+    }
+
+    /**
+     * A copy of this adapter whose requests give up after $seconds, with no retries.
+     *
+     * @param float $seconds
+     *
+     * @return static
+     */
+    public function withTimeout(float $seconds): static
+    {
+        $copy = clone $this;
+        $copy->timeout = max(0.1, $seconds);
+        if (!$this->injected) {
+            $copy->client = null;
+        }
+
+        return $copy;
+    }
+
+    /**
+     * Whether the last list() failed because the bucket did not answer in time.
+     *
+     * @return bool
+     */
+    public function timedOut(): bool
+    {
+        return $this->timedOut;
+    }
+
+    /**
+     * Whether the endpoint is plain http on an address outside this machine and its
+     * private network. A one-word host name counts as private.
+     *
+     * @return bool
+     */
+    public function plainHttp(): bool
+    {
+        if ($this->endpointScheme() !== 'http') {
+            return false;
+        }
+        $host = strtolower(trim((string) parse_url('http://' . $this->endpointHost(), PHP_URL_HOST), '[]'));
+        if ($host === '' || $host === 'localhost' || str_ends_with($host, '.localhost')) {
+            return false;
+        }
+        if (filter_var($host, FILTER_VALIDATE_IP) !== false) {
+            return filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false;
+        }
+
+        return strpos($host, '.') !== false;
+    }
+
+    /**
+     * Whether anyone can read the object: an unsigned HEAD to its plain URL on the
+     * endpoint answers 2xx.
+     *
+     * @param string $key
+     * @param float  $timeout seconds
+     *
+     * @return bool false on any other answer or error
+     */
+    public function publiclyReadable(string $key, float $timeout = 3.0): bool
+    {
+        try {
+            $http = $this->http ?? HttpClient::create();
+            $status = $http->request('HEAD', $this->endpointUrl($key), array(
+                'timeout' => $timeout,
+                'max_duration' => $timeout,
+                'max_redirects' => 0,
+            ))->getStatusCode();
+
+            return $status >= 200 && $status < 300;
+        } catch (Throwable $e) {
+            return false;
+        }
     }
 
     /**
@@ -394,6 +498,11 @@ class S3Storage implements StorageAdapter
                 $state['etag'] = (string) $head->getEtag();
                 $state['bytes_done'] = 0;
             }
+            // A file shorter than what was fetched lost bytes since, so start again.
+            clearstatcache(true, $localPath);
+            if ((int) $state['bytes_done'] > 0 && (!is_file($localPath) || (int) filesize($localPath) < (int) $state['bytes_done'])) {
+                $state['bytes_done'] = 0;
+            }
             $umask = umask(0077);
             $out = @fopen($localPath, 'c');
             umask($umask);
@@ -455,6 +564,7 @@ class S3Storage implements StorageAdapter
      */
     public function list(string $prefix): array|false
     {
+        $this->timedOut = false;
         try {
             $rows = array();
             $result = $this->client()->listObjectsV2(array('Bucket' => $this->bucket, 'Prefix' => $prefix));
@@ -469,8 +579,28 @@ class S3Storage implements StorageAdapter
 
             return $rows;
         } catch (Throwable $e) {
+            $this->timedOut = self::isTimeout($e);
+
             return false;
         }
+    }
+
+    /**
+     * Whether an error, or one behind it, is a request that ran out of time.
+     *
+     * @param Throwable $e
+     *
+     * @return bool
+     */
+    private static function isTimeout(Throwable $e): bool
+    {
+        for ($err = $e; $err !== null; $err = $err->getPrevious()) {
+            if ($err instanceof TimeoutExceptionInterface || preg_match('/timed? ?out|timeout|max duration/i', $err->getMessage())) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -644,13 +774,16 @@ class S3Storage implements StorageAdapter
     private function client(): object
     {
         if ($this->client === null) {
+            $http = $this->timeout > 0
+                ? HttpClient::create(['timeout' => $this->timeout, 'max_duration' => $this->timeout])
+                : null;
             $this->client = new S3Client([
                 'endpoint' => $this->endpointScheme() . '://' . $this->endpointHost(),
                 'region' => $this->region,
                 'accessKeyId' => $this->accessKey,
                 'accessKeySecret' => $this->secretKey,
                 'pathStyleEndpoint' => $this->pathStyle,
-            ]);
+            ], null, $http);
         }
 
         return $this->client;

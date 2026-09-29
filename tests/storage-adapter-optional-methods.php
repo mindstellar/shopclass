@@ -33,6 +33,7 @@ use mindstellar\storage\StorageAdapter;
 use mindstellar\storage\StorageManager;
 
 $GLOBALS['prefs'] = array();
+BackupBucket::useBase('https://www.example.com/');
 function osc_get_preference($key, $section = 'osclass')
 {
     return $GLOBALS['prefs'][$key] ?? '';
@@ -165,7 +166,7 @@ pin('with offload off there is no bucket', null, BackupBucket::adapter());
 $controller = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php');
 $view       = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/tools/backup.php');
 check('the page is told of a bucket only when there is one', strpos($controller, "'backup_bucket', \$bucket !== null ? array(") !== false);
-check('...and offers the bucket choice only then', (bool) preg_match("/if \\(\\\$bucket !== null\\) \\{\\s*\\\$places\\['bucket'\\] = array\\(/", $view));
+check('...and offers the bucket choice only then, and not over plain http', (bool) preg_match("/if \\(\\\$bucket !== null && !\\\$plain\\) \\{\\s*\\\$places\\['bucket'\\] = array\\(/", $view));
 
 harness_section('With them, the bucket option');
 
@@ -183,13 +184,13 @@ $GLOBALS['prefs']['storage_s3_bucket']        = 'photos';
 $GLOBALS['prefs']['storage_s3_public_url']    = 'https://cdn.example';
 $GLOBALS['prefs']['storage_s3_backup_bucket'] = '';
 pin('the core S3 adapter with no backups bucket uses the photo bucket', true, BackupBucket::shared());
-pin('...under backups/', 'photos/backups/', BackupBucket::label());
+pin('...under backups/ in the site folder', 'photos/backups/www.example.com/', BackupBucket::label());
 pin('...and warns while it has a public URL', true, BackupBucket::exposed());
 $GLOBALS['prefs']['storage_s3_public_url'] = '';
 pin('...and while it serves photos without signed links', true, BackupBucket::exposed());
 $GLOBALS['prefs']['storage_s3_backup_bucket'] = 'private-backups';
 pin('a backups bucket is used when set', false, BackupBucket::shared());
-pin('...shown by name', 'private-backups/backups/', BackupBucket::label());
+pin('...shown by name', 'private-backups/backups/www.example.com/', BackupBucket::label());
 pin('...with no warning', false, BackupBucket::exposed());
 $adapter = BackupBucket::adapter();
 $state   = array();
@@ -213,6 +214,19 @@ pin('...while the photo adapter keeps its bucket', 'photos', (static function ()
 
     return $client->calls[0]['params']['Bucket'];
 })());
+harness_section('A plain http endpoint');
+
+$manager->register(new S3Storage(array('endpoint' => 'http://s3.example.com', 'bucket' => 'photos', 'client' => $client)));
+pin('a public plain http endpoint is flagged', true, BackupBucket::insecure());
+pin('...and a backup to the bucket is refused',
+    'Your S3 endpoint uses plain http, so a backup and its download link would travel unencrypted. Use an https endpoint.',
+    BackupManager::startBackup('everything', 'bucket'));
+$manager->register(new S3Storage(array('endpoint' => 'http://minio:9000', 'bucket' => 'photos', 'client' => $client)));
+pin('a plain http endpoint on the private network is not', false, BackupBucket::insecure());
+check('the page warns and hides the bucket choice', strpos($view, '$plain   = $bucket !== null && BackupBucket::insecure();') !== false
+    && strpos($view, "if (\$plain) {") !== false);
+$manager->register(new S3Storage(array('endpoint' => 'https://s3.example', 'bucket' => 'photos', 'client' => $client)));
+
 $GLOBALS['prefs']['storage_s3_backup_bucket'] = 'photos';
 pin('naming the photo bucket as the backups bucket still counts as shared', true, BackupBucket::shared());
 

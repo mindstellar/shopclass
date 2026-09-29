@@ -41,6 +41,20 @@ use mindstellar\database\Connection;
 use mindstellar\database\DbException;
 use mindstellar\job\Job;
 use mindstellar\storage\S3Storage;
+use Symfony\Component\HttpClient\MockHttpClient;
+use Symfony\Component\HttpClient\Response\MockResponse;
+
+$GLOBALS['prefs'] = array();
+function osc_get_preference($key, $section = 'osclass')
+{
+    return $GLOBALS['prefs'][$key] ?? '';
+}
+function osc_set_preference($key, $value = '', $section = 'osclass', $type = 'STRING')
+{
+    $GLOBALS['prefs'][$key] = $value;
+
+    return true;
+}
 
 /** Records what would run, and fails on the statements it is told to. */
 final class FakeConnection extends Connection
@@ -318,7 +332,15 @@ foreach ($shapes as $label => $state) {
 harness_section('A backup to the bucket');
 
 $s3      = new FakeS3Client();
-$bucket  = new S3Storage(array('endpoint' => 'https://s3.example', 'bucket' => 'shop-backups', 'access_key' => 'k', 'secret_key' => 's', 'client' => $s3));
+$anon    = array();
+$anonAns = 403;
+$http    = new MockHttpClient(static function (string $method, string $url) use (&$anon, &$anonAns): MockResponse {
+    $anon[] = $method . ' ' . $url;
+
+    return new MockResponse('', array('http_code' => $anonAns));
+});
+$bucket  = new S3Storage(array('endpoint' => 'https://s3.example', 'bucket' => 'shop-backups', 'access_key' => 'k', 'secret_key' => 's', 'client' => $s3, 'http' => $http));
+$GLOBALS['prefs']['storage_s3_bucket'] = 'shop-backups';
 $uploads = array();
 $effects = array(
     'saved'    => static function (array $p) use (&$saved) {
@@ -372,6 +394,22 @@ pin('...each checked by size', 2, count($s3->calls('headObject')));
 pin('the copy here is removed', array(), glob($store->dir() . substr($name, 0, -4) . '*'));
 pin('...and the backup is reported saved in the bucket', array(1, 'bucket'), array(count($saved), $saved[0]['where'] ?? null));
 pin('the bucket lists it', array($name), array_column((array) $store->bucketAll($bucket), 'name'));
+pin('...after one unsigned HEAD for the backup', array('HEAD https://shop-backups.s3.example/' . BackupBucket::key($name)), $anon);
+pin('...which a private bucket refuses, so nothing is flagged', '', $GLOBALS['prefs'][BackupBucket::PUBLIC_FLAG] ?? null);
+
+$anonAns = 200;
+list(, $built) = $runJob(static function (Job $job) use ($store, $builder) {
+    BackupJobs::create($job, $store, $builder);
+}, Builder::begin('database', 'bucket'));
+$runJob($uploadJob, $uploads[count($uploads) - 1]);
+pin('an upload that anyone can read still finishes', 'done', $store->state()['status']);
+pin('...and flags the bucket', BackupBucket::label(), $GLOBALS['prefs'][BackupBucket::PUBLIC_FLAG] ?? null);
+check('...so the page warns', BackupBucket::flaggedPublic());
+check('...inside the verdict', (bool) preg_match("/if \\(\\\$open\\) \\{\\s*\\\$issues\\[\\] = array\\(\\s*'tone'\\s*=> 'danger',\\s*'text'\\s*=> __\\('Anyone can read your backups in this bucket. Make the bucket private.'\\)/",
+    (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/tools/backup.php')));
+$anonAns = 403;
+$store->bucketDelete($bucket, $built['name']);
+$store->clearState();
 
 harness_section('A failed upload keeps the backup here');
 

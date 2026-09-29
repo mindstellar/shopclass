@@ -245,6 +245,14 @@ check('the page learns only the label, the warning and whether the bucket could 
 ));
 check('a bucket row downloads by posting its name, not by a link', strpos($view, "\$postButton('backup_download', __('Download'), \$names(\$row))") !== false
     && strpos($view, "'from' => 'bucket'") !== false);
+check('a bucket that timed out gets the quiet line, anything else the connection line', (bool) preg_match(
+    "/BackupBucket::listFailure\\(\\) === 'timeout'\\s*\\? __\\('The bucket did not answer; its backups are not listed right now.'\\)\\s*: __\\('The bucket could not be read/",
+    $view
+));
+check('...shown escaped', strpos($view, "<?php echo osc_esc_html(BackupBucket::listFailure() === 'timeout'") !== false);
+check('an open bucket and a plain http endpoint are warned about in the verdict', strpos($view, 'if ($open) {') !== false
+    && strpos($view, 'if ($plain) {') !== false
+    && strpos($view, 'if ($open) {') < strpos($view, 'osc_admin_verdict($issues);'));
 $delete = $body('backup_delete');
 check('a bucket delete comes after the token', strpos($delete, 'osc_csrf_check()') < strpos($delete, 'bucketDelete('));
 check('...and deletes nothing here when no bucket is set', strpos($delete, "\$bucket === false ? BackupStore::site()->delete(\$name) : \$bucket !== null && BackupStore::site()->bucketDelete(\$bucket, \$name)") !== false);

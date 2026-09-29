@@ -16,11 +16,30 @@ use mindstellar\storage\StorageManager;
  * The S3 bucket backups can be saved to: the separate backups bucket when one is set,
  * else the photo bucket under backups/. Offered only when photo offload is on and the
  * storage adapter has the optional methods below.
+ *
+ * Each site keeps its backups in its own folder, backups/<site>/, named from the site
+ * address in config.php. Nothing in the database names it, so a restored copy of another
+ * site's database cannot point this site at that site's backups.
  */
 final class BackupBucket
 {
-    /** Where backups live in the bucket. */
+    /** The folder the per-site folders sit in. */
     public const PREFIX = 'backups/';
+
+    /** The longest per-site folder name. */
+    public const SITE_MAX = 60;
+
+    /** Seconds the Backup page waits for the bucket listing. */
+    public const PAGE_TIMEOUT = 5.0;
+
+    /** Seconds the page's copy of the bucket listing is used. */
+    public const LIST_TTL = 60;
+
+    /** Seconds the unsigned check for a public backup waits. */
+    public const PUBLIC_TIMEOUT = 3.0;
+
+    /** The preference that holds the label of a bucket found readable by anyone. */
+    public const PUBLIC_FLAG = 'backup_bucket_public';
 
     /** How long a download link lives, in seconds. */
     public const LINK_TTL = 900;
@@ -30,6 +49,12 @@ final class BackupBucket
 
     /** @var object|null|false false: resolve from the settings */
     private static $adapter = false;
+
+    /** @var string|null a site address in place of WEB_PATH, for tests */
+    private static $base;
+
+    /** @var string why the last bucket listing failed: '', 'timeout' or 'error' */
+    private static $failure = '';
 
     /**
      * Use this adapter instead of the one the settings name, for tests. False puts the
@@ -42,6 +67,125 @@ final class BackupBucket
     public static function use($adapter): void
     {
         self::$adapter = $adapter;
+    }
+
+    /**
+     * Use this site address instead of WEB_PATH, for tests. Null puts WEB_PATH back.
+     *
+     * @param string|null $base
+     *
+     * @return void
+     */
+    public static function useBase(?string $base): void
+    {
+        self::$base = $base;
+    }
+
+    /**
+     * The per-site folder name for a site address: host, port and path, lower-cased, in
+     * a-z 0-9 . and -, cut to SITE_MAX with a hash of the whole when longer.
+     *
+     * @param string $baseUrl
+     *
+     * @return string
+     */
+    public static function siteFolder(string $baseUrl): string
+    {
+        $url  = strtolower(trim($baseUrl));
+        $url  = preg_match('#^[a-z][a-z0-9+.-]*://#', $url) ? $url : 'http://' . $url;
+        $part = parse_url($url);
+        $part = is_array($part) ? $part : array();
+        $raw  = ($part['host'] ?? '') . (isset($part['port']) ? '-' . $part['port'] : '') . '/' . ($part['path'] ?? '');
+        $raw  = (string) preg_replace('#(?<=/)\.+(?=/|$)#', '', $raw);
+        $name = (string) preg_replace('/[^a-z0-9.]+/', '-', $raw);
+        $name = trim((string) preg_replace('/\.{2,}/', '.', $name), '.-');
+        if ($name === '') {
+            return 'site';
+        }
+        if (strlen($name) > self::SITE_MAX) {
+            $name = rtrim(substr($name, 0, self::SITE_MAX - 9), '.-') . '-' . substr(sha1($name), 0, 8);
+        }
+
+        return $name;
+    }
+
+    /**
+     * This site's folder in the bucket, with a trailing slash.
+     *
+     * @return string
+     */
+    public static function prefix(): string
+    {
+        $base = self::$base ?? (defined('WEB_PATH') ? (string) WEB_PATH : '');
+
+        return self::PREFIX . self::siteFolder($base) . '/';
+    }
+
+    /**
+     * Record why the last bucket listing failed, '' when it did not.
+     *
+     * @param string $failure
+     *
+     * @return void
+     */
+    public static function listed(string $failure): void
+    {
+        self::$failure = $failure;
+    }
+
+    /**
+     * Why the last bucket listing failed: '', 'timeout' or 'error'.
+     *
+     * @return string
+     */
+    public static function listFailure(): string
+    {
+        return self::$failure;
+    }
+
+    /**
+     * Whether the bucket is reached over plain http on a public address, where a backup
+     * and its download link would travel unencrypted.
+     *
+     * @return bool
+     */
+    public static function insecure(): bool
+    {
+        $adapter = self::adapter();
+
+        return $adapter !== null && method_exists($adapter, 'plainHttp') && $adapter->plainHttp();
+    }
+
+    /**
+     * After an upload, ask for the object without signing. Remember the bucket as open
+     * when it answers, and forget it when it does not.
+     *
+     * @param object $bucket
+     * @param string $key
+     *
+     * @return bool whether anyone can read it
+     */
+    public static function checkPublic(object $bucket, string $key): bool
+    {
+        if (!method_exists($bucket, 'publiclyReadable')) {
+            return false;
+        }
+        $open = (bool) $bucket->publiclyReadable($key, self::PUBLIC_TIMEOUT);
+        osc_set_preference(self::PUBLIC_FLAG, $open ? self::label() : '');
+
+        return $open;
+    }
+
+    /**
+     * Whether the last upload to this bucket could be read without signing.
+     *
+     * @return bool
+     */
+    public static function flaggedPublic(): bool
+    {
+        $flag = (string) osc_get_preference(self::PUBLIC_FLAG);
+
+        return $flag !== '' && $flag === self::label();
     }
 
     /**
@@ -96,7 +240,7 @@ final class BackupBucket
     {
         $bucket = self::shared() ? (string) osc_get_preference('storage_s3_bucket') : self::separate();
 
-        return ($bucket !== '' ? $bucket . '/' : '') . self::PREFIX;
+        return ($bucket !== '' ? $bucket . '/' : '') . self::prefix();
     }
 
     /**
@@ -136,7 +280,7 @@ final class BackupBucket
      */
     public static function key(string $name): string
     {
-        return self::PREFIX . $name;
+        return self::prefix() . $name;
     }
 
     /**
@@ -148,7 +292,7 @@ final class BackupBucket
      */
     public static function sidecarKey(string $name): string
     {
-        return self::PREFIX . substr($name, 0, -4) . '.json';
+        return self::prefix() . substr($name, 0, -4) . '.json';
     }
 
     /**

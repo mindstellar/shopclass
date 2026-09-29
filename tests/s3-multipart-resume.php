@@ -179,6 +179,18 @@ $client->calls = array();
 pin('a resumed download returns without an error', true, $s3->getLarge('backups/big.zip', $local, $always, $state));
 pin('...asking from byte 1500', 'bytes=1500-4499', $client->calls('getObject')[0]['params']['Range']);
 pin('...and the file is whole', $bytes, (string) file_get_contents($local));
+// The file lost bytes since the last range (a sweep, a full disk): start again from 0.
+$state = array('size' => strlen($bytes), 'etag' => '"' . md5($bytes) . '"', 'bytes_done' => 3000, 'done' => false);
+file_put_contents($local, substr($bytes, 0, 1000));
+$client->calls = array();
+pin('a file shorter than what was fetched is fetched again', true, $s3->getLarge('backups/big.zip', $local, $always, $state));
+pin('...from byte 0', 'bytes=0-4499', $client->calls('getObject')[0]['params']['Range'] ?? null);
+pin('...and the file is whole, not padded', $bytes, (string) file_get_contents($local));
+$state = array('size' => strlen($bytes), 'etag' => '"' . md5($bytes) . '"', 'bytes_done' => 3000, 'done' => false);
+unlink($local);
+$client->calls = array();
+$s3->getLarge('backups/big.zip', $local, $always, $state);
+pin('a file that is gone is fetched again from byte 0', array('bytes=0-4499', $bytes), array($client->calls('getObject')[0]['params']['Range'] ?? null, (string) @file_get_contents($local)));
 $client->objects['backups/big.zip'] = 'changed';
 $state = array('size' => strlen($bytes), 'etag' => '"' . md5($bytes) . '"', 'bytes_done' => 1500, 'done' => false);
 pin('an object changed since the first range fails the download', false, $s3->getLarge('backups/big.zip', $local, $always, $state));
