@@ -175,7 +175,7 @@ define('OSC_DISABLE_WEB_RESTORE', true);
 ```
 
 The page then hides the restore buttons and says restore is turned off. Backups
-still work. To restore by hand, load the `.sql` file with `mysql` and unzip the
+still work. A restore that was already started before you set it still finishes. To restore by hand, load the `.sql` file with `mysql` and unzip the
 files over `oc-content/`.
 
 ## Cache

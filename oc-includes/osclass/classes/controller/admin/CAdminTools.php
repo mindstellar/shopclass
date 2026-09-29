@@ -202,7 +202,7 @@ class CAdminTools extends AdminSecBaseModel
                 $admin  = Admin::newInstance()->findByPrimaryKey(osc_logged_admin_id());
                 $reauth = is_array($admin) ? AdminReauth::verify(
                     $admin,
-                    (string) Params::getParam('password', false, false),
+                    Params::getParamString('password', false, false),
                     Params::getParamString('code')
                 ) : _m("You don't have enough permissions");
                 if ($reauth !== '') {
