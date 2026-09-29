@@ -145,16 +145,10 @@ $groups = array(
     <div id="db-check">
         <?php if ($error !== '') { ?>
             <?php osc_admin_form_section(__('Check and repair'), array('spaced' => true)); ?>
-            <div class="flashmessage flashmessage-error">
-                <p class="mb-0"><?php printf(__('Could not read the schema: %s'), osc_esc_html($error)); ?></p>
-            </div>
+            <?php osc_admin_verdict(array(array('tone' => 'danger', 'text' => sprintf(__('Could not read the schema: %s'), $error)))); ?>
         <?php } elseif ($findings === array()) { ?>
             <?php osc_admin_form_section(__('Check and repair'), array('spaced' => true)); ?>
-            <?php osc_admin_empty(array(
-                'icon'  => 'bi-check2-circle',
-                'title' => __('Everything matches. Nothing to repair.'),
-                'text'  => __('Your database has every table, column and index Shopclass expects.'),
-            )); ?>
+            <p class="text-muted mb-0"><?php _e('Everything matches. Nothing to repair.'); ?></p>
         <?php } else { ?>
             <?php foreach ($groups as $group) { ?>
                 <?php $rows = array_values(array_filter($findings, static function ($f) use ($group) {

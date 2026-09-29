@@ -438,7 +438,8 @@ if (!function_exists('osc_admin_verdict')) {
     {
         if ($issues === array()) {
             if ($healthyText !== '') {
-                echo '<div class="callout-success callout-block osc-verdict">' . osc_esc_html($healthyText) . '</div>';
+                echo '<div class="callout-success callout-block osc-verdict"><ul class="osc-verdict-list"><li class="osc-verdict-line">'
+                    . '<span class="osc-verdict-text">' . osc_esc_html($healthyText) . '</span></li></ul></div>';
             }
 
             return;

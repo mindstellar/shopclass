@@ -146,20 +146,27 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             <?php } ?>
         </ul>
 
-        <?php $upgrade = $view->_get('db_upgrade'); ?>
-        <?php if (is_array($upgrade) && $upgrade['error'] === 0) { ?>
-            <div class="callout-success callout-block">
-                <?php echo osc_esc_html($upgrade['applied'] === array()
-                    ? __('Nothing was waiting. The database is up to date.')
-                    : sprintf(_n('The database is updated. %d update ran.', 'The database is updated. %d updates ran.', count($upgrade['applied'])), count($upgrade['applied']))); ?>
-            </div>
-        <?php } elseif (is_array($upgrade)) { ?>
-            <div class="flashmessage flashmessage-error">
-                <p class="mb-0"><?php echo osc_esc_html($upgrade['message'] !== '' ? $upgrade['message'] : __('The database update failed.')); ?></p>
-            </div>
-        <?php } ?>
-
-        <?php osc_admin_verdict($report['issues'] ?? array(), SystemChecks::healthy($tab)); ?>
+        <?php
+        // The update's result joins the tab's verdict: one box, not two.
+        $upgrade = $view->_get('db_upgrade');
+        $issues  = $report['issues'] ?? array();
+        $healthy = SystemChecks::healthy($tab);
+        if (is_array($upgrade) && $upgrade['error'] === 0) {
+            $ran = $upgrade['applied'] === array()
+                ? __('Nothing was waiting. The database is up to date.')
+                : sprintf(_n('The database is updated. %d update ran.', 'The database is updated. %d updates ran.', count($upgrade['applied'])), count($upgrade['applied']));
+            if ($issues === array()) {
+                $healthy = $ran;
+            } else {
+                $issues[] = array('tone' => 'info', 'text' => $ran);
+            }
+        } elseif (is_array($upgrade)) {
+            array_unshift($issues, array(
+                'tone' => 'danger',
+                'text' => $upgrade['message'] !== '' ? $upgrade['message'] : __('The database update failed.'),
+            ));
+        }
+        osc_admin_verdict($issues, $healthy); ?>
 
         <?php foreach (($report['groups'] ?? array()) as $group) { ?>
             <section class="sysinfo-group">

@@ -135,7 +135,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         <div class="callout-<?php echo $restore ? 'warning' : 'info'; ?> callout-block backup-callout" id="backup-run"
              data-status-url="<?php echo osc_esc_html($poll); ?>"
              data-done-url="<?php echo osc_esc_html(osc_admin_base_url(true) . '?page=tools&action=backup'); ?>">
-            <div class="backup-callout-body">
+            <div class="backup-callout-body backup-callout-stack">
                 <p class="backup-callout-title"><?php echo osc_esc_html($words['title']); ?></p>
                 <?php if ($restore) { ?>
                     <p><?php _e('Visitors see the maintenance page until this finishes.'); ?></p>
@@ -162,13 +162,15 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         $failure = BackupManager::failure($state); ?>
         <div class="callout-danger callout-block backup-callout" role="alert">
             <div class="backup-callout-body">
-                <p class="backup-callout-title"><?php echo osc_esc_html(array_shift($failure['lines'])); ?></p>
-                <?php foreach ($failure['lines'] as $line) { ?>
-                    <p><?php echo osc_esc_html($line); ?></p>
-                <?php } ?>
+                <div class="backup-callout-text">
+                    <p class="backup-callout-title"><?php echo osc_esc_html(array_shift($failure['lines'])); ?></p>
+                    <?php foreach ($failure['lines'] as $line) { ?>
+                        <p><?php echo osc_esc_html($line); ?></p>
+                    <?php } ?>
+                </div>
                 <div class="backup-callout-actions">
                     <?php if ($failure['reopen']) {
-                        $postButton('backup_reopen', __('Open the site again'));
+                        $postButton('backup_reopen', __('Open the site again'), array(), 'primary');
                         osc_admin_action_button(array('label' => __('See the job'), 'url' => osc_admin_base_url(true) . '?page=tools&action=jobs'));
                     } else {
                         if ($state['kind'] === 'backup') {
@@ -182,16 +184,18 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <?php } elseif ($status === 'done' && ($state['where'] ?? '') === 'download') { ?>
         <div class="callout-success callout-block backup-callout">
             <div class="backup-callout-body">
-                <p class="backup-callout-title"><?php printf(
-                    osc_esc_html(__('Your backup is ready: %1$s, %2$s, %3$s.')),
-                    osc_esc_html(BackupJobs::when(date('c', (int) $state['started']))),
-                    osc_esc_html(BackupJobs::whatWord((string) $state['what'])),
-                    osc_esc_html(DatabaseTools::bytes((int) $state['size']))
-                ); ?></p>
-                <p class="backup-callout-note"><?php _e('It is removed after you download it, or after one hour.'); ?></p>
-                <?php if ($skipped !== '') { ?>
-                    <p><?php echo osc_esc_html($skipped); ?></p>
-                <?php } ?>
+                <div class="backup-callout-text">
+                    <p class="backup-callout-title"><?php printf(
+                        osc_esc_html(__('Your backup is ready: %1$s, %2$s, %3$s.')),
+                        osc_esc_html(BackupJobs::when(date('c', (int) $state['started']))),
+                        osc_esc_html(BackupJobs::whatWord((string) $state['what'])),
+                        osc_esc_html(DatabaseTools::bytes((int) $state['size']))
+                    ); ?></p>
+                    <p class="backup-callout-note"><?php _e('It is removed after you download it, or after one hour.'); ?></p>
+                    <?php if ($skipped !== '') { ?>
+                        <p><?php echo osc_esc_html($skipped); ?></p>
+                    <?php } ?>
+                </div>
                 <div class="backup-callout-actions">
                     <?php $postButton('backup_download', __('Download now'), array('name' => $state['name']), 'primary'); ?>
                 </div>
@@ -201,10 +205,12 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         $lines = array_values(array_filter($notice['lines'])); ?>
         <div class="callout-<?php echo $notice['tone'] === 'success' ? 'success' : 'info'; ?> callout-block backup-callout" role="status">
             <div class="backup-callout-body">
-                <p class="backup-callout-title"><?php echo osc_esc_html(array_shift($lines)); ?></p>
-                <?php foreach ($lines as $line) { ?>
-                    <p><?php echo osc_esc_html($line); ?></p>
-                <?php } ?>
+                <div class="backup-callout-text">
+                    <p class="backup-callout-title"><?php echo osc_esc_html(array_shift($lines)); ?></p>
+                    <?php foreach ($lines as $line) { ?>
+                        <p><?php echo osc_esc_html($line); ?></p>
+                    <?php } ?>
+                </div>
                 <div class="backup-callout-actions">
                     <?php $postButton('backup_dismiss', __('Dismiss')); ?>
                 </div>
@@ -252,6 +258,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 </div>
             <?php osc_admin_form_row_close(); ?>
         <?php } ?>
+        <?php if ($locked) { ?>
+            <?php osc_admin_form_row_open(''); ?>
+                <p class="backup-form-note"><?php echo osc_esc_html($demo ? __('Not available on the demo site.') : __('One backup at a time.')); ?></p>
+            <?php osc_admin_form_row_close(); ?>
+        <?php } ?>
     <?php osc_admin_form_close(array(
         array(
             'label'   => __('Make backup'),
@@ -260,22 +271,15 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             'attrs'   => $locked ? array('disabled' => 'disabled') : array(),
         ),
     )); ?>
-    <?php if ($locked) { ?>
-        <p class="backup-form-note"><?php echo osc_esc_html($demo ? __('Not available on the demo site.') : __('One backup at a time.')); ?></p>
-    <?php } ?>
 
     <?php osc_admin_form_section(__('Saved backups'), array(
         'spaced'     => true,
         'intro_html' => $list === array() ? '' : osc_esc_html(sprintf(__('Newest first. Kept: the last %d on the server.'), $keep))
             . ' ' . osc_esc_html(__("A backup holds your users' password hashes and your site's keys. Keep it as private as your database.")),
     )); ?>
-    <?php if ($list === array()) {
-        osc_admin_empty(array(
-            'icon'  => 'bi-archive',
-            'title' => __('No saved backups yet'),
-            'text'  => __('Backups you save on the server are listed here. Downloads are not kept.'),
-        ));
-    } else { ?>
+    <?php if ($list === array()) { ?>
+        <p class="text-muted mb-0" id="backup-list-empty"><?php echo osc_esc_html(__('No saved backups yet.') . ' ' . __('Backups you save on the server are listed here. Downloads are not kept.')); ?></p>
+    <?php } else { ?>
         <div class="table-responsive">
             <table class="table" id="backup-list">
                 <thead>
@@ -338,12 +342,14 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <div id="restore">
         <?php osc_admin_form_section(__('Restore from a file'), array('spaced' => true)); ?>
         <?php if ($noWeb) { ?>
-            <p class="backup-form-note" id="backup-restore-off"><?php echo osc_esc_html($offLine); ?></p>
+            <p class="text-muted mb-0" id="backup-restore-off"><?php echo osc_esc_html($offLine); ?></p>
         <?php } else { ?>
-        <div class="callout-danger callout-block mb-3">
-            <?php _e("Restoring replaces what is on the site now. It cannot be undone. A safety copy of today's database is saved first."); ?>
-        </div>
         <?php osc_admin_form_open(array('page' => 'tools', 'action' => 'backup_upload', 'id' => 'backup-upload-form', 'upload' => true)); ?>
+            <?php osc_admin_form_row_open(''); ?>
+                <div class="callout-danger callout-block">
+                    <?php _e("Restoring replaces what is on the site now. It cannot be undone. A safety copy of today's database is saved first."); ?>
+                </div>
+            <?php osc_admin_form_row_close(); ?>
             <?php osc_admin_field(array(
                 'type'     => 'file',
                 'id'       => 'backup_file',
@@ -419,7 +425,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         if ($reauth !== '') {
             $body .= '<div class="callout-danger callout-block" role="alert">' . osc_esc_html($reauth) . '</div>';
         }
-        $body .= '<label for="backup-reauth-password">' . osc_esc_html(__('Your password')) . '</label>' . $passwordField;
+        $body .= '<div class="backup-reauth-field"><label class="form-label" for="backup-reauth-password">' . osc_esc_html(__('Your password')) . '</label>' . $passwordField . '</div>';
         if ($twoStep) {
             ob_start();
             osc_admin_field(array(
@@ -430,8 +436,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 'required' => true,
                 'attrs'    => array('inputmode' => 'numeric', 'autocomplete' => 'one-time-code', 'maxlength' => '10'),
             ));
-            $body .= '<label for="backup-reauth-code">' . osc_esc_html(__('Code from your app, or a backup code')) . '</label>'
-                . (string) ob_get_clean();
+            $body .= '<div class="backup-reauth-field"><label class="form-label" for="backup-reauth-code">' . osc_esc_html(__('Code from your app, or a backup code')) . '</label>'
+                . (string) ob_get_clean() . '</div>';
         }
         $body .= '</div>';
 

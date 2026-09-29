@@ -1,16 +1,24 @@
 // Tools > Backup and restore.
 
-// The running, failed and ready callouts hold several lines and their buttons.
+// The running, failed and ready callouts: their lines, with the buttons beside them the
+// way a verdict line carries its button. The buttons drop under the text on a phone.
 .backup-callout {
   font-size: 1rem;
-  margin-block-end: 1rem;
+  margin-block-end: 1.5rem;
+  padding: .75rem 1rem;
+
+  &::before {
+    line-height: 1.95rem;
+  }
 }
 
 .backup-callout-body {
+  align-items: flex-start;
   display: flex;
   flex: 1 1 auto;
-  flex-direction: column;
-  gap: .5rem;
+  flex-wrap: wrap;
+  gap: .5rem 1rem;
+  justify-content: space-between;
   min-width: 0;
 
   p {
@@ -18,8 +26,26 @@
   }
 }
 
+// Progress takes the full width, so the running callout stays one column.
+.backup-callout-stack {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: .5rem;
+}
+
+.backup-callout-text {
+  display: flex;
+  flex: 1 1 18rem;
+  flex-direction: column;
+  gap: .35rem;
+  min-width: 0;
+}
+
+// Level with the icon and with a small button beside it.
 .backup-callout-title {
   font-weight: 600;
+  line-height: 1.5;
+  padding-block: .225rem;
 }
 
 .backup-callout-note {
@@ -29,9 +55,9 @@
 
 .backup-callout-actions {
   display: flex;
+  flex: 0 0 auto;
   flex-wrap: wrap;
   gap: .5rem;
-  justify-content: flex-end;
 
   form {
     display: inline;
@@ -40,8 +66,7 @@
 
 .backup-form-note {
   color: var(--osc-ink-muted);
-  font-size: .875rem;
-  margin: .5rem 0 0;
+  margin: 0;
 }
 
 // The line beside a choice that says what it holds; under it on a phone.
@@ -60,6 +85,13 @@
     flex-basis: 100%;
     margin-block-start: -.35rem;
     margin-inline-start: 1.6rem;
+  }
+
+  // Under its choice the folder reads as a note like the others, not a full-width chip.
+  #backup-form code.backup-choice-note {
+    background-color: transparent;
+    border: 0;
+    padding: 0;
   }
 }
 
@@ -181,15 +213,32 @@
 .backup-reauth {
   display: flex;
   flex-direction: column;
-  gap: .375rem;
-  margin-block-start: 1rem;
-
-  label {
-    font-weight: 600;
-    margin-block-start: .25rem;
-  }
+  gap: .85rem;
+  margin-block-start: 1.1rem;
 
   .callout-block {
-    margin-block-end: .25rem;
+    margin: 0;
+  }
+}
+
+.backup-reauth-field {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+
+  .form-label {
+    color: var(--osc-ink);
+    margin: 0;
+  }
+}
+
+// A row with no label (the S3 note, the one-at-a-time note, the restore warning) lines up
+// with the controls above it rather than running under the label column.
+@media (min-width: 577px) {
+  #backup-form,
+  #backup-upload-form {
+    .form-row > .form-controls:first-child {
+      margin-inline-start: 170px;
+    }
   }
 }

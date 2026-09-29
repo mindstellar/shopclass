@@ -323,3 +323,50 @@
     outline-offset: 2px;
   }
 }
+
+// Tools > Upgrade Shopclass: the verdict, then the notes, in one reading column like
+// System info.
+.upgrade-tool {
+  #steps > * {
+    max-inline-size: 56rem;
+  }
+
+  .osc-verdict,
+  .upgrade-running {
+    margin-block-end: 1rem;
+  }
+}
+
+.upgrade-tool-note,
+.upgrade-tool-message {
+  color: var(--osc-ink-muted);
+  line-height: 1.55;
+  margin: 0;
+  max-inline-size: 68ch;
+
+  p {
+    margin: 0 0 .5rem;
+  }
+}
+
+.upgrade-tool-notes {
+  max-inline-size: 68ch;
+
+  h4 {
+    color: var(--osc-ink);
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 1rem 0 .35rem;
+  }
+
+  p,
+  ul {
+    color: var(--osc-ink);
+    line-height: 1.55;
+    margin: 0 0 .5rem;
+  }
+
+  ul {
+    padding-inline-start: 1.25rem;
+  }
+}

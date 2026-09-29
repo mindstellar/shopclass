@@ -2611,10 +2611,6 @@ msgstr ""
 msgid "Confirm new password"
 msgstr ""
 
-#: oc-admin/themes/modern/tools/upgrade.php
-msgid "Congratulations! Your Shopclass installation is up to date!"
-msgstr ""
-
 #: oc-includes/osclass/installer/gui/install.php
 msgid "Connect database"
 msgstr ""
@@ -4594,10 +4590,6 @@ msgstr ""
 msgid "Help text"
 msgstr ""
 
-#: oc-admin/themes/modern/tools/upgrade.php
-msgid "Hey, a new version %s is available for download. Check details below."
-msgstr ""
-
 #: oc-includes/osclass/install-functions.php
 msgid "Hi %s,"
 msgstr ""
@@ -4947,10 +4939,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
 msgid "In-app installs are disabled on this deployment."
-msgstr ""
-
-#: oc-admin/themes/modern/tools/upgrade.php
-msgid "In-app updates are disabled"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
@@ -6647,10 +6635,6 @@ msgstr ""
 msgid "No"
 msgstr ""
 
-#: oc-admin/themes/modern/tools/upgrade.php
-msgid "No Upgrade Available"
-msgstr ""
-
 #: oc-admin/themes/modern/tools/logs.php
 msgid "No activity has been logged yet."
 msgstr ""
@@ -6885,7 +6869,7 @@ msgid "No room for more photos."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
-msgid "No saved backups yet"
+msgid "No saved backups yet."
 msgstr ""
 
 #: oc-admin/themes/modern/functions.php
@@ -7212,12 +7196,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/KeywordBlockSettingsForm.php
 msgid "On a match"
-msgstr ""
-
-#: oc-admin/themes/modern/tools/upgrade.php
-msgid ""
-"Once the upgrade is complete, you will be redirected to the Admin Control "
-"Panel."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
@@ -9149,6 +9127,10 @@ msgstr ""
 msgid "Shopclass "
 msgstr ""
 
+#: oc-admin/themes/modern/tools/upgrade.php
+msgid "Shopclass %1$s is available. You have %2$s."
+msgstr ""
+
 #: oc-admin/themes/modern/tools/version.php
 msgid "Shopclass %s"
 msgstr ""
@@ -9212,6 +9194,14 @@ msgstr ""
 
 #: oc-includes/osclass/installer/gui/install.php
 msgid "Shopclass is already installed here."
+msgstr ""
+
+#: oc-admin/themes/modern/tools/upgrade.php
+msgid "Shopclass is up to date. You have version %s."
+msgstr ""
+
+#: oc-admin/themes/modern/tools/upgrade.php
+msgid "Shopclass is upgraded to %s."
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
@@ -10265,6 +10255,14 @@ msgstr ""
 msgid "The upgrade did not finish"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/upgrade.php
+msgid "The upgrade failed."
+msgstr ""
+
+#: oc-admin/themes/modern/tools/upgrade.php
+msgid "The upgrade finished, with some errors."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/DatabaseTools.php
 msgid "The upload failed. Try again."
 msgstr ""
@@ -10426,6 +10424,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/wallet.php
 msgid "This balance is below zero, usually after a refund of credits that had "
+msgstr ""
+
+#: oc-admin/themes/modern/tools/upgrade.php
+msgid "This can take a few minutes. Keep this page open."
 msgstr ""
 
 #: oc-admin/themes/modern/upgrade/index.php
@@ -11219,35 +11221,16 @@ msgid "Upgrade"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/upgrade.php
-msgid "Upgrade Failed"
-msgstr ""
-
-#: oc-admin/themes/modern/tools/upgrade.php
-msgid "Upgrade Notes:"
-msgstr ""
-
-#: oc-admin/themes/modern/tools/upgrade.php
-msgid "Upgrade Now to "
-msgstr ""
-
 #: oc-includes/osclass/classes/AdminMenu.php
 msgid "Upgrade Shopclass"
 msgstr ""
 
-#: oc-admin/themes/modern/tools/upgrade.php
-msgid "Upgrade Successful"
-msgstr ""
-
-#: oc-admin/themes/modern/tools/upgrade.php
-msgid "Upgrade completed with few errors"
-msgstr ""
-
-#: oc-admin/themes/modern/tools/upgrade.php
-msgid "Upgrade is available for (Current version %s)"
-msgstr ""
-
 #: oc-admin/themes/modern/upgrade/index.php
 msgid "Upgrade now"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/upgrade.php
+msgid "Upgrade to %s"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsForm.php
@@ -11255,7 +11238,7 @@ msgid "Upgrades"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/upgrade.php
-msgid "Upgrading your Shopclass installation (this could take a while):"
+msgid "Upgrading Shopclass to %s."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/add.php
@@ -11831,6 +11814,10 @@ msgstr ""
 msgid "What's new"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/upgrade.php
+msgid "What's new in %s"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/cleanup.php
 #: oc-admin/themes/modern/tools/jobs.php
 msgid "When"
@@ -12021,10 +12008,6 @@ msgid ""
 "the %2$s."
 msgstr ""
 
-#: oc-admin/themes/modern/tools/upgrade.php
-msgid "Your Shopclass installation has been upgraded to version "
-msgstr ""
-
 #: oc-includes/osclass/classes/admin/ui/Field.php
 msgid "Your admin language"
 msgstr ""
@@ -12058,10 +12041,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/database.php
 msgid "Your database has"
-msgstr ""
-
-#: oc-admin/themes/modern/tools/system-info/database.php
-msgid "Your database has every table, column and index Shopclass expects."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php

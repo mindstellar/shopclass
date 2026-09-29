@@ -21,6 +21,8 @@ pre {
 // A code span sits inside a line of prose, so its box has to fit that line. The 8px it
 // shared with `pre` made it taller than the line and it painted over the text above.
 code {
+  // Ink, not Bootstrap's pink: a token that follows the theme.
+  color: var(--osc-ink-emphasis);
   padding: .1em .35em;
 }
 

@@ -16051,6 +16051,7 @@ pre {
 }
 
 code {
+  color: var(--osc-ink-emphasis);
   padding: 0.1em 0.35em;
 }
 
@@ -18144,6 +18145,45 @@ body .tox .tox-notification--info svg {
   border-radius: 4px;
   outline: 2px solid var(--osc-bronze);
   outline-offset: 2px;
+}
+
+.upgrade-tool #steps > * {
+  max-inline-size: 56rem;
+}
+.upgrade-tool .osc-verdict,
+.upgrade-tool .upgrade-running {
+  margin-block-end: 1rem;
+}
+
+.upgrade-tool-note,
+.upgrade-tool-message {
+  color: var(--osc-ink-muted);
+  line-height: 1.55;
+  margin: 0;
+  max-inline-size: 68ch;
+}
+.upgrade-tool-note p,
+.upgrade-tool-message p {
+  margin: 0 0 0.5rem;
+}
+
+.upgrade-tool-notes {
+  max-inline-size: 68ch;
+}
+.upgrade-tool-notes h4, .upgrade-tool-notes .h4 {
+  color: var(--osc-ink);
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 1rem 0 0.35rem;
+}
+.upgrade-tool-notes p,
+.upgrade-tool-notes ul {
+  color: var(--osc-ink);
+  line-height: 1.55;
+  margin: 0 0 0.5rem;
+}
+.upgrade-tool-notes ul {
+  padding-inline-start: 1.25rem;
 }
 
 #media-library .media-col-preview {
@@ -21330,22 +21370,44 @@ form h3, form .h3 {
 
 .backup-callout {
   font-size: 1rem;
-  margin-block-end: 1rem;
+  margin-block-end: 1.5rem;
+  padding: 0.75rem 1rem;
+}
+.backup-callout::before {
+  line-height: 1.95rem;
 }
 
 .backup-callout-body {
+  align-items: flex-start;
   display: flex;
   flex: 1 1 auto;
-  flex-direction: column;
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  justify-content: space-between;
   min-width: 0;
 }
 .backup-callout-body p {
   margin: 0;
 }
 
+.backup-callout-stack {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+}
+
+.backup-callout-text {
+  display: flex;
+  flex: 1 1 18rem;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
 .backup-callout-title {
   font-weight: 600;
+  line-height: 1.5;
+  padding-block: 0.225rem;
 }
 
 .backup-callout-note {
@@ -21355,9 +21417,9 @@ form h3, form .h3 {
 
 .backup-callout-actions {
   display: flex;
+  flex: 0 0 auto;
   flex-wrap: wrap;
   gap: 0.5rem;
-  justify-content: flex-end;
 }
 .backup-callout-actions form {
   display: inline;
@@ -21365,8 +21427,7 @@ form h3, form .h3 {
 
 .backup-form-note {
   color: var(--osc-ink-muted);
-  font-size: 0.875rem;
-  margin: 0.5rem 0 0;
+  margin: 0;
 }
 
 .backup-choice-note {
@@ -21383,6 +21444,11 @@ form h3, form .h3 {
     flex-basis: 100%;
     margin-block-start: -0.35rem;
     margin-inline-start: 1.6rem;
+  }
+  #backup-form code.backup-choice-note {
+    background-color: transparent;
+    border: 0;
+    padding: 0;
   }
 }
 #backup-list td {
@@ -21480,17 +21546,29 @@ form h3, form .h3 {
 .backup-reauth {
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
-  margin-block-start: 1rem;
-}
-.backup-reauth label {
-  font-weight: 600;
-  margin-block-start: 0.25rem;
+  gap: 0.85rem;
+  margin-block-start: 1.1rem;
 }
 .backup-reauth .callout-block {
-  margin-block-end: 0.25rem;
+  margin: 0;
 }
 
+.backup-reauth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.backup-reauth-field .form-label {
+  color: var(--osc-ink);
+  margin: 0;
+}
+
+@media (min-width: 577px) {
+  #backup-form .form-row > .form-controls:first-child,
+  #backup-upload-form .form-row > .form-controls:first-child {
+    margin-inline-start: 170px;
+  }
+}
 .ui-osc-tabs {
   border: 0;
   padding: 0;
