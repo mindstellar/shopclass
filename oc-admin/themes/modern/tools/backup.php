@@ -242,14 +242,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         ));
         ?>
         <?php if ($offload) { ?>
-            <div class="form-row">
-                <div class="form-label"></div>
-                <div class="form-controls">
-                    <div class="callout-info callout-block" id="backup-bucket-note">
-                        <?php _e('Photos live in your S3 bucket and are not copied. They stay there. Turn on versioning in the bucket to keep old copies.'); ?>
-                    </div>
+            <?php osc_admin_form_row_open(''); ?>
+                <div class="callout-info callout-block" id="backup-bucket-note">
+                    <?php _e('Photos live in your S3 bucket and are not copied. They stay there. Turn on versioning in the bucket to keep old copies.'); ?>
                 </div>
-            </div>
+            <?php osc_admin_form_row_close(); ?>
         <?php } ?>
     <?php osc_admin_form_close(array(
         array(
