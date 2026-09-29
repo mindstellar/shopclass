@@ -374,6 +374,14 @@ class Cli
             return 2;
         }
 
+        // During a restore only the restore's own jobs run; the schedule waits.
+        if (\mindstellar\job\JobWorker::restoring()) {
+            $ran = \mindstellar\job\JobWorker::run(50);
+            $this->out(sprintf("A backup is being restored: ran %d of its jobs and nothing else.\n", $ran));
+
+            return 0;
+        }
+
         // Mirrors index.php's cron dispatch: mark the run so nested code never
         // tries to schedule another auto-cron pass.
         if (!defined('__FROM_CRON__')) {

@@ -209,7 +209,7 @@ final class BackupJobs
      */
     public static function builder(BackupStore $store): Builder
     {
-        return new Builder($store, ABS_PATH . 'oc-content', ABS_PATH, array(
+        return new Builder($store, ABS_PATH . 'oc-content', array(
             'db_bytes' => static function (): int {
                 $size = DatabaseTools::size(Connection::instance(), DB_TABLE_PREFIX);
 
@@ -235,11 +235,7 @@ final class BackupJobs
 
         return new Restorer($store, self::builder($store), ABS_PATH . 'oc-content', ABS_PATH, array(
             'load'     => static function ($handle, callable $each) use ($conn): int {
-                try {
-                    return DatabaseTools::restore($conn, $handle, $each, true);
-                } catch (DbException $e) {
-                    throw new RuntimeException(sprintf(__('MySQL said: %s'), BackupFailure::clean($conn->lastError())));
-                }
+                return self::load($conn, $handle, $each);
             },
             'lock'     => static function () use ($conn): ?callable {
                 try {
@@ -270,6 +266,28 @@ final class BackupJobs
                 $store->saveState(self::state($p, 'running'));
             },
         ));
+    }
+
+    /**
+     * Load an SQL backup, replacing this site's tables. A failure names the MySQL error
+     * number only: the server's own words can quote values from the file.
+     *
+     * @param Connection $conn
+     * @param resource   $handle
+     * @param callable   $each fn(int $ran): void after each statement
+     *
+     * @return int statements run
+     * @throws RuntimeException when a statement fails
+     */
+    public static function load(Connection $conn, $handle, callable $each): int
+    {
+        try {
+            return DatabaseTools::restore($conn, $handle, $each, true);
+        } catch (DbException $e) {
+            throw new RuntimeException($e->getCode() > 0
+                ? sprintf(__('A statement in the backup failed (MySQL error %d).'), $e->getCode())
+                : __('A statement in the backup failed.'));
+        }
     }
 
     /**

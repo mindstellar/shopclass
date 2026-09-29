@@ -150,6 +150,8 @@ you find.
 
 ### Fixed
 
+- When two sites share a database with nested prefixes (`oc_` and `oc_shop2_`), a backup no longer takes, and a restore no longer drops, the other site's tables.
+- A restore carries on with cron, not only while its page is open. Other background jobs wait until it finishes.
 - Database backups and restores run in small pieces, so a large database no longer runs out of memory.
 - Restoring a backup no longer breaks on a semicolon inside a value.
 - Repair shows and runs only when there is something it can fix.

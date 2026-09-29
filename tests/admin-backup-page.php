@@ -10,8 +10,9 @@
 
 /**
  * Tools > Backup and restore: every old backup URL still routes, each action refuses on
- * the demo before it checks the token, a download takes only a listed name, and the
- * browser can no longer name a server folder.
+ * the demo before it checks the token, a visit forgets nothing until Dismiss is posted,
+ * a download takes only a listed name, the browser can no longer name a server folder,
+ * and the folder is closed on Apache 2.4 and 2.2.
  *
  * No database. Usage:  php tests/admin-backup-page.php
  */
@@ -72,6 +73,11 @@ foreach (array('backupStart', 'backupDownload', 'backupUpload', 'backup_cancel',
     check("$name refuses on the demo before it checks the token", $demo !== false && $token !== false && $demo < $token);
 }
 check('backup_dismiss checks the token', strpos($body('backup_dismiss'), 'osc_csrf_check()') !== false);
+$page = $body('backupPage');
+check('a plain visit to the page forgets no finished run', $page !== '' && strpos($page, 'clearState') === false
+    && strpos($page, 'dismiss') === false && strpos($page, 'osc_add_flash_ok_message') === false);
+check('...it shows the run with a Dismiss button that posts', strpos($view, "\$postButton('backup_dismiss', __('Dismiss'))") !== false
+    && substr_count($view, "\$postButton('backup_dismiss'") >= 2);
 check('the status poll checks the token', (bool) preg_match(
     "/case 'backup_status':\\s*osc_csrf_check\\(\\);/",
     (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php')
@@ -146,7 +152,19 @@ exec('rm -rf ' . escapeshellarg($base));
 
 $store = new BackupStore(sys_get_temp_dir() . '/osc_backup_protect_' . getmypid());
 pin('the folder is made and closed', true, $store->protect());
-check('...with an .htaccess denying everyone', strpos((string) file_get_contents($store->dir() . '.htaccess'), 'Require all denied') !== false);
+$htaccess = (string) file_get_contents($store->dir() . '.htaccess');
+check('...with an .htaccess denying everyone on Apache 2.4, inside its module check', (bool) preg_match(
+    '#<IfModule mod_authz_core\.c>\s*Require all denied\s*</IfModule>#',
+    $htaccess
+), $htaccess);
+check('...and on Apache 2.2', (bool) preg_match('#<IfModule !mod_authz_core\.c>\s*Order allow,deny\s*Deny from all\s*</IfModule>#', $htaccess), $htaccess);
+check('...with no bare Require line that breaks Apache 2.2', !preg_match('#^Require#m', $htaccess), $htaccess);
+$plain = sys_get_temp_dir() . '/osc_protect_folder_' . getmypid();
+@mkdir($plain);
+\mindstellar\utility\FileSystem::protectFolder($plain);
+pin('the purifier cache and the backups folder get the same .htaccess', $htaccess, (string) file_get_contents($plain . '/.htaccess'));
+exec('rm -rf ' . escapeshellarg($plain));
+check('...and the purifier cache uses the shared helper', strpos((string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/security/PurifierCache.php'), 'FileSystem::protectFolder($dir)') !== false);
 check('...an empty index.php', is_file($store->dir() . 'index.php'));
 check('...and the probe file', is_file($store->dir() . BackupStore::PROBE));
 pin('...readable by the site only', '750', substr(sprintf('%o', fileperms($store->dir())), -3));

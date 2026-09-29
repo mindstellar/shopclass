@@ -29,7 +29,6 @@ require_once __DIR__ . '/lib/stubs.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hMaintenance.php';
 require_once ABS_PATH . 'oc-includes/vendor/autoload.php';
 
-use mindstellar\admin\DatabaseTools;
 use mindstellar\backup\BackupJobs;
 use mindstellar\backup\BackupStore;
 use mindstellar\backup\Builder;
@@ -55,7 +54,7 @@ final class FakeConnection extends Connection
     {
         foreach ($this->failOn as $needle) {
             if (strpos($sql, $needle) !== false) {
-                throw new DbException('Database query failed');
+                throw new DbException('Database query failed', 1062);
             }
         }
         $this->ran[] = $sql;
@@ -86,7 +85,7 @@ $dump  = static function (string $file, callable $each) use (&$dumps): array {
 
     return array('tables' => 1, 'bytes' => (int) filesize($file));
 };
-$builder = new Builder($store, $content, $site, array('dump' => $dump));
+$builder = new Builder($store, $content, array('dump' => $dump));
 
 $saved = array();
 $logs  = array();
@@ -180,11 +179,7 @@ $lock = array();
 $make = static function (array $overrides = array()) use ($store, $builder, $content, $site, $conn, &$lock): Restorer {
     return new Restorer($store, $builder, $content, $site, $overrides + array(
         'load'        => static function ($handle, callable $each) use ($conn): int {
-            try {
-                return DatabaseTools::restore($conn, $handle, $each, true);
-            } catch (DbException $e) {
-                throw new RuntimeException('MySQL said: no');
-            }
+            return BackupJobs::load($conn, $handle, $each);
         },
         'lock'        => static function () use (&$lock) {
             $lock[] = 'take';
@@ -244,7 +239,9 @@ pin('...puts the safety copy back', true, $state['rolled_back']);
 check('...by loading it after the failed backup', end($conn->ran) === 'SET FOREIGN_KEY_CHECKS = 1'
     && in_array("insert into `sc_t_probe` values\n(13)", $conn->ran, true));
 pin('...keeps the site closed', OSC_MAINTENANCE_RESTORE_MARKER, file_get_contents($site . '/.maintenance'));
-pin('...and says what MySQL said', 'MySQL said: no', $state['message']);
+pin('...and gives the MySQL error number, never its words', 'A statement in the backup failed (MySQL error 1062).', $state['message']);
+check('...so no value from the file reaches the log', $logs !== array() && strpos((string) end($logs), '(11)') === false
+    && strpos((string) end($logs), 'MySQL error 1062') !== false, (string) end($logs));
 
 $conn->failOn = array('(11)', '(14)');
 file_put_contents($site . '/.maintenance', 'owner');
@@ -268,6 +265,45 @@ unlink($site . '/.maintenance');
 $runJob($restoreJob($make()), Restorer::begin('upload-aaaaaaaaaaaaaaaa.sql', true, false));
 pin('an old dump with another prefix is refused at the start', array('failed', 'start'), array($store->state()['status'], $store->state()['stage']));
 pin('...without closing the site', false, file_exists($site . '/.maintenance'));
+
+harness_section('Pruning');
+
+$pruneStore = new BackupStore($base . '/prune/');
+@mkdir($pruneStore->dir(), 0777, true);
+/** A saved file with its manifest, made $age minutes ago. */
+$seedBackup = static function (string $kind, string $what, int $age) use ($pruneStore): string {
+    $name = date('Y-m-d-His', time() - $age * 60) . '-' . $what . '-' . BackupStore::random(16) . '.zip';
+    file_put_contents($pruneStore->dir() . $name, 'zip');
+    $pruneStore->saveManifest($name, array('format' => 1, 'what' => $what, 'kind' => $kind,
+        'shopclass_version' => '6.4.0', 'created' => date('c', time() - $age * 60)));
+
+    return $name;
+};
+$backups = array();
+$safety  = array();
+for ($i = 0; $i < BackupJobs::KEEP + 2; $i++) {
+    $backups[] = $seedBackup('backup', 'everything', 100 + $i * 10);
+}
+// Safety copies are the newest, so a prune that counted them would push real backups out.
+for ($i = 0; $i < BackupJobs::SAFETY_KEEP + 2; $i++) {
+    $safety[] = $seedBackup('safety', 'database', 1 + $i);
+}
+$download = $seedBackup('download', 'database', 0);
+file_put_contents($pruneStore->dir() . 'upload-aaaaaaaaaaaaaaaa.zip', 'upload');
+
+$names = static function (string $kind) use ($pruneStore): array {
+    return array_column(array_filter($pruneStore->all(), static function (array $r) use ($kind) {
+        return $r['kind'] === $kind;
+    }), 'name');
+};
+pin('backups past the number kept go, newest kept', 2, $pruneStore->prune('backup', BackupJobs::KEEP));
+pin('...exactly the newest KEEP backups stay', array_slice($backups, 0, BackupJobs::KEEP), $names('backup'));
+pin('...and no safety copy is touched', count($safety), count($names('safety')));
+pin('safety copies keep their own newest SAFETY_KEEP', 2, $pruneStore->prune('safety', BackupJobs::SAFETY_KEEP));
+pin('...exactly those', array_slice($safety, 0, BackupJobs::SAFETY_KEEP), $names('safety'));
+pin('...and the backups are still all there', array_slice($backups, 0, BackupJobs::KEEP), $names('backup'));
+check('a download waiting to be fetched is never counted or pruned', is_file($pruneStore->dir() . $download));
+check('...nor an upload', is_file($pruneStore->dir() . 'upload-aaaaaaaaaaaaaaaa.zip'));
 
 BackupJobs::effects(array());
 

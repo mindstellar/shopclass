@@ -12,6 +12,7 @@ namespace mindstellar\security;
 
 use HTMLPurifier_Config;
 use HTMLPurifier_DefinitionCacheFactory;
+use mindstellar\utility\FileSystem;
 
 /**
  * Where HTMLPurifier keeps its built definitions between requests.
@@ -81,13 +82,7 @@ class PurifierCache
         if (!is_writable($dir)) {
             return false;
         }
-        if (!is_file($dir . '/index.php')) {
-            @file_put_contents($dir . '/index.php', "<?php\n");
-        }
-        if (!is_file($dir . '/.htaccess')) {
-            @file_put_contents($dir . '/.htaccess', "<IfModule mod_authz_core.c>\n    Require all denied\n</IfModule>\n"
-                . "<IfModule !mod_authz_core.c>\n    Deny from all\n</IfModule>\n");
-        }
+        FileSystem::protectFolder($dir);
 
         return self::$dir = $dir;
     }

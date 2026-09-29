@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\TablePrefix;
+
 /**
  * Model database for Dump database tables
  *
@@ -36,9 +38,6 @@ class Dump extends DAO
 
     /** Bytes of values per INSERT statement, kept well under max_allowed_packet. */
     private const INSERT_BYTES = 1048576;
-
-    /** Stands for the table prefix in a dump, so it restores onto any prefix. */
-    private const PREFIX_TOKEN = '/*TABLE_PREFIX*/';
 
     /**
      * Return the shared Dump model instance, creating it on first use.
@@ -72,7 +71,7 @@ class Dump extends DAO
     }
 
     /**
-     * Whether a table name carries this site's prefix.
+     * Whether a table is one of this site's.
      *
      * @param string $table
      *
@@ -80,7 +79,7 @@ class Dump extends DAO
      */
     private function hasPrefix($table)
     {
-        return DB_TABLE_PREFIX !== '' && strpos($table, DB_TABLE_PREFIX) === 0;
+        return DB_TABLE_PREFIX !== '' && TablePrefix::owns($table, DB_TABLE_PREFIX);
     }
 
     /**
@@ -135,8 +134,8 @@ class Dump extends DAO
             $create = str_replace('CREATE TABLE', 'CREATE TABLE IF NOT EXISTS', $_line['Create Table'] . ';');
             if ($prefixToken && $this->hasPrefix($table)) {
                 $create = (string) preg_replace(
-                    '/(CREATE TABLE IF NOT EXISTS |REFERENCES )`' . preg_quote(DB_TABLE_PREFIX, '/') . '/',
-                    '$1`' . self::PREFIX_TOKEN,
+                    '/(CREATE TABLE IF NOT EXISTS |REFERENCES )`' . preg_quote(DB_TABLE_PREFIX, '/') . 't_/',
+                    '$1`' . TablePrefix::TOKEN . 't_',
                     $create
                 );
             }
@@ -192,7 +191,7 @@ class Dump extends DAO
         if ($res instanceof mysqli_result) {
             $fields = $res->fetch_fields();
             $target = $prefixToken && $this->hasPrefix($table)
-                ? self::PREFIX_TOKEN . substr($table, strlen(DB_TABLE_PREFIX))
+                ? TablePrefix::TOKEN . substr($table, strlen(DB_TABLE_PREFIX))
                 : $table;
             $count  = 0;
             $batch  = 0;

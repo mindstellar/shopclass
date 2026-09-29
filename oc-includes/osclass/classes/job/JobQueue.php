@@ -343,11 +343,12 @@ final class JobQueue
      * that token. Two workers running at once therefore cannot take the same row: the
      * second one's UPDATE finds nothing still pending, and its SELECT comes back empty.
      *
-     * @param int $batch
+     * @param int         $batch
+     * @param string|null $typePrefix claim only types that start with this
      *
      * @return array<int,array<string,string|null>> the claimed rows, oldest id first
      */
-    public function claim(int $batch = 20): array
+    public function claim(int $batch = 20, ?string $typePrefix = null): array
     {
         $table = $this->table();
         $now   = date('Y-m-d H:i:s');
@@ -370,11 +371,17 @@ final class JobQueue
         // this is hand-written: the table name is built from a constant, every value is
         // a bound '?', and the limit is cast to int.
         try {
+            $params = array(self::STATUS_RUNNING, $token, $now, self::STATUS_PENDING, $now);
+            $only   = '';
+            if ($typePrefix !== null) {
+                $only     = ' AND s_type LIKE ?';
+                $params[] = addcslashes($typePrefix, '\\%_') . '%';
+            }
             osc_db_execute(
                 'UPDATE ' . $table . ' SET s_status = ?, s_worker = ?, dt_locked = ?'
-                . ' WHERE s_status = ? AND dt_next_run <= ?'
+                . ' WHERE s_status = ? AND dt_next_run <= ?' . $only
                 . ' ORDER BY pk_i_id LIMIT ' . (int) max(1, $batch),
-                array(self::STATUS_RUNNING, $token, $now, self::STATUS_PENDING, $now)
+                $params
             );
 
             // A claimed job gives up its key, so a change that arrives mid-run queues a new job.

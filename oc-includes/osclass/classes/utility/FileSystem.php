@@ -46,6 +46,29 @@ class FileSystem
     }
 
     /**
+     * Close a folder to the web: an empty index.php and an .htaccess that denies every
+     * request on Apache 2.4 and 2.2. A file already there is left alone.
+     *
+     * @param string $dir
+     *
+     * @return void
+     */
+    public static function protectFolder(string $dir): void
+    {
+        $dir   = rtrim($dir, '/\\') . '/';
+        $files = array(
+            'index.php' => "<?php\n",
+            '.htaccess' => "<IfModule mod_authz_core.c>\n    Require all denied\n</IfModule>\n"
+                . "<IfModule !mod_authz_core.c>\n    Order allow,deny\n    Deny from all\n</IfModule>\n",
+        );
+        foreach ($files as $name => $content) {
+            if (!is_file($dir . $name)) {
+                @file_put_contents($dir . $name, $content);
+            }
+        }
+    }
+
+    /**
      * Sets access and modification time of file.
      *
      * @param string|iterable<string> $files A filename, an array of files, or a \Traversable instance to create

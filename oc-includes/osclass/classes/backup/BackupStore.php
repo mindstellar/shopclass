@@ -10,6 +10,8 @@
 
 namespace mindstellar\backup;
 
+use mindstellar\utility\FileSystem;
+
 /**
  * The backup folder on the server: its protection, the saved backups in it with their
  * manifests beside them, the state of the running backup or restore, and clean-up.
@@ -79,15 +81,9 @@ final class BackupStore
         if (!is_dir($this->dir) || !is_writable($this->dir)) {
             return false;
         }
-        $files = array(
-            '.htaccess'   => "Require all denied\n<IfModule !mod_authz_core.c>\n    Order allow,deny\n    Deny from all\n</IfModule>\n",
-            'index.php'   => "<?php\n",
-            self::PROBE   => "closed\n",
-        );
-        foreach ($files as $name => $content) {
-            if (!is_file($this->dir . $name)) {
-                @file_put_contents($this->dir . $name, $content);
-            }
+        FileSystem::protectFolder($this->dir);
+        if (!is_file($this->dir . self::PROBE)) {
+            @file_put_contents($this->dir . self::PROBE, "closed\n");
         }
 
         return true;

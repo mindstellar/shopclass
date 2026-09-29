@@ -10,6 +10,8 @@
 
 namespace mindstellar\backup;
 
+use mindstellar\database\TablePrefix;
+
 /**
  * The manifest.json inside a backup, and the checks a restore makes against it. Pure:
  * no database, no files.
@@ -136,7 +138,7 @@ final class Manifest
             if (!preg_match($pattern, $line, $m)) {
                 continue;
             }
-            if (strpos($m[1], '/*TABLE_PREFIX*/') === 0) {
+            if (strpos($m[1], TablePrefix::TOKEN) === 0) {
                 return null;
             }
             foreach (self::CORE_TABLES as $table) {

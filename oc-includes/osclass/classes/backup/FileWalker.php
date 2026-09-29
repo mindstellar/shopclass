@@ -16,31 +16,26 @@ use Generator;
  * Walks oc-content in a fixed order, so a backup can stop after any file and carry on
  * after it in a later run.
  *
- * A linked folder or file is followed only when it points inside the site; one that
- * points outside is skipped and named in skipped(). Links are never stored as links.
+ * A linked folder or file is followed only when it points inside oc-content; one that
+ * points elsewhere is skipped and named in skipped(). Links are never stored as links.
  */
 final class FileWalker
 {
     /** Folders under oc-content that are never backed up. */
     public const EXCLUDED = array('downloads/backups', 'downloads/oc-temp', 'uploads/temp');
 
-    /** @var string real path of the folder walked */
+    /** @var string real path of the folder walked; links may not leave it */
     private $root;
 
-    /** @var string real path of the site */
-    private $site;
-
-    /** @var array<string,true> links skipped because they point outside the site */
+    /** @var array<string,true> links skipped because they point outside the root */
     private $skipped = array();
 
     /**
      * @param string $root the folder to walk, normally oc-content
-     * @param string $site the site folder; links may not leave it
      */
-    public function __construct(string $root, string $site)
+    public function __construct(string $root)
     {
         $this->root = rtrim((string) realpath($root), '/\\');
-        $this->site = rtrim((string) realpath($site), '/\\');
     }
 
     /**
@@ -81,7 +76,7 @@ final class FileWalker
     }
 
     /**
-     * Links that were skipped because they point outside the site, relative to the root.
+     * Links that were skipped because they point outside the root, relative to it.
      *
      * @return string[]
      */
@@ -165,7 +160,7 @@ final class FileWalker
             if ($real === false) {
                 continue;
             }
-            if ($isLink && !$this->inside($real)) {
+            if ($isLink && !self::within($real, $this->root)) {
                 $this->skipped[$path] = true;
                 continue;
             }
@@ -173,8 +168,12 @@ final class FileWalker
             if (self::isExcluded($path, $isDir)) {
                 continue;
             }
+            // A link may lead into a left-out folder under another name.
+            $key = $isDir || $isLink ? (string) realpath($real) : $real;
+            if ($key !== $this->root && self::within($key, $this->root) && self::isExcluded(substr($key, strlen($this->root) + 1), $isDir)) {
+                continue;
+            }
             if ($isDir) {
-                $key = (string) realpath($real);
                 if (isset($visited[$key])) {
                     continue;
                 }
@@ -193,14 +192,17 @@ final class FileWalker
     }
 
     /**
-     * Whether a real path is the site folder or below it.
+     * Whether a real path is the folder $root or below it.
      *
      * @param string $real
+     * @param string $root a real path
      *
      * @return bool
      */
-    private function inside(string $real): bool
+    public static function within(string $real, string $root): bool
     {
-        return $this->site !== '' && ($real === $this->site || strpos($real, $this->site . '/') === 0);
+        $root = rtrim($root, '/');
+
+        return $root !== '' && ($real === $root || strpos($real, $root . '/') === 0);
     }
 }

@@ -117,11 +117,11 @@ final class BackupManager
      *
      * @param string $name
      *
-     * @return array{reason:string,note:string,manifest:?array,database:bool,files:int,size:int}
+     * @return array{reason:string,note:string,manifest:?array,database:bool,files:int,size:int,db_bytes:int,files_bytes:int}
      */
     public static function check(string $name): array
     {
-        $out  = array('reason' => '', 'note' => '', 'manifest' => null, 'database' => false, 'files' => 0, 'size' => 0);
+        $out  = array('reason' => '', 'note' => '', 'manifest' => null, 'database' => false, 'files' => 0, 'size' => 0, 'db_bytes' => 0, 'files_bytes' => 0);
         $path = BackupStore::site()->path($name);
         if ($path === null) {
             return array('reason' => __('That backup is not in the list any more.')) + $out;
@@ -129,12 +129,14 @@ final class BackupManager
         $info = Restorer::inspect($path);
 
         return array(
-            'reason'   => $info['ok'] ? '' : $info['reason'],
-            'note'     => $info['note'],
-            'manifest' => $info['manifest'],
-            'database' => $info['database'],
-            'files'    => $info['files'],
-            'size'     => (int) filesize($path),
+            'reason'      => $info['ok'] ? '' : $info['reason'],
+            'note'        => $info['note'],
+            'manifest'    => $info['manifest'],
+            'database'    => $info['database'],
+            'files'       => $info['files'],
+            'size'        => (int) filesize($path),
+            'db_bytes'    => $info['db_bytes'],
+            'files_bytes' => $info['files_bytes'],
         );
     }
 

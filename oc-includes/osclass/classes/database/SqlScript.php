@@ -69,7 +69,7 @@ final class SqlScript
     {
         $tokens = array();
         if (defined('DB_TABLE_PREFIX')) {
-            $tokens['/*TABLE_PREFIX*/'] = DB_TABLE_PREFIX;
+            $tokens[TablePrefix::TOKEN] = DB_TABLE_PREFIX;
         }
         if (defined('OSCLASS_VERSION')) {
             $tokens['/*OSCLASS_VERSION*/'] = OSCLASS_VERSION;

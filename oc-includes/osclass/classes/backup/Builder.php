@@ -29,7 +29,7 @@ final class Builder
     /** Seconds the first count of the files may take. */
     public const COUNT_SECONDS = 60;
 
-    /** Links outside the site named in the manifest, at most. */
+    /** Links outside oc-content named in the manifest, at most. */
     private const SKIPPED_MAX = 50;
 
     /** @var BackupStore */
@@ -37,9 +37,6 @@ final class Builder
 
     /** @var string real path of oc-content */
     private $content;
-
-    /** @var string real path of the site */
-    private $site;
 
     /** @var callable fn(string $file, callable $each): array{tables:int,bytes:int} */
     private $dump;
@@ -59,14 +56,12 @@ final class Builder
     /**
      * @param BackupStore         $store
      * @param string              $content oc-content
-     * @param string              $site    the site folder
      * @param array<string,mixed> $opts    dump, db_bytes, progress callables; batch, seconds
      */
-    public function __construct(BackupStore $store, string $content, string $site, array $opts = array())
+    public function __construct(BackupStore $store, string $content, array $opts = array())
     {
         $this->store    = $store;
         $this->content  = rtrim((string) realpath($content), '/');
-        $this->site     = rtrim((string) realpath($site), '/');
         $this->dump     = $opts['dump'] ?? array(DatabaseDump::class, 'write');
         $this->dbBytes  = $opts['db_bytes'] ?? static function (): int {
             return 0;
@@ -166,7 +161,7 @@ final class Builder
         list($db, $files) = self::parts($p);
         $bytes = $db ? max(0, (int) ($this->dbBytes)()) : 0;
         if ($files) {
-            $walker = new FileWalker($this->content, $this->site);
+            $walker = new FileWalker($this->content);
             $count  = $walker->count(microtime(true) + self::COUNT_SECONDS);
             $p['files']['total']    = $count['count'];
             $p['files']['bytes']    = $count['bytes'];
@@ -240,7 +235,7 @@ final class Builder
     {
         $deadline = microtime(true) + $this->seconds;
         $zip      = new ZipWriter($this->partPath($p), $p['zip']);
-        $walker   = new FileWalker($this->content, $this->site);
+        $walker   = new FileWalker($this->content);
         $added    = 0;
         $finished = true;
         foreach ($walker->files((string) $p['files']['cursor']) as $rel => $file) {

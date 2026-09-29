@@ -361,6 +361,45 @@ pin('and hands the unrun jobs back', array('pending:a0:wNULL:lkNULL', 'pending:a
 $truncate();
 pin('an empty queue costs nothing and runs nothing', 0, JobWorker::run(10));
 
+harness_section('During a restore');
+
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hMaintenance.php';
+$marker = tempnam(sys_get_temp_dir(), 'osc_restore_marker_');
+file_put_contents($marker, OSC_MAINTENANCE_RESTORE_MARKER);
+JobWorker::useMaintenanceFile($marker);
+
+$truncate();
+$steps = array();
+JobRegistry::register('backup.restore', static function (Job $job) use (&$steps) {
+    $steps[] = (int) $job->get('step', 0);
+    if ((int) $job->get('step', 0) < 2) {
+        $job->repeat(array('step' => (int) $job->get('step', 0) + 1));
+    }
+});
+JobRegistry::register('test.content', static function () {
+    throw new RuntimeException('must not run mid-restore');
+});
+$other   = $queue->enqueue('test.content', array());
+$restore = $queue->enqueue('backup.restore', array('step' => 0));
+check('fixture: the restore marker is read', JobWorker::restoring());
+pin('the worker carries the restore on', 3, JobWorker::run(10));
+pin('...step by step to the end', array(0, 1, 2), $steps);
+pin('...and runs nothing else', 'pending:a0:wNULL:lkNULL', $rowState($other));
+
+$steps = array();
+$queue->enqueue('backup.restore', array('step' => 0));
+$code = (new \mindstellar\cli\Cli())->dispatch(array('cron', '--type=hourly'));
+pin('cron from the command line carries it on too', array(0, array(0, 1, 2)), array($code, $steps));
+pin('...and leaves the other job alone', 'pending:a0:wNULL:lkNULL', $rowState($other));
+pin('...and never enters the cron schedule', false, defined('__FROM_CRON__'));
+
+file_put_contents($marker, '');
+pin('with the site open again the other job runs', 1, JobWorker::run(10));
+JobWorker::useMaintenanceFile(null);
+unlink($marker);
+JobRegistry::forget('backup.restore');
+JobRegistry::forget('test.content');
+
 harness_section('The registry');
 
 check('a registered type is found', JobRegistry::has('test.ok'));

@@ -44,13 +44,19 @@ if (CLI) {
     ) {
         exit(1);
     }
+
+    // During a restore cron carries the restore on and runs nothing else.
+    if (osc_maintenance_is_restoring(ABS_PATH . '.maintenance')) {
+        \mindstellar\job\JobWorker::run(50);
+        exit(0);
+    }
 }
 
 if (file_exists(ABS_PATH . '.maintenance')) {
     // Default is a public 503 (same as before this option existed). Unchecking
     // lockout in Tools → Maintenance leaves the site up and shows a banner.
     // CLI is not 503'd, so `php index.php -p cron` still runs, except while a
-    // package upgrade or a restore is replacing things. Admins always get through.
+    // package upgrade is replacing files. Admins always get through.
     if (osc_maintenance_should_lockout_request(
         true,
         osc_maintenance_lockout_enabled(),

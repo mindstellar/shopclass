@@ -158,7 +158,7 @@ class SchemaReconciler
             return array('ran' => array(), 'failed' => array('struct.sql not found: ' . $path));
         }
 
-        list(, $queries, $failed) = $this->reconcile(str_replace('/*TABLE_PREFIX*/', DB_TABLE_PREFIX, $sql));
+        list(, $queries, $failed) = $this->reconcile(TablePrefix::expand($sql, DB_TABLE_PREFIX));
 
         return array(
             'ran'    => array_values(array_diff(array_values($queries), $failed)),

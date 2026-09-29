@@ -169,7 +169,7 @@ final class SqlStream
     {
         $tokens = array();
         if (defined('DB_TABLE_PREFIX')) {
-            $tokens['/*TABLE_PREFIX*/'] = (string) DB_TABLE_PREFIX;
+            $tokens[TablePrefix::TOKEN] = (string) DB_TABLE_PREFIX;
         }
         if (defined('OSCLASS_VERSION')) {
             $tokens['/*OSCLASS_VERSION*/'] = (string) OSCLASS_VERSION;

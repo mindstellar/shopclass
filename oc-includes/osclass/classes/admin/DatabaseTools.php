@@ -15,6 +15,7 @@ use mindstellar\admin\form\MediaSettingsForm;
 use mindstellar\database\Connection;
 use mindstellar\database\SchemaDoctor;
 use mindstellar\database\SqlStream;
+use mindstellar\database\TablePrefix;
 use mindstellar\migration\MigrationRunner;
 use mindstellar\upgrade\Osclass;
 use Throwable;
@@ -218,7 +219,7 @@ final class DatabaseTools
         }
         $prefix = defined('DB_TABLE_PREFIX') ? (string) DB_TABLE_PREFIX : '';
 
-        return $prefix === '' || strpos($m[1], $prefix) === 0 ? $m[1] : null;
+        return TablePrefix::owns($m[1], $prefix) ? $m[1] : null;
     }
 
     /**
@@ -370,7 +371,7 @@ final class DatabaseTools
             $row = $conn->selectOne(
                 'SELECT COUNT(*) AS n, COALESCE(SUM(data_length + index_length), 0) AS bytes'
                 . ' FROM information_schema.TABLES WHERE table_schema = DATABASE() AND table_name LIKE ?',
-                array(addcslashes($prefix, '\\%_') . '%')
+                array(TablePrefix::like($prefix))
             );
         } catch (Throwable $e) {
             return null;

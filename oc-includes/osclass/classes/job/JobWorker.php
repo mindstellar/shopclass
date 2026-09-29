@@ -28,6 +28,12 @@ final class JobWorker
     /** @var bool whether register_jobs has been fired this request */
     private static $registered = false;
 
+    /** Job types that run while a backup is restored; nothing else does. */
+    public const RESTORE_TYPES = 'backup.';
+
+    /** @var string|null the .maintenance file read, when not the site's own */
+    private static $maintenance = null;
+
     /**
      * Claim and run jobs until the queue is drained or the budget is spent.
      *
@@ -44,6 +50,8 @@ final class JobWorker
         if ($queue->count(JobQueue::STATUS_PENDING) === 0) {
             return 0;
         }
+        // Mid-restore other jobs would work on half-restored data, so only the restore goes on.
+        $only = self::restoring() ? self::RESTORE_TYPES : null;
 
         $start    = time();
         $ran      = 0;
@@ -51,7 +59,7 @@ final class JobWorker
         $types    = array();
 
         while ((time() - $start) < $maxSeconds) {
-            $rows = $queue->claim($batch);
+            $rows = $queue->claim($batch, $only);
             if ($rows === array()) {
                 break;
             }
@@ -218,5 +226,29 @@ final class JobWorker
     public static function resetRegistration(): void
     {
         self::$registered = false;
+    }
+
+    /**
+     * Whether a backup is being restored, so only its own jobs may run.
+     *
+     * @return bool
+     */
+    public static function restoring(): bool
+    {
+        $file = self::$maintenance ?? (defined('ABS_PATH') ? ABS_PATH . '.maintenance' : '');
+
+        return $file !== '' && function_exists('osc_maintenance_is_restoring') && osc_maintenance_is_restoring($file);
+    }
+
+    /**
+     * Read another .maintenance file, for tests; null for the site's own.
+     *
+     * @param string|null $path
+     *
+     * @return void
+     */
+    public static function useMaintenanceFile(?string $path): void
+    {
+        self::$maintenance = $path;
     }
 }

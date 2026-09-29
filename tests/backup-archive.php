@@ -10,8 +10,9 @@
 
 /**
  * The backup zip: written in steps that survive a stop, read back by ZipArchive, zip64
- * records past 4 GB, the file walk (links out of the site skipped, links inside followed,
- * the backups folder left out), and extraction that writes only under oc-content.
+ * records past 4 GB, the file walk (links out of oc-content skipped, links inside followed,
+ * the backups folder left out), extraction that writes only under oc-content and never
+ * into the backups folder, and the size checks that refuse a zip bomb.
  *
  * No database. Usage:  php tests/backup-archive.php
  */
@@ -19,6 +20,8 @@
 error_reporting(E_ALL & ~E_DEPRECATED);
 
 define('ABS_PATH', dirname(__DIR__) . '/');
+define('OSCLASS_VERSION', '6.4.0');
+define('DB_TABLE_PREFIX', 'oc_');
 
 require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/lib/stubs.php';
@@ -26,7 +29,9 @@ require_once ABS_PATH . 'oc-includes/vendor/autoload.php';
 
 use mindstellar\backup\BackupArchive;
 use mindstellar\backup\FileWalker;
+use mindstellar\backup\Restorer;
 use mindstellar\backup\ZipWriter;
+use mindstellar\utility\Zip;
 
 $base = sys_get_temp_dir() . '/osc_backup_archive_' . getmypid();
 @mkdir($base, 0777, true);
@@ -90,7 +95,7 @@ harness_section('The file walk');
 $site    = $base . '/site';
 $content = $site . '/oc-content';
 $outside = $base . '/elsewhere';
-foreach (array('uploads/2', 'uploads/purifier-html', 'uploads/temp', 'downloads/backups', 'downloads/oc-temp', 'plugins/p/.git', 'plugins/a-c', 'plugins/a') as $dir) {
+foreach (array('uploads/2', 'uploads/purifier-html', 'uploads/temp', 'downloads/backups', 'downloads/oc-temp', 'plugins/p/.git', 'plugins/a-c', 'plugins/a', 'media') as $dir) {
     @mkdir($content . '/' . $dir, 0777, true);
 }
 @mkdir($site . '/shared', 0777, true);
@@ -100,36 +105,43 @@ foreach (array('uploads/2/1.jpg', 'uploads/purifier-html/c.ser', 'uploads/temp/t
     file_put_contents($content . '/' . $file, $file);
 }
 file_put_contents($site . '/shared/inside.txt', 'in');
+file_put_contents($site . '/config.php', 'site keys');
+file_put_contents($content . '/media/inside.txt', 'in');
 file_put_contents($outside . '/secret.txt', 'out');
 symlink($outside, $content . '/themes');
-symlink($site . '/shared', $content . '/languages');
+symlink($content . '/media', $content . '/languages');
+symlink($site . '/shared', $content . '/shared');
+symlink('../..', $content . '/uploads/up');
+symlink('../downloads/backups', $content . '/uploads/bk');
 symlink($outside . '/secret.txt', $content . '/linked.txt');
 symlink($content, $content . '/plugins/loop');
 
-$walker = new FileWalker($content, $site);
+$walker = new FileWalker($content);
 $files  = array_keys(iterator_to_array($walker->files()));
 pin('only real content is walked, in order', array(
     'languages/inside.txt',
+    'media/inside.txt',
     'plugins/a/b.php',
     'plugins/a-c/x.php',
     'plugins/p/index.php',
     'uploads/2/1.jpg',
 ), $files);
-pin('links out of the site are skipped and named', array('linked.txt', 'themes'), (static function (array $s): array {
+pin('links out of oc-content are skipped and named, even into the site', array('linked.txt', 'shared', 'themes', 'uploads/up'), (static function (array $s): array {
     sort($s);
 
     return $s;
 })($walker->skipped()));
-pin('a walk resumes after the file it stopped on', array('plugins/p/index.php', 'uploads/2/1.jpg'), array_keys(iterator_to_array((new FileWalker($content, $site))->files('plugins/a-c/x.php'))));
+check('...so config.php is never backed up', !in_array('uploads/up/config.php', $files, true));
+check('a link into the backups folder is not followed', !in_array('uploads/bk/old.zip', $files, true));
+pin('a walk resumes after the file it stopped on', array('plugins/p/index.php', 'uploads/2/1.jpg'), array_keys(iterator_to_array((new FileWalker($content))->files('plugins/a-c/x.php'))));
 pin('...a folder name sorts before a longer name it starts', -1, FileWalker::compare('plugins/a/b.php', 'plugins/a-c/x.php'));
 check('the backups folder is always left out', FileWalker::isExcluded('downloads/backups', true) && FileWalker::isExcluded('downloads/backups/x.zip', false));
 check('...a name that only starts like it is not', !FileWalker::isExcluded('downloads/backups-old/x.zip', false));
-pin('a count walk agrees with the walk', array('count' => 5, 'bytes' => 2 + strlen('plugins/a/b.php') + strlen('plugins/a-c/x.php') + strlen('plugins/p/index.php') + strlen('uploads/2/1.jpg'), 'complete' => true), (new FileWalker($content, $site))->count(microtime(true) + 60));
+pin('a count walk agrees with the walk', array('count' => 6, 'bytes' => 4 + strlen('plugins/a/b.php') + strlen('plugins/a-c/x.php') + strlen('plugins/p/index.php') + strlen('uploads/2/1.jpg'), 'complete' => true), (new FileWalker($content))->count(microtime(true) + 60));
 
 harness_section('Extract');
 
-$real  = realpath($content);
-$sreal = realpath($site);
+$real = realpath($content);
 foreach (array(
     '../evil.php'                          => 'a parent path',
     '/etc/cron.d/x'                        => 'an absolute path',
@@ -139,13 +151,19 @@ foreach (array(
     'other/x.php'                          => 'anything not under files/oc-content/',
     'files/config.php'                     => 'the site folder',
     'files/oc-content/themes/secret.txt'   => 'a path through a link out of the site',
+    'files/oc-content/shared/x.php'        => 'a path through a link into the site but out of oc-content',
+    'files/oc-content/uploads/up/config.php' => 'config.php through a link to the site folder',
     'files/oc-content/linked.txt'          => 'a link itself',
     'files/oc-content/uploads/2'           => 'a folder',
+    'files/oc-content/downloads/backups/x.zip' => 'the backups folder',
+    'files/oc-content/downloads/backups/.state.json' => 'the backup state file',
+    'files/oc-content/uploads/bk/x.zip'    => 'the backups folder through a link',
+    'files/oc-content/uploads/temp/x.jpg'  => 'another left-out folder',
 ) as $name => $what) {
-    pin("refused: $what", null, BackupArchive::target($name, $real, $sreal));
+    pin("refused: $what", null, BackupArchive::target($name, $real));
 }
-pin('allowed: a file under oc-content', $real . '/uploads/2/new.jpg', BackupArchive::target('files/oc-content/uploads/2/new.jpg', $real, $sreal));
-pin('allowed: through a link that stays in the site', $real . '/languages/new.txt', BackupArchive::target('files/oc-content/languages/new.txt', $real, $sreal));
+pin('allowed: a file under oc-content', $real . '/uploads/2/new.jpg', BackupArchive::target('files/oc-content/uploads/2/new.jpg', $real));
+pin('allowed: through a link that stays in oc-content', $real . '/languages/new.txt', BackupArchive::target('files/oc-content/languages/new.txt', $real));
 
 $crafted = new ZipArchive();
 $crafted->open($base . '/crafted.zip', ZipArchive::CREATE);
@@ -156,15 +174,19 @@ $crafted->addFromString('files/oc-content/uploads/fresh/f.txt', 'fresh');
 $crafted->addFromString('../evil.php', 'x');
 $crafted->addFromString('files/oc-content/themes/secret.txt', 'overwritten');
 $crafted->addFromString('files/oc-content/sym', 'target');
+$crafted->addFromString('files/oc-content/downloads/backups/planted.zip', 'x');
+$crafted->addFromString('files/oc-content/uploads/up/config.php', 'overwritten');
 $crafted->setExternalAttributesName('files/oc-content/sym', ZipArchive::OPSYS_UNIX, (0120777 << 16));
 $crafted->close();
 chmod($content . '/uploads/2/1.jpg', 0640);
 
 $archive = new BackupArchive($base . '/crafted.zip');
-pin('it counts the entries under files/oc-content/', 4, $archive->fileCount());
-$r = $archive->extract($real, $sreal, 0, 100, microtime(true) + 20);
+pin('it counts the entries under files/oc-content/', 6, $archive->fileCount());
+$r = $archive->extract($real, 0, 100, microtime(true) + 20);
 $archive->close();
-pin('two files written, three refused', array('written' => 2, 'refused' => 3, 'done' => true), array('written' => $r['written'], 'refused' => $r['refused'], 'done' => $r['done']));
+pin('two files written, five refused', array('written' => 2, 'refused' => 5, 'done' => true), array('written' => $r['written'], 'refused' => $r['refused'], 'done' => $r['done']));
+pin('nothing is written into the backups folder', false, file_exists($content . '/downloads/backups/planted.zip'));
+pin('config.php is not written through a link', 'site keys', file_get_contents($site . '/config.php'));
 pin('an existing file is replaced', 'NEW', file_get_contents($content . '/uploads/2/1.jpg'));
 pin('...keeping its mode', '640', substr(sprintf('%o', fileperms($content . '/uploads/2/1.jpg')), -3));
 pin('a new folder is made', 'fresh', file_get_contents($content . '/uploads/fresh/f.txt'));
@@ -173,9 +195,70 @@ pin('no symlink is made from an entry', false, is_link($content . '/sym') || fil
 pin('files not in the backup are left in place', 'plugins/a/b.php', file_get_contents($content . '/plugins/a/b.php'));
 
 $archive = new BackupArchive($base . '/crafted.zip');
-$step    = $archive->extract($real, $sreal, 0, 3, microtime(true) + 20);
+$step    = $archive->extract($real, 0, 3, microtime(true) + 20);
 $archive->close();
 pin('a batch stops at its size and says where to go on', array(3, false), array($step['next'], $step['done']));
+
+harness_section('Zip bombs');
+
+/** A zip whose central directory claims $size bytes for its one file entry. */
+$forged = static function (string $path, int $size, string $manifest = '{}') {
+    $zip = new ZipArchive();
+    $zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+    $zip->addFromString('manifest.json', $manifest);
+    $zip->addFromString('files/oc-content/uploads/big.bin', str_repeat('A', 10));
+    $zip->setCompressionName('files/oc-content/uploads/big.bin', ZipArchive::CM_STORE);
+    $zip->close();
+    $bytes = (string) file_get_contents($path);
+    $at    = strrpos($bytes, "PK\x01\x02");
+    file_put_contents($path, substr_replace($bytes, pack('V', $size), $at + 24, 4));
+};
+$manifest = (string) json_encode(array('format' => 1, 'created' => date('c'), 'shopclass_version' => '6.4.0', 'what' => 'files',
+    'contents' => array('files' => array('count' => 1, 'bytes' => 1))));
+
+$forged($base . '/bomb.zip', 0xFFFFFFF0, $manifest);
+$bomb = new BackupArchive($base . '/bomb.zip');
+pin('an entry far larger than its compressed bytes is refused', false, $bomb->measure()['safe']);
+$bomb->close();
+$info = Restorer::inspect($base . '/bomb.zip', $real);
+check('...and the restore will not start', !$info['ok'] && strpos($info['reason'], 'too compressed') !== false, $info['reason']);
+
+$sane = new ZipArchive();
+$sane->open($base . '/sane.zip', ZipArchive::CREATE);
+$sane->addFromString('manifest.json', $manifest);
+$sane->addFromString('files/oc-content/uploads/new/a.txt', str_repeat('text ', 400));
+$sane->addFromString('files/oc-content/uploads/new/b.txt', str_repeat('more ', 400));
+$sane->close();
+$sizes = (new BackupArchive($base . '/sane.zip'))->measure($real);
+pin('a real backup passes, sized from the zip and not the manifest', array(true, 4000), array($sizes['safe'], $sizes['files']));
+pin('...and may be restored', true, Restorer::inspect($base . '/sane.zip', $real, 1048576)['ok']);
+$tight = Restorer::inspect($base . '/sane.zip', $real, 3000);
+pin('the files must fit in the free space', false, $tight['ok']);
+check('...and it says how much is needed', strpos($tight['reason'], 'not enough free space') !== false, $tight['reason']);
+pin('...the manifest cannot talk it down', 4000, $tight['files_bytes']);
+
+check('the backup limits pass what a package limit refuses', !Zip::entryWithinLimits(200 * 1048576, 100 * 1048576, 0)
+    && Zip::entryWithinLimits(200 * 1048576, 100 * 1048576, 0, BackupArchive::MAX_ENTRY_BYTES, BackupArchive::MAX_TOTAL_BYTES, BackupArchive::MAX_RATIO));
+check('...and refuse a ratio no deflate reaches', !Zip::entryWithinLimits(1200 * 1048576, 1048576, 0, BackupArchive::MAX_ENTRY_BYTES, BackupArchive::MAX_TOTAL_BYTES, BackupArchive::MAX_RATIO));
+
+// The zip says 10 bytes; libzip is made to hand over more by a larger stored entry claiming 10.
+$lie = new ZipArchive();
+$lie->open($base . '/lie.zip', ZipArchive::CREATE);
+$lie->addFromString('files/oc-content/uploads/lie.txt', str_repeat('B', 5000));
+$lie->setCompressionName('files/oc-content/uploads/lie.txt', ZipArchive::CM_STORE);
+$lie->close();
+$bytes = (string) file_get_contents($base . '/lie.zip');
+$at    = strrpos($bytes, "PK\x01\x02");
+file_put_contents($base . '/lie.zip', substr_replace($bytes, pack('V', 10), $at + 24, 4));
+$archive = new BackupArchive($base . '/lie.zip');
+try {
+    $archive->extract($real, 0, 10, microtime(true) + 20);
+    $wrote = @filesize($content . '/uploads/lie.txt');
+} catch (RuntimeException $e) {
+    $wrote = @filesize($content . '/uploads/lie.txt');
+}
+$archive->close();
+check('an entry never writes more than the size it declared', $wrote === false || $wrote <= 10, var_export($wrote, true));
 
 exit(harness_result());
 

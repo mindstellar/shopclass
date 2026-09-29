@@ -174,31 +174,41 @@ class Zip
 
     /**
      * Check a single entry's uncompressed size, running total, and compression ratio
-     * against the named caps. Does not mutate $totalUncompressedSoFar; the caller adds
-     * the entry's size once it has also passed the path-containment check.
+     * against caps. Does not mutate $totalUncompressedSoFar; the caller adds the entry's
+     * size once it has also passed the path-containment check. The default caps suit a
+     * plugin or theme package.
      *
      * @param int $uncompressedSize
      * @param int $compressedSize
      * @param int $totalUncompressedSoFar bytes already accepted from this archive
+     * @param int $maxEntry               largest entry, uncompressed
+     * @param int $maxTotal               largest archive, uncompressed
+     * @param int $maxRatio               largest uncompressed-to-compressed ratio
      *
      * @return bool true when the entry is within all limits
      */
-    private function entryWithinLimits(int $uncompressedSize, int $compressedSize, int $totalUncompressedSoFar): bool
-    {
+    public static function entryWithinLimits(
+        int $uncompressedSize,
+        int $compressedSize,
+        int $totalUncompressedSoFar,
+        int $maxEntry = self::MAX_ENTRY_UNCOMPRESSED_BYTES,
+        int $maxTotal = self::MAX_TOTAL_UNCOMPRESSED_BYTES,
+        int $maxRatio = self::MAX_COMPRESSION_RATIO
+    ): bool {
         if ($uncompressedSize < 0 || $compressedSize < 0) {
             return false;
         }
 
-        if ($uncompressedSize > self::MAX_ENTRY_UNCOMPRESSED_BYTES) {
+        if ($uncompressedSize > $maxEntry) {
             return false;
         }
 
-        if (($totalUncompressedSoFar + $uncompressedSize) > self::MAX_TOTAL_UNCOMPRESSED_BYTES) {
+        if (($totalUncompressedSoFar + $uncompressedSize) > $maxTotal) {
             return false;
         }
 
         if ($uncompressedSize > self::RATIO_CHECK_MIN_UNCOMPRESSED_BYTES) {
-            if ($compressedSize <= 0 || ($uncompressedSize / $compressedSize) > self::MAX_COMPRESSION_RATIO) {
+            if ($compressedSize <= 0 || ($uncompressedSize / $compressedSize) > $maxRatio) {
                 return false;
             }
         }
@@ -214,7 +224,7 @@ class Zip
      *
      * @return bool true when the ZipArchive entry's unix mode marks it as a symlink
      */
-    private function isZipArchiveEntrySymlink(ZipArchive $zip, int $index): bool
+    public static function isZipArchiveEntrySymlink(ZipArchive $zip, int $index): bool
     {
         if (!$zip->getExternalAttributesIndex($index, $opsys, $attr)) {
             return false;
@@ -289,14 +299,14 @@ class Zip
                 continue;
             }
 
-            if ($this->isZipArchiveEntrySymlink($zip, $i)) {
+            if (self::isZipArchiveEntrySymlink($zip, $i)) {
                 error_log(sprintf('Zip::unzipFile rejected "%s": entry "%s" is a symlink.', $zipFile, $stat['name']));
                 $zip->close();
 
                 return 2;
             }
 
-            if (!$this->entryWithinLimits((int) $stat['size'], (int) $stat['comp_size'], $totalUncompressed)) {
+            if (!self::entryWithinLimits((int) $stat['size'], (int) $stat['comp_size'], $totalUncompressed)) {
                 error_log(sprintf(
                     'Zip::unzipFile rejected "%s": entry "%s" exceeds the size/ratio limits.',
                     $zipFile,
@@ -394,7 +404,7 @@ class Zip
                 continue;
             }
 
-            if (!$this->entryWithinLimits((int) $entry['size'], (int) $entry['compressed_size'], $totalUncompressed)) {
+            if (!self::entryWithinLimits((int) $entry['size'], (int) $entry['compressed_size'], $totalUncompressed)) {
                 error_log(sprintf(
                     'Zip::unzipFile rejected "%s": entry "%s" exceeds the size/ratio limits.',
                     $zip_file,

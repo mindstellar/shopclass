@@ -11,6 +11,7 @@
 namespace mindstellar\backup;
 
 use Dump;
+use mindstellar\database\TablePrefix;
 use RuntimeException;
 
 /**
@@ -75,7 +76,8 @@ final class DatabaseDump
     }
 
     /**
-     * This site's tables, the ones carrying its prefix.
+     * This site's tables. Another install sharing the database is left out, even on a
+     * prefix that starts with this one.
      *
      * @return string[]
      */
@@ -84,7 +86,7 @@ final class DatabaseDump
         $tables = array();
         foreach (Dump::newInstance()->showTables() as $row) {
             $name = (string) current($row);
-            if (DB_TABLE_PREFIX === '' || strpos($name, DB_TABLE_PREFIX) === 0) {
+            if (TablePrefix::owns($name, DB_TABLE_PREFIX)) {
                 $tables[] = $name;
             }
         }

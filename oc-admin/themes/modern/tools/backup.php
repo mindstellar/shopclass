@@ -20,6 +20,8 @@ $state   = $view->_get('backup_state') ?: array();
 $busy    = (bool) $view->_get('backup_busy');
 $list    = $view->_get('backup_list') ?: array();
 $confirm = is_array($view->_get('backup_confirm')) ? $view->_get('backup_confirm') : null;
+$notice  = is_array($view->_get('backup_notice')) ? $view->_get('backup_notice') : null;
+$skipped = (string) $view->_get('backup_skipped');
 $probe   = $view->_get('backup_probe');
 $demo    = defined('DEMO');
 $status  = (string) ($state['status'] ?? '');
@@ -183,8 +185,24 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     osc_esc_html(DatabaseTools::bytes((int) $state['size']))
                 ); ?></p>
                 <p class="backup-callout-note"><?php _e('It is removed after you download it, or after one hour.'); ?></p>
+                <?php if ($skipped !== '') { ?>
+                    <p><?php echo osc_esc_html($skipped); ?></p>
+                <?php } ?>
                 <div class="backup-callout-actions">
                     <?php $postButton('backup_download', __('Download now'), array('name' => $state['name']), 'primary'); ?>
+                </div>
+            </div>
+        </div>
+    <?php } elseif ($notice !== null) {
+        $lines = array_values(array_filter($notice['lines'])); ?>
+        <div class="callout-<?php echo $notice['tone'] === 'success' ? 'success' : 'info'; ?> callout-block backup-callout" role="status">
+            <div class="backup-callout-body">
+                <p class="backup-callout-title"><?php echo osc_esc_html(array_shift($lines)); ?></p>
+                <?php foreach ($lines as $line) { ?>
+                    <p><?php echo osc_esc_html($line); ?></p>
+                <?php } ?>
+                <div class="backup-callout-actions">
+                    <?php $postButton('backup_dismiss', __('Dismiss')); ?>
                 </div>
             </div>
         </div>
@@ -349,8 +367,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         $when     = $manifest !== null ? BackupJobs::when((string) $manifest['created']) : '';
         $hasDb    = $confirm['database'];
         $hasFiles = $confirm['files'] > 0;
-        $dbBytes  = (int) ($manifest['contents']['database']['bytes'] ?? 0);
-        $fBytes   = (int) ($manifest['contents']['files']['bytes'] ?? 0);
+        $dbBytes  = (int) $confirm['db_bytes'];
+        $fBytes   = (int) $confirm['files_bytes'];
         $free     = BackupStore::site()->freeSpace();
 
         $text = $when !== ''
@@ -360,7 +378,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             $text .= ' ' . __("A safety copy of today's database is saved first.");
         }
 
-        $body = '';
+        $body = '<p class="backup-restore-note">' . osc_esc_html(__('Only restore backups you made. A restore runs the SQL and puts back the files in it, and it brings back the admin passwords and keys it holds.')) . '</p>';
         if ($hasDb && $hasFiles) {
             $body .= '<input type="hidden" name="choose" value="1" />'
                 . '<div class="backup-restore-parts" role="group" aria-label="' . osc_esc_html(__('Put back')) . '">'

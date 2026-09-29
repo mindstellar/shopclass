@@ -196,6 +196,31 @@ pin('...without doubling a row', $rows, (int) $admin->query("SELECT COUNT(*) FRO
 pin('only a table with this site\'s prefix is dropped', null, DatabaseTools::createdTable('CREATE TABLE `wp_users` (id int)'));
 unlink($tok);
 
+harness_section('Another install in the same database');
+
+// The installer allows a prefix that starts with another one, so oc_ and oc_shop2_ can share a database.
+$admin->query('CREATE TABLE `oc_shop2_t_x` (pk_i_id INT NOT NULL PRIMARY KEY) ENGINE=InnoDB');
+$admin->query('INSERT INTO `oc_shop2_t_x` VALUES (1), (2), (3)');
+$ours = \mindstellar\backup\DatabaseDump::tables();
+check('fixture: this site\'s own table is backed up', in_array($table, $ours, true));
+check('a backup leaves the other install\'s table out', !in_array('oc_shop2_t_x', $ours, true), implode(', ', $ours));
+$sized = DatabaseTools::size(Connection::instance(), 'oc_');
+pin('...and does not count it in this site\'s size', count($ours), $sized['tables']);
+
+$foreign = tempnam(sys_get_temp_dir(), 'osc_backup_foreign_');
+file_put_contents($foreign, "CREATE TABLE IF NOT EXISTS `oc_shop2_t_x` (pk_i_id INT NOT NULL PRIMARY KEY) ENGINE=InnoDB;\n");
+$handle = fopen($foreign, 'rb');
+DatabaseTools::restore(Connection::instance(), $handle, null, true);
+fclose($handle);
+unlink($foreign);
+pin('a restore or rollback never drops it', 3, (int) $admin->query('SELECT COUNT(*) FROM `oc_shop2_t_x`')->fetch_row()[0]);
+$other = tempnam(sys_get_temp_dir(), 'osc_backup_other_');
+file_put_contents($other, '');
+Dump::newInstance()->table_structure($other, 'oc_shop2_t_x', true);
+Dump::newInstance()->table_data($other, 'oc_shop2_t_x', true);
+check('...and the prefix token never takes its name', strpos((string) file_get_contents($other), '/*TABLE_PREFIX*/') === false, (string) file_get_contents($other));
+unlink($other);
+
 harness_section('Upgrade lock');
 
 $conn = Connection::instance();

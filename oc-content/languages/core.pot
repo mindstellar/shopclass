@@ -13,6 +13,12 @@ msgstr ""
 msgid " is available"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "%1$d linked folder was skipped: %2$s (it points outside oc-content)."
+msgid_plural "%1$d linked folders were skipped: %2$s (they point outside oc-content)."
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-admin/themes/modern/parts/ui.php
 msgid "%1$s &raquo; %2$s"
 msgstr ""
@@ -608,6 +614,14 @@ msgid ""
 "A security fix for the version you run (6.4.0 to 6.4.1) is installed at "
 "night once it is a day old, and the contact e-mail is told how it went. Off "
 "by default."
+msgstr ""
+
+#: oc-includes/osclass/classes/backup/BackupJobs.php
+msgid "A statement in the backup failed (MySQL error %d)."
+msgstr ""
+
+#: oc-includes/osclass/classes/backup/BackupJobs.php
+msgid "A statement in the backup failed."
 msgstr ""
 
 #: oc-includes/osclass/helpers/hUtils.php
@@ -1608,6 +1622,10 @@ msgstr ""
 msgid "Backup cancelled"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "Backup cancelled. Nothing was saved."
+msgstr ""
+
 #: oc-includes/osclass/classes/backup/BackupJobs.php
 msgid "Backup failed"
 msgstr ""
@@ -1618,6 +1636,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/backup/BackupJobs.php
 msgid "Backup saved: %1$s, %2$s, %3$s, %4$s"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "Backup saved: %1$s, %2$s, %3$s."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
@@ -6434,10 +6456,6 @@ msgstr ""
 msgid "MySQL 5.7.5+ or MariaDB 10.2+ (found %s)"
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupJobs.php
-msgid "MySQL said: %s"
-msgstr ""
-
 #: oc-includes/osclass/install-functions.php
 msgid "MySQLi extension for PHP"
 msgstr ""
@@ -7348,6 +7366,12 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
 msgid "Only logged-in users can subscribe to search alerts"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/backup.php
+msgid ""
+"Only restore backups you made. A restore runs the SQL and puts back the "
+"files in it, and it brings back the admin passwords and keys it holds."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations.php
@@ -9984,6 +10008,14 @@ msgstr ""
 msgid "The backup folder is not writable."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "The backup from %s is restored."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "The backup is restored."
+msgstr ""
+
 #: oc-includes/osclass/classes/market/Installer.php
 msgid "The catalog entry is missing a version or a download url."
 msgstr ""
@@ -10417,6 +10449,12 @@ msgstr ""
 msgid "There aren't any uploaded listing yet"
 msgstr ""
 
+#: oc-includes/osclass/classes/backup/Restorer.php
+msgid ""
+"There is not enough free space to put back the files: %1$s needed, %2$s "
+"free."
+msgstr ""
+
 #: oc-admin/themes/modern/tools/backup.php
 msgid ""
 "There is not enough space for a safety copy of the files. Only the database "
@@ -10553,6 +10591,12 @@ msgid "This field is used in %d form. Changes here apply to that form."
 msgid_plural "This field is used in %d forms. Changes here apply to all of them."
 msgstr[0] ""
 msgstr[1] ""
+
+#: oc-includes/osclass/classes/backup/Restorer.php
+msgid ""
+"This file cannot be restored: what it holds is too large or too compressed "
+"to be a real backup."
+msgstr ""
 
 #: oc-includes/osclass/classes/backup/Manifest.php
 msgid "This file has no version information. Updates run after it, just in case."

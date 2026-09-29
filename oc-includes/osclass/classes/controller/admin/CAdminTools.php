@@ -487,41 +487,40 @@ class CAdminTools extends AdminSecBaseModel
     }
 
     /**
-     * Tools > Backup and restore. A finished run is reported once, then forgotten.
+     * Tools > Backup and restore. A finished run stays on the page until it is dismissed
+     * or the next run starts; a plain visit changes no state.
      *
      * @return void
      */
     private function backupPage(): void
     {
-        $store = BackupStore::site();
-        $state = BackupManager::current();
-        $busy  = BackupManager::busy();
-        $keep  = '';
-        if (($state['status'] ?? '') === 'done' && $state['kind'] === 'backup' && $state['where'] === 'download') {
+        $store  = BackupStore::site();
+        $state  = BackupManager::current();
+        $busy   = BackupManager::busy();
+        $keep   = '';
+        $notice = null;
+        $status = (string) ($state['status'] ?? '');
+        if ($status === 'done' && $state['kind'] === 'backup' && $state['where'] === 'download') {
             if ($store->path((string) $state['name']) !== null) {
                 $keep = (string) $state['name'];
-                $this->flashSkipped($state);
             } else {
-                $store->clearState();
                 $state = array();
             }
-        } elseif (($state['status'] ?? '') === 'done') {
-            $when = BackupJobs::when((string) ($state['source_created'] ?? ''));
-            osc_add_flash_ok_message(osc_esc_html($state['kind'] === 'restore'
-                ? ($when !== '' ? sprintf(_m('The backup from %s is restored.'), $when) : _m('The backup is restored.'))
+        } elseif ($status === 'done') {
+            $when   = BackupJobs::when((string) ($state['source_created'] ?? ''));
+            $notice = array('tone' => 'success', 'lines' => array($state['kind'] === 'restore'
+                ? ($when !== '' ? sprintf(__('The backup from %s is restored.'), $when) : __('The backup is restored.'))
                 : sprintf(
-                    _m('Backup saved: %1$s, %2$s, %3$s.'),
+                    __('Backup saved: %1$s, %2$s, %3$s.'),
                     BackupJobs::when(date('c', (int) $state['started'])),
                     BackupJobs::whatWord((string) $state['what']),
                     DatabaseTools::bytes((int) $state['size'])
-                )), 'admin');
-            $this->flashSkipped($state);
-            $store->clearState();
-            $state = array();
-        } elseif (($state['status'] ?? '') === 'cancelled') {
-            osc_add_flash_info_message(_m('Backup cancelled. Nothing was saved.'), 'admin');
-            $store->clearState();
-            $state = array();
+                )));
+        } elseif ($status === 'cancelled') {
+            $notice = array('tone' => 'info', 'lines' => array(__('Backup cancelled. Nothing was saved.')));
+        }
+        if ($notice !== null) {
+            $notice['lines'][] = self::skippedLine($state);
         }
         if (!$busy && is_dir($store->dir())) {
             $store->sweep(false, $keep);
@@ -540,6 +539,8 @@ class CAdminTools extends AdminSecBaseModel
         }
 
         $this->_exportVariableToView('backup_state', $state);
+        $this->_exportVariableToView('backup_notice', $notice);
+        $this->_exportVariableToView('backup_skipped', $keep !== '' ? self::skippedLine($state) : '');
         $this->_exportVariableToView('backup_busy', $busy);
         $this->_exportVariableToView('backup_list', $list);
         $this->_exportVariableToView('backup_confirm', $confirm);
@@ -548,27 +549,29 @@ class CAdminTools extends AdminSecBaseModel
     }
 
     /**
-     * Name the linked folders a backup skipped because they point outside the site.
+     * The linked folders a backup skipped because they point outside oc-content, in
+     * words; '' when there were none.
      *
      * @param array<string,mixed> $state
      *
-     * @return void
+     * @return string
      */
-    private function flashSkipped(array $state): void
+    private static function skippedLine(array $state): string
     {
         $skipped = (array) ($state['skipped'] ?? array());
         if ($skipped === array()) {
-            return;
+            return '';
         }
-        osc_add_flash_info_message(sprintf(
-            _mn(
-                '%1$d linked folder was skipped: %2$s (it points outside the site).',
-                '%1$d linked folders were skipped: %2$s (they point outside the site).',
+
+        return sprintf(
+            _n(
+                '%1$d linked folder was skipped: %2$s (it points outside oc-content).',
+                '%1$d linked folders were skipped: %2$s (they point outside oc-content).',
                 count($skipped)
             ),
             count($skipped),
-            osc_esc_html(implode(', ', array_map('strval', $skipped)))
-        ), 'admin');
+            implode(', ', array_map('strval', $skipped))
+        );
     }
 
     /**

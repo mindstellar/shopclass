@@ -28,7 +28,7 @@ going while the page is open, and with [cron](/docs/configure/cron/) set up it
 also carries on after you close it. One backup runs at a time, and it can be
 cancelled.
 
-A linked folder that points outside the site (a theme symlinked from elsewhere)
+A linked folder that points outside `oc-content` (a theme symlinked from elsewhere)
 is skipped and named on the page. With photos offloaded to S3, the photos stay
 in the bucket and are not copied; turn on versioning in the bucket.
 
@@ -155,7 +155,11 @@ only the database or only the files of an "Everything" backup.
 While it runs, visitors see the maintenance page. A safety copy of the database
 is saved first, and if loading the backup fails the safety copy is put back.
 Database updates run after an older backup. Files are written over; files added
-since the backup are left in place.
+since the backup are left in place. While a restore runs, cron and
+`oc-cli.php jobs:work` carry it on and run nothing else.
+
+Only restore backups you made. A restore runs the SQL and puts back the files in
+it, and it brings back the admin passwords and keys it holds.
 
 ## Cache
 

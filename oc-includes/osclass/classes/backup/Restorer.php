@@ -10,6 +10,7 @@
 
 namespace mindstellar\backup;
 
+use mindstellar\admin\DatabaseTools;
 use RuntimeException;
 use Throwable;
 
@@ -35,9 +36,6 @@ final class Restorer
     /** @var string real path of oc-content */
     private $content;
 
-    /** @var string real path of the site */
-    private $site;
-
     /** @var array<string,mixed> */
     private $opts;
 
@@ -56,7 +54,6 @@ final class Restorer
         $this->store   = $store;
         $this->builder = $builder;
         $this->content = rtrim((string) realpath($content), '/');
-        $this->site    = rtrim((string) realpath($site), '/');
         $this->opts    = $opts + array(
             'progress'    => static function (array $p): void {
             },
@@ -95,15 +92,17 @@ final class Restorer
 
     /**
      * What a backup file holds and whether it may be restored here, without changing
-     * anything.
+     * anything. Sizes come from the zip's own records, never from its manifest.
      *
-     * @param string $path
+     * @param string      $path
+     * @param string|null $content oc-content, to check its free space against the files
+     * @param int|null    $free    free bytes there; null asks the disk
      *
-     * @return array{ok:bool,reason:string,migrate:bool,note:string,manifest:?array,database:bool,files:int}
+     * @return array{ok:bool,reason:string,migrate:bool,note:string,manifest:?array,database:bool,files:int,db_bytes:int,files_bytes:int}
      */
-    public static function inspect(string $path): array
+    public static function inspect(string $path, ?string $content = null, ?int $free = null): array
     {
-        $out = array('manifest' => null, 'database' => false, 'files' => 0);
+        $out = array('manifest' => null, 'database' => false, 'files' => 0, 'db_bytes' => 0, 'files_bytes' => 0);
         if (strtolower(substr($path, -4)) === '.sql') {
             $handle = @fopen($path, 'rb');
             if ($handle === false) {
@@ -112,7 +111,8 @@ final class Restorer
             $prefix = Manifest::sqlPrefix($handle);
             fclose($handle);
 
-            return Manifest::check(null, OSCLASS_VERSION, DB_TABLE_PREFIX, $prefix) + array('database' => true) + $out;
+            return Manifest::check(null, OSCLASS_VERSION, DB_TABLE_PREFIX, $prefix)
+                + array('database' => true, 'db_bytes' => (int) filesize($path)) + $out;
         }
         try {
             $archive = new BackupArchive($path);
@@ -120,10 +120,31 @@ final class Restorer
             return array('ok' => false, 'reason' => __('This file is not a Shopclass backup.'), 'migrate' => false, 'note' => '') + $out;
         }
         $manifest = $archive->manifest();
-        $out      = array('manifest' => $manifest, 'database' => $archive->hasDatabase(), 'files' => $archive->fileCount());
+        $sizes    = $archive->measure($content !== null ? (string) realpath($content) : null);
+        $out      = array(
+            'manifest'    => $manifest,
+            'database'    => $archive->hasDatabase(),
+            'files'       => $archive->fileCount(),
+            'db_bytes'    => $sizes['database'],
+            'files_bytes' => $sizes['files'],
+        );
         $archive->close();
         if ($manifest === null) {
             return array('ok' => false, 'reason' => __('This file is not a Shopclass backup.'), 'migrate' => false, 'note' => '') + $out;
+        }
+        if (!$sizes['safe']) {
+            return array('ok' => false, 'reason' => __('This file cannot be restored: what it holds is too large or too compressed to be a real backup.'), 'migrate' => false, 'note' => '') + $out;
+        }
+        if ($content !== null && $free === null) {
+            $disk = @disk_free_space($content);
+            $free = $disk === false ? null : (int) $disk;
+        }
+        if ($content !== null && $free !== null && $sizes['need'] > $free) {
+            return array('ok' => false, 'reason' => sprintf(
+                __('There is not enough free space to put back the files: %1$s needed, %2$s free.'),
+                DatabaseTools::bytes($sizes['need']),
+                DatabaseTools::bytes($free)
+            ), 'migrate' => false, 'note' => '') + $out;
         }
 
         return Manifest::check($manifest, OSCLASS_VERSION, DB_TABLE_PREFIX) + $out;
@@ -191,7 +212,7 @@ final class Restorer
         if ($path === null) {
             throw new BackupFailure(__('The backup file is gone.'), 'start');
         }
-        $info = self::inspect($path);
+        $info = self::inspect($path, $p['parts']['files'] ? $this->content : null);
         if (!$info['ok']) {
             throw new BackupFailure($info['reason'], 'start');
         }
@@ -210,7 +231,7 @@ final class Restorer
             throw new BackupFailure(__('The site could not be put in maintenance mode.'), 'start');
         }
 
-        $filesBytes = (int) ($info['manifest']['contents']['files']['bytes'] ?? 0);
+        $filesBytes = $info['files_bytes'];
         $free       = $this->store->freeSpace();
         $roomFiles  = $p['parts']['files'] && ($free === null || $free >= 2 * $filesBytes);
         $p['safety_files'] = $roomFiles;
@@ -371,7 +392,6 @@ final class Restorer
         try {
             $r = $archive->extract(
                 $this->content,
-                $this->site,
                 (int) $p['entries']['next'],
                 (int) $this->opts['batch'],
                 microtime(true) + (int) $this->opts['seconds']
