@@ -56,26 +56,27 @@ class CAdminTools extends AdminSecBaseModel
                 if ($this->refuseOnDemo($back)) {
                     break;
                 }
+                $sql = Params::getFiles('sql');
+                // Over post_max_size PHP drops the whole body, token included, so say why first.
+                if ($sql === array() && Params::getServerParam('REQUEST_METHOD') === 'POST'
+                    && (int) Params::getServerParam('CONTENT_LENGTH') > DatabaseTools::uploadLimit()
+                ) {
+                    osc_add_flash_error_message(DatabaseTools::tooLargeMessage(), 'admin');
+                    $this->redirectTo($back);
+                    break;
+                }
                 osc_csrf_check();
-                $sql    = Params::getFiles('sql');
-                $handle = isset($sql['size'], $sql['tmp_name']) && $sql['size'] != 0 && is_uploaded_file($sql['tmp_name'])
-                    ? fopen($sql['tmp_name'], 'rb')
-                    : false;
-                if ($handle !== false) {
-                    try {
-                        DatabaseTools::restore(\mindstellar\database\Connection::instance(), $handle);
-                        osc_calculate_location_slug(osc_subdomain_type());
-                        osc_add_flash_ok_message(_m('Import complete'), 'admin');
-                    } catch (\mindstellar\database\DbException $e) {
-                        osc_add_flash_error_message(_m('There was a problem importing data to the database'), 'admin');
-                    }
-                    fclose($handle);
-                } else {
-                    osc_add_flash_warning_message(_m('No file was uploaded'), 'admin');
+                $error = DatabaseTools::uploadError($sql);
+                if ($error === '' && !is_uploaded_file($sql['tmp_name'])) {
+                    $error = _m('No file was uploaded');
                 }
-                if (!empty($sql['tmp_name'])) {
-                    @unlink($sql['tmp_name']);
+                if ($error !== '') {
+                    osc_add_flash_warning_message($error, 'admin');
+                    $this->redirectTo($back);
+                    break;
                 }
+                $this->restoreUpload($sql['tmp_name']);
+                @unlink($sql['tmp_name']);
                 $this->redirectTo($back);
                 break;
             case ('category'):
@@ -180,116 +181,90 @@ class CAdminTools extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . DatabaseTools::movedTo($this->action));
                 break;
             case ('backup-sql'):
-                if ($this->refuseOnDemo(osc_admin_base_url(true) . DatabaseTools::movedTo('backup'))) {
+                $back = osc_admin_base_url(true) . DatabaseTools::movedTo('backup');
+                if ($this->refuseOnDemo($back)) {
                     break;
                 }
                 osc_csrf_check();
-                //databasse dump...
-                if (Params::getParam('bck_dir') != '') {
-                    $path = trim(Params::getParam('bck_dir'));
-                    if (substr($path, -1, 1) !== '/') {
-                        $path .= '/';
-                    }
+                $dir = $this->backupDir();
+                if ($dir === null) {
+                    $this->redirectTo($back);
+                    break;
+                }
+                $filename = DatabaseTools::backupName('Osclass_mysqlbackup', 'sql');
+                if (!DatabaseTools::createPrivateFile($dir . $filename)) {
+                    osc_add_flash_error_message(_m('The folder is not writable'), 'admin');
+                    $this->redirectTo($back);
+                    break;
+                }
+                $result = osc_dbdump($dir, $filename);
+                if ($result < 0) {
+                    @unlink($dir . $filename);
+                    osc_add_flash_error_message($this->dumpError($result), 'admin');
                 } else {
-                    $path = osc_base_path();
+                    osc_add_flash_ok_message(sprintf(_m('Backup saved as %s'), osc_esc_html($dir . $filename)), 'admin');
                 }
-                $filename = 'Osclass_mysqlbackup.' . date('YmdHis') . '.sql';
-
-                switch (osc_dbdump($path, $filename)) {
-                    case (-1):
-                        $msg = _m('Path is empty');
-                        osc_add_flash_error_message($msg, 'admin');
-                        break;
-                    case (-2):
-                        $msg = sprintf(_m('Could not connect with the database'));
-                        osc_add_flash_error_message($msg, 'admin');
-                        break;
-                    case (-3):
-                        $msg = _m('There are no tables to back up');
-                        osc_add_flash_error_message($msg, 'admin');
-                        break;
-                    case (-4):
-                        $msg = _m('The folder is not writable');
-                        osc_add_flash_error_message($msg, 'admin');
-                        break;
-                    default:
-                        $msg = _m('Backup completed successfully');
-                        osc_add_flash_ok_message($msg, 'admin');
-                        break;
-                }
-                $this->redirectTo(osc_admin_base_url(true) . DatabaseTools::movedTo('backup'));
+                $this->redirectTo($back);
                 break;
             case ('backup-sql_file'):
-                if ($this->refuseOnDemo(osc_admin_base_url(true) . DatabaseTools::movedTo('backup'))) {
+                $back = osc_admin_base_url(true) . DatabaseTools::movedTo('backup');
+                if ($this->refuseOnDemo($back)) {
                     break;
                 }
                 osc_csrf_check();
-                //databasse dump...
-
-                $filename = 'Osclass_mysqlbackup.' . date('YmdHis') . '.sql';
-                $path     = sys_get_temp_dir() . '/';
-
-                // Same codes as the server save; osc_dbdump() returns -4 for an unwritable folder.
-                switch (osc_dbdump($path, $filename)) {
-                    case (-1):
-                        osc_add_flash_error_message(_m('Path is empty'), 'admin');
-                        break;
-                    case (-2):
-                        osc_add_flash_error_message(_m('Could not connect with the database'), 'admin');
-                        break;
-                    case (-3):
-                        osc_add_flash_error_message(_m('There are no tables to back up'), 'admin');
-                        break;
-                    case (-4):
-                        osc_add_flash_error_message(_m('The folder is not writable'), 'admin');
-                        break;
-                    default:
-                        $this->sendFile($path . $filename);
+                $tmp = $this->privateTempFile();
+                if ($tmp === null) {
+                    osc_add_flash_error_message(_m('The folder is not writable'), 'admin');
+                    $this->redirectTo($back);
+                    break;
                 }
-                @unlink($path . $filename);
-                $this->redirectTo(osc_admin_base_url(true) . DatabaseTools::movedTo('backup'));
+                $result = osc_dbdump(dirname($tmp) . DIRECTORY_SEPARATOR, basename($tmp));
+                if ($result < 0) {
+                    osc_add_flash_error_message($this->dumpError($result), 'admin');
+                    $this->redirectTo($back);
+                    break;
+                }
+                $this->sendFile($tmp, DatabaseTools::backupName('Osclass_mysqlbackup', 'sql'));
                 break;
             case ('backup-zip_file'):
-                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=upgrade#backup-files')) {
+                $back = osc_admin_base_url(true) . '?page=tools&action=upgrade#backup-files';
+                if ($this->refuseOnDemo($back)) {
                     break;
                 }
                 osc_csrf_check();
-                $filename = 'Osclass_backup.' . date('YmdHis') . '.zip';
-                $path     = sys_get_temp_dir() . '/';
-
-                if (osc_zip_folder(osc_base_path(), $path . $filename)) {
-                    $this->sendFile($path . $filename);
+                $tmp = $this->privateTempFile();
+                if ($tmp !== null) {
+                    // ZipArchive will not open an empty file, so the zip gets its own name beside it.
+                    $zip = $tmp . '.zip';
+                    register_shutdown_function(static function () use ($zip): void {
+                        @unlink($zip);
+                    });
+                    if ($this->zipSite($zip)) {
+                        $this->sendFile($zip, DatabaseTools::backupName('Osclass_backup', 'zip'));
+                    }
                 }
-
-                $msg = _m('Error, the zip file was not created in the specified directory');
-                osc_add_flash_error_message($msg, 'admin');
-                $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=upgrade#backup-files');
+                osc_add_flash_error_message(_m('Error, the zip file was not created in the specified directory'), 'admin');
+                $this->redirectTo($back);
                 break;
             case ('backup-zip'):
-                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=upgrade#backup-files')) {
+                $back = osc_admin_base_url(true) . '?page=tools&action=upgrade#backup-files';
+                if ($this->refuseOnDemo($back)) {
                     break;
                 }
-                //zip of the code just to back it up
                 osc_csrf_check();
-                if (Params::getParam('bck_dir')) {
-                    $archive_name = trim(Params::getParam('bck_dir'));
-                    if (substr(trim($archive_name), -1, 1) !== '/') {
-                        $archive_name .= '/';
-                    }
-                    $archive_name .= '/Osclass_backup.' . date('YmdHis') . '.zip';
-                } else {
-                    $archive_name = osc_base_path() . 'Osclass_backup.' . date('YmdHis') . '.zip';
+                $dir = $this->backupDir();
+                if ($dir === null) {
+                    $this->redirectTo($back);
+                    break;
                 }
-                $archive_folder = osc_base_path();
-
-                if (osc_zip_folder($archive_folder, $archive_name)) {
-                    $msg = _m('Archived successfully!');
-                    osc_add_flash_ok_message($msg, 'admin');
+                $archive = $dir . DatabaseTools::backupName('Osclass_backup', 'zip');
+                if ($this->zipSite($archive)) {
+                    osc_add_flash_ok_message(sprintf(_m('Backup saved as %s'), osc_esc_html($archive)), 'admin');
                 } else {
-                    $msg = _m('Error, the zip file was not created in the specified directory');
-                    osc_add_flash_error_message($msg, 'admin');
+                    @unlink($archive);
+                    osc_add_flash_error_message(_m('Error, the zip file was not created in the specified directory'), 'admin');
                 }
-                $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=upgrade#backup-files');
+                $this->redirectTo($back);
                 break;
             case ('maintenance'):
                 if (defined('DEMO')) {
@@ -546,29 +521,151 @@ class CAdminTools extends AdminSecBaseModel
     }
 
     /**
-     * Send a backup file as a download, delete it, and end the request. Output buffers are
-     * dropped first so a large file streams instead of filling memory.
+     * Send a backup file as a download and end the request. Output buffers are dropped
+     * first so a large file streams instead of filling memory.
+     *
+     * @param string $file the file on disk, deleted by the shutdown call that made it
+     * @param string $name the name the browser saves it under
+     *
+     * @return void
+     */
+    private function sendFile(string $file, string $name): void
+    {
+        while (ob_get_level() > 0 && @ob_end_clean()) {
+        }
+        header('Content-Description: File Transfer');
+        header('Content-Type: application/octet-stream');
+        header('Content-Disposition: attachment; filename=' . $name);
+        header('Content-Transfer-Encoding: binary');
+        header('Expires: 0');
+        header('Cache-Control: no-store');
+        header('Content-Length: ' . filesize($file));
+        readfile($file);
+        exit;
+    }
+
+    /**
+     * A new temp file only this user can read, deleted when the request ends, even when
+     * the download is cut off. Null when none can be made.
+     *
+     * @return string|null
+     */
+    private function privateTempFile(): ?string
+    {
+        $tmp = @tempnam(sys_get_temp_dir(), 'osc_backup_');
+        if ($tmp === false) {
+            return null;
+        }
+        register_shutdown_function(static function () use ($tmp): void {
+            @unlink($tmp);
+        });
+        if (!chmod($tmp, 0600)) {
+            return null;
+        }
+
+        return $tmp;
+    }
+
+    /**
+     * Zip the site folder to $archive, readable by this user only.
+     *
+     * @param string $archive
+     *
+     * @return bool
+     */
+    private function zipSite(string $archive): bool
+    {
+        $umask = umask(0077);
+        try {
+            $ok = (bool) osc_zip_folder(osc_base_path(), $archive);
+        } finally {
+            umask($umask);
+        }
+
+        return $ok && is_file($archive) && chmod($archive, 0600);
+    }
+
+    /**
+     * The posted server backup folder, checked, with a trailing separator. The default
+     * folder is made on first use. Flashes the reason and returns null when refused.
+     *
+     * @return string|null
+     */
+    private function backupDir(): ?string
+    {
+        $asked   = trim(Params::getParamString('bck_dir', false, false));
+        $default = DatabaseTools::defaultBackupDir(osc_base_path());
+        if ($asked !== '' && $asked === $default && !is_dir($default)) {
+            @mkdir($default, 0700);
+        }
+        $check = DatabaseTools::checkBackupDir($asked, osc_base_path());
+        if ($check['error'] !== '') {
+            osc_add_flash_error_message($check['error'], 'admin');
+
+            return null;
+        }
+
+        return $check['dir'];
+    }
+
+    /**
+     * The message for an osc_dbdump() error code.
+     *
+     * @param int $code
+     *
+     * @return string
+     */
+    private function dumpError(int $code): string
+    {
+        switch ($code) {
+            case -1:
+                return _m('Path is empty');
+            case -2:
+                return _m('Could not connect with the database');
+            case -3:
+                return _m('There are no tables to back up');
+            default:
+                return _m('The folder is not writable');
+        }
+    }
+
+    /**
+     * Run an uploaded backup against the database, unless an upgrade is running.
      *
      * @param string $file
      *
      * @return void
      */
-    private function sendFile(string $file): void
+    private function restoreUpload(string $file): void
     {
-        while (ob_get_level() > 0) {
-            ob_end_clean();
+        $conn = \mindstellar\database\Connection::instance();
+        try {
+            $release = DatabaseTools::upgradeLock($conn);
+        } catch (\mindstellar\database\DbException $e) {
+            $release = null;
         }
-        header('Content-Description: File Transfer');
-        header('Content-Type: application/octet-stream');
-        header('Content-Disposition: attachment; filename=' . basename($file));
-        header('Content-Transfer-Encoding: binary');
-        header('Expires: 0');
-        header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
-        header('Pragma: public');
-        header('Content-Length: ' . filesize($file));
-        readfile($file);
-        @unlink($file);
-        exit;
+        if ($release === null) {
+            osc_add_flash_error_message(_m('An upgrade is running. Try again when it has finished.'), 'admin');
+
+            return;
+        }
+        $handle = fopen($file, 'rb');
+        if ($handle === false) {
+            $release();
+            osc_add_flash_warning_message(_m('No file was uploaded'), 'admin');
+
+            return;
+        }
+        try {
+            DatabaseTools::restore($conn, $handle);
+            osc_calculate_location_slug(osc_subdomain_type());
+            osc_add_flash_ok_message(_m('Import complete'), 'admin');
+        } catch (\mindstellar\database\DbException $e) {
+            osc_add_flash_error_message(_m('There was a problem importing data to the database'), 'admin');
+        } finally {
+            fclose($handle);
+            $release();
+        }
     }
 
     /**
@@ -611,8 +708,19 @@ class CAdminTools extends AdminSecBaseModel
 
                 return;
             }
-            if ($error === '' && DatabaseTools::repairable($findings) === array()) {
+            if ($error === '' && !DatabaseTools::repairAllowed($findings, $pending)) {
                 osc_add_flash_info_message(_m('Nothing needs repairing.'), 'admin');
+                $this->redirectTo($self);
+
+                return;
+            }
+            try {
+                $release = DatabaseTools::upgradeLock($conn);
+            } catch (\mindstellar\database\DbException $e) {
+                $release = null;
+            }
+            if ($release === null) {
+                osc_add_flash_error_message(_m('An upgrade is running. Try again when it has finished.'), 'admin');
                 $this->redirectTo($self);
 
                 return;
@@ -621,6 +729,8 @@ class CAdminTools extends AdminSecBaseModel
                 $repair = (new \mindstellar\database\SchemaReconciler($conn))->repair();
             } catch (Throwable $e) {
                 $repair = array('ran' => array(), 'failed' => array($e->getMessage()));
+            } finally {
+                $release();
             }
             $this->_exportVariableToView('db_repair', $repair);
             list($findings, $error) = $this->schemaFindings();

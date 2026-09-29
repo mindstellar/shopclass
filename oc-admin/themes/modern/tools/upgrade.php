@@ -246,9 +246,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         <?php osc_admin_text(array(
             'name'  => 'bck_dir',
             'label' => __('Server folder'),
-            'value' => osc_base_path(),
+            'value' => mindstellar\admin\DatabaseTools::defaultBackupDir(osc_base_path()),
             'width' => 'key',
-            'help'  => __('The zip is saved here. Pick a folder the public cannot open. A large site can run out of time: then use the command line.'),
+            'help'  => __('The zip is saved here. It must be outside the site folder, so the public cannot download it. A large site can run out of time: then use the command line.'),
         )); ?>
     <?php osc_admin_form_close(array(
         array('label' => __('Back up site files'), 'icon' => 'bi-file-zip', 'type' => 'submit', 'variant' => 'secondary'),

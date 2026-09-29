@@ -250,6 +250,7 @@ you find.
 
 ### Security
 
+- Backups can no longer be saved inside the site folder, where anyone could download them. They go to a private folder, get names no one can guess, and only the owner can read them.
 - Tools > System info warns when visitor addresses look wrong because the site sits behind a proxy that does not pass on the real IP.
 - Deleting an account now also deletes the messages it sent through custom forms.
 - The link that confirms an e-mail address change works once, expires after 24 hours, and can no longer be used as a password-reset code.

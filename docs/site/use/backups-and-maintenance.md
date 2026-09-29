@@ -19,6 +19,10 @@ A complete backup needs two parts:
    **Tools → Upgrade Shopclass**, under **Back up site files**. The zip is
    always written to a folder on the server.
 
+A server folder must be outside the install folder, or anyone could download the
+backup. Both screens offer `shopclass-backups` next to the install folder, and
+refuse a folder inside it. Backup files are readable by their owner only.
+
 A database dump without the uploads restores a site whose every photo is
 missing.
 

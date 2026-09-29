@@ -23,6 +23,8 @@ $size       = $view->_get('db_size');
 $server     = (string) $view->_get('db_server');
 $hasPending = $pending !== array();
 $repairable = DatabaseTools::repairable($findings);
+$canRepair  = DatabaseTools::repairAllowed($findings, $pending);
+$uploadMax  = DatabaseTools::uploadLimit();
 $self       = osc_admin_base_url(true) . '?page=tools&action=database';
 
 $labels = array(
@@ -329,11 +331,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             <?php osc_admin_text(array(
                 'name'          => 'bck_dir',
                 'label'         => __('Server folder'),
-                'value'         => osc_base_path(),
+                'value'         => DatabaseTools::defaultBackupDir(osc_base_path()),
                 'width'         => 'key',
                 'depends'       => 'action',
                 'depends_value' => array('backup-sql'),
-                'help'          => __('Pick a folder the public cannot open.'),
+                'help'          => __('It must be outside the site folder, so the public cannot download it.'),
             )); ?>
         <?php osc_admin_form_close(array(
             array('label' => __('Back up the database'), 'icon' => 'bi-download', 'type' => 'submit', 'variant' => 'secondary'),
@@ -360,6 +362,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 'name'  => 'sql',
                 'label' => __('Backup file (.sql)'),
                 'attrs' => array('accept' => '.sql'),
+                'help'  => $uploadMax < PHP_INT_MAX
+                    ? sprintf(__('This server accepts files up to %s. Restore a larger file from the command line.'), DatabaseTools::bytes($uploadMax))
+                    : '',
             )); ?>
         <?php osc_admin_form_close(array(
             array(
@@ -391,7 +396,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             'text'    => __('This applies the waiting updates in order. Keep the page open until it finishes. Take a backup first.'),
             'confirm' => __('Run database update'),
         )); ?>
-    <?php } elseif ($repairable !== array()) { ?>
+    <?php } elseif ($canRepair) { ?>
         <?php osc_admin_confirm_dialog(array(
             'id'      => 'db-repair-dialog',
             'tone'    => 'plain',

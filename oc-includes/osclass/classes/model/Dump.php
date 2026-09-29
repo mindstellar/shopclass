@@ -31,6 +31,12 @@ class Dump extends DAO
     /** Bytes collected before table_data() writes them out. */
     private const CHUNK = 1048576;
 
+    /** Rows per INSERT statement, so a restore never holds a whole table. */
+    private const INSERT_ROWS = 1000;
+
+    /** Bytes of values per INSERT statement, kept well under max_allowed_packet. */
+    private const INSERT_BYTES = 1048576;
+
     /**
      * Return the shared Dump model instance, creating it on first use.
      *
@@ -122,7 +128,8 @@ class Dump extends DAO
      * Dump all table rows into path
      *
      * Rows are read unbuffered and written in chunks, so memory use does not grow with
-     * the table. The bytes match the one-INSERT-per-table format this has always written.
+     * the table. A new INSERT starts every 1000 rows or about 1 MB of values, so each
+     * statement fits in max_allowed_packet when restored.
      *
      * @param string $path
      * @param string $table
@@ -161,12 +168,23 @@ class Dump extends DAO
         if ($res instanceof mysqli_result) {
             $fields = $res->fetch_fields();
             $count  = 0;
-            $write  = function (array $row) use ($table, $fields, $handle, &$buffer, &$count) {
-                $buffer .= $count === 0
-                    ? '/* dumping data for table `' . $table . "` */\ninsert into `" . $table . "` values\n"
-                    : ",\n";
-                $buffer .= $this->rowValues($row, $fields);
+            $batch  = 0;
+            $bytes  = 0;
+            $write  = function (array $row) use ($table, $fields, $handle, &$buffer, &$count, &$batch, &$bytes) {
+                if ($count === 0) {
+                    $buffer .= '/* dumping data for table `' . $table . "` */\n";
+                }
+                $buffer .= $batch === 0 ? 'insert into `' . $table . "` values\n" : ",\n";
+                $values  = $this->rowValues($row, $fields);
+                $buffer .= $values;
                 $count++;
+                $batch++;
+                $bytes += strlen($values);
+                if ($batch >= self::INSERT_ROWS || $bytes >= self::INSERT_BYTES) {
+                    $buffer .= ";\n";
+                    $batch   = 0;
+                    $bytes   = 0;
+                }
                 if (strlen($buffer) >= self::CHUNK) {
                     $this->writeChunk($handle, $buffer);
                     $buffer = '';
@@ -187,7 +205,7 @@ class Dump extends DAO
                 $res->free();
             }
 
-            if ($count > 0) {
+            if ($batch > 0) {
                 $buffer .= ";\n";
             }
         }

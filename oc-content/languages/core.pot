@@ -3878,6 +3878,10 @@ msgstr ""
 msgid "Engineering - Architecture"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/DatabaseTools.php
+msgid "Enter a server folder for the backup."
+msgstr ""
+
 #: oc-includes/osclass/install-location.php
 msgid "Enter a valid contact email address."
 msgstr ""
@@ -5120,6 +5124,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/LatestSearchSettingsForm.php
 msgid "It may be useful to know what queries users make."
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "It must be outside the site folder, so the public cannot download it."
 msgstr ""
 
 #: oc-includes/osclass/classes/datatables/AlertsDataTable.php
@@ -6676,6 +6684,10 @@ msgstr ""
 msgid "No file was received"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/DatabaseTools.php
+msgid "No file was uploaded"
+msgstr ""
+
 #: oc-includes/AjaxUploader.php
 msgid "No files were uploaded."
 msgstr ""
@@ -7548,10 +7560,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/database.php
 msgid "Photos, plugins and themes are files, not database: back them up on %s."
-msgstr ""
-
-#: oc-admin/themes/modern/tools/database.php
-msgid "Pick a folder the public cannot open."
 msgstr ""
 
 #: oc-admin/themes/modern/fields/submissions.php
@@ -9679,6 +9687,14 @@ msgid ""
 "try again."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/DatabaseTools.php
+msgid "The backup folder does not exist."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/DatabaseTools.php
+msgid "The backup folder is not writable."
+msgstr ""
+
 #: oc-includes/osclass/classes/market/Installer.php
 msgid "The catalog entry is missing a version or a download url."
 msgstr ""
@@ -9792,6 +9808,12 @@ msgstr ""
 
 #: oc-includes/osclass/install-functions.php
 msgid "The file %s doesn't exist"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/DatabaseTools.php
+msgid ""
+"The file is larger than this server accepts (%s). Raise upload_max_filesize "
+"and post_max_size, or restore from the command line."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
@@ -9986,6 +10008,10 @@ msgstr ""
 msgid "The upgrade did not finish"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/DatabaseTools.php
+msgid "The upload failed. Try again."
+msgstr ""
+
 #: oc-includes/osclass/install-functions.php
 msgid "The user connected, but isn't allowed to write to this database. Grant it "
 msgstr ""
@@ -10008,8 +10034,9 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/upgrade.php
 msgid ""
-"The zip is saved here. Pick a folder the public cannot open. A large site "
-"can run out of time: then use the command line."
+"The zip is saved here. It must be outside the site folder, so the public "
+"cannot download it. A large site can run out of time: then use the command "
+"line."
 msgstr ""
 
 #: oc-includes/osclass/classes/market/Installer.php
@@ -10170,6 +10197,12 @@ msgstr[1] ""
 msgid "This file will be removed from the server. The listing, user or page it "
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/DatabaseTools.php
+msgid ""
+"This folder is inside the site, so anyone could download the backup. Pick a "
+"folder outside it."
+msgstr ""
+
 #: oc-admin/themes/modern/parts/market.php
 msgid "This folder isn't writable, so nothing can be installed from here."
 msgstr ""
@@ -10319,6 +10352,12 @@ msgstr ""
 msgid ""
 "This request's address matches every forwarding header sent with it — no "
 "proxy misconfiguration detected."
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid ""
+"This server accepts files up to %s. Restore a larger file from the command "
+"line."
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php

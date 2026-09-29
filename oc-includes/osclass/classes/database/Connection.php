@@ -449,7 +449,9 @@ class Connection
 
             return $result;
         } catch (Throwable $e) {
-            error_log('Db query failed: ' . $sql . ' -- ' . $e->getMessage());
+            // Capped, so a failed statement carrying user rows does not copy them into the log.
+            $logged = strlen($sql) > 300 ? substr($sql, 0, 300) . '… (' . strlen($sql) . ' bytes)' : $sql;
+            error_log('Db query failed: ' . $logged . ' -- ' . $e->getMessage());
             if ($e instanceof DbException) {
                 throw $e;
             }

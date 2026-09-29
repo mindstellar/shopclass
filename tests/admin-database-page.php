@@ -50,11 +50,18 @@ foreach (array(SchemaDoctor::MISSING_TABLE, SchemaDoctor::MISSING_COLUMN, Schema
 $controller = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php');
 $view       = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/tools/database.php');
 
-$refuse = strpos($controller, 'DatabaseTools::repairable($findings) === array()');
-$run    = strpos($controller, 'SchemaReconciler($conn))->repair()');
-check('the server refuses Repair before running it when nothing is fixable', $refuse !== false && $run !== false && $refuse < $run);
+pin('Repair allowed: something fixable, nothing waiting', true, DatabaseTools::repairAllowed(array($finding(SchemaDoctor::MISSING_INDEX)), array()));
+pin('Repair refused: nothing found', false, DatabaseTools::repairAllowed(array(), array()));
+pin('Repair refused: only extra items', false, DatabaseTools::repairAllowed(array($finding(SchemaDoctor::EXTRA_INDEX)), array()));
+pin('Repair refused: an update is waiting', false, DatabaseTools::repairAllowed(array($finding(SchemaDoctor::MISSING_INDEX)), array('0099_x.php')));
+check('the server checks repairAllowed() before running Repair', (static function (string $c): bool {
+    $refuse = strpos($c, '!DatabaseTools::repairAllowed($findings, $pending)');
+    $run    = strpos($c, 'SchemaReconciler($conn))->repair()');
+
+    return $refuse !== false && $run !== false && $refuse < $run;
+})($controller));
 check('the Repair dialog renders only when something is fixable', (bool) preg_match(
-    '/elseif \(\$repairable !== array\(\)\) \{ \?>\s*<\?php osc_admin_confirm_dialog\(array\(\s*\'id\'\s*=> \'db-repair-dialog\'/',
+    '/elseif \(\$canRepair\) \{ \?>\s*<\?php osc_admin_confirm_dialog\(array\(\s*\'id\'\s*=> \'db-repair-dialog\'/',
     $view
 ));
 check('the Repair button sits in the "Repair can fix these" group only', substr_count($view, "'confirm' => '#db-repair-dialog'") === 1
@@ -83,6 +90,69 @@ check('the menu no longer lists Backup data', strpos($menu, 'action=backup') ===
 check('the menu no longer lists Import data', strpos($menu, "'tools_import'") === false);
 check('import_post restores through the streamed path', strpos($controller, 'DatabaseTools::restore(') !== false
     && strpos($controller, 'executeScript(') === false);
+
+harness_section('Server backup folder');
+
+$base = sys_get_temp_dir() . '/osc_backup_dir_' . getmypid();
+$site = $base . '/site';
+$out  = $base . '/private';
+@mkdir($site . '/oc-content', 0777, true);
+@mkdir($out, 0777, true);
+@symlink($site . '/oc-content', $base . '/link');
+$refused = static function (string $dir) use ($site): bool {
+    return DatabaseTools::checkBackupDir($dir, $site)['error'] !== '';
+};
+check('the site folder is refused', $refused($site));
+check('...with a trailing slash too', $refused($site . '/'));
+check('a folder inside the site is refused', $refused($site . '/oc-content'));
+check('a /.. path that lands inside the site is refused', $refused($out . '/../site/oc-content'));
+check('a symlink pointing inside the site is refused', $refused($base . '/link'));
+check('a site root given with a trailing slash still guards its folders', DatabaseTools::checkBackupDir($site . '/oc-content', $site . '/')['error'] !== '');
+check('a missing folder is refused', $refused($base . '/nowhere'));
+check('an empty value is refused', $refused(''));
+check('the parent of the site folder is accepted', !$refused($base));
+pin('a folder outside the site is accepted, as its real path', array('dir' => realpath($out) . '/', 'error' => ''), DatabaseTools::checkBackupDir($out, $site));
+check('a sibling whose name starts like the site folder is accepted', (static function () use ($base, $site): bool {
+    @mkdir($base . '/site-backups');
+
+    return DatabaseTools::checkBackupDir($base . '/site-backups', $site)['error'] === '';
+})());
+if (function_exists('posix_geteuid') && posix_geteuid() !== 0) {
+    chmod($out, 0500);
+    check('a folder that cannot be written is refused', $refused($out));
+    chmod($out, 0700);
+}
+pin('the default folder sits beside the site', $base . '/' . DatabaseTools::BACKUP_FOLDER, DatabaseTools::defaultBackupDir($site));
+check('...outside it', strpos(DatabaseTools::defaultBackupDir($site), $site . '/') !== 0);
+
+$name = DatabaseTools::backupName('Osclass_mysqlbackup', 'sql');
+check('a backup name carries 16 random hex characters', (bool) preg_match('/^Osclass_mysqlbackup\.\d{14}\.[0-9a-f]{16}\.sql$/', $name), $name);
+check('...so two names made in the same second differ', DatabaseTools::backupName('Osclass_backup', 'zip') !== DatabaseTools::backupName('Osclass_backup', 'zip'));
+
+$private = $out . '/' . $name;
+pin('a private file is made', true, DatabaseTools::createPrivateFile($private));
+pin('...with mode 0600', '0600', substr(sprintf('%o', fileperms($private)), -4));
+pin('...and never over an existing one', false, DatabaseTools::createPrivateFile($private));
+unlink($private);
+@unlink($base . '/link');
+@rmdir($base . '/site-backups');
+@rmdir($site . '/oc-content');
+@rmdir($site);
+@rmdir($out);
+@rmdir($base);
+
+harness_section('Restore upload');
+
+pin('no file field', 'No file was uploaded', DatabaseTools::uploadError(array()));
+pin('an array-shaped sql[] field is refused, not a TypeError', 'No file was uploaded', DatabaseTools::uploadError(array(
+    'name' => array('a.sql'), 'type' => array(''), 'tmp_name' => array('/tmp/x'), 'error' => array(0), 'size' => array(10),
+)));
+pin('no file chosen', 'No file was uploaded', DatabaseTools::uploadError(array('tmp_name' => '', 'error' => UPLOAD_ERR_NO_FILE, 'size' => 0)));
+foreach (array(UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE) as $code) {
+    check("error $code says the file is too large", strpos(DatabaseTools::uploadError(array('tmp_name' => '', 'error' => $code, 'size' => 0)), 'larger than this server accepts') !== false);
+}
+pin('a partial upload fails plainly', 'The upload failed. Try again.', DatabaseTools::uploadError(array('tmp_name' => '/tmp/x', 'error' => UPLOAD_ERR_PARTIAL, 'size' => 5)));
+pin('a good upload passes', '', DatabaseTools::uploadError(array('tmp_name' => '/tmp/x', 'error' => UPLOAD_ERR_OK, 'size' => 5)));
 
 harness_section('Waiting updates in plain words');
 

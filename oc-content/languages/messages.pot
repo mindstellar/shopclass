@@ -291,7 +291,7 @@ msgid "An update is waiting. Run it first: it fixes most of these safely."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
-msgid "Archived successfully!"
+msgid "An upgrade is running. Try again when it has finished."
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-forgot_password-content.php
@@ -317,7 +317,7 @@ msgid "Back to your wallet"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
-msgid "Backup completed successfully"
+msgid "Backup saved as %s"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/wallet-content.php

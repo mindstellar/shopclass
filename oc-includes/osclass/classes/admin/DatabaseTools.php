@@ -10,6 +10,8 @@
 
 namespace mindstellar\admin;
 
+use Closure;
+use mindstellar\admin\form\MediaSettingsForm;
 use mindstellar\database\Connection;
 use mindstellar\database\SchemaDoctor;
 use mindstellar\database\SqlStream;
@@ -38,6 +40,9 @@ final class DatabaseTools
         'import'      => 'database#restore',
     );
 
+    /** The backup folder offered by default, next to the site folder. */
+    public const BACKUP_FOLDER = 'shopclass-backups';
+
     /**
      * The findings Repair can fix.
      *
@@ -50,6 +55,19 @@ final class DatabaseTools
         return array_values(array_filter($findings, static function ($f) {
             return in_array($f['kind'] ?? '', self::REPAIRABLE, true);
         }));
+    }
+
+    /**
+     * Whether Repair may run: no update is waiting and at least one finding is fixable.
+     *
+     * @param array<int,array<string,string>> $findings SchemaDoctor::diagnose() rows
+     * @param string[]                        $pending  migrations not applied yet
+     *
+     * @return bool
+     */
+    public static function repairAllowed(array $findings, array $pending): bool
+    {
+        return $pending === array() && self::repairable($findings) !== array();
     }
 
     /**
@@ -177,6 +195,198 @@ final class DatabaseTools
         }
 
         return $ran;
+    }
+
+    /**
+     * Take the lock an upgrade holds, so a restore or repair cannot run beside one. Returns
+     * the call that releases it, or null when an upgrade holds it now.
+     *
+     * @param Connection $conn
+     *
+     * @return Closure|null
+     * @throws \mindstellar\database\DbException
+     */
+    public static function upgradeLock(Connection $conn): ?Closure
+    {
+        $lock = (new MigrationRunner($conn, dirname(__DIR__, 2) . '/installer/migrations'))->lockName();
+        if ((int) $conn->scalar('SELECT IS_USED_LOCK(?) = CONNECTION_ID()', array($lock)) === 1) {
+            // Taking it again would release it early on MySQL before 5.7.5.
+            return static function (): void {
+            };
+        }
+        if ((int) $conn->scalar('SELECT GET_LOCK(?, 0)', array($lock)) !== 1) {
+            return null;
+        }
+
+        return static function () use ($conn, $lock): void {
+            try {
+                $conn->scalar('SELECT RELEASE_LOCK(?)', array($lock));
+            } catch (Throwable $e) {
+                // The server drops the lock with the session anyway.
+            }
+        };
+    }
+
+    /**
+     * The folder offered for server backups: `shopclass-backups` beside the site folder,
+     * or '' when it cannot be made there.
+     *
+     * @param string $webRoot the site folder
+     *
+     * @return string
+     */
+    public static function defaultBackupDir(string $webRoot): string
+    {
+        $root = realpath($webRoot);
+        if ($root === false) {
+            return '';
+        }
+        $parent = dirname($root);
+        $dir    = rtrim($parent, '/\\') . DIRECTORY_SEPARATOR . self::BACKUP_FOLDER;
+        if (is_dir($dir) ? is_writable($dir) : is_writable($parent)) {
+            return $dir;
+        }
+
+        return '';
+    }
+
+    /**
+     * Check a folder for server backups. It must exist, be writable, and sit outside the
+     * site folder, where the web server could hand the file to anyone.
+     *
+     * @param string $dir     the folder asked for
+     * @param string $webRoot the site folder
+     *
+     * @return array{dir:string,error:string} the real path with a trailing separator, or the reason it is refused
+     */
+    public static function checkBackupDir(string $dir, string $webRoot): array
+    {
+        $dir = trim($dir);
+        if ($dir === '') {
+            return array('dir' => '', 'error' => __('Enter a server folder for the backup.'));
+        }
+        $real = realpath($dir);
+        if ($real === false || !is_dir($real)) {
+            return array('dir' => '', 'error' => __('The backup folder does not exist.'));
+        }
+        $root = realpath($webRoot);
+        if ($root === false || self::isInside($real, $root)) {
+            return array(
+                'dir'   => '',
+                'error' => __('This folder is inside the site, so anyone could download the backup. Pick a folder outside it.'),
+            );
+        }
+        if (!is_writable($real)) {
+            return array('dir' => '', 'error' => __('The backup folder is not writable.'));
+        }
+
+        return array('dir' => rtrim($real, '/\\') . DIRECTORY_SEPARATOR, 'error' => '');
+    }
+
+    /**
+     * Whether a real path is the folder $root or anything below it.
+     *
+     * @param string $path
+     * @param string $root
+     *
+     * @return bool
+     */
+    private static function isInside(string $path, string $root): bool
+    {
+        $root = rtrim($root, '/\\');
+
+        return $root === '' || $path === $root || strpos($path, $root . DIRECTORY_SEPARATOR) === 0;
+    }
+
+    /**
+     * A backup file name nobody can guess: prefix, time and 16 random hex characters.
+     *
+     * @param string $prefix e.g. Osclass_mysqlbackup
+     * @param string $ext    e.g. sql
+     *
+     * @return string
+     */
+    public static function backupName(string $prefix, string $ext): string
+    {
+        return $prefix . '.' . date('YmdHis') . '.' . bin2hex(random_bytes(8)) . '.' . $ext;
+    }
+
+    /**
+     * Create an empty file only its owner can read, failing if it already exists.
+     *
+     * @param string $path
+     *
+     * @return bool
+     */
+    public static function createPrivateFile(string $path): bool
+    {
+        $handle = @fopen($path, 'xb');
+        if ($handle === false) {
+            return false;
+        }
+        fclose($handle);
+
+        return chmod($path, 0600);
+    }
+
+    /**
+     * The largest upload PHP accepts here, in bytes: the smaller of upload_max_filesize
+     * and post_max_size. PHP_INT_MAX when neither sets a limit.
+     *
+     * @return int
+     */
+    public static function uploadLimit(): int
+    {
+        $limits = array();
+        foreach (array('upload_max_filesize', 'post_max_size') as $setting) {
+            $kb = MediaSettingsForm::sizeToKb((string) ini_get($setting));
+            if ($kb > 0) {
+                $limits[] = $kb * 1024;
+            }
+        }
+
+        return $limits === array() ? PHP_INT_MAX : min($limits);
+    }
+
+    /**
+     * Why an uploaded restore file cannot be used, or '' when it can. A file field sent
+     * as an array (sql[]) is refused like a missing file.
+     *
+     * @param mixed $file the \$_FILES entry
+     *
+     * @return string
+     */
+    public static function uploadError($file): string
+    {
+        if (!is_array($file) || !isset($file['error'], $file['tmp_name'], $file['size'])
+            || !is_int($file['error']) || !is_string($file['tmp_name'])
+        ) {
+            return __('No file was uploaded');
+        }
+        if ($file['error'] === UPLOAD_ERR_INI_SIZE || $file['error'] === UPLOAD_ERR_FORM_SIZE) {
+            return self::tooLargeMessage();
+        }
+        if ($file['error'] === UPLOAD_ERR_NO_FILE || (int) $file['size'] === 0) {
+            return __('No file was uploaded');
+        }
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            return __('The upload failed. Try again.');
+        }
+
+        return '';
+    }
+
+    /**
+     * The message for a file over PHP's upload limit.
+     *
+     * @return string
+     */
+    public static function tooLargeMessage(): string
+    {
+        return sprintf(
+            __('The file is larger than this server accepts (%s). Raise upload_max_filesize and post_max_size, or restore from the command line.'),
+            self::bytes(self::uploadLimit())
+        );
     }
 
     /** Oldest servers Shopclass supports. */
