@@ -422,8 +422,8 @@ class Cli
     }
 
     /**
-     * Add what struct.sql declares and this database lacks. With --dry-run, print the
-     * db:doctor findings and change nothing.
+     * Add what struct.sql declares and this database lacks. Refuses while a migration is
+     * pending; --dry-run still runs, since it changes nothing either way.
      *
      * @param array<string, mixed> $args
      *
@@ -436,6 +436,24 @@ class Cli
             $this->out("\nDry run: nothing was changed.\n");
 
             return 0;
+        }
+
+        try {
+            $runner = new \mindstellar\migration\MigrationRunner(
+                Connection::instance(),
+                osc_lib_path() . 'osclass/installer/migrations'
+            );
+            $runner->ensureLedger();
+            $pending = $runner->pending();
+        } catch (\Throwable $e) {
+            $this->err('Could not check pending migrations: ' . $e->getMessage() . "\n");
+
+            return 1;
+        }
+        if ($pending !== []) {
+            $this->err("An upgrade is waiting. Run db:upgrade first: it fixes most of these safely.\n");
+
+            return 1;
         }
 
         try {
@@ -474,8 +492,9 @@ class Cli
     /**
      * Report where this database differs from struct.sql. Reads only; changes nothing.
      *
-     * db:repair is additive and cannot fix a nullability difference, a column core stopped
-     * declaring, or an index whose columns are in the wrong order. Those need asking for.
+     * db:repair fixes a missing table, column or index, and a column with the wrong type.
+     * It cannot fix a nullability difference or an index with the wrong columns, and it
+     * leaves an extra column or index alone on purpose. Those need a person to look at them.
      *
      * @param array<string, mixed> $args
      *
@@ -498,14 +517,14 @@ class Cli
         }
 
         $labels = [
-            \mindstellar\database\SchemaDoctor::MISSING_TABLE  => 'table is missing',
-            \mindstellar\database\SchemaDoctor::MISSING_COLUMN => 'column is missing',
-            \mindstellar\database\SchemaDoctor::EXTRA_COLUMN   => 'column is not declared by core',
-            \mindstellar\database\SchemaDoctor::NULLABILITY    => 'column nullability differs',
-            \mindstellar\database\SchemaDoctor::COLUMN_TYPE    => 'column type differs',
-            \mindstellar\database\SchemaDoctor::MISSING_INDEX  => 'index is missing',
-            \mindstellar\database\SchemaDoctor::EXTRA_INDEX    => 'index is not declared by core',
-            \mindstellar\database\SchemaDoctor::INDEX_COLUMNS  => 'index columns differ',
+            \mindstellar\database\SchemaDoctor::MISSING_TABLE  => 'missing table',
+            \mindstellar\database\SchemaDoctor::MISSING_COLUMN => 'missing column',
+            \mindstellar\database\SchemaDoctor::MISSING_INDEX  => 'missing index',
+            \mindstellar\database\SchemaDoctor::COLUMN_TYPE    => 'column has a different type',
+            \mindstellar\database\SchemaDoctor::EXTRA_COLUMN   => 'extra column',
+            \mindstellar\database\SchemaDoctor::EXTRA_INDEX    => 'extra index',
+            \mindstellar\database\SchemaDoctor::INDEX_COLUMNS  => 'index has different columns',
+            \mindstellar\database\SchemaDoctor::NULLABILITY    => 'column differs in whether it can be empty',
         ];
 
         $byTable = [];
@@ -547,12 +566,12 @@ class Cli
             $this->out("\n");
         }
 
-        $this->out("Nothing was changed, and not every line above is a fault.\n");
-        $this->out("  A missing table, column or index is repaired by db:repair.\n");
-        $this->out("  An undeclared index or column is usually something this site added on purpose;\n");
-        $this->out("  core leaves it alone. It is worth a look only if nobody remembers adding it.\n");
-        $this->out("  A nullability or type difference is the one core cannot repair on its own.\n");
-        $this->out("  Report those rather than altering tables by hand.\n");
+        $this->out("Nothing was changed, and not every line above is a problem.\n");
+        $this->out("  db:repair fixes a missing table, column or index, and a column with the wrong type.\n");
+        $this->out("  An extra column or index is usually something a plugin or your team added on\n");
+        $this->out("  purpose; db:repair leaves it alone. Delete it only if you are sure nothing uses it.\n");
+        $this->out("  db:repair does not change a nullability difference or an index with the wrong\n");
+        $this->out("  columns. Ask for help before changing those by hand.\n");
 
         return 1;
     }

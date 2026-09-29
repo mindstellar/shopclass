@@ -155,6 +155,21 @@ check('db:repair restores the dropped index', $hasIndex('oc_t_country', 'idx_s_n
 
 pin('db:doctor is clean afterwards', 0, \mindstellar\cli\Cli::run(array('db:doctor')));
 
+harness_section('db:repair refuses while a migration is pending');
+
+// Un-baseline one migration, the same shape a real upgrade-in-progress leaves the ledger in.
+$pendingName = $runner->applied()[0];
+$admin->query("DELETE FROM oc_t_migration WHERE s_migration = '" . $admin->real_escape_string($pendingName) . "'");
+
+$admin->query('ALTER TABLE oc_t_country DROP INDEX idx_s_name');
+pin('db:repair refuses while a migration is pending', 1, \mindstellar\cli\Cli::run(array('db:repair')));
+check('...and leaves the drift alone', !$hasIndex('oc_t_country', 'idx_s_name'));
+pin('db:repair --dry-run still works while pending', 0, \mindstellar\cli\Cli::run(array('db:repair', '--dry-run')));
+
+$admin->query("INSERT INTO oc_t_migration (s_migration, dt_applied) VALUES ('" . $admin->real_escape_string($pendingName) . "', NOW())");
+pin('db:repair works again once nothing is pending', 0, \mindstellar\cli\Cli::run(array('db:repair')));
+check('...and fixes the drift', $hasIndex('oc_t_country', 'idx_s_name'));
+
 harness_section('repair() and an index under another name');
 
 $admin->query('ALTER TABLE oc_t_item DROP INDEX idx_expiration, ADD INDEX dt_expiration (dt_expiration)');

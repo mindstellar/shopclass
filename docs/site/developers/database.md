@@ -99,5 +99,6 @@ Create them on plugin install, drop them on uninstall, and prefix them with both
 $table = DB_TABLE_PREFIX . 't_myplugin_data';
 ```
 
-Do not add columns to core tables. A migration will not know about them, and the
-next `db:repair` brings the schema back to what core expects.
+Do not add columns to core tables. A migration will not know about them, and
+`db:repair` never removes a column — it stays flagged as extra until someone
+removes it by hand.

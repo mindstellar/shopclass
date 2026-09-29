@@ -287,6 +287,10 @@ msgid "An error has occurred"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "An upgrade is waiting. Finish it first: it fixes most of these safely."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid "Archived successfully!"
 msgstr ""
 

@@ -513,13 +513,6 @@ msgid ""
 "what it can and cannot do, and where a quiet misconfiguration would bite."
 msgstr ""
 
-#: oc-admin/themes/modern/tools/database.php
-msgid ""
-"A column or index core does not declare is usually something a plugin or "
-"this site added on purpose, and Repair leaves it alone. Report a "
-"nullability or type difference rather than altering tables by hand."
-msgstr ""
-
 #: oc-includes/osclass/classes/admin/form/CommentSettingsForm.php
 msgid "A comment is being held for moderation"
 msgstr ""
@@ -548,6 +541,13 @@ msgstr ""
 msgid ""
 "A package is what a buyer picks at checkout. Add one to start selling "
 "credits."
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid ""
+"A plugin or someone on your team added these. Shopclass does not need them, "
+"and Repair leaves them alone. Delete one only if you are sure nothing uses "
+"it."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/logs.php
@@ -1154,6 +1154,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/index.php
 msgid "An update is ready for this theme. "
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "An upgrade is waiting. Finish it first: it fixes most of these safely."
 msgstr ""
 
 #: oc-admin/themes/modern/items/settings.php
@@ -2010,6 +2014,10 @@ msgstr ""
 msgid "Change advanced configuration of your Shopclass. "
 msgstr ""
 
+#: oc-admin/themes/modern/tools/database.php
+msgid "Change made"
+msgstr ""
+
 #: oc-includes/osclass/classes/Breadcrumb.php
 msgid "Change my email"
 msgstr ""
@@ -2365,19 +2373,11 @@ msgid "Collapse or expand this section"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/database.php
-msgid "Column is missing"
+msgid "Column differs in whether it can be empty"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/database.php
-msgid "Column is not declared by core"
-msgstr ""
-
-#: oc-admin/themes/modern/tools/database.php
-msgid "Column nullability differs"
-msgstr ""
-
-#: oc-admin/themes/modern/tools/database.php
-msgid "Column type differs"
+msgid "Column has a different type"
 msgstr ""
 
 #: oc-admin/themes/modern/comments/frm.php
@@ -2459,8 +2459,8 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/database.php
 msgid ""
-"Compares your database with the structure this version of Shopclass "
-"declares. "
+"Compares your database with what Shopclass expects, and lists what is "
+"different. "
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
@@ -3377,14 +3377,6 @@ msgid ""
 "weaker."
 msgstr ""
 
-#: oc-admin/themes/modern/tools/database.php
-msgid "Difference"
-msgstr ""
-
-#: oc-admin/themes/modern/tools/database.php
-msgid "Differences"
-msgstr ""
-
 #: oc-admin/themes/modern/languages/frm.php
 msgid "Direction"
 msgstr ""
@@ -4038,8 +4030,20 @@ msgstr ""
 msgid "Expires after"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/database.php
+msgid "Extra column"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/BillingSettingsForm.php
 msgid "Extra days"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "Extra index"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "Extra items: nothing to do"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsForm.php
@@ -4189,6 +4193,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/index.php
 msgid "Find one in Browse, or upload its zip file."
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "Finish the upgrade first. Most of these will then be gone."
 msgstr ""
 
 #: oc-includes/osclass/classes/Pagination.php
@@ -4891,15 +4899,7 @@ msgid "Include regions"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/database.php
-msgid "Index columns differ"
-msgstr ""
-
-#: oc-admin/themes/modern/tools/database.php
-msgid "Index is missing"
-msgstr ""
-
-#: oc-admin/themes/modern/tools/database.php
-msgid "Index is not declared by core"
+msgid "Index has different columns"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info.php
@@ -6126,6 +6126,22 @@ msgstr ""
 msgid "Missing"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/database.php
+msgid "Missing column"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "Missing index"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "Missing primary key"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "Missing table"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/CommentSettingsForm.php
 msgid "Moderated comments"
 msgstr ""
@@ -6291,7 +6307,6 @@ msgstr ""
 #: oc-admin/themes/modern/settings/locations/form.php
 #: oc-admin/themes/modern/settings/locations/list.php
 #: oc-admin/themes/modern/stats/users.php
-#: oc-admin/themes/modern/tools/database.php
 #: oc-admin/themes/modern/users/frm.php
 #: oc-admin/themes/modern/users/index.php
 #: oc-includes/osclass/classes/admin/form/AdminAccountForm.php
@@ -6380,6 +6395,10 @@ msgstr ""
 msgid ""
 "Needs a CAPTCHA provider configured under Settings &raquo; "
 "reCAPTCHA/Turnstile; otherwise no challenge is shown."
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "Needs a closer look"
 msgstr ""
 
 #: oc-admin/themes/modern/comments/index.php
@@ -7602,6 +7621,10 @@ msgstr ""
 msgid "Premium"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/database.php
+msgid "Press Repair to fix them. Take a backup first."
+msgstr ""
+
 #: oc-admin/themes/modern/appearance/index.php
 #: oc-admin/themes/modern/media/index.php
 #: oc-admin/themes/modern/settings/index.php
@@ -8046,6 +8069,16 @@ msgstr ""
 #: oc-admin/themes/modern/tools/database.php
 #: oc-includes/osclass/installer/basic_data.php
 msgid "Repair"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "Repair can fix these"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid ""
+"Repair does not change these. Ask for help before changing the table by "
+"hand."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/database.php
@@ -8878,12 +8911,12 @@ msgstr ""
 msgid "Shopclass checks once a day. Check now if you are expecting something."
 msgstr ""
 
-#: oc-admin/themes/modern/tools/database.php
-msgid "Shopclass declares"
-msgstr ""
-
 #: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Shopclass doesn't check the watermark image size"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "Shopclass expects"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info.php
@@ -9235,10 +9268,6 @@ msgstr ""
 msgid "State"
 msgstr ""
 
-#: oc-admin/themes/modern/tools/database.php
-msgid "Statement"
-msgstr ""
-
 #: oc-admin/themes/modern/pages/index.php
 msgid "Static pages like \"About Us\" or \"Info\" live here."
 msgstr ""
@@ -9283,6 +9312,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/fields/iframe.php
 msgid "Step"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "Still to do"
 msgstr ""
 
 #: oc-admin/themes/modern/languages/frm.php
@@ -9417,10 +9450,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/database.php
 msgid "Table"
-msgstr ""
-
-#: oc-admin/themes/modern/tools/database.php
-msgid "Table is missing"
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-database.php
@@ -9950,6 +9979,13 @@ msgstr ""
 msgid "This action cannot be done because it is a demo site"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/database.php
+msgid ""
+"This adds what is missing and fixes column types. It does not touch extra "
+"columns or indexes, and it can take a while on a large site. Take a backup "
+"first."
+msgstr ""
+
 #: oc-admin/themes/modern/admins/two_factor.php
 msgid "This admin signs in with a code from an authenticator app."
 msgstr ""
@@ -9972,18 +10008,8 @@ msgstr ""
 msgid "This cannot be undone."
 msgstr ""
 
-#: oc-admin/themes/modern/tools/database.php
-msgid ""
-"This changes table structure and can take a while on a large site. Take a "
-"backup first."
-msgstr ""
-
 #: oc-includes/osclass/install-functions.php
 msgid "This database already has Shopclass tables in it. Choose a different table "
-msgstr ""
-
-#: oc-admin/themes/modern/tools/database.php
-msgid "This database has"
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
@@ -10341,6 +10367,10 @@ msgstr ""
 #: oc-admin/themes/modern/upgrade/index.php
 #: oc-includes/osclass/classes/AdminMenu.php
 msgid "Tools"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "Tools &raquo; Upgrade"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
@@ -11307,6 +11337,7 @@ msgstr ""
 msgid "Welcome to Shopclass"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/database.php
 #: oc-admin/themes/modern/tools/jobs.php
 msgid "What"
 msgstr ""
@@ -11568,12 +11599,16 @@ msgstr ""
 msgid "Your database already matched this version of Shopclass."
 msgstr ""
 
+#: oc-admin/themes/modern/tools/database.php
+msgid "Your database has"
+msgstr ""
+
 #: oc-admin/themes/modern/upgrade/index.php
 msgid "Your database is up to date"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/database.php
-msgid "Your database matches what Shopclass declares."
+msgid "Your database matches what Shopclass expects."
 msgstr ""
 
 #: oc-includes/osclass/classes/actions/ItemActions.php
@@ -11869,6 +11904,7 @@ msgstr ""
 msgid "minutes"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/database.php
 #: oc-admin/themes/modern/tools/system-info.php
 msgid "missing"
 msgstr ""

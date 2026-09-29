@@ -565,9 +565,18 @@ class CAdminTools extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=logs');
                 break;
             case 'database':
+                $pendingUpgrade = $this->pendingMigrations() !== array();
                 // Repair posts back to this URL so the result renders here, under the right menu entry.
                 if (Params::getServerParam('REQUEST_METHOD') === 'POST' && Params::getParam('repair') !== '') {
                     if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=database')) {
+                        break;
+                    }
+                    if ($pendingUpgrade) {
+                        osc_add_flash_error_message(
+                            _m('An upgrade is waiting. Finish it first: it fixes most of these safely.'),
+                            'admin'
+                        );
+                        $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=database');
                         break;
                     }
                     osc_csrf_check();
@@ -578,6 +587,7 @@ class CAdminTools extends AdminSecBaseModel
                     }
                     $this->_exportVariableToView('db_repair', $repair);
                 }
+                $this->_exportVariableToView('db_pending_upgrade', $pendingUpgrade);
                 $this->exportSchemaFindings();
                 $this->doView('tools/database.php');
                 break;
@@ -585,6 +595,28 @@ class CAdminTools extends AdminSecBaseModel
             default:
                 $this->doView('tools/system-info.php');
                 break;
+        }
+    }
+
+    /**
+     * Migrations not yet applied, in run order. Empty when there are none, or when the
+     * ledger or migrations directory cannot be read -- the Database screen falls back to
+     * treating that the same as "nothing pending" and lets SchemaDoctor report the real error.
+     *
+     * @return string[]
+     */
+    private function pendingMigrations(): array
+    {
+        try {
+            $runner = new \mindstellar\migration\MigrationRunner(
+                \mindstellar\database\Connection::instance(),
+                osc_lib_path() . 'osclass/installer/migrations'
+            );
+            $runner->ensureLedger();
+
+            return $runner->pending();
+        } catch (Throwable $e) {
+            return array();
         }
     }
 

@@ -305,6 +305,7 @@ you find.
 
 ### Changed
 
+- **Tools → Database** sorts what it finds by what to do: what Repair can fix, extra items to leave alone, and what needs a closer look. Repair waits while an upgrade is pending.
 - Upgrades run the database migrations only, so the "some queries failed" screen is gone.
 - The installer checks for MySQL 5.7.5+ or MariaDB 10.2+.
 - Pending e-mail address changes expire after 7 days.

@@ -188,9 +188,11 @@ Run it after any change to the server, and put it in your monitoring.
 ## Database
 
 **Tools → Database** lists where the database differs from what ShopClass
-declares. **Repair** adds missing tables, columns, indexes and foreign keys,
-corrects column types and defaults, and shows what it ran. It never removes a table, column or index, so anything a plugin added stays. It may rebuild a core primary or foreign key to correct it, so take a backup first. From
-a shell: `php oc-cli.php db:doctor` reports, `php oc-cli.php db:repair` repairs.
+expects, grouped by what to do about it. **Repair** adds a missing table,
+column or index, and fixes a column with the wrong type — take a backup
+first. An extra column or index is left alone; a nullability difference or
+an index with the wrong columns needs a person to look at it. From a shell:
+`php oc-cli.php db:doctor` reports, `php oc-cli.php db:repair` repairs.
 
 ## A maintenance routine
 
