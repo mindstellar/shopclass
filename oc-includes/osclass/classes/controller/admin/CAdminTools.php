@@ -19,6 +19,7 @@ if (!defined('ABS_PATH')) {
 /**
  * Class CAdminTools
  */
+use mindstellar\admin\DatabaseTools;
 use mindstellar\admin\ListPaging;
 use mindstellar\utility\AjaxResponse;
 
@@ -46,32 +47,36 @@ class CAdminTools extends AdminSecBaseModel
         parent::doModel();
 
         switch ($this->action) {
-            case ('import'):         // calling import view
-                $this->doView('tools/import.php');
+            case ('import'):
+                // Restoring a backup is now a part of Tools > Database; old links land there.
+                $this->redirectTo(osc_admin_base_url(true) . DatabaseTools::movedTo('import'));
                 break;
             case ('import_post'):
-                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=import')) {
+                $back = osc_admin_base_url(true) . DatabaseTools::movedTo('import');
+                if ($this->refuseOnDemo($back)) {
                     break;
                 }
-                // calling
                 osc_csrf_check();
-                $sql = Params::getFiles('sql');
-                if (isset($sql['size']) && $sql['size'] != 0) {
-                    $content_file = file_get_contents($sql['tmp_name']);
-
+                $sql    = Params::getFiles('sql');
+                $handle = isset($sql['size'], $sql['tmp_name']) && $sql['size'] != 0 && is_uploaded_file($sql['tmp_name'])
+                    ? fopen($sql['tmp_name'], 'rb')
+                    : false;
+                if ($handle !== false) {
                     try {
-                        \mindstellar\database\Connection::instance()
-                            ->executeScript($content_file);
+                        DatabaseTools::restore(\mindstellar\database\Connection::instance(), $handle);
                         osc_calculate_location_slug(osc_subdomain_type());
                         osc_add_flash_ok_message(_m('Import complete'), 'admin');
                     } catch (\mindstellar\database\DbException $e) {
                         osc_add_flash_error_message(_m('There was a problem importing data to the database'), 'admin');
                     }
+                    fclose($handle);
                 } else {
                     osc_add_flash_warning_message(_m('No file was uploaded'), 'admin');
                 }
-                @unlink($sql['tmp_name']);
-                $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=import');
+                if (!empty($sql['tmp_name'])) {
+                    @unlink($sql['tmp_name']);
+                }
+                $this->redirectTo($back);
                 break;
             case ('category'):
                 $this->doView('tools/category.php');
@@ -171,10 +176,11 @@ class CAdminTools extends AdminSecBaseModel
                 break;
             case ('backup'):
             case ('backup_post'):
-                $this->doView('tools/backup.php');
+                // The backup screen is now a part of Tools > Database; old links land there.
+                $this->redirectTo(osc_admin_base_url(true) . DatabaseTools::movedTo($this->action));
                 break;
             case ('backup-sql'):
-                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=backup')) {
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . DatabaseTools::movedTo('backup'))) {
                     break;
                 }
                 osc_csrf_check();
@@ -211,91 +217,56 @@ class CAdminTools extends AdminSecBaseModel
                         osc_add_flash_ok_message($msg, 'admin');
                         break;
                 }
-                $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=backup');
+                $this->redirectTo(osc_admin_base_url(true) . DatabaseTools::movedTo('backup'));
                 break;
             case ('backup-sql_file'):
-                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=backup')) {
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . DatabaseTools::movedTo('backup'))) {
                     break;
                 }
+                osc_csrf_check();
                 //databasse dump...
 
                 $filename = 'Osclass_mysqlbackup.' . date('YmdHis') . '.sql';
                 $path     = sys_get_temp_dir() . '/';
 
+                // Same codes as the server save; osc_dbdump() returns -4 for an unwritable folder.
                 switch (osc_dbdump($path, $filename)) {
                     case (-1):
-                        $msg = _m('Path is empty');
-                        osc_add_flash_error_message($msg, 'admin');
+                        osc_add_flash_error_message(_m('Path is empty'), 'admin');
                         break;
                     case (-2):
-                        $msg = sprintf(
-                            _m('Could not connect with the database. Error: %s'),
-                            \mindstellar\database\Connection::instance()->lastError()
-                        );
-                        osc_add_flash_error_message($msg, 'admin');
+                        osc_add_flash_error_message(_m('Could not connect with the database'), 'admin');
                         break;
                     case (-3):
-                        $msg = sprintf(
-                            _m('Could not select the database. Error: %s'),
-                            \mindstellar\database\Connection::instance()->lastError()
-                        );
-                        osc_add_flash_error_message($msg, 'admin');
+                        osc_add_flash_error_message(_m('There are no tables to back up'), 'admin');
                         break;
                     case (-4):
-                        $msg = _m('There are no tables to back up');
-                        osc_add_flash_error_message($msg, 'admin');
-                        break;
-                    case (-5):
-                        $msg = _m('The folder is not writable');
-                        osc_add_flash_error_message($msg, 'admin');
+                        osc_add_flash_error_message(_m('The folder is not writable'), 'admin');
                         break;
                     default:
-                        $msg = _m('Backup completed successfully');
-                        osc_add_flash_ok_message($msg, 'admin');
-                        header('Content-Description: File Transfer');
-                        header('Content-Type: application/octet-stream');
-                        header('Content-Disposition: attachment; filename=' . basename($filename));
-                        header('Content-Transfer-Encoding: binary');
-                        header('Expires: 0');
-                        header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
-                        header('Pragma: public');
-                        header('Content-Length: ' . filesize($path . $filename));
-                        flush();
-                        readfile($path . $filename);
-                        exit;
-                        break;
+                        $this->sendFile($path . $filename);
                 }
-                $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=backup');
+                @unlink($path . $filename);
+                $this->redirectTo(osc_admin_base_url(true) . DatabaseTools::movedTo('backup'));
                 break;
             case ('backup-zip_file'):
-                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=backup')) {
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=upgrade#backup-files')) {
                     break;
                 }
+                osc_csrf_check();
                 $filename = 'Osclass_backup.' . date('YmdHis') . '.zip';
                 $path     = sys_get_temp_dir() . '/';
 
                 if (osc_zip_folder(osc_base_path(), $path . $filename)) {
-                    $msg = _m('Archived successfully!');
-                    osc_add_flash_ok_message($msg, 'admin');
-                    header('Content-Description: File Transfer');
-                    header('Content-Type: application/octet-stream');
-                    header('Content-Disposition: attachment; filename=' . basename($filename));
-                    header('Content-Transfer-Encoding: binary');
-                    header('Expires: 0');
-                    header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
-                    header('Pragma: public');
-                    header('Content-Length: ' . filesize($path . $filename));
-                    flush();
-                    readfile($path . $filename);
-                    exit;
+                    $this->sendFile($path . $filename);
                 }
 
                 $msg = _m('Error, the zip file was not created in the specified directory');
                 osc_add_flash_error_message($msg, 'admin');
-                $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=backup');
+                $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=upgrade#backup-files');
                 break;
             case ('backup-zip'):
-                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=backup')) {
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=upgrade#backup-files')) {
                     break;
                 }
                 //zip of the code just to back it up
@@ -318,7 +289,7 @@ class CAdminTools extends AdminSecBaseModel
                     $msg = _m('Error, the zip file was not created in the specified directory');
                     osc_add_flash_error_message($msg, 'admin');
                 }
-                $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=backup');
+                $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=upgrade#backup-files');
                 break;
             case ('maintenance'):
                 if (defined('DEMO')) {
@@ -565,31 +536,7 @@ class CAdminTools extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=logs');
                 break;
             case 'database':
-                $pendingUpgrade = $this->pendingMigrations() !== array();
-                // Repair posts back to this URL so the result renders here, under the right menu entry.
-                if (Params::getServerParam('REQUEST_METHOD') === 'POST' && Params::getParam('repair') !== '') {
-                    if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=database')) {
-                        break;
-                    }
-                    if ($pendingUpgrade) {
-                        osc_add_flash_error_message(
-                            _m('An upgrade is waiting. Finish it first: it fixes most of these safely.'),
-                            'admin'
-                        );
-                        $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=database');
-                        break;
-                    }
-                    osc_csrf_check();
-                    try {
-                        $repair = (new \mindstellar\database\SchemaReconciler(\mindstellar\database\Connection::instance()))->repair();
-                    } catch (Throwable $e) {
-                        $repair = array('ran' => array(), 'failed' => array($e->getMessage()));
-                    }
-                    $this->_exportVariableToView('db_repair', $repair);
-                }
-                $this->_exportVariableToView('db_pending_upgrade', $pendingUpgrade);
-                $this->exportSchemaFindings();
-                $this->doView('tools/database.php');
+                $this->databasePage();
                 break;
             case 'system_info':
             default:
@@ -599,43 +546,114 @@ class CAdminTools extends AdminSecBaseModel
     }
 
     /**
-     * Migrations not yet applied, in run order. Empty when there are none, or when the
-     * ledger or migrations directory cannot be read -- the Database screen falls back to
-     * treating that the same as "nothing pending" and lets SchemaDoctor report the real error.
+     * Send a backup file as a download, delete it, and end the request. Output buffers are
+     * dropped first so a large file streams instead of filling memory.
      *
-     * @return string[]
-     */
-    private function pendingMigrations(): array
-    {
-        try {
-            $runner = new \mindstellar\migration\MigrationRunner(
-                \mindstellar\database\Connection::instance(),
-                osc_lib_path() . 'osclass/installer/migrations'
-            );
-            $runner->ensureLedger();
-
-            return $runner->pending();
-        } catch (Throwable $e) {
-            return array();
-        }
-    }
-
-    /**
-     * Hand the SchemaDoctor findings to the Database view, or the error that stopped them.
+     * @param string $file
      *
      * @return void
      */
-    private function exportSchemaFindings(): void
+    private function sendFile(string $file): void
     {
-        try {
-            $findings = (new \mindstellar\database\SchemaDoctor(\mindstellar\database\Connection::instance()))->diagnose();
-            $error    = '';
-        } catch (Throwable $e) {
-            $findings = array();
-            $error    = $e->getMessage();
+        while (ob_get_level() > 0) {
+            ob_end_clean();
         }
+        header('Content-Description: File Transfer');
+        header('Content-Type: application/octet-stream');
+        header('Content-Disposition: attachment; filename=' . basename($file));
+        header('Content-Transfer-Encoding: binary');
+        header('Expires: 0');
+        header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
+        header('Pragma: public');
+        header('Content-Length: ' . filesize($file));
+        readfile($file);
+        @unlink($file);
+        exit;
+    }
+
+    /**
+     * Tools > Database: status, waiting updates, check and repair, and backup. The update
+     * and Repair post back here so their result renders in place.
+     *
+     * @return void
+     */
+    private function databasePage(): void
+    {
+        $self    = osc_admin_base_url(true) . '?page=tools&action=database';
+        $conn    = \mindstellar\database\Connection::instance();
+        $dir     = osc_lib_path() . 'osclass/installer/migrations';
+        $pending = DatabaseTools::pending($conn, $dir);
+        $isPost  = Params::getServerParam('REQUEST_METHOD') === 'POST';
+
+        if ($isPost && Params::getParam('upgrade') !== '') {
+            if ($this->refuseOnDemo($self)) {
+                return;
+            }
+            osc_csrf_check();
+            $this->_exportVariableToView('db_upgrade', DatabaseTools::upgrade());
+            osc_reset_preferences();
+            $pending = DatabaseTools::pending($conn, $dir);
+        }
+
+        list($findings, $error) = $this->schemaFindings();
+
+        if ($isPost && Params::getParam('repair') !== '') {
+            if ($this->refuseOnDemo($self)) {
+                return;
+            }
+            osc_csrf_check();
+            if ($pending !== array()) {
+                osc_add_flash_error_message(
+                    _m('An update is waiting. Run it first: it fixes most of these safely.'),
+                    'admin'
+                );
+                $this->redirectTo($self);
+
+                return;
+            }
+            if ($error === '' && DatabaseTools::repairable($findings) === array()) {
+                osc_add_flash_info_message(_m('Nothing needs repairing.'), 'admin');
+                $this->redirectTo($self);
+
+                return;
+            }
+            try {
+                $repair = (new \mindstellar\database\SchemaReconciler($conn))->repair();
+            } catch (Throwable $e) {
+                $repair = array('ran' => array(), 'failed' => array($e->getMessage()));
+            }
+            $this->_exportVariableToView('db_repair', $repair);
+            list($findings, $error) = $this->schemaFindings();
+        }
+
+        $this->_exportVariableToView('db_pending', $pending);
         $this->_exportVariableToView('db_findings', $findings);
         $this->_exportVariableToView('db_findings_error', $error);
+        $this->_exportVariableToView('db_size', DatabaseTools::size($conn, DB_TABLE_PREFIX));
+        try {
+            $server = $conn->serverInfo();
+        } catch (Throwable $e) {
+            $server = '';
+        }
+        $this->_exportVariableToView('db_server', $server);
+        $this->doView('tools/database.php');
+    }
+
+    /**
+     * The SchemaDoctor findings, and the error that stopped them ('' when none).
+     *
+     * @return array{0:array<int,array<string,string>>,1:string}
+     */
+    private function schemaFindings(): array
+    {
+        try {
+            return array(
+                (new \mindstellar\database\SchemaDoctor(\mindstellar\database\Connection::instance()))->diagnose(),
+                '',
+            );
+        } catch (Throwable $e) {
+            return array(array(), $e->getMessage());
+        }
     }
 
     /**

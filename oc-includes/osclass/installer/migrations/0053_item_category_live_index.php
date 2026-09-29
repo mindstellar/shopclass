@@ -15,6 +15,8 @@ use mindstellar\migration\SchemaProbes;
 /**
  * Add t_item.idx_category_live, which serves the category search and its count. Skipped
  * when an index on the same columns already exists under any name.
+ *
+ * @title Speed up category pages and their counts
  */
 return new class () implements MigrationInterface {
     use SchemaProbes;

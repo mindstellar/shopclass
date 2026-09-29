@@ -135,6 +135,8 @@ check('...and applies nothing', !in_array('0001_lock_probe.sql', $probeRunner->a
     && $admin->query("SHOW TABLES LIKE 'oc_t_lock_probe'")->num_rows === 0);
 $result = json_decode((string) \mindstellar\upgrade\Osclass::upgradeDB(), true);
 pin('upgradeDB() reports the other upgrade', array(3, 'Another upgrade is already running. Wait for it to finish, then try again.'), array((int) ($result['error'] ?? 0), $result['message'] ?? ''));
+$screen = \mindstellar\admin\DatabaseTools::upgrade();
+pin('Tools > Database update reports the other upgrade', array(3, 'Another upgrade is already running. Wait for it to finish, then try again.', array()), array($screen['error'], $screen['message'], $screen['applied']));
 
 $admin->query("SELECT RELEASE_LOCK('" . $admin->real_escape_string($probeRunner->lockName()) . "')");
 $done = $probeRunner->run();

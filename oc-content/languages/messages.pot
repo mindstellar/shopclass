@@ -287,7 +287,7 @@ msgid "An error has occurred"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
-msgid "An upgrade is waiting. Finish it first: it fixes most of these safely."
+msgid "An update is waiting. Run it first: it fixes most of these safely."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
@@ -523,18 +523,10 @@ msgstr ""
 msgid "Could not connect with the database"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
-msgid "Could not connect with the database. Error: %s"
-msgstr ""
-
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
 msgid ""
 "Could not read the list of translations at %s. This server has to be able "
 "to reach it."
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
-msgid "Could not select the database. Error: %s"
 msgstr ""
 
 #: oc-includes/osclass/classes/actions/UserActions.php
@@ -1266,6 +1258,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid "Nothing matches the enabled rules."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "Nothing needs repairing."
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-public-profile-content.php

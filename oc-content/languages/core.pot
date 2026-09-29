@@ -45,6 +45,12 @@ msgstr ""
 msgid "%1$s in %2$s"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/database.php
+msgid ""
+"%1$s is older than Shopclass supports. Ask your host for MySQL %2$s or "
+"MariaDB %3$s or newer."
+msgstr ""
+
 #: oc-includes/osclass/classes/settings/SettingsImage.php
 msgid "%1$s must be %2$d KB or smaller"
 msgstr ""
@@ -135,6 +141,12 @@ msgstr[1] ""
 msgid "%d continuing"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/database.php
+msgid "%d database update is waiting."
+msgid_plural "%d database updates are waiting."
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-includes/osclass/helpers/hAdminUi.php
 msgid "%d day"
 msgid_plural "%d days"
@@ -144,6 +156,18 @@ msgstr[1] ""
 #: oc-admin/themes/modern/functions.php
 msgid "%d days"
 msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "%d difference Repair can fix."
+msgid_plural "%d differences Repair can fix."
+msgstr[0] ""
+msgstr[1] ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "%d difference needs a closer look."
+msgid_plural "%d differences need a closer look."
+msgstr[0] ""
+msgstr[1] ""
 
 #: oc-includes/osclass/classes/job/JobWorker.php
 msgid "%d done"
@@ -199,6 +223,12 @@ msgstr[1] ""
 #: oc-admin/themes/modern/fields/submissions.php
 msgid "%d submissions"
 msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "%d table"
+msgid_plural "%d tables"
+msgstr[0] ""
+msgstr[1] ""
 
 #: oc-includes/osclass/classes/admin/ui/Editor.php
 msgid "%d things need fixing before this can be saved."
@@ -885,6 +915,12 @@ msgid ""
 "let it try again at once."
 msgstr ""
 
+#: oc-admin/themes/modern/tools/database.php
+msgid ""
+"Adds what is missing and fixes column types. Extra columns and indexes are "
+"left alone."
+msgstr ""
+
 #: oc-includes/osclass/emails.php
 msgid "Admin"
 msgstr ""
@@ -1156,8 +1192,10 @@ msgstr ""
 msgid "An update is ready for this theme. "
 msgstr ""
 
-#: oc-admin/themes/modern/tools/database.php
-msgid "An upgrade is waiting. Finish it first: it fixes most of these safely."
+#: oc-admin/themes/modern/tools/upgrade.php
+msgid ""
+"An upgrade replaces the core files. Save a zip of the whole site folder "
+"first: photos, plugins, themes and the core."
 msgstr ""
 
 #: oc-admin/themes/modern/items/settings.php
@@ -1518,6 +1556,14 @@ msgstr ""
 msgid "Back to themes"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/upgrade.php
+msgid "Back up site files"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "Back up the database"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/storage.php
 msgid ""
 "Backfill existing images between local disk and remote storage. Each action "
@@ -1543,32 +1589,12 @@ msgstr ""
 msgid "Background jobs"
 msgstr ""
 
-#: oc-admin/themes/modern/tools/backup.php
+#: oc-admin/themes/modern/tools/database.php
 msgid "Backup"
 msgstr ""
 
-#: oc-admin/themes/modern/tools/backup.php
-msgid "Backup Method"
-msgstr ""
-
-#: oc-admin/themes/modern/tools/backup.php
-msgid "Backup SQL (download file)"
-msgstr ""
-
-#: oc-admin/themes/modern/tools/backup.php
-msgid "Backup SQL (store on server)"
-msgstr ""
-
-#: oc-includes/osclass/classes/AdminMenu.php
-msgid "Backup data"
-msgstr ""
-
-#: oc-admin/themes/modern/tools/backup.php
-msgid "Backup files (store on server)"
-msgstr ""
-
-#: oc-admin/themes/modern/tools/backup.php
-msgid "Backup folder"
+#: oc-admin/themes/modern/tools/database.php
+msgid "Backup file (.sql)"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info.php
@@ -2087,6 +2113,10 @@ msgstr ""
 msgid "Check all"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/database.php
+msgid "Check and repair"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/locations/data.php
 msgid "Check for updates"
 msgstr ""
@@ -2170,10 +2200,6 @@ msgstr ""
 #: oc-admin/themes/modern/items/index.php
 #: oc-admin/themes/modern/users/index.php
 msgid "Choose an option"
-msgstr ""
-
-#: oc-admin/themes/modern/tools/backup.php
-msgid "Choose backup method"
 msgstr ""
 
 #: oc-admin/themes/modern/functions.php
@@ -2457,12 +2483,6 @@ msgstr ""
 msgid "Company"
 msgstr ""
 
-#: oc-admin/themes/modern/tools/database.php
-msgid ""
-"Compares your database with what Shopclass expects, and lists what is "
-"different. "
-msgstr ""
-
 #: oc-admin/themes/modern/parts/market.php
 msgid "Compatibility"
 msgstr ""
@@ -2655,6 +2675,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
 msgid "Could not reach the catalog: %s."
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "Could not read the database structure: %s"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/database.php
@@ -2972,6 +2996,14 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info.php
 msgid "Database server"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "Database update"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "Database version"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/index.php
@@ -3457,6 +3489,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/languages/index.php
 msgid "Download language"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "Download to this computer"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
@@ -3964,8 +4000,22 @@ msgstr ""
 msgid "Every published theme is already installed"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/database.php
+msgid ""
+"Every statement in the file runs against your live database. It can change "
+"or delete what is there now, and it cannot be undone."
+msgstr ""
+
 #: oc-includes/osclass/installer/basic_data.php
 msgid "Everything Else"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "Everything about your database in one place: its state, waiting updates, "
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "Everything matches. Nothing to repair."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/list.php
@@ -4130,16 +4180,13 @@ msgstr ""
 msgid "Fields"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/database.php
 #: oc-includes/osclass/classes/datatables/MediaDataTable.php
 msgid "File"
 msgstr ""
 
 #: oc-includes/osclass/classes/storage/StorageJobs.php
 msgid "File #%d"
-msgstr ""
-
-#: oc-admin/themes/modern/tools/import.php
-msgid "File (.sql)"
 msgstr ""
 
 #: oc-includes/AjaxUploader.php
@@ -4193,10 +4240,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/index.php
 msgid "Find one in Browse, or upload its zip file."
-msgstr ""
-
-#: oc-admin/themes/modern/tools/database.php
-msgid "Finish the upgrade first. Most of these will then be gone."
 msgstr ""
 
 #: oc-includes/osclass/classes/Pagination.php
@@ -4690,12 +4733,6 @@ msgid ""
 "can make you wait."
 msgstr ""
 
-#: oc-admin/themes/modern/tools/backup.php
-msgid ""
-"If you don't specify a backup folder, the backup files will be created in "
-"the "
-msgstr ""
-
 #: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
 msgid ""
 "If you see a captcha widget below, the active provider is configured "
@@ -4747,7 +4784,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/languages/index.php
 #: oc-admin/themes/modern/settings/keywordBlock.php
-#: oc-admin/themes/modern/tools/import.php
 msgid "Import"
 msgstr ""
 
@@ -4769,11 +4805,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/languages/index.php
 msgid "Import a language from the catalog or upload a package to add one."
-msgstr ""
-
-#: oc-admin/themes/modern/tools/import.php
-#: oc-includes/osclass/classes/AdminMenu.php
-msgid "Import data"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/form.php
@@ -6432,6 +6463,10 @@ msgstr ""
 msgid "New"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/database.php
+msgid "New Shopclass files are in place, but the database has not caught up yet. "
+msgstr ""
+
 #: oc-admin/themes/modern/settings/locations/preview.php
 msgid "New address"
 msgstr ""
@@ -6951,6 +6986,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
 msgid "Nothing to browse yet"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "Nothing was waiting. The database is up to date."
 msgstr ""
 
 #: oc-admin/themes/modern/items/settings.php
@@ -7505,6 +7544,14 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info.php
 msgid "Photos per listing"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "Photos, plugins and themes are files, not database: back them up on %s."
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "Pick a folder the public cannot open."
 msgstr ""
 
 #: oc-admin/themes/modern/fields/submissions.php
@@ -8200,6 +8247,22 @@ msgstr ""
 msgid "Restaurant - Food Service"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/database.php
+msgid "Restore"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "Restore from a backup"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "Restore from this file"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "Restore from this file?"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Restrictions"
 msgstr ""
@@ -8240,12 +8303,32 @@ msgstr ""
 msgid "Rows per page"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/database.php
+msgid "Run an .sql backup file against this database, such as one saved above."
+msgstr ""
+
 #: oc-admin/themes/modern/tools/cleanup.php
 msgid "Run cleanup now"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/cleanup.php
 msgid "Run cleanup now?"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "Run database update"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "Run it"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "Run the database update first. Most of these will then be gone."
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "Run the database update?"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/jobs.php
@@ -8288,10 +8371,10 @@ msgstr ""
 msgid "Save"
 msgstr ""
 
-#: oc-admin/themes/modern/tools/backup.php
+#: oc-admin/themes/modern/tools/database.php
 msgid ""
-"Save a backup of all of your site's information: listings, users and "
-"configuration."
+"Save a copy of the database: listings, users, categories and settings. Take "
+"one before an update or a repair."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
@@ -8321,6 +8404,10 @@ msgstr ""
 #: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
 #: oc-includes/osclass/helpers/hAdminUi.php
 msgid "Save changes"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "Save in a folder on the server"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsForm.php
@@ -8550,6 +8637,10 @@ msgid ""
 "duplicate, etc."
 msgstr ""
 
+#: oc-admin/themes/modern/tools/database.php
+msgid "See the list"
+msgstr ""
+
 #: oc-includes/osclass/classes/form/FieldForm.php
 msgid "Select"
 msgstr ""
@@ -8745,6 +8836,7 @@ msgid "Serve files through time-limited signed URLs."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/cache.php
+#: oc-admin/themes/modern/tools/database.php
 msgid "Server"
 msgstr ""
 
@@ -8754,6 +8846,11 @@ msgstr ""
 
 #: oc-includes/AjaxUploader.php
 msgid "Server error. Upload directory isn't writable."
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+#: oc-admin/themes/modern/tools/upgrade.php
+msgid "Server folder"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MailServerSettingsForm.php
@@ -8938,8 +9035,8 @@ msgstr ""
 #: oc-includes/osclass/classes/upgrade/AutoSecurityUpdate.php
 msgid ""
 "Shopclass installed the files of security update %2$s on %1$s, but the "
-"database step failed: %3$s. Open Tools, then Update, in the admin to finish "
-"it."
+"database step failed: %3$s. Open Tools, then Database, in the admin to "
+"finish it."
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install.php
@@ -8983,6 +9080,7 @@ msgid "Shopclass upgraded successfully."
 msgstr ""
 
 #: oc-admin/themes/modern/main/index.php
+#: oc-admin/themes/modern/tools/database.php
 #: oc-admin/themes/modern/tools/system-info.php
 msgid "Shopclass version"
 msgstr ""
@@ -9142,6 +9240,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/media/index.php
 #: oc-admin/themes/modern/parts/market.php
+#: oc-admin/themes/modern/tools/database.php
 msgid "Size"
 msgstr ""
 
@@ -9293,6 +9392,7 @@ msgstr ""
 #: oc-admin/themes/modern/settings/locations/form.php
 #: oc-admin/themes/modern/settings/locations/list.php
 #: oc-admin/themes/modern/tools/cache.php
+#: oc-admin/themes/modern/tools/database.php
 #: oc-includes/osclass/classes/admin/ui/Editor.php
 #: oc-includes/osclass/classes/datatables/CommentsDataTable.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
@@ -9378,7 +9478,6 @@ msgstr ""
 msgid "Submissions"
 msgstr ""
 
-#: oc-admin/themes/modern/tools/backup.php
 #: oc-includes/osclass/helpers/hForms.php
 msgid "Submit"
 msgstr ""
@@ -9646,6 +9745,16 @@ msgstr ""
 msgid "The database Shopclass should use."
 msgstr ""
 
+#: oc-admin/themes/modern/tools/upgrade.php
+msgid "The database is backed up on %s."
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid "The database is updated. %d update ran."
+msgid_plural "The database is updated. %d updates ran."
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-includes/osclass/install-functions.php
 msgid ""
 "The database returned an unexpected error (code %s). Your hosting support "
@@ -9656,6 +9765,7 @@ msgstr ""
 msgid "The database server rejected that username and password. Re-copy them from "
 msgstr ""
 
+#: oc-admin/themes/modern/tools/database.php
 #: oc-includes/osclass/classes/upgrade/AutoSecurityUpdate.php
 msgid "The database update failed."
 msgstr ""
@@ -9778,6 +9888,12 @@ msgstr ""
 msgid "The plugin folder is not writable on your server so you cannot upload "
 msgstr ""
 
+#: oc-admin/themes/modern/tools/database.php
+msgid ""
+"The same update the command line runs with db:upgrade. On a large site it "
+"can take a few minutes."
+msgstr ""
+
 #: oc-admin/themes/modern/settings/locations.php
 msgid "The search could not be run. Check your connection and try again."
 msgstr ""
@@ -9890,6 +10006,12 @@ msgstr ""
 msgid "The work they were going to do will never happen. This can't be undone."
 msgstr ""
 
+#: oc-admin/themes/modern/tools/upgrade.php
+msgid ""
+"The zip is saved here. Pick a folder the public cannot open. A large site "
+"can run out of time: then use the command line."
+msgstr ""
+
 #: oc-includes/osclass/classes/market/Installer.php
 msgid "Theme installed."
 msgstr ""
@@ -9990,6 +10112,12 @@ msgstr ""
 msgid "This admin signs in with a code from an authenticator app."
 msgstr ""
 
+#: oc-admin/themes/modern/tools/database.php
+msgid ""
+"This applies the waiting updates in order. Keep the page open until it "
+"finishes. Take a backup first."
+msgstr ""
+
 #: oc-admin/themes/modern/billing/wallet.php
 msgid "This balance is below zero, usually after a refund of credits that had "
 msgstr ""
@@ -10076,12 +10204,6 @@ msgid ""
 "of Service or any other help information."
 msgstr ""
 
-#: oc-admin/themes/modern/tools/backup.php
-msgid ""
-"This is the folder in which your backups will be created. We recommend that "
-"you "
-msgstr ""
-
 #: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
 msgid "This key is valid"
 msgstr ""
@@ -10106,6 +10228,12 @@ msgstr ""
 msgid ""
 "This option will send an email X days before an ad expires to the author. 0 "
 "for no email."
+msgstr ""
+
+#: oc-admin/themes/modern/tools/database.php
+msgid ""
+"This overwrites data. The file can change or delete anything in your "
+"database, and it cannot be undone. Take a backup first."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
@@ -10354,11 +10482,9 @@ msgstr ""
 msgid "Too old. Shopclass is built and tested against PHP 8.0 and up."
 msgstr ""
 
-#: oc-admin/themes/modern/tools/backup.php
 #: oc-admin/themes/modern/tools/cache.php
 #: oc-admin/themes/modern/tools/cleanup.php
 #: oc-admin/themes/modern/tools/database.php
-#: oc-admin/themes/modern/tools/import.php
 #: oc-admin/themes/modern/tools/jobs.php
 #: oc-admin/themes/modern/tools/logs.php
 #: oc-admin/themes/modern/tools/maintenance.php
@@ -10369,8 +10495,8 @@ msgstr ""
 msgid "Tools"
 msgstr ""
 
-#: oc-admin/themes/modern/tools/database.php
-msgid "Tools &raquo; Upgrade"
+#: oc-admin/themes/modern/tools/upgrade.php
+msgid "Tools » Database"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
@@ -10574,6 +10700,7 @@ msgstr ""
 msgid "Unable to unzip package file."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/DatabaseTools.php
 #: oc-includes/osclass/classes/upgrade/Osclass.php
 msgid "Unable to upgrade Database"
 msgstr ""
@@ -10681,6 +10808,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/plugins/configuration.php
 #: oc-admin/themes/modern/settings/locations/data.php
+#: oc-admin/themes/modern/tools/database.php
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
 msgid "Update"
 msgstr ""
@@ -10788,6 +10916,7 @@ msgstr ""
 msgid "Upgrade Now to "
 msgstr ""
 
+#: oc-admin/themes/modern/tools/database.php
 #: oc-includes/osclass/classes/AdminMenu.php
 msgid "Upgrade Shopclass"
 msgstr ""
@@ -10826,12 +10955,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/languages/index.php
 msgid "Upload language"
-msgstr ""
-
-#: oc-admin/themes/modern/tools/import.php
-msgid ""
-"Upload registers from other Shopclass installations or upload new "
-"geographic information to your site. "
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
@@ -11603,12 +11726,16 @@ msgstr ""
 msgid "Your database has"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/database.php
+msgid "Your database has every table, column and index Shopclass expects."
+msgstr ""
+
 #: oc-admin/themes/modern/upgrade/index.php
 msgid "Your database is up to date"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/database.php
-msgid "Your database matches what Shopclass expects."
+msgid "Your database is up to date and healthy."
 msgstr ""
 
 #: oc-includes/osclass/classes/actions/ItemActions.php

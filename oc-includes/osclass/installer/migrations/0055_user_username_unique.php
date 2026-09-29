@@ -17,6 +17,8 @@ use mindstellar\migration\SchemaProbes;
  * when that is taken), and every duplicate but the oldest account gets "_<id>" appended,
  * compared as the column's collation compares them. Then uk_user_username replaces
  * idx_s_username. Each step reads the current rows, so a re-run is safe.
+ *
+ * @title Make every username unique
  */
 return new class () implements MigrationInterface {
     use SchemaProbes;

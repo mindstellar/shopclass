@@ -22,6 +22,8 @@ use mindstellar\migration\SchemaProbes;
  * The key is added with foreign_key_checks off, so InnoDB builds it in place in well under
  * a second instead of copying and write-locking the table. That is only safe because the
  * orphans are gone.
+ *
+ * @title Link listings, custom fields, messages and alerts to what they belong to
  */
 return new class () implements MigrationInterface {
     use SchemaProbes;

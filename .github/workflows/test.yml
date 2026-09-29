@@ -530,6 +530,9 @@ jobs:
       # Upgrades run migrations only; db:repair is the opt-in reconciler.
       - name: Schema repair
         run: php tests/schema-repair.php
+      # A backup is written and restored without holding a table in memory.
+      - name: Backup and restore
+        run: php tests/backup-restore.php
       # ONLY_FULL_GROUP_BY rejects a grouped query outright, and every one of them is
       # wrapped in a catch that returns an empty array — so a site that turns the strict
       # modes on loses its alert emails, its custom fields and its statistics charts with
@@ -586,3 +589,9 @@ jobs:
       # name with brackets makes invalid is one browsers silently skip.
       - name: Location admin view
         run: php tests/location-admin-view.php
+      # Repair is offered and run only when something is fixable, and old Tools URLs resolve.
+      - name: Admin database page
+        run: php tests/admin-database-page.php
+      # A script is split statement by statement from a stream, quoted values intact.
+      - name: SQL stream
+        run: php tests/sql-stream.php

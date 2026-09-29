@@ -232,4 +232,26 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     </div>
     <!-- /settings form -->
 </div>
+<div id="backup-files">
+    <?php osc_admin_form_section(__('Back up site files'), array(
+        'spaced'     => true,
+        'intro_html' => osc_esc_html(__('An upgrade replaces the core files. Save a zip of the whole site folder first: photos, plugins, themes and the core.'))
+            . ' ' . sprintf(
+                __('The database is backed up on %s.'),
+                '<a href="' . osc_esc_html(osc_admin_base_url(true) . '?page=tools&action=database#backup') . '">'
+                . osc_esc_html(__('Tools » Database')) . '</a>'
+            ),
+    )); ?>
+    <?php osc_admin_form_open(array('page' => 'tools', 'action' => 'backup-zip')); ?>
+        <?php osc_admin_text(array(
+            'name'  => 'bck_dir',
+            'label' => __('Server folder'),
+            'value' => osc_base_path(),
+            'width' => 'key',
+            'help'  => __('The zip is saved here. Pick a folder the public cannot open. A large site can run out of time: then use the command line.'),
+        )); ?>
+    <?php osc_admin_form_close(array(
+        array('label' => __('Back up site files'), 'icon' => 'bi-file-zip', 'type' => 'submit', 'variant' => 'secondary'),
+    )); ?>
+</div>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

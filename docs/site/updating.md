@@ -18,7 +18,7 @@ easier to undo when you can put them back.
 
 ## The one-click update
 
-1. Open **Admin → Tools → Update**.
+1. Open **Admin → Tools → Upgrade Shopclass**.
 2. If a release is available, the page offers it with its changelog.
 3. Press update and wait — the updater downloads the package, replaces core
    files, and runs any pending database migrations.
@@ -165,7 +165,8 @@ Upload the new files over the old ones, replacing:
 ### 3. Run the database migration
 
 Core files alone are not an update — the schema has to catch up. Either open the
-admin panel, which offers the migration as a button, or run it from a shell:
+admin panel, which offers the migration as a button (**Tools → Database** has it
+too, as **Run database update**), or run it from a shell:
 
 ```bash
 php oc-cli.php db:upgrade

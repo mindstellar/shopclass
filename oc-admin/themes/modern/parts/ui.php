@@ -951,7 +951,9 @@ if (!function_exists('osc_admin_confirm_dialog')) {
      * would put two identical pairs of hidden inputs in the same form.
      *
      * Keys: id, title, text, confirm (label), confirm_id, method ('get'|'post'), url,
-     * fields (name => value hidden inputs), body_html (extra markup inside the form).
+     * fields (name => value hidden inputs), body_html (extra markup inside the form),
+     * confirm_form (the id of a form on the page that the confirm button submits instead,
+     * for a form the dialog cannot hold, such as a file upload).
      *
      * `text` is escaped, exactly as osc_admin_empty()'s `text` is. Pass `text_html` for
      * the rare sentence that needs a <strong>.
@@ -992,6 +994,7 @@ if (!function_exists('osc_admin_confirm_dialog')) {
                     <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
                     <button type="submit"
                             <?php if (!empty($opts['confirm_id'])) { ?>id="<?php echo osc_esc_html($opts['confirm_id']); ?>"<?php } ?>
+                            <?php if (!empty($opts['confirm_form'])) { ?>form="<?php echo osc_esc_html($opts['confirm_form']); ?>"<?php } ?>
                             class="btn btn-<?php echo $danger ? 'danger' : 'submit'; ?> btn-sm">
                         <?php echo osc_esc_html($opts['confirm'] ?? __('Delete')); ?>
                     </button>

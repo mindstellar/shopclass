@@ -419,26 +419,12 @@ class AdminMenu
             'administrator'
         );
 
-        $this->add_menu(__('Tools'), osc_admin_base_url(true) . '?page=tools&action=import', 'tools', 'administrator', 'bi bi-tools');
+        $this->add_menu(__('Tools'), osc_admin_base_url(true) . '?page=tools&action=database', 'tools', 'administrator', 'bi bi-tools');
         $this->add_submenu(
             'tools',
             __('Upgrade Shopclass'),
             osc_admin_base_url(true) . '?page=tools&action=upgrade',
             'tools_upgrade',
-            'administrator'
-        );
-        $this->add_submenu(
-            'tools',
-            __('Backup data'),
-            osc_admin_base_url(true) . '?page=tools&action=backup',
-            'tools_backup',
-            'administrator'
-        );
-        $this->add_submenu(
-            'tools',
-            __('Import data'),
-            osc_admin_base_url(true) . '?page=tools&action=import',
-            'tools_import',
             'administrator'
         );
         $this->add_submenu(

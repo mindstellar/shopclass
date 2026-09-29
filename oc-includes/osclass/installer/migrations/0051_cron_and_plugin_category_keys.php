@@ -16,6 +16,8 @@ use mindstellar\migration\SchemaProbes;
  * Give t_cron and t_plugin_category the primary keys their lookups assume, after removing
  * duplicate rows, and restore any missing core cron row. Each step probes first, so a
  * re-run is safe.
+ *
+ * @title Add missing keys to scheduled tasks and plugin categories
  */
 return new class () implements MigrationInterface {
     use SchemaProbes;

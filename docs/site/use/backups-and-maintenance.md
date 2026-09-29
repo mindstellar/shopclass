@@ -9,16 +9,15 @@ Everything here lives under **Tools** in the admin panel.
 
 ## Backups
 
-**Tools → Backup data** has a **Backup folder** field (where server-side
-backups are written) and a **Backup Method** dropdown with three choices, and a
-complete backup needs both kinds:
+A complete backup needs two parts:
 
-1. **Backup SQL (download file)** or **Backup SQL (store on server)** — a dump
-   of the database: listings, users, categories, settings, everything.
-2. **Backup files (store on server)** — a zip of the whole install folder: the
-   application code plus `oc-content/` (uploads, installed plugins and
-   themes). There is no direct-download option for this one; it is always
-   written to the backup folder.
+1. **The database** — listings, users, categories, settings, everything.
+   **Tools → Database**, under **Backup**: download the dump, or save it in a
+   folder on the server.
+2. **The site files** — a zip of the whole install folder: the application
+   code plus `oc-content/` (uploads, installed plugins and themes).
+   **Tools → Upgrade Shopclass**, under **Back up site files**. The zip is
+   always written to a folder on the server.
 
 A database dump without the uploads restores a site whose every photo is
 missing.
@@ -137,16 +136,18 @@ front of yours), the logged IP is only meaningful if the real client IP is
 being passed through — see the
 [caching contract](/docs/developers/caching/).
 
-## Import
+## Restore and import
 
-**Tools → Import data** takes a `.sql` file — the route for location data,
-bulk-loading listings, or anything prepared outside the admin.
+**Tools → Database**, under **Restore from a backup**, runs a `.sql` file
+against your database: a backup saved on the same page, location data, or
+anything prepared outside the admin. It reads the file one statement at a time,
+so a large backup does not need a large PHP memory limit.
 
 It substitutes the `/*TABLE_PREFIX*/` placeholder for your actual table
 prefix, which is why SQL prepared for it should keep the placeholder rather
 than a hard-coded `oc_`.
 
-Back up first. An import runs whatever SQL you give it.
+Back up first. A restore runs whatever SQL you give it and can overwrite data.
 
 ## Cache
 
@@ -187,12 +188,24 @@ Run it after any change to the server, and put it in your monitoring.
 
 ## Database
 
-**Tools → Database** lists where the database differs from what ShopClass
-expects, grouped by what to do about it. **Repair** adds a missing table,
-column or index, and fixes a column with the wrong type — take a backup
-first. An extra column or index is left alone; a nullability difference or
-an index with the wrong columns needs a person to look at it. From a shell:
-`php oc-cli.php db:doctor` reports, `php oc-cli.php db:repair` repairs.
+**Tools → Database** holds all database work, in five parts:
+
+- **Status** — one line saying whether anything needs doing, then the
+  Shopclass and database versions, the server, and the table count and size.
+- **Database update** — shown only when updates are waiting. **Run database
+  update** runs them, the same as `php oc-cli.php db:upgrade`.
+- **Check and repair** — where the database differs from what ShopClass
+  expects, grouped by what to do about it. **Repair** appears only when there is
+  something it can fix: a missing table, column or index, or a column with the
+  wrong type. Take a backup first. An extra column or index is left alone; a
+  nullability difference or an index with the wrong columns needs a person to
+  look at it.
+- **Backup** — the database dump described above.
+- **Restore from a backup** — runs a `.sql` file, as described under
+  [Restore and import](#restore-and-import).
+
+From a shell: `php oc-cli.php db:doctor` reports, `php oc-cli.php db:repair`
+repairs.
 
 ## A maintenance routine
 

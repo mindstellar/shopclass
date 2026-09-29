@@ -148,6 +148,9 @@ you find.
 
 ### Fixed
 
+- Database backups and restores run in small pieces, so a large database no longer runs out of memory.
+- Restoring a backup no longer breaks on a semicolon inside a value.
+- Repair shows and runs only when there is something it can fix.
 - The activity log no longer loses an entry under strict SQL mode when its text is too long; it is cut to fit.
 - `t_city_area.pk_i_id` is AUTO_INCREMENT, so a city area can be added without choosing its id.
 - **Repair** no longer adds a unique key a second time when the site already has one on the same columns.
@@ -305,6 +308,7 @@ you find.
 
 ### Changed
 
+- **Tools → Database** holds all database work: status, waiting updates, check and repair, backup and restore. Backup data and Import data are gone from the menu; their old links still work. The site-files backup moved to Upgrade Shopclass.
 - **Tools → Database** sorts what it finds by what to do: what Repair can fix, extra items to leave alone, and what needs a closer look. Repair waits while an upgrade is pending.
 - Upgrades run the database migrations only, so the "some queries failed" screen is gone.
 - The installer checks for MySQL 5.7.5+ or MariaDB 10.2+.

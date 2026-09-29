@@ -16,6 +16,8 @@ use mindstellar\migration\SchemaProbes;
  * Indexes for the log and search purges, the alert cron, the admin user list and the
  * expiry cron. An index already present on the same columns under another name counts,
  * so a hand-added one is not duplicated.
+ *
+ * @title Speed up cleanup, alerts, the user list and expiry
  */
 return new class () implements MigrationInterface {
     use SchemaProbes;

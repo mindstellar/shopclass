@@ -17,6 +17,8 @@ use mindstellar\migration\SchemaProbes;
  * Add the foreign key t_form_submission.fk_i_user_id never had, so deleting a user removes
  * their form messages with them instead of leaving them behind. Deleting a submission
  * cascades to t_form_submission_value. Orphans are cleared first on every run.
+ *
+ * @title Link form submissions to their user
  */
 return new class () implements MigrationInterface {
     use SchemaProbes;
