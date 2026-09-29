@@ -255,6 +255,7 @@ you find.
 
 ### Security
 
+- Restoring a backup from the admin asks for your password again, and your 2FA code when 2FA is on. `OSC_DISABLE_WEB_RESTORE` turns web restore off.
 - Server backups live in `oc-content/downloads/backups/`, closed to the web and named so no one can guess them. The page warns if the folder is open to the web. The browser can no longer choose the folder.
 - Backups can no longer be saved inside the site folder, where anyone could download them. They go to a private folder, get names no one can guess, and only the owner can read them.
 - Tools > System info warns when visitor addresses look wrong because the site sits behind a proxy that does not pass on the real IP.

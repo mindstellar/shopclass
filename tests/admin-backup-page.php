@@ -12,7 +12,8 @@
  * Tools > Backup and restore: every old backup URL still routes, each action refuses on
  * the demo before it checks the token, a visit forgets nothing until Dismiss is posted,
  * a download takes only a listed name, the browser can no longer name a server folder,
- * and the folder is closed on Apache 2.4 and 2.2.
+ * the folder is closed on Apache 2.4 and 2.2, a restore asks for the password first, and
+ * OSC_DISABLE_WEB_RESTORE hides and refuses restores.
  *
  * No database. Usage:  php tests/admin-backup-page.php
  */
@@ -172,6 +173,55 @@ pin('...readable by the site only', '750', substr(sprintf('%o', fileperms($store
 $store->saveState(array('status' => 'running'));
 pin('the state file is private', '600', substr(sprintf('%o', fileperms($store->dir() . '.state.json')), -3));
 exec('rm -rf ' . escapeshellarg($store->dir()));
+
+harness_section('A restore asks for the password again');
+
+$restore = $body('backup_restore');
+$verify  = strpos($restore, 'AdminReauth::verify(');
+$start   = strpos($restore, 'BackupManager::startRestore(');
+check('backup_restore checks the password before it starts anything', $verify !== false && $start !== false && $verify < $start);
+check('...with the posted password and code', strpos($restore, "Params::getParam('password', false, false)") !== false
+    && strpos($restore, "Params::getParamString('code')") !== false);
+check('...and a refusal leaves before startRestore', (bool) preg_match(
+    '/if \(\$reauth !== \'\'\) \{[^}]*redirectTo\([^}]*break;\s*\}/s',
+    substr($restore, 0, (int) $start)
+));
+check('an uploaded file reaches a restore only through backup_restore', strpos($body('backupUpload'), 'startRestore') === false
+    && substr_count($controller, 'BackupManager::startRestore(') === 1);
+check('the dialog has a password field', strpos($view, "'name'     => 'password'") !== false && strpos($view, "'type'     => 'secret'") !== false);
+check('...and a code field when 2FA is on', (bool) preg_match("/if \\(\\\$twoStep\\) \\{.*?'name'     => 'code'/s", $view));
+check('the page learns whether 2FA is on', strpos($body('backupPage'), 'AdminTwoFactor::enabled($me)') !== false);
+check('a refusal is shown inside the dialog', strpos($view, 'osc_esc_html($reauth)') !== false);
+
+harness_section('OSC_DISABLE_WEB_RESTORE');
+
+$switch = static function (string $env, string $define = ''): string {
+    $code = 'define("ABS_PATH", ' . var_export(ABS_PATH, true) . ');' . $define
+        . 'require ABS_PATH . "oc-includes/osclass/utils.php"; echo var_export(osc_web_restore_disabled(), true);';
+
+    return (string) shell_exec(($env !== '' ? 'OSC_DISABLE_WEB_RESTORE=' . escapeshellarg($env) . ' ' : 'env -u OSC_DISABLE_WEB_RESTORE ')
+        . escapeshellarg(PHP_BINARY) . ' -r ' . escapeshellarg($code));
+};
+pin('unset: restore is on', 'false', $switch(''));
+pin('the environment turns it off', 'true', $switch('1'));
+pin('the constant turns it off', 'true', $switch('', 'define("OSC_DISABLE_WEB_RESTORE", true);'));
+pin('the constant wins over the environment', 'false', $switch('1', 'define("OSC_DISABLE_WEB_RESTORE", false);'));
+
+foreach (array('backup_restore', 'backupUpload') as $name) {
+    check("$name refuses when restore is off", strpos($body($name), 'refuseRestoreOff()') !== false);
+}
+$off = strpos($restore, 'refuseRestoreOff()');
+check('...before the password is checked', $off !== false && $verify !== false && $off < $verify);
+check('the refusal checks the switch', strpos($body('refuseRestoreOff'), 'if (!osc_web_restore_disabled())') !== false);
+check('no confirm dialog is built when restore is off', strpos($body('backupPage'), "if (\$name !== '' && !\$busy && !osc_web_restore_disabled())") !== false);
+check('backups still start when restore is off', strpos($body('backupStart'), 'restore_disabled') === false
+    && strpos($body('backupStart'), 'refuseRestoreOff') === false);
+check('the page hides the Restore… buttons', (bool) preg_match("/if \\(\\\$locked && !\\\$noWeb\\) \\{.*?\\} elseif \\(!\\\$noWeb\\) \\{\\s*osc_admin_action_button\\(array\\(\\s*'label' => __\\('Restore…'\\)/s", $view));
+check('...and the upload form, showing the off line instead', (bool) preg_match(
+    "/<\\?php if \\(\\\$noWeb\\) \\{ \\?>\\s*<p[^>]*><\\?php echo osc_esc_html\\(\\\$offLine\\); \\?><\\/p>\\s*<\\?php \\} else \\{ \\?>.*?backup_upload.*?<\\?php \\} \\?>\\s*<\\/div>/s",
+    $view
+));
+check('...in the owner\'s words', strpos($view, "__('Restore is turned off on this site. Use the command line.')") !== false);
 
 $nginx = (string) file_get_contents(ABS_PATH . '.docker/prod/nginx.conf');
 check('the production nginx closes the downloads folder', (bool) preg_match('#location \^~ /oc-content/downloads/ \{\s*deny all;#', $nginx));

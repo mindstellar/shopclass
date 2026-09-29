@@ -1700,6 +1700,10 @@ msgstr ""
 msgid "Resource deleted"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "Restore is turned off on this site. Use the command line."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsStorage.php
 msgid ""
 "Restore queued. Images download back to local storage in the background as "
@@ -1984,6 +1988,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
 msgid "That package no longer exists"
+msgstr ""
+
+#: oc-includes/osclass/classes/security/AdminReauth.php
+msgid "That password is not right. Nothing was started."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebBilling.php
@@ -2825,6 +2833,7 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsCustom.php
 #: oc-includes/osclass/classes/controller/base/AdminSecBaseModel.php
 msgid "You don't have enough permissions"

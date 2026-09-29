@@ -69,10 +69,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         <?php
         $throttle = __get('login_throttle_activity') ?: array('aRows' => array());
         $contexts = array(
-            'admin'         => __('Admin panel'),
-            'web'           => __('Website'),
-            'admin-recover' => __('Admin password reset'),
-            'web-recover'   => __('Website password reset'),
+            'admin'          => __('Admin panel'),
+            'web'            => __('Website'),
+            'admin-recover'  => __('Admin password reset'),
+            'web-recover'    => __('Website password reset'),
+            'restore_reauth' => __('Password check before a restore'),
         );
         $rows     = $throttle['aRows'];
 

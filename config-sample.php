@@ -52,6 +52,9 @@ define('REL_WEB_URL', 'rel_here');
 /** Website base url */
 defined('WEB_PATH') or define('WEB_PATH', 'web_path_here'); // i.e http://localhost/
 
+/** Turn off restoring a backup from the admin; backups still work. */
+//define('OSC_DISABLE_WEB_RESTORE', true);
+
 // Below are optional settings and should only be enabled for debugging purposes
 
 /** Enable osclass debug */

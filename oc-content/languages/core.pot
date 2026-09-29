@@ -2440,6 +2440,10 @@ msgstr ""
 msgid "Code"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/backup.php
+msgid "Code from your app, or a backup code"
+msgstr ""
+
 #: oc-admin/themes/modern/parts/header.php
 msgid "Collapse"
 msgstr ""
@@ -7534,6 +7538,10 @@ msgstr ""
 msgid "Password"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/spamNbots.php
+msgid "Password check before a restore"
+msgstr ""
+
 #: oc-includes/osclass/classes/form/AdminForm.php
 #: oc-includes/osclass/classes/form/UserForm.php
 msgid "Password: enter at least 5 characters"
@@ -8378,6 +8386,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
 msgid "Restore from this file"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/backup.php
+msgid "Restore is turned off on this site. Use the command line."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
@@ -12100,6 +12112,10 @@ msgstr ""
 
 #: oc-includes/osclass/functions.php
 msgid "Your orders"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/backup.php
+msgid "Your password"
 msgstr ""
 
 #: oc-admin/themes/modern/fields/index.php

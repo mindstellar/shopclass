@@ -66,7 +66,7 @@ class LoginThrottle
      * What this limiter counts. The same ledger also holds contact-form and listing-post
      * events for other limits; those must neither block a sign-in nor be cleared by one.
      */
-    public const CONTEXTS = array('admin', 'web', 'admin-recover', 'web-recover');
+    public const CONTEXTS = array('admin', 'web', 'admin-recover', 'web-recover', 'restore_reauth');
 
     /**
      * Decide what to do with an attempt, before any password is checked.

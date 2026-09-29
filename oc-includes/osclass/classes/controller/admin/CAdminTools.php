@@ -25,6 +25,7 @@ use mindstellar\admin\SystemChecks;
 use mindstellar\backup\BackupJobs;
 use mindstellar\backup\BackupManager;
 use mindstellar\backup\BackupStore;
+use mindstellar\security\AdminReauth;
 use mindstellar\utility\AjaxResponse;
 
 class CAdminTools extends AdminSecBaseModel
@@ -194,10 +195,25 @@ class CAdminTools extends AdminSecBaseModel
                     break;
                 }
                 osc_csrf_check();
+                if ($this->refuseRestoreOff()) {
+                    break;
+                }
+                $name = Params::getParamString('name', false, false);
+                $admin  = Admin::newInstance()->findByPrimaryKey(osc_logged_admin_id());
+                $reauth = is_array($admin) ? AdminReauth::verify(
+                    $admin,
+                    (string) Params::getParam('password', false, false),
+                    Params::getParamString('code')
+                ) : _m("You don't have enough permissions");
+                if ($reauth !== '') {
+                    Session::newInstance()->_set('backupReauthError', $reauth);
+                    $this->redirectTo(self::backupUrl() . '&confirm=' . rawurlencode($name));
+                    break;
+                }
                 $parts  = Params::getParamArray('parts');
                 $choose = Params::getParamInt('choose') === 1;
                 $error  = BackupManager::startRestore(
-                    Params::getParamString('name', false, false),
+                    $name,
                     !$choose || in_array('database', $parts, true),
                     !$choose || in_array('files', $parts, true)
                 );
@@ -532,7 +548,9 @@ class CAdminTools extends AdminSecBaseModel
         $list    = $store->all();
         $confirm = null;
         $name    = Params::getParamString('confirm', false, false);
-        if ($name !== '' && !$busy) {
+        $reauth  = (string) Session::newInstance()->_get('backupReauthError');
+        Session::newInstance()->_drop('backupReauthError');
+        if ($name !== '' && !$busy && !osc_web_restore_disabled()) {
             $check = BackupManager::check($name);
             if ($check['reason'] !== '') {
                 osc_add_flash_error_message(osc_esc_html($check['reason']), 'admin');
@@ -547,6 +565,9 @@ class CAdminTools extends AdminSecBaseModel
         $this->_exportVariableToView('backup_busy', $busy);
         $this->_exportVariableToView('backup_list', $list);
         $this->_exportVariableToView('backup_confirm', $confirm);
+        $this->_exportVariableToView('backup_reauth_error', $confirm !== null ? $reauth : '');
+        $me = $confirm !== null ? Admin::newInstance()->findByPrimaryKey(osc_logged_admin_id()) : null;
+        $this->_exportVariableToView('backup_reauth_2fa', is_array($me) && \mindstellar\security\AdminTwoFactor::enabled($me));
         $this->_exportVariableToView('backup_probe', $list !== array() ? BackupManager::probe() : null);
         $this->doView('tools/backup.php');
     }
@@ -575,6 +596,22 @@ class CAdminTools extends AdminSecBaseModel
             count($skipped),
             implode(', ', array_map('strval', $skipped))
         );
+    }
+
+    /**
+     * Refuse a restore when OSC_DISABLE_WEB_RESTORE is set. Returns true when it redirected.
+     *
+     * @return bool
+     */
+    private function refuseRestoreOff(): bool
+    {
+        if (!osc_web_restore_disabled()) {
+            return false;
+        }
+        osc_add_flash_error_message(_m('Restore is turned off on this site. Use the command line.'), 'admin');
+        $this->redirectTo(self::backupUrl());
+
+        return true;
     }
 
     /**
@@ -650,7 +687,7 @@ class CAdminTools extends AdminSecBaseModel
     private function backupUpload(string $field): void
     {
         $back = self::backupUrl() . '#restore';
-        if ($this->refuseOnDemo($back)) {
+        if ($this->refuseOnDemo($back) || $this->refuseRestoreOff()) {
             return;
         }
         $file = Params::getFiles($field);

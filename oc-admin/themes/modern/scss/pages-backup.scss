@@ -177,3 +177,19 @@
   font-size: .875rem;
   margin: .5rem 0 0;
 }
+
+.backup-reauth {
+  display: flex;
+  flex-direction: column;
+  gap: .375rem;
+  margin-block-start: 1rem;
+
+  label {
+    font-weight: 600;
+    margin-block-start: .25rem;
+  }
+
+  .callout-block {
+    margin-block-end: .25rem;
+  }
+}

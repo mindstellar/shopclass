@@ -203,3 +203,4 @@ which sets out how to report privately and which versions are supported.
 - [ ] CAPTCHA on publishing and registration
 - [ ] Database user scoped to one database, not reachable publicly
 - [ ] Offsite backups, and one of them restored successfully
+- [ ] `OSC_DISABLE_WEB_RESTORE` set if restores should only happen from a shell ([backups](/docs/use/backups-and-maintenance/#turning-web-restore-off))

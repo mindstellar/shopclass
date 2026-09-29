@@ -1110,6 +1110,21 @@ function osc_market_changes_blocked()
 }
 
 /**
+ * Whether restoring a backup from the admin is turned off (OSC_DISABLE_WEB_RESTORE in
+ * config.php, or the environment). Making backups is not affected.
+ *
+ * @return bool
+ */
+function osc_web_restore_disabled()
+{
+    if (defined('OSC_DISABLE_WEB_RESTORE')) {
+        return (bool) OSC_DISABLE_WEB_RESTORE;
+    }
+
+    return filter_var(getenv('OSC_DISABLE_WEB_RESTORE'), FILTER_VALIDATE_BOOLEAN);
+}
+
+/**
  * Strip backslashes from a string, or from every value of an array, recursively.
  *
  * @param string|array<mixed> $array

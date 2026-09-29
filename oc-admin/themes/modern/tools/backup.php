@@ -32,6 +32,10 @@ $keep    = (int) osc_get_preference('backup_keep');
 $keep    = $keep > 0 ? $keep : BackupJobs::KEEP;
 $max     = DatabaseTools::uploadLimit();
 $poll    = osc_admin_base_url(true) . '?page=ajax&action=backup_status&' . osc_csrf_token_url();
+$noWeb   = osc_web_restore_disabled();
+$offLine = __('Restore is turned off on this site. Use the command line.');
+$reauth  = (string) $view->_get('backup_reauth_error');
+$twoStep = (bool) $view->_get('backup_reauth_2fa');
 
 /** A row's date, what, and size in words, for the list and the delete confirm. */
 $describe = static function (array $row): array {
@@ -300,9 +304,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                             <div class="backup-actions">
                                 <?php
                                 $postButton('backup_download', __('Download'), array('name' => $row['name']));
-                                if ($locked) {
+                                if ($locked && !$noWeb) {
                                     osc_admin_action_button(array('label' => __('Restore…'), 'attrs' => array('disabled' => 'disabled')));
-                                } else {
+                                } elseif (!$noWeb) {
                                     osc_admin_action_button(array(
                                         'label' => __('Restore…'),
                                         'url'   => osc_admin_base_url(true) . '?page=tools&action=backup&confirm=' . rawurlencode($row['name']),
@@ -333,6 +337,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 
     <div id="restore">
         <?php osc_admin_form_section(__('Restore from a file'), array('spaced' => true)); ?>
+        <?php if ($noWeb) { ?>
+            <p class="backup-form-note" id="backup-restore-off"><?php echo osc_esc_html($offLine); ?></p>
+        <?php } else { ?>
         <div class="callout-danger callout-block mb-3">
             <?php _e("Restoring replaces what is on the site now. It cannot be undone. A safety copy of today's database is saved first."); ?>
         </div>
@@ -357,6 +364,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 'attrs'   => $locked ? array('disabled' => 'disabled') : array(),
             ),
         )); ?>
+        <?php } ?>
     </div>
 
     <?php if ($confirm !== null) {
@@ -395,6 +403,37 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 $body .= '<p class="backup-restore-note">' . osc_esc_html(__('There is not enough space for a safety copy of the files. Only the database is copied first.')) . '</p>';
             }
         }
+
+        // The server checks these again before anything is queued.
+        ob_start();
+        osc_admin_field(array(
+            'type'     => 'secret',
+            'name'     => 'password',
+            'id'       => 'backup-reauth-password',
+            'row'      => false,
+            'required' => true,
+            'attrs'    => array('autofocus' => true),
+        ));
+        $passwordField = (string) ob_get_clean();
+        $body .= '<div class="backup-reauth">';
+        if ($reauth !== '') {
+            $body .= '<div class="callout-danger callout-block" role="alert">' . osc_esc_html($reauth) . '</div>';
+        }
+        $body .= '<label for="backup-reauth-password">' . osc_esc_html(__('Your password')) . '</label>' . $passwordField;
+        if ($twoStep) {
+            ob_start();
+            osc_admin_field(array(
+                'type'     => 'text',
+                'name'     => 'code',
+                'id'       => 'backup-reauth-code',
+                'row'      => false,
+                'required' => true,
+                'attrs'    => array('inputmode' => 'numeric', 'autocomplete' => 'one-time-code', 'maxlength' => '10'),
+            ));
+            $body .= '<label for="backup-reauth-code">' . osc_esc_html(__('Code from your app, or a backup code')) . '</label>'
+                . (string) ob_get_clean();
+        }
+        $body .= '</div>';
 
         osc_admin_confirm_dialog(array(
             'id'        => 'backup-restore-dialog',

@@ -161,6 +161,23 @@ since the backup are left in place. While a restore runs, cron and
 Only restore backups you made. A restore runs the SQL and puts back the files in
 it, and it brings back the admin passwords and keys it holds.
 
+The confirm asks for your admin password, and for a code from your app or a
+backup code when [two-step sign-in](/docs/use/spam-and-abuse/#two-step-sign-in-for-admins) is on. Wrong
+tries count toward the same limit as failed sign-ins.
+
+### Turning web restore off
+
+To allow restores only from a shell, add this to `config.php`, or set the
+environment variable `OSC_DISABLE_WEB_RESTORE=1`:
+
+```php
+define('OSC_DISABLE_WEB_RESTORE', true);
+```
+
+The page then hides the restore buttons and says restore is turned off. Backups
+still work. To restore by hand, load the `.sql` file with `mysql` and unzip the
+files over `oc-content/`.
+
 ## Cache
 
 **Tools → Cache** shows which object-cache driver is running (in-request only
