@@ -1600,6 +1600,10 @@ msgstr ""
 msgid "Back up first"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/upgrade.php
+msgid "Back up first: %s."
+msgstr ""
+
 #: oc-admin/themes/modern/settings/storage.php
 msgid ""
 "Backfill existing images between local disk and remote storage. Each action "
@@ -9822,6 +9826,13 @@ msgid ""
 "before turning on "
 msgstr ""
 
+#: oc-admin/themes/modern/tools/upgrade.php
+msgid ""
+"The Shopclass files are replaced with the new version, and any change made "
+"to core files is lost. Visitors see a maintenance page for a few minutes "
+"while it runs."
+msgstr ""
+
 #: oc-admin/themes/modern/appearance/index.php
 msgid "The active theme extends this one. Deleting it would leave "
 msgstr ""
@@ -10253,6 +10264,12 @@ msgstr ""
 
 #: oc-admin/themes/modern/upgrade/index.php
 msgid "The upgrade did not finish"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/upgrade.php
+msgid ""
+"The upgrade did not report back. Reload the page to check which version you "
+"have."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/upgrade.php
@@ -10826,6 +10843,10 @@ msgstr ""
 msgid "Tools"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/upgrade.php
+msgid "Tools > Backup and restore"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Top Left"
 msgstr ""
@@ -11223,6 +11244,10 @@ msgstr ""
 #: oc-admin/themes/modern/tools/upgrade.php
 #: oc-includes/osclass/classes/AdminMenu.php
 msgid "Upgrade Shopclass"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/upgrade.php
+msgid "Upgrade Shopclass to %s?"
 msgstr ""
 
 #: oc-admin/themes/modern/upgrade/index.php

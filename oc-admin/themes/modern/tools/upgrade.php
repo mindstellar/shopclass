@@ -15,8 +15,7 @@ if (!empty($updateJson)) {
     $remoteVersion  = (string) $osclassUpgrade->getNewVersion();
 }
 $selfUpdateOff = osc_self_update_disabled();
-$isConfirm     = Params::getParam('confirm') === 'true';
-$running       = !$selfUpdateOff && $isAvailable && $isConfirm;
+$running       = !$selfUpdateOff && $isAvailable && __get('upgrade_start') === true;
 
 // The run itself after confirm, the release notes before it, and a fresh version check when
 // nothing is waiting.
@@ -28,6 +27,7 @@ osc_add_hook('admin_footer', static function () use ($selfUpdateOff, $isAvailabl
         'upgraded'  => sprintf(__('Shopclass is upgraded to %s.'), $remoteVersion),
         'partial'   => __('The upgrade finished, with some errors.'),
         'failed'    => __('The upgrade failed.'),
+        'noReply'   => __('The upgrade did not report back. Reload the page to check which version you have.'),
         'notes'     => __('Check release notes'),
         'notesUrl'  => osc_admin_base_url(true) . '?page=tools&action=version',
     );
@@ -61,13 +61,12 @@ osc_add_hook('admin_footer', static function () use ($selfUpdateOff, $isAvailabl
                 box.appendChild(list);
                 return box;
             };
-            var report = function (box, html) {
-                steps.innerHTML = '';
-                steps.appendChild(box);
-                if (html) {
-                    var more = document.createElement('div');
+            var report = function (box, message) {
+                steps.replaceChildren(box);
+                if (message) {
+                    var more = document.createElement('p');
                     more.className = 'upgrade-tool-message';
-                    more.innerHTML = html;
+                    more.textContent = message;
                     steps.appendChild(more);
                 }
             };
@@ -75,10 +74,15 @@ osc_add_hook('admin_footer', static function () use ($selfUpdateOff, $isAvailabl
             <?php if ($running) { ?>
             fetch(<?php echo json_encode(osc_admin_base_url(true) . '?page=ajax&action=upgrade&' . osc_csrf_token_url()); ?>, {credentials: 'same-origin'})
                 .then(function (response) {
-                    return response.json();
+                    return response.json().catch(function () {
+                        return null;
+                    });
                 })
                 .then(function (json) {
-                    if (json.error == 0) {
+                    // A fatal error or a timeout mid-run answers with something other than JSON.
+                    if (!json || typeof json !== 'object') {
+                        report(verdict('warning', t.noReply));
+                    } else if (json.error == 0) {
                         report(verdict('success', t.upgraded, {label: t.notes, url: t.notesUrl}));
                     } else if (json.error == 2) {
                         report(verdict('warning', t.partial), json.message);
@@ -87,7 +91,7 @@ osc_add_hook('admin_footer', static function () use ($selfUpdateOff, $isAvailabl
                     }
                 })
                 .catch(function () {
-                    report(verdict('danger', t.failed));
+                    report(verdict('warning', t.noReply));
                 });
             <?php } elseif ($isAvailable) { ?>
             var notes = document.getElementById('upgrade-release-notes');
@@ -99,30 +103,82 @@ osc_add_hook('admin_footer', static function () use ($selfUpdateOff, $isAvailabl
                     if (!notes || !json || typeof json.body !== 'string' || json.body.trim() === '') {
                         return;
                     }
-                    // Plain text only: headings, bullets and paragraphs, never the body's own markup.
+                    // Built as elements, never as HTML: paragraphs, bullets, headings, bold, code and project links.
+                    var inline = function (parent, text) {
+                        var re = /\*\*([^*]+)\*\*|`([^`]+)`|(https:\/\/github\.com\/mindstellar\/[^\s<>"'`)]*[^\s<>"'`).,;:!?])/g;
+                        var last = 0;
+                        var m;
+                        while ((m = re.exec(text)) !== null) {
+                            parent.appendChild(document.createTextNode(text.slice(last, m.index)));
+                            var el;
+                            if (m[1] !== undefined) {
+                                el = document.createElement('strong');
+                                el.textContent = m[1];
+                            } else if (m[2] !== undefined) {
+                                el = document.createElement('code');
+                                el.textContent = m[2];
+                            } else {
+                                el = document.createElement('a');
+                                el.href = m[3];
+                                el.rel = 'noopener';
+                                el.target = '_blank';
+                                el.textContent = m[3];
+                            }
+                            parent.appendChild(el);
+                            last = re.lastIndex;
+                        }
+                        parent.appendChild(document.createTextNode(text.slice(last)));
+                    };
                     var list = null;
-                    json.body.replace(/\r\n/g, '\n').split('\n').forEach(function (raw) {
+                    var block = null;
+                    var started = false;
+                    var close = function () {
+                        if (!block) {
+                            return;
+                        }
+                        var el = document.createElement(block.tag);
+                        inline(el, block.parts.join(' '));
+                        (block.tag === 'li' ? list : notes).appendChild(el);
+                        block = null;
+                        started = true;
+                    };
+                    json.body.replace(/\r\n?/g, '\n').split('\n').forEach(function (raw) {
                         var line = raw.trim();
-                        var bullet = line.match(/^[*-]\s+(.*)$/);
+                        if (line === '') {
+                            close();
+                            return;
+                        }
+                        var heading = line.match(/^(#{1,6})\s+(.*)$/);
+                        if (heading) {
+                            close();
+                            list = null;
+                            // The section title already names the release.
+                            if (heading[1].length > 2 || started) {
+                                block = {tag: 'h4', parts: [heading[2]]};
+                                close();
+                            }
+                            return;
+                        }
+                        var bullet = line.match(/^[-*]\s+(.*)$/);
                         if (bullet) {
+                            close();
                             if (!list) {
                                 list = document.createElement('ul');
                                 notes.appendChild(list);
+                                started = true;
                             }
-                            var item = document.createElement('li');
-                            item.textContent = bullet[1];
-                            list.appendChild(item);
+                            block = {tag: 'li', parts: [bullet[1]]};
                             return;
                         }
+                        if (block && (block.tag === 'p' || /^\s/.test(raw))) {
+                            block.parts.push(line);
+                            return;
+                        }
+                        close();
                         list = null;
-                        if (line === '') {
-                            return;
-                        }
-                        var heading = line.match(/^#{1,6}\s*(.*)$/);
-                        var el = document.createElement(heading ? 'h4' : 'p');
-                        el.textContent = heading ? heading[1] : line;
-                        notes.appendChild(el);
+                        block = {tag: 'p', parts: [line]};
                     });
+                    close();
                     notes.hidden = false;
                 })
                 .catch(function () {
@@ -199,9 +255,24 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         'action' => array(
                             'label'   => sprintf(__('Upgrade to %s'), $remoteVersion),
                             'variant' => 'primary',
-                            'url'     => osc_admin_base_url(true) . '?page=tools&action=upgrade&confirm=true',
+                            'attrs'   => array('data-osc-dialog-open' => '#upgrade-dialog'),
                         ),
-                    ))); ?>
+                    )));
+                    osc_admin_confirm_dialog(array(
+                        'id'        => 'upgrade-dialog',
+                        'tone'      => 'plain',
+                        'method'    => 'post',
+                        'url'       => osc_admin_base_url(true) . '?page=tools&action=upgrade',
+                        'fields'    => array('confirm' => 'true'),
+                        'title'     => sprintf(__('Upgrade Shopclass to %s?'), $remoteVersion),
+                        'text'      => __('The Shopclass files are replaced with the new version, and any change made to core files is lost. Visitors see a maintenance page for a few minutes while it runs.'),
+                        'body_html' => '<p class="osc-dialog-text">' . sprintf(
+                            osc_esc_html(__('Back up first: %s.')),
+                            '<a href="' . osc_esc_html(osc_admin_base_url(true) . '?page=tools&action=backup') . '">'
+                            . osc_esc_html(__('Tools > Backup and restore')) . '</a>'
+                        ) . '</p>',
+                        'confirm'   => sprintf(__('Upgrade to %s'), $remoteVersion),
+                    )); ?>
                     <p class="upgrade-tool-note">
                         <?php _e('Please note that this upgrade may take a few minutes to complete.'); ?>
                         <?php _e('Please be aware that this upgrade will overwrite any existing modification you have made to core files.'); ?>

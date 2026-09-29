@@ -13479,6 +13479,10 @@ ul.showing-results {
   font-weight: 600;
 }
 
+.osc-dialog-text + .osc-dialog-text {
+  margin-block-start: 0.5rem;
+}
+
 .osc-dialog-actions {
   display: flex;
   gap: 0.6rem;
@@ -18169,6 +18173,7 @@ body .tox .tox-notification--info svg {
 
 .upgrade-tool-notes {
   max-inline-size: 68ch;
+  overflow-wrap: anywhere;
 }
 .upgrade-tool-notes h4, .upgrade-tool-notes .h4 {
   color: var(--osc-ink);
@@ -18184,6 +18189,9 @@ body .tox .tox-notification--info svg {
 }
 .upgrade-tool-notes ul {
   padding-inline-start: 1.25rem;
+}
+.upgrade-tool-notes li + li {
+  margin-block-start: 0.25rem;
 }
 
 #media-library .media-col-preview {

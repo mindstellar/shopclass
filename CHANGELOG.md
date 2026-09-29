@@ -151,6 +151,7 @@ you find.
 
 ### Fixed
 
+- Upgrade release notes show as real paragraphs and lists with working links, instead of one line per paragraph.
 - When two sites share a database with nested prefixes (`oc_` and `oc_shop2_`), a backup no longer takes, and a restore no longer drops, the other site's tables.
 - A restore carries on with cron, not only while its page is open. Other background jobs wait until it finishes.
 - Database backups and restores run in small pieces, so a large database no longer runs out of memory.
@@ -255,6 +256,7 @@ you find.
 
 ### Security
 
+- The upgrade no longer starts from a link. It asks first, and starts only after you confirm.
 - Restoring a backup from the admin asks for your password again, and your 2FA code when 2FA is on. `OSC_DISABLE_WEB_RESTORE` turns web restore off.
 - Server backups live in `oc-content/downloads/backups/`, closed to the web and named so no one can guess them. The page warns if the folder is open to the web. The browser can no longer choose the folder.
 - Backups can no longer be saved inside the site folder, where anyone could download them. They go to a private folder, get names no one can guess, and only the owner can read them.
@@ -316,6 +318,7 @@ you find.
 
 ### Changed
 
+- **Upgrade Shopclass**, **Backup and restore** and **System info** share one look: one box that says what needs doing, and quiet lines instead of big empty blocks.
 - **Tools → System info** has Overview, Database and Server tabs. One box at the top of each says what needs doing. Tools now opens on it.
 - Check and repair moved into System info → Database. The old Database link still works.
 - **Tools → Database** holds all database work: status, waiting updates, check and repair, backup and restore. Backup data and Import data are gone from the menu; their old links still work. The site-files backup moved to Upgrade Shopclass.

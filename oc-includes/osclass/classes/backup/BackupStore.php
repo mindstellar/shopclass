@@ -167,7 +167,7 @@ final class BackupStore
                 continue;
             }
             $manifest = $this->manifest($name);
-            if ($manifest === null || ($manifest['kind'] ?? '') === 'download') {
+            if (!self::isSaved($manifest)) {
                 continue;
             }
             $rows[] = array(
@@ -235,7 +235,20 @@ final class BackupStore
     }
 
     /**
-     * Remove every file a backup in progress left behind.
+     * Whether a manifest belongs to a finished backup or safety copy, as all() lists them.
+     *
+     * @param array<string,mixed>|null $manifest
+     *
+     * @return bool
+     */
+    private static function isSaved(?array $manifest): bool
+    {
+        return $manifest !== null && ($manifest['kind'] ?? '') !== 'download';
+    }
+
+    /**
+     * Remove every file a backup in progress left behind. A finished backup or safety
+     * copy is never touched; delete() is the only way to remove one.
      *
      * @param string $name
      *
@@ -243,7 +256,7 @@ final class BackupStore
      */
     public function discard(string $name): void
     {
-        if (!preg_match(self::NAME, $name)) {
+        if (!preg_match(self::NAME, $name) || self::isSaved($this->manifest($name))) {
             return;
         }
         foreach (array('.part', '.part.cdir', '.sql') as $suffix) {

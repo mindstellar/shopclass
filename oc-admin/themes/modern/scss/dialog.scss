@@ -70,6 +70,10 @@
   }
 }
 
+.osc-dialog-text + .osc-dialog-text {
+  margin-block-start: .5rem;
+}
+
 .osc-dialog-actions {
   display: flex;
   gap: .6rem;

@@ -139,6 +139,12 @@ class CAdminTools extends AdminSecBaseModel
                 if ($this->refuseOnDemo(osc_admin_base_url(true))) {
                     break;
                 }
+                // Only the confirm dialog's POST starts the run; a link with confirm=true just shows the page.
+                $start = Params::getServerParam('REQUEST_METHOD') === 'POST' && Params::getParamString('confirm') === 'true';
+                if ($start) {
+                    osc_csrf_check();
+                }
+                $this->_exportVariableToView('upgrade_start', $start);
                 $this->doView('tools/upgrade.php');
                 break;
             case 'version':

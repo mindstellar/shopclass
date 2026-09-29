@@ -266,6 +266,50 @@ $runJob($restoreJob($make()), Restorer::begin('upload-aaaaaaaaaaaaaaaa.sql', tru
 pin('an old dump with another prefix is refused at the start', array('failed', 'start'), array($store->state()['status'], $store->state()['stage']));
 pin('...without closing the site', false, file_exists($site . '/.maintenance'));
 
+harness_section('Discard keeps saved backups');
+
+$saved0 = $store->dir() . $source;
+$json0  = substr($saved0, 0, -4) . '.json';
+$store->discard($source);
+check('discard() leaves a saved backup in place', is_file($saved0) && is_file($json0));
+
+$p   = Builder::begin('files', 'server');
+$job = new Job(array('pk_i_id' => '10'), $p);
+BackupJobs::create($job, $store, $builder);
+$partial = $job->repeatRequest()['payload'];
+check('fixture: a partial run has its part file', is_file($store->dir() . $partial['name'] . '.part'));
+$store->discard($partial['name']);
+pin('discard() removes a run that did not finish', array(), glob($store->dir() . $partial['name'] . '*'));
+
+// Every state shape that names the saved backup; clean-up and a replayed run must leave it alone.
+$restoreDone = BackupJobs::state(array('stage' => 'done') + Restorer::begin($source, true, true), 'done');
+$shapes = array(
+    'restore finished' => $restoreDone,
+    'restore failed'   => array('status' => 'failed', 'stage' => 'database') + $restoreDone,
+    'stale'            => array('status' => 'running', 'updated' => time() - 3600) + $restoreDone,
+    'upload source'    => array('source' => BackupStore::uploadName('zip'), 'safety_name' => $source) + $restoreDone,
+    'download name'    => BackupJobs::state(array('stage' => 'finish', 'name' => $source) + Builder::begin('everything', 'download'), 'running'),
+);
+$conn->failOn = array();
+check('fixture: fewer backups than KEEP', count(array_filter(array_column($store->all(), 'kind'), static function ($k) {
+    return $k === 'backup';
+})) < BackupJobs::KEEP);
+foreach ($shapes as $label => $state) {
+    file_put_contents($store->dir() . '.state.json', json_encode($state));
+    $store->sweep(false);
+    $store->sweep(true);
+    $store->prune('backup', BackupJobs::KEEP);
+    $store->prune('safety', BackupJobs::SAFETY_KEEP);
+    try {
+        $builder->step(array('stage' => 'bogus', 'run' => 'x', 'name' => $source));
+    } catch (\mindstellar\backup\BackupFailure $e) {
+    }
+    $runJob($restoreJob($make()), Restorer::begin($source, true, true));
+    pin($label . ': the restore finishes', 'done', $store->state()['status']);
+    check($label . ': the backup survives', is_file($saved0) && is_file($json0)
+        && in_array($source, array_column($store->all(), 'name'), true));
+}
+
 harness_section('Pruning');
 
 $pruneStore = new BackupStore($base . '/prune/');
