@@ -31,6 +31,14 @@
 require_once __DIR__ . '/../lib/scratchdb.php';
 require_once __DIR__ . '/../lib/harness.php';
 
+// The worker logs through __(); a run of this file alone has no translation layer.
+if (!function_exists('__')) {
+    function __($text, $domain = 'core')
+    {
+        return $text;
+    }
+}
+
 use mindstellar\job\Job;
 use mindstellar\job\JobQueue;
 use mindstellar\job\JobRegistry;

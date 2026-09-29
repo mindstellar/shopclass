@@ -374,8 +374,8 @@ final class JobQueue
             $params = array(self::STATUS_RUNNING, $token, $now, self::STATUS_PENDING, $now);
             $only   = '';
             if ($typePrefix !== null) {
-                $only     = ' AND s_type LIKE ?';
-                $params[] = addcslashes($typePrefix, '\\%_') . '%';
+                $only     = " AND s_type LIKE ? ESCAPE '!'";
+                $params[] = str_replace(array('!', '%', '_'), array('!!', '!%', '!_'), $typePrefix) . '%';
             }
             osc_db_execute(
                 'UPDATE ' . $table . ' SET s_status = ?, s_worker = ?, dt_locked = ?'

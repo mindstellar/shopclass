@@ -121,7 +121,10 @@ if (osc_is_web_user_logged_in()) {
 switch (Params::getParam('page')) {
     case ('cron'):      // cron system
         define('__FROM_CRON__', true);
-        require_once(LIB_PATH . 'osclass/cron.php');
+        // A restore is half-way: scheduled tasks would run against a half-loaded database.
+        if (!osc_maintenance_is_restoring(ABS_PATH . '.maintenance')) {
+            require_once(LIB_PATH . 'osclass/cron.php');
+        }
         break;
     case ('user'):      // user pages (with security)
         $osclass_action = Params::getParam('action');
@@ -208,7 +211,7 @@ switch (Params::getParam('page')) {
 // a file, redirected, or exited never reaches here and keeps its own headers.
 osc_send_response_cache_headers();
 
-if (!defined('__FROM_CRON__') && osc_auto_cron()) {
+if (!defined('__FROM_CRON__') && osc_auto_cron() && !osc_maintenance_is_restoring(ABS_PATH . '.maintenance')) {
     // Auto-cron sends a fire-and-forget self request to run scheduled tasks. Left ungated it
     // fires on EVERY page view, so a busy site hammers itself with one internal POST per hit
     // (each spawns an FPM worker). Throttle it to at most one dispatch per 5 minutes.

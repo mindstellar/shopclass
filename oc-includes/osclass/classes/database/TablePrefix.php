@@ -42,7 +42,7 @@ final class TablePrefix
      */
     public static function like(string $prefix): string
     {
-        return addcslashes($prefix, '\\%_') . 't\\_%';
+        return str_replace(array('!', '%', '_'), array('!!', '!%', '!_'), $prefix) . 't!_%';
     }
 
     /**

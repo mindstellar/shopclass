@@ -370,7 +370,7 @@ final class DatabaseTools
         try {
             $row = $conn->selectOne(
                 'SELECT COUNT(*) AS n, COALESCE(SUM(data_length + index_length), 0) AS bytes'
-                . ' FROM information_schema.TABLES WHERE table_schema = DATABASE() AND table_name LIKE ?',
+                . ' FROM information_schema.TABLES WHERE table_schema = DATABASE() AND table_name LIKE ? ESCAPE \'!\'',
                 array(TablePrefix::like($prefix))
             );
         } catch (Throwable $e) {
