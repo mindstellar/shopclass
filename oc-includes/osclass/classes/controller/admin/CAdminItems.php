@@ -574,8 +574,8 @@ class CAdminItems extends AdminSecBaseModel
                 $regUserCanSendFriend  = (Params::getParam('reg_user_can_send_friend') != '') ? '1' : '0';
                 $warnExpiration        = Params::getParam('warn_expiration');
                 $warnExpiration        = (int)$warnExpiration;
-                $titleLength           = Params::getParam('max_chars_per_title');
-                $descriptionLength     = Params::getParam('max_chars_per_description');
+                $titleLength           = Params::getParamString('max_chars_per_title');
+                $descriptionLength     = Params::getParamString('max_chars_per_description');
                 $moderatePost          = Params::getParam('moderate_admin_post');
                 $moderateEdit          = Params::getParam('moderate_admin_edit');
                 $tinymce               = Params::getParam('tinymce');
