@@ -26,11 +26,6 @@ namespace mindstellar\routing;
 class CoreRoutes
 {
     /**
-     * Path segment placeholder used when a route's arguments carry no value.
-     */
-    private const DEFAULT_SEPARATOR = '/';
-
-    /**
      * The table, in the order the rules must be tried. Order is load bearing:
      * the first pattern that matches wins, so a route whose path is a prefix of
      * another's has to come after it.
@@ -457,10 +452,8 @@ class CoreRoutes
         }
         $tpl       = $templates[$name];
         $structure = trim((string)osc_get_preference($tpl['pref']));
-        // An empty structure compiles to '^/?$', which answers the site's front page
-        // with the wrong controller. Reachable: this table is rebuilt the moment new
-        // code is deployed, which can be before a release's migration has seeded a
-        // preference, and the permalinks screen does not require every structure.
+        // An empty structure is skipped for the same reason rules() skips an empty
+        // path: it would compile to '^/?$' and answer the site's front page.
         if ($structure === '') {
             return array();
         }
@@ -609,13 +602,13 @@ class CoreRoutes
                 if (!isset($spec['re'])) {
                     continue;
                 }
-                $pattern    .= ($spec['sep'] ?? self::DEFAULT_SEPARATOR) . $spec['re'];
+                $pattern    .= ($spec['sep'] ?? '/') . $spec['re'];
                 $captures[]  = $name;
             }
             $pattern .= $route['tail'] ?? '/?$';
 
             $query = $route['to'];
-            foreach (self::order($route, $captures) as $name) {
+            foreach ($route['order'] ?? $captures as $name) {
                 $query[$name] = '$' . (array_search($name, $captures, true) + 1);
             }
 
@@ -665,7 +658,7 @@ class CoreRoutes
         }
 
         $query = $route['to'];
-        foreach (self::order($route, array_keys($params)) as $key) {
+        foreach ($route['order'] ?? array_keys($params) as $key) {
             $value = (string)($args[$key] ?? '');
             if ($value === '') {
                 continue;
@@ -674,19 +667,6 @@ class CoreRoutes
         }
 
         return ($admin ? osc_admin_base_url(true) : osc_base_url(true)) . '?' . self::join($query);
-    }
-
-    /**
-     * Parameter names in the order they are written into a query string.
-     *
-     * @param array<string,mixed> $route
-     * @param array<int,string>   $fallback
-     *
-     * @return array<int,string>
-     */
-    private static function order(array $route, array $fallback): array
-    {
-        return $route['order'] ?? $fallback;
     }
 
     /**

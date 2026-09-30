@@ -12,12 +12,8 @@
 namespace mindstellar\storage;
 
 /**
- * What an upload is allowed to be, and what it actually is.
- *
- * The allowed list was derived from `mimes.php` by the same eighteen lines in two places, and
- * the two then disagreed about how to read a file's type: one asked `getimagesize()`, the other
- * tried finfo, then `mime_content_type()`, then — with neither available — the type the browser
- * sent, which is the one thing about an upload nobody should trust.
+ * What an upload is allowed to be, and what it actually is. Detects a file's real type
+ * through finfo, then mime_content_type(), never the type the browser sent.
  *
  * @package mindstellar\storage
  */

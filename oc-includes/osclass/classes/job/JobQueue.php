@@ -13,6 +13,7 @@ namespace mindstellar\job;
 
 use InvalidArgumentException;
 use mindstellar\database\DbException;
+use mindstellar\database\QueryBuilder;
 
 /**
  * The durable queue behind t_job_queue.
@@ -227,14 +228,14 @@ final class JobQueue
         $stats = array(self::STATUS_PENDING => 0, self::STATUS_RUNNING => 0, self::STATUS_ERROR => 0, 'oldest' => null);
 
         try {
-            $q = osc_db_table($this->table())
-                ->select('s_status')
-                ->selectRaw('COUNT(*) AS i_count')
-                ->selectRaw('MIN(dt_created) AS dt_oldest')
-                ->groupBy('s_status');
-            if ($type !== null && $type !== '') {
-                $q = $q->where('s_type', $type);
-            }
+            $q = self::whereType(
+                osc_db_table($this->table())
+                    ->select('s_status')
+                    ->selectRaw('COUNT(*) AS i_count')
+                    ->selectRaw('MIN(dt_created) AS dt_oldest')
+                    ->groupBy('s_status'),
+                $type
+            );
             $rows = $q->get();
         } catch (DbException $e) {
             return $stats;
@@ -242,7 +243,7 @@ final class JobQueue
 
         foreach ($rows as $row) {
             $status = (string) $row['s_status'];
-            if (array_key_exists($status, $stats) && $status !== 'oldest') {
+            if (array_key_exists($status, $stats)) {
                 $stats[$status] = (int) $row['i_count'];
             }
             if ($status === self::STATUS_PENDING) {
@@ -525,16 +526,43 @@ final class JobQueue
         }
 
         try {
-            osc_db_table($this->table())->where('pk_i_id', $id)->update(array(
+            osc_db_table($this->table())->where('pk_i_id', $id)->update(self::resetColumns(array(
                 's_payload'   => $encoded,
                 's_status'    => self::STATUS_PENDING,
-                's_worker'    => null,
-                'dt_locked'   => null,
                 'dt_next_run' => date('Y-m-d H:i:s', time() + max(0, $delaySeconds)),
-            ));
+            )));
         } catch (DbException $e) {
             // absorbed; the stale-lock sweep recovers it
         }
+    }
+
+    /**
+     * The s_worker/dt_locked reset every path applies once a job stops being claimed,
+     * plus any extra columns that path also writes.
+     *
+     * @param array<string,mixed> $extra
+     *
+     * @return array<string,mixed>
+     */
+    private static function resetColumns(array $extra = array()): array
+    {
+        return $extra + array(
+            's_worker'  => null,
+            'dt_locked' => null,
+        );
+    }
+
+    /**
+     * Narrow a query to one job type, when given.
+     *
+     * @param QueryBuilder $q
+     * @param string|null  $type
+     *
+     * @return QueryBuilder
+     */
+    private static function whereType(QueryBuilder $q, ?string $type): QueryBuilder
+    {
+        return ($type !== null && $type !== '') ? $q->where('s_type', $type) : $q;
     }
 
     /**
@@ -576,11 +604,7 @@ final class JobQueue
             osc_db_table($this->table())
                 ->whereIn('pk_i_id', array_map('intval', $ids))
                 ->where('s_status', self::STATUS_RUNNING)
-                ->update(array(
-                    's_status'  => self::STATUS_PENDING,
-                    's_worker'  => null,
-                    'dt_locked' => null,
-                ));
+                ->update(self::resetColumns(array('s_status' => self::STATUS_PENDING)));
         } catch (DbException $e) {
             // absorbed; the stale-lock sweep recovers them
         }
@@ -607,12 +631,10 @@ final class JobQueue
 
         $attempts = (int) $row['i_attempts'] + 1;
 
-        $values = array(
+        $values = self::resetColumns(array(
             'i_attempts'   => $attempts,
             's_last_error' => substr($error, 0, 250),
-            's_worker'     => null,
-            'dt_locked'    => null,
-        );
+        ));
 
         if ($attempts >= self::MAX_ATTEMPTS) {
             $values['s_status'] = self::STATUS_ERROR;
@@ -651,10 +673,7 @@ final class JobQueue
     public function count(string $status = self::STATUS_PENDING, ?string $type = null): int
     {
         try {
-            $q = osc_db_table($this->table())->where('s_status', $status);
-            if ($type !== null && $type !== '') {
-                $q = $q->where('s_type', $type);
-            }
+            $q = self::whereType(osc_db_table($this->table())->where('s_status', $status), $type);
 
             return $q->count();
         } catch (DbException $e) {
@@ -670,25 +689,10 @@ final class JobQueue
      */
     public function summary(): array
     {
-        $counts = array(
-            self::STATUS_PENDING => 0,
-            self::STATUS_RUNNING => 0,
-            self::STATUS_ERROR   => 0,
-        );
+        $stats = $this->stats();
+        unset($stats['oldest']);
 
-        try {
-            $rows = osc_db_select(
-                'SELECT s_status, COUNT(*) AS i_count FROM ' . $this->table() . ' GROUP BY s_status'
-            );
-        } catch (DbException $e) {
-            return $counts;
-        }
-
-        foreach ($rows as $row) {
-            $counts[(string) $row['s_status']] = (int) $row['i_count'];
-        }
-
-        return $counts;
+        return $stats;
     }
 
     /**
@@ -734,9 +738,7 @@ final class JobQueue
             if ($status !== null && $status !== '') {
                 $q = $q->where('s_status', $status);
             }
-            if ($type !== null && $type !== '') {
-                $q = $q->where('s_type', $type);
-            }
+            $q = self::whereType($q, $type);
 
             $rows = $q->orderBy('pk_i_id', 'DESC')
                 ->limit(max(1, min(200, $limit)))
@@ -781,14 +783,12 @@ final class JobQueue
             return osc_db_table($this->table())
                 ->where('pk_i_id', $id)
                 ->where('s_status', self::STATUS_ERROR)
-                ->update(array(
+                ->update(self::resetColumns(array(
                     's_status'     => self::STATUS_PENDING,
                     'i_attempts'   => 0,
                     's_last_error' => null,
-                    's_worker'     => null,
-                    'dt_locked'    => null,
                     'dt_next_run'  => date('Y-m-d H:i:s'),
-                )) > 0;
+                ))) > 0;
         } catch (DbException $e) {
             return false;
         }
@@ -804,19 +804,14 @@ final class JobQueue
     public function retryAll(?string $type = null): int
     {
         try {
-            $q = osc_db_table($this->table())->where('s_status', self::STATUS_ERROR);
-            if ($type !== null && $type !== '') {
-                $q = $q->where('s_type', $type);
-            }
+            $q = self::whereType(osc_db_table($this->table())->where('s_status', self::STATUS_ERROR), $type);
 
-            return $q->update(array(
+            return $q->update(self::resetColumns(array(
                 's_status'     => self::STATUS_PENDING,
                 'i_attempts'   => 0,
                 's_last_error' => null,
-                's_worker'     => null,
-                'dt_locked'    => null,
                 'dt_next_run'  => date('Y-m-d H:i:s'),
-            ));
+            )));
         } catch (DbException $e) {
             return 0;
         }
@@ -851,10 +846,7 @@ final class JobQueue
     public function forgetAll(?string $type = null): int
     {
         try {
-            $q = osc_db_table($this->table())->where('s_status', self::STATUS_ERROR);
-            if ($type !== null && $type !== '') {
-                $q = $q->where('s_type', $type);
-            }
+            $q = self::whereType(osc_db_table($this->table())->where('s_status', self::STATUS_ERROR), $type);
 
             return $q->delete();
         } catch (DbException $e) {

@@ -36,6 +36,26 @@ use Throwable;
 final class ResourceUploader
 {
     /**
+     * Re-encode the uploaded source into an "_original" file next to the variants.
+     * A copy stores the upload byte for byte, so anything appended after the image
+     * survives on disk under an image extension; re-encoding strips that.
+     *
+     * @param string $tmpFile  absolute path to the uploaded temp file
+     * @param string $destPath absolute path to write the re-encoded original to
+     * @param string $extension
+     *
+     * @return void
+     */
+    public static function saveOriginal(string $tmpFile, string $destPath, string $extension): void
+    {
+        try {
+            ImageProcessing::fromFile($tmpFile)->autoRotate()->saveToFile($destPath, $extension);
+        } catch (Throwable $e) {
+            @unlink($destPath);
+        }
+    }
+
+    /**
      * Validate an image, write its variants and record a t_resource row.
      *
      * $options keys (all optional):
@@ -155,14 +175,7 @@ final class ResourceUploader
             return false;
         }
         if ($keepOriginal) {
-            // Re-encoded, not copied. A copy stores the upload byte for byte, so anything
-            // appended after the image survives on disk under an image extension.
-            try {
-                ImageProcessing::fromFile($tmpFile)->autoRotate()
-                    ->saveToFile($folder . $id . '_original.' . $extension, $extension);
-            } catch (Throwable $e) {
-                @unlink($folder . $id . '_original.' . $extension);
-            }
+            self::saveOriginal($tmpFile, $folder . $id . '_original.' . $extension, $extension);
         }
 
         $this->cleanupTemps($tmpFile, $normalTmp, $secondary);

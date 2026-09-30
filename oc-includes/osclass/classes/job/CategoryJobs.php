@@ -17,19 +17,9 @@ use mindstellar\database\DbException;
 use Throwable;
 
 /**
- * Deleting a category, in batches, when it is too big to do in a request.
- *
- * `Category::deleteByPrimaryKey()` loads every listing in the tree and removes them one
- * at a time inside a single transaction. Measured on a 243k-listing production copy: 808
- * listings took 17.9 seconds, about 22ms each. The largest category there holds 39,225,
- * which is roughly 14.5 minutes of held InnoDB locks -- and any host with a
- * `max_execution_time` kills the request part-way, rolls the whole thing back, and leaves
- * a category nobody can delete. It was never a data-safety problem; it was an
- * availability one.
- *
- * So a big category is deleted here instead, a batch at a time, with nothing held open
- * between batches. A small one is still deleted in the request, because a site owner
- * clicking delete on a category with nine listings should see it gone, not "queued".
+ * Deleting a category, in batches, when it is too big to do in a request. A big category
+ * is removed a batch at a time with nothing held open between runs; a small one is still
+ * deleted inline, the same request the user clicked delete in.
  */
 final class CategoryJobs
 {
@@ -84,7 +74,7 @@ final class CategoryJobs
         // the job reaches them, and a category being emptied should not be browsable.
         self::disable($ids);
 
-        $id = osc_job_enqueue(self::TYPE, array('category_id' => $categoryId, 'ids' => $ids));
+        $id = osc_job_enqueue(self::TYPE, array('category_id' => $categoryId));
 
         return $id > 0 ? 'queued' : 'failed';
     }
@@ -132,7 +122,7 @@ final class CategoryJobs
             }
 
             // More than a batch left. Nothing is held between runs.
-            $job->repeat(array('category_id' => $categoryId, 'ids' => $ids));
+            $job->repeat(array('category_id' => $categoryId));
 
             return;
         }
@@ -249,10 +239,6 @@ final class CategoryJobs
      */
     private static function disable(array $ids): void
     {
-        if ($ids === array()) {
-            return;
-        }
-
         try {
             osc_db_table(DB_TABLE_PREFIX . 't_category')
                 ->whereIn('pk_i_id', $ids)

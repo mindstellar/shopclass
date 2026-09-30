@@ -535,25 +535,17 @@ class Sitemap extends DAO
      */
     public function itemUrl($itemId, $itemTitle, $itemCategory = '', $itemCity = '', $locale = '')
     {
-        if (osc_rewrite_enabled()) {
-            $values = array(
-                'ITEM_ID'    => osc_sanitizeString($itemId),
-                'ITEM_CITY'  => osc_sanitizeString($itemCity),
-                'ITEM_TITLE' => osc_sanitizeString($itemTitle),
-            );
-            if (stripos((string)osc_get_preference('rewrite_item_url'), '{CATEGORIES}') !== false) {
-                $values['CATEGORIES'] = \mindstellar\routing\CoreRoutes::categoryPath($itemCategory);
-            }
-            $url  = \mindstellar\routing\CoreRoutes::expand('item', $values);
-            $path = osc_base_url() . ($locale !== '' ? $locale . '/' : '') . $url;
-        } else {
-            $path = osc_item_url_ns($itemId, $locale);
-        }
+        $row = array(
+            'pk_i_id'          => $itemId,
+            's_title'          => $itemTitle,
+            's_city'           => $itemCity,
+            'fk_i_category_id' => $itemCategory,
+        );
 
         // Return the raw URL: addUrl() wraps it in a DOMDocument text node,
         // which is the single XML-escaping step. Pre-encoding here would
         // double-escape "&" in query-string (non-friendly) URLs.
-        return $path;
+        return osc_item_url_from_item($row, $locale);
     }
 
     /* ------------------------------------------------------------------ *

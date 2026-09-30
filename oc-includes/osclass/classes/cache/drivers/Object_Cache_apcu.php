@@ -204,8 +204,6 @@ class Object_Cache_apcu implements iObject_Cache
             }
             if ($found) {
                 $this->cache[$key] = is_object($value) ? clone $value : $value;
-            }
-            if ($found) {
                 ++$this->cache_hits;
                 $return = $this->cache[$key];
             } else {

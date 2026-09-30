@@ -12,6 +12,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\storage\ResourceUploader;
 use mindstellar\utility\Sanitize;
 
 /**
@@ -1114,14 +1115,8 @@ class ItemActions
                             continue;
                         }
                         if (osc_keep_original_image()) {
-                            // Re-encoded, not copied. A copy stores the upload byte for byte, so
-                            // anything appended after the image survives under an image extension.
                             $path = $folder . $resourceId . '_original.' . $extension;
-                            try {
-                                ImageProcessing::fromFile($tmpName)->autoRotate()->saveToFile($path, $extension);
-                            } catch (Throwable $e) {
-                                @unlink($path);
-                            }
+                            ResourceUploader::saveOriginal($tmpName, $path, $extension);
                         }
                         unlink($tmpName . '_normal');
                         unlink($tmpName . '_preview');

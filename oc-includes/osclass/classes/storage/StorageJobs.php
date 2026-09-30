@@ -20,14 +20,8 @@ use RuntimeException;
 use Throwable;
 
 /**
- * The `storage.*` job handlers.
- *
- * These were a `switch` inside the storage worker, which is why a plugin could never add
- * a job type of its own. They register through the same call a plugin uses, and the queue
- * that runs them is shared with everything else.
- *
- * Every one is idempotent, because the queue can run a job twice: a worker killed
- * mid-upload leaves its row claimed, and a later tick picks it up again.
+ * The `storage.*` job handlers, registered through the same call a plugin uses. Each is
+ * idempotent, since a worker killed mid-job leaves its row claimed for a later tick to pick up.
  */
 final class StorageJobs
 {
@@ -41,12 +35,9 @@ final class StorageJobs
      */
     public static function register(): void
     {
-        // The adapter has to exist before any storage job runs, and the request that
-        // drains the queue is usually not the one that produced the upload -- a web cron
-        // tick, or the CLI. Registering it here ties it to the handlers it serves.
-        //
-        // Guarded because this runs inside a hook: a fatal here would stop every other
-        // handler registering, and take down jobs that have nothing to do with storage.
+        // The adapter must exist before any storage job runs, and the request draining
+        // the queue is often not the one that produced the upload. Guarded: a fatal here
+        // must not stop every other handler from registering.
         if (function_exists('osc_storage_register_remote')) {
             osc_storage_register_remote();
         }
@@ -70,14 +61,9 @@ final class StorageJobs
     }
 
     /**
-     * Queue a storage job. One place builds the payload, so the polymorphic discriminator
-     * below cannot be dropped by accident at a call site.
-     *
-     * s_owner_type / i_owner_id are what route a job to the Resource (t_resource) model
-     * rather than ItemResource (t_item_resource). Dropping them sent every t_resource
-     * offload -- user avatars via the uploaded_resource hook -- to the item table, where
-     * the pk hit an unrelated item resource or none: the avatar never flipped, and its
-     * freshly uploaded object could even be queued for deletion.
+     * Queue a storage job. One place builds the payload, so s_owner_type / i_owner_id --
+     * which route a job to the Resource model instead of ItemResource -- cannot be
+     * dropped by accident at a call site.
      *
      * @param string              $op        delete|offload|restore|adopt|regenerate
      * @param string              $storageId the adapter this job acts on
@@ -139,20 +125,34 @@ final class StorageJobs
         $adapter     = StorageManager::instance()->adapter($job->storage());
         $removeLocal = ($snapshot['local'] ?? true) !== false;
 
-        foreach (ResourceLocator::variants() as $variant) {
-            if ($adapter !== null && $adapter->isRemote()) {
+        if ($adapter !== null && $adapter->isRemote()) {
+            foreach (ResourceLocator::variants() as $variant) {
                 try {
                     $adapter->delete(ResourceLocator::storageKey($snapshot, $variant));
                 } catch (Throwable $e) {
                     // Missing-key errors from the remote adapter are not fatal here.
                 }
             }
+        }
 
-            if ($removeLocal) {
-                $path = ResourceLocator::localPath($snapshot, $variant);
-                if (file_exists($path) && !is_dir($path)) {
-                    (new FileSystem())->remove($path);
-                }
+        if ($removeLocal) {
+            self::removeLocal($snapshot);
+        }
+    }
+
+    /**
+     * Remove each local variant of a resource that is still a file.
+     *
+     * @param array<string,mixed> $snapshot
+     *
+     * @return void
+     */
+    private static function removeLocal(array $snapshot): void
+    {
+        foreach (ResourceLocator::variants() as $variant) {
+            $path = ResourceLocator::localPath($snapshot, $variant);
+            if (file_exists($path) && !is_dir($path)) {
+                (new FileSystem())->remove($path);
             }
         }
     }
@@ -201,13 +201,7 @@ final class StorageJobs
         self::updateStorage($snapshot, $storage);
 
         if (osc_get_preference('storage_keep_local', 'osclass') === 'none') {
-            foreach (ResourceLocator::variants() as $variant) {
-                $path = ResourceLocator::localPath($snapshot, $variant);
-                if (file_exists($path) && !is_dir($path)) {
-                    (new FileSystem())->remove($path);
-                }
-            }
-
+            self::removeLocal($snapshot);
             self::invalidateOwnerCaches($snapshot);
         }
     }

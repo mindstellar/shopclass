@@ -85,10 +85,6 @@ osc_add_hook('init', static function () {
     osc_storage_register_remote();
 });
 
-// Draining the queue is hJobs.php's cron hook now, and it runs every job type rather
-// than only storage's. The remote adapter is registered from StorageJobs::register(),
-// which the worker calls before its first claim.
-
 // Queue a freshly uploaded resource for offload to the configured remote
 // adapter. No-op on installs that never configured one.
 $oscStorageEnqueueOffload = static function ($resource) {

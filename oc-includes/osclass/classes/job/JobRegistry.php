@@ -14,17 +14,11 @@ namespace mindstellar\job;
 use InvalidArgumentException;
 
 /**
- * Which callable runs which job type.
+ * Which callable runs which job type. Core registers `storage.*` and `category.*` through
+ * `osc_job_register_handler()`, the same call a plugin uses.
  *
- * This is what a `switch` in the worker used to be, and the reason it is a registry
- * instead: a plugin cannot add a `case`. Core registers `storage.*` and `category.*`
- * here the same way a plugin registers its own, through `osc_job_register_handler()`,
- * so there is one route in and no privileged list.
- *
- * A type is `namespace.name`: lower-case letters, digits, underscores and dots. The
- * namespace is what keeps a plugin's `invoice.send` from colliding with core's, and
- * it is required -- a bare `send` is refused, because the first plugin to claim a
- * common word would take it from everyone else.
+ * A type is `namespace.name` (lower-case letters, digits, underscores, dots); the namespace
+ * is required so a plugin's `invoice.send` cannot collide with another plugin's or core's.
  */
 final class JobRegistry
 {

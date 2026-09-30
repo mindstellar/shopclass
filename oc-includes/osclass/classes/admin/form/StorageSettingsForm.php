@@ -68,13 +68,9 @@ final class StorageSettingsForm
                 's3'    => __('Amazon S3-compatible'),
             ))
                 ->default('local')
-                ->sanitize(static function ($value) {
-                    return self::backend($value);
-                })
+                ->sanitize(array(self::class, 'backend'))
                 // Again on the way to storage: a value posted as a list skips a field's sanitiser.
-                ->persist(static function ($value) {
-                    return self::backend($value);
-                })
+                ->persist(array(self::class, 'backend'))
             ->select(
                 self::PROVIDER,
                 __('Provider'),
@@ -84,12 +80,8 @@ final class StorageSettingsForm
             )
                 ->set('id', 'storage_provider')
                 ->default(self::DEFAULT_PROVIDER)
-                ->sanitize(static function ($value) {
-                    return self::provider($value);
-                })
-                ->persist(static function ($value) {
-                    return self::provider($value);
-                })
+                ->sanitize(array(self::class, 'provider'))
+                ->persist(array(self::class, 'provider'))
             ->text('storage_s3_bucket', __('Bucket'))
             ->text('storage_s3_region', __('Region'))
                 // At the write, so the provider is the one a before_save listener left.
@@ -108,9 +100,7 @@ final class StorageSettingsForm
             )
                 ->width('key')
                 ->attrs(self::URL_ATTRS)
-                ->sanitize(static function ($value) {
-                    return self::httpUrlOrEmpty($value);
-                })
+                ->sanitize(array(self::class, 'httpUrlOrEmpty'))
             ->text('storage_s3_access_key', __('Access key'))
                 ->width('key')
             ->secret(self::SECRET, __('Secret key'))
@@ -135,9 +125,7 @@ final class StorageSettingsForm
                     . osc_esc_html(__('Optional. Overrides the URL used to serve files, e.g. a CDN domain in front of the bucket.'))
                     . '</span>'
                 )
-                ->sanitize(static function ($value) {
-                    return self::httpUrlOrEmpty($value);
-                })
+                ->sanitize(array(self::class, 'httpUrlOrEmpty'))
             ->checkbox(
                 'storage_s3_signed_urls',
                 __('Serve files through time-limited signed URLs.'),
@@ -150,23 +138,15 @@ final class StorageSettingsForm
                 ->set('max', self::MAX_TTL)
                 ->suffix(__('seconds'))
                 ->default(self::DEFAULT_TTL)
-                ->sanitize(static function ($value) {
-                    return self::ttl($value);
-                })
-                ->persist(static function ($value) {
-                    return self::ttl($value);
-                })
+                ->sanitize(array(self::class, 'ttl'))
+                ->persist(array(self::class, 'ttl'))
             ->select('storage_keep_local', __('Local copies'), array(
                 'all'  => __('Keep local copies'),
                 'none' => __('Delete after upload'),
             ))
                 ->default('all')
-                ->sanitize(static function ($value) {
-                    return self::keepLocal($value);
-                })
-                ->persist(static function ($value) {
-                    return self::keepLocal($value);
-                })
+                ->sanitize(array(self::class, 'keepLocal'))
+                ->persist(array(self::class, 'keepLocal'))
             ->group(__('Backups'))
             ->text(
                 'storage_s3_backup_bucket',
@@ -176,12 +156,8 @@ final class StorageSettingsForm
                    . 'Each site saves in its own folder named from its address. '
                    . 'Use one backups bucket per site, or leave it to the per-site folder.')
             )
-                ->sanitize(static function ($value) {
-                    return self::bucketName($value);
-                })
-                ->persist(static function ($value) {
-                    return self::bucketName($value);
-                })
+                ->sanitize(array(self::class, 'bucketName'))
+                ->persist(array(self::class, 'bucketName'))
             ->number(
                 'backup_keep',
                 __('Backups kept'),
@@ -190,12 +166,8 @@ final class StorageSettingsForm
                 ->set('min', 1)
                 ->set('max', self::MAX_KEEP)
                 ->default(self::DEFAULT_KEEP)
-                ->sanitize(static function ($value) {
-                    return self::keep($value);
-                })
-                ->persist(static function ($value) {
-                    return self::keep($value);
-                })
+                ->sanitize(array(self::class, 'keep'))
+                ->persist(array(self::class, 'keep'))
             ->custom('storage_clear', static function () {
                 echo '<div class="clear"></div>';
             })

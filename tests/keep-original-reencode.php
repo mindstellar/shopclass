@@ -105,13 +105,26 @@ foreach (array(
         preg_match('/osc_copy\(\s*\$tmp(Name|File)\s*,/', $src) !== 1,
         'osc_copy() is still handed the raw upload temp'
     );
-    check(
-        $file . ' re-encodes the original instead',
-        strpos($src, "_original.' . \$extension") !== false
-        && preg_match('/ImageProcessing::fromFile\(\$tmp\w*\)->autoRotate\(\)\s*\n?\s*->?\s*saveToFile/', $src) === 1,
-        'no ImageProcessing::fromFile(...)->autoRotate()->saveToFile() found'
-    );
 }
+
+// Both paths share the re-encode step through ResourceUploader::saveOriginal().
+$itemActionsSrc = file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/actions/ItemActions.php');
+check(
+    'ItemActions.php delegates the original to ResourceUploader::saveOriginal()',
+    strpos($itemActionsSrc, "_original.' . \$extension") !== false
+    && strpos($itemActionsSrc, 'ResourceUploader::saveOriginal(') !== false,
+    'no ResourceUploader::saveOriginal() call found'
+);
+
+$uploaderSrc = file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/storage/ResourceUploader.php');
+check(
+    'ResourceUploader::saveOriginal() re-encodes the original',
+    preg_match(
+        '/function saveOriginal\(.*?ImageProcessing::fromFile\(\$tmp\w*\)->autoRotate\(\)\s*\n?\s*->?\s*saveToFile/s',
+        $uploaderSrc
+    ) === 1,
+    'no ImageProcessing::fromFile(...)->autoRotate()->saveToFile() found inside saveOriginal()'
+);
 
 array_map('unlink', glob($dir . '/*'));
 @rmdir($dir);
