@@ -142,11 +142,11 @@ final class AdminTwoFactor
             return null;
         }
         $codes = Totp::newBackupCodes();
-        self::save($adminId, array(
+        self::write($adminId, (string)json_encode(array(
             'secret' => $secret,
             'backup' => array_map(array(self::class, 'backupHash'), $codes),
             'step'   => $step,
-        ));
+        )));
 
         return $codes;
     }
@@ -166,7 +166,7 @@ final class AdminTwoFactor
         }
         $codes              = Totp::newBackupCodes();
         $settings['backup'] = array_map(array(self::class, 'backupHash'), $codes);
-        self::save((int)$admin['pk_i_id'], $settings);
+        self::write((int)$admin['pk_i_id'], (string)json_encode($settings));
 
         return $codes;
     }
@@ -195,17 +195,6 @@ final class AdminTwoFactor
         $data = json_decode((string)self::read((int)($admin['pk_i_id'] ?? 0)), true);
 
         return (string)$admin['s_password'] . (is_array($data) ? (string)($data['secret'] ?? $data['off'] ?? '') : '');
-    }
-
-    /**
-     * @param int                 $adminId
-     * @param array<string,mixed> $settings
-     *
-     * @return void
-     */
-    private static function save(int $adminId, array $settings): void
-    {
-        self::write($adminId, (string)json_encode($settings));
     }
 
     /**

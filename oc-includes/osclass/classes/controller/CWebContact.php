@@ -173,7 +173,7 @@ MESSAGE;
                     'gone'    => _m('This message was already sent, or its link has expired.'),
                     'invalid' => _m('This link is not valid.'),
                     'failed'  => _m('The message could not be sent. The listing or member may no longer be available.'),
-                ));
+                ), $discard ? 'deleted' : '1');
                 break;
             default:                //contact
                 $this->doView(osc_locate_template(array('contact.php'), 'contact'));
@@ -188,10 +188,11 @@ MESSAGE;
      * @param int                  $max    tries per hour from one address
      * @param callable             $run    fn(string $token): string, 'done' or an $errors key
      * @param array<string,string> $errors message per outcome
+     * @param string               $done   the done= value on success
      *
      * @return void
      */
-    private function linkPost(string $mode, int $max, callable $run, array $errors)
+    private function linkPost(string $mode, int $max, callable $run, array $errors, string $done = '1')
     {
         osc_csrf_check();
         $back    = osc_base_url(true) . '?page=contact&action=' . $mode;
@@ -203,7 +204,7 @@ MESSAGE;
         \mindstellar\security\ActionThrottle::record($context);
         $status = $run(Params::getParamString('t'));
         if ($status === 'done') {
-            $this->redirectTo($back . '&done=' . (Params::getParamString('discard') === '1' ? 'deleted' : '1'));
+            $this->redirectTo($back . '&done=' . $done);
         }
         osc_add_flash_error_message($errors[$status] ?? $errors['failed']);
         $this->redirectTo($back);

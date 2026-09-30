@@ -149,15 +149,20 @@ function _alert_email_recipient($user, $ads, $s_search)
     );
     $unsub_link = '<a href="' . $unsub_link . '">' . __('unsubscribe alert') . '</a>';
 
-    $keys = array('{USER_NAME}', '{USER_EMAIL}', '{ADS}', '{UNSUB_LINK}');
+    [$words, $htmlWords] = _osc_mail_words(
+        array(
+            '{USER_NAME}'  => $user['s_name'],
+            '{USER_EMAIL}' => $user['s_email'],
+            '{ADS}'        => $ads,
+            '{UNSUB_LINK}' => $unsub_link,
+        ),
+        array('{USER_NAME}', '{USER_EMAIL}')
+    );
 
     return array(
         'user'      => $user,
-        'words'     => array($keys, array($user['s_name'], $user['s_email'], $ads, $unsub_link)),
-        'htmlWords' => array(
-            $keys,
-            array(osc_esc_html($user['s_name']), osc_esc_html($user['s_email']), $ads, $unsub_link),
-        ),
+        'words'     => $words,
+        'htmlWords' => $htmlWords,
     );
 }
 

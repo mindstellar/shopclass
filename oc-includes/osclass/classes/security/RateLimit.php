@@ -63,7 +63,7 @@ final class RateLimit
                 array($bucket, $window)
             );
         } catch (\Throwable $e) {
-            self::unavailable($e);
+            FailOpen::log('RateLimit', 'the request', $e, $failOpen);
 
             return $failOpen;
         }
@@ -84,21 +84,9 @@ final class RateLimit
                 array(time())
             );
         } catch (\Throwable $e) {
-            self::unavailable($e);
+            FailOpen::log('RateLimit', 'the request', $e);
 
             return 0;
         }
-    }
-
-    /**
-     * The counter could not be reached, so the limit stands aside.
-     *
-     * @param \Throwable $e
-     *
-     * @return void
-     */
-    private static function unavailable(\Throwable $e): void
-    {
-        FailOpen::log('RateLimit', 'the request', $e);
     }
 }

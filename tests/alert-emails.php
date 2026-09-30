@@ -206,8 +206,8 @@ foreach (array('hourly', 'daily', 'weekly') as $period) {
 
     $out = digest($fn, array('pk_i_id' => 23, 's_name' => 'Jo <b> & Co', 's_email' => 'jo@example.com'));
     pin(
-        'the subject is plain text, so the name goes in as written',
-        'Alert_email_' . $period . ' for Jo <b> & Co',
+        'the subject is plain text, so tags are stripped from the name',
+        'Alert_email_' . $period . ' for Jo  & Co',
         $out['sent'][0]['subject']
     );
     pin(

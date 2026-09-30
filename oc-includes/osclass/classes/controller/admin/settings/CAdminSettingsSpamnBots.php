@@ -186,17 +186,6 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
         // reads as "no key configured" rather than as anything being wrong.
         $this->_exportVariableToView('akismet_status', $akismetStatus);
         $this->_exportVariableToView('spam_forms', SpamSettingsForm::formVars($akismetStatus, $rejected, $values));
-        // Failed sign-ins, a page at a time. The list is on System info > Security now; a
-        // replaced admin theme's own view may still read it here.
-        $activity = \mindstellar\security\LoginThrottle::activity();
-        $length   = \mindstellar\admin\ListPaging::length(20);
-        $page     = \mindstellar\admin\ListPaging::page();
-        $rows     = array_slice($activity, \mindstellar\admin\ListPaging::start($page, $length), $length);
-        $this->_exportVariableToView('login_throttle_activity', array(
-            'aRows'                => $rows,
-            'iTotalDisplayRecords' => count($activity),
-            'iDisplayLength'       => $length,
-        ));
         $this->doView('settings/spamNbots.php');
     }
 }

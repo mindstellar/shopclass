@@ -59,6 +59,7 @@ class CAdminSettings
             case ('akismet_post'):
             case ('recaptcha_post'):
             case ('alerts_post'):
+            case ('messages_post'):
             case ('login_throttle_post'):
             case ('login_throttle_reset'):
             case ('login_throttle_unblock'):

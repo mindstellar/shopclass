@@ -118,14 +118,7 @@ class AdminSecBaseModel extends SecBaseModel
     }
 
     /**
-     * Send the admin away when this install is a demo, before an action changes anything.
-     *
-     * Thirty-five screens carried a copy of this, in two wordings of the same sentence, and
-     * every missing copy is a demo site something can be done to.
-     *
-     * Answers whether it refused, so a caller stops on its own rather than trusting
-     * redirectTo() to exit. It does exit today, and the answer is still worth acting on: it
-     * is what keeps the refusal true if that ever stops being the case.
+     * On a demo install, refuse the action and redirect before it changes anything.
      *
      * @param string $redirectUrl where to send them; the admin home by default
      *

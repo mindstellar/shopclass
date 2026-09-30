@@ -153,7 +153,7 @@ class CAdminLogin extends AdminBaseModel
                     $this->redirectTo(osc_admin_base_url(true) . '?page=login&action=2fa');
                 }
                 Session::newInstance()->_drop('admin2fa');
-                $this->signIn(Admin::newInstance()->findByPrimaryKey($pending['id']), $pending['remember'], $pending['locale']);
+                $this->signIn($admin, $pending['remember'], $pending['locale']);
                 $this->redirectTo($pending['redirect']);
                 break;
             case ('recover'):        // form to recover the password (in this case we have the form in /gui/)

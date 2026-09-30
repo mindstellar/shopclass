@@ -37,7 +37,7 @@ final class ProxyIpMismatch
 
     /**
      * @param string               $remoteAddr the request's REMOTE_ADDR
-     * @param array<string,string> $server     the headers listed above, keyed as in $_SERVER
+     * @param array<string,mixed>  $server     server params keyed as in $_SERVER; only the headers listed above are read
      *
      * @return array{header: string, proxy: string}|null the triggering header and REMOTE_ADDR, or null when addresses agree
      */
