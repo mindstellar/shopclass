@@ -352,6 +352,32 @@ padding: 1em;'><h2>Memcached stats</h2>";
     }
 
     /**
+     * Whether the last call reached the server. Only a connection error marks it down:
+     * a refused value (too large, not a number) still means the server answered.
+     *
+     * @return bool
+     */
+    private function answered(): bool
+    {
+        $connection = array(
+            'RES_HOST_LOOKUP_FAILURE', 'RES_CONNECTION_FAILURE', 'RES_CONNECTION_BIND_FAILURE',
+            'RES_CONNECTION_SOCKET_CREATE_FAILURE', 'RES_WRITE_FAILURE', 'RES_READ_FAILURE',
+            'RES_UNKNOWN_READ_FAILURE', 'RES_NO_SERVERS', 'RES_ERRNO', 'RES_FAIL_UNIX_SOCKET',
+            'RES_TIMEOUT', 'RES_SERVER_MARKED_DEAD', 'RES_SERVER_TEMPORARILY_DISABLED', 'RES_AUTH_FAILURE',
+        );
+        $code = $this->memcached->getResultCode();
+        foreach ($connection as $name) {
+            if (defined('Memcached::' . $name) && $code === constant('Memcached::' . $name)) {
+                $this->down = true;
+
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Namespace every key with a value unique to this install.
      *
      * APCu and memcached are shared stores: several installs can sit behind one
@@ -364,17 +390,6 @@ padding: 1em;'><h2>Memcached stats</h2>";
      *
      * @return string
      */
-    private function answered(): bool
-    {
-        $code = $this->memcached->getResultCode();
-        if (in_array($code, array(Memcached::RES_SUCCESS, Memcached::RES_NOTFOUND, Memcached::RES_NOTSTORED, Memcached::RES_DATA_EXISTS), true)) {
-            return true;
-        }
-        $this->down = true;
-
-        return false;
-    }
-
     private function _key($key)
     {
         return $this->site_prefix . $key;
