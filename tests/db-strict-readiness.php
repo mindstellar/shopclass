@@ -85,7 +85,9 @@ pin('ready only when every check is clean', array(true, false, false), array(
 ));
 
 $armedProp = new ReflectionProperty(StrictRefusals::class, 'armed');
-$armedProp->setAccessible(true);
+if (PHP_VERSION_ID < 80100) {
+    $armedProp->setAccessible(true);
+}
 StrictRefusals::reset();
 StrictRefusals::record(null, 1406, "Data too long for column 's_title' at row 1", 'INSERT INTO x (s_title) VALUES (?)');
 check('queuing a refusal arms the shutdown flush', $armedProp->getValue() === true);
@@ -95,7 +97,9 @@ check('...and reset() clears armed too, not just the queue', $armedProp->getValu
 // Db's own leak guard rolls back a transaction left open at request end; queuing a refusal
 // must arm it too, so that rollback is registered (and so runs) before this flush.
 $leakGuardProp = new ReflectionProperty(\mindstellar\database\Db::class, 'leakGuardArmed');
-$leakGuardProp->setAccessible(true);
+if (PHP_VERSION_ID < 80100) {
+    $leakGuardProp->setAccessible(true);
+}
 $leakGuardProp->setValue(null, false);
 check('Db\'s leak guard starts unarmed for this check', $leakGuardProp->getValue() === false);
 StrictRefusals::record(null, 1406, "Data too long for column 's_title' at row 1", 'INSERT INTO x (s_title) VALUES (?)');
@@ -239,7 +243,9 @@ pin('...and nothing is left waiting to be written', array(), $strictRows());
 harness_section('CLI output is sanitized');
 
 $cliSafe = new ReflectionMethod(\mindstellar\cli\Cli::class, 'cliSafe');
-$cliSafe->setAccessible(true);
+if (PHP_VERSION_ID < 80100) {
+    $cliSafe->setAccessible(true);
+}
 $cli = new \mindstellar\cli\Cli();
 pin('letters, digits, and _.$ - pass through unchanged',
     'oc_t_item_description.s_title data_too_long-1', $cliSafe->invoke($cli, 'oc_t_item_description.s_title data_too_long-1'));
