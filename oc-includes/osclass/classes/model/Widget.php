@@ -133,7 +133,6 @@ class Widget extends DAO
 
             return true;
         } finally {
-            // After the write, so a read inside it cannot put the old row back.
             $this->cacheChanged();
         }
     }

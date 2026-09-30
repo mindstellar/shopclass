@@ -203,7 +203,6 @@ class OSCLocale extends DAO
 
             return $deleted;
         } finally {
-            // After the write, so a read inside it cannot put the old row back.
             $this->cacheChanged();
         }
     }
@@ -262,7 +261,6 @@ class OSCLocale extends DAO
             }
             return false;
         } finally {
-            // After the write, so a read inside it cannot put the old row back.
             $this->cacheChanged();
         }
     }

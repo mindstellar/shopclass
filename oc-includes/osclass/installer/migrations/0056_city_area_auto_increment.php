@@ -13,11 +13,9 @@ use mindstellar\migration\MigrationInterface;
 use mindstellar\migration\SchemaProbes;
 
 /**
- * Give t_city_area.pk_i_id AUTO_INCREMENT, so callers can insert a city area without
- * picking an id themselves. INPLACE is refused for this MODIFY, and MySQL/MariaDB also
- * refuse it outright while t_user.fk_i_city_area_id and t_item_location.fk_i_city_area_id
- * reference the column -- so it runs with foreign_key_checks off for the session, which
- * does not touch the existing constraints. Guarded on EXTRA, so a re-run is a no-op.
+ * Give t_city_area.pk_i_id AUTO_INCREMENT, so callers can insert a city area without picking
+ * an id themselves. It runs with foreign_key_checks off for the session, since MySQL/MariaDB
+ * refuse this MODIFY while two tables still reference the column.
  *
  * @title Let new city areas get their own ID
  */

@@ -39,7 +39,7 @@ final class SqlStream
         $statement = '';
         $quote     = null;
         $comment   = false;
-        $tokens    = self::tokens();
+        $tokens    = SqlScript::tokens();
 
         while (($line = fgets($handle)) !== false) {
             if ($tokens !== array() && strpos($line, '/*') !== false) {
@@ -158,24 +158,6 @@ final class SqlStream
         }
 
         return $statement === '0' ? '' : $statement;
-    }
-
-    /**
-     * The schema tokens and their values.
-     *
-     * @return array<string,string>
-     */
-    private static function tokens(): array
-    {
-        $tokens = array();
-        if (defined('DB_TABLE_PREFIX')) {
-            $tokens[TablePrefix::TOKEN] = (string) DB_TABLE_PREFIX;
-        }
-        if (defined('OSCLASS_VERSION')) {
-            $tokens['/*OSCLASS_VERSION*/'] = (string) OSCLASS_VERSION;
-        }
-
-        return $tokens;
     }
 }
 

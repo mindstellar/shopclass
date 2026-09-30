@@ -12,20 +12,9 @@ use mindstellar\database\Connection;
 use mindstellar\migration\MigrationInterface;
 
 /**
- * Brings three columns to the shape `struct.sql` has declared since 5.0.0. Installs old enough
- * to predate that never had it, and the schema reconciler cannot see the difference: it matches
- * a column's type with a one-token regex, so NULL and NOT NULL compare equal.
- *
- * The one that matters is `t_user.s_email`. A unique index permits unlimited NULLs, so while the
- * column is nullable `uk_user_email` does not actually guarantee one account per address.
- *
- * NOT NULL does not make a field required — '' is still allowed, and core stores it for a listing
- * with no contact address. Nothing about who must supply an e-mail changes here.
- *
- * `i_permissions` is a dead Osclass 2011 column, dropped from `struct.sql` long before 5.0.0.
- *
- * Idempotent, and it never alters data: a column already in the declared shape is skipped, and
- * one holding NULLs is left alone rather than letting a non-strict server turn them into ''.
+ * Brings `t_user.s_email`, `t_item.s_contact_email` and `t_category_description.s_name` to the
+ * NULL-ability `struct.sql` declares, and drops the dead `t_user.i_permissions` column. Idempotent:
+ * a column already in shape, or holding NULLs where NOT NULL is wanted, is left alone.
  */
 return new class () implements MigrationInterface {
     /** Column => the definition struct.sql declares for it. */

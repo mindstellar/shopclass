@@ -513,17 +513,19 @@ class Alerts extends DAO
         }
 
         try {
-            $rows  = osc_db_select($sql, $params);
-            $total = osc_db_count($this->getTableName(), $where, $params);
-            // Always the WHOLE table, ignoring the s_email filter, as the legacy query did.
-            $all   = osc_db_count($this->getTableName());
+            $rows = osc_db_select($sql, $params);
         } catch (\mindstellar\database\DbException $e) {
             return $alerts;
         }
 
+        // Always the WHOLE table, ignoring the s_email filter, as the legacy query did.
+        $counts = $this->pagedCounts($where, $params);
+        if ($counts === null) {
+            return $alerts;
+        }
+
         $alerts['alerts'] = osc_db_stringify_rows($rows);
-        $alerts['total_results'] = $total > 0 ? (string)$total : 0;
-        $alerts['rows']          = $all > 0 ? (string)$all : 0;
+        [$alerts['total_results'], $alerts['rows']] = $counts;
 
         return $alerts;
     }

@@ -427,10 +427,12 @@ function install_db_error_message($code, array $ctx = array())
  */
 function install_prefix_in_use(mysqli $db, string $prefix): bool
 {
-    $like = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), $prefix) . 't\\_%';
-    $res  = $db->query("SHOW TABLES LIKE '" . $db->real_escape_string($like) . "'");
+    $count = (new \mindstellar\database\Connection($db))->scalar(
+        'SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME LIKE ? ESCAPE \'!\'',
+        array(\mindstellar\database\TablePrefix::like($prefix))
+    );
 
-    return $res instanceof mysqli_result && $res->num_rows > 0;
+    return (int) $count > 0;
 }
 
 /**
@@ -566,7 +568,8 @@ function install_test_db_connection()
     // Connected. Warn early if this prefix already has Shopclass tables.
     $db = $probe->getHandle();
     if ($db instanceof mysqli) {
-        if (install_prefix_in_use($db, $tableprefix) && install_is_unfinished($db, $tableprefix)) {
+        $prefixInUse = install_prefix_in_use($db, $tableprefix);
+        if ($prefixInUse && install_is_unfinished($db, $tableprefix)) {
             if (Params::getParam('reset_unfinished') == '') {
                 $msg = install_unfinished_message();
 
@@ -580,7 +583,7 @@ function install_test_db_connection()
                 'field'   => null,
             );
         }
-        if (install_prefix_in_use($db, $tableprefix)) {
+        if ($prefixInUse) {
             return array(
                 'ok'      => false,
                 'level'   => 'warning',

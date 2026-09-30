@@ -15,13 +15,9 @@ use mindstellar\migration\SchemaProbes;
 
 /**
  * Add the foreign keys t_item_description, t_meta_fields, t_form_submission and t_alerts
- * never had. Orphan rows are cleared first on every run, since a manual repair may already
- * have added a key without checking the rows. Constraint names are read from
- * information_schema, never assumed.
- *
- * The key is added with foreign_key_checks off, so InnoDB builds it in place in well under
- * a second instead of copying and write-locking the table. That is only safe because the
- * orphans are gone.
+ * never had, clearing orphan rows first on every run. The key is added with
+ * foreign_key_checks off, so InnoDB builds it in place instead of copying and write-locking
+ * the table.
  *
  * @title Link listings, custom fields, messages and alerts to what they belong to
  */

@@ -129,12 +129,11 @@ class BanRule extends DAO
 
         $rules['rules'] = osc_db_stringify_rows($rows);
 
-        // Counts are strings, as FOUND_ROWS() returned; zero stays int 0.
-        // 'rows' counts the whole table, ignoring the filter, as the legacy query did.
-        $total                  = osc_db_count($this->getTableName(), $where, $params);
-        $rules['total_results'] = $total > 0 ? (string) $total : 0;
-        $rowsTotal              = osc_db_count($this->getTableName());
-        $rules['rows']          = $rowsTotal > 0 ? (string) $rowsTotal : 0;
+        $counts = $this->pagedCounts($where, $params);
+        if ($counts === null) {
+            return $rules;
+        }
+        [$rules['total_results'], $rules['rows']] = $counts;
 
         return $rules;
     }

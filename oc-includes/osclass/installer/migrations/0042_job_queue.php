@@ -12,26 +12,9 @@ use mindstellar\database\Connection;
 use mindstellar\migration\MigrationInterface;
 
 /**
- * `t_storage_queue` was only ever storage-specific in its name and one column. Everything
- * else -- typed jobs, a JSON payload, attempts, backoff, a worker token, a dead-letter
- * status -- is a general job queue, and core has a second thing that needs one: deleting a
- * category with 39k listings holds InnoDB locks for about 14.5 minutes inside a single
- * transaction, which a host's max_execution_time turns into a rollback and an undeletable
- * category.
- *
- * So the table becomes `t_job_queue`:
- *
- * - `s_storage` may now be NULL. A storage job still carries the adapter id there; a job
- *   that has nothing to do with storage leaves it empty.
- * - `s_type` widens to 60 so types can be namespaced -- `storage.offload`, `category.delete`
- *   -- which is what lets a handler registry route them, and what keeps a plugin's own type
- *   from colliding with core's.
- * - Rows already queued are renamed into the `storage.` namespace in the same step, so an
- *   upgrade that happens mid-drain does not strand them as unknown types.
- *
- * RENAME TABLE is a metadata change on InnoDB: no copy, no rebuild, instant on any size.
- * Nothing in `oc-content/` reads the table and no `osc_*` helper exposed it, so the rename
- * cannot reach a third-party plugin or theme.
+ * Renames `t_storage_queue` to `t_job_queue`, widens `s_type` to 60 and lets `s_storage` go NULL
+ * so the queue can carry non-storage jobs, namespacing already-queued rows under `storage.`.
+ * RENAME TABLE is a metadata-only change on InnoDB, so this is instant at any size.
  */
 return new class () implements MigrationInterface {
     /** The job types this table held before it was namespaced. */

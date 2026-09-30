@@ -13,17 +13,9 @@ namespace mindstellar\migration;
 use mindstellar\database\Connection;
 
 /**
- * The "is it already there?" questions a migration asks before it changes anything, so
- * a re-run after an interrupted upgrade is safe, plus the shared machinery for adding a
+ * The "is it already there?" questions a migration asks before it changes anything, so a
+ * re-run after an interrupted upgrade is safe, plus the shared machinery for adding a
  * foreign key: clearing orphans and aligning a child column with its parent's type.
- *
- * Every migration that needed one used to carry its own private copy -- fifteen of
- * them, all the same lookup. Use this instead:
- *
- *   return new class () implements MigrationInterface {
- *       use SchemaProbes;
- *       ...
- *   };
  */
 trait SchemaProbes
 {

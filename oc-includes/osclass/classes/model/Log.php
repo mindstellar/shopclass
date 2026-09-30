@@ -185,11 +185,11 @@ class Log extends DAO
 
         $result['logs'] = osc_db_stringify_rows($rows);
 
-        // Counts are strings, as FOUND_ROWS() returned; zero stays int 0.
-        $total                   = osc_db_count($table, implode(' AND ', $where), $params);
-        $result['total_results'] = $total > 0 ? (string) $total : 0;
-        $rowsTotal               = osc_db_count($table);
-        $result['rows']          = $rowsTotal > 0 ? (string) $rowsTotal : 0;
+        $counts = $this->pagedCounts(implode(' AND ', $where), $params);
+        if ($counts === null) {
+            return $result;
+        }
+        [$result['total_results'], $result['rows']] = $counts;
 
         return $result;
     }

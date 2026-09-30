@@ -139,7 +139,6 @@ class FieldGroup extends DAO
 
             return $id;
         } finally {
-            // After the write, so a read inside it cannot put the old row back.
             $this->cacheChanged();
         }
     }
@@ -216,7 +215,6 @@ class FieldGroup extends DAO
 
             return $deleted;
         } finally {
-            // After the write, so a read inside it cannot put the old row back.
             $this->cacheChanged();
         }
     }
@@ -254,7 +252,6 @@ class FieldGroup extends DAO
                 return false;
             }
         } finally {
-            // After the write, so a read inside it cannot put the old row back.
             $this->cacheChanged();
         }
     }
@@ -306,7 +303,6 @@ class FieldGroup extends DAO
                 }
             }
         } finally {
-            // After the write, so a read inside it cannot put the old row back.
             $this->cacheChanged();
         }
     }
@@ -368,7 +364,6 @@ class FieldGroup extends DAO
 
             return $return;
         } finally {
-            // After the write, so a read inside it cannot put the old row back.
             $this->cacheChanged();
         }
     }
@@ -397,7 +392,6 @@ class FieldGroup extends DAO
                 return false;
             }
         } finally {
-            // After the write, so a read inside it cannot put the old row back.
             $this->cacheChanged();
         }
     }

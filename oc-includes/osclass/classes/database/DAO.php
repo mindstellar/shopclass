@@ -529,6 +529,27 @@ class DAO
     }
 
     /**
+     * The filtered and whole-table row counts for a paged list, as strings, or int 0.
+     * Null when a count fails.
+     *
+     * @param string           $where  WHERE clause without the WHERE keyword, '' for none
+     * @param array<int,mixed> $params bound values for $where
+     *
+     * @return array{0:int|string,1:int|string}|null
+     */
+    protected function pagedCounts(string $where, array $params = array()): ?array
+    {
+        try {
+            $total = osc_db_count($this->getTableName(), $where, $params);
+            $rows  = osc_db_count($this->getTableName());
+        } catch (\mindstellar\database\DbException $e) {
+            return null;
+        }
+
+        return array($total > 0 ? (string) $total : 0, $rows > 0 ? (string) $rows : 0);
+    }
+
+    /**
      * The model's field list as a SELECT column list, or '*' when it has none.
      *
      * @return string
@@ -611,7 +632,8 @@ class DAO
     }
 
     /**
-     * Drop the model's cached reads after a write.
+     * Drop the model's cached reads after a write. Callers invoke this after the write, so a
+     * read inside it cannot put the old row back.
      *
      * @return void
      */

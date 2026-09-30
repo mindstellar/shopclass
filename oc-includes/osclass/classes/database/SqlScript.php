@@ -67,18 +67,32 @@ final class SqlScript
      */
     private static function substituteTokens(string $sql): string
     {
-        $tokens = array();
-        if (defined('DB_TABLE_PREFIX')) {
-            $tokens[TablePrefix::TOKEN] = DB_TABLE_PREFIX;
-        }
-        if (defined('OSCLASS_VERSION')) {
-            $tokens['/*OSCLASS_VERSION*/'] = OSCLASS_VERSION;
-        }
+        $tokens = self::tokens();
         if ($tokens === array()) {
             return $sql;
         }
 
         return str_replace(array_keys($tokens), array_values($tokens), $sql);
+    }
+
+    /**
+     * The schema placeholder tokens and their expansions, populated once their constants
+     * are defined. Shared with SqlStream, which expands the same placeholders while
+     * reading a script one statement at a time.
+     *
+     * @return array<string,string>
+     */
+    public static function tokens(): array
+    {
+        $tokens = array();
+        if (defined('DB_TABLE_PREFIX')) {
+            $tokens[TablePrefix::TOKEN] = (string) DB_TABLE_PREFIX;
+        }
+        if (defined('OSCLASS_VERSION')) {
+            $tokens['/*OSCLASS_VERSION*/'] = (string) OSCLASS_VERSION;
+        }
+
+        return $tokens;
     }
 
     /**

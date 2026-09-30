@@ -621,14 +621,15 @@ class User extends DAO
 
         try {
             $users['users'] = osc_db_stringify_rows(osc_db_select($sql, $params));
-            $total          = osc_db_count($this->getTableName(), $where, $params);
-            $rows           = osc_db_count($this->getTableName());
         } catch (\mindstellar\database\DbException $e) {
             return $users;
         }
 
-        $users['total_results'] = $total > 0 ? (string)$total : 0;
-        $users['rows']          = $rows > 0 ? (string)$rows : 0;
+        $counts = $this->pagedCounts($where, $params);
+        if ($counts === null) {
+            return $users;
+        }
+        [$users['total_results'], $users['rows']] = $counts;
 
         return $users;
     }
