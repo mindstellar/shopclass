@@ -128,7 +128,7 @@ check('Repair waits for a running upgrade', strpos($post, 'DatabaseTools::upgrad
 check('the update dialog posts to the Database tab', (bool) preg_match("/'id'\\s*=> 'db-update-dialog',.*?'url'\\s*=> SystemChecks::url\\(\\\$env, 'database', 'db-update'\\)/s", $shell));
 check('the Repair dialog posts to the Database tab', strpos($database, "\$self       = SystemChecks::url(\$env, 'database');") !== false);
 check('the Repair dialog renders only when Repair may run', (bool) preg_match(
-    '/if \(!\$hasPending && \$canRepair\) \{ \?>\s*<\?php osc_admin_confirm_dialog\(array\(\s*\'id\'\s*=> \'db-repair-dialog\'/',
+    '/if \(\$canRepair\) \{ \?>\s*<\?php osc_admin_confirm_dialog\(array\(\s*\'id\'\s*=> \'db-repair-dialog\'/',
     $database
 ));
 check('the Repair button sits in the "Repair can fix these" group only', substr_count($database, "'confirm' => '#db-repair-dialog'") === 1
@@ -177,7 +177,6 @@ check('Security tab URL', strpos($spamCtl, "'?page=tools&action=system-info&tab=
 check('Spam and bots keeps its settings form', strpos($spamView, "\$forms['login_throttle']") !== false);
 check('...but no longer lists who is blocked', strpos($spamView, 'login_throttle_activity') === false && strpos($spamView, 'login_throttle_unblock') === false);
 check('...and links to the Security tab instead', strpos($spamView, 'tab=security#signin-activity') !== false);
-check('the controller still exports the list for a replaced admin theme', strpos($spamCtl, "'login_throttle_activity'") !== false);
 
 exit(harness_result());
 

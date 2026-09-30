@@ -909,7 +909,7 @@ class CAdminTools extends AdminSecBaseModel
     {
         $self = self::databaseUrl();
         $conn = \mindstellar\database\Connection::instance();
-        $dir  = osc_lib_path() . 'osclass/installer/migrations';
+        $dir  = DatabaseTools::migrationsDir();
 
         if (Params::getParam('upgrade') !== '') {
             if ($this->refuseOnDemo($self)) {
@@ -1086,7 +1086,7 @@ class CAdminTools extends AdminSecBaseModel
             'db_size'          => null,
         );
         if ($withDatabase) {
-            $env['pending'] = DatabaseTools::pending($conn, osc_lib_path() . 'osclass/installer/migrations');
+            $env['pending'] = DatabaseTools::pending($conn, DatabaseTools::migrationsDir());
             list($env['findings'], $env['findings_error']) = $this->schemaFindings();
             $env['db_size'] = DatabaseTools::size($conn, DB_TABLE_PREFIX);
         }

@@ -12,6 +12,7 @@ if (!defined('OC_ADMIN')) {
     exit('Direct access is not allowed.');
 }
 
+use mindstellar\admin\DatabaseTools;
 use mindstellar\admin\SystemChecks;
 
 // The checks live in SystemChecks. The oscsi_* helpers stay defined for plugins that call them.
@@ -26,25 +27,7 @@ if (!function_exists('oscsi_bytes')) {
      */
     function oscsi_bytes($value)
     {
-        $value = trim((string)$value);
-        if ($value === '') {
-            return 0;
-        }
-        if ((int)$value === -1) {
-            return -1;
-        }
-        $unit   = strtolower(substr($value, -1));
-        $number = (int)$value;
-        switch ($unit) {
-            case 'g':
-                return $number * 1024 * 1024 * 1024;
-            case 'm':
-                return $number * 1024 * 1024;
-            case 'k':
-                return $number * 1024;
-            default:
-                return $number;
-        }
+        return SystemChecks::iniBytes((string)$value);
     }
 }
 
@@ -64,10 +47,8 @@ if (!function_exists('oscsi_size')) {
         if (!is_numeric($bytes) || $bytes <= 0) {
             return '—';
         }
-        $units = array('B', 'KB', 'MB', 'GB', 'TB');
-        $i     = (int)min(floor(log($bytes, 1024)), count($units) - 1);
 
-        return round($bytes / (1024 ** $i), 1) . ' ' . $units[$i];
+        return DatabaseTools::bytes((int)$bytes);
     }
 }
 

@@ -25,7 +25,6 @@ osc_add_hook('admin_footer', static function () use ($selfUpdateOff, $isAvailabl
     }
     $strings = array(
         'upgraded'  => sprintf(__('Shopclass is upgraded to %s.'), $remoteVersion),
-        'partial'   => __('The upgrade finished, with some errors.'),
         'failed'    => __('The upgrade failed.'),
         'noReply'   => __('The upgrade did not report back. Reload the page to check which version you have.'),
         'notes'     => __('Check release notes'),
@@ -84,8 +83,6 @@ osc_add_hook('admin_footer', static function () use ($selfUpdateOff, $isAvailabl
                         report(verdict('warning', t.noReply));
                     } else if (json.error == 0) {
                         report(verdict('success', t.upgraded, {label: t.notes, url: t.notesUrl}));
-                    } else if (json.error == 2) {
-                        report(verdict('warning', t.partial), json.message);
                     } else {
                         report(verdict('danger', t.failed), json.message);
                     }
@@ -273,10 +270,6 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         ) . '</p>',
                         'confirm'   => sprintf(__('Upgrade to %s'), $remoteVersion),
                     )); ?>
-                    <p class="upgrade-tool-note">
-                        <?php _e('Please note that this upgrade may take a few minutes to complete.'); ?>
-                        <?php _e('Please be aware that this upgrade will overwrite any existing modification you have made to core files.'); ?>
-                    </p>
                     <section class="upgrade-tool-notes" id="upgrade-release-notes" hidden>
                         <?php osc_admin_form_section(sprintf(__("What's new in %s"), $remoteVersion), array('spaced' => true)); ?>
                     </section>

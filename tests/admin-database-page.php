@@ -61,7 +61,7 @@ check('the server checks repairAllowed() before running Repair', (static functio
     return $refuse !== false && $run !== false && $refuse < $run;
 })($controller));
 check('the Repair dialog renders only when something is fixable', (bool) preg_match(
-    '/if \(!\$hasPending && \$canRepair\) \{ \?>\s*<\?php osc_admin_confirm_dialog\(array\(\s*\'id\'\s*=> \'db-repair-dialog\'/',
+    '/if \(\$canRepair\) \{ \?>\s*<\?php osc_admin_confirm_dialog\(array\(\s*\'id\'\s*=> \'db-repair-dialog\'/',
     $view
 ));
 check('the Repair button sits in the "Repair can fix these" group only', substr_count($view, "'confirm' => '#db-repair-dialog'") === 1

@@ -34,6 +34,18 @@ final class DatabaseTools
         SchemaDoctor::COLUMN_TYPE,
     );
 
+    /** Finding kinds for something a plugin or person added; Repair leaves them alone. */
+    public const EXTRA = array(
+        SchemaDoctor::EXTRA_COLUMN,
+        SchemaDoctor::EXTRA_INDEX,
+    );
+
+    /** Finding kinds Repair does not change and a person should look at. */
+    public const CLOSER_LOOK = array(
+        SchemaDoctor::INDEX_COLUMNS,
+        SchemaDoctor::NULLABILITY,
+    );
+
     /** Old Tools actions whose screen is now a part of another page, with where they land. */
     public const MOVED = array(
         'import'   => 'backup#restore',
@@ -85,6 +97,16 @@ final class DatabaseTools
         list($target, $fragment) = explode('#', self::MOVED[$action]) + array(1 => '');
 
         return '?page=tools&action=' . $target . ($fragment !== '' ? '#' . $fragment : '');
+    }
+
+    /**
+     * The core migrations directory.
+     *
+     * @return string
+     */
+    public static function migrationsDir(): string
+    {
+        return dirname(__DIR__, 2) . '/installer/migrations';
     }
 
     /**
@@ -236,7 +258,7 @@ final class DatabaseTools
      */
     public static function upgradeLock(Connection $conn): ?Closure
     {
-        $lock = (new MigrationRunner($conn, dirname(__DIR__, 2) . '/installer/migrations'))->lockName();
+        $lock = (new MigrationRunner($conn, self::migrationsDir()))->lockName();
         if ((int) $conn->scalar('SELECT IS_USED_LOCK(?) = CONNECTION_ID()', array($lock)) === 1) {
             // Taking it again would release it early on MySQL before 5.7.5.
             return static function (): void {

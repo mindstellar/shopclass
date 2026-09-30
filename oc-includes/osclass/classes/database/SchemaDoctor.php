@@ -129,22 +129,20 @@ final class SchemaDoctor
             $substitutes = array();
             foreach ($declared['indexes'] as $name => $columns) {
                 if (!isset($liveIndexes[$name])) {
-                    // An old install can carry the same guarantee under another name — a
-                    // PRIMARY KEY on the columns core declares a UNIQUE KEY for, say. The
-                    // name differs, nothing else does, so there is nothing to act on.
-                    if ($this->coveredElsewhere($liveIndexes, $columns)) {
+                    // An old install can carry the same index under another name, such as a
+                    // PRIMARY KEY where core declares a UNIQUE KEY; nothing to act on.
+                    if (in_array($columns, $liveIndexes, true)) {
                         $substitutes[] = $columns;
                         continue;
                     }
                     $findings[] = $this->finding($table, self::MISSING_INDEX, $name, implode(', ', $columns), 'absent');
                     continue;
                 }
-                // Column order decides which queries a normal index can serve, so it is
-                // compared. A FULLTEXT index searches all of its columns at once, so the
-                // order they were declared in means nothing.
-                $live     = $liveIndexes[$name];
-                $ordered  = $this->indexTypes[$table][$name] ?? '';
-                if ($ordered === 'FULLTEXT') {
+                // Column order matters for a normal index. A FULLTEXT index searches all its
+                // columns at once, so its order is ignored.
+                $live = $liveIndexes[$name];
+                $type = $this->indexTypes[$table][$name] ?? '';
+                if ($type === 'FULLTEXT') {
                     $a = $live;
                     $b = $columns;
                     sort($a);
@@ -168,14 +166,13 @@ final class SchemaDoctor
                 if (isset($declared['indexes'][$name]) || $name === 'PRIMARY') {
                     continue;
                 }
-                // A foreign key needs a covering index and the server makes one when no
-                // declared index already leads on that column. It is required, not spare.
+                // The server adds an index for a foreign key when no declared one leads on
+                // its column. It is required, not spare.
                 if ($this->backsForeignKey($table, $columns)) {
                     continue;
                 }
-                // The index accepted above as standing in for a declared one core could not
-                // find by name. Only that one: an index duplicating a declared index that is
-                // present under its own name is genuinely spare, and costs a write for nothing.
+                // Skip only the index accepted above in place of a declared one. A duplicate of
+                // a declared index present under its own name is spare.
                 if (in_array($columns, $substitutes, true)) {
                     continue;
                 }
@@ -209,10 +206,8 @@ final class SchemaDoctor
     /**
      * Parse struct.sql into table => ['columns' => name => spec, 'indexes' => name => columns].
      *
-     * Deliberately not a SQL parser: struct.sql is core's own file, one column or key per line,
-     * and the reconciler reads it the same way. A line it cannot make sense of is skipped rather
-     * than reported, because a false difference is worse than a missed one in a tool whose whole
-     * output is "here is what looks wrong".
+     * Not a SQL parser: struct.sql has one column or key per line, as the reconciler reads it.
+     * A line it cannot read is skipped, since a false difference is worse than a missed one.
      *
      * @return array<string,array{columns:array<string,array{type:string,nullable:bool}>,indexes:array<string,array<int,string>>}>
      */
@@ -316,9 +311,8 @@ final class SchemaDoctor
     /**
      * Both sides reduced to the same spelling, so only a real difference is reported.
      *
-     * An integer's display width is decoration the server adds or drops by version — `int` and
-     * `int(11)` are one type — and it spells an enum without the spaces struct.sql writes for
-     * readability. A tool whose entire output is "this looks wrong" has to be silent about both.
+     * An integer's display width varies by server version (`int` and `int(11)` are one type),
+     * and the server spells an enum without the spaces struct.sql uses.
      *
      * @param string $type
      *
@@ -392,25 +386,6 @@ final class SchemaDoctor
         }
 
         return in_array($columns[0], $this->foreignKeyColumns[$table], true);
-    }
-
-    /**
-     * Whether some other index on the table already covers exactly these columns, in order.
-     *
-     * @param array<string,array<int,string>> $liveIndexes
-     * @param array<int,string>               $columns
-     *
-     * @return bool
-     */
-    private function coveredElsewhere(array $liveIndexes, array $columns): bool
-    {
-        foreach ($liveIndexes as $existing) {
-            if ($existing === $columns) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**

@@ -10,6 +10,7 @@
 
 namespace mindstellar\upgrade;
 
+use mindstellar\admin\DatabaseTools;
 use Throwable;
 
 /**
@@ -86,9 +87,9 @@ final class AutoSecurityUpdate
                 throw new \RuntimeException(__('The new files did not arrive.'));
             }
             $stage = 'database';
-            $db    = json_decode((string) Osclass::upgradeDB(), true);
-            if ((int) ($db['error'] ?? 1) !== 0) {
-                throw new \RuntimeException((string) ($db['message'] ?? __('The database update failed.')));
+            $db    = DatabaseTools::upgrade();
+            if ($db['error'] !== 0) {
+                throw new \RuntimeException($db['message'] !== '' ? $db['message'] : __('The database update failed.'));
             }
             $stage = 'done';
             $reason = '';
@@ -141,7 +142,7 @@ final class AutoSecurityUpdate
             $subject = sprintf(__('[%1$s] Security update %2$s could not be installed'), $site, $to);
             $body    = $stage === 'files'
                 ? sprintf(__('Shopclass tried to install security update %2$s on %1$s and stopped: %3$s. Open Tools, then Update, in the admin to install it.'), $site, $to, $reason)
-                : sprintf(__('Shopclass installed the files of security update %2$s on %1$s, but the database step failed: %3$s. Open Tools, then Database, in the admin to finish it.'), $site, $to, $reason);
+                : sprintf(__('Shopclass installed the files of security update %2$s on %1$s, but the database step failed: %3$s. Open Tools, then System info, then Database, in the admin to finish it.'), $site, $to, $reason);
         }
 
         osc_sendMail(array(

@@ -12,7 +12,6 @@ namespace mindstellar\admin;
 
 use mindstellar\backup\BackupJobs;
 use mindstellar\backup\BackupStore;
-use mindstellar\database\SchemaDoctor;
 use mindstellar\database\StrictModeReadiness;
 
 /**
@@ -256,7 +255,7 @@ final class SystemChecks
             );
         }
         $closer = array_filter($findings, static function ($f) {
-            return in_array($f['kind'] ?? '', array(SchemaDoctor::INDEX_COLUMNS, SchemaDoctor::NULLABILITY), true);
+            return in_array($f['kind'] ?? '', DatabaseTools::CLOSER_LOOK, true);
         });
         if ($closer !== array()) {
             $issues[] = self::issue(
@@ -342,13 +341,6 @@ final class SystemChecks
         $help    = array('label' => __('How to change it'), 'url' => $here ? '#server-help' : self::url($env, 'server', 'server-help'));
         $details = array('label' => __('Server details'), 'url' => self::url($env, 'server'));
         $issues  = array();
-
-        $php = (string) ($env['php'] ?? PHP_VERSION);
-        if (version_compare($php, '7.4', '<')) {
-            $issues[] = self::issue('php_too_old', 'danger', sprintf(__('PHP %s is too old. Shopclass is built and tested against PHP 8.0 and up.'), $php), $help);
-        } elseif (version_compare($php, '8.0', '<')) {
-            $issues[] = self::issue('php_7', 'warning', sprintf(__('PHP %s is past end of life and gets no security fixes. Move to PHP 8.'), $php), $help);
-        }
 
         $missing = self::missingExtensions($env);
         if ($missing !== array()) {

@@ -21,6 +21,7 @@
 
 namespace mindstellar\upgrade;
 
+use mindstellar\admin\DatabaseTools;
 use mindstellar\database\Connection;
 use mindstellar\migration\MigrationRunner;
 use mindstellar\utility\FileSystem;
@@ -85,7 +86,7 @@ class Osclass extends UpgradePackage
         // tab closed halfway through leaves the schema mid-migration for no reason.
         ignore_user_abort(true);
 
-        if (is_dir(osc_lib_path() . 'osclass/installer/migrations')) {
+        if (is_dir(DatabaseTools::migrationsDir())) {
             // Legacy installs store the version as an MMN integer (3.9.0 => 390); modern ones
             // store a dotted string (5.3.0.dev). Only the former can predate 3.9.0, so restrict
             // the numeric comparison to numeric values — a dotted string is always newer.
@@ -100,22 +101,15 @@ class Osclass extends UpgradePackage
 
             osc_set_preference('admin_theme', 'modern');
 
-            $runner = new MigrationRunner(Connection::instance(), osc_lib_path() . 'osclass/installer/migrations');
+            $runner = new MigrationRunner(Connection::instance(), DatabaseTools::migrationsDir());
             $runner->ensureLedger();
             $migrated = $runner->run();
-            if (!$migrated['ok'] && !empty($migrated['busy'])) {
-                return json_encode([
-                    'error'   => 3,
-                    'message' => __('Another upgrade is already running. Wait for it to finish, then try again.'),
-                ]);
-            }
             if (!$migrated['ok']) {
                 return json_encode([
                     'error'   => 3,
-                    'message' => sprintf(
-                        __('Migration failed: %s'),
-                        $migrated['failed']
-                    ) . ' — ' . $migrated['error']
+                    'message' => !empty($migrated['busy'])
+                        ? __('Another upgrade is already running. Wait for it to finish, then try again.')
+                        : sprintf(__('Migration failed: %s'), $migrated['failed']) . ' — ' . $migrated['error'],
                 ]);
             }
 
@@ -264,21 +258,7 @@ class Osclass extends UpgradePackage
      *
      * @param array<int,array<string,mixed>> $assets GitHub release "assets" array
      *
-     * @return string|null browser_download_url, or null if none suitable
-     */
-    public static function selectReleaseAssetUrl($assets)
-    {
-        $asset = self::selectReleaseAsset($assets);
-
-        return $asset === null ? null : $asset['browser_download_url'];
-    }
-
-    /**
-     * The release asset selectReleaseAssetUrl() names, with its digest.
-     *
-     * @param array<int,array<string,mixed>> $assets
-     *
-     * @return array<string,mixed>|null
+     * @return array<string,mixed>|null the asset, or null if none suitable
      */
     public static function selectReleaseAsset($assets): ?array
     {

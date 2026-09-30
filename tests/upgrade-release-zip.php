@@ -31,7 +31,7 @@ $asset = static function (string $name): array {
     return array('name' => $name, 'browser_download_url' => 'https://example.test/' . $name);
 };
 $pick = static function (array $names) use ($asset) {
-    return Osclass::selectReleaseAssetUrl(array_map($asset, $names));
+    return Osclass::selectReleaseAsset(array_map($asset, $names))['browser_download_url'] ?? null;
 };
 
 pin(

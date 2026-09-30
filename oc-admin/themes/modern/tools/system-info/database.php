@@ -61,13 +61,13 @@ $groups = array(
     array(
         'title' => __('Extra items: nothing to do'),
         'intro' => __('A plugin or someone on your team added these. Shopclass does not need them, and Repair leaves them alone. Delete one only if you are sure nothing uses it.'),
-        'kinds' => array(SchemaDoctor::EXTRA_COLUMN, SchemaDoctor::EXTRA_INDEX),
+        'kinds' => DatabaseTools::EXTRA,
         'show_expected' => false,
     ),
     array(
         'title' => __('Needs a closer look'),
         'intro' => __('Repair does not change these. Ask for help before changing the table by hand.'),
-        'kinds' => array(SchemaDoctor::INDEX_COLUMNS, SchemaDoctor::NULLABILITY),
+        'kinds' => DatabaseTools::CLOSER_LOOK,
         'show_expected' => true,
     ),
 );
@@ -91,7 +91,7 @@ $groups = array(
                     <tbody>
                     <?php foreach ($pending as $migration) { ?>
                         <tr>
-                            <td><?php echo osc_esc_html(DatabaseTools::title(osc_lib_path() . 'osclass/installer/migrations', (string) $migration)); ?></td>
+                            <td><?php echo osc_esc_html(DatabaseTools::title(DatabaseTools::migrationsDir(), (string) $migration)); ?></td>
                             <td class="text-muted"><code><?php echo osc_esc_html((string) $migration); ?></code></td>
                         </tr>
                     <?php } ?>
@@ -203,7 +203,7 @@ $groups = array(
         <?php } ?>
     </div>
 
-    <?php if (!$hasPending && $canRepair) { ?>
+    <?php if ($canRepair) { ?>
         <?php osc_admin_confirm_dialog(array(
             'id'      => 'db-repair-dialog',
             'tone'    => 'plain',

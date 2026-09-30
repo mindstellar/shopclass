@@ -136,8 +136,6 @@ $cases = array(
     'db_closer_look'       => array('database', array('findings' => array(array('kind' => SchemaDoctor::NULLABILITY, 'table' => 't', 'name' => 'c'))), 'warning', '#db-check'),
     'db_unreadable'        => array('database', array('findings_error' => 'no access'), 'danger', null),
     'db_server_old'        => array('database', array('db_server' => '5.7.4'), 'danger', null),
-    'php_too_old'          => array('server', array('php' => '7.3.0'), 'danger', '#server-help'),
-    'php_7'                => array('server', array('php' => '7.4.33'), 'warning', '#server-help'),
     'ext_missing'          => array('server', array('extensions' => array('curl')), 'danger', '#server-help'),
     'no_image_library'     => array('server', array('imagick' => false, 'gd' => false), 'danger', '#server-help'),
     'uploads_read_only'    => array('server', array('uploads_writable' => false), 'danger', null),

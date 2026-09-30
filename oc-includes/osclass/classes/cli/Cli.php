@@ -12,6 +12,8 @@
 namespace mindstellar\cli;
 
 use Admin;
+use mindstellar\admin\DatabaseTools;
+use mindstellar\admin\SystemChecks;
 use mindstellar\database\Connection;
 use mindstellar\market\Catalog;
 use mindstellar\market\Compatibility;
@@ -413,22 +415,15 @@ class Cli
      */
     private function cmdDbUpgrade(array $args): int
     {
-        $result  = \mindstellar\upgrade\Osclass::upgradeDB();
-        $decoded = json_decode((string) $result, true);
-        $error   = is_array($decoded) ? (int) ($decoded['error'] ?? 1) : 1;
-        $message = is_array($decoded) ? (string) ($decoded['message'] ?? $result) : (string) $result;
+        $result = DatabaseTools::upgrade();
 
-        // upgradeDB() builds messages for the admin screen, so strip the markup
-        // and collapse whitespace for a terminal.
-        $message = trim(preg_replace('/\s+/', ' ', strip_tags($message)));
-
-        if ($error === 0) {
-            $this->out($message . "\n");
+        if ($result['error'] === 0) {
+            $this->out($result['message'] . "\n");
 
             return 0;
         }
 
-        $this->err($message . "\n");
+        $this->err($result['message'] . "\n");
 
         return 1;
     }
@@ -453,7 +448,7 @@ class Cli
         try {
             $runner = new \mindstellar\migration\MigrationRunner(
                 Connection::instance(),
-                osc_lib_path() . 'osclass/installer/migrations'
+                DatabaseTools::migrationsDir()
             );
             $runner->ensureLedger();
             $pending = $runner->pending();
@@ -469,11 +464,23 @@ class Cli
         }
 
         try {
+            $release = DatabaseTools::upgradeLock(Connection::instance());
+        } catch (\Throwable $e) {
+            $release = null;
+        }
+        if ($release === null) {
+            $this->err("An upgrade is running. Try again when it has finished.\n");
+
+            return 1;
+        }
+        try {
             $result = (new \mindstellar\database\SchemaReconciler(Connection::instance()))->repair();
         } catch (\Throwable $e) {
             $this->err('Could not read the schema: ' . $e->getMessage() . "\n");
 
             return 1;
+        } finally {
+            $release();
         }
 
         if ($result['ran'] === [] && $result['failed'] === []) {
@@ -652,12 +659,7 @@ class Cli
             $this->out($table . "\n");
             foreach ($rows as $f) {
                 $this->out(sprintf("  %-30s %s\n", $f['name'], $labels[$f['kind']] ?? $f['kind']));
-
-                $extra = [
-                    \mindstellar\database\SchemaDoctor::EXTRA_COLUMN,
-                    \mindstellar\database\SchemaDoctor::EXTRA_INDEX,
-                ];
-                if (in_array($f['kind'], $extra, true)) {
+                if (in_array($f['kind'], DatabaseTools::EXTRA, true)) {
                     $this->out(sprintf("      this database has %s\n", $f['found']));
                     continue;
                 }
@@ -859,41 +861,21 @@ class Cli
         );
     }
 
-    /**
-     * @param array<string, mixed> $args
-     *
-     * @return int
-     */
     private function cmdBackupCreate(array $args): int
     {
         return $this->backups()->create($args);
     }
 
-    /**
-     * @param array<string, mixed> $args
-     *
-     * @return int
-     */
     private function cmdBackupList(array $args): int
     {
         return $this->backups()->list($args);
     }
 
-    /**
-     * @param array<string, mixed> $args
-     *
-     * @return int
-     */
     private function cmdBackupRestore(array $args): int
     {
         return $this->backups()->restore($args);
     }
 
-    /**
-     * @param array<string, mixed> $args
-     *
-     * @return int
-     */
     private function cmdBackupDelete(array $args): int
     {
         return $this->backups()->delete($args);
@@ -1646,7 +1628,7 @@ class Cli
         }
 
         // Required extensions.
-        foreach (['mysqli', 'curl', 'mbstring', 'fileinfo', 'zip', 'json', 'openssl', 'ctype'] as $ext) {
+        foreach (SystemChecks::EXTENSIONS as $ext) {
             extension_loaded($ext)
                 ? $check('ok', 'Extension ' . $ext, 'installed')
                 : $check('fail', 'Extension ' . $ext, 'missing');
@@ -1693,7 +1675,7 @@ class Cli
         $cronLast = osc_cron_last_run();
         if ($cronLast === 0) {
             $check('warn', 'Cron', 'no run recorded yet');
-        } elseif ((time() - $cronLast) > 25 * 3600) {
+        } elseif ((time() - $cronLast) > SystemChecks::CRON_MAX_AGE) {
             $check('warn', 'Cron', 'last run ' . date('Y-m-d H:i', $cronLast) . ' — not firing regularly?');
         } else {
             $check('ok', 'Cron', 'last run ' . date('Y-m-d H:i', $cronLast));
