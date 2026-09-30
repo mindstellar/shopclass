@@ -70,7 +70,8 @@ class CWebContact extends BaseModel
                 }
 
                 $refused = \mindstellar\security\MessageGuard::banError($yourEmail)
-                    ?? \mindstellar\security\MessageGuard::linkError($subject, $message, $yourName);
+                    ?? \mindstellar\security\MessageGuard::fieldError(array($yourName))
+                    ?? \mindstellar\security\MessageGuard::linkError($message);
                 if ($refused !== null) {
                     $fail($refused);
 

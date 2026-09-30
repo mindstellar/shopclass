@@ -132,8 +132,10 @@ only reaches you, sends at once.
 
 **Settings → Spam and bots → Messages:**
 
-- **Links allowed in a message.** Default 1, counted across every field. A
-  message with more is refused and the sender is told why. 0 allows none.
+- **Links allowed in a message.** Default 1, counted in the message. A message
+  with more is refused and the sender is told why. 0 allows none. Names may not
+  hold links or markup, and a phone number may hold only digits, spaces,
+  `+ ( ) - .` and an extension.
 - **Report link.** Mail a member receives ends with *Report the sender*. The
   member confirms on a page, and the sender's address cannot send messages for
   the set number of days (default 30). Sign-in and posting still work. Each link

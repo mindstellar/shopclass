@@ -566,11 +566,10 @@ class CWebItem extends BaseModel
                 }
 
                 $refused = \mindstellar\security\MessageGuard::banError(Params::getParamString('yourEmail'))
-                    ?? \mindstellar\security\MessageGuard::linkError(
-                        Params::getParamString('message'),
-                        Params::getParamString('yourName'),
-                        Params::getParamString('friendName')
-                    );
+                    ?? \mindstellar\security\MessageGuard::fieldError(
+                        array(Params::getParamString('yourName'), Params::getParamString('friendName'))
+                    )
+                    ?? \mindstellar\security\MessageGuard::linkError(Params::getParamString('message'));
                 if ($refused !== null) {
                     osc_add_flash_error_message($refused);
                     $this->redirectTo(osc_item_send_friend_url());
@@ -662,11 +661,11 @@ class CWebItem extends BaseModel
                 }
 
                 $refused = \mindstellar\security\MessageGuard::banError($contactValues['yourEmail'])
-                    ?? \mindstellar\security\MessageGuard::linkError(
-                        $contactValues['message_body'],
-                        $contactValues['yourName'],
+                    ?? \mindstellar\security\MessageGuard::fieldError(
+                        array($contactValues['yourName']),
                         $contactValues['phoneNumber']
-                    );
+                    )
+                    ?? \mindstellar\security\MessageGuard::linkError($contactValues['message_body']);
                 if ($refused !== null) {
                     osc_keep_form($contactValues, $refused);
                     $this->redirectTo(osc_local_referer(osc_item_url()));

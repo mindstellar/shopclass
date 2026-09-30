@@ -95,17 +95,16 @@ final class MessageGuard
     }
 
     /**
-     * The error to show when the fields together carry more links than allowed, or null.
-     * Pass every field that ends up in the mail, not just the message.
+     * The error to show when the message carries more links than allowed, or null.
      *
-     * @param string ...$texts
+     * @param string $message
      *
      * @return string|null
      */
-    public static function linkError(string ...$texts): ?string
+    public static function linkError(string $message): ?string
     {
         $max   = self::maxLinks();
-        $count = self::countLinks(implode("\n", $texts));
+        $count = self::countLinks($message);
         if ($count <= $max) {
             return null;
         }
@@ -114,6 +113,32 @@ final class MessageGuard
         }
 
         return sprintf(_mn('A message can contain %d link.', 'A message can contain up to %d links.', $max), $max);
+    }
+
+    /**
+     * The error to show for a name or phone number that is not one, or null. A name has no
+     * link and no markup; a phone number is digits, spaces, + ( ) - . and an extension.
+     *
+     * @param string[] $names every name field on the form
+     * @param string   $phone
+     *
+     * @return string|null
+     */
+    public static function fieldError(array $names, string $phone = ''): ?string
+    {
+        foreach ($names as $name) {
+            if (mb_strlen($name) > 100 || strpbrk($name, '<>') !== false || self::countLinks($name) > 0) {
+                return _m('Please enter a real name, without links.');
+            }
+        }
+        $phone = trim($phone);
+        if ($phone !== '' && (mb_strlen($phone) > 30
+            || !preg_match('/^\+?[\p{Nd}\s().\-]+(?:\s*(?:ext\.?|x)\s*\p{Nd}+)?$/iu', $phone))
+        ) {
+            return _m('Please enter a valid phone number.');
+        }
+
+        return null;
     }
 
     /**

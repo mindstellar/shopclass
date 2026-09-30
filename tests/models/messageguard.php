@@ -89,8 +89,22 @@ harness_section('MessageGuard: the link limit');
 $setPref('message_max_links', null);
 pin('unset, the limit is 1', 1, MessageGuard::maxLinks());
 pin('one link passes', null, MessageGuard::linkError('Call me or see https://a.test'));
-check('two links are refused', is_string(MessageGuard::linkError('https://a.test', 'and https://b.test')));
-check('links are counted across every field passed', is_string(MessageGuard::linkError('clean', 'spam.com/x', 'buy.shop')));
+check('two links are refused', is_string(MessageGuard::linkError('https://a.test and https://b.test')));
+
+harness_section('MessageGuard: names and phone numbers');
+
+pin('a plain name passes', null, MessageGuard::fieldError(array('María José O\'Neil'), ''));
+pin('an empty phone passes', null, MessageGuard::fieldError(array('Ann'), ''));
+foreach (array('+1 (555) 010-2030', '020 7946 0958', '555.010.2030 ext 12', '+44 20 7946 0958 x3') as $ok) {
+    pin('phone ' . $ok . ' passes', null, MessageGuard::fieldError(array('Ann'), $ok));
+}
+foreach (array('http://spam.example/x', 'call 555 now', '<b>555</b>', str_repeat('1', 31)) as $bad) {
+    check('phone ' . substr($bad, 0, 20) . ' is refused', is_string(MessageGuard::fieldError(array('Ann'), $bad)));
+}
+foreach (array('http://spam.example/promo', 'Visit buy.shop', 'Ann <b>', str_repeat('a', 101)) as $bad) {
+    check('name ' . substr($bad, 0, 20) . ' is refused', is_string(MessageGuard::fieldError(array($bad))));
+}
+check('every name passed is checked', is_string(MessageGuard::fieldError(array('Ann', 'spam.com/x'))));
 
 $setPref('message_max_links', '0');
 pin('0 is kept, not read as unset', 0, MessageGuard::maxLinks());
