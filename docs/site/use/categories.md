@@ -25,6 +25,12 @@ Drag categories into the order you want. This is the order visitors see
 when browsing, so put your busiest categories at the top rather than
 leaving them alphabetical.
 
+## Listing counts
+
+The number of listings shown for each category is recounted once a day. It
+can go wrong in between after an import or a direct database change.
+**Recount listings**, at the top of the list, counts them again now.
+
 ## Disabling versus deleting
 
 | Action | What happens to listings in it |

@@ -300,14 +300,21 @@ class Utils
      * Live listings in a category and every category below it, at any depth.
      *
      * @param array<string,mixed> $category
+     * @param array<int,bool>     $seen     ids already counted, so a parent loop cannot recurse forever
      *
      * @return int
      */
-    private static function subtreeItemCount(array $category)
+    private static function subtreeItemCount(array $category, array &$seen = array())
     {
+        $id = (int)$category['pk_i_id'];
+        if (isset($seen[$id])) {
+            return 0;
+        }
+        $seen[$id] = true;
+
         $total = (int)Item::newInstance()->numItems($category);
-        foreach (Category::newInstance()->findSubcategories($category['pk_i_id']) as $sub) {
-            $total += self::subtreeItemCount($sub);
+        foreach (Category::newInstance()->findSubcategories($id) as $sub) {
+            $total += self::subtreeItemCount($sub, $seen);
         }
 
         return $total;

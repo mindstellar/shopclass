@@ -2005,6 +2005,17 @@ pin('spam takes an expired premium listing away', 1, $catCount($countChild));
 $actions->spam($lapsed, false);
 pin('unspam brings it back', 2, $catCount($countChild));
 
+$admin->query('UPDATE ' . DB_TABLE_PREFIX . 't_item SET b_spam = 1 WHERE pk_i_id = ' . $lapsed);
+\mindstellar\utility\Utils::updateCategoryStatsById($countChild);
+pin('a spam listing is not counted', 1, $catCount($countChild));
+$actions->spam($lapsed, false);
+pin('unspam counts an expired premium listing', 2, $catCount($countChild));
+
+Item::newInstance()->updateExpirationDate($lapsed, date('Y-m-d H:i:s', time() + 86400));
+pin('extending an expired premium listing does not count it twice', 2, $catCount($countChild));
+Item::newInstance()->updateExpirationDate($lapsed, date('Y-m-d H:i:s', time() - 86400));
+pin('expiring a premium listing keeps it counted', 2, $catCount($countChild));
+
 $admin->query(
     'UPDATE ' . DB_TABLE_PREFIX . 't_item SET dt_premium_expiration = DATE_SUB(NOW(), INTERVAL 1 HOUR)'
     . ' WHERE pk_i_id = ' . $lapsed
