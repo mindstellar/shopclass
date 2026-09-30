@@ -175,7 +175,7 @@ final class BackupJobs
             $manifest['kind'] = 'backup';
             $store->saveManifest($name, $manifest);
             $side = array();
-            if (!$bucket->putLarge($store->dir() . substr($name, 0, -4) . '.json', BackupBucket::sidecarKey($name), static function (): bool {
+            if (!$bucket->putLarge($store->sidecarPath($name), BackupBucket::sidecarKey($name), static function (): bool {
                 return true;
             }, $side) || empty($side['done'])) {
                 $bucket->deleteMany(array(BackupBucket::key($name)));
@@ -282,11 +282,11 @@ final class BackupJobs
             if ($bucket === null) {
                 throw new BackupFailure(BackupBucket::addressProblem() ?: __('Saving to the bucket is not set up any more.'), 'fetch');
             }
-            if (!preg_match(BackupStore::UPLOAD, (string) $p['source']) || !preg_match(BackupStore::NAME, (string) $p['bucket_name'])) {
+            if (!preg_match(BackupStore::UPLOAD, (string) $p['source']) || !BackupStore::isName((string) $p['bucket_name'])) {
                 throw new BackupFailure(__('That backup is not in the list any more.'), 'fetch');
             }
             if (!$store->protect()) {
-                throw new BackupFailure(sprintf(__('The backup folder cannot be written: %s'), BackupStore::FOLDER), 'fetch');
+                throw new BackupFailure(BackupStore::unwritable(), 'fetch');
             }
             $deadline = microtime(true) + Builder::SECONDS;
             $ok = $bucket->getLarge(BackupBucket::key((string) $p['bucket_name']), $local, static function (int $done, int $total) use (&$p, $store, $deadline): bool {
@@ -654,7 +654,7 @@ final class BackupJobs
     public static function when(string $iso): string
     {
         $ts = strtotime($iso);
-        if ($ts === false || $iso === '') {
+        if ($ts === false) {
             return '';
         }
 

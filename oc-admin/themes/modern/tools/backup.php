@@ -15,6 +15,7 @@ use mindstellar\backup\BackupBucket;
 use mindstellar\backup\BackupJobs;
 use mindstellar\backup\BackupManager;
 use mindstellar\backup\BackupStore;
+use mindstellar\backup\Restorer;
 
 $view    = View::newInstance();
 $state   = $view->_get('backup_state') ?: array();
@@ -30,7 +31,7 @@ $plain   = $bucket !== null && BackupBucket::insecure();
 $open    = $bucket !== null && BackupBucket::flaggedPublic();
 $demo    = defined('DEMO');
 $status  = (string) ($state['status'] ?? '');
-$live    = in_array($status, array('queued', 'running'), true);
+$live    = BackupManager::isLive($state);
 $locked  = $demo || $busy || $live;
 $offload = osc_get_preference('storage_active') === 's3';
 $keep    = BackupJobs::keepCount();
@@ -462,7 +463,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         }
         if ($hasFiles) {
             $body .= '<p class="backup-restore-note">' . osc_esc_html(__('Files added since the backup are left in place.')) . '</p>';
-            if ($free !== null && $free < 2 * $fBytes) {
+            if (!Restorer::roomForFileSafety($free, $fBytes)) {
                 $body .= '<p class="backup-restore-note">' . osc_esc_html(__('There is not enough space for a safety copy of the files. Only the database is copied first.')) . '</p>';
             }
         }

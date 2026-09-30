@@ -23,7 +23,7 @@ use Throwable;
  */
 final class BackupManager
 {
-    public const WHAT  = array('database', 'files', 'everything');
+    public const WHAT  = Manifest::WHAT;
     public const WHERE = array('download', 'server', 'bucket');
 
     /** The job types that make one run: only one at a time. */
@@ -51,6 +51,18 @@ final class BackupManager
     }
 
     /**
+     * Whether a state belongs to a run that is queued or running.
+     *
+     * @param array<string,mixed> $state
+     *
+     * @return bool
+     */
+    public static function isLive(array $state): bool
+    {
+        return in_array($state['status'] ?? '', array('queued', 'running'), true);
+    }
+
+    /**
      * Whether a state belongs to a run that is going and reported in the last STALE seconds.
      *
      * @param array<string,mixed> $state
@@ -60,7 +72,7 @@ final class BackupManager
      */
     public static function liveState(array $state, int $now): bool
     {
-        return in_array($state['status'] ?? '', array('queued', 'running'), true)
+        return self::isLive($state)
             && $now - (int) ($state['updated'] ?? 0) < self::STALE;
     }
 
@@ -88,7 +100,7 @@ final class BackupManager
         }
         $store = BackupStore::site();
         if (!$store->protect()) {
-            return sprintf(__('The backup folder cannot be written: %s'), BackupStore::FOLDER);
+            return BackupStore::unwritable();
         }
         $store->sweep(false);
         $p = Builder::begin($what, $where) + self::siteFacts();
@@ -130,12 +142,9 @@ final class BackupManager
         }
         if ($bucket) {
             if (!BackupStore::site()->protect()) {
-                return sprintf(__('The backup folder cannot be written: %s'), BackupStore::FOLDER);
+                return BackupStore::unwritable();
             }
-            $p = Restorer::begin(BackupStore::uploadName('zip'), $db, $files);
-            $p['stage']       = 'fetch';
-            $p['bucket_name'] = $name;
-            $p['fetch']       = array();
+            $p = Restorer::beginFetch($name, $db, $files);
         } else {
             $p = Restorer::begin($name, $db, $files);
         }
@@ -162,6 +171,18 @@ final class BackupManager
         if ($path === null) {
             return array('reason' => __('That backup is not in the list any more.')) + $out;
         }
+        return self::checkFile($path);
+    }
+
+    /**
+     * What a backup file holds and whether it may be restored here, in the shape check() returns.
+     *
+     * @param string $path
+     *
+     * @return array{reason:string,note:string,manifest:?array,database:bool,files:int,size:int,db_bytes:int,files_bytes:int}
+     */
+    public static function checkFile(string $path): array
+    {
         $info = Restorer::inspect($path);
 
         return array(
@@ -192,7 +213,7 @@ final class BackupManager
         if ($bucket === null) {
             return array('reason' => self::noBucket()) + $out;
         }
-        if ($name !== basename($name) || !preg_match(BackupStore::NAME, $name)) {
+        if (!BackupStore::isName($name)) {
             return $gone;
         }
         $size = null;
@@ -250,7 +271,7 @@ final class BackupManager
     public static function cancel(): bool
     {
         $state = self::current();
-        if ($state === array() || $state['kind'] !== 'backup' || !in_array($state['status'], array('queued', 'running'), true)) {
+        if ($state === array() || $state['kind'] !== 'backup' || !self::isLive($state)) {
             return false;
         }
         BackupStore::site()->requestCancel((string) $state['run']);
@@ -273,7 +294,7 @@ final class BackupManager
             return array();
         }
 
-        return self::resolve($state, in_array($state['status'] ?? '', array('queued', 'running'), true) && self::busy(), time());
+        return self::resolve($state, self::isLive($state) && self::busy(), time());
     }
 
     /**
@@ -285,8 +306,7 @@ final class BackupManager
     public static function poll(): array
     {
         $state = self::current();
-        $live  = in_array($state['status'] ?? '', array('queued', 'running'), true);
-        if ($live) {
+        if (self::isLive($state)) {
             $pending = 0;
             foreach (self::JOBS as $type) {
                 $pending += osc_job_stats($type)['pending'];
@@ -322,8 +342,7 @@ final class BackupManager
      */
     public static function resolve(array $state, bool $jobExists, int $now): array
     {
-        $live = in_array($state['status'] ?? '', array('queued', 'running'), true);
-        if (!$live || $jobExists || $now - (int) ($state['updated'] ?? 0) < self::STALE) {
+        if (!self::isLive($state) || $jobExists || $now - (int) ($state['updated'] ?? 0) < self::STALE) {
             return $state;
         }
         $state['status']  = 'failed';
@@ -355,8 +374,7 @@ final class BackupManager
         $title  = sprintf(__('Making a backup: %1$s, %2$s.'), BackupJobs::whatWord((string) ($s['what'] ?? '')), $where);
         // A bucket backup is built in the first 60% of the bar and uploaded in the rest.
         $scale  = ($s['where'] ?? '') === 'bucket' ? .6 : 1;
-        $hasDb    = ($s['what'] ?? '') !== 'files';
-        $hasFiles = ($s['what'] ?? '') !== 'database';
+        [$hasDb, $hasFiles] = Builder::parts($s + array('what' => ''));
         $dbShare  = $hasDb ? ($hasFiles ? 20 : 95) : 0;
         if (($s['status'] ?? '') === 'queued') {
             return array('title' => $title, 'line' => __('Waiting to start'), 'percent' => 0);
@@ -521,7 +539,7 @@ final class BackupManager
     public static function dismiss(): void
     {
         $state = self::current();
-        if ($state !== array() && in_array($state['status'], array('queued', 'running'), true)) {
+        if (self::isLive($state)) {
             return;
         }
         BackupStore::site()->clearState();

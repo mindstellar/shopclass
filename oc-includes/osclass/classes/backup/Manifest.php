@@ -153,11 +153,13 @@ final class Manifest
     }
 
     /**
+     * A check's answer when a backup may not be restored.
+     *
      * @param string $reason
      *
      * @return array{ok:bool,reason:string,migrate:bool,note:string}
      */
-    private static function refuse(string $reason): array
+    public static function refuse(string $reason): array
     {
         return array('ok' => false, 'reason' => $reason, 'migrate' => false, 'note' => '');
     }

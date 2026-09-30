@@ -92,6 +92,38 @@ final class Restorer
     }
 
     /**
+     * The payload of a new restore of a backup in the bucket, downloaded first as an upload.
+     *
+     * @param string $bucketName the backup's name in the bucket
+     * @param bool   $db
+     * @param bool   $files
+     *
+     * @return array<string,mixed>
+     */
+    public static function beginFetch(string $bucketName, bool $db, bool $files): array
+    {
+        $p = self::begin(BackupStore::uploadName('zip'), $db, $files);
+        $p['stage']       = 'fetch';
+        $p['bucket_name'] = $bucketName;
+        $p['fetch']       = array();
+
+        return $p;
+    }
+
+    /**
+     * Whether there is room for a safety copy of the files: twice their size, or the disk does not say.
+     *
+     * @param int|null $free
+     * @param int      $bytes
+     *
+     * @return bool
+     */
+    public static function roomForFileSafety(?int $free, int $bytes): bool
+    {
+        return $free === null || $free >= 2 * $bytes;
+    }
+
+    /**
      * What a backup file holds and whether it may be restored here, without changing
      * anything. Sizes come from the zip's own records, never from its manifest.
      *
@@ -107,7 +139,7 @@ final class Restorer
         if (strtolower(substr($path, -4)) === '.sql') {
             $handle = @fopen($path, 'rb');
             if ($handle === false) {
-                return array('ok' => false, 'reason' => __('The file cannot be read.'), 'migrate' => false, 'note' => '') + $out;
+                return Manifest::refuse(__('The file cannot be read.')) + $out;
             }
             $prefix = Manifest::sqlPrefix($handle);
             fclose($handle);
@@ -118,7 +150,7 @@ final class Restorer
         try {
             $archive = new BackupArchive($path);
         } catch (RuntimeException $e) {
-            return array('ok' => false, 'reason' => __('This file is not a Shopclass backup.'), 'migrate' => false, 'note' => '') + $out;
+            return Manifest::refuse(__('This file is not a Shopclass backup.')) + $out;
         }
         $manifest = $archive->manifest();
         $sizes    = $archive->measure($content !== null ? (string) realpath($content) : null);
@@ -131,21 +163,21 @@ final class Restorer
         );
         $archive->close();
         if ($manifest === null) {
-            return array('ok' => false, 'reason' => __('This file is not a Shopclass backup.'), 'migrate' => false, 'note' => '') + $out;
+            return Manifest::refuse(__('This file is not a Shopclass backup.')) + $out;
         }
         if (!$sizes['safe']) {
-            return array('ok' => false, 'reason' => __('This file cannot be restored: what it holds is too large or too compressed to be a real backup.'), 'migrate' => false, 'note' => '') + $out;
+            return Manifest::refuse(__('This file cannot be restored: what it holds is too large or too compressed to be a real backup.')) + $out;
         }
         if ($content !== null && $free === null) {
             $disk = @disk_free_space($content);
             $free = $disk === false ? null : (int) $disk;
         }
         if ($content !== null && $free !== null && $sizes['need'] > $free) {
-            return array('ok' => false, 'reason' => sprintf(
+            return Manifest::refuse(sprintf(
                 __('There is not enough free space to put back the files: %1$s needed, %2$s free.'),
                 DatabaseTools::bytes($sizes['need']),
                 DatabaseTools::bytes($free)
-            ), 'migrate' => false, 'note' => '') + $out;
+            )) + $out;
         }
 
         return Manifest::check($manifest, OSCLASS_VERSION, DB_TABLE_PREFIX) + $out;
@@ -234,7 +266,7 @@ final class Restorer
 
         $filesBytes = $info['files_bytes'];
         $free       = $this->store->freeSpace();
-        $roomFiles  = $p['parts']['files'] && ($free === null || $free >= 2 * $filesBytes);
+        $roomFiles  = $p['parts']['files'] && self::roomForFileSafety($free, $filesBytes);
         $p['safety_files'] = $roomFiles;
         if ($p['parts']['database']) {
             $p['safety'] = Builder::begin($roomFiles ? 'everything' : 'database', 'server', 'safety');
@@ -452,7 +484,7 @@ final class Restorer
      *
      * @return void
      */
-    public function reopen(array $p): void
+    private function reopen(array $p): void
     {
         $file = (string) $this->opts['maintenance'];
         if (!function_exists('osc_maintenance_is_restoring') || !osc_maintenance_is_restoring($file)) {

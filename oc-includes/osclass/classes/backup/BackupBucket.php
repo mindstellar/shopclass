@@ -334,7 +334,7 @@ final class BackupBucket
      */
     public static function sidecarKey(string $name): string
     {
-        return self::prefix() . substr($name, 0, -4) . '.json';
+        return self::prefix() . BackupStore::sidecar($name);
     }
 
     /**

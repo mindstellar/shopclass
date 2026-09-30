@@ -248,7 +248,7 @@ final class BackupCommands
         $bucket = null;
         $path   = null;
         if ($from === 's3') {
-            if ($target !== basename($target) || !preg_match(BackupStore::NAME, $target)) {
+            if (!BackupStore::isName($target)) {
                 return $this->fail("Give the name of a backup in the bucket, as backup:list --to=s3 shows it.\n", 2);
             }
             $bucket = BackupBucket::adapter();
@@ -268,15 +268,7 @@ final class BackupCommands
                 $target = $name;
                 $file   = (string) $site->path($name);
             }
-            $info  = Restorer::inspect($file);
-            $check = array(
-                'reason'   => $info['ok'] ? '' : $info['reason'],
-                'note'     => $info['note'],
-                'manifest' => $info['manifest'],
-                'database' => $info['database'],
-                'files'    => $info['files'],
-                'size'     => (int) filesize($file),
-            );
+            $check = BackupManager::checkFile($file);
         }
         if ($check['reason'] !== '') {
             return $this->fail($check['reason'] . "\n");
@@ -300,10 +292,7 @@ final class BackupCommands
         }
 
         if ($from === 's3') {
-            $p = Restorer::begin(BackupStore::uploadName('zip'), $db, $files);
-            $p['stage']       = 'fetch';
-            $p['bucket_name'] = $target;
-            $p['fetch']       = array();
+            $p = Restorer::beginFetch($target, $db, $files);
         } else {
             $p = Restorer::begin($path !== null ? basename($path) : $target, $db, $files);
         }
@@ -346,7 +335,7 @@ final class BackupCommands
     {
         $name = (string) ($args['_'][0] ?? '');
         $from = $args['from'] ?? 'server';
-        if ($name !== basename($name) || !preg_match(BackupStore::NAME, $name)) {
+        if (!BackupStore::isName($name)) {
             return $this->fail("Name a backup as backup:list shows it.\n", 2);
         }
         if (!in_array($from, array('server', 's3'), true)) {

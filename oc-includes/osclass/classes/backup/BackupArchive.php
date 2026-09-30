@@ -110,16 +110,6 @@ final class BackupArchive
     }
 
     /**
-     * Total entries, for walking them by index.
-     *
-     * @return int
-     */
-    public function entries(): int
-    {
-        return $this->zip->numFiles;
-    }
-
-    /**
      * The real sizes of what it holds, from the zip's own records: the database, the
      * files, and the bytes putting the files back adds to oc-content. 'safe' is false
      * when there are too many entries or one is too large or too compressed to be real.

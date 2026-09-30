@@ -36,6 +36,9 @@ final class BackupStore
     /** Downloads and uploads left behind are removed after this many seconds. */
     public const TTL = 3600;
 
+    /** What a backup in progress adds to its name for its partial files. */
+    private const PARTIAL = array('.part', '.part.cdir', '.sql', '.upart');
+
     /** @var string with a trailing slash */
     private $dir;
 
@@ -132,6 +135,52 @@ final class BackupStore
     }
 
     /**
+     * Whether a name is a saved backup's name, with no path in it.
+     *
+     * @param string $name
+     *
+     * @return bool
+     */
+    public static function isName(string $name): bool
+    {
+        return $name === basename($name) && preg_match(self::NAME, $name) === 1;
+    }
+
+    /**
+     * The name of the manifest saved beside a backup.
+     *
+     * @param string $name
+     *
+     * @return string
+     */
+    public static function sidecar(string $name): string
+    {
+        return substr($name, 0, -4) . '.json';
+    }
+
+    /**
+     * The path of the manifest saved beside a backup.
+     *
+     * @param string $name
+     *
+     * @return string
+     */
+    public function sidecarPath(string $name): string
+    {
+        return $this->dir . self::sidecar($name);
+    }
+
+    /**
+     * Why a backup cannot start when the folder cannot be written, in words.
+     *
+     * @return string
+     */
+    public static function unwritable(): string
+    {
+        return sprintf(__('The backup folder cannot be written: %s'), self::FOLDER);
+    }
+
+    /**
      * The path of a saved backup or an upload, by name only. Null for anything that is
      * not one, including a name carrying a path.
      *
@@ -141,7 +190,7 @@ final class BackupStore
      */
     public function path(string $name): ?string
     {
-        if ($name !== basename($name) || (!preg_match(self::NAME, $name) && !preg_match(self::UPLOAD, $name))) {
+        if ($name !== basename($name) || (!self::isName($name) && !preg_match(self::UPLOAD, $name))) {
             return null;
         }
         $path = $this->dir . $name;
@@ -199,7 +248,7 @@ final class BackupStore
         if (!preg_match(self::NAME, $name)) {
             return null;
         }
-        $json = @file_get_contents($this->dir . substr($name, 0, -4) . '.json');
+        $json = @file_get_contents($this->sidecarPath($name));
 
         return is_string($json) ? Manifest::parse($json) : null;
     }
@@ -214,7 +263,7 @@ final class BackupStore
      */
     public function saveManifest(string $name, array $manifest): void
     {
-        $this->writePrivate($this->dir . substr($name, 0, -4) . '.json', (string) json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        $this->writePrivate($this->sidecarPath($name), (string) json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
 
     /**
@@ -230,7 +279,7 @@ final class BackupStore
         if ($path === null || !preg_match(self::NAME, $name)) {
             return false;
         }
-        @unlink($this->dir . substr($name, 0, -4) . '.json');
+        @unlink($this->sidecarPath($name));
 
         return @unlink($path);
     }
@@ -260,10 +309,10 @@ final class BackupStore
         if (!preg_match(self::NAME, $name) || self::isSaved($this->manifest($name))) {
             return;
         }
-        foreach (array('.part', '.part.cdir', '.sql', '.upart') as $suffix) {
+        foreach (self::PARTIAL as $suffix) {
             @unlink($this->dir . $name . $suffix);
         }
-        @unlink($this->dir . substr($name, 0, -4) . '.json');
+        @unlink($this->sidecarPath($name));
         @unlink($this->dir . $name);
     }
 
@@ -410,7 +459,7 @@ final class BackupStore
      */
     public function bucketDelete(object $bucket, string $name): bool
     {
-        if ($name !== basename($name) || !preg_match(self::NAME, $name)) {
+        if (!self::isName($name)) {
             return false;
         }
         $this->forgetBucketList();
@@ -457,7 +506,7 @@ final class BackupStore
      */
     public function bucketLink(object $bucket, string $name): string
     {
-        if ($name !== basename($name) || !preg_match(self::NAME, $name) || !$bucket->exists(BackupBucket::key($name))) {
+        if (!self::isName($name) || !$bucket->exists(BackupBucket::key($name))) {
             return '';
         }
 
@@ -475,7 +524,10 @@ final class BackupStore
      */
     public function sweep(bool $running, string $keep = ''): void
     {
-        $old = time() - self::TTL;
+        $old     = time() - self::TTL;
+        $partial = '/^\d{4}-\d{2}-\d{2}-\d{6}-[a-z]+-[a-z2-7]{16}\.zip(' . implode('|', array_map(static function (string $s): string {
+            return preg_quote($s, '/');
+        }, self::PARTIAL)) . ')$/';
         foreach (glob($this->dir . '*') ?: array() as $file) {
             $name = basename($file);
             if ($name === $keep || is_link($file) || !is_file($file)) {
@@ -494,7 +546,7 @@ final class BackupStore
                 }
                 continue;
             }
-            if (!$running && preg_match('/^\d{4}-\d{2}-\d{2}-\d{6}-[a-z]+-[a-z2-7]{16}\.zip\.(part|part\.cdir|sql|upart)$/', $name)) {
+            if (!$running && preg_match($partial, $name)) {
                 @unlink($file);
             }
         }
