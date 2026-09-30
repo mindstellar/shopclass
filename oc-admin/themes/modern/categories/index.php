@@ -170,6 +170,19 @@ function drawCategory($category)
         <div class="cat-toolbar">
             <button type="button" class="cat-tool-btn" data-cat-act="expand-all"><?php _e('Expand all'); ?></button>
             <button type="button" class="cat-tool-btn" data-cat-act="collapse-all"><?php _e('Collapse all'); ?></button>
+            <?php if (!empty($categories)) { ?>
+                <span class="cat-toolbar-spacer"></span>
+                <?php osc_admin_form_open(array(
+                    'page'       => 'tools',
+                    'action'     => 'category_post',
+                    'horizontal' => false,
+                )); ?>
+                    <button type="submit" class="cat-tool-btn" title="<?php echo osc_esc_html(__('The counts also refresh once a day on their own.')); ?>">
+                        <i class="bi bi-calculator" aria-hidden="true"></i>
+                        <?php _e('Recount listings'); ?>
+                    </button>
+                <?php osc_admin_form_close(null, array('horizontal' => false)); ?>
+            <?php } ?>
         </div>
 
         <?php if (empty($categories)) { ?>

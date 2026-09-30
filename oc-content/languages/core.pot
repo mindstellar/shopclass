@@ -2064,10 +2064,6 @@ msgstr ""
 msgid "Cache"
 msgstr ""
 
-#: oc-admin/themes/modern/tools/category.php
-msgid "Calculate category stats"
-msgstr ""
-
 #: oc-admin/themes/modern/tools/locations.php
 msgid "Calculate location stats"
 msgstr ""
@@ -2224,10 +2220,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MainSettingsForm.php
 msgid "Category settings"
-msgstr ""
-
-#: oc-admin/themes/modern/tools/category.php
-msgid "Category stats"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
@@ -6065,7 +6057,6 @@ msgid ""
 msgstr ""
 
 #: oc-admin/themes/modern/tools/maintenance.php
-#: oc-includes/osclass/classes/AdminMenu.php
 msgid "Maintenance"
 msgstr ""
 
@@ -8168,10 +8159,6 @@ msgstr ""
 msgid "Rebuild photo sizes"
 msgstr ""
 
-#: oc-includes/osclass/classes/AdminMenu.php
-msgid "Recalculate category stats"
-msgstr ""
-
 #: oc-admin/themes/modern/settings/locations/data.php
 msgid "Recalculate counts"
 msgstr ""
@@ -8223,6 +8210,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/locations.php
 msgid "Recount failed. Try again later."
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "Recount listings"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/locations.php
@@ -9792,7 +9783,6 @@ msgstr ""
 #: oc-admin/themes/modern/stats/items.php
 #: oc-admin/themes/modern/stats/reports.php
 #: oc-admin/themes/modern/stats/users.php
-#: oc-admin/themes/modern/tools/category.php
 #: oc-admin/themes/modern/tools/locations.php
 #: oc-includes/osclass/classes/AdminMenu.php
 msgid "Statistics"
@@ -10258,6 +10248,10 @@ msgstr ""
 msgid ""
 "The cheapest speed-up there is — PHP stops recompiling every file on every "
 "request."
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "The counts also refresh once a day on their own."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/widgets.php
@@ -12294,10 +12288,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/plugins/index.php
 msgid "You are about to delete the files of the plugin. Do you want to continue?"
-msgstr ""
-
-#: oc-admin/themes/modern/tools/category.php
-msgid "You can recalculate your category stats if they are incorrect."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/locations.php

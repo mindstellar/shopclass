@@ -61,16 +61,18 @@ class CAdminTools extends AdminSecBaseModel
             case ('backup_upload'):
                 $this->backupUpload($this->action === 'import_post' ? 'sql' : 'backup_file');
                 break;
+            // The recount lives on the Categories screen; the old page URL still lands there.
             case ('category'):
-                $this->doView('tools/category.php');
+                $this->redirectTo(osc_admin_base_url(true) . '?page=categories');
                 break;
             case ('category_post'):
-                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=tools&action=category')) {
+                osc_csrf_check();
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=categories')) {
                     break;
                 }
                 osc_update_cat_stats();
                 osc_add_flash_ok_message(_m('Recount category stats has been successful'), 'admin');
-                $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=category');
+                $this->redirectTo(osc_admin_base_url(true) . '?page=categories');
                 break;
             case ('locations'):
                 $this->doView('tools/locations.php');
