@@ -179,12 +179,6 @@ msgid_plural "A message can contain up to %d links."
 msgstr[0] ""
 msgstr[1] ""
 
-#: oc-includes/osclass/classes/security/MessageHold.php
-msgid ""
-"A message from %s is already waiting. Click the link we e-mailed to that "
-"address to send it."
-msgstr ""
-
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 msgid "A new listing has been added"
 msgstr ""
@@ -439,14 +433,14 @@ msgstr ""
 msgid "Check your email to confirm the alert."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/CWebItem.php
-msgid "Check your inbox to validate your listing"
-msgstr ""
-
 #: oc-includes/osclass/classes/security/MessageHold.php
 msgid ""
-"Check your inbox. We sent a link to %s, and your message is sent when you "
-"click it."
+"Check your inbox at %s. A message is sent only when you click the link we "
+"e-mailed."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebItem.php
+msgid "Check your inbox to validate your listing"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
@@ -493,10 +487,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid "Cleanup started. It runs in the background until nothing matches."
-msgstr ""
-
-#: oc-includes/osclass/gui/contact-message-content.php
-msgid "Click the button to send your message."
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-public-profile-content.php
@@ -692,6 +682,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/actions/ItemActions.php
 msgid "Descriptions can be 1 to %d characters."
+msgstr ""
+
+#: oc-includes/osclass/gui/contact-message-content.php
+msgid "Did you not write this? Delete it, and nothing is sent."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
@@ -1538,6 +1532,7 @@ msgid "Please complete the security check."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebContact.php
+#: oc-includes/osclass/classes/security/MessageGuard.php
 msgid "Please enter a correct email"
 msgstr ""
 
@@ -2373,6 +2368,10 @@ msgid ""
 "available."
 msgstr ""
 
+#: oc-includes/osclass/gui/contact-message-content.php
+msgid "The message has been deleted. Nothing was sent."
+msgstr ""
+
 #: oc-includes/osclass/classes/actions/UserActions.php
 msgid "The name cannot be empty"
 msgstr ""
@@ -2700,6 +2699,10 @@ msgstr ""
 msgid "This message has already been reported."
 msgstr ""
 
+#: oc-includes/osclass/gui/contact-message-content.php
+msgid "This message is waiting to be sent from your address to %s."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebContact.php
 msgid "This message was already sent, or its link has expired."
 msgstr ""
@@ -2726,6 +2729,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebBilling.php
 msgid "This upgrade is not available right now"
+msgstr ""
+
+#: oc-includes/osclass/gui/contact-message-content.php
+msgid "This was not me, delete it"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
@@ -3262,6 +3269,14 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/SitemapSettingsForm.php
 msgid "robots.txt is not writable. Fix the file or folder permissions and try again"
+msgstr ""
+
+#: oc-includes/osclass/classes/security/MessageHold.php
+msgid "the seller of \"%s\""
+msgstr ""
+
+#: oc-includes/osclass/classes/security/MessageHold.php
+msgid "the site owner"
 msgstr ""
 
 #: oc-includes/osclass/gui/item-comments-content.php

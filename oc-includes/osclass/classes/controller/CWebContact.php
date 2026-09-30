@@ -136,7 +136,7 @@ MESSAGE;
                 $sent = \mindstellar\security\MessageHold::deliver(
                     'site_contact',
                     $yourEmail,
-                    array('params' => osc_apply_filter('contact_params', $params))
+                    array('params' => osc_apply_filter('contact_params', $params), 'message' => $message)
                 );
                 \mindstellar\security\ActionThrottle::record('site_contact');
                 if ($sent) {
@@ -166,7 +166,10 @@ MESSAGE;
                 ));
                 break;
             case ('confirm_post'):
-                $this->linkPost('confirm', 20, array(\mindstellar\security\MessageHold::class, 'confirm'), array(
+                $discard = Params::getParamString('discard') === '1';
+                $this->linkPost('confirm', 20, static function (string $token) use ($discard): string {
+                    return \mindstellar\security\MessageHold::confirm($token, $discard);
+                }, array(
                     'gone'    => _m('This message was already sent, or its link has expired.'),
                     'invalid' => _m('This link is not valid.'),
                     'failed'  => _m('The message could not be sent. The listing or member may no longer be available.'),
@@ -200,7 +203,7 @@ MESSAGE;
         \mindstellar\security\ActionThrottle::record($context);
         $status = $run(Params::getParamString('t'));
         if ($status === 'done') {
-            $this->redirectTo($back . '&done=1');
+            $this->redirectTo($back . '&done=' . (Params::getParamString('discard') === '1' ? 'deleted' : '1'));
         }
         osc_add_flash_error_message($errors[$status] ?? $errors['failed']);
         $this->redirectTo($back);
@@ -216,13 +219,17 @@ MESSAGE;
      */
     private function messageView(string $mode)
     {
-        $done  = Params::getParamString('done') === '1';
-        $token = $done ? '' : Params::getParamString('t');
+        $done  = Params::getParamString('done');
+        $token = $done !== '' ? '' : Params::getParamString('t');
         $data  = null;
         if ($token !== '') {
             $data = $mode === 'report'
                 ? \mindstellar\security\MessageGuard::readReport($token)
-                : \mindstellar\security\SignedPayload::unpack('message-confirm', $token);
+                : \mindstellar\security\MessageHold::preview($token);
+        }
+        // The token is in this page's address; keep it out of Referer headers.
+        if (!headers_sent()) {
+            header('Referrer-Policy: no-referrer');
         }
         $heading = $mode === 'report' ? _m('Report the sender') : _m('Send your message');
 
@@ -230,6 +237,8 @@ MESSAGE;
         $this->_exportVariableToView('message_mode', $mode);
         $this->_exportVariableToView('message_done', $done);
         $this->_exportVariableToView('message_token', $data === null ? '' : $token);
+        $this->_exportVariableToView('message_to', $mode === 'confirm' ? (string) ($data['to'] ?? '') : '');
+        $this->_exportVariableToView('message_text', $mode === 'confirm' ? (string) ($data['message'] ?? '') : '');
         $this->_exportVariableToView('report_sender', $mode === 'report' ? (string) ($data['sender'] ?? '') : '');
         $this->_exportVariableToView('report_permanent', $mode === 'report' && !empty($data['permanent']));
         $this->_exportVariableToView('report_days', \mindstellar\security\MessageGuard::banDays());

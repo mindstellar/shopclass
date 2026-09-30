@@ -653,9 +653,12 @@ class CWebItem extends BaseModel
                     'phoneNumber'  => Params::getParamString('phoneNumber'),
                     'message_body' => Params::getParamString('message'),
                 );
-                if (osc_captcha_enabled() && !osc_check_captcha()) {
-                    osc_keep_form($contactValues, _m('Please complete the security check.'));
+                $fail = function (string $error) use ($contactValues) {
+                    osc_keep_form($contactValues, $error);
                     $this->redirectTo(osc_local_referer(osc_item_url()));
+                };
+                if (osc_captcha_enabled() && !osc_check_captcha()) {
+                    $fail(_m('Please complete the security check.'));
 
                     return false;
                 }
@@ -667,8 +670,7 @@ class CWebItem extends BaseModel
                     $contactValues['phoneNumber']
                 );
                 if ($refused !== null) {
-                    osc_keep_form($contactValues, $refused);
-                    $this->redirectTo(osc_local_referer(osc_item_url()));
+                    $fail($refused);
 
                     return false;
                 }
@@ -699,8 +701,7 @@ class CWebItem extends BaseModel
                     osc_item_attachment() ? osc_mail_upload_attachment('attachment') : null
                 );
                 if ($refused !== null) {
-                    osc_keep_form($contactValues, $refused);
-                    $this->redirectTo(osc_local_referer(osc_item_url()));
+                    $fail($refused);
 
                     return false;
                 }
@@ -712,8 +713,7 @@ class CWebItem extends BaseModel
 
                 osc_run_hook('post_item_contact_post', $item);
                 if (is_string($result)) {
-                    osc_keep_form($contactValues, trim($result));
-                    $this->redirectTo(osc_local_referer(osc_item_url()));
+                    $fail(trim($result));
 
                     return false;
                 } else {

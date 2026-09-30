@@ -116,8 +116,8 @@ final class MessageGuard
     }
 
     /**
-     * Why a message form must refuse this sender, or null: the ban list, then the name and
-     * phone fields, then the links in the message.
+     * Why a message form must refuse this sender, or null: an address the ban list cannot
+     * match exactly, the ban list, then the name and phone fields, then the links.
      *
      * @param string   $email
      * @param string   $message
@@ -128,6 +128,11 @@ final class MessageGuard
      */
     public static function refusal(string $email, string $message, array $names = array(), string $phone = ''): ?string
     {
+        // The ban list reads these as patterns, so an address with them could not be banned exactly.
+        if (strpbrk($email, '*|') !== false || strpos(ltrim($email), '!') === 0) {
+            return _m('Please enter a correct email');
+        }
+
         return self::banError($email) ?? self::fieldError($names, $phone) ?? self::linkError($message);
     }
 

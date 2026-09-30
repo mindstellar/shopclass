@@ -91,6 +91,7 @@ final class JobQueue
      * @param array<string,mixed> $options delay: seconds to hold it back.
      *                                     storage: adapter id, for storage.* jobs only.
      *                                     unique_key: de-duplication key, up to 100 characters.
+     *                                     keep_existing: on a key clash, queue nothing and return 0.
      *
      * @return int the job id (the existing one when a key matched), or 0 when the insert failed
      * @throws InvalidArgumentException on a malformed type or key, or a payload that cannot be
@@ -104,7 +105,8 @@ final class JobQueue
         $row    = $this->row($type, self::encode($payload, 'Job payload for "' . $type . '"'), $options, $unique);
 
         try {
-            if ($unique === null) {
+            // keep_existing: a key clash leaves the waiting job alone and queues nothing.
+            if ($unique === null || !empty($options['keep_existing'])) {
                 return osc_db_table($this->table())->insert($row);
             }
 
@@ -439,6 +441,30 @@ final class JobQueue
         $payload = json_decode((string) $row['s_payload'], true);
 
         return is_array($payload) ? $payload : array();
+    }
+
+    /**
+     * Read a waiting job's payload without taking it.
+     *
+     * @param int    $id
+     * @param string $type
+     * @param string $key its unique_key
+     *
+     * @return array<string,mixed>|null
+     */
+    public function peek(int $id, string $type, string $key): ?array
+    {
+        try {
+            $row = osc_db_select_one(
+                'SELECT s_payload FROM ' . $this->table() . ' WHERE pk_i_id = ? AND s_type = ? AND s_status = ? AND s_unique = ?',
+                array($id, $type, self::STATUS_PENDING, $key)
+            );
+        } catch (DbException $e) {
+            return null;
+        }
+        $payload = $row ? json_decode((string) $row['s_payload'], true) : null;
+
+        return is_array($payload) ? $payload : null;
     }
 
     /**

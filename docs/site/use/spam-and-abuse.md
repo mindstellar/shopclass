@@ -122,10 +122,11 @@ redundant on a site where comments are closed or moderated.
 The contact form, contact the seller, contact a user and share a listing all
 send e-mail.
 
-**Confirmed senders only.** Mail to a member leaves only from an address the
-sender has proved is theirs. A signed-in member's own address counts. Anyone
-else gets a link at the address they typed; the message is sent when they click
-it, and waits at most 24 hours. After one click, that browser sends straight
+**Confirmed senders only.** Mail leaves only from an address the sender has
+proved is theirs. A signed-in member's own address counts when the site checks
+e-mails at sign-up. Anyone else gets a link at the address they typed. The link
+opens a page showing the message; it is sent when they click *Send my message*,
+or deleted with *This was not me*. It waits at most 24 hours. After one click, that browser sends straight
 away for 30 days. One message per address can wait at a time. A file can be
 attached only once the address is confirmed. The site's own contact form works
 the same way.

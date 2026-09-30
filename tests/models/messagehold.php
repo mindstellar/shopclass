@@ -175,6 +175,9 @@ $tokenOf = static function (string $url): string {
     return (string) ($q['t'] ?? '');
 };
 $token = $tokenOf(MessageHold::confirmUrl($heldId(), 'guest@example.test'));
+pin('the link page shows the text', 'Is it still for sale?', MessageHold::preview($token)['message'] ?? null);
+pin('and who it goes to', 'member', MessageHold::preview($token)['to'] ?? null);
+pin('a forged link shows nothing', null, MessageHold::preview('forged.token'));
 pin('a forged link is refused', 'invalid', MessageHold::confirm('forged.token'));
 pin(
     'a link naming another address takes nothing',
@@ -204,6 +207,26 @@ $goneId = seed_user($admin, 'gone', 'gone@example.test', 1, 0);
 MessageHold::deliver('user_contact', 'late@example.test', array('id' => $goneId) + $args);
 pin('is dropped, not sent', 'failed', MessageHold::confirm($tokenOf(MessageHold::confirmUrl($heldId(), 'late@example.test'))));
 pin('the member got nothing more', 2, count($sent));
+
+harness_section('MessageHold: someone who never wrote it deletes it');
+
+unset($_COOKIE['osc_msg_trust']);
+$before = count($sent);
+MessageHold::deliver('user_contact', 'framed@example.test', array('message' => 'Planted text') + $args);
+$planted = $tokenOf(MessageHold::confirmUrl($heldId(), 'framed@example.test'));
+pin('the owner sees the planted text', 'Planted text', MessageHold::preview($planted)['message'] ?? null);
+pin('deleting it succeeds', 'done', MessageHold::confirm($planted, true));
+pin('nothing was sent', $before, count($sent));
+pin('the browser is not trusted for that address', false, MessageHold::verified('framed@example.test'));
+pin('the link is used up', 'gone', MessageHold::confirm($planted));
+
+harness_section('JobQueue: keep_existing leaves a waiting job alone');
+
+$queue = \mindstellar\job\JobQueue::instance();
+$first = $queue->enqueue('test.keep', array('v' => 1), array('unique_key' => 'k1', 'keep_existing' => true, 'delay' => 60));
+check('the first job is queued', $first > 0);
+pin('a second one with the same key is not', 0, $queue->enqueue('test.keep', array('v' => 2), array('unique_key' => 'k1', 'keep_existing' => true)));
+pin('and the first keeps its payload', array('v' => 1), $queue->peek($first, 'test.keep', 'k1'));
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

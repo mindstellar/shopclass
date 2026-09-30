@@ -105,6 +105,9 @@ foreach (array('http://spam.example/promo', 'Visit buy.shop', 'Ann <b>', str_rep
     check('name ' . substr($bad, 0, 20) . ' is refused', is_string(MessageGuard::fieldError(array($bad))));
 }
 check('every name passed is checked', is_string(MessageGuard::fieldError(array('Ann', 'spam.com/x'))));
+foreach (array('spam*1@evil.test', 'a|b@evil.test', '!x@evil.test') as $bad) {
+    check('an address with ' . $bad[strcspn($bad, '*|!')] . ' is refused', is_string(MessageGuard::refusal($bad, 'hi')));
+}
 
 $setPref('message_max_links', '0');
 pin('0 is kept, not read as unset', 0, MessageGuard::maxLinks());

@@ -62,7 +62,7 @@ characters. The namespace is required. Without it the first plugin to claim `sen
 take the word from every other plugin.
 
 Use your plugin's own prefix: `acme.send_digest`, `acme.mail.retry`. Core uses
-`storage.*`, `category.*`, `alerts.*` and `cleanup.*`.
+`storage.*`, `category.*`, `alerts.*`, `cleanup.*` and `message.*`.
 
 An invalid type throws at the call site, not hours later in a cron run.
 

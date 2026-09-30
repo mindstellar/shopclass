@@ -39,7 +39,10 @@ final class MessageHold
             return false;
         }
         $key = self::key($email);
-        if (osc_is_web_user_logged_in() && hash_equals(self::key((string) osc_logged_user_email()), $key)) {
+        // An account address is proven only where sign-up proves it.
+        if (osc_user_validation_enabled() && osc_is_web_user_logged_in()
+            && hash_equals(self::key((string) osc_logged_user_email()), $key)
+        ) {
             return true;
         }
         $trust = SignedPayload::unpack('message-trust', (string) ($_COOKIE[self::COOKIE] ?? ''));
@@ -49,7 +52,8 @@ final class MessageHold
 
     /**
      * Send the message now when the sender is confirmed, or hold it and mail them a link.
-     * A held message sets its own flash message.
+     * One message per address waits at a time. A held message sets its own flash message,
+     * the same whether or not another was already waiting.
      *
      * @param string              $kind  'site_contact', 'item_contact', 'user_contact' or 'send_friend'
      * @param string              $email the sender's address
@@ -65,32 +69,29 @@ final class MessageHold
 
         $queue = JobQueue::instance();
         $key   = self::key($email);
-        if ($queue->hasKey(self::JOB, $key)) {
-            osc_add_flash_info_message(sprintf(
-                _m('A message from %s is already waiting. Click the link we e-mailed to that address to send it.'),
-                $email
-            ));
+        $id    = 0;
+        if (!$queue->hasKey(self::JOB, $key)) {
+            try {
+                $id = $queue->enqueue(
+                    self::JOB,
+                    array('kind' => $kind, 'email' => $email, 'args' => $args),
+                    array('delay' => self::HOLD_TTL, 'unique_key' => $key, 'keep_existing' => true)
+                );
+            } catch (\InvalidArgumentException $e) {
+                $id = 0;
+            }
+            if ($id <= 0 && !$queue->hasKey(self::JOB, $key)) {
+                osc_add_flash_error_message(_m('Your message could not be sent. Please try again later.'));
 
-            return false;
-        }
-        try {
-            $id = $queue->enqueue(
-                self::JOB,
-                array('kind' => $kind, 'email' => $email, 'args' => $args),
-                array('delay' => self::HOLD_TTL, 'unique_key' => $key)
-            );
-        } catch (\InvalidArgumentException $e) {
-            $id = 0;
-        }
-        if ($id <= 0) {
-            osc_add_flash_error_message(_m('Your message could not be sent. Please try again later.'));
-
-            return false;
+                return false;
+            }
         }
 
-        self::mailConfirmLink($email, $id);
+        if ($id > 0) {
+            self::mailConfirmLink($email, $id);
+        }
         osc_add_flash_info_message(sprintf(
-            _m('Check your inbox. We sent a link to %s, and your message is sent when you click it.'),
+            _m('Check your inbox at %s. A message is sent only when you click the link we e-mailed.'),
             $email
         ));
 
@@ -119,28 +120,81 @@ final class MessageHold
     }
 
     /**
-     * Send a held message whose link was clicked, and trust this browser for its address.
+     * Who a held message goes to and what it says, for the page its link opens.
      *
      * @param string $token
      *
-     * @return string 'done', 'gone' (already sent, or expired), 'invalid' or 'failed'
+     * @return array{to:string,message:string}|null null when the link is bad, used or expired
      */
-    public static function confirm(string $token): string
+    public static function preview(string $token): ?array
     {
-        $data = SignedPayload::unpack('message-confirm', $token);
-        if ($data === null || !isset($data['i'], $data['h'])) {
+        $link = self::readConfirm($token);
+        $held = $link === null ? null : JobQueue::instance()->peek($link['id'], self::JOB, $link['key']);
+        if ($held === null) {
+            return null;
+        }
+        $args = (array) ($held['args'] ?? array());
+        switch ($held['kind'] ?? '') {
+            case 'site_contact':
+                $to = _m('the site owner');
+                break;
+            case 'item_contact':
+                $item = \Item::newInstance()->findByPrimaryKey((int) ($args['id'] ?? 0));
+                $to   = sprintf(_m('the seller of "%s"'), $item ? (string) $item['s_title'] : '');
+                break;
+            case 'user_contact':
+                $user = \User::newInstance()->findByPrimaryKey((int) ($args['id'] ?? 0));
+                $to   = $user ? (string) $user['s_name'] : '';
+                break;
+            default:
+                $to = (string) ($args['friendEmail'] ?? '');
+        }
+
+        return array('to' => $to, 'message' => (string) ($args['message'] ?? ''));
+    }
+
+    /**
+     * Send a held message whose link was clicked, and trust this browser for its address.
+     * With $discard the message is deleted instead, for someone who never wrote it.
+     *
+     * @param string $token
+     * @param bool   $discard
+     *
+     * @return string 'done', 'gone' (already sent, deleted or expired), 'invalid' or 'failed'
+     */
+    public static function confirm(string $token, bool $discard = false): string
+    {
+        $link = self::readConfirm($token);
+        if ($link === null) {
             return 'invalid';
         }
         // The job's key is the sender's address hash, so a link only takes its own message.
-        $held = JobQueue::instance()->take((int) $data['i'], self::JOB, (string) $data['h']);
+        $held = JobQueue::instance()->take($link['id'], self::JOB, $link['key']);
         if ($held === null) {
             return 'gone';
         }
-        $email = (string) ($held['email'] ?? '');
+        if ($discard) {
+            return 'done';
+        }
 
-        self::trust($email);
+        self::trust((string) ($held['email'] ?? ''));
 
         return self::send((string) ($held['kind'] ?? ''), (array) ($held['args'] ?? array())) ? 'done' : 'failed';
+    }
+
+    /**
+     * @param string $token
+     *
+     * @return array{id:int,key:string}|null
+     */
+    private static function readConfirm(string $token): ?array
+    {
+        $data = SignedPayload::unpack('message-confirm', $token);
+        if ($data === null || !isset($data['i'], $data['h']) || !is_string($data['h'])) {
+            return null;
+        }
+
+        return array('id' => (int) $data['i'], 'key' => $data['h']);
     }
 
     /**
