@@ -9,8 +9,6 @@
  */
 
 /**
- * Pins ProxyIpMismatch::detect(): warns when a forwarding header disagrees with REMOTE_ADDR,
-/**
  * A cache server that is down must read as a miss, never as a stored false.
  */
 
