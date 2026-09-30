@@ -291,12 +291,16 @@ final class SystemChecks
         if ((string) ($strict['error'] ?? '') !== '') {
             $issues[] = self::issue('strict_unreadable', 'info', sprintf(__('Could not check whether the site is ready for strict SQL mode: %s'), (string) $strict['error']));
         }
-        $refused = array_sum(array_map('intval', array_column((array) ($strict['refused'] ?? array()), 'count')));
-        if ($refused > 0) {
-            $issues[] = self::issue('strict_refused', 'warning', sprintf(
-                _n('%d write was refused by strict SQL mode in the last 7 days.', '%d writes were refused by strict SQL mode in the last 7 days.', $refused),
-                $refused
-            ), $which);
+        if (empty($strict['log_enabled']) && array_key_exists('log_enabled', $strict)) {
+            $issues[] = self::issue('strict_refused_unknown', 'info', __('Refused writes are not recorded while the activity log is off, so this cannot confirm there are none.'), $which);
+        } else {
+            $refused = array_sum(array_map('intval', array_column((array) ($strict['refused'] ?? array()), 'count')));
+            if ($refused > 0) {
+                $issues[] = self::issue('strict_refused', 'warning', sprintf(
+                    _n('%d write was refused by strict SQL mode in the last 7 days.', '%d writes were refused by strict SQL mode in the last 7 days.', $refused),
+                    $refused
+                ), $which);
+            }
         }
         $zero = count((array) ($strict['zero_dates'] ?? array()));
         if ($zero > 0) {
@@ -723,14 +727,15 @@ final class SystemChecks
         if (!is_array($strict)) {
             return array();
         }
-        $server   = (string) ($strict['server_mode'] ?? '');
-        $session  = StrictModeReadiness::isStrict((string) ($strict['session_mode'] ?? ''));
-        $constant = !empty($strict['constant']);
-        $refused  = (array) ($strict['refused'] ?? array());
-        $zero     = $strict['zero_dates'] ?? null;
-        $defaults = (array) ($strict['zero_defaults'] ?? array());
-        $settings = (array) ($strict['settings'] ?? array());
-        $none     = __('none');
+        $server     = (string) ($strict['server_mode'] ?? '');
+        $session    = StrictModeReadiness::isStrict((string) ($strict['session_mode'] ?? ''));
+        $constant   = !empty($strict['constant']);
+        $logEnabled = !array_key_exists('log_enabled', $strict) || (bool) $strict['log_enabled'];
+        $refused    = $logEnabled ? (array) ($strict['refused'] ?? array()) : array();
+        $zero       = $strict['zero_dates'] ?? null;
+        $defaults   = (array) ($strict['zero_defaults'] ?? array());
+        $settings   = (array) ($strict['settings'] ?? array());
+        $none       = __('none');
 
         if ($constant) {
             $note = $session ? __('Shopclass keeps the server\'s mode.') : __('Shopclass keeps the server\'s mode, but it is not strict, so over-long values are still cut short.');
@@ -750,7 +755,11 @@ final class SystemChecks
         $rows = array(
             array('label' => __('Server mode'), 'value' => StrictModeReadiness::isStrict($server) ? __('strict') : __('not strict'), 'note' => $server !== '' ? str_replace(',', ', ', $server) : __('empty')),
             array('label' => 'OSC_DB_STRICT_MODE', 'value' => $constant ? __('set') : __('not set'), 'note' => $note),
-            array('label' => __('Refused writes, last 7 days'), 'value' => $total > 0 ? number_format($total) : $none),
+            array(
+                'label' => __('Refused writes, last 7 days'),
+                'value' => $logEnabled ? ($total > 0 ? number_format($total) : $none) : __('unknown'),
+                'note'  => $logEnabled ? '' : __('Refused writes are not recorded while the activity log is off.'),
+            ),
             array(
                 'label' => __('Zero dates'),
                 'value' => $zero === null ? __('not checked here') : ($zeroList === array() ? $none : sprintf(_n('%d column', '%d columns', count($zeroList)), count($zeroList))),

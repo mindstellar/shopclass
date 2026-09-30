@@ -181,11 +181,12 @@ class Db
      * "listing saved no row, no error logged" failures. Here it is instead rolled back
      * explicitly and logged loudly, so the leak is diagnosable and the connection never closes
      * mid-transaction. Registered lazily (only if a transaction is ever opened) so a request
-     * that uses none pays nothing.
+     * that uses none pays nothing. Public and idempotent so StrictRefusals can arm this first,
+     * guaranteeing its own shutdown flush is registered after (and so runs after) this rollback.
      *
      * @return void
      */
-    private static function armLeakGuard(): void
+    public static function armLeakGuard(): void
     {
         if (self::$leakGuardArmed) {
             return;

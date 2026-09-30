@@ -559,16 +559,20 @@ class Cli
         }
         $line('Length settings', $settings === [] ? 'fit their columns' : implode('; ', $settings));
 
-        $total = array_sum(array_column($report['refused'], 'count'));
-        $line('Refused writes', $total === 0 ? 'none in the last 7 days' : $total . ' in the last 7 days');
-        foreach ($report['refused'] as $r) {
-            $this->out(sprintf(
-                "    %-40s %-16s %d time(s), last %s\n",
-                $r['column'] !== '' ? $r['column'] : '(unknown column)',
-                $r['kind'],
-                $r['count'],
-                $r['last']
-            ));
+        if (empty($report['log_enabled'])) {
+            $line('Refused writes', 'unknown; not recorded while the activity log is off');
+        } else {
+            $total = array_sum(array_column($report['refused'], 'count'));
+            $line('Refused writes', $total === 0 ? 'none in the last 7 days' : $total . ' in the last 7 days');
+            foreach ($report['refused'] as $r) {
+                $this->out(sprintf(
+                    "    %-40s %-16s %d time(s), last %s\n",
+                    $this->cliSafe($r['column'] !== '' ? $r['column'] : '(unknown column)'),
+                    $this->cliSafe($r['kind']),
+                    $r['count'],
+                    $r['last']
+                ));
+            }
         }
 
         if (\mindstellar\database\StrictModeReadiness::ready($report)) {
@@ -579,6 +583,18 @@ class Cli
         $this->out("Not ready: fix the lines above first. Refused writes are listed in the admin activity log.\n");
 
         return 1;
+    }
+
+    /**
+     * A database-sourced string, safe to print to a terminal: only letters, digits, `_.$ -`.
+     *
+     * @param string $text
+     *
+     * @return string
+     */
+    private function cliSafe(string $text): string
+    {
+        return (string) preg_replace('/[^A-Za-z0-9_.$ -]/', '', $text);
     }
 
     /**

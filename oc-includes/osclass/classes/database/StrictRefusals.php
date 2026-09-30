@@ -23,12 +23,14 @@ final class StrictRefusals
 {
     public const SECTION = 'strict';
 
-    /** Driver error number => kind, as stored in the log's action column. */
+    /** Driver error number => kind, as stored in the log's action column. 1292 is refined
+     *  to 'bad_date' by kindFor() when the message names a date/time value; it also covers
+     *  plain numeric truncation, which stays 'incorrect_value'. */
     public const KINDS = array(
         1406 => 'data_too_long',
         1265 => 'data_truncated',
         1366 => 'incorrect_value',
-        1292 => 'bad_date',
+        1292 => 'incorrect_value',
         1048 => 'cannot_be_null',
         1364 => 'no_default',
         1264 => 'out_of_range',
@@ -37,23 +39,26 @@ final class StrictRefusals
     /** At most this many rows per request, whatever fails. */
     private const PER_REQUEST = 20;
 
-    /** @var array<string,bool> keys already recorded this request */
+    /** @var array<string,bool> keys already queued this request */
     private static $seen = array();
 
     /** @var array<int,array{kind:string,column:string}> */
     private static $queue = array();
 
-    /** @var bool true while a record is being written, so its own failure is not recorded */
+    /** @var bool true while a record is queued or flushed, so its own failure is not recorded */
     private static $busy = false;
 
-    /** @var bool */
+    /** @var bool whether the shutdown flush is registered */
     private static $armed = false;
 
+    /** @var \mysqli|null the connection to check sql_mode on at flush time */
+    private static $conn;
+
     /**
-     * Note a failed statement. Does nothing unless the error is one strict mode raises and the
-     * session is strict. Never throws.
+     * Note a failed statement, queuing (kind, table.column) in memory with no database call.
+     * Never throws.
      *
-     * @param \mysqli|null $conn    the connection the statement ran on, to read its sql_mode
+     * @param \mysqli|null $conn    the connection the statement ran on, read for sql_mode at flush
      * @param int          $errno
      * @param string       $message the driver's message, parsed for the column name only
      * @param string       $sql     parsed for the target table only
@@ -70,34 +75,25 @@ final class StrictRefusals
         if (isset(self::$seen[$key])) {
             return;
         }
-        self::$busy = true;
-        try {
-            // 1048 is also raised with strict mode off, so the session decides for every kind.
-            if ($conn !== null && !self::sessionIsStrict($conn)) {
-                return;
-            }
-            self::$seen[$key] = true;
-            self::$queue[]    = $refusal;
-        } catch (Throwable $e) {
-            return;
-        } finally {
-            self::$busy = false;
+        self::$seen[$key] = true;
+        self::$queue[]    = $refusal;
+        if (self::$conn === null) {
+            self::$conn = $conn;
         }
 
-        // Inside a transaction the row would be lost with its rollback, so it waits for the end.
-        if (Db::inTransaction()) {
-            if (!self::$armed) {
-                self::$armed = true;
-                register_shutdown_function(array(self::class, 'flush'));
-            }
-
-            return;
+        if (!self::$armed) {
+            self::$armed = true;
+            // Db's own leak guard rolls back a transaction left open at request end; arming
+            // it here (idempotent if already armed) guarantees it is registered, and so runs,
+            // before the flush registered next.
+            Db::armLeakGuard();
+            register_shutdown_function(array(self::class, 'flush'));
         }
-        self::flush();
     }
 
     /**
-     * Write the waiting records to the activity log.
+     * Write the waiting records to the activity log. Checks the session sql_mode once, here,
+     * and writes nothing when it is not strict.
      *
      * @return void
      */
@@ -108,6 +104,11 @@ final class StrictRefusals
         }
         self::$busy = true;
         try {
+            if (!self::sessionIsStrict()) {
+                self::$queue = array();
+
+                return;
+            }
             while (self::$queue !== array()) {
                 $refusal = array_shift(self::$queue);
                 \Log::newInstance()->insertLog(self::SECTION, $refusal['kind'], 0, $refusal['column'], 'system', 0);
@@ -121,8 +122,8 @@ final class StrictRefusals
 
     /**
      * The kind of refusal and "table.column" it hit, as far as they can be told. The column
-     * comes from the message and the table from the statement, or from the message when it
-     * names one; either is left out when unknown.
+     * name is read only from the very end of the message — never wherever " for column " first
+     * appears — so a refused value that itself contains that text is not mistaken for it.
      *
      * @param int    $errno
      * @param string $message
@@ -136,12 +137,13 @@ final class StrictRefusals
         $column = '';
         $names  = array();
 
-        $at = strrpos($message, ' for column ');
-        if ($at !== false && preg_match('/^ for column ((?:[`\'][^`\']*[`\']\.?)+) at row \d+/', substr($message, $at), $m)) {
-            preg_match_all('/[`\']([^`\']*)[`\']/', $m[1], $parts);
-            $names = $parts[1];
-        } elseif (preg_match('/^(?:Column|Field) [`\']([^`\']+)[`\'] (?:cannot be null|doesn\'t have a default value)/', $message, $m)) {
-            $names = array($m[1]);
+        if (!str_starts_with($message, 'Truncated incorrect')) {
+            if (preg_match('/ for column ((?:[`\'][^`\']*[`\']\.?)+) at row \d+$/', $message, $m)) {
+                preg_match_all('/[`\']([^`\']*)[`\']/', $m[1], $parts);
+                $names = $parts[1];
+            } elseif (preg_match('/^(?:Column|Field) [`\']([^`\']+)[`\'] (?:cannot be null|doesn\'t have a default value)/', $message, $m)) {
+                $names = array($m[1]);
+            }
         }
         if ($names !== array()) {
             $column = (string) array_pop($names);
@@ -158,13 +160,13 @@ final class StrictRefusals
         $column = $valid($column) ? $column : '';
 
         return array(
-            'kind'   => self::KINDS[$errno] ?? 'unknown',
+            'kind'   => self::kindFor($errno, $message),
             'column' => $table !== '' && $column !== '' ? $table . '.' . $column : $table . $column,
         );
     }
 
     /**
-     * The refusals recorded this request, as "kind table.column".
+     * The refusals queued this request, as "kind table.column".
      *
      * @return array<int,string>
      */
@@ -174,7 +176,7 @@ final class StrictRefusals
     }
 
     /**
-     * Forget what this request recorded. For tests.
+     * Forget what this request queued. For tests.
      *
      * @return void
      */
@@ -183,6 +185,8 @@ final class StrictRefusals
         self::$seen  = array();
         self::$queue = array();
         self::$busy  = false;
+        self::$armed = false;
+        self::$conn  = null;
     }
 
     /**
@@ -201,14 +205,42 @@ final class StrictRefusals
     }
 
     /**
-     * @param \mysqli $conn
+     * The kind label for an error number, refining 1292 to 'bad_date' only when the message
+     * names a date/time/timestamp value — 1292 also covers plain numeric truncation.
+     *
+     * @param int    $errno
+     * @param string $message
+     *
+     * @return string
+     */
+    private static function kindFor(int $errno, string $message): string
+    {
+        if ($errno === 1292 && preg_match('/\b(?:date|datetime|timestamp|time)\b/i', $message)) {
+            return 'bad_date';
+        }
+
+        return self::KINDS[$errno] ?? 'unknown';
+    }
+
+    /**
+     * Whether the session on the connection last seen by record() is strict. False (and thus
+     * nothing written) when that connection is gone or the check itself fails.
      *
      * @return bool
      */
-    private static function sessionIsStrict(\mysqli $conn): bool
+    private static function sessionIsStrict(): bool
     {
-        $result = $conn->query('SELECT @@SESSION.sql_mode');
-        $mode   = $result instanceof \mysqli_result ? (string) ($result->fetch_row()[0] ?? '') : '';
+        $conn = self::$conn;
+        if (!$conn instanceof \mysqli) {
+            return false;
+        }
+
+        try {
+            $result = $conn->query('SELECT @@SESSION.sql_mode');
+        } catch (Throwable $e) {
+            return false;
+        }
+        $mode = $result instanceof \mysqli_result ? (string) ($result->fetch_row()[0] ?? '') : '';
 
         return StrictModeReadiness::isStrict($mode);
     }

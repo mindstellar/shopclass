@@ -350,6 +350,20 @@ pin('ready: every check reads clean', array('none', 'none', 'none', 'fit their c
 pin('Overview does not count zero dates', 'not checked here', array_column(SystemChecks::report('database', $env(array('strict' => array('zero_dates' => null) + $ready)))['groups'][1]['rows'], 'value', 'label')['Zero dates']);
 pin('no strict report: no group', 1, count(SystemChecks::report('database', $env())['groups']));
 
+harness_section('Strict SQL mode: activity log off');
+
+$logOff = array('log_enabled' => false, 'refused' => null) + $ready;
+$logOffDb = SystemChecks::report('database', $env(array('strict' => $logOff)));
+pin('an honest "unknown" line, not silence', array('strict_refused_unknown'), $ids($logOffDb));
+pin('...its wording', 'Refused writes are not recorded while the activity log is off, so this cannot confirm there are none.', $logOffDb['issues'][0]['text']);
+$logOffFacts = array_column(array_column($logOffDb['groups'], null, 'title')['Strict SQL mode']['rows'], 'value', 'label');
+pin('facts: "unknown", never "none"', 'unknown', $logOffFacts['Refused writes, last 7 days']);
+$logOffNote = array_column(array_column($logOffDb['groups'], null, 'title')['Strict SQL mode']['rows'], 'note', 'label');
+pin('...with the same honest note', 'Refused writes are not recorded while the activity log is off.', $logOffNote['Refused writes, last 7 days']);
+$mixedIds = $ids(SystemChecks::report('database', $env(array('strict' => array('log_enabled' => false, 'refused' => null) + $notReady))));
+check('log off wins over stale refused data: "unknown" shown, not the ordinary refused line',
+    in_array('strict_refused_unknown', $mixedIds, true) && !in_array('strict_refused', $mixedIds, true));
+
 harness_section('Which tab a URL opens');
 
 pin('no tab: Overview', 'overview', SystemChecks::tab(''));

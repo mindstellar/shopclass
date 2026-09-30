@@ -49,6 +49,7 @@ class StrictModeReadiness
             'zero_dates'    => null,
             'zero_defaults' => array(),
             'settings'      => array(),
+            'log_enabled'   => osc_is_admin_log_enabled(),
             'refused'       => array(),
             'error'         => '',
         );
@@ -58,7 +59,9 @@ class StrictModeReadiness
             $report['session_mode'] = (string) ($modes['s'] ?? '');
             $report['zero_defaults'] = self::zeroDefaults($prefix);
             $report['settings']      = self::settingsTooLong($prefix);
-            $report['refused']       = self::refused($prefix, $now - self::REFUSED_WINDOW);
+            // Refusals are only ever written to the activity log, so with it off the log holds
+            // none whether or not any happened — read it as unknown, not as a clean answer.
+            $report['refused'] = $report['log_enabled'] ? self::refused($prefix, $now - self::REFUSED_WINDOW) : null;
             if ($scanData) {
                 $report['zero_dates'] = self::zeroDates($prefix);
             }
@@ -70,7 +73,8 @@ class StrictModeReadiness
     }
 
     /**
-     * Whether nothing in a report stands in the way of strict mode.
+     * Whether nothing in a report stands in the way of strict mode. A report whose 'refused' is
+     * unknown (the activity log is off) never counts as ready.
      *
      * @param array<string,mixed> $report see report()
      *
@@ -78,11 +82,13 @@ class StrictModeReadiness
      */
     public static function ready(array $report): bool
     {
+        $refused = array_key_exists('refused', $report) ? $report['refused'] : array();
+
         return ($report['error'] ?? '') === ''
             && ($report['zero_dates'] ?? array()) === array()
             && ($report['zero_defaults'] ?? array()) === array()
             && ($report['settings'] ?? array()) === array()
-            && ($report['refused'] ?? array()) === array();
+            && $refused === array();
     }
 
     /**

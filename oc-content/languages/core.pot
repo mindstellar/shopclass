@@ -8254,6 +8254,16 @@ msgid "Refunded"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
+msgid ""
+"Refused writes are not recorded while the activity log is off, so this "
+"cannot confirm there are none."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/SystemChecks.php
+msgid "Refused writes are not recorded while the activity log is off."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "Refused writes, last 7 days"
 msgstr ""
 

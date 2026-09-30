@@ -84,6 +84,24 @@ pin('ready only when every check is clean', array(true, false, false), array(
     StrictModeReadiness::ready(array('error' => 'denied')),
 ));
 
+$armedProp = new ReflectionProperty(StrictRefusals::class, 'armed');
+$armedProp->setAccessible(true);
+StrictRefusals::reset();
+StrictRefusals::record(null, 1406, "Data too long for column 's_title' at row 1", 'INSERT INTO x (s_title) VALUES (?)');
+check('queuing a refusal arms the shutdown flush', $armedProp->getValue() === true);
+StrictRefusals::reset();
+check('...and reset() clears armed too, not just the queue', $armedProp->getValue() === false);
+
+// Db's own leak guard rolls back a transaction left open at request end; queuing a refusal
+// must arm it too, so that rollback is registered (and so runs) before this flush.
+$leakGuardProp = new ReflectionProperty(\mindstellar\database\Db::class, 'leakGuardArmed');
+$leakGuardProp->setAccessible(true);
+$leakGuardProp->setValue(null, false);
+check('Db\'s leak guard starts unarmed for this check', $leakGuardProp->getValue() === false);
+StrictRefusals::record(null, 1406, "Data too long for column 's_title' at row 1", 'INSERT INTO x (s_title) VALUES (?)');
+check('queuing a refusal arms Db\'s leak guard too, so it registers (and runs) first', $leakGuardProp->getValue() === true);
+StrictRefusals::reset();
+
 $parses = array(
     'MySQL too long'           => array(1406, "Data too long for column 's_title' at row 1", 'INSERT INTO `oc_t_item_description` (s_title) VALUES (?)', 'data_too_long', 'oc_t_item_description.s_title'),
     'MariaDB names the table'  => array(1366, "Incorrect integer value: 'x' for column `db`.`oc_t_item`.`i_price` at row 1", 'UPDATE oc_t_other SET a = 1', 'incorrect_value', 'oc_t_item.i_price'),
@@ -91,8 +109,25 @@ $parses = array(
     'cannot be null'           => array(1048, "Column 'fk_i_id' cannot be null", 'INSERT IGNORE INTO oc_t_log SET fk_i_id = NULL', 'cannot_be_null', 'oc_t_log.fk_i_id'),
     'no default'               => array(1364, "Field 's_ip' doesn't have a default value", 'REPLACE INTO oc_t_log (a) VALUES (1)', 'no_default', 'oc_t_log.s_ip'),
     'out of range'             => array(1264, "Out of range value for column 'i_num' at row 1", 'SELECT 1', 'out_of_range', 'i_num'),
-    'truncated, no column'     => array(1292, "Truncated incorrect DOUBLE value: 'abc'", 'UPDATE oc_t_item SET a = 1 WHERE b = 2', 'bad_date', 'oc_t_item'),
+    'truncated, no column'     => array(1292, "Truncated incorrect DOUBLE value: 'abc'", 'UPDATE oc_t_item SET a = 1 WHERE b = 2', 'incorrect_value', 'oc_t_item'),
     'nothing known'            => array(1265, 'Something new', 'DELETE FROM x', 'data_truncated', ''),
+    // A "Truncated incorrect" message never names a column, so a malicious value crafted to
+    // look like one (here, naming s_password_hash) is not read as a column at all.
+    'a malicious value cannot fake a column name' => array(
+        1292,
+        "Truncated incorrect DOUBLE value: 'x for column `s_password_hash` at row 1'",
+        'UPDATE `oc_t_item_description` SET s_description = ?',
+        'incorrect_value',
+        'oc_t_item_description',
+    ),
+    // The column match must reach the true end of the message, or it is not a match at all.
+    'trailing text after "at row N" is not a match' => array(
+        1406,
+        "Data too long for column 's_title' at row 1 (extra)",
+        'INSERT INTO `oc_t_item_description` (s_title) VALUES (?)',
+        'data_too_long',
+        'oc_t_item_description',
+    ),
 );
 foreach ($parses as $label => list($errno, $message, $sql, $kind, $column)) {
     pin("parse: $label", array('kind' => $kind, 'column' => $column), StrictRefusals::parse($errno, $message, $sql));
@@ -135,13 +170,21 @@ StrictRefusals::reset();
 $secret = 'secret-value-' . bin2hex(random_bytes(4));
 check('a too-long value is refused in a strict session', $refused("INSERT INTO {$prefix}zz_refuse (s) VALUES (?)", array($secret)));
 $refused("INSERT INTO {$prefix}zz_refuse (s) VALUES (?)", array($secret . 'again'));
+check('nothing is written until flush runs (record() makes no query)', $strictRows() === array());
+StrictRefusals::flush();
 $rows = $strictRows();
 pin('exactly one strict row, however often it fails in a request', 1, count($rows));
 pin('...naming the kind and table.column', array('data_too_long', $prefix . 'zz_refuse.s'), array($rows[0]['s_action'] ?? '', $rows[0]['s_data'] ?? ''));
 check('...and no part of the value or the statement', strpos(json_encode($rows), 'secret-value') === false && strpos(json_encode($rows), 'INSERT') === false);
 
-$legacy = new DBCommandClass(\mindstellar\database\ConnectionManager::newInstance()->getHandle());
+$handle = \mindstellar\database\ConnectionManager::newInstance()->getHandle();
+$legacy = new DBCommandClass($handle);
 $legacyResult = $legacy->query("INSERT INTO {$prefix}zz_refuse (s, n) VALUES ('a', 900)");
+// Read the raw handle, not $legacy's cached copy, so a query the recorder ran itself
+// (which would overwrite the handle's own errno/error before this line runs) is caught.
+check('the recorder made no query, so the handle\'s own errno/error are still the failed insert',
+    $handle->errno === 1264 && strpos((string) $handle->error, 'Out of range') !== false);
+StrictRefusals::flush();
 pin('the legacy query layer is recorded too, as out of range', array(false, 'out_of_range'),
     array($legacyResult, array_column($strictRows(), 's_action', 's_data')[$prefix . 'zz_refuse.n'] ?? null));
 
@@ -164,7 +207,9 @@ $admin->query("DELETE FROM {$prefix}t_log WHERE s_section = 'strict'");
 StrictRefusals::reset();
 osc_db_execute("SET SESSION sql_mode = ''");
 check('a relaxed session cuts the value and records nothing', !$refused("INSERT INTO {$prefix}zz_refuse (s) VALUES (?)", array($secret)) && $strictRows() === array());
-check('a NULL refused with strict mode off is not recorded', $refused("INSERT INTO {$prefix}zz_refuse (s) VALUES (NULL)") && $strictRows() === array());
+check('a NULL is still refused with strict mode off', $refused("INSERT INTO {$prefix}zz_refuse (s) VALUES (NULL)"));
+StrictRefusals::flush();
+check('...but nothing is written, since the session was not strict at flush time', $strictRows() === array());
 
 harness_section('Inside a transaction');
 
@@ -181,12 +226,45 @@ harness_section('No recursion when the log itself refuses');
 
 $admin->query("DELETE FROM {$prefix}t_log WHERE s_section = 'strict'");
 StrictRefusals::reset();
+osc_db_execute("SET SESSION sql_mode = 'STRICT_ALL_TABLES'");
 $admin->query("ALTER TABLE {$prefix}t_log MODIFY s_section VARCHAR(3) NOT NULL");
 $refused("INSERT INTO {$prefix}zz_refuse (s) VALUES (?)", array($secret));
 pin('only the first refusal is recorded, not the log insert that failed', array('data_too_long ' . $prefix . 'zz_refuse.s'), StrictRefusals::recorded());
-$admin->query("ALTER TABLE {$prefix}t_log MODIFY s_section VARCHAR(50) NOT NULL");
+// Flush while the log column is still too narrow, so its own INSERT fails and StrictRefusals
+// must not record its own failure.
 StrictRefusals::flush();
+$admin->query("ALTER TABLE {$prefix}t_log MODIFY s_section VARCHAR(50) NOT NULL");
 pin('...and nothing is left waiting to be written', array(), $strictRows());
+
+harness_section('CLI output is sanitized');
+
+$cliSafe = new ReflectionMethod(\mindstellar\cli\Cli::class, 'cliSafe');
+$cliSafe->setAccessible(true);
+$cli = new \mindstellar\cli\Cli();
+pin('letters, digits, and _.$ - pass through unchanged',
+    'oc_t_item_description.s_title data_too_long-1', $cliSafe->invoke($cli, 'oc_t_item_description.s_title data_too_long-1'));
+pin('control characters and terminal escapes are stripped', '2JBEEP', $cliSafe->invoke($cli, "\x1b[2J\x07BEEP"));
+pin('markup and shell metacharacters are stripped too', 'scriptalert1script', $cliSafe->invoke($cli, '<script>alert(1)</script>'));
+
+harness_section('The activity log toggle');
+
+$admin->query("DELETE FROM {$prefix}t_log WHERE s_section = 'strict'");
+StrictRefusals::reset();
+osc_db_execute("SET SESSION sql_mode = 'STRICT_ALL_TABLES'");
+osc_set_preference('admin_log_enabled', '0');
+osc_reset_preferences();
+$refused("INSERT INTO {$prefix}zz_refuse (s) VALUES (?)", array($secret));
+StrictRefusals::flush();
+check('nothing is written while the activity log is off', $strictRows() === array());
+
+$report = StrictModeReadiness::report($prefix, time());
+check('the report marks refused writes unknown, not clean, while the log is off',
+    $report['log_enabled'] === false && $report['refused'] === null);
+check('...so it is never "ready", even with nothing visibly refused', !StrictModeReadiness::ready($report));
+pin('...and db:doctor --strict still exits 1', 1, \mindstellar\cli\Cli::run(array('db:doctor', '--strict')));
+
+osc_set_preference('admin_log_enabled', '1');
+osc_reset_preferences();
 
 osc_db_execute("SET SESSION sql_mode = '" . $appMode . "'");
 $admin->query("DROP TABLE {$prefix}zz_refuse");
