@@ -120,25 +120,34 @@ MESSAGE;
                     'reply_to' => $yourEmail,
                     'subject'  => '[' . osc_page_title() . '] ' . __('Contact') . ' - ' . $subject,
                     'body'     => nl2br(osc_esc_html($message))
+                        . \mindstellar\security\MessageGuard::reportFooter($yourEmail, osc_contact_email(), true),
                 );
 
-                $error = false;
-                if (osc_contact_attachment()) {
-                    $emailAttachment = osc_mail_upload_attachment('attachment');
-                    $error           = $emailAttachment === false;
+                $attachment = osc_contact_attachment() ? osc_mail_upload_attachment('attachment') : null;
+                if ($attachment === false) {
+                    $fail(_m('That type of file cannot be attached.'));
+
+                    return false;
                 }
-                if ($error) {
-                    osc_add_flash_error_message(_m('That type of file cannot be attached.'));
-                } else {
-                    if (!empty($emailAttachment)) {
-                        $params['attachment'] = $emailAttachment;
+                // A held message cannot keep its file, so a file needs a confirmed address.
+                if (is_array($attachment)) {
+                    if (!\mindstellar\security\MessageHold::verified($yourEmail)) {
+                        $fail(_m('Send one message without a file first and confirm your e-mail. '
+                            . 'After that you can attach files.'));
+
+                        return false;
                     }
+                    $params['attachment'] = $attachment;
+                }
 
-                    osc_run_hook('pre_contact_post', $params);
-
-                    osc_sendMail(osc_apply_filter('contact_params', $params));
-                    \mindstellar\security\ActionThrottle::record('site_contact');
-
+                osc_run_hook('pre_contact_post', $params);
+                $sent = \mindstellar\security\MessageHold::deliver(
+                    'site_contact',
+                    $yourEmail,
+                    array('params' => osc_apply_filter('contact_params', $params))
+                );
+                \mindstellar\security\ActionThrottle::record('site_contact');
+                if ($sent) {
                     osc_add_flash_ok_message(_m('Your email has been sent properly. Thank you for contacting us!'));
                 }
 
@@ -163,11 +172,12 @@ MESSAGE;
                     Log::newInstance()->insertLog('ban', 'report', 0, (string) ($report['sender'] ?? ''), 'user', 0);
                     $this->redirectTo($back . '&done=1');
                 }
-                osc_add_flash_error_message($status === 'used'
-                    ? _m('This message has already been reported.')
-                    : ($status === 'invalid'
-                        ? _m('This report link is not valid or has expired.')
-                        : _m('The report could not be saved. Please try again later.')));
+                $errors = array(
+                    'used'    => _m('This message has already been reported.'),
+                    'invalid' => _m('This report link is not valid or has expired.'),
+                    'admin'   => _m('Only a site admin can ban a sender for good.'),
+                );
+                osc_add_flash_error_message($errors[$status] ?? _m('The report could not be saved. Please try again later.'));
                 $this->redirectTo($back);
                 break;
             case ('confirm_post'):
@@ -182,11 +192,12 @@ MESSAGE;
                 if ($status === 'sent') {
                     $this->redirectTo($back . '&done=1');
                 }
-                osc_add_flash_error_message($status === 'gone'
-                    ? _m('This message was already sent, or its link has expired.')
-                    : ($status === 'invalid'
-                        ? _m('This link is not valid.')
-                        : _m('The message could not be sent. The listing or member may no longer be available.')));
+                $errors = array(
+                    'gone'    => _m('This message was already sent, or its link has expired.'),
+                    'invalid' => _m('This link is not valid.'),
+                );
+                osc_add_flash_error_message($errors[$status]
+                    ?? _m('The message could not be sent. The listing or member may no longer be available.'));
                 $this->redirectTo($back);
                 break;
             default:                //contact
@@ -219,6 +230,7 @@ MESSAGE;
         $this->_exportVariableToView('message_done', $done);
         $this->_exportVariableToView('message_token', $data === null ? '' : $token);
         $this->_exportVariableToView('report_sender', $mode === 'report' ? (string) ($data['sender'] ?? '') : '');
+        $this->_exportVariableToView('report_permanent', $mode === 'report' && !empty($data['permanent']));
         $this->_exportVariableToView('report_days', \mindstellar\security\MessageGuard::banDays());
 
         osc_run_hook('before_html');

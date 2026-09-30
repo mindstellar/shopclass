@@ -50,7 +50,8 @@ you find.
 
 ### New
 
-- Mail to a member leaves only from a confirmed address: a guest clicks a link sent to the address they typed, and that browser is then trusted for 30 days.
+- Message mail leaves only from a confirmed address: a guest clicks a link sent to the address they typed, and that browser is then trusted for 30 days.
+- Mail from the contact form carries a *Report the sender* link that lets a signed-in admin ban the address for good.
 - Messages allow 1 link by default (Settings → Spam and bots → Messages). Mail a member receives carries a one-time *Report the sender* link that blocks the sender from messages for 30 days.
 - System info → Database and `oc-cli.php db:doctor --strict` show whether a site is ready for strict SQL mode. Writes that strict mode refuses are recorded in the activity log, by table and column only.
 - `oc-cli.php backup:create`, `backup:list`, `backup:restore` and `backup:delete` do the same backups from a shell: no time limit, a folder outside the site, big files, and restore when web restore is off.

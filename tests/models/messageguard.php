@@ -225,6 +225,32 @@ pin('and cannot bring back a ban the admin lifted', 'used', MessageGuard::report
 pin('the lifted ban stays lifted', 0, osc_is_banned('once@example.test', '10.0.0.1', 'messages'));
 pin('a forged link files nothing', 'invalid', MessageGuard::report('forged.token'));
 
+harness_section('MessageGuard: a report from site contact mail bans for good, admins only');
+
+if (!function_exists('osc_is_admin_user_logged_in')) {
+    function osc_is_admin_user_logged_in()
+    {
+        return false;
+    }
+}
+$setPref('message_report_link', '0');
+check(
+    'contact-form mail carries the link even with member reports off',
+    strpos(MessageGuard::reportFooter('a@b.test', 'owner@example.test', true), 'action=report') !== false
+);
+$setPref('message_report_link', null);
+parse_str((string) parse_url(MessageGuard::reportUrl('forever@example.test', 'owner@example.test', true), PHP_URL_QUERY), $q);
+pin('the link says it is permanent', true, MessageGuard::readReport((string) $q['t'])['permanent'] ?? null);
+pin('a member link does not', false, $read['permanent'] ?? null);
+pin('without a signed-in admin nothing is banned', 'admin', MessageGuard::report((string) $q['t']));
+pin('the address is still free', 0, osc_is_banned('forever@example.test', '10.0.0.1'));
+
+MessageGuard::banSender('forever@example.test', 'owner@example.test', true);
+$row = $admin->query("SELECT s_scope, dt_expires FROM $table WHERE s_email = 'forever@example.test'")->fetch_assoc();
+pin('a permanent ban blocks everything', 'all', $row['s_scope'] ?? null);
+pin('and never ends', true, is_array($row) && array_key_exists('dt_expires', $row) && $row['dt_expires'] === null);
+pin('so sign-in and posting are blocked too', 1, osc_is_banned('forever@example.test', '10.0.0.1'));
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }

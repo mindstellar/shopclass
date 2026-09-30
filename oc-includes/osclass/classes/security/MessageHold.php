@@ -13,7 +13,7 @@ namespace mindstellar\security;
 use mindstellar\job\JobQueue;
 
 /**
- * Mail to a member leaves only from a confirmed sender address. A signed-in member's own
+ * Message mail leaves only from a confirmed sender address. A signed-in member's own
  * address is confirmed; anyone else's message waits in the job queue until they click a link
  * sent to the address they typed, and that browser is then trusted for 30 days.
  */
@@ -54,7 +54,7 @@ final class MessageHold
      * Send the message now when the sender is confirmed, or hold it and mail them a link.
      * A held message sets its own flash message.
      *
-     * @param string              $kind  'item_contact', 'user_contact' or 'send_friend'
+     * @param string              $kind  'site_contact', 'item_contact', 'user_contact' or 'send_friend'
      * @param string              $email the sender's address
      * @param array<string,mixed> $args  what send() needs, as plain data
      *
@@ -149,6 +149,8 @@ final class MessageHold
     public static function send(string $kind, array $args): bool
     {
         switch ($kind) {
+            case 'site_contact':
+                return osc_sendMail((array) ($args['params'] ?? array())) !== false;
             case 'item_contact':
             case 'send_friend':
                 $item = \Item::newInstance()->findByPrimaryKey((int) ($args['id'] ?? 0));

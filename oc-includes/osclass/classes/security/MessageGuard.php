@@ -182,46 +182,51 @@ final class MessageGuard
     }
 
     /**
-     * The report link for mail from $sender to $recipient. Each link carries its own id,
-     * so it can be used once.
+     * The report link for mail from $sender to $recipient. Each link carries its own id, so
+     * it can be used once. A permanent link, for mail to the site owner, bans for good.
      *
      * @param string $sender
      * @param string $recipient
+     * @param bool   $permanent
      *
      * @return string
      */
-    public static function reportUrl(string $sender, string $recipient): string
+    public static function reportUrl(string $sender, string $recipient, bool $permanent = false): string
     {
-        $token = SignedPayload::pack(
-            'report-sender',
-            array('s' => $sender, 'r' => $recipient, 'n' => bin2hex(random_bytes(16))),
-            self::REPORT_TTL
-        );
+        $data = array('s' => $sender, 'r' => $recipient, 'n' => bin2hex(random_bytes(16)));
+        if ($permanent) {
+            $data['p'] = 1;
+        }
 
-        return osc_base_url(true) . '?page=contact&action=report&t=' . rawurlencode($token);
+        return osc_base_url(true) . '?page=contact&action=report&t='
+            . rawurlencode(SignedPayload::pack('report-sender', $data, self::REPORT_TTL));
     }
 
     /**
-     * The footer appended to mail a member receives, or '' when reporting is off.
+     * The "Report the sender" footer for a mail. Mail to a member carries it when the setting
+     * is on; mail to the site owner always does, and bans permanently.
      *
      * @param string $sender
      * @param string $recipient
+     * @param bool   $permanent
      *
-     * @return string HTML
+     * @return string HTML, or ''
      */
-    public static function reportFooter(string $sender, string $recipient): string
+    public static function reportFooter(string $sender, string $recipient, bool $permanent = false): string
     {
-        if (!self::reportEnabled() || $sender === '' || $recipient === '') {
+        if ((!$permanent && !self::reportEnabled()) || $sender === '' || $recipient === '') {
             return '';
         }
-
-        return '<p style="margin-top:24px;font-size:12px;color:#666">'
-            . osc_esc_html(sprintf(
+        $text = $permanent
+            ? _m('Spam? Report the sender to ban this address from the site for good.')
+            : sprintf(
                 _m('Unwanted message? Report the sender and they cannot send messages on %s for %d days.'),
                 osc_page_title(),
                 self::banDays()
-            ))
-            . ' <a href="' . osc_esc_html(self::reportUrl($sender, $recipient)) . '">'
+            );
+
+        return '<p style="margin-top:24px;font-size:12px;color:#666">' . osc_esc_html($text)
+            . ' <a href="' . osc_esc_html(self::reportUrl($sender, $recipient, $permanent)) . '">'
             . osc_esc_html(_m('Report the sender')) . '</a></p>';
     }
 
@@ -230,7 +235,7 @@ final class MessageGuard
      *
      * @param string $token
      *
-     * @return array{sender:string,recipient:string,nonce:string}|null null when forged, damaged or too old
+     * @return array{sender:string,recipient:string,nonce:string,permanent:bool}|null null when forged, damaged or too old
      */
     public static function readReport(string $token): ?array
     {
@@ -241,15 +246,20 @@ final class MessageGuard
             return null;
         }
 
-        return array('sender' => $data['s'], 'recipient' => $data['r'], 'nonce' => $data['n']);
+        return array(
+            'sender'    => $data['s'],
+            'recipient' => $data['r'],
+            'nonce'     => $data['n'],
+            'permanent' => !empty($data['p']),
+        );
     }
 
     /**
-     * File a report: ban the sender from messages, once per link.
+     * File a report: ban the sender, once per link.
      *
      * @param string $token
      *
-     * @return string 'done', 'used', 'invalid' or 'failed'
+     * @return string 'done', 'used', 'invalid', 'admin' (a permanent ban needs a signed-in admin) or 'failed'
      */
     public static function report(string $token): string
     {
@@ -257,11 +267,14 @@ final class MessageGuard
         if ($report === null) {
             return 'invalid';
         }
+        if ($report['permanent'] && !osc_is_admin_user_logged_in()) {
+            return 'admin';
+        }
         $queue = JobQueue::instance();
         if ($queue->hasKey(self::USED_JOB, $report['nonce'])) {
             return 'used';
         }
-        if (!self::banSender($report['sender'], $report['recipient'])) {
+        if (!self::banSender($report['sender'], $report['recipient'], $report['permanent'])) {
             return 'failed';
         }
         try {
@@ -275,25 +288,27 @@ final class MessageGuard
     }
 
     /**
-     * Ban $sender from the message forms for banDays(). An active report ban on the same
-     * address is extended rather than repeated.
+     * Ban $sender: from messages for banDays(), or from the whole site for good. An active
+     * ban of the same kind is extended rather than repeated.
      *
      * @param string $sender
      * @param string $recipient who reported it, kept in the rule's name for the admin
+     * @param bool   $permanent
      *
      * @return bool
      */
-    public static function banSender(string $sender, string $recipient): bool
+    public static function banSender(string $sender, string $recipient, bool $permanent = false): bool
     {
         $table   = DB_TABLE_PREFIX . 't_ban_rule';
-        $expires = date('Y-m-d H:i:s', strtotime('+' . self::banDays() . ' days'));
+        $scope   = $permanent ? 'all' : self::SCOPE;
+        $expires = $permanent ? null : date('Y-m-d H:i:s', strtotime('+' . self::banDays() . ' days'));
         $pattern = self::literalPattern($sender);
 
         try {
             $existing = osc_db_select_one(
                 'SELECT pk_i_id FROM ' . $table . ' WHERE s_email = ? AND s_scope = ?'
-                . ' AND dt_expires IS NOT NULL AND dt_expires > ?',
-                array($pattern, self::SCOPE, date('Y-m-d H:i:s'))
+                . ' AND (dt_expires IS NULL OR dt_expires > ?)',
+                array($pattern, $scope, date('Y-m-d H:i:s'))
             );
             if ($existing) {
                 osc_db_execute(
@@ -309,7 +324,7 @@ final class MessageGuard
                     mb_substr(sprintf(__('Reported by %s'), $recipient), 0, 250),
                     '',
                     mb_substr($pattern, 0, 250),
-                    self::SCOPE,
+                    $scope,
                     $expires,
                 )
             );

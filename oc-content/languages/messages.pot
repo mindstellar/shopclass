@@ -332,6 +332,12 @@ msgstr ""
 msgid "Balance after"
 msgstr ""
 
+#: oc-includes/osclass/gui/contact-message-content.php
+msgid ""
+"Ban %s from this site for good? They will not be able to sign in, post or "
+"send messages. You can undo this under Users → Ban rules."
+msgstr ""
+
 #: oc-includes/osclass/classes/billing/gateway/OfflineGateway.php
 msgid "Bank transfer"
 msgstr ""
@@ -1362,6 +1368,16 @@ msgstr ""
 msgid "Only a paid order can be refunded"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebContact.php
+msgid "Only a site admin can ban a sender for good."
+msgstr ""
+
+#: oc-includes/osclass/gui/contact-message-content.php
+msgid ""
+"Only a site admin can ban a sender for good. Sign in to the admin in this "
+"browser, then open the link again."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebItem.php
 msgid "Only registered users are allowed to post listings"
 msgstr ""
@@ -1842,6 +1858,7 @@ msgstr ""
 msgid "Send my message"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebContact.php
 #: oc-includes/osclass/classes/controller/CWebItem.php
 msgid "Send one message without a file first and confirm your e-mail. "
 msgstr ""
@@ -1897,6 +1914,10 @@ msgstr ""
 msgid "Sign in to see your orders."
 msgstr ""
 
+#: oc-includes/osclass/gui/contact-message-content.php
+msgid "Sign in to the admin"
+msgstr ""
+
 #: oc-includes/osclass/gui/account/nav.php
 #: oc-includes/osclass/helpers/hTheme.php
 msgid "Sign-in details"
@@ -1948,6 +1969,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebForm.php
 msgid "Sorry, your submission could not be saved. Please try again."
+msgstr ""
+
+#: oc-includes/osclass/classes/security/MessageGuard.php
+msgid "Spam? Report the sender to ban this address from the site for good."
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/wallet-content.php
@@ -2003,7 +2028,7 @@ msgid "Thank you! Your submission has been received."
 msgstr ""
 
 #: oc-includes/osclass/gui/contact-message-content.php
-msgid "Thank you. The sender cannot send messages on this site for %d days."
+msgid "Thank you. The sender has been reported."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebItem.php

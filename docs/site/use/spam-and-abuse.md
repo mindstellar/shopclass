@@ -127,8 +127,12 @@ sender has proved is theirs. A signed-in member's own address counts. Anyone
 else gets a link at the address they typed; the message is sent when they click
 it, and waits at most 24 hours. After one click, that browser sends straight
 away for 30 days. One message per address can wait at a time. A file can be
-attached only once the address is confirmed. The site's own contact form, which
-only reaches you, sends at once.
+attached only once the address is confirmed. The site's own contact form works
+the same way.
+
+**Mail from your contact form** ends with *Report the sender* too. It bans the
+address from the whole site for good: sign-in, posting and messages. Only a
+signed-in admin can use it; anyone else is asked to sign in first.
 
 **Settings → Spam and bots → Messages:**
 
