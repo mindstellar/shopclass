@@ -7607,14 +7607,6 @@ msgstr ""
 msgid "PHP"
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/SystemChecks.php
-msgid "PHP %s is past end of life and gets no security fixes. Move to PHP 8."
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/SystemChecks.php
-msgid "PHP %s is too old. Shopclass is built and tested against PHP 8.0 and up."
-msgstr ""
-
 #: oc-admin/themes/modern/parts/market.php
 msgid "PHP %s or newer"
 msgstr ""
@@ -7888,18 +7880,8 @@ msgstr ""
 msgid "Placeholders"
 msgstr ""
 
-#: oc-admin/themes/modern/tools/upgrade.php
-msgid ""
-"Please be aware that this upgrade will overwrite any existing modification "
-"you have made to core files."
-msgstr ""
-
 #: oc-admin/gui/recover.php
 msgid "Please enter your username or e-mail address"
-msgstr ""
-
-#: oc-admin/themes/modern/tools/upgrade.php
-msgid "Please note that this upgrade may take a few minutes to complete."
 msgstr ""
 
 #: oc-includes/osclass/classes/Plugins.php
@@ -9483,8 +9465,8 @@ msgstr ""
 #: oc-includes/osclass/classes/upgrade/AutoSecurityUpdate.php
 msgid ""
 "Shopclass installed the files of security update %2$s on %1$s, but the "
-"database step failed: %3$s. Open Tools, then Database, in the admin to "
-"finish it."
+"database step failed: %3$s. Open Tools, then System info, then Database, in "
+"the admin to finish it."
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install.php
@@ -10224,8 +10206,7 @@ msgstr ""
 msgid "The backup folder cannot be written."
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupJobs.php
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupStore.php
 msgid "The backup folder cannot be written: %s"
 msgstr ""
 
@@ -10639,10 +10620,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/upgrade.php
 msgid "The upgrade failed."
-msgstr ""
-
-#: oc-admin/themes/modern/tools/upgrade.php
-msgid "The upgrade finished, with some errors."
 msgstr ""
 
 #: oc-includes/osclass/classes/backup/BackupJobs.php

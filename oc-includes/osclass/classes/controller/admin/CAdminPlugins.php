@@ -305,11 +305,7 @@ class CAdminPlugins extends AdminSecBaseModel
 
                 $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
 
-                $p_iPage = 1;
-                if (is_numeric(Params::getParam('iPage')) && Params::getParam('iPage') >= 1) {
-                    $p_iPage = Params::getParam('iPage');
-                }
-                Params::setParam('iPage', $p_iPage);
+                $p_iPage        = ListPaging::page();
                 $aPlugin        = Plugins::listAll();
                 $active_plugins = osc_get_plugins();
 

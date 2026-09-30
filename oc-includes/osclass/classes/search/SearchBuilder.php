@@ -92,13 +92,12 @@ class SearchBuilder
      * changes either inside the hook keeps its change. Listeners get the request params,
      * the Search being built and the context.
      *
-     * @param SearchCriteria $criteria
-     * @param \Search        $search
-     * @param string         $context 'request' for the search page, 'alert' for a saved alert
+     * @param \Search $search
+     * @param string  $context 'request' for the search page, 'alert' for a saved alert
      *
      * @return void
      */
-    public static function fireConditions(SearchCriteria $criteria, \Search $search, string $context = 'request'): void
+    public static function fireConditions(\Search $search, string $context = 'request'): void
     {
         osc_run_hook('search_conditions', \Params::getParamsAsArray(), $search, $context);
     }

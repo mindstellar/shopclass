@@ -200,7 +200,6 @@ class CAdminUsers extends AdminSecBaseModel
                 break;
             case ('activate'):       //activate
                 osc_csrf_check();
-                $userId   = Params::getParam('id');
                 $userActions = new UserActions(true);
                 BulkAction::apply(
                     static fn ($id) => (bool)$userActions->activate($id),
@@ -212,8 +211,6 @@ class CAdminUsers extends AdminSecBaseModel
                 break;
             case ('deactivate'):     //deactivate
                 osc_csrf_check();
-                $userId   = Params::getParam('id');
-
                 $userActions = new UserActions(true);
                 BulkAction::apply(
                     static fn ($id) => (bool)$userActions->deactivate($id),
@@ -225,7 +222,6 @@ class CAdminUsers extends AdminSecBaseModel
                 break;
             case ('enable'):
                 osc_csrf_check();
-                $userId   = Params::getParam('id');
                 $userActions = new UserActions(true);
                 BulkAction::apply(
                     static fn ($id) => (bool)$userActions->enable($id),
@@ -237,7 +233,6 @@ class CAdminUsers extends AdminSecBaseModel
                 break;
             case ('disable'):
                 osc_csrf_check();
-                $userId   = Params::getParam('id');
                 $userActions = new UserActions(true);
                 BulkAction::apply(
                     static fn ($id) => (bool)$userActions->disable($id),
@@ -249,8 +244,6 @@ class CAdminUsers extends AdminSecBaseModel
                 break;
             case ('delete'):         //delete
                 osc_csrf_check();
-                $userId   = Params::getParam('id');
-
                 $manager = $this->userManager;
                 BulkAction::apply(
                     static function ($id) use ($manager) {

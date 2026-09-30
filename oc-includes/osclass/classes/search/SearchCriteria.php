@@ -11,14 +11,7 @@
 namespace mindstellar\search;
 
 /**
- * A listing search, normalised out of a request bag.
- *
- * fromRequest() does exactly the splitting/coercion CWebSearch::doModel() used to do
- * inline (sCategory/sCityArea/sCity/sRegion/sCountry comma-split, sUser/sLocale
- * split-or-stay-empty, sPattern through strip_tags()+trim()+the `search_pattern`
- * filter, bPic/bPremium loose-== 1). Feed it Params::getParamsAsArray() — purified
- * the same way Params::getParam() purifies one key, so the values it reads back out
- * are byte-identical to what the old inline code read.
+ * A listing search, normalised out of a request bag built by Params::getParamsAsArray().
  */
 class SearchCriteria
 {

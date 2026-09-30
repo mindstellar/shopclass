@@ -26,14 +26,7 @@ final class AjaxResponse
     /**
      * Send $data as JSON, with the headers that stop a browser treating it as a page.
      *
-     * Does not exit, on purpose. Every caller is `AjaxResponse::json(...); break;` inside a
-     * switch that `doModel()` ends immediately after, so exiting would change nothing today --
-     * and adding it while converting 103 call sites would have meant the conversion was no
-     * longer just a header change, with no way to tell a real difference from a mistake.
-     *
-     * Somewhere that keeps running after the response is a different matter: a `404` that
-     * carries on executing is a bug. Code like that should exit itself, or ask for it here
-     * explicitly, rather than have this guess from context.
+     * Does not exit. Code that must stop after responding should exit itself.
      *
      * @param mixed $data
      * @param int   $status HTTP status, when nothing has been sent yet
@@ -65,11 +58,8 @@ final class AjaxResponse
     /**
      * The `{"error": …}` shape these controllers already answer with.
      *
-     * Legacy, and kept because the JavaScript and the plugins already read it. **An API should
-     * not reuse this.** It reports failure in a 200 body, which leaves the status code saying
-     * the opposite; a REST endpoint wants the status doing that work and an envelope of its
-     * own. Calling this from an API for convenience would make this shape a public contract by
-     * accident, and then it could not be changed.
+     * Legacy, kept for existing JS and plugins. Do not reuse it for a new API: it reports
+     * failure with HTTP 200, which a REST endpoint should not do.
      *
      * @param string $message
      * @param int    $code    the error number the existing callers read

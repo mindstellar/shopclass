@@ -315,7 +315,7 @@ class CWebSearch extends BaseModel
             $this->mSearch->page($p_iPage, $p_iPageSize);
         }
 
-        \mindstellar\search\SearchBuilder::fireConditions($criteria, $this->mSearch);
+        \mindstellar\search\SearchBuilder::fireConditions($this->mSearch);
 
         // RETRIEVE ITEMS AND TOTAL
         // A search backend may answer the query itself: a listener on 'search_results' receives

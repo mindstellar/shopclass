@@ -74,7 +74,7 @@ class AlertReplay
                 SearchBuilder::apply($criteria, $search);
                 $search->order('dt_pub_date', 'DESC');
                 $search->page(0, max(1, $limit));
-                SearchBuilder::fireConditions($criteria, $search, 'alert');
+                SearchBuilder::fireConditions($search, 'alert');
             });
         } finally {
             \Search::resetInstance($previous);
