@@ -20,6 +20,9 @@
  */
 class Item extends DAO
 {
+    /** Width of t_item_description.s_title, in characters. */
+    public const TITLE_WIDTH = 100;
+
     /**
      * It references to self object: Item.
      * It is used as a singleton
@@ -542,7 +545,7 @@ class Item extends DAO
         $array_set = array(
             'fk_i_item_id'     => $id,
             'fk_c_locale_code' => $locale,
-            's_title'          => $title,
+            's_title'          => self::fitTitle($title),
             's_description'    => $description
         );
 
@@ -885,6 +888,18 @@ class Item extends DAO
     }
 
     /**
+     * Cut a title to the column width: strict SQL mode refuses an over-long one and loses the row.
+     *
+     * @param mixed $title
+     *
+     * @return string|null
+     */
+    private static function fitTitle($title): ?string
+    {
+        return $title === null ? null : mb_substr((string) $title, 0, self::TITLE_WIDTH, 'UTF-8');
+    }
+
+    /**
      * Update title and description given a item id and locale.
      *
      * @param int    $id
@@ -902,7 +917,7 @@ class Item extends DAO
             . ' (s_title, s_description, fk_c_locale_code, fk_i_item_id) VALUES (?, ?, ?, ?)';
 
         try {
-            osc_db_execute($sql, array($title, $text, $locale, $id));
+            osc_db_execute($sql, array(self::fitTitle($title), $text, $locale, $id));
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }

@@ -35,6 +35,15 @@ class ItemActions
         's_contact_phone' => 40,
     );
 
+    /** Widths of the t_item contact columns a listing form fills. */
+    public const CONTACT_WIDTHS = array(
+        's_contact_name'  => 100,
+        's_contact_email' => 140,
+    );
+
+    /** Highest description length the listing settings accept. */
+    public const DESCRIPTION_MAX = 20000;
+
     public $is_admin;
     public $data;
     /** @var bool admin mode that still applies listing limits and moderation */
@@ -229,8 +238,10 @@ class ItemActions
         // Validate
         $flash_error .= ((!osc_validate_max($aItem['contactName'], 35)) ? _m('Name too long.') . PHP_EOL : '');
         $flash_error .= ((!osc_validate_email($aItem['contactEmail'])) ? _m('Email invalid.') . PHP_EOL : '');
+        // The name already has its tighter cap above.
+        $flash_error .= $this->contactWidthErrors(array('contactEmail' => $aItem['contactEmail']));
 
-        $flash_error .= $this->validateCommonInput($flash_error, $aItem);
+        $flash_error .= $this->validateCommonInput('', $aItem);
 
         // The wait is the global preference unless the posting user holds a
         // listing.no_wait entitlement -- osc_items_wait_time_for_user() falls back to
@@ -323,6 +334,14 @@ class ItemActions
                 return _m('Your listing could not be saved. Please try again.');
             }
 
+            // Written first so a refused title or description removes the new row again,
+            // rather than leaving a live listing with no text.
+            if (!$this->insertItemLocales('ADD', $aItem['title'], $aItem['description'], $itemId)) {
+                $this->discardNewItem($itemId);
+
+                return _m('Your listing could not be saved. Please try again.');
+            }
+
             if (!$this->is_admin) {
                 // Record the publish so the flood wait is enforced server-side (see the
                 // countByIpContext check above): durable, correct across app servers, and
@@ -345,9 +364,6 @@ class ItemActions
             );
 
             Params::setParam('itemId', $itemId);
-
-            // INSERT title and description locales
-            $this->insertItemLocales('ADD', $aItem['title'], $aItem['description'], $itemId);
 
             $location = array(
                 'fk_i_item_id'      => $itemId,
@@ -558,18 +574,21 @@ class ItemActions
             $flash_error .= _m('Image is too big. Max. size') . osc_max_size_kb() . ' Kb' . PHP_EOL;
         }
 
-        $title_message = '';
+        // One title is enough, but a too-long one is refused in every language.
+        $maxTitle  = osc_max_characters_per_title();
+        $tooLong   = '';
+        $tooShort  = '';
+        $hasTitle  = false;
         foreach ($aItem['title'] as $key => $value) {
-            if (osc_validate_text($value) && osc_validate_max($value, osc_max_characters_per_title())) {
-                $title_message = '';
-                break;
+            if (!osc_validate_max($value, $maxTitle)) {
+                $tooLong .= sprintf(_m('Title too long (%s).'), $key) . PHP_EOL;
+            } elseif (osc_validate_text($value)) {
+                $hasTitle = true;
+            } else {
+                $tooShort .= sprintf(_m('Title too short (%s).'), $key) . PHP_EOL;
             }
-
-            $title_message .= (!osc_validate_text($value) ? sprintf(_m('Title too short (%s).'), $key) . PHP_EOL : '');
-            $title_message .= (!osc_validate_max($value, osc_max_characters_per_title())
-                ? sprintf(_m('Title too long (%s).'), $key) . PHP_EOL : '');
         }
-        $flash_error .= $title_message;
+        $flash_error .= ($hasTitle || $tooLong !== '' ? '' : $tooShort) . $tooLong;
 
         $desc_message = '';
         foreach ($aItem['description'] as $key => $value) {
@@ -876,19 +895,92 @@ class ItemActions
      * @param array<string,string> $description Description per locale
      * @param int                  $itemId
      *
-     * @return void
+     * @return bool False when a locale could not be written
      */
     public function insertItemLocales($type, $title, $description, $itemId)
     {
         foreach ($title as $k => $_data) {
             $_title       = $_data;
             $_description = $description[$k];
+            $written      = true;
             if ($type === 'ADD') {
-                $this->manager->insertLocale($itemId, $k, $_title, $_description);
+                $written = $this->manager->insertLocale($itemId, $k, $_title, $_description);
             } elseif ($type === 'EDIT') {
-                $this->manager->updateLocaleForce($itemId, $k, $_title, $_description);
+                $written = $this->manager->updateLocaleForce($itemId, $k, $_title, $_description);
+            }
+            if (!$written) {
+                trigger_error('Item locale ' . $k . ' was not written for item ' . $itemId . '.', E_USER_WARNING);
+
+                return false;
             }
         }
+
+        return true;
+    }
+
+    /**
+     * Remove a listing whose add failed half way, before anything else refers to it.
+     *
+     * @param int $itemId
+     *
+     * @return void
+     */
+    private function discardNewItem($itemId)
+    {
+        try {
+            osc_db_transaction(static function () use ($itemId) {
+                osc_db_table(DB_TABLE_PREFIX . 't_item_description')->where('fk_i_item_id', $itemId)->delete();
+                osc_db_table(DB_TABLE_PREFIX . 't_item')->where('pk_i_id', $itemId)->delete();
+            });
+        } catch (\Throwable $e) {
+            trigger_error('Half-made item ' . $itemId . ' could not be removed.', E_USER_WARNING);
+        }
+    }
+
+    /**
+     * Errors for contact values wider than the t_item columns that hold them.
+     *
+     * @param array<string,mixed> $aItem
+     *
+     * @return string
+     */
+    private function contactWidthErrors(array $aItem)
+    {
+        $errors = '';
+        if (!osc_validate_max((string)($aItem['contactName'] ?? ''), self::CONTACT_WIDTHS['s_contact_name'])) {
+            $errors .= _m('Name too long.') . PHP_EOL;
+        }
+        if (!osc_validate_max((string)($aItem['contactEmail'] ?? ''), self::CONTACT_WIDTHS['s_contact_email'])) {
+            $errors .= _m('Email too long.') . PHP_EOL;
+        }
+
+        return $errors;
+    }
+
+    /**
+     * Errors for the listing length settings; empty when both are in range.
+     *
+     * @param mixed $titleLength
+     * @param mixed $descriptionLength
+     *
+     * @return string
+     */
+    public static function lengthSettingErrors($titleLength, $descriptionLength)
+    {
+        $inRange = static function ($value, int $max): bool {
+            return is_scalar($value) && preg_match('/^[0-9]+$/', (string)$value) === 1
+                && (int)$value >= 1 && (int)$value <= $max;
+        };
+
+        $errors = '';
+        if (!$inRange($titleLength, Item::TITLE_WIDTH)) {
+            $errors .= sprintf(_m('Titles can be 1 to %d characters.'), Item::TITLE_WIDTH) . PHP_EOL;
+        }
+        if (!$inRange($descriptionLength, self::DESCRIPTION_MAX)) {
+            $errors .= sprintf(_m('Descriptions can be 1 to %d characters.'), self::DESCRIPTION_MAX) . PHP_EOL;
+        }
+
+        return $errors;
     }
 
     /**
@@ -1193,7 +1285,11 @@ class ItemActions
         $aItem['contactPhone'] = $this->Sanitize->phone($aItem['contactPhone']);
 
         // Validate
-        $flash_error .= $this->validateCommonInput($flash_error, $aItem);
+        $flash_error .= $this->validateCommonInput('', $aItem);
+        // Only an admin editing a listing with no owner writes the contact name and e-mail.
+        if ($this->is_admin && !$aItem['userId']) {
+            $flash_error .= $this->contactWidthErrors($aItem);
+        }
 
         $_meta = Field::newInstance()->findByCategory($aItem['catId']);
         // Custom field values come with the data when there is no form post, as on an import.
@@ -1208,6 +1304,11 @@ class ItemActions
         if ($flash_error) {
             $success = $flash_error;
         } else {
+            // Text first: when it is refused, nothing else about the listing has changed yet.
+            if (!$this->insertItemLocales('EDIT', $aItem['title'], $aItem['description'], $aItem['idItem'])) {
+                return _m('Your listing could not be saved. Please try again.');
+            }
+
             $location = array(
                 'fk_c_country_code' => $aItem['countryId'],
                 's_country'         => $aItem['countryName'],
@@ -1271,8 +1372,6 @@ class ItemActions
                 $where['s_secret'] = $aItem['secret'];
             }
             $result = $this->manager->update($aUpdate, $where);
-            // UPDATE title and description locales
-            $this->insertItemLocales('EDIT', $aItem['title'], $aItem['description'], $aItem['idItem']);
             // UPLOAD item resources
             $this->uploadItemResources($aItem['photos'], $aItem['idItem']);
 

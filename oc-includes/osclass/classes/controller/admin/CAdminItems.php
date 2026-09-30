@@ -596,12 +596,7 @@ class CAdminItems extends AdminSecBaseModel
                 if (!osc_validate_int($warnExpiration)) {
                     $msg .= _m('Number of expiration days has to be a numeric value') . '<br/>';
                 }
-                if (!osc_validate_int($titleLength)) {
-                    $msg .= _m('Title Length has to be a numeric value') . '<br/>';
-                }
-                if (!osc_validate_int($descriptionLength)) {
-                    $msg .= _m('Description Length has to be a numeric value') . '<br/>';
-                }
+                $msg .= str_replace(PHP_EOL, '<br/>', ItemActions::lengthSettingErrors($titleLength, $descriptionLength));
                 if ($msg != '') {
                     osc_add_flash_error_message($msg, 'admin');
                     $this->redirectTo(osc_admin_base_url(true) . '?page=items&action=settings');

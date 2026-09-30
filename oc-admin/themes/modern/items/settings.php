@@ -179,15 +179,19 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 'name'   => 'max_chars_per_title',
                 'label'  => __('Title length'),
                 'value'  => osc_max_characters_per_title(),
-                'min'    => 0,
+                'min'    => 1,
+                'max'    => Item::TITLE_WIDTH,
                 'suffix' => __('characters'),
+                'help'   => sprintf(__('Titles can be 1 to %d characters.'), Item::TITLE_WIDTH),
             ));
             osc_admin_number(array(
                 'name'   => 'max_chars_per_description',
                 'label'  => __('Description length'),
                 'value'  => osc_max_characters_per_description(),
-                'min'    => 0,
+                'min'    => 1,
+                'max'    => ItemActions::DESCRIPTION_MAX,
                 'suffix' => __('characters'),
+                'help'   => sprintf(__('Descriptions can be 1 to %d characters.'), ItemActions::DESCRIPTION_MAX),
             ));
             osc_admin_field(array(
                 'type'      => 'checkbox',

@@ -437,7 +437,7 @@ class ItemForm extends Form
      */
     public static function title_input($name, $locale = null, $value = '')
     {
-        parent::generic_input_text($name . '[' . self::field_locale($locale) . ']', $value);
+        parent::generic_input_text($name . '[' . self::field_locale($locale) . ']', $value, osc_max_characters_per_title());
 
         return true;
     }

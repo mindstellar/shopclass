@@ -236,6 +236,12 @@ if (!function_exists('osc_max_images_per_item')) {
         return 10;
     }
 }
+if (!function_exists('osc_max_characters_per_title')) {
+    function osc_max_characters_per_title()
+    {
+        return 100;
+    }
+}
 if (!function_exists('osc_max_size_kb')) {
     function osc_max_size_kb()
     {

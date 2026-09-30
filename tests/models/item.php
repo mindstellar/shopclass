@@ -1012,6 +1012,49 @@ pin(
 pin('the stranger sees their own premium listing', 1, count($model->findItemTypesByUserID($stranger, 0, 100, false)));
 pin('...and it still counts as premium site-wide', '1', $model->findItemByTypes(null, 'premium', true));
 
+/* ----------------------------------------------------------------------------
+ * A title wider than t_item_description.s_title. Strict SQL mode refused the row,
+ * leaving a live listing with no title or description; the model now cuts it.
+ * ------------------------------------------------------------------------- */
+harness_section('Item::insertLocale / updateLocaleForce — over-long titles under strict SQL');
+
+$longTitle = str_repeat('é', 50) . str_repeat('t', 100);
+$titleOf   = static function (int $id) use ($admin, $descTable): ?string {
+    $row = $admin->query(
+        "SELECT s_title FROM $descTable WHERE fk_i_item_id = $id AND fk_c_locale_code = 'en_US'"
+    )->fetch_assoc();
+
+    return $row['s_title'] ?? null;
+};
+
+$titled = seed_item($admin, $cat, $user, 'Long title');
+$admin->query("DELETE FROM $descTable WHERE fk_i_item_id = $titled");
+
+$mode = osc_db_scalar('SELECT @@SESSION.sql_mode');
+osc_db_execute("SET SESSION sql_mode = 'STRICT_ALL_TABLES'");
+$inserted = $model->insertLocale($titled, 'en_US', $longTitle, 'A description');
+$afterInsert = $titleOf($titled);
+$replaced = $model->updateLocaleForce($titled, 'en_US', str_repeat('ü', 150), 'Another description');
+$afterReplace = $titleOf($titled);
+osc_db_execute('SET SESSION sql_mode = ?', array((string) $mode));
+
+pin('a 150-character title is still written', true, $inserted);
+pin('cut to the column width, in characters', mb_substr($longTitle, 0, 100, 'UTF-8'), $afterInsert);
+pin('updateLocaleForce writes it too', true, $replaced);
+pin('and cuts it the same way', str_repeat('ü', 100), $afterReplace);
+
+harness_section('osc_max_characters_per_title — never wider than the column');
+
+$titlePref = static function ($value): int {
+    Preference::newInstance()->set('title_character_length', $value);
+
+    return osc_max_characters_per_title();
+};
+pin('an unset preference falls back to the column width', 100, $titlePref(''));
+pin('a stored 200 is capped at 100', 100, $titlePref('200'));
+pin('a stored 60 is kept', 60, $titlePref('60'));
+pin('a stored 0 falls back to the column width', 100, $titlePref('0'));
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }

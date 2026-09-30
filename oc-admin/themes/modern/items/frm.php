@@ -256,6 +256,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         'error'          => $itemErrors['title'] ?? '',
         'class'          => 'osc-editor-title',
         'placeholder'    => __('Enter title here'),
+        // The listing save decodes rather than escapes a title, so the browser's count is the stored one.
+        'maxlength'      => osc_max_characters_per_title(),
+        'purify'         => false,
     ));
 
     echo '<div class="osc-editor-cols">';

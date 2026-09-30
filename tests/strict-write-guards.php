@@ -191,6 +191,16 @@ pin(
     $sorted(array_intersect_key($locationWidths, $itemLocation))
 );
 pin(
+    'as do the listing contact columns',
+    $sorted(ItemActions::CONTACT_WIDTHS),
+    $sorted(array_intersect_key($widthsOf('t_item'), ItemActions::CONTACT_WIDTHS))
+);
+pin(
+    'and the title column the Item model cuts to',
+    Item::TITLE_WIDTH,
+    $widthsOf('t_item_description')['s_title'] ?? null
+);
+pin(
     'as does the listing phone column',
     $itemDeclared['s_contact_phone'],
     $widthsOf('t_item')['s_contact_phone'] ?? null
@@ -609,6 +619,152 @@ check(
         "SELECT COUNT(*) c FROM {$prefix}t_item_location WHERE s_country = '" . str_repeat('C', 80) . "'"
     )->fetch_assoc()['c'] === 1
 );
+
+/* ----------------------------------------------------------------------------
+ * Titles. t_item_description.s_title holds 100 characters; a longer one used to
+ * leave a live listing with no title or description behind it.
+ * ------------------------------------------------------------------------- */
+harness_section('publishing: over-long titles and contact values');
+
+check('the connection is still strict', harness_strict_writes(), implode(',', harness_sql_mode()));
+
+$longTitle = str_repeat('é', 50) . str_repeat('t', 100);
+$descCount = static function () use ($admin, $prefix): int {
+    return (int) $admin->query("SELECT COUNT(*) c FROM {$prefix}t_item_description")->fetch_assoc()['c'];
+};
+$lastTitle = static function () use ($admin, $prefix): string {
+    return (string) $admin->query(
+        "SELECT d.s_title FROM {$prefix}t_item_description d ORDER BY d.fk_i_item_id DESC LIMIT 1"
+    )->fetch_assoc()['s_title'];
+};
+
+$before = $itemCount();
+pin(
+    'a 150-character title is refused by name',
+    "Title too long (en_US).\n",
+    $publish(array('title' => array('en_US' => $longTitle)))
+);
+pin('and no listing was written', $before, $itemCount());
+
+pin(
+    'a too-long title in a second language is refused even when the first is fine',
+    "Title too long (es_ES).\n",
+    $publish(array(
+        'title'       => array('en_US' => 'A fine title', 'es_ES' => $longTitle),
+        'description' => array('en_US' => 'A description long enough.', 'es_ES' => 'Una descripcion larga.'),
+    ))
+);
+
+pin(
+    'a 141-character e-mail is refused — the column holds 140',
+    "Email too long.\n",
+    $publish(array('contactEmail' => str_repeat('a', 128) . '@example.test'))
+);
+
+osc_add_filter('pre_item_add_error', 'strict_guard_clear_item_flash');
+$before = $itemCount();
+pin('with the check cleared by a plugin, the listing is still published', 2, $publish(array('title' => array('en_US' => $longTitle))));
+pin('with its row', $before + 1, $itemCount());
+pin('and its title cut to 100 characters', mb_substr($longTitle, 0, 100, 'UTF-8'), $lastTitle());
+
+$warnings = array();
+set_error_handler(static function (int $errno, string $errstr) use (&$warnings): bool {
+    $warnings[] = $errstr;
+
+    return true;
+});
+$before     = $itemCount();
+$descBefore = $descCount();
+$halfMade   = $publish(array(
+    'title'       => array('en_US' => 'A fine title', 'xx_XX' => 'No such locale'),
+    'description' => array('en_US' => 'A description long enough.', 'xx_XX' => 'No such locale'),
+));
+restore_error_handler();
+osc_remove_filter('pre_item_add_error', 'strict_guard_clear_item_flash');
+
+pin('a refused description row fails the post', 'Your listing could not be saved. Please try again.', $halfMade);
+pin('and leaves no listing behind', $before, $itemCount());
+pin('nor any of its description rows', $descBefore, $descCount());
+check(
+    'the refusal left a warning naming the locale',
+    strpos($warnings[0] ?? '', 'Item locale xx_XX was not written for item ') === 0,
+    describe($warnings[0] ?? null)
+);
+
+harness_section('editing: over-long titles and a refused description row');
+
+$editItem = (int) $admin->query("SELECT MAX(pk_i_id) m FROM {$prefix}t_item")->fetch_assoc()['m'];
+$itemRow  = static function () use ($admin, $prefix, $editItem): array {
+    return $admin->query(
+        "SELECT i.i_price, i.s_secret, i.s_contact_email, d.s_title FROM {$prefix}t_item i"
+        . " JOIN {$prefix}t_item_description d ON d.fk_i_item_id = i.pk_i_id WHERE i.pk_i_id = $editItem"
+    )->fetch_assoc();
+};
+$editItemAs = static function (array $overrides, bool $isAdmin = false) use ($itemData, $itemRow, $editItem) {
+    $action       = new ItemActions($isAdmin);
+    $action->data = $itemData(array_merge(
+        array('idItem' => $editItem, 'secret' => $itemRow()['s_secret'], 'price' => 99),
+        $overrides
+    ));
+
+    return $action->edit();
+};
+
+$rowBefore = $itemRow();
+pin(
+    'an over-long title is refused on edit too',
+    "Title too long (en_US).\n",
+    $editItemAs(array('title' => array('en_US' => $longTitle)))
+);
+pin('and the listing is untouched', $rowBefore, $itemRow());
+
+pin(
+    'an admin editing a listing with no owner cannot store a 141-character e-mail',
+    "Email too long.\n",
+    $editItemAs(array('userId' => null, 'contactEmail' => str_repeat('a', 128) . '@example.test'), true)
+);
+
+osc_add_filter('pre_item_edit_error', 'strict_guard_clear_item_flash');
+pin('with the check cleared by a plugin, the edit saves', 1, $editItemAs(array('title' => array('en_US' => str_repeat('ü', 150)))));
+pin('with the title cut to 100 characters', str_repeat('ü', 100), $itemRow()['s_title']);
+
+$rowBefore = $itemRow();
+$warnings  = array();
+set_error_handler(static function (int $errno, string $errstr) use (&$warnings): bool {
+    $warnings[] = $errstr;
+
+    return true;
+});
+$refusedEdit = $editItemAs(array(
+    'title'       => array('xx_XX' => 'No such locale'),
+    'description' => array('xx_XX' => 'No such locale'),
+));
+restore_error_handler();
+osc_remove_filter('pre_item_edit_error', 'strict_guard_clear_item_flash');
+
+pin('a refused description row fails the edit', 'Your listing could not be saved. Please try again.', $refusedEdit);
+pin('before anything else about the listing changed', $rowBefore, $itemRow());
+pin('and left a warning', 1, count($warnings));
+
+harness_section('listing settings: title and description length');
+
+foreach (array('0', '101', 'abc', '-5', '', '1.5') as $bad) {
+    pin(
+        'title length ' . var_export($bad, true) . ' is refused',
+        "Titles can be 1 to 100 characters.\n",
+        ItemActions::lengthSettingErrors($bad, '5000')
+    );
+}
+foreach (array('0', '20001', 'abc', '-1') as $bad) {
+    pin(
+        'description length ' . var_export($bad, true) . ' is refused',
+        "Descriptions can be 1 to 20000 characters.\n",
+        ItemActions::lengthSettingErrors('100', $bad)
+    );
+}
+foreach (array(array('1', '1'), array('100', '20000'), array('60', '5000')) as $ok) {
+    pin('lengths ' . implode(' / ', $ok) . ' are accepted', '', ItemActions::lengthSettingErrors($ok[0], $ok[1]));
+}
 
 exit(harness_result());
 

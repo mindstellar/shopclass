@@ -153,6 +153,7 @@ you find.
 
 ### Fixed
 
+- A listing title longer than 100 characters no longer leaves a listing without a title under strict SQL mode. Titles are capped at 100, the settings refuse larger limits, and a failed save is undone.
 - When memcached is down or frozen, pages keep working from the database. Before, cached reads came back empty, and some admin pages failed.
 - Upgrade release notes show as real paragraphs and lists with working links, instead of one line per paragraph.
 - When two sites share a database with nested prefixes (`oc_` and `oc_shop2_`), a backup no longer takes, and a restore no longer drops, the other site's tables.

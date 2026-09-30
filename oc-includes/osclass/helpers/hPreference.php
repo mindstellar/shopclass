@@ -416,15 +416,16 @@ function osc_max_images_per_item()
 }
 
 /**
- * Gets how many characters are allowed for the listings title
+ * Gets how many characters are allowed for the listings title.
+ * Never more than the title column holds, whatever is stored.
  *
  * @return int
  */
 function osc_max_characters_per_title()
 {
-    $value = getPreference('title_character_length');
+    $value = (int)getPreference('title_character_length');
 
-    return (!empty($value) ? (int)$value : 128);
+    return $value > 0 ? min($value, Item::TITLE_WIDTH) : Item::TITLE_WIDTH;
 }
 
 /**
