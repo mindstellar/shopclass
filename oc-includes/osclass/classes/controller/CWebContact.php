@@ -70,7 +70,7 @@ class CWebContact extends BaseModel
                 }
 
                 $refused = \mindstellar\security\MessageGuard::banError($yourEmail)
-                    ?? \mindstellar\security\MessageGuard::linkError($subject, $message);
+                    ?? \mindstellar\security\MessageGuard::linkError($subject, $message, $yourName);
                 if ($refused !== null) {
                     $fail($refused);
 
@@ -144,7 +144,8 @@ MESSAGE;
                 $this->redirectTo(osc_contact_url());
                 break;
             case ('report'):
-                $this->reportView();
+            case ('confirm'):
+                $this->messageView($this->action);
                 break;
             case ('report_post'):
                 osc_csrf_check();
@@ -153,18 +154,39 @@ MESSAGE;
                     osc_add_flash_error_message(_m("You've sent too many reports recently. Please try again later."));
                     $this->redirectTo($back);
                 }
-                $report = \mindstellar\security\MessageGuard::readReport(Params::getParamString('t'));
-                if ($report === null) {
-                    osc_add_flash_error_message(_m('This report link is not valid or has expired.'));
-                    $this->redirectTo($back);
-                }
                 \mindstellar\security\ActionThrottle::record('report_sender');
-                if (!\mindstellar\security\MessageGuard::banSender($report['sender'], $report['recipient'])) {
-                    osc_add_flash_error_message(_m('The report could not be saved. Please try again later.'));
+                $token  = Params::getParamString('t');
+                $status = \mindstellar\security\MessageGuard::report($token);
+                if ($status === 'done') {
+                    $report = \mindstellar\security\MessageGuard::readReport($token);
+                    Log::newInstance()->insertLog('ban', 'report', 0, (string) ($report['sender'] ?? ''), 'user', 0);
+                    $this->redirectTo($back . '&done=1');
+                }
+                osc_add_flash_error_message($status === 'used'
+                    ? _m('This message has already been reported.')
+                    : ($status === 'invalid'
+                        ? _m('This report link is not valid or has expired.')
+                        : _m('The report could not be saved. Please try again later.')));
+                $this->redirectTo($back);
+                break;
+            case ('confirm_post'):
+                osc_csrf_check();
+                $back = osc_base_url(true) . '?page=contact&action=confirm';
+                if (\mindstellar\security\ActionThrottle::exceeded('message_confirm', 20, 3600)) {
+                    osc_add_flash_error_message(_m("You've sent too many messages recently. Please try again later."));
                     $this->redirectTo($back);
                 }
-                Log::newInstance()->insertLog('ban', 'report', 0, $report['sender'], 'user', 0);
-                $this->redirectTo($back . '&done=1');
+                \mindstellar\security\ActionThrottle::record('message_confirm');
+                $status = \mindstellar\security\MessageHold::confirm(Params::getParamString('t'));
+                if ($status === 'sent') {
+                    $this->redirectTo($back . '&done=1');
+                }
+                osc_add_flash_error_message($status === 'gone'
+                    ? _m('This message was already sent, or its link has expired.')
+                    : ($status === 'invalid'
+                        ? _m('This link is not valid.')
+                        : _m('The message could not be sent. The listing or member may no longer be available.')));
+                $this->redirectTo($back);
                 break;
             default:                //contact
                 $this->doView(osc_locate_template(array('contact.php'), 'contact'));
@@ -172,27 +194,37 @@ MESSAGE;
     }
 
     /**
-     * The page a "Report the sender" link opens. Nothing is banned until its button is
-     * pressed, so a mail scanner that follows the link cannot file a report.
+     * The pages the links in message mail open: send a held message, or report its sender.
+     * Nothing happens until the button is pressed, so a mail scanner following a link does nothing.
+     *
+     * @param string $mode 'confirm' or 'report'
      *
      * @return void
      */
-    private function reportView()
+    private function messageView(string $mode)
     {
-        $done   = Params::getParamString('done') === '1';
-        $report = $done ? null : \mindstellar\security\MessageGuard::readReport(Params::getParamString('t'));
+        $done  = Params::getParamString('done') === '1';
+        $token = $done ? '' : Params::getParamString('t');
+        $data  = null;
+        if ($token !== '') {
+            $data = $mode === 'report'
+                ? \mindstellar\security\MessageGuard::readReport($token)
+                : \mindstellar\security\SignedPayload::unpack('message-confirm', $token);
+        }
+        $heading = $mode === 'report' ? _m('Report the sender') : _m('Send your message');
 
         $this->_exportVariableToView('meta_noindex', true);
-        $this->_exportVariableToView('report_done', $done);
-        $this->_exportVariableToView('report_token', $report === null ? '' : Params::getParamString('t'));
-        $this->_exportVariableToView('report_sender', $report['sender'] ?? '');
+        $this->_exportVariableToView('message_mode', $mode);
+        $this->_exportVariableToView('message_done', $done);
+        $this->_exportVariableToView('message_token', $data === null ? '' : $token);
+        $this->_exportVariableToView('report_sender', $mode === 'report' ? (string) ($data['sender'] ?? '') : '');
         $this->_exportVariableToView('report_days', \mindstellar\security\MessageGuard::banDays());
 
         osc_run_hook('before_html');
         osc_gui_view(
-            'contact-report.php',
-            ABS_PATH . 'oc-includes/osclass/gui/contact-report-content.php',
-            array('heading' => _m('Report the sender'), 'title' => _m('Report the sender') . ' — ' . osc_page_title())
+            'contact-message.php',
+            ABS_PATH . 'oc-includes/osclass/gui/contact-message-content.php',
+            array('heading' => $heading, 'title' => $heading . ' — ' . osc_page_title())
         );
         Session::newInstance()->_clearVariables();
         osc_run_hook('after_html');

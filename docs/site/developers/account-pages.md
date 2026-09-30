@@ -327,6 +327,10 @@ dangerous should sit a misclick away from changing an email address.
 | `item-contact.php` | writing to a seller about one listing |
 | `item-send-friend.php` | passing a listing on to someone else |
 
+`contact-message.php` is the page the links in message mail open: *Send my message* for a
+held message, and *Report the sender*. Core's fallback is `gui/contact-message-content.php`;
+it reads `message_mode` (`confirm` or `report`), `message_done` and `message_token`.
+
 The contact page, the seller contact page and the public profile draw one shared
 form. After a failed send, each shows the reason in `.oe-form-error` and refills what
 was typed. A plugin handling its own contact-style form can do the same with

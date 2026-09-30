@@ -144,7 +144,7 @@ pin('no name reserved in 6.2 has been dropped', array(), $lost);
 // when the theme ships none, so each has to be reserved.
 pin(
     'and the additions are exactly the views core took over',
-    array('user-change_username', 'user-custom', 'user-delete_account', 'user-public-profile'),
+    array('contact-message', 'user-change_username', 'user-custom', 'user-delete_account', 'user-public-profile'),
     array_values(array_diff($reserved, $legacy))
 );
 

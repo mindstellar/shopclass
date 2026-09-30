@@ -2787,6 +2787,10 @@ msgstr ""
 msgid "Confirm new password"
 msgstr ""
 
+#: oc-includes/osclass/classes/security/MessageHold.php
+msgid "Confirm your message on %s"
+msgstr ""
+
 #: oc-includes/osclass/installer/gui/install.php
 msgid "Connect database"
 msgstr ""
@@ -6382,6 +6386,10 @@ msgstr ""
 #: oc-admin/themes/modern/emails/frm.php
 #: oc-admin/themes/modern/tools/maintenance.php
 msgid "Message"
+msgstr ""
+
+#: oc-includes/osclass/classes/security/MessageHold.php
+msgid "Message waiting for its sender to confirm"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebContact.php
@@ -11738,6 +11746,10 @@ msgstr ""
 msgid ""
 "Used in the address of search pages. Leave blank to make one from the name; "
 "a slug already taken gets a number added."
+msgstr ""
+
+#: oc-includes/osclass/classes/security/MessageHold.php
+msgid "Used report link"
 msgstr ""
 
 #: oc-admin/themes/modern/pages/frm.php

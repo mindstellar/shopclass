@@ -1880,11 +1880,20 @@ class ItemActions
         $item = $aItem['item'];
         View::newInstance()->_exportVariableToView('item', $item);
 
-        osc_run_hook('hook_email_send_friend', $aItem);
+        $sent = \mindstellar\security\MessageHold::deliver('send_friend', (string) $aItem['yourEmail'], array(
+            'id'          => (int) $item['pk_i_id'],
+            'yourName'    => (string) $aItem['yourName'],
+            'yourEmail'   => (string) $aItem['yourEmail'],
+            'friendName'  => (string) $aItem['friendName'],
+            'friendEmail' => (string) $aItem['friendEmail'],
+            'message'     => (string) $aItem['message'],
+        ));
         $item_url = osc_item_url();
         $item_url = '<a href="' . $item_url . '" >' . $item_url . '</a>';
         Params::setParam('item_url', $item_url);
-        osc_add_flash_ok_message(sprintf(_m('We just sent your message to %s'), $aItem['friendName']));
+        if ($sent) {
+            osc_add_flash_ok_message(sprintf(_m('We just sent your message to %s'), $aItem['friendName']));
+        }
 
         return true;
     }
@@ -1981,7 +1990,13 @@ class ItemActions
             return $flash_error;
         }
 
-        osc_run_hook('hook_email_item_inquiry', $aItem);
+        \mindstellar\security\MessageHold::deliver('item_contact', (string) $aItem['yourEmail'], array(
+            'id'          => (int) $aItem['id'],
+            'yourEmail'   => (string) $aItem['yourEmail'],
+            'yourName'    => (string) $aItem['yourName'],
+            'phoneNumber' => (string) $aItem['phoneNumber'],
+            'message'     => (string) $aItem['message'],
+        ));
     }
 
     /**

@@ -243,7 +243,7 @@ class CWebUserNonSecure extends BaseModel
                 }
 
                 $refused = \mindstellar\security\MessageGuard::banError($yourEmail)
-                    ?? \mindstellar\security\MessageGuard::linkError($message);
+                    ?? \mindstellar\security\MessageGuard::linkError($message, $yourName, $phone);
                 if ($refused !== null) {
                     $fail($refused);
 
@@ -260,16 +260,17 @@ class CWebUserNonSecure extends BaseModel
                     return;
                 }
 
-                osc_run_hook(
-                    'hook_email_contact_user',
-                    (int) $user['pk_i_id'],
-                    $yourEmail,
-                    $yourName,
-                    $phone,
-                    $message
-                );
+                $sent = \mindstellar\security\MessageHold::deliver('user_contact', $yourEmail, array(
+                    'id'          => (int) $user['pk_i_id'],
+                    'yourEmail'   => $yourEmail,
+                    'yourName'    => $yourName,
+                    'phoneNumber' => $phone,
+                    'message'     => $message,
+                ));
                 \mindstellar\security\ActionThrottle::record('user_contact');
-                osc_add_flash_ok_message(_m('Your email has been sent properly.'));
+                if ($sent) {
+                    osc_add_flash_ok_message(_m('Your email has been sent properly.'));
+                }
                 $this->redirectTo($back);
                 break;
             default:

@@ -330,8 +330,8 @@ Core fires 536 names. Generated from the source; do not edit by hand.
 | `hook_email_admin_new_user` | action | `$user` | `oc-includes/osclass/classes/actions/UserActions.php` |
 | `hook_email_alert_validation` | action | `Alerts::newInstance()->findByPrimaryKey($alertID), $email, $secret` | `oc-includes/osclass/helpers/hSearch.php` |
 | `hook_email_comment_validated` | action | `$aComment` | `oc-includes/osclass/classes/controller/admin/CAdminItemComments.php` |
-| `hook_email_contact_user` | action | `(int) $user['pk_i_id'], $yourEmail, $yourName, $phone, $message` | `oc-includes/osclass/classes/controller/CWebUserNonSecure.php` |
-| `hook_email_item_inquiry` | action | `$aItem` | `oc-includes/osclass/classes/actions/ItemActions.php` |
+| `hook_email_contact_user` | action | `(int) $user['pk_i_id'], (string) $args['yourEmail'], (string) $args['yourName'], (string) $args['phoneNumber'], (string) $args['message']` | `oc-includes/osclass/classes/security/MessageHold.php` |
+| `hook_email_item_inquiry` | action | `$args` | `oc-includes/osclass/classes/security/MessageHold.php` |
 | `hook_email_item_validation` | action | `$item` | `oc-includes/osclass/classes/actions/ItemActions.php` |
 | `hook_email_item_validation_non_register_user` | action | `$item` | `oc-includes/osclass/classes/actions/ItemActions.php` |
 | `hook_email_new_admin` | action | `array( 's_name' => $result['values']['s_name'], 's_username' => $result['values']['s_username'], 's_password' => $result['values']['s_password'], 's_email' => $result['values']['s_email'], )` | `oc-includes/osclass/classes/controller/admin/CAdminAdmins.php` |
@@ -339,7 +339,7 @@ Core fires 536 names. Generated from the source; do not edit by hand.
 | `hook_email_new_comment_user` | action | `$aItem` | `oc-includes/osclass/classes/actions/ItemActions.php` |
 | `hook_email_new_email` | action | `Params::getParam('new_email'), $validation_url` | `oc-includes/osclass/classes/controller/CWebUser.php` |
 | `hook_email_new_item_non_register_user` | action | `$item` | `oc-includes/osclass/classes/actions/ItemActions.php` |
-| `hook_email_send_friend` | action | `$aItem` | `oc-includes/osclass/classes/actions/ItemActions.php` |
+| `hook_email_send_friend` | action | `$args` | `oc-includes/osclass/classes/security/MessageHold.php` |
 | `hook_email_user_forgot_password` | action | `$user, $password_url` | `oc-includes/osclass/classes/actions/UserActions.php` |
 | `hook_email_user_registration` | action | `$user` | `oc-includes/osclass/classes/controller/CWebRegister.php` |
 | `hook_email_user_validation` | action | `$user, $input` | `oc-includes/osclass/classes/actions/UserActions.php` |

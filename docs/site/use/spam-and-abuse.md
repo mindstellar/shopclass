@@ -120,15 +120,25 @@ redundant on a site where comments are closed or moderated.
 ## Messages
 
 The contact form, contact the seller, contact a user and share a listing all
-send e-mail. **Settings → Spam and bots → Messages** controls them:
+send e-mail.
 
-- **Links allowed in a message.** Default 1. A message with more is refused and
-  the sender is told why. 0 allows none.
+**Confirmed senders only.** Mail to a member leaves only from an address the
+sender has proved is theirs. A signed-in member's own address counts. Anyone
+else gets a link at the address they typed; the message is sent when they click
+it, and waits at most 24 hours. After one click, that browser sends straight
+away for 30 days. One message per address can wait at a time. A file can be
+attached only once the address is confirmed. The site's own contact form, which
+only reaches you, sends at once.
+
+**Settings → Spam and bots → Messages:**
+
+- **Links allowed in a message.** Default 1, counted across every field. A
+  message with more is refused and the sender is told why. 0 allows none.
 - **Report link.** Mail a member receives ends with *Report the sender*. The
   member confirms on a page, and the sender's address cannot send messages for
-  the set number of days (default 30). Sign-in and posting still work. The rule
-  shows under **Users → Ban rules** as *Messages only, until …*, where you can
-  delete it early.
+  the set number of days (default 30). Sign-in and posting still work. Each link
+  works once. The rule shows under **Users → Ban rules** as *Messages only, until
+  …*, where you can delete it early.
 
 Each form also has an hourly limit per IP address. The ban list applies to all
 of them, and to e-mail fields on your own forms.

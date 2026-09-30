@@ -858,39 +858,16 @@ function fn_email_send_friend($aItem)
     $item_url = osc_item_url();
     $item_url = '<a href="' . $item_url . '" >' . $item_url . '</a>';
 
-    $words   = array();
-    $words[] = array(
-        '{FRIEND_NAME}',
-        '{USER_NAME}',
-        '{USER_EMAIL}',
-        '{FRIEND_EMAIL}',
-        '{ITEM_TITLE}',
-        '{COMMENT}',
-        '{ITEM_URL}',
-        '{ITEM_LINK}'
-    );
-    $titleWords   = $words;
-    $titleWords[] = array(
-        $aItem['friendName'],
-        $aItem['yourName'],
-        $aItem['yourEmail'],
-        $aItem['friendEmail'],
-        $aItem['s_title'],
-        $aItem['message'],
-        osc_item_url(),
-        $item_url
-    );
-    // What the visitor typed is text, never markup, in a mail sent under the site's name.
-    $words[] = array(
-        osc_esc_html($aItem['friendName']),
-        osc_esc_html($aItem['yourName']),
-        osc_esc_html($aItem['yourEmail']),
-        osc_esc_html($aItem['friendEmail']),
-        $aItem['s_title'],
-        nl2br(osc_esc_html($aItem['message'])),
-        osc_item_url(),
-        $item_url
-    );
+    [$titleWords, $words] = _osc_mail_words(array(
+        '{FRIEND_NAME}'  => $aItem['friendName'],
+        '{USER_NAME}'    => $aItem['yourName'],
+        '{USER_EMAIL}'   => $aItem['yourEmail'],
+        '{FRIEND_EMAIL}' => $aItem['friendEmail'],
+        '{ITEM_TITLE}'   => $aItem['s_title'],
+        '{COMMENT}'      => $aItem['message'],
+        '{ITEM_URL}'     => osc_item_url(),
+        '{ITEM_LINK}'    => $item_url,
+    ), array('{FRIEND_NAME}', '{USER_NAME}', '{USER_EMAIL}', '{FRIEND_EMAIL}', '{COMMENT}'));
 
     $title = osc_apply_filter('email_send_friend_title_after', osc_mailBeauty(osc_apply_filter(
         'email_title',
@@ -938,6 +915,31 @@ function fn_email_send_friend($aItem)
 osc_add_hook('hook_email_send_friend', 'fn_email_send_friend');
 
 /**
+ * Placeholder lists for osc_mailBeauty(): one for the subject and one for the body. Text a
+ * visitor typed is escaped in the body, with its line breaks kept, and has its tags removed in
+ * the subject.
+ *
+ * @param array<string,mixed> $values  placeholder => value
+ * @param string[]            $visitor the placeholders that hold what a visitor typed
+ *
+ * @return array{0:array<int,array<int,mixed>>,1:array<int,array<int,mixed>>} subject words, body words
+ */
+function _osc_mail_words(array $values, array $visitor): array
+{
+    $title = $values;
+    $body  = $values;
+    foreach ($visitor as $key) {
+        $title[$key] = strip_tags((string) $values[$key]);
+        $body[$key]  = nl2br(osc_esc_html((string) $values[$key]));
+    }
+
+    return array(
+        array(array_keys($title), array_values($title)),
+        array(array_keys($body), array_values($body)),
+    );
+}
+
+/**
  * Deliver a listing contact-form enquiry to the seller.
  *
  * @param array<string,mixed> $aItem Form payload: id, yourName, yourEmail, phoneNumber, message
@@ -969,40 +971,16 @@ function fn_email_item_inquiry($aItem)
     $item_url  = osc_item_url();
     $item_link = '<a href="' . $item_url . '" >' . $item_url . '</a>';
 
-    $words   = array();
-    $words[] = array(
-        '{CONTACT_NAME}',
-        '{USER_NAME}',
-        '{USER_EMAIL}',
-        '{USER_PHONE}',
-        '{ITEM_TITLE}',
-        '{ITEM_URL}',
-        '{ITEM_LINK}',
-        '{COMMENT}'
-    );
-
-    $titleWords   = $words;
-    $titleWords[] = array(
-        $item['s_contact_name'],
-        $yourName,
-        $yourEmail,
-        $phoneNumber,
-        $item['s_title'],
-        $item_url,
-        $item_link,
-        $message
-    );
-    // What the visitor typed is text, never markup, in a mail sent under the site's name.
-    $words[] = array(
-        osc_esc_html($item['s_contact_name']),
-        osc_esc_html($yourName),
-        osc_esc_html($yourEmail),
-        osc_esc_html($phoneNumber),
-        $item['s_title'],
-        $item_url,
-        $item_link,
-        nl2br(osc_esc_html($message))
-    );
+    [$titleWords, $words] = _osc_mail_words(array(
+        '{CONTACT_NAME}' => $item['s_contact_name'],
+        '{USER_NAME}'    => $yourName,
+        '{USER_EMAIL}'   => $yourEmail,
+        '{USER_PHONE}'   => $phoneNumber,
+        '{ITEM_TITLE}'   => $item['s_title'],
+        '{ITEM_URL}'     => $item_url,
+        '{ITEM_LINK}'    => $item_link,
+        '{COMMENT}'      => $message,
+    ), array('{CONTACT_NAME}', '{USER_NAME}', '{USER_EMAIL}', '{USER_PHONE}', '{COMMENT}'));
 
     $title = osc_apply_filter('email_item_inquiry_title_after', osc_mailBeauty(osc_apply_filter(
         'email_title',
@@ -1597,24 +1575,13 @@ function fn_email_contact_user($id, $yourEmail, $yourName, $phoneNumber, $messag
         $content = current($aPage['locale']);
     }
 
-    $words   = array();
-    $words[] = array(
-        '{CONTACT_NAME}',
-        '{USER_NAME}',
-        '{USER_EMAIL}',
-        '{USER_PHONE}',
-        '{COMMENT}'
-    );
-    $titleWords   = $words;
-    $titleWords[] = array(osc_user_name(), $yourName, $yourEmail, $phoneNumber, $message);
-    // What the visitor typed is text, never markup, in a mail sent under the site's name.
-    $words[] = array(
-        osc_esc_html(osc_user_name()),
-        osc_esc_html($yourName),
-        osc_esc_html($yourEmail),
-        osc_esc_html($phoneNumber),
-        nl2br(osc_esc_html($message))
-    );
+    [$titleWords, $words] = _osc_mail_words(array(
+        '{CONTACT_NAME}' => osc_user_name(),
+        '{USER_NAME}'    => $yourName,
+        '{USER_EMAIL}'   => $yourEmail,
+        '{USER_PHONE}'   => $phoneNumber,
+        '{COMMENT}'      => $message,
+    ), array('{CONTACT_NAME}', '{USER_NAME}', '{USER_EMAIL}', '{USER_PHONE}', '{COMMENT}'));
 
     $title = osc_apply_filter('email_item_inquiry_title_after', osc_mailBeauty(osc_apply_filter(
         'email_title',

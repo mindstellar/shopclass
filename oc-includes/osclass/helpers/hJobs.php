@@ -262,6 +262,7 @@ osc_add_hook('register_jobs', static function () {
     \mindstellar\job\CleanupJobs::register();
     \mindstellar\search\AlertJobs::register();
     \mindstellar\backup\BackupJobs::register();
+    \mindstellar\security\MessageHold::registerJobs();
 });
 
 // A job queued by a web request would otherwise wait for the next cron tick. The worker

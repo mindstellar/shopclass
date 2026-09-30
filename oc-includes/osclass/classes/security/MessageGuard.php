@@ -10,24 +10,31 @@
 
 namespace mindstellar\security;
 
+use mindstellar\job\JobQueue;
+
 /**
  * Guards for the public forms that send mail: the contact form, contact the seller,
  * contact a user and share a listing.
  *
- * It caps the links in a message, and it signs the "Report the sender" link added to mail
- * a member receives. A report bans the sender's address from these forms for a set number
- * of days; the ban rule it writes is scoped to messages, so sign-in and posting still work.
+ * It caps links, checks the ban list, and signs the "Report the sender" link in mail to a
+ * member; only confirmed senders reach a member ({@see MessageHold}), so a report bans a real address.
  */
 final class MessageGuard
 {
     /** Scope of a ban rule that blocks the message forms only. */
     public const SCOPE = 'messages';
 
-    /** How long a report link stays usable. */
-    private const LINK_TTL = 30 * 86400;
+    /** A job that remembers a used report link until the link could no longer work. */
+    public const USED_JOB = 'message.report_used';
+
+    private const REPORT_TTL = 30 * 86400;
 
     private const DEFAULT_MAX_LINKS = 1;
     private const DEFAULT_BAN_DAYS  = 30;
+
+    /** Common top-level domains: a bare name ending in one reads as a link in most mail apps. */
+    private const TLDS = 'com|net|org|info|biz|io|co|me|xyz|top|site|online|shop|store|app|dev|live|link|click|'
+        . 'pro|club|vip|win|icu|buzz|ru|cn|in|uk|de|fr|it|es|nl|pl|br|au|ca|us|eu|tv|cc|ly|tk|ml|ga|cf|gq|ws|su|to|gg';
 
     /**
      * Links allowed in one message. 0 allows none.
@@ -64,9 +71,9 @@ final class MessageGuard
     }
 
     /**
-     * Links in a text: anything with a scheme, anything starting www., and a bare
-     * domain followed by a path. A bare name like example.com on its own is not counted,
-     * so ordinary words with a dot in them do not trip the limit.
+     * Links in a text: anything with a scheme or starting www., a bare domain followed by a
+     * path or query, and a bare domain on a common top-level domain. E-mail addresses are
+     * not links, and look-alike dots are read as dots.
      *
      * @param string $text
      *
@@ -74,9 +81,13 @@ final class MessageGuard
      */
     public static function countLinks(string $text): int
     {
-        $n = preg_match_all(
+        $text = str_replace(array('．', '。', '｡', '[.]', '(.)', '[dot]', '(dot)'), '.', $text);
+        $text = (string) preg_replace('/[^\s@<>"\']+@[^\s@<>"\']+/u', ' ', $text);
+        $label = '[\p{L}\p{N}](?:[\p{L}\p{N}-]*[\p{L}\p{N}])?';
+        $n     = preg_match_all(
             '~(?:\b[a-z][a-z0-9+.-]*://|\bwww\.)[^\s<>"\']+'
-            . '|\b[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9-]+)*\.[a-z]{2,24}/[^\s<>"\']*~i',
+            . '|' . $label . '(?:\.' . $label . ')*\.\p{L}{2,24}[/?#][^\s<>"\']*'
+            . '|' . $label . '(?:\.' . $label . ')*\.(?:' . self::TLDS . ')(?![\p{L}\p{N}-])~iu',
             $text
         );
 
@@ -84,7 +95,8 @@ final class MessageGuard
     }
 
     /**
-     * The error to show when the texts together carry more links than allowed, or null.
+     * The error to show when the fields together carry more links than allowed, or null.
+     * Pass every field that ends up in the mail, not just the message.
      *
      * @param string ...$texts
      *
@@ -145,7 +157,8 @@ final class MessageGuard
     }
 
     /**
-     * The report link for mail from $sender to $recipient.
+     * The report link for mail from $sender to $recipient. Each link carries its own id,
+     * so it can be used once.
      *
      * @param string $sender
      * @param string $recipient
@@ -154,9 +167,13 @@ final class MessageGuard
      */
     public static function reportUrl(string $sender, string $recipient): string
     {
-        $payload = self::b64((string) json_encode(array('s' => $sender, 'r' => $recipient, 't' => time())));
+        $token = SignedPayload::pack(
+            'report-sender',
+            array('s' => $sender, 'r' => $recipient, 'n' => bin2hex(random_bytes(16))),
+            self::REPORT_TTL
+        );
 
-        return osc_base_url(true) . '?page=contact&action=report&t=' . rawurlencode($payload . '.' . self::sign($payload));
+        return osc_base_url(true) . '?page=contact&action=report&t=' . rawurlencode($token);
     }
 
     /**
@@ -188,23 +205,48 @@ final class MessageGuard
      *
      * @param string $token
      *
-     * @return array{sender:string,recipient:string}|null null when forged, damaged or too old
+     * @return array{sender:string,recipient:string,nonce:string}|null null when forged, damaged or too old
      */
     public static function readReport(string $token): ?array
     {
-        $parts = explode('.', $token);
-        if (count($parts) !== 2 || !hash_equals(self::sign($parts[0]), $parts[1])) {
-            return null;
-        }
-        $data = json_decode((string) base64_decode(strtr($parts[0], '-_', '+/'), true), true);
-        if (!is_array($data) || !isset($data['s'], $data['r'], $data['t'])
-            || !is_string($data['s']) || !is_string($data['r'])
-            || time() - (int) $data['t'] > self::LINK_TTL
+        $data = SignedPayload::unpack('report-sender', $token);
+        if ($data === null || !isset($data['s'], $data['r'], $data['n'])
+            || !is_string($data['s']) || !is_string($data['r']) || !is_string($data['n'])
         ) {
             return null;
         }
 
-        return array('sender' => $data['s'], 'recipient' => $data['r']);
+        return array('sender' => $data['s'], 'recipient' => $data['r'], 'nonce' => $data['n']);
+    }
+
+    /**
+     * File a report: ban the sender from messages, once per link.
+     *
+     * @param string $token
+     *
+     * @return string 'done', 'used', 'invalid' or 'failed'
+     */
+    public static function report(string $token): string
+    {
+        $report = self::readReport($token);
+        if ($report === null) {
+            return 'invalid';
+        }
+        $queue = JobQueue::instance();
+        if ($queue->hasKey(self::USED_JOB, $report['nonce'])) {
+            return 'used';
+        }
+        if (!self::banSender($report['sender'], $report['recipient'])) {
+            return 'failed';
+        }
+        try {
+            // Kept until the link has expired, when the queue drops it.
+            $queue->enqueue(self::USED_JOB, array(), array('delay' => self::REPORT_TTL, 'unique_key' => $report['nonce']));
+        } catch (\InvalidArgumentException $e) {
+            // The nonce is always a hex string; nothing to recover here.
+        }
+
+        return 'done';
     }
 
     /**
@@ -220,8 +262,7 @@ final class MessageGuard
     {
         $table   = DB_TABLE_PREFIX . 't_ban_rule';
         $expires = date('Y-m-d H:i:s', strtotime('+' . self::banDays() . ' days'));
-        // The ban list reads *, | and a leading ! as patterns, so the address is matched literally.
-        $pattern = ltrim(str_replace(array('*', '|'), '', $sender), '!');
+        $pattern = self::literalPattern($sender);
 
         try {
             $existing = osc_db_select_one(
@@ -255,6 +296,21 @@ final class MessageGuard
     }
 
     /**
+     * An address as a ban-list pattern that matches only itself: *, | and a leading ! are
+     * dropped, and regex characters are escaped with the ban list's own escape, |.
+     *
+     * @param string $email
+     *
+     * @return string
+     */
+    public static function literalPattern(string $email): string
+    {
+        $email = ltrim(str_replace(array('*', '|'), '', strtolower(trim($email))), '!');
+
+        return (string) preg_replace('/([+?^$(){}\[\]\\\\])/', '|$1', $email);
+    }
+
+    /**
      * Delete report bans that have ended. Run by the daily task.
      *
      * @return void
@@ -269,15 +325,5 @@ final class MessageGuard
         } catch (\mindstellar\database\DbException $e) {
             // Before the upgrade adds dt_expires there is nothing to purge.
         }
-    }
-
-    private static function sign(string $payload): string
-    {
-        return self::b64(hash_hmac('sha256', 'report-sender|' . $payload, SigningKey::get(), true));
-    }
-
-    private static function b64(string $raw): string
-    {
-        return rtrim(strtr(base64_encode($raw), '+/', '-_'), '=');
     }
 }

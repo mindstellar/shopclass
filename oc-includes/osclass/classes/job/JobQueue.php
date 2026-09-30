@@ -409,6 +409,59 @@ final class JobQueue
     }
 
     /**
+     * Take a waiting job off the queue before a worker runs it: the row is deleted and its
+     * payload handed back. Of two callers taking the same job, only one gets it.
+     *
+     * @param int         $id
+     * @param string      $type the job must be of this type
+     * @param string|null $key  and, when given, carry this unique_key
+     *
+     * @return array<string,mixed>|null the payload, or null when no such job is waiting
+     */
+    public function take(int $id, string $type, ?string $key = null): ?array
+    {
+        $table = $this->table();
+        $where = ' WHERE pk_i_id = ? AND s_type = ? AND s_status = ?';
+        $args  = array($id, $type, self::STATUS_PENDING);
+        if ($key !== null) {
+            $where .= ' AND s_unique = ?';
+            $args[] = $key;
+        }
+
+        try {
+            $row = osc_db_select_one('SELECT s_payload FROM ' . $table . $where, $args);
+            if (!$row || (int) osc_db_execute('DELETE FROM ' . $table . $where, $args) !== 1) {
+                return null;
+            }
+        } catch (DbException $e) {
+            return null;
+        }
+        $payload = json_decode((string) $row['s_payload'], true);
+
+        return is_array($payload) ? $payload : array();
+    }
+
+    /**
+     * Whether a job of $type with this unique_key is waiting or running.
+     *
+     * @param string $type
+     * @param string $key
+     *
+     * @return bool
+     */
+    public function hasKey(string $type, string $key): bool
+    {
+        try {
+            return (int) osc_db_scalar(
+                'SELECT COUNT(*) FROM ' . $this->table() . ' WHERE s_type = ? AND s_unique = ?',
+                array($type, $key)
+            ) > 0;
+        } catch (DbException $e) {
+            return false;
+        }
+    }
+
+    /**
      * The job is done. Remove it.
      *
      * @param int $id

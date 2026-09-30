@@ -38,6 +38,7 @@ final class ThemeViews
     public const CORE = [
         '404',
         'contact',
+        'contact-message',
         'alert-form',
         'custom',
         'footer',

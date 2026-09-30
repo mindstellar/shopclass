@@ -566,7 +566,11 @@ class CWebItem extends BaseModel
                 }
 
                 $refused = \mindstellar\security\MessageGuard::banError(Params::getParamString('yourEmail'))
-                    ?? \mindstellar\security\MessageGuard::linkError(Params::getParamString('message'));
+                    ?? \mindstellar\security\MessageGuard::linkError(
+                        Params::getParamString('message'),
+                        Params::getParamString('yourName'),
+                        Params::getParamString('friendName')
+                    );
                 if ($refused !== null) {
                     osc_add_flash_error_message($refused);
                     $this->redirectTo(osc_item_send_friend_url());
@@ -658,7 +662,11 @@ class CWebItem extends BaseModel
                 }
 
                 $refused = \mindstellar\security\MessageGuard::banError($contactValues['yourEmail'])
-                    ?? \mindstellar\security\MessageGuard::linkError($contactValues['message_body']);
+                    ?? \mindstellar\security\MessageGuard::linkError(
+                        $contactValues['message_body'],
+                        $contactValues['yourName'],
+                        $contactValues['phoneNumber']
+                    );
                 if ($refused !== null) {
                     osc_keep_form($contactValues, $refused);
                     $this->redirectTo(osc_local_referer(osc_item_url()));
@@ -687,9 +695,18 @@ class CWebItem extends BaseModel
                     $this->redirectTo(osc_item_url());
                 }
 
-                if (osc_item_attachment() && osc_mail_upload_attachment('attachment') === false) {
+                $attachment = osc_item_attachment() ? osc_mail_upload_attachment('attachment') : null;
+                if ($attachment === false) {
                     osc_add_flash_error_message(_m('That type of file cannot be attached.'));
                     $this->redirectTo(osc_item_url());
+                }
+                // A held message cannot keep its file, so a file needs a confirmed address.
+                if (is_array($attachment) && !\mindstellar\security\MessageHold::verified($contactValues['yourEmail'])) {
+                    osc_keep_form($contactValues, _m('Send one message without a file first and confirm your e-mail. '
+                        . 'After that you can attach files.'));
+                    $this->redirectTo(osc_local_referer(osc_item_url()));
+
+                    return false;
                 }
 
                 osc_run_hook('pre_item_contact_post', $item);
@@ -706,7 +723,9 @@ class CWebItem extends BaseModel
                 } else {
                     // Count the accepted enquiry toward the window.
                     \mindstellar\security\ActionThrottle::record('item_contact');
-                    osc_add_flash_ok_message(_m("We've just sent an e-mail to the seller"));
+                    if (!\mindstellar\security\MessageHold::held()) {
+                        osc_add_flash_ok_message(_m("We've just sent an e-mail to the seller"));
+                    }
                 }
 
                 $this->redirectTo(osc_item_url());

@@ -220,7 +220,7 @@ function osc_is_ip_banned($ip, $rules = null)
  */
 function osc_is_email_banned($email, $rules = null)
 {
-    if ($rules === null) {
+    if ($rules == null) {
         $rules = osc_ban_rules();
     }
     $email = strtolower($email);
