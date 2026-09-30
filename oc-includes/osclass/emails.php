@@ -869,7 +869,8 @@ function fn_email_send_friend($aItem)
         '{ITEM_URL}',
         '{ITEM_LINK}'
     );
-    $words[] = array(
+    $titleWords   = $words;
+    $titleWords[] = array(
         $aItem['friendName'],
         $aItem['yourName'],
         $aItem['yourEmail'],
@@ -879,11 +880,22 @@ function fn_email_send_friend($aItem)
         osc_item_url(),
         $item_url
     );
+    // What the visitor typed is text, never markup, in a mail sent under the site's name.
+    $words[] = array(
+        osc_esc_html($aItem['friendName']),
+        osc_esc_html($aItem['yourName']),
+        osc_esc_html($aItem['yourEmail']),
+        osc_esc_html($aItem['friendEmail']),
+        $aItem['s_title'],
+        nl2br(osc_esc_html($aItem['message'])),
+        osc_item_url(),
+        $item_url
+    );
 
     $title = osc_apply_filter('email_send_friend_title_after', osc_mailBeauty(osc_apply_filter(
         'email_title',
         osc_apply_filter('email_send_friend_title', $content['s_title'], $aItem)
-    ), $words), $aItem);
+    ), $titleWords), $aItem);
     $body  = osc_apply_filter(
         'email_send_friend_description_after',
         osc_mailBeauty(
@@ -903,7 +915,10 @@ function fn_email_send_friend($aItem)
         'to_name'   => $aItem['friendName'],
         'reply_to'  => $aItem['yourEmail'],
         'subject'   => $title,
-        'body'      => $body
+        'body'      => $body . \mindstellar\security\MessageGuard::reportFooter(
+            (string) $aItem['yourEmail'],
+            (string) $aItem['friendEmail']
+        ),
     );
 
     if (osc_notify_contact_friends()) {
@@ -935,7 +950,7 @@ function fn_email_item_inquiry($aItem)
     $yourEmail   = $aItem['yourEmail'];
     $yourName    = $aItem['yourName'];
     $phoneNumber = $aItem['phoneNumber'];
-    $message     = nl2br(strip_tags($aItem['message']));
+    $message     = $aItem['message'];
 
     $path = null;
     $item = Item::newInstance()->findByPrimaryKey($id);
@@ -966,7 +981,8 @@ function fn_email_item_inquiry($aItem)
         '{COMMENT}'
     );
 
-    $words[] = array(
+    $titleWords   = $words;
+    $titleWords[] = array(
         $item['s_contact_name'],
         $yourName,
         $yourEmail,
@@ -976,11 +992,22 @@ function fn_email_item_inquiry($aItem)
         $item_link,
         $message
     );
+    // What the visitor typed is text, never markup, in a mail sent under the site's name.
+    $words[] = array(
+        osc_esc_html($item['s_contact_name']),
+        osc_esc_html($yourName),
+        osc_esc_html($yourEmail),
+        osc_esc_html($phoneNumber),
+        $item['s_title'],
+        $item_url,
+        $item_link,
+        nl2br(osc_esc_html($message))
+    );
 
     $title = osc_apply_filter('email_item_inquiry_title_after', osc_mailBeauty(osc_apply_filter(
         'email_title',
         osc_apply_filter('email_item_inquiry_title', $content['s_title'], $aItem)
-    ), $words), $aItem);
+    ), $titleWords), $aItem);
     $body  = osc_apply_filter(
         'email_item_inquiry_description_after',
         osc_mailBeauty(
@@ -1000,7 +1027,10 @@ function fn_email_item_inquiry($aItem)
         'to_name'   => $item['s_contact_name'],
         'reply_to'  => $yourEmail,
         'subject'   => $title,
-        'body'      => $body,
+        'body'      => $body . \mindstellar\security\MessageGuard::reportFooter(
+            (string) $yourEmail,
+            (string) $item['s_contact_email']
+        ),
     );
 
     if (osc_notify_contact_item()) {
@@ -1575,12 +1605,15 @@ function fn_email_contact_user($id, $yourEmail, $yourName, $phoneNumber, $messag
         '{USER_PHONE}',
         '{COMMENT}'
     );
+    $titleWords   = $words;
+    $titleWords[] = array(osc_user_name(), $yourName, $yourEmail, $phoneNumber, $message);
+    // What the visitor typed is text, never markup, in a mail sent under the site's name.
     $words[] = array(
-        osc_user_name(),
-        $yourName,
-        $yourEmail,
-        $phoneNumber,
-        $message
+        osc_esc_html(osc_user_name()),
+        osc_esc_html($yourName),
+        osc_esc_html($yourEmail),
+        osc_esc_html($phoneNumber),
+        nl2br(osc_esc_html($message))
     );
 
     $title = osc_apply_filter('email_item_inquiry_title_after', osc_mailBeauty(osc_apply_filter(
@@ -1594,7 +1627,7 @@ function fn_email_contact_user($id, $yourEmail, $yourName, $phoneNumber, $messag
             $phoneNumber,
             $message
         )
-    ), $words), $id, $yourEmail, $yourName, $phoneNumber, $message);
+    ), $titleWords), $id, $yourEmail, $yourName, $phoneNumber, $message);
     $body  = osc_apply_filter(
         'email_item_inquiry_description_after',
         osc_mailBeauty(
@@ -1625,7 +1658,7 @@ function fn_email_contact_user($id, $yourEmail, $yourName, $phoneNumber, $messag
         'to_name'  => osc_user_name(),
         'reply_to' => $yourEmail,
         'subject'  => $title,
-        'body'     => $body,
+        'body'     => $body . \mindstellar\security\MessageGuard::reportFooter((string) $yourEmail, (string) osc_user_email()),
     );
 
     if (osc_notify_contact_item()) {

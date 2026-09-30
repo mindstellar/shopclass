@@ -69,13 +69,19 @@ class CWebContact extends BaseModel
                     return false;
                 }
 
-                $banned = osc_is_banned($yourEmail);
-                if ($banned == 1) {
-                    $fail(_m('Your current email is not allowed'));
+                $refused = \mindstellar\security\MessageGuard::banError($yourEmail)
+                    ?? \mindstellar\security\MessageGuard::linkError($subject, $message);
+                if ($refused !== null) {
+                    $fail($refused);
 
                     return false;
-                } elseif ($banned == 2) {
-                    $fail(_m('Your current IP is not allowed'));
+                }
+                if (\mindstellar\security\ActionThrottle::exceeded(
+                    'site_contact',
+                    (int) osc_apply_filter('site_contact_throttle_max', 5),
+                    (int) osc_apply_filter('site_contact_throttle_window', 3600)
+                )) {
+                    $fail(_m("You've sent too many messages recently. Please try again later."));
 
                     return false;
                 }
@@ -112,7 +118,7 @@ MESSAGE;
                     'to_name'  => osc_page_title(),
                     'reply_to' => $yourEmail,
                     'subject'  => '[' . osc_page_title() . '] ' . __('Contact') . ' - ' . $subject,
-                    'body'     => nl2br($message)
+                    'body'     => nl2br(osc_esc_html($message))
                 );
 
                 $error = false;
@@ -130,15 +136,66 @@ MESSAGE;
                     osc_run_hook('pre_contact_post', $params);
 
                     osc_sendMail(osc_apply_filter('contact_params', $params));
+                    \mindstellar\security\ActionThrottle::record('site_contact');
 
                     osc_add_flash_ok_message(_m('Your email has been sent properly. Thank you for contacting us!'));
                 }
 
                 $this->redirectTo(osc_contact_url());
                 break;
+            case ('report'):
+                $this->reportView();
+                break;
+            case ('report_post'):
+                osc_csrf_check();
+                $back = osc_base_url(true) . '?page=contact&action=report';
+                if (\mindstellar\security\ActionThrottle::exceeded('report_sender', 10, 3600)) {
+                    osc_add_flash_error_message(_m("You've sent too many reports recently. Please try again later."));
+                    $this->redirectTo($back);
+                }
+                $report = \mindstellar\security\MessageGuard::readReport(Params::getParamString('t'));
+                if ($report === null) {
+                    osc_add_flash_error_message(_m('This report link is not valid or has expired.'));
+                    $this->redirectTo($back);
+                }
+                \mindstellar\security\ActionThrottle::record('report_sender');
+                if (!\mindstellar\security\MessageGuard::banSender($report['sender'], $report['recipient'])) {
+                    osc_add_flash_error_message(_m('The report could not be saved. Please try again later.'));
+                    $this->redirectTo($back);
+                }
+                Log::newInstance()->insertLog('ban', 'report', 0, $report['sender'], 'user', 0);
+                $this->redirectTo($back . '&done=1');
+                break;
             default:                //contact
                 $this->doView(osc_locate_template(array('contact.php'), 'contact'));
         }
+    }
+
+    /**
+     * The page a "Report the sender" link opens. Nothing is banned until its button is
+     * pressed, so a mail scanner that follows the link cannot file a report.
+     *
+     * @return void
+     */
+    private function reportView()
+    {
+        $done   = Params::getParamString('done') === '1';
+        $report = $done ? null : \mindstellar\security\MessageGuard::readReport(Params::getParamString('t'));
+
+        $this->_exportVariableToView('meta_noindex', true);
+        $this->_exportVariableToView('report_done', $done);
+        $this->_exportVariableToView('report_token', $report === null ? '' : Params::getParamString('t'));
+        $this->_exportVariableToView('report_sender', $report['sender'] ?? '');
+        $this->_exportVariableToView('report_days', \mindstellar\security\MessageGuard::banDays());
+
+        osc_run_hook('before_html');
+        osc_gui_view(
+            'contact-report.php',
+            ABS_PATH . 'oc-includes/osclass/gui/contact-report-content.php',
+            array('heading' => _m('Report the sender'), 'title' => _m('Report the sender') . ' — ' . osc_page_title())
+        );
+        Session::newInstance()->_clearVariables();
+        osc_run_hook('after_html');
     }
 
     //hopefully generic...

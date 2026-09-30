@@ -113,20 +113,48 @@ function osc_proxy_ip_mismatch()
 }
 
 /**
+ * The ban rules in force. Expired rules are left out, and so are rules that block
+ * messages only, unless $scope is 'messages'.
+ *
+ * @param string $scope 'all', or 'messages' for the contact and share forms
+ *
+ * @return array<int,array<string,mixed>>
+ */
+function osc_ban_rules(string $scope = 'all'): array
+{
+    // SELECT * so the list still loads before the upgrade has added s_scope and dt_expires.
+    try {
+        $rows = osc_db_select('SELECT * FROM ' . DB_TABLE_PREFIX . 't_ban_rule');
+    } catch (\mindstellar\database\DbException $e) {
+        return array();
+    }
+    $now = date('Y-m-d H:i:s');
+
+    return array_values(array_filter($rows, static function ($rule) use ($scope, $now) {
+        if (!empty($rule['dt_expires']) && $rule['dt_expires'] <= $now) {
+            return false;
+        }
+
+        return ($rule['s_scope'] ?? 'all') !== 'messages' || $scope === 'messages';
+    }));
+}
+
+/**
  * Check if an email and/or IP are banned
  *
  * @param string      $email
  * @param string|null $ip    Defaults to the request's REMOTE_ADDR
+ * @param string      $scope 'messages' also applies the rules that block messages only
  *
  * @return int 0: not banned, 1: email is banned, 2: IP is banned
  * @since 3.1
  */
-function osc_is_banned($email = '', $ip = null)
+function osc_is_banned($email = '', $ip = null, string $scope = 'all')
 {
     if ($ip === null) {
         $ip = Params::getServerParam('REMOTE_ADDR');
     }
-    $rules = BanRule::newInstance()->listAll();
+    $rules = osc_ban_rules($scope);
     if (!osc_is_ip_banned($ip, $rules)) {
         if ($email) {
             return osc_is_email_banned($email, $rules) ? 1 : 0; // 1:Email is banned, 0:not banned
@@ -150,7 +178,7 @@ function osc_is_banned($email = '', $ip = null)
 function osc_is_ip_banned($ip, $rules = null)
 {
     if ($rules === null) {
-        $rules = BanRule::newInstance()->listAll();
+        $rules = osc_ban_rules();
     }
     $ip_blocks = explode('.', $ip);
     if (count($ip_blocks) == 4) {
@@ -192,8 +220,8 @@ function osc_is_ip_banned($ip, $rules = null)
  */
 function osc_is_email_banned($email, $rules = null)
 {
-    if ($rules == null) {
-        $rules = BanRule::newInstance()->listAll();
+    if ($rules === null) {
+        $rules = osc_ban_rules();
     }
     $email = strtolower($email);
     foreach ($rules as $rule) {

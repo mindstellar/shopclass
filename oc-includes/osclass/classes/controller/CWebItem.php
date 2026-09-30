@@ -565,6 +565,15 @@ class CWebItem extends BaseModel
                     return false; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
                 }
 
+                $refused = \mindstellar\security\MessageGuard::banError(Params::getParamString('yourEmail'))
+                    ?? \mindstellar\security\MessageGuard::linkError(Params::getParamString('message'));
+                if ($refused !== null) {
+                    osc_add_flash_error_message($refused);
+                    $this->redirectTo(osc_item_send_friend_url());
+
+                    return false;
+                }
+
                 // Bound how many listings one source may share per window — the form
                 // relays site-branded mail, so it needs a ceiling regardless of the login.
                 if (\mindstellar\security\ActionThrottle::exceeded(
@@ -648,13 +657,13 @@ class CWebItem extends BaseModel
                     return false;
                 }
 
-                $banned = osc_is_banned(Params::getParam('yourEmail'));
-                if ($banned == 1) {
-                    osc_add_flash_error_message(_m('Your current email is not allowed'));
-                    $this->redirectTo(osc_item_url());
-                } elseif ($banned == 2) {
-                    osc_add_flash_error_message(_m('Your current IP is not allowed'));
-                    $this->redirectTo(osc_item_url());
+                $refused = \mindstellar\security\MessageGuard::banError($contactValues['yourEmail'])
+                    ?? \mindstellar\security\MessageGuard::linkError($contactValues['message_body']);
+                if ($refused !== null) {
+                    osc_keep_form($contactValues, $refused);
+                    $this->redirectTo(osc_local_referer(osc_item_url()));
+
+                    return false;
                 }
 
                 if (osc_isExpired($item['dt_expiration'])) {

@@ -130,6 +130,10 @@ msgstr ""
 msgid "%1$s, %2$s, %3$s. This only removes the backup file."
 msgstr ""
 
+#: oc-includes/osclass/classes/datatables/BanRulesDataTable.php
+msgid "%1$s, until %2$s"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "%1$s: %2$d, %3$s holds %4$d"
 msgstr ""
@@ -721,6 +725,10 @@ msgstr ""
 msgid "A record of admin and listing activity — who did what, and when. "
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
+msgid "A report blocks the sender for"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "A required PHP extension is missing: %s."
 msgid_plural "Required PHP extensions are missing: %s."
@@ -860,6 +868,10 @@ msgstr ""
 msgid ""
 "Add URLs the sitemap would not otherwise discover on its own, such as pages "
 "served by a plugin."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
+msgid "Add a \"Report the sender\" link to messages members receive"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/keywordBlock.php
@@ -1462,6 +1474,12 @@ msgstr ""
 msgid "Applies to"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
+msgid ""
+"Applies to the contact form, contact the seller, contact a user and share a "
+"listing. 0 allows none."
+msgstr ""
+
 #: oc-admin/themes/modern/parts/ui.php
 msgid "Apply"
 msgstr ""
@@ -1944,6 +1962,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/security.php
 msgid "Blocked until"
+msgstr ""
+
+#: oc-includes/osclass/classes/datatables/BanRulesDataTable.php
+msgid "Blocks"
 msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
@@ -4256,6 +4278,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
 #: oc-includes/osclass/classes/backup/BackupJobs.php
+#: oc-includes/osclass/classes/datatables/BanRulesDataTable.php
 msgid "Everything"
 msgstr ""
 
@@ -5698,12 +5721,22 @@ msgstr ""
 msgid "Limits"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/spamNbots.php
+msgid ""
+"Limits for the forms that send e-mail: the contact form, contact the "
+"seller, contact a "
+msgstr ""
+
 #: oc-includes/osclass/classes/EmailVariables.php
 msgid "Link for account validation."
 msgstr ""
 
 #: oc-includes/osclass/classes/EmailVariables.php
 msgid "Link for edit listing"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
+msgid "Links allowed in a message"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/preview.php
@@ -6359,6 +6392,15 @@ msgstr ""
 #: oc-includes/osclass/classes/form/ContactForm.php
 #: oc-includes/osclass/classes/form/SendFriendForm.php
 msgid "Message: this field is required"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/spamNbots.php
+#: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
+msgid "Messages"
+msgstr ""
+
+#: oc-includes/osclass/classes/datatables/BanRulesDataTable.php
+msgid "Messages only"
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install.php
@@ -8449,8 +8491,16 @@ msgstr ""
 msgid "Report counts are always recorded — moderation depends on them."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
+msgid "Report link"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/KeywordBlockSettingsForm.php
 msgid "Report threshold"
+msgstr ""
+
+#: oc-includes/osclass/classes/security/MessageGuard.php
+msgid "Reported by %s"
 msgstr ""
 
 #: oc-admin/themes/modern/items/reported.php
@@ -10487,6 +10537,12 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/index.php
 msgid "The search page shows: this field must only contain numeric characters"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
+msgid ""
+"The sender cannot send messages for this long. Sign-in and posting still "
+"work. You can lift it under Users → Ban rules."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php

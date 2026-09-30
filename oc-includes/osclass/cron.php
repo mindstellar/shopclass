@@ -99,6 +99,7 @@ if (is_array($cron)) {
             LatestSearches::newInstance()->purgeDate(date('Y-m-d H:i:s', time() - (24 * 3600)));
         }
         osc_update_cat_stats();
+        \mindstellar\security\MessageGuard::purgeExpired();
 
         // Retention: prune admin activity-log rows past the configured window
         // (0 = keep forever), so t_log cannot grow without bound. Mirrors the

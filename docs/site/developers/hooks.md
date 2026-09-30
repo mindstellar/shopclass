@@ -136,7 +136,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 534 names. Generated from the source; do not edit by hand.
+Core fires 536 names. Generated from the source; do not edit by hand.
 
 ### Admin (77)
 
@@ -275,7 +275,7 @@ Core fires 534 names. Generated from the source; do not edit by hand.
 | `email_item_inquiry_description` | filter | `$content['s_text'], $aItem` | `oc-includes/osclass/emails.php` |
 | `email_item_inquiry_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_item_inquiry_description', $content['s_text'], $aItem) ), $words ), $aItem` | `oc-includes/osclass/emails.php` |
 | `email_item_inquiry_title` | filter | `$content['s_title'], $aItem` | `oc-includes/osclass/emails.php` |
-| `email_item_inquiry_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_item_inquiry_title', $content['s_title'], $aItem) ), $words), $aItem` | `oc-includes/osclass/emails.php` |
+| `email_item_inquiry_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_item_inquiry_title', $content['s_title'], $aItem) ), $titleWords), $aItem` | `oc-includes/osclass/emails.php` |
 | `email_item_validation_description` | filter | `$content['s_text'], $item` | `oc-includes/osclass/emails.php` |
 | `email_item_validation_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_item_validation_description', $content['s_text'], $item) ), $words ), $item` | `oc-includes/osclass/emails.php` |
 | `email_item_validation_non_register_user_description` | filter | `$content['s_text'], $item` | `oc-includes/osclass/emails.php` |
@@ -308,7 +308,7 @@ Core fires 534 names. Generated from the source; do not edit by hand.
 | `email_send_friend_description` | filter | `$content['s_text'], $aItem` | `oc-includes/osclass/emails.php` |
 | `email_send_friend_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_send_friend_description', $content['s_text'], $aItem) ), $words ), $aItem` | `oc-includes/osclass/emails.php` |
 | `email_send_friend_title` | filter | `$content['s_title'], $aItem` | `oc-includes/osclass/emails.php` |
-| `email_send_friend_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_send_friend_title', $content['s_title'], $aItem) ), $words), $aItem` | `oc-includes/osclass/emails.php` |
+| `email_send_friend_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_send_friend_title', $content['s_title'], $aItem) ), $titleWords), $aItem` | `oc-includes/osclass/emails.php` |
 | `email_title` | filter | `osc_apply_filter( 'email_alert_validation_title', $page_description[$prefLocale]['s_title'], $alert, $email, $secret )` | `oc-includes/osclass/emails.php` |
 | `email_user_forgot_pass_word_title` | filter | `$content['s_title'], $user, $password_url` | `oc-includes/osclass/emails.php` |
 | `email_user_forgot_pass_word_title_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_title', osc_apply_filter('email_user_forgot_pass_word_title', $content['s_title'], $user, $password_url) ), $words ), $user, $password_url` | `oc-includes/osclass/emails.php` |
@@ -426,7 +426,7 @@ Core fires 534 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/osclass/classes/model/Search.php` |
 
-### Other (197)
+### Other (199)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -614,6 +614,8 @@ Core fires 534 names. Generated from the source; do not edit by hand.
 | `settings_page_after_group` | action | `$page['id'], $group, $index` | `oc-includes/osclass/classes/admin/ui/SettingsForm.php` |
 | `settings_page_saved` | action | `$pageId, $exposed` | `oc-includes/osclass/helpers/hSettings.php` |
 | `shutdown_functions` | filter | `[$injectCsrf]` | `oc-includes/osclass/classes/Csrf.php` |
+| `site_contact_throttle_max` | filter | `5` | `oc-includes/osclass/classes/controller/CWebContact.php` |
+| `site_contact_throttle_window` | filter | `3600` | `oc-includes/osclass/classes/controller/CWebContact.php` |
 | `slug` | filter | `trim($fieldsDescription['s_slug'])` | `oc-includes/osclass/classes/model/Category.php` |
 | `static_page_text` | filter | `osc_static_page_field('s_text', $locale), $locale` | `oc-includes/osclass/helpers/hPage.php` |
 | `style_url` | filter | `$css` | `oc-includes/osclass/classes/Styles.php` |

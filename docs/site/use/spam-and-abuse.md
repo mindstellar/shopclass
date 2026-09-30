@@ -117,6 +117,22 @@ An Akismet API key enables comment and listing spam checking through the same
 service WordPress uses. It is worth having on a site with open comments, and
 redundant on a site where comments are closed or moderated.
 
+## Messages
+
+The contact form, contact the seller, contact a user and share a listing all
+send e-mail. **Settings → Spam and bots → Messages** controls them:
+
+- **Links allowed in a message.** Default 1. A message with more is refused and
+  the sender is told why. 0 allows none.
+- **Report link.** Mail a member receives ends with *Report the sender*. The
+  member confirms on a page, and the sender's address cannot send messages for
+  the set number of days (default 30). Sign-in and posting still work. The rule
+  shows under **Users → Ban rules** as *Messages only, until …*, where you can
+  delete it early.
+
+Each form also has an hourly limit per IP address. The ban list applies to all
+of them, and to e-mail fields on your own forms.
+
 ## Rate limits and registration rules
 
 The settings that do the most, and are easiest to forget:

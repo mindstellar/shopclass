@@ -106,6 +106,18 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
                 osc_add_flash_ok_message(_m('Sign-in protection settings have been updated'), 'admin');
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
                 break;
+            case ('messages_post'):
+                osc_csrf_check();
+
+                $result = CoreSettings::attempt(SpamSettingsForm::registerMessages());
+                if ($result['errors'] !== array()) {
+                    $this->drawForms(SpamSettingsForm::PAGE_MESSAGES, $result['values']);
+                    break;
+                }
+
+                osc_add_flash_ok_message(_m('Message settings have been updated'), 'admin');
+                $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
+                break;
             case ('login_throttle_unblock'):
                 if ($this->refuseOnDemo(self::securityUrl())) {
                     break;
@@ -149,7 +161,7 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
     }
 
     /**
-     * Draw the screen: four independent forms, at most one of which is being handed back
+     * Draw the screen: five independent forms, at most one of which is being handed back
      * what was typed into it.
      *
      * @param string     $rejected the page id of the form that was refused, if any

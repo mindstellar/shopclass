@@ -242,13 +242,10 @@ class CWebUserNonSecure extends BaseModel
                     return;
                 }
 
-                $banned = osc_is_banned($yourEmail);
-                if ($banned == 1) {
-                    $fail(_m('Your current email is not allowed'));
-
-                    return;
-                } elseif ($banned == 2) {
-                    $fail(_m('Your current IP is not allowed'));
+                $refused = \mindstellar\security\MessageGuard::banError($yourEmail)
+                    ?? \mindstellar\security\MessageGuard::linkError($message);
+                if ($refused !== null) {
+                    $fail($refused);
 
                     return;
                 }

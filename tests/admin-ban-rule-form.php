@@ -346,7 +346,13 @@ while ($res && ($column = $res->fetch_assoc())) {
 if ($res) {
     $res->free();
 }
-pin('the table is the shape the page declares', array('pk_i_id', 's_name', 's_ip', 's_email'), $columns);
+// s_scope and dt_expires are written by a member's report, not by this screen, and a save
+// here leaves them as they were.
+pin(
+    'the table is the shape the page declares, plus the report columns',
+    array('pk_i_id', 's_name', 's_ip', 's_email', 's_scope', 'dt_expires'),
+    $columns
+);
 foreach (array_keys($fields) as $name) {
     check('the column ' . $name . ' writes to is one the table has', in_array($name, $columns, true));
 }

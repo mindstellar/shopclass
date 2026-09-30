@@ -101,6 +101,20 @@ class CWebForm extends BaseModel
         $meta   = Params::getParamArray('meta');
         $result = FieldValidator::process($fields, $meta);
 
+        // Every address typed into an email field goes through the ban list, as on the contact form.
+        foreach ($fields as $f) {
+            $typed = $result['values'][(int) $f['pk_i_id']] ?? null;
+            if (osc_field_resolve_type($f) === 'EMAIL' && is_string($typed) && $typed !== '') {
+                $refused = \mindstellar\security\MessageGuard::banError($typed);
+                if ($refused !== null) {
+                    osc_add_flash_error_message($refused);
+                    $this->redirectTo($return);
+
+                    return;
+                }
+            }
+        }
+
         // Plugins may amend the validation errors (add or clear their own).
         $errors = osc_apply_filter('form_validation_errors', $result['errors'], $form, $result['values'], $contextType, $contextId);
         $result['errors'] = is_array($errors) ? $errors : $result['errors'];

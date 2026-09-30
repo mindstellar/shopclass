@@ -50,6 +50,7 @@ you find.
 
 ### New
 
+- Messages allow 1 link by default (Settings → Spam and bots → Messages). Mail a member receives carries a *Report the sender* link that blocks the sender from messages for 30 days.
 - System info → Database and `oc-cli.php db:doctor --strict` show whether a site is ready for strict SQL mode. Writes that strict mode refuses are recorded in the activity log, by table and column only.
 - `oc-cli.php backup:create`, `backup:list`, `backup:restore` and `backup:delete` do the same backups from a shell: no time limit, a folder outside the site, big files, and restore when web restore is off.
 - Backups can be saved to your S3 bucket. A separate private **Backups bucket** in Settings → Storage keeps them away from your photos. Download and restore work from the bucket too, and **Backups kept** applies there.
@@ -262,6 +263,7 @@ you find.
 
 ### Security
 
+- Text a visitor types into the contact, contact-the-seller, contact-a-user and share forms is sent as text, never HTML. The site contact form has an hourly limit, and share a listing checks the ban list.
 - In a shared bucket, each site's backup folder carries a fingerprint of the full site address, so similar addresses never share a folder. Bucket backups need `WEB_PATH` set in config.php or the environment.
 - The upgrade no longer starts from a link. It asks first, and starts only after you confirm.
 - Restoring a backup from the admin asks for your password again, and your 2FA code when 2FA is on. `OSC_DISABLE_WEB_RESTORE` turns web restore off.

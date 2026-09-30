@@ -54,6 +54,13 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     . 'subscribing prevents anonymous email harvesting and confirmation-email abuse through the alert endpoint.'); ?></p>
         <?php osc_admin_settings_form($forms['alerts']['id'], $forms['alerts']); ?>
     </div>
+    <div id="messages-settings" class="separate-top">
+        <?php osc_admin_form_section(__('Messages'), array(
+            'intro' => __('Limits for the forms that send e-mail: the contact form, contact the seller, contact a '
+                          . 'user and share a listing.'),
+        )); ?>
+        <?php osc_admin_settings_form($forms['messages']['id'], $forms['messages']); ?>
+    </div>
     <div id="login-throttle-settings" class="separate-top">
         <?php osc_admin_form_section(__('Sign-in protection'), array(
             'intro' => __('After too many failed sign-ins, Shopclass blocks that address or account for a '

@@ -82,6 +82,7 @@ class BanRulesDataTable extends DataTable
         $this->addColumn('name', __('Ban name / Reason'));
         $this->addColumn('ip', __('IP rule'));
         $this->addColumn('email', __('E-mail rule'));
+        $this->addColumn('blocks', __('Blocks'));
 
         $dummy = &$this;
         osc_run_hook('admin_rules_table', $dummy);
@@ -172,6 +173,7 @@ class BanRulesDataTable extends DataTable
                 $row['name']        = osc_esc_html($aRow['s_name']) . $actions;
                 $row['ip']          = osc_esc_html($aRow['s_ip']);
                 $row['email']       = osc_esc_html($aRow['s_email']);
+                $row['blocks']      = osc_esc_html(self::blocks($aRow));
 
                 $row = osc_apply_filter('rules_processing_row', $row, $aRow);
 
@@ -179,5 +181,22 @@ class BanRulesDataTable extends DataTable
                 $this->rawRows[] = $aRow;
             }
         }
+    }
+
+    /**
+     * What a rule blocks, and until when.
+     *
+     * @param array<string,mixed> $rule
+     *
+     * @return string
+     */
+    private static function blocks(array $rule): string
+    {
+        $what = ($rule['s_scope'] ?? 'all') === 'messages' ? __('Messages only') : __('Everything');
+        if (empty($rule['dt_expires'])) {
+            return $what;
+        }
+
+        return sprintf(__('%1$s, until %2$s'), $what, osc_format_date($rule['dt_expires']));
     }
 }

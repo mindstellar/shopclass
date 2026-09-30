@@ -503,6 +503,8 @@ filter search_results
 filter send_friend_throttle_max
 filter send_friend_throttle_window
 filter shutdown_functions
+filter site_contact_throttle_max
+filter site_contact_throttle_window
 filter sitemap_items_source
 filter sitemap_items_total
 filter sitemap_url_entry
