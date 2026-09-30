@@ -298,6 +298,58 @@ pin('stats rows, skipping what the driver does not give', array(
 )), 'value', 'label'));
 pin('no stats: no rows', array(), SystemChecks::cacheStatRows(array()));
 
+harness_section('Strict SQL mode');
+
+$ready = array(
+    'server_mode' => 'STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION', 'session_mode' => 'NO_ENGINE_SUBSTITUTION', 'constant' => false,
+    'zero_dates' => array(), 'zero_defaults' => array(), 'settings' => array(), 'refused' => array(), 'error' => '',
+);
+$notReady = array(
+    'refused'  => array(
+        array('column' => 'oc_t_log.s_data', 'kind' => 'data_too_long', 'count' => 3, 'last' => date('Y-m-d H:i:s', $now - 7200)),
+        array('column' => 'oc_t_item_description.s_title', 'kind' => 'data_too_long', 'count' => 2, 'last' => date('Y-m-d H:i:s', $now - 60)),
+    ),
+    'zero_dates' => array('oc_t_item.dt_expiration' => 4),
+    'settings'   => array(array('setting' => 'title_character_length', 'value' => 200, 'column' => 'oc_t_item_description.s_title', 'width' => 100)),
+) + $ready;
+
+pin('ready: no line on Database', array(), SystemChecks::report('database', $env(array('strict' => $ready)))['issues']);
+pin('...nor on Overview', array(), SystemChecks::report('overview', $env(array('strict' => $ready)))['issues']);
+$dbReport = SystemChecks::report('database', $env(array('strict' => $notReady)));
+pin('not ready: one amber line per check on Database', array('strict_refused', 'strict_zero_dates', 'strict_setting_title_character_length'), $ids($dbReport));
+pin('...amber box', 'warning', SystemChecks::tone($dbReport['issues']));
+pin('refused writes are summed', '5 writes were refused by strict SQL mode in the last 7 days.', $dbReport['issues'][0]['text']);
+pin('...See which opens the section', array('See which', '#db-strict'), array($dbReport['issues'][0]['action']['label'], $dbReport['issues'][0]['action']['url']));
+pin('the setting line names both widths', 'The Title length setting is 200 characters, but its column holds 100. Strict SQL mode refuses the longer values.', $dbReport['issues'][2]['text']);
+pin('...and offers the settings', $base . '?page=items&action=settings', $dbReport['issues'][2]['action']['url']);
+$ov = SystemChecks::report('overview', $env(array('strict' => $notReady)))['issues'];
+pin('Overview: one line, the first of them', array('database_summary'), array_column($ov, 'id'));
+pin('...with the count of the rest', '5 writes were refused by strict SQL mode in the last 7 days. And 2 more.', $ov[0]['text']);
+pin('...opening the Database tab', $base . '?page=tools&action=system-info&tab=database', $ov[0]['action']['url']);
+pin('a failed read is an info line', array('strict_unreadable'), $ids(SystemChecks::report('database', $env(array('strict' => array('error' => 'denied') + $ready)))));
+
+$groups = array_column(SystemChecks::report('database', $env(array('strict' => $notReady)))['groups'], null, 'title');
+check('the facts sit in the Strict SQL mode group, anchored for See which', ($groups['Strict SQL mode']['id'] ?? '') === 'db-strict');
+$facts = array_column($groups['Strict SQL mode']['rows'], 'value', 'label');
+pin('facts: server mode, constant, and each check', array(
+    'Server mode' => 'strict', 'OSC_DB_STRICT_MODE' => 'not set', 'Refused writes, last 7 days' => '5',
+    'Zero dates' => '1 column', 'Zero-date defaults' => 'none', 'Length settings' => '1 is larger than its column',
+), $facts);
+pin('refused writes listed by column, newest first as read, with kind and count', array(
+    array('oc_t_log.s_data', 'value too long', '3 times · last 2 hours ago'),
+    array('oc_t_item_description.s_title', 'value too long', '2 times · last 1 minute ago'),
+), array_map(static function ($r) {
+    return array($r['label'], $r['value'], $r['note']);
+}, $groups['Writes strict SQL mode refused']['rows']));
+$readyGroups = array_column(SystemChecks::report('database', $env(array('strict' => $ready)))['groups'], null, 'title');
+check('ready: no refused-writes list', !isset($readyGroups['Writes strict SQL mode refused']));
+pin('ready: every check reads clean', array('none', 'none', 'none', 'fit their columns'), array_values(array_intersect_key(
+    array_column($readyGroups['Strict SQL mode']['rows'], 'value', 'label'),
+    array_flip(array('Refused writes, last 7 days', 'Zero dates', 'Zero-date defaults', 'Length settings'))
+)));
+pin('Overview does not count zero dates', 'not checked here', array_column(SystemChecks::report('database', $env(array('strict' => array('zero_dates' => null) + $ready)))['groups'][1]['rows'], 'value', 'label')['Zero dates']);
+pin('no strict report: no group', 1, count(SystemChecks::report('database', $env())['groups']));
+
 harness_section('Which tab a URL opens');
 
 pin('no tab: Overview', 'overview', SystemChecks::tab(''));

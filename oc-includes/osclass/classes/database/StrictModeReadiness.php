@@ -11,15 +11,178 @@
 namespace mindstellar\database;
 
 /**
- * Whether a relaxed install's schema and data would survive strict SQL mode.
+ * Whether a site is ready for strict SQL mode.
  *
  * Strict mode refuses a date with a zero year, month or day on write, so a row holding
  * one fails the next time it is saved, and a column whose default is one fails any
- * later ALTER TABLE. Code that relies on silent truncation (plugins) can only be found
- * by testing.
+ * later ALTER TABLE. A length setting larger than its column lets a value through that
+ * the column then refuses. Values that were cut short in the past leave no trace, so
+ * code that writes them shows up only as refused writes (StrictRefusals).
  */
 class StrictModeReadiness
 {
+    /** Settings that cap what a column stores: setting => array(table without prefix, column). */
+    public const LENGTH_SETTINGS = array(
+        'title_character_length'       => array('t_item_description', 's_title'),
+        'description_character_length' => array('t_item_description', 's_description'),
+    );
+
+    /** How far back refused writes are counted. */
+    public const REFUSED_WINDOW = 7 * 86400;
+
+    /**
+     * Everything the readiness report shows, read once. A failed read leaves its part empty
+     * and sets 'error'.
+     *
+     * @param string $prefix   table prefix
+     * @param int    $now
+     * @param bool   $scanData also count zero dates, which scans every table with a date column
+     *
+     * @return array<string,mixed>
+     */
+    public static function report(string $prefix, int $now, bool $scanData = true): array
+    {
+        $report = array(
+            'server_mode'   => '',
+            'session_mode'  => '',
+            'constant'      => defined('OSC_DB_STRICT_MODE') && OSC_DB_STRICT_MODE,
+            'zero_dates'    => null,
+            'zero_defaults' => array(),
+            'settings'      => array(),
+            'refused'       => array(),
+            'error'         => '',
+        );
+        try {
+            $modes                  = osc_db_select_one('SELECT @@GLOBAL.sql_mode AS g, @@SESSION.sql_mode AS s');
+            $report['server_mode']  = (string) ($modes['g'] ?? '');
+            $report['session_mode'] = (string) ($modes['s'] ?? '');
+            $report['zero_defaults'] = self::zeroDefaults($prefix);
+            $report['settings']      = self::settingsTooLong($prefix);
+            $report['refused']       = self::refused($prefix, $now - self::REFUSED_WINDOW);
+            if ($scanData) {
+                $report['zero_dates'] = self::zeroDates($prefix);
+            }
+        } catch (\Throwable $e) {
+            $report['error'] = $e->getMessage();
+        }
+
+        return $report;
+    }
+
+    /**
+     * Whether nothing in a report stands in the way of strict mode.
+     *
+     * @param array<string,mixed> $report see report()
+     *
+     * @return bool
+     */
+    public static function ready(array $report): bool
+    {
+        return ($report['error'] ?? '') === ''
+            && ($report['zero_dates'] ?? array()) === array()
+            && ($report['zero_defaults'] ?? array()) === array()
+            && ($report['settings'] ?? array()) === array()
+            && ($report['refused'] ?? array()) === array();
+    }
+
+    /**
+     * Whether an sql_mode refuses bad values rather than cutting them.
+     *
+     * @param string $mode
+     *
+     * @return bool
+     */
+    public static function isStrict(string $mode): bool
+    {
+        $modes = array_map('trim', explode(',', strtoupper($mode)));
+
+        return in_array('STRICT_TRANS_TABLES', $modes, true) || in_array('STRICT_ALL_TABLES', $modes, true);
+    }
+
+    /**
+     * Length settings larger than the column that stores the value.
+     *
+     * @param array<string,int> $values setting => stored value
+     * @param array<string,int> $widths "table.column" => characters it holds
+     * @param string            $prefix
+     *
+     * @return array<int,array{setting:string,value:int,column:string,width:int}>
+     */
+    public static function settingsOverColumns(array $values, array $widths, string $prefix): array
+    {
+        $found = array();
+        foreach (self::LENGTH_SETTINGS as $setting => $target) {
+            $column = $prefix . $target[0] . '.' . $target[1];
+            $value  = (int) ($values[$setting] ?? 0);
+            $width  = $widths[$column] ?? null;
+            if ($value > 0 && $width !== null && $value > $width) {
+                $found[] = array('setting' => $setting, 'value' => $value, 'column' => $column, 'width' => (int) $width);
+            }
+        }
+
+        return $found;
+    }
+
+    /**
+     * The stored length settings checked against their columns' widths in information_schema.
+     *
+     * @param string $prefix
+     *
+     * @return array<int,array{setting:string,value:int,column:string,width:int}>
+     */
+    public static function settingsTooLong(string $prefix): array
+    {
+        $names  = array_keys(self::LENGTH_SETTINGS);
+        $marks  = implode(', ', array_fill(0, count($names), '?'));
+        $values = array();
+        foreach (osc_db_select(
+            'SELECT s_name, s_value FROM ' . self::ident($prefix . 't_preference') . " WHERE s_section = 'osclass' AND s_name IN ($marks)",
+            $names
+        ) as $row) {
+            $values[(string) $row['s_name']] = (int) $row['s_value'];
+        }
+
+        $widths = array();
+        foreach (self::LENGTH_SETTINGS as $target) {
+            $row = osc_db_select_one(
+                'SELECT DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH, CHARACTER_SET_NAME FROM information_schema.COLUMNS'
+                . ' WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?',
+                array($prefix . $target[0], $target[1])
+            );
+            if ($row !== null) {
+                $widths[$prefix . $target[0] . '.' . $target[1]] = self::width($row);
+            }
+        }
+
+        return self::settingsOverColumns($values, $widths, $prefix);
+    }
+
+    /**
+     * Writes refused by strict mode since $since, from the activity log, most recent first.
+     *
+     * @param string $prefix
+     * @param int    $since
+     *
+     * @return array<int,array{column:string,kind:string,count:int,last:string}>
+     */
+    public static function refused(string $prefix, int $since): array
+    {
+        $rows = osc_db_select(
+            'SELECT s_data, s_action, COUNT(*) AS n, MAX(dt_date) AS last FROM ' . self::ident($prefix . 't_log')
+            . ' WHERE s_section = ? AND dt_date >= ? GROUP BY s_data, s_action ORDER BY last DESC LIMIT 50',
+            array(StrictRefusals::SECTION, date('Y-m-d H:i:s', $since))
+        );
+
+        return array_map(static function ($row) {
+            return array(
+                'column' => (string) $row['s_data'],
+                'kind'   => (string) $row['s_action'],
+                'count'  => (int) $row['n'],
+                'last'   => (string) $row['last'],
+            );
+        }, $rows);
+    }
+
     /**
      * Rows holding a zero or partly zero date, per column, in this site's tables.
      *
@@ -92,6 +255,25 @@ class StrictModeReadiness
             . " AND c.DATA_TYPE IN ('date', 'datetime', 'timestamp') ORDER BY c.TABLE_NAME, c.ORDINAL_POSITION",
             array($prefix, $prefix)
         );
+    }
+
+    /**
+     * The characters a text column holds: its declared length, or for TEXT types its bytes
+     * divided by the widest character of its character set.
+     *
+     * @param array<string,mixed> $column information_schema.COLUMNS row
+     *
+     * @return int
+     */
+    private static function width(array $column): int
+    {
+        if (in_array(strtolower((string) $column['DATA_TYPE']), array('char', 'varchar'), true)) {
+            return (int) $column['CHARACTER_MAXIMUM_LENGTH'];
+        }
+        $set   = strtolower((string) $column['CHARACTER_SET_NAME']);
+        $bytes = $set === 'utf8mb4' ? 4 : (in_array($set, array('utf8', 'utf8mb3'), true) ? 3 : 1);
+
+        return intdiv((int) $column['CHARACTER_OCTET_LENGTH'], $bytes);
     }
 
     /**

@@ -50,6 +50,7 @@ you find.
 
 ### New
 
+- System info → Database and `oc-cli.php db:doctor --strict` show whether a site is ready for strict SQL mode. Writes that strict mode refuses are recorded in the activity log, by table and column only.
 - `oc-cli.php backup:create`, `backup:list`, `backup:restore` and `backup:delete` do the same backups from a shell: no time limit, a folder outside the site, big files, and restore when web restore is off.
 - Backups can be saved to your S3 bucket. A separate private **Backups bucket** in Settings → Storage keeps them away from your photos. Download and restore work from the bucket too, and **Backups kept** applies there.
 - System info reminds you to make a backup when none was saved on the server in the last 30 days.

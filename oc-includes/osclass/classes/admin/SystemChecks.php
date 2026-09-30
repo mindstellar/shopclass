@@ -13,6 +13,7 @@ namespace mindstellar\admin;
 use mindstellar\backup\BackupJobs;
 use mindstellar\backup\BackupStore;
 use mindstellar\database\SchemaDoctor;
+use mindstellar\database\StrictModeReadiness;
 
 /**
  * The checks behind Tools > System info. Each tab gets the issues to act on and the
@@ -158,7 +159,10 @@ final class SystemChecks
     {
         switch ($tab) {
             case 'database':
-                $report = array('issues' => self::databaseIssues($env, true), 'groups' => self::databaseFacts($env));
+                $report = array(
+                    'issues' => array_merge(self::databaseIssues($env, true), self::strictIssues($env, true)),
+                    'groups' => array_merge(self::databaseFacts($env), self::strictFacts($env)),
+                );
                 break;
             case 'server':
                 $report = array('issues' => self::serverIssues($env, true), 'groups' => self::serverFacts($env));
@@ -176,6 +180,7 @@ final class SystemChecks
                 $report = array(
                     'issues' => array_merge(
                         self::databaseIssues($env, false),
+                        self::summary($env, 'database', self::strictIssues($env, false)),
                         self::serverIssues($env, false),
                         self::backupIssues($env),
                         self::summary($env, 'jobs', self::jobsIssues($env, false)),
@@ -260,6 +265,60 @@ final class SystemChecks
                 sprintf(_n('%d difference in the database needs a closer look.', '%d differences in the database need a closer look.', count($closer)), count($closer)),
                 array('label' => __('See the list'), 'url' => $list)
             );
+        }
+
+        return $issues;
+    }
+
+    /**
+     * What stands in the way of strict SQL mode: writes it refused in the last 7 days, zero
+     * dates, and length settings larger than their columns.
+     *
+     * @param array<string,mixed> $env  'strict' is StrictModeReadiness::report()
+     * @param bool                $here true on the Database tab, where the list is on the page
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public static function strictIssues(array $env, bool $here): array
+    {
+        $strict = $env['strict'] ?? null;
+        if (!is_array($strict)) {
+            return array();
+        }
+        $which  = array('label' => __('See which'), 'url' => $here ? '#db-strict' : self::url($env, 'database', 'db-strict'));
+        $issues = array();
+
+        if ((string) ($strict['error'] ?? '') !== '') {
+            $issues[] = self::issue('strict_unreadable', 'info', sprintf(__('Could not check whether the site is ready for strict SQL mode: %s'), (string) $strict['error']));
+        }
+        $refused = array_sum(array_map('intval', array_column((array) ($strict['refused'] ?? array()), 'count')));
+        if ($refused > 0) {
+            $issues[] = self::issue('strict_refused', 'warning', sprintf(
+                _n('%d write was refused by strict SQL mode in the last 7 days.', '%d writes were refused by strict SQL mode in the last 7 days.', $refused),
+                $refused
+            ), $which);
+        }
+        $zero = count((array) ($strict['zero_dates'] ?? array()));
+        if ($zero > 0) {
+            $issues[] = self::issue('strict_zero_dates', 'warning', sprintf(
+                _n('%d column holds zero dates, which strict SQL mode refuses when the row is saved again.', '%d columns hold zero dates, which strict SQL mode refuses when the row is saved again.', $zero),
+                $zero
+            ), $which);
+        }
+        $defaults = count((array) ($strict['zero_defaults'] ?? array()));
+        if ($defaults > 0) {
+            $issues[] = self::issue('strict_zero_defaults', 'warning', sprintf(
+                _n('%d column defaults to a zero date, so strict SQL mode refuses changes to its table.', '%d columns default to a zero date, so strict SQL mode refuses changes to their tables.', $defaults),
+                $defaults
+            ), $which);
+        }
+        foreach ((array) ($strict['settings'] ?? array()) as $setting) {
+            $issues[] = self::issue('strict_setting_' . (string) $setting['setting'], 'warning', sprintf(
+                __('The %1$s setting is %2$d characters, but its column holds %3$d. Strict SQL mode refuses the longer values.'),
+                self::lengthSettingName((string) $setting['setting']),
+                (int) $setting['value'],
+                (int) $setting['width']
+            ), array('label' => __('Settings'), 'url' => (string) ($env['admin_url'] ?? '') . '?page=items&action=settings'));
         }
 
         return $issues;
@@ -649,6 +708,115 @@ final class SystemChecks
         $rows[] = array('label' => __('Table prefix'), 'value' => (string) ($env['prefix'] ?? ''), 'mono' => true);
 
         return array(array('title' => '', 'rows' => $rows));
+    }
+
+    /**
+     * The strict SQL mode facts, and the refused writes when there are any.
+     *
+     * @param array<string,mixed> $env
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private static function strictFacts(array $env): array
+    {
+        $strict = $env['strict'] ?? null;
+        if (!is_array($strict)) {
+            return array();
+        }
+        $server   = (string) ($strict['server_mode'] ?? '');
+        $session  = StrictModeReadiness::isStrict((string) ($strict['session_mode'] ?? ''));
+        $constant = !empty($strict['constant']);
+        $refused  = (array) ($strict['refused'] ?? array());
+        $zero     = $strict['zero_dates'] ?? null;
+        $defaults = (array) ($strict['zero_defaults'] ?? array());
+        $settings = (array) ($strict['settings'] ?? array());
+        $none     = __('none');
+
+        if ($constant) {
+            $note = $session ? __('Shopclass keeps the server\'s mode.') : __('Shopclass keeps the server\'s mode, but it is not strict, so over-long values are still cut short.');
+        } else {
+            $note = __('Shopclass turns the strict modes off, so over-long values are cut short without an error.');
+        }
+        $zeroList = array();
+        foreach ((array) $zero as $column => $rows) {
+            $zeroList[] = sprintf(_n('%1$s (%2$d row)', '%1$s (%2$d rows)', (int) $rows), $column, (int) $rows);
+        }
+        $settingList = array();
+        foreach ($settings as $setting) {
+            $settingList[] = sprintf(__('%1$s: %2$d, %3$s holds %4$d'), self::lengthSettingName((string) $setting['setting']), (int) $setting['value'], (string) $setting['column'], (int) $setting['width']);
+        }
+        $total = array_sum(array_map('intval', array_column($refused, 'count')));
+
+        $rows = array(
+            array('label' => __('Server mode'), 'value' => StrictModeReadiness::isStrict($server) ? __('strict') : __('not strict'), 'note' => $server !== '' ? str_replace(',', ', ', $server) : __('empty')),
+            array('label' => 'OSC_DB_STRICT_MODE', 'value' => $constant ? __('set') : __('not set'), 'note' => $note),
+            array('label' => __('Refused writes, last 7 days'), 'value' => $total > 0 ? number_format($total) : $none),
+            array(
+                'label' => __('Zero dates'),
+                'value' => $zero === null ? __('not checked here') : ($zeroList === array() ? $none : sprintf(_n('%d column', '%d columns', count($zeroList)), count($zeroList))),
+                'note'  => implode(', ', $zeroList),
+            ),
+            array('label' => __('Zero-date defaults'), 'value' => $defaults === array() ? $none : implode(', ', $defaults)),
+            array(
+                'label' => __('Length settings'),
+                'value' => $settingList === array() ? __('fit their columns') : sprintf(_n('%d is larger than its column', '%d are larger than their columns', count($settingList)), count($settingList)),
+                'note'  => implode('; ', $settingList),
+            ),
+        );
+        $groups = array(array('title' => __('Strict SQL mode'), 'id' => 'db-strict', 'rows' => $rows));
+
+        if ($refused !== array()) {
+            $list = array();
+            foreach ($refused as $r) {
+                $when   = strtotime((string) $r['last']);
+                $list[] = array(
+                    'label' => (string) $r['column'] !== '' ? (string) $r['column'] : __('unknown column'),
+                    'value' => self::strictKindWord((string) $r['kind']),
+                    'note'  => sprintf(_n('%d time', '%d times', (int) $r['count']), (int) $r['count'])
+                        . ($when !== false ? ' · ' . sprintf(__('last %s ago'), osc_admin_duration(max(0, self::now($env) - $when))) : ''),
+                );
+            }
+            $groups[] = array('title' => __('Writes strict SQL mode refused'), 'rows' => $list);
+        }
+
+        return $groups;
+    }
+
+    /**
+     * What a refusal kind means, in the owner's words.
+     *
+     * @param string $kind StrictRefusals::KINDS value
+     *
+     * @return string
+     */
+    public static function strictKindWord(string $kind): string
+    {
+        $words = array(
+            'data_too_long'   => __('value too long'),
+            'data_truncated'  => __('value the column cannot hold'),
+            'incorrect_value' => __('wrong kind of value'),
+            'bad_date'        => __('invalid date or time'),
+            'cannot_be_null'  => __('empty where a value is required'),
+            'no_default'      => __('no value and no default'),
+            'out_of_range'    => __('number out of range'),
+        );
+
+        return $words[$kind] ?? $kind;
+    }
+
+    /**
+     * @param string $setting
+     *
+     * @return string
+     */
+    private static function lengthSettingName(string $setting): string
+    {
+        $names = array(
+            'title_character_length'       => __('Title length'),
+            'description_character_length' => __('Description length'),
+        );
+
+        return $names[$setting] ?? $setting;
     }
 
     /**

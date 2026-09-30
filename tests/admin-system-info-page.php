@@ -134,6 +134,15 @@ check('the Repair dialog renders only when Repair may run', (bool) preg_match(
 check('the Repair button sits in the "Repair can fix these" group only', substr_count($database, "'confirm' => '#db-repair-dialog'") === 1
     && (bool) preg_match("/'repair' => !\\\$hasPending/", $database));
 
+harness_section('Strict SQL mode');
+
+check('the report is read for the Overview and the Database tab only', (bool) preg_match(
+    "/if \\(\\\$tab === 'overview' \\|\\| \\\$tab === 'database'\\) \\{.*?StrictModeReadiness::report\\(DB_TABLE_PREFIX, \\\$env\\['now'\\], \\\$tab === 'database'\\)/s",
+    $body('systemInfoPage')
+));
+check('a fact group can carry the anchor See which points at', strpos($shell, "isset(\$group['id']) ? ' id=\"' . osc_esc_html(\$group['id']) . '\"' : ''") !== false);
+check('the Database tab partial adds no verdict box or empty-state block for it', strpos($database, 'strict') === false && strpos($database, 'osc_admin_empty(') === false);
+
 harness_section('Actions on the new tabs');
 
 foreach (array('jobs_run', 'jobs_retry', 'jobs_forget', 'cache_clear') as $action) {

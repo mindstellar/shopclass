@@ -41,7 +41,7 @@ class Cli
         'install'             => ['cmdInstall', 'Headless install from env/flags (--unattended)'],
         'cron'                => ['cmdCron', 'Run due scheduled tasks (--type=hourly|daily|weekly|all)'],
         'db:upgrade'          => ['cmdDbUpgrade', 'Run pending migrations'],
-        'db:doctor'           => ['cmdDbDoctor', 'Report where this database differs from struct.sql; changes nothing'],
+        'db:doctor'           => ['cmdDbDoctor', 'Report schema differences and strict SQL mode readiness (--strict: readiness only); changes nothing'],
         'db:repair'           => ['cmdDbRepair', 'Bring the schema back in line with struct.sql; never drops anything (--dry-run)'],
         'package:reconcile'   => ['cmdPackageReconcile', 'Install/refresh bundled plugins & themes onto a persistent oc-content (no-op outside a container image)'],
         'cache:flush'         => ['cmdCacheFlush', 'Flush the object cache'],
@@ -444,7 +444,7 @@ class Cli
     private function cmdDbRepair(array $args): int
     {
         if (array_key_exists('dry-run', $args)) {
-            $this->cmdDbDoctor($args);
+            $this->schemaReport();
             $this->out("\nDry run: nothing was changed.\n");
 
             return 0;
@@ -502,6 +502,86 @@ class Cli
     }
 
     /**
+     * Report where this database differs from struct.sql, then whether the site is ready for
+     * strict SQL mode. --strict prints only the second part. Reads only; changes nothing.
+     *
+     * @param array<string, mixed> $args
+     *
+     * @return int 0 when the schema matches and the site is ready, 1 otherwise
+     */
+    private function cmdDbDoctor(array $args): int
+    {
+        if (array_key_exists('strict', $args)) {
+            return $this->strictReport();
+        }
+        $schema = $this->schemaReport();
+        $this->out("\n");
+
+        return max($schema, $this->strictReport());
+    }
+
+    /**
+     * Print whether the site is ready for strict SQL mode: the server's mode, the constant,
+     * zero dates, length settings larger than their columns, and writes refused in the last 7 days.
+     *
+     * @return int 0 when ready, 1 when not
+     */
+    private function strictReport(): int
+    {
+        $report = \mindstellar\database\StrictModeReadiness::report(DB_TABLE_PREFIX, time());
+        $line   = function (string $label, string $value): void {
+            $this->out(sprintf("  %-20s %s\n", $label, $value));
+        };
+        $strict = [\mindstellar\database\StrictModeReadiness::class, 'isStrict'];
+
+        $this->out("Strict SQL mode\n");
+        if ($report['error'] !== '') {
+            $this->err('Could not check strict SQL mode readiness: ' . $report['error'] . "\n");
+
+            return 1;
+        }
+        $line('Server mode', ($strict($report['server_mode']) ? 'strict' : 'not strict')
+            . ' (' . ($report['server_mode'] !== '' ? $report['server_mode'] : 'empty') . ')');
+        $line('OSC_DB_STRICT_MODE', $report['constant']
+            ? ($strict($report['session_mode']) ? 'set; the server\'s mode is kept' : 'set, but the server\'s mode is not strict')
+            : 'not set; Shopclass turns the strict modes off');
+
+        $zero = [];
+        foreach ((array) $report['zero_dates'] as $column => $rows) {
+            $zero[] = $column . ' (' . $rows . ' rows)';
+        }
+        $line('Zero dates', $zero === [] ? 'none' : implode(', ', $zero));
+        $line('Zero-date defaults', $report['zero_defaults'] === [] ? 'none' : implode(', ', $report['zero_defaults']));
+
+        $settings = [];
+        foreach ($report['settings'] as $s) {
+            $settings[] = sprintf('%s is %d, %s holds %d', $s['setting'], $s['value'], $s['column'], $s['width']);
+        }
+        $line('Length settings', $settings === [] ? 'fit their columns' : implode('; ', $settings));
+
+        $total = array_sum(array_column($report['refused'], 'count'));
+        $line('Refused writes', $total === 0 ? 'none in the last 7 days' : $total . ' in the last 7 days');
+        foreach ($report['refused'] as $r) {
+            $this->out(sprintf(
+                "    %-40s %-16s %d time(s), last %s\n",
+                $r['column'] !== '' ? $r['column'] : '(unknown column)',
+                $r['kind'],
+                $r['count'],
+                $r['last']
+            ));
+        }
+
+        if (\mindstellar\database\StrictModeReadiness::ready($report)) {
+            $this->out("Ready for strict SQL mode.\n");
+
+            return 0;
+        }
+        $this->out("Not ready: fix the lines above first. Refused writes are listed in the admin activity log.\n");
+
+        return 1;
+    }
+
+    /**
      * Report where this database differs from struct.sql. Reads only; changes nothing.
      *
      * db:repair fixes a missing table, column or index, and a column with the wrong type.
@@ -512,7 +592,7 @@ class Cli
      *
      * @return int 0 when the schema matches, 1 when it does not
      */
-    private function cmdDbDoctor(array $args): int
+    private function schemaReport(): int
     {
         try {
             $findings = (new \mindstellar\database\SchemaDoctor(Connection::instance()))->diagnose();
@@ -1570,29 +1650,16 @@ class Cli
             $check('fail', 'Database', $e->getMessage());
         }
 
-        // Strict SQL mode — new installs run it; an upgraded one can opt in once its data allows.
-        if (defined('OSC_DB_STRICT_MODE') && OSC_DB_STRICT_MODE) {
-            $check('ok', 'Strict SQL mode', 'on');
+        // Strict SQL mode — new installs run it; an upgraded one can opt in once `db:doctor --strict` says ready.
+        $strict = \mindstellar\database\StrictModeReadiness::report(DB_TABLE_PREFIX, time());
+        $on     = defined('OSC_DB_STRICT_MODE') && OSC_DB_STRICT_MODE;
+        if ($strict['error'] !== '') {
+            $check('warn', 'Strict SQL mode', ($on ? 'on' : 'off') . '; could not check: ' . $strict['error']);
+        } elseif (\mindstellar\database\StrictModeReadiness::ready($strict)) {
+            $check('ok', 'Strict SQL mode', $on ? 'on' : "off; the site is ready. Add define('OSC_DB_STRICT_MODE', true);"
+                . ' to config.php, then test your plugins');
         } else {
-            try {
-                $zero     = \mindstellar\database\StrictModeReadiness::zeroDates(DB_TABLE_PREFIX);
-                $defaults = \mindstellar\database\StrictModeReadiness::zeroDefaults(DB_TABLE_PREFIX);
-                if ($zero === [] && $defaults === []) {
-                    $check('ok', 'Strict SQL mode', "off; stored data is ready. Add define('OSC_DB_STRICT_MODE', true);"
-                        . ' to config.php, then test your plugins');
-                } else {
-                    $list = [];
-                    foreach ($zero as $column => $rows) {
-                        $list[] = $column . ' (' . $rows . ' rows)';
-                    }
-                    foreach ($defaults as $column) {
-                        $list[] = $column . ' (default)';
-                    }
-                    $check('warn', 'Strict SQL mode', 'off; zero dates would block it: ' . implode(', ', $list));
-                }
-            } catch (\Throwable $e) {
-                $check('warn', 'Strict SQL mode', 'off; could not check the data: ' . $e->getMessage());
-            }
+            $check('warn', 'Strict SQL mode', ($on ? 'on' : 'off') . '; not ready. Run db:doctor --strict for the list');
         }
 
         // Base URL resolution — CLI cannot fall back to the Host header.

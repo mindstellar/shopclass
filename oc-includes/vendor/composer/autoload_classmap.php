@@ -891,6 +891,7 @@ return array(
     'mindstellar\\database\\SqlScript' => $baseDir . '/oc-includes/osclass/classes/database/SqlScript.php',
     'mindstellar\\database\\SqlStream' => $baseDir . '/oc-includes/osclass/classes/database/SqlStream.php',
     'mindstellar\\database\\StrictModeReadiness' => $baseDir . '/oc-includes/osclass/classes/database/StrictModeReadiness.php',
+    'mindstellar\\database\\StrictRefusals' => $baseDir . '/oc-includes/osclass/classes/database/StrictRefusals.php',
     'mindstellar\\database\\TablePrefix' => $baseDir . '/oc-includes/osclass/classes/database/TablePrefix.php',
     'mindstellar\\fields\\FieldTypeRegistry' => $baseDir . '/oc-includes/osclass/classes/fields/FieldTypeRegistry.php',
     'mindstellar\\form\\admin\\Item' => $baseDir . '/oc-includes/osclass/classes/form/admin/Item.php',

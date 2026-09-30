@@ -1008,6 +1008,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\database\\SqlScript' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/database/SqlScript.php',
         'mindstellar\\database\\SqlStream' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/database/SqlStream.php',
         'mindstellar\\database\\StrictModeReadiness' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/database/StrictModeReadiness.php',
+        'mindstellar\\database\\StrictRefusals' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/database/StrictRefusals.php',
         'mindstellar\\database\\TablePrefix' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/database/TablePrefix.php',
         'mindstellar\\fields\\FieldTypeRegistry' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/fields/FieldTypeRegistry.php',
         'mindstellar\\form\\admin\\Item' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/form/admin/Item.php',

@@ -80,9 +80,26 @@ define('OSC_DB_STRICT_MODE', true);
 behaviour. That is deliberate: a plugin that has been silently truncating a value
 for years would start failing mid-request.
 
-Before you opt in, run `php oc-cli.php doctor`. Its **Strict SQL mode** line lists any
-column holding a zero date (`0000-00-00`), which strict mode refuses the next time that
-row is saved. Fix those first.
+Before you opt in, read the readiness report. It is under **Tools → System info →
+Database**, in the **Strict SQL mode** part, and on the command line:
+
+```
+php oc-cli.php db:doctor --strict
+```
+
+It exits `1` until the site is ready. Fix each line it flags:
+
+- **Zero dates**: columns holding a date like `0000-00-00`. Strict mode refuses that row
+  the next time it is saved.
+- **Zero-date defaults**: columns whose default is a zero date. Strict mode refuses any
+  later change to that table.
+- **Length settings**: a setting such as the title length that is larger than its
+  column. Lower it under **Listings → Settings**.
+- **Refused writes, last 7 days**: writes strict mode refused, by table, column and kind.
+  They are also in the activity log. The value itself is never recorded.
+
+Values that were cut short in the past leave no trace, so a plugin that writes too much
+shows up only as a refused write. After you opt in, check the report again for a week.
 
 To opt your site in, add the line to `config.php` yourself. In a container with no
 `config.php`, set the environment variable instead:

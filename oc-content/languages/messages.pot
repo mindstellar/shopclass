@@ -649,10 +649,6 @@ msgstr ""
 msgid "Description"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
-msgid "Description Length has to be a numeric value"
-msgstr ""
-
 #: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
 msgid "Description field is required"
 msgstr ""
@@ -663,6 +659,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/actions/ItemActions.php
 msgid "Description too short (%s)."
+msgstr ""
+
+#: oc-includes/osclass/classes/actions/ItemActions.php
+msgid "Descriptions can be 1 to %d characters."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
@@ -731,6 +731,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/alert-form-content.php
 msgid "Email me when something new matches"
+msgstr ""
+
+#: oc-includes/osclass/classes/actions/ItemActions.php
+msgid "Email too long."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebLogin.php
@@ -2597,10 +2601,6 @@ msgstr ""
 msgid "Title"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
-msgid "Title Length has to be a numeric value"
-msgstr ""
-
 #: oc-includes/osclass/classes/actions/ItemActions.php
 msgid "Title too long (%s)."
 msgstr ""
@@ -2608,6 +2608,10 @@ msgstr ""
 #: oc-includes/osclass/classes/actions/ItemActions.php
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 msgid "Title too short (%s)."
+msgstr ""
+
+#: oc-includes/osclass/classes/actions/ItemActions.php
+msgid "Titles can be 1 to %d characters."
 msgstr ""
 
 #: oc-includes/osclass/classes/actions/ItemActions.php

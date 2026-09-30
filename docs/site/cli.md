@@ -50,7 +50,7 @@ full setup:
 |---|---|
 | `install --unattended` | Install with no browser — settings come from environment variables or flags. |
 | `db:upgrade` | Run pending migrations. Also in the admin under **Tools → System info → Database**. |
-| `db:doctor` | Report where this database differs from what ShopClass expects. Changes nothing. Exits `1` when it finds anything. |
+| `db:doctor [--strict]` | Report where this database differs from what ShopClass expects, then whether the site is ready for strict SQL mode. `--strict` prints only the readiness part. Changes nothing. Exits `1` when it finds anything. |
 | `db:repair [--dry-run]` | Add missing tables, columns, indexes and foreign keys, and correct column types and defaults. Exits `1` when a statement fails. `--dry-run` prints the `db:doctor` report and changes nothing. Also in the admin under **Tools → System info → Database**. |
 | `package:reconcile` | Install or refresh bundled plugins and themes onto a persistent `oc-content`. Outside a container image, it does nothing. |
 | `version` | Print the installed version. |

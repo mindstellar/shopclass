@@ -9,8 +9,10 @@
  */
 
 /**
- * Pins StrictModeReadiness::zeroDates(), the check `oc-cli.php doctor` runs before an owner
- * turns strict SQL mode on: it counts zero dates per column in this site's tables only.
+ * Pins StrictModeReadiness, the report `oc-cli.php db:doctor --strict` and System info print
+ * before an owner turns strict SQL mode on: zero dates per column in this site's tables only,
+ * length settings larger than their columns, and writes strict mode refused. Also pins
+ * StrictRefusals, which records each refused write in the activity log without its value.
  * Env:    DRIFT_DB_HOST DRIFT_DB_PORT DRIFT_DB_USER DRIFT_DB_PASS
  * Usage:  php tests/db-strict-readiness.php
  */
@@ -18,7 +20,9 @@
 require_once __DIR__ . '/lib/scratchdb.php';
 require_once __DIR__ . '/lib/harness.php';
 
+use mindstellar\database\DbException;
 use mindstellar\database\StrictModeReadiness;
+use mindstellar\database\StrictRefusals;
 
 $GLOBALS['okCount']    = 0;
 $GLOBALS['failCount']  = 0;
@@ -56,5 +60,137 @@ osc_db_execute("SET SESSION sql_mode = '" . $mode . "'");
 $admin->query("DROP VIEW {$prefix}zz_view");
 $admin->query("DROP TABLE {$prefix}zz_probe");
 $admin->query('DROP TABLE other_zz_probe');
+
+harness_section('Pure checks');
+
+pin('strict modes are recognised', array(true, true, false, false), array(
+    StrictModeReadiness::isStrict('ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES'),
+    StrictModeReadiness::isStrict('strict_all_tables'),
+    StrictModeReadiness::isStrict('NO_ENGINE_SUBSTITUTION'),
+    StrictModeReadiness::isStrict(''),
+));
+pin('a title setting of 200 against a column of 100 is reported',
+    array(array('setting' => 'title_character_length', 'value' => 200, 'column' => 'oc_t_item_description.s_title', 'width' => 100)),
+    StrictModeReadiness::settingsOverColumns(
+        array('title_character_length' => 200, 'description_character_length' => 5000),
+        array('oc_t_item_description.s_title' => 100, 'oc_t_item_description.s_description' => 4194303),
+        'oc_'
+    ));
+pin('a setting that fits, or is unset, is not', array(), StrictModeReadiness::settingsOverColumns(
+    array('title_character_length' => 100), array('oc_t_item_description.s_title' => 100), 'oc_'));
+pin('ready only when every check is clean', array(true, false, false), array(
+    StrictModeReadiness::ready(array('error' => '', 'zero_dates' => null)),
+    StrictModeReadiness::ready(array('error' => '', 'refused' => array(array('count' => 1)))),
+    StrictModeReadiness::ready(array('error' => 'denied')),
+));
+
+$parses = array(
+    'MySQL too long'           => array(1406, "Data too long for column 's_title' at row 1", 'INSERT INTO `oc_t_item_description` (s_title) VALUES (?)', 'data_too_long', 'oc_t_item_description.s_title'),
+    'MariaDB names the table'  => array(1366, "Incorrect integer value: 'x' for column `db`.`oc_t_item`.`i_price` at row 1", 'UPDATE oc_t_other SET a = 1', 'incorrect_value', 'oc_t_item.i_price'),
+    'a value that looks like a column' => array(1292, "Incorrect datetime value: 'a for column 'evil' at row 9' for column 'dt_pub' at row 1", 'UPDATE LOW_PRIORITY `db`.`oc_t_item` SET dt_pub = ?', 'bad_date', 'oc_t_item.dt_pub'),
+    'cannot be null'           => array(1048, "Column 'fk_i_id' cannot be null", 'INSERT IGNORE INTO oc_t_log SET fk_i_id = NULL', 'cannot_be_null', 'oc_t_log.fk_i_id'),
+    'no default'               => array(1364, "Field 's_ip' doesn't have a default value", 'REPLACE INTO oc_t_log (a) VALUES (1)', 'no_default', 'oc_t_log.s_ip'),
+    'out of range'             => array(1264, "Out of range value for column 'i_num' at row 1", 'SELECT 1', 'out_of_range', 'i_num'),
+    'truncated, no column'     => array(1292, "Truncated incorrect DOUBLE value: 'abc'", 'UPDATE oc_t_item SET a = 1 WHERE b = 2', 'bad_date', 'oc_t_item'),
+    'nothing known'            => array(1265, 'Something new', 'DELETE FROM x', 'data_truncated', ''),
+);
+foreach ($parses as $label => list($errno, $message, $sql, $kind, $column)) {
+    pin("parse: $label", array('kind' => $kind, 'column' => $column), StrictRefusals::parse($errno, $message, $sql));
+}
+
+harness_section('Length settings against information_schema');
+
+$admin->query("DELETE FROM {$prefix}t_preference WHERE s_section = 'osclass' AND s_name = 'title_character_length'");
+$admin->query("INSERT INTO {$prefix}t_preference (s_section, s_name, s_value, e_type) VALUES ('osclass', 'title_character_length', '200', 'INTEGER')");
+pin('a stored title length of 200 against the 100-character column',
+    array(array('setting' => 'title_character_length', 'value' => 200, 'column' => $prefix . 't_item_description.s_title', 'width' => 100)),
+    StrictModeReadiness::settingsTooLong($prefix));
+$admin->query("UPDATE {$prefix}t_preference SET s_value = '100' WHERE s_section = 'osclass' AND s_name = 'title_character_length'");
+pin('...and nothing at 100', array(), StrictModeReadiness::settingsTooLong($prefix));
+$admin->query("DELETE FROM {$prefix}t_preference WHERE s_section = 'osclass' AND s_name = 'title_character_length'");
+
+harness_section('Refused writes are recorded');
+
+/** The strict rows in the activity log. */
+$strictRows = static function () use ($admin, $prefix): array {
+    return $admin->query("SELECT dt_date, s_section, s_action, fk_i_id, s_data, s_ip, s_who, fk_i_who_id FROM {$prefix}t_log WHERE s_section = 'strict'")
+        ->fetch_all(MYSQLI_ASSOC);
+};
+/** Run a write and say whether it was refused. */
+$refused = static function (string $sql, array $params = array()): bool {
+    try {
+        osc_db_execute($sql, $params);
+
+        return false;
+    } catch (DbException $e) {
+        return true;
+    }
+};
+
+$admin->query("CREATE TABLE {$prefix}zz_refuse (id INT AUTO_INCREMENT PRIMARY KEY, s VARCHAR(5) NOT NULL, n TINYINT NOT NULL DEFAULT 0)");
+$appMode = (string) osc_db_scalar('SELECT @@SESSION.sql_mode');
+osc_db_execute("SET SESSION sql_mode = 'STRICT_ALL_TABLES'");
+StrictRefusals::reset();
+
+$secret = 'secret-value-' . bin2hex(random_bytes(4));
+check('a too-long value is refused in a strict session', $refused("INSERT INTO {$prefix}zz_refuse (s) VALUES (?)", array($secret)));
+$refused("INSERT INTO {$prefix}zz_refuse (s) VALUES (?)", array($secret . 'again'));
+$rows = $strictRows();
+pin('exactly one strict row, however often it fails in a request', 1, count($rows));
+pin('...naming the kind and table.column', array('data_too_long', $prefix . 'zz_refuse.s'), array($rows[0]['s_action'] ?? '', $rows[0]['s_data'] ?? ''));
+check('...and no part of the value or the statement', strpos(json_encode($rows), 'secret-value') === false && strpos(json_encode($rows), 'INSERT') === false);
+
+$legacy = new DBCommandClass(\mindstellar\database\ConnectionManager::newInstance()->getHandle());
+$legacyResult = $legacy->query("INSERT INTO {$prefix}zz_refuse (s, n) VALUES ('a', 900)");
+pin('the legacy query layer is recorded too, as out of range', array(false, 'out_of_range'),
+    array($legacyResult, array_column($strictRows(), 's_action', 's_data')[$prefix . 'zz_refuse.n'] ?? null));
+
+$grouped = array();
+foreach (StrictModeReadiness::refused($prefix, time() - 60) as $r) {
+    $grouped[$r['column']] = array($r['kind'], $r['count']);
+}
+ksort($grouped);
+pin('refused() groups them by column and kind', array(
+    $prefix . 'zz_refuse.n' => array('out_of_range', 1),
+    $prefix . 'zz_refuse.s' => array('data_too_long', 1),
+), $grouped);
+$report = StrictModeReadiness::report($prefix, time());
+check('...so the report is not ready', !StrictModeReadiness::ready($report) && $report['error'] === '');
+pin('...and db:doctor --strict exits 1', 1, \mindstellar\cli\Cli::run(array('db:doctor', '--strict')));
+
+harness_section('Only strict-mode refusals');
+
+$admin->query("DELETE FROM {$prefix}t_log WHERE s_section = 'strict'");
+StrictRefusals::reset();
+osc_db_execute("SET SESSION sql_mode = ''");
+check('a relaxed session cuts the value and records nothing', !$refused("INSERT INTO {$prefix}zz_refuse (s) VALUES (?)", array($secret)) && $strictRows() === array());
+check('a NULL refused with strict mode off is not recorded', $refused("INSERT INTO {$prefix}zz_refuse (s) VALUES (NULL)") && $strictRows() === array());
+
+harness_section('Inside a transaction');
+
+osc_db_execute("SET SESSION sql_mode = 'STRICT_ALL_TABLES'");
+StrictRefusals::reset();
+osc_db_begin();
+$refused("INSERT INTO {$prefix}zz_refuse (s) VALUES (?)", array($secret));
+osc_db_rollback();
+pin('the record waits for the end of the request, so a rollback cannot take it', array(), $strictRows());
+StrictRefusals::flush();
+pin('...and is written then', 1, count($strictRows()));
+
+harness_section('No recursion when the log itself refuses');
+
+$admin->query("DELETE FROM {$prefix}t_log WHERE s_section = 'strict'");
+StrictRefusals::reset();
+$admin->query("ALTER TABLE {$prefix}t_log MODIFY s_section VARCHAR(3) NOT NULL");
+$refused("INSERT INTO {$prefix}zz_refuse (s) VALUES (?)", array($secret));
+pin('only the first refusal is recorded, not the log insert that failed', array('data_too_long ' . $prefix . 'zz_refuse.s'), StrictRefusals::recorded());
+$admin->query("ALTER TABLE {$prefix}t_log MODIFY s_section VARCHAR(50) NOT NULL");
+StrictRefusals::flush();
+pin('...and nothing is left waiting to be written', array(), $strictRows());
+
+osc_db_execute("SET SESSION sql_mode = '" . $appMode . "'");
+$admin->query("DROP TABLE {$prefix}zz_refuse");
+$admin->query("DELETE FROM {$prefix}t_log WHERE s_section = 'strict'");
+pin('a clean site: db:doctor --strict exits 0', 0, \mindstellar\cli\Cli::run(array('db:doctor', '--strict')));
 
 exit(harness_result());

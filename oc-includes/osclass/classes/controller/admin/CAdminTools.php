@@ -874,6 +874,11 @@ class CAdminTools extends AdminSecBaseModel
             }
         }
 
+        if ($tab === 'overview' || $tab === 'database') {
+            // Counting zero dates scans every table with a date column, so only the Database tab does it.
+            $env['strict'] = \mindstellar\database\StrictModeReadiness::report(DB_TABLE_PREFIX, $env['now'], $tab === 'database');
+        }
+
         if ($tab === 'jobs') {
             $queue = \mindstellar\job\JobQueue::instance();
             $this->_exportVariableToView('jobs_failed', $queue->page(\mindstellar\job\JobQueue::STATUS_ERROR, null, 50));

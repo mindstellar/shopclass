@@ -165,7 +165,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         osc_admin_verdict($issues, $healthy); ?>
 
         <?php foreach (($report['groups'] ?? array()) as $group) { ?>
-            <section class="sysinfo-group">
+            <section class="sysinfo-group"<?php echo isset($group['id']) ? ' id="' . osc_esc_html($group['id']) . '"' : ''; ?>>
                 <?php osc_admin_form_section($group['title'], isset($group['link']) ? array(
                     'intro_html' => '<a href="' . osc_esc_html($group['link']['url']) . '">' . osc_esc_html($group['link']['label']) . '</a>',
                 ) : array()); ?>
