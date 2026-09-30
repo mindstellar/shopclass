@@ -53,7 +53,7 @@ final class MessageGuard
      *
      * @return bool
      */
-    public static function reportEnabled(): bool
+    private static function reportEnabled(): bool
     {
         return osc_get_preference('message_report_link') !== '0';
     }
@@ -116,6 +116,22 @@ final class MessageGuard
     }
 
     /**
+     * Why a message form must refuse this sender, or null: the ban list, then the name and
+     * phone fields, then the links in the message.
+     *
+     * @param string   $email
+     * @param string   $message
+     * @param string[] $names
+     * @param string   $phone
+     *
+     * @return string|null
+     */
+    public static function refusal(string $email, string $message, array $names = array(), string $phone = ''): ?string
+    {
+        return self::banError($email) ?? self::fieldError($names, $phone) ?? self::linkError($message);
+    }
+
+    /**
      * The error to show for a name or phone number that is not one, or null. A name has no
      * link and no markup; a phone number is digits, spaces, + ( ) - . and an extension.
      *
@@ -149,7 +165,7 @@ final class MessageGuard
      *
      * @return int 0 allowed, 1 address banned, 2 IP banned
      */
-    public static function banned(string $email): int
+    private static function banned(string $email): int
     {
         $banned = osc_is_banned($email, null, self::SCOPE);
         if ($banned === 0 && osc_is_web_user_logged_in()) {

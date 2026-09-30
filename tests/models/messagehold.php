@@ -144,7 +144,6 @@ unset($_COOKIE['osc_msg_trust']);
 harness_section('MessageHold: a guest message waits');
 
 pin('it is not sent', false, MessageHold::deliver('user_contact', 'Guest@Example.test', $args));
-pin('it says it was held', true, MessageHold::held());
 pin('the member got nothing', array(), $sent);
 pin('one message waits in the queue', 1, $jobs());
 // Another suite file turns on demo mode, which sends no mail at all; the mail pins need mail.
@@ -183,7 +182,7 @@ pin(
     MessageHold::confirm($tokenOf(MessageHold::confirmUrl($heldId(), 'someone@else.test')))
 );
 pin('and leaves the message waiting', 1, $jobs());
-pin('the link sends the message', 'sent', MessageHold::confirm($token));
+pin('the link sends the message', 'done', MessageHold::confirm($token));
 pin('the member got the first message', array(array($memberId, 'guest@example.test', 'Is it still for sale?')), $sent);
 pin('the queue is empty again', 0, $jobs());
 pin('the same link again sends nothing', 'gone', MessageHold::confirm($token));
@@ -193,7 +192,6 @@ harness_section('MessageHold: a confirmed browser sends at once');
 
 pin('the address is now confirmed here', true, MessageHold::verified('GUEST@example.test'));
 pin('the next message goes straight out', true, MessageHold::deliver('user_contact', 'guest@example.test', $args));
-pin('it was not held', false, MessageHold::held());
 pin('the member got it', 2, count($sent));
 if (!defined('DEMO')) {
     pin('no new confirm mail', 1, count($GLOBALS['held_mail']));

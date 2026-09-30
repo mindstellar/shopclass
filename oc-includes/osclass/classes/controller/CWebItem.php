@@ -565,11 +565,11 @@ class CWebItem extends BaseModel
                     return false; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
                 }
 
-                $refused = \mindstellar\security\MessageGuard::banError(Params::getParamString('yourEmail'))
-                    ?? \mindstellar\security\MessageGuard::fieldError(
-                        array(Params::getParamString('yourName'), Params::getParamString('friendName'))
-                    )
-                    ?? \mindstellar\security\MessageGuard::linkError(Params::getParamString('message'));
+                $refused = \mindstellar\security\MessageGuard::refusal(
+                    Params::getParamString('yourEmail'),
+                    Params::getParamString('message'),
+                    array(Params::getParamString('yourName'), Params::getParamString('friendName'))
+                );
                 if ($refused !== null) {
                     osc_add_flash_error_message($refused);
                     $this->redirectTo(osc_item_send_friend_url());
@@ -660,12 +660,12 @@ class CWebItem extends BaseModel
                     return false;
                 }
 
-                $refused = \mindstellar\security\MessageGuard::banError($contactValues['yourEmail'])
-                    ?? \mindstellar\security\MessageGuard::fieldError(
-                        array($contactValues['yourName']),
-                        $contactValues['phoneNumber']
-                    )
-                    ?? \mindstellar\security\MessageGuard::linkError($contactValues['message_body']);
+                $refused = \mindstellar\security\MessageGuard::refusal(
+                    $contactValues['yourEmail'],
+                    $contactValues['message_body'],
+                    array($contactValues['yourName']),
+                    $contactValues['phoneNumber']
+                );
                 if ($refused !== null) {
                     osc_keep_form($contactValues, $refused);
                     $this->redirectTo(osc_local_referer(osc_item_url()));
@@ -694,15 +694,12 @@ class CWebItem extends BaseModel
                     $this->redirectTo(osc_item_url());
                 }
 
-                $attachment = osc_item_attachment() ? osc_mail_upload_attachment('attachment') : null;
-                if ($attachment === false) {
-                    osc_add_flash_error_message(_m('That type of file cannot be attached.'));
-                    $this->redirectTo(osc_item_url());
-                }
-                // A held message cannot keep its file, so a file needs a confirmed address.
-                if (is_array($attachment) && !\mindstellar\security\MessageHold::verified($contactValues['yourEmail'])) {
-                    osc_keep_form($contactValues, _m('Send one message without a file first and confirm your e-mail. '
-                        . 'After that you can attach files.'));
+                $refused = \mindstellar\security\MessageHold::attachmentError(
+                    $contactValues['yourEmail'],
+                    osc_item_attachment() ? osc_mail_upload_attachment('attachment') : null
+                );
+                if ($refused !== null) {
+                    osc_keep_form($contactValues, $refused);
                     $this->redirectTo(osc_local_referer(osc_item_url()));
 
                     return false;
@@ -722,7 +719,7 @@ class CWebItem extends BaseModel
                 } else {
                     // Count the accepted enquiry toward the window.
                     \mindstellar\security\ActionThrottle::record('item_contact');
-                    if (!\mindstellar\security\MessageHold::held()) {
+                    if ($result === true) {
                         osc_add_flash_ok_message(_m("We've just sent an e-mail to the seller"));
                     }
                 }

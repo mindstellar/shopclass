@@ -69,9 +69,7 @@ class CWebContact extends BaseModel
                     return false;
                 }
 
-                $refused = \mindstellar\security\MessageGuard::banError($yourEmail)
-                    ?? \mindstellar\security\MessageGuard::fieldError(array($yourName))
-                    ?? \mindstellar\security\MessageGuard::linkError($message);
+                $refused = \mindstellar\security\MessageGuard::refusal($yourEmail, $message, array($yourName));
                 if ($refused !== null) {
                     $fail($refused);
 
@@ -124,19 +122,13 @@ MESSAGE;
                 );
 
                 $attachment = osc_contact_attachment() ? osc_mail_upload_attachment('attachment') : null;
-                if ($attachment === false) {
-                    $fail(_m('That type of file cannot be attached.'));
+                $refused    = \mindstellar\security\MessageHold::attachmentError($yourEmail, $attachment);
+                if ($refused !== null) {
+                    $fail($refused);
 
                     return false;
                 }
-                // A held message cannot keep its file, so a file needs a confirmed address.
                 if (is_array($attachment)) {
-                    if (!\mindstellar\security\MessageHold::verified($yourEmail)) {
-                        $fail(_m('Send one message without a file first and confirm your e-mail. '
-                            . 'After that you can attach files.'));
-
-                        return false;
-                    }
                     $params['attachment'] = $attachment;
                 }
 
@@ -158,51 +150,60 @@ MESSAGE;
                 $this->messageView($this->action);
                 break;
             case ('report_post'):
-                osc_csrf_check();
-                $back = osc_base_url(true) . '?page=contact&action=report';
-                if (\mindstellar\security\ActionThrottle::exceeded('report_sender', 10, 3600)) {
-                    osc_add_flash_error_message(_m("You've sent too many reports recently. Please try again later."));
-                    $this->redirectTo($back);
-                }
-                \mindstellar\security\ActionThrottle::record('report_sender');
-                $token  = Params::getParamString('t');
-                $status = \mindstellar\security\MessageGuard::report($token);
-                if ($status === 'done') {
-                    $report = \mindstellar\security\MessageGuard::readReport($token);
-                    Log::newInstance()->insertLog('ban', 'report', 0, (string) ($report['sender'] ?? ''), 'user', 0);
-                    $this->redirectTo($back . '&done=1');
-                }
-                $errors = array(
+                $this->linkPost('report', 10, static function (string $token): string {
+                    $status = \mindstellar\security\MessageGuard::report($token);
+                    if ($status === 'done') {
+                        $sender = (string) (\mindstellar\security\MessageGuard::readReport($token)['sender'] ?? '');
+                        Log::newInstance()->insertLog('ban', 'report', 0, $sender, 'user', 0);
+                    }
+
+                    return $status;
+                }, array(
                     'used'    => _m('This message has already been reported.'),
                     'invalid' => _m('This report link is not valid or has expired.'),
                     'admin'   => _m('Only a site admin can ban a sender for good.'),
-                );
-                osc_add_flash_error_message($errors[$status] ?? _m('The report could not be saved. Please try again later.'));
-                $this->redirectTo($back);
+                    'failed'  => _m('The report could not be saved. Please try again later.'),
+                ));
                 break;
             case ('confirm_post'):
-                osc_csrf_check();
-                $back = osc_base_url(true) . '?page=contact&action=confirm';
-                if (\mindstellar\security\ActionThrottle::exceeded('message_confirm', 20, 3600)) {
-                    osc_add_flash_error_message(_m("You've sent too many messages recently. Please try again later."));
-                    $this->redirectTo($back);
-                }
-                \mindstellar\security\ActionThrottle::record('message_confirm');
-                $status = \mindstellar\security\MessageHold::confirm(Params::getParamString('t'));
-                if ($status === 'sent') {
-                    $this->redirectTo($back . '&done=1');
-                }
-                $errors = array(
+                $this->linkPost('confirm', 20, array(\mindstellar\security\MessageHold::class, 'confirm'), array(
                     'gone'    => _m('This message was already sent, or its link has expired.'),
                     'invalid' => _m('This link is not valid.'),
-                );
-                osc_add_flash_error_message($errors[$status]
-                    ?? _m('The message could not be sent. The listing or member may no longer be available.'));
-                $this->redirectTo($back);
+                    'failed'  => _m('The message could not be sent. The listing or member may no longer be available.'),
+                ));
                 break;
             default:                //contact
                 $this->doView(osc_locate_template(array('contact.php'), 'contact'));
         }
+    }
+
+    /**
+     * The button on a message-link page: check the form, spend one of this address's tries
+     * for the hour, run $run on the link's token and come back with its outcome.
+     *
+     * @param string               $mode   'report' or 'confirm'
+     * @param int                  $max    tries per hour from one address
+     * @param callable             $run    fn(string $token): string, 'done' or an $errors key
+     * @param array<string,string> $errors message per outcome
+     *
+     * @return void
+     */
+    private function linkPost(string $mode, int $max, callable $run, array $errors)
+    {
+        osc_csrf_check();
+        $back    = osc_base_url(true) . '?page=contact&action=' . $mode;
+        $context = 'message_' . $mode;
+        if (\mindstellar\security\ActionThrottle::exceeded($context, $max, 3600)) {
+            osc_add_flash_error_message(_m('Too many tries from your connection. Please try again later.'));
+            $this->redirectTo($back);
+        }
+        \mindstellar\security\ActionThrottle::record($context);
+        $status = $run(Params::getParamString('t'));
+        if ($status === 'done') {
+            $this->redirectTo($back . '&done=1');
+        }
+        osc_add_flash_error_message($errors[$status] ?? $errors['failed']);
+        $this->redirectTo($back);
     }
 
     /**

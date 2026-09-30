@@ -1967,9 +1967,9 @@ class ItemActions
     }
 
     /**
-     * Validate the contact form and fire the listing-inquiry email hook.
+     * Validate the contact form and send the inquiry, or hold it until the sender confirms.
      *
-     * @return string|null the validation errors, or null when the inquiry was sent
+     * @return string|bool the validation errors, true when sent, false when held
      */
     public function contact()
     {
@@ -1990,7 +1990,7 @@ class ItemActions
             return $flash_error;
         }
 
-        \mindstellar\security\MessageHold::deliver('item_contact', (string) $aItem['yourEmail'], array(
+        return \mindstellar\security\MessageHold::deliver('item_contact', (string) $aItem['yourEmail'], array(
             'id'          => (int) $aItem['id'],
             'yourEmail'   => (string) $aItem['yourEmail'],
             'yourName'    => (string) $aItem['yourName'],

@@ -1858,9 +1858,10 @@ msgstr ""
 msgid "Send my message"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/CWebContact.php
-#: oc-includes/osclass/classes/controller/CWebItem.php
-msgid "Send one message without a file first and confirm your e-mail. "
+#: oc-includes/osclass/classes/security/MessageHold.php
+msgid ""
+"Send one message without a file first and confirm your e-mail. After that "
+"you can attach files."
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-recover-content.php
@@ -2123,8 +2124,7 @@ msgstr ""
 msgid "That theme is not installed."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/CWebContact.php
-#: oc-includes/osclass/classes/controller/CWebItem.php
+#: oc-includes/osclass/classes/security/MessageHold.php
 msgid "That type of file cannot be attached."
 msgstr ""
 
@@ -2763,6 +2763,10 @@ msgid_plural "Too many failed attempts. Please try again in %d minutes."
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-includes/osclass/classes/controller/CWebContact.php
+msgid "Too many tries from your connection. Please try again later."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
 msgid "Two-step sign-in is off."
 msgstr ""
@@ -3029,10 +3033,6 @@ msgstr ""
 #: oc-includes/osclass/classes/controller/CWebItem.php
 #: oc-includes/osclass/classes/controller/CWebUserNonSecure.php
 msgid "You've sent too many messages recently. Please try again later."
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/CWebContact.php
-msgid "You've sent too many reports recently. Please try again later."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebItem.php

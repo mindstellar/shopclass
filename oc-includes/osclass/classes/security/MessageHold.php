@@ -26,9 +26,6 @@ final class MessageHold
     private const TRUST_TTL = 30 * 86400;
     private const COOKIE    = 'osc_msg_trust';
 
-    /** @var bool whether the last deliver() held the message */
-    private static $held = false;
-
     /**
      * Whether $email is confirmed for this visitor.
      *
@@ -62,14 +59,12 @@ final class MessageHold
      */
     public static function deliver(string $kind, string $email, array $args): bool
     {
-        self::$held = false;
         if (self::verified($email)) {
             return self::send($kind, $args);
         }
 
-        self::$held = true;
-        $queue      = JobQueue::instance();
-        $key        = self::key($email);
+        $queue = JobQueue::instance();
+        $key   = self::key($email);
         if ($queue->hasKey(self::JOB, $key)) {
             osc_add_flash_info_message(sprintf(
                 _m('A message from %s is already waiting. Click the link we e-mailed to that address to send it.'),
@@ -103,13 +98,24 @@ final class MessageHold
     }
 
     /**
-     * Whether the last deliver() held the message rather than sending it.
+     * Why an attached file must be refused, or null. A held message cannot keep its file,
+     * so a file needs a confirmed address.
      *
-     * @return bool
+     * @param string           $email
+     * @param array|false|null $attachment what osc_mail_upload_attachment() returned
+     *
+     * @return string|null
      */
-    public static function held(): bool
+    public static function attachmentError(string $email, $attachment): ?string
     {
-        return self::$held;
+        if ($attachment === false) {
+            return _m('That type of file cannot be attached.');
+        }
+        if (is_array($attachment) && !self::verified($email)) {
+            return _m('Send one message without a file first and confirm your e-mail. After that you can attach files.');
+        }
+
+        return null;
     }
 
     /**
@@ -117,7 +123,7 @@ final class MessageHold
      *
      * @param string $token
      *
-     * @return string 'sent', 'gone' (already sent, or expired), 'invalid' or 'failed'
+     * @return string 'done', 'gone' (already sent, or expired), 'invalid' or 'failed'
      */
     public static function confirm(string $token): string
     {
@@ -134,7 +140,7 @@ final class MessageHold
 
         self::trust($email);
 
-        return self::send((string) ($held['kind'] ?? ''), (array) ($held['args'] ?? array())) ? 'sent' : 'failed';
+        return self::send((string) ($held['kind'] ?? ''), (array) ($held['args'] ?? array())) ? 'done' : 'failed';
     }
 
     /**
@@ -146,7 +152,7 @@ final class MessageHold
      *
      * @return bool
      */
-    public static function send(string $kind, array $args): bool
+    private static function send(string $kind, array $args): bool
     {
         switch ($kind) {
             case 'site_contact':

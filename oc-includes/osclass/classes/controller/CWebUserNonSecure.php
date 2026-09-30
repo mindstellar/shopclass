@@ -242,9 +242,7 @@ class CWebUserNonSecure extends BaseModel
                     return;
                 }
 
-                $refused = \mindstellar\security\MessageGuard::banError($yourEmail)
-                    ?? \mindstellar\security\MessageGuard::fieldError(array($yourName), $phone)
-                    ?? \mindstellar\security\MessageGuard::linkError($message);
+                $refused = \mindstellar\security\MessageGuard::refusal($yourEmail, $message, array($yourName), $phone);
                 if ($refused !== null) {
                     $fail($refused);
 
