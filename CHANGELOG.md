@@ -154,6 +154,7 @@ you find.
 
 ### Fixed
 
+- Category counts stay right when premium is turned on or off, when premium ends, and when a category moves to a new parent.
 - A listing title longer than 100 characters no longer leaves a listing without a title under strict SQL mode. Titles are capped at 100, the settings refuse larger limits, and a failed save is undone.
 - When memcached is down or frozen, pages keep working from the database. Before, cached reads came back empty, and some admin pages failed.
 - Upgrade release notes show as real paragraphs and lists with working links, instead of one line per paragraph.
@@ -382,6 +383,8 @@ you find.
 - Both filter panels pick a country from a list and suggest the region and city inside it.
 - Statistics → Recalculate location stats has left the menu. It has its own button on
   Listings → Locations → Data. The old URL still works.
+- Statistics → Recalculate category stats has left the menu. It is now a Recount listings button
+  on Listings → Categories. The old URL still works.
 - The full-size photo copy drops camera metadata, because it is re-saved rather than copied.
 - Hook priority accepts any whole number, negative included, instead of only 0 to 10. A plugin
   that registered outside that range was stored and never run; it now runs. Admin table columns

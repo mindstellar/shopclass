@@ -1231,7 +1231,7 @@ class ItemActions
         if ($result == 1) {
             osc_run_hook('disable_item', $id);
             $item = $this->manager->findByPrimaryKey($id);
-            if ($item['b_active'] == 1 && $item['b_spam'] == 0 && !osc_isExpired($item['dt_expiration'])) {
+            if (osc_item_is_counted(array('b_enabled' => 1) + $item)) {
                 $this->_decreaseStats($item);
             }
 
@@ -1239,6 +1239,21 @@ class ItemActions
         }
 
         return false;
+    }
+
+    /**
+     * Take one listing out of the category, location and user totals.
+     *
+     * @param int $id
+     *
+     * @return void
+     */
+    public static function decreaseStatsFor(int $id): void
+    {
+        $item = Item::newInstance()->findByPrimaryKey($id);
+        if ($item) {
+            (new self(true))->_decreaseStats($item);
+        }
     }
 
     /**
@@ -1397,14 +1412,15 @@ class ItemActions
                 }
             }
 
-            $oldIsExpired  = osc_isExpired($old_item['dt_expiration']);
+            // Premium keeps an expired listing counted, as the recount does.
+            $oldIsExpired  = empty($old_item['b_premium']) && osc_isExpired($old_item['dt_expiration']);
             $dt_expiration = Item::newInstance()
                 ->updateExpirationDate($aItem['idItem'], $aItem['dt_expiration'], false);
             if ($dt_expiration === false) {
                 $dt_expiration          = $old_item['dt_expiration'];
                 $aItem['dt_expiration'] = $old_item['dt_expiration'];
             }
-            $newIsExpired = osc_isExpired($dt_expiration);
+            $newIsExpired = empty($old_item['b_premium']) && osc_isExpired($dt_expiration);
 
             // Recalculate stats related with items
             $this->updateStats(
@@ -1546,8 +1562,7 @@ class ItemActions
             // updated correctly
             if ($result == 1) {
                 osc_run_hook('activate_item', $id);
-                // b_enabled == 1 && b_active == 1
-                if ($item[0]['b_spam'] == 0 && !osc_isExpired($item[0]['dt_expiration'])) {
+                if (osc_item_is_counted(array('b_active' => 1) + $item[0])) {
                     $this->increaseStats($item[0]);
                 }
 
@@ -1579,7 +1594,7 @@ class ItemActions
         if ($result == 1) {
             osc_run_hook('deactivate_item', $id);
             $item = $this->manager->findByPrimaryKey($id);
-            if ($item['b_enabled'] == 1 && $item['b_spam'] == 0 && !osc_isExpired($item['dt_expiration'])) {
+            if (osc_item_is_counted(array('b_active' => 1) + $item)) {
                 $this->_decreaseStats($item);
             }
 
@@ -1608,7 +1623,7 @@ class ItemActions
         if ($result == 1) {
             osc_run_hook('enable_item', $id);
             $item = $this->manager->findByPrimaryKey($id);
-            if ($item['b_active'] == 1 && $item['b_spam'] == 0 && !osc_isExpired($item['dt_expiration'])) {
+            if (osc_item_is_counted(array('b_enabled' => 1) + $item)) {
                 $this->increaseStats($item);
             }
 
@@ -1649,14 +1664,15 @@ class ItemActions
         // not inherit a stale expiry and get swept away an hour after it is made.
         $set['dt_premium_expiration'] = null;
 
-        if ($on && $days !== null) {
-            // Just the two columns, not findByPrimaryKey(): that hydrates locales and
-            // resources this decision has no use for.
-            $current = osc_db_select_one(
-                'SELECT b_premium, dt_premium_expiration FROM ' . DB_TABLE_PREFIX . 't_item WHERE pk_i_id = ?',
-                array((int) $id)
-            );
+        // Just the columns needed here, not findByPrimaryKey(): that hydrates locales and
+        // resources this decision has no use for.
+        $current = osc_db_select_one(
+            'SELECT b_premium, dt_premium_expiration, b_enabled, b_active, b_spam, dt_expiration FROM '
+            . DB_TABLE_PREFIX . 't_item WHERE pk_i_id = ?',
+            array((int) $id)
+        );
 
+        if ($on && $days !== null) {
             if (!empty($current['b_premium']) && empty($current['dt_premium_expiration'])) {
                 // Already premium with no end date. A dated purchase must not turn an
                 // open-ended upgrade into one that expires.
@@ -1681,6 +1697,15 @@ class ItemActions
         );
         // updated correctly
         if ($result == 1) {
+            // An expired listing is counted only while premium, so the switch can move it.
+            if ($current && osc_item_is_counted($current) !== osc_item_is_counted(array('b_premium' => $value) + $current)) {
+                $item = $this->manager->findByPrimaryKey($id);
+                if ($on) {
+                    $this->increaseStats($item);
+                } else {
+                    $this->_decreaseStats($item);
+                }
+            }
             if ($fireHook) {
                 if ($on) {
                     osc_run_hook('item_premium_on', $id);
@@ -1726,20 +1751,11 @@ class ItemActions
                 osc_run_hook('item_spam_off', $id);
             }
 
-            $b_active  = $item['b_active'];
-            $b_enabled = $item['b_enabled'];
-            $b_spam    = $item['b_spam'];
-            $isExpired = osc_isExpired($item['dt_expiration']);
-
-            if (
-                $b_active == 1 && $b_enabled == 1 && $b_spam == 0
-                && !$isExpired
-            ) {
+            $before = osc_item_is_counted($item);
+            $after  = osc_item_is_counted(array('b_spam' => $on ? 1 : 0) + $item);
+            if ($before && !$after) {
                 $this->_decreaseStats($item);
-            } elseif (
-                $b_active == 1 && $b_enabled == 1 && $b_spam == 1
-                && !$isExpired
-            ) {
+            } elseif (!$before && $after) {
                 $this->increaseStats($item);
             }
 

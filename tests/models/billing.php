@@ -36,6 +36,9 @@ require_once __DIR__ . '/../lib/harness.php';
 
 $admin = scratchdb_session('osc_models_billing');
 
+// Premium::expire() and Item::updateExpirationDate() read osc_item_is_counted() and osc_isExpired().
+require_once ABS_PATH . 'oc-includes/osclass/utils.php';
+
 // hBilling.php registers the built-in features and a couple of hooks the moment it is
 // included, and Plugins::addHook() resolves the caller against PLUGINS_PATH -- the
 // same stand-in tests/models/item.php uses, since hDefines.php pulls in far more than
@@ -1076,7 +1079,7 @@ osc_reset_preferences();
 // all reused by more than one section from here on.
 
 // ItemActions::add() reaches sanitisation, validation and Item::updateExpirationDate()
-// (-> osc_isExpired()) -- none of hValidate.php/hSanitize.php/hSecurity.php/utils.php
+// -- none of hValidate.php/hSanitize.php/hSecurity.php
 // is pulled in by the requires above, unlike tests/models/item.php's stand-ins, because
 // nothing else in this file needed them until now.
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hValidate.php';
@@ -1085,7 +1088,6 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hSecurity.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hLocale.php'; // Category::__construct() -> osc_current_user_locale()
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hCache.php';  // Category::__construct() -> toTree() -> the category cache
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hUsers.php';  // Log::insertLog() -> osc_logged_user_id()
-require_once ABS_PATH . 'oc-includes/osclass/utils.php';
 
 // osc_validate_category() requires a non-root category (or osc_selectable_parent_categories()),
 // so the fixture needs a parent, unlike $categoryId above.
@@ -1961,6 +1963,55 @@ pin(
 osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
 osc_reset_preferences();
 pin('billing off -> neither link, whatever is on sale', array(), $menuClasses());
+
+/* ----------------------------------------------------------------------------
+ * Premium and the category counts. An expired listing counts only while premium,
+ * the same rule the daily recount uses, so switching premium must move the count.
+ * ------------------------------------------------------------------------- */
+harness_section('Premium: category counts follow the switch');
+
+$countRoot  = seed_category($admin, 'Count root');
+$countChild = seed_category($admin, 'Count child', $countRoot);
+$catCount   = static function (int $catId) use ($admin): int {
+    $row = $admin->query(
+        'SELECT i_num_items FROM ' . DB_TABLE_PREFIX . 't_category_stats WHERE fk_i_category_id = ' . $catId
+    )->fetch_assoc();
+
+    return (int) ($row['i_num_items'] ?? 0);
+};
+
+$lapsed = seed_item($admin, $countChild, $userId, 'Lapsed listing');
+$admin->query('UPDATE ' . DB_TABLE_PREFIX . 't_item SET dt_expiration = DATE_SUB(NOW(), INTERVAL 1 DAY) WHERE pk_i_id = ' . $lapsed);
+$live = seed_item($admin, $countChild, $userId, 'Live listing');
+\mindstellar\utility\Utils::updateCategoryStatsById($countChild);
+pin('only the unexpired listing counts to start', 1, $catCount($countChild));
+
+$actions = new ItemActions(true);
+$actions->premium($lapsed, true);
+pin('premium on an expired listing adds it', 2, $catCount($countChild));
+pin('the parent follows', 2, $catCount($countRoot));
+
+$actions->premium($lapsed, false);
+pin('premium off an expired listing takes it away', 1, $catCount($countChild));
+
+$actions->premium($live, true);
+pin('premium on an unexpired listing changes nothing', 1, $catCount($countChild));
+$actions->premium($live, false);
+pin('premium off an unexpired listing changes nothing', 1, $catCount($countChild));
+
+$actions->premium($lapsed, true);
+$actions->spam($lapsed, true);
+pin('spam takes an expired premium listing away', 1, $catCount($countChild));
+$actions->spam($lapsed, false);
+pin('unspam brings it back', 2, $catCount($countChild));
+
+$admin->query(
+    'UPDATE ' . DB_TABLE_PREFIX . 't_item SET dt_premium_expiration = DATE_SUB(NOW(), INTERVAL 1 HOUR)'
+    . ' WHERE pk_i_id = ' . $lapsed
+);
+Premium::expire();
+pin('the sweep ending premium takes an expired listing away', 1, $catCount($countChild));
+pin('the parent follows the sweep', 1, $catCount($countRoot));
 
 osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
 

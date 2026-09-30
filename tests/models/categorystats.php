@@ -651,6 +651,19 @@ $truncateStats();
 pin('a full recount writes a row for every category', (int) $admin->query('SELECT COUNT(*) FROM '
     . DB_TABLE_PREFIX . 't_category')->fetch_row()[0], $rowCount());
 
+harness_section('Utils recount by id — counts every level below');
+
+$deepRoot = seed_category($admin, 'Deep root');
+$deepMid  = seed_category($admin, 'Deep mid', $deepRoot);
+$deepLeaf = seed_category($admin, 'Deep leaf', $deepMid);
+seed_item($admin, $deepLeaf, null, 'Deep listing');
+seed_item($admin, $deepMid, null, 'Mid listing');
+$truncateStats();
+\mindstellar\utility\Utils::updateCategoryStatsById($deepLeaf);
+pin('the leaf counts its own listing', '1', ($rowFor($deepLeaf) ?? array())['i_num_items'] ?? null);
+pin('the middle counts its own and the leaf listing', '2', ($rowFor($deepMid) ?? array())['i_num_items'] ?? null);
+pin('the root counts its grandchild listing too', '2', ($rowFor($deepRoot) ?? array())['i_num_items'] ?? null);
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }

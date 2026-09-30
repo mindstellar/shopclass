@@ -271,9 +271,9 @@ class CAdminAjax extends AdminSecBaseModel
                     }
                 }
 
-                // update category stats
-                foreach ($aRecountCat as $rId) {
-                    Utils::updateCategoryStatsById($rId);
+                // A move changes the totals of both the old and the new parents, so recount the tree.
+                if ($aRecountCat !== array()) {
+                    Utils::updateAllCategoriesStats();
                 }
 
                 if ($error) {

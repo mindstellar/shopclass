@@ -36,6 +36,22 @@ function osc_isExpired($dt_expiration)
 }
 
 /**
+ * Whether a listing counts toward the category, location and user totals: enabled,
+ * active, not spam, and premium or not expired. The daily recount uses the same rule.
+ *
+ * @param array<string,mixed> $item
+ *
+ * @return bool
+ */
+function osc_item_is_counted(array $item): bool
+{
+    return (int)($item['b_enabled'] ?? 0) === 1
+        && (int)($item['b_active'] ?? 0) === 1
+        && (int)($item['b_spam'] ?? 0) === 0
+        && (!empty($item['b_premium']) || !osc_isExpired((string)($item['dt_expiration'] ?? '')));
+}
+
+/**
  * Remove resources from disk
  *
  * @param int|array<int,int>       $id       Resource id; an array uses its first element

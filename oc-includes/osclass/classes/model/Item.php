@@ -946,7 +946,10 @@ class Item extends DAO
         }
 
         try {
-            $item = osc_db_select_one('SELECT dt_expiration FROM ' . $this->getTableName() . ' WHERE pk_i_id = ?', array($id));
+            $item = osc_db_select_one(
+                'SELECT dt_expiration, b_enabled, b_active, b_spam, b_premium FROM ' . $this->getTableName() . ' WHERE pk_i_id = ?',
+                array($id)
+            );
         } catch (\mindstellar\database\DbException $e) {
             $item = null;
         }
@@ -957,7 +960,7 @@ class Item extends DAO
         // null row and converges on the same false, so it is guarded up front.
         if ($item !== null) {
             $item        = osc_db_stringify_row($item);
-            $expired_old = osc_isExpired($item['dt_expiration']);
+            $counted_old = osc_item_is_counted($item);
             if (ctype_digit($expiration_time)) {
                 if ($expiration_time > 0) {
                     // A DATE_ADD(...) expression must reach the column UNquoted:
@@ -1013,9 +1016,9 @@ class Item extends DAO
                     return $_item['dt_expiration'];
                 }
 
-                $expired = osc_isExpired($_item['dt_expiration']);
-                if ($expired !== $expired_old) {
-                    if ($expired) {
+                $counted = osc_item_is_counted(array('dt_expiration' => $_item['dt_expiration']) + $item);
+                if ($counted !== $counted_old) {
+                    if (!$counted) {
                         if ($_item['fk_i_user_id'] != null) {
                             User::newInstance()->decreaseNumItems($_item['fk_i_user_id']);
                         }
@@ -1256,9 +1259,7 @@ class Item extends DAO
         // Counters are decremented only once the row is really gone. Doing it first
         // meant a delete that failed still took the listing out of every total, and
         // the numbers stayed wrong until the next stats rebuild.
-        if ($item['b_active'] == 1 && $item['b_enabled'] == 1 && $item['b_spam'] == 0
-            && !osc_isExpired($item['dt_expiration'])
-        ) {
+        if (osc_item_is_counted($item)) {
             if ($item['fk_i_user_id'] != null) {
                 User::newInstance()->decreaseNumItems($item['fk_i_user_id']);
             }

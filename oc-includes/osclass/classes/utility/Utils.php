@@ -276,22 +276,11 @@ class Utils
         if (!is_numeric($id)) {
             throw new \InvalidArgumentException(__('Category id is not a valid integer'));
         }
-        // get sub categories
-        $aCategories   = Category::newInstance()->findSubcategories($id);
-        $categoryTotal = 0;
-        $category      = Category::newInstance()->findByPrimaryKey($id);
-
-        if (count($aCategories) > 0) {
-            // sum items in category
-            foreach ($aCategories as $subcategory) {
-                $total         = Item::newInstance()->numItems($subcategory);
-                $categoryTotal += $total;
-            }
-            $categoryTotal += Item::newInstance()->numItems($category);
-        } else {
-            $total         = Item::newInstance()->numItems($category);
-            $categoryTotal += $total;
+        $category = Category::newInstance()->findByPrimaryKey($id);
+        if (!$category) {
+            return;
         }
+        $categoryTotal = self::subtreeItemCount($category);
 
         try {
             osc_db_execute(
@@ -305,6 +294,23 @@ class Utils
         if ($category['fk_i_parent_id'] != 0) {
             self::updateCategoryStatsById($category['fk_i_parent_id']);
         }
+    }
+
+    /**
+     * Live listings in a category and every category below it, at any depth.
+     *
+     * @param array<string,mixed> $category
+     *
+     * @return int
+     */
+    private static function subtreeItemCount(array $category)
+    {
+        $total = (int)Item::newInstance()->numItems($category);
+        foreach (Category::newInstance()->findSubcategories($category['pk_i_id']) as $sub) {
+            $total += self::subtreeItemCount($sub);
+        }
+
+        return $total;
     }
 
     /**
