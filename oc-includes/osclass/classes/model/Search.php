@@ -17,6 +17,9 @@
  */
 class Search extends DAO
 {
+    /** Seconds the featured block keeps one random order. */
+    private const PREMIUM_ROTATION = 300;
+
     private static $instance;
     private $conditions;
     private $itemConditions;
@@ -1180,6 +1183,17 @@ class Search extends DAO
     }
 
     /**
+     * A random order that holds for PREMIUM_ROTATION seconds, so the featured block rotates
+     * while a page stays the same long enough to be cached and answer 304.
+     *
+     * @return string
+     */
+    private static function premiumOrder(): string
+    {
+        return 'RAND(' . intdiv(time(), self::PREMIUM_ROTATION) . ')';
+    }
+
+    /**
      * Add an ORDER BY clause, normalising the direction.
      *
      * @param string $orderby
@@ -1479,14 +1493,7 @@ class Search extends DAO
             }
             $this->addWhere(DB_TABLE_PREFIX . 't_item.pk_i_id IN (' . $subSelect . ')');
 
-            // Least-shown first, so the block rotates. The stats row holds the running
-            // total and there is exactly one per listing, so reading it needs neither a
-            // SUM nor a GROUP BY.
-            $this->addOrderBy(
-                sprintf('%st_item_stats.i_num_premium_views', DB_TABLE_PREFIX),
-                'ASC'
-            );
-            $this->addOrderBy(null, 'random');
+            $this->addOrderBy(self::premiumOrder());
             $this->addLimit(0, $num);
         } else {
             $this->addSelect(DB_TABLE_PREFIX . 't_item.*, ' . DB_TABLE_PREFIX
@@ -1520,14 +1527,7 @@ class Search extends DAO
                                   . implode(', ', $this->categories) . ')');
             }
 
-            // Least-shown first, so the block rotates. The stats row holds the running
-            // total and there is exactly one per listing, so reading it needs neither a
-            // SUM nor a GROUP BY.
-            $this->addOrderBy(
-                sprintf('%st_item_stats.i_num_premium_views', DB_TABLE_PREFIX),
-                'ASC'
-            );
-            $this->addOrderBy(null, 'random');
+            $this->addOrderBy(self::premiumOrder());
             $this->addLimit(0, $num);
         }
 

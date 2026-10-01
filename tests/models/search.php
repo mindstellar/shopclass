@@ -290,6 +290,12 @@ harness_section('Search: premium');
 $s = new Search();
 $premiums = $s->getPremiums(10);
 pin('getPremiums returns the premium items', $sorted(array($car2, $bike2)), $sorted($ids($premiums)));
+$premiumSql = new ReflectionMethod(Search::class, 'makeSQLPremium');
+if (PHP_VERSION_ID < 80100) {
+    $premiumSql->setAccessible(true);
+}
+check('the order is a seeded RAND(), not a fresh one', (bool) preg_match('/ORDER BY RAND\(\d+\)/', (string) $premiumSql->invoke(new Search(), 2)));
+pin('and holds between calls, so the page can be cached', $ids($premiums), $ids((new Search())->getPremiums(10)));
 
 /* ----------------------------------------------------------------------------
  * Sorting.
