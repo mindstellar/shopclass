@@ -57,7 +57,9 @@ if (!defined('ABS_PATH')) {
         </div>
         <div class="oe-field">
             <label class="oe-label" for="oe-sf-message"><?php echo osc_esc_html(_m('Message')); ?></label>
-            <textarea class="oe-input" id="oe-sf-message" name="message" rows="4"><?php echo osc_esc_html(osc_gui_kept('message_body')); ?></textarea>
+            <textarea class="oe-input" id="oe-sf-message" name="message" rows="4"<?php
+                $sfMax = \mindstellar\security\MessageGuard::maxLength();
+                echo $sfMax > 0 ? ' maxlength="' . $sfMax . '"' : ''; ?>><?php echo osc_esc_html(osc_gui_kept('message_body')); ?></textarea>
         </div>
 
         <?php if (osc_captcha_enabled()) { ?>

@@ -141,6 +141,8 @@ signed-in admin can use it; anyone else is asked to sign in first.
   with more is refused and the sender is told why. 0 allows none. Names may not
   hold links or markup, and a phone number may hold only digits, spaces,
   `+ ( ) - .` and an extension.
+- **Longest message.** Default 5000 characters. A longer message is refused and
+  the sender is told the limit. 0 allows any length.
 - **Report link.** Mail a member receives ends with *Report the sender*. The
   member confirms on a page, and the sender's address cannot send messages for
   the set number of days (default 30). Sign-in and posting still work. Each link

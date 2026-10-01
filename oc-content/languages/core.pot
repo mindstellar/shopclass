@@ -6058,6 +6058,14 @@ msgstr ""
 msgid "Logout"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
+msgid "Longer messages are refused. 0 allows any length."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
+msgid "Longest message"
+msgstr ""
+
 #: oc-includes/osclass/installer/basic_data.php
 msgid "Lost And Found"
 msgstr ""
@@ -12653,6 +12661,7 @@ msgid "change user password url"
 msgstr ""
 
 #: oc-admin/themes/modern/items/settings.php
+#: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
 msgid "characters"
 msgstr ""
 

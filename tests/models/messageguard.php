@@ -88,8 +88,18 @@ harness_section('MessageGuard: the link limit');
 
 $setPref('message_max_links', null);
 pin('unset, the limit is 1', 1, MessageGuard::maxLinks());
-pin('one link passes', null, MessageGuard::linkError('Call me or see https://a.test'));
-check('two links are refused', is_string(MessageGuard::linkError('https://a.test and https://b.test')));
+pin('one link passes', null, MessageGuard::messageError('Call me or see https://a.test'));
+check('two links are refused', is_string(MessageGuard::messageError('https://a.test and https://b.test')));
+
+harness_section('MessageGuard: the length limit');
+
+$setPref('message_max_length', null);
+pin('unset, the limit is 5000', 5000, MessageGuard::maxLength());
+pin('5000 characters pass', null, MessageGuard::messageError(str_repeat('é', 5000)));
+check('5001 are refused', is_string(MessageGuard::messageError(str_repeat("é", 5001))));
+$setPref('message_max_length', '0');
+pin('0 allows any length', null, MessageGuard::messageError(str_repeat('a', 20000)));
+$setPref('message_max_length', null);
 
 harness_section('MessageGuard: names and phone numbers');
 
@@ -111,8 +121,8 @@ foreach (array('spam*1@evil.test', 'a|b@evil.test', '!x@evil.test') as $bad) {
 
 $setPref('message_max_links', '0');
 pin('0 is kept, not read as unset', 0, MessageGuard::maxLinks());
-check('with 0, one link is refused', is_string(MessageGuard::linkError('https://a.test')));
-pin('with 0, plain text passes', null, MessageGuard::linkError('Is it still for sale?'));
+check('with 0, one link is refused', is_string(MessageGuard::messageError('https://a.test')));
+pin('with 0, plain text passes', null, MessageGuard::messageError('Is it still for sale?'));
 $setPref('message_max_links', null);
 
 /* ----------------------------------------------------------------------------

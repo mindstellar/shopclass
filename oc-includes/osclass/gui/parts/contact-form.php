@@ -33,6 +33,7 @@ if (!defined('ABS_PATH')) {
 
 $cf       = $contactForm;
 $cfPrefix = osc_esc_html((string) $cf['prefix']);
+$cfMax    = \mindstellar\security\MessageGuard::maxLength();
 ?>
 <form action="<?php echo osc_esc_html(osc_base_url(true)); ?>" method="post"<?php
     echo !empty($cf['name']) ? ' name="' . osc_esc_html((string) $cf['name']) . '"' : '';
@@ -84,7 +85,7 @@ $cfPrefix = osc_esc_html((string) $cf['prefix']);
     <div class="oe-field">
         <label class="oe-label" for="<?php echo $cfPrefix; ?>-message"><?php echo osc_esc_html(_m('Message')); ?></label>
         <textarea class="oe-input" id="<?php echo $cfPrefix; ?>-message" name="message" rows="6" required
-                  minlength="10"><?php echo osc_esc_html(osc_gui_kept('message_body')); ?></textarea>
+                  minlength="10"<?php echo $cfMax > 0 ? ' maxlength="' . $cfMax . '"' : ''; ?>><?php echo osc_esc_html(osc_gui_kept('message_body')); ?></textarea>
     </div>
     <?php if (!empty($cf['attachment'])) { ?>
         <div class="oe-field">

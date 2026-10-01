@@ -255,6 +255,14 @@ final class SpamSettingsForm
             )
                 ->clampMin(0)
                 ->default(1)
+            ->number(
+                'message_max_length',
+                __('Longest message'),
+                __('Longer messages are refused. 0 allows any length.')
+            )
+                ->clampMin(0)
+                ->suffix(__('characters'))
+                ->default(5000)
             ->checkbox(
                 'message_report_link',
                 __('Add a "Report the sender" link to messages members receive')

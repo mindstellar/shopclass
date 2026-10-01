@@ -29,7 +29,8 @@ final class MessageGuard
 
     private const REPORT_TTL = 30 * 86400;
 
-    private const DEFAULT_MAX_LINKS = 1;
+    private const DEFAULT_MAX_LINKS  = 1;
+    private const DEFAULT_MAX_LENGTH = 5000;
     private const DEFAULT_BAN_DAYS  = 30;
 
     /** Common top-level domains: a bare name ending in one reads as a link in most mail apps. */
@@ -46,6 +47,18 @@ final class MessageGuard
         $v = osc_get_preference('message_max_links');
 
         return $v === '' || $v === null ? self::DEFAULT_MAX_LINKS : max(0, (int) $v);
+    }
+
+    /**
+     * Characters allowed in one message. 0 allows any length.
+     *
+     * @return int
+     */
+    public static function maxLength(): int
+    {
+        $v = osc_get_preference('message_max_length');
+
+        return $v === '' || $v === null ? self::DEFAULT_MAX_LENGTH : max(0, (int) $v);
     }
 
     /**
@@ -95,14 +108,19 @@ final class MessageGuard
     }
 
     /**
-     * The error to show when the message carries more links than allowed, or null.
+     * The error to show for a message that is too long or has too many links, or null.
      *
      * @param string $message
      *
      * @return string|null
      */
-    public static function linkError(string $message): ?string
+    public static function messageError(string $message): ?string
     {
+        $limit = self::maxLength();
+        if ($limit > 0 && mb_strlen($message) > $limit) {
+            return sprintf(_m('A message can be up to %d characters long.'), $limit);
+        }
+
         $max   = self::maxLinks();
         $count = self::countLinks($message);
         if ($count <= $max) {
@@ -117,7 +135,7 @@ final class MessageGuard
 
     /**
      * Why a message form must refuse this sender, or null: an address the ban list cannot
-     * match exactly, the ban list, then the name and phone fields, then the links.
+     * match exactly, the ban list, then the name and phone fields, then the message length and links.
      *
      * @param string   $email
      * @param string   $message
@@ -133,7 +151,7 @@ final class MessageGuard
             return _m('Please enter a correct email');
         }
 
-        return self::banError($email) ?? self::fieldError($names, $phone) ?? self::linkError($message);
+        return self::banError($email) ?? self::fieldError($names, $phone) ?? self::messageError($message);
     }
 
     /**
