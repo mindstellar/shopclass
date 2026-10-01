@@ -52,11 +52,11 @@ pin(
     $cron->getFields()
 );
 pin(
-    'the model adds exactly one method of its own',
-    array('__construct', 'getCronByType', 'newInstance'),
+    'the model adds a lookup and a claim of its own',
+    array('__construct', 'claim', 'getCronByType', 'newInstance'),
     array_values(array_intersect(
         array_keys(harness_public_method_map('Cron')),
-        array('__construct', 'newInstance', 'getCronByType')
+        array('__construct', 'newInstance', 'getCronByType', 'claim')
     ))
 );
 
@@ -123,6 +123,9 @@ $seen = $cron->getCronByType('HOURLY');
 pin('the first claim wins', true, $cron->claim('HOURLY', $seen['d_next_exec'], '2026-03-01 10:00:05', '2026-03-01 11:00:00'));
 pin('the second, from the same reading, loses', false, $cron->claim('HOURLY', $seen['d_next_exec'], '2026-03-01 10:00:06', '2026-03-01 11:00:00'));
 pin('and the schedule moved on once', '2026-03-01 10:00:05', $cron->getCronByType('HOURLY')['d_last_exec']);
+// No lock is held: a run that crashed after its claim leaves only the moved schedule behind.
+$next = $cron->getCronByType('HOURLY');
+pin('so the next hour can still be claimed after a crashed run', true, $cron->claim('HOURLY', $next['d_next_exec'], '2026-03-01 11:00:03', '2026-03-01 12:00:00'));
 pin('a type with no row cannot be claimed', false, $cron->claim('MISSING', '2026-03-01 11:00:00', '2026-03-01 12:00:00', '2026-03-01 13:00:00'));
 
 /* ----------------------------------------------------------------------------
