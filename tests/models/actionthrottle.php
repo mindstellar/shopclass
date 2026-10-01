@@ -147,7 +147,10 @@ osc_add_filter('action_throttle_limit', static function ($limit, $context) {
     return $context === 'send_friend' ? array('max' => 10) + $limit : $limit;
 });
 check('the filter raises it for that form', ActionThrottle::exceededFor('send_friend', 5) === false);
-check('and leaves other forms alone', ActionThrottle::exceededFor('item_contact', 0) === false);
+for ($i = 0; $i < 5; $i++) {
+    $seed('item_contact', '198.51.100.1', $at(60));
+}
+check('and leaves other forms at their default', ActionThrottle::exceededFor('item_contact', 5) === true);
 
 harness_section('ActionThrottle::exceeded — a max of zero disables the limit');
 

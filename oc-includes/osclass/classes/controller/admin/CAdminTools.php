@@ -677,7 +677,7 @@ class CAdminTools extends AdminSecBaseModel
 
             return;
         }
-        $path     = preg_match(BackupStore::NAME, $name) ? $store->path($name) : null;
+        $path     = BackupStore::isName($name) ? $store->path($name) : null;
         $manifest = $path !== null ? $store->manifest($name) : null;
         if ($manifest === null) {
             osc_add_flash_error_message(_m('That backup is not in the list any more.'), 'admin');
@@ -756,7 +756,7 @@ class CAdminTools extends AdminSecBaseModel
         }
         $store = BackupStore::site();
         if ($error === '' && !$store->protect()) {
-            $error = sprintf(_m('The backup folder cannot be written: %s'), BackupStore::FOLDER);
+            $error = BackupStore::unwritable();
         }
         $name = BackupStore::uploadName($ext);
         if ($error === '' && !move_uploaded_file($file['tmp_name'], $store->dir() . $name)) {

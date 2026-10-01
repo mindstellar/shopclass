@@ -89,7 +89,7 @@ class AdminSecBaseModel extends SecBaseModel
         try {
             $runner = new MigrationRunner(
                 Connection::instance(),
-                osc_lib_path() . 'osclass/installer/migrations'
+                \mindstellar\admin\DatabaseTools::migrationsDir()
             );
             $runner->ensureLedger();
             if ($runner->pending() !== array()) {

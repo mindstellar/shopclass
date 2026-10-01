@@ -113,7 +113,7 @@ foreach (array(
 ) as $bad => $what) {
     pin("refused: $what", null, $store->path($bad));
 }
-check('a download also needs a backup name, not an upload', strpos($body('backupDownload'), 'preg_match(BackupStore::NAME, $name)') !== false);
+check('a download also needs a backup name, not an upload', strpos($body('backupDownload'), 'BackupStore::isName($name)') !== false);
 check('...and its manifest', strpos($body('backupDownload'), '$store->manifest($name)') !== false);
 pin('a name carries 16 random characters', 1, preg_match(BackupStore::NAME, BackupStore::newName('database')));
 check('...so two made in the same second differ', BackupStore::newName('files') !== BackupStore::newName('files'));

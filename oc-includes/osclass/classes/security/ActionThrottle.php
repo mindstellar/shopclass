@@ -54,7 +54,7 @@ class ActionThrottle
     {
         $limit = (array) osc_apply_filter('action_throttle_limit', array('max' => $max, 'window' => $window), $context);
 
-        return self::exceeded($context, (int) ($limit['max'] ?? $max), (int) ($limit['window'] ?? $window));
+        return self::exceeded($context, (int) ($limit['max'] ?? $max), max(1, (int) ($limit['window'] ?? $window)));
     }
 
     /**

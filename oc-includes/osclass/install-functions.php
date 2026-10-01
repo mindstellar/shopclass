@@ -428,7 +428,7 @@ function install_db_error_message($code, array $ctx = array())
 function install_prefix_in_use(mysqli $db, string $prefix): bool
 {
     $count = (new \mindstellar\database\Connection($db))->scalar(
-        'SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME LIKE ? ESCAPE \'!\'',
+        'SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME LIKE BINARY ? ESCAPE \'!\'',
         array(\mindstellar\database\TablePrefix::like($prefix))
     );
 
