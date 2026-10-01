@@ -702,13 +702,13 @@ function osc_mail_layout_file(?array $bases = null): string
     if ($bases === null) {
         $bases  = array();
         $themes = WebThemes::newInstance();
-        // Cron, the admin and the CLI never load the public theme, so name it from the setting.
+        // Cron, the admin and the CLI never load the public theme; set it from the site
+        // setting, so the layout and the theme URL helpers it calls both find it.
+        if ((string) $themes->getCurrentTheme() === '' && \mindstellar\utility\Validate::packageName((string) osc_theme())) {
+            $themes->setCurrentTheme((string) osc_theme());
+        }
         $theme  = (string) $themes->getCurrentTheme();
         $active = (string) $themes->getCurrentThemePath();
-        if ($theme === '' && \mindstellar\utility\Validate::packageName((string) osc_theme())) {
-            $theme  = (string) osc_theme();
-            $active = osc_themes_path() . $theme . '/';
-        }
         if ($active !== '') {
             $bases[] = $active;
         }

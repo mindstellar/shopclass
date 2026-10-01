@@ -155,6 +155,12 @@ class WebThemes
         return self::$path;
     }
 
+    public function setCurrentTheme($theme)
+    {
+        self::$theme = $theme;
+        self::$path  = osc_themes_path() . $theme . '/';
+    }
+
     public static $theme = 'test';
 
     public function getCurrentTheme()
