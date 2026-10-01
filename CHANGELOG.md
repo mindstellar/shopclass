@@ -71,7 +71,7 @@ you find.
 - Restoring a backup runs in the background behind the maintenance page, saves a safety copy first, and puts it back if loading fails. The confirm can put back only the database or only the files.
 - **Tools > Database** lists where the database differs from what Shopclass expects, and **Repair** fixes it. `oc-cli.php db:repair` does the same.
 - Tools > Cleanup can remove the profile pictures of deleted accounts.
-- **Media → Settings → Photo format** replaces Force JPEG: keep the original format (default), save as JPEG, or save as WebP (about a third smaller). A WebP upload now stays WebP. Transparent parts of JPEG and WebP photos turn white.
+- **Media → Settings → Photo format** replaces Force JPEG: keep the original format (default), save as JPEG, or save as WebP (about a third smaller). A WebP upload now stays WebP.
 - The installer can remove an install that did not finish and start again.
 - The listing form takes HEIC photos while Browser resize is on: the browser turns them into JPEG before upload.
 - Public profiles and the contact page have a meta description.

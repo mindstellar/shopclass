@@ -9,7 +9,7 @@
  */
 
 /**
- * Pins WebP in ImageProcessing: a WebP photo stays WebP on a white background, a JPEG or PNG
+ * Pins WebP in ImageProcessing: a WebP photo stays WebP with its transparency, a JPEG or PNG
  * can be written as WebP, and resizing keeps the format. Runs with GD, and with Imagick when
  * it is loaded and can write WebP.
  *
@@ -64,11 +64,9 @@ imagejpeg(imagecreatetruecolor(200, 100), $dir . '/photo.jpg', 90);
 $read = static function (string $path): array {
     $info = getimagesize($path);
     $gd   = imagecreatefromstring((string) file_get_contents($path));
-    $px   = imagecolorat($gd, 2, 2);
-    $a    = ($px >> 24) & 0x7F;
-    $rgb  = $px & 0xFFFFFF;
+    $a    = (imagecolorat($gd, 2, 2) >> 24) & 0x7F;
 
-    return array($info['mime'], $info[0] . 'x' . $info[1], $a > 100 ? 'transparent corner' : ($rgb > 0xF0F0F0 ? 'white corner' : 'dark corner'));
+    return array($info['mime'], $info[0] . 'x' . $info[1], $a > 100 ? 'transparent corner' : 'opaque corner');
 };
 
 $engines = array();
@@ -88,20 +86,20 @@ foreach ($engines as $engine => $imagick) {
     $webp = ImageProcessing::fromFile($dir . '/alpha.webp');
     pin('a WebP photo is read as WebP', array('webp', 'image/webp'), array($webp->getExt(), $webp->getMime()));
     $webp->resizeTo(100, 50)->saveToFile($dir . "/out-$engine.webp");
-    pin('and saved at its own format is flattened onto white', array('image/webp', '100x50', 'white corner'), $read($dir . "/out-$engine.webp"));
+    pin('and saved at its own format keeps its transparency', array('image/webp', '100x50', 'transparent corner'), $read($dir . "/out-$engine.webp"));
 
     ImageProcessing::fromFile($dir . '/alpha.png')->saveToFile($dir . "/png-$engine.webp", 'webp');
-    pin('a PNG written as WebP is flattened onto white', array('image/webp', '200x100', 'white corner'), $read($dir . "/png-$engine.webp"));
+    pin('a PNG written as WebP keeps its transparency', array('image/webp', '200x100', 'transparent corner'), $read($dir . "/png-$engine.webp"));
 
     ImageProcessing::fromFile($dir . '/photo.jpg')->saveToFile($dir . "/jpg-$engine.webp", 'webp');
     pin('a JPEG can be written as WebP', 'image/webp', $read($dir . "/jpg-$engine.webp")[0]);
 
     // Resized to a square without Force aspect, a wide photo gets bands above and below.
     ImageProcessing::fromFile($dir . '/photo.jpg')->resizeTo(100, 100)->saveToFile($dir . "/pad-$engine.webp", 'webp');
-    pin('a JPEG resized into WebP gets white bands', array('image/webp', '100x100', 'white corner'), $read($dir . "/pad-$engine.webp"));
+    pin('a JPEG resized into WebP gets transparent bands', array('image/webp', '100x100', 'transparent corner'), $read($dir . "/pad-$engine.webp"));
     ImageProcessing::fromFile($dir . '/photo.jpg')->resizeTo(100, 100)->saveToFile($dir . "/pad-$engine.jpg", 'jpeg');
     $pad = imagecreatefromjpeg($dir . "/pad-$engine.jpg");
-    pin('and into JPEG too', 'white', (imagecolorat($pad, 2, 2) & 0xFFFFFF) > 0xF0F0F0 ? 'white' : sprintf('%06x', imagecolorat($pad, 2, 2)));
+    pin('and into JPEG white ones', 'white', (imagecolorat($pad, 2, 2) & 0xFFFFFF) > 0xF0F0F0 ? 'white' : sprintf('%06x', imagecolorat($pad, 2, 2)));
 
     ImageProcessing::fromFile($dir . '/alpha.webp')->saveToFile($dir . "/back-$engine.jpg", 'jpeg');
     pin('and a WebP can still be written as JPEG', 'image/jpeg', $read($dir . "/back-$engine.jpg")[0]);
