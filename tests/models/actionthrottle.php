@@ -32,6 +32,17 @@ require_once __DIR__ . '/../lib/harness.php';
 use mindstellar\security\ActionThrottle;
 
 $admin = scratchdb_session('osc_models_actionthrottle');
+// exceededFor() reads its limits through the filter API.
+if (!defined('PLUGINS_PATH')) {
+    define('PLUGINS_PATH', ABS_PATH . 'oc-content/plugins/');
+}
+if (!function_exists('osc_plugins_path')) {
+    function osc_plugins_path()
+    {
+        return PLUGINS_PATH;
+    }
+}
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hPlugins.php';
 $table = DB_TABLE_PREFIX . 't_login_attempt';
 
 $truncate = static function () use ($admin, $table): void {
@@ -131,6 +142,12 @@ check('four sends under a limit of five is allowed', ActionThrottle::exceeded('s
 $seed('send_friend', '198.51.100.1', $at(60)); // fifth
 check('the fifth send reaches the limit and the next is refused', ActionThrottle::exceeded('send_friend', 5, 3600) === true);
 check('a higher limit still lets it through', ActionThrottle::exceeded('send_friend', 10, 3600) === false);
+check('exceededFor uses the default limit', ActionThrottle::exceededFor('send_friend', 5) === true);
+osc_add_filter('action_throttle_limit', static function ($limit, $context) {
+    return $context === 'send_friend' ? array('max' => 10) + $limit : $limit;
+});
+check('the filter raises it for that form', ActionThrottle::exceededFor('send_friend', 5) === false);
+check('and leaves other forms alone', ActionThrottle::exceededFor('item_contact', 0) === false);
 
 harness_section('ActionThrottle::exceeded — a max of zero disables the limit');
 

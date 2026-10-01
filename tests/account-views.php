@@ -226,7 +226,7 @@ foreach (array($guiDir . 'contact-content.php', $guiDir . 'item-contact-content.
 $nonSecure = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebUserNonSecure.php');
 preg_match("/case 'contact_post':.*?break;/s", $nonSecure, $contactCase);
 check('user contact_post checks the CSRF token', isset($contactCase[0]) && strpos($contactCase[0], 'osc_csrf_check()') !== false);
-check('user contact_post is throttled', isset($contactCase[0]) && strpos($contactCase[0], "ActionThrottle::exceeded(\n                    'user_contact'") !== false);
+check('user contact_post is throttled', isset($contactCase[0]) && strpos($contactCase[0], "ActionThrottle::exceededFor('user_contact'") !== false);
 
 $alertsSrc = (string) file_get_contents($accountIn . 'user-alerts-content.php');
 check('alerts apply alert_row_actions', strpos($alertsSrc, "osc_apply_filter('alert_row_actions'") !== false);

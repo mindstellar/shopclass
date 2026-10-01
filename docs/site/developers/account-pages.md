@@ -242,9 +242,8 @@ a failed send, with the reason in `.oe-form-error` at the top of the form. Witho
 JavaScript it shows in place and the button jumps to it.
 
 `user_contact_form($user)` fires inside the form, before the button, and
-`user_contact_form_after($user)` after it. Sends are limited per visitor by the
-`user_contact_throttle_max` (15) and `user_contact_throttle_window` (3600
-seconds) filters.
+`user_contact_form_after($user)` after it. Sends are limited to 15 an hour per visitor. The
+`action_throttle_limit` filter changes it for `'user_contact'`.
 
 ## Changing the listing rows
 

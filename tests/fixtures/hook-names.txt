@@ -271,6 +271,7 @@ action user_register_failed
 action user_register_form
 action user_register_form_after
 action validate_user
+filter action_throttle_limit
 filter actions_manage_alerts
 filter actions_manage_items
 filter actions_manage_keyword_block
@@ -304,8 +305,6 @@ filter alert_email_weekly_title
 filter alert_email_weekly_title_after
 filter alert_row_actions
 filter alert_search_params
-filter alert_subscribe_throttle_max
-filter alert_subscribe_throttle_window
 filter alerts_processing_row
 filter ban_rule_bulk_filter
 filter base_url
@@ -416,8 +415,6 @@ filter image_png_compression
 filter init_send_mail
 filter item_add_prepare_data
 filter item_bulk_filter
-filter item_contact_throttle_max
-filter item_contact_throttle_window
 filter item_description
 filter item_edit_prepare_data
 filter item_mark
@@ -500,11 +497,7 @@ filter save_latest_searches_pattern
 filter scripts_defer
 filter search_pattern
 filter search_results
-filter send_friend_throttle_max
-filter send_friend_throttle_window
 filter shutdown_functions
-filter site_contact_throttle_max
-filter site_contact_throttle_window
 filter sitemap_items_source
 filter sitemap_items_total
 filter sitemap_url_entry
@@ -523,8 +516,6 @@ filter upload_image_extension
 filter upload_image_mime
 filter user_add_flash_error
 filter user_bulk_filter
-filter user_contact_throttle_max
-filter user_contact_throttle_window
 filter user_edit_flash_error
 filter user_info
 filter user_menu_filter

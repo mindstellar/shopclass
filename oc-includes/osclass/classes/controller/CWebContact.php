@@ -75,11 +75,7 @@ class CWebContact extends BaseModel
 
                     return false;
                 }
-                if (\mindstellar\security\ActionThrottle::exceeded(
-                    'site_contact',
-                    (int) osc_apply_filter('site_contact_throttle_max', 5),
-                    (int) osc_apply_filter('site_contact_throttle_window', 3600)
-                )) {
+                if (\mindstellar\security\ActionThrottle::exceededFor('site_contact', 5)) {
                     $fail(_m("You've sent too many messages recently. Please try again later."));
 
                     return false;

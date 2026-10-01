@@ -136,7 +136,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 536 names. Generated from the source; do not edit by hand.
+Core fires 527 names. Generated from the source; do not edit by hand.
 
 ### Admin (77)
 
@@ -345,7 +345,7 @@ Core fires 536 names. Generated from the source; do not edit by hand.
 | `hook_email_user_validation` | action | `$user, $input` | `oc-includes/osclass/classes/actions/UserActions.php` |
 | `hook_email_warn_expiration` | action | `$item` | `oc-includes/osclass/cron.php` |
 
-### Item (76)
+### Item (74)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -367,8 +367,6 @@ Core fires 536 names. Generated from the source; do not edit by hand.
 | `item_comments_after` | action | — | `oc-includes/osclass/gui/item-comments-content.php` |
 | `item_comments_before` | action | — | `oc-includes/osclass/gui/item-comments-content.php` |
 | `item_contact_form` | action | — | `oc-includes/osclass/gui/item-contact-content.php` |
-| `item_contact_throttle_max` | filter | `15` | `oc-includes/osclass/classes/controller/CWebItem.php` |
-| `item_contact_throttle_window` | filter | `3600` | `oc-includes/osclass/classes/controller/CWebItem.php` |
 | `item_content_updated` | action | `(int)$id, $locale` | `oc-includes/osclass/classes/model/Item.php` |
 | `item_decrease_stat` | action | `$item` | `oc-includes/osclass/classes/actions/ItemActions.php` |
 | `item_description` | filter | `$v['s_description']` | `oc-includes/osclass/classes/controller/CWebItem.php` |
@@ -426,12 +424,13 @@ Core fires 536 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/osclass/classes/model/Search.php` |
 
-### Other (199)
+### Other (194)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
 | `account_page_after` | action | `'user-alerts'` | `oc-includes/osclass/gui/account/user-alerts-content.php` |
 | `account_page_before` | action | `'user-alerts'` | `oc-includes/osclass/gui/account/user-alerts-content.php` |
+| `action_throttle_limit` | filter | `array('max' => $max, 'window' => $window), $context` | `oc-includes/osclass/classes/security/ActionThrottle.php` |
 | `actions_manage_alerts` | filter | `$options, $aRow` | `oc-includes/osclass/classes/datatables/AlertsDataTable.php` |
 | `actions_manage_keyword_block` | filter | `$options, $aRow` | `oc-includes/osclass/classes/datatables/KeywordBlocksDataTable.php` |
 | `actions_manage_rules` | filter | `$options, $aRow` | `oc-includes/osclass/classes/datatables/BanRulesDataTable.php` |
@@ -463,8 +462,6 @@ Core fires 536 names. Generated from the source; do not edit by hand.
 | `alert_email_weekly_title` | filter | `$template['s_title'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
 | `alert_email_weekly_title_after` | filter | `osc_mailBeauty($_title, $words), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
 | `alert_row_actions` | filter | `$alertActions, osc_alert()` | `oc-includes/osclass/gui/account/user-alerts-content.php` |
-| `alert_subscribe_throttle_max` | filter | `10` | `oc-includes/osclass/helpers/hSearch.php` |
-| `alert_subscribe_throttle_window` | filter | `3600` | `oc-includes/osclass/helpers/hSearch.php` |
 | `alerts_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/AlertsDataTable.php` |
 | `ban_rule_bulk_filter` | filter | `$bulk_options` | `oc-includes/osclass/classes/controller/admin/CAdminUsers.php` |
 | `base_url` | filter | `$path, $with_index` | `oc-includes/osclass/helpers/hDefines.php` |
@@ -609,13 +606,9 @@ Core fires 536 names. Generated from the source; do not edit by hand.
 | `sanitize_html_allowed` | filter | `implode(',', array( 'p', 'br', 'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li', 'a[href\|title\|rel]', 'h3', 'h4', 'blockquote', 'hr', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'span[style]', 'img[src\|alt\|width\|height]', ))` | `oc-includes/osclass/helpers/hSanitize.php` |
 | `scripts_defer` | filter | `defined('OC_ADMIN') && OC_ADMIN` | `oc-includes/osclass/classes/Scripts.php` |
 | `scripts_loaded` | action | — | `oc-includes/osclass/helpers/hTheme.php` |
-| `send_friend_throttle_max` | filter | `5` | `oc-includes/osclass/classes/controller/CWebItem.php` |
-| `send_friend_throttle_window` | filter | `3600` | `oc-includes/osclass/classes/controller/CWebItem.php` |
 | `settings_page_after_group` | action | `$page['id'], $group, $index` | `oc-includes/osclass/classes/admin/ui/SettingsForm.php` |
 | `settings_page_saved` | action | `$pageId, $exposed` | `oc-includes/osclass/helpers/hSettings.php` |
 | `shutdown_functions` | filter | `[$injectCsrf]` | `oc-includes/osclass/classes/Csrf.php` |
-| `site_contact_throttle_max` | filter | `5` | `oc-includes/osclass/classes/controller/CWebContact.php` |
-| `site_contact_throttle_window` | filter | `3600` | `oc-includes/osclass/classes/controller/CWebContact.php` |
 | `slug` | filter | `trim($fieldsDescription['s_slug'])` | `oc-includes/osclass/classes/model/Category.php` |
 | `static_page_text` | filter | `osc_static_page_field('s_text', $locale), $locale` | `oc-includes/osclass/helpers/hPage.php` |
 | `style_url` | filter | `$css` | `oc-includes/osclass/classes/Styles.php` |
@@ -675,7 +668,7 @@ Core fires 536 names. Generated from the source; do not edit by hand.
 | `theme_screenshot_url` | filter | `$url, $theme` | `oc-includes/osclass/helpers/hTheme.php` |
 | `theme_url` | filter | `$script` | `oc-includes/osclass/classes/Scripts.php` |
 
-### User (44)
+### User (42)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -704,8 +697,6 @@ Core fires 536 names. Generated from the source; do not edit by hand.
 | `user_bulk_filter` | filter | `$bulk_options` | `oc-includes/osclass/classes/controller/admin/CAdminUsers.php` |
 | `user_contact_form` | action | `$publicUser` | `oc-includes/osclass/gui/account/user-public-profile-content.php` |
 | `user_contact_form_after` | action | `$publicUser` | `oc-includes/osclass/gui/account/user-public-profile-content.php` |
-| `user_contact_throttle_max` | filter | `15` | `oc-includes/osclass/classes/controller/CWebUserNonSecure.php` |
-| `user_contact_throttle_window` | filter | `3600` | `oc-includes/osclass/classes/controller/CWebUserNonSecure.php` |
 | `user_dashboard` | action | — | `oc-includes/osclass/gui/account/user-dashboard-content.php` |
 | `user_edit_completed` | action | `$userId` | `oc-includes/osclass/classes/actions/UserActions.php` |
 | `user_edit_flash_error` | filter | `$flash_error, $userId` | `oc-includes/osclass/classes/actions/UserActions.php` |

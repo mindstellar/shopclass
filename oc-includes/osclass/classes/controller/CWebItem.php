@@ -579,11 +579,7 @@ class CWebItem extends BaseModel
 
                 // Bound how many listings one source may share per window — the form
                 // relays site-branded mail, so it needs a ceiling regardless of the login.
-                if (\mindstellar\security\ActionThrottle::exceeded(
-                    'send_friend',
-                    (int)osc_apply_filter('send_friend_throttle_max', 5),
-                    (int)osc_apply_filter('send_friend_throttle_window', 3600)
-                )) {
+                if (\mindstellar\security\ActionThrottle::exceededFor('send_friend', 5)) {
                     osc_add_flash_error_message(
                         _m("You've shared too many listings recently. Please try again later.")
                     );
@@ -685,15 +681,10 @@ class CWebItem extends BaseModel
                 // Bound how many enquiries one source may send per window (defence in
                 // depth: contact only reaches a listing's own seller, not an arbitrary
                 // address, so the default ceiling is looser than share-a-listing).
-                if (\mindstellar\security\ActionThrottle::exceeded(
-                    'item_contact',
-                    (int)osc_apply_filter('item_contact_throttle_max', 15),
-                    (int)osc_apply_filter('item_contact_throttle_window', 3600)
-                )) {
-                    osc_add_flash_error_message(
-                        _m("You've sent too many messages recently. Please try again later.")
-                    );
-                    $this->redirectTo(osc_item_url());
+                if (\mindstellar\security\ActionThrottle::exceededFor('item_contact', 15)) {
+                    $fail(_m("You've sent too many messages recently. Please try again later."));
+
+                    return false;
                 }
 
                 $refused = \mindstellar\security\MessageHold::attachmentError(

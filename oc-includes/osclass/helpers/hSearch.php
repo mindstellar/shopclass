@@ -455,11 +455,7 @@ function osc_subscribe_alert(string $token, string $email): int
         if (osc_is_banned($email) !== 0) {
             return -1;
         }
-        if (\mindstellar\security\ActionThrottle::exceeded(
-            'alert_subscribe',
-            (int)osc_apply_filter('alert_subscribe_throttle_max', 10),
-            (int)osc_apply_filter('alert_subscribe_throttle_window', 3600)
-        )) {
+        if (\mindstellar\security\ActionThrottle::exceededFor('alert_subscribe', 10)) {
             return -5;
         }
     }
