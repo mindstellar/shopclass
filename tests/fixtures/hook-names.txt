@@ -221,6 +221,7 @@ action item_premium_on
 action item_spam_off
 action item_spam_on
 action items_bulk_enabled_by_category
+action job_gave_up
 action login_admin
 action login_admin_form
 action logout

@@ -387,18 +387,6 @@ final class JobQueue
                 $params
             );
 
-            // A claimed job gives up its key, so a change that arrives mid-run queues a new job.
-            // Its own statement: before migration 0050 the column is missing, and the claim
-            // must still work.
-            try {
-                osc_db_execute(
-                    'UPDATE ' . $table . ' SET s_unique = NULL WHERE s_worker = ? AND s_unique IS NOT NULL',
-                    array($token)
-                );
-            } catch (DbException $e) {
-                // absorbed
-            }
-
             $rows = osc_db_select(
                 'SELECT * FROM ' . $table . ' WHERE s_worker = ? AND s_status = ?'
                 . ' ORDER BY pk_i_id',
@@ -406,6 +394,24 @@ final class JobQueue
             );
         } catch (DbException $e) {
             return array();
+        }
+
+        // A claimed job gives up its key, so a change that arrives mid-run queues a new job.
+        // By primary key, so only the claimed rows are locked; before migration 0050 the
+        // column is missing, and the claim must still work.
+        $keyed = array();
+        foreach ($rows as $i => $row) {
+            if (($row['s_unique'] ?? null) !== null) {
+                $keyed[]             = (int) $row['pk_i_id'];
+                $rows[$i]['s_unique'] = null;
+            }
+        }
+        if ($keyed !== array()) {
+            try {
+                osc_db_table($table)->whereIn('pk_i_id', $keyed)->update(array('s_unique' => null));
+            } catch (DbException $e) {
+                // absorbed
+            }
         }
 
         return $rows === array() ? array() : osc_db_stringify_rows($rows);

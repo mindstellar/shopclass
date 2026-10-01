@@ -214,6 +214,7 @@ final class JobWorker
         }
         $detail = JobRegistry::detail($type, $payload);
         self::log('gave_up', $id, JobRegistry::name($type) . ($detail !== '' ? ' - ' . $detail : '') . ': ' . $error);
+        osc_run_hook('job_gave_up', $type, $payload, $error, $id);
 
         return 'gave_up';
     }

@@ -45,6 +45,17 @@ use mindstellar\job\JobRegistry;
 use mindstellar\job\JobWorker;
 
 $admin = scratchdb_session('osc_models_jobqueue');
+// The worker fires hooks, which load the plugin API.
+if (!defined('PLUGINS_PATH')) {
+    define('PLUGINS_PATH', ABS_PATH . 'oc-content/plugins/');
+}
+if (!function_exists('osc_plugins_path')) {
+    function osc_plugins_path()
+    {
+        return PLUGINS_PATH;
+    }
+}
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hPlugins.php';
 $table = DB_TABLE_PREFIX . 't_job_queue';
 $queue = JobQueue::instance();
 
@@ -325,6 +336,16 @@ $id = $queue->enqueue('test.boom', array());
 JobWorker::run(10);
 pin('a throwing handler fails its job', 'pending:a1:wNULL:lkNULL', $rowState($id));
 pin('with the exception message as the reason', 'handler said no', $column($id, 's_last_error'));
+
+$gaveUp = array();
+osc_add_hook('job_gave_up', static function ($type, $payload, $error, $jobId) use (&$gaveUp) {
+    $gaveUp[] = array($type, $error, $jobId);
+});
+JobWorker::run(10);
+pin('a retry is not a give-up', array(), $gaveUp);
+$admin->query("UPDATE $table SET i_attempts = " . (JobQueue::MAX_ATTEMPTS - 1) . ", dt_next_run = NOW() WHERE pk_i_id = $id");
+JobWorker::run(10);
+pin('the last try fires job_gave_up', array(array('test.boom', 'handler said no', $id)), $gaveUp);
 
 $truncate();
 $id = $queue->enqueue('test.batch', array('offset' => 0));

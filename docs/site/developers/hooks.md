@@ -136,7 +136,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 527 names. Generated from the source; do not edit by hand.
+Core fires 528 names. Generated from the source; do not edit by hand.
 
 ### Admin (77)
 
@@ -424,7 +424,7 @@ Core fires 527 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/osclass/classes/model/Search.php` |
 
-### Other (194)
+### Other (195)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -544,6 +544,7 @@ Core fires 527 names. Generated from the source; do not edit by hand.
 | `init_register` | action | — | `oc-includes/osclass/classes/controller/CWebRegister.php` |
 | `init_send_mail` | filter | `$mail, $params` | `oc-includes/osclass/utils.php` |
 | `invalidate_locale_cache` | action | — | `oc-includes/osclass/helpers/hCache.php` |
+| `job_gave_up` | action | `$type, $payload, $error, $id` | `oc-includes/osclass/classes/job/JobWorker.php` |
 | `keyword_block_bulk_filter` | filter | `$bulk_options` | `oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsKeywordBlock.php` |
 | `keyword_block_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/KeywordBlocksDataTable.php` |
 | `language_attributes` | filter | `$attrs` | `oc-includes/osclass/helpers/hTheme.php` |

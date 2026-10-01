@@ -171,7 +171,17 @@ queue and does nothing else, so it is safe to run every minute:
 ```
 
 `php oc-cli.php jobs:status` reports what is waiting and names anything that gave up. Both
-exit non-zero when a job has stopped retrying, so a cron log can notice.
+exit non-zero when a job has stopped retrying, so a cron log can notice. `php oc-cli.php doctor`
+warns about the same, and about work that has waited over an hour.
+
+To alert on it, hook `job_gave_up`. It fires once when a job uses its last try, with the type,
+payload, error and job id:
+
+```php
+osc_add_hook('job_gave_up', function ($type, $payload, $error, $id) {
+    error_log("Job $id ($type) gave up: $error");
+});
+```
 
 ## Seeing what is happening
 

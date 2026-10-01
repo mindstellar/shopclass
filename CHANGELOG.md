@@ -59,6 +59,7 @@ you find.
 
 ### New
 
+- A `job_gave_up` hook fires when a background job stops retrying, and `oc-cli.php doctor` warns about failed or long-waiting jobs.
 - Message mail leaves only from a confirmed address: a guest clicks a link sent to the address they typed, and that browser is then trusted for 30 days.
 - Mail from the contact form carries a *Report the sender* link that lets a signed-in admin ban the address for good.
 - Messages allow 1 link and 5000 characters by default (Settings → Spam and bots → Messages). Mail a member receives carries a one-time *Report the sender* link that blocks the sender from messages for 30 days.
@@ -167,6 +168,7 @@ you find.
 
 ### Fixed
 
+- Claiming background jobs no longer locks the whole queue table, which could deadlock with new jobs being added under load.
 - Category counts stay right when premium is turned on or off, when premium ends, and when a category moves to a new parent.
 - A listing title longer than 100 characters no longer leaves a listing without a title under strict SQL mode. Titles are capped at 100, the settings refuse larger limits, and a failed save is undone.
 - When memcached is down or frozen, pages keep working from the database. Before, cached reads came back empty, and some admin pages failed.

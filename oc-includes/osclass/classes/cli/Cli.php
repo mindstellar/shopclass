@@ -1681,6 +1681,17 @@ class Cli
             $check('ok', 'Cron', 'last run ' . date('Y-m-d H:i', $cronLast));
         }
 
+        // Job queue: jobs that stopped retrying, and work left waiting.
+        $jobs   = \mindstellar\job\JobQueue::instance()->stats();
+        $oldest = $jobs['oldest'] !== null ? strtotime((string) $jobs['oldest']) : false;
+        if ($jobs['error'] > 0) {
+            $check('warn', 'Job queue', $jobs['error'] . ' job(s) stopped retrying; run jobs:status');
+        } elseif ($oldest !== false && time() - $oldest > 3600) {
+            $check('warn', 'Job queue', $jobs['pending'] . ' waiting, oldest since ' . date('Y-m-d H:i', $oldest) . '; is cron running?');
+        } else {
+            $check('ok', 'Job queue', $jobs['pending'] . ' waiting');
+        }
+
         // Object cache backend.
         $driver = defined('OSC_CACHE') ? (string) OSC_CACHE : 'default';
         $driver === 'default'
