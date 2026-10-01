@@ -99,7 +99,7 @@ class ImageProcessing
                 $this->mime = 'image/png';
                 break;
             case 'image/webp':
-                // Stays WebP, transparency and all, where the server can write it; else JPEG below.
+                // Stays WebP where the server can write it; else JPEG below.
                 if (self::canWriteWebp($this->use_imagick)) {
                     $this->ext  = 'webp';
                     $this->mime = 'image/webp';
@@ -406,13 +406,16 @@ class ImageProcessing
 
         if ($this->use_imagick) {
             try {
-                if ($ext === 'jpeg') {
+                // Photos have no use for transparency: JPEG and WebP get a white background.
+                if ($ext === 'jpeg' || $ext === 'webp') {
                     $bg = new Imagick();
                     $bg->newImage($this->width, $this->height, 'white');
                     $this->im->thumbnailImage($this->width, $this->height, true);
                     $bg->compositeImage($this->im, imagick::COMPOSITE_OVER, 0, 0);
-                    $this->im  = $bg;
-                    $this->ext = 'jpeg';
+                    $this->im = $bg;
+                    if ($ext === 'jpeg') {
+                        $this->ext = 'jpeg';
+                    }
                 }
                 $this->im->setImageDepth(8);
                 // Strip EXIF/profiles: smaller files, and no leaking camera/GPS metadata.
@@ -435,8 +438,11 @@ class ImageProcessing
                     imagepng($this->im, $imagePath, $png_compression);
                     break;
                 case 'webp':
-                    imagesavealpha($this->im, true);
-                    imagewebp($this->im, $imagePath, $jpeg_quality);
+                    $flat = imagecreatetruecolor($this->width, $this->height);
+                    imagefill($flat, 0, 0, imagecolorallocate($flat, 255, 255, 255));
+                    imagecopy($flat, $this->im, 0, 0, 0, 0, $this->width, $this->height);
+                    imagewebp($flat, $imagePath, $jpeg_quality);
+                    imagedestroy($flat);
                     break;
                 default:
                     if (($ext === 'jpeg' && ($this->ext !== 'jpeg' && $this->ext !== 'jpg')) || $this->watermarked) {

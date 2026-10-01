@@ -50,10 +50,12 @@ Safari can do this; a browser that cannot read HEIC says so and uploads nothing.
 
 **Photo format** says how new photos are saved:
 
-- **Keep the original format** (default): JPEG, PNG, GIF and WebP stay as they are.
-- **Save as JPEG**: the smallest choice for old browsers. Transparent parts turn white.
-- **Save as WebP**: about a third smaller than JPEG, and keeps transparency. Shown only
-  when your server's PHP can write WebP.
+- **Keep the original format** (default): JPEG, PNG, GIF and WebP keep their format.
+- **Save as JPEG**: the smallest choice for old browsers.
+- **Save as WebP**: about a third smaller than JPEG. Shown only when your server's PHP
+  can write WebP.
+
+JPEG and WebP photos have no transparent parts: they turn white.
 
 Photos already uploaded keep their format.
 
