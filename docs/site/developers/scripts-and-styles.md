@@ -68,8 +68,8 @@ Bootstrap 5, not jQuery:
 | Registered in the admin | Depends on |
 |---|---|
 | `bootstrap5` | `popper` |
-| `popper` | — |
-| `sortablejs` | — |
+| `popper` | none |
+| `sortablejs` | none |
 | `admin-osc`, `admin-ui-osc`, `admin-categories`, `admin-location` | core admin behaviour |
 
 If your code needs jQuery, ship it and register it yourself:
@@ -80,8 +80,8 @@ osc_register_script('myplugin-widget', $url, 'jquery');
 osc_enqueue_script('myplugin-widget');   // pulls jquery in first
 ```
 
-Better: most of what plugins used jQuery for — selectors, `fetch`, class
-toggling, event delegation — is a few lines of plain JavaScript in a browser
+Better: most of what plugins used jQuery for (selectors, `fetch`, class
+toggling, event delegation) is a few lines of plain JavaScript in a browser
 from the last decade. Dropping the dependency makes your plugin lighter and
 removes a class of version conflicts entirely.
 
@@ -90,7 +90,7 @@ removes a class of version conflicts entirely.
 The `$id` is a global namespace shared with every other plugin on the install.
 
 - Prefix ids with your plugin folder: `myplugin-widget`, not `widget`.
-- For a **third-party library**, use the library's ordinary name — `fancybox`,
+- For a **third-party library**, use the library's ordinary name: `fancybox`,
   `chartjs`, `flatpickr`. Two plugins registering the same library under the
   same id load it once; register it as `my_strange_name` and the visitor
   downloads it twice.
@@ -116,14 +116,14 @@ Render the input, and nothing else.
 | `data-ac` | The endpoint: `location_countries`, `location_regions` or `location_cities`. |
 | `data-ac-url` | Where to post. Always `osc_base_url(true)`. |
 | `data-ac-target` | Selector of the hidden input that receives the chosen row's id. |
-| `data-ac-scope` | Selector whose value narrows the search — the region, for a city. |
+| `data-ac-scope` | Selector whose value narrows the search: the region, for a city. |
 | `data-ac-scope-param` | The parameter name that value is sent as. |
 | `data-ac-clears` | Comma-separated selectors emptied when this field changes. |
 
 The endpoints match on the first letters of a name and return `{id, value}` rows.
 
 If your theme already ships its own binder, it wins the race and core's becomes a
-no-op for that field — so adopting this is safe and can be done one field at a time.
+no-op for that field, so adopting this is safe and can be done one field at a time.
 
 ## Cache-busting
 

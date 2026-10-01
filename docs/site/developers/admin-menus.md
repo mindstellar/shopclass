@@ -94,13 +94,13 @@ function myplugin_admin_menu()
 osc_add_hook('admin_menu_init', 'myplugin_admin_menu');
 ```
 
-Use a **unique** `$menu_id`. Prefix it with your plugin folder — two plugins
+Use a **unique** `$menu_id`. Prefix it with your plugin folder: two plugins
 claiming the same id overwrite each other's menus.
 
 :::caution[Settings screens]
 Pointing a menu at a hand-written `admin/settings.php` is deprecated for
-settings. [Declare a settings page](/docs/developers/settings-pages/) instead
-— core adds its menu entry for you. For a screen that edits one record, build
+settings. [Declare a settings page](/docs/developers/settings-pages/) instead.
+Core adds its menu entry for you. For a screen that edits one record, build
 it from the [editor components](/docs/developers/admin-editors/).
 :::
 

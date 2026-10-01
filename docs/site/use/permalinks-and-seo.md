@@ -14,7 +14,7 @@ use them.
 **Settings → Permalinks.**
 
 With friendly URLs off, a listing is `index.php?page=item&id=1234`. With them on
-it carries the title. Turn them on **before** the site is indexed — changing URL
+it carries the title. Turn them on **before** the site is indexed: changing URL
 structure afterwards means redirects and lost rankings.
 
 Every route has its own pattern: listings, pages, categories, search, contact,
@@ -29,7 +29,7 @@ self-describing, and means the URL changes if a listing is re-categorised.
 :::caution[Friendly URLs need web-server rewriting]
 On Apache, `mod_rewrite` must be enabled and `AllowOverride All` must apply so
 the shipped `.htaccess` is read. On nginx you need a `try_files` rule. If every
-link shows a 404 (page not found) error after turning them on, this is why —
+link shows a 404 (page not found) error after turning them on, this is why:
 see [install troubleshooting](/docs/install/#troubleshooting).
 :::
 
@@ -47,8 +47,8 @@ Choose what goes in:
 - Countries, regions and cities
 - Pages
 
-Extra URLs the sitemap would not otherwise find — pages served by a plugin, for
-example — can be added by hand, each with its own **frequency** (Hourly, Daily,
+Extra URLs the sitemap would not otherwise find (pages served by a plugin, for
+example) can be added by hand, each with its own **frequency** (Hourly, Daily,
 Weekly, Monthly or Yearly) and **last modified** date.
 
 **Include what has content, exclude what does not.** Categories-with-cities
@@ -77,18 +77,18 @@ filter combinations wastes it on pages you do not want ranking anyway.
 Every search has an RSS feed (a machine-readable list of results that updates
 automatically), and users can subscribe to one as an
 [alert](/docs/use/listings-and-moderation/#alerts) delivered by e-mail. Alerts
-are sent by **cron** (a timer on your server — see
+are sent by **cron** (a timer on your server, see
 [Set up cron](/docs/configure/cron/)) on the schedule the user picked; without
 cron they never arrive.
 
-**Settings → Latest searches** controls how long queries are kept — an hour, a
+**Settings → Latest searches** controls how long queries are kept: an hour, a
 day, a week, forever, the last 1000, or a number you set. That log is worth
 reading: it tells you the words your visitors actually use, which is what your
 category names should match.
 
 ## Practical SEO for a classifieds site
 
-- **Listing titles are your page titles.** Encourage sellers to write real ones —
+- **Listing titles are your page titles.** Encourage sellers to write real ones:
   the publish-form placeholder does more for your rankings than any setting here.
 - **Expired listings are a decision.** Deleting them 404s pages that may still
   rank; keeping them all leaves visitors finding unavailable items. Most sites
@@ -99,5 +99,5 @@ category names should match.
   it consistently, and redirect the other. Both answering the same content
   splits your ranking signal.
 - **Make the site fast.** Turn on [object caching](/docs/configure/cache/) and
-  put a proxy or CDN in front — see the
+  put a proxy or CDN in front: see the
   [caching contract](/docs/developers/caching/).

@@ -1,6 +1,6 @@
 ---
 title: Page caching
-description: Serve public pages from nginx without running PHP — the switch in the Docker image, keeping pages for an hour, and clearing them the moment a listing changes.
+description: "Serve public pages from nginx without running PHP: the switch in the Docker image, keeping pages for an hour, and clearing them the moment a listing changes."
 sidebar:
   order: 5
 ---

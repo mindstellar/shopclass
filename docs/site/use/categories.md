@@ -1,6 +1,6 @@
 ---
 title: Categories
-description: Build and manage the ShopClass category tree — adding, nesting, reordering, disabling and translating categories, and what happens to listings when you change one.
+description: "Build and manage the ShopClass category tree: adding, nesting, reordering, disabling and translating categories, and what happens to listings when you change one."
 sidebar:
   order: 2
 ---
@@ -56,12 +56,12 @@ Rename early, or not at all.
 
 Editing a category exposes its own rules:
 
-- **Expiration (days)** — how long a listing in this category lives. This
+- **Expiration (days)**: how long a listing in this category lives. This
   is where listing expiry is set, not in the global listing settings. Zero
   means listings in this category never expire.
-- **Show the price field on listings in this category** — whether the
+- **Show the price field on listings in this category**: whether the
   price field appears at all.
-- **Apply the expiration and price changes to all subcategories** — the
+- **Apply the expiration and price changes to all subcategories**: the
   option that saves you editing each child by hand.
 
 Plugins can add their own per-category settings here too.
@@ -87,5 +87,5 @@ A few rules that hold up:
 - **Keep it shallow.** Every extra level is another click between a
   visitor and a listing.
 - **Fewer, broader categories plus good filters** beats a deep tree.
-  Filters are what actually narrow a search — that is what forms and fields
+  Filters are what actually narrow a search: that is what forms and fields
   are for.

@@ -1,13 +1,13 @@
 ---
 title: Docker & the production image
-description: Run ShopClass from the published container image — environment configuration, persistent volumes, and how core and packages update differently.
+description: "Run ShopClass from the published container image: environment configuration, persistent volumes, and how core and packages update differently."
 sidebar:
   order: 1
 ---
 
-ShopClass publishes a self-contained image — Nginx (the web server), PHP-FPM
+ShopClass publishes a self-contained image: Nginx (the web server), PHP-FPM
 (the process that runs the PHP code) and Supervisor (the tool that keeps both
-running), all in one container, with the Storefront theme baked in — that
+running), all in one container, with the Storefront theme baked in. It
 provisions itself on first boot.
 
 ```bash
@@ -71,11 +71,11 @@ Everything is set from environment variables:
 | `OSC_ADMIN_USER` / `OSC_ADMIN_EMAIL` / `OSC_ADMIN_PASSWORD` | The first admin account. Leave the password unset and a strong one is generated and printed to the logs |
 | `OSC_SITE_TITLE` | Site title at provisioning time |
 | `OSC_IGNORE_CONFIG_FILE` | Set to `1` so the image configures itself from the environment rather than a `config.php` |
-| `OSC_DISABLE_WEB_RESTORE` | Set to `1` to turn off restoring backups from the admin. Backups still work — see [backups](/docs/use/backups-and-maintenance/#turning-web-restore-off) |
+| `OSC_DISABLE_WEB_RESTORE` | Set to `1` to turn off restoring backups from the admin. Backups still work: see [backups](/docs/use/backups-and-maintenance/#turning-web-restore-off) |
 | `OSC_DISABLE_PACKAGE_INSTALLS` | Set to `1` to turn off installing and updating plugins and themes from the admin market and `oc-cli.php market:*` |
-| `OSC_REAL_IP_HEADER` / `OSC_REAL_IP_TRUSTED` | The header carrying the real client IP behind a proxy, e.g. `X-Real-IP` or `CF-Connecting-IP`, and the address ranges to trust it from (in CIDR notation, e.g. `172.16.0.0/12`) — see [putting it behind TLS](#putting-it-behind-tls) |
+| `OSC_REAL_IP_HEADER` / `OSC_REAL_IP_TRUSTED` | The header carrying the real client IP behind a proxy, e.g. `X-Real-IP` or `CF-Connecting-IP`, and the address ranges to trust it from (in CIDR notation, e.g. `172.16.0.0/12`): see [putting it behind TLS](#putting-it-behind-tls) |
 | `OSC_CACHE` / `OSC_CACHE_HOST` / `OSC_CACHE_PORT` | [Object cache](/docs/configure/cache/) |
-| `OSC_MICROCACHE` | Set to `1` to cache public pages in nginx — see [page caching](/docs/configure/page-cache/). The image already carries the purge module (lets a cached page be removed early), so the nginx Cache plugin works with nothing further to configure |
+| `OSC_MICROCACHE` | Set to `1` to cache public pages in nginx: see [page caching](/docs/configure/page-cache/). The image already carries the purge module (lets a cached page be removed early), so the nginx Cache plugin works with nothing further to configure |
 | `OSC_RATE_LIMIT` / `OSC_RATE_LIMIT_BURST` | Requests per second per client IP, e.g. `10r/s`. Unset is off |
 | `OSC_TLS_DOMAIN` / `OSC_TLS_REDIRECT_FROM` / `OSC_TLS_EMAIL` | [Built-in HTTPS](#built-in-https): the domain, other names to send to it (comma-separated), and the e-mail for expiry notices (default `OSC_ADMIN_EMAIL`) |
 
@@ -113,7 +113,7 @@ This is the part that surprises people.
 
 **Core ships baked into the image.** A core update is a redeploy with a newer
 image tag. The container migrates its own schema on start, and the in-app core
-updater is switched off (`OSC_DISABLE_SELF_UPDATE=1`) — otherwise it would write
+updater is switched off (`OSC_DISABLE_SELF_UPDATE=1`), otherwise it would write
 over itself, only to lose the write on the next redeploy.
 
 **Plugins and themes live in volumes.** A package installed or updated through
@@ -122,7 +122,7 @@ survives a redeploy.
 
 On every start, the entrypoint (the script the container runs on startup)
 compares the volume against the packages baked into the new image: it installs
-any that are missing and refreshes any the image ships a newer version of —
+any that are missing and refreshes any the image ships a newer version of,
 **without ever touching a package installed through the market**. You can run
 that step yourself:
 
@@ -151,7 +151,7 @@ orchestrator (the system managing your containers, such as Kubernetes):
 ```
 
 On Kubernetes, a `CronJob` running the same command is the equivalent. Without
-it, alerts never send and listings never expire — see
+it, alerts never send and listings never expire. See
 [setting up cron](/docs/configure/cron/).
 
 ## Built-in HTTPS
@@ -200,7 +200,7 @@ services:
       - "127.0.0.1:8080:80"   # loopback only
 ```
 
-Then a server block on the host. This is the plain-HTTP form — certbot rewrites
+Then a server block on the host. This is the plain-HTTP form: certbot rewrites
 it in the next step:
 
 ```nginx
@@ -236,7 +236,7 @@ port 80.
 **Nothing about renewal touches the container.** The certificate lives on the
 host, the host's nginx is what serves it, and certbot's nginx installer reloads
 that nginx after a successful renewal. There is no mounted certificate, no
-deploy hook to write, and no container restart in the loop — which is the main
+deploy hook to write, and no container restart in the loop. That is the main
 reason to terminate here rather than inside the image.
 
 Installing certbot from your distribution's package (or snap) also installs the
@@ -250,8 +250,8 @@ certbot renew --dry-run                  # prove the whole path works
 `certbot renew` does nothing until a certificate is within 30 days of expiry, so
 running it often is free and expected. Two things keep it working:
 
-- **Leave port 80 open on the host.** The HTTP-01 challenge — Let's Encrypt's way
-  of confirming you control the domain — arrives there. The redirect certbot adds
+- **Leave port 80 open on the host.** The HTTP-01 challenge (Let's Encrypt's way
+  of confirming you control the domain) arrives there. The redirect certbot adds
   is fine, since Let's Encrypt follows it, but a firewall that drops :80 entirely
   will fail every renewal, silently, until the certificate expires.
 - **Do not hand-edit the `managed by Certbot` lines** in the server block. That
@@ -265,9 +265,9 @@ TLS is invisible to ShopClass unless these are set:
 
 | Setting | Value |
 |---|---|
-| `WEB_PATH` | `https://example.com/` — the app builds every URL and cookie path from this |
+| `WEB_PATH` | `https://example.com/`: the app builds every URL and cookie path from this |
 | `OSC_REAL_IP_HEADER` | `X-Real-IP`, matching the `proxy_set_header` above |
-| `OSC_REAL_IP_TRUSTED` | `172.16.0.0/12` — see below |
+| `OSC_REAL_IP_TRUSTED` | `172.16.0.0/12`: see below |
 
 `X-Forwarded-Proto` is what makes the app treat the request as secure: it sets
 `HTTPS=on` for PHP, so `osc_is_ssl()` is true and the login cookie is issued with
@@ -275,7 +275,7 @@ the `Secure` flag. Without it, a visitor on HTTPS gets cookies that are not
 marked secure, and the app generates `http://` links.
 
 `OSC_REAL_IP_TRUSTED` is the one people get wrong. When the host proxies into a
-published port, the container does not see `127.0.0.1` — it sees the Docker
+published port, the container does not see `127.0.0.1`. It sees the Docker
 bridge gateway (the address Docker's internal network uses to reach the host),
 something like `172.19.0.1`. Trusting loopback there restores nothing, and every
 visitor arrives as the gateway, which collapses login throttling and abuse-report
@@ -285,7 +285,7 @@ narrow it to your own gateway with `docker network inspect`.
 ### Other terminators
 
 An ALB (a cloud load balancer), a Kubernetes ingress (the routing rules for a
-Kubernetes cluster), Cloudflare or a managed platform all work the same way —
+Kubernetes cluster), Cloudflare or a managed platform all work the same way:
 the contract is the three settings above plus a proxy that sends
 `X-Forwarded-Proto`. Only the certificate's owner changes. See
 [security](/docs/deploy/security/) and the
@@ -304,13 +304,13 @@ visitors send and therefore what the cache is keyed on. See
 
 Three things have to be true before a second instance is safe:
 
-1. **Uploads are offloaded to S3** — otherwise each instance has its own photos.
-2. **The object cache is memcached, not APCu** — APCu lives inside one PHP
+1. **Uploads are offloaded to S3**, otherwise each instance has its own photos.
+2. **The object cache is memcached, not APCu**: APCu lives inside one PHP
    process, so two instances never see the same cache.
 3. **Cron runs once**, not once per instance.
 
 ## Local development
 
-For working on ShopClass itself there is a separate development stack — PHP-FPM,
-MariaDB, Nginx, Memcached, Mailhog and phpMyAdmin — in `docker-compose.dev.yml`.
+For working on ShopClass itself there is a separate development stack (PHP-FPM,
+MariaDB, Nginx, Memcached, Mailhog and phpMyAdmin) in `docker-compose.dev.yml`.
 See the [developer documentation](/docs/developers/).

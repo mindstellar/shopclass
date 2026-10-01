@@ -5,7 +5,7 @@ sidebar:
   order: 19
 ---
 
-Some pages belong to core rather than to your theme — the account-delete
+Some pages belong to core rather than to your theme: the account-delete
 confirmation, the credits wallet, the buy and orders screens. Core uses your
 theme's view if you ship one. If you do not, it needs somewhere to put the page.
 
@@ -23,11 +23,11 @@ Core finds chrome on its own, first hit wins:
 3. `common/header.php` + `common/footer.php`
 
 Each is tried in your theme first, then in the parent theme when your
-`index.php` names one — a child theme that ships no chrome inherits its
+`index.php` names one. A child theme that ships no chrome inherits its
 parent's. The bundled fallback theme is deliberately not in that walk: it knows
 nothing about your site, so core renders its own page instead.
 
-Both halves must exist. A header with no footer is not chrome — core would
+Both halves must exist. A header with no footer is not chrome: core would
 leave the page unclosed, so it falls through to its own standalone page
 instead.
 
@@ -72,12 +72,12 @@ caller can fall through to something else:
 
 ```php
 if (!osc_get_header()) {
-    // no chrome on this theme — render a self-contained page instead
+    // no chrome on this theme, so render a self-contained page instead
 }
 ```
 
 `osc_theme_has_chrome()` answers the same question without rendering, and
-`osc_theme_chrome()` returns the resolved pair as absolute paths — or `null` —
+`osc_theme_chrome()` returns the resolved pair as absolute paths (or `null`)
 if you need to know *which* files answered rather than just whether any did.
 
 ```php
@@ -87,7 +87,7 @@ $chrome = osc_theme_chrome();   // ['header' => '/…/common/header.php', 'foote
 ## What core puts between them
 
 Core prints its page markup wrapped in `.oe-page` and `.oe-doc`, and injects one
-small stylesheet through the `header` hook — the same hook your `<head>` already
+small stylesheet through the `header` hook: the same hook your `<head>` already
 runs for enqueued scripts and styles. Every selector in it is `.oe-*` prefixed,
 so it cannot reach your own markup on the same page.
 
@@ -107,12 +107,12 @@ osc_remove_theme_support(string $feature): void;
 
 Call `osc_add_theme_support()` from `functions.php`, which core loads before it
 renders anything. A feature nobody declared reads as `false`, and core does what
-it did before — declaring is always optional.
+it did before: declaring is always optional.
 
 ## Declaring extra views
 
 A static page's internal name becomes a URL segment, so core keeps a list of
-names a page may not take — otherwise a page slugged `contact` would shadow the
+names a page may not take. Otherwise a page slugged `contact` would shadow the
 contact route. That list is core's own view vocabulary, and a theme adds to it:
 
 ```php
@@ -122,18 +122,18 @@ osc_add_theme_support('views', array(
 ));
 ```
 
-Names may be written with or without `.php`. A declaration only ever **adds** —
+Names may be written with or without `.php`. A declaration only ever **adds**:
 core's own names stay reserved whatever you declare, and a theme that declares
 nothing behaves exactly as before.
 
-`osc_theme_view_names()` returns the whole reserved set — core's names plus
-anything the active theme declared — as names without a directory and without
+`osc_theme_view_names()` returns the whole reserved set (core's names plus
+anything the active theme declared) as names without a directory and without
 `.php`. The admin page editor uses it to refuse a colliding slug; a plugin that
 offers its own page-naming UI should check against the same list rather than
 hardcoding one.
 
 ```php
-in_array('contact', osc_theme_view_names(), true);   // true — reserved by core
+in_array('contact', osc_theme_view_names(), true);   // true, reserved by core
 ```
 
 ## Declaring widget zones
@@ -158,15 +158,15 @@ osc_add_theme_support('widget_locations', array(
 ```
 
 The declared order is the order the admin shows them in. `description` is
-optional; a zone with no `label` falls back to its slug. A bare list —
-`array('header', 'footer')` — and a `slug => label` map are both accepted.
+optional; a zone with no `label` falls back to its slug. A bare list
+(`array('header', 'footer')`) and a `slug => label` map are both accepted.
 
 Declare from the `init` hook rather than the top of `functions.php` if your
 labels are translated: core requires `functions.php` before the translation
 layer is initialised.
 
 **A theme that declares nothing keeps its `Widgets:` line**, with each slug
-standing in as its own label — exactly what it does today.
+standing in as its own label, exactly what it does today.
 
 `osc_widget_locations()` returns the resolved map, and passes through the
 `widget_locations` filter, which is how a plugin contributes a zone of its own.
@@ -179,5 +179,5 @@ Rendering a zone is unchanged:
 osc_show_widgets('footer');
 ```
 
-It prints nothing when the zone is empty — which is most zones on most sites, so
+It prints nothing when the zone is empty, which is most zones on most sites, so
 buffer it if your wrapper would otherwise render as an empty box.

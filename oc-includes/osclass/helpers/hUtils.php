@@ -685,7 +685,7 @@ function osc_is_bot_request()
     }
 
     $tokens = osc_apply_filter('bot_user_agents', array(
-        // Generic — catches the long tail, which is most of it.
+        // Generic: catches the long tail, which is most of it.
         'bot', 'crawler', 'crawling', 'spider', 'scraper', 'archiver', 'fetcher',
         // Search engines.
         'googlebot', 'bingbot', 'slurp', 'duckduckbot', 'baiduspider', 'yandex',

@@ -1,6 +1,6 @@
 ---
 title: Caching contract
-description: How ShopClass drives a reverse proxy or CDN — the cookie allowlist, the Cache-Control it emits, and why the proxy config stays small.
+description: "How ShopClass drives a reverse proxy or CDN: the cookie allowlist, the Cache-Control it emits, and why the proxy config stays small."
 sidebar:
   order: 11
 ---
@@ -8,7 +8,7 @@ sidebar:
 ShopClass is designed to sit behind a reverse proxy or CDN. This page is the
 contract between the two: **the application decides whether a response is public
 or private, and says so in standard HTTP.** A proxy should respect what the app
-says, never infer it from side channels — cookie presence, hashed names, URL
+says, never infer it from side channels: cookie presence, hashed names, URL
 lists.
 
 Every detail here is domain-independent and stable across installs. The full
@@ -17,7 +17,7 @@ version, including the reference nginx config, is
 
 :::note[Not the object cache]
 This is about caching whole HTTP responses in front of PHP. Caching database
-work *inside* PHP is a separate, complementary layer — see
+work *inside* PHP is a separate, complementary layer: see
 [object caching](/docs/configure/cache/).
 :::
 
@@ -27,14 +27,14 @@ work *inside* PHP is a separate, complementary layer — see
 2. **What may cache it, and for how long?** Decided by the `Cache-Control` the
    app emits.
 
-A proxy needs exactly one request-side signal — the cookie set, for the
+A proxy needs exactly one request-side signal: the cookie set, for the
 serve-from-cache decision it makes before PHP runs. Everything else follows from
 the response headers.
 
 ## The cookie allowlist
 
 These, and only these, mean "this response is personalised". A proxy must bypass
-the cache — neither serve nor store — when a request carries any of them:
+the cache (neither serve nor store) when a request carries any of them:
 
 | Cookie | Set when | Why it matters |
 |---|---|---|
@@ -43,12 +43,12 @@ the cache — neither serve nor store — when a request carries any of them:
 | `oc_userLocale` | a visitor switches language | changes the rendered language |
 
 Front-end and admin identity (`oc_userId`, `oc_userSecret`, `oc_adminId`) are keys
-*inside* a cookie named `md5(WEB_PATH)` — not cookie names, and not something a
+*inside* a cookie named `md5(WEB_PATH)`, not cookie names, and not something a
 proxy config can hardcode. `oc_cache_bypass` is the fixed-name flag core sets in
 lockstep with login so the edge has one stable name to match. A rule written
 against the key names never fires.
 
-**Every other cookie is irrelevant and must not affect caching** — including
+**Every other cookie is irrelevant and must not affect caching**, including
 analytics cookies (`_ga`, `_gid`, `_fbp`, …) and the theme's `cookies_consent`.
 The server never reads them, so they cannot change the output.
 
@@ -59,7 +59,7 @@ view, makes every subsequent request a miss. The decision must be a fixed
 allowlist of **names**.
 :::
 
-The names are guaranteed stable — no `md5(WEB_PATH)` or domain hash in them —
+The names are guaranteed stable (no `md5(WEB_PATH)` or domain hash in them),
 and core will not add or rename a personalisation cookie without updating the
 helper, this list and the reference config together. Plugins can extend the set
 through the `cache_relevant_cookies` filter.
@@ -83,7 +83,7 @@ osc_apply_filter('response_cache_control', $value); // the whole header
 ```
 
 Core calls `session_cache_limiter('')` on the front end so PHP cannot inject its
-own conflicting `no-cache` headers — core owns `Cache-Control` end to end. The
+own conflicting `no-cache` headers: core owns `Cache-Control` end to end. The
 admin panel keeps PHP's default limiter, and is never cached.
 
 Every HTML response, admin included, also carries how long PHP took to build it:
@@ -96,15 +96,15 @@ build. A plugin can drop it with
 ## Verifying it
 
 ```bash
-# anonymous — expect a cacheable response, and HIT on the second request
+# anonymous: expect a cacheable response, and HIT on the second request
 curl -sI https://example.com/ | grep -i 'cache-control\|cf-cache-status\|x-cache'
 
-# carrying a session cookie — expect private, no-store and a bypass
+# carrying a session cookie: expect private, no-store and a bypass
 curl -sI https://example.com/ -H 'Cookie: oc_cache_bypass=1' | grep -i 'cache-control\|cf-cache-status'
 ```
 
 If a logged-in request returns a cached response, stop and fix the cookie rule
-before doing anything else — that configuration serves one user's page to
+before doing anything else: that configuration serves one user's page to
 another.
 
 ## Anti-patterns

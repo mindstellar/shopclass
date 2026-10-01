@@ -1,6 +1,6 @@
 ---
 title: Mail server
-description: Set up SMTP in ShopClass so sign-up, alert and contact e-mails reach the inbox — the settings, provider examples and what to do when mail goes missing.
+description: "Set up SMTP in ShopClass so sign-up, alert and contact e-mails reach the inbox: the settings, provider examples and what to do when mail goes missing."
 sidebar:
   order: 2
 ---

@@ -1,6 +1,6 @@
 ---
 title: Listings & moderation
-description: Manage published listings in ShopClass — the listing rules, moderation queue, reported listings, comments, and cleaning up expired and spam content.
+description: "Manage published listings in ShopClass: the listing rules, moderation queue, reported listings, comments, and cleaning up expired and spam content."
 sidebar:
   order: 4
 ---
@@ -18,18 +18,18 @@ Set them before you have users, not after.
 | **Only logged in users can post listings** | Whether publishing needs an account. Off means anyone can post; on cuts spam sharply, and cuts volume too. |
 | **Hold new listings for admin moderation** | New listings from users are disabled until an admin approves them. Listings an admin posts are never held. |
 | **Hold edited listings for admin moderation** | The same, for edits to an existing listing. An admin's own edits are never held. |
-| **Users have to validate their listings** | A new listing stays inactive until the user validates it, with a threshold — **After *n* validated listings the user doesn't need to validate the listings any more**. So regulars post freely while newcomers are checked. |
+| **Users have to validate their listings** | A new listing stays inactive until the user validates it, with a threshold: **After *n* validated listings the user doesn't need to validate the listings any more**. So regulars post freely while newcomers are checked. |
 | **Logged in users don't need to validate their listings** | Skips that validation step for anyone who is logged in. |
 | **Warn about expiration** | Days of notice a seller gets before a listing expires. |
 | **Attach *n* images per listing** | The photo limit. |
-| **An user has to wait *n* seconds between each listing added** | Rate limit on posting — the cheapest defence against a bulk poster. |
+| **An user has to wait *n* seconds between each listing added** | Rate limit on posting: the cheapest defence against a bulk poster. |
 | **Only allow registered users to contact publisher** | Whether the contact form needs an account. |
 | **Notify admin when a new listing is added** | An e-mail to you on every publish. Useful early, unbearable at volume. |
 | **Enable the "send to a friend" form** | A sharing form on the listing page. |
 
 :::note
-**RSS shows** and **Latest listings shown** — how many listings appear in the
-RSS feed and on the home page — live under **Settings → General**, not here.
+**RSS shows** and **Latest listings shown** (how many listings appear in the
+RSS feed and on the home page) live under **Settings → General**, not here.
 :::
 
 ## Moderating
@@ -66,14 +66,14 @@ Two things worth knowing:
 **Settings → Comments** controls whether listings accept comments at all,
 and on what terms:
 
-- **Allow people to post comments on listings** — the master switch.
+- **Allow people to post comments on listings**: the master switch.
 - **Users must be registered and logged in to comment**.
-- **Require a CAPTCHA to post a comment** — see [spam and abuse](/docs/use/spam-and-abuse/).
-- **A comment is being held for moderation** — turns moderation on, with a
+- **Require a CAPTCHA to post a comment**: see [spam and abuse](/docs/use/spam-and-abuse/).
+- **A comment is being held for moderation**: turns moderation on, with a
   threshold next to it: **Moderated comments** (the number of previously
   approved comments an author needs before theirs appear without review).
-- **Comments per page** — break comments into pages, with *n* per page.
-- **Notifications** — e-mail the admin when **a new comment is posted**, and
+- **Comments per page**: break comments into pages, with *n* per page.
+- **Notifications**: e-mail the admin when **a new comment is posted**, and
   e-mail the listing's owner when **there's a new comment on his listing**.
   There is no separate notification for a comment held for moderation.
 
@@ -91,10 +91,10 @@ account, enable or disable one, edit its details, or add a user yourself.
 
 **Users → Settings** carries the registration rules:
 
-- **Anyone can register** — the master switch.
-- **Users need to validate their account** — e-mail confirmation before the
+- **Anyone can register**: the master switch.
+- **Users need to validate their account**: e-mail confirmation before the
   account works.
-- **When a new user is registered** — notify the admin.
+- **When a new user is registered**: notify the admin.
 
 ### Ban rules
 
@@ -111,7 +111,7 @@ notify a user by email when a new listing matches their saved search.*
 
 Alerts are sent by **cron**, on the schedule each user picked for their
 saved search: hourly, daily or weekly. If your users say they never receive
-them, check cron before anything else — see
+them, check cron before anything else. See
 [setting up cron](/docs/configure/cron/).
 
 ## Clearing out old content

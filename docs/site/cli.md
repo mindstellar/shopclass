@@ -1,6 +1,6 @@
 ---
 title: Command-line interface
-description: The oc-cli.php reference for ShopClass — cron, database migrations, backups, admin recovery, plugin and theme management, health checks.
+description: "The oc-cli.php reference for ShopClass: cron, database migrations, backups, admin recovery, plugin and theme management, health checks."
 sidebar:
   order: 4
 ---
@@ -18,7 +18,7 @@ php oc-cli.php help          # list every command
 :::note[It cannot be reached over HTTP]
 `oc-cli.php` only runs from the command line. If you request it through a web
 browser, it answers `403` (forbidden) instead of running. So every command
-below needs a shell (a command-line session) on the server — which is also why
+below needs a shell (a command-line session) on the server. That is also why
 these commands can do things the admin panel will not.
 :::
 
@@ -37,8 +37,8 @@ no wrapper script needed.
 |---|---|
 | `cron [--type=hourly\|daily\|weekly\|all]` | Run due scheduled tasks: e-mail alerts, expiring premium listings, cleanup, sitemap warm. Defaults to all three tiers. |
 
-A typical crontab entry — see [setting up cron](/docs/configure/cron/) for the
-full setup:
+A typical crontab entry (see [setting up cron](/docs/configure/cron/) for the
+full setup):
 
 ```cron
 */5 * * * * php /path/to/site/oc-cli.php cron >/dev/null 2>&1
@@ -48,7 +48,7 @@ full setup:
 
 | Command | What it does |
 |---|---|
-| `install --unattended` | Install with no browser — settings come from environment variables or flags. |
+| `install --unattended` | Install with no browser: settings come from environment variables or flags. |
 | `db:upgrade` | Run pending migrations. Also in the admin under **Tools → System info → Database**. |
 | `db:doctor [--strict]` | Report where this database differs from what ShopClass expects, then whether the site is ready for strict SQL mode. `--strict` prints only the readiness part. Changes nothing. Exits `1` when it finds anything. |
 | `db:repair [--dry-run]` | Add missing tables, columns, indexes and foreign keys, and correct column types and defaults. Exits `1` when a statement fails. `--dry-run` prints the `db:doctor` report and changes nothing. Also in the admin under **Tools → System info → Database**. |
@@ -76,7 +76,7 @@ php oc-cli.php user:create-admin --user=jane --email=jane@example.com
 |---|---|
 | `plugin:list` | List plugins with status, version and folder. |
 | `plugin:activate --plugin=<folder>` | Enable an installed plugin. Accepts the folder name or `folder/index.php`. |
-| `plugin:deactivate --plugin=<folder>` | Disable an active plugin — the fix when one fatals on load. |
+| `plugin:deactivate --plugin=<folder>` | Disable an active plugin: the fix when one fatals on load. |
 | `theme:list` | List installed public themes, marking the active one. |
 | `theme:activate --theme=<name>` | Set the active public theme. |
 
@@ -146,8 +146,8 @@ Shell access is the permission here, so no admin password is asked.
 | `jobs:work [--max-seconds=]` | Drain the background job queue and nothing else. Safe to run every minute. |
 | `jobs:status` | Show pending, running and gave-up jobs, and the oldest pending one, per type; name anything that gave up. `--type=` narrows it to one type. |
 
-Slow work — moving photos to remote storage, emptying a large category, whatever a
-plugin queues — is done in the background rather than during a page load. Every
+Slow work (moving photos to remote storage, emptying a large category, whatever a
+plugin queues) is done in the background rather than during a page load. Every
 `cron` run also works through that queue. `jobs:work` does only this work, so it can
 run every minute and pick new work up quickly:
 
@@ -155,7 +155,7 @@ run every minute and pick new work up quickly:
 * * * * * php /path/to/site/oc-cli.php jobs:work --max-seconds=50 >/dev/null 2>&1
 ```
 
-It exits non-zero only when the queue holds jobs the worker gave up on — a backlog
+It exits non-zero only when the queue holds jobs the worker gave up on. A backlog
 still draining is the normal case and exits `0`. An empty queue costs one query, so
 the entry is harmless to leave in place on a site that queues nothing.
 
@@ -196,5 +196,5 @@ The older cron entry point still works for existing crontabs:
 php index.php -p cron -t hourly
 ```
 
-New setups should use `oc-cli.php cron` — it covers more than alerts and returns
+New setups should use `oc-cli.php cron`. It covers more than alerts and returns
 a meaningful exit code.

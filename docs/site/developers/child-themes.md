@@ -1,6 +1,6 @@
 ---
 title: Child themes
-description: Extend a theme without forking it — what a child inherits, the lookup order, and the two rules that stop a child breaking its parent.
+description: "Extend a theme without forking it: what a child inherits, the lookup order, and the two rules that stop a child breaking its parent."
 sidebar:
   order: 18
 ---
@@ -22,7 +22,7 @@ keep it lowercase and hyphenated.
 oc-content/themes/storefront-blue/
 ```
 
-**2. Give it an `index.php`.** This file is only the header block — the child does not need
+**2. Give it an `index.php`.** This file is only the header block. The child does not need
 to render anything.
 
 ```php
@@ -43,21 +43,21 @@ At this point it already works as a theme. It looks exactly like storefront.
 | To change | Do this |
 |---|---|
 | A page's markup | Copy that view from the parent and edit it |
-| The styling | Add a stylesheet — see [Assets](#assets) |
-| What a parent function returns | Redeclare it in `functions.php` — see [functions.php](#functionsphp) |
+| The styling | Add a stylesheet: see [Assets](#assets) |
+| What a parent function returns | Redeclare it in `functions.php`: see [functions.php](#functionsphp) |
 
 **4. Try it before you switch.** Appearance lists the child with a **Preview** link:
 `index.php?theme=storefront-blue`. This renders the whole site in the child, but only for
-you — a signed-in admin. Visitors keep seeing the live theme. Activate the child once it
+you, a signed-in admin. Visitors keep seeing the live theme. Activate the child once it
 looks right.
 
 **5. Add a screenshot** so the Appearance card is not a placeholder. Add `screenshot.png`,
-`.jpg` or `.webp` to the child's own folder — screenshots are not inherited.
+`.jpg` or `.webp` to the child's own folder: screenshots are not inherited.
 
 ## Parent Theme
 
 `Parent Theme` is the parent's **directory name**, not its display name: `storefront`, not
-`Storefront`. It must be a bare name — letters, digits, dots, underscores and hyphens only.
+`Storefront`. It must be a bare name: letters, digits, dots, underscores and hyphens only.
 A value with a slash, or made only of dots such as `..`, is refused before it reaches the
 filesystem. A name that does not match an installed theme is skipped.
 
@@ -73,7 +73,7 @@ The first directory that has the file wins. So a child shipping `item.php` rende
 listing page and inherits `search.php` from the parent without mentioning it.
 
 The walk is **one level deep**. If a parent itself declares a parent, that does not add a
-fourth directory — a grandparent is never consulted. The same goes for a theme that names
+fourth directory: a grandparent is never consulted. The same goes for a theme that names
 itself as its own parent, and for an A-declares-B, B-declares-A pair: both resolve once and
 stop.
 
@@ -89,13 +89,13 @@ Anything the walk reaches:
 |---|---|---|
 | Views (`item.php`, `search.php`, `user/*.php`, …) | yes | First theme in the walk that has the file |
 | Chrome (`header.php` + `footer.php`, or `common/`) | yes | The pair is taken from one theme, never split |
-| `functions.php` | **both run** | See below — this one is not a fallback |
+| `functions.php` | **both run** | See below: this one is not a fallback |
 | `osc_add_theme_support()` declarations | yes | The child wins a contested feature |
-| `css/`, `js/`, images | yes | Per file — the child's copy, else the parent's |
+| `css/`, `js/`, images | yes | Per file: the child's copy, else the parent's |
 
 ## functions.php
 
-This is the one file that does not fall back. **Both** copies run — the child's first, then
+This is the one file that does not fall back. **Both** copies run: the child's first, then
 the parent's.
 
 That order is what lets a child replace a parent's function, but only if the parent guards
@@ -114,13 +114,13 @@ The child declares `storefront_listing_card()` first, so the parent's guard skip
 copy.
 
 **Without that guard, PHP stops the request.** Two files declaring the same function name is
-`Cannot redeclare storefront_listing_card()` — a fatal error the site cannot catch or
+`Cannot redeclare storefront_listing_card()`, a fatal error the site cannot catch or
 recover from. Because the child loads first, it is the *parent* that crashes, so the page is
 blank.
 
 Appearance checks for this before you switch themes: a child whose `functions.php` declares
 a name the parent declares **unguarded** gets a warning on its card, naming the clashing
-functions. A guarded name is not reported — that one is the override working as intended.
+functions. A guarded name is not reported: that one is the override working as intended.
 
 **The guard belongs on the parent, and only there.** A guard in the child does nothing: the
 child loads first, so `function_exists()` is always false at that point. The function gets
@@ -156,7 +156,7 @@ every `storefront_excerpt()` call in the parent's templates now runs yours.
 
 ### When the parent did not guard
 
-Then you cannot replace that function — declaring it is a fatal either way. Two things still
+Then you cannot replace that function: declaring it is a fatal either way. Two things still
 work:
 
 - **Hooks and filters.** Both themes may add to the same hook, and both run. A child can
@@ -193,7 +193,7 @@ file**: the child's copy when it ships one, the parent's when it does not.
 So there are two ways to change the styling.
 
 **Replace the sheet.** Ship a file at the same path as the parent's, and yours is served
-instead. Nothing to register — the walk finds it.
+instead. Nothing to register: the walk finds it.
 
 ```
 storefront/css/style.css        <- parent
@@ -225,7 +225,7 @@ Most of what a child can override depends on the parent having been written for 
 this costs anything, and it stays invisible until somebody tries to extend the theme.
 
 **Guard every function.** This is the big one. A child cannot replace a function the parent
-declares unguarded — redeclaring it is a fatal, and because the child loads first, it is the
+declares unguarded: redeclaring it is a fatal, and because the child loads first, it is the
 parent that crashes. Appearance names the clash on the child's card, so an unguarded parent
 shows up as somebody else's theme being marked broken.
 
@@ -250,7 +250,7 @@ if (!defined('MYTHEME_VERSION')) {
 child first. A parent that picks the *filename* by looking in `__DIR__` defeats that:
 
 ```php
-// WRONG — decides on the parent's folder, then asks for that name
+// WRONG: decides on the parent's folder, then asks for that name
 $min = str_replace('.css', '.min.css', $file);
 if (file_exists(__DIR__ . '/' . $min)) { $file = $min; }
 return osc_current_web_theme_url($file);
@@ -271,7 +271,7 @@ forever.
 osc_add_hook('header', 'mytheme_enqueue_base', 5);
 ```
 
-**Fire hooks and filters at the points somebody will want to change** — a filter around the
+**Fire hooks and filters at the points somebody will want to change**: a filter around the
 price string, the card markup, the meta line. A child that can use a filter never has to
 redeclare a function, which sidesteps the guard problem entirely.
 
@@ -299,7 +299,7 @@ theme is ignored rather than followed.
 
 ## See also
 
-- [Package specification](/docs/developers/package-spec/) — every header field
-- [Template hierarchy](/docs/developers/template-hierarchy/) — how one view is chosen
-- [Theme chrome](/docs/developers/theme-chrome/) — the header/footer pair
-- [Scripts and styles](/docs/developers/scripts-and-styles/) — enqueueing assets
+- [Package specification](/docs/developers/package-spec/): every header field
+- [Template hierarchy](/docs/developers/template-hierarchy/): how one view is chosen
+- [Theme chrome](/docs/developers/theme-chrome/): the header/footer pair
+- [Scripts and styles](/docs/developers/scripts-and-styles/): enqueueing assets

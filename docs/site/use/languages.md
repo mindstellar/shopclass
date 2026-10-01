@@ -1,6 +1,6 @@
 ---
 title: Languages
-description: Add and manage languages in a ShopClass site, and translate the content — categories, pages, form labels and e-mail templates — yourself.
+description: "Add and manage languages in a ShopClass site, and translate the content (categories, pages, form labels and e-mail templates) yourself."
 sidebar:
   order: 12
 ---
@@ -17,14 +17,14 @@ available comes from
 [**mindstellar/shopclass-i18n**](https://github.com/mindstellar/shopclass-i18n),
 which is where translations are maintained and where you contribute a fix.
 
-If the language you want is not offered — the screen says *no official
-languages available* when it cannot reach the list — you can **upload** a
+If the language you want is not offered (the screen says *no official
+languages available* when it cannot reach the list), you can **upload** a
 translation file directly.
 
 Each language has two separate switches:
 
-- **Enabled (website)** — visitors can see the site in this language.
-- **Enabled (oc-admin)** — admins can use the admin panel in this language.
+- **Enabled (website)**: visitors can see the site in this language.
+- **Enabled (oc-admin)**: admins can use the admin panel in this language.
 
 Turn one on without the other to prepare a language before showing it to
 visitors, or to give your team an admin language your visitors don't have.
@@ -41,10 +41,10 @@ not translated by anyone but you:
 
 | Content | Where |
 |---|---|
-| Category names | **Listings → Categories** — one name per active language |
-| Static pages | **Pages** — title and body per language |
-| Field and form labels | **Forms** — the admin requires a name for the default language |
-| E-mail templates | **Settings → Email templates** — per language |
+| Category names | **Listings → Categories**: one name per active language |
+| Static pages | **Pages**: title and body per language |
+| Field and form labels | **Forms**: the admin requires a name for the default language |
+| E-mail templates | **Settings → Email templates**: per language |
 
 :::caution[An empty translation shows as empty]
 A category or page with no text for an active language renders blank to
@@ -65,5 +65,5 @@ marketplace, one language done well usually beats both.
 Translations live in
 [shopclass-i18n](https://github.com/mindstellar/shopclass-i18n). Fixing an
 awkward string in a language you speak takes minutes, and is one of the
-most useful contributions to the project — see
+most useful contributions to the project: see
 [contributing](/docs/developers/contributing/).

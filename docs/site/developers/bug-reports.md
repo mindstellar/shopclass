@@ -1,6 +1,6 @@
 ---
 title: How to write a bug report
-description: What to include in a ShopClass bug report so it can actually be reproduced and fixed — versions, environment, steps, and where to file it.
+description: "What to include in a ShopClass bug report so it can actually be reproduced and fixed: versions, environment, steps, and where to file it."
 sidebar:
   order: 17
 ---
@@ -12,7 +12,7 @@ One rule governs everything below:
 
 When a report arrives, someone reads it and tries to make the bug happen on
 their own machine. If they can, they find the cause and fix it. If they cannot,
-they have to come back and ask you for details — and the fix waits for the round
+they have to come back and ask you for details, and the fix waits for the round
 trip. Most reports that go unfixed are not ignored; they are unreproducible.
 
 ## What to include
@@ -20,17 +20,17 @@ trip. Most reports that go unfixed are not ignored; they are unreproducible.
 1. **What were you trying to do?**
 2. **What did you click or do last?**
 3. **What happened, and what did you expect instead?** Quote the error message
-   exactly — "it says an error" is not the error.
+   exactly: "it says an error" is not the error.
 4. **What version of ShopClass?** `php oc-cli.php version`, or the admin
    dashboard.
-5. **What PHP version and hosting?** Shared, VPS, Docker — and the PHP version.
+5. **What PHP version and hosting?** Shared, VPS, Docker, and the PHP version.
    `php oc-cli.php doctor` reports both, along with your extensions and database
    version.
 6. **What theme and plugins are active?** `php oc-cli.php plugin:list` and
    `php oc-cli.php theme:list`.
 7. **Which browser**, if it is a front-end or admin panel problem.
 
-**Screenshots for step 3 are worth a lot** — they show exactly what you saw
+**Screenshots for step 3 are worth a lot**: they show exactly what you saw
 instead of your description of it.
 
 ## Where to report it
@@ -38,19 +38,19 @@ instead of your description of it.
 | What | Where |
 |---|---|
 | Core | [mindstellar/shopclass issues](https://github.com/mindstellar/shopclass/issues) |
-| A plugin | That plugin's own repository — name and version in the report |
-| A theme | That theme's own repository — name and version |
+| A plugin | That plugin's own repository: name and version in the report |
+| A theme | That theme's own repository: name and version |
 | Not sure it is a bug | [Discussions](https://github.com/mindstellar/shopclass/discussions) first |
-| A security vulnerability | **Privately** — see the [security policy](https://github.com/mindstellar/shopclass/blob/master/SECURITY.md). Never a public issue. |
+| A security vulnerability | **Privately**: see the [security policy](https://github.com/mindstellar/shopclass/blob/master/SECURITY.md). Never a public issue. |
 
 ## Narrowing it down first
 
 Ten minutes here saves days of back-and-forth:
 
 - **Switch to the default theme.** If the bug disappears, it is the theme's.
-- **Disable plugins one at a time** — `php oc-cli.php plugin:deactivate
+- **Disable plugins one at a time**: `php oc-cli.php plugin:deactivate
   --plugin=<folder>`. If one makes it stop, name that plugin in the report.
-- **Turn on error logging** and include what it says — see
+- **Turn on error logging** and include what it says: see
   [debug PHP errors](/docs/developers/debug-php-errors/).
 - **Search existing issues.** Your problem may already have a patch or a
   workaround waiting.

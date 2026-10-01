@@ -146,7 +146,7 @@ foreach ($families as $family => $names) {
     $out[] = '| Name | Kind | Arguments | Fired at |';
     $out[] = '|---|---|---|---|';
     foreach ($names as $name => $info) {
-        $args = $info['args'] === '' ? '—' : '`' . str_replace('|', '\\|', $info['args']) . '`';
+        $args = $info['args'] === '' ? 'none' : '`' . str_replace('|', '\\|', $info['args']) . '`';
         $out[] = '| `' . $name . '` | ' . $info['kind'] . ' | ' . $args . ' | `' . $info['where'] . '` |';
     }
     $out[] = '';

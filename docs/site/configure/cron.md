@@ -1,6 +1,6 @@
 ---
 title: Set up cron
-description: Make ShopClass run its scheduled jobs — alerts, listing expiry and clean-up — with one crontab line, or the built-in fallback.
+description: "Make ShopClass run its scheduled jobs (alerts, listing expiry and clean-up) with one crontab line, or the built-in fallback."
 sidebar:
   order: 1
 ---

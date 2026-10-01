@@ -1,6 +1,6 @@
 ---
 title: Object caching
-description: Speed up ShopClass by keeping repeated database results in memcached or APCu — setup, how long entries last, environment variables, and how it differs from a page cache.
+description: "Speed up ShopClass by keeping repeated database results in memcached or APCu: setup, how long entries last, environment variables, and how it differs from a page cache."
 sidebar:
   order: 4
 ---
@@ -32,7 +32,7 @@ php -m | grep -E 'memcached|apcu'
 
 If the extension is missing, the setting does nothing.
 
-## memcached — recommended
+## memcached (recommended)
 
 **memcached** is a small cache server. Use it if you have more than one web
 server. It is also fine with one.
@@ -52,7 +52,7 @@ $_cache_config = array(
 );
 ```
 
-## APCu — one server only
+## APCu (one server only)
 
 **APCu** keeps the cache inside PHP itself. It is simpler and faster, but each
 web server has its own copy. Use it on a single server. Do not use it once you

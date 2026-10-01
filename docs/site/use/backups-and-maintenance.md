@@ -11,10 +11,10 @@ Everything here lives under **Tools** in the admin panel.
 
 **Tools → Backup and restore** makes a backup of:
 
-- **Database** — listings, users, categories, settings.
-- **Files** — `oc-content/`: photos, plugins, themes, languages. Core files are
+- **Database**: listings, users, categories, settings.
+- **Files**: `oc-content/`, holding photos, plugins, themes, languages. Core files are
   not included; the release zip is their backup.
-- **Everything** — both.
+- **Everything**: both.
 
 Download it to your computer, or save it on the server in
 `oc-content/downloads/backups/`. That folder is closed to the web by an
@@ -98,7 +98,7 @@ php oc-cli.php backup:list
 **Tools → Maintenance mode** puts the site into maintenance while you work. Signed-in
 admins always keep full access. What everyone else sees is up to you.
 
-The top of the screen shows the current state — *Maintenance mode is: ON / OFF* —
+The top of the screen shows the current state, *Maintenance mode is: ON / OFF*,
 with one button to switch it.
 
 ### Two ways to run it
@@ -111,7 +111,7 @@ answer a server gives browsers and search engines.)
 | **Ticked** (the default) | An HTTP 503 page carrying your message. Nobody can browse or post. |
 | **Unticked** | The site as normal, with your message as a banner across the top. |
 
-Tick it before a major update, a large migration or a schema change — nobody
+Tick it before a major update, a large migration or a schema change. That way nobody
 publishes a listing into a database you are in the middle of moving.
 
 Leave it unticked for work that does not risk the data: a theme change, a price
@@ -122,7 +122,7 @@ Your choice is remembered when you turn maintenance mode off again.
 ### The message
 
 The **Message** box under the checkbox is shown on the banner and on the 503 page.
-Plain text only, up to 500 characters — HTML is stripped. Leave it blank and
+Plain text only, up to 500 characters. HTML is stripped. Leave it blank and
 ShopClass writes a polite default using your site name.
 
 :::caution[Do not forget it is on]
@@ -160,7 +160,7 @@ batch** sets the batch size. The background work runs on [cron](/docs/configure/
 **Recent cleanups** lists what each finished run removed, and **Tools → System info
 → Jobs** shows what is still waiting.
 
-On an established site this is what keeps the database fast — dead rows cost you
+On an established site this is what keeps the database fast: dead rows cost you
 on every search. Back up before the first run, and think about expired listings
 specifically: deleting them turns pages that may still rank in search into a
 404 (page not found) error.
@@ -180,7 +180,7 @@ entirely.
 
 Behind a reverse proxy (a server such as a CDN or load balancer sitting in
 front of yours), the logged IP is only meaningful if the real client IP is
-being passed through — see the
+being passed through. See the
 [caching contract](/docs/developers/caching/).
 
 ## Restore
@@ -239,7 +239,7 @@ install one of the extensions the screen lists and set
 `define('OSC_CACHE', 'apcu');` (or `memcached`) in your config file.
 
 Once a persistent driver is active, use **Clear cache** after a bulk import or
-a direct database edit — anything that changed data behind the application's
+a direct database edit, meaning anything that changed data behind the application's
 back:
 
 ```bash
@@ -252,7 +252,7 @@ See [object caching](/docs/configure/cache/).
 
 **Tools → System info** opens on **Overview**: one box that says whether
 anything needs doing, one line per problem with a button to fix it, then the key
-facts — versions, web server, last backup, cron, photo storage. It asks for a
+facts: versions, web server, last backup, cron, photo storage. It asks for a
 backup when none was saved on the server in the last 30 days.
 
 The Overview shows one line for the worst problem on each of the other tabs.
@@ -269,8 +269,8 @@ config.php is read-only.
 **Cache** is described above.
 
 **Server** lists PHP, its limits and extensions, the uploads folder, debug and
-maintenance mode and the site's paths — the details every bug report should
-include — with a short guide to changing them.
+maintenance mode and the site's paths (the details every bug report should
+include), with a short guide to changing them.
 
 The same ground, from a shell, with pass/fail verdicts and a non-zero exit code
 when something is wrong:
@@ -285,12 +285,12 @@ Run it after any change to the server, and put it in your monitoring.
 
 The **Database** tab of **Tools → System info** holds the database checks:
 
-- **Status** — one box saying whether anything needs doing, then the
+- **Status**: one box saying whether anything needs doing, then the
   Shopclass and database versions, the server, the table count and size, and
   the table prefix.
-- **Database update** — shown only when updates are waiting. **Run database
+- **Database update**: shown only when updates are waiting. **Run database
   update** runs them, the same as `php oc-cli.php db:upgrade`.
-- **Check and repair** — where the database differs from what ShopClass
+- **Check and repair**: where the database differs from what ShopClass
   expects, grouped by what to do about it. **Repair** appears only when there is
   something it can fix: a missing table, column or index, or a column with the
   wrong type. Take a backup first. An extra column or index is left alone; a
@@ -302,12 +302,12 @@ repairs.
 
 ## A maintenance routine
 
-**Weekly** — check reported listings and the moderation queue; skim new users
+**Weekly**: check reported listings and the moderation queue; skim new users
 for spam registrations.
 
-**Monthly** — run `doctor`; apply core, plugin and theme updates on a staging
+**Monthly**: run `doctor`; apply core, plugin and theme updates on a staging
 copy, then live; check the cleanup ran.
 
-**Quarterly** — restore a backup into staging and confirm it works; review
+**Quarterly**: restore a backup into staging and confirm it works; review
 [location data](/docs/configure/locations/) for updates; re-read your category
 tree against what people actually search for.

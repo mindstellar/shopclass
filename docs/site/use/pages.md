@@ -5,7 +5,7 @@ sidebar:
   order: 9
 ---
 
-Every classifieds site needs a handful of pages that are not listings — About,
+Every classifieds site needs a handful of pages that are not listings: About,
 Terms, Privacy, How it works, Contact.
 
 **Pages** in the admin panel.
@@ -23,9 +23,9 @@ footer link.
 
 Pick the **Page template** field when creating the page:
 
-- **Default template** — the text editor. A rich-text field, right for prose.
+- **Default template**: the text editor. A rich-text field, right for prose.
   Terms and Privacy want exactly this.
-- **Page builder (blocks)** — composes the page from widget blocks instead.
+- **Page builder (blocks)**: composes the page from widget blocks instead.
   Right for a landing page or a How-it-works page with images and sections.
 
 The available blocks are the same widget types used elsewhere:
@@ -45,7 +45,7 @@ wraps the theme's header and footer around the blocks.
 ## Forms on a page
 
 A [form](/docs/use/forms-and-custom-fields/) can be placed on a page to collect
-submissions — a contact form, an application, an enquiry form. Responses arrive
+submissions: a contact form, an application, an enquiry form. Responses arrive
 in **Forms → Submissions** rather than only by e-mail, so nothing is lost if
 mail delivery fails.
 
@@ -53,13 +53,13 @@ mail delivery fails.
 
 Beyond taste, some of these are load-bearing:
 
-- **Terms** and **Privacy** — required by most payment providers and by law in
+- **Terms** and **Privacy**: required by most payment providers and by law in
   many jurisdictions, and the first thing a user checks before posting personal
   contact details.
-- **Contact** — an actual route to a human. A marketplace with no contact page
+- **Contact**: an actual route to a human. A marketplace with no contact page
   reads as a scam.
-- **How it works** — the page that converts a visitor into a first-time poster.
-- **About** — who runs the site. On a local marketplace this is worth more than
+- **How it works**: the page that converts a visitor into a first-time poster.
+- **About**: who runs the site. On a local marketplace this is worth more than
   any feature.
 
 ## Editing safely
@@ -68,4 +68,4 @@ Beyond taste, some of these are load-bearing:
 - **Custom Code blocks run on visitors' browsers.** Paste only what you
   understand, from a source you trust.
 - **Write each language.** A page with an empty translation shows empty to
-  visitors in that language — see [languages](/docs/use/languages/).
+  visitors in that language: see [languages](/docs/use/languages/).

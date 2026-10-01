@@ -5,7 +5,7 @@ sidebar:
   order: 8
 ---
 
-The toolbar across the top of the admin panel holds shortcuts — publish a
+The toolbar across the top of the admin panel holds shortcuts: publish a
 listing, jump to the front end, see pending comments. Plugins can add their own
 nodes to it.
 
@@ -24,7 +24,7 @@ AdminToolbar::newInstance()->add_menu(array(
 |---|---|
 | `id` | Unique identifier for the node. Prefix it with your plugin folder. |
 | `title` | The visible label. HTML is accepted, so escape anything user-supplied. |
-| `href` | Where it links. Optional — omit for a plain label. |
+| `href` | Where it links. Optional: omit for a plain label. |
 | `meta` | Extra attributes: `class`, `onclick`, `target`, `title`, `tabindex`. |
 
 ## Hooking it up

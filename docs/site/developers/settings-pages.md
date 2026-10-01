@@ -1,6 +1,6 @@
 ---
 title: Settings pages
-description: Declare an admin settings page in ShopClass and core renders it, validates it, checks CSRF and capability, saves it and reports the result — no controller of your own.
+description: "Declare an admin settings page in ShopClass and core renders it, validates it, checks CSRF and capability, saves it and reports the result: no controller of your own."
 sidebar:
   order: 6
 ---
@@ -80,7 +80,7 @@ use mindstellar\admin\ui\FormSpec;
 ```
 
 `menu` is one of `settings`, `plugins`, `appearance`, `tools`, `items`,
-`users`, `pages`, `stats`. Pass `''` for a page with no menu entry — one
+`users`, `pages`, `stats`. Pass `''` for a page with no menu entry: one
 reached from a link you put somewhere else. `osc_settings_page_url('acme.delivery')`
 gives you its URL.
 
@@ -97,12 +97,12 @@ Keys every field takes:
 | `default` | Value used until something is saved |
 | `required` | Rejected as empty on save |
 | `sanitize` | `callable(mixed $value): mixed`, run before validation |
-| `validate` | `callable(mixed $value, array $field): ?string` — the error, or null |
+| `validate` | `callable(mixed $value, array $field): ?string`: the error, or null |
 | `depends` | Another field on this page. While that field is off, this one is hidden, is not required, and its posted value is **discarded** |
 | `depends_value` | With `depends`: a string or list of strings. The field is on while the master's value is one of them. Only for a select or radio master, and each must be one of its option keys |
 | `translate` | `text`/`textarea`/`richtext` only: one control per enabled locale |
 | `locales` | With `translate`: the locales to expand over, as code => name, instead of every enabled one |
-| `collect` | `callable(array $field): mixed` — how the submission becomes this field's value, for a control core cannot read by name. It replaces the read, the trim and the purify |
+| `collect` | `callable(array $field): mixed`: how the submission becomes this field's value, for a control core cannot read by name. It replaces the read, the trim and the purify |
 | `purify` | `false` to store markup as submitted (see below) |
 | `column` | The key to store under, when it is not the field's own name |
 | `persist` | `false` to store nowhere, or a callable returning what the key takes: `null` leaves it as it was, `FormSpec::WRITE_NULL` stores NULL (an empty string on a preference page) |
@@ -127,7 +127,7 @@ save. That matches what a hand-written screen reading the same field through
 field that holds markup or code on purpose.
 
 `richtext` is different: its value goes through `osc_sanitize_html()`, which
-keeps safe formatting instead of stripping every tag — a body is written as
+keeps safe formatting instead of stripping every tag: a body is written as
 markup, and stripping it would empty what the admin just formatted.
 `'purify' => false` on a `richtext` field stores it exactly as submitted.
 
@@ -136,7 +136,7 @@ stored value through `osc_esc_html()` or `osc_esc_js()` as you always would.
 
 A `secret` field must say whether the admin can read it back (an API key) or
 must never see it again (a password). The type alone does not say which, so
-`write_only` is required on it — registration fails without it.
+`write_only` is required on it: registration fails without it.
 
 ## Images
 
@@ -177,7 +177,7 @@ stored is the image's resource id.
   preference page, not a table store.
 
 `osc_settings_image_url()` works even when the page is not registered in the
-current request — it then reads the preference `logo` in the section `folio`
+current request: it then reads the preference `logo` in the section `folio`
 directly. A page that sets its own `section` or `column` must be registered
 for this to work.
 
@@ -193,7 +193,7 @@ A page can write one row of a table rather than one preference per field:
     ->register();
 ```
 
-The row is addressed by an integer key **supplied by your controller** —
+The row is addressed by an integer key **supplied by your controller**,
 never taken from the request. No key inserts a row, and a key that is not a
 positive integer is refused. This is why the generic controller does not
 serve a table-backed page: it needs a controller of yours, one that supplies
@@ -234,7 +234,7 @@ someone else's page cannot read a password out of a payload it did not ask
 for.
 
 For an effect that belongs to one page, not to anyone listening, declare it
-on the page instead. It runs once, only after a successful save, and last —
+on the page instead. It runs once, only after a successful save, and last,
 after `admin_form_after_save`, so it sees whatever a listener made of the
 values:
 
@@ -255,13 +255,13 @@ has. It follows the page as you scroll, so Save stays reachable on a long
 screen.
 
 A save that changes nothing reports exactly that, instead of claiming
-success — the store writes only the values that actually differ.
+success: the store writes only the values that actually differ.
 
 ## The hand-rolled path (deprecated)
 
 :::caution[Deprecated since 6.3.0]
-Hand-writing a settings screen — your own `<form>`, controller action, CSRF
-check and save block — is deprecated. Declare the page instead. The old way
+Hand-writing a settings screen (your own `<form>`, controller action, CSRF
+check and save block) is deprecated. Declare the page instead. The old way
 keeps working and will not be removed: the `osc_*` helpers and admin class
 names it uses stay a public API.
 :::
@@ -275,7 +275,7 @@ offers two hooks so a plugin can extend it without owning the page:
 | `admin_locations_drawer_fields` | action | Rendering the add/edit drawer, after the built-in fields. Receives `$level` and `$record` (`null` when adding, the row's data when editing) |
 
 A declaration gives you the CSRF check, the capability check, the escaping,
-the `depends` handling and the redirect — all written once in core. Move an
+the `depends` handling and the redirect: all written once in core. Move an
 existing screen the next time you touch it. The Test Payments plugin in
 [Payment gateways](/docs/developers/payment-gateways/) shows the result.
 
@@ -322,7 +322,7 @@ one.
 | `osc_admin_form_section($title)` | A titled group of fields. |
 | `osc_admin_form_row_open($label)` · `osc_admin_form_row_close()` | One labelled row holding several controls. |
 | `osc_admin_page_head($title, $actions)` | The screen title with its action buttons. |
-| `osc_admin_action_section()` | An intro, a status block, and buttons — no form. |
+| `osc_admin_action_section()` | An intro, a status block, and buttons, no form. |
 
 `osc_admin_field()` takes `type`, `name`, `label`, `value`, `help`,
 `options`, `prefix`, `suffix`, `width`, `required`, `disabled`, `id` and
@@ -330,6 +330,6 @@ one.
 'custom'` with a `render` callable to put your own markup inside a normal
 row.
 
-If the screen edits **one record**, not a list of preferences — a main
-column, a rail showing the record's state, one Save at the foot — build it
+If the screen edits **one record**, not a list of preferences (a main
+column, a rail showing the record's state, one Save at the foot), build it
 from the editor components instead: [Admin editors](/docs/developers/admin-editors/).

@@ -1,6 +1,6 @@
 ---
 title: Importing listings
-description: Create and update listings from a plugin through core's own save path — ItemActions::prepareDataFrom(), import mode, owner and photos — plus the rate limit and address check an import API needs.
+description: "Create and update listings from a plugin through core's own save path: ItemActions::prepareDataFrom(), import mode, owner and photos, plus the rate limit and address check an import API needs."
 sidebar:
   order: 26
 ---

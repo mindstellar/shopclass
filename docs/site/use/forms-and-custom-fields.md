@@ -1,6 +1,6 @@
 ---
 title: Forms & custom fields
-description: Model any category in ShopClass with typed custom fields — reusable fields, forms attached to categories, conditional logic, and form submissions.
+description: "Model any category in ShopClass with typed custom fields: reusable fields, forms attached to categories, conditional logic, and form submissions."
 sidebar:
   order: 3
 ---
@@ -13,11 +13,11 @@ all of that without code, through **fields** grouped into **forms**.
 
 ## The model, in three parts
 
-**Fields** are the individual inputs — *Make*, *Year*, *Fuel type*. A field
+**Fields** are the individual inputs: *Make*, *Year*, *Fuel type*. A field
 is defined once and is **reusable**: the same *Year* field can sit in your
 Cars form and your Motorbikes form.
 
-**Forms** are ordered groups of fields — *Vehicle details*, *Property
+**Forms** are ordered groups of fields: *Vehicle details*, *Property
 details*.
 
 **Listings → Categories** are what a form is attached to. A form applies to
@@ -25,8 +25,8 @@ one or more categories. Its fields then appear when publishing in those
 categories, and as filters when browsing them.
 
 :::caution[A form attached to no category does nothing]
-The admin flags it: *"Not attached to a category — it won't appear on
-listings yet."* Creating the form is only half the job.
+The admin marks it as not attached to a category, and it won't appear on
+listings yet. Creating the form is only half the job.
 :::
 
 ## Creating a form
@@ -39,7 +39,7 @@ your reusable fields on the right.
 1. Press **+ New form** and name it.
 2. Drag fields in from the **Fields** panel on the right, or use the
    form's own **+ Add field** to make a new one.
-3. Drag to reorder — this is the order visitors see. You can also reorder
+3. Drag to reorder: this is the order visitors see. You can also reorder
    from the keyboard: focus the grip and use the arrow keys.
 4. Open the form's **settings** (the gear icon) to attach it to the
    categories it applies to. Each form shows its **Applies to:** line
@@ -79,7 +79,7 @@ Editing a field opens its settings beside the form:
 - **Placeholder**, **Help text** and **Default value** turn a bare input
   into one a seller can answer without guessing.
 - **Advanced options** holds the rest, including *Tick to allow searches by
-  this field* — see [making fields searchable](#making-fields-searchable) —
+  this field* (see [making fields searchable](#making-fields-searchable)),
   and, for a URL field, *Tick to open links in new tab*.
 
 ## Reused fields change everywhere
@@ -102,8 +102,8 @@ Every field carries a **Conditional logic** setting with three modes:
 | Mode | Effect |
 |---|---|
 | **Always show** | The default. The field is on the form for everyone. |
-| **Show only when…** | The field appears only when another field matches a condition — show *Engine size* only when *Fuel type* is not *Electric*. |
-| **Required only when…** | The field is always visible, but only mandatory when the condition matches — make *Registration number* required only when *Condition* is *Used*. |
+| **Show only when…** | The field appears only when another field matches a condition: show *Engine size* only when *Fuel type* is not *Electric*. |
+| **Required only when…** | The field is always visible, but only mandatory when the condition matches: make *Registration number* required only when *Condition* is *Used*. |
 
 The available conditions are **is**, **is not**, **is greater than**, **is
 less than** and **is filled**.
@@ -125,7 +125,7 @@ Attach shared fields high in the tree, and specific ones low.
 
 ## Legacy fields from before Forms
 
-Fields attached directly to categories — the older Osclass model — still
+Fields attached directly to categories (the older Osclass model) still
 work. The admin marks them with a **"n cats · no form"** badge and
 explains: *attached directly to n categories, outside any form. Drag it
 into a form to manage it here.*
@@ -158,7 +158,7 @@ you need to keep first.
 
 Existing values are kept, but the consequences differ by change:
 
-- **Renaming a field** is safe — the stored values are untouched.
+- **Renaming a field** is safe: the stored values are untouched.
 - **Removing an option** from a dropdown leaves listings holding a value
   that is no longer offered. They keep it and display it; nobody can
   select it again.
@@ -171,7 +171,7 @@ Existing values are kept, but the consequences differ by change:
 
 A field is only useful as a filter if search knows about it. In the
 field's **Advanced options**, tick **"Tick to allow searches by this
-field"** for the fields you want visitors to narrow by — price ranges,
-year, bedrooms — and leave descriptive fields unmarked. Every searchable
+field"** for the fields you want visitors to narrow by (price ranges,
+year, bedrooms) and leave descriptive fields unmarked. Every searchable
 field adds a query cost and another control in the sidebar, so choose the
 two or three that actually change what people find.

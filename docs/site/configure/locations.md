@@ -1,6 +1,6 @@
 ---
 title: Install location data
-description: Add countries, regions and cities to ShopClass so visitors can find listings near them — from the admin panel or the command line.
+description: "Add countries, regions and cities to ShopClass so visitors can find listings near them: from the admin panel or the command line."
 sidebar:
   order: 3
 ---
@@ -13,7 +13,7 @@ need 1.6 million place names, so you install only the countries you serve.
 
 **Admin → Listings → Locations** has two tabs.
 
-### Data — install and update countries
+### Data: install and update countries
 
 **Data** lists all 255 countries in the published catalog. Filter them by **All**,
 **Installed**, **Updates** or **Not installed**. Install a country, and its
@@ -34,7 +34,7 @@ bulk change. **Recalculate** counts them again. It shows its progress, for
 example *27% counted: 24,198 of 88,301 locations*. The site stays online while it
 runs.
 
-### Browse — edit what you have
+### Browse: edit what you have
 
 **Browse** shows your installed places: countries, then regions, then cities. The
 breadcrumb at the top takes you back up a level.

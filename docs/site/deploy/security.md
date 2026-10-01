@@ -1,13 +1,13 @@
 ---
 title: Security & hardening
-description: Harden a ShopClass install — file permissions, HTTPS, admin access, login throttling, updates, backups and reporting vulnerabilities.
+description: "Harden a ShopClass install: file permissions, HTTPS, admin access, login throttling, updates, backups and reporting vulnerabilities."
 sidebar:
   order: 2
 ---
 
 ShopClass ships with CSRF protection (stopping another site from tricking a
 visitor's browser into taking an action on yours), hardened sessions, login
-throttling and CAPTCHA support. What follows is the deployment side — the parts
+throttling and CAPTCHA support. What follows is the deployment side: the parts
 that are your server's job rather than the application's.
 
 ## Keep it updated
@@ -16,7 +16,7 @@ The single most effective thing on this page. Most compromised PHP sites are
 running a version with a published, patched vulnerability.
 
 - Watch [releases](https://github.com/mindstellar/shopclass/releases).
-- Apply core updates promptly — see [updating](/docs/updating/).
+- Apply core updates promptly: see [updating](/docs/updating/).
 - Update plugins and themes too. An abandoned plugin is a liability regardless
   of how current core is.
 - Remove packages you do not use. Disabled is better than installed; uninstalled
@@ -46,7 +46,7 @@ chmod 640 config.php
 
 :::danger[`777` is never the answer]
 It is the most common "fix" in forum posts and it makes every file on the site
-writable by every process on the server — including anything an attacker
+writable by every process on the server, including anything an attacker
 manages to run. If permissions are genuinely the problem, fix the **owner**, not
 the mode.
 :::
@@ -59,7 +59,7 @@ server and by nobody else.
 `oc-content/` is served over HTTP, and several things that can appear there
 should not be readable:
 
-- `debug.log`, `queries.log`, `explain_queries.log` — see
+- `debug.log`, `queries.log`, `explain_queries.log`: see
   [debugging](/docs/developers/debug-php-errors/). Delete them when you are done
   and deny `*.log` in your server config.
 - Database dumps. Never leave a backup in the web root, except in the backups
@@ -105,12 +105,12 @@ For a site where the admin panel has no reason to be publicly reachable, put it
 behind an IP allowlist, a VPN, or an identity proxy (a separate login wall in
 front of the admin panel) at the web-server layer.
 
-Locked out? `php oc-cli.php user:reset-password --user=<name>` — see the
+Locked out? `php oc-cli.php user:reset-password --user=<name>`: see the
 [CLI reference](/docs/cli/).
 
 ## Login throttling and the real client IP
 
-Failed logins are throttled per IP and per account by default — 20 attempts per
+Failed logins are throttled per IP and per account by default: 20 attempts per
 IP and 10 per account in a 15-minute window.
 
 :::danger[Behind a proxy this needs configuring, or it protects nothing]
@@ -121,7 +121,7 @@ per-IP limit then treats your entire audience as one person, and abuse reports
 all key to the same address, and stored IPs and IP bans stop meaning anything.
 :::
 
-ShopClass reads the visitor IP only from `REMOTE_ADDR` — it never trusts a
+ShopClass reads the visitor IP only from `REMOTE_ADDR`. It never trusts a
 forwarding header from the request itself, because an unauthenticated visitor
 could set one to fake any address they like. `Tools → System info` warns when
 `REMOTE_ADDR` does not match a forwarding header your proxy is sending, which
@@ -139,7 +139,7 @@ set_real_ip_from 173.245.48.0/20;   # your proxy's / Cloudflare's IP range
 real_ip_header    CF-Connecting-IP; # or X-Real-IP, X-Forwarded-For, ...
 ```
 
-The container image does this for you — set `OSC_REAL_IP_HEADER` (and
+The container image does this for you: set `OSC_REAL_IP_HEADER` (and
 `OSC_REAL_IP_TRUSTED` for the CIDR ranges) and it writes the block above; see
 [Docker](/docs/deploy/docker/#putting-it-behind-tls).
 
@@ -151,7 +151,7 @@ RemoteIPTrustedProxy 173.245.48.0/20
 ```
 
 **Cloudflare**: use the `CF-Connecting-IP` header, and trust it only from
-[Cloudflare's published IP ranges](https://www.cloudflare.com/ips/) — list
+[Cloudflare's published IP ranges](https://www.cloudflare.com/ips/): list
 every range in `set_real_ip_from` / `RemoteIPTrustedProxy`, not just one.
 
 Whichever proxy you use, trust the narrowest set of peers that can actually
@@ -171,23 +171,23 @@ e-mail validation. See [spam and abuse](/docs/use/spam-and-abuse/).
 - A dedicated user with privileges on **one** database. Never the MySQL root
   account.
 - A strong, unique password.
-- Not reachable from the internet — `localhost` or a private network only.
+- Not reachable from the internet: `localhost` or a private network only.
 
 ## Uploads
 
 Uploaded images are user-controlled files. Make sure your web server will not
-execute anything in the uploads directory — deny PHP execution under
+execute anything in the uploads directory: deny PHP execution under
 `oc-content/uploads/` at the server level. A single file can be a valid image
-and valid PHP at once (called a polyglot file) — this is a real attack
+and valid PHP at once (called a polyglot file). This is a real attack
 technique, not a theoretical one.
 
 If you have [offloaded uploads to S3](/docs/use/media-and-storage/), the bucket
-should be public-read at most — never public-write.
+should be public-read at most, never public-write.
 
 ## Backups are a security control
 
 Ransomware and a bad `DELETE` look the same from the restore side. Keep offsite,
-tested backups — see [backups](/docs/use/backups-and-maintenance/).
+tested backups: see [backups](/docs/use/backups-and-maintenance/).
 
 ## Reporting a vulnerability
 

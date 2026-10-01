@@ -1,6 +1,6 @@
 ---
 title: Install ShopClass
-description: Step-by-step installation guide for ShopClass — server requirements, the four-step installer, and what to do when a step fails.
+description: "Step-by-step installation guide for ShopClass: server requirements, the four-step installer, and what to do when a step fails."
 sidebar:
   order: 1
 ---
@@ -36,7 +36,7 @@ deployed from a branch will look broken in the admin panel.
 
 ## 2. Unpack it into your web root
 
-Upload and extract the package into the directory your domain serves — usually
+Upload and extract the package into the directory your domain serves, usually
 `public_html`, `htdocs` or `/var/www/html`.
 
 You can also install into a subdirectory (`public_html/classifieds`), in which
@@ -45,7 +45,7 @@ case your site lives at `https://example.com/classifieds/`.
 ## 3. Create a database
 
 From your hosting control panel, create an empty MySQL or MariaDB database.
-Create a user with full privileges on it too. Write down these four values —
+Create a user with full privileges on it too. Write down these four values:
 the installer asks for them next:
 
 - database host (usually `localhost`)
@@ -57,7 +57,7 @@ If your database listens on a non-default port, enter the host as `host:port`.
 
 ## 4. Run the installer
 
-Open your site in a browser — `https://example.com/` — and the installer starts
+Open your site in a browser (`https://example.com/`) and the installer starts
 automatically. If it does not, go straight to
 `https://example.com/oc-includes/osclass/install.php`.
 
@@ -86,7 +86,7 @@ Leave the password field blank and a strong one is generated for you.
 
 ### Step 4 · Done
 
-Copy the admin password — it is also e-mailed to you — and open the admin panel.
+Copy the admin password (it is also e-mailed to you) and open the admin panel.
 
 ![The installer's final step, showing the generated admin username and password with a link to the admin panel.](images/install/4-done.png)
 
@@ -101,9 +101,9 @@ notice instead of re-running.
 
 A fresh install works, but three things are worth doing on day one:
 
-1. **[Set up cron](/docs/configure/cron/)** — without it, e-mail alerts never
+1. **[Set up cron](/docs/configure/cron/)**: without it, e-mail alerts never
    send and expired listings never expire.
-2. **[Configure your mail server](/docs/configure/mail-server/)** — registration
+2. **[Configure your mail server](/docs/configure/mail-server/)**: registration
    and contact e-mails depend on it.
 3. **[Install location data](/docs/configure/locations/)** for the countries you
    serve, so visitors can filter by region and city.
@@ -122,7 +122,7 @@ See the [command-line interface](/docs/cli/) for the full flag list.
 ## Troubleshooting
 
 **The installer says a directory is not writable.**
-Give the web-server user write access to the paths it names — typically
+Give the web-server user write access to the paths it names, typically
 `oc-content/` and its `uploads/` and `downloads/` subdirectories. On most hosts
 `755` on directories is enough; `777` is almost never necessary and is worth
 avoiding.
@@ -137,5 +137,5 @@ enabled and that `AllowOverride All` applies to your web root so the shipped
 [repository's reference config](https://github.com/mindstellar/shopclass).
 
 **Something else.**
-Ask in [GitHub Discussions](https://github.com/mindstellar/shopclass/discussions)
-— include your PHP version, your host, and what the screen actually said.
+Ask in [GitHub Discussions](https://github.com/mindstellar/shopclass/discussions).
+Include your PHP version, your host, and what the screen actually said.

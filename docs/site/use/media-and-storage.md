@@ -1,6 +1,6 @@
 ---
 title: Media & storage
-description: Configure images in ShopClass — sizes, upload limits, watermarks — and offload uploads to S3-compatible storage with the migration queue.
+description: "Configure images in ShopClass (sizes, upload limits, watermarks) and offload uploads to S3-compatible storage with the migration queue."
 sidebar:
   order: 6
 ---
@@ -20,7 +20,7 @@ from every upload:
 | **Preview size** | The gallery strip on a listing page |
 | **Normal size** | The full view a visitor opens |
 
-Sizes are entered as dimensions. Bigger is not better here — thumbnails are what
+Sizes are entered as dimensions. Bigger is not better here: thumbnails are what
 a browse page loads dozens of at once, and they set how fast the page feels.
 
 **Photo shape → Keep each photo's own shape** (on for new sites) only makes photos
@@ -65,14 +65,14 @@ Photos already uploaded keep their format.
 ## Upload restrictions
 
 **Maximum size** caps what a visitor may upload, in KB. The screen shows the
-ceiling PHP itself imposes — *Maximum size PHP configuration allows: n KB* — and
+ceiling PHP itself imposes (*Maximum size PHP configuration allows: n KB*), and
 your setting cannot exceed it.
 
 If you need a higher limit than PHP allows, raise `upload_max_filesize`,
 `post_max_size` and `memory_limit` in PHP's configuration first; the ShopClass
-setting will not override them — it uses whichever of the three gives the
+setting will not override them. It uses whichever of the three gives the
 lowest number. A too-low PHP limit shows up as an upload that silently fails on
-large photos — see [debugging PHP errors](/docs/developers/debug-php-errors/).
+large photos. See [debugging PHP errors](/docs/developers/debug-php-errors/).
 
 The photo count per listing is set separately, in **Listings → Settings**.
 
@@ -94,8 +94,8 @@ devalues the listing for the seller who posted it.
 on the web server. That is fine for one server and becomes a problem the moment
 you want two, or when uploads outgrow the disk.
 
-Storage offload moves them to an **S3-compatible bucket** — cloud storage that
-speaks the same protocol as Amazon S3, which most storage providers support —
+Storage offload moves them to an **S3-compatible bucket** (cloud storage that
+speaks the same protocol as Amazon S3, which most storage providers support),
 served directly to visitors.
 
 Turn it on from the **Active storage** field: switch it from **Local disk** to
@@ -123,14 +123,14 @@ step, which is much easier to debug than a failed upload later.
 
 Two fields deserve attention:
 
-- **Public URL** — the hostname visitors will load images from. Set this to
-  your CDN (a content delivery network — servers that cache and serve files
+- **Public URL**: the hostname visitors will load images from. Set this to
+  your CDN (a content delivery network: servers that cache and serve files
   closer to visitors) or custom domain if the bucket is behind one, not the
   raw endpoint.
-- **Local copies** — **Keep local copies** or **Delete after upload**. Keeping
+- **Local copies**: **Keep local copies** or **Delete after upload**. Keeping
   a copy costs disk, and buys you a working site if the bucket becomes
   unreachable.
-- **Backups bucket** and **Backups kept** — where
+- **Backups bucket** and **Backups kept**: where
   [backups saved to S3](/docs/use/backups-and-maintenance/#saving-to-your-s3-bucket)
   go, and how many are kept.
 
@@ -148,12 +148,12 @@ there until you move it, and the migration tools do that:
 | Action | What it does |
 |---|---|
 | **Offload all local images to remote storage** | Queues every local image for upload. |
-| **Download all remote images back to local (offline copy)** | Pulls everything back — an offline copy, and the way out if you change your mind. |
+| **Download all remote images back to local (offline copy)** | Pulls everything back: an offline copy, and the way out if you change your mind. |
 | **Adopt existing Better S3 images** | Takes over images already in a bucket from the Better S3 plugin, rather than re-uploading them. |
 
 ### The queue
 
-Migration does not happen inside your request — it is queued and processed in
+Migration does not happen inside your request. It is queued and processed in
 the background, which is the only way it can survive a site with tens of
 thousands of images.
 
@@ -166,12 +166,12 @@ wrong and every job is failing the same way.
 
 ### Before you offload
 
-- Take a [backup](/docs/use/backups-and-maintenance/) — this rewrites where
+- Take a [backup](/docs/use/backups-and-maintenance/): this rewrites where
   every image on the site is served from.
 - Set a bucket lifecycle policy if your provider charges for storage you forget
   about.
 - Make the bucket's objects publicly readable, or serve them through a CDN that
   can read them. For a private bucket, turn on **Serve files through
-  time-limited signed URLs** — each image link then carries its own
+  time-limited signed URLs**: each image link then carries its own
   time-limited access code, so visitors are not shown broken images.
 - Test with a single new listing before migrating the whole library.

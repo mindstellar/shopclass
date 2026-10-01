@@ -1,6 +1,6 @@
 ---
 title: Developer documentation
-description: Build plugins and themes for ShopClass — the extension API carried over from Osclass, the package contract, and the registry that publishes your work.
+description: "Build plugins and themes for ShopClass: the extension API carried over from Osclass, the package contract, and the registry that publishes your work."
 sidebar:
   order: 1
 ---
@@ -8,7 +8,7 @@ sidebar:
 ShopClass is extended the way Osclass was: **hooks** to run your code at the
 right moment, **helpers** to read and write the application's data, and
 **routes** to add pages of your own. That API was kept deliberately through the
-modernisation — the `osc_*` helper functions, hook names, admin CSS class names
+modernisation: the `osc_*` helper functions, hook names, admin CSS class names
 and `oc-includes/assets/` paths are treated as a public API and were not
 renamed.
 
@@ -18,14 +18,14 @@ If you wrote for Osclass, you already know most of this.
 
 Worth knowing before you port something:
 
-- **PHP 8 throughout.** The floor is 8.0. Code that relied on PHP 7 leniency —
-  implicit type juggling, dynamic properties, `create_function` — will fatal.
+- **PHP 8 throughout.** The floor is 8.0. Code that relied on PHP 7 leniency
+  (implicit type juggling, dynamic properties, `create_function`) will fatal.
 - **jQuery is not loaded for you.** The admin panel is Bootstrap 5 and registers
   `bootstrap5`, `popper` and `sortablejs`; the front end loads nothing by
   default. A plugin that assumed `$` was present must now register and enqueue
   its own copy.
 - **A real CLI.** `oc-cli.php` covers cron, migrations, packages and health
-  checks — see the [CLI reference](/docs/cli/).
+  checks: see the [CLI reference](/docs/cli/).
 - **A package registry.** Plugins and themes are published through
   [the market](/docs/developers/market/) instead of ad-hoc update URLs.
 - **`oc-includes/assets/chart-js/` is gone** as of 6.2.0. It was added in 2021
@@ -77,11 +77,11 @@ npm run build        # vendor assets + SCSS → CSS + JS
 npm run watch        # rebuild on change
 ```
 
-A full stack — PHP-FPM, MariaDB, Nginx, Memcached, Mailhog and phpMyAdmin —
+A full stack (PHP-FPM, MariaDB, Nginx, Memcached, Mailhog and phpMyAdmin)
 ships in `docker-compose.dev.yml`:
 
 ```bash
-npm run dev:build     # first run — builds the PHP-FPM image
+npm run dev:build     # first run: builds the PHP-FPM image
 npm run dev           # start
 npm run dev:logs      # follow the logs
 ```
@@ -101,8 +101,8 @@ checked out locally.
 ## Reading the code
 
 These pages are task-shaped: how to add a route, how to register a menu, what a
-package must declare. For tracing the code itself — what a class does, where a
-call ends up — [**Ask DeepWiki**](https://deepwiki.com/mindstellar/shopclass)
+package must declare. For tracing the code itself (what a class does, where a
+call ends up), [**Ask DeepWiki**](https://deepwiki.com/mindstellar/shopclass)
 indexes the repository and answers questions about it conversationally.
 
 It is generated from the source, so it knows the codebase and nothing about your

@@ -1,6 +1,6 @@
 ---
 title: Background jobs
-description: Queue slow work and let cron run it — osc_job_enqueue(), handler registration, retries, batching long work, and the admin queue screen.
+description: "Queue slow work and let cron run it: osc_job_enqueue(), handler registration, retries, batching long work, and the admin queue screen."
 sidebar:
   order: 25
 ---
@@ -36,7 +36,7 @@ That is the whole API for most plugins.
 ## Two rules you have to follow
 
 **Put the facts in the payload, not a foreign key.** The job may run long after the row
-that created it was deleted — that is often exactly why it was queued.
+that created it was deleted, and that is often exactly why it was queued.
 
 ```php
 // Wrong: the user may be gone by the time this runs.
@@ -57,7 +57,7 @@ charging a card twice is not.
 
 ## Naming a job type
 
-A type is `namespace.name` — lower-case letters, digits, underscores and dots, up to 60
+A type is `namespace.name`: lower-case letters, digits, underscores and dots, up to 60
 characters. The namespace is required. Without it the first plugin to claim `send` would
 take the word from every other plugin.
 
@@ -93,7 +93,7 @@ osc_job_enqueue_many('acme.reindex', $payloads, array(
 
 A handler that cannot finish in one tick does one batch, says where to carry on from, and
 returns. The job is re-queued instead of finishing, and **no attempt is counted against
-it** — a batch that worked is not a failure.
+it**: a batch that worked is not a failure.
 
 ```php
 osc_job_register_handler('acme.rebuild', function ($job) {
@@ -110,7 +110,7 @@ osc_job_register_handler('acme.rebuild', function ($job) {
 });
 ```
 
-Nothing is held between batches — no transaction, no lock, no PHP process. That is what
+Nothing is held between batches: no transaction, no lock, no PHP process. That is what
 makes the work survivable on a shared host.
 
 ## When a job fails

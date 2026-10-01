@@ -1,12 +1,12 @@
 ---
 title: Database model
-description: Explore the ShopClass schema — table prefix, the core tables, and generating an entity-relationship diagram from struct.sql.
+description: "Explore the ShopClass schema: table prefix, the core tables, and generating an entity-relationship diagram from struct.sql."
 sidebar:
   order: 12
 ---
 
 ShopClass stores everything in MySQL/MariaDB. Table names carry the prefix
-chosen at install — `oc_` by default, and configurable per install, so **never
+chosen at install (`oc_` by default, and configurable per install), so **never
 hard-code it**:
 
 ```php
@@ -18,18 +18,18 @@ $prefix = DB_TABLE_PREFIX;             // in raw SQL
 
 | Table | Holds |
 |---|---|
-| `t_item` | Listings — price, dates, contact, coordinates, flags. |
+| `t_item` | Listings: price, dates, contact, coordinates, flags. |
 | `t_item_description` | Title and description, one row per language. Carries the full-text index. |
 | `t_item_resource` | Uploaded photos and files attached to a listing. |
 | `t_category` / `t_category_description` | The category tree and its translations. |
 | `t_country`, `t_region`, `t_city` | [Location data](/docs/configure/locations/). |
 | `t_user` | Accounts, with `t_admin` for admin users. |
-| `t_preference` | Every setting, grouped by section — the row that decides how the site behaves. |
+| `t_preference` | Every setting, grouped by section: the row that decides how the site behaves. |
 | `t_pages` | Static pages. |
 | `t_plugin_category` | Per-plugin, per-category configuration. |
 
-Column names follow a typed prefix — `i_` integer, `s_` string, `d_` decimal,
-`b_` boolean, `dt_` datetime, `pk_` primary key, `fk_` foreign key — so
+Column names follow a typed prefix: `i_` integer, `s_` string, `d_` decimal,
+`b_` boolean, `dt_` datetime, `pk_` primary key, `fk_` foreign key, so
 `fk_i_category_id` is a foreign key to a category id. See
 [coding style](/docs/developers/coding-style/).
 
@@ -39,7 +39,7 @@ The authoritative schema is
 `oc-includes/osclass/installer/struct.sql`. To get an interactive
 entity-relationship diagram from it:
 
-1. Install [MySQL Workbench](https://www.mysql.com/products/workbench/) — free
+1. Install [MySQL Workbench](https://www.mysql.com/products/workbench/), free
    and cross-platform.
 2. **Database → Reverse Engineer**, or **File → Import → Reverse Engineer MySQL
    Create Script**.
@@ -47,15 +47,15 @@ entity-relationship diagram from it:
 4. Check **Place imported objects on a diagram**.
 5. Execute, then rearrange the tables.
 
-Relations highlight as you hover, which is the only practical way to follow them
-— the full schema is too dense to read as a static picture.
+Relations highlight as you hover, which is the only practical way to follow them:
+the full schema is too dense to read as a static picture.
 
 Generating it yourself rather than reading a published image also means the
 diagram matches **your** version, not whatever release the image was made from.
 
 ## Querying from a plugin
 
-Use the DAO layer rather than raw SQL where one exists — it applies the prefix,
+Use the DAO layer rather than raw SQL where one exists, since it applies the prefix,
 escapes parameters and keeps working across schema migrations:
 
 ```php
@@ -100,5 +100,5 @@ $table = DB_TABLE_PREFIX . 't_myplugin_data';
 ```
 
 Do not add columns to core tables. A migration will not know about them, and
-`db:repair` never removes a column — it stays flagged as extra until someone
+`db:repair` never removes a column: it stays flagged as extra until someone
 removes it by hand.

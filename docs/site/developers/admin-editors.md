@@ -1,6 +1,6 @@
 ---
 title: Admin editors
-description: Build an add/edit screen in the ShopClass admin from the same components the listing and page editors use — the two-column shell, the status panel, the pickers, the photo grid and the sticky save bar.
+description: "Build an add/edit screen in the ShopClass admin from the same components the listing and page editors use: the two-column shell, the status panel, the pickers, the photo grid and the sticky save bar."
 sidebar:
   order: 7
 ---
@@ -45,7 +45,7 @@ osc_admin_editor_close(array(
 
 `osc_admin_editor_open()` emits the `<form>`, its hidden route, the CSRF token, the error
 summary and the main column. It takes everything
-[`osc_admin_form_open()`](/docs/developers/settings-pages/) takes — `action`, `page`, `url`,
+[`osc_admin_form_open()`](/docs/developers/settings-pages/) takes: `action`, `page`, `url`,
 `method`, `fields`, `name`, `id`, `class`, `upload`, `csrf`. It always opens the form
 unwrapped, because an editor stacks its labels above its controls. Plus:
 
@@ -57,7 +57,7 @@ unwrapped, because an editor stacks its labels above its controls. Plus:
 | `error_ids` | `name => control id`, where the id is not the name |
 
 `osc_admin_editor_rail()` closes the main column and opens the rail. Options: `id`, `class`.
-**Skip this call and you get one full-width column** — right for a screen with nothing to
+**Skip this call and you get one full-width column**, which is right for a screen with nothing to
 say about state.
 
 `osc_admin_editor_close($actions, $opts)` closes the form with the sticky save bar. It
@@ -68,7 +68,7 @@ or `type`, `variant` (`primary`, `secondary`, `dim`, `danger`, `outline-danger`)
 `class`, `title` and `attrs`.
 
 The grid is CSS grid, not Bootstrap columns. From 992px up, the rail is 20rem wide and
-sticky. Below that there is one column, and **the rail comes first** — so a moderator on a
+sticky. Below that there is one column, and **the rail comes first**, so a moderator on a
 phone reaches the record's state without scrolling past its body.
 
 ## The status panel
@@ -98,7 +98,7 @@ osc_admin_publish_panel(array(
 | `title` | Panel heading, "Status" by default |
 | `title_actions` | Action specs in the panel's header |
 | `class` | Extra classes on the panel |
-| `status` | List of `array($state, $word)` — or `array('state' => …, 'word' => …)` |
+| `status` | List of `array($state, $word)`, or `array('state' => …, 'word' => …)` |
 | `rows` | `osc_admin_definition()` rows: `label`, `value`, `html`, `mono` |
 | `body_html` | Markup between the rows and the actions |
 | `actions` | Routine actions, as secondary buttons |
@@ -126,7 +126,7 @@ wires `aria-describedby`. On a translated field, it takes a map of locale code t
 
 **`translate`** expands one field into one control per locale, under a tab strip.
 **`translate_name`** says how one locale's posted name is spelled, with `%s` standing for
-the locale code. Without it, the name is the field's name with the code appended — which is
+the locale code. Without it, the name is the field's name with the code appended. That is
 what existing callers already get, so nothing changed under them.
 
 `locales` carries the list, as `code => name`. It is required: the field never queries
@@ -182,20 +182,20 @@ save path.
 
 Each renders a composite control and posts the same plain names a hand-written form would.
 
-**`osc_admin_category_picker()`** — a control showing the chosen path, and a searchable list
+**`osc_admin_category_picker()`**: a control showing the chosen path, and a searchable list
 of the whole tree behind it. Keys: `name` (default `catId`), `id`, `value`, `label`,
 `required`, `help`, `error`, `categories` (rows carrying `pk_i_id`, `fk_i_parent_id` and
 `s_name`; the enabled tree by default). Picking a category fires `change` on the hidden
 field, so a script of yours can listen for it.
 
-**`osc_admin_location_picker()`** — the country select, region and city inputs with their
+**`osc_admin_location_picker()`**: the country select, region and city inputs with their
 hidden ids, and the rest of the address behind a disclosure. Keys: `value` and `errors`
 keyed by `countryId`, `region`, `regionId`, `city`, `cityId`, `cityArea`, `zip`, `address`;
 `names` to post any of them under another name; `countries`; `detail` (`disclosure` by
 default, or `inline` or `none`); `label_*` per label. Every control keeps the id core's
 location autocomplete already binds to, so the suggestions work with no script of your own.
 
-**`osc_admin_user_picker()`** — the card when a registered user matches, and a search that
+**`osc_admin_user_picker()`**: the card when a registered user matches, and a search that
 fills the named fields when one is picked. Keys: `user` (an array with `name`, `email` and
 `url`; `null` for no match), `id`, `label`, `placeholder`, `help`, `source` (the
 autocomplete endpoint), `fields` (what a pick fills, as key => the posted name).
@@ -281,7 +281,7 @@ One file, an add/edit screen for a plugin's own record type, with a rail.
 ```php
 <?php
 /**
- * Acme Offers — the add/edit screen. Rendered by the plugin's own controller action.
+ * Acme Offers: the add/edit screen. Rendered by the plugin's own controller action.
  *
  * @var array $offer   The record being edited, or an empty array when adding
  * @var array $errors  name => message, empty on a first draw
@@ -415,22 +415,22 @@ osc_admin_editor_close(array(
 
 The save side is yours. Read the posted names with `Params::getParamInt()` /
 `getParamString()`, check `osc_csrf_check()`, and build `$errors` for a re-render.
-`Params::getParam()` returns raw request data — it is not sanitisation.
+`Params::getParam()` returns raw request data. It is not sanitisation.
 
 ## Hooking core's editors
 
-A plugin that renders into the listing or page editor — on `item_form`, `item_edit`,
-`page_meta` — draws below the core fields, inside the same main column. Nothing about
+A plugin that renders into the listing or page editor (on `item_form`, `item_edit`,
+`page_meta`) draws below the core fields, inside the same main column. Nothing about
 those hooks or their arguments changed. Draw your fields with `osc_admin_field()` and they
 match what is above them. Hand-written markup keeps working as it always did.
 
 One thing that will catch your eye: inside the plugin-field panel, a value's right edge
-sits in from core's fields above it. That is deliberate and long-standing. Leave it alone —
-it is not your markup misbehaving.
+sits in from core's fields above it. That is deliberate and long-standing. Leave it alone.
+It is not your markup misbehaving.
 
 ## Class names you can target
 
-These are published and additive. Restyle them freely — they will not be renamed.
+These are published and additive. Restyle them freely. They will not be renamed.
 
 `osc-editor`, `osc-editor-main`, `osc-editor-side`, `osc-editor-cols`, `osc-editor-actions`,
 `osc-editor-title`, `osc-field`, `osc-field-required`, `osc-publish`, `osc-publish-status`,
@@ -466,8 +466,8 @@ end still uses some of them. Use the replacements in new admin code.
 
 ## Related
 
-- [Settings pages](/docs/developers/settings-pages/) — when the screen is a list of
+- [Settings pages](/docs/developers/settings-pages/): when the screen is a list of
   preferences rather than one record
-- [Administrator menus](/docs/developers/admin-menus/) — getting your screen into the menu
-- [Scripts and styles](/docs/developers/scripts-and-styles/) — loading a script of your own
+- [Administrator menus](/docs/developers/admin-menus/): getting your screen into the menu
+- [Scripts and styles](/docs/developers/scripts-and-styles/): loading a script of your own
   alongside these

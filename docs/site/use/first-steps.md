@@ -1,6 +1,6 @@
 ---
 title: First steps after installing
-description: The settings to get right on day one of a new ShopClass site — site details, categories, locations, cron, mail and spam defences.
+description: "The settings to get right on day one of a new ShopClass site: site details, categories, locations, cron, mail and spam defences."
 sidebar:
   order: 1
 ---
@@ -23,7 +23,7 @@ engines see the site.
 **Listings → Locations**, or `php oc-cli.php location:update --country=IN`.
 
 Visitors filter listings by place. Without location data, they cannot.
-Install the countries you serve — see
+Install the countries you serve. See
 [installing location data](/docs/configure/locations/).
 
 ## 3. Categories
@@ -83,7 +83,7 @@ everyone:
 - How much notice a seller gets before a listing expires
   (**Warn about expiration**).
 
-Listing **expiry itself is set per category** — *Expiration (days)* on the
+Listing **expiry itself is set per category**: *Expiration (days)* on the
 category, with an option to apply it to all subcategories. See
 [categories](/docs/use/categories/).
 

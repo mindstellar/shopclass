@@ -1,6 +1,6 @@
 ---
 title: Updating ShopClass
-description: How to update a ShopClass install — the built-in one-click updater, the manual route, and the database migration step that finishes the job.
+description: "How to update a ShopClass install: the built-in one-click updater, the manual route, and the database migration step that finishes the job."
 sidebar:
   order: 2
 ---
@@ -10,7 +10,7 @@ the admin panel, and the built-in updater downloads and applies it for you.
 Use the manual route below if your host blocks outgoing web requests, or if
 you would rather move every file yourself.
 
-:::caution[Back up first — every time]
+:::caution[Back up first, every time]
 Take a copy of your **database** and of **`oc-content/`** before you start.
 Everything you have configured lives in one of the two, and an update is much
 easier to undo when you can put them back.
@@ -20,7 +20,7 @@ easier to undo when you can put them back.
 
 1. Open **Admin → Tools → Upgrade Shopclass**.
 2. If a release is available, the page offers it with its changelog.
-3. Press update and wait — the updater downloads the package, replaces core
+3. Press update and wait. The updater downloads the package, replaces core
    files, and runs any pending database migrations.
 
 That is the whole procedure on a healthy install.
@@ -48,8 +48,8 @@ each alert as the plain search values it stands for.
 
 - **Back up `t_alerts` if you might need the old alerts.** The stored SQL is thrown
   away as each alert is converted.
-- **An alert holding anything Shopclass did not write** — usually a plugin's own
-  filter — is paused, not deleted. **Users → Alerts** lists them under a notice.
+- **An alert holding anything Shopclass did not write** (usually a plugin's own
+  filter) is paused, not deleted. **Users → Alerts** lists them under a notice.
   The user has to save the search again.
 - **A large site finishes in the background.** The upgrade converts for about ten
   seconds, then queues the rest for the next cron runs. Alerts not converted yet
@@ -108,7 +108,7 @@ To opt your site in, add the line to `config.php` yourself. In a container with 
 OSC_DB_STRICT_MODE=1
 ```
 
-Remove it to go back — nothing is stored in the database either way.
+Remove it to go back; nothing is stored in the database either way.
 
 :::caution[Try it on a copy first]
 Core is tested under strict modes. Third-party plugins write through the same
@@ -134,7 +134,7 @@ dependent rows along with their parent. Three consequences:
   php oc-cli.php db:upgrade
   ```
 
-An interrupted upgrade is **safe to resume** — each step is recorded as it
+An interrupted upgrade is **safe to resume**: each step is recorded as it
 completes and every step can be re-run, so starting it again finishes it.
 
 Before each key is rebuilt, any row still pointing at a parent that no longer
@@ -168,20 +168,20 @@ Upload the new files over the old ones, replacing:
 
 - `oc-admin/` and everything under it
 - `oc-includes/` and everything under it
-- the root-level PHP files — `index.php`, `item.php`, `contact.php`,
+- the root-level PHP files: `index.php`, `item.php`, `contact.php`,
   `ajax.php`, `oc-load.php`, `oc-cli.php` and their siblings
 
 :::danger[Two things you must not overwrite]
-- **`config.php`** — it holds your database credentials. The release does not
+- **`config.php`**: it holds your database credentials. The release does not
   contain one; make sure your upload tool does not delete it.
-- **`oc-content/`** — copy only the *contents* of the release's `oc-content`
+- **`oc-content/`**: copy only the *contents* of the release's `oc-content`
   into yours. Replacing the whole directory destroys your uploads, your
   installed plugins and any theme you have customised.
 :::
 
 ### 3. Run the database migration
 
-Core files alone are not an update — the schema has to catch up. Either open the
+Core files alone are not an update: the schema has to catch up. Either open the
 admin panel, which offers the migration as a button (**Tools → System info → Database** has it
 too, as **Run database update**), or run it from a shell:
 
