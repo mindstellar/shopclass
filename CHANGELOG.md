@@ -54,7 +54,12 @@ The contact forms are harder to use for spam. A guest's message is sent only aft
 confirm their e-mail address, a message can hold 1 link and 5000 characters by default, and
 every message carries a *Report the sender* link.
 
-This is the third release candidate. Please try it on a copy of your site and tell us what
+E-mails now go out in a tidy layout with your site's name, the message in a card and a footer,
+and a theme can give them its own look. Featured listings rotate every few minutes, so pages
+that show them can be cached. A listing photo can keep its own shape instead of being padded
+to a fixed size.
+
+This is the fourth release candidate. Please try it on a copy of your site and tell us what
 you find.
 
 ### New
