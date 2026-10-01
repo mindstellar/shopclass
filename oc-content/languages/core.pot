@@ -4573,14 +4573,6 @@ msgstr ""
 msgid "For security, type <b>your current password</b>"
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
-msgid "Force aspect"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
-msgid "Force image aspect."
-msgstr ""
-
 #: oc-includes/osclass/classes/admin/form/LatestSearchSettingsForm.php
 msgid "Forever"
 msgstr ""
@@ -5480,6 +5472,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/cleanup.php
 msgid "Keep daily statistics history for"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
+msgid "Keep each photo's own shape (recommended)"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/logs.php
@@ -7133,10 +7129,6 @@ msgstr ""
 msgid "No version was specified."
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
-msgid "No white background will be added to keep the size."
-msgstr ""
-
 #: oc-admin/themes/modern/appearance/page-block-form.php
 msgid ""
 "No widget types are available to you. Ask an administrator, or install a "
@@ -7839,6 +7831,10 @@ msgstr ""
 msgid "Photo quality"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
+msgid "Photo shape"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "Photo storage"
 msgstr ""
@@ -7850,6 +7846,13 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsForm.php
 msgid "Photos allowed per listing while the entitlement is held."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
+msgid ""
+"Photos are only made smaller, never filled out to the sizes above. Your "
+"theme decides how to frame them. When off, the empty space is filled with "
+"white in JPEG and left see-through in PNG and WebP."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php

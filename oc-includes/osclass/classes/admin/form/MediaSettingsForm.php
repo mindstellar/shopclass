@@ -129,8 +129,12 @@ final class MediaSettingsForm
                 ->sanitize(static function ($value) {
                     return self::jpegQuality($value);
                 })
-            ->checkbox('force_aspect_image', __('Force image aspect.'), __('No white background will be added to keep the size.'))
-                ->rowLabel(__('Force aspect'))
+            ->checkbox(
+                'force_aspect_image',
+                __('Keep each photo\'s own shape (recommended)'),
+                __('Photos are only made smaller, never filled out to the sizes above. Your theme decides how to frame them. When off, the empty space is filled with white in JPEG and left see-through in PNG and WebP.')
+            )
+                ->rowLabel(__('Photo shape'))
                 ->set('id', 'force_aspect_image')
             ->number('maxSizeKb', __('Maximum size'))
                 ->required()

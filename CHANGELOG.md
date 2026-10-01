@@ -341,6 +341,7 @@ you find.
 
 ### Changed
 
+- **Media → Force aspect** is now **Photo shape → Keep each photo's own shape**, on for new sites: photos keep their shape instead of being filled out to the size.
 - **Tools → System info** gains Jobs, Security and Cache tabs. Background jobs, Cache and the blocked sign-in list moved there, and their old links still work.
 - **Upgrade Shopclass**, **Backup and restore** and **System info** share one look: one box that says what needs doing, and quiet lines instead of big empty blocks.
 - **Tools → System info** has Overview, Database and Server tabs. One box at the top of each says what needs doing. Tools now opens on it.

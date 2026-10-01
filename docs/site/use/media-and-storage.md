@@ -23,6 +23,11 @@ from every upload:
 Sizes are entered as dimensions. Bigger is not better here — thumbnails are what
 a browse page loads dozens of at once, and they set how fast the page feels.
 
+**Photo shape → Keep each photo's own shape** (on for new sites) only makes photos
+smaller, so a tall or wide photo keeps its shape and the theme frames it. When it is
+off, every photo is filled out to the exact size: with white in JPEG, see-through in
+PNG and WebP. Regenerate after changing it.
+
 ### Regenerating
 
 Changing a size does not touch images that already exist. Under
