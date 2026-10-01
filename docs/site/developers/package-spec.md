@@ -1,6 +1,6 @@
 ---
 title: Package specification
-description: The contract a ShopClass plugin or theme must satisfy — header fields, compatibility metadata, versioning and artwork.
+description: "The contract a ShopClass plugin or theme must satisfy: header fields, compatibility metadata, versioning and artwork."
 sidebar:
   order: 2
 ---
@@ -10,8 +10,8 @@ of its `index.php`. Core parses that block to show the package in the admin
 list; the registry parses the same block to publish it. One declaration, two
 readers, no way for them to disagree.
 
-This page is the practical summary. The normative version — with the parser's
-exact behaviour, the manifest schema and the PR validation rules — is
+This page is the practical summary. The normative version (with the parser's
+exact behaviour, the manifest schema and the PR validation rules) is
 [`docs/PACKAGE-SPEC.md`](https://github.com/mindstellar/shopclass/blob/master/docs/PACKAGE-SPEC.md)
 in the repository.
 
@@ -38,7 +38,7 @@ Support URI: https://github.com/mindstellar/shopclass-plugin-digital-goods/issue
 
 :::danger[Keep the block at the very top, and nowhere else]
 Core matches each field with a case-insensitive substring search over the whole
-file — not a parse of the comment. **The first occurrence anywhere in
+file, not a parse of the comment. **The first occurrence anywhere in
 `index.php` wins**, and a longer field name contains a shorter one: a line
 reading `API Version: 2` placed above `Version: 1.4.0` makes your package report
 version `2`. Values also end at the end of the line; they cannot wrap.
@@ -59,7 +59,7 @@ version `2`. Values also end at the end of the line; they cannot wrap.
 | `Tested up to` | recommended | Highest core version you have verified. |
 | `Requires PHP` | recommended | Minimum PHP version. |
 | `Author URI` | optional | |
-| `Plugin update URI` | optional | Legacy self-hosted updates — see [auto-update](/docs/developers/auto-update/). |
+| `Plugin update URI` | optional | Legacy self-hosted updates, see [auto-update](/docs/developers/auto-update/). |
 
 ### Theme fields
 
@@ -87,7 +87,7 @@ correctly on people's sites.
 
 `Requires Shopclass` and `Tested up to` decide whether an install offers your
 package at all. Set `Requires Shopclass` to the oldest core version you actually
-support — not the newest one you happen to run.
+support, not the newest one you happen to run.
 
 ### The compatibility badge
 
@@ -98,10 +98,10 @@ The checks run in this order, and the first one that matches wins:
 
 | Badge | When | What to do |
 |---|---|---|
-| **Needs 6.5 or newer** | `Requires Shopclass` is above this install | nothing — the site must upgrade first |
-| **Needs PHP 8.2** | Core is fine, but `Requires PHP` is above this server | nothing — the server must upgrade first |
+| **Needs 6.5 or newer** | `Requires Shopclass` is above this install | nothing, the site must upgrade first |
+| **Needs PHP 8.2** | Core is fine, but `Requires PHP` is above this server | nothing, the server must upgrade first |
 | **Tested up to 6.2** | It runs here, but your `Tested up to` minor is behind core's | check it on the new release, then raise `Tested up to` |
-| **Works with 6.4** | It runs here and nothing is behind | nothing — this is the goal |
+| **Works with 6.4** | It runs here and nothing is behind | nothing, this is the goal |
 | **No version declared** | You declared none of the three headers | declare at least `Requires Shopclass` |
 
 Two details worth knowing:
@@ -120,14 +120,14 @@ an install is offered: the newest one whose `Requires Shopclass` and
 
 | Asset | Plugin | Theme | Spec |
 |---|---|---|---|
-| Icon | `assets/icon.svg` or `assets/icon.png` | — | Square. SVG preferred; PNG at 256×256. |
+| Icon | `assets/icon.svg` or `assets/icon.png` | none | Square. SVG preferred; PNG at 256×256. |
 | Screenshot | `assets/screenshot-1.png`, … | `screenshot.png` **at the package root** | 4:3, minimum 1200×900. |
 
 The theme screenshot sits at the package root because that is where a decade of
 themes already put it, and where core looks.
 
 **Artwork is optional.** Core renders a built-in placeholder for any package
-without it — a neutral, theme-aware tile tinted from a hash of the slug — so a
+without it: a neutral, theme-aware tile tinted from a hash of the slug, so a
 grid of unillustrated packages still reads as distinct tiles rather than broken
 images. Do not ship a blank or a "no image" graphic of your own; the fallback is
 better than one.
@@ -137,5 +137,5 @@ logos-on-gradients, no before/after collages.
 
 ## Getting listed
 
-Publishing to every install goes through the registries — see
+Publishing to every install goes through the registries, see
 [the market](/docs/developers/market/).

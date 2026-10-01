@@ -1,12 +1,12 @@
 ---
 title: Plugins
-description: Find, install, update and remove ShopClass plugins from the admin market or the command line — and recover when one breaks the site.
+description: Find, install, update and remove ShopClass plugins from the admin market or the command line, and recover when one breaks the site.
 sidebar:
   order: 8
 ---
 
-Plugins add what your particular site needs and core deliberately does not carry
-— payment gateways, map providers, storage backends, import tools.
+Plugins add what your particular site needs and core deliberately does not carry:
+payment gateways, map providers, storage backends, import tools.
 
 **Plugins** in the admin panel.
 
@@ -21,7 +21,7 @@ Plugins add what your particular site needs and core deliberately does not carry
 | **Updates** | Installed plugins with a newer version, with a count in the tab. |
 
 Each card carries the version, the author, a short description, and whether the
-package runs on your version — *Needs 6.5 or newer*, *Needs PHP 8.2* — so you
+package runs on your version (*Needs 6.5 or newer*, *Needs PHP 8.2*), so you
 never have to compare numbers yourself.
 
 Appearance uses the same three tabs and the same cards.
@@ -45,7 +45,7 @@ Three states, and the difference matters:
 |---|---|
 | **Installed but disabled** | Files present, code not running, settings and data kept. |
 | **Enabled** | Running. |
-| **Uninstalled** | Files removed. Most plugins drop their tables and settings — usually irreversibly. |
+| **Uninstalled** | Files removed. Most plugins drop their tables and settings, usually irreversibly. |
 
 To stop a plugin temporarily, **disable** it. Uninstall only when you are done
 with it for good.
@@ -57,7 +57,7 @@ php oc-cli.php plugin:activate --plugin=better-s3
 ```
 
 `plugin:deactivate` is the fix when a plugin fatals on load and takes the admin
-panel down with it — see
+panel down with it. See
 [debugging PHP errors](/docs/developers/debug-php-errors/).
 
 ## Updating
@@ -75,7 +75,7 @@ targets the newest core, while the reverse is not guaranteed.
 ## Configuring
 
 A configurable plugin adds its own screen, reachable from its row in the
-plugins list. Where that screen lives in the menu is the plugin's choice — some
+plugins list. Where that screen lives in the menu is the plugin's choice: some
 add a top-level section, most add an entry under **Settings** or **Tools**.
 
 Some plugins also carry **per-category** configuration, set from the category
@@ -100,7 +100,7 @@ The catalog will happily install anything listed. Before you add one:
 2. Confirm the site recovers.
 3. Turn on [error logging](/docs/developers/debug-php-errors/) and reproduce.
 4. Report it on the plugin's own issue tracker, with the detail in
-   [how to write a bug report](/docs/developers/bug-reports/) — including your
+   [how to write a bug report](/docs/developers/bug-reports/), including your
    ShopClass and PHP versions.
 
 ## Locking installs down

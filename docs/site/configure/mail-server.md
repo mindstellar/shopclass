@@ -1,6 +1,6 @@
 ---
 title: Mail server
-description: Configure SMTP in ShopClass so registration, alert and contact e-mails actually arrive — settings, provider examples and deliverability troubleshooting.
+description: "Configure SMTP in ShopClass so registration, alert and contact e-mails actually arrive: settings, provider examples and deliverability troubleshooting."
 sidebar:
   order: 2
 ---
@@ -33,16 +33,16 @@ networks. If mail silently never leaves, this is the first thing to check.
 
 ## Sending through a transactional provider
 
-A dedicated sending service — Postmark, Mailgun, Amazon SES, Brevo, SendGrid and
-others — will do more for your delivery rate than any setting in ShopClass. They
+A dedicated sending service (Postmark, Mailgun, Amazon SES, Brevo, SendGrid and
+others) will do more for your delivery rate than any setting in ShopClass. They
 all expose plain SMTP credentials that drop into the fields above.
 
 Whichever you use, complete their domain verification and publish the DNS
 records they give you:
 
-- **SPF** — authorises the provider to send as your domain.
-- **DKIM** — signs your messages so receivers can verify them.
-- **DMARC** — tells receivers what to do when the first two fail.
+- **SPF**: authorises the provider to send as your domain.
+- **DKIM**: signs your messages so receivers can verify them.
+- **DMARC**: tells receivers what to do when the first two fail.
 
 Without those three, your mail is unauthenticated no matter how it is sent.
 
@@ -57,7 +57,7 @@ sooner than a transactional provider would.
 | Hostname | `smtp.gmail.com` |
 | Server port | `587` |
 | Username | Your full address, e.g. `you@gmail.com` |
-| Password | An [app password](https://support.google.com/accounts/answer/185833) — not your account password |
+| Password | An [app password](https://support.google.com/accounts/answer/185833), not your account password |
 | Encryption | `tls` |
 | SMTP authentication | Checked |
 
@@ -66,8 +66,8 @@ passwords have not worked for SMTP for years.
 
 ## Testing
 
-Trigger a real message rather than guessing — register a test account, or use
-the contact form — and watch what happens. If nothing arrives, check the spam
+Trigger a real message rather than guessing. Register a test account, or use
+the contact form, and watch what happens. If nothing arrives, check the spam
 folder before assuming the send failed.
 
 ## Troubleshooting
@@ -80,11 +80,11 @@ Port 465 is often the one left open.
 **Mail arrives, but always in spam.**
 Your domain is not authenticated. Publish SPF, DKIM and DMARC records for the
 address in the **From** field, and make sure that address is on a domain you
-control — not a free mailbox.
+control, not a free mailbox.
 
 **It worked, then stopped.**
-Either the provider suspended sending — check their dashboard for a bounce or
-complaint threshold you crossed — or a burst of alert e-mail hit a rate limit.
+Either the provider suspended sending (check their dashboard for a bounce or
+complaint threshold you crossed), or a burst of alert e-mail hit a rate limit.
 Both are visible on the provider's side, not in ShopClass.
 
 **Some recipients get it, others never do.**

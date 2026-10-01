@@ -1,6 +1,6 @@
 ---
 title: Command-line interface
-description: The oc-cli.php reference for ShopClass — cron, database migrations, admin recovery, plugin and theme management, health checks.
+description: "The oc-cli.php reference for ShopClass: cron, database migrations, admin recovery, plugin and theme management, health checks."
 sidebar:
   order: 4
 ---
@@ -21,7 +21,7 @@ through the web server. The commands below are only reachable from a shell on
 the server, which is why they can do things the admin panel will not.
 :::
 
-Every command sets a proper exit code — `0` on success, non-zero on failure — so
+Every command sets a proper exit code (`0` on success, non-zero on failure), so
 they slot into schedulers and monitoring without wrapper scripts.
 
 ## Scheduled tasks
@@ -30,7 +30,7 @@ they slot into schedulers and monitoring without wrapper scripts.
 |---|---|
 | `cron [--type=hourly\|daily\|weekly\|all]` | Run due scheduled tasks: e-mail alerts, expiring premium listings, cleanup, sitemap warm. Defaults to all three tiers. |
 
-A typical crontab entry — see [setting up cron](/docs/configure/cron/) for the
+A typical crontab entry. See [setting up cron](/docs/configure/cron/) for the
 full setup:
 
 ```cron
@@ -41,9 +41,9 @@ full setup:
 
 | Command | What it does |
 |---|---|
-| `install --unattended` | Headless install from environment variables or flags — no browser. |
+| `install --unattended` | Headless install from environment variables or flags, no browser. |
 | `db:upgrade [--skip-db] [--skip-reconcile]` | Run pending migrations, repairing a drifted schema first. `--skip-db` continues past false-positive query errors. |
-| `package:reconcile` | Install or refresh bundled plugins and themes onto a persistent `oc-content` — a no-op outside a container image. |
+| `package:reconcile` | Install or refresh bundled plugins and themes onto a persistent `oc-content`: a no-op outside a container image. |
 | `version` | Print the installed version. |
 
 ## Recovering access
@@ -66,7 +66,7 @@ php oc-cli.php user:create-admin --user=jane --email=jane@example.com
 |---|---|
 | `plugin:list` | List plugins with status, version and folder. |
 | `plugin:activate --plugin=<folder>` | Enable an installed plugin. Accepts the folder name or `folder/index.php`. |
-| `plugin:deactivate --plugin=<folder>` | Disable an active plugin — the fix when one fatals on load. |
+| `plugin:deactivate --plugin=<folder>` | Disable an active plugin: the fix when one fatals on load. |
 | `theme:list` | List installed public themes, marking the active one. |
 | `theme:activate --theme=<name>` | Set the active public theme. |
 
@@ -111,7 +111,7 @@ on a tight schedule of its own:
 * * * * * php /path/to/site/oc-cli.php storage:work --max-seconds=50 >/dev/null 2>&1
 ```
 
-It exits non-zero only when the queue holds jobs the worker gave up on — a backlog
+It exits non-zero only when the queue holds jobs the worker gave up on: a backlog
 still draining is the normal case and exits `0`. On a site with no remote storage
 configured it prints one line and exits `0`, so the entry is harmless to leave in
 place.
@@ -131,5 +131,5 @@ The older cron entry point still works for existing crontabs:
 php index.php -p cron -t hourly
 ```
 
-New setups should use `oc-cli.php cron` — it covers more than alerts and returns
+New setups should use `oc-cli.php cron`: it covers more than alerts and returns
 a meaningful exit code.

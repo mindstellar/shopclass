@@ -1,6 +1,6 @@
 ---
 title: Set up cron
-description: Configure scheduled tasks in ShopClass — a system crontab, the built-in fallback, and what breaks when neither is running.
+description: "Configure scheduled tasks in ShopClass: a system crontab, the built-in fallback, and what breaks when neither is running."
 sidebar:
   order: 1
 ---
@@ -44,7 +44,7 @@ crontab -l
 ```
 
 You need the **CLI** PHP binary, not the web server's module. If plain `php` is
-not on the path, ask your host for the full path — it is often something like
+not on the path, ask your host for the full path: it is often something like
 `/usr/local/bin/php` or `/opt/alt/php82/usr/bin/php`.
 
 ### If you prefer separate tiers
@@ -76,8 +76,8 @@ web entry point instead:
 wget -qO /dev/null https://example.com/index.php?page=cron
 ```
 
-Set it to run hourly. This is weaker than the CLI — it runs inside a web request
-and inherits the web server's timeout — but it is far better than nothing.
+Set it to run hourly. This is weaker than the CLI (it runs inside a web request
+and inherits the web server's timeout), but it is far better than nothing.
 
 ## The built-in fallback
 
@@ -90,7 +90,7 @@ Due tasks are then triggered by ordinary page views, at most once every five
 minutes. Nobody waits for them: on PHP-FPM the page is sent first and the work
 runs afterwards in the same process. On other setups ShopClass falls back to
 asking itself for `?page=cron` over HTTP, which **an origin behind a proxy cannot
-do** — it resolves its own public address to the proxy and never reaches itself,
+do**: it resolves its own public address to the proxy and never reaches itself,
 so nothing runs and nothing says so. If that is your setup, use a real crontab.
 
 The real cost that remains either way: nothing runs while the site has no
@@ -109,7 +109,7 @@ Pick one.
 php oc-cli.php doctor
 ```
 
-Among its checks, `doctor` reports **cron freshness** — how long since the
+Among its checks, `doctor` reports **cron freshness**: how long since the
 scheduled tasks last completed. If that number keeps growing, your crontab is
 not running the command you think it is.
 
@@ -134,7 +134,7 @@ Plugins add their own work to these tiers through the `cron_hourly`,
 ## Remote storage needs its own entry
 
 If listings are offloaded to remote storage, the queue that moves uploaded images
-is drained from the hourly tier — which on a busy site is not often enough, and the
+is drained from the hourly tier, which on a busy site is not often enough, and the
 hourly tier does too much else to be run every few minutes. Give it a second entry
 of its own:
 

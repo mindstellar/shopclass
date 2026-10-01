@@ -5,7 +5,7 @@ sidebar:
   order: 20
 ---
 
-Thirteen views make up the account section — the dashboard, the seller's
+Thirteen views make up the account section: the dashboard, the seller's
 listings, alerts, the profile form, the three settings pages, sign in, register,
 the two password-reset steps, a member's public page, and the slot a plugin's
 account page renders into.
@@ -20,13 +20,13 @@ Core now has a fallback page for every one of them.
 
 Per view, first hit wins:
 
-1. **your theme ships the view** — your file renders, unchanged. Nothing below
+1. **your theme ships the view**: your file renders, unchanged. Nothing below
    this runs.
-2. **your parent theme ships it** — the parent's file renders, with the parent's
+2. **your parent theme ships it**: the parent's file renders, with the parent's
    asset URLs, exactly as it always has.
-3. **you have [chrome](/docs/developers/theme-chrome/)** — your header and footer, with
+3. **you have [chrome](/docs/developers/theme-chrome/)**: your header and footer, with
    core's page between them.
-4. **otherwise** — core's own standalone page.
+4. **otherwise**: core's own standalone page.
 
 So adding a view to your theme takes the page back, at any time, with no
 migration. Deleting one hands it to core. There is no registration step and
@@ -38,12 +38,12 @@ core owns. The whole of the theming job is CSS.
 
 ## The class vocabulary
 
-Core's markup carries the classes below. **These names are a permanent contract**
-— the same promise as the `osc_*` helpers and the admin's class names. They can
+Core's markup carries the classes below. **These names are a permanent contract**,
+the same promise as the `osc_*` helpers and the admin's class names. They can
 be restyled freely; they will not be renamed or removed.
 
 Every rule core ships is scoped `.oe-page .name`, so match that specificity when
-you override — a bare `.oe-list-item {}` loses to core's `.oe-page .oe-list-item {}`.
+you override. A bare `.oe-list-item {}` loses to core's `.oe-page .oe-list-item {}`.
 
 ### Structure
 
@@ -55,13 +55,13 @@ you override — a bare `.oe-list-item {}` loses to core's `.oe-page .oe-list-it
 | `.oe-account` | an account page: content column then nav | two children, content **first** in source order |
 | `.oe-account-main` | the content column of `.oe-account` | the page's own markup, nothing else |
 | `.oe-account-nav` | the account section nav | a `<nav>` holding an `<h2>` and one `<ul>`; the current entry carries `aria-current="page"` |
-| `.oe-form-page` | a page that is one form — sign in, register, reset | no nav beside it |
+| `.oe-form-page` | a page that is one form: sign in, register, reset | no nav beside it |
 
 ### Records
 
 | Class | Wraps | You may assume |
 |---|---|---|
-| `.oe-list` | a list of records — listings, alerts | a `<ul>`; no bullets, no padding |
+| `.oe-list` | a list of records: listings, alerts | a `<ul>`; no bullets, no padding |
 | `.oe-list-item` | one record | an `<li>`; holds a thumb, an `.oe-list-body` and an `.oe-price` |
 | `.oe-list-body` | the middle column of a record | holds the `<h3>` title and `.oe-meta` |
 | `.oe-meta` | a record's secondary line | date, status, category, row actions; wraps freely |
@@ -80,7 +80,7 @@ you override — a bare `.oe-list-item {}` loses to core's `.oe-page .oe-list-it
 |---|---|---|
 | `.oe-field` | a label and its control | one control, or a country/region pair |
 | `.oe-label` | the field's `<label>` | `for` always matches a real control id |
-| `.oe-input` | a control core renders itself | absent on controls `UserForm` renders — see below |
+| `.oe-input` | a control core renders itself | absent on controls `UserForm` renders (see below) |
 | `.oe-hint` | help text under a field | bound with `aria-describedby` |
 | `.oe-avatar` | the account holder's current picture on the profile page | a square image; core sizes and rounds it |
 | `.oe-danger` | the destructive block at the foot of a page | separated by a rule; holds a heading, a line of copy and one danger button |
@@ -91,7 +91,7 @@ you override — a bare `.oe-list-item {}` loses to core's `.oe-page .oe-list-it
 
 ### Notices
 
-Core's flash messages keep the class names they have always had —
+Core's flash messages keep the class names they have always had:
 `flashmessage` and `flashmessage-{ok,error,warning,info}`. Style those; there is
 no second name for the same thing.
 
@@ -101,7 +101,7 @@ is dropped from the session as it is printed, so it never returns on the next
 page.
 
 If your header already calls `osc_show_flash_message()`, core's own call is a
-no-op — whichever runs first prints the message, and there is no double render.
+no-op. Whichever runs first prints the message, and there is no double render.
 
 ### Controls `UserForm` renders
 
@@ -114,7 +114,7 @@ hand-roll them. Reach them through the wrapper:
 ```
 
 Core's own defaults for those controls are declared inside `:where()`, which
-gives them **zero specificity** — so any rule you write wins, including a bare
+gives them **zero specificity**, so any rule you write wins, including a bare
 `input {}`. That is deliberate: inside your theme these should look like your
 fields, not like core's.
 
@@ -151,7 +151,7 @@ Controllers call it; a plugin serving its own account route can too.
 
 - **No JavaScript**, with one exception: the profile form calls
   `UserForm::location_javascript()` so the region list follows the country
-  without a reload. The form works without it — choose a country, save, and the
+  without a reload. The form works without it: choose a country, save, and the
   page comes back with that country's regions.
 - **No assets.** One small stylesheet, printed inline once per request through
   the `header` hook. Nothing to enqueue, nothing to cache-bust.
@@ -192,7 +192,7 @@ osc_gui_view(
 
 Resolution is the same three steps core uses: the active theme's view if it has
 one, otherwise your file inside the theme's chrome, otherwise core's own shell.
-Your file is markup only — no `<html>`, no header, no footer.
+Your file is markup only: no `<html>`, no header, no footer.
 
 ## One page, three routes
 
@@ -202,7 +202,7 @@ action, so nothing about the controllers changed; the route that was asked for g
 `autofocus` on its field, so an old link still lands where it used to.
 
 A theme that ships any one of those three views still wins for that route, exactly as
-before — the consolidation is core's fallback shape, not a rule imposed on themes.
+before. The consolidation is core's fallback shape, not a rule imposed on themes.
 
 Deleting an account stays on its own page. It is destructive and irreversible, and nothing
 dangerous should sit a misclick away from changing an email address.

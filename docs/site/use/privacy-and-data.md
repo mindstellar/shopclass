@@ -5,7 +5,7 @@ sidebar:
   order: 15
 ---
 
-Running a marketplace means holding personal data about the people using it —
+Running a marketplace means holding personal data about the people using it:
 profiles, listings, comments, saved searches and, if you sell credits, orders.
 ShopClass gives users both halves of a data-subject request: **erasure**, which
 has always existed, and **export**, added in **6.2.0**.
@@ -13,7 +13,7 @@ has always existed, and **export**, added in **6.2.0**.
 ## Users can download their own data
 
 A signed-in user follows the link on their account page and receives everything
-the site holds about them as **JSON** — profile, listings, comments, saved
+the site holds about them as **JSON**: profile, listings, comments, saved
 searches, orders and credit history.
 
 Two details worth knowing:
@@ -30,14 +30,14 @@ someone uses it.
 ## Deleting an account
 
 Erasure removes the account and the personal data attached to it. Some records
-are deliberately kept — the accounting records a sale leaves behind, for example
-— because a business is required to retain them.
+are deliberately kept (the accounting records a sale leaves behind, for example)
+because a business is required to retain them.
 
 Which tables hold personal data, whether each is included in an export, and what
 deleting an account does to each, are recorded together in core
 (`mindstellar\privacy\PersonalData::map()`) with a reason attached to every
 entry. A test fails if a table with a user column is added to the schema without
-one — because the failure mode otherwise is silent: data nobody can see and
+one, because the failure mode otherwise is silent: data nobody can see and
 nobody knows to look for.
 
 That map is the honest answer when somebody asks what you hold about them.

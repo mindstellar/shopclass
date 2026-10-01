@@ -5,7 +5,7 @@ sidebar:
   order: 9
 ---
 
-Every classifieds site needs a handful of pages that are not listings — About,
+Every classifieds site needs a handful of pages that are not listings: About,
 Terms, Privacy, How it works, Contact. As the admin puts it: *static pages like
 "About Us" or "Info" live here.*
 
@@ -24,9 +24,10 @@ warns you: *this permanently removes the page and any link to it in the footer.*
 **The text editor** is the default: a rich-text field, right for prose. Terms
 and Privacy want exactly this.
 
-**Page builder (blocks)** composes the page from widget blocks instead — *"compose
-this page from widget blocks instead of the text editor"*. Right for a landing
-page or a How-it-works page with images and sections.
+**Page builder (blocks)** composes the page from widget blocks instead, as the
+admin puts it: *"compose this page from widget blocks instead of the text
+editor"*. Right for a landing page or a How-it-works page with images and
+sections.
 
 Pick the template when creating the page. The available blocks are the same
 widget types used elsewhere:
@@ -46,7 +47,7 @@ wraps the theme's header and footer around the blocks.
 ## Forms on a page
 
 A [form](/docs/use/forms-and-custom-fields/) can be placed on a page to collect
-submissions — a contact form, an application, an enquiry form. Responses arrive
+submissions: a contact form, an application, an enquiry form. Responses arrive
 in **Forms → Submissions** rather than only by e-mail, so nothing is lost if
 mail delivery fails.
 
@@ -54,13 +55,13 @@ mail delivery fails.
 
 Beyond taste, some of these are load-bearing:
 
-- **Terms** and **Privacy** — required by most payment providers and by law in
+- **Terms** and **Privacy**: required by most payment providers and by law in
   many jurisdictions, and the first thing a user checks before posting personal
   contact details.
-- **Contact** — an actual route to a human. A marketplace with no contact page
+- **Contact**: an actual route to a human. A marketplace with no contact page
   reads as a scam.
-- **How it works** — the page that converts a visitor into a first-time poster.
-- **About** — who runs the site. On a local marketplace this is worth more than
+- **How it works**: the page that converts a visitor into a first-time poster.
+- **About**: who runs the site. On a local marketplace this is worth more than
   any feature.
 
 ## Editing safely
@@ -69,4 +70,4 @@ Beyond taste, some of these are load-bearing:
 - **Custom Code blocks run on visitors' browsers.** Paste only what you
   understand, from a source you trust.
 - **Write each language.** A page with an empty translation shows empty to
-  visitors in that language — see [languages](/docs/use/languages/).
+  visitors in that language. See [languages](/docs/use/languages/).

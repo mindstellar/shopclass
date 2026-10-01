@@ -1,13 +1,13 @@
 ---
 title: Improving search
-description: Tune ShopClass search — MySQL full-text word length, stopwords, rebuilding the index, and when to reach for a dedicated search engine.
+description: Tune ShopClass search, MySQL full-text word length, stopwords, rebuilding the index, and when to reach for a dedicated search engine.
 sidebar:
   order: 6
 ---
 
 ShopClass searches listing titles and descriptions through a MySQL **full-text
 index**. That is fast and needs no extra services, but it has defaults that
-surprise people — most often, short words that simply never match.
+surprise people. Most often, short words that simply never match.
 
 ## Words shorter than the minimum are ignored
 
@@ -19,7 +19,7 @@ MySQL will not index a word below a minimum length. The defaults are:
 | MyISAM (legacy) | `ft_min_word_len` | **4** |
 
 So on a default install, searching for `TV`, `PC` or `BMW` on a MyISAM table
-returns nothing at all — not "no results found", but genuinely no match, because
+returns nothing at all, not "no results found", but genuinely no match, because
 the word was never indexed.
 
 If your categories are full of short model names or two-letter abbreviations,
@@ -40,14 +40,14 @@ Restart the database for them to take effect.
 
 :::caution[Shared hosting cannot do this]
 Full-text tuning requires access to the database server's configuration. If you
-are on shared hosting, you cannot change these — skip to
+are on shared hosting, you cannot change these. Skip to
 [when to use a real search engine](#when-mysql-is-not-enough).
 :::
 
 ## Rebuild the index afterwards
 
 Changing an indexing variable does **not** re-index existing rows. Until you
-rebuild, the new setting applies only to listings added after the restart —
+rebuild, the new setting applies only to listings added after the restart,
 which looks exactly like the change not working.
 
 ```sql
@@ -65,7 +65,7 @@ Replace `oc_` with your actual table prefix.
 MySQL also refuses to index very common words, from a built-in stopword list.
 On an English-language site this is usually what you want. On a site in another
 language, the English list is doing nothing useful and may be excluding real
-search terms — supply your own with `innodb_ft_server_stopword_table`, or empty
+search terms. Supply your own with `innodb_ft_server_stopword_table`, or empty
 the list.
 
 ## Keeping search fast as the site grows
@@ -84,7 +84,7 @@ the list.
 Full-text search in MySQL has no typo tolerance, no stemming worth relying on,
 no relevance tuning and no faceted scoring. Past a few hundred thousand
 listings, or on a site where search quality *is* the product, the answer is a
-dedicated engine — Elasticsearch, OpenSearch, Meilisearch or Typesense — driven
+dedicated engine (Elasticsearch, OpenSearch, Meilisearch or Typesense) driven
 from a plugin that indexes on the listing hooks.
 
 That is a plugin's job, not core's. See the

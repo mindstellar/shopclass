@@ -14,12 +14,12 @@ use them.
 **Settings → Permalinks.**
 
 With friendly URLs off, a listing is `index.php?page=item&id=1234`. With them on
-it carries the title. Turn them on **before** the site is indexed — changing URL
+it carries the title. Turn them on **before** the site is indexed: changing URL
 structure afterwards means redirects and lost rankings.
 
 Every route has its own pattern: listings, categories, user pages, contact,
 feeds, and the account flows. The screen lists the keywords each pattern accepts,
-and every one is required — a blank field is rejected.
+and every one is required: a blank field is rejected.
 
 Leave the defaults unless you have a specific reason. The one worth thinking
 about is the **listing** pattern: including the category makes the URL
@@ -28,7 +28,7 @@ self-describing, and means the URL changes if a listing is re-categorised.
 :::caution[Friendly URLs need web-server rewriting]
 On Apache, `mod_rewrite` must be enabled and `AllowOverride All` must apply so
 the shipped `.htaccess` is read. On nginx you need a `try_files` rule. If every
-link 404s after turning them on, this is why — see
+link 404s after turning them on, this is why, see
 [install troubleshooting](/docs/install/#troubleshooting).
 :::
 
@@ -46,7 +46,7 @@ Choose what goes in:
 - Countries, regions and cities
 - Pages
 
-and set the **frequency** — Hourly, Daily or Monthly — plus **last modified**
+and set the **frequency** (Hourly, Daily or Monthly) plus **last modified**
 handling. Extra URLs can be added by hand.
 
 **Include what has content, exclude what does not.** Categories-with-cities
@@ -66,7 +66,7 @@ php oc-cli.php sitemap:warm
 The same screen edits and saves **robots.txt**.
 
 The default is fine for most sites. Two things worth adding: your sitemap URL,
-and a `Disallow` for search-result URLs — an infinite space of filter
+and a `Disallow` for search-result URLs: an infinite space of filter
 combinations that wastes crawl budget on pages you do not want ranking anyway.
 
 ## Saved-search feeds
@@ -82,7 +82,7 @@ your category names should match.
 
 ## Practical SEO for a classifieds site
 
-- **Listing titles are your page titles.** Encourage sellers to write real ones —
+- **Listing titles are your page titles.** Encourage sellers to write real ones:
   the publish-form placeholder does more for your rankings than any setting here.
 - **Expired listings are a decision.** Deleting them 404s pages that may still
   rank; keeping them all leaves visitors finding unavailable items. Most sites
@@ -93,5 +93,5 @@ your category names should match.
   it consistently, and redirect the other. Both answering the same content
   splits your ranking signal.
 - **Make the site fast.** Turn on [object caching](/docs/configure/cache/) and
-  put a proxy or CDN in front — see the
+  put a proxy or CDN in front, see the
   [caching contract](/docs/developers/caching/).

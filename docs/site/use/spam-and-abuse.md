@@ -1,6 +1,6 @@
 ---
 title: Spam & abuse
-description: Defend a ShopClass site against spam and bots — Turnstile or reCAPTCHA, the keyword blocklist, login throttling, Akismet and rate limits.
+description: Defend a ShopClass site against spam and bots, Turnstile or reCAPTCHA, the keyword blocklist, login throttling, Akismet and rate limits.
 sidebar:
   order: 5
 ---
@@ -14,8 +14,8 @@ because each one costs a real visitor something.
 ## CAPTCHA
 
 Pick one provider and fill in its two keys. The admin validates them as you save
-and tells you plainly — *This key is valid*, or *The key you entered is invalid.
-Please double-check it* — so you find out immediately rather than when a visitor
+and tells you plainly (*This key is valid*, or *The key you entered is invalid.
+Please double-check it*), so you find out immediately rather than when a visitor
 cannot post.
 
 | Provider | Keys |
@@ -27,13 +27,13 @@ cannot post.
 invisible to the visitor, and does not send your users' behaviour to an ad
 company. reCAPTCHA is there because many sites already have keys for it.
 
-Once a provider is configured, choose where the challenge appears — publishing a
+Once a provider is configured, choose where the challenge appears: publishing a
 listing, contacting a publisher, registering, and posting a comment. Turning it
 on for **publishing** and **registration** stops most of what matters; turning
 it on everywhere annoys real users for little extra gain.
 
 :::caution[The site key is public, the secret key is not]
-The site key is rendered into the page — that is normal. The secret key
+The site key is rendered into the page. That is normal. The secret key
 authenticates your server to the provider and must never appear in a theme, a
 repository or a support post.
 :::
@@ -74,8 +74,8 @@ Each keyword can be matched against:
 
 Keywords can be added one at a time or **imported** in bulk.
 
-Use it for the specific spam your site actually attracts — the phrases in the
-listings you keep deleting — not for a generic profanity list. Broad keywords
+Use it for the specific spam your site actually attracts (the phrases in the
+listings you keep deleting), not for a generic profanity list. Broad keywords
 catch real listings: blocking "free" on a marketplace blocks "free delivery".
 
 ## Akismet

@@ -1,12 +1,12 @@
 ---
 title: Contributing
-description: How to contribute to ShopClass — the pull request workflow, coding standards, documentation, translations, testing and reporting bugs.
+description: How to contribute to ShopClass, the pull request workflow, coding standards, documentation, translations, testing and reporting bugs.
 sidebar:
   order: 15
 ---
 
-ShopClass is maintained by its users. Contributions are welcome — bug fixes,
-features, translations and documentation — and several of the most useful ones
+ShopClass is maintained by its users. Contributions are welcome (bug fixes,
+features, translations and documentation), and several of the most useful ones
 need no PHP at all.
 
 ## Code
@@ -15,7 +15,7 @@ need no PHP at all.
    agree an approach before the work than after it.
 2. **Branch from `develop`.** Never target `master`.
 3. Make the change. If it touches the admin theme, run `npm run build` and
-   **commit the compiled output** — releases are cut with `git archive`, so
+   **commit the compiled output**. Releases are cut with `git archive`, so
    whatever is committed is exactly what users receive.
 4. Run the linters:
    ```bash
@@ -30,7 +30,7 @@ See [coding style](/docs/developers/coding-style/) for the standard, and the
 Nothing runs `composer install` or `npm run build` at release time. A change to
 `composer.json` without a rebuilt `oc-includes/vendor/` ships the old library
 under the new version number. Run `composer update <package>` and commit
-`vendor/` alongside the manifest — CI fails the build otherwise.
+`vendor/` alongside the manifest. CI fails the build otherwise.
 :::
 
 ## Documentation
@@ -54,14 +54,14 @@ takes minutes.
 ## Testing
 
 You do not have to write code to help. Running a prerelease against a real site
-— your own copy, not production — and reporting what broke is genuinely
+(your own copy, not production) and reporting what broke is genuinely
 valuable, and it is how compatibility problems get found before a release
 instead of after.
 
 ## Reporting bugs and suggesting features
 
 Open an [issue](https://github.com/mindstellar/shopclass/issues). A reproducible
-report is worth ten vague ones — see
+report is worth ten vague ones. See
 [how to write a bug report](/docs/developers/bug-reports/).
 
 Security vulnerabilities are the exception: **do not** open a public issue. The
@@ -77,10 +77,10 @@ an hour than writing code.
 
 ## Plugins and themes
 
-Publishing an extension helps the whole ecosystem — and, unlike core, it is
+Publishing an extension helps the whole ecosystem, and, unlike core, it is
 entirely yours. See [the market](/docs/developers/market/).
 
 ## Telling people
 
 More users means a stronger community means a better ShopClass. A link, a
-mention, a blog post about what you built with it — all of it counts.
+mention, a blog post about what you built with it: all of it counts.

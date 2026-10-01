@@ -1,6 +1,6 @@
 ---
 title: First steps after installing
-description: The settings to get right on day one of a new ShopClass site — site details, categories, locations, cron, mail and spam defences.
+description: The settings to get right on day one of a new ShopClass site, site details, categories, locations, cron, mail and spam defences.
 sidebar:
   order: 1
 ---
@@ -23,7 +23,7 @@ before search engines see the site.
 **Listings → Locations**, or `php oc-cli.php location:update --country=IN`.
 
 A classifieds site without location data cannot filter by place, which is half
-of what makes it useful. Install the countries you actually serve — see
+of what makes it useful. Install the countries you actually serve. See
 [installing location data](/docs/configure/locations/).
 
 ## 3. Categories
@@ -32,7 +32,7 @@ of what makes it useful. Install the countries you actually serve — see
 
 The default tree is a starting point, not an answer. Disable what you will not
 use and rename the rest to the words your visitors use. Category structure is
-hard to change once listings exist, because every listing belongs to one — so
+hard to change once listings exist, because every listing belongs to one, so
 spend time here now rather than later.
 
 See [categories](/docs/use/categories/).
@@ -61,7 +61,7 @@ SMTP before you invite anybody. See [mail server](/docs/configure/mail-server/).
 
 **Settings → Spam and bots.**
 
-Turn on a CAPTCHA — Turnstile or reCAPTCHA — before the site is public. A
+Turn on a CAPTCHA (Turnstile or reCAPTCHA) before the site is public. A
 classifieds site with an open publish form is found by bots within days of going
 live. See [spam and abuse](/docs/use/spam-and-abuse/).
 
@@ -79,7 +79,7 @@ visible to everyone:
 - how long a user must wait between posts
 - how much notice a seller gets before a listing expires
 
-Listing **expiry itself is per category** — *Expiration (days)* on the category,
+Listing **expiry itself is per category**: *Expiration (days)* on the category,
 with an option to apply it to all subcategories. See
 [categories](/docs/use/categories/).
 
@@ -106,7 +106,7 @@ php oc-cli.php doctor
 ```
 
 It checks the PHP version and extensions, the database, directory writability,
-whether cron has actually run recently, and the cache — and exits non-zero if
+whether cron has actually run recently, and the cache. It exits non-zero if
 anything fails.
 
 Then post a listing yourself, from a logged-out browser, exactly as a visitor

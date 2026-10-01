@@ -1,6 +1,6 @@
 ---
 title: Payment gateways
-description: Take payments in ShopClass by registering a gateway, and give it a declared settings page — walked through with the bundled Test Payments plugin.
+description: "Take payments in ShopClass by registering a gateway, and give it a declared settings page: walked through with the bundled Test Payments plugin."
 sidebar:
   order: 21
 ---
@@ -106,7 +106,7 @@ hash_hmac('sha256', 'test-gateway-callback', \mindstellar\security\SigningKey::g
 
 After your gateway accepts a callback, `Billing::handleCallback()`:
 
-- refuses a **paid** result whose amount or currency differs from the order — but
+- refuses a **paid** result whose amount or currency differs from the order, but
   only if you pass them, so always pass them;
 - refuses an order that belongs to another gateway;
 - settles an order only while it is pending, and keys the credit on the order,
@@ -129,7 +129,7 @@ Two things to know:
   the handler.
 - Check the buyer owns the order, and call `osc_csrf_check()` on every POST.
 
-**Pay**, **Decline** and **Refund** pass a signed payload to `Billing::handleCallback()` —
+**Pay**, **Decline** and **Refund** pass a signed payload to `Billing::handleCallback()`:
 the same call the callback route makes. **Leave pending** and **Fail with error** send
 nothing. The page can also print a `curl` command that posts that
 payload to the real route, for replay tests.

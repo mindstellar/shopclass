@@ -47,7 +47,7 @@ osc_remove_admin_submenu_page($menu_id, $submenu_id);
 osc_remove_admin_menu();                              // clears the lot
 ```
 
-Removing core entries is a blunt instrument — another plugin may be linking to
+Removing core entries is a blunt instrument: another plugin may be linking to
 what you just deleted. Prefer capabilities.
 
 ## Adding to an existing core section
@@ -94,11 +94,11 @@ function myplugin_admin_menu()
 osc_add_hook('admin_menu_init', 'myplugin_admin_menu');
 ```
 
-Use a **unique** `$menu_id` — prefix it with your plugin folder. Two plugins
+Use a **unique** `$menu_id`: prefix it with your plugin folder. Two plugins
 claiming the same id will overwrite each other's menus.
 
 :::caution[Settings screens]
 Pointing a menu at a hand-written `admin/settings.php` is deprecated for settings.
-[Declare a settings page](/docs/developers/settings-pages/) instead — core adds its
+[Declare a settings page](/docs/developers/settings-pages/) instead. Core adds its
 menu entry for you.
 :::

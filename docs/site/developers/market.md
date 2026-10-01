@@ -1,6 +1,6 @@
 ---
 title: The market
-description: How ShopClass plugins and themes are published — the GitHub-native registries, the static catalog, and how to submit a package.
+description: "How ShopClass plugins and themes are published: the GitHub-native registries, the static catalog, and how to submit a package."
 sidebar:
   order: 3
 ---
@@ -24,7 +24,7 @@ and **Admin → Appearance**, or the `market:*`
 A package either lives **inside** the registry repository or **outside** it in
 your own.
 
-**In-repo** — your source tree goes in `plugins/<slug>/` (or `themes/<slug>/`)
+**In-repo**: your source tree goes in `plugins/<slug>/` (or `themes/<slug>/`)
 alongside a small `shopclass.json` manifest:
 
 ```jsonc
@@ -47,7 +47,7 @@ Note what it does **not** carry: a `version`. The builder reads the version from
 your `index.php` header and the release tag, so a package's version has exactly
 one source of truth.
 
-**External** — keep your code in your own repository and register a one-file
+**External**: keep your code in your own repository and register a one-file
 pointer at `external/<slug>.json`:
 
 ```jsonc
@@ -62,8 +62,8 @@ pointer at `external/<slug>.json`:
 ```
 
 The builder fetches your releases, picks the matching asset, reads the header
-block **out of the zip** — so name, version and compatibility come from the real
-artifact, never a hand-edited claim — computes its `sha256`, and emits an entry
+block **out of the zip**, so name, version and compatibility come from the real
+artifact, never a hand-edited claim. It computes the `sha256`, and emits an entry
 identical in shape to an in-repo one. Core never learns the difference.
 
 Both `storefront` and `bender` are registered this way today.
@@ -75,7 +75,7 @@ CI validates **only the package your PR changed**, and checks that:
 - the header block parses, and its required fields are present
 - the slug matches the directory or manifest
 - compatibility metadata is sane
-- the package actually installs — a smoke install runs against a real core
+- the package actually installs: a smoke install runs against a real core
 
 Deprecated-function use is reported as a **warning, never a failure**. It tells
 you what to fix without blocking a release your users are waiting for.
@@ -90,14 +90,14 @@ mirror as a fallback. Core fetches it with a conditional `GET` about once a day
 and caches the result.
 
 This is deliberate: core must never call `api.github.com` per installed package.
-Unauthenticated GitHub API allows 60 requests per hour per IP — a shared budget
-on shared hosting — and a site with fifteen plugins would exhaust it on a single
+Unauthenticated GitHub API allows 60 requests per hour per IP (a shared budget
+on shared hosting), and a site with fifteen plugins would exhaust it on a single
 update check. One cached catalog request answers for every package at once.
 
 ## Requirements for listing
 
 - **GPL-compatible licence.** ShopClass is GPLv3; the ecosystem is too.
-- **A working `index.php` header block** — see the
+- **A working `index.php` header block**, see the
   [package specification](/docs/developers/package-spec/).
 - **A real support URL**, so users have somewhere to go.
 

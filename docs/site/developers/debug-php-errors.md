@@ -1,6 +1,6 @@
 ---
 title: Debug PHP errors
-description: Turn on error reporting and logging in ShopClass with OSC_DEBUG and OSC_DEBUG_LOG — including how to debug a white screen.
+description: "Turn on error reporting and logging in ShopClass with OSC_DEBUG and OSC_DEBUG_LOG: including how to debug a white screen."
 sidebar:
   order: 12
 ---
@@ -20,7 +20,7 @@ define('OSC_DEBUG', true);
 Error reporting rises to `E_ALL | E_STRICT` and `display_errors` is turned on,
 so PHP prints what went wrong instead of a blank page.
 
-With `OSC_DEBUG` off — the default — the level is
+With `OSC_DEBUG` off (the default), the level is
 `E_ALL ^ E_NOTICE ^ E_USER_NOTICE`.
 
 :::danger[Never leave this on in production]
@@ -60,12 +60,12 @@ or deny access to `*.log` in your server config.
 
 ## Debugging a white screen
 
-A blank page means PHP died before it could print anything — usually a fatal
+A blank page means PHP died before it could print anything: usually a fatal
 error with display off.
 
 1. Set `OSC_DEBUG` and `OSC_DEBUG_LOG` as above.
 2. Reload the page and read `oc-content/debug.log`.
-3. If the log is still empty, PHP failed before ShopClass loaded — a syntax
+3. If the log is still empty, PHP failed before ShopClass loaded: a syntax
    error in `config.php`, or an out-of-memory kill. Check your **server's** PHP
    error log; your host's control panel will point at it.
 
@@ -93,5 +93,5 @@ php oc-cli.php doctor
 
 ## Related
 
-- [Debug SQL queries](/docs/developers/debug-sql-queries/) — when the problem is
+- [Debug SQL queries](/docs/developers/debug-sql-queries/): when the problem is
   the database rather than the code.

@@ -1,6 +1,6 @@
 ---
 title: E-mail templates & alerts
-description: Edit the e-mails ShopClass sends — activation, password reset, contact and alerts — and understand which ones depend on cron.
+description: "Edit the e-mails ShopClass sends: activation, password reset, contact and alerts, and understand which ones depend on cron."
 sidebar:
   order: 13
 ---
@@ -13,11 +13,11 @@ notifications and saved-search alerts. All of them are editable.
 
 ## Editing a template
 
-Each template has a **title** — the subject line — and a **body**, per active
+Each template has a **title** (the subject line) and a **body**, per active
 language. As the admin notes, *email templates are registered by the core and by
 installed plugins*, so a plugin that sends mail adds its own here.
 
-Templates use placeholders for the values filled in at send time — the user's
+Templates use placeholders for the values filled in at send time: the user's
 name, the listing title, the confirmation link. **Keep the placeholders.** A
 template missing its link placeholder sends an activation e-mail nobody can act
 on, and the send still looks successful.
@@ -34,7 +34,7 @@ two are the ones that lock people out when they are wrong.
 | **Listing validation** | A seller who never gets this has an invisible listing. |
 | **Password reset** | The only self-service route back in. |
 | **Contact publisher** | The message that makes the marketplace work at all. |
-| **Alerts** | Saved-search notifications — the thing that brings users back. |
+| **Alerts** | Saved-search notifications: the thing that brings users back. |
 
 ## Notifications to you
 
@@ -42,7 +42,7 @@ Several settings decide when the admin gets mail:
 
 - **Listings → Settings → notify admin when a new listing is added**
 - **Users → Settings → when a new user is registered**
-- **Settings → Comments → Notifications** — when a comment is posted, and when
+- **Settings → Comments → Notifications**: when a comment is posted, and when
   one is held for moderation
 
 All of these are useful in week one and unbearable at volume. Turn them off when
@@ -51,10 +51,10 @@ the site is busy and moderate from the admin lists instead.
 ## Alerts and cron
 
 Saved-search alerts are **not** sent when a listing is published. They are sent
-by **cron**, on the schedule each user picked for their saved search — hourly,
+by **cron**, on the schedule each user picked for their saved search: hourly,
 daily or weekly.
 
-That means the single most common report — "my users never get alerts" — is
+That means the single most common report ("my users never get alerts") is
 almost always a missing crontab entry, not a mail problem. Check it first:
 
 ```bash
@@ -71,7 +71,7 @@ enable, disable and delete users' saved searches.
 Work through it in this order:
 
 1. **Is it a cron e-mail?** Alerts and anything scheduled need cron running.
-2. **Is SMTP configured?** PHP's default `mail()` usually lands in spam — see
+2. **Is SMTP configured?** PHP's default `mail()` usually lands in spam. See
    [mail server](/docs/configure/mail-server/).
 3. **Is the domain authenticated?** SPF, DKIM and DMARC for the sending address.
 4. **Is the template intact?** A broken template can produce mail that arrives

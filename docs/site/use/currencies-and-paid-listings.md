@@ -12,7 +12,7 @@ code, name and description; add the ones your market uses and delete the rest.
 
 The list shows how many listings use each currency, so you can see what is safe
 to remove. Deleting a currency that listings are priced in leaves those listings
-without a valid one — check the count first.
+without a valid one, so check the count first.
 
 A single-country site should offer exactly one. Every extra currency is another
 decision on the publish form and another thing to compare in search results.
@@ -20,7 +20,7 @@ decision on the publish form and another thing to compare in search results.
 ## Paid listings
 
 **New in 6.2.0.** ShopClass can sell credits and charge for listings without a
-payment gateway in core. It is **off by default** — nothing changes until you
+payment gateway in core. It is **off by default**: nothing changes until you
 turn it on.
 
 The settings move once you switch it on: while billing is **off** they live at
@@ -29,8 +29,8 @@ The settings move once you switch it on: while billing is **off** they live at
 entry from Settings. If you cannot find the screen you were just on, that is why.
 
 The split matters: **core owns entitlements, plugins own money.** Core decides
-what a seller is entitled to — a featured listing for fourteen days, three extra
-photos, a bump — and a payment plugin decides how they paid for it. Core never
+what a seller is entitled to (a featured listing for fourteen days, three extra
+photos, a bump) and a payment plugin decides how they paid for it. Core never
 sees a card number or a gateway API key.
 
 That is why upgrades are priced in **credits**: an abstract unit a payment
@@ -43,14 +43,14 @@ the screen tells you plainly: *No payment methods installed*, with **Browse
 plugins** to find one. Each installed method shows as **Ready** or **Needs
 setting up**.
 
-**Bank transfer / cash** is built in and needs no plugin — you write your own
+**Bank transfer / cash** is built in and needs no plugin: you write your own
 payment instructions and settle each order by hand once the money arrives, with
 no card processor or API keys involved. Right for a local site with a handful of
 paying sellers.
 
 **Test Payments** is a bundled plugin for trying the flow out. Its checkout page
 lets you choose **Pay**, **Decline**, **Leave pending** or **Fail**, and each one
-drives the real billing callback — so you can see an order succeed, hang or fail
+drives the real billing callback, so you can see an order succeed, hang or fail
 without moving any money. Install it from **Plugins**, then enable it.
 
 :::caution[Take it off a live site]
@@ -70,12 +70,12 @@ Test Payments hands out credits for nothing. It is for testing only.
 | **Extra listing slots** | More listings than the free allowance |
 | **Skip the posting wait** | Waives the flood-control delay between posts |
 
-Each is sold independently — turn on only what you actually want to sell — and
+Each is sold independently: turn on only what you actually want to sell, and
 each has its own price in credits and, where relevant, its own duration.
 
 ### Credit bundles
 
-**Billing → Packages** defines the bundles buyers choose from at checkout — how
+**Billing → Packages** defines the bundles buyers choose from at checkout: how
 much credit each contains and what it costs. Without at least one package there
 is nothing for a buyer to purchase.
 
@@ -102,7 +102,7 @@ Set the free allowance to what a casual seller needs and a dealer does not.
 - Take a [backup](/docs/use/backups-and-maintenance/).
 - Test the whole flow end to end with bank transfer first, including what a
   seller sees when their upgrade expires.
-- Write your refund terms into your [Terms page](/docs/use/pages/) — the payment
+- Write your refund terms into your [Terms page](/docs/use/pages/); the payment
   plugin will not do it for you.
 - Confirm that expiry actually runs: entitlements expire on the **hourly cron**.
   Without [cron](/docs/configure/cron/), a featured listing stays featured
@@ -110,6 +110,6 @@ Set the free allowance to what a casual seller needs and a dealer does not.
 
 ### For developers
 
-The contract between core and a payment plugin — what an entitlement is, how a
-plugin grants one, and what core guarantees about it — is specified in
+The contract between core and a payment plugin (what an entitlement is, how a
+plugin grants one, and what core guarantees about it) is specified in
 [`docs/BILLING.md`](https://github.com/mindstellar/shopclass/blob/master/docs/BILLING.md).

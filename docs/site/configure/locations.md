@@ -1,20 +1,20 @@
 ---
 title: Install location data
-description: Add countries, regions and cities to ShopClass so visitors can filter listings by place — from the admin panel or the command line.
+description: Add countries, regions and cities to ShopClass so visitors can filter listings by place, from the admin panel or the command line.
 sidebar:
   order: 3
 ---
 
 Location is half of what makes a classifieds site useful: *for sale near me*
 only works if the site knows what "near me" contains. ShopClass ships with no
-location data — a site serving one country has no business carrying 1.6 million
-place names — so you install the countries you actually serve.
+location data. A site serving one country has no business carrying 1.6 million
+place names, so you install the countries you actually serve.
 
 ## From the admin panel
 
 **Admin → Listings → Locations** has two tabs.
 
-### Data — install and update countries
+### Data: install and update countries
 
 **Data** lists all 255 countries in the published catalog. Filter them by **All**,
 **Installed**, **Updates** or **Not installed**, then install a country; its
@@ -30,10 +30,10 @@ The tab also shows the catalog release date, with a **Check for updates** button
 #### Listing counts
 
 The number of listings shown against each location can drift after an import or a
-bulk change. **Recalculate** counts them again. It reports progress — *27%
-counted: 24,198 of 88,301 locations* — and the site stays online while it runs.
+bulk change. **Recalculate** counts them again. It reports progress (*27%
+counted: 24,198 of 88,301 locations*), and the site stays online while it runs.
 
-### Browse — edit what you have
+### Browse: edit what you have
 
 **Browse** walks your installed data: countries, then regions, then cities. A
 breadcrumb across the top takes you back up.
@@ -45,7 +45,7 @@ it holds, and whether it is active or hidden.
 |---|---|
 | **Search** | Type a name. Choose **This level** or **Everywhere** to search the whole tree. |
 | **A–Z strip** | Jump to a letter. Appears once a level has many entries. |
-| **Paging** | 50 rows a page — *Showing 1–50 of 17,505 cities*. |
+| **Paging** | 50 rows a page: *Showing 1–50 of 17,505 cities*. |
 | **Edit** | Opens a drawer beside the list. Rename, change the slug, hide or show. |
 | **Add** | **Add country**, **Add region** or **Add city**, depending on the level. |
 | **Bulk actions** | Tick rows, then apply an action to all of them. |
@@ -55,7 +55,7 @@ it holds, and whether it is active or hidden.
 Delete shows you what goes with it: the places underneath, how many listings are
 deleted, and how many users keep their account but lose their location.
 
-If any listing would be deleted, you must type something before the button works —
+If any listing would be deleted, you must type something before the button works:
 the location's name for one row, or the number of listings for a selection. If no
 listing is affected, it just asks you to confirm.
 
@@ -85,7 +85,7 @@ size of an update before committing to it.
 
 ## Keeping it current
 
-Place names change — councils merge, cities are renamed, spellings are
+Place names change: councils merge, cities are renamed, spellings are
 corrected. The catalog carries a content-derived version and a per-country
 checksum, so ShopClass answers "is my data current?" with one small request
 rather than by re-downloading anything. `location:status` shows you the answer,
@@ -96,8 +96,8 @@ finds no changes never produces a prompt.
 
 ## Where the data comes from
 
-The dataset is [**mindstellar/location-data**](https://github.com/mindstellar/location-data)
-— countries, administrative divisions and 1.6M+ settlements built from Wikidata
+The dataset is [**mindstellar/location-data**](https://github.com/mindstellar/location-data):
+countries, administrative divisions and 1.6M+ settlements built from Wikidata
 and published **CC0**. No attribution or share-alike condition travels with the
 data your site imports.
 
@@ -122,13 +122,13 @@ osc_add_filter('locations_json_url', function () {
 });
 ```
 
-For safety, a pointer may only resolve to a manifest on its own origin — whoever
+For safety, a pointer may only resolve to a manifest on its own origin, so whoever
 serves the pointer cannot redirect an install somewhere else.
 
 ## Importing your own data
 
-If you have location data of your own — a country the catalog does not cover
-well, or a custom set of service areas — you can import SQL directly through
+If you have location data of your own (a country the catalog does not cover
+well, or a custom set of service areas), you can import SQL directly through
 **Admin → Tools → Import**, or with any MySQL client.
 
 Two rules:

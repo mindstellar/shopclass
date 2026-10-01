@@ -11,7 +11,7 @@ document describing the latest version.
 
 **That mechanism still works**, and existing packages relying on it keep
 updating. For anything new, [the market](/docs/developers/market/) is the better
-route — including for code you host in your own repository, which can be
+route, including for code you host in your own repository, which can be
 registered with a one-file pointer without moving your source anywhere.
 
 ## Why the market replaced it
@@ -20,7 +20,7 @@ Self-hosted update URLs put one HTTP request per installed package into every
 update check. A site with fifteen plugins made fifteen outbound calls, each to a
 different author's server, each able to be slow, down, or gone. The catalog
 answers for every package in one cached request, and it verifies a `sha256`
-against the real artifact — the update URL mechanism verifies nothing.
+against the real artifact. The update URL mechanism verifies nothing.
 
 ## The legacy contract
 
@@ -52,7 +52,7 @@ It must return JSON in this shape:
 
 | Field | Notes |
 |---|---|
-| `s_version` | Any alphanumeric string is accepted, but use `MAJOR.MINOR.PATCH` — core has to decide whether it is *newer* than what is installed, and only a sortable version answers that. |
+| `s_version` | Any alphanumeric string is accepted, but use `MAJOR.MINOR.PATCH`: core has to decide whether it is *newer* than what is installed, and only a sortable version answers that. |
 | `e_type` | One of `PLUGIN`, `THEME` or `LANGUAGE`. |
 | `s_source_file` | Direct link to the zip. Must be reachable without authentication. |
 | `s_update_url` | The endpoint itself, so it can be re-checked after installation. |

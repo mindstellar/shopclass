@@ -11,9 +11,9 @@ Everything here lives under **Tools** in the admin panel.
 
 **Tools → Backup data** exports two things, and a complete backup needs both:
 
-1. **A SQL dump** of the database — listings, users, categories, settings,
+1. **A SQL dump** of the database: listings, users, categories, settings,
    everything. Downloaded directly, or written to a directory on the server.
-2. **A zip of the install**, which carries `oc-content/` — uploads, installed
+2. **A zip of the install**, which carries `oc-content/`: uploads, installed
    plugins and themes.
 
 A database dump without the uploads restores a site whose every photo is
@@ -21,7 +21,7 @@ missing.
 
 On a large site the zip is the part that fails first: it is built in one request,
 so a big uploads directory can exhaust the memory limit or the execution time.
-When that happens, use the command line below instead — it has neither limit.
+When that happens, use the command line below instead. It has neither limit.
 
 ### From the command line
 
@@ -48,7 +48,7 @@ tar -czf uploads-$(date +%F).tar.gz oc-content/
 **Tools → Maintenance mode** puts the site into maintenance while you work. Signed-in
 admins always keep full access. What everyone else sees is up to you.
 
-The top of the screen shows the current state — *Maintenance mode is: ON / OFF* —
+The top of the screen shows the current state, *Maintenance mode is: ON / OFF*,
 with one button to switch it.
 
 ### Two ways to run it
@@ -60,7 +60,7 @@ Under **Visitors** there is a checkbox, **Block the public site (HTTP 503)**.
 | **Ticked** (the default) | An HTTP 503 page carrying your message. Nobody can browse or post. |
 | **Unticked** | The site as normal, with your message as a banner across the top. |
 
-Tick it before a major update, a large migration or a schema change — nobody
+Tick it before a major update, a large migration or a schema change. Nobody
 publishes a listing into a database you are in the middle of moving.
 
 Leave it unticked for work that does not risk the data: a theme change, a price
@@ -71,7 +71,7 @@ Your choice is remembered when you turn maintenance mode off again.
 ### The message
 
 The **Message** box under the checkbox is shown on the banner and on the 503 page.
-Plain text only, up to 500 characters — HTML is stripped. Leave it blank and
+Plain text only, up to 500 characters. HTML is stripped. Leave it blank and
 Shopclass writes a polite default using your site name.
 
 :::caution[Do not forget it is on]
@@ -98,7 +98,7 @@ the one exception: it locks out everything except a signed-in admin.
 
 Run it on demand, or save the settings and let the **daily cron** do it.
 
-On an established site this is what keeps the database fast — dead rows cost you
+On an established site this is what keeps the database fast: dead rows cost you
 on every search. Back up before the first run, and think about expired listings
 specifically: deleting them 404s pages that may still rank.
 
@@ -112,12 +112,12 @@ change" on a site with more than one admin. It can be filtered, and cleared
 entirely.
 
 Behind a reverse proxy, the logged IP is only meaningful if the real client IP
-is being passed through — see the
+is being passed through. See the
 [caching contract](/docs/developers/caching/).
 
 ## Import
 
-**Tools → Import data** takes SQL directly — the route for location data,
+**Tools → Import data** takes SQL directly: the route for location data,
 bulk-loading listings, or anything prepared outside the admin.
 
 It substitutes the `/*TABLE_PREFIX*/` placeholder for your actual prefix, which
@@ -129,7 +129,7 @@ Back up first. An import runs whatever SQL you give it.
 ## Cache
 
 **Tools → Cache** clears the object cache after a bulk import or a direct
-database edit — anything that changed data behind the application's back.
+database edit: anything that changed data behind the application's back.
 
 ```bash
 php oc-cli.php cache:flush
@@ -140,7 +140,7 @@ See [object caching](/docs/configure/cache/).
 ## System info and health
 
 **Tools → System info** reports the PHP version, memory limit, upload limits,
-extensions, database version and disk space — the details every bug report
+extensions, database version and disk space: the details every bug report
 should include.
 
 The same ground, from a shell, with pass/fail verdicts and a non-zero exit code
@@ -154,12 +154,12 @@ Run it after any change to the server, and put it in your monitoring.
 
 ## A maintenance routine
 
-**Weekly** — check reported listings and the moderation queue; skim new users
+**Weekly**: check reported listings and the moderation queue; skim new users
 for spam registrations.
 
-**Monthly** — run `doctor`; apply core, plugin and theme updates on a staging
+**Monthly**: run `doctor`; apply core, plugin and theme updates on a staging
 copy, then live; check the cleanup ran.
 
-**Quarterly** — restore a backup into staging and confirm it works; review
+**Quarterly**: restore a backup into staging and confirm it works; review
 [location data](/docs/configure/locations/) for updates; re-read your category
 tree against what people actually search for.

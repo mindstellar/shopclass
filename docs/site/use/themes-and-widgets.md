@@ -1,6 +1,6 @@
 ---
 title: Themes & widgets
-description: Install, switch and customise ShopClass themes, and place widgets into a theme's sections — including what to check before switching.
+description: Install, switch and customise ShopClass themes, and place widgets into a theme's sections, including what to check before switching.
 sidebar:
   order: 7
 ---
@@ -10,7 +10,7 @@ where you place widgets into the sections a theme offers.
 
 ## The bundled theme
 
-New installs get **Storefront** — a real, maintained theme, not a placeholder.
+New installs get **Storefront**: a real, maintained theme, not a placeholder.
 It has light and dark modes, three WCAG-AA colour palettes and its own settings
 screen, and it is the theme the [live demo](https://demo.mindstellar.com) runs.
 
@@ -24,11 +24,11 @@ palette and their own hero copy, which is a settings change, not a theme change.
 | Tab | What it shows |
 |---|---|
 | **Themes** | What is installed. **Current theme** is the live one; **Other themes** follow. |
-| **Browse** | The [theme registry](/docs/developers/market/) — the same catalog `oc-cli.php` reads. One click installs. |
+| **Browse** | The [theme registry](/docs/developers/market/), the same catalog `oc-cli.php` reads. One click installs. |
 | **Updates** | Installed themes with a newer version, with a count in the tab. |
 
 Each theme is a card carrying its version, its author, a short description and a
-state badge — *Live*, *Installed* — with the buttons that apply to it:
+state badge (*Live*, *Installed*) with the buttons that apply to it:
 **Activate**, **Preview**, **Delete**.
 
 **Plugins → Manage plugins** works the same way, with **Installed**, **Browse**
@@ -54,10 +54,10 @@ Themes are not interchangeable. Check three things:
 
 - **Widget sections differ between themes.** A theme declares its own sections,
   so widgets placed for one theme may have nowhere to go in another. They are
-  not deleted — they simply stop rendering until you place them again.
+  not deleted. They simply stop rendering until you place them again.
 - **Compatibility.** A theme declares the ShopClass and PHP versions it supports,
-  and the card says plainly whether it runs here — *Needs 6.5 or newer*, *Needs
-  PHP 8.2* — instead of leaving you to compare numbers.
+  and the card says plainly whether it runs here (*Needs 6.5 or newer*, *Needs
+  PHP 8.2*) instead of leaving you to compare numbers.
 - **Try it on a copy.** Especially for a site with traffic.
 
 Deleting a theme removes its files. Switch away from it first.
@@ -65,7 +65,7 @@ Deleting a theme removes its files. Switch away from it first.
 ## Widgets
 
 A widget is a block of content placed into a section of the page. Theme
-templates declare which sections exist — a sidebar, a footer column, a strip
+templates declare which sections exist: a sidebar, a footer column, a strip
 above the listing grid.
 
 **Appearance → Manage widgets** shows every section with what is in it. **Add widget**
@@ -99,7 +99,7 @@ See [pages](/docs/use/pages/).
 
 ## Customising a theme
 
-You can edit a theme's files directly, and it will work — until the theme
+You can edit a theme's files directly, and it will work, until the theme
 updates and overwrites your changes.
 
 Two durable approaches:

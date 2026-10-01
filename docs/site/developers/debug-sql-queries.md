@@ -22,8 +22,8 @@ define('OSC_DEBUG_DB', true);
 Every query is collected and printed at the end of the page, along with how long
 it took and any error code and message.
 
-That gives you the two things you usually need at once: the query count — a page
-issuing four hundred queries has a loop doing lookups it should have batched —
+That gives you the two things you usually need at once: the query count (a page
+issuing four hundred queries has a loop doing lookups it should have batched)
 and which individual query is slow.
 
 ## Log queries to a file
@@ -36,7 +36,7 @@ define('OSC_DEBUG_DB_LOG', true);
 Queries go to `oc-content/queries.log`.
 
 Use this rather than on-page output whenever the request has no page to print
-to — **AJAX calls, cron runs and CLI commands**. Their queries are invisible any
+to: **AJAX calls, cron runs and CLI commands**. Their queries are invisible any
 other way.
 
 ```bash
@@ -66,7 +66,7 @@ touch oc-content/queries.log oc-content/explain_queries.log
 chmod 664 oc-content/queries.log oc-content/explain_queries.log
 ```
 
-Delete them when you are done — `oc-content/` is served over HTTP, and a query
+Delete them when you are done. `oc-content/` is served over HTTP, and a query
 log describes your schema to anyone who finds it.
 
 ## Reducing what you find
@@ -81,4 +81,4 @@ log describes your schema to anyone who finds it.
 ## Related
 
 - [Debug PHP errors](/docs/developers/debug-php-errors/)
-- [Improving search](/docs/configure/search/) — full-text indexing specifically
+- [Improving search](/docs/configure/search/): full-text indexing specifically

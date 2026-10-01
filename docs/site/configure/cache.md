@@ -1,12 +1,12 @@
 ---
 title: Object caching
-description: Configure the ShopClass object cache with memcached or APCu — drivers, TTLs, environment variables, and how it differs from a page cache.
+description: Configure the ShopClass object cache with memcached or APCu, drivers, TTLs, environment variables, and how it differs from a page cache.
 sidebar:
   order: 4
 ---
 
 ShopClass has an object cache: a short-lived store for the results of repeated
-database work — category trees, preferences, location lookups — shared across
+database work (category trees, preferences, location lookups) shared across
 requests. On a busy site it is the difference between a handful of queries per
 page and a few dozen.
 
@@ -16,7 +16,7 @@ real backend is a two-line change.
 
 :::note[This is not a page cache]
 The object cache stores fragments of work inside PHP. Caching whole responses at
-a reverse proxy or CDN is a separate, complementary layer — see
+a reverse proxy or CDN is a separate, complementary layer. See
 [page caching](/docs/configure/page-cache/) for how to turn it on, and the
 [caching contract](/docs/developers/caching/) for what core promises a proxy.
 :::
@@ -31,7 +31,7 @@ php -m | grep -E 'memcached|apcu'
 
 The setting does nothing if the extension is missing.
 
-## memcached — recommended
+## memcached: recommended
 
 Right for anything with more than one web server, and fine with one.
 
@@ -50,7 +50,7 @@ $_cache_config = array(
 );
 ```
 
-## APCu — single server
+## APCu: single server
 
 Simpler, faster, and confined to one PHP process pool. Right for a single VPS,
 wrong the moment you add a second web server.
@@ -76,11 +76,11 @@ Handy for containers, where editing `config.php` per environment is awkward:
 
 | Variable | Purpose |
 |---|---|
-| `OSC_CACHE` | Driver name — `memcached`, `apcu`, `memcache` |
+| `OSC_CACHE` | Driver name: `memcached`, `apcu`, `memcache` |
 | `OSC_CACHE_HOST` | Server host, for memcached/memcache |
 | `OSC_CACHE_PORT` | Server port, default `11211` |
 
-An explicit `define()` in `config.php` — or a `$_cache_config` array — always
+An explicit `define()` in `config.php` (or a `$_cache_config` array) always
 wins over the environment.
 
 ## Flushing it
@@ -95,7 +95,7 @@ php oc-cli.php cache:flush
 ## Legacy drivers
 
 `define('OSC_CACHE', 'memcache')` still works and drives the old, unmaintained
-`memcache` extension. It is deprecated — use `memcached`.
+`memcache` extension. It is deprecated. Use `memcached`.
 
 ## Troubleshooting
 

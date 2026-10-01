@@ -6,7 +6,7 @@ sidebar:
 ---
 
 Every front-end controller used to name exactly one view. Rendering a listing
-meant `item.php`, and that was the whole conversation — a theme that wanted a
+meant `item.php`, and that was the whole conversation. A theme that wanted a
 different layout for one category had nowhere to put it.
 
 Controllers now name an **ordered list**, most specific first, and core renders
@@ -21,7 +21,7 @@ the first one a theme actually ships.
 | Static page | `page-{slug}.php`, the picked template, `page.php` |
 | Everything else | one candidate, the name it has always had |
 
-`{category}` on a results page is the token from the URL — the slug for
+`{category}` on a results page is the token from the URL: the slug for
 `/jobs`, the id when the search was made by id. It is offered only when the
 search is filtered to exactly one category.
 
@@ -35,7 +35,7 @@ osc_locate_template(array $candidates, string $context = ''): string
 ```
 
 Returns the **view name** of the first candidate any theme in the stack can
-render — not a filesystem path, because rendering goes through
+render, not a filesystem path, because rendering goes through
 `osc_current_web_theme_path()`, which also points the theme's own asset URLs at
 whichever theme answered.
 
@@ -81,13 +81,13 @@ Context slugs are the route names: `home`, `search`, `item`, `item-post`,
 `user-public-profile`).
 
 A filter that returns anything other than an array is ignored, and candidates
-that are absolute or contain `..` are dropped — neither can blank a page or
+that are absolute or contain `..` are dropped: neither can blank a page or
 reach outside the theme directories.
 
 ## Editing reuses the publishing form
 
 Core asks for `item-edit.php` first and falls back to `item-post.php`, because the
-two carry the same fields — `ItemForm` hands both the same list, and the view can
+two carry the same fields. `ItemForm` hands both the same list, and the view can
 tell them apart with `osc_is_edit_page()`.
 
 So a theme ships **one** publishing form and gets editing for free. Ship
@@ -109,9 +109,9 @@ JavaScript: change country, submit, and the re-rendered form offers that
 country's regions rather than the previous one's.
 
 `osc_show_item_comments()` renders the comment thread and its form inside your
-listing page — see [The comment block](#the-comment-block) below.
+listing page, see [The comment block](#the-comment-block) below.
 
-The title and description inputs pick their own locale — the visitor's when
+The title and description inputs pick their own locale: the visitor's when
 publishing, and when editing the one the listing's text actually came from, so an
 edit updates the translation it is showing instead of copying it into a second
 one. `osc_item_content_locale()` reports that locale and
@@ -123,7 +123,7 @@ so you no longer enqueue `osc-uploader` or `osc-ui-common` before the form.
 ## The comment block
 
 Comments are on by default, so a theme that draws no comment block ships a
-feature nobody can reach. One call renders the whole thing — the count, the
+feature nobody can reach. One call renders the whole thing: the count, the
 thread, the form:
 
 ```php

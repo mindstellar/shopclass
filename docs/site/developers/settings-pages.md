@@ -1,6 +1,6 @@
 ---
 title: Settings pages
-description: Declare an admin settings page in ShopClass and core renders it, validates it, checks CSRF and capability, saves it and reports the result — no controller of your own.
+description: Declare an admin settings page in ShopClass and core renders it, validates it, checks CSRF and capability, saves it and reports the result. No controller of your own.
 sidebar:
   order: 6
 ---
@@ -56,7 +56,7 @@ on the front end with `osc_get_preference($name, $pageId)` instead.
 
 ## The builder
 
-The array form above and the builder describe the same page — use whichever
+The array form above and the builder describe the same page. Use whichever
 reads better. The builder is worth it once a page has more than a handful of
 fields, because each field's options sit on the field rather than in a nested
 array:
@@ -77,7 +77,7 @@ use mindstellar\admin\ui\FormSpec;
 
 `menu` is one of `settings`, `plugins`, `appearance`, `tools`, `items`,
 `users`, `pages`, `stats`. Pass `''` for a page with no menu entry, reached
-from a link you put somewhere else — `osc_settings_page_url('acme.delivery')`
+from a link you put somewhere else: `osc_settings_page_url('acme.delivery')`
 gives you its URL.
 
 ## Field types
@@ -93,7 +93,7 @@ Keys every field takes:
 | `default` | Value used until something is saved |
 | `required` | Rejected as empty on save |
 | `sanitize` | `callable(mixed $value): mixed`, run before validation |
-| `validate` | `callable(mixed $value, array $field): ?string` — the error, or null |
+| `validate` | `callable(mixed $value, array $field): ?string` (the error, or null) |
 | `depends` | Another field on this page. While that field is off, this one is hidden, is not required, and its posted value is **discarded** |
 | `depends_value` | With `depends`: a string or list of strings. The field is on while the master's value is one of them. Only for a select or radio master, and each must be one of its option keys |
 | `translate` | `text`/`textarea` only: one control per enabled locale |
@@ -120,7 +120,7 @@ which is what a hand-written screen reading the same field through
 `Params::getParam()` has always stored. Declare `'purify' => false` for a field
 that holds markup or code on purpose.
 
-This governs what is **stripped**, not what is **escaped** — print a stored
+This governs what is **stripped**, not what is **escaped**. Print a stored
 value through `osc_esc_html()` or `osc_esc_js()` as you always would.
 
 A `secret` must say whether it is one the admin can read back (an API key) or
@@ -181,7 +181,7 @@ A page can write one row of a table rather than one preference per field:
 ```
 
 The row is addressed by an integer key **supplied by your controller**, never
-taken from the request — no key inserts a row, and a key that is not a positive
+taken from the request. No key inserts a row, and a key that is not a positive
 integer is refused. That is why the generic controller does not serve a
 table-backed page: it needs a controller of yours that supplies a row id it has
 already checked this admin may edit.
@@ -203,7 +203,7 @@ not ask for.
 
 For an effect that belongs to one page rather than to anyone listening, declare
 it on the page instead. It runs once after a successful save, never after a
-refused one, and last — after `admin_form_after_save`, so it sees whatever a
+refused one, and last, after `admin_form_after_save`, so it sees whatever a
 listener made of the values:
 
 ```php
@@ -221,14 +221,14 @@ The action row counts what has changed since the page loaded: quiet on a form
 nobody has touched, and "3 unsaved changes" on one somebody has. It follows the
 page as you scroll, so Save stays reachable on a long screen.
 
-A save that changes nothing reports exactly that rather than claiming success —
-the store writes only the values that actually differ.
+A save that changes nothing reports exactly that rather than claiming success.
+The store writes only the values that actually differ.
 
 ## The hand-rolled path (deprecated)
 
 :::caution[Deprecated since 6.3.0]
-Hand-writing a settings screen — your own `<form>`, controller action, CSRF check
-and save block — is deprecated. Declare the page instead. The old way keeps
+Hand-writing a settings screen (your own `<form>`, controller action, CSRF check
+and save block) is deprecated. Declare the page instead. The old way keeps
 working and will not be removed: the `osc_*` helpers and admin class names it
 uses stay a public API.
 :::
@@ -248,7 +248,7 @@ screen when you next touch it; the Test Payments plugin in
 
 ### When you cannot declare the page
 
-Some screens are not a settings form at all — a list with its own actions, a
+Some screens are not a settings form at all: a list with its own actions, a
 dialog, a panel inside another page. Do not hand-write the markup for those
 either. Core exposes the same field renderers the declared path uses, so your
 screen looks like the rest of the admin and keeps doing so when the admin theme
@@ -288,7 +288,7 @@ osc_admin_form_close(array(
 | `osc_admin_form_section($title)` | A titled group of fields. |
 | `osc_admin_form_row_open($label)` · `osc_admin_form_row_close()` | One labelled row holding several controls. |
 | `osc_admin_page_head($title, $actions)` | The screen title with its action buttons. |
-| `osc_admin_action_section()` | An intro, a status block, and buttons — no form. |
+| `osc_admin_action_section()` | An intro, a status block, and buttons. No form. |
 
 `osc_admin_field()` takes `type`, `name`, `label`, `value`, `help`, `options`,
 `prefix`, `suffix`, `width`, `required`, `disabled`, `id` and `attrs`. Pass

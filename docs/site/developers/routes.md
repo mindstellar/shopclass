@@ -1,6 +1,6 @@
 ---
 title: Routes
-description: Add your own pages to ShopClass with osc_add_route — clean URLs, parameters, admin routes and controller routes.
+description: "Add your own pages to ShopClass with osc_add_route: clean URLs, parameters, admin routes and controller routes."
 sidebar:
   order: 4
 ---
@@ -31,7 +31,7 @@ osc_add_route($id, $regexp, $url, $file);
 | `$url` | Pattern used to *build* the pretty URL, with `{parameters}`. |
 | `$file` | The PHP file to load when it matches. |
 
-Register routes early — on `init` or at the top of your plugin's `index.php` —
+Register routes early, on `init` or at the top of your plugin's `index.php`,
 so they exist before the request is dispatched.
 
 ## Building the URL
@@ -47,7 +47,7 @@ osc_route_admin_url($id, $args = array());  // admin panel
 ## A worked example
 
 ```php
-// Register — in your plugin's index.php
+// Register, in your plugin's index.php
 osc_add_route(
     'dynamic-route',                                  // id
     'dynamic-route/([0-9]+)/(.+)',                    // regexp
@@ -55,7 +55,7 @@ osc_add_route(
     osc_plugin_folder(__FILE__) . 'mydynamicroute.php' // file
 );
 
-// Link to it — anywhere in a theme or plugin
+// Link to it, anywhere in a theme or plugin
 echo osc_route_url('dynamic-route', array(
     'my-numeric-param' => '12345',
     'my-own-param'     => 'my-own-value',
@@ -74,15 +74,15 @@ Inside `mydynamicroute.php`, read the captured groups with `Params::getParam()`.
   404 on the public site.
 
 :::danger[Make your patterns unique]
-Regular expressions collide easily, and a greedy pattern can swallow core URLs —
+Regular expressions collide easily, and a greedy pattern can swallow core URLs:
 listings, categories, user pages. Prefix your routes with something specific to
 your plugin, and test that listings still resolve after you add one.
 :::
 
 ## Controller routes
 
-For an endpoint that *acts and redirects* rather than rendering a page — a form
-target, a webhook receiver, a "mark as sold" link — use a route hook instead:
+For an endpoint that *acts and redirects* rather than rendering a page (a form
+target, a webhook receiver, a "mark as sold" link), use a route hook instead:
 
 ```php
 osc_add_route_hook($id, $regexp, $url);

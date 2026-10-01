@@ -1,31 +1,31 @@
 ---
 title: Coding style
-description: The PHP coding standard for ShopClass core — PSR-12, the pinned php-cs-fixer, the PHP 8.0 floor, and the legacy naming conventions you will meet in older files.
+description: "The PHP coding standard for ShopClass core: PSR-12, the pinned php-cs-fixer, the PHP 8.0 floor, and the legacy naming conventions you will meet in older files."
 sidebar:
   order: 14
 ---
 
 ShopClass core follows **PSR-12**, enforced by a pinned `php-cs-fixer` that CI
-runs on every pull request. You do not have to memorise the rules — run the
+runs on every pull request. You do not have to memorise the rules. Run the
 formatter.
 
 ## Running the formatter
 
 ```bash
-composer cs:check    # dry run with a diff — exactly what CI enforces
+composer cs:check    # dry run with a diff, exactly what CI enforces
 composer cs:fix      # apply
 ```
 
 The ruleset is deliberately **non-risky**: only whitespace, structure and import
 hygiene are touched, never anything that could change runtime behaviour.
-Generated and vendored trees — `oc-includes/vendor`, `oc-includes/assets`,
-`oc-content`, `oc-includes/osclass/gui` — are excluded because they are not ours
+Generated and vendored trees (`oc-includes/vendor`, `oc-includes/assets`,
+`oc-content`, `oc-includes/osclass/gui`) are excluded because they are not ours
 to reformat.
 
 ## Checking the PHP floor
 
 The supported floor is **PHP 8.0**, and CI fails a pull request that uses syntax
-or functions newer than that — even if your local PHP is happy with it:
+or functions newer than that, even if your local PHP is happy with it:
 
 ```bash
 composer lint:install    # once
@@ -94,7 +94,7 @@ $sSomeText        = 'This is some text';
 $aVariable        = array(1, 2, 3);
 ```
 
-New code does not need to adopt it — write plain, descriptive names — but do not
+New code does not need to adopt it. Write plain, descriptive names, but do not
 rewrite existing variables just to change their style. A rename that touches a
 hundred lines hides the one line that mattered.
 
@@ -112,7 +112,7 @@ pk_i_id              -- primary key
 fk_i_category_id     -- foreign key
 ```
 
-Follow it in any table you add — the DAO layer and the schema reconciler both
+Follow it in any table you add: the DAO layer and the schema reconciler both
 assume it.
 
 ## Documentation blocks
