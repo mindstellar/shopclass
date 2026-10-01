@@ -42,10 +42,19 @@ jobs. Sign-in protection lists who is blocked right now and lets you unblock the
 
 The database is tidier and safer: related rows are now linked, so nothing is left behind when
 you delete a listing, a user or a form, and usernames are unique. Category searches are faster,
-and upgrades no longer show a "some queries failed" screen. **Tools → Database** checks your
-database and can repair it. Usernames made only of digits are no longer allowed.
+and upgrades no longer show a "some queries failed" screen. **Tools → System info → Database**
+checks your database and can repair it. Usernames made only of digits are no longer allowed.
 
-This is the second release candidate. Please try it on a copy of your site and tell us what
+**Tools → Backup and restore** makes a backup of the database, the files or both as one zip,
+saved on the server, in your S3 bucket or downloaded, and puts it back from the admin or the
+command line. **Tools → System info** now shows your server, database, jobs, security and
+cache on one screen.
+
+The contact forms are harder to use for spam. A guest's message is sent only after they
+confirm their e-mail address, a message can hold 1 link and 5000 characters by default, and
+every message carries a *Report the sender* link.
+
+This is the third release candidate. Please try it on a copy of your site and tell us what
 you find.
 
 ### New
