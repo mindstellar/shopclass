@@ -20,7 +20,7 @@ if (!defined('ABS_PATH')) {
  * @var array<string,string> $mail
  */
 $esc    = static fn ($v): string => osc_esc_html((string) $v);
-$accent = preg_match('/^#[0-9a-fA-F]{3,8}$/', (string) ($mail['accent'] ?? '')) ? $mail['accent'] : '#0b7269';
+$accent = preg_match('/^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})\z/i', (string) ($mail['accent'] ?? '')) ? $mail['accent'] : '#0b7269';
 ?>
 <!DOCTYPE html>
 <html lang="<?php echo $esc(substr((string) osc_current_user_locale(), 0, 2)); ?>">

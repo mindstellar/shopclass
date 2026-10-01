@@ -54,6 +54,9 @@ $GLOBALS['__initAlt']     = null;
 
 function osc_apply_filter($tag, $value, ...$args)
 {
+    if ($tag === 'mail_layout_vars' && isset($GLOBALS['__accent'])) {
+        $value['accent'] = $GLOBALS['__accent'];
+    }
     if ($tag === 'init_send_mail') {
         $mail = new RecordingMailer(true);
         if ($GLOBALS['__initAlt'] !== null) {
@@ -133,6 +136,10 @@ function osc_themes_path()
 {
     return sys_get_temp_dir() . '/';
 }
+function osc_theme()
+{
+    return $GLOBALS['__siteTheme'] ?? '';
+}
 /** The site's theme, as far as the e-mail layout asks: a folder that can be swapped. */
 class WebThemes
 {
@@ -148,9 +155,11 @@ class WebThemes
         return self::$path;
     }
 
+    public static $theme = 'test';
+
     public function getCurrentTheme()
     {
-        return 'test';
+        return self::$theme;
     }
 
     public function loadThemeInfo($theme)
@@ -374,5 +383,39 @@ rmdir($theme . 'templates');
 rmdir($theme);
 WebThemes::$path = '';
 check('without one, core\'s layout is used', str_ends_with(osc_mail_layout_file(), 'osclass/gui/templates/email-layout.php'));
+
+$broken = sys_get_temp_dir() . '/mail-layout-broken-' . getmypid() . '/';
+@mkdir($broken . 'templates', 0777, true);
+file_put_contents($broken . 'templates/email-layout.php', '<?php echo "half"; throw new RuntimeException("bad layout");');
+WebThemes::$path = $broken;
+pin('a layout that throws sends the mail bare', $html, @osc_mail_layout($html));
+pin('and leaves no output buffer open', ob_get_level(), ob_get_level());
+unlink($broken . 'templates/email-layout.php');
+WebThemes::$path = '';
+
+// Cron and the admin never load the public theme, so the setting names it.
+$named = sys_get_temp_dir() . '/mail-layout-named-' . getmypid() . '/';
+@mkdir($named . 'templates', 0777, true);
+file_put_contents($named . 'templates/email-layout.php', '<?php echo "NAMED";');
+WebThemes::$theme = '';
+$GLOBALS['__siteTheme'] = basename($named);
+pin('without a loaded theme, the site\'s theme setting is used', $named . 'templates/email-layout.php', osc_mail_layout_file());
+unlink($named . 'templates/email-layout.php');
+rmdir($named . 'templates');
+rmdir($named);
+@rmdir($broken . 'templates');
+@rmdir($broken);
+$GLOBALS['__siteTheme'] = '';
+WebThemes::$theme = 'test';
+
+$accentFor = static function (string $accent) use ($html): bool {
+    $GLOBALS['__accent'] = $accent;
+    $out = osc_mail_layout($html);
+    unset($GLOBALS['__accent']);
+
+    return strpos($out, 'border-top:4px solid ' . $accent . ';') !== false;
+};
+check('a six-digit accent is used', $accentFor('#c2410c'));
+check('a five-digit one is not', !$accentFor('#c2410'));
 
 exit(harness_result());

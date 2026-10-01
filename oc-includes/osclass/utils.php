@@ -673,9 +673,17 @@ function osc_mail_layout(string $body, array $params = array()): string
 
     $file = osc_mail_layout_file();
     ob_start();
-    (static function (string $file, array $mail): void {
-        include $file;
-    })($file, $mail);
+    try {
+        (static function (string $file, array $mail): void {
+            include $file;
+        })($file, $mail);
+    } catch (\Throwable $e) {
+        // A broken layout must not stop the mail: it goes out bare.
+        trigger_error('E-mail layout ' . $file . ': ' . $e->getMessage(), E_USER_WARNING);
+        ob_end_clean();
+
+        return $body;
+    }
     $html = (string) ob_get_clean();
 
     return (string) osc_apply_filter('mail_layout', $html !== '' ? $html : $body, $mail, $params);
@@ -694,11 +702,17 @@ function osc_mail_layout_file(?array $bases = null): string
     if ($bases === null) {
         $bases  = array();
         $themes = WebThemes::newInstance();
+        // Cron, the admin and the CLI never load the public theme, so name it from the setting.
+        $theme  = (string) $themes->getCurrentTheme();
         $active = (string) $themes->getCurrentThemePath();
+        if ($theme === '' && \mindstellar\utility\Validate::packageName((string) osc_theme())) {
+            $theme  = (string) osc_theme();
+            $active = osc_themes_path() . $theme . '/';
+        }
         if ($active !== '') {
             $bases[] = $active;
         }
-        $info = $themes->loadThemeInfo($themes->getCurrentTheme());
+        $info = $theme === '' ? false : $themes->loadThemeInfo($theme);
         if (is_array($info) && !empty($info['template'])
             && \mindstellar\utility\Validate::packageName((string) $info['template'])
         ) {
