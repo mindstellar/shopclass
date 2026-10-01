@@ -30,7 +30,16 @@ The file gets one array, `$mail`:
 Use tables and inline styles: many mail apps ignore a `<style>` block, and none
 run scripts.
 
+Put the theme's logo and colours in this file, not in a hook. Mail is often sent
+from cron, the admin or the command line, where the theme's `functions.php` does
+not load, so a filter added there would miss those e-mails. The file itself always
+runs: read the theme's settings with `osc_get_preference()`, and the theme URL
+helpers return full addresses.
+
 ## In a plugin
+
+Plugins load for every e-mail, so these two filters are the plugin's way in. A theme
+uses the template file instead.
 
 ```php
 // Change what the layout gets: a logo, a colour, a footer line.
