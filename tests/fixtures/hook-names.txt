@@ -444,6 +444,8 @@ filter login_admin_url
 filter logs_processing_row
 filter mail_from
 filter mail_from_name
+filter mail_layout
+filter mail_layout_vars
 filter manage_item_search_with_filters
 filter manage_user_search_with_filters
 filter market_allowed_package_hosts

@@ -24,6 +24,9 @@
 if (!defined('ABS_PATH')) {
     define('ABS_PATH', dirname(__DIR__) . DIRECTORY_SEPARATOR);
 }
+if (!defined('LIB_PATH')) {
+    define('LIB_PATH', ABS_PATH . 'oc-includes/');
+}
 if (!defined('OSCLASS_VERSION')) {
     define('OSCLASS_VERSION', '0');
 }
@@ -108,6 +111,52 @@ function osc_get_domain()
 function osc_page_title()
 {
     return 'Example';
+}
+
+function osc_base_url()
+{
+    return 'https://example.com/';
+}
+function __($text)
+{
+    return $text;
+}
+function osc_esc_html($text)
+{
+    return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8');
+}
+function osc_current_user_locale()
+{
+    return 'en_US';
+}
+function osc_themes_path()
+{
+    return sys_get_temp_dir() . '/';
+}
+/** The site's theme, as far as the e-mail layout asks: a folder that can be swapped. */
+class WebThemes
+{
+    public static $path = '';
+
+    public static function newInstance()
+    {
+        return new self();
+    }
+
+    public function getCurrentThemePath()
+    {
+        return self::$path;
+    }
+
+    public function getCurrentTheme()
+    {
+        return 'test';
+    }
+
+    public function loadThemeInfo($theme)
+    {
+        return array();
+    }
 }
 
 require_once __DIR__ . '/../oc-includes/osclass/utils.php';
@@ -250,7 +299,7 @@ pin(
 harness_section('what osc_sendMail() sends');
 
 $html = '<p>Hi Jo,</p><p>See <a href="https://example.com/i42">Blue bike</a>.</p>';
-$base = array('to' => 'jo@example.com', 'subject' => 'Hi', 'body' => $html);
+$base = array('to' => 'jo@example.com', 'subject' => 'Hi', 'body' => $html, 'layout' => false);
 
 RecordingMailer::$last = null;
 pin('it sends', true, osc_sendMail($base + array('alt_body' => $html)));
@@ -299,5 +348,31 @@ pin(
     'Set up by a plugin in init_send_mail',
     RecordingMailer::$last['AltBody']
 );
+
+harness_section('the e-mail layout');
+
+$wrapped = osc_mail_layout($html, array('subject' => 'Hi'));
+check('the body sits inside a whole HTML document', stripos($wrapped, '<!DOCTYPE html>') !== false && strpos($wrapped, $html) !== false);
+pin('exactly once', 1, substr_count($wrapped, $html));
+check('with the site name in it', strpos($wrapped, 'Example') !== false);
+pin('a body that is already a document is left alone', '<html><body>x</body></html>', osc_mail_layout('<html><body>x</body></html>'));
+pin("'layout' => false sends the body as it is", $html, osc_mail_layout($html, array('layout' => false)));
+
+unset($base['layout']);
+osc_sendMail($base);
+check('osc_sendMail() sends the body in the layout', stripos(RecordingMailer::$last['Body'], '<!DOCTYPE html>') !== false);
+pin('while the plain copy is the message alone', "Hi Jo,\n\nSee Blue bike (https://example.com/i42).", RecordingMailer::$last['AltBody']);
+
+$theme = sys_get_temp_dir() . '/mail-layout-theme-' . getmypid() . '/';
+@mkdir($theme . 'templates', 0777, true);
+file_put_contents($theme . 'templates/email-layout.php', '<?php echo "THEME:" . $mail["body"];');
+WebThemes::$path = $theme;
+pin("a theme's templates/email-layout.php wins over core's", $theme . 'templates/email-layout.php', osc_mail_layout_file());
+pin('and renders the mail', 'THEME:' . $html, osc_mail_layout($html));
+unlink($theme . 'templates/email-layout.php');
+rmdir($theme . 'templates');
+rmdir($theme);
+WebThemes::$path = '';
+check('without one, core\'s layout is used', str_ends_with(osc_mail_layout_file(), 'osclass/gui/templates/email-layout.php'));
 
 exit(harness_result());

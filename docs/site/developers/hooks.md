@@ -136,7 +136,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 528 names. Generated from the source; do not edit by hand.
+Core fires 530 names. Generated from the source; do not edit by hand.
 
 ### Admin (77)
 
@@ -424,7 +424,7 @@ Core fires 528 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/osclass/classes/model/Search.php` |
 
-### Other (195)
+### Other (197)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -564,6 +564,8 @@ Core fires 528 names. Generated from the source; do not edit by hand.
 | `logs_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/LogsDataTable.php` |
 | `mail_from` | filter | `$from, $params` | `oc-includes/osclass/utils.php` |
 | `mail_from_name` | filter | `$from_name, $params` | `oc-includes/osclass/utils.php` |
+| `mail_layout` | filter | `$html !== '' ? $html : $body, $mail, $params` | `oc-includes/osclass/utils.php` |
+| `mail_layout_vars` | filter | `array( 'body' => $body, 'subject' => (string) ($params['subject'] ?? ''), 'preheader' => mb_substr(trim((string) preg_replace('/\s+/u', ' ', _osc_mail_text($body))), 0, 120), 'site_name' => osc_page_title(), 'site_url' => osc_base_url(), 'logo_url' => '', 'accent' => '#0b7269', 'footer' => sprintf(__('You received this e-mail from %s.'), osc_page_title()), ), $params` | `oc-includes/osclass/utils.php` |
 | `market_allowed_package_hosts` | filter | `$defaultHosts` | `oc-includes/osclass/classes/utility/FileSystem.php` |
 | `market_catalog_mirror_base` | filter | `$default, $this->type` | `oc-includes/osclass/classes/market/Catalog.php` |
 | `market_catalog_primary_base` | filter | `$default, $this->type` | `oc-includes/osclass/classes/market/Catalog.php` |

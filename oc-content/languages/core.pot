@@ -12384,6 +12384,10 @@ msgstr ""
 msgid "You haven't checked for %s yet. Check now to browse what's available."
 msgstr ""
 
+#: oc-includes/osclass/utils.php
+msgid "You received this e-mail from %s."
+msgstr ""
+
 #: oc-admin/themes/modern/admins/two_factor.php
 msgid "You sign in with your password and a code from your authenticator app."
 msgstr ""

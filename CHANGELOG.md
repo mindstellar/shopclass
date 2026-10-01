@@ -59,6 +59,7 @@ you find.
 
 ### New
 
+- Every HTML e-mail goes out in one layout with a header, the message in a card and a footer. A theme replaces it with `templates/email-layout.php`; plugins use the `mail_layout_vars` and `mail_layout` filters.
 - Every HTML page sends a `Server-Timing` header with how long it took to build, shown in the browser's developer tools.
 - A `job_gave_up` hook fires when a background job stops retrying, and `oc-cli.php doctor` warns about failed or long-waiting jobs.
 - Message mail leaves only from a confirmed address: a guest clicks a link sent to the address they typed, and that browser is then trusted for 30 days.

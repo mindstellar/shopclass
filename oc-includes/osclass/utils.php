@@ -466,7 +466,7 @@ function osc_sendMail($params)
         }
 
         $mail->Subject = $params['subject'];
-        $mail->Body    = $params['body'];
+        $mail->Body    = osc_mail_layout((string) $params['body'], $params);
 
         if (array_key_exists('attachment', $params)) {
             if (!is_array($params['attachment']) || isset($params['attachment']['path'])) {
@@ -642,6 +642,76 @@ function _osc_mail_alt_body(array $params)
     }
 
     return _osc_mail_text($alt !== '' && $alt !== $body ? $alt : $body);
+}
+
+/**
+ * Wrap an e-mail body in the site's e-mail layout: a theme's templates/email-layout.php,
+ * else core's. A body that is already a whole HTML document, or a send with
+ * 'layout' => false, goes out as it is.
+ *
+ * @param string              $body
+ * @param array<string,mixed> $params the osc_sendMail() parameters
+ *
+ * @return string
+ */
+function osc_mail_layout(string $body, array $params = array()): string
+{
+    if (trim($body) === '' || ($params['layout'] ?? true) === false || stripos($body, '<html') !== false) {
+        return $body;
+    }
+
+    $mail = (array) osc_apply_filter('mail_layout_vars', array(
+        'body'      => $body,
+        'subject'   => (string) ($params['subject'] ?? ''),
+        'preheader' => mb_substr(trim((string) preg_replace('/\s+/u', ' ', _osc_mail_text($body))), 0, 120),
+        'site_name' => osc_page_title(),
+        'site_url'  => osc_base_url(),
+        'logo_url'  => '',
+        'accent'    => '#0b7269',
+        'footer'    => sprintf(__('You received this e-mail from %s.'), osc_page_title()),
+    ), $params);
+
+    $file = osc_mail_layout_file();
+    ob_start();
+    (static function (string $file, array $mail): void {
+        include $file;
+    })($file, $mail);
+    $html = (string) ob_get_clean();
+
+    return (string) osc_apply_filter('mail_layout', $html !== '' ? $html : $body, $mail, $params);
+}
+
+/**
+ * The e-mail layout file: templates/email-layout.php in the active theme or its parent,
+ * else core's own.
+ *
+ * @param string[]|null $bases theme folders to look in, active first; null for the site's
+ *
+ * @return string
+ */
+function osc_mail_layout_file(?array $bases = null): string
+{
+    if ($bases === null) {
+        $bases  = array();
+        $themes = WebThemes::newInstance();
+        $active = (string) $themes->getCurrentThemePath();
+        if ($active !== '') {
+            $bases[] = $active;
+        }
+        $info = $themes->loadThemeInfo($themes->getCurrentTheme());
+        if (is_array($info) && !empty($info['template'])
+            && \mindstellar\utility\Validate::packageName((string) $info['template'])
+        ) {
+            $bases[] = osc_themes_path() . $info['template'] . '/';
+        }
+    }
+    foreach ($bases as $base) {
+        if (is_file(rtrim($base, '/') . '/templates/email-layout.php')) {
+            return rtrim($base, '/') . '/templates/email-layout.php';
+        }
+    }
+
+    return LIB_PATH . 'osclass/gui/templates/email-layout.php';
 }
 
 /**
