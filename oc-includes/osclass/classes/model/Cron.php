@@ -66,6 +66,28 @@ class Cron extends DAO
 
         return osc_db_stringify_row($row);
     }
+
+    /**
+     * Take a due run: move the schedule on, but only if it still says what the caller read.
+     * Of two requests (or servers) that saw the same run due, only one gets true.
+     *
+     * @param string $type     HOURLY, DAILY or WEEKLY
+     * @param string $seenNext d_next_exec as the caller read it
+     * @param string $lastExec
+     * @param string $nextExec
+     *
+     * @return bool
+     */
+    public function claim(string $type, string $seenNext, string $lastExec, string $nextExec): bool
+    {
+        $q = osc_db_table($this->getTableName())->where('e_type', $type)->where('d_next_exec', $seenNext);
+
+        try {
+            return $q->update(array('d_last_exec' => $lastExec, 'd_next_exec' => $nextExec)) === 1;
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
+    }
 }
 
 /* file end: ./oc-includes/osclass/model/Cron.php */

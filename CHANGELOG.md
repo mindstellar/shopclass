@@ -170,6 +170,7 @@ you find.
 
 ### Fixed
 
+- Hourly, daily and weekly cron jobs no longer run twice when two requests start them at the same moment, so alert e-mails are not sent twice.
 - Claiming background jobs no longer locks the whole queue table, which could deadlock with new jobs being added under load.
 - Category counts stay right when premium is turned on or off, when premium ends, and when a category moves to a new parent.
 - A listing title longer than 100 characters no longer leaves a listing without a title under strict SQL mode. Titles are capped at 100, the settings refuse larger limits, and a failed save is undone.

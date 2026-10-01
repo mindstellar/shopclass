@@ -115,6 +115,16 @@ $prevLevel = error_reporting(E_ALL & ~E_WARNING);
 pin('null returns bool false rather than raising', false, $cron->getCronByType(null));
 error_reporting($prevLevel);
 
+harness_section('Cron::claim — two requests that saw the same run due');
+
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . "t_cron WHERE e_type = 'HOURLY'");
+$admin->query('INSERT INTO ' . DB_TABLE_PREFIX . "t_cron (e_type, d_last_exec, d_next_exec) VALUES ('HOURLY', '2026-03-01 09:00:00', '2026-03-01 10:00:00')");
+$seen = $cron->getCronByType('HOURLY');
+pin('the first claim wins', true, $cron->claim('HOURLY', $seen['d_next_exec'], '2026-03-01 10:00:05', '2026-03-01 11:00:00'));
+pin('the second, from the same reading, loses', false, $cron->claim('HOURLY', $seen['d_next_exec'], '2026-03-01 10:00:06', '2026-03-01 11:00:00'));
+pin('and the schedule moved on once', '2026-03-01 10:00:05', $cron->getCronByType('HOURLY')['d_last_exec']);
+pin('a type with no row cannot be claimed', false, $cron->claim('MISSING', '2026-03-01 11:00:00', '2026-03-01 12:00:00', '2026-03-01 13:00:00'));
+
 /* ----------------------------------------------------------------------------
  * Query cost — a single lookup is one statement, and stays one.
  * ------------------------------------------------------------------------- */
