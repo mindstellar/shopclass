@@ -344,6 +344,7 @@ you find.
 
 ### Changed
 
+- HTMLPurifier 4.19.1 and TinyMCE 8.9.2.
 - Featured listings rotate every 5 minutes instead of on every page view, so pages that show them can be cached and answer 304.
 - **Media → Force aspect** is now **Photo shape → Keep each photo's own shape**, on for new sites: photos keep their shape instead of being filled out to the size.
 - **Tools → System info** gains Jobs, Security and Cache tabs. Background jobs, Cache and the blocked sign-in list moved there, and their old links still work.
