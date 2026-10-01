@@ -59,6 +59,7 @@ you find.
 
 ### New
 
+- Every HTML page sends a `Server-Timing` header with how long it took to build, shown in the browser's developer tools.
 - A `job_gave_up` hook fires when a background job stops retrying, and `oc-cli.php doctor` warns about failed or long-waiting jobs.
 - Message mail leaves only from a confirmed address: a guest clicks a link sent to the address they typed, and that browser is then trusted for 30 days.
 - Mail from the contact form carries a *Report the sender* link that lets a signed-in admin ban the address for good.

@@ -86,6 +86,13 @@ Core calls `session_cache_limiter('')` on the front end so PHP cannot inject its
 own conflicting `no-cache` headers — core owns `Cache-Control` end to end. The
 admin panel keeps PHP's default limiter, and is never cached.
 
+Every HTML response, admin included, also carries how long PHP took to build it:
+`Server-Timing: app;dur=84.2;desc="Page build"` (milliseconds). Browser developer
+tools show it under Network → Timing. It is a header, so the page and its `ETag`
+do not change; a page served from a shared cache repeats the time of its first
+build. A plugin can drop it with
+`osc_remove_filter('response_body', 'osc_response_server_timing')`.
+
 ## Verifying it
 
 ```bash

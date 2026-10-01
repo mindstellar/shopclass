@@ -154,7 +154,7 @@ class Csrf
      *
      * @return bool
      */
-    private static function isHtmlResponse($body, array $headers): bool
+    public static function isHtmlResponse($body, array $headers): bool
     {
         $type = '';
         foreach ($headers as $header) {
