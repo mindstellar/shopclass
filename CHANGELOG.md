@@ -242,7 +242,6 @@ its own. Theme and plugin authors should read the Breaking section before upgrad
 - Upgrade release notes show as real paragraphs and lists with working links.
 - The admin user search filters by name, e-mail and partial username.
 - On the user editor, choosing a country reloads the regions.
-- A system page can be saved again.
 - A refused page save no longer stores part of the page, and a title or internal name of only spaces is refused.
 - Saving an email template with a taken internal name no longer saves half of it.
 - Settings screens show the unsaved-changes save bar.
