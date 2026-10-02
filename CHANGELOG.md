@@ -59,7 +59,12 @@ and a theme can give them its own look. Featured listings rotate every few minut
 that show them can be cached. A listing photo can keep its own shape instead of being padded
 to a fixed size.
 
-This is the fourth release candidate. Please try it on a copy of your site and tell us what
+Buyers now get a receipt by e-mail when they pay, and can print it from their orders page.
+A paid order can be refunded from its order screen when the payment plugin supports it, and
+links to the payment in the provider's own dashboard. The new Stripe Payment plugin in the
+market is the first to use both. Sessions no longer reset on hosts with long session ids.
+
+This is the fifth release candidate. Please try it on a copy of your site and tell us what
 you find.
 
 ### New
