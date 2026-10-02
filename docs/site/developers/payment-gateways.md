@@ -70,7 +70,8 @@ Implement `DashboardLinkGateway::dashboardUrl()` to put a **View payment** link 
 in your provider's dashboard on the admin order screen; core shows only an https URL.
 To keep a small value of your own on an order, such as whether it was a live or test
 payment, call `Orders::setMeta($orderId, 'my_key', $value)`; keys starting with `_` are
-core's, and `null` removes the key.
+core's, and `null` removes the key. Start the key with your gateway id and `_` (for example
+`stripe_livemode`) to keep it off the order screen.
 
 ### The callback
 

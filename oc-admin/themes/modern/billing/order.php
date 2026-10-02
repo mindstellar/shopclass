@@ -127,8 +127,10 @@ $rows[] = array('label' => __('Created'), 'value' => osc_admin_date($order->getD
 if ($order->getPaidDate() !== null) {
     $rows[] = array('label' => __('Paid'), 'value' => osc_admin_date($order->getPaidDate(), true), 'html' => true);
 }
+// Keys starting with "_" belong to core, and keys starting with the gateway id and "_" are the plugin's own notes.
+$gatewayPrefix = $order->getGateway() . '_';
 foreach ($order->getMeta() as $key => $value) {
-    if (is_scalar($value) && strpos((string) $key, '_') !== 0) {
+    if (is_scalar($value) && strpos((string) $key, '_') !== 0 && strpos((string) $key, $gatewayPrefix) !== 0) {
         $rows[] = array('label' => (string)$key, 'value' => (string)$value);
     }
 }
