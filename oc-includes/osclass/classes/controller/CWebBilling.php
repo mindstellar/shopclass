@@ -16,6 +16,7 @@ use mindstellar\billing\ItemUpgrades;
 use mindstellar\billing\Orders;
 use mindstellar\billing\Packages;
 use mindstellar\billing\PaymentGatewayRegistry;
+use mindstellar\billing\Receipts;
 use mindstellar\billing\Wallet;
 
 /**
@@ -102,6 +103,9 @@ class CWebBilling extends WebSecBaseModel
             case ('orders'):
                 $this->ordersView();
                 break;
+            case ('receipt'):
+                $this->receiptView();
+                break;
             case ('upgrade'):
                 $this->upgradePost();
                 break;
@@ -162,6 +166,24 @@ class CWebBilling extends WebSecBaseModel
     }
 
     /**
+     * The printable receipt for one of the user's own paid or refunded orders. Anyone
+     * else's order, or an order with no receipt, is a 404.
+     *
+     * @return void
+     */
+    private function receiptView()
+    {
+        $order = Orders::find(Params::getParamInt('id'));
+        if ($order === null || !Receipts::canView($order, (int) osc_logged_user_id(), false)) {
+            $this->do404();
+
+            return;
+        }
+
+        Receipts::render($order, osc_billing_orders_url(), _m('Back to your orders'));
+    }
+
+    /**
      * Start a checkout for a package.
      *
      * The package id is the only thing about the price that comes from the browser --
@@ -202,7 +224,7 @@ class CWebBilling extends WebSecBaseModel
 
         $intent = Billing::checkout($order);
         if ($intent === null) {
-            osc_add_flash_error_message(_m('Payment is unavailable right now. Please try again later.'));
+            osc_add_flash_error_message(_m('That payment method is not available right now. Try again or choose another.'));
             $this->redirectTo($this->url('buy'));
         }
 

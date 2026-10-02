@@ -14,6 +14,7 @@ if (!defined('ABS_PATH')) {
 
 use mindstellar\billing\Order;
 use mindstellar\billing\Orders;
+use mindstellar\billing\Receipts;
 
 /**
  * The buyer's own orders -- markup only: no page chrome, no heading
@@ -109,6 +110,9 @@ $col = array(
                             <span class="oe-badge oe-bill-badge <?php echo osc_esc_html($order->getStatus()); ?>">
                                 <?php echo osc_esc_html($statusWords[$order->getStatus()] ?? $order->getStatus()); ?>
                             </span>
+                            <?php if (Receipts::available($order)) { ?>
+                                <a href="<?php echo osc_esc_html(Receipts::url($order->getId())); ?>"><?php echo osc_esc_html(_m('Receipt')); ?></a>
+                            <?php } ?>
                         </td>
                     </tr>
                 <?php } ?>

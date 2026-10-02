@@ -28,13 +28,14 @@ use mindstellar\billing\PaymentGatewayRegistry;
  */
 class CAdminSettingsBilling extends AdminSecBaseModel
 {
-    /** The five forms on the screen, by the action each posts to. */
+    /** The six forms on the screen, by the action each posts to. */
     private const FORMS = array(
         'billing_post',
         'billing_pricing_post',
         'billing_offline_post',
         'billing_upgrades_post',
         'billing_limits_post',
+        'billing_receipts_post',
     );
 
     /**
@@ -48,7 +49,7 @@ class CAdminSettingsBilling extends AdminSecBaseModel
 
     //Business Layer...
     /**
-     * Saves whichever of the five billing forms was posted, otherwise draws the screen.
+     * Saves whichever of the six billing forms was posted, otherwise draws the screen.
      *
      * @return void
      */
@@ -64,7 +65,7 @@ class CAdminSettingsBilling extends AdminSecBaseModel
     }
 
     /**
-     * Save one of the five forms. Which preferences are written, and what is re-registered
+     * Save one of the six forms. Which preferences are written, and what is re-registered
      * afterwards, is the declaration's; all that is left here is the CSRF check, the message
      * and where to go next.
      *
@@ -108,6 +109,8 @@ class CAdminSettingsBilling extends AdminSecBaseModel
                 return _m('Upgrade settings have been updated');
             case 'billing_limits_post':
                 return _m('Seller limit settings have been updated');
+            case 'billing_receipts_post':
+                return _m('Receipt settings have been updated');
             default:
                 return _m('Billing settings have been updated');
         }
@@ -131,13 +134,15 @@ class CAdminSettingsBilling extends AdminSecBaseModel
                 return BillingSettingsForm::registerUpgrades();
             case 'billing_limits_post':
                 return BillingSettingsForm::registerLimits();
+            case 'billing_receipts_post':
+                return BillingSettingsForm::registerReceipts();
             default:
                 return BillingSettingsForm::registerSwitch();
         }
     }
 
     /**
-     * Exports the five billing forms and the gateway list, then renders the billing view.
+     * Exports the six billing forms and the gateway list, then renders the billing view.
      *
      * @param string     $rejected the page id of the form that was refused, if any
      * @param array|null $values   that form's submitted values

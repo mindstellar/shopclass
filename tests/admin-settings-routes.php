@@ -115,6 +115,7 @@ foreach (array(
     'billing_offline_post',
     'billing_upgrades_post',
     'billing_limits_post',
+    'billing_receipts_post',
 ) as $action) {
     check('routed: ' . $action, isset($routed[$action]));
 }

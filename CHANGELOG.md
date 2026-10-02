@@ -64,6 +64,9 @@ you find.
 
 ### New
 
+- Buyers get a receipt by e-mail when an order is paid, and can print it from their orders page (**Settings → Billing → Receipts**).
+- A paid order has a **Refund** button when its payment plugin can refund (`RefundableGateway`). Test Payments supports it.
+- `Orders::attachRef()` lets a payment plugin store its checkout id on a pending order, and `DashboardLinkGateway` adds a link to the payment in the provider's dashboard.
 - Every HTML e-mail goes out in one layout with a header, the message in a card and a footer. A theme replaces it with `templates/email-layout.php`; plugins use the `mail_layout_vars` and `mail_layout` filters.
 - Every HTML page sends a `Server-Timing` header with how long it took to build, shown in the browser's developer tools.
 - A `job_gave_up` hook fires when a background job stops retrying, and `oc-cli.php doctor` warns about failed or long-waiting jobs.
@@ -175,6 +178,7 @@ you find.
 
 ### Fixed
 
+- Sessions no longer reset on every page on hosts with long session ids, which logged users out and broke forms (thanks @tonybyng).
 - Hourly, daily and weekly cron jobs no longer run twice when two requests start them at the same moment, so alert e-mails are not sent twice.
 - Claiming background jobs no longer locks the whole queue table, which could deadlock with new jobs being added under load.
 - Category counts stay right when premium is turned on or off, when premium ends, and when a category moves to a new parent.

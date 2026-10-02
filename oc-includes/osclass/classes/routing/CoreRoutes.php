@@ -333,6 +333,11 @@ class CoreRoutes
                 'pref' => 'rewrite_billing_wallet',
                 'to'   => array('page' => 'billing'),
             ),
+            'billing_receipt' => array(
+                'to'     => array('page' => 'billing', 'action' => 'receipt'),
+                'params' => array('id' => array()),
+                'rule'   => false,
+            ),
             'billing_upgrade' => array(
                 'to'     => array('page' => 'billing', 'action' => 'upgrade'),
                 'params' => array(

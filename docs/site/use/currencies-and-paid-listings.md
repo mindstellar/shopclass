@@ -89,6 +89,20 @@ of days, for example.
 Orders are visible to you at **Billing → Orders**, and balances at
 **Billing → Credits**.
 
+### Receipts
+
+When an order is paid, the buyer gets a receipt by e-mail, whatever the payment
+method. Each paid or refunded order also has a **Receipt** link on the buyer's
+orders page: a page they can print or save as PDF. You open the same page from
+**View receipt** on the order in **Billing → Orders**.
+
+Under **Settings → Billing → Receipts** you can switch the e-mail off and add your
+business name, address and tax number to every receipt. A receipt is not a tax
+invoice.
+
+If the e-mail cannot be sent, it waits on the background queue and is tried again.
+A buyer gets one receipt per order.
+
 ### Seller limits
 
 **Free listings per seller** and the **photo cap** set what sellers get for

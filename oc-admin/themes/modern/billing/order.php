@@ -11,6 +11,8 @@
  */
 
 use mindstellar\billing\Order;
+use mindstellar\billing\Orders;
+use mindstellar\billing\Receipts;
 
 osc_admin_page(array(
     'section' => __('Billing'),
@@ -21,6 +23,9 @@ osc_admin_page(array(
 $order   = __get('order');
 $entries = __get('entries');
 $balance = (int)__get('balance');
+$refundable = (bool)__get('refundable');
+$dashboardUrl = (string) __get('dashboardUrl');
+$refundSent = $order->isPaid() && $order->meta(Orders::REFUND_REQUESTED) !== null;
 
 // The view layer hands back '' for anything exported as null, so "absent" has to be
 // tested for what it is rather than compared against null. Both of these are genuinely
@@ -28,6 +33,16 @@ $balance = (int)__get('balance');
 // payment may have been uninstalled since.
 $user    = is_array(__get('user')) ? __get('user') : null;
 $gateway = is_object(__get('gateway')) ? __get('gateway') : null;
+// Payment plugin off or not set up: the screen says so instead of hiding actions.
+$gatewayLabel   = $gateway !== null ? $gateway->getName() : $order->getGateway();
+$gatewayWarning = '';
+if ($gateway === null) {
+    $gatewayWarning = sprintf(__('The %s payment plugin is not active.'), $gatewayLabel);
+} elseif (!$gateway->isConfigured()) {
+    $gatewayWarning = sprintf(__('The %s payment plugin is not set up.'), $gatewayLabel);
+}
+$pluginsUrl = osc_admin_base_url(true) . '?page=plugins';
+$userName = $user !== null ? ($user['s_username'] ?: $user['s_name']) : __('this user');
 
 $base       = osc_admin_base_url(true) . '?page=billing';
 $actionUrl  = osc_admin_base_url(true);
@@ -64,7 +79,7 @@ if ($user !== null) {
     $rows[] = array(
         'label' => __('User'),
         'value' => '<a href="' . osc_esc_html($base . '&action=wallet&userId=' . $order->getUserId()) . '">'
-                   . osc_esc_html($user['s_username'] ?: $user['s_name']) . '</a>'
+                   . osc_esc_html($userName) . '</a>'
                    . ' <span class="text-muted">' . osc_esc_html($user['s_email']) . '</span>',
         'html'  => true,
     );
@@ -77,21 +92,43 @@ $rows[] = array(
     'label' => __('Payment method'),
     'value' => $gateway !== null
         ? $gateway->getName()
-        // The plugin that took this payment is no longer installed. The order still has to
+        // The plugin that took this payment is not active. The order still has to
         // be readable and reconcilable, so the stored id stands in for the missing name.
-        : sprintf(__('%s (plugin not installed)'), $order->getGateway()),
+        : sprintf(__('%s (plugin not active)'), $order->getGateway()),
 );
 $rows[] = array(
     'label' => __('Reference'),
     'value' => $order->getExternalRef() ?: __('None yet'),
     'mono'  => (bool)$order->getExternalRef(),
 );
+if (Receipts::available($order)) {
+    $receiptSent = $order->meta(Orders::RECEIPT_SENT);
+    $rows[] = array(
+        'label' => __('Receipt'),
+        'value' => '<a href="' . osc_esc_html($base . '&action=receipt&id=' . $order->getId()) . '" target="_blank" rel="noopener">'
+                   . osc_esc_html(__('View receipt')) . '</a>'
+                   . ($receiptSent !== null
+                       ? ' <span class="text-muted">' . osc_esc_html(__('e-mailed')) . ' '
+                         . osc_admin_date((string) $receiptSent, true) . '</span>'
+                       : ''),
+        'html'  => true,
+    );
+}
+if ($dashboardUrl !== '') {
+    $rows[] = array(
+        'label' => __('Provider'),
+        'value' => '<a href="' . osc_esc_html($dashboardUrl) . '" target="_blank" rel="noopener noreferrer">'
+                   . osc_esc_html(__('View payment'))
+                   . ' <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i></a>',
+        'html'  => true,
+    );
+}
 $rows[] = array('label' => __('Created'), 'value' => osc_admin_date($order->getDate(), true), 'html' => true);
 if ($order->getPaidDate() !== null) {
     $rows[] = array('label' => __('Paid'), 'value' => osc_admin_date($order->getPaidDate(), true), 'html' => true);
 }
 foreach ($order->getMeta() as $key => $value) {
-    if (is_scalar($value)) {
+    if (is_scalar($value) && strpos((string) $key, '_') !== 0) {
         $rows[] = array('label' => (string)$key, 'value' => (string)$value);
     }
 }
@@ -157,6 +194,15 @@ foreach ($order->getMeta() as $key => $value) {
                             number_format($order->getCredits())
                         ); ?>
                     </p>
+                    <?php if ($gatewayWarning !== '') { ?>
+                        <div class="callout-warning callout-block mb-3">
+                            <div>
+                                <?php echo osc_esc_html($gatewayWarning . ' ' . __('The payment may still come through '
+                                    . 'once it is back. Check the provider before you mark this paid by hand.')); ?>
+                                <a href="<?php echo osc_esc_html($pluginsUrl); ?>"><?php _e('Open Plugins'); ?></a>
+                            </div>
+                        </div>
+                    <?php } ?>
                     <form method="post" action="<?php echo osc_esc_html($actionUrl); ?>">
                         <input type="hidden" name="page" value="billing"/>
                         <input type="hidden" name="action" value="order_paid"/>
@@ -179,19 +225,78 @@ foreach ($order->getMeta() as $key => $value) {
                      thing an admin's eye lands on. */ ?>
             <?php if ($order->isPaid()) { ?>
                 <?php osc_admin_panel_open(__('Refund')); ?>
-                    <p class="panel-subtitle">
-                        <?php _e('Record a refund you have already made through your payment provider. '
-                                 . 'Shopclass never asks the provider for the money back — it only writes down '
-                                 . 'that you did.'); ?>
-                    </p>
-                    <button type="button" class="btn btn-danger"
-                            data-osc-dialog-open="#order-refund-dialog"><?php _e('Record a refund'); ?></button>
+                    <?php if ($refundable) { ?>
+                        <p class="panel-subtitle">
+                            <?php printf(
+                                osc_esc_html(__('Refund this payment through %s. The buyer gets the money back '
+                                                . 'and the credits are taken back.')),
+                                osc_esc_html($gateway->getName())
+                            ); ?>
+                        </p>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="button" class="btn btn-danger"
+                                    data-osc-dialog-open="#order-refund-gateway-dialog"><?php _e('Refund'); ?></button>
+                            <button type="button" class="btn btn-dim"
+                                    data-osc-dialog-open="#order-refund-dialog"><?php _e('Record a refund'); ?></button>
+                        </div>
+                        <p class="panel-subtitle mt-3 mb-0">
+                            <?php _e('Already refunded at the provider? Record it instead, so nothing is sent twice.'); ?>
+                        </p>
+                    <?php } else { ?>
+                        <?php if ($gatewayWarning !== '') { ?>
+                            <div class="callout-warning callout-block mb-3">
+                                <div>
+                                    <?php echo osc_esc_html($gatewayWarning . ' ' . __('This order cannot be refunded '
+                                        . 'from here. Turn the plugin on, or refund it in the provider\'s dashboard '
+                                        . 'and then use Record a refund.')); ?>
+                                    <a href="<?php echo osc_esc_html($pluginsUrl); ?>"><?php _e('Open Plugins'); ?></a>
+                                </div>
+                            </div>
+                        <?php } ?>
+                        <?php if ($refundSent) { ?>
+                            <p class="panel-subtitle">
+                                <?php printf(
+                                    osc_esc_html(__('A refund was sent to the payment provider on %s, but it was not '
+                                                    . 'recorded here. Check the provider\'s dashboard, then record it.')),
+                                    osc_esc_html((string) $order->meta(Orders::REFUND_REQUESTED))
+                                ); ?>
+                            </p>
+                        <?php } ?>
+                        <p class="panel-subtitle">
+                            <?php _e('Record a refund you have already made through your payment provider. '
+                                     . 'Shopclass never asks the provider for the money back — it only writes down '
+                                     . 'that you did.'); ?>
+                        </p>
+                        <button type="button" class="btn btn-danger"
+                                data-osc-dialog-open="#order-refund-dialog"><?php _e('Record a refund'); ?></button>
+                    <?php } ?>
                 <?php osc_admin_panel_close(); ?>
             <?php } ?>
         </div>
     </div>
 
-    <?php if ($order->isPaid()) {
+    <?php if ($refundable) {
+        osc_admin_confirm_dialog(array(
+            'id'      => 'order-refund-gateway-dialog',
+            'url'     => $actionUrl,
+            'fields'  => array(
+                'page'   => 'billing',
+                'action' => 'order_refund_gateway',
+                'id'     => (int) $order->getId(),
+            ),
+            'title'   => sprintf(__('Refund order #%d?'), $order->getId()),
+            'text'    => sprintf(
+                __('%1$s sends %2$s back to the buyer, and %3$s credits are taken back from %4$s. '
+                   . 'This cannot be undone.'),
+                $gateway->getName(),
+                osc_admin_money($order->getAmount(), $order->getCurrency()),
+                number_format($order->getCredits()),
+                $userName
+            ),
+            'confirm' => __('Refund'),
+        ));
+    }
+    if ($order->isPaid()) {
         osc_admin_confirm_dialog(array(
             'id'      => 'order-refund-dialog',
             'url'     => $actionUrl,
@@ -206,7 +311,7 @@ foreach ($order->getMeta() as $key => $value) {
                    . 'them their balance will go below zero, and they will not be able to '
                    . 'spend again until it is back up.'),
                 number_format($order->getCredits()),
-                $user !== null ? ($user['s_username'] ?: $user['s_name']) : __('this user')
+                $userName
             ),
             'confirm' => __('Record the refund'),
         ));

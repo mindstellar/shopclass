@@ -11,7 +11,7 @@
  */
 
 /**
- * The chrome around the five declared billing forms. Each form -- its heading, its intro,
+ * The chrome around the six declared billing forms. Each form -- its heading, its intro,
  * its route, its fields, their values and the submit row -- is core's, drawn from the
  * declaration the controller saves through. The payment-method table below them is a list
  * of what is installed and belongs to the view.
@@ -29,7 +29,7 @@ $gateways = __get('gateways');
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="general-settings">
-    <?php foreach (array('switch', 'pricing', 'offline', 'upgrades', 'limits') as $part) {
+    <?php foreach (array('switch', 'pricing', 'offline', 'upgrades', 'limits', 'receipts') as $part) {
         osc_admin_settings_form($forms[$part]['id'], $forms[$part]);
     } ?>
 

@@ -322,6 +322,14 @@ msgstr ""
 msgid "Back to sign in"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "Back to the order"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebBilling.php
+msgid "Back to your orders"
+msgstr ""
+
 #: oc-includes/osclass/gui/billing/orders-content.php
 msgid "Back to your wallet"
 msgstr ""
@@ -1243,6 +1251,10 @@ msgstr ""
 msgid "No published translation was found for %s."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "No reason was given"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
 msgid "No region was selected"
 msgstr ""
@@ -1423,6 +1435,10 @@ msgid "Order #%d is recorded as refunded and the credits have been taken back"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "Order #%d is refunded and the credits have been taken back"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
 msgid ""
 "Order #%d was marked failed and is now marked paid; the credits have been "
 "added"
@@ -1483,10 +1499,6 @@ msgstr ""
 
 #: oc-includes/osclass/helpers/hUsers.php
 msgid "Paused"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/CWebBilling.php
-msgid "Payment is unavailable right now. Please try again later."
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/buy-content.php
@@ -1696,6 +1708,14 @@ msgstr ""
 msgid ""
 "Re-generation complete. %d photos could not be opened and were left as they "
 "were."
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/orders-content.php
+msgid "Receipt"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsBilling.php
+msgid "Receipt settings have been updated"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSpamnBots.php
@@ -2084,6 +2104,10 @@ msgid "That order had already been settled"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "That order has no receipt"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
 msgid "That order no longer exists"
 msgstr ""
 
@@ -2105,6 +2129,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebBilling.php
 msgid "That payment method is not available"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebBilling.php
+msgid "That payment method is not available right now. Try again or choose another."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsCustom.php
@@ -2425,6 +2453,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 msgid "The plugin has been uploaded correctly"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "The refund was not made: %s"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebContact.php

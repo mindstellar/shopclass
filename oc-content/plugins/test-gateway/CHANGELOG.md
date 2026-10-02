@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0
+
+### New
+
+- Refunds from the admin order screen. Needs Shopclass 6.4.0.
+
 ## 1.0.1
 
 ### Changed

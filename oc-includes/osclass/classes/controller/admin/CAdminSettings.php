@@ -92,6 +92,7 @@ class CAdminSettings
             case ('billing_offline_post'):
             case ('billing_upgrades_post'):
             case ('billing_limits_post'):
+            case ('billing_receipts_post'):
                 $do = new CAdminSettingsBilling();
                 break;
             case ('mailserver'):

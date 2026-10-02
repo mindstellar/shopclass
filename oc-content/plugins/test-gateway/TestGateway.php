@@ -14,17 +14,19 @@ namespace mindstellar\testgateway;
 use mindstellar\billing\Billing;
 use mindstellar\billing\CallbackResult;
 use mindstellar\billing\CheckoutIntent;
+use mindstellar\billing\DashboardLinkGateway;
 use mindstellar\billing\Order;
 use mindstellar\billing\Orders;
-use mindstellar\billing\PaymentGateway;
+use mindstellar\billing\RefundableGateway;
 use mindstellar\security\SigningKey;
 
 /**
  * A payment gateway that moves no money. The test checkout page plays the provider:
  * it signs a callback and hands it to Billing::handleCallback(), the same entry point
- * core's webhook route uses.
+ * core's webhook route uses. It also accepts refunds from the admin order screen, and
+ * links each order to its test checkout page as its dashboard.
  */
-final class TestGateway implements PaymentGateway
+final class TestGateway implements RefundableGateway, DashboardLinkGateway
 {
     /** Gateway id stored on every order. */
     public const ID = 'test';
@@ -142,6 +144,39 @@ final class TestGateway implements PaymentGateway
         return $fields['status'] === 'refunded'
             ? CallbackResult::refunded($orderId, $fields['ref'])
             : CallbackResult::failed($orderId, 'declined at the test checkout', $fields['ref']);
+    }
+
+    /**
+     * Refund from the admin order screen. No money moved, so the refund is accepted
+     * for any paid order of this gateway.
+     *
+     * @param Order $order
+     *
+     * @return CallbackResult
+     */
+    public function refund(Order $order): CallbackResult
+    {
+        if (!self::enabled()) {
+            return CallbackResult::ignored(__('Test payments are switched off', 'test-gateway'));
+        }
+        if ($order->getGateway() !== self::ID || !$order->isPaid()) {
+            return CallbackResult::ignored(__('Not a paid test order', 'test-gateway'));
+        }
+
+        return CallbackResult::refunded($order->getId(), 'test_refund_' . $order->getId());
+    }
+
+    /**
+     * The test checkout page stands in for the provider's dashboard. Core shows it only
+     * on an https site.
+     *
+     * @param Order $order
+     *
+     * @return string|null
+     */
+    public function dashboardUrl(Order $order): ?string
+    {
+        return $order->getGateway() === self::ID ? self::checkoutUrl($order->getId()) : null;
     }
 
     /**
