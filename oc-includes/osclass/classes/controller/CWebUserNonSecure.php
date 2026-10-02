@@ -190,6 +190,7 @@ class CWebUserNonSecure extends BaseModel
                 }
 
                 View::newInstance()->_exportVariableToView('user', $user);
+                osc_prime_item_upgrades($items);
                 $this->_exportVariableToView('items', $items);
                 $this->_exportVariableToView('search_total_pages', $total_pages);
                 $this->_exportVariableToView('search_total_items', $total_items);

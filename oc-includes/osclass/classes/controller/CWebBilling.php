@@ -296,6 +296,11 @@ class CWebBilling extends WebSecBaseModel
             $this->redirectTo(osc_user_list_items_url());
         }
 
+        if ($featureId === 'item.bump' && osc_billing_bump_paused($userId, true)) {
+            osc_add_flash_warning_message(osc_billing_bump_paused_message($userId));
+            $this->redirectTo(osc_user_list_items_url());
+        }
+
         $extending = $decision === self::DECISION_EXTEND;
 
         $spent = Billing::spend($userId, $featureId, array(
@@ -309,6 +314,8 @@ class CWebBilling extends WebSecBaseModel
                 ? sprintf(_m('%s extended on this listing'), $feature->getLabel())
                 : sprintf(_m('%s applied to this listing'), $feature->getLabel());
             osc_add_flash_ok_message($message);
+        } elseif ($featureId === 'item.bump' && osc_billing_bump_paused($userId, true)) {
+            osc_add_flash_warning_message(osc_billing_bump_paused_message($userId));
         } else {
             osc_add_flash_error_message(sprintf(
                 _m('Not enough credits for this upgrade. <a href="%s">Buy more credits</a>'),

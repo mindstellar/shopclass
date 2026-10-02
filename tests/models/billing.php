@@ -1408,10 +1408,10 @@ check(
 
 /* ----------------------------------------------------------------------------
  * osc_prime_item_upgrades(): the public helper. Accepts item rows and bare ids
- * in the same call, since a theme has whichever is already to hand, and must
- * cost a site with billing switched off nothing at all.
+ * in the same call, since a theme has whichever is already to hand. It primes with
+ * billing off too, since themes read upgrades on every card either way.
  * ------------------------------------------------------------------------- */
-harness_section('osc_prime_item_upgrades(): rows or ids, no-op while billing is off');
+harness_section('osc_prime_item_upgrades(): rows or ids, billing on or off');
 
 $helperItemId  = seed_item($admin, $categoryId, $primeUserId, 'Helper primed by id');
 $helperItemId2 = seed_item($admin, $categoryId, $primeUserId, 'Helper primed by row');
@@ -1426,8 +1426,8 @@ $admin->query(
     . $helperItemId
 );
 check(
-    'osc_prime_item_upgrades() is a no-op while billing is off -- the delete is visible, nothing was cached',
-    ItemUpgrades::has($helperItemId, 'test.helper') === false
+    'osc_prime_item_upgrades() primes while billing is off too -- it read the cache, not the table',
+    ItemUpgrades::has($helperItemId, 'test.helper') === true
 );
 ItemUpgrades::grant($helperItemId, 'test.helper', 10, null); // restore for the next check
 
@@ -1956,8 +1956,122 @@ pin(
     $bumpHookFired
 );
 
+/* A free bump is not a way past the listing limit; a paid one is. */
+harness_section('Billing: free bumps respect the listing limit');
+
+$overUser  = seed_user($admin, 'overlimit', 'overlimit@example.test');
+$overItems = array();
+for ($i = 0; $i < 3; $i++) {
+    $overItems[] = seed_item($admin, $categoryId, $overUser, 'Over limit ' . $i);
+}
+// Back-dated so a bump has a date to move.
+$admin->query('UPDATE ' . DB_TABLE_PREFIX . 't_item SET dt_pub_date = DATE_SUB(NOW(), INTERVAL 2 DAY)'
+    . ' WHERE fk_i_user_id = ' . $overUser);
+$overItem = static function (int $n) use ($admin, $overItems): array {
+    return $admin->query('SELECT * FROM ' . DB_TABLE_PREFIX . 't_item WHERE pk_i_id = ' . $overItems[$n])->fetch_assoc();
+};
+$offerIds = static function (array $item): array {
+    return array_column(osc_item_upgrade_offers($item), 'feature');
+};
+$freeBump = static function (int $userId, int $itemId): bool {
+    return Billing::spend($userId, 'item.bump', array('itemId' => $itemId, 'ref_type' => 'item', 'ref_id' => $itemId));
+};
+\Session::newInstance()->_setEphemeral('userId', $overUser);
+
+osc_set_preference('billing_bump_credits', '0', 'osclass', 'INTEGER');
+osc_set_preference('billing_free_live_listings', '3', 'osclass', 'INTEGER');
+osc_reset_preferences();
+osc_billing_bump_paused_reset();
+check('at the limit (3 of 3) a free bump is allowed', Entitlements::withinFreeCeiling($overUser) && !osc_billing_bump_paused($overUser));
+check('and offered', osc_item_can_bump($overItem(0)) && in_array('item.bump', $offerIds($overItem(0)), true));
+check('and the spend goes through', $freeBump($overUser, $overItems[0]));
+
+osc_set_preference('billing_free_live_listings', '2', 'osclass', 'INTEGER');
+osc_reset_preferences();
+osc_billing_bump_paused_reset();
+check('over the limit (3 of 2) free bumps are paused', osc_billing_bump_paused($overUser));
+check('can_bump says no', !osc_item_can_bump($overItem(1)));
+check('the Bump offer is gone', !in_array('item.bump', $offerIds($overItem(1)), true));
+check('the other offers stay', $offerIds($overItem(1)) === array_values(array_diff($offerIds($overItem(1)), array('item.bump'))));
+$pubBefore = $pubDateOf($overItems[1]);
+check('a crafted spend is refused', !$freeBump($overUser, $overItems[1]));
+pin('and the listing does not move', $pubBefore, $pubDateOf($overItems[1]));
+check('the seller is told why', strpos(osc_billing_bump_paused_message($overUser), '3') !== false
+    && strpos(osc_billing_bump_paused_message($overUser), '2') !== false);
+
+Entitlements::grant($overUser, 'listing.slot', 1, null);
+osc_billing_bump_paused_reset();
+check('a bought listing slot raises the limit, so free bumps come back', !osc_billing_bump_paused($overUser)
+    && osc_item_can_bump($overItem(1)));
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . "t_user_entitlement WHERE fk_i_user_id = " . $overUser);
+osc_billing_bump_paused_reset();
+
+osc_set_preference('billing_free_live_listings', '0', 'osclass', 'INTEGER');
+osc_reset_preferences();
+osc_billing_bump_paused_reset();
+check('a limit of 0 means unlimited: no pause', !osc_billing_bump_paused($overUser) && osc_item_can_bump($overItem(1)));
+
+osc_set_preference('billing_free_live_listings', '2', 'osclass', 'INTEGER');
+osc_set_preference('billing_bump_credits', '5', 'osclass', 'INTEGER');
+osc_reset_preferences();
+osc_billing_bump_paused_reset();
+Wallet::credit($overUser, 20, Wallet::REASON_GRANT);
+check('a paid bump over the limit is not paused', !osc_billing_bump_paused($overUser));
+check('and is offered', in_array('item.bump', $offerIds($overItem(2)), true));
+check('and the spend goes through', $freeBump($overUser, $overItems[2]));
+pin('for its price', 15, Wallet::balance($overUser));
+check('another user is never paused by this one', !osc_billing_bump_paused($bumpUserId));
+
+/* The display check is remembered per user; the bump itself always looks again. */
+osc_set_preference('billing_bump_credits', '0', 'osclass', 'INTEGER');
+osc_reset_preferences();
+osc_billing_bump_paused_reset();
+check('over the limit the display check says paused', osc_billing_bump_paused($overUser));
+osc_set_preference('billing_free_live_listings', '0', 'osclass', 'INTEGER');
+osc_reset_preferences();
+check('the remembered answer stays for the page', osc_billing_bump_paused($overUser));
+check('a fresh check sees the change', !osc_billing_bump_paused($overUser, true));
+osc_billing_bump_paused_reset();
+check('with no limit the display check says not paused', !osc_billing_bump_paused($overUser));
+osc_set_preference('billing_free_live_listings', '2', 'osclass', 'INTEGER');
+osc_reset_preferences();
+check('the display check keeps that answer', !osc_billing_bump_paused($overUser));
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . 't_item_upgrade WHERE fk_i_item_id = ' . $overItems[2]);
+$admin->query('UPDATE ' . DB_TABLE_PREFIX . 't_item SET dt_pub_date = DATE_SUB(NOW(), INTERVAL 2 DAY) WHERE pk_i_id = ' . $overItems[2]);
+check('but the bump itself looks again and refuses', !$freeBump($overUser, $overItems[2]));
+osc_billing_bump_paused_reset();
+
+$manyUser  = seed_user($admin, 'manylistings', 'many@example.test');
+$manyItems = array();
+for ($i = 0; $i < 8; $i++) {
+    $manyItems[] = $admin->query('SELECT * FROM ' . DB_TABLE_PREFIX . 't_item WHERE pk_i_id = '
+        . seed_item($admin, $categoryId, $manyUser, 'Many ' . $i))->fetch_assoc();
+}
+\Session::newInstance()->_setEphemeral('userId', $manyUser);
+harness_assert_no_n_plus_1(
+    'drawing the offers for N listings costs the same queries for any N',
+    static function (int $n) use ($manyItems) {
+        osc_billing_bump_paused_reset();
+        $rows = array_slice($manyItems, 0, $n);
+        osc_prime_item_upgrades($rows);
+        foreach ($rows as $row) {
+            osc_item_upgrade_offers($row);
+        }
+        osc_billing_bump_paused_message();
+    },
+    1,
+    8
+);
+
+\Session::newInstance()->_setEphemeral('userId', 0);
+osc_set_preference('billing_free_live_listings', '0', 'osclass', 'INTEGER');
+osc_set_preference('billing_bump_credits', '5', 'osclass', 'INTEGER');
+osc_reset_preferences();
+osc_billing_bump_paused_reset();
+
 osc_set_preference('billing_bump_enabled', '0', 'osclass', 'BOOLEAN');
 osc_reset_preferences();
+osc_billing_bump_paused_reset();
 
 /* ----------------------------------------------------------------------------
  * CWebBilling::decideUpgrade(): the rest of the route-level decision -- a

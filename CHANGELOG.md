@@ -183,6 +183,7 @@ you find.
 
 ### Fixed
 
+- A free bump no longer works for a seller over their live-listing limit; a paid bump still does.
 - Sessions no longer reset on every page on hosts with long session ids, which logged users out and broke forms (thanks @tonybyng).
 - Hourly, daily and weekly cron jobs no longer run twice when two requests start them at the same moment, so alert e-mails are not sent twice.
 - Claiming background jobs no longer locks the whole queue table, which could deadlock with new jobs being added under load.
@@ -343,6 +344,7 @@ you find.
 
 ### Performance
 
+- Listing pages load urgent, highlighted and bump state for all their cards in one query instead of one per card, also when billing is off.
 - Category searches and their page counts use a new index: on a 230,000-listing site the count drops from about 38 ms to 6 ms.
 - New indexes for the admin log, alerts, latest searches, the user list and the expiry reminders.
 - The admin user, alert, log, ban rule and keyword lists no longer use `SQL_CALC_FOUND_ROWS`.

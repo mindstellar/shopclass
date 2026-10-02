@@ -752,14 +752,14 @@ function osc_item_can_be_featured(?array $item = null): bool
  *
  * $items may be item rows (as a search returns) or bare ids, since a caller has
  * whichever is already to hand -- a row's 'pk_i_id' is read when present,
- * otherwise the value itself is taken as the id. A no-op while billing is off,
- * since nothing reads ItemUpgrades in that state and the query would be waste.
+ * otherwise the value itself is taken as the id. It runs with billing off too: upgrades
+ * granted while billing was on still show, and themes read them on every card.
  *
  * @param array $items item rows and/or int ids, mixed within one call is fine
  */
 function osc_prime_item_upgrades(array $items): void
 {
-    if (!osc_billing_enabled() || $items === array()) {
+    if ($items === array()) {
         return;
     }
 
@@ -856,7 +856,102 @@ function osc_item_can_bump(?array $item = null): bool
         return false;
     }
 
-    return !ItemUpgrades::has((int) $item['pk_i_id'], 'item.bump');
+    return !ItemUpgrades::has((int) $item['pk_i_id'], 'item.bump') && !osc_billing_bump_paused((int) $userId);
+}
+
+/**
+ * Whether free bumps are paused for $userId: a bump costs them nothing and they hold
+ * more live listings than their ceiling. A paid bump is never paused.
+ *
+ * Remembered per user for the request, so a list of listings costs one check. Pass
+ * $fresh to recompute, as the bump itself does.
+ *
+ * @param int|null $userId Defaults to the logged-in user
+ * @param bool     $fresh  Ignore the remembered answer
+ *
+ * @return bool
+ */
+function osc_billing_bump_paused(?int $userId = null, bool $fresh = false): bool
+{
+    return _osc_billing_bump_pause((int) ($userId ?? osc_logged_user_id()), $fresh)['paused'];
+}
+
+/**
+ * Why a seller cannot bump for free, or '' when they can.
+ *
+ * @param int|null $userId Defaults to the logged-in user
+ *
+ * @return string
+ */
+function osc_billing_bump_paused_message(?int $userId = null): string
+{
+    $state = _osc_billing_bump_pause((int) ($userId ?? osc_logged_user_id()), false);
+    if (!$state['paused']) {
+        return '';
+    }
+
+    return sprintf(
+        _m('Free bumps are paused: you have %1$d live listings and your limit is %2$d.'),
+        $state['live'],
+        $state['ceiling']
+    );
+}
+
+/**
+ * Forget the remembered free-bump answers, so the next check reads the database.
+ *
+ * @return void
+ */
+function osc_billing_bump_paused_reset(): void
+{
+    $memo = &_osc_billing_bump_pause_memo();
+    $memo = array();
+}
+
+/**
+ * The free-bump state for one user: paused, live count and ceiling.
+ *
+ * @param int  $userId
+ * @param bool $fresh
+ *
+ * @return array{paused:bool,live:int,ceiling:int}
+ */
+function _osc_billing_bump_pause(int $userId, bool $fresh): array
+{
+    $none = array('paused' => false, 'live' => 0, 'ceiling' => -1);
+    if ($userId === 0 || !osc_billing_enabled() || !osc_billing_bump_enabled()) {
+        return $none;
+    }
+
+    $memo = &_osc_billing_bump_pause_memo();
+    if (!$fresh && isset($memo[$userId])) {
+        return $memo[$userId];
+    }
+
+    $feature = FeatureRegistry::instance()->get('item.bump');
+    $price   = $feature !== null ? $feature->price($userId) : osc_billing_bump_credits();
+    $state   = $none;
+    if ($price <= 0) {
+        $ceiling = Entitlements::listingCeiling($userId);
+        if ($ceiling !== -1) {
+            $live  = Entitlements::liveListings($userId);
+            $state = array('paused' => $live > $ceiling, 'live' => $live, 'ceiling' => $ceiling);
+        }
+    }
+
+    return $memo[$userId] = $state;
+}
+
+/**
+ * The per-request store behind _osc_billing_bump_pause().
+ *
+ * @return array<int,array{paused:bool,live:int,ceiling:int}>
+ */
+function &_osc_billing_bump_pause_memo(): array
+{
+    static $memo = array();
+
+    return $memo;
 }
 
 /**
@@ -1035,6 +1130,11 @@ function osc_register_billing_item_upgrades(): void
                     return false;
                 }
                 $itemId = (int) $itemId;
+
+                // A free bump is not a way past the listing limit; a paid one is.
+                if (osc_billing_bump_paused($userId, true)) {
+                    return false;
+                }
 
                 // Bump re-sorts the listing by moving the date every "newest first"
                 // query already orders by. It carries no state of its own beyond

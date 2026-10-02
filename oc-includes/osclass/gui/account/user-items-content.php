@@ -49,6 +49,10 @@ $listingLimit = osc_user_listing_limit();
             <?php if (!osc_user_can_publish()) { ?>
                 <p class="oe-muted"><?php echo osc_esc_html(osc_listing_limit_message()); ?></p>
             <?php }
+            $bumpPaused = osc_billing_bump_paused_message();
+            if ($bumpPaused !== '') { ?>
+                <p class="oe-muted"><?php echo osc_esc_html($bumpPaused); ?></p>
+            <?php }
         } ?>
 
         <?php if (osc_count_items() === 0) { ?>

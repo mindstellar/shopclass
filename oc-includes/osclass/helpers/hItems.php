@@ -1374,11 +1374,8 @@ function osc_has_latest_items($total_latest_items = null, $options = array(), $w
         }
 
         $items = $search->getLatestItems($total_latest_items, $options, $withPicture);
-        // Batch-load item-upgrade state for the home page's listing the same way
-        // the search/category path does -- gated so billing off costs nothing.
-        if (osc_billing_enabled()) {
-            osc_prime_item_upgrades($items);
-        }
+        // Batch-load item-upgrade state for the home page's listing the same way the search/category path does.
+        osc_prime_item_upgrades($items);
         View::newInstance()->_exportVariableToView('latestItems', $items);
     }
 
@@ -1435,9 +1432,7 @@ function osc_count_latest_items($total_latest_items = null, $options = array())
             $options = array();
         }
         $items = $search->getLatestItems($total_latest_items, $options);
-        if (osc_billing_enabled()) {
-            osc_prime_item_upgrades($items);
-        }
+        osc_prime_item_upgrades($items);
         View::newInstance()->_exportVariableToView('latestItems', $items);
     }
 

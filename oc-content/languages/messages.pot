@@ -872,6 +872,10 @@ msgstr ""
 msgid "Forgotten your password?"
 msgstr ""
 
+#: oc-includes/osclass/helpers/hBilling.php
+msgid "Free bumps are paused: you have %1$d live listings and your limit is %2$d."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/PermalinkSettingsForm.php
 msgid ""
 "Friendly URLs deactivated, but .htaccess file could not be deleted. Please, "

@@ -41,6 +41,7 @@ function osc_get_premiums($max = 2)
     }
 
     $premiums = $mSearch->getPremiums($max);
+    osc_prime_item_upgrades($premiums);
     View::newInstance()->_exportVariableToView('premiums', $premiums);
 
     return $premiums;

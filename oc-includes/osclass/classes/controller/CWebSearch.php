@@ -361,11 +361,8 @@ class CWebSearch extends BaseModel
 
         // Batch-load highlight/urgent/bump state for the whole page in one query,
         // instead of the two per card osc_item_is_highlighted()/osc_item_is_urgent()
-        // would otherwise cost inside the theme's listing loop. Gated so a site with
-        // billing off never runs the query at all.
-        if (osc_billing_enabled()) {
-            osc_prime_item_upgrades($aItems);
-        }
+        // would otherwise cost inside the theme's listing loop, with billing on or off.
+        osc_prime_item_upgrades($aItems);
 
         $iStart    = $p_iPage * $p_iPageSize;
         $iEnd      = min(($p_iPage + 1) * $p_iPageSize, $iTotalItems);
