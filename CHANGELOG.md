@@ -4,433 +4,262 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 ## Shopclass 6.4.0
 
-This release makes your site safer to run and easier to keep up to date.
+This release makes your site safer to run, easier to keep up to date, and faster.
 
-You can now add a second step to the admin sign-in: a code from an authenticator app on
-your phone. Shopclass can also install security fixes by itself when you switch it on. It
-waits a day after a fix comes out, installs it at night, and e-mails you how it went. You
-choose whether you get stable releases only, or release candidates and betas too.
+Admins can now add a second sign-in step: a code from an authenticator app on their phone.
+Shopclass can install security releases by itself when you switch it on, and e-mails you how it
+went. You choose the update channel: stable releases only, or release candidates and betas too.
+Saved search alerts no longer hold database code, and the upgrade converts the ones you have.
 
-Saved search alerts now keep only what a visitor searched for, never database code, and the
-upgrade converts your existing alerts for you. Large phone photos shrink in the browser
-before they upload, so they no longer fail the size limit. The listing and page editors
-share one tidy layout, and plugins get a shared queue for slow work.
+Buyers get a receipt by e-mail when they pay, and can print it from their orders page. When the
+payment plugin supports it, a paid order can be refunded from its order screen and links to the
+payment in the provider's dashboard. The new Stripe Payment plugin in the market does both.
 
-Photos can now be saved as WebP, which makes them about a third smaller. The installer can
-clean up an install that stopped halfway and start again, and it gives clearer help when the
-database details are wrong.
+Core now draws every account page, the public profile and the contact page, with hooks a theme
+can add to; the bundled Storefront 2.0 theme is built on them. E-mails go out in one tidy layout
+a theme can restyle. Photos can be saved as WebP, large phone photos shrink before upload, and
+iPhone HEIC photos are accepted.
 
-Pages load faster on sites with memcached or APCu: a cached page now asks the database
-far less. The download is smaller too, because libraries nothing used anymore are gone,
-jQuery among them. If your theme or a plugin still needs jQuery, it has to bring its own.
+Pages load faster: a cached page asks the database far less, and listing pages read every
+card's badges in one query. Slow work such as cleanup runs in a background job queue that
+plugins can use too. A new server can get a site with one command, with free HTTPS.
 
-Photos keep truer colours: new sites and the Docker image use ImageMagick where it is
-available, and iPhone HEIC photos can be added from the listing form. **JPEG quality** is now
-called **Photo quality**, because it sets WebP quality too.
+**Tools → Backup and restore** backs up and restores your site, and **Tools → System info**
+checks your database and repairs it. The database is tidier: related rows are linked, and
+usernames are unique.
 
-Core now draws every account page, the public profile and the contact page itself, with
-hooks a theme can use to add to them. Your listings shows each listing's real status,
-and a member's profile has a Message button. Plugins get a stronger query builder and
-job queue.
-
-A new server can now get a site with one command, with free HTTPS: the Docker image gets
-and renews its own certificate. The image is now also on Docker Hub as
-`mindstellar/shopclass`.
-
-Cleanup and other slow work run in the background, with a history on Tools → Background
-jobs. Sign-in protection lists who is blocked right now and lets you unblock them.
-
-The database is tidier and safer: related rows are now linked, so nothing is left behind when
-you delete a listing, a user or a form, and usernames are unique. Category searches are faster,
-and upgrades no longer show a "some queries failed" screen. **Tools → System info → Database**
-checks your database and can repair it. Usernames made only of digits are no longer allowed.
-
-**Tools → Backup and restore** makes a backup of the database, the files or both as one zip,
-saved on the server, in your S3 bucket or downloaded, and puts it back from the admin or the
-command line. **Tools → System info** now shows your server, database, jobs, security and
-cache on one screen.
-
-The contact forms are harder to use for spam. A guest's message is sent only after they
-confirm their e-mail address, a message can hold 1 link and 5000 characters by default, and
-every message carries a *Report the sender* link.
-
-E-mails now go out in a tidy layout with your site's name, the message in a card and a footer,
-and a theme can give them its own look. Featured listings rotate every few minutes, so pages
-that show them can be cached. A listing photo can keep its own shape instead of being padded
-to a fixed size.
-
-Buyers now get a receipt by e-mail when they pay, and can print it from their orders page.
-A paid order can be refunded from its order screen when the payment plugin supports it, and
-links to the payment in the provider's own dashboard. The new Stripe Payment plugin in the
-market is the first to use both. Sessions no longer reset on hosts with long session ids.
-
-Free bumps now pause while a seller has more live listings than their limit; paid bumps still
-work. Listing pages load faster: each page reads every card's badges in one query.
-
-This is the sixth release candidate. Please try it on a copy of your site and tell us what
-you find.
+jQuery and other unused libraries no longer ship; a theme or plugin that needs jQuery must bring
+its own. Theme and plugin authors should read the Breaking section before upgrading.
 
 ### New
 
+- Admins can turn on two-step sign-in with a code from an authenticator app, with one-time backup codes to copy or download. `oc-cli.php user:2fa-off` turns it off for an admin who is locked out.
+- An update channel (stable, release candidates or betas) replaces the prerelease switch, and security releases can install themselves, with an e-mail to the admin. Off by default.
+- The core updater checks each download against GitHub's checksum.
 - Buyers get a receipt by e-mail when an order is paid, and can print it from their orders page (**Settings → Billing → Receipts**).
 - A paid order has a **Refund** button when its payment plugin can refund (`RefundableGateway`). Test Payments supports it.
 - `Orders::attachRef()` lets a payment plugin store its checkout id on a pending order, and `DashboardLinkGateway` adds a link to the payment in the provider's dashboard.
 - Every HTML e-mail goes out in one layout with a header, the message in a card and a footer. A theme replaces it with `templates/email-layout.php`; plugins use the `mail_layout_vars` and `mail_layout` filters.
-- Every HTML page sends a `Server-Timing` header with how long it took to build, shown in the browser's developer tools.
-- `osc_item_adjacent_url()` and `osc_item_adjacent_id()` give themes the next and previous live listing in one query.
-- A `job_gave_up` hook fires when a background job stops retrying, and `oc-cli.php doctor` warns about failed or long-waiting jobs.
-- Message mail leaves only from a confirmed address: a guest clicks a link sent to the address they typed, and that browser is then trusted for 30 days.
-- Mail from the contact form carries a *Report the sender* link that lets a signed-in admin ban the address for good.
-- Messages allow 1 link and 5000 characters by default (Settings → Spam and bots → Messages). Mail a member receives carries a one-time *Report the sender* link that blocks the sender from messages for 30 days.
-- System info → Database and `oc-cli.php db:doctor --strict` show whether a site is ready for strict SQL mode. Writes that strict mode refuses are recorded in the activity log, by table and column only.
-- `oc-cli.php backup:create`, `backup:list`, `backup:restore` and `backup:delete` do the same backups from a shell: no time limit, a folder outside the site, big files, and restore when web restore is off.
-- Backups can be saved to your S3 bucket. A separate private **Backups bucket** in Settings → Storage keeps them away from your photos. Download and restore work from the bucket too, and **Backups kept** applies there.
+- **Tools → Backup and restore** backs up the database, the files or both as one zip, in the background, downloaded or saved on the server.
+- Backups can go to a private **Backups bucket** on S3 (Settings → Storage), and download, restore and **Backups kept** work there too. Bucket backups need `WEB_PATH` set.
+- A restore runs in the background behind the maintenance page, saves a safety copy first, and puts it back if loading fails. It can restore only the database or only the files.
+- `oc-cli.php backup:create`, `backup:list`, `backup:restore` and `backup:delete` do the same from a shell, with no time limit and restore even when web restore is off.
 - System info reminds you to make a backup when none was saved on the server in the last 30 days.
-- **Tools → Backup and restore** makes a database, files or everything backup as one zip, downloaded or saved on the server, in the background.
-- Restoring a backup runs in the background behind the maintenance page, saves a safety copy first, and puts it back if loading fails. The confirm can put back only the database or only the files.
-- **Tools > Database** lists where the database differs from what Shopclass expects, and **Repair** fixes it. `oc-cli.php db:repair` does the same.
-- Tools > Cleanup can remove the profile pictures of deleted accounts.
-- **Media → Settings → Photo format** replaces Force JPEG: keep the original format (default), save as JPEG, or save as WebP (about a third smaller). A WebP upload now stays WebP.
-- The installer can remove an install that did not finish and start again.
-- The listing form takes HEIC photos while Browser resize is on: the browser turns them into JPEG before upload.
-- Public profiles and the contact page have a meta description.
-- An update channel (stable, release candidates or betas) replaces the prerelease switch, and security releases can install themselves, with an e-mail to the admin. Off by default.
-- The core updater checks each download against GitHub's checksum.
-- Admins can turn on two-step sign-in with a code from an authenticator app, with one-time backup codes you can copy or download. `oc-cli.php user:2fa-off` turns it off for an admin who is locked out.
-- Photos larger than the normal size are shrunk in the browser before upload, so large phone photos no longer fail the size limit. **Media → Settings → Browser resize** turns it off.
-- The `alert_search_params` filter lets a plugin save its own search values with an alert, and `search_conditions` now also gets the search and a context (`'request'` or `'alert'`).
-- `oc-cli.php doctor` says whether an upgraded site's data is ready for strict SQL mode, and lists columns holding zero dates.
-- `Params::getParamBool()`, `getParamEmail()` and `getParamEnum()` read a typed request value with native checks, and never return an array.
-- `osc-table-stack` gives a plugin's own admin table the phone card layout core lists use.
-- A plugin can add its own `oc-cli.php` commands with the `cli_commands` filter.
-- `osc_admin_plugin_page()` gives a plugin's own admin screen the title, **?** help and icon actions core screens have.
-- Installed plugins and themes have a **Details** link, and their icon opens the same details as in Browse. A package not in the catalog shows its own README and screenshots.
-- Plugin cards show the icon beside the name, theme cards show the screenshot across the top, and long descriptions scroll inside the card.
-- `ItemActions` takes custom field values from `meta` in its data when there is no form post, so an importer can set them.
-- Admin-mode `ItemActions` takes an `ownerId` param, so a caller names the account instead of core matching the contact e-mail.
-- `ItemActions::prepareDataFrom()` builds a listing from plain data, so a plugin need not fill the request.
-- `ItemActions::asImport()`: no posting wait or e-mails, but listing limits and moderation still apply.
-- An admin-mode listing edit from `prepareDataFrom()` needs no secret; the admin editor still checks the one its form carries.
-- `Params::withRequest()` runs code against given values in place of the request.
-- A declared form's `persist` callable can return `FormSpec::WRITE_NULL` to store NULL.
-- `mindstellar\security\RateLimit` limits requests per key (an API key, an account), with one counter row per window.
-- `mindstellar\security\AddressGuard` checks that an address someone sent is public before the server fetches it.
-- `LocationImporter::normalizeKey()` is public, so a plugin can match place names the same way.
-- `osc_core_url()` builds any core page's URL from the same table the rewrite rules are
-  compiled from, so a link and the rule that answers it cannot drift apart.
-- A `field-group` class for controls that read as one field, such as an amount and its currency.
-- `osc_admin_category_picker()`, `osc_admin_location_picker()` and `osc_admin_user_picker()`:
-  the three composites an entity editor is made of, for plugins as well as core.
-- `osc_admin_photo_grid()` draws a record's photos as a grid of tiles, with the cover marked,
-  a remove control per photo and a drop target that uploads before the save.
-- `osc_admin_field()` takes `'type' => 'richtext'`, a `'translate_name'` pattern for a
-  screen that spells its posted names its own way, and an `'error'` slot per field.
-  Declared settings pages can carry a rich-text field too.
-- An Admin editors page in the developer docs: every component an add/edit screen is built
-  from, with a worked example of a plugin screen with a rail.
-- A Child themes page in the developer docs: what a child inherits, the order Shopclass looks
-  in, and the two rules that stop a child breaking its parent.
-- Appearance warns when a child theme and its parent would both declare the same function.
-  PHP cannot survive that, so it had to be said before you switch rather than after.
-- A Hooks and filters page in the developer docs, listing every hook and filter core fires,
-  what it passes and where.
-- Links a seller writes in a listing description now carry `rel="nofollow"`. Links back into
-  your own site are left alone.
-- Paginated search and category pages declare `rel="prev"` and `rel="next"`.
-- `osc_resource_alt()` gives a theme alt text for a listing photo, filterable as `resource_alt`.
-- `php oc-cli.php db:doctor` reports where your database differs from what Shopclass declares.
-  It changes nothing. Upgrades repair what they can; this names what they cannot.
-- A shared background job queue any plugin can use: `osc_job_enqueue()` queues work,
-  `osc_job_register_handler()` says what runs it, and cron does the rest. See
-  [Background jobs](https://shopclass.org/docs/developers/jobs/).
-- Tools -> Background jobs shows what is waiting, what is running and what gave up.
-- `php oc-cli.php jobs:work` drains the queue on its own schedule, and `jobs:status`
-  reports it. `storage:work` still works as an alias.
-- The credits page shows listings used against the limit and links to your orders.
-- New hooks `user_login_form` (inside the sign-in form), `user_login_form_after` and `user_register_form_after` (after each form), for extra fields and social sign-in buttons. The username field on the sign-in details page carries `data-username-check` for a live availability check.
-- **Your listings** has status tabs, shows the listing limit, each listing's views, and a Delete link that asks first. New hooks `account_page_before` and `account_page_after` on every account page, and filters `listing_row_badges`, `listing_row_meta`, `listing_row_actions` and `listing_list_html` for listing lists.
-- **Your listings** offers the paid upgrades the seller can buy for each live listing. A `listing_row_actions` entry can be a POST button with the CSRF token. New helper `osc_item_upgrade_offers()`.
-- A plugin's account page takes its heading from the title its route was registered with.
-- The public profile shows the member's picture, place, a Business badge, an Edit link on your own profile, and a Message button that opens a contact form with the captcha; a failed send reopens it with the reason. New hooks `user_contact_form` and `user_contact_form_after`.
-- **Alerts** lists each saved search's keywords, category, place, price and filters, and asks before it stops an alert. New helpers `osc_alert_criteria()` and `osc_alert_summary()`, and filter `alert_row_actions`.
-- The contact page has new hooks `contact_form_top`, `contact_form_after` and `contact_page_aside`, which fills a column beside the form. Core's save-this-search form carries `data-osc-alert-form`.
-- The query builder takes table aliases (`'t_item AS i'`) in reads and joins, and gains `selectRaw()`, `whereNull()`, `whereNotNull()`, `orWhereNull()` and `orWhereNotNull()`.
-- Jobs can carry a `unique_key` that folds repeated work into one waiting job. New `osc_job_enqueue_many()`, `osc_job_ensure()` and `osc_job_stats()`.
-- `php oc-cli.php jobs:status` shows pending, running, gave-up and the oldest pending job per type, and takes `--type=`.
-- `php oc-cli.php` takes the site address from a new `OSC_CLI_URL`, which leaves web requests alone, and says so when a site without config.php has neither it nor `WEB_PATH`, instead of failing with an undefined constant. The dev Docker stack passes `OSC_CLI_URL` from `.env`.
-- **Your profile** has the account type, the neighbourhood, an About field for each language and a Download your data link. New hook `user_avatar_form`; the location fields carry `data-location-cascade`.
-- The profile form is grouped into Photo, Your details, Contact, Location and About you, with the picture first. New classes `.oe-group`, `.oe-grid`, `.oe-avatar-field` and `.oe-avatar-empty`.
-- The dashboard's greeting, buttons, heading and See all line carry classes a theme can hide. The credits pages fire `account_page_before` and `account_page_after`. The contact page marks name and subject optional.
-- Background jobs write to the activity log: one line per worker run, one when a job gives up, and what each cleanup removed. **Tools → Background jobs** lists them under Recent activity, with readable job names. New `osc_job_describe()`, and `osc_admin_when()`, `osc_admin_duration()` and `osc_cron_last_run()`.
-- **Sign-in protection** lists the addresses and accounts with recent failed sign-ins, marks the blocked ones and unblocks one at a time.
+- **Tools → System info → Database** lists where the database differs from what Shopclass expects, and **Repair** fixes what it can. `oc-cli.php db:doctor` and `db:repair` do the same.
+- System info → Database and `oc-cli.php db:doctor --strict` show whether a site is ready for strict SQL mode, and list columns holding zero dates. Writes strict mode refuses are logged by table and column.
+- A shared background job queue for plugins: `osc_job_enqueue()` queues work, `osc_job_register_handler()` runs it, and cron does the rest. See [Background jobs](https://shopclass.org/docs/developers/jobs/).
+- Jobs can carry a `unique_key` that folds repeated work into one waiting job. New `osc_job_enqueue_many()`, `osc_job_ensure()`, `osc_job_stats()` and `osc_job_describe()`.
+- **System info → Jobs** shows what is waiting, running and gave up, with recent activity from the activity log.
+- `php oc-cli.php jobs:work` drains the queue on its own schedule, and `jobs:status` reports it per type (`--type=`). `storage:work` still works as an alias.
+- A `job_gave_up` hook fires when a background job stops retrying, and `oc-cli.php doctor` warns about failed or long-waiting jobs.
+- `osc_admin_when()`, `osc_admin_duration()` and `osc_cron_last_run()` format times for admin screens.
 - `install.sh`, attached to each release, sets up a Docker site in one command, with free HTTPS and a www redirect when given a domain.
-- The Docker image serves HTTPS itself when `OSC_TLS_DOMAIN` is set: it gets and renews a Let's Encrypt certificate and redirects `OSC_TLS_REDIRECT_FROM` names.
+- The Docker image serves HTTPS itself when `OSC_TLS_DOMAIN` is set: it gets and renews a Let's Encrypt certificate and redirects `OSC_TLS_REDIRECT_FROM` names. The image is on Docker Hub as `mindstellar/shopclass`.
+- **Media → Settings → Photo format** replaces Force JPEG: keep the original format (default), save as JPEG, or save as WebP (about a third smaller). `webp` is now an allowed extension by default.
+- Photos larger than the normal size shrink in the browser before upload, so large phone photos no longer fail the size limit. **Media → Settings → Browser resize** turns it off.
+- The listing form takes HEIC photos while Browser resize is on: the browser turns them into JPEG before upload.
+- A guest's message is sent only after they confirm their e-mail address; that browser is then trusted for 30 days.
+- Messages allow 1 link and 5000 characters by default (**Settings → Spam and bots → Messages**). Each one carries a *Report the sender* link: an admin can ban the address, a member can block the sender for 30 days.
+- **Sign-in protection** lists the addresses and accounts with recent failed sign-ins, marks the blocked ones and unblocks one at a time.
+- **Your listings** has status tabs, the listing limit, each listing's views, a Delete link that asks first, and the paid upgrades the seller can buy. New helper `osc_item_upgrade_offers()`.
+- New hooks `account_page_before` and `account_page_after` on every account page, including credits, and filters `listing_row_badges`, `listing_row_meta`, `listing_row_actions` and `listing_list_html` for listing lists. A `listing_row_actions` entry can be a POST button with the CSRF token.
+- The public profile shows the member's picture, place, a Business badge, an Edit link on your own profile, and a Message button with the captcha. New hooks `user_contact_form` and `user_contact_form_after`.
+- **Your profile** is grouped into Photo, Your details, Contact, Location and About you, with the account type, the neighbourhood, an About field per language and a Download your data link. New hook `user_avatar_form` and classes `.oe-group`, `.oe-grid`, `.oe-avatar-field` and `.oe-avatar-empty`.
+- **Alerts** lists each saved search's keywords, category, place, price and filters, and asks before it stops one. New helpers `osc_alert_criteria()` and `osc_alert_summary()`, and filter `alert_row_actions`.
+- New hooks `user_login_form`, `user_login_form_after` and `user_register_form_after` for extra fields and social sign-in buttons. The sign-in details username field carries `data-username-check`.
+- The contact page has new hooks `contact_form_top`, `contact_form_after` and `contact_page_aside`, and marks name and subject optional. Core's save-this-search form carries `data-osc-alert-form`.
+- The credits page shows listings used against the limit and links to your orders.
+- The dashboard's greeting, buttons, heading and See all line carry classes a theme can hide.
+- A plugin's account page takes its heading from the title its route was registered with.
+- `osc_item_adjacent_url()` and `osc_item_adjacent_id()` give themes the next and previous live listing in one query.
+- `osc_resource_alt()` gives a theme alt text for a listing photo, filterable as `resource_alt`.
+- Links a seller writes in a listing description carry `rel="nofollow"`; links into your own site are left alone.
+- Paginated search and category pages declare `rel="prev"` and `rel="next"`.
+- Public profiles and the contact page have a meta description.
+- Every HTML page sends a `Server-Timing` header with how long it took to build.
+- The installer can remove an install that did not finish and start again.
+- Tools → Cleanup can remove the profile pictures of deleted accounts.
+- Installed plugins and themes have a **Details** link, and a package not in the catalog shows its own README and screenshots. Plugin cards show the icon beside the name, theme cards the screenshot across the top.
+- Appearance warns when a child theme and its parent would both declare the same function.
+- New developer docs pages: Admin editors, Child themes, and Hooks and filters (every hook and filter core fires).
+- The query builder takes table aliases (`'t_item AS i'`) and gains `selectRaw()`, `whereNull()`, `whereNotNull()`, `orWhereNull()` and `orWhereNotNull()`.
+- `ItemActions::prepareDataFrom()` builds a listing from plain data, including custom fields from `meta` and the owner from `ownerId`. An admin-mode edit from it needs no secret.
+- `ItemActions::asImport()` skips the posting wait and e-mails, but listing limits and moderation still apply.
+- `Params::getParamBool()`, `getParamEmail()` and `getParamEnum()` read a typed request value and never return an array. `Params::withRequest()` runs code against given values in place of the request.
+- `mindstellar\security\RateLimit` limits requests per key, and `mindstellar\security\AddressGuard` checks an address is public before the server fetches it.
+- `osc_core_url()` builds any core page's URL from the same table the rewrite rules come from, so a link and its rule cannot drift apart.
+- `osc_admin_category_picker()`, `osc_admin_location_picker()`, `osc_admin_user_picker()` and `osc_admin_photo_grid()` are the parts of an entity editor, for plugins as well as core.
+- `osc_admin_field()` takes `'type' => 'richtext'`, a `'translate_name'` pattern and an `'error'` slot per field. Declared settings pages can carry a rich-text field too.
+- `osc_admin_plugin_page()` gives a plugin's admin screen the title, **?** help and icon actions core screens have.
+- A plugin can add its own `oc-cli.php` commands with the `cli_commands` filter.
+- `php oc-cli.php` takes the site address from a new `OSC_CLI_URL`, and says so when it has neither that nor `WEB_PATH`.
+- The `alert_search_params` filter lets a plugin save its own search values with an alert, and `search_conditions` also gets the search and a context (`'request'` or `'alert'`).
+- A declared form's `persist` callable can return `FormSpec::WRITE_NULL` to store NULL.
+- `LocationImporter::normalizeKey()` is public, so a plugin can match place names the same way.
+- `osc-table-stack` gives a plugin's admin table the phone card layout core lists use, and `field-group` joins controls that read as one field.
 
 ### Breaking
 
-- `t_alerts`, `t_item_description`, `t_meta_fields` and `t_form_submission` have foreign keys: a row whose parent is missing, or a guest alert with `fk_i_user_id = 0`, is refused.
-- `t_user.s_username` is unique (`uk_user_username` replaces `idx_s_username`). The upgrade gives empty usernames the user id and renames duplicates to `<name>_<id>`.
-- Usernames made only of digits are refused.
-- Guest alerts store `fk_i_user_id` as `NULL`, not `0`.
+- jQuery, jQuery UI and jQuery Validate no longer ship, and the `jquery`, `jquery-ui` and `jquery-validate` script ids are gone. A theme or plugin that uses them must ship and register its own copy.
+- The `phpseclib` and `mcrypt_compat` libraries are gone. A plugin that still calls `mcrypt_*()` needs its own copy.
+- `t_storage_queue` is now `t_job_queue`, and job types are namespaced (`offload` became `storage.offload`). Queued jobs carry across, and `StorageQueue` and `StorageWorker` still work.
+- `t_alerts`, `t_item_description`, `t_meta_fields` and `t_form_submission` have foreign keys: a row whose parent is missing is refused. Guest alerts store `fk_i_user_id` as `NULL`, not `0`.
+- `t_user.s_username` is unique (`uk_user_username` replaces `idx_s_username`), and usernames made only of digits are refused. The upgrade fills empty usernames with the user id and renames duplicates to `<name>_<id>`.
+- `Search::toJson(true)` returns the same JSON as `toJson()`. `Search::setJsonAlert()` with an old-format alert applies only its categories, price, pattern, picture and premium flags.
 - The `send_friend_throttle_max`, `item_contact_throttle_max` and matching `_window` filters are replaced by one `action_throttle_limit` filter, which gets `array('max', 'window')` and the form name.
+- Route values captured on friendly URLs arrive decoded, as query values do; a plugin that decoded them itself must stop.
 - The `delete_user` hook no longer removes avatars; deleting the user does, after the delete succeeds.
-- The `phpseclib` and `mcrypt_compat` libraries are gone. Nothing in Shopclass used them; a plugin that still calls `mcrypt_*()` needs its own copy.
-- jQuery, jQuery UI and jQuery Validate no longer ship, and the `jquery`, `jquery-ui` and `jquery-validate` script ids are gone. An old theme or plugin that uses them must ship its own copy and register it.
-- `Search::toJson(true)` returns the same JSON as `toJson()`; the parsed-conditions form it used to return is gone.
-- `Search::setJsonAlert()` with an old-format alert applies only its categories, price, pattern, picture and premium flags; its SQL fragments, sort and paging are ignored.
-- Route values captured on friendly URLs now arrive decoded, as query values do; a plugin that decoded them itself must stop.
-- Removed the admin CSS kept one release for compatibility with the old Locations screen:
-  `.locations`, `#l_countries`, `#i_regions`, `#i_cities`.
-- `t_storage_queue` is now `t_job_queue`, and its job types are namespaced -- `offload`
-  became `storage.offload`. Queued jobs are carried across on upgrade. `StorageQueue` and
-  `StorageWorker` still work and forward to the new classes.
-
-### Fixed
-
-- A free bump no longer works for a seller over their live-listing limit; a paid bump still does.
-- Sessions no longer reset on every page on hosts with long session ids, which logged users out and broke forms (thanks @tonybyng).
-- Hourly, daily and weekly cron jobs no longer run twice when two requests start them at the same moment, so alert e-mails are not sent twice.
-- Claiming background jobs no longer locks the whole queue table, which could deadlock with new jobs being added under load.
-- Category counts stay right when premium is turned on or off, when premium ends, and when a category moves to a new parent.
-- A listing title longer than 100 characters no longer leaves a listing without a title under strict SQL mode. Titles are capped at 100, the settings refuse larger limits, and a failed save is undone.
-- When memcached is down or frozen, pages keep working from the database. Before, cached reads came back empty, and some admin pages failed.
-- Upgrade release notes show as real paragraphs and lists with working links, instead of one line per paragraph.
-- When two sites share a database with nested prefixes (`oc_` and `oc_shop2_`), a backup no longer takes, and a restore no longer drops, the other site's tables.
-- A restore carries on with cron, not only while its page is open. Other background jobs wait until it finishes.
-- Database backups and restores run in small pieces, so a large database no longer runs out of memory.
-- Restoring a backup no longer breaks on a semicolon inside a value.
-- Repair shows and runs only when there is something it can fix.
-- The activity log no longer loses an entry under strict SQL mode when its text is too long; it is cut to fit.
-- `t_city_area.pk_i_id` is AUTO_INCREMENT, so a city area can be added without choosing its id.
-- **Repair** no longer adds a unique key a second time when the site already has one on the same columns.
-- Two upgrades started at once no longer run side by side; the second one waits and reports that an upgrade is already running.
-- `t_cron` and `t_plugin_category` get a primary key, so duplicate rows can no longer appear; a missing cron row is restored.
-- **Repair** no longer adds an index a second time when the site already has one on the same columns under another name.
-- Two sign-ups at the same moment can no longer end with the same username.
-- The daily sweep of orphaned uploads now works through all of them, not only the first 500.
-- The account menu marks Credits as the current page on the credits page.
-- Saving a profile no longer clears its stored map position.
-- Editing "About you" checks its size, as registration does.
-- The contact page refuses an empty message. A failed send on any contact form shows the reason in the form, with what was typed.
-- The seller contact form's "Invalid email address" message can be translated again.
-- The admin alerts list shows the whole saved search, not only its keywords and categories.
-- A page that shows a flash message or a refilled form is no longer sent as publicly cacheable.
-- Saving core's profile form reset the account type and neighbourhood, and it loaded every city when no region was set.
-- **Your listings** showed a blocked or spam listing as Published, and hid blocked, expired and pending ones unless a status was asked for. It now shows them all, in themes with their own list too.
-- WebP photos can be uploaded. They were refused even when `webp` was an allowed extension, and it is now allowed by default.
-- A photo whose files cannot be saved shows an error instead of staying as a broken image.
-- Count helpers such as `osc_count_comments()` return 0, not -1, when nothing was loaded, so `if (osc_count_comments())` no longer passes on an empty page.
-- A photo over 50 megapixels is refused before it is opened, so a small crafted file cannot use up the server's memory. The `image_max_pixels` filter changes the limit, and **Regenerate images** skips such a photo and says how many.
-- The installer works on a site served on a port other than 80 or 443; the site address no longer loses the port.
-- Installing into a database that already holds a Shopclass site stops before it creates any table.
-- While the database is down, the installer shows a notice instead of the install form, so no visitor can set the site up again.
-- On a site that already has database settings, the installer only accepts those same settings, so it can never be pointed at another database.
-- **Test connection** catches a user that cannot write, a bad table prefix and an unknown host.
-- Page titles no longer carry a double space when a part such as the city is empty.
-- With a captcha on, the contact, contact-seller and send-to-friend forms show it, so they can be sent; after a failed send they keep what was typed.
-- The save-this-search form on core's search page saves the alert and says so, without JavaScript; before, it saved nothing.
-- Guest alert sign-ups are limited to 10 an hour per address and refuse banned emails, so the form cannot be used to flood someone with confirmation mails. The `action_throttle_limit` filter changes the limit.
-- The sign-in form no longer fires `user_form`, so profile-field plugins stop drawing inside it; the profile form fires `user_form` again, as older themes did.
-- On **Media**, a photo's listing link opens the listing editor instead of the listings screen.
-- A search for a category that does not exist answers 404 instead of listing every ad on the site, and its link uses the friendly search address.
-- The plugin and theme catalogue refreshes once a day again; before, it only changed when an admin chose **Check now**, so new updates went unseen.
-- The toolbar's update counts match the Updates tabs.
-- A failed update says the previous version was put back; a search with no results has a **Clear search** button.
-- Submenu dots no longer overlap their labels in right-to-left languages.
-- A search sent with list values where one value is expected (`sPattern[]`, nested `sCategory`, an empty `sUser[]`) or a date field set to `1e20` no longer breaks the page.
-- A date custom-field search with a non-numeric value, or a number range of `1e400`, no longer breaks the search page.
-- A custom-field search sent as a list (`meta[5][]=x`) is ignored instead of failing the whole search, and a numeric value is compared as text. The category recount no longer builds invalid SQL on a site with no categories.
-- A widget select whose options come from a function now shows them. The Form widget's picker was empty.
-- The site contact form's attachment now works when enabled. It used to be dropped unless the request also carried an `attachment` field.
-- `oc-cli.php install` writes the `--web-url` address to `config.php` instead of `http:///`. The installer now escapes every value it writes there, so a database password with a `"` or `'` works, and writes the file as 0644, not 0666.
-- Pagination puts its navigation landmark on a `<nav>` around the list, not on the `<ul>`.
-- Package READMEs show wrapped list items, code inside lists, links, rules and README images correctly in the details dialog.
-- The current-theme card no longer runs off the screen on a phone.
-- Moving a listing to no country no longer prints a failed database query.
-- No more deprecation notices on PHP 8.5 from image resizing, downloads and contact-form attachments.
-- A theme in a folder with a dot in its name, such as `my.theme`, now shows under Appearance.
-- A plugin symlinked into `oc-content/plugins/` gets its own hook names, so install and uninstall run.
-- The admin sidebar no longer jumps at the end of opening or closing a group.
-- A refused save no longer moves the admin sidebar's highlight to Dashboard.
-- Saving an email template with a taken internal name no longer saved half of it.
-- The listing-expiry warning email left its last paragraph unclosed.
-- Every email now carries a plain-text copy alongside the HTML, with link addresses kept, so
-  it reads in any mail app and is less likely to be marked as spam.
-- Search alert emails greeted registered subscribers by their e-mail address instead of
-  their name.
-- An empty listing, page or category permalink setting no longer builds a rule that
-  answers the site's front page with the wrong screen.
-- Paging a category broke when the category permalink was built from two keywords, such as
-  `{CATEGORY_NAME}-c{CATEGORY_ID}`: page 2 read the category id as the page number.
-- "My listings" lost the type filter when friendly URLs were off.
-- A system page could not be saved: its internal name was disabled, so the browser never sent it.
-- A refused page save no longer stores the page template, the bodies or the modified date
-  before refusing.
-- A page title or internal name of nothing but spaces is refused rather than stored.
-- The listing editor posted a `cityAreaId` nothing read, and wired an autocomplete to
-  elements it never drew.
-- The page editor's rich-text body drew near-black text on a dark sheet, at 1.31:1.
-- Settings screens never showed the unsaved-changes save bar: the admin theme's copy of the
-  action row dropped the option core passed it.
-- The Show e-mail box on the listing editor no longer opens unticked on a listing that has it on.
-- A parent theme overruled its child on anything both declared with `osc_add_theme_support()`.
-  The child wins now, and a feature it says nothing about is still inherited.
-- A child theme's own stylesheets and scripts could resolve to its parent's folder, and 404.
-  Loading a view the parent owned switched the whole site to the parent for the rest of the
-  request; theme files are resolved one at a time now and nothing is switched.
-- Appearance names the theme a child extends, warns when that parent is not installed, and
-  says so before you delete a theme another one depends on.
-- The admin user search did nothing: searching by name or e-mail returned the unfiltered
-  list. Searching by username matched only an exact string.
-- On the user editor, choosing a country did not reload the regions: the script was emitted
-  in the page head, so it never found the field it was meant to watch.
-- Suggestions under a field inside a dialog were drawn behind it.
-- Deleting a category with thousands of listings timed out and rolled back, leaving a category
-  that could not be deleted. A large one is now hidden immediately and emptied in the
-  background.
-- `php oc-cli.php storage:work` never reported a failed job: it counted a status the queue
-  never writes, so it always exited 0.
-- `?iDisplayLength=0` or `?iDisplayLength=abc` answered with an error page on 13 of the 14 admin
-  list screens, and `?iPage=-3` left Ban rules and Alerts redirecting to themselves. Every list
-  screen reads its page and page size the same way now.
-- Bulk actions on listings counted wrongly. Activating, or clearing a mark, counted a listing
-  that was not there or had nothing to do, so selecting two could report three. The comments
-  screen reported no count at all, and now says how many changed.
+- Removed the old Locations screen's admin CSS: `.locations`, `#l_countries`, `#i_regions`, `#i_cities`.
 
 ### Security
 
-- Text a visitor types into the contact, contact-the-seller, contact-a-user and share forms is sent as text, never HTML. The site contact form has an hourly limit, and share a listing checks the ban list.
-- In a shared bucket, each site's backup folder carries a fingerprint of the full site address, so similar addresses never share a folder. Bucket backups need `WEB_PATH` set in config.php or the environment.
-- The upgrade no longer starts from a link. It asks first, and starts only after you confirm.
-- Restoring a backup from the admin asks for your password again, and your 2FA code when 2FA is on. `OSC_DISABLE_WEB_RESTORE` turns web restore off.
-- Server backups live in `oc-content/downloads/backups/`, closed to the web and named so no one can guess them. The page warns if the folder is open to the web. The browser can no longer choose the folder.
-- Backups can no longer be saved inside the site folder, where anyone could download them. They go to a private folder, get names no one can guess, and only the owner can read them.
-- Tools > System info warns when visitor addresses look wrong because the site sits behind a proxy that does not pass on the real IP.
-- Deleting an account now also deletes the messages it sent through custom forms.
-- The link that confirms an e-mail address change works once, expires after 24 hours, and can no longer be used as a password-reset code.
-- Contact-form and listing-post events no longer count toward the sign-in limit, and signing in no longer resets the contact-form and posting limits for that address.
-- The public profile's contact form checks the CSRF token, the sender's fields and the member's status, and limits how many messages one visitor sends.
-- Deleting your own listing needs a CSRF token, so another site can no longer delete it through a link. `osc_item_delete_url()` adds the token; e-mailed delete links keep working through the listing's secret.
-- A new search alert stores the search's values, not SQL, and runs through the same builder as the search page.
-- The upgrade converts every saved alert to its search values and discards its stored SQL, so back up `t_alerts` first if you may need it. An alert holding anything core did not write is paused and listed under **Users → Alerts**; on a large site `php oc-cli.php jobs:work` finishes the conversion at once.
-- A search's `sLocale` value reached SQL unescaped, an injection open to anonymous visitors. Only locale codes are accepted now, and they are escaped; two locales also no longer build invalid SQL.
-- Search-alert tokens from before 6.2.0 are refused. Their format could be edited without detection, and a saved alert's conditions run as SQL.
-- A saved alert's categories, sort and paging are held to their own shape when the alert runs.
-- A listing contact attachment is sent from PHP's upload folder instead of being copied into `oc-content/uploads/` under a guessable name. Both contact forms refuse script files the same way, and send nothing when they do.
-- **Appearance** activates only a theme that is installed.
-- A theme or plugin name made only of dots, such as `..`, is refused, so a child theme cannot name the folder above the themes as its parent.
+- Search alerts store the search's values, not SQL, and run through the search page's builder, with categories, sort and paging held to their own shape.
+- The upgrade converts saved alerts and discards their stored SQL, so back up `t_alerts` first if you may need it. An alert holding anything core did not write is paused and listed under **Users → Alerts**.
+- Search-alert tokens from before 6.2.0 are refused.
+- A search's `sLocale` value reached SQL unescaped, open to anonymous visitors. Only escaped locale codes are accepted now.
+- The `?theme=` preview could load `functions.php` from outside the themes folder. It must now name an installed theme, and a theme path cannot leave `oc-content/themes/`.
+- A listing could attach, and then delete, a photo it did not upload. An `ajax_photos[]` name must now be a file staged under the form's own upload token.
+- Deleting a theme whose folder is a symlink deleted what the link pointed at, not the link. This is fixed for every delete core does.
+- Deleting a theme another theme extends is refused, and so is a theme name that is not installed. **Appearance** activates only an installed theme.
+- A theme or plugin name made only of dots, such as `..`, is refused.
+- Deleting your own listing needs a CSRF token; `osc_item_delete_url()` adds it, and e-mailed delete links keep working.
+- The public profile's contact form checks the CSRF token, the sender's fields and the member's status, and limits messages per visitor.
 - The email template test send needs a CSRF token.
-- Search alert emails escape listing titles and the subscriber's name and address in the
-  message body. The `alert_email_*_description_after` filters now receive that escaped text.
-- Deleting a theme whose directory is a symlink deleted what the link pointed at, rather than
-  the link. `is_link()` resolves through a trailing slash and answers false, and the delete
-  passes one -- so the check that was there never saw the link. Reported after it emptied a
-  developer's theme checkout, `.git` and all. Applies to every delete core does, not just themes.
-- Deleting a theme another theme extends is refused, and a theme name that is not installed is
-  refused before it reaches the filesystem.
-- The `?theme=` preview took whatever name it was given. The name becomes a directory and
-  core requires `functions.php` out of it, so a signed-in admin could point it outside the
-  themes folder and run that file. A preview must now name an installed theme, and a theme
-  path can no longer resolve outside `oc-content/themes/`.
-- Ajax replies now say they are JSON. Every one on the public side went out labelled
-  `text/html`, so a browser pointed straight at the URL rendered the body instead of
-  downloading it. Nothing exploitable was found — request parameters are already stripped of
-  markup — but a reply that has to be labelled correctly should not depend on that.
-- A listing could attach a photo it did not upload. The names in `ajax_photos[]` became paths
-  under `uploads/temp/` with nothing checking them, and every temp file a post processes is
-  deleted afterwards — so a crafted name attached, and then removed, somebody else's photo.
-  A name must now be a plain filename staged under the posting form's own upload token.
-- On installs old enough to predate 5.0.0, `t_user.s_email` accepted NULL, which weakened the
-  unique index on it: a unique index permits any number of NULLs. It is NOT NULL now, matching
-  every new install. Nothing about who must supply an address changes.
-- "Keep the photo at its full size" stored the upload byte for byte, so anything appended after
-  the image survived on disk under a `.jpg` or `.png` name. The full-size copy is re-encoded now.
+- Text typed into the contact, contact-the-seller, contact-a-user and share forms is sent as text, never HTML. The site contact form has an hourly limit, and share checks the ban list.
+- A listing contact attachment is sent from PHP's upload folder, not copied into `oc-content/uploads/`. Both contact forms refuse script files.
+- Search alert emails escape listing titles and the subscriber's name and address. The `alert_email_*_description_after` filters now get that escaped text.
+- "Keep the photo at its full size" stored the upload byte for byte, so anything appended survived on disk. The full-size copy is re-encoded now, which also drops camera metadata.
+- The upgrade no longer starts from a link; it asks first.
+- Backups are kept out of the site folder under names no one can guess, and the page warns if their folder is open to the web. Each site in a shared bucket gets its own folder.
+- Restoring a backup from the admin asks for your password again, and your 2FA code when 2FA is on. `OSC_DISABLE_WEB_RESTORE` turns web restore off.
+- The link that confirms an e-mail address change works once, expires after 24 hours, and can no longer be used as a password-reset code.
+- Contact-form and listing-post events no longer count toward the sign-in limit, and signing in no longer resets those limits.
+- Deleting an account also deletes the messages it sent through custom forms.
+- Ajax replies on the public side are labelled as JSON instead of `text/html`.
+- `t_user.s_email` is NOT NULL on old installs too, so its unique index holds.
+- Tools → System info warns when visitor addresses look wrong because the site sits behind a proxy that does not pass on the real IP.
 
 ### Performance
 
-- Listing pages load urgent, highlighted and bump state for all their cards in one query instead of one per card, also when billing is off.
+- With memcached or APCu, a cached page runs 4 to 9 database queries instead of 11 to 16: languages, widgets, form groups, currencies and footer pages are cached.
+- Listing pages load urgent, highlighted and bump state for all their cards in one query, also when billing is off.
 - Category searches and their page counts use a new index: on a 230,000-listing site the count drops from about 38 ms to 6 ms.
-- New indexes for the admin log, alerts, latest searches, the user list and the expiry reminders.
-- The admin user, alert, log, ban rule and keyword lists no longer use `SQL_CALC_FOUND_ROWS`.
-- The expiry reminder e-mails find listings with a query an index can serve.
-- With memcached or APCu, a cached page runs 4 to 9 database queries instead of 11 to 16: the language list, widgets, form groups, currencies and footer pages are cached, and saving any of them clears it.
-- The unpacked release is about 4.7 MB smaller, and each page no longer loads two unused libraries. jQuery, an unused Bootstrap stylesheet, TinyMCE's dark skins, source maps and the admin theme's Sass source no longer ship.
-- A new database connection needs 2 round trips after the login instead of 5 (3 on new installs), which matters most when the database is on another server.
-- Dates in listing loops translate their month and day names once per request, and the Sample Widgets plugin builds its category list only when its form is open.
-- A request value with no `<`, `>` or `&` skips HTMLPurifier, which took about 1.5 ms of each item and search page.
-- HTMLPurifier caches its built rules in signed files under `oc-content/uploads/`, and falls back to no cache when that folder cannot be written.
-- Dropped `idx_s_content_type` on listing photos. It led on the row's own id, so no query could
-  ever use it, while costing a write on every photo added or changed.
+- New indexes for the admin log, alerts, latest searches, the user list and the expiry reminders, and admin lists no longer use `SQL_CALC_FOUND_ROWS`.
+- The unpacked release is about 4.7 MB smaller, and each page loads two fewer libraries.
+- A new database connection needs 2 round trips after the login instead of 5, which matters most when the database is on another server.
+- A request value with no `<`, `>` or `&` skips HTMLPurifier, and HTMLPurifier caches its rules in signed files under `oc-content/uploads/`.
+- Dates in listing loops translate month and day names once per request.
+- Dropped `idx_s_content_type` on listing photos, which no query could use.
 
 ### Changed
 
-- HTMLPurifier 4.19.1 and TinyMCE 8.9.2.
-- Featured listings rotate every 5 minutes instead of on every page view, so pages that show them can be cached and answer 304.
-- **Media → Force aspect** is now **Photo shape → Keep each photo's own shape**, on for new sites: photos keep their shape instead of being filled out to the size.
-- **Tools → System info** gains Jobs, Security and Cache tabs. Background jobs, Cache and the blocked sign-in list moved there, and their old links still work.
-- **Upgrade Shopclass**, **Backup and restore** and **System info** share one look: one box that says what needs doing, and quiet lines instead of big empty blocks.
-- **Tools → System info** has Overview, Database and Server tabs. One box at the top of each says what needs doing. Tools now opens on it.
-- Check and repair moved into System info → Database. The old Database link still works.
-- **Tools → Database** holds all database work: status, waiting updates, check and repair, backup and restore. Backup data and Import data are gone from the menu; their old links still work. The site-files backup moved to Upgrade Shopclass.
-- **Tools → Database** sorts what it finds by what to do: what Repair can fix, extra items to leave alone, and what needs a closer look. Repair waits while an upgrade is pending.
+- **Tools → System info** has Overview, Database, Server, Jobs, Security and Cache tabs, and Tools opens on it. Background jobs, Cache, the blocked sign-in list and database check and repair moved there; old links still work.
+- Backup data and Import data left the Tools menu; their old links still work.
+- **Upgrade Shopclass**, **Backup and restore** and **System info** share one look: one box that says what needs doing.
 - Upgrades run the database migrations only, so the "some queries failed" screen is gone.
+- Tools → Cleanup runs in the background until nothing matches, so a large backlog no longer times out. Its Reported listings rule has an age (30 days until you set it).
+- Featured listings rotate every 5 minutes instead of on every page view, so pages that show them can be cached.
+- Free bumps pause while a seller has more live listings than their limit; paid bumps still work.
+- **Media → Force aspect** is now **Photo shape → Keep each photo's own shape**, on for new sites.
+- The Docker image includes ImageMagick, and new installs use it where it is loaded, so wide-colour and CMYK photos keep their colours. **JPEG quality** is now **Photo quality**, since it sets WebP quality too.
+- The release no longer ships the Sample Forms, Sample Widgets and Test Payments plugins. They install from the market; sites that have them keep them.
+- Releases ship as `shopclass_v*.zip`. `osclass_v*.zip` still ships for sites updating from older versions.
+- HTMLPurifier 4.19.1 and TinyMCE 8.9.2.
 - The installer checks for MySQL 5.7.5+ or MariaDB 10.2+.
 - Pending e-mail address changes expire after 7 days.
-- Tools > Cleanup runs in the background, a batch at a time, until nothing matches, so a large backlog no longer times out **Run cleanup now**.
-- Cleanup's Reported listings rule has an age, counted from the listing's last change (30 days until you set it). The Cleanup and Background jobs screens match the rest of the admin.
 - A theme that declares its chrome with `'account' => true` gets core's credits pages inside it, ahead of its `user-custom.php`.
 - The credits page hides Buy when there is no package or payment method (`osc_billing_can_buy()`), and billing tables stack on a phone.
-- The Docker image includes ImageMagick, locked to photo formats and about 30 MB larger, and new installs use it where it is loaded. With ImageMagick, wide-colour and CMYK photos keep their colours. **JPEG quality** is now **Photo quality**, since it sets WebP quality too.
-- The release no longer ships the Sample Forms, Sample Widgets and Test Payments plugins. The two samples install from the market; sites that have them keep them.
-- Each page of search results points its canonical link at itself, not at page 1, so listings that only deeper pages show can be found.
-- Releases ship as `shopclass_v*.zip`. `osclass_v*.zip` still ships with each release for sites updating from older versions, and the updater accepts either.
-- The search URL builder declares its five subdomain modes, its two canonical place
-  URLs, its filter names and its country/region/city lists once each, instead of
-  writing each one out in full.
-- Core page URLs and the rewrite rules that match them are declared once, in a shared
-  route table, instead of being written out twice. The listing, page and category permalink
-  structures go through the same table, so a link and the rule that answers it cannot drift.
-- A category's own fields sit on a responsive grid instead of one per line, and share a right edge.
-- On a phone both editors give every small control a 24px tap target, stack the two-up field
-  row and show photos two across.
-- `printMultiLangTitleDesc()`, `ItemForm::category_multiple_selects()` in the admin and
-  `ItemForm::photos_javascript()` are documented as deprecated. They keep working.
-- The listing editor has a Status panel in its rail, with the state, the dates, the
-  moderation actions and the expiry; blocking a listing and marking it as spam ask first.
-- The listing's category is chosen from one searchable list showing the whole path, not a
-  row of cascading selects.
-- The listing's seller says which account it belongs to, and a search fills the contact
-  fields from a registered user.
-- The email template editor matches the page editor: placeholders insert with a click, a
-  test sends from the rail, and the internal name can no longer be changed.
-- The email template editor also lists the placeholders every email gets, such as `{WEB_LINK}`.
+- Each page of search results points its canonical link at itself, not at page 1.
+- The listing and page editors have a Status panel in their rail. Blocking a listing and marking it as spam ask first.
+- The listing's category is picked from one searchable list showing the whole path, and its seller is linked to an account.
+- Both editors share one locale tab strip, one rich-text setup and a save bar that counts unsaved changes. A rejected save keeps what was typed, with the message under its field.
+- The email template editor matches the page editor: placeholders, including the ones every email gets, insert with a click, and a test sends from the rail.
+- The rich-text editor uses the admin's own colours and follows the light/dark toggle.
 - Language tabs open on your own admin language and mark it with a dot.
-- The page editor has a Status panel in its rail, an Advanced group for the internal name,
-  and a save bar that counts unsaved changes.
-- The listing and page editors draw their titles and bodies from the shared field, so both
-  screens have one locale tab strip, one rich-text setup and one place a field says what is
-  wrong with it.
-- A rejected save on either editor comes back with what was typed still in it, the message
-  under the field it belongs to and the locale tab marked.
-- The rich-text editor is drawn in the admin's own colours, type and corners -- toolbar,
-  menus, dialogs and status bar -- and follows the light/dark toggle without reloading.
-- The admin is set at 14px instead of 16px, so more of a list fits on screen. It is set on the
-  root, so it still follows a larger browser font size if you have set one.
-- List rows read in three sizes instead of one, and the status column drops its fill — the
-  dot and the word carry it. Status badges outside a table are unchanged.
-- Every list screen's filter bar is the same control in the same place, with bulk actions
-  beside it on one row instead of stacked above the table.
-- Comments can be searched by author, address or text, and "Hidden comments" is a filter in
-  that bar rather than a button beside the table.
+- The admin is set at 14px instead of 16px, so more fits on screen; it still follows a larger browser font size.
+- Every list screen has the same filter bar, with bulk actions beside it, and rows read in three text sizes.
+- Comments can be searched by author, address or text, and "Hidden comments" is a filter.
 - Both filter panels pick a country from a list and suggest the region and city inside it.
-- Statistics → Recalculate location stats has left the menu. It has its own button on
-  Listings → Locations → Data. The old URL still works.
-- Statistics → Recalculate category stats has left the menu. It is now a Recount listings button
-  on Listings → Categories. The old URL still works.
-- The full-size photo copy drops camera metadata, because it is re-saved rather than copied.
-- Hook priority accepts any whole number, negative included, instead of only 0 to 10. A plugin
-  that registered outside that range was stored and never run; it now runs. Admin table columns
-  accept the same range.
+- Recalculate location stats and category stats left the Statistics menu. They are buttons on Listings → Locations → Data and Listings → Categories; old URLs still work.
+- A category's own fields sit on a responsive grid.
+- On a phone both editors give small controls a 24px tap target and show photos two across.
+- Hook priority accepts any whole number, negative included, instead of only 0 to 10. A plugin registered outside that range now runs.
+- `printMultiLangTitleDesc()`, `ItemForm::category_multiple_selects()` in the admin and `ItemForm::photos_javascript()` are deprecated. They keep working.
+
+### Fixed
+
+- Sessions no longer reset on every page on hosts with long session ids, which logged users out and broke forms (thanks @tonybyng).
+- Hourly, daily and weekly cron jobs no longer run twice when two requests start them at once, so alert e-mails are not sent twice.
+- When memcached is down or frozen, pages keep working from the database.
+- Two upgrades started at once no longer run side by side.
+- Category counts stay right when premium changes or ends, and when a category moves to a new parent.
+- Deleting a category with thousands of listings no longer times out; a large one is hidden at once and emptied in the background.
+- A listing title longer than 100 characters no longer leaves a listing untitled under strict SQL mode. Titles are capped at 100.
+- The activity log no longer loses an entry under strict SQL mode when its text is too long.
+- Two sign-ups at the same moment can no longer end with the same username.
+- `t_cron` and `t_plugin_category` get a primary key, so duplicate rows cannot appear, and a missing cron row is restored.
+- `t_city_area.pk_i_id` is AUTO_INCREMENT, so a city area can be added without choosing its id.
+- The daily sweep of orphaned uploads works through all of them, not only the first 500.
+- Every email carries a plain-text copy alongside the HTML, so it reads in any mail app and is less likely to be marked as spam.
+- Search alert emails greet registered subscribers by name, not e-mail address.
+- The listing-expiry warning email closes its last paragraph.
+- With a captcha on, the contact, contact-seller and send-to-friend forms show it, so they can be sent.
+- The contact page refuses an empty message, and a failed send on any contact form shows the reason with what was typed.
+- The site contact form's attachment works when enabled.
+- The seller contact form's "Invalid email address" message can be translated again.
+- The save-this-search form on core's search page saves the alert without JavaScript.
+- Guest alert sign-ups are limited to 10 an hour per address and refuse banned emails.
+- The admin alerts list shows the whole saved search.
+- **Your listings** shows blocked, spam, expired and pending listings with their real status, in themes with their own list too.
+- Saving the profile form no longer resets the account type, neighbourhood or map position, and no longer loads every city when no region is set.
+- Editing "About you" checks its size, as registration does.
+- The account menu marks Credits as the current page on the credits page.
+- The sign-in form no longer fires `user_form`; the profile form fires it again, as older themes did.
+- A page that shows a flash message or a refilled form is no longer publicly cacheable.
+- A search for a category that does not exist answers 404 instead of listing every ad.
+- Odd search input no longer breaks the search page: list values where one is expected, numbers like `1e20`, or a custom-field value sent as a list.
+- The category recount no longer builds invalid SQL on a site with no categories.
+- Paging a category works when its permalink has two keywords, such as `{CATEGORY_NAME}-c{CATEGORY_ID}`.
+- An empty listing, page or category permalink setting no longer answers the front page with the wrong screen.
+- "My listings" keeps the type filter when friendly URLs are off.
+- Page titles no longer carry a double space when a part such as the city is empty.
+- Count helpers such as `osc_count_comments()` return 0, not -1, when nothing was loaded.
+- A photo whose files cannot be saved shows an error instead of a broken image.
+- A photo over 50 megapixels is refused before it is opened. The `image_max_pixels` filter changes the limit.
+- The installer works on a port other than 80 or 443.
+- The installer stops before creating tables in a database that already holds a Shopclass site, and accepts only the existing database settings on a configured site.
+- While the database is down, the installer shows a notice instead of the install form.
+- **Test connection** catches a user that cannot write, a bad table prefix and an unknown host.
+- `oc-cli.php install` writes the `--web-url` address to `config.php`. The installer escapes every value it writes there, and writes the file as 0644.
+- A child theme now wins over its parent on anything both declare with `osc_add_theme_support()`.
+- A child theme's own stylesheets and scripts no longer resolve to its parent's folder.
+- Appearance names the theme a child extends, and warns when that parent is missing or about to be deleted.
+- A theme in a folder with a dot in its name, such as `my.theme`, shows under Appearance.
+- A plugin symlinked into `oc-content/plugins/` gets its own hook names, so install and uninstall run.
+- The plugin and theme catalogue refreshes once a day again.
+- The toolbar's update counts match the Updates tabs, and a failed update says the previous version was put back.
+- Package READMEs show lists, code, links, rules and images correctly in the details dialog.
+- Upgrade release notes show as real paragraphs and lists with working links.
+- The admin user search filters by name, e-mail and partial username.
+- On the user editor, choosing a country reloads the regions.
+- A system page can be saved again.
+- A refused page save no longer stores part of the page, and a title or internal name of only spaces is refused.
+- Saving an email template with a taken internal name no longer saves half of it.
+- Settings screens show the unsaved-changes save bar.
+- The Show e-mail box on the listing editor keeps its state.
+- Admin list screens no longer break on a bad `iDisplayLength` or `iPage` value.
+- Bulk actions on listings report the right count, and the comments screen says how many changed.
+- On **Media**, a photo's listing link opens the listing editor.
+- A widget select whose options come from a function shows them.
+- Moving a listing to no country no longer prints a failed database query.
+- `php oc-cli.php storage:work` reports failed jobs.
+- No more deprecation notices on PHP 8.5 from image resizing, downloads and contact-form attachments.
+- The page editor's rich-text body is readable in dark mode.
+- Suggestions under a field inside a dialog are no longer drawn behind it.
+- The admin sidebar no longer jumps when a group opens or closes, and a refused save keeps its highlight.
+- Submenu dots no longer overlap their labels in right-to-left languages.
+- The current-theme card fits on a phone.
+- Pagination puts its navigation landmark on a `<nav>` around the list.
 
 ## Shopclass 6.3.0
 
