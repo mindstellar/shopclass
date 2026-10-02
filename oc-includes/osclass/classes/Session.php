@@ -108,7 +108,12 @@ class Session
         if (!isset($_SESSION)) {
             session_name('osclass');
             if (!$this->_session_start()) {
-                session_id(uniqid('', true));
+                // the true adds a period within the session id and whilst Plesk doesnt complain, cPanel 
+                // outputs 
+                // PHP Warning:  session_start(): Session ID is too long or contains illegal characters. 
+                // Only the A-Z, a-z, 0-9, &quot;-&quot;, and &quot;,&quot; characters are allowed 
+                // and outputs CSRF Token errors on form submissions because it hasnt reread the session
+                session_id(str_replace('.', '', uniqid('', true)));                
                 session_start();
                 session_regenerate_id();
             }
