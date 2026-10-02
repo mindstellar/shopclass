@@ -132,6 +132,7 @@ jobs:
         # Archive from the pushed commit, not a tag — the tag does not exist yet.
         env:
           OSCLASS_REF: ${{ github.sha }}
+          GH_TOKEN: ${{ github.token }}
         run: bash ./.build.sh
 
       # deprecated-api.json and package-lint.php are the registry's copy of the
