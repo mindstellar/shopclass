@@ -1916,3 +1916,68 @@ function osc_item_map_type()
 {
     return osc_get_preference('map_type');
 }
+
+/**
+ * Id of the nearest live listing by id order: 'next' is the next higher id, 'prev' the next lower.
+ * Live means what public search shows: enabled, active, not spam, and premium or not expired.
+ *
+ * @param string   $direction 'next' or 'prev'
+ * @param int|null $itemId    Listing to start from, defaults to the current item
+ *
+ * @return int 0 when there is none
+ * @since 6.4.0
+ */
+function osc_item_adjacent_id(string $direction = 'next', ?int $itemId = null): int
+{
+    return _osc_item_adjacent($direction, $itemId)['id'];
+}
+
+/**
+ * URL of the nearest live listing by id order, as osc_item_url_from_item() builds it.
+ *
+ * @param string   $direction 'next' or 'prev'
+ * @param int|null $itemId    Listing to start from, defaults to the current item
+ *
+ * @return string '' when there is none
+ * @since 6.4.0
+ */
+function osc_item_adjacent_url(string $direction = 'next', ?int $itemId = null): string
+{
+    return _osc_item_adjacent($direction, $itemId)['url'];
+}
+
+/**
+ * Shared lookup for the two helpers above: one query on a cache miss, cached 180 s,
+ * the empty answer too.
+ *
+ * @param string   $direction
+ * @param int|null $itemId
+ *
+ * @return array{id:int,url:string}
+ */
+function _osc_item_adjacent(string $direction, ?int $itemId): array
+{
+    $itemId = $itemId ?? osc_item_id();
+    if ($itemId <= 0) {
+        return array('id' => 0, 'url' => '');
+    }
+
+    $next   = $direction !== 'prev';
+    $locale = OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale();
+    $key    = 'item_adjacent_' . ($next ? 'next' : 'prev') . '_' . $itemId . '_'
+        . (osc_rewrite_enabled() ? '1' : '0') . '_' . $locale;
+
+    $found  = false;
+    $cached = osc_cache_get($key, $found);
+    if ($found && is_array($cached)) {
+        return $cached;
+    }
+
+    $row    = Item::newInstance()->findAdjacentLive($itemId, $next, $locale);
+    $result = $row === array()
+        ? array('id' => 0, 'url' => '')
+        : array('id' => (int)$row['pk_i_id'], 'url' => osc_item_url_from_item($row));
+    osc_cache_set($key, $result, 180);
+
+    return $result;
+}

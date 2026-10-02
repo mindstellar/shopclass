@@ -94,6 +94,22 @@ building something else out of the same structure, such as a sitemap.
 Where two placeholders could answer the same thing, the one that appears first in
 the structure wins.
 
+### Next and previous listing
+
+`osc_item_adjacent_url('next')` and `osc_item_adjacent_url('prev')` link to the
+next higher and next lower listing id. They skip listings that search hides: spam,
+disabled, inactive and expired. The answer is `''` when there is no such listing:
+
+```php
+<?php if ($url = osc_item_adjacent_url('prev')) { ?>
+    <a href="<?php echo osc_esc_html($url); ?>">Previous</a>
+<?php } ?>
+```
+
+They default to the current listing; pass an id as the second argument for
+another. `osc_item_adjacent_id()` returns the id instead (`0` for none). The
+lookup is one query and is cached for three minutes.
+
 ## A worked example
 
 ```php

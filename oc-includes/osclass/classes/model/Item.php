@@ -483,6 +483,55 @@ class Item extends DAO
     }
 
     /**
+     * The nearest live listing by id, with only the fields the listing URL needs.
+     * The title follows findByPrimaryKey(): $locale first, else the first non-empty one.
+     *
+     * @param int    $itemId Listing to start from
+     * @param bool   $next   true for the next higher id, false for the next lower
+     * @param string $locale Preferred title locale
+     *
+     * @return array{pk_i_id:string,fk_i_category_id:string,s_city:string,s_title:string}|array{}
+     *         Empty when there is no such listing or the query fails
+     */
+    public function findAdjacentLive(int $itemId, bool $next, string $locale): array
+    {
+        $sql = 'SELECT a.pk_i_id, a.fk_i_category_id, l.s_city, d.fk_c_locale_code, d.s_title'
+            . ' FROM (SELECT i.pk_i_id, i.fk_i_category_id FROM ' . $this->getTableName() . ' i'
+            . ' WHERE i.pk_i_id ' . ($next ? '>' : '<') . ' ? AND ' . implode(' AND ', self::liveConditions('i.'))
+            . ' ORDER BY i.pk_i_id ' . ($next ? 'ASC' : 'DESC') . ' LIMIT 1) a'
+            . ' LEFT JOIN ' . DB_TABLE_PREFIX . 't_item_location l ON l.fk_i_item_id = a.pk_i_id'
+            . ' LEFT JOIN ' . DB_TABLE_PREFIX . "t_item_description d ON d.fk_i_item_id = a.pk_i_id AND d.s_title <> ''"
+            . ' ORDER BY d.fk_c_locale_code';
+
+        try {
+            $rows = osc_db_stringify_rows(osc_db_select($sql, array($itemId)));
+        } catch (\mindstellar\database\DbException $e) {
+            return array();
+        }
+        if ($rows === array()) {
+            return array();
+        }
+
+        $title = '';
+        foreach ($rows as $row) {
+            if ($row['fk_c_locale_code'] === $locale) {
+                $title = (string)$row['s_title'];
+                break;
+            }
+            if ($title === '') {
+                $title = (string)$row['s_title'];
+            }
+        }
+
+        return array(
+            'pk_i_id'          => (string)$rows[0]['pk_i_id'],
+            'fk_i_category_id' => (string)$rows[0]['fk_i_category_id'],
+            's_city'           => (string)$rows[0]['s_city'],
+            's_title'          => $title,
+        );
+    }
+
+    /**
      * Count the live items in a category.
      *
      * LEAVE THIS FOR COMPATIBILITIES ISSUES (ONLY SITEMAP GENERATOR)

@@ -77,6 +77,7 @@ you find.
 - `Orders::attachRef()` lets a payment plugin store its checkout id on a pending order, and `DashboardLinkGateway` adds a link to the payment in the provider's dashboard.
 - Every HTML e-mail goes out in one layout with a header, the message in a card and a footer. A theme replaces it with `templates/email-layout.php`; plugins use the `mail_layout_vars` and `mail_layout` filters.
 - Every HTML page sends a `Server-Timing` header with how long it took to build, shown in the browser's developer tools.
+- `osc_item_adjacent_url()` and `osc_item_adjacent_id()` give themes the next and previous live listing in one query.
 - A `job_gave_up` hook fires when a background job stops retrying, and `oc-cli.php doctor` warns about failed or long-waiting jobs.
 - Message mail leaves only from a confirmed address: a guest clicks a link sent to the address they typed, and that browser is then trusted for 30 days.
 - Mail from the contact form carries a *Report the sender* link that lets a signed-in admin ban the address for good.

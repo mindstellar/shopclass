@@ -273,7 +273,7 @@ pin(
         '__construct', 'clearStat', 'countByMarkas', 'countByUserID', 'countByUserIDEnabled',
         'countItemTypesByEmail', 'countItemTypesByUserID', 'deleteByCity', 'deleteByCityArea',
         'deleteByCountry', 'deleteByPrimaryKey', 'deleteByRegion', 'enableByCategory', 'extendCategoryName',
-        'extendData', 'extendDataSingle', 'findByCategoryID', 'findByDayExpiration', 'findByEmail',
+        'extendData', 'extendDataSingle', 'findAdjacentLive', 'findByCategoryID', 'findByDayExpiration', 'findByEmail',
         'findByHourExpiration', 'findByPhone', 'findByPrimaryKey', 'findByUserID', 'findByUserIDEnabled',
         'findItemByTypes', 'findItemTypesByUserID', 'findLocationByID', 'findResourcesByID', 'insertLocale',
         'listAllWithCategories', 'listLatest', 'listWhere', 'liveConditions', 'metaFields', 'mostViewed',
