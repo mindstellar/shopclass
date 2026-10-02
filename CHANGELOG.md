@@ -64,7 +64,10 @@ A paid order can be refunded from its order screen when the payment plugin suppo
 links to the payment in the provider's own dashboard. The new Stripe Payment plugin in the
 market is the first to use both. Sessions no longer reset on hosts with long session ids.
 
-This is the fifth release candidate. Please try it on a copy of your site and tell us what
+Free bumps now pause while a seller has more live listings than their limit; paid bumps still
+work. Listing pages load faster: each page reads every card's badges in one query.
+
+This is the sixth release candidate. Please try it on a copy of your site and tell us what
 you find.
 
 ### New
