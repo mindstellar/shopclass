@@ -135,7 +135,7 @@
 
   dt {
     color: var(--osc-ink-muted);
-    font-size: .8125rem; // Label
+    font-size: $font-size-label; // Label
     font-weight: 500;
     letter-spacing: .01em;
     line-height: 1.4;
@@ -153,6 +153,110 @@
   @media (max-width: 575.98px) {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+// A muted line under a value: the context a number needs.
+.osc-deflist-note {
+  color: var(--osc-ink-muted);
+  font-size: $font-size-label;
+  margin: .15rem 0 0;
+}
+
+// ---- Verdict ----------------------------------------------------------------
+// One callout that says whether anything needs doing, one line per issue with its own
+// button. The callout supplies the tint and the icon; this lays out the lines.
+// Two classes, so the body size wins over the callout's label size. Each line is as tall
+// as a small button, and the icon's line matches it, so the icon sits level with line one.
+.callout-block.osc-verdict {
+  font-size: 1rem;
+  gap: .6rem;
+  padding: .75rem 1rem;
+
+  &::before {
+    line-height: 1.95rem;
+  }
+}
+
+.osc-verdict-list {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: .5rem;
+  list-style: none;
+  margin: 0;
+  min-width: 0;
+  padding: 0;
+}
+
+.osc-verdict-line {
+  align-items: center;
+  min-block-size: 1.95rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem 1rem;
+  justify-content: space-between;
+}
+
+.osc-verdict-text {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+// ---- Progress ---------------------------------------------------------------
+// Work running in the background: the bar, the line under it, and a cancel button
+// that drops under the text on a narrow screen.
+.osc-progress {
+  align-items: flex-end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem 1rem;
+  inline-size: 100%;
+}
+
+.osc-progress-main {
+  flex: 1 1 18rem;
+  min-width: 0;
+
+  progress {
+    appearance: none;
+    background-color: var(--osc-rule);
+    block-size: .5rem;
+    border: 0;
+    border-radius: $border-radius-pill;
+    display: block;
+    inline-size: 100%;
+    overflow: hidden;
+
+    &::-webkit-progress-bar {
+      background-color: var(--osc-rule);
+    }
+
+    &::-webkit-progress-value {
+      background-color: var(--osc-bronze);
+      transition: inline-size 250ms ease-out;
+    }
+
+    &::-moz-progress-bar {
+      background-color: var(--osc-bronze);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      &::-webkit-progress-value {
+        transition: none;
+      }
+    }
+  }
+}
+
+.osc-progress-status {
+  color: var(--osc-ink);
+  font-size: .875rem;
+  font-variant-numeric: tabular-nums;
+  margin: .45rem 0 0;
+}
+
+.osc-progress-cancel {
+  flex: 0 0 auto;
 }
 
 // Gateway references, transaction ids, keys — values you compare character by
@@ -188,6 +292,62 @@
   }
 }
 
+// The filter strip above a list. One row of controls that reads as one control: the
+// fields share a hairline box and only the buttons at the end carry a fill, so a screen
+// with three filters does not look like a screen with three buttons.
+.osc-filter {
+  align-items: stretch;
+  background: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: $border-radius;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  overflow: hidden;
+
+  .form-control,
+  .form-select {
+    background-color: transparent;
+    border: 0;
+    border-inline-end: 1px solid var(--osc-rule);
+    border-radius: 0;
+    width: auto;
+  }
+
+  .form-control:focus,
+  .form-select:focus {
+    background-color: var(--osc-bench);
+    box-shadow: none;
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: -2px;
+    position: relative;
+  }
+
+  // The search field is the one that should grow into whatever room is left.
+  .form-control[type="search"],
+  [data-osc-filter-for] {
+    flex: 1 1 11rem;
+    min-width: 8rem;
+  }
+
+  .btn {
+    border-radius: 0;
+    border-width: 0;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  // Only the last control in the row keeps a square outer edge against the box.
+  > :last-child {
+    border-inline-end: 0;
+  }
+
+  // A control the switcher has put away must not hold its place in the row.
+  .hide {
+    display: none;
+  }
+}
+
 .osc-toolbar-between {
   justify-content: space-between;
 }
@@ -214,7 +374,7 @@
 
 .osc-pager-range {
   color: var(--osc-ink-muted);
-  font-size: .8125rem; // Label
+  font-size: $font-size-label; // Label
   margin: 0;
 }
 
@@ -308,7 +468,7 @@
 .cat-drawer-eyebrow {
   color: var(--osc-ink-muted);
   display: block;
-  font-size: .8125rem;
+  font-size: $font-size-label;
   font-weight: 500;
   letter-spacing: .01em;
 }

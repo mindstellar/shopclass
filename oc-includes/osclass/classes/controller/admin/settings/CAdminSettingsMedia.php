@@ -73,20 +73,28 @@ class CAdminSettingsMedia extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=media');
                 break;
             case ('images_post'):
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m("This action can't be done because it's a demo site"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=media');
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=settings&action=media')) {
+                    break;
                 }
                 osc_csrf_check();
 
                 if (\mindstellar\storage\StorageManager::instance()->remote() === null) {
                     // No remote storage configured: regenerate every resource inline, exactly as before.
-                    $aResources = ItemResource::newInstance()->getAllResources();
-                    foreach ($aResources as $resource) {
-                        ItemActions::regenerateResourceImages($resource);
+                    // One photo that cannot be opened, such as one over the pixel limit, is skipped.
+                    $skipped = 0;
+                    foreach (ItemResource::newInstance()->getAllResources() as $resource) {
+                        try {
+                            ItemActions::regenerateResourceImages($resource);
+                        } catch (Throwable $e) {
+                            $skipped++;
+                        }
                     }
 
-                    osc_add_flash_ok_message(_m('Re-generation complete'), 'admin');
+                    if ($skipped > 0) {
+                        osc_add_flash_warning_message(sprintf(_m('Re-generation complete. %d photos could not be opened and were left as they were.'), $skipped), 'admin');
+                    } else {
+                        osc_add_flash_ok_message(_m('Re-generation complete'), 'admin');
+                    }
                 } else {
                     // A remote adapter is active: regenerating inline would mean one synchronous
                     // download per resource, so page through resource ids (never loading full rows)
@@ -99,7 +107,7 @@ class CAdminSettingsMedia extends AdminSecBaseModel
                     do {
                         $ids = $itemResourceManager->getResourceIdsBatch($offset, $batchSize);
                         foreach ($ids as $id) {
-                            StorageQueue::newInstance()->enqueue(
+                            \mindstellar\storage\StorageJobs::enqueue(
                                 'regenerate',
                                 $remoteId,
                                 array('pk_i_id' => $id, 's_storage' => $remoteId)

@@ -20,12 +20,12 @@ define('LIB_PATH', ABS_PATH . 'oc-includes/');
 // when present, otherwise from the environment. Requiring config.php directly
 // here broke an environment-only install (no config.php / OSC_IGNORE_CONFIG_FILE)
 // — this AJAX endpoint would connect to the wrong host and fail with a 503.
+require_once LIB_PATH . 'osclass/helpers/hErrors.php';
 require_once LIB_PATH . 'osclass/config-loader.php';
 require_once LIB_PATH . 'vendor/autoload.php';
 
 require_once LIB_PATH . 'osclass/helpers/hDatabaseInfo.php';
 require_once LIB_PATH . 'osclass/helpers/hDefines.php';
-require_once LIB_PATH . 'osclass/helpers/hErrors.php';
 require_once LIB_PATH . 'osclass/helpers/hLocale.php';
 require_once LIB_PATH . 'osclass/helpers/hLocation.php';
 require_once LIB_PATH . 'osclass/helpers/hPreference.php';
@@ -43,7 +43,7 @@ require_once LIB_PATH . 'osclass/helpers/hDatabase.php';
 Params::init();
 Session::newInstance()->session_start();
 
-if (is_osclass_installed()) {
+if (is_osclass_installed() || install_database_unreachable()) {
     die();
 }
 
@@ -51,7 +51,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 // State-changing request: require the installer nonce (osc_csrf_check() cannot
 // work yet — no preferences exist).
-if (!install_nonce_check()) {
+if (!install_nonce_check() || !Session::newInstance()->_get('install_db_done')) {
     echo json_encode(array(
         'status' => false,
         'error'  => __('Your session expired. Reload the page and start again.'),

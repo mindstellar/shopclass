@@ -13,6 +13,12 @@
 #bulk-actions {
   margin-bottom: 1rem;
   max-width: 15rem;
+
+  // In a toolbar row the gap is the toolbar's to give, and the row aligns the group
+  // against the filter beside it rather than hanging it below the line.
+  .osc-toolbar > & {
+    margin-bottom: 0;
+  }
 }
 
 .submit-right {
@@ -24,8 +30,6 @@
 // "Choose…" truncated to "Choo…". The rows stack instead, label above a control
 // that fills its column, which is the shape the rest of the admin's forms use.
 #display-filters {
-  padding: 40px 0 0;
-
   .form-row {
     display: flex;
     flex-direction: column;
@@ -56,7 +60,7 @@
 
 #item-form label {
   display: block;
-  font-size: 14px;
+  font-size: .875rem;
   margin-bottom: 5px;
   margin-top: 10px;
 }
@@ -67,7 +71,7 @@
 }
 
 .input-title-wide label {
-  font-size: 18px !important;
+  font-size: 1.125rem !important;
 }
 
 .input-description-wide textarea {
@@ -75,14 +79,14 @@
 }
 
 #item-form .input-currency {
-  font-size: 18px;
+  font-size: 1.125rem;
   line-height: 28px;
   vertical-align: bottom;
 }
 
 #item-form h3.label {
   color: var(--osc-ink-emphasis);
-  font-size: 14px;
+  font-size: .875rem;
   font-weight: 500;
   margin: 0 0 10px;
 }
@@ -140,9 +144,34 @@
   .has-slider {
     padding-inline-start: 180px;
   }
+  // A category's fields are short and there are often several, so they sit on a responsive
+  // grid rather than one per line with most of the row empty.
+  .meta_list,
+  .meta-section {
+    display: grid;
+    gap: .35rem 1.25rem;
+    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  }
+
+  .meta-section,
+  .meta-section-title {
+    grid-column: 1 / -1;
+  }
+
+  // A field that wants the whole measure takes the whole row.
+  .meta:has(textarea),
+  .meta:has(.meta-radio-list),
+  .meta:has(input[type="checkbox"]) {
+    grid-column: 1 / -1;
+  }
+
   .meta {
+    min-inline-size: 0;
+
+    // Each control fills its cell, so a row of fields shares one right edge.
     select, input[type='text'], input[type='email'], input[type='tel'], input[type='number'], input.cf_date {
-      max-width:15rem;
+      max-width: 100%;
+      width: 100%;
     }
   }
 

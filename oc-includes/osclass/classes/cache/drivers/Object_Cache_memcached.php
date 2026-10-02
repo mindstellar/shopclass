@@ -67,6 +67,13 @@ class Object_Cache_memcached implements iObject_Cache
     private $memcached;
 
     /**
+     * Set after the first call the server did not answer; the rest of the request skips it.
+     *
+     * @var bool
+     */
+    private $down = false;
+
+    /**
      * Sets up object properties and connects to the configured server(s).
      */
     public function __construct()
@@ -91,6 +98,11 @@ class Object_Cache_memcached implements iObject_Cache
         }
 
         $this->memcached = new Memcached();
+        // Short limits so a hung server costs about a second per request, not a hang.
+        $this->memcached->setOption(Memcached::OPT_CONNECT_TIMEOUT, 1000);
+        $this->memcached->setOption(Memcached::OPT_POLL_TIMEOUT, 1000);
+        $this->memcached->setOption(Memcached::OPT_SEND_TIMEOUT, 1000000);
+        $this->memcached->setOption(Memcached::OPT_RECV_TIMEOUT, 1000000);
         foreach ($cache_server as $_config) {
             $this->memcached->addServer($_config['hostname'], $_config['port'], $_config['weight']);
         }
@@ -111,8 +123,12 @@ class Object_Cache_memcached implements iObject_Cache
             $data = clone $data;
         }
 
+        if ($this->down) {
+            return false;
+        }
         $expire = ($expire == 0) ? $this->default_expiration : $expire;
         $result = $this->memcached->add($this->_key($key), $data, $expire);
+        $this->answered();
         if (false !== $result) {
             $this->cache[$key] = $data;
         }
@@ -129,8 +145,12 @@ class Object_Cache_memcached implements iObject_Cache
      */
     public function delete($key)
     {
-        $result = $this->memcached->delete($this->_key($key));
         unset($this->cache[$key]);
+        if ($this->down) {
+            return false;
+        }
+        $result = $this->memcached->delete($this->_key($key));
+        $this->answered();
 
         return $result;
     }
@@ -143,6 +163,9 @@ class Object_Cache_memcached implements iObject_Cache
     public function flush()
     {
         $this->cache = array();
+        if ($this->down) {
+            return false;
+        }
 
         return $this->memcached->flush();
     }
@@ -164,8 +187,17 @@ class Object_Cache_memcached implements iObject_Cache
             return is_object($this->cache[$key]) ? clone $this->cache[$key] : $this->cache[$key];
         }
 
+        if ($this->down) {
+            $found = false;
+            ++$this->cache_misses;
+
+            return false;
+        }
         $value = $this->memcached->get($this->_key($key));
-        if ($this->memcached->getResultCode() === Memcached::RES_NOTFOUND) {
+        // Only a real answer is a hit: a dead or unreachable server reports a miss, so the
+        // caller loads from the database instead of getting false as if it were the value.
+        if ($this->memcached->getResultCode() !== Memcached::RES_SUCCESS) {
+            $this->answered();
             $found = false;
             ++$this->cache_misses;
 
@@ -196,9 +228,14 @@ class Object_Cache_memcached implements iObject_Cache
 
         $this->cache[$key] = $data;
 
+        if ($this->down) {
+            return false;
+        }
         $expire = ($expire == 0) ? $this->default_expiration : $expire;
+        $result = $this->memcached->set($this->_key($key), $data, $expire);
+        $this->answered();
 
-        return $this->memcached->set($this->_key($key), $data, $expire);
+        return $result;
     }
 
     /**
@@ -223,9 +260,16 @@ class Object_Cache_memcached implements iObject_Cache
     {
         $expire = ($expire == 0) ? $this->default_expiration : $expire;
         $mKey   = $this->_key($key);
+        if ($this->down) {
+            $this->cache[$key] = $initial;
+
+            return $initial;
+        }
 
         $value = $this->memcached->increment($mKey, $by);
-        if (false === $value) {
+        if (false === $value && !$this->answered()) {
+            $value = $initial;
+        } elseif (false === $value) {
             if ($this->memcached->add($mKey, $initial, $expire)) {
                 $value = $initial;
             } else {
@@ -305,6 +349,32 @@ padding: 1em;'><h2>Memcached stats</h2>";
             'evictions'    => isset($stats['evictions']) ? (int)$stats['evictions'] : null,
             'server'       => $server,
         );
+    }
+
+    /**
+     * Whether the last call reached the server. Only a connection error marks it down:
+     * a refused value (too large, not a number) still means the server answered.
+     *
+     * @return bool
+     */
+    private function answered(): bool
+    {
+        $connection = array(
+            'RES_HOST_LOOKUP_FAILURE', 'RES_CONNECTION_FAILURE', 'RES_CONNECTION_BIND_FAILURE',
+            'RES_CONNECTION_SOCKET_CREATE_FAILURE', 'RES_WRITE_FAILURE', 'RES_READ_FAILURE',
+            'RES_UNKNOWN_READ_FAILURE', 'RES_NO_SERVERS', 'RES_ERRNO', 'RES_FAIL_UNIX_SOCKET',
+            'RES_TIMEOUT', 'RES_SERVER_MARKED_DEAD', 'RES_SERVER_TEMPORARILY_DISABLED', 'RES_AUTH_FAILURE',
+        );
+        $code = $this->memcached->getResultCode();
+        foreach ($connection as $name) {
+            if (defined('Memcached::' . $name) && $code === constant('Memcached::' . $name)) {
+                $this->down = true;
+
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

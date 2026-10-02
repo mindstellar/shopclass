@@ -80,14 +80,11 @@ osc_add_hook('uploaded_resource', static function ($resource) {
     if ($remote === null || !is_array($resource) || empty($resource['pk_i_id'])) {
         return;
     }
-    StorageQueue::newInstance()->enqueue('offload', $remote->getId(), $resource);
+    \mindstellar\storage\StorageJobs::enqueue('offload', $remote->getId(), $resource);
 });
 
-// App-level cascade: deleting a user removes every resource it owns (avatars in
-// A3, and anything a plugin attached to owner type 'user').
-osc_add_hook('delete_user', static function ($id) {
-    (new ResourceUploader())->deleteByOwner(Resource::OWNER_USER, (int) $id);
-});
+// A user's resources are removed by User::deleteUser(), with the user row, so a delete
+// that rolls back keeps them.
 
 // Future-proofing: no t_resource rows use owner type 'item' until the item
 // backfill lands, but registering the cascade now means they are covered the
@@ -117,8 +114,11 @@ function osc_sweep_orphan_resources(): void
     $sweepCap = 500;
     $graceCutoff = time() - (48 * 3600);
 
+    // Each run continues where the last stopped, and wraps to the start at the end.
+    $offset        = (int) osc_get_preference('resource_sweep_offset');
     $resourceModel = Resource::newInstance();
-    $ids = $resourceModel->getResourceIdsBatch(0, $sweepCap);
+    $ids = $resourceModel->getResourceIdsBatch($offset, $sweepCap);
+    osc_set_preference('resource_sweep_offset', count($ids) < $sweepCap ? 0 : $offset + $sweepCap, 'osclass', 'INTEGER');
     if (empty($ids)) {
         return;
     }

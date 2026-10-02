@@ -15,6 +15,8 @@
 /**
  * Class WebSecBaseModel
  */
+use mindstellar\utility\AjaxResponse;
+
 class WebSecBaseModel extends SecBaseModel
 {
     /**
@@ -64,7 +66,7 @@ class WebSecBaseModel extends SecBaseModel
     public function showAuthFailPage()
     {
         if (Params::getParam('page') === 'ajax') {
-            echo json_encode(array('error' => 1, 'msg' => __('Session timed out')));
+            AjaxResponse::json(array('error' => 1, 'msg' => __('Session timed out')));
             exit;
         }
 

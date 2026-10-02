@@ -10,6 +10,7 @@
 
 use mindstellar\database\Connection;
 use mindstellar\migration\MigrationInterface;
+use mindstellar\migration\SchemaProbes;
 
 /**
  * Rebuild the dependent foreign keys with ON DELETE CASCADE, matching the referential
@@ -36,6 +37,8 @@ use mindstellar\migration\MigrationInterface;
  * been dropped entirely on some install is simply re-created.
  */
 return new class () implements MigrationInterface {
+    use SchemaProbes;
+
     /**
      * Child table, its FK column, and the parent it references. Order is irrelevant --
      * each entry is rebuilt independently.
@@ -117,26 +120,6 @@ return new class () implements MigrationInterface {
                 . ' REFERENCES ' . $parent . ' (' . $parentColumn . ') ON DELETE CASCADE'
             );
         }
-    }
-
-    /**
-     * Whether $table exists in the current database.
-     *
-     * @param Connection $conn
-     * @param string     $table
-     *
-     * @return bool
-     * @throws \mindstellar\database\DbException
-     */
-    private function tableExists(Connection $conn, string $table): bool
-    {
-        $count = $conn->scalar(
-            'SELECT COUNT(*) FROM information_schema.TABLES'
-            . ' WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?',
-            array($table)
-        );
-
-        return (int) $count > 0;
     }
 
     /**

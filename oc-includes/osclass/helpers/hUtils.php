@@ -304,48 +304,58 @@ function osc_format_date($date, $dateformat = null)
         $dateformat = osc_date_format();
     }
 
-    $month       = array(
-        '',
-        __('January'),
-        __('February'),
-        __('March'),
-        __('April'),
-        __('May'),
-        __('June'),
-        __('July'),
-        __('August'),
-        __('September'),
-        __('October'),
-        __('November'),
-        __('December')
-    );
-    $month_short = array(
-        '',
-        __('Jan'),
-        __('Feb'),
-        __('Mar'),
-        __('Apr'),
-        __('May'),
-        __('Jun'),
-        __('Jul'),
-        __('Aug'),
-        __('Sep'),
-        __('Oct'),
-        __('Nov'),
-        __('Dec')
-    );
-    $day         = array(
-        '',
-        __('Monday'),
-        __('Tuesday'),
-        __('Wednesday'),
-        __('Thursday'),
-        __('Friday'),
-        __('Saturday'),
-        __('Sunday')
-    );
-    $day_short   = array('', __('Mon'), __('Tue'), __('Wed'), __('Thu'), __('Fri'), __('Sat'), __('Sun'));
-    $ampm        = array('AM' => __('AM'), 'PM' => __('PM'), 'am' => __('am'), 'pm' => __('pm'));
+    // The names are translated once per language for the request, not for every date.
+    // Keyed by the language plus three translated words, so a translator switched mid-request
+    // (an email in another language) still gets its own names.
+    static $names = array();
+    $locale = (defined('OC_ADMIN') && OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale())
+        . '|' . __('January') . '|' . __('Mon') . '|' . __('PM');
+    if (!isset($names[$locale])) {
+        $month       = array(
+            '',
+            __('January'),
+            __('February'),
+            __('March'),
+            __('April'),
+            __('May'),
+            __('June'),
+            __('July'),
+            __('August'),
+            __('September'),
+            __('October'),
+            __('November'),
+            __('December')
+        );
+        $month_short = array(
+            '',
+            __('Jan'),
+            __('Feb'),
+            __('Mar'),
+            __('Apr'),
+            __('May'),
+            __('Jun'),
+            __('Jul'),
+            __('Aug'),
+            __('Sep'),
+            __('Oct'),
+            __('Nov'),
+            __('Dec')
+        );
+        $day         = array(
+            '',
+            __('Monday'),
+            __('Tuesday'),
+            __('Wednesday'),
+            __('Thursday'),
+            __('Friday'),
+            __('Saturday'),
+            __('Sunday')
+        );
+        $day_short   = array('', __('Mon'), __('Tue'), __('Wed'), __('Thu'), __('Fri'), __('Sat'), __('Sun'));
+        $ampm        = array('AM' => __('AM'), 'PM' => __('PM'), 'am' => __('am'), 'pm' => __('pm'));
+        $names[$locale] = array($month, $month_short, $day, $day_short, $ampm);
+    }
+    [$month, $month_short, $day, $day_short, $ampm] = $names[$locale];
 
     $time       = strtotime($date);
     $dateformat = preg_replace('|(?<!\\\)F|', osc_escape_string($month[date('n', $time)]), $dateformat);
@@ -675,7 +685,7 @@ function osc_is_bot_request()
     }
 
     $tokens = osc_apply_filter('bot_user_agents', array(
-        // Generic — catches the long tail, which is most of it.
+        // Generic: catches the long tail, which is most of it.
         'bot', 'crawler', 'crawling', 'spider', 'scraper', 'archiver', 'fetcher',
         // Search engines.
         'googlebot', 'bingbot', 'slurp', 'duckduckbot', 'baiduspider', 'yandex',
@@ -1238,11 +1248,11 @@ function osc_tinymce_config($preset = 'basic', array $overrides = array())
         $config['paste_data_images']             = false;
         $config['paste_remove_styles_if_webkit'] = true;
         $config['paste_webkit_styles']           = 'none';
-        // Only the light oxide skin ships, so the editor is a consistent "sheet of
-        // paper" in both themes rather than a half-dark panel.
+        // Type only. A colour here would be a light-mode value baked in, and it beat the
+        // dark content stylesheet: near-black text on a dark sheet, at 1.31:1.
         $config['content_style'] = 'body{font-family:system-ui,-apple-system,"Segoe UI",'
                                    . 'Roboto,Helvetica Neue,Arial,sans-serif;font-size:16px;'
-                                   . 'line-height:1.55;color:#14181f}';
+                                   . 'line-height:1.55}';
     } else {
         // Lean set: basic inline formatting, lists and links. No source view -- this is the
         // preset the public listing form uses, and handing a poster a raw-HTML pane invites
@@ -1315,5 +1325,68 @@ if (!function_exists('osc_server_rewrite_rules')) {
                . "<IfModule mod_mime.c>\n"
                . "AddType text/xsl .xsl\n"
                . '</IfModule>';
+    }
+}
+
+/**
+ * Keep a failed form's values for the next page, plus the reason as 'contact_error',
+ * and show the reason as a flash message. Read them back with osc_gui_kept().
+ *
+ * @param array<string,string> $values field => value
+ * @param string               $error
+ *
+ * @return void
+ */
+function osc_keep_form(array $values, string $error): void
+{
+    $session = Session::newInstance();
+    foreach ($values as $key => $value) {
+        $session->_setForm($key, (string) $value);
+    }
+    $session->_setForm('contact_error', $error);
+    osc_add_flash_error_message($error);
+}
+
+/**
+ * The page the request came from when it is on this site, else $fallback. The host is
+ * compared, not a prefix, so a look-alike host cannot pass.
+ *
+ * @param string $fallback
+ *
+ * @return string
+ */
+function osc_local_referer($fallback)
+{
+    $referer = (string)Params::getServerParam('HTTP_REFERER', false, false);
+    if ($referer !== '') {
+        $refHost  = parse_url($referer, PHP_URL_HOST);
+        $baseHost = parse_url(osc_base_url(), PHP_URL_HOST);
+        if (is_string($refHost) && is_string($baseHost) && strcasecmp($refHost, $baseHost) === 0) {
+            return $referer;
+        }
+    }
+
+    return (string)$fallback;
+}
+
+if (!function_exists('osc_cron_last_run')) {
+    /**
+     * When cron last ran, on any schedule, as a UNIX time. 0 when it never has.
+     *
+     * @return int
+     */
+    function osc_cron_last_run()
+    {
+        $last = 0;
+        try {
+            foreach ((array)Cron::newInstance()->listAll() as $row) {
+                $time = !empty($row['d_last_exec']) ? (int)strtotime($row['d_last_exec']) : 0;
+                $last = max($last, $time);
+            }
+        } catch (Throwable $e) {
+            return 0;
+        }
+
+        return $last;
     }
 }

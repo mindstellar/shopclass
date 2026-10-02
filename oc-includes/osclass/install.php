@@ -108,11 +108,16 @@ Translation::newInstance(true);
 $install_nonce = install_nonce();
 
 $already_installed = is_osclass_installed();
+// A site whose database is down must not offer the installer to whoever visits.
+$db_unreachable = !$already_installed && install_database_unreachable();
+if ($db_unreachable) {
+    http_response_code(503);
+}
 
 // AJAX: test the database settings entered on step 2 without committing to them.
 // Answered as JSON and handled before any HTML is produced. Guarded by the
 // installer nonce (osc_csrf_check() cannot work yet — no preferences exist).
-if (!$already_installed && Params::getParam('action') === 'test_db') {
+if (!$already_installed && !$db_unreachable && Params::getParam('action') === 'test_db') {
     header('Content-Type: application/json; charset=utf-8');
     if (!install_nonce_check()) {
         echo json_encode(array(
@@ -128,7 +133,7 @@ if (!$already_installed && Params::getParam('action') === 'test_db') {
 }
 
 // Already installed: render the calm "already installed" card, never the form.
-if ($already_installed) {
+if ($already_installed || $db_unreachable) {
     include_once LIB_PATH . 'osclass/installer/gui/install.php';
     exit;
 }

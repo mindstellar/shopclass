@@ -880,9 +880,12 @@ class FieldForm extends Form
         echo '<div id="language-tab" class="ui-osc-tabs osc-tab mt-3">';
         echo '<ul>';
         foreach ($locales as $locale) {
-            $active = ($locale['pk_c_code'] === $currentLocale) ? ' class="ui-tabs-active ui-state-active"' : '';
-            echo '<li' . $active . '><a href="#meta_' . osc_esc_html($locale['pk_c_code']) . '">'
-                . osc_esc_html($locale['s_name']) . '</a></li>';
+            echo \mindstellar\admin\ui\Field::localeTab(
+                'meta_' . $locale['pk_c_code'],
+                $locale['s_name'],
+                $locale['pk_c_code'],
+                $currentLocale
+            );
         }
         echo '</ul>';
         foreach ($locales as $locale) {

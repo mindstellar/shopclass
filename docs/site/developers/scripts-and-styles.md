@@ -2,7 +2,7 @@
 title: Scripts and styles
 description: Load JavaScript and CSS from a ShopClass plugin or theme with the enqueue functions, and what changed now that jQuery is gone from core.
 sidebar:
-  order: 8
+  order: 9
 ---
 
 Plugins and themes load their own JavaScript and CSS through the **enqueue**
@@ -58,6 +58,9 @@ osc_add_hook('init_admin', 'myplugin_assets');  // admin panel
 ## jQuery is not loaded for you
 
 This is the change that catches ported Osclass plugins.
+
+Since 6.4, core no longer ships or registers `jquery`, `jquery-ui` or `jquery-validate`.
+A theme or plugin that uses them must ship its own copy.
 
 The front end loads **nothing** by default, and the admin panel registers
 Bootstrap 5, not jQuery:

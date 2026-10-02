@@ -13,6 +13,8 @@
  * KeywordBlocksDataTable-shaped, minus bulk/row actions: the log is a report,
  * not an editable list. Section and free-text filters come off the request.
  */
+use mindstellar\admin\ListPaging;
+
 class LogsDataTable extends DataTable
 {
     private $order_by;
@@ -92,23 +94,13 @@ class LogsDataTable extends DataTable
         if (!isset($_get['iDisplayStart'])) {
             $_get['iDisplayStart'] = 0;
         }
-        if (!isset($_get['iDisplayLength']) || !is_numeric($_get['iDisplayLength'])) {
-            $_get['iDisplayLength'] = 20;
-        }
-        $p_iPage = 1;
-        if (!is_numeric(Params::getParam('iPage')) || Params::getParam('iPage') < 1) {
-            Params::setParam('iPage', $p_iPage);
-            $this->iPage = $p_iPage;
-        } else {
-            $this->iPage = Params::getParam('iPage');
-        }
+        $this->iPage = ListPaging::page();
 
         $this->order_by = $this->resolveOrder($_get, $this->sortable, 'dt_date');
-        // set start and limit using iPage param
-        $start = ($this->iPage - 1) * $_get['iDisplayLength'];
-
-        $this->start = (int) $start;
-        $this->limit = (int) $_get['iDisplayLength'];
+        // This screen shows 20 a page rather than the usual 10: a log line is one row of
+        // short fields, and the point of opening it is to scan.
+        $this->limit = ListPaging::length(20);
+        $this->start = ListPaging::start($this->iPage, $this->limit);
     }
 
     /**

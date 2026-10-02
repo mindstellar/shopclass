@@ -535,29 +535,17 @@ class Sitemap extends DAO
      */
     public function itemUrl($itemId, $itemTitle, $itemCategory = '', $itemCity = '', $locale = '')
     {
-        if (osc_rewrite_enabled()) {
-            $url = osc_get_preference('rewrite_item_url');
-            if (preg_match('{CATEGORIES}', $url)) {
-                $sanitizedCategories = array();
-                $cat                 = Category::newInstance()->hierarchy($itemCategory);
-                for ($i = count($cat); $i > 0; $i--) {
-                    $sanitizedCategories[] = $cat[$i - 1]['s_slug'];
-                }
-                $url = str_replace('{CATEGORIES}', implode('/', $sanitizedCategories), $url);
-            }
-            $url = str_replace('{ITEM_ID}', osc_sanitizeString($itemId), $url);
-            $url = str_replace('{ITEM_CITY}', osc_sanitizeString($itemCity), $url);
-            $url = str_replace('{ITEM_TITLE}', osc_sanitizeString($itemTitle), $url);
-            $url = str_replace('?', '', $url);
-            $path = ($locale !== '') ? osc_base_url() . $locale . '/' . $url : osc_base_url() . $url;
-        } else {
-            $path = osc_item_url_ns($itemId, $locale);
-        }
+        $row = array(
+            'pk_i_id'          => $itemId,
+            's_title'          => $itemTitle,
+            's_city'           => $itemCity,
+            'fk_i_category_id' => $itemCategory,
+        );
 
         // Return the raw URL: addUrl() wraps it in a DOMDocument text node,
         // which is the single XML-escaping step. Pre-encoding here would
         // double-escape "&" in query-string (non-friendly) URLs.
-        return $path;
+        return osc_item_url_from_item($row, $locale);
     }
 
     /* ------------------------------------------------------------------ *

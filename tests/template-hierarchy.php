@@ -30,6 +30,7 @@ if (!defined('ABS_PATH')) {
 }
 
 require_once __DIR__ . '/lib/harness.php';
+require_once ABS_PATH . 'oc-includes/osclass/classes/utility/Validate.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/theme/ThemeSupports.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/theme/ThemeViews.php';
 

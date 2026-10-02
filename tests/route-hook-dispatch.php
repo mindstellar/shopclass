@@ -76,10 +76,14 @@ $routeCase = $case[1] ?? '';
 // Routes as a plugin registers them: one hook route, one file route.
 $rw = (new ReflectionClass('Rewrite'))->newInstanceWithoutConstructor();
 $rp = new ReflectionProperty('Rewrite', 'routes');
-$rp->setAccessible(true);
+if (PHP_VERSION_ID < 80100) {
+    $rp->setAccessible(true);
+}
 $rp->setValue($rw, array());
 $ip = new ReflectionProperty('Rewrite', 'instance');
-$ip->setAccessible(true);
+if (PHP_VERSION_ID < 80100) {
+    $ip->setAccessible(true);
+}
 $ip->setValue(null, $rw);
 $rw->addRouteHook('demo-pay', 'demo/pay', 'demo/pay');
 $rw->addRoute('demo-page', 'demo/page', 'demo/page', 'demo/page.php');

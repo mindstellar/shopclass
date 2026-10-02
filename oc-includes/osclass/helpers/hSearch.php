@@ -417,6 +417,72 @@ function osc_search_alert()
 }
 
 /**
+ * Subscribe an email to a saved search. The owner is the signed-in user, never the caller:
+ * a guest gets a confirmation email, a signed-in active user is subscribed at once.
+ *
+ * @param string $token the alert token from osc_search_alert()
+ * @param string $email ignored when a user is signed in
+ *
+ * @return int 1 done, 0 not saved, -1 bad email or inactive user, -2 bad alert, -4 sign-in required,
+ *             -5 too many from this address
+ */
+function osc_subscribe_alert(string $token, string $email): int
+{
+    // Anonymous subscriptions can be switched off, against email harvesting and abuse.
+    if (osc_get_preference('alerts_require_login') && !osc_is_web_user_logged_in()) {
+        return -4;
+    }
+    // A token carries an authentication tag, so a forged or tampered one does not decrypt.
+    $alert = \mindstellar\search\AlertEnvelope::fromToken($token);
+    if ($alert === null) {
+        return -2;
+    }
+
+    $userid = 0;
+    if (osc_is_web_user_logged_in()) {
+        $userid = osc_logged_user_id();
+        $user   = User::newInstance()->findByPrimaryKey($userid);
+        $email  = (string)$user['s_email'];
+    }
+    if ($alert == '' || $email === '') {
+        return 0;
+    }
+    if (!osc_validate_email($email)) {
+        return -1;
+    }
+    // A guest's alert mails a confirmation to any address, so it is limited and ban-checked.
+    if ((int)$userid === 0) {
+        if (osc_is_banned($email) !== 0) {
+            return -1;
+        }
+        if (\mindstellar\security\ActionThrottle::exceededFor('alert_subscribe', 10)) {
+            return -5;
+        }
+    }
+
+    $secret  = osc_genRandomPassword();
+    $alertID = Alerts::newInstance()->createAlert($userid, $email, $alert, $secret);
+    if (!$alertID) {
+        return 0;
+    }
+    if ((int)$userid > 0) {
+        $user = User::newInstance()->findByPrimaryKey($userid);
+        if ($user['b_active'] == 1 && $user['b_enabled'] == 1) {
+            Alerts::newInstance()->activate($alertID);
+
+            return 1;
+        }
+
+        return -1;
+    }
+
+    \mindstellar\security\ActionThrottle::record('alert_subscribe');
+    osc_run_hook('hook_email_alert_validation', Alerts::newInstance()->findByPrimaryKey($alertID), $email, $secret);
+
+    return 1;
+}
+
+/**
  * Gets for a default search (all categories, noother option)
  *
  * @param array $params
@@ -451,105 +517,25 @@ function osc_search_url($params = null)
     if (!empty($params['sPattern'])) {
         $params['sPattern'] = osc_apply_filter('search_pattern', $params['sPattern']);
     }
-    if (osc_subdomain_type() === 'category' && isset($params['sCategory'])) {
-        if ($params['sCategory'] != Params::getParam('sCategory')) {
-            if (is_array($params['sCategory'])) {
-                $params['sCategory'] = implode(',', $params['sCategory']);
+    // One subdomain mode can be active at a time, so the five that used to be written
+    // out one after another are one lookup and one body.
+    $sub = _aux_search_subdomains()[osc_subdomain_type()] ?? null;
+    if ($sub !== null && isset($params[$sub['param']])) {
+        $key = $sub['param'];
+        if ($params[$key] != Params::getParam($key)) {
+            if (is_array($params[$key])) {
+                $params[$key] = implode(',', $params[$key]);
             }
-            if ($params['sCategory'] != '' && strpos($params['sCategory'], ',') === false) {
-                if (is_numeric($params['sCategory'])) {
-                    $category = Category::newInstance()->findByPrimaryKey($params['sCategory']);
-                } else {
-                    $category = Category::newInstance()->findBySlug($params['sCategory']);
-                }
-                if (isset($category['s_slug'])) {
+            if ($params[$key] != '' && strpos($params[$key], ',') === false) {
+                $row = _aux_search_find($sub, $params[$key]);
+                if (isset($row[$sub['label']])) {
                     $base_url =
-                        $http_url . $category['s_slug'] . '.' . osc_subdomain_host() . REL_WEB_URL;
-                    unset($params['sCategory']);
+                        $http_url . $row[$sub['label']] . '.' . osc_subdomain_host() . REL_WEB_URL;
+                    unset($params[$key]);
                 }
             }
         } elseif (osc_is_subdomain()) {
-            unset($params['sCategory']);
-        }
-    } elseif (osc_subdomain_type() === 'country' && isset($params['sCountry'])) {
-        if ($params['sCountry'] != Params::getParam('sCountry')) {
-            if (is_array($params['sCountry'])) {
-                $params['sCountry'] = implode(',', $params['sCountry']);
-            }
-            if ($params['sCountry'] != '' && strpos($params['sCountry'], ',') === false) {
-                if (is_numeric($params['sCountry'])) {
-                    $country = Country::newInstance()->findByPrimaryKey($params['sCountry']);
-                } else {
-                    $country = Country::newInstance()->findByCode($params['sCountry']);
-                }
-                if (isset($country['s_slug'])) {
-                    $base_url =
-                        $http_url . $country['s_slug'] . '.' . osc_subdomain_host() . REL_WEB_URL;
-                    unset($params['sCountry']);
-                }
-            }
-        } elseif (osc_is_subdomain()) {
-            unset($params['sCountry']);
-        }
-    } elseif (osc_subdomain_type() === 'region' && isset($params['sRegion'])) {
-        if ($params['sRegion'] != Params::getParam('sRegion')) {
-            if (is_array($params['sRegion'])) {
-                $params['sRegion'] = implode(',', $params['sRegion']);
-            }
-            if ($params['sRegion'] != '' && strpos($params['sRegion'], ',') === false) {
-                if (is_numeric($params['sRegion'])) {
-                    $region = Region::newInstance()->findByPrimaryKey($params['sRegion']);
-                } else {
-                    $region = Region::newInstance()->findByName($params['sRegion']);
-                }
-                if (isset($region['s_slug'])) {
-                    $base_url =
-                        $http_url . $region['s_slug'] . '.' . osc_subdomain_host() . REL_WEB_URL;
-                    unset($params['sRegion']);
-                }
-            }
-        } elseif (osc_is_subdomain()) {
-            unset($params['sRegion']);
-        }
-    } elseif (osc_subdomain_type() === 'city' && isset($params['sCity'])) {
-        if ($params['sCity'] != Params::getParam('sCity')) {
-            if (is_array($params['sCity'])) {
-                $params['sCity'] = implode(',', $params['sCity']);
-            }
-            if ($params['sCity'] != '' && strpos($params['sCity'], ',') === false) {
-                if (is_numeric($params['sCity'])) {
-                    $city = City::newInstance()->findByPrimaryKey($params['sCity']);
-                } else {
-                    $city = City::newInstance()->findByName($params['sCity']);
-                }
-                if (isset($city['s_slug'])) {
-                    $base_url =
-                        $http_url . $city['s_slug'] . '.' . osc_subdomain_host() . REL_WEB_URL;
-                    unset($params['sCity']);
-                }
-            }
-        } elseif (osc_is_subdomain()) {
-            unset($params['sCity']);
-        }
-    } elseif (osc_subdomain_type() === 'user' && isset($params['sUser'])) {
-        if ($params['sUser'] != Params::getParam('sUser')) {
-            if (is_array($params['sUser'])) {
-                $params['sUser'] = implode(',', $params['sUser']);
-            }
-            if ($params['sUser'] != '' && strpos($params['sUser'], ',') === false) {
-                if (is_numeric($params['sUser'])) {
-                    $user = User::newInstance()->findByPrimaryKey($params['sUser']);
-                } else {
-                    $user = User::newInstance()->findByUsername($params['sUser']);
-                }
-                if (isset($user['s_username'])) {
-                    $base_url =
-                        $http_url . $user['s_username'] . '.' . osc_subdomain_host() . REL_WEB_URL;
-                    unset($params['sUser']);
-                }
-            }
-        } elseif (osc_is_subdomain()) {
-            unset($params['sUser']);
+            unset($params[$key]);
         }
     }
 
@@ -579,168 +565,57 @@ function osc_search_url($params = null)
                 $category = Category::newInstance()->findBySlug($params['sCategory']);
             }
             if (isset($category['pk_i_id'])) {
-                $url = osc_get_preference('rewrite_cat_url');
-                if (preg_match('|{CATEGORIES}|', $url)) {
-                    $categories           =
-                        Category::newInstance()->hierarchy($category['pk_i_id']);
-                    $sanitized_categories = array();
-                    $mCat                 = Category::newInstance();
-                    for ($i = count($categories); $i > 0; $i--) {
-                        $tmpcat                 =
-                            $mCat->findByPrimaryKey($categories[$i - 1]['pk_i_id']);
-                        $sanitized_categories[] = $tmpcat['s_slug'];
-                    }
-                    $url = str_replace('{CATEGORIES}', implode('/', $sanitized_categories), $url);
+                $values = array(
+                    'CATEGORY_NAME' => $category['s_slug'],
+                    'CATEGORY_SLUG' => $category['s_slug'], // the older spelling, still built
+                    'CATEGORY_ID'   => $category['pk_i_id'],
+                );
+                if (stripos((string)osc_get_preference('rewrite_cat_url'), '{CATEGORIES}') !== false) {
+                    $values['CATEGORIES'] =
+                        \mindstellar\routing\CoreRoutes::categoryPath($category['pk_i_id']);
                 }
                 $seo_prefix = '';
                 if (osc_get_preference('seo_url_search_prefix') != '') {
                     $seo_prefix = osc_get_preference('seo_url_search_prefix') . '/';
                 }
-                // DEPRECATED : CATEGORY_SLUG is going to be removed in 3.4
-                $url = str_replace(
-                    array('{CATEGORY_NAME}', '{CATEGORY_SLUG}', '{CATEGORY_ID}'),
-                    array($category['s_slug'], $category['s_slug'], $category['pk_i_id']),
-                    $url
-                );
+                $url = \mindstellar\routing\CoreRoutes::expand('category', $values);
             } else {
-                // Search by a category which does not exists (by form)
-                // TODO CHANGE TO NEW ROUTES!!
-                return $base_url . 'index.php?page=search&sCategory='
+                // No such category: the search page answers it with a 404.
+                return $url . '/' . osc_get_preference('rewrite_search_category') . ','
                     . urlencode($params['sCategory']);
             }
             if (isset($params['iPage']) && $params['iPage'] != '' && $params['iPage'] != 1) {
                 $url .= '/' . $params['iPage'];
             }
             $url = $base_url . $seo_prefix . $url;
-        } elseif (isset($params['sRegion']) && is_string($params['sRegion'])
-            && strpos($params['sRegion'], ',') === false
-            && (
-                $countP == 1 || ($countP == 2 && (isset($params['iPage']) || isset($params['sCategory'])))
-                || (isset($params['iPage'], $params['sCategory']) && $countP == 3)
-            )
+        } elseif (_aux_search_place_wanted($params, 'sRegion', $countP)
+            || _aux_search_place_wanted($params, 'sCity', $countP)
         ) {
-            $url = $base_url;
-            if (osc_get_preference('seo_url_search_prefix') != '') {
-                $url .= osc_get_preference('seo_url_search_prefix') . '/';
+            $key   = _aux_search_place_wanted($params, 'sRegion', $countP) ? 'sRegion' : 'sCity';
+            $place = _aux_search_place_url($params, _aux_search_places()[$key], $base_url);
+            if ($place['stop']) {
+                return $place['url'];
             }
-            if (isset($params['sCategory'])) {
-                $_auxSlug = _aux_search_category_slug($params['sCategory']);
-                if ($_auxSlug != '') {
-                    $url .= $_auxSlug . '_';
-                }
-            }
-
-            if (isset($params['sRegion'])) {
-                if (osc_list_region_id() == $params['sRegion']) {
-                    $url .= osc_sanitizeString(osc_list_region_slug()) . '-r'
-                        . osc_list_region_id();
-                } else {
-                    if (is_numeric($params['sRegion'])) {
-                        $region = Region::newInstance()->findByPrimaryKey($params['sRegion']);
-                    } else {
-                        $region = Region::newInstance()->findByName($params['sRegion']);
-                    }
-                    if (isset($region['s_slug'])) {
-                        $url .= osc_sanitizeString($region['s_slug']) . '-r' . $region['pk_i_id'];
-                    } else {
-                        // Search by a region which does not exists (by form)
-                        // TODO CHANGE TO NEW ROUTES!!
-                        return $url . 'index.php?page=search&sRegion='
-                            . urlencode($params['sRegion']);
-                    }
-                }
-            }
-            if (isset($params['iPage']) && $params['iPage'] != '' && $params['iPage'] != 1) {
-                $url .= '/' . $params['iPage'];
-            }
-        } elseif (isset($params['sCity']) && !is_array($params['sCity'])
-            && strpos($params['sCity'], ',') === false
-            && ($countP == 1
-                || ($countP == 2
-                    && (isset($params['iPage'])
-                        || isset($params['sCategory'])))
-                || (isset($params['iPage'], $params['sCategory']) && $countP == 3))
-        ) {
-            $url = $base_url;
-            if (osc_get_preference('seo_url_search_prefix') != '') {
-                $url .= osc_get_preference('seo_url_search_prefix') . '/';
-            }
-            if (isset($params['sCategory'])) {
-                $_auxSlug = _aux_search_category_slug($params['sCategory']);
-                if ($_auxSlug != '') {
-                    $url .= $_auxSlug . '_';
-                }
-            }
-            if (isset($params['sCity'])) {
-                if (osc_list_city_id() == $params['sCity']) {
-                    $url .= osc_sanitizeString(osc_list_city_slug()) . '-c' . osc_list_city_id();
-                } else {
-                    if (is_numeric($params['sCity'])) {
-                        $city = City::newInstance()->findByPrimaryKey($params['sCity']);
-                    } else {
-                        $city = City::newInstance()->findByName($params['sCity']);
-                    }
-                    if (isset($city['s_slug'])) {
-                        $url .= osc_sanitizeString($city['s_slug']) . '-c' . $city['pk_i_id'];
-                    } else {
-                        // Search by a city which does not exists (by form)
-                        // TODO CHANGE TO NEW ROUTES!!
-                        return $url . 'index.php?page=search&sCity=' . urlencode($params['sCity']);
-                    }
-                }
-            }
-            if (isset($params['iPage']) && $params['iPage'] != '' && $params['iPage'] != 1) {
-                $url .= '/' . $params['iPage'];
-            }
+            $url = $place['url'];
         } elseif ($params != null && is_array($params)) {
+            $names = _aux_search_param_names();
             foreach ($params as $k => $v) {
-                switch ($k) {
-                    case 'sCountry':
-                        $k = osc_get_preference('rewrite_search_country');
-                        break;
-                    case 'sRegion':
-                        $k = osc_get_preference('rewrite_search_region');
-                        break;
-                    case 'sCity':
-                        $k = osc_get_preference('rewrite_search_city');
-                        break;
-                    case 'sCityArea':
-                        $k = osc_get_preference('rewrite_search_city_area');
-                        break;
-                    case 'sCategory':
-                        $k = osc_get_preference('rewrite_search_category');
-                        if (is_array($v)) {
-                            $v = implode(',', $v);
-                        }
-                        break;
-                    case 'sUser':
-                        $k = osc_get_preference('rewrite_search_user');
-                        if (is_array($v)) {
-                            $v = implode(',', $v);
-                        }
-                        break;
-                    case 'sPattern':
-                        $k = osc_get_preference('rewrite_search_pattern');
-                        break;
-                    case 'meta':
-                        // meta(@id),value/meta(@id),value2/...
-                        foreach ($v as $key => $value) {
-                            if (is_array($value)) {
-                                foreach ($value as $_key => $_value) {
-                                    if ($value != '') {
-                                        $url .= '/meta' . $key . '-' . $_key . ','
-                                            . urlencode($_value);
-                                    }
-                                }
-                            } elseif ($value != '') {
-                                $url .= '/meta' . $key . ',' . urlencode($value);
-                            }
-                        }
-                        break;
-                    default:
-                        break;
+                if ($k === 'meta') {
+                    $url .= _aux_search_meta_path($v);
+                    continue;
                 }
-                if (!is_array($v) && $v != '') {
+                if (is_array($v)) {
+                    // Category and seller are the only filters that take several
+                    // values; every other array is skipped, as it always has been.
+                    if ($k !== 'sCategory' && $k !== 'sUser') {
+                        continue;
+                    }
+                    $v = implode(',', $v);
+                }
+                if (isset($names[$k])) {
+                    $k = osc_get_preference($names[$k]);
+                }
+                if ($v != '') {
                     $url .= '/' . $k . ',' . urlencode($v);
                 }
             }
@@ -837,22 +712,60 @@ function osc_list_city()
 }
 
 /**
+ * Load one place list into the view, unless something already did.
+ *
+ * @param string $key    Exported name: list_countries, list_regions or list_cities
+ * @param string $filter The country or region to narrow by, where that applies
+ *
+ * @return void
+ */
+function _aux_search_load_list($key, $filter = '%%%%')
+{
+    if (View::newInstance()->_exists($key)) {
+        return;
+    }
+    $loaders = array(
+        'list_countries' => static function () {
+            return CountryStats::newInstance()->listCountries();
+        },
+        'list_regions'   => static function () use ($filter) {
+            return RegionStats::newInstance()->listRegions($filter);
+        },
+        'list_cities'    => static function () use ($filter) {
+            return CityStats::newInstance()->listCities($filter);
+        },
+    );
+    View::newInstance()->_exportVariableToView($key, $loaders[$key]());
+}
+
+/**
+ * Step one place along, resetting the walk once the list runs out so the next loop
+ * over the same list starts again from the top.
+ *
+ * @param string $key
+ *
+ * @return bool False once the list is exhausted
+ */
+function _aux_search_walk_list($key)
+{
+    $more = View::newInstance()->_next($key);
+    if (!$more) {
+        View::newInstance()->_reset($key);
+    }
+
+    return $more;
+}
+
+/**
  * Gets the next country in the list_countries list
  *
  * @return bool False once the list is exhausted
  */
 function osc_has_list_countries()
 {
-    if (!View::newInstance()->_exists('list_countries')) {
-        View::newInstance()
-            ->_exportVariableToView('list_countries', CountryStats::newInstance()->listCountries());
-    }
-    $result = View::newInstance()->_next('list_countries');
-    if (!$result) {
-        View::newInstance()->_reset('list_countries');
-    }
+    _aux_search_load_list('list_countries');
 
-    return $result;
+    return _aux_search_walk_list('list_countries');
 }
 
 /**
@@ -864,18 +777,9 @@ function osc_has_list_countries()
  */
 function osc_has_list_regions($country = '%%%%')
 {
-    if (!View::newInstance()->_exists('list_regions')) {
-        View::newInstance()->_exportVariableToView(
-            'list_regions',
-            RegionStats::newInstance()->listRegions($country)
-        );
-    }
-    $result = View::newInstance()->_next('list_regions');
-    if (!$result) {
-        View::newInstance()->_reset('list_regions');
-    }
+    _aux_search_load_list('list_regions', $country);
 
-    return $result;
+    return _aux_search_walk_list('list_regions');
 }
 
 /**
@@ -887,16 +791,9 @@ function osc_has_list_regions($country = '%%%%')
  */
 function osc_has_list_cities($region = '%%%%')
 {
-    if (!View::newInstance()->_exists('list_cities')) {
-        View::newInstance()
-            ->_exportVariableToView('list_cities', CityStats::newInstance()->listCities($region));
-    }
-    $result = View::newInstance()->_next('list_cities');
-    if (!$result) {
-        View::newInstance()->_reset('list_cities');
-    }
+    _aux_search_load_list('list_cities', $region);
 
-    return $result;
+    return _aux_search_walk_list('list_cities');
 }
 
 /**
@@ -906,10 +803,7 @@ function osc_has_list_cities($region = '%%%%')
  */
 function osc_count_list_countries()
 {
-    if (!View::newInstance()->_exists('list_countries')) {
-        View::newInstance()
-            ->_exportVariableToView('list_countries', CountryStats::newInstance()->listCountries());
-    }
+    _aux_search_load_list('list_countries');
 
     return View::newInstance()->_count('list_countries');
 }
@@ -923,12 +817,7 @@ function osc_count_list_countries()
  */
 function osc_count_list_regions($country = '%%%%')
 {
-    if (!View::newInstance()->_exists('list_regions')) {
-        View::newInstance()->_exportVariableToView(
-            'list_regions',
-            RegionStats::newInstance()->listRegions($country)
-        );
-    }
+    _aux_search_load_list('list_regions', $country);
 
     return View::newInstance()->_count('list_regions');
 }
@@ -942,15 +831,11 @@ function osc_count_list_regions($country = '%%%%')
  */
 function osc_count_list_cities($region = '%%%%')
 {
-    if (!View::newInstance()->_exists('list_cities')) {
-        View::newInstance()
-            ->_exportVariableToView('list_cities', CityStats::newInstance()->listCities($region));
-    }
+    _aux_search_load_list('list_cities', $region);
 
     return View::newInstance()->_count('list_cities');
 }
 
-// country attributes
 /**
  * Gets the name of current "list country"
  *
@@ -1209,7 +1094,9 @@ function osc_get_canonical()
 
 /**
  * Strip a search condition set down to the filters a visitor actually chose, with
- * category ids resolved to names.
+ * category ids resolved to names. Takes a decoded t_alerts.s_search; for an alert stored
+ * as search values the result also carries `params`, the stored values, and for a held
+ * alert it is only `held`, the reason.
  *
  * @param array<string,mixed> $conditions
  *
@@ -1217,12 +1104,40 @@ function osc_get_canonical()
  */
 function osc_get_raw_search($conditions)
 {
+    if (\mindstellar\search\AlertEnvelope::isEnvelope($conditions)) {
+        $params = \mindstellar\search\AlertEnvelope::validateDecoded($conditions);
+        if ($params === null) {
+            // A held alert: no search, only the reason it was held.
+            return isset($conditions['held']) && is_string($conditions['held'])
+                ? array('held' => $conditions['held'])
+                : array();
+        }
+        $raw = array_filter(
+            \mindstellar\search\AlertEnvelope::legacyFields($params),
+            static fn ($v) => $v !== '' && $v !== array() && $v !== 0
+        );
+        if (isset($raw['aCategories'])) {
+            $mCategory = Category::newInstance();
+            foreach ($raw['aCategories'] as $k => $id) {
+                $raw['aCategories'][$k] = $mCategory->findNameByPrimaryKey($id);
+            }
+        }
+        $raw['params'] = $params;
+
+        return $raw;
+    }
+
     $keys      = array('aCategories', 'countries', 'regions', 'cities', 'city_areas');
     $mCategory = Category::newInstance();
     foreach ($keys as $key) {
         if (isset($conditions[$key]) && is_array($conditions[$key]) && !empty($conditions[$key])) {
             foreach ($conditions[$key] as $k => $v) {
-                if (preg_match('|([0-9]+)|', $v, $match)) {
+                // A stored row is not trusted to hold only strings here.
+                if (!is_string($v) && !is_int($v)) {
+                    unset($conditions[$key][$k]);
+                    continue;
+                }
+                if (preg_match('|([0-9]+)|', (string)$v, $match)) {
                     if ($key === 'aCategories') {
                         $conditions[$key][$k] = $mCategory->findNameByPrimaryKey($match[1]);
                     } else {
@@ -1230,6 +1145,7 @@ function osc_get_raw_search($conditions)
                     }
                 }
             }
+            $conditions[$key] = array_values($conditions[$key]);
         } else {
             unset($conditions[$key]);
         }
@@ -1243,7 +1159,7 @@ function osc_get_raw_search($conditions)
         unset($conditions['price_max']);
     }
 
-    if (!isset($conditions['sPattern']) || $conditions['sPattern'] == '') {
+    if (!isset($conditions['sPattern']) || !is_scalar($conditions['sPattern']) || $conditions['sPattern'] == '') {
         unset($conditions['sPattern']);
     }
 
@@ -1261,6 +1177,185 @@ function osc_get_raw_search($conditions)
     );
 
     return $conditions;
+}
+
+/**
+ * How each subdomain mode names its filter and where it looks the value up.
+ *
+ * @return array<string,array<string,string>> Keyed by osc_subdomain_type()
+ */
+function _aux_search_subdomains()
+{
+    return array(
+        'category' => array('param' => 'sCategory', 'model' => 'Category',
+            'finder' => 'findBySlug', 'label' => 's_slug'),
+        'country'  => array('param' => 'sCountry', 'model' => 'Country',
+            'finder' => 'findByCode', 'label' => 's_slug'),
+        'region'   => array('param' => 'sRegion', 'model' => 'Region',
+            'finder' => 'findByName', 'label' => 's_slug'),
+        'city'     => array('param' => 'sCity', 'model' => 'City',
+            'finder' => 'findByName', 'label' => 's_slug'),
+        'user'     => array('param' => 'sUser', 'model' => 'User',
+            'finder' => 'findByUsername', 'label' => 's_username'),
+    );
+}
+
+/**
+ * Look one filter value up: by id when it is numeric, otherwise by the spec's finder.
+ *
+ * @param array<string,string> $spec  A row of _aux_search_subdomains() or _aux_search_places()
+ * @param mixed                $value
+ *
+ * @return array<string,mixed>|null
+ */
+function _aux_search_find(array $spec, $value)
+{
+    $model = call_user_func(array($spec['model'], 'newInstance'));
+
+    return is_numeric($value)
+        ? $model->findByPrimaryKey($value)
+        : $model->{$spec['finder']}($value);
+}
+
+/**
+ * The two places that get a canonical URL of their own, and how to build one.
+ *
+ * mark is the letter the id is written behind: /gujarat-r7, /surat-c11.
+ *
+ * @return array<string,array<string,string>> Keyed by the search parameter
+ */
+function _aux_search_places()
+{
+    return array(
+        'sRegion' => array('param' => 'sRegion', 'model' => 'Region', 'finder' => 'findByName',
+            'mark' => '-r', 'currentId' => 'osc_list_region_id', 'currentSlug' => 'osc_list_region_slug'),
+        'sCity'   => array('param' => 'sCity', 'model' => 'City', 'finder' => 'findByName',
+            'mark' => '-c', 'currentId' => 'osc_list_city_id', 'currentSlug' => 'osc_list_city_slug'),
+    );
+}
+
+/**
+ * Whether this search is just one place, optionally inside one category and on one
+ * page -- the only shape that earns a canonical URL rather than a query string.
+ *
+ * Every value here has been through osc_remove_slash(), which returns a string for
+ * anything that is not an array, so "not an array" is the same test as "a string".
+ *
+ * @param array<string,mixed> $params
+ * @param string              $key
+ * @param int                 $countP
+ *
+ * @return bool
+ */
+function _aux_search_place_wanted(array $params, $key, $countP)
+{
+    if (!isset($params[$key]) || is_array($params[$key])
+        || strpos($params[$key], ',') !== false
+    ) {
+        return false;
+    }
+
+    return $countP == 1
+        || ($countP == 2 && (isset($params['iPage']) || isset($params['sCategory'])))
+        || (isset($params['iPage'], $params['sCategory']) && $countP == 3);
+}
+
+/**
+ * The canonical URL for one region or city.
+ *
+ * 'stop' says the value matched no row, in which case 'url' is the query-string form
+ * the caller must hand straight back. That fallback is built on top of the prefix and
+ * category already appended, which is how it has always behaved.
+ *
+ * @param array<string,mixed>  $params
+ * @param array<string,string> $spec     A row of _aux_search_places()
+ * @param string               $base_url
+ *
+ * @return array{url:string,stop:bool}
+ */
+function _aux_search_place_url(array $params, array $spec, $base_url)
+{
+    $url = $base_url;
+    if (osc_get_preference('seo_url_search_prefix') != '') {
+        $url .= osc_get_preference('seo_url_search_prefix') . '/';
+    }
+    if (isset($params['sCategory'])) {
+        $categorySlug = _aux_search_category_slug($params['sCategory']);
+        if ($categorySlug != '') {
+            $url .= $categorySlug . '_';
+        }
+    }
+
+    $key   = $spec['param'];
+    $value = $params[$key];
+    if (call_user_func($spec['currentId']) == $value) {
+        $url .= osc_sanitizeString(call_user_func($spec['currentSlug'])) . $spec['mark']
+            . call_user_func($spec['currentId']);
+    } else {
+        $row = _aux_search_find($spec, $value);
+        if (!isset($row['s_slug'])) {
+            // Searching a place that does not exist, usually straight off a form.
+            return array(
+                'url'  => $url . 'index.php?page=search&' . $key . '=' . urlencode($value),
+                'stop' => true,
+            );
+        }
+        $url .= osc_sanitizeString($row['s_slug']) . $spec['mark'] . $row['pk_i_id'];
+    }
+
+    if (isset($params['iPage']) && $params['iPage'] != '' && $params['iPage'] != 1) {
+        $url .= '/' . $params['iPage'];
+    }
+
+    return array('url' => $url, 'stop' => false);
+}
+
+/**
+ * The friendly-URL name each search parameter is written under. An admin renames
+ * these on the permalinks screen, so they are read, not hardcoded.
+ *
+ * @return array<string,string> Parameter => preference holding its name
+ */
+function _aux_search_param_names()
+{
+    return array(
+        'sCountry'  => 'rewrite_search_country',
+        'sRegion'   => 'rewrite_search_region',
+        'sCity'     => 'rewrite_search_city',
+        'sCityArea' => 'rewrite_search_city_area',
+        'sCategory' => 'rewrite_search_category',
+        'sUser'     => 'rewrite_search_user',
+        'sPattern'  => 'rewrite_search_pattern',
+    );
+}
+
+/**
+ * Custom-field filters as friendly path segments: /meta4,red and, for a range,
+ * /meta4-min,1/meta4-max,9.
+ *
+ * @param mixed $meta
+ *
+ * @return string
+ */
+function _aux_search_meta_path($meta)
+{
+    if (!is_array($meta)) {
+        return '';
+    }
+    $path = '';
+    foreach ($meta as $field => $value) {
+        if (is_array($value)) {
+            foreach ($value as $part => $partValue) {
+                if ($value != '') {
+                    $path .= '/meta' . $field . '-' . $part . ',' . urlencode($partValue);
+                }
+            }
+        } elseif ($value != '') {
+            $path .= '/meta' . $field . ',' . urlencode($value);
+        }
+    }
+
+    return $path;
 }
 
 /**

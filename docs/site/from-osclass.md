@@ -9,14 +9,14 @@ ShopClass is Osclass, continued under its own name. Upgrading is **not** a
 migration: there is no export, no re-import and no rebuild. It is the same
 application continuing at a higher version number, against the same database.
 
-For the history (why the rename happened and what became of the old project),
+For the history of why the rename happened and what became of the old project,
 see [what happened to Osclass](/osclass/). This page is the mechanical upgrade.
 
 ## Which path is yours
 
 | You are on | What to do |
 |---|---|
-| **Osclass 5.2.2** | Nothing special. 5.2.2 points its built-in updater at the ShopClass releases. Open **Admin → Tools → Update** and take the update as you always have. |
+| **Osclass 5.2.2** | Nothing special. 5.2.2 points its built-in updater at the ShopClass releases: open **Admin → Tools → Update** and take the update as you always have. |
 | **Osclass 5.0 – 5.2.1** | Update to 5.2.2 first through the built-in updater, then let it carry you across to 6.x. |
 | **Osclass 3.x** | Update up the 3.x line to 3.9.0, then to the 5.x line, then to 5.2.2. Each step migrates the schema; skipping steps does not. |
 | **Nothing yet** | Skip Osclass entirely: [install ShopClass](/docs/install/). |
@@ -29,16 +29,18 @@ all of them.
 
 ## Unpacking a release by hand
 
-If you are moving a long-frozen install and would rather not chain updaters,
-unpack the ShopClass release over the site the way
-[Updating ShopClass](/docs/updating/) describes, then reconcile the schema:
+If your install has been stuck on an old version for a long time and you would
+rather not chain several updates, unpack the ShopClass release over the site
+the way [Updating ShopClass](/docs/updating/) describes. Then migrate the
+schema (bring the database's table structure up to date):
 
 ```bash
 php oc-cli.php db:upgrade
 ```
 
-This is the same migration the updater runs. It repairs a drifted schema first,
-which matters on old installs where a plugin once added or dropped a column.
+This is the same migration the updater runs. Old installs where a plugin once
+added or dropped a column can still differ afterwards: check with
+`php oc-cli.php db:doctor` and fix what is missing with `db:repair`.
 
 ## What carries over untouched
 
@@ -53,9 +55,10 @@ which matters on old installs where a plugin once added or dropped a column.
 
 ## What is worth testing
 
-Extensions that reach past the public API into legacy internals, or that assume
-jQuery is loaded in the admin panel, may need attention: the core no longer
-loads jQuery on the front end and the admin theme is Bootstrap 5.
+Extensions that reach past the public API into legacy internals may need
+attention. So do ones that assume jQuery is loaded in the admin panel: the
+admin theme is now Bootstrap 5, and the front end no longer loads jQuery at
+all.
 
 Test on a copy of the site first:
 
@@ -75,7 +78,7 @@ php oc-cli.php theme:activate --theme=storefront
 ## Rolling back
 
 Restore the database dump and the file copy you took at the start. Because the
-upgrade never rewrites your content, a rollback is a plain restore: there is no
+upgrade never rewrites your content, a rollback is a plain restore. There is no
 data to un-migrate.
 
 ## Frequently asked
@@ -85,7 +88,7 @@ No. ShopClass is GPLv3 and free, the same as Osclass was, with no account and no
 paid tier.
 
 **Will my Osclass plugins keep working?**
-Most do. The extension API was kept deliberately. Plugins that used
+Most do, since the extension API was kept deliberately. Plugins that used
 undocumented internals are the exception. Test on a copy.
 
 **Does my site have to change domain or URLs?**

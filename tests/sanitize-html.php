@@ -28,6 +28,15 @@ require_once __DIR__ . '/../oc-includes/osclass/helpers/hSanitize.php';
 require_once __DIR__ . '/lib/stubs.php';
 require_once __DIR__ . '/lib/harness.php';
 
+// Defined before the first purify() call: the purifier is built once and keeps whichever
+// host it was given, which is what decides an outbound link from an inbound one.
+if (!function_exists('osc_base_url')) {
+    function osc_base_url($with_index = false)
+    {
+        return 'https://example.test/';
+    }
+}
+
 $GLOBALS['okCount']    = 0;
 $GLOBALS['failCount']  = 0;
 $GLOBALS['failLabels'] = array();
@@ -98,6 +107,34 @@ check(
     'a mailto link keeps its href',
     strpos(osc_sanitize_html('<a href="mailto:a@b.test">x</a>'), 'mailto:a@b.test') !== false
 );
+harness_section('outbound links carry rel="nofollow"');
+
+// A description is a field any registered user can fill in, so its outbound links are worth
+// spamming for the ranking they pass. Inbound ones are the site's own and must not be marked.
+check(
+    'an outbound link is nofollowed',
+    strpos(osc_sanitize_html('<a href="https://spam.example/x">x</a>'), 'nofollow') !== false
+);
+check(
+    'a link back into this site is not',
+    strpos(osc_sanitize_html('<a href="https://example.test/item/1">x</a>'), 'nofollow') === false
+);
+check(
+    'a relative link is not either',
+    strpos(osc_sanitize_html('<a href="/item/1">x</a>'), 'nofollow') === false
+);
+check(
+    'a mailto link is left alone',
+    strpos(osc_sanitize_html('<a href="mailto:a@b.test">x</a>'), 'nofollow') === false
+);
+check(
+    'a rel the seller already wrote keeps its own values',
+    (bool)preg_match(
+        '/rel="[^"]*nofollow[^"]*"/',
+        osc_sanitize_html('<a href="https://spam.example/x" rel="noopener">x</a>')
+    )
+);
+
 check(
     'the forecolor button\'s colour span keeps its colour',
     strpos(osc_sanitize_html('<span style="color:#ff0000">red</span>'), 'color') !== false

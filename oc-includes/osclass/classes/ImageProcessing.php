@@ -28,6 +28,14 @@ class ImageProcessing
     private $watermarked = false;
     private $use_imagick = false;
 
+    /** The photo formats read, by getimagesize() type, with their ImageMagick coder. */
+    private const PHOTO_CODERS = array(
+        IMAGETYPE_JPEG => 'jpeg',
+        IMAGETYPE_PNG  => 'png',
+        IMAGETYPE_GIF  => 'gif',
+        IMAGETYPE_WEBP => 'webp',
+    );
+
     /**
      * ImageProcessing constructor.
      *
@@ -49,29 +57,25 @@ class ImageProcessing
             throw new RuntimeException(sprintf(__('%s is corrupt or broken!'), $imagePath));
         }
 
-        $this->image_info = getimagesize($imagePath);
-
+        $this->image_info = self::imageInfo($imagePath);
+        if (!is_array($this->image_info)) {
+            throw new RuntimeException(sprintf(__('%s is corrupt or broken!'), $imagePath));
+        }
         if (extension_loaded('imagick') && osc_use_imagick()) {
             $this->use_imagick = true;
         }
+        if (self::pixelCount($imagePath) > self::maxPixels()) {
+            throw new RuntimeException(sprintf(__('%s has too many pixels to process.'), $imagePath));
+        }
 
         if ($this->use_imagick) {
+            // Only the first frame of an animation is read.
             try {
-                $this->im = new Imagick($imagePath);
+                $this->im = new Imagick(self::coder($this->image_info) . ':' . $imagePath . '[0]');
             } catch (ImagickException $e) {
-                trigger_error($e->getMessage(), E_USER_WARNING);
+                throw new RuntimeException(sprintf(__('%s is corrupt or broken!'), $imagePath));
             }
-            /**
-             * Check if image have more frames and get the first frame if it has.
-             */
-            if ($this->im->getNumberImages() > 1) {
-                $this->im->destroy();
-                try {
-                    $this->im = new Imagick($imagePath . '[0]');
-                } catch (ImagickException $e) {
-                    trigger_error($e->getMessage(), E_USER_WARNING);
-                }
-            }
+            $this->toSrgb();
 
             $geometry     = $this->im->getImageGeometry();
             $this->width  = $geometry['width'];
@@ -94,6 +98,14 @@ class ImageProcessing
                 $this->ext  = 'png';
                 $this->mime = 'image/png';
                 break;
+            case 'image/webp':
+                // Stays WebP, transparency and all, where the server can write it; else JPEG below.
+                if (self::canWriteWebp($this->use_imagick)) {
+                    $this->ext  = 'webp';
+                    $this->mime = 'image/webp';
+                    break;
+                }
+                // no break
             default:
                 $this->ext  = 'jpg';
                 $this->mime = 'image/jpeg';
@@ -103,11 +115,115 @@ class ImageProcessing
                     imagesavealpha($bg, true);
                     imagealphablending($bg, true);
                     imagecopy($bg, $this->im, 0, 0, 0, 0, $this->width, $this->height);
-                    imagedestroy($this->im);
                     $this->im = $bg;
                 }
                 break;
         }
+    }
+
+    /**
+     * The most pixels an image may have before it is opened. The image_max_pixels filter
+     * changes it.
+     *
+     * @return int
+     */
+    public static function maxPixels()
+    {
+        return max(1, (int)Plugins::applyFilter('image_max_pixels', 50000000));
+    }
+
+    /**
+     * How many pixels opening the image would decode. ImageMagick is asked too when it is in
+     * use, because a GIF frame can be larger than the size its header states.
+     *
+     * @param string $imagePath
+     *
+     * @return int 0 when the file is not an image
+     */
+    public static function pixelCount($imagePath)
+    {
+        $info = self::imageInfo($imagePath);
+        if (!is_array($info)) {
+            return 0;
+        }
+        $pixels = $info[0] * $info[1];
+        if (extension_loaded('imagick') && osc_use_imagick()) {
+            try {
+                $ping = new Imagick();
+                $ping->pingImage(self::coder($info) . ':' . $imagePath . '[0]');
+                $pixels = max($pixels, $ping->getImageWidth() * $ping->getImageHeight());
+                $ping->clear();
+            } catch (ImagickException $e) {
+                return PHP_INT_MAX;
+            }
+        }
+
+        return $pixels;
+    }
+
+    /**
+     * The image's width, height and type, as getimagesize() gives them.
+     *
+     * @param string $imagePath
+     *
+     * @return array<int|string,mixed>|null null when the file is not an image
+     */
+    public static function imageInfo($imagePath)
+    {
+        $info = @getimagesize($imagePath);
+
+        // Only photo formats; anything else would reach a decoder no photo ever needs.
+        return is_array($info) && isset(self::PHOTO_CODERS[$info[2]]) ? $info : null;
+    }
+
+    /**
+     * The ImageMagick coder for an image imageInfo() accepted. Named on every read, so
+     * ImageMagick cannot pick another decoder from the file's contents.
+     *
+     * @param array<int|string,mixed> $info
+     *
+     * @return string
+     */
+    private static function coder(array $info)
+    {
+        return self::PHOTO_CODERS[$info[2]];
+    }
+
+    /**
+     * Convert to standard sRGB before the colour profile is stripped on save, so a wide-gamut
+     * phone photo or a CMYK one keeps its colours. The profile is CC0, from Compact-ICC-Profiles.
+     *
+     * @return void
+     */
+    private function toSrgb()
+    {
+        try {
+            $icc = $this->im->getImageProfiles('icc', true)['icc'] ?? '';
+            // A real colour profile is a few KB, a CMYK one about 0.5 MB; a larger one is not parsed.
+            if ($icc !== '' && strlen($icc) <= 1048576 && $this->im->getImageColorspace() !== Imagick::COLORSPACE_GRAY) {
+                $this->im->profileImage('icc', (string)file_get_contents(dirname(__DIR__) . '/icc/sRGB-v2-micro.icc'));
+            } elseif ($this->im->getImageColorspace() === Imagick::COLORSPACE_CMYK) {
+                $this->im->transformImageColorspace(Imagick::COLORSPACE_SRGB);
+            }
+        } catch (ImagickException $e) {
+            // Colours stay as they were; the photo itself is still usable.
+        }
+    }
+
+    /**
+     * Whether this server can write WebP with the given engine.
+     *
+     * @param bool $imagick
+     *
+     * @return bool
+     */
+    public static function canWriteWebp($imagick)
+    {
+        if ($imagick) {
+            return class_exists('Imagick') && in_array('WEBP', Imagick::queryFormats('WEBP'), true);
+        }
+
+        return function_exists('imagewebp');
     }
 
     /**
@@ -116,7 +232,7 @@ class ImageProcessing
      * @param string $imagePath
      *
      * @return \ImageProcessing
-     * @throws RuntimeException when the file is missing, unreadable or empty
+     * @throws RuntimeException when the file is missing, unreadable, empty or too large
      */
     public static function fromFile($imagePath)
     {
@@ -128,10 +244,9 @@ class ImageProcessing
      */
     public function __destruct()
     {
+        // A GD image is an object since PHP 8.0 and is freed with it; only Imagick needs this.
         if ($this->use_imagick) {
             $this->im->destroy();
-        } else {
-            imagedestroy($this->im);
         }
     }
 
@@ -217,12 +332,9 @@ class ImageProcessing
         }
 
         if ($this->use_imagick) {
+            // Padding stays transparent; saving as JPEG turns it white.
             $bg = new Imagick();
-            if ($this->ext === 'jpg') {
-                $bg->newImage($width, $height, 'white');
-            } else {
-                $bg->newImage($width, $height, 'none');
-            }
+            $bg->newImage($width, $height, 'none');
             $this->im->thumbnailImage($width, $height, true);
             $bg->compositeImage(
                 $this->im,
@@ -249,7 +361,6 @@ class ImageProcessing
                 $this->width,
                 $this->height
             );
-            imagedestroy($this->im);
             $this->im = $newIm;
         }
         $this->width  = $width;
@@ -277,7 +388,10 @@ class ImageProcessing
             $ext = $this->ext;
         }
 
-        if ($ext !== 'png' && $ext !== 'gif') {
+        if ($ext === 'webp' && !self::canWriteWebp($this->use_imagick)) {
+            $ext = 'jpeg';
+        }
+        if ($ext !== 'png' && $ext !== 'gif' && $ext !== 'webp') {
             $ext = 'jpeg';
         }
 
@@ -292,7 +406,7 @@ class ImageProcessing
 
         if ($this->use_imagick) {
             try {
-                if ($ext === 'jpeg' && ($this->ext !== 'jpeg' && $this->ext !== 'jpg')) {
+                if ($ext === 'jpeg') {
                     $bg = new Imagick();
                     $bg->newImage($this->width, $this->height, 'white');
                     $this->im->thumbnailImage($this->width, $this->height, true);
@@ -319,6 +433,10 @@ class ImageProcessing
                 case 'gif':
                 case 'png':
                     imagepng($this->im, $imagePath, $png_compression);
+                    break;
+                case 'webp':
+                    imagesavealpha($this->im, true);
+                    imagewebp($this->im, $imagePath, $jpeg_quality);
                     break;
                 default:
                     if (($ext === 'jpeg' && ($this->ext !== 'jpeg' && $this->ext !== 'jpg')) || $this->watermarked) {
@@ -500,7 +618,7 @@ class ImageProcessing
         }
 
         if ($this->use_imagick) {
-            $wm                 = new Imagick($path_watermark);
+            $wm                 = new Imagick('png:' . $path_watermark);
             $watermark_geometry = $wm->getImageGeometry();
             $watermark_height   = $watermark_geometry['height'];
             $watermark_width    = $watermark_geometry['width'];
@@ -526,7 +644,7 @@ class ImageProcessing
                 $watermark_height,
                 100
             );
-            imagedestroy($watermark);
+            unset($watermark);
         }
 
         return $this;
@@ -649,8 +767,7 @@ class ImageProcessing
             //Write Image
             imagepng($image, osc_uploads_path() . $watermark_filename);
 
-            // Clean memory
-            imagedestroy($image);
+            unset($image);
         }
 
         // save new image name to preference

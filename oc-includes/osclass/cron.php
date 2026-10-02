@@ -27,16 +27,15 @@ if (!defined('CLI')) {
 // Hourly crons
 $cron = Cron::newInstance()->getCronByType('HOURLY');
 if (is_array($cron)) {
-    $i_next = strtotime($cron['d_next_exec']);
+    $claimed = false;
+    $i_next  = strtotime($cron['d_next_exec']);
 
     if ((CLI && (Params::getParam('cron-type') === 'hourly')) || ((($i_now - $i_next + $shift_seconds) >= 0) && !CLI)) {
-        // update the next execution time in t_cron
+        // Only the request that moves the schedule on runs the jobs, so two at once cannot both run.
         $d_next = date('Y-m-d H:i:s', $i_now_truncated + 3600);
-        Cron::newInstance()->update(
-            array('d_last_exec' => $d_now, 'd_next_exec' => $d_next),
-            array('e_type' => 'HOURLY')
-        );
-
+        $claimed = Cron::newInstance()->claim('HOURLY', (string) $cron['d_next_exec'], $d_now, $d_next);
+    }
+    if ($claimed) {
         osc_runAlert('HOURLY', $cron['d_last_exec']);
 
         // Run cron AFTER updating the next execution time to avoid double run of cron
@@ -79,16 +78,15 @@ if (is_array($cron)) {
 // Daily cron
 $cron = Cron::newInstance()->getCronByType('DAILY');
 if (is_array($cron)) {
-    $i_next = strtotime($cron['d_next_exec']);
+    $claimed = false;
+    $i_next  = strtotime($cron['d_next_exec']);
 
     if ((CLI && (Params::getParam('cron-type') === 'daily')) || ((($i_now - $i_next + $shift_seconds) >= 0) && !CLI)) {
-        // update the next execution time in t_cron
+        // Only the request that moves the schedule on runs the jobs, so two at once cannot both run.
         $d_next = date('Y-m-d H:i:s', $i_now_truncated + (24 * 3600));
-        Cron::newInstance()->update(
-            array('d_last_exec' => $d_now, 'd_next_exec' => $d_next),
-            array('e_type' => 'DAILY')
-        );
-
+        $claimed = Cron::newInstance()->claim('DAILY', (string) $cron['d_next_exec'], $d_now, $d_next);
+    }
+    if ($claimed) {
         //osc_do_auto_upgrade();
 
         osc_runAlert('DAILY', $cron['d_last_exec']);
@@ -99,6 +97,7 @@ if (is_array($cron)) {
             LatestSearches::newInstance()->purgeDate(date('Y-m-d H:i:s', time() - (24 * 3600)));
         }
         osc_update_cat_stats();
+        \mindstellar\security\MessageGuard::purgeExpired();
 
         // Retention: prune admin activity-log rows past the configured window
         // (0 = keep forever), so t_log cannot grow without bound. Mirrors the
@@ -122,6 +121,16 @@ if (is_array($cron)) {
         // anything; what is left is history, and under a sustained guessing run
         // the table is the fastest-growing one in the schema.
         \mindstellar\security\LoginThrottle::prune();
+        \mindstellar\security\RateLimit::prune();
+
+        // Pending e-mail changes are dropped after 7 days; their confirmation link then stops working.
+        try {
+            osc_db_table(DB_TABLE_PREFIX . 't_user_email_tmp')
+                ->where('dt_date', '<', date('Y-m-d H:i:s', time() - (7 * 24 * 3600)))
+                ->delete();
+        } catch (\mindstellar\database\DbException $e) {
+            error_log('Pending e-mail change prune failed: ' . $e->getMessage());
+        }
 
         // Pre-generate the XML sitemap into the object cache so bots never trigger
         // the (potentially heavy) location scans on the request path. Regeneration
@@ -148,16 +157,15 @@ if (is_array($cron)) {
 // Weekly cron
 $cron = Cron::newInstance()->getCronByType('WEEKLY');
 if (is_array($cron)) {
-    $i_next = strtotime($cron['d_next_exec']);
+    $claimed = false;
+    $i_next  = strtotime($cron['d_next_exec']);
 
     if ((CLI && (Params::getParam('cron-type') === 'weekly')) || ((($i_now - $i_next + $shift_seconds) >= 0) && !CLI)) {
-        // update the next execution time in t_cron
+        // Only the request that moves the schedule on runs the jobs, so two at once cannot both run.
         $d_next = date('Y-m-d H:i:s', $i_now_truncated + (7 * 24 * 3600));
-        Cron::newInstance()->update(
-            array('d_last_exec' => $d_now, 'd_next_exec' => $d_next),
-            array('e_type' => 'WEEKLY')
-        );
-
+        $claimed = Cron::newInstance()->claim('WEEKLY', (string) $cron['d_next_exec'], $d_now, $d_next);
+    }
+    if ($claimed) {
         osc_runAlert('WEEKLY', $cron['d_last_exec']);
 
         // Run cron AFTER updating the next execution time to avoid double run of cron

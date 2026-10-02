@@ -267,23 +267,6 @@ class AdminMenu
             'stats_comments',
             'moderator'
         );
-        // The two entries below run a recalculation rather than opening a report, so they
-        // are held apart from the views above instead of sitting in the same list.
-        $this->add_submenu_divider('stats', __('Maintenance'), 'stats_maintenance', 'administrator');
-        $this->add_submenu(
-            'stats',
-            __('Recalculate location stats'),
-            osc_admin_base_url(true) . '?page=tools&action=locations',
-            'tools_location',
-            'administrator'
-        );
-        $this->add_submenu(
-            'stats',
-            __('Recalculate category stats'),
-            osc_admin_base_url(true) . '?page=tools&action=category',
-            'tools_category',
-            'administrator'
-        );
 
         $this->add_menu(
             __('Appearance'),
@@ -425,33 +408,26 @@ class AdminMenu
             'administrator'
         );
 
-        $this->add_menu(__('Tools'), osc_admin_base_url(true) . '?page=tools&action=import', 'tools', 'administrator', 'bi bi-tools');
+        $this->add_menu(__('Tools'), osc_admin_base_url(true) . '?page=tools&action=system-info', 'tools', 'administrator', 'bi bi-tools');
         $this->add_submenu(
             'tools',
-            __('Upgrade Shopclass'),
-            osc_admin_base_url(true) . '?page=tools&action=upgrade',
-            'tools_upgrade',
+            __('System info'),
+            osc_admin_base_url(true) . '?page=tools&action=system-info',
+            'tools_system_info',
             'administrator'
         );
         $this->add_submenu(
             'tools',
-            __('Backup data'),
+            __('Backup and restore'),
             osc_admin_base_url(true) . '?page=tools&action=backup',
             'tools_backup',
             'administrator'
         );
         $this->add_submenu(
             'tools',
-            __('Import data'),
-            osc_admin_base_url(true) . '?page=tools&action=import',
-            'tools_import',
-            'administrator'
-        );
-        $this->add_submenu(
-            'tools',
-            __('Cache'),
-            osc_admin_base_url(true) . '?page=tools&action=cache',
-            'tools_cache',
+            __('Upgrade Shopclass'),
+            osc_admin_base_url(true) . '?page=tools&action=upgrade',
+            'tools_upgrade',
             'administrator'
         );
         $this->add_submenu(
@@ -473,13 +449,6 @@ class AdminMenu
             __('Activity log'),
             osc_admin_base_url(true) . '?page=tools&action=logs',
             'tools_logs',
-            'administrator'
-        );
-        $this->add_submenu(
-            'tools',
-            __('System info'),
-            osc_admin_base_url(true) . '?page=tools&action=system_info',
-            'tools_system_info',
             'administrator'
         );
         // Snapshot what core registered, so the renderer can tell a plugin's or a theme's
@@ -552,6 +521,10 @@ class AdminMenu
         // actual url
         $actual_url  = urldecode(Params::getServerParam('QUERY_STRING', false, false));
         $actual_page = Params::getParam('page');
+        // A refused save redraws its form from a POST, which has no query string.
+        if ($actual_url === '' && is_string($actual_page) && $actual_page !== '') {
+            $actual_url = 'page=' . $actual_page;
+        }
 
         $adminMenu = self::newInstance();
         $aMenu     = $adminMenu->get_array_menu();

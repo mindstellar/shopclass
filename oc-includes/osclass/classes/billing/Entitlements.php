@@ -340,6 +340,25 @@ final class Entitlements
     }
 
     /**
+     * Whether $userId holds no more live listings than their ceiling allows. Unlike
+     * withinFreeQuota() this allows being exactly at the ceiling: it gates actions on a
+     * listing that is already live, such as a free bump.
+     *
+     * @param int $userId
+     *
+     * @return bool
+     */
+    public static function withinFreeCeiling(int $userId): bool
+    {
+        $ceiling = self::listingCeiling($userId);
+        if ($ceiling === -1) {
+            return true;
+        }
+
+        return self::liveListings($userId) <= $ceiling;
+    }
+
+    /**
      * How many of $userId's listings currently occupy a live-mode slot.
      *
      * A slot is claimed the moment a listing publishes and released only by

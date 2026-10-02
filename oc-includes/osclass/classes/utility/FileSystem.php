@@ -46,6 +46,29 @@ class FileSystem
     }
 
     /**
+     * Close a folder to the web: an empty index.php and an .htaccess that denies every
+     * request on Apache 2.4 and 2.2. A file already there is left alone.
+     *
+     * @param string $dir
+     *
+     * @return void
+     */
+    public static function protectFolder(string $dir): void
+    {
+        $dir   = rtrim($dir, '/\\') . '/';
+        $files = array(
+            'index.php' => "<?php\n",
+            '.htaccess' => "<IfModule mod_authz_core.c>\n    Require all denied\n</IfModule>\n"
+                . "<IfModule !mod_authz_core.c>\n    Order allow,deny\n    Deny from all\n</IfModule>\n",
+        );
+        foreach ($files as $name => $content) {
+            if (!is_file($dir . $name)) {
+                @file_put_contents($dir . $name, $content);
+            }
+        }
+    }
+
+    /**
      * Sets access and modification time of file.
      *
      * @param string|iterable<string> $files A filename, an array of files, or a \Traversable instance to create
@@ -336,14 +359,20 @@ class FileSystem
         }
         $files = array_reverse($files);
         foreach ($files as $file) {
+            // is_link() resolves THROUGH a trailing slash and answers false, while is_dir()
+            // still answers true -- so "themes/mytheme/" took the directory branch below and
+            // walked into whatever the link pointed at, deleting somebody else's files. The
+            // name is trimmed before the test so a link is recognised either way.
+            $link         = rtrim((string) $file, '/\\');
+            $link         = $link === '' ? (string) $file : $link;
             $isFileExists = file_exists($file);
-            if (is_link($file)) {
+            if (is_link($link)) {
+                // A symlink is removed as itself. What it points at is not ours to delete.
                 // See https://bugs.php.net/52176
-                if ($isFileExists
-                    && !(self::callback('unlink', $file) || '\\' !== DIRECTORY_SEPARATOR
-                        || self::callback('rmdir', $file))
+                if (!(self::callback('unlink', $link) || '\\' !== DIRECTORY_SEPARATOR
+                        || self::callback('rmdir', $link))
                 ) {
-                    throw new RuntimeException(sprintf('Unable to remove symlink "%s": ' . self::$lastError, $file));
+                    throw new RuntimeException(sprintf('Unable to remove symlink "%s": ' . self::$lastError, $link));
                 }
             } elseif (is_dir($file)) {
                 $this->remove(new FilesystemIterator(
@@ -752,7 +781,7 @@ class FileSystem
             $data                     = curl_exec($ch);
             $responseInfo['status']  = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
             $responseInfo['headers'] = $responseHeaders;
-            curl_close($ch);
+            unset($ch);
         } else {
             throw new RuntimeException(sprintf('Unable to get content from "%s". CURL not initializes.
             Is PHP-curl extension installed?', $url));
@@ -933,7 +962,7 @@ class FileSystem
                 $success    = curl_exec($ch);
                 $curlErrno  = curl_errno($ch);
                 $httpStatus = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-                curl_close($ch);
+                unset($ch);
                 fclose($fp);
 
                 if ($success === false || $curlErrno !== 0 || $httpStatus < 200 || $httpStatus >= 300) {

@@ -66,7 +66,7 @@
 
 .market-last-checked {
   color: var(--osc-ink-muted);
-  font-size: .8125rem;
+  font-size: $font-size-label;
   margin: .5rem 0 0;
 }
 
@@ -77,33 +77,27 @@
   text-align: center;
 }
 
+.market-no-results p {
+  margin: 0 0 .75rem;
+}
+
 // ---- Browse grid -----------------------------------------------------------
 .market-grid-item {
   margin-bottom: 1rem;
 }
 
-// Same shape as an installed tile (packages.scss): art on the start edge, identity beside
-// it, actions along the bottom. A package reads the same whether it is installed or not.
+// The same media card as an installed package (packages.scss), so a package reads the
+// same whether it is installed or not.
 .market-card {
+  --osc-pkg-bg: var(--bs-card-bg);
   block-size: 100%;
-  column-gap: 1rem;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  grid-template-rows: 1fr auto;
-  padding: 1rem;
-  row-gap: .75rem;
 }
 
 .market-card-thumb-btn {
-  align-items: flex-start;
-  background: none;
+  background-color: var(--osc-bench-sunk);
   border: 0;
   cursor: pointer;
   display: flex;
-  flex: 0 0 auto;
-  grid-column: 1;
-  grid-row: 1;
-  inline-size: 4rem;
   padding: 0;
   text-align: start;
 
@@ -113,42 +107,48 @@
   }
 }
 
-.market-card-thumb {
-  aspect-ratio: 4 / 3;
-  background-color: var(--osc-bench-sunk);
-  border-radius: $border-radius;
+.market-card .market-card-thumb-btn {
+  align-self: start;
+  aspect-ratio: var(--osc-pkg-media-ratio);
+  grid-area: art;
   inline-size: 100%;
 }
 
-// Name first, verdict beside it — the reading order every list on these screens uses.
+.market-app[data-type="theme"] .market-card .market-card-thumb-btn {
+  border-block-end: 1px solid var(--osc-rule);
+}
+
+.market-card-thumb {
+  block-size: 100%;
+  border-radius: 0;
+  inline-size: 100%;
+}
+
 .market-card-head {
   align-items: center;
   display: flex;
-  flex-wrap: wrap;
   gap: .5rem;
+  grid-area: head;
+  min-inline-size: 0;
+  padding: .85rem 1rem 0;
 
   .market-card-status {
-    order: 0;
+    flex: 0 0 auto;
   }
 }
 
+// The details wrapper lays out nothing itself: its parts are placed on the card's grid.
 .market-card-body {
-  display: flex;
-  flex-direction: column;
-  gap: .35rem;
-  grid-column: 2;
-  grid-row: 1;
-  min-inline-size: 0;
-  padding: 0;
-}
-
-.market-card-status {
-  order: -1;
+  display: contents;
 }
 
 .market-card-title {
   font-size: 1.0625rem; // Title
   margin: 0;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .market-card-title-btn {
@@ -170,8 +170,13 @@
 
 .market-card-author {
   color: var(--osc-ink-muted);
-  font-size: .8125rem;
-  margin: 0;
+  font-size: $font-size-label;
+  grid-area: meta;
+  margin: .2rem 0 0;
+  overflow: hidden;
+  padding-inline: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 // Appended to the author line rather than a row of its own, so a card with no count (today's
@@ -182,14 +187,12 @@
 
 .market-card-desc {
   color: var(--osc-ink);
-  flex: 1 1 auto;
-  font-size: .875rem;
-  margin: 0;
+  padding-inline: 1rem;
 }
 
 .market-card-reason {
   color: var(--osc-ink-muted);
-  font-size: .8125rem;
+  font-size: $font-size-label;
   margin: .25rem 0 0;
 }
 
@@ -197,8 +200,10 @@
 // gets the same muted treatment as .market-card-reason rather than a callout tint.
 .market-card-note {
   color: var(--osc-ink-muted);
-  font-size: .8125rem;
+  font-size: $font-size-label;
+  grid-area: note;
   margin: .25rem 0 0;
+  padding-inline: 1rem;
 }
 
 .market-card-actions {
@@ -207,8 +212,9 @@
   display: flex;
   flex-wrap: wrap;
   gap: .5rem;
-  grid-column: 1 / -1;
-  padding-block-start: .75rem;
+  grid-area: actions;
+  margin: .5rem 1rem 0;
+  padding-block: .75rem;
 }
 
 .market-card-action {
@@ -256,6 +262,8 @@
 // Same geometry as the installed row (packages.scss): a pending update is the same object
 // in a different state, so it is read the same way.
 .market-update-item {
+  --osc-pkg-bg: var(--osc-bench);
+  --osc-pkg-shade: color-mix(in srgb, var(--osc-ink) 22%, transparent);
   align-items: flex-start;
   border-block-end: 1px solid var(--osc-rule);
   display: flex;
@@ -263,16 +271,16 @@
   padding: 1rem .25rem;
 
   &:hover {
+    --osc-pkg-bg: var(--osc-bench-warm);
     background-color: var(--osc-bench-warm);
   }
 
-  .market-update-item-thumb,
   .osc-thumb {
-    aspect-ratio: 4 / 3;
+    aspect-ratio: var(--osc-pkg-media-ratio);
     background-color: var(--osc-bench-sunk);
     border-radius: $border-radius;
     flex: 0 0 auto;
-    inline-size: 4.5rem;
+    inline-size: var(--osc-pkg-media-w);
   }
 }
 
@@ -280,16 +288,14 @@
   border-block-start: 1px solid var(--osc-rule);
 }
 
-// .market-card-thumb-btn is written for the Browse grid, where it fills a card's full
-// width; reused here to open the same detail dialog from an Updates row, so it needs its
-// own box model rather than the grid one.
 .market-update-thumb-btn {
   flex: 0 0 auto;
-  inline-size: auto;
 }
 
 .market-update-body {
+  @extend %osc-pkg-scroll;
   flex: 1 1 auto;
+  max-block-size: 10rem;
   min-inline-size: 0;
 }
 
@@ -299,12 +305,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: .5rem;
-
-  // .market-card-status carries order:-1 for the browse card, where the verdict leads;
-  // in a row the name leads, so the badge takes its place in source order.
-  .market-card-status {
-    order: 0;
-  }
 }
 
 .market-update-title {
@@ -314,7 +314,7 @@
 
 .market-update-versions {
   color: var(--osc-ink-muted);
-  font-size: .8125rem;
+  font-size: $font-size-label;
   margin: .15rem 0 0;
 }
 
@@ -381,7 +381,7 @@
 
 .market-detail-author {
   color: var(--osc-ink-muted);
-  font-size: .8125rem;
+  font-size: $font-size-label;
   margin: .15rem 0 .5rem;
 }
 
@@ -391,7 +391,7 @@
 
 .market-detail-note {
   color: var(--osc-ink-muted);
-  font-size: .8125rem;
+  font-size: $font-size-label;
 
   &:empty {
     display: none;
@@ -400,7 +400,7 @@
 
 .market-detail-reason {
   color: var(--osc-ink-muted);
-  font-size: .8125rem;
+  font-size: $font-size-label;
 
   &:empty {
     display: none;
@@ -414,7 +414,7 @@
 
   dt {
     color: var(--osc-ink-muted);
-    font-size: .8125rem; // Label — the system's smallest step
+    font-size: $font-size-label; // Label — the system's smallest step
     font-weight: 500;
     text-transform: uppercase;
   }
@@ -440,7 +440,7 @@
     background-color: var(--osc-bench-sunk);
     border-radius: $border-radius-pill;
     color: var(--osc-ink-muted);
-    font-size: .8125rem; // Label — the system's smallest step
+    font-size: $font-size-label; // Label — the system's smallest step
     padding: .1rem .55rem;
   }
 }
@@ -535,7 +535,7 @@
 
 .market-detail-screens-caption {
   color: var(--osc-ink-muted);
-  font-size: .8125rem;
+  font-size: $font-size-label;
   margin: .5rem 0 0;
 
   &:empty {
@@ -568,6 +568,29 @@
     margin: 1.1em 0 .4em;
   }
 
+  h1 {
+    font-size: 1.25rem;
+  }
+
+  h2 {
+    font-size: 1.125rem;
+  }
+
+  hr {
+    border: 0;
+    border-block-start: 1px solid var(--osc-rule);
+    margin: 1.25em 0;
+    opacity: 1;
+  }
+
+  li > p {
+    margin: .35em 0 0;
+  }
+
+  li > pre {
+    margin: .35em 0 .5em;
+  }
+
   p, ul, ol, pre, blockquote {
     margin: 0 0 .75em;
   }
@@ -594,6 +617,7 @@
     border-collapse: collapse;
     display: block;
     font-size: .875em;
+    inline-size: fit-content;
     margin: 0 0 .75em;
     max-inline-size: 100%;
     overflow-x: auto;
@@ -675,7 +699,7 @@
 }
 
 .market-detail-versions-table {
-  font-size: .8125rem;
+  font-size: $font-size-label;
   margin: 0;
   min-inline-size: 36rem;
 
@@ -701,7 +725,7 @@
     align-items: center;
     color: var(--osc-ink);
     display: inline-flex;
-    font-size: .8125rem;
+    font-size: $font-size-label;
     font-weight: 500;
     gap: .35rem;
     text-decoration: none;

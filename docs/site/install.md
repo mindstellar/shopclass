@@ -5,9 +5,9 @@ sidebar:
   order: 1
 ---
 
-ShopClass installs the way PHP applications have always installed: unpack a
-release into your web root and open the site in a browser. There is no build
-step, no bundler and no command line required on the server.
+ShopClass installs like most PHP software: upload a release to your web root
+(the folder your website serves files from) and open the site in a browser.
+There is no build step and no command line needed on the server.
 
 ## Server requirements
 
@@ -15,12 +15,13 @@ step, no bundler and no command line required on the server.
 |---|---|
 | PHP | **8.0 or newer** |
 | PHP extensions | `mysqli`, `gd`, `curl`, `mbstring`, `openssl`, `zip`, `json`, `ctype`, `fileinfo`, `posix` |
-| Database | MySQL 5.7+ or MariaDB 10.2+ |
+| Database | MySQL 5.7.5+ or MariaDB 10.2+ |
 | Web server | Apache or nginx |
 
 Almost every shared host meets this today. If you are not sure, run the
-installer anyway. Its first step checks all of it and tells you exactly what is
-missing before anything is written.
+installer anyway. Its first step checks your PHP version, key extensions
+(MySQLi, GD and cURL) and your folder permissions, and tells you exactly what
+is missing before anything is written.
 
 ## 1. Download a release
 
@@ -35,7 +36,7 @@ deployed from a branch will look broken in the admin panel.
 
 ## 2. Unpack it into your web root
 
-Upload and extract the package into the directory your domain serves: usually
+Upload and extract the package into the directory your domain serves, usually
 `public_html`, `htdocs` or `/var/www/html`.
 
 You can also install into a subdirectory (`public_html/classifieds`), in which
@@ -43,9 +44,9 @@ case your site lives at `https://example.com/classifieds/`.
 
 ## 3. Create a database
 
-From your hosting control panel, create an empty MySQL/MariaDB database and a
-user with full privileges on it. Note the four values down. The installer asks
-for them next:
+From your hosting control panel, create an empty MySQL or MariaDB database.
+Create a user with full privileges on it too. Write down these four values:
+the installer asks for them next:
 
 - database host (usually `localhost`)
 - database name
@@ -136,5 +137,5 @@ enabled and that `AllowOverride All` applies to your web root so the shipped
 [repository's reference config](https://github.com/mindstellar/shopclass).
 
 **Something else.**
-Ask in [GitHub Discussions](https://github.com/mindstellar/shopclass/discussions)
-and include your PHP version, your host, and what the screen actually said.
+Ask in [GitHub Discussions](https://github.com/mindstellar/shopclass/discussions).
+Include your PHP version, your host, and what the screen actually said.

@@ -42,8 +42,7 @@ $model = CityArea::newInstance();
 $table = DB_TABLE_PREFIX . 't_city_area';
 
 /**
- * t_city_area.pk_i_id is NOT AUTO_INCREMENT (struct.sql declares no
- * AUTO_INCREMENT on it), so every insert has to supply an id explicitly.
+ * Explicit ids keep these fixtures independent of the AUTO_INCREMENT counter.
  *
  * @return int The id just inserted, for convenience
  */

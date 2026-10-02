@@ -32,6 +32,7 @@ if (!osc_is_configured()) {
         . 'Run the installer to get started.',
         array(
             'tone'    => 'info',
+            'status'  => 503,
             'actions' => array(
                 array(
                     'label'   => 'Run the installer',
@@ -45,6 +46,12 @@ if (!osc_is_configured()) {
             ),
         )
     );
+}
+
+// A command line has no request to take the site address from.
+if (PHP_SAPI === 'cli' && !defined('WEB_PATH')) {
+    fwrite(STDERR, "Set OSC_CLI_URL to the site's address, e.g. OSC_CLI_URL=http://localhost:8000/ (or WEB_PATH, which also fixes it for web requests)\n");
+    exit(1);
 }
 
 // load default constants
@@ -65,6 +72,7 @@ if (!Preference::newInstance()->get('osclass_installed')) {
         'Your settings are in place, but the database hasn\'t been set up yet. Run the installer to finish.',
         array(
             'tone'    => 'info',
+            'status'  => 503,
             'actions' => array(
                 array(
                     'label'   => 'Run the installer',
@@ -96,6 +104,7 @@ require_once LIB_PATH . 'osclass/utils.php';
 require_once LIB_PATH . 'osclass/formatting.php';
 require_once LIB_PATH . 'osclass/locales.php';
 require_once LIB_PATH . 'osclass/helpers/hPlugins.php';
+require_once LIB_PATH . 'osclass/helpers/hJobs.php';
 require_once LIB_PATH . 'osclass/helpers/hStorage.php';
 require_once LIB_PATH . 'osclass/helpers/hResources.php';
 require_once LIB_PATH . 'osclass/emails.php';
@@ -150,14 +159,6 @@ Scripts::init();
 Styles::init();
 
 // register scripts
-//
-// jQuery is no longer used anywhere in core — the admin and every core form are vanilla.
-// These three stay registered because legacy third-party themes and plugins may still
-// enqueue them. Nothing in core enqueues them, so they cost nothing until a theme asks.
-osc_register_script('jquery', osc_assets_url('jquery/jquery.min.js'));
-osc_register_script('jquery-ui', osc_assets_url('jquery-ui/jquery-ui.min.js'), 'jquery');
-osc_register_script('jquery-validate', osc_assets_url('jquery-validation/jquery.validate.min.js'), 'jquery');
-
 osc_register_script('tiny_mce', osc_assets_url('tinymce/tinymce.min.js'));
 
 // Shared vanilla UI helpers (oscAutocomplete, …) — no jQuery. Used by the admin

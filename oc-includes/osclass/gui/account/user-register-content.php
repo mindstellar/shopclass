@@ -54,6 +54,7 @@ if (!defined('ABS_PATH')) {
             <button class="oe-btn" type="submit"><?php echo osc_esc_html(_m('Create account')); ?></button>
         </div>
     </form>
+    <?php osc_run_hook('user_register_form_after'); ?>
 
     <p class="oe-muted"><?php echo osc_esc_html(_m('Already have an account?')); ?>
         <a href="<?php echo osc_esc_html(osc_user_login_url()); ?>"><?php

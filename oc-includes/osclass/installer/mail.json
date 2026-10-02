@@ -125,7 +125,7 @@
             "fk_i_page_id": 22,
             "s_internal_name": "email_warn_expiration",
             "s_title": "{WEB_TITLE} - Your ad is about to expire",
-            "s_description": "<p>Hi {USER_NAME},<\/p><p>Your listing <a href=\"{ITEM_URL}\">{ITEM_TITLE}<\/a> is about to expire at {WEB_LINK}."
+            "s_description": "<p>Hi {USER_NAME},<\/p><p>Your listing <a href=\"{ITEM_URL}\">{ITEM_TITLE}<\/a> is about to expire at {WEB_LINK}.<\/p>"
         }
     ]
 }

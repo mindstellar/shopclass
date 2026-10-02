@@ -19,6 +19,7 @@
  *   - a signed callback with the wrong amount or currency does nothing
  *   - a paid callback credits once, and a replay credits nothing more
  *   - a refund or decline for a different amount does nothing
+ *   - the admin Refund button refunds its own paid orders once, and nothing else
  *
  * Usage:  php tests/test-gateway.php   (own scratch database, dropped on exit)
  */
@@ -54,6 +55,12 @@ require_once __DIR__ . '/lib/stubs.php';
 function osc_route_url($id, $args = array())
 {
     return WEB_PATH . 'index.php?page=route&route=' . $id . '&' . http_build_query($args);
+}
+// The billing URL helpers build from the core route table; hDefines.php, where
+// osc_core_url() lives, pulls in far more than this file needs.
+function osc_core_url($name, $args = array())
+{
+    return \mindstellar\routing\CoreRoutes::url($name, $args);
 }
 $GLOBALS['flash'] = array();
 function osc_add_flash_ok_message($msg, $section = 'pubMessages')
@@ -129,6 +136,7 @@ pin('a well-formed currency list passes', null, osc_settings_validate($fields['c
  * Fixtures: billing on, the gateway registered, one buyer.
  * ------------------------------------------------------------------------- */
 osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');
+osc_set_preference(\mindstellar\billing\Receipts::PREF_EMAIL, '0', Billing::PREF_GROUP, 'BOOLEAN');
 osc_reset_preferences();
 
 $gateway = new TestGateway();
@@ -295,5 +303,46 @@ pin('auto mode can leave an order pending', Order::STATUS_PENDING, $status($left
 pin('no currencies set means the billing currency', array('USD'), $gateway->getSupportedCurrencies());
 $setting('currencies', 'eur, GBP, nope');
 pin('listed codes are used and a bad one is skipped', array('EUR', 'GBP'), $gateway->getSupportedCurrencies());
+
+/* ----------------------------------------------------------------------------
+ * The admin Refund button.
+ * ------------------------------------------------------------------------- */
+harness_section('Refund from the admin');
+
+check('the gateway can refund from the admin', $gateway instanceof \mindstellar\billing\RefundableGateway);
+
+$adminRefund = $newOrder(15);
+pin('a pending order is refused', CallbackResult::OUTCOME_IGNORED, $gateway->refund($adminRefund)->getOutcome());
+pin('no refund button for a pending order', null, Billing::refundableGateway($adminRefund));
+
+Billing::markPaid($adminRefund, 'test_paid');
+$paid    = Orders::find($adminRefund->getId());
+$balance = Wallet::balance($buyer);
+check('a paid order offers the refund button', Billing::refundableGateway($paid) === $gateway);
+
+$setting('enabled', '0', 'BOOLEAN');
+pin('no refund button while test mode is off', null, Billing::refundableGateway($paid));
+pin('refused while test mode is off', CallbackResult::OUTCOME_IGNORED, Billing::refundThroughGateway($paid)->getOutcome());
+pin('the order stays paid', Order::STATUS_PAID, $status($paid));
+$setting('enabled', '1', 'BOOLEAN');
+
+$other = Orders::create($buyer, 'other', 1_000_000, 'USD', 5);
+Orders::settle($other->getId(), Order::STATUS_PAID, 'x');
+pin('another gateway\'s order is refused', CallbackResult::OUTCOME_IGNORED, $gateway->refund(Orders::find($other->getId()))->getOutcome());
+
+$result = Billing::refundThroughGateway($paid);
+pin('a paid order is refunded', CallbackResult::OUTCOME_REFUNDED, $result->getOutcome());
+pin('for this order', $paid->getId(), $result->getOrderId());
+pin('the order reads refunded', Order::STATUS_REFUNDED, $status($paid));
+pin('the credits are taken back', $balance - 15, Wallet::balance($buyer));
+
+pin('a second press is refused', CallbackResult::OUTCOME_IGNORED, Billing::refundThroughGateway($paid)->getOutcome());
+pin('and takes nothing more', $balance - 15, Wallet::balance($buyer));
+
+harness_section('Dashboard link');
+
+$linked = $newOrder(1);
+check('the test checkout page is its dashboard', strpos((string) $gateway->dashboardUrl($linked), 'route=test-gateway-checkout') !== false);
+pin('core shows no link on an http site', null, Billing::dashboardUrl($linked));
 
 exit(harness_result());

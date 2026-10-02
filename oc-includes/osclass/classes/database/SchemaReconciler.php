@@ -16,9 +16,9 @@ namespace mindstellar\database;
 /**
  * Additive schema reconciler.
  *
- * Diffs struct.sql against the live schema and applies what is missing. Pairs
- * with mindstellar\migration\MigrationRunner: this handles everything that can
- * be derived from struct.sql, migrations handle everything that cannot.
+ * Diffs struct.sql against the live schema and applies what is missing. Upgrades
+ * run migrations only; this is the opt-in repair behind `db:repair` and
+ * System info > Database.
  *
  * The diffing itself is string work over the parsed struct.sql; only the
  * introspection (SHOW TABLES / DESCRIBE / SHOW INDEX / SHOW CREATE TABLE) and
@@ -96,14 +96,20 @@ class SchemaReconciler
                     // classify fields (into sql file)
                     $this->classifyFieldsSql($fields, $normal_fields, $indexes, $constrains, $lastTable);
                     // Take fields from the DB (now into database)
-                    $tbl_fields = $this->conn->select('DESCRIBE ' . $table);
-                    // compare and create alter statments
-                    $this->createAlterTable($tbl_fields, $table, $normal_fields, $struct_queries);
-                    // Go for the index part
+                    $tbl_fields  = $this->conn->select('DESCRIBE ' . $table);
                     $tbl_indexes = $this->conn->select('SHOW INDEX FROM ' . $table);
+                    $has_primary = false;
+                    foreach ($tbl_indexes as $tbl_index) {
+                        if ($tbl_index['Key_name'] === 'PRIMARY') {
+                            $has_primary = true;
+                            break;
+                        }
+                    }
+                    // compare and create alter statments
+                    $this->createAlterTable($tbl_fields, $table, $normal_fields, $struct_queries, $has_primary);
 
                     // compare table index and struct.sql index for the same table, and only add the new ones
-                    $this->createNewIndex($tbl_indexes, $indexes, $table, $struct_queries);
+                    $this->createNewIndex($tbl_indexes, $indexes, $table, $struct_queries, $has_primary);
 
                     // show create table TABLE_NAME constrains
                     $tbl_constraint = $this->conn->selectOne('SHOW CREATE TABLE ' . $table);
@@ -134,6 +140,30 @@ class SchemaReconciler
         $this->conn->execute('SET FOREIGN_KEY_CHECKS = 1');
 
         return array($ok, $queries, $error_queries);
+    }
+
+    /**
+     * Reconcile the live schema against the bundled struct.sql.
+     *
+     * @param string|null $structPath defaults to the bundled installer/struct.sql
+     *
+     * @return array{ran:array<int,string>,failed:array<int,string>} statements that succeeded, and those that failed
+     * @throws DbException when the introspection queries themselves fail
+     */
+    public function repair(?string $structPath = null): array
+    {
+        $path = $structPath ?? (ABS_PATH . 'oc-includes/osclass/installer/struct.sql');
+        $sql  = is_file($path) ? (string) file_get_contents($path) : '';
+        if ($sql === '') {
+            return array('ran' => array(), 'failed' => array('struct.sql not found: ' . $path));
+        }
+
+        list(, $queries, $failed) = $this->reconcile(TablePrefix::expand($sql, DB_TABLE_PREFIX));
+
+        return array(
+            'ran'    => array_values(array_diff(array_values($queries), $failed)),
+            'failed' => array_values($failed),
+        );
     }
 
     /**
@@ -267,10 +297,12 @@ class SchemaReconciler
      * @param array<string,string>           $normal_fields  wanted declarations keyed by lowercase
      *                                                       name; matched entries are removed, by reference
      * @param array<int|string,string>       $struct_queries statements to run, appended to by reference
+     * @param bool                           $has_primary    whether the live table has a primary key; set
+     *                                                       to true once a statement here adds one
      *
      * @return void
      */
-    private function createAlterTable($tbl_fields, $table, &$normal_fields, &$struct_queries)
+    private function createAlterTable($tbl_fields, $table, &$normal_fields, &$struct_queries, &$has_primary = true)
     {
         foreach ($tbl_fields as $tbl_field) {
             //Every field should we on the definition, so else SHOULD never happen,
@@ -285,6 +317,14 @@ class SchemaReconciler
                 // it -- inside a DEFAULT, say -- cannot be mistaken for the type.
                 $declaration = $normal_fields[strtolower($tbl_field['Field'])];
                 $fieldName   = preg_quote($tbl_field['Field'], '|');
+
+                // A single-column primary key is folded into its column's declaration.
+                // Re-declaring it on a table that already has one fails, so it is kept only to add a missing key.
+                $wants_primary = (bool) preg_match('/\s+PRIMARY\s+KEY$/i', $declaration);
+                if ($wants_primary && $has_primary) {
+                    $declaration = preg_replace('/\s+PRIMARY\s+KEY$/i', '', $declaration);
+                }
+                $changed = false;
 
                 // Take the of the field
                 if (preg_match(
@@ -313,9 +353,16 @@ class SchemaReconciler
                         )
                     ) {
                         $struct_queries[] =
-                            'ALTER TABLE ' . $table . ' CHANGE COLUMN ' . $tbl_field['Field'] . ' '
-                            . $normal_fields[strtolower($tbl_field['Field'])];
+                            'ALTER TABLE ' . $table . ' CHANGE COLUMN ' . $tbl_field['Field'] . ' ' . $declaration;
+                        $changed          = true;
                     }
+                }
+
+                if ($wants_primary && !$has_primary) {
+                    if (!$changed) {
+                        $struct_queries[] = 'ALTER TABLE ' . $table . ' ADD PRIMARY KEY (' . $tbl_field['Field'] . ')';
+                    }
+                    $has_primary = true;
                 }
 
                 // Have we changed the default value? [with quotes]
@@ -358,6 +405,9 @@ class SchemaReconciler
         // For the rest of normal fields (they are not in the table) we add them.
         foreach ($normal_fields as $k => $v) {
             $struct_queries[] = 'ALTER TABLE ' . $table . ' ADD COLUMN ' . $v;
+            if (preg_match('/\s+PRIMARY\s+KEY$/i', $v)) {
+                $has_primary = true;
+            }
         }
     }
 
@@ -370,10 +420,11 @@ class SchemaReconciler
      *                                                       removed, by reference
      * @param string                         $table
      * @param array<int|string,string>       $struct_queries statements to run, appended to by reference
+     * @param bool                           $has_primary    whether the live table has a primary key
      *
      * @return void
      */
-    private function createNewIndex($tbl_indexes, &$indexes, $table, &$struct_queries)
+    private function createNewIndex($tbl_indexes, &$indexes, $table, &$struct_queries, $has_primary = true)
     {
         if ($tbl_indexes) {
             unset($indexes_array);
@@ -386,14 +437,6 @@ class SchemaReconciler
             }
 
             foreach ($indexes_array as $k => $v) {
-                // if PRIMARY KEY already exist
-                $exist_primary = false;
-                if (($k === 'PRIMARY') && isset($indexes_array['PRIMARY'])) {
-                    if (count($indexes_array['PRIMARY']['columns']) > 0) {
-                        $exist_primary = true;
-                    }
-                }
-
                 $string = '';
                 if ($k === 'PRIMARY') {
                     $string .= 'PRIMARY KEY ';
@@ -445,17 +488,29 @@ class SchemaReconciler
         // when the two canonical forms differ only in formatting (a sub-part
         // length, fulltext column order). Skipping by name keeps the reconcile
         // clean where before it surfaced a false-positive error.
-        $existingNames = array();
+        $existingNames      = array();
+        $liveColumns        = array();
+        $liveUniqueColumns  = array();
         if ($tbl_indexes) {
             foreach ($tbl_indexes as $tbl_index) {
                 $existingNames[strtolower($tbl_index['Key_name'])] = true;
+                if (strtoupper((string) $tbl_index['Index_type']) !== 'FULLTEXT') {
+                    $column = strtolower($tbl_index['Column_name'])
+                        . ((string) $tbl_index['Sub_part'] !== '' ? '(' . $tbl_index['Sub_part'] . ')' : '');
+                    $liveColumns[$tbl_index['Key_name']][] = $column;
+                    // PRIMARY is unique too (Non_unique = 0), and already covers its columns.
+                    if ((int) $tbl_index['Non_unique'] === 0) {
+                        $liveUniqueColumns[$tbl_index['Key_name']][] = $column;
+                    }
+                }
             }
         }
 
         // alter table
         foreach ($indexes as $v) {
             if (preg_match('/primary key/i', $v, $coincidencias) > 0) {
-                $struct_queries[] = 'ALTER TABLE ' . $table . ' DROP PRIMARY KEY, ADD ' . $v;
+                // Dropping a key that is not there fails the whole statement.
+                $struct_queries[] = 'ALTER TABLE ' . $table . ($has_primary ? ' DROP PRIMARY KEY,' : '') . ' ADD ' . $v;
                 continue;
             }
             $name = self::indexDefName($v);
@@ -464,8 +519,43 @@ class SchemaReconciler
                 // genuine definition change is carried by a migration, not here.
                 continue;
             }
+            if (preg_match('/^\s*(INDEX|KEY)\b/i', $v)
+                && in_array(self::indexDefColumns($v), $liveColumns, true)
+            ) {
+                // A plain index on the same ordered columns under another name serves the same queries.
+                continue;
+            }
+            if (preg_match('/^\s*UNIQUE\b/i', $v)
+                && in_array(self::indexDefColumns($v), $liveUniqueColumns, true)
+            ) {
+                // A unique index (or the primary key) already enforces uniqueness on these columns.
+                continue;
+            }
             $struct_queries[] = 'ALTER TABLE ' . $table . ' ADD ' . $v;
         }
+    }
+
+    /**
+     * The ordered column list of a struct.sql index definition, lower-cased, with any
+     * prefix length kept: "INDEX idx (a, B(10))" -> ['a', 'b(10)'].
+     *
+     * @param string $def
+     *
+     * @return array<int,string>
+     */
+    private static function indexDefColumns($def)
+    {
+        $open  = strpos($def, '(');
+        $close = strrpos($def, ')');
+        if ($open === false || $close === false || $close <= $open) {
+            return array();
+        }
+        $columns = array();
+        foreach (explode(',', substr($def, $open + 1, $close - $open - 1)) as $column) {
+            $columns[] = strtolower(preg_replace('/[\s`]+/', '', $column));
+        }
+
+        return $columns;
     }
 
     /**

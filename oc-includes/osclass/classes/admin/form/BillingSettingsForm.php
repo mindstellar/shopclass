@@ -12,11 +12,12 @@
 namespace mindstellar\admin\form;
 
 use mindstellar\billing\Billing;
+use mindstellar\billing\Receipts;
 
 /**
- * The billing settings screen, which is five independent forms: the switch that turns
+ * The billing settings screen, which is six independent forms: the switch that turns
  * selling on at all, what posting and featuring cost, the built-in bank-transfer method,
- * the per-listing upgrades, and the seller limits that can be bought past.
+ * the per-listing upgrades, the seller limits that can be bought past, and receipts.
  *
  * Each of the last four re-runs the registration its values feed, so a switch takes effect
  * on the request that flipped it rather than the next one. That is a save-time effect, so
@@ -39,6 +40,8 @@ final class BillingSettingsForm
     public const PAGE_UPGRADES = 'core.settings_billing_upgrades';
 
     public const PAGE_LIMITS = 'core.settings_billing_limits';
+
+    public const PAGE_RECEIPTS = 'core.settings_billing_receipts';
 
     /**
      * The switch. Nothing else on the screen matters while it is off, which is why it has a
@@ -312,13 +315,49 @@ final class BillingSettingsForm
     }
 
     /**
-     * What the view needs to draw all five forms, keyed by the section each one is.
+     * Payment receipts: whether they are e-mailed, and the business details they carry.
+     *
+     * @return string the page id
+     */
+    public static function registerReceipts(): string
+    {
+        if (osc_settings_page(self::PAGE_RECEIPTS) !== null) {
+            return self::PAGE_RECEIPTS;
+        }
+
+        CoreSettings::page(self::PAGE_RECEIPTS, __('Receipts'), Billing::PREF_GROUP)
+            ->onAfterSave(static function () {
+                osc_reset_preferences();
+            })
+            ->group(
+                __('Receipts'),
+                __('A buyer can open and print a receipt for every paid order from their orders page. '
+                   . 'A receipt is not a tax invoice.')
+            )
+            ->checkbox(Receipts::PREF_EMAIL, __('E-mail a receipt when an order is paid'))
+                ->rowLabel(__('Receipt e-mail'))
+                ->default(true)
+            ->textarea(
+                Receipts::PREF_BUSINESS,
+                __('Business details on receipts'),
+                __('Optional. Your business name, address and tax number, printed at the top '
+                   . 'of every receipt exactly as written here.')
+            )
+                ->set('rows', 4)
+                ->width('key')
+            ->register();
+
+        return self::PAGE_RECEIPTS;
+    }
+
+    /**
+     * What the view needs to draw all six forms, keyed by the section each one is.
      *
      * @param string                   $rejected the page id of the form that was refused, if any
      * @param array<string,mixed>|null $values   that form's submitted values
      *
      * @return array<string,array<string,mixed>> view variables per section: 'switch',
-     *         'pricing', 'offline', 'upgrades', 'limits'
+     *         'pricing', 'offline', 'upgrades', 'limits', 'receipts'
      */
     public static function formVars(string $rejected = '', ?array $values = null): array
     {
@@ -328,6 +367,7 @@ final class BillingSettingsForm
             'offline'  => array(self::registerOffline(), 'billing_offline_post', __('Save bank transfer settings')),
             'upgrades' => array(self::registerUpgrades(), 'billing_upgrades_post', __('Save upgrade settings')),
             'limits'   => array(self::registerLimits(), 'billing_limits_post', __('Save limits')),
+            'receipts' => array(self::registerReceipts(), 'billing_receipts_post', __('Save receipt settings')),
         );
 
         $vars = array();

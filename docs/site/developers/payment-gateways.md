@@ -1,15 +1,15 @@
 ---
 title: Payment gateways
-description: "Take payments in ShopClass by registering a gateway, and give it a declared settings page: walked through with the bundled Test Payments plugin."
+description: "Take payments in ShopClass by registering a gateway, and give it a declared settings page: walked through with the Test Payments plugin."
 sidebar:
-  order: 21
+  order: 23
 ---
 
 Core sells credits, keeps the wallet and applies upgrades. It never touches money.
 A **gateway plugin** does one job: take the payment and report back "this order
 is paid". Core then mints the credits.
 
-The bundled **Test Payments** plugin (`oc-content/plugins/test-gateway/`) is a
+The **Test Payments** plugin (`oc-content/plugins/test-gateway/` in the core repository) is a
 complete gateway that moves no money. Read it next to this page. It has three
 files that matter:
 
@@ -59,6 +59,19 @@ public function createCheckout(Order $order): CheckoutIntent
 
 Return `CheckoutIntent::html($markup)` instead to render in place, as core's bank
 transfer gateway does. Core prints that markup unescaped, so escape everything in it.
+
+To keep the provider's id for the checkout (a session id, say), call
+`Orders::attachRef($order->getId(), $this->getId(), $ref)`; it works only while the
+order is pending, and a new checkout for the same order replaces it.
+If `createCheckout()` throws, core logs it, leaves the order pending and tells the buyer
+the payment method is not available.
+
+Implement `DashboardLinkGateway::dashboardUrl()` to put a **View payment** link to the payment
+in your provider's dashboard on the admin order screen; core shows only an https URL.
+To keep a small value of your own on an order, such as whether it was a live or test
+payment, call `Orders::setMeta($orderId, 'my_key', $value)`; keys starting with `_` are
+core's, and `null` removes the key. Start the key with your gateway id and `_` (for example
+`stripe_livemode`) to keep it off the order screen.
 
 ### The callback
 
@@ -134,6 +147,54 @@ the same call the callback route makes. **Leave pending** and **Fail with error*
 nothing. The page can also print a `curl` command that posts that
 payload to the real route, for replay tests.
 
+## Receipts
+
+Core e-mails the buyer a receipt when `Billing::markPaid()` settles an order, for every
+gateway, and shows a printable receipt page. A gateway does nothing for this. The
+**Payment method** line is your `getName()` and **Payment reference** is the ref you
+settle with.
+
+## Refunds from the admin
+
+Implement `mindstellar\billing\RefundableGateway` instead of `PaymentGateway` and add
+one method. A paid order of your gateway then shows a **Refund** button on its admin
+order screen.
+
+```php
+use mindstellar\billing\RefundableGateway;
+
+final class MyGateway implements RefundableGateway
+{
+    public function refund(Order $order): CallbackResult
+    {
+        // One key per order, so a double click or a retry refunds once.
+        $response = $this->api->refund($order->getExternalRef(), 'refund-order-' . $order->getId());
+        if (!$response->ok) {
+            return CallbackResult::ignored($response->message); // shown to the admin
+        }
+
+        return CallbackResult::refunded($order->getId(), $response->id);
+    }
+}
+```
+
+When the admin confirms, core:
+
+- runs one refund per order at a time, reads the order again and asks your gateway
+  only if it is still paid;
+- on `refunded()` for this order's id, marks the order refunded and takes the credits
+  back, once;
+- on `ignored()`, changes nothing and shows your reason to the admin, so keep it short
+  and free of secrets;
+- on any other answer, or an exception, changes nothing and logs it.
+
+Core marks the order as sent just before it calls `refund()`, and clears the mark only
+on `ignored()`. While the mark is set the Refund button is gone, so an unclear outcome
+is never sent twice; the admin checks the provider and uses **Record a refund**.
+
+If the provider also sends a refund webhook, return `refunded()` from
+`handleCallback()` as before. Core ignores the second one for an order already refunded.
+
 ## Declaring its settings page
 
 `settings.php` returns the spec; `index.php` registers it:
@@ -194,11 +255,13 @@ osc_add_hook(osc_plugin_path(__FILE__) . '_uninstall', static function () {
 ## Trying it
 
 1. Turn billing on and add a credit package under **Billing → Packages**.
-2. Install **Test Payments**, open **Plugins → Test payments** and tick *Test mode*.
+2. Copy `oc-content/plugins/test-gateway/` from the core repository into your site, install
+   **Test Payments**, open **Plugins → Test payments** and tick *Test mode*.
 3. As a user, buy a package with the test payment method.
 4. Press **Pay**, **Decline**, **Leave pending** or **Fail with error**. A paid order
    shows **Refund** on the same page.
-5. Check **Billing → Orders** and the order's credit movements.
+5. Check **Billing → Orders** and the order's credit movements. A paid order there
+   also has a **Refund** button.
 
 An admin notice stays on every admin page while test mode is on.
 `tests/test-gateway.php` covers the signature, age, amount, replay and

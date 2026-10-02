@@ -20,25 +20,19 @@ const NM = 'node_modules';
  * directly into `dest`, false preserves its path relative to `cwd`.
  */
 const TARGETS = [
-  // jQuery is dead weight for core — nothing in the admin or in any core form uses it. It
-  // ships only because the bundled `bender` front theme still enqueues these three, and
-  // that theme lives in its own repository. Delete them here once bender is vanilla.
-  { dest: `${ASSETS}/jquery`, flatten: true, src: ['jquery/dist/jquery.min.js', 'jquery/LICENSE.txt'] },
-  { dest: `${ASSETS}/jquery-ui`, flatten: true, src: ['jquery-ui-dist/*.min.js', 'jquery-ui-dist/*.min.css', 'jquery-ui-dist/LICENSE.txt'] },
-  { dest: `${ASSETS}/jquery-ui/images`, flatten: true, src: ['jquery-ui-dist/images/*'] },
-  { dest: `${ASSETS}/jquery-validation`, flatten: true, src: ['jquery-validation/dist/jquery.validate.min.js', 'jquery-validation/LICENSE.md'] },
-  { dest: `${ASSETS}/bootstrap`, flatten: true, src: ['bootstrap/dist/css/bootstrap.min.*', 'bootstrap/dist/js/bootstrap.min.*', 'bootstrap/LICENSE'] },
+  { dest: `${ASSETS}/bootstrap`, flatten: true, src: ['bootstrap/dist/js/bootstrap.min.*', 'bootstrap/LICENSE'] },
   { dest: `${ASSETS}/popper`, flatten: true, src: ['@popperjs/core/dist/umd/popper.min.js', '@popperjs/core/LICENSE.md'] },
   { dest: `${ASSETS}/sortablejs`, flatten: true, src: ['sortablejs/Sortable.min.js', 'sortablejs/LICENSE'] },
+  { dest: `${ASSETS}/qrcode-generator`, flatten: true, src: ['qrcode-generator/dist/qrcode.js'] },
   { dest: `${ASSETS}/fonts/open-sans`, flatten: true, src: ['npm-font-open-sans/fonts/Regular/OpenSans-Regular.ttf', 'npm-font-open-sans/LICENSE'] },
 
   { dest: `${ASSETS}/bootstrap-icons`, flatten: true, src: ['bootstrap-icons/LICENSE'] },
   { dest: `${ASSETS}/bootstrap-icons`, flatten: false, cwd: 'bootstrap-icons/font', src: ['**/*'] },
 
   { dest: `${ASSETS}/tinymce`, flatten: false, cwd: 'tinymce', src: ['license.txt', 'tinymce.min.js'] },
-  { dest: `${ASSETS}/tinymce`, flatten: false, cwd: 'tinymce', src: ['icons/**/*.min.*', 'skins/ui/oxide/**/*.min.*', 'skins/ui/oxide-dark/**/*.min.*', 'skins/content/default/**/*.min.*', 'skins/content/dark/**/*.min.*', 'themes/silver/**/*.min.*'] },
+  { dest: `${ASSETS}/tinymce`, flatten: false, cwd: 'tinymce', src: ['icons/**/*.min.*', 'skins/ui/oxide/**/*.min.*', 'skins/content/default/**/*.min.*', 'themes/silver/**/*.min.*'] },
   { dest: `${ASSETS}/tinymce/models/dom`, flatten: false, cwd: 'tinymce/models/dom', src: ['**/*.min.js'] },
-  { dest: `${ASSETS}/tinymce/skins`, flatten: false, cwd: 'tinymce/skins', src: ['content/default/content.min.css', 'content/dark/content.min.css', 'ui/oxide/skin.min.css', 'ui/oxide-dark/skin.min.css'] },
+  { dest: `${ASSETS}/tinymce/skins`, flatten: false, cwd: 'tinymce/skins', src: ['content/default/content.min.css', 'ui/oxide/skin.min.css'] },
   { dest: `${ASSETS}/tinymce/plugins`, flatten: false, cwd: 'tinymce/plugins', src: ['{advlist,anchor,autolink,charmap,code,fullscreen,image,imagetools,insertdatetime,link,lists,media,paste,preview,searchreplace,table,visualblocks}/*.min.js'] },
 
   // Only date.js is still registered (as `php-date`). The colorpicker, the jQuery

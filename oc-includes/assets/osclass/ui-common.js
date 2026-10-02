@@ -49,7 +49,11 @@ function oscAutocomplete(input, opts) {
     list.style.position = 'fixed';
     list.style.zIndex = '1080';
     list.style.margin = '0';
-    document.body.appendChild(list);
+    // A modal <dialog> renders in the browser's top layer, which sits above every
+    // z-index on the page -- a list appended to <body> is behind it however high its
+    // z-index goes. So the list joins the dialog when the field is inside one.
+    var host = input.closest ? input.closest('dialog') : null;
+    (host || document.body).appendChild(list);
 
     var items = [];
     var active = -1;

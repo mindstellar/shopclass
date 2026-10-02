@@ -116,7 +116,7 @@ function osc_theme_template_paths(): array
 
     $info = $themes->loadThemeInfo($themes->getCurrentTheme());
     if (is_array($info) && isset($info['template']) && $info['template'] !== ''
-        && preg_match('/^[a-zA-Z0-9._-]+$/', $info['template'])
+        && \mindstellar\utility\Validate::packageName($info['template'])
     ) {
         $parent = osc_themes_path() . $info['template'] . '/';
         if (is_dir($parent)) {
@@ -239,7 +239,7 @@ function osc_theme_chrome(): ?array
     // own shell is the right answer when nothing in the active lineage answers.
     $info = $themes->loadThemeInfo($themes->getCurrentTheme());
     if (is_array($info) && isset($info['template']) && $info['template'] !== ''
-        && preg_match('/^[a-zA-Z0-9._-]+$/', $info['template'])
+        && \mindstellar\utility\Validate::packageName($info['template'])
     ) {
         $parent = osc_themes_path() . $info['template'] . '/';
         if (is_dir($parent)) {
@@ -416,14 +416,14 @@ function osc_gui_view(string $themeView, string $contentFile, array $opts = arra
         // page this fallback exists to replace.
         $info = $themes->loadThemeInfo($themes->getCurrentTheme());
         if (is_array($info) && !empty($info['template'])
-            && preg_match('/^[a-zA-Z0-9._-]+$/', (string) $info['template'])
+            && \mindstellar\utility\Validate::packageName((string) $info['template'])
         ) {
             $parentPath = osc_themes_path() . $info['template'] . '/';
             if (file_exists($parentPath . $themeView)) {
-                // Switches the theme URLs to the parent, exactly as the walk does,
-                // so the parent's view loads the parent's assets.
-                $themes->setParentTheme();
-                require $themes->getCurrentThemePath() . $themeView;
+                // Required from the parent's directory without becoming the parent:
+                // osc_theme_asset_url() resolves each asset on its own, so the parent's
+                // view already gets the parent's files, and the child keeps its own.
+                require $parentPath . $themeView;
 
                 return;
             }
@@ -485,6 +485,19 @@ function osc_gui_view(string $themeView, string $contentFile, array $opts = arra
 }
 
 /**
+ * The heading of a plugin's account page: the title its route was registered with,
+ * or "Your account" when the route gave none.
+ *
+ * @return string
+ */
+function osc_gui_custom_heading(): string
+{
+    $title = trim((string) Rewrite::newInstance()->get_title());
+
+    return ($title === '' || $title === 'Custom') ? _m('Your account') : $title;
+}
+
+/**
  * Render core's own fallback page for one of the account and auth views.
  *
  * Core has a content partial for every view the account section routes to, so a
@@ -523,7 +536,7 @@ function osc_gui_account_view(string $themeView): bool
         'user-recover.php'         => array('heading' => _m('Reset your password')),
         'user-forgot_password.php' => array('heading' => _m('Choose a new password')),
         'user-public-profile.php'  => array('heading' => (string) osc_user_name()),
-        'user-custom.php'          => array('heading' => _m('Your account')),
+        'user-custom.php'          => array('heading' => osc_gui_custom_heading()),
         'user-delete_account.php'  => array(
             'heading' => _m('Delete your account'),
             'tone'    => 'danger',
@@ -758,6 +771,19 @@ function osc_head(): void
         $canonical = (string) osc_get_canonical();
         if ($canonical !== '') {
             echo '<link rel="canonical" href="' . osc_esc_html($canonical) . '">' . PHP_EOL;
+        }
+    }
+    if ($want('pagination') && osc_is_search_page()) {
+        // osc_search_page() counts from 0, the iPage in a URL from 1, and page 1 has no iPage.
+        // Bing still reads these; Google works the sequence out on its own.
+        $page  = (int) osc_search_page();
+        $total = (int) osc_search_total_pages();
+        $link  = static fn (int $number) => osc_update_search_url(array('iPage' => $number > 1 ? $number : ''));
+        if ($page > 0) {
+            echo '<link rel="prev" href="' . osc_esc_html((string) $link($page)) . '">' . PHP_EOL;
+        }
+        if ($total > 0 && $page < $total - 1) {
+            echo '<link rel="next" href="' . osc_esc_html((string) $link($page + 2)) . '">' . PHP_EOL;
         }
     }
     if ($want('feed')) {
@@ -1102,7 +1128,7 @@ function osc_theme_has_screenshot($theme = null)
  */
 function _osc_theme_screenshot_asset($theme)
 {
-    if (!is_string($theme) || $theme === '' || !preg_match('/^[a-zA-Z0-9._-]+$/', $theme)) {
+    if (!\mindstellar\utility\Validate::packageName($theme)) {
         return null;
     }
 
@@ -1122,12 +1148,15 @@ function _osc_theme_screenshot_asset($theme)
  * @param string                          $name
  * @param array<int,array<string,string>> $options
  * @param string                          $class
+ * @param string                          $attributes Extra markup for the <select>, already escaped
  *
  * @return void
  */
-function osc_print_bulk_actions($id, $name, $options, $class = '')
+function osc_print_bulk_actions($id, $name, $options, $class = '', $attributes = '')
 {
-    echo '<select id="' . $id . '" name="' . $name . '" ' . ($class != '' ? 'class="form-select ' . $class . '"' : 'form-select') . '>';
+    echo '<select id="' . $id . '" name="' . $name . '" '
+         . ($attributes !== '' ? $attributes . ' ' : '')
+         . ($class != '' ? 'class="form-select ' . $class . '"' : 'form-select') . '>';
     foreach ($options as $o) {
         $opt   = '';
         $label = '';

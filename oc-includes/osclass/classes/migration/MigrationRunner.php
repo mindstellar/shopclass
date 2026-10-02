@@ -31,6 +31,9 @@ use Throwable;
  */
 class MigrationRunner
 {
+    /** Seconds to wait for another run to finish before giving up. */
+    private const LOCK_WAIT = 5;
+
     private Connection $conn;
     private string $dir;
     private string $table;
@@ -105,28 +108,63 @@ class MigrationRunner
      * the first migration that throws halts the run and is NOT recorded, so the next
      * upgrade retries from there.
      *
-     * @return array{ok:bool,applied:string[],failed:?string,error:?string}
+     * The run holds a named lock on the database, so two upgrade requests cannot apply the
+     * same migration at once. When another run holds it, nothing is applied, `failed` is
+     * null and `busy` is true.
+     *
+     * @return array{ok:bool,applied:string[],failed:?string,error:?string,busy?:bool}
      * @throws \mindstellar\database\DbException when the ledger itself cannot be read or written
      */
     public function run(): array
     {
-        $applied = array();
-        foreach ($this->pending() as $name) {
-            try {
-                $this->apply($name);
-            } catch (Throwable $e) {
-                return array(
-                    'ok'      => false,
-                    'applied' => $applied,
-                    'failed'  => $name,
-                    'error'   => $e->getMessage(),
-                );
-            }
-            $this->record($name);
-            $applied[] = $name;
+        $lock = $this->lockName();
+        if ((int) $this->conn->scalar('SELECT GET_LOCK(?, ?)', array($lock, self::LOCK_WAIT)) !== 1) {
+            return array(
+                'ok'      => false,
+                'applied' => array(),
+                'failed'  => null,
+                'error'   => 'Another upgrade is already running.',
+                'busy'    => true,
+            );
         }
 
-        return array('ok' => true, 'applied' => $applied, 'failed' => null, 'error' => null);
+        try {
+            $applied = array();
+            foreach ($this->pending() as $name) {
+                try {
+                    $this->apply($name);
+                } catch (Throwable $e) {
+                    return array(
+                        'ok'      => false,
+                        'applied' => $applied,
+                        'failed'  => $name,
+                        'error'   => $e->getMessage(),
+                    );
+                }
+                $this->record($name);
+                $applied[] = $name;
+            }
+
+            return array('ok' => true, 'applied' => $applied, 'failed' => null, 'error' => null);
+        } finally {
+            try {
+                $this->conn->scalar('SELECT RELEASE_LOCK(?)', array($lock));
+            } catch (Throwable $e) {
+                // The server drops the lock with the session anyway.
+            }
+        }
+    }
+
+    /**
+     * The named lock that serialises runs against one database and table prefix.
+     *
+     * @return string
+     * @throws \mindstellar\database\DbException
+     */
+    public function lockName(): string
+    {
+        // GET_LOCK names are capped at 64 characters, so the scope is hashed.
+        return 'osc_migrate_' . md5((string) $this->conn->scalar('SELECT DATABASE()') . '|' . DB_TABLE_PREFIX);
     }
 
     /**

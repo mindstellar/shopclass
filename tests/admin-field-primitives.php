@@ -52,6 +52,9 @@ function osc_admin_base_url($index = false)
     return 'https://example.test/oc-admin/index.php';
 }
 
+// For osc_tinymce_config(), which a richtext field's configuration comes from.
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hUtils.php';
+
 require_once ABS_PATH . 'oc-includes/osclass/classes/admin/ui/Field.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/admin/ui/Form.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php';
@@ -597,5 +600,251 @@ foreach (array('email', 'url', 'secret') as $type) {
     });
     check("an unpurified {$type} carries the cap it was given", strpos($html, 'maxlength="20"') !== false);
 }
+
+harness_section('a translated field spells its posted names the screen\'s way');
+
+// The three primitives the editors are built from. Each is pinned here rather than on a
+// screen, because what they emit is the contract a plugin builds against.
+
+$locales = array('en_US' => 'English', 'es_ES' => 'Espanol');
+
+// Without the pattern, a locale's name is the field name with the code appended -- which
+// is what every caller shipped before it existed, so nothing may change for them.
+$html = render(static function () use ($locales) {
+    osc_admin_field(array(
+        'type'      => 'text',
+        'name'      => 's_title',
+        'label'     => 'Title',
+        'translate' => true,
+        'locales'   => $locales,
+        'value'     => array('en_US' => 'About us', 'es_ES' => 'Sobre nosotros'),
+    ));
+});
+emits('with no pattern the name is still the field plus the code', $html, 'name="s_titleen_US"');
+emits('for every locale', $html, 'name="s_titlees_ES"');
+
+// The page editor's spelling. Its controller has always read en_US#s_title, so adopting
+// the shared field must not change a single posted name.
+$html = render(static function () use ($locales) {
+    osc_admin_field(array(
+        'type'           => 'text',
+        'name'           => 's_title',
+        'label'          => 'Title',
+        'translate'      => true,
+        'translate_name' => '%s#s_title',
+        'locales'        => $locales,
+        'value'          => array('en_US' => 'About us', 'es_ES' => 'Sobre nosotros'),
+    ));
+});
+emits('the pattern spells the posted name', $html, 'name="en_US#s_title"');
+emits('one per locale', $html, 'name="es_ES#s_title"');
+check('and the appended form is gone', strpos($html, 's_titleen_US') === false, $html);
+emits('each control still carries its own locale\'s value', $html, 'value="Sobre nosotros"');
+// The label points at a control that exists: the id follows the posted name, so a pattern
+// that changes the name and not the id would leave the row labelling nothing.
+emits(
+    'and the row label points at the first locale\'s control',
+    $html,
+    '<label for="field-en_US-s_title">Title</label>'
+);
+
+// The listing editor's spelling, which is an array key rather than a prefix.
+$html = render(static function () use ($locales) {
+    osc_admin_field(array(
+        'type'           => 'text',
+        'name'           => 'title',
+        'label'          => 'Title',
+        'translate'      => true,
+        'translate_name' => 'title[%s]',
+        'locales'        => $locales,
+        'value'          => array('en_US' => 'A red bicycle'),
+    ));
+});
+emits('an array-keyed pattern posts as an array', $html, 'name="title[en_US]"');
+emits('with one key per locale', $html, 'name="title[es_ES]"');
+
+pin(
+    'the name one locale posts under is answerable without rendering anything',
+    'en_US#s_title',
+    mindstellar\admin\ui\Field::translatedName(
+        array('name' => 's_title', 'translate_name' => '%s#s_title'),
+        'en_US'
+    )
+);
+pin(
+    'and with no pattern it is the field plus the code',
+    's_titleen_US',
+    mindstellar\admin\ui\Field::translatedName(array('name' => 's_title'), 'en_US')
+);
+
+harness_section('a rich-text field');
+
+$html = render(static function () {
+    osc_admin_field(array(
+        'type'   => 'richtext',
+        'name'   => 's_text',
+        'label'  => 'Body',
+        'value'  => '<p>Who we are.</p>',
+        'height' => 460,
+        'preset' => 'full',
+    ));
+});
+emits('is a textarea carrying its editor\'s configuration', $html, '<textarea id="field-s_text" name="s_text"');
+emits('which the shared script finds by the attribute', $html, 'data-osc-richtext="');
+// The value is markup, and a textarea whose body is not escaped ends at the first
+// </textarea> the stored text happens to contain.
+emits('its value is escaped into the element body', $html, '>&lt;p&gt;Who we are.&lt;/p&gt;</textarea>');
+emits('the configuration is the preset the field asked for', $html, '&quot;height&quot;:460');
+emits('and the preset\'s own toolbar', $html, 'visualblocks code fullscreen preview');
+
+// With no script the field is still a textarea holding the markup, so the body posts.
+check('and it is a textarea, not a div nothing submits', substr_count($html, '<textarea') === 1, $html);
+
+// The editor replaces the textarea with its own UI, so the browser cannot show the control
+// it would be refusing the form over -- and it refuses silently: no submit event, so the
+// page's own validator never runs and the Save button looks dead.
+$html = render(static function () {
+    osc_admin_field(array(
+        'type'     => 'richtext',
+        'name'     => 's_text',
+        'label'    => 'Body',
+        'layout'   => 'stacked',
+        'required' => true,
+    ));
+});
+check('a required rich-text field asks nothing of the browser', strpos($html, ' required') === false, $html);
+emits('and still says it is required', $html, 'osc-field-required');
+
+pin(
+    'a declared settings page may carry one',
+    true,
+    in_array('richtext', mindstellar\settings\SettingsPageRegistry::FIELD_TYPES, true)
+);
+
+$html = render(static function () use ($locales) {
+    osc_admin_field(array(
+        'type'           => 'richtext',
+        'name'           => 's_text',
+        'label'          => 'Body',
+        'translate'      => true,
+        'translate_name' => '%s#s_text',
+        'locales'        => $locales,
+        'value'          => array('en_US' => 'English body', 'es_ES' => 'Cuerpo'),
+    ));
+});
+emits('and it expands over locales like the other translated types', $html, 'name="en_US#s_text"');
+pin('one editor per locale', 2, substr_count($html, 'data-osc-richtext'));
+
+// A second translated field on the same locales does not need a second strip: two strips
+// can disagree, and a title in one language above a body in another is a mistake nothing
+// on screen explains. The panels stay, so the strip above can switch these too.
+$html = render(static function () use ($locales) {
+    osc_admin_field(array(
+        'type'      => 'richtext',
+        'name'      => 's_text',
+        'label'     => 'Body',
+        'translate' => true,
+        'tabs'      => false,
+        'locales'   => $locales,
+        'value'     => array('en_US' => 'English body', 'es_ES' => 'Cuerpo'),
+    ));
+});
+check('a field may be drawn without a strip of its own', strpos($html, 'osc-tab') === false, $html);
+pin('and still gets one panel per locale', 2, substr_count($html, 'class="field-translate-panel"'));
+pin('with every locale but the first hidden', 1, substr_count($html, 'field-translate-panel" id="field-s_text-es_ES" hidden'));
+
+harness_section('the error slot');
+
+$html = render(static function () {
+    osc_admin_field(array(
+        'type'  => 'text',
+        'name'  => 'price',
+        'label' => 'Price',
+        'value' => 'abc',
+        'error' => 'Enter a number, like 14900.',
+    ));
+});
+emits('the control says it is invalid', $html, 'aria-invalid="true"');
+emits('and points at the sentence saying why', $html, 'aria-describedby="field-price-error"');
+emits(
+    'which is under it, in the class the stylesheet paints',
+    $html,
+    '<p class="field-error" id="field-price-error">Enter a number, like 14900.</p>'
+);
+
+$clean = render(static function () {
+    osc_admin_field(array('type' => 'text', 'name' => 'price', 'label' => 'Price', 'value' => '9.99'));
+});
+check('a field nothing rejected says none of it', strpos($clean, 'aria-invalid') === false, $clean);
+check('and carries no message', strpos($clean, 'field-error') === false, $clean);
+
+$html = render(static function () {
+    osc_admin_field(array(
+        'type'  => 'text',
+        'name'  => 'q',
+        'label' => 'Q',
+        'error' => 'Not <b>this</b> & not that.',
+    ));
+});
+emits('the message is escaped like every other value', $html, 'Not &lt;b&gt;this&lt;/b&gt; &amp; not that.');
+
+// A translated field is rejected one locale at a time: the message belongs to the control
+// the locale drew, and the tab says so, because a hidden panel's error is one nobody finds.
+$html = render(static function () use ($locales) {
+    osc_admin_field(array(
+        'type'           => 'text',
+        'name'           => 's_title',
+        'label'          => 'Title',
+        'translate'      => true,
+        'translate_name' => '%s#s_title',
+        'locales'        => $locales,
+        'value'          => array('en_US' => 'About us'),
+        'error'          => array('es_ES' => 'Espanol: this page needs a title here.'),
+    ));
+});
+emits('the rejected locale carries the message', $html, '<p class="field-error" id="field-es_ES-s_title-error">');
+check('and the accepted one does not', strpos($html, 'field-en_US-s_title-error') === false, $html);
+emits(
+    'the tab marks the locale whose panel holds it',
+    $html,
+    '<li data-osc-tab-error title="Espanol: this page needs a title here."><a href="#field-s_title-es_ES">'
+);
+pin('and only that one', 1, substr_count($html, 'data-osc-tab-error'));
+
+harness_section('a field stacked instead of rowed');
+
+// The editors put the label above the control: a body that fills the column has nothing to
+// sit beside, so there is no label column to put one in.
+$html = render(static function () {
+    osc_admin_field(array(
+        'type'     => 'text',
+        'name'     => 's_title',
+        'label'    => 'Title',
+        'required' => true,
+        'layout'   => 'stacked',
+    ));
+});
+emits('the field is its own block', $html, '<div class="osc-field">');
+emits('with the label above the control', $html, '<label class="form-label osc-field-required" for="field-s_title">Title</label>');
+check('and no settings row around it', strpos($html, 'form-row') === false, $html);
+
+// A required control the browser cannot show is a form it refuses to submit, silently:
+// no submit event, so the page's own validator never runs and the button looks dead.
+$html = render(static function () use ($locales) {
+    osc_admin_field(array(
+        'type'           => 'text',
+        'name'           => 's_title',
+        'label'          => 'Title',
+        'required'       => true,
+        'layout'         => 'stacked',
+        'translate'      => true,
+        'translate_name' => '%s#s_title',
+        'locales'        => $locales,
+    ));
+});
+pin('only the open locale is required of the browser', 1, substr_count($html, ' required'));
+emits('the first one, which is the one on screen', $html, 'name="en_US#s_title"');
+pin('and every locale is labelled as required', 2, substr_count($html, 'osc-field-required'));
+emits('each label naming its own locale', $html, '>Title (Espanol)</label>');
 
 exit(harness_result());

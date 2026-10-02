@@ -1,6 +1,6 @@
 ---
 title: Themes & widgets
-description: Install, switch and customise ShopClass themes, and place widgets into a theme's sections, including what to check before switching.
+description: "Install, switch and customise ShopClass themes, and place widgets into a theme's sections, including what to check before switching."
 sidebar:
   order: 7
 ---
@@ -11,8 +11,9 @@ where you place widgets into the sections a theme offers.
 ## The bundled theme
 
 New installs get **Storefront**: a real, maintained theme, not a placeholder.
-It has light and dark modes, three WCAG-AA colour palettes and its own settings
-screen, and it is the theme the [live demo](https://demo.mindstellar.com) runs.
+It has light and dark modes, three colour palettes that meet WCAG-AA (the
+standard for readable colour contrast) and its own settings screen, and it is
+the theme the [live demo](https://demo.mindstellar.com) runs.
 
 Start by configuring it rather than replacing it. Most sites need a logo, a
 palette and their own hero copy, which is a settings change, not a theme change.
@@ -24,11 +25,11 @@ palette and their own hero copy, which is a settings change, not a theme change.
 | Tab | What it shows |
 |---|---|
 | **Themes** | What is installed. **Current theme** is the live one; **Other themes** follow. |
-| **Browse** | The [theme registry](/docs/developers/market/), the same catalog `oc-cli.php` reads. One click installs. |
+| **Browse** | The [theme registry](/docs/developers/market/): the same catalog `oc-cli.php` reads. One click installs. |
 | **Updates** | Installed themes with a newer version, with a count in the tab. |
 
 Each theme is a card carrying its version, its author, a short description and a
-state badge (*Live*, *Installed*) with the buttons that apply to it:
+state badge (*Live*, *Installed*), with the buttons that apply to it:
 **Activate**, **Preview**, **Delete**.
 
 **Plugins → Manage plugins** works the same way, with **Installed**, **Browse**
@@ -54,7 +55,7 @@ Themes are not interchangeable. Check three things:
 
 - **Widget sections differ between themes.** A theme declares its own sections,
   so widgets placed for one theme may have nowhere to go in another. They are
-  not deleted. They simply stop rendering until you place them again.
+  not deleted; they stop rendering until you place them again.
 - **Compatibility.** A theme declares the ShopClass and PHP versions it supports,
   and the card says plainly whether it runs here (*Needs 6.5 or newer*, *Needs
   PHP 8.2*) instead of leaving you to compare numbers.
@@ -82,6 +83,8 @@ section; the order is the order visitors see.
 
 Plugins register further types, which appear in the same picker.
 
+Only full admins can add a Custom Code widget; moderators cannot.
+
 :::danger[Custom Code runs on your visitors' browsers]
 Anything you paste there executes on every page the widget appears on. Paste
 only code you understand, from a source you trust. A "free analytics snippet"
@@ -106,9 +109,11 @@ Two durable approaches:
 
 - **A child theme.** Declare `Parent Theme` in the child's header block and
   override only the templates you change. The parent keeps updating underneath.
+  See [Child themes](/docs/developers/child-themes/) for what is inherited and
+  the two rules that stop a child breaking its parent.
 - **A plugin.** Styles, scripts and behaviour can be added from a plugin with
-  [the enqueue functions](/docs/developers/scripts-and-styles/), leaving the
-  theme untouched entirely.
+  [the functions that register them](/docs/developers/scripts-and-styles/),
+  leaving the theme untouched entirely.
 
 For building a theme from scratch, see the
 [package specification](/docs/developers/package-spec/).

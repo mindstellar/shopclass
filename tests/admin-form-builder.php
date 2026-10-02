@@ -128,7 +128,7 @@ harness_section('every field type has a builder method');
 foreach (SettingsPageRegistry::FIELD_TYPES as $type) {
     check('the builder can declare a ' . $type, method_exists(FormSpec::class, $type));
 }
-pin('and no type is missing from the registry list', 14, count(SettingsPageRegistry::FIELD_TYPES));
+pin('and no type is missing from the registry list', 15, count(SettingsPageRegistry::FIELD_TYPES));
 
 harness_section('one field of each type is the array a hand writes');
 
@@ -409,6 +409,7 @@ $notModifiers = array_merge(
         'menuTitle',
         'section',
         'store',
+        'translateTable',
         'capability',
         'help',
         'intro',
@@ -567,6 +568,31 @@ check(
     'a page declaring no store emits none, leaving the registry to supply the default',
     !array_key_exists('store', osc_admin_form('acme')->title('Acme')->text('f')->toArray())
 );
+// The locale table rides on the same key, so a translated field on a table page has one
+// place to go. Emitted as a key of its own it would be dropped, and the translated field
+// would be refused as one a column cannot hold.
+pin(
+    'translateTable() joins the store rather than replacing it',
+    array(
+        'table'         => 't_pages',
+        'pk'            => 'pk_i_id',
+        'locale_table'  => 't_pages_description',
+        'locale_fk'     => 'fk_i_pages_id',
+        'locale_column' => 'fk_c_locale_code',
+    ),
+    osc_admin_form('page')->store('t_pages')->translateTable('t_pages_description', 'fk_i_pages_id')->toArray()['store']
+);
+$noStore = null;
+try {
+    osc_admin_form('page')->translateTable('t_pages_description', 'fk_i_pages_id');
+} catch (LogicException $e) {
+    $noStore = $e->getMessage();
+}
+check(
+    'and it refuses to be declared before the store it belongs to',
+    $noStore !== null,
+    'translateTable() without store() has no table to bind the locale rows to'
+);
 
 harness_section('groups');
 
@@ -636,6 +662,7 @@ $handSpec = array(
                 array('type' => 'radio', 'name' => 'plan', 'label' => 'Plan', 'options' => array('a' => 'A', 'b' => 'B')),
                 array('type' => 'checkbox', 'name' => 'verbose', 'label' => 'Log everything', 'row_label' => 'Logging'),
                 array('type' => 'textarea', 'name' => 'notes', 'label' => 'Notes', 'help' => 'Freeform.'),
+                array('type' => 'richtext', 'name' => 'body', 'label' => 'Body'),
                 array('type' => 'custom', 'name' => 'widget', 'label' => 'Widget', 'render' => $renderer),
                 array('type' => 'email', 'name' => 'notify', 'label' => 'Notify', 'sanitize' => $sanitizer, 'validate' => $validator),
                 array('type' => 'text', 'name' => 'tag', 'label' => 'Tag', 'prefix' => 'Tagged', 'attrs' => array('maxlength' => '20')),
@@ -666,6 +693,7 @@ $built = osc_admin_form('myplugin-built')
     ->radio('plan', 'Plan', array('a' => 'A', 'b' => 'B'))
     ->checkbox('verbose', 'Log everything')->rowLabel('Logging')
     ->textarea('notes', 'Notes', 'Freeform.')
+    ->richtext('body', 'Body')
     ->custom('widget', $renderer, 'Widget')
     ->email('notify', 'Notify')->sanitize($sanitizer)->validate($validator)
     ->text('tag', 'Tag')->prefix('Tagged')->attrs(array('maxlength' => '20'))
@@ -685,7 +713,7 @@ check('the hand-written page registered', SettingsPageRegistry::instance()->get(
 check('the built page registered', SettingsPageRegistry::instance()->get('myplugin-built') !== null);
 pin('both declare the same field names', array_keys($handFields), array_keys($builtFields));
 pin('and the same normalised field specs', $handFields, $builtFields);
-pin('nothing is lost on the way through the groups', 14, count($builtFields));
+pin('nothing is lost on the way through the groups', 15, count($builtFields));
 $builtTypes = array_values(array_unique(array_column($builtFields, 'type')));
 sort($builtTypes);
 $allTypes = SettingsPageRegistry::FIELD_TYPES;
@@ -732,7 +760,7 @@ pin(
 pin(
     'a translate on a type that cannot expand over locales',
     'SettingsPageRegistry: page "bad-translate" field "verbose" cannot be translated:'
-    . ' only text and textarea expand over locales',
+    . ' only text, textarea and richtext expand over locales',
     builder_error(osc_admin_form('bad-translate')->title('T')->checkbox('verbose')->translate())
 );
 pin(

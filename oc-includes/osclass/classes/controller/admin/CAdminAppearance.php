@@ -19,6 +19,8 @@ if (!defined('ABS_PATH')) {
 /**
  * Class CAdminAppearance
  */
+use mindstellar\utility\AjaxResponse;
+
 class CAdminAppearance extends AdminSecBaseModel
 {
     //Business Layer...
@@ -38,9 +40,8 @@ class CAdminAppearance extends AdminSecBaseModel
                 $this->doView('appearance/add.php');
                 break;
             case ('add_post'):
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m("This action can't be done because it's a demo site"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=appearance')) {
+                    break;
                 }
                 osc_csrf_check();
                 $filePackage = Params::getFiles('package');
@@ -80,28 +81,52 @@ class CAdminAppearance extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
                 break;
             case ('delete'):
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m("This action can't be done because it's a demo site"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=appearance')) {
+                    break;
                 }
                 osc_csrf_check();
-                $theme = Params::getParam('webtheme');
-                if ($theme != '') {
-                    if ($theme != osc_current_web_theme()) {
-                        if (file_exists(osc_content_path() . 'themes/' . $theme . '/functions.php')) {
-                            include osc_content_path() . 'themes/' . $theme . '/functions.php';
-                        }
-                        osc_run_hook('theme_delete_' . $theme);
-                        if (osc_deleteDir(osc_content_path() . 'themes/' . $theme . '/')) {
-                            osc_add_flash_ok_message(_m('Theme removed successfully'), 'admin');
-                        } else {
-                            osc_add_flash_error_message(_m('There was a problem removing the theme'), 'admin');
-                        }
-                    } else {
-                        osc_add_flash_error_message(_m('Current theme can not be deleted'), 'admin');
+                $theme   = Params::getParamString('webtheme');
+                $themes  = WebThemes::newInstance();
+                // The name decides which directory is included and then deleted, so it is
+                // matched against the installed themes rather than trusted.
+                $known   = $themes->getListThemes();
+                // A theme another one extends: deleting it leaves that child rendering on
+                // the default theme, which is a broken site nobody asked for.
+                $needed  = array();
+                foreach ($known as $other) {
+                    $info = $themes->loadThemeInfo($other);
+                    if (is_array($info) && !empty($info['template']) && $info['template'] === $theme
+                        && $other !== $theme
+                    ) {
+                        $needed[] = $other;
                     }
-                } else {
+                }
+
+                if ($theme === '') {
                     osc_add_flash_error_message(_m('No theme selected'), 'admin');
+                } elseif (!in_array($theme, $known, true)) {
+                    osc_add_flash_error_message(_m('That theme is not installed'), 'admin');
+                } elseif ($theme === osc_current_web_theme()) {
+                    osc_add_flash_error_message(_m('Current theme can not be deleted'), 'admin');
+                } elseif ($needed !== array()) {
+                    osc_add_flash_error_message(
+                        sprintf(
+                            _m('"%1$s" extends this theme. Delete it first, or switch it to '
+                               . 'another parent.'),
+                            implode('", "', $needed)
+                        ),
+                        'admin'
+                    );
+                } else {
+                    if (file_exists(osc_content_path() . 'themes/' . $theme . '/functions.php')) {
+                        include osc_content_path() . 'themes/' . $theme . '/functions.php';
+                    }
+                    osc_run_hook('theme_delete_' . $theme);
+                    if (osc_deleteDir(osc_content_path() . 'themes/' . $theme . '/')) {
+                        osc_add_flash_ok_message(_m('Theme removed successfully'), 'admin');
+                    } else {
+                        osc_add_flash_error_message(_m('There was a problem removing the theme'), 'admin');
+                    }
                 }
 
                 $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
@@ -245,9 +270,9 @@ class CAdminAppearance extends AdminSecBaseModel
                 } catch (Throwable $e) {
                     $newId = 0;
                 }
+                \mindstellar\cache\CacheGroup::invalidate('widget');
 
-                header('Content-Type: application/json');
-                echo json_encode($newId > 0
+                AjaxResponse::json($newId > 0
                     ? array(
                         'error'       => 0,
                         'id'          => (int)$newId,
@@ -282,6 +307,7 @@ class CAdminAppearance extends AdminSecBaseModel
                     osc_db_table(DB_TABLE_PREFIX . 't_widget')
                         ->where('pk_i_id', $moved)
                         ->update(array('s_location' => $location));
+                    \mindstellar\cache\CacheGroup::invalidate('widget');
                     // Only ids that live in the target section after the move.
                     $validIds = array();
                     foreach (Widget::newInstance()->findByLocation($location) as $widget) {
@@ -293,8 +319,7 @@ class CAdminAppearance extends AdminSecBaseModel
                     $ok = Widget::newInstance()->reorder($ids);
                 }
 
-                header('Content-Type: application/json');
-                echo json_encode(array('error' => $ok ? 0 : 1));
+                AjaxResponse::json(array('error' => $ok ? 0 : 1));
                 exit;
             case ('reorder_widgets_post'):
                 // JSON endpoint: flagging the request as AJAX makes the CSRF check
@@ -321,18 +346,24 @@ class CAdminAppearance extends AdminSecBaseModel
 
                 $ok = Widget::newInstance()->reorder($ids);
 
-                header('Content-Type: application/json');
-                echo json_encode(array('error' => $ok ? 0 : 1));
+                AjaxResponse::json(array('error' => $ok ? 0 : 1));
                 exit;
                 /* /widget */
             case ('activate'):
                 osc_csrf_check();
-                osc_set_preference('theme', Params::getParam('theme'));
+                // Only an installed theme, the same rule theme:activate applies on the CLI.
+                $theme = Params::getParamString('theme');
+                if (!in_array($theme, WebThemes::newInstance()->getListThemes(), true)) {
+                    osc_add_flash_error_message(_m('That theme is not installed.'), 'admin');
+                    $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
+                    break;
+                }
+                osc_set_preference('theme', $theme);
                 // Clear opcache so the new theme's code runs at once even with
                 // opcache.validate_timestamps=Off (see Plugins::resetOpcache).
                 Plugins::resetOpcache();
                 osc_add_flash_ok_message(_m('Theme activated correctly'), 'admin');
-                osc_run_hook('theme_activate', Params::getParam('theme'));
+                osc_run_hook('theme_activate', $theme);
                 $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
                 break;
             case ('render'):
@@ -483,10 +514,16 @@ class CAdminAppearance extends AdminSecBaseModel
             'last_checked'      => $catalog->lastChecked(),
             'error'             => $catalog->lastError(),
             'writable'          => is_writable(osc_themes_path()),
-            'disabled'          => osc_package_installs_disabled() || defined('DEMO'),
+            'disabled'          => osc_market_changes_blocked(),
             'categories'        => $categories,
             'catalog_available' => $index !== array() || $updates !== array(),
         );
+
+        // The toolbar count is saved once a day; recount when it disagrees with this list,
+        // so the header drawn next shows the same number as the Updates tab.
+        if ((int) osc_get_preference('themes_update_count') !== count($marketUpdates)) {
+            osc_admin_toolbar_update_themes(true);
+        }
 
         return array($browse, $marketUpdates, $meta);
     }

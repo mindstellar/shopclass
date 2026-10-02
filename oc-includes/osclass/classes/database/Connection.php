@@ -449,7 +449,12 @@ class Connection
 
             return $result;
         } catch (Throwable $e) {
-            error_log('Db query failed: ' . $sql . ' -- ' . $e->getMessage());
+            if ($e instanceof \mysqli_sql_exception) {
+                StrictRefusals::record($this->conn, (int) $e->getCode(), $e->getMessage(), $sql);
+            }
+            // Capped, so a failed statement carrying user rows does not copy them into the log.
+            $logged = strlen($sql) > 300 ? substr($sql, 0, 300) . '… (' . strlen($sql) . ' bytes)' : $sql;
+            error_log('Db query failed: ' . $logged . ' -- ' . $e->getMessage());
             if ($e instanceof DbException) {
                 throw $e;
             }

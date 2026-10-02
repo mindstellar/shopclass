@@ -153,7 +153,9 @@ if (class_exists('Object_Cache_Factory')) {
     Object_Cache_Factory::newInstance()->flush();
 }
 $searchCategoryReset = new ReflectionProperty('Category', 'instance');
-$searchCategoryReset->setAccessible(true);
+if (PHP_VERSION_ID < 80100) {
+    $searchCategoryReset->setAccessible(true);
+}
 $searchCategoryReset->setValue(null, null);
 
 /** Collect the pk_i_id column from a doSearch result. */
@@ -288,6 +290,12 @@ harness_section('Search: premium');
 $s = new Search();
 $premiums = $s->getPremiums(10);
 pin('getPremiums returns the premium items', $sorted(array($car2, $bike2)), $sorted($ids($premiums)));
+$premiumSql = new ReflectionMethod(Search::class, 'makeSQLPremium');
+if (PHP_VERSION_ID < 80100) {
+    $premiumSql->setAccessible(true);
+}
+check('the order is a seeded RAND(), not a fresh one', (bool) preg_match('/ORDER BY RAND\(\d+\)/', (string) $premiumSql->invoke(new Search(), 2)));
+pin('and holds between calls, so the page can be cached', $ids($premiums), $ids((new Search())->getPremiums(10)));
 
 /* ----------------------------------------------------------------------------
  * Sorting.
@@ -549,6 +557,76 @@ pin('non-int ids are dropped, only real ids hydrate', array($hydIds[0]), $ids($s
 
 $s = new Search();
 check('fromPrimaryKeys returns $this (chainable)', $s->fromPrimaryKeys($hydIds) instanceof Search);
+
+harness_section('Search: setJsonAlert applies only the plain-value fields of an old-format blob');
+
+$prop = static function (Search $search, string $name) {
+    $p = new ReflectionProperty('Search', $name);
+    if (PHP_VERSION_ID < 80100) {
+        $p->setAccessible(true);
+    }
+
+    return $p->getValue($search);
+};
+$hostile                          = $decoded;
+$hostile['aCategories']           = array($catCars, '1) OR SLEEP(1) -- ', 'x');
+$hostile['order_column']          = 'dt_pub_date, SLEEP(1)';
+$hostile['order_direction']       = 'ASC; DROP TABLE x';
+$hostile['limit_init']            = '0 UNION SELECT 1';
+$hostile['results_per_page']      = '3';
+$hostile['cities']                = array('1=1 ');
+$hostile['user_ids']              = array('1=1 ');
+$hostile['tables_join']           = array(array('oc_t_user u', '1=1', 'LEFT'));
+$hostile['no_catched_tables']     = array('oc_t_user');
+$hostile['no_catched_conditions'] = array('SLEEP(1)');
+$safe = new Search();
+$safe->setJsonAlert($hostile);
+pin('categories become whole numbers only', array((int)$catCars, 1), $prop($safe, 'categories'));
+pin(
+    'no SQL-bearing field is taken: locations, users, tables, joins, conditions',
+    array(array(), null, array(), array(), array()),
+    array(
+        $prop($safe, 'cities'),
+        $prop($safe, 'user_ids'),
+        $prop($safe, 'tables_join'),
+        $prop($safe, 'tables'),
+        $prop($safe, 'conditions'),
+    )
+);
+pin(
+    'nor sort or paging: the Search keeps its own',
+    array('dt_pub_date', 'DESC', 0, 10),
+    array(
+        $prop($safe, 'order_column'),
+        $prop($safe, 'order_direction'),
+        $prop($safe, 'limit_init'),
+        $prop($safe, 'results_per_page'),
+    )
+);
+pin(
+    'the price range still applies',
+    array(1000 * 1000000, 20000 * 1000000),
+    array($prop($safe, 'price_min'), $prop($safe, 'price_max'))
+);
+$reused = new Search();
+$reused->addCity('Aville');
+$reused->addConditions('1 = 1');
+$reused->setJsonAlert($decoded);
+pin(
+    'restoring onto a used Search clears what it carried',
+    array(array(), array()),
+    array($prop($reused, 'cities'), $prop($reused, 'conditions'))
+);
+
+harness_section('Search: locale codes never reach SQL unchecked');
+
+$loc = new Search();
+$loc->addLocale(array("zz_ZZ' OR 'a'='a", 'en_US', array('x')));
+pin('only a locale-code shape is kept', array('en_US' => 'en_US'), $prop($loc, 'locale_code'));
+$twoLocales = new Search();
+$twoLocales->addPattern('se');
+$twoLocales->addLocale(array('en_US', 'es_ES'));
+check('two locales build valid SQL (they used to lack an OR)', count($twoLocales->doSearch()) > 0);
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

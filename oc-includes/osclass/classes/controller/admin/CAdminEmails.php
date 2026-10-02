@@ -19,6 +19,8 @@ if (!defined('ABS_PATH')) {
 /**
  * Class CAdminEmails
  */
+use mindstellar\admin\ListPaging;
+
 class CAdminEmails extends AdminSecBaseModel
 {
     //specific for this class
@@ -65,64 +67,35 @@ class CAdminEmails extends AdminSecBaseModel
                 break;
             case 'edit_post':
                 osc_csrf_check();
-                $id              = Params::getParam('id');
-                $s_internal_name = Params::getParam('s_internal_name');
+                $id = Params::getParam('id');
 
-                $aFieldsDescription = array();
-                $postParams         = Params::getParamsAsArray('', false);
-                $not_empty          = false;
-                foreach ($postParams as $k => $v) {
-                    if (preg_match('|(.+?)#(.+)|', $k, $m)) {
-                        if ($m[2] == 's_title' && $v != '') {
-                            $not_empty = true;
-                        }
-                        $aFieldsDescription[$m[1]][$m[2]] = $v;
-                    }
-                }
-
-                Session::newInstance()->_setForm('s_internal_name', $s_internal_name);
+                $aFieldsDescription = self::descriptions(Params::getParamsAsArray('', false));
                 Session::newInstance()->_setForm('aFieldsDescription', $aFieldsDescription);
 
-                if ($not_empty) {
-                    foreach ($aFieldsDescription as $k => $_data) {
-                        $this->emailManager->updateDescription($id, $k, $_data['s_title'], $_data['s_text']);
-                    }
-
-                    if (!$this->emailManager->internalNameExists($id, $s_internal_name)) {
-                        if (!$this->emailManager->isIndelible($id)) {
-                            $this->emailManager->updateInternalName($id, $s_internal_name);
-                        }
-                        Session::newInstance()->_clearVariables();
-                        osc_add_flash_ok_message(_m('The email/alert has been updated'), 'admin');
-                        $this->redirectTo(osc_admin_base_url(true) . '?page=emails');
-                    }
-                    osc_add_flash_error_message(_m('You can\'t repeat internal name'), 'admin');
-                } else {
-                    osc_add_flash_error_message(
-                        _m('The email couldn\'t be updated, at least one title should not be empty'),
-                        'admin'
-                    );
+                if (!self::save($id, $aFieldsDescription, $this->emailManager)) {
+                    $error = _m('The email couldn\'t be updated, at least one title should not be empty');
+                    osc_add_flash_error_message($error, 'admin');
+                    $this->_exportVariableToView('editorErrors', array('s_title' => $error));
+                    $this->_exportVariableToView('email', $this->emailManager->findByPrimaryKey($id));
+                    $this->doView('emails/frm.php');
+                    break;
                 }
-                $this->redirectTo(osc_admin_base_url(true) . '?page=emails&action=edit&id=' . $id);
+
+                Session::newInstance()->_clearVariables();
+                osc_add_flash_ok_message(_m('The email/alert has been updated'), 'admin');
+                $this->redirectTo(osc_admin_base_url(true) . '?page=emails');
                 break;
             default:
                 //-
-                if (Params::getParam('iDisplayLength') == '') {
-                    Params::setParam('iDisplayLength', 10);
-                }
-
-                $p_iPage = 1;
-                if (is_numeric(Params::getParam('iPage')) && Params::getParam('iPage') >= 1) {
-                    $p_iPage = Params::getParam('iPage');
-                }
-                Params::setParam('iPage', $p_iPage);
+                Params::setParam('iDisplayLength', ListPaging::length());
+                $p_iPage = ListPaging::page();
 
                 $prefLocale = osc_current_admin_locale();
                 $emails     = $this->emailManager->listAll(1);
 
                 // pagination
-                $start = ($p_iPage - 1) * Params::getParam('iDisplayLength');
-                $limit = Params::getParam('iDisplayLength');
+                $limit = ListPaging::length();
+                $start = ListPaging::start($p_iPage, $limit);
                 $count = count($emails);
 
                 $displayRecords = $limit;
@@ -186,6 +159,56 @@ class CAdminEmails extends AdminSecBaseModel
 
                 $this->doView('emails/index.php');
         }
+    }
+
+    /**
+     * The posted subject and message of each locale, from fields named '<locale>#<field>'.
+     *
+     * @param array<string,mixed> $post the request parameters
+     *
+     * @return array<string,array<string,string>> locale code => field => value
+     */
+    public static function descriptions(array $post): array
+    {
+        $descriptions = array();
+        foreach ($post as $key => $value) {
+            if (is_string($value) && preg_match('|(.+?)#(.+)|', (string)$key, $m)) {
+                $descriptions[$m[1]][$m[2]] = $value;
+            }
+        }
+
+        return $descriptions;
+    }
+
+    /**
+     * Write a template's subject and message in every locale posted.
+     *
+     * Nothing is written unless one locale has a subject. The internal name is how core finds
+     * a template to send, so it is never changed here.
+     *
+     * @param int|string                         $id
+     * @param array<string,array<string,string>> $descriptions from descriptions()
+     * @param Page                               $pages
+     *
+     * @return bool false when the save was refused
+     */
+    public static function save($id, array $descriptions, Page $pages): bool
+    {
+        $titled = false;
+        foreach ($descriptions as $fields) {
+            if (($fields['s_title'] ?? '') !== '') {
+                $titled = true;
+            }
+        }
+        if (!$titled) {
+            return false;
+        }
+
+        foreach ($descriptions as $locale => $fields) {
+            $pages->updateDescription($id, $locale, $fields['s_title'] ?? '', $fields['s_text'] ?? '');
+        }
+
+        return true;
     }
 
     //hopefully generic...

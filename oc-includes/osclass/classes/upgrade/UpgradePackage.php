@@ -194,6 +194,16 @@ abstract class UpgradePackage
     }
 
     /**
+     * Top-level folder names a package zip may wrap its files in.
+     *
+     * @return array<string>
+     */
+    public function getFolderNames(): array
+    {
+        return array($this->s_short_name);
+    }
+
+    /**
      * Package Source download url
      *
      * @return string

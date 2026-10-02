@@ -16,6 +16,7 @@ use mindstellar\billing\ItemUpgrades;
 use mindstellar\billing\Orders;
 use mindstellar\billing\Packages;
 use mindstellar\billing\PaymentGatewayRegistry;
+use mindstellar\billing\Receipts;
 use mindstellar\billing\Wallet;
 
 /**
@@ -102,6 +103,9 @@ class CWebBilling extends WebSecBaseModel
             case ('orders'):
                 $this->ordersView();
                 break;
+            case ('receipt'):
+                $this->receiptView();
+                break;
             case ('upgrade'):
                 $this->upgradePost();
                 break;
@@ -162,6 +166,24 @@ class CWebBilling extends WebSecBaseModel
     }
 
     /**
+     * The printable receipt for one of the user's own paid or refunded orders. Anyone
+     * else's order, or an order with no receipt, is a 404.
+     *
+     * @return void
+     */
+    private function receiptView()
+    {
+        $order = Orders::find(Params::getParamInt('id'));
+        if ($order === null || !Receipts::canView($order, (int) osc_logged_user_id(), false)) {
+            $this->do404();
+
+            return;
+        }
+
+        Receipts::render($order, osc_billing_orders_url(), _m('Back to your orders'));
+    }
+
+    /**
      * Start a checkout for a package.
      *
      * The package id is the only thing about the price that comes from the browser --
@@ -202,7 +224,7 @@ class CWebBilling extends WebSecBaseModel
 
         $intent = Billing::checkout($order);
         if ($intent === null) {
-            osc_add_flash_error_message(_m('Payment is unavailable right now. Please try again later.'));
+            osc_add_flash_error_message(_m('That payment method is not available right now. Try again or choose another.'));
             $this->redirectTo($this->url('buy'));
         }
 
@@ -274,6 +296,11 @@ class CWebBilling extends WebSecBaseModel
             $this->redirectTo(osc_user_list_items_url());
         }
 
+        if ($featureId === 'item.bump' && osc_billing_bump_paused($userId, true)) {
+            osc_add_flash_warning_message(osc_billing_bump_paused_message($userId));
+            $this->redirectTo(osc_user_list_items_url());
+        }
+
         $extending = $decision === self::DECISION_EXTEND;
 
         $spent = Billing::spend($userId, $featureId, array(
@@ -287,6 +314,8 @@ class CWebBilling extends WebSecBaseModel
                 ? sprintf(_m('%s extended on this listing'), $feature->getLabel())
                 : sprintf(_m('%s applied to this listing'), $feature->getLabel());
             osc_add_flash_ok_message($message);
+        } elseif ($featureId === 'item.bump' && osc_billing_bump_paused($userId, true)) {
+            osc_add_flash_warning_message(osc_billing_bump_paused_message($userId));
         } else {
             osc_add_flash_error_message(sprintf(
                 _m('Not enough credits for this upgrade. <a href="%s">Buy more credits</a>'),
@@ -409,9 +438,9 @@ class CWebBilling extends WebSecBaseModel
      * Three-step resolution, in order:
      *   1. the active theme ships $file itself (e.g. user-billing-wallet.php) --
      *      it fully owns the page;
-     *   2. else the active theme ships user-custom.php -- the theme's account
-     *      chrome renders the registered billing render target, the same way it
-     *      already renders a plugin's page (see CWebCustom::doModel());
+     *   2. else, unless the theme declares a chrome pair, the theme's user-custom.php
+     *      renders the registered billing render target, the same way it already
+     *      renders a plugin's page (see CWebCustom::doModel());
      *   3. else osc_gui_view(): the theme's own chrome around core's content
      *      partial when the theme exposes a chrome pair, otherwise core's shell.
      *      The bundled theme is an external repository (see
@@ -429,7 +458,7 @@ class CWebBilling extends WebSecBaseModel
         if (isset(self::FALLBACK_VIEWS[$file])) {
             if ($this->themeProvides($file)) {
                 osc_current_web_theme_path($file);
-            } elseif ($this->themeProvides('user-custom.php')) {
+            } elseif (!$this->themeDeclaresChrome() && $this->themeProvides('user-custom.php')) {
                 $this->_exportVariableToView('file', self::RENDER_TARGETS[$file]);
                 Params::setParam('in_user_menu', true);
                 osc_current_web_theme_path('user-custom.php');
@@ -462,6 +491,20 @@ class CWebBilling extends WebSecBaseModel
     private function themeProvides(string $file): bool
     {
         return file_exists(WebThemes::newInstance()->getCurrentThemePath() . $file);
+    }
+
+    /**
+     * Whether the theme asks for the credits pages inside its chrome rather than its
+     * user-custom.php: it declares chrome with 'account' => true. A probed header.php and
+     * footer.php are not that request, and neither is chrome declared for other pages.
+     *
+     * @return bool
+     */
+    private function themeDeclaresChrome(): bool
+    {
+        $declared = osc_theme_supports('chrome');
+
+        return is_array($declared) && !empty($declared['account']) && osc_theme_has_chrome();
     }
 
     /**

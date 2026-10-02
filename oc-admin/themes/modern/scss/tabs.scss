@@ -46,7 +46,7 @@
       color: var(--osc-ink-muted);
       cursor: pointer;
       display: block;
-      font-size: .8125rem;
+      font-size: $font-size-label;
       font-weight: 500;
       padding: .4rem .85rem;
       text-decoration: none;
@@ -69,6 +69,16 @@
   }
 }
 
+[role="tabpanel"]:focus {
+  outline: 0;
+}
+
+[role="tabpanel"]:focus-visible {
+  border-radius: $border-radius;
+  outline: 2px solid var(--osc-bronze);
+  outline-offset: 4px;
+}
+
 // .osc-tabnav — a row of navigation tabs (each an <a> to another URL, one current),
 // styled as a quiet underline strip. The URL-navigation sibling of .osc-tab above,
 // which is the JS-driven in-page panel widget; this one has no script.
@@ -83,6 +93,13 @@
 
   li {
     margin: 0;
+  }
+
+  // A count beside a tab label is how many, not a state, so it is quieter text rather
+  // than a second badge competing with the status column below it.
+  .tab-count {
+    color: var(--osc-ink-muted);
+    font-weight: 400;
   }
 
   a {
@@ -103,4 +120,16 @@
       color: var(--osc-bronze);
     }
   }
+}
+
+// The admin's own language: the tab a locale strip opens on, marked with a dot.
+.osc-tab li[data-osc-tab-mine] > a::after {
+  background-color: var(--osc-bronze);
+  border-radius: 50%;
+  content: "";
+  display: inline-block;
+  height: .375rem;
+  margin-inline-start: .375rem;
+  vertical-align: middle;
+  width: .375rem;
 }

@@ -10,6 +10,7 @@
 
 use mindstellar\database\Connection;
 use mindstellar\migration\MigrationInterface;
+use mindstellar\migration\SchemaProbes;
 
 /**
  * Location import identity: lets regions and cities be matched back to an upstream data
@@ -40,6 +41,8 @@ use mindstellar\migration\MigrationInterface;
  * the runner baselines rather than replays.
  */
 return new class () implements MigrationInterface {
+    use SchemaProbes;
+
     /**
      * Add i_source_id and the coordinate columns to t_region/t_city, key each unique
      * on its source id, and create t_location_slug_history.
@@ -87,49 +90,4 @@ return new class () implements MigrationInterface {
         );
     }
 
-    /**
-     * Whether $column already exists on $table in the current database.
-     *
-     * @param Connection $conn
-     * @param string     $table
-     * @param string     $column
-     *
-     * @return bool
-     * @throws \mindstellar\database\DbException
-     */
-    private function columnExists(Connection $conn, string $table, string $column): bool
-    {
-        $count = $conn->scalar(
-            'SELECT COUNT(*) FROM information_schema.COLUMNS'
-            . ' WHERE TABLE_SCHEMA = DATABASE()'
-            . ' AND TABLE_NAME = ?'
-            . ' AND COLUMN_NAME = ?',
-            array($table, $column)
-        );
-
-        return (int) $count > 0;
-    }
-
-    /**
-     * Whether $index already exists on $table in the current database.
-     *
-     * @param Connection $conn
-     * @param string     $table
-     * @param string     $index
-     *
-     * @return bool
-     * @throws \mindstellar\database\DbException
-     */
-    private function indexExists(Connection $conn, string $table, string $index): bool
-    {
-        $count = $conn->scalar(
-            'SELECT COUNT(*) FROM information_schema.STATISTICS'
-            . ' WHERE TABLE_SCHEMA = DATABASE()'
-            . ' AND TABLE_NAME = ?'
-            . ' AND INDEX_NAME = ?',
-            array($table, $index)
-        );
-
-        return (int) $count > 0;
-    }
 };

@@ -26,6 +26,19 @@ use Session;
 class Validate
 {
     /**
+     * Whether a theme or plugin name is a safe folder name. Letters, digits, dots,
+     * underscores and hyphens only, and not made only of dots, so '..' is refused.
+     *
+     * @param mixed $name
+     *
+     * @return bool
+     */
+    public static function packageName($name): bool
+    {
+        return is_string($name) && preg_match('/^(?!\.+$)[a-zA-Z0-9._-]+$/', $name) === 1;
+    }
+
+    /**
      * Validate using filter_var
      * common method to validate value
      * Validate before using these values, this will only sanitize the requested param

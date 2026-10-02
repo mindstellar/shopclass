@@ -73,10 +73,13 @@ final class Billing
     /**
      * Ask the order's gateway what the browser should do next.
      *
+     * A gateway that throws is logged and treated as unavailable. The order stays
+     * pending, like an abandoned checkout, so a late paid callback can still settle it.
+     *
      * @param Order $order
      *
-     * @return CheckoutIntent|null null when the gateway is unregistered or not
-     *                             configured -- the caller shows "payment unavailable"
+     * @return CheckoutIntent|null null when the gateway is unregistered, not configured
+     *                             or threw -- the caller shows "payment unavailable"
      *                             rather than a broken checkout
      */
     public static function checkout(Order $order): ?CheckoutIntent
@@ -86,7 +89,20 @@ final class Billing
             return null;
         }
 
-        return $gateway->createCheckout($order);
+        try {
+            return $gateway->createCheckout($order);
+        } catch (Throwable $e) {
+            error_log(sprintf(
+                'Billing: checkout for order #%d through %s threw %s (code %s)',
+                $order->getId(),
+                $order->getGateway(),
+                get_class($e),
+                (string) $e->getCode()
+            ));
+            self::log('checkout failed', $order, get_class($e));
+
+            return null;
+        }
     }
 
     /**
@@ -187,7 +203,12 @@ final class Billing
 
         if ($settled) {
             self::log('paid', $order, $externalRef);
-            osc_run_hook('billing_order_paid', $order->getId(), $order->getUserId(), $order->getCredits());
+            // The hook runs before the e-mail, so a slow mail server cannot keep plugins from hearing about the payment.
+            try {
+                osc_run_hook('billing_order_paid', $order->getId(), $order->getUserId(), $order->getCredits());
+            } finally {
+                Receipts::afterPaid($order);
+            }
         }
 
         return $settled;
@@ -197,8 +218,8 @@ final class Billing
      * Reverse a paid order.
      *
      * The credits come back out even if that leaves the balance negative -- see
-     * Wallet::reverse(). Core never asks the provider for a refund; it records the one
-     * the provider reports.
+     * Wallet::reverse(). This only records a refund; refundThroughGateway() is the
+     * path that asks the provider for the money back.
      *
      * @param Order $order
      *
@@ -231,6 +252,228 @@ final class Billing
         }
 
         return $reversed;
+    }
+
+    /**
+     * The order's gateway when it can refund the order itself: the order is paid, no
+     * refund was already sent to the provider, and its gateway is registered, configured
+     * and implements RefundableGateway.
+     *
+     * @param Order $order
+     *
+     * @return RefundableGateway|null
+     */
+    public static function refundableGateway(Order $order): ?RefundableGateway
+    {
+        if (!$order->isPaid() || $order->meta(Orders::REFUND_REQUESTED) !== null) {
+            return null;
+        }
+
+        $gateway = PaymentGatewayRegistry::instance()->get($order->getGateway());
+
+        return $gateway instanceof RefundableGateway && $gateway->isConfigured() ? $gateway : null;
+    }
+
+    /**
+     * The order's page in the provider's dashboard, when its gateway offers one.
+     * Only an absolute https URL with a host is accepted; anything else, or a gateway
+     * that throws, gives null.
+     *
+     * @param Order $order
+     *
+     * @return string|null
+     */
+    public static function dashboardUrl(Order $order): ?string
+    {
+        $gateway = PaymentGatewayRegistry::instance()->get($order->getGateway());
+        if (!$gateway instanceof DashboardLinkGateway) {
+            return null;
+        }
+
+        try {
+            $url = $gateway->dashboardUrl($order);
+        } catch (Throwable $e) {
+            error_log(sprintf(
+                'Billing: dashboard link for order #%d through %s threw %s (code %s)',
+                $order->getId(),
+                $order->getGateway(),
+                get_class($e),
+                (string) $e->getCode()
+            ));
+
+            return null;
+        }
+
+        if ($url === null || preg_match('/[\x00-\x20\x7F]/', $url)) {
+            return null;
+        }
+        $parts = parse_url($url);
+        if (!is_array($parts) || strtolower($parts['scheme'] ?? '') !== 'https' || ($parts['host'] ?? '') === '') {
+            return null;
+        }
+
+        return $url;
+    }
+
+    /**
+     * Ask the order's gateway to refund it, and record the refund when the provider
+     * accepts it.
+     *
+     * Runs under a per-order lock and reads the order again first, so two presses or two
+     * admins cannot refund twice. Anything other than refunded() for this same order
+     * changes nothing.
+     *
+     * @param Order     $order
+     * @param bool|null $providerAccepted Set to true when the provider accepted the refund,
+     *                                    including when it could not be recorded here
+     *
+     * @return CallbackResult refunded() when this call refunded the order, otherwise
+     *                        ignored() with a reason the admin can read
+     */
+    public static function refundThroughGateway(Order $order, ?bool &$providerAccepted = null): CallbackResult
+    {
+        $providerAccepted = false;
+        $lock             = self::refundLockName($order->getId());
+
+        try {
+            $locked = (int) osc_db_scalar('SELECT GET_LOCK(?, 2)', array($lock)) === 1;
+        } catch (Throwable $e) {
+            $locked = false;
+        }
+        if (!$locked) {
+            return CallbackResult::ignored(__('A refund for this order is already running'));
+        }
+
+        try {
+            return self::refundLocked($order, $providerAccepted);
+        } finally {
+            try {
+                osc_db_scalar('SELECT RELEASE_LOCK(?)', array($lock));
+            } catch (Throwable $e) {
+                // The lock goes with the connection anyway.
+            }
+        }
+    }
+
+    /**
+     * Name of the lock refundThroughGateway() holds for one order. Scoped to this
+     * database, since GET_LOCK names are server-wide.
+     *
+     * @param int $orderId
+     *
+     * @return string
+     */
+    public static function refundLockName(int $orderId): string
+    {
+        $site = (defined('DB_NAME') ? DB_NAME : '') . '|' . DB_TABLE_PREFIX;
+
+        return 'osc_refund_' . substr(md5($site), 0, 12) . '_' . $orderId;
+    }
+
+    /**
+     * The body of refundThroughGateway(), run while the order's lock is held.
+     *
+     * @param Order $order
+     * @param bool  $providerAccepted
+     *
+     * @return CallbackResult
+     */
+    private static function refundLocked(Order $order, bool &$providerAccepted): CallbackResult
+    {
+        $fresh = Orders::find($order->getId());
+        if ($fresh === null) {
+            return CallbackResult::ignored(__('That order no longer exists'));
+        }
+
+        $gateway = self::refundableGateway($fresh);
+        if ($gateway === null) {
+            if (!$fresh->isPaid()) {
+                return CallbackResult::ignored(__('Only a paid order can be refunded'));
+            }
+
+            return CallbackResult::ignored($fresh->meta(Orders::REFUND_REQUESTED) !== null
+                ? __('A refund was already sent to the payment provider. Check its dashboard, then use Record a refund.')
+                : __('This payment method cannot refund from here'));
+        }
+
+        // Marked before the call: if the provider takes the refund and anything after
+        // fails, even a crash mid-call, a later press cannot send a second one.
+        if (!Orders::markRefundRequested($fresh->getId())) {
+            return CallbackResult::ignored(__('The refund could not be started. Try again.'));
+        }
+
+        try {
+            $result = $gateway->refund($fresh);
+        } catch (Throwable $e) {
+            error_log(sprintf(
+                'Billing: refund of order #%d through %s threw %s (code %s)',
+                $fresh->getId(),
+                $fresh->getGateway(),
+                get_class($e),
+                (string) $e->getCode()
+            ));
+            self::log('refund failed', $fresh, get_class($e));
+
+            return CallbackResult::ignored(__('The payment provider returned an error'));
+        }
+
+        if ($result->getOutcome() === CallbackResult::OUTCOME_IGNORED) {
+            // A clear no from the provider: nothing was sent, so the button comes back.
+            Orders::markRefundRequested($fresh->getId(), false);
+        }
+
+        if ($result->getOutcome() !== CallbackResult::OUTCOME_REFUNDED) {
+            self::log('refund refused', $fresh, $result->getMessage());
+
+            return $result->getOutcome() === CallbackResult::OUTCOME_IGNORED
+                ? $result
+                : CallbackResult::ignored(__('The payment provider gave an answer that does not match this order'));
+        }
+
+        if ($result->getOrderId() !== $fresh->getId()) {
+            self::log('refund mismatch', $fresh, $result->getExternalRef());
+
+            return CallbackResult::ignored(__('The payment provider gave an answer that does not match this order'));
+        }
+
+        $providerAccepted = true;
+
+        try {
+            $recorded = self::refund($fresh);
+        } catch (Throwable $e) {
+            error_log(sprintf(
+                'Billing: order #%d was refunded at %s (%s) but recording it threw %s (code %s)',
+                $fresh->getId(),
+                $fresh->getGateway(),
+                (string) $result->getExternalRef(),
+                get_class($e),
+                (string) $e->getCode()
+            ));
+            // The write can commit and a hook after it throw; then the refund is recorded.
+            try {
+                $now = Orders::find($fresh->getId());
+            } catch (Throwable $ignored) {
+                $now = null;
+            }
+            if ($now !== null && $now->getStatus() === Order::STATUS_REFUNDED) {
+                return $result;
+            }
+            self::log('refund unrecorded', $fresh, $result->getExternalRef());
+
+            return CallbackResult::ignored(
+                __('Refunded at the provider but not recorded here. Record it with Record a refund.')
+            );
+        }
+
+        if (!$recorded) {
+            self::log('refund already recorded', $fresh, $result->getExternalRef());
+
+            return CallbackResult::ignored(
+                __('Refunded at the provider, but the order had already been marked refunded. Check the credit movements.')
+            );
+        }
+
+        return $result;
     }
 
     /**

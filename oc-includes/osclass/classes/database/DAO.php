@@ -81,6 +81,12 @@ class DAO
      * @var array
      */
     public $fields;
+    /**
+     * The cache group a successful write drops, for a model whose reads are cached.
+     *
+     * @var string|null
+     */
+    protected $cacheGroup = null;
 
     /**
      * Driver error number from this object's most recent operation, 0 when it
@@ -457,6 +463,7 @@ class DAO
                 array_values($values)
             );
             $this->clearError();
+            $this->cacheChanged();
 
             return (int) $id;
         } catch (\mindstellar\database\DbException $e) {
@@ -519,6 +526,27 @@ class DAO
         }
 
         return (string)$total;
+    }
+
+    /**
+     * The filtered and whole-table row counts for a paged list, as strings, or int 0.
+     * Null when a count fails.
+     *
+     * @param string           $where  WHERE clause without the WHERE keyword, '' for none
+     * @param array<int,mixed> $params bound values for $where
+     *
+     * @return array{0:int|string,1:int|string}|null
+     */
+    protected function pagedCounts(string $where, array $params = array()): ?array
+    {
+        try {
+            $total = osc_db_count($this->getTableName(), $where, $params);
+            $rows  = osc_db_count($this->getTableName());
+        } catch (\mindstellar\database\DbException $e) {
+            return null;
+        }
+
+        return array($total > 0 ? (string) $total : 0, $rows > 0 ? (string) $rows : 0);
     }
 
     /**
@@ -593,6 +621,7 @@ class DAO
         try {
             $affected = osc_db_execute($sql, $params);
             $this->clearError();
+            $this->cacheChanged();
         } catch (\mindstellar\database\DbException $e) {
             $this->recordError($e);
 
@@ -600,6 +629,37 @@ class DAO
         }
 
         return $affected;
+    }
+
+    /**
+     * Drop the model's cached reads after a write. Callers invoke this after the write, so a
+     * read inside it cannot put the old row back.
+     *
+     * @return void
+     */
+    protected function cacheChanged()
+    {
+        if ($this->cacheGroup !== null) {
+            \mindstellar\cache\CacheGroup::invalidate($this->cacheGroup);
+        }
+    }
+
+    /**
+     * The ", pk_i_id ASC|DESC" to append to an ORDER BY so ties break on the id and
+     * pages of a sorted list never overlap. Empty for a random or an id-ordered list.
+     *
+     * @param string $orderColumn
+     * @param string $direction
+     *
+     * @return string
+     */
+    protected function idTieBreak(string $orderColumn, string $direction): string
+    {
+        if (strtolower($direction) === 'random' || $orderColumn === 'pk_i_id') {
+            return '';
+        }
+
+        return ', pk_i_id' . (strtoupper(trim($direction)) === 'DESC' ? ' DESC' : ' ASC');
     }
 
     /**

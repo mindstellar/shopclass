@@ -260,9 +260,9 @@ function osc_user_public_profile_url($id = null)
     if ($id != '') {
         if (osc_rewrite_enabled()) {
             $user = User::newInstance()->findByPrimaryKey($id);
-            $path = osc_base_url() . osc_get_preference('rewrite_user_profile') . '/' . $user['s_username'];
+            $path = osc_core_url('user_pub_profile', array('username' => $user['s_username']));
         } else {
-            $path = sprintf(osc_base_url(true) . '?page=user&action=pub_profile&id=%d', $id);
+            $path = osc_core_url('user_pub_profile_id', array('id' => (int)$id));
         }
     } else {
         $path = '';
@@ -332,9 +332,12 @@ function osc_is_admin_user_logged_in()
                 'admin',
                 $adminId,
                 Cookie::newInstance()->get_value('oc_adminSecret'),
-                $admin['s_password']
+                \mindstellar\security\AdminTwoFactor::rememberBinding($admin)
             )
         ) {
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_regenerate_id(true);
+            }
             Session::newInstance()->_set('adminId', $admin['pk_i_id']);
             Session::newInstance()->_set('adminUserName', $admin['s_username']);
             Session::newInstance()->_set('adminName', $admin['s_name']);
@@ -755,13 +758,34 @@ function osc_alert()
 }
 
 /**
- * Gets search field of current alert
+ * Gets search field of current alert.
+ *
+ * For an alert stored as search values, a JSON object with the fields the old stored
+ * format had (sPattern, aCategories, city_areas, cities, regions, countries, price_min,
+ * price_max) plus `params`, the stored values; for a held alert, the same fields empty
+ * plus `held`, the reason. The raw column stays readable through osc_alert_field('s_search').
  *
  * @return string
  */
 function osc_alert_search()
 {
-    return (string)osc_alert_field('s_search');
+    $search = (string)osc_alert_field('s_search');
+    $params = \mindstellar\search\AlertEnvelope::validate($search);
+    if ($params === null) {
+        $held = \mindstellar\search\AlertEnvelope::heldReason($search);
+        if ($held === null) {
+            return $search;
+        }
+        // A held alert has no search: the display keys empty, plus the reason.
+        $display         = \mindstellar\search\AlertEnvelope::legacyFields(array());
+        $display['held'] = $held;
+
+        return (string)json_encode($display, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+    $display           = \mindstellar\search\AlertEnvelope::legacyFields($params);
+    $display['params'] = (object)$params;
+
+    return (string)json_encode($display, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 }
 
 /**
@@ -822,6 +846,80 @@ function osc_alert_type()
 function osc_alert_is_active()
 {
     return (bool)osc_alert_field('b_active');
+}
+
+/**
+ * What an alert searches for, as labelled parts: each entry is ['label', 'value'].
+ * Empty for an alert on all listings. A paused alert (one the upgrade could not
+ * keep) returns one 'held' entry. Defaults to the current alert in the loop.
+ *
+ * @param array<string,mixed>|null $alert an alert row
+ *
+ * @return array<string,array{label:string,value:string}>
+ */
+function osc_alert_criteria(?array $alert = null): array
+{
+    $search = $alert !== null ? ($alert['s_search'] ?? '') : osc_alert_field('s_search');
+    $raw    = osc_get_raw_search((array) json_decode((string) $search, true));
+    if (isset($raw['held'])) {
+        return array('held' => array(
+            'label' => _m('Paused'),
+            'value' => _m('This alert could not be kept after an update. Save the search again.'),
+        ));
+    }
+
+    $parts = array();
+    if (!empty($raw['sPattern'])) {
+        $parts['pattern'] = array('label' => _m('Keywords'), 'value' => (string) $raw['sPattern']);
+    }
+    $lists = array('aCategories' => _m('Category'));
+    // Alerts older than the search-values format store locations as SQL.
+    if (isset($raw['params'])) {
+        $lists += array('city_areas' => _m('Neighbourhood'), 'cities' => _m('City'),
+                        'regions' => _m('Region'), 'countries' => _m('Country'));
+    }
+    foreach ($lists as $key => $label) {
+        if (!empty($raw[$key])) {
+            $parts[$key] = array('label' => $label, 'value' => implode(', ', array_map('strval', (array) $raw[$key])));
+        }
+    }
+    $min = !empty($raw['price_min']) ? (string) $raw['price_min'] : '';
+    $max = !empty($raw['price_max']) ? (string) $raw['price_max'] : '';
+    if ($min !== '' || $max !== '') {
+        $parts['price'] = array('label' => _m('Price'), 'value' => $max === '' ? '≥ ' . $min
+            : ($min === '' ? '≤ ' . $max : $min . ' – ' . $max));
+    }
+    if (!empty($raw['withPicture'])) {
+        $parts['picture'] = array('label' => _m('Photos'), 'value' => _m('With photos only'));
+    }
+    if (!empty($raw['onlyPremium'])) {
+        $parts['premium'] = array('label' => _m('Featured'), 'value' => _m('Featured listings only'));
+    }
+
+    return $parts;
+}
+
+/**
+ * One line naming what the current alert searches for, e.g. "bike · Cycling · Leeds".
+ *
+ * @return string
+ */
+function osc_alert_summary(): string
+{
+    $parts = osc_alert_criteria();
+    if (isset($parts['held'])) {
+        return $parts['held']['value'];
+    }
+    unset($parts['picture'], $parts['premium']);
+    $values = array_map(static fn ($p) => $p['value'], $parts);
+    if (isset($parts['pattern'])) {
+        $values['pattern'] = '"' . $parts['pattern']['value'] . '"';
+    }
+    if (isset($parts['price'])) {
+        $values['price'] = $parts['price']['label'] . ': ' . $parts['price']['value'];
+    }
+
+    return $values !== array() ? implode(' · ', $values) : _m('All listings');
 }
 
 /**

@@ -32,6 +32,9 @@ const OSC_MAINTENANCE_PREF_MESSAGE = 'maintenance_message';
 /** Written into `.maintenance` by the package upgrader; always locks visitors out. */
 const OSC_MAINTENANCE_UPGRADE_MARKER = 'upgrade';
 
+/** Written into `.maintenance` while a backup is restored; locks out like an upgrade. */
+const OSC_MAINTENANCE_RESTORE_MARKER = 'restore';
+
 /** Stored message is trimmed, tags stripped, then cut to this length. */
 const OSC_MAINTENANCE_MESSAGE_MAX = 500;
 
@@ -94,14 +97,14 @@ function osc_sanitize_maintenance_message($raw)
  *
  * False when there is no `.maintenance` file, the visitor is a signed-in
  * admin, the SAPI is CLI (so `php index.php -p cron` still runs), or lockout
- * has been turned off. An upgrade in progress locks out everyone but admins,
- * CLI included. Pure: no database.
+ * has been turned off; an upgrade or a restore in progress locks out everyone
+ * but admins, CLI included. Pure: no database.
  *
  * @param bool $fileExists      `.maintenance` is present at the install root.
  * @param bool $lockoutEnabled  osc_maintenance_lockout_from_pref() answer.
  * @param bool $isAdmin         Signed-in oc-admin user.
  * @param bool $isCli           PHP_SAPI === 'cli' / the CLI constant.
- * @param bool $upgrading       `.maintenance` holds OSC_MAINTENANCE_UPGRADE_MARKER.
+ * @param bool $upgrading       `.maintenance` holds the upgrade or the restore marker.
  *
  * @return bool
  */
@@ -132,6 +135,33 @@ function osc_maintenance_is_upgrading($path)
     $contents = @file_get_contents($path, false, null, 0, 32);
 
     return is_string($contents) && trim($contents) === OSC_MAINTENANCE_UPGRADE_MARKER;
+}
+
+/**
+ * Whether `.maintenance` was written by a backup restore.
+ *
+ * @param string $path Path to the `.maintenance` file.
+ *
+ * @return bool
+ */
+function osc_maintenance_is_restoring($path)
+{
+    $contents = @file_get_contents($path, false, null, 0, 32);
+
+    return is_string($contents) && trim($contents) === OSC_MAINTENANCE_RESTORE_MARKER;
+}
+
+/**
+ * Whether `.maintenance` holds a marker that locks out everyone but admins: an upgrade
+ * or a restore in progress.
+ *
+ * @param string $path Path to the `.maintenance` file.
+ *
+ * @return bool
+ */
+function osc_maintenance_locks_everyone($path)
+{
+    return osc_maintenance_is_upgrading($path) || osc_maintenance_is_restoring($path);
 }
 
 /**

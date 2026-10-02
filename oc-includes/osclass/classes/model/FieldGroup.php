@@ -22,6 +22,8 @@
  */
 class FieldGroup extends DAO
 {
+    protected $cacheGroup = 'field_group';
+
     /**
      * It references to self object: FieldGroup.
      * It is used as a singleton
@@ -64,16 +66,15 @@ class FieldGroup extends DAO
      */
     public function findByPrimaryKey($id)
     {
-        try {
-            $row = osc_db_table($this->getTableName())->where('pk_i_id', $id)->first();
-        } catch (\mindstellar\database\DbException $e) {
-            return array();
-        }
-        if ($row === null) {
-            return array();
-        }
+        return \mindstellar\cache\CacheGroup::remember('field_group', 'id:' . (int)$id, function () use ($id) {
+            try {
+                $row = osc_db_table($this->getTableName())->where('pk_i_id', $id)->first();
+            } catch (\mindstellar\database\DbException $e) {
+                return null;
+            }
 
-        return osc_db_stringify_row($row);
+            return $row === null ? array() : osc_db_stringify_row($row);
+        }) ?? array();
     }
 
     /**
@@ -124,18 +125,22 @@ class FieldGroup extends DAO
      */
     public function insertGroup($name, $slug = '', $position = 0)
     {
-        $slug = $this->uniqueSlug($slug !== '' ? $slug : $name);
         try {
-            $id = osc_db_table($this->getTableName())->insert(array(
-                's_name'     => $name,
-                's_slug'     => $slug,
-                'i_position' => (int)$position,
-            ));
-        } catch (\mindstellar\database\DbException $e) {
-            return false;
-        }
+            $slug = $this->uniqueSlug($slug !== '' ? $slug : $name);
+            try {
+                $id = osc_db_table($this->getTableName())->insert(array(
+                    's_name'     => $name,
+                    's_slug'     => $slug,
+                    'i_position' => (int)$position,
+                ));
+            } catch (\mindstellar\database\DbException $e) {
+                return false;
+            }
 
-        return $id;
+            return $id;
+        } finally {
+            $this->cacheChanged();
+        }
     }
 
     /**
@@ -173,43 +178,45 @@ class FieldGroup extends DAO
      */
     public function deleteByPrimaryKey($id)
     {
-        // A null id used to build a comparison with no right-hand side, so the
-        // delete failed and the method reported false. A bound null is valid SQL
-        // that simply matches nothing and would report 0 instead — callers tell
-        // those two apart, so the failure value is reproduced explicitly.
-        if ($id === null) {
-            return false;
-        }
-
-        osc_run_hook('before_delete_field_group', $id);
-
         try {
-            $deleted = osc_db_transaction(function () use ($id) {
-                foreach (array('t_meta_group_categories', 't_meta_group_fields') as $table) {
-                    osc_db_table(DB_TABLE_PREFIX . $table)->where('fk_i_group_id', $id)->delete();
-                }
+            // A null id used to build a comparison with no right-hand side, so the
+            // delete failed and the method reported false. A bound null is valid SQL
+            // that simply matches nothing and would report 0 instead — callers tell
+            // those two apart, so the failure value is reproduced explicitly.
+            if ($id === null) {
+                return false;
+            }
 
-                // Submissions carry no foreign key to the form, so nothing would
-                // stop the delete and nothing would clean them up either: they would
-                // sit in the submissions list for ever, attributed to a form that no
-                // longer exists. Their values follow by cascade.
-                osc_db_table(DB_TABLE_PREFIX . 't_form_submission')
-                    ->where('fk_i_group_id', $id)
-                    ->delete();
+            osc_run_hook('before_delete_field_group', $id);
 
-                osc_db_table(DB_TABLE_PREFIX . 't_meta_fields')
-                    ->where('fk_i_group_id', $id)
-                    ->update(array('fk_i_group_id' => null));
+            try {
+                $deleted = osc_db_transaction(function () use ($id) {
+                    foreach (array('t_meta_group_categories', 't_meta_group_fields') as $table) {
+                        osc_db_table(DB_TABLE_PREFIX . $table)->where('fk_i_group_id', $id)->delete();
+                    }
 
-                return osc_db_table($this->getTableName())->where('pk_i_id', $id)->delete();
-            });
-        } catch (\Throwable $e) {
-            return false;
+                    // The foreign keys cascade submissions and loosen fields too; both
+                    // stay here for installs whose foreign keys were never created.
+                    osc_db_table(DB_TABLE_PREFIX . 't_form_submission')
+                        ->where('fk_i_group_id', $id)
+                        ->delete();
+
+                    osc_db_table(DB_TABLE_PREFIX . 't_meta_fields')
+                        ->where('fk_i_group_id', $id)
+                        ->update(array('fk_i_group_id' => null));
+
+                    return osc_db_table($this->getTableName())->where('pk_i_id', $id)->delete();
+                });
+            } catch (\Throwable $e) {
+                return false;
+            }
+
+            osc_run_hook('after_delete_field_group', $id);
+
+            return $deleted;
+        } finally {
+            $this->cacheChanged();
         }
-
-        osc_run_hook('after_delete_field_group', $id);
-
-        return $deleted;
     }
 
     /**
@@ -225,23 +232,27 @@ class FieldGroup extends DAO
      */
     public function setMeta($id, $key, $value)
     {
-        $row  = $this->findByPrimaryKey($id);
-        $meta = (isset($row['s_meta']) && $row['s_meta'] !== '') ? json_decode($row['s_meta'], true) : array();
-        if (!is_array($meta)) {
-            $meta = array();
-        }
-        if ($value === '' || $value === null) {
-            unset($meta[$key]);
-        } else {
-            $meta[$key] = $value;
-        }
-
         try {
-            return osc_db_table($this->getTableName())
-                ->where('pk_i_id', (int)$id)
-                ->update(array('s_meta' => empty($meta) ? null : json_encode($meta)));
-        } catch (\mindstellar\database\DbException $e) {
-            return false;
+            $row  = $this->findByPrimaryKey($id);
+            $meta = (isset($row['s_meta']) && $row['s_meta'] !== '') ? json_decode($row['s_meta'], true) : array();
+            if (!is_array($meta)) {
+                $meta = array();
+            }
+            if ($value === '' || $value === null) {
+                unset($meta[$key]);
+            } else {
+                $meta[$key] = $value;
+            }
+
+            try {
+                return osc_db_table($this->getTableName())
+                    ->where('pk_i_id', (int)$id)
+                    ->update(array('s_meta' => empty($meta) ? null : json_encode($meta)));
+            } catch (\mindstellar\database\DbException $e) {
+                return false;
+            }
+        } finally {
+            $this->cacheChanged();
         }
     }
 
@@ -258,37 +269,41 @@ class FieldGroup extends DAO
      */
     public function setFieldSingleGroup($fieldId, $groupId)
     {
-        $link = DB_TABLE_PREFIX . 't_meta_group_fields';
-        // Both statements have always discarded their result: the unlink is not
-        // conditional on the insert succeeding, and an insert the foreign key
-        // rejects has always left the field detached without raising. Each keeps
-        // its own swallowed catch so that stays true.
         try {
-            osc_db_table($link)->where('fk_i_field_id', (int)$fieldId)->delete();
-        } catch (\mindstellar\database\DbException $e) {
-            // discarded, as before
-        }
-        if ((int)$groupId > 0) {
+            $link = DB_TABLE_PREFIX . 't_meta_group_fields';
+            // Both statements have always discarded their result: the unlink is not
+            // conditional on the insert succeeding, and an insert the foreign key
+            // rejects has always left the field detached without raising. Each keeps
+            // its own swallowed catch so that stays true.
             try {
-                // $link is built from the DB_TABLE_PREFIX constant and a literal
-                // suffix; the only caller-supplied value is bound.
-                $pos = (int)osc_db_scalar(
-                    'SELECT COALESCE(MAX(i_position), -1) + 1 AS pos FROM ' . $link
-                    . ' WHERE fk_i_group_id = ?',
-                    array((int)$groupId)
-                );
-            } catch (\mindstellar\database\DbException $e) {
-                $pos = 0;
-            }
-            try {
-                osc_db_table($link)->insert(array(
-                    'fk_i_group_id' => (int)$groupId,
-                    'fk_i_field_id' => (int)$fieldId,
-                    'i_position'    => $pos,
-                ));
+                osc_db_table($link)->where('fk_i_field_id', (int)$fieldId)->delete();
             } catch (\mindstellar\database\DbException $e) {
                 // discarded, as before
             }
+            if ((int)$groupId > 0) {
+                try {
+                    // $link is built from the DB_TABLE_PREFIX constant and a literal
+                    // suffix; the only caller-supplied value is bound.
+                    $pos = (int)osc_db_scalar(
+                        'SELECT COALESCE(MAX(i_position), -1) + 1 AS pos FROM ' . $link
+                        . ' WHERE fk_i_group_id = ?',
+                        array((int)$groupId)
+                    );
+                } catch (\mindstellar\database\DbException $e) {
+                    $pos = 0;
+                }
+                try {
+                    osc_db_table($link)->insert(array(
+                        'fk_i_group_id' => (int)$groupId,
+                        'fk_i_field_id' => (int)$fieldId,
+                        'i_position'    => $pos,
+                    ));
+                } catch (\mindstellar\database\DbException $e) {
+                    // discarded, as before
+                }
+            }
+        } finally {
+            $this->cacheChanged();
         }
     }
 
@@ -329,24 +344,28 @@ class FieldGroup extends DAO
      */
     public function insertCategories($id, $categories = null)
     {
-        if (!is_array($categories)) {
-            return false;
-        }
-        $return = true;
-        foreach ($categories as $c) {
-            // A rejected row (duplicate assignment, unknown category) has always
-            // been folded into the return value while the remaining ids were
-            // still written, so the catch stays inside the loop.
-            try {
-                osc_db_table(sprintf('%st_meta_group_categories', DB_TABLE_PREFIX))->insert(
-                    array('fk_i_group_id' => $id, 'fk_i_category_id' => (int)$c)
-                );
-            } catch (\mindstellar\database\DbException $e) {
-                $return = false;
+        try {
+            if (!is_array($categories)) {
+                return false;
             }
-        }
+            $return = true;
+            foreach ($categories as $c) {
+                // A rejected row (duplicate assignment, unknown category) has always
+                // been folded into the return value while the remaining ids were
+                // still written, so the catch stays inside the loop.
+                try {
+                    osc_db_table(sprintf('%st_meta_group_categories', DB_TABLE_PREFIX))->insert(
+                        array('fk_i_group_id' => $id, 'fk_i_category_id' => (int)$c)
+                    );
+                } catch (\mindstellar\database\DbException $e) {
+                    $return = false;
+                }
+            }
 
-        return $return;
+            return $return;
+        } finally {
+            $this->cacheChanged();
+        }
     }
 
     /**
@@ -358,18 +377,22 @@ class FieldGroup extends DAO
      */
     public function cleanCategoriesFromGroup($id)
     {
-        // Same divergence as deleteByPrimaryKey: a null id used to fail the query
-        // and report false, where a bound null matches nothing and would report 0.
-        if ($id === null) {
-            return false;
-        }
-
         try {
-            return osc_db_table(sprintf('%st_meta_group_categories', DB_TABLE_PREFIX))
-                ->where('fk_i_group_id', $id)
-                ->delete();
-        } catch (\mindstellar\database\DbException $e) {
-            return false;
+            // Same divergence as deleteByPrimaryKey: a null id used to fail the query
+            // and report false, where a bound null matches nothing and would report 0.
+            if ($id === null) {
+                return false;
+            }
+
+            try {
+                return osc_db_table(sprintf('%st_meta_group_categories', DB_TABLE_PREFIX))
+                    ->where('fk_i_group_id', $id)
+                    ->delete();
+            } catch (\mindstellar\database\DbException $e) {
+                return false;
+            }
+        } finally {
+            $this->cacheChanged();
         }
     }
 

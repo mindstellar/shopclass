@@ -68,7 +68,9 @@ $model = ItemReport::newInstance();
  * been sent under CLI). */
 $_SESSION = array();
 $startedProp = new ReflectionProperty('Session', 'started');
-$startedProp->setAccessible(true);
+if (PHP_VERSION_ID < 80100) {
+    $startedProp->setAccessible(true);
+}
 $startedProp->setValue(Session::newInstance(), true);
 
 $view = View::newInstance();

@@ -233,7 +233,9 @@ harness_section('setSQLMode — what a default install strips');
 
 $reflected = new ReflectionClass('mindstellar\database\ConnectionManager');
 $stripList = $reflected->getProperty('incompatible_modes');
-$stripList->setAccessible(true);
+if (PHP_VERSION_ID < 80100) {
+    $stripList->setAccessible(true);
+}
 pin(
     'the strip list is exactly these five modes',
     array('NO_ZERO_DATE', 'ONLY_FULL_GROUP_BY', 'STRICT_TRANS_TABLES', 'STRICT_ALL_TABLES', 'TRADITIONAL'),

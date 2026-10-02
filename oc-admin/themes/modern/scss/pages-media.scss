@@ -27,7 +27,7 @@
 
   .media-owner-unattached {
     color: var(--osc-ink-muted);
-    font-size: .8125rem;
+    font-size: $font-size-label;
   }
 
   .media-owner-tag {
@@ -50,7 +50,7 @@
 
   .media-owner-link {
     color: var(--osc-ink-muted);
-    font-size: .8125rem;
+    font-size: $font-size-label;
     text-decoration: none;
 
     &:hover { color: var(--osc-bronze); text-decoration: underline; }

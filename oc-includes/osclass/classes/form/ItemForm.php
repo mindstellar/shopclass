@@ -437,7 +437,7 @@ class ItemForm extends Form
      */
     public static function title_input($name, $locale = null, $value = '')
     {
-        parent::generic_input_text($name . '[' . self::field_locale($locale) . ']', $value);
+        parent::generic_input_text($name . '[' . self::field_locale($locale) . ']', $value, osc_max_characters_per_title());
 
         return true;
     }
@@ -992,8 +992,11 @@ class ItemForm extends Form
         if ($item == null) {
             $item = osc_item();
         }
-        if (!Session::newInstance()->_getForm('showEmail')) {
-            $item['b_show_email'] = Session::newInstance()->_getForm('showEmail');
+        // A checkbox posts nothing when it is off, so the saved value may only be replaced
+        // when a rejected submit actually put the key in the form session.
+        $form = Session::newInstance()->_getForm();
+        if (is_array($form) && array_key_exists('showEmail', $form)) {
+            $item['b_show_email'] = $form['showEmail'];
         }
         parent::generic_input_checkbox(
             'showEmail',
@@ -1814,6 +1817,10 @@ class ItemForm extends Form
         $aExt              = explode(',', osc_allowed_extension());
         $allowedExtensions = "'" . implode("','", $aExt) . "'";
         $acceptAttr        = '.' . implode(',.', $aExt);
+        // The browser turns HEIC into JPEG before upload, so it is offered only while it can.
+        if (\mindstellar\storage\BrowserResize::config() !== null) {
+            $acceptAttr .= ',.heic,.heif,image/heic,image/heif';
+        }
         $maxSize           = osc_max_size_kb() * 1024;
         $maxImages         = self::maxImagesForForm();
         $isAdd             = Params::getParam('action') === 'item_add';
@@ -1864,12 +1871,14 @@ class ItemForm extends Form
                     maxSizeBytes: <?php echo (int)$maxSize; ?>,
                     allowedExtensions: [<?php echo $allowedExtensions; ?>],
                     showPrimary: <?php echo $isAdd ? 'true' : 'false'; ?>,
+                    resize: <?php echo json_encode(\mindstellar\storage\BrowserResize::config()); ?>,
                     i18n: {
                         confirmDelete: "<?php echo osc_esc_js(__("This action can't be undone. Are you sure you want to continue?")); ?>",
                         typeError: "<?php echo osc_esc_js(__('{file} has an invalid extension. Valid extension(s): {extensions}.')); ?>",
                         sizeError: "<?php echo osc_esc_js(__('{file} is too large.')); ?>",
                         tooMany: "<?php echo osc_esc_js(__('Too many images. The limit is {limit}.')); ?>",
                         failUpload: "<?php echo osc_esc_js(__('{file} could not be uploaded.')); ?>",
+                        heicError: "<?php echo osc_esc_js(__('{file} is a HEIC photo this browser cannot convert. Save it as JPEG and try again.')); ?>",
                         primary: "<?php echo osc_esc_js(__('Primary')); ?>",
                         makePrimary: "<?php echo osc_esc_js(__('Make primary image')); ?>",
                         "delete": "<?php echo osc_esc_js(__('Delete')); ?>",

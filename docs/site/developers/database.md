@@ -2,7 +2,7 @@
 title: Database model
 description: "Explore the ShopClass schema: table prefix, the core tables, and generating an entity-relationship diagram from struct.sql."
 sidebar:
-  order: 11
+  order: 12
 ---
 
 ShopClass stores everything in MySQL/MariaDB. Table names carry the prefix
@@ -29,7 +29,7 @@ $prefix = DB_TABLE_PREFIX;             // in raw SQL
 | `t_plugin_category` | Per-plugin, per-category configuration. |
 
 Column names follow a typed prefix: `i_` integer, `s_` string, `d_` decimal,
-`b_` boolean, `dt_` datetime, `pk_` primary key, `fk_` foreign key. So
+`b_` boolean, `dt_` datetime, `pk_` primary key, `fk_` foreign key, so
 `fk_i_category_id` is a foreign key to a category id. See
 [coding style](/docs/developers/coding-style/).
 
@@ -47,15 +47,15 @@ entity-relationship diagram from it:
 4. Check **Place imported objects on a diagram**.
 5. Execute, then rearrange the tables.
 
-Relations highlight as you hover, which is the only practical way to follow
-them: the full schema is too dense to read as a static picture.
+Relations highlight as you hover, which is the only practical way to follow them:
+the full schema is too dense to read as a static picture.
 
 Generating it yourself rather than reading a published image also means the
 diagram matches **your** version, not whatever release the image was made from.
 
 ## Querying from a plugin
 
-Use the DAO layer rather than raw SQL where one exists. It applies the prefix,
+Use the DAO layer rather than raw SQL where one exists, since it applies the prefix,
 escapes parameters and keeps working across schema migrations:
 
 ```php
@@ -63,8 +63,32 @@ $items = Item::newInstance()->findByCategoryID($categoryId);
 $user  = User::newInstance()->findByPrimaryKey($userId);
 ```
 
-When you do need raw SQL, go through the connection so your query is prepared
-and escaped, and never interpolate request input into a string.
+For your own queries, use the query builder. It binds every value and checks
+every table and column name:
+
+```php
+$p = DB_TABLE_PREFIX;
+
+$rows = osc_db_table($p . 't_item AS i')
+    ->select('i.pk_i_id')
+    ->selectRaw('COUNT(r.pk_i_id) AS n_pic')
+    ->leftJoin($p . 't_item_resource AS r', 'r.fk_i_item_id', '=', 'i.pk_i_id')
+    ->where('i.b_active', 1)
+    ->whereNotNull('i.dt_pub_date')
+    ->groupBy('i.pk_i_id')
+    ->get();
+```
+
+- A table may carry an alias, `'t_item AS i'`, for reads and joins. Writes take
+  the plain table name.
+- `selectRaw()` and `whereRaw()` take SQL you write yourself. Put values in their
+  second argument as `?` placeholders, never in the string.
+- `whereNull()`, `whereNotNull()`, `orWhereNull()` and `orWhereNotNull()` test for
+  NULL. An empty `whereIn()` matches no rows.
+- `count()` honours joins, wheres and a `groupBy()`.
+
+When you need raw SQL, use `osc_db_select()` or `osc_db_execute()` with `?`
+placeholders, and never put request input into the string.
 
 ## Adding your own tables
 
@@ -75,5 +99,6 @@ Create them on plugin install, drop them on uninstall, and prefix them with both
 $table = DB_TABLE_PREFIX . 't_myplugin_data';
 ```
 
-Do not add columns to core tables. A migration will not know about them, and the
-next `db:upgrade` reconciles the schema against what core expects.
+Do not add columns to core tables. A migration will not know about them, and
+`db:repair` never removes a column: it stays flagged as extra until someone
+removes it by hand.

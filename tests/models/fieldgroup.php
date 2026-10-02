@@ -737,7 +737,7 @@ scratchdb_truncate_all($admin);
 $lvl1 = seed_category($admin, 'L1');
 $lvl2 = seed_category($admin, 'L2', $lvl1);
 $lvl3 = seed_category($admin, 'L3', $lvl2);
-pin('a three-level category with no forms costs three walk queries plus one lookup', 4, harness_query_count(static function () use ($model, $lvl3) {
+pin('a three-level category with no forms costs one parent map plus one lookup', 2, harness_query_count(static function () use ($model, $lvl3) {
     $model->findByCategory($lvl3);
 }));
 

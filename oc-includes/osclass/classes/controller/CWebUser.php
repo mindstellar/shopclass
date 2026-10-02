@@ -15,6 +15,8 @@
 /**
  * Class CWebUser
  */
+use mindstellar\utility\AjaxResponse;
+
 class CWebUser extends WebSecBaseModel
 {
     /**
@@ -111,10 +113,11 @@ class CWebUser extends WebSecBaseModel
                 $user    =
                     User::newInstance()->findByPrimaryKey(Session::newInstance()->_get('userId'));
                 foreach ($aAlerts as $k => $a) {
-                    $array_conditions = (array)json_decode($a['s_search'], true);
-
-                    $search = new Search();
-                    $search->setJsonAlert($array_conditions);
+                    $search = \mindstellar\search\AlertReplay::search($a);
+                    if ($search === null) {
+                        $aAlerts[$k]['items'] = array();
+                        continue;
+                    }
                     $search->notFromUser(Session::newInstance()->_get('userId'));
                     $search->limit(0, 3);
 
@@ -182,16 +185,24 @@ class CWebUser extends WebSecBaseModel
                     $username
                 );
                 if ($username != '') {
-                    $user = User::newInstance()->findByUsername($username);
-                    if (isset($user['s_username'])) {
+                    $user    = User::newInstance()->findByUsername($username);
+                    $numeric = UserActions::numericUsernameError($username);
+                    $claim   = '';
+                    if ($numeric !== '') {
+                        osc_add_flash_error_message($numeric);
+                    } elseif (isset($user['s_username'])) {
                         osc_add_flash_error_message(_m('The specified username is already in use'));
                     } elseif (osc_is_username_blacklisted($username)) {
                         osc_add_flash_error_message(_m('The specified username is not valid, it contains some invalid words'));
                     } else {
-                        User::newInstance()->update(
-                            array('s_username' => $username),
-                            array('pk_i_id' => Session::newInstance()->_get('userId'))
-                        );
+                        $claim = UserActions::claimUsername((int) Session::newInstance()->_get('userId'), $username);
+                        if ($claim === 'taken') {
+                            osc_add_flash_error_message(_m('The specified username is already in use'));
+                        } elseif ($claim !== 'ok') {
+                            osc_add_flash_error_message(_m('Your profile could not be saved. Please try again.'));
+                        }
+                    }
+                    if ($claim === 'ok') {
                         osc_add_flash_ok_message(_m('The username was updated'));
                         osc_run_hook(
                             'after_username_change',
@@ -257,11 +268,10 @@ class CWebUser extends WebSecBaseModel
                 $this->redirectTo(osc_user_profile_url());
                 break;
             case 'items':                   // view items user
-                $itemsPerPage =
-                    (Params::getParam('itemsPerPage') != '') ? Params::getParam('itemsPerPage')
-                        : 10;
-                $page         = (Params::getParam('iPage') > 0) ? Params::getParam('iPage') - 1 : 0;
-                $itemType     = Params::getParam('itemType');
+                $itemsPerPage = Params::getParamInt('itemsPerPage') > 0 ? min(Params::getParamInt('itemsPerPage'), 100) : 10;
+                $page         = Params::getParamInt('iPage') > 0 ? Params::getParamInt('iPage') - 1 : 0;
+                // The owner sees every listing they hold unless a status tab narrows it.
+                $itemType     = Params::getParamString('itemType') ?: 'all';
                 $total_items  =
                     Item::newInstance()->countItemTypesByUserID(osc_logged_user_id(), $itemType);
                 $total_pages  = ceil($total_items / $itemsPerPage);
@@ -273,6 +283,7 @@ class CWebUser extends WebSecBaseModel
                         $itemType
                     );
 
+                osc_prime_item_upgrades($items);
                 $this->_exportVariableToView('items', $items);
                 $this->_exportVariableToView('search_total_pages', $total_pages);
                 $this->_exportVariableToView('search_total_items', $total_items);
@@ -356,7 +367,7 @@ class CWebUser extends WebSecBaseModel
                 header('Content-Disposition: attachment; filename="my-data-' . date('Y-m-d') . '.json"');
                 header('X-Content-Type-Options: nosniff');
                 header('Cache-Control: private, no-store');
-                echo json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+                AjaxResponse::json($data, flags: JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
                 exit;
             case 'delete':
                 // GET must not delete. Older themes still point here with id and

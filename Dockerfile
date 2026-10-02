@@ -23,17 +23,27 @@ LABEL org.opencontainers.image.title="Shopclass" \
 # window is up. Without it OSC_MICROCACHE can only hold a page for the thirty
 # seconds core asks for, since time would be the only way an entry ever leaves.
 # It is an Alpine package versioned with nginx itself, not a source build, and it
-# does nothing until the purge location is configured.
-RUN apk add --no-cache nginx nginx-mod-http-cache-purge supervisor curl unzip tzdata msmtp ca-certificates
+# does nothing until the purge location is configured. acme.sh gets and renews the
+# certificate for the built-in HTTPS (OSC_TLS_DOMAIN).
+RUN apk add --no-cache nginx nginx-mod-http-cache-purge supervisor curl unzip tzdata msmtp ca-certificates acme.sh
 
 # PHP extensions Shopclass uses in production (superset of composer's ext-*
-# requires, plus opcache and the memcached object-cache driver). imagick is left
-# out to keep the image lean — the app's image handling works on gd.
+# requires, plus opcache and the memcached object-cache driver). imagick keeps photo
+# colours; its policy allows only photo formats, with size limits.
 ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
 RUN chmod +x /usr/local/bin/install-php-extensions \
     && install-php-extensions \
-        bcmath curl exif fileinfo gd gettext intl mbstring memcached mysqli opcache zip \
-    && rm /usr/local/bin/install-php-extensions
+        bcmath curl exif fileinfo gd gettext imagick intl mbstring memcached mysqli opcache zip \
+    && rm /usr/local/bin/install-php-extensions \
+    # Only the JPEG, WebP, PNG and GIF coders are used. The other coders install themselves
+    # with ImageMagick, so they are forbidden; their libraries then go, and apk keeps any
+    # library something still needs.
+    && apk add --no-cache '!imagemagick-heic' '!imagemagick-jp2' '!imagemagick-jxl' '!imagemagick-pango' \
+        '!imagemagick-pdf' '!imagemagick-raw' '!imagemagick-svg' '!imagemagick-tiff' \
+    && apk del --no-cache ghostscript jbig2dec librsvg glycin-svg glycin-image-rs libglycin gdk-pixbuf \
+        libjxl libhwy libraw libheif libheif-aom libheif-dav1d libheif-jpeg libheif-libde265 \
+        libheif-openjpeg libheif-x265 libde265 x265-libs openjpeg tiff pango cairo shared-mime-info
+COPY .docker/prod/imagemagick-policy.xml /etc/ImageMagick-7/policy.xml
 
 # Runtime PHP config: production OPcache + a larger upload ceiling. clear_env=no
 # lets php-fpm workers see the container environment (DB_*, WEB_PATH, ...) via
@@ -80,7 +90,8 @@ RUN mkdir -p /application/oc-content/uploads /application/oc-content/downloads \
              /application/oc-content/plugins /application/oc-content/themes \
              /run/nginx /var/log/supervisor \
     && chown -R www-data:www-data /application/oc-content \
-    && chmod +x /application/.docker/prod/entrypoint.sh /application/.docker/prod/healthcheck.sh
+    && chmod +x /application/.docker/prod/entrypoint.sh /application/.docker/prod/healthcheck.sh \
+        /application/.docker/prod/tls.sh
 
 COPY .docker/prod/nginx.conf      /etc/nginx/nginx.conf
 COPY .docker/prod/supervisord.conf /etc/supervisord.conf
@@ -89,6 +100,9 @@ COPY .docker/prod/supervisord.conf /etc/supervisord.conf
 # halves from OSC_MICROCACHE / OSC_RATE_LIMIT. nginx will not start if an included
 # file is missing, so these have to exist even when the features are off.
 RUN : > /etc/nginx/real_ip.conf \
+    && printf 'listen 80 default_server;\nlisten [::]:80 default_server;\n' > /etc/nginx/listen.conf \
+    && : > /etc/nginx/tls_http.conf \
+    && /application/.docker/prod/tls.sh conf \
     && : > /etc/nginx/microcache_http.conf \
     && : > /etc/nginx/microcache_php.conf \
     && mkdir -p /var/cache/nginx/microcache \
@@ -110,7 +124,7 @@ ENV OSC_IGNORE_CONFIG_FILE=1 \
     OSC_DISABLE_SELF_UPDATE=1 \
     OSC_BUNDLED_CONTENT_PATH=/usr/src/shopclass/oc-content
 
-EXPOSE 80
+EXPOSE 80 443
 
 # Liveness/readiness: see .docker/prod/healthcheck.sh (200 once installed, 3xx
 # otherwise — both mean the web stack is up; a DB outage 5xx fails it).

@@ -67,15 +67,98 @@ class Params
      */
     public static function getParamInt($param, $default = 0)
     {
-        if ($param === '' || !isset(self::$request[$param])) {
+        $value = self::scalarParam($param);
+
+        return $value === null ? $default : (int) $value;
+    }
+
+    /**
+     * Type-safe yes/no accessor: `1/0`, `true/false`, `on/off`, `yes/no` (any case, surrounding
+     * whitespace ignored) and ''.
+     * Anything else, an array, or a missing param yields $default.
+     *
+     * @param string $param
+     * @param bool   $default
+     *
+     * @return bool
+     */
+    public static function getParamBool($param, $default = false)
+    {
+        $value = self::scalarParam($param);
+        if ($value === null) {
             return $default;
         }
-        $value = self::$request[$param];
-        if (is_array($value)) {
+        $bool = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+
+        return $bool ?? $default;
+    }
+
+    /**
+     * Type-safe email accessor, checked with FILTER_VALIDATE_EMAIL after trimming. Quoted
+     * local parts and IP-literal domains are refused too, so no `"`, `<`, `>` or `\` gets
+     * through. A `'` is legal in an address, so bind the value in SQL and escape it on output.
+     * An invalid address, an array, or a missing param yields $default.
+     *
+     * @param string $param
+     * @param string $default
+     *
+     * @return string
+     */
+    public static function getParamEmail($param, $default = '')
+    {
+        $value = self::scalarParam($param);
+        if ($value === null) {
+            return $default;
+        }
+        $email = filter_var(trim($value), FILTER_VALIDATE_EMAIL);
+        if ($email === false || preg_match('/["<>\\\\\[\]\s(),;:]/', $email) === 1) {
             return $default;
         }
 
-        return (int)$value;
+        return $email;
+    }
+
+    /**
+     * One value from a fixed list, for sort keys, directions, types and actions. The
+     * match is exact and case-sensitive against the list's values, not its keys; the list's
+     * own element is returned, so an int list gives an int. Hard-code the list: one built
+     * from request data guards nothing. Anything else, an array, or a missing param yields $default.
+     *
+     * @param string $param
+     * @param array  $allowed
+     * @param mixed  $default
+     *
+     * @return mixed
+     */
+    public static function getParamEnum($param, array $allowed, $default = null)
+    {
+        $value = self::scalarParam($param);
+        if ($value === null) {
+            return $default;
+        }
+        foreach ($allowed as $option) {
+            if ((string) $option === $value) {
+                return $option;
+            }
+        }
+
+        return $default;
+    }
+
+    /**
+     * The raw request value as a string, or null when it is missing or an array.
+     *
+     * @param string $param
+     *
+     * @return string|null
+     */
+    private static function scalarParam($param)
+    {
+        if ($param === '' || !isset(self::$request[$param]) || is_array(self::$request[$param])) {
+            return null;
+        }
+
+        return (string) self::$request[$param];
     }
 
     /**
@@ -172,13 +255,16 @@ class Params
                 $v = self::purify($v, $html_encode, $xss_check, $quotes_encode); // recursive
             }
         } else {
-            if ($xss_check === true) {
+            if ($xss_check === true && strpbrk((string) $value, '<>&') === false) {
+                // With no tag or entity to parse, the purifier would only normalise newlines
+                // and clean the UTF-8, so do exactly that. tests/params-purify.php pins the match.
+                $value = HTMLPurifier_Encoder::cleanUTF8(str_replace(array("\r\n", "\r"), "\n", (string) $value));
+            } elseif ($xss_check === true) {
                 if (self::$HTMLPurifier === null) {
                     $purifier_config = HTMLPurifier_Config::createDefault();
                     $purifier_config->set('HTML.Allowed', '');
-                    // Stripping all tags leaves no definition to persist, so use the in-memory
-                    // NullCache instead of writing serializer blobs into the public uploads dir.
-                    $purifier_config->set('Cache.DefinitionImpl', null);
+                    $purifier_config->set('Output.Newline', "\n");
+                    \mindstellar\security\PurifierCache::apply($purifier_config);
                     self::$HTMLPurifier = new HTMLPurifier($purifier_config);
                 }
 
@@ -337,6 +423,26 @@ class Params
     public static function unsetParam($key)
     {
         unset(self::$request[$key]);
+    }
+
+    /**
+     * Run $fn with the request params replaced by $request, then put the real ones back.
+     * Code that reads a form through Params can then read plain data instead.
+     *
+     * @param array<string,mixed> $request
+     * @param callable            $fn
+     *
+     * @return mixed what $fn returns
+     */
+    public static function withRequest(array $request, callable $fn)
+    {
+        $saved         = self::$request;
+        self::$request = $request;
+        try {
+            return $fn();
+        } finally {
+            self::$request = $saved;
+        }
     }
 
     /**

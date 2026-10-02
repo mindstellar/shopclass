@@ -103,6 +103,10 @@ function osc_response_is_cacheable()
     // doesn't know the cookie list: a stale/tampered identity cookie, or a chosen locale (which
     // rendered this page in another language), makes the response per-visitor. Third-party
     // cookies are deliberately absent from this list and never downgrade the response.
+    // A flash message or a refilled form shows this visitor's own input.
+    if (!empty($_COOKIE['oc_flash']) || !empty($_COOKIE['oc_form'])) {
+        return false;
+    }
     foreach (osc_cache_relevant_cookies() as $name) {
         if (isset($_COOKIE[$name]) && $_COOKIE[$name] !== '') {
             return false;
@@ -222,10 +226,42 @@ function osc_response_etag($body)
     return $body;
 }
 
+/**
+ * The Server-Timing value for a page built between $start and $now, in milliseconds.
+ *
+ * @param float $start request start, as REQUEST_TIME_FLOAT
+ * @param float $now
+ *
+ * @return string
+ */
+function osc_server_timing_value(float $start, float $now): string
+{
+    return 'app;dur=' . number_format(max(0.0, $now - $start) * 1000, 1, '.', '') . ';desc="Page build"';
+}
+
+/**
+ * Tell the browser how long an HTML page took to build, in a Server-Timing header. The
+ * page itself is unchanged, so its ETag and any cached copy are too.
+ *
+ * @param string $body the finished page
+ *
+ * @return string the same body
+ */
+function osc_response_server_timing($body)
+{
+    $start = (float) ($_SERVER['REQUEST_TIME_FLOAT'] ?? 0);
+    if ($start > 0 && !headers_sent() && \mindstellar\Csrf::isHtmlResponse((string) $body, headers_list())) {
+        header('Server-Timing: ' . osc_server_timing_value($start, microtime(true)), false);
+    }
+
+    return $body;
+}
+
 // Guarded so this file stays includable on its own -- the test suite loads it without a
 // plugin layer, and so does early boot.
 if (function_exists('osc_add_filter')) {
     osc_add_filter('response_body', 'osc_response_etag');
+    osc_add_filter('response_body', 'osc_response_server_timing');
 }
 
 /* file end: ./oc-includes/osclass/helpers/hHttpCache.php */

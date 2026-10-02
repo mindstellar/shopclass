@@ -36,9 +36,30 @@ function ctx(array $over = array()): void
         'page_description' => 'A classifieds site.',
         'static_text' => '', 'item_description' => '',
         'item_category' => '', 'item_city' => '',
+        'profile' => false, 'contact' => false, 'user_info' => '', 'user_name' => '',
     ), $over);
 }
 
+function osc_is_public_profile()
+{
+    return $GLOBALS['ctx']['profile'];
+}
+function osc_is_contact_page()
+{
+    return $GLOBALS['ctx']['contact'];
+}
+function osc_user_info($locale = '')
+{
+    return $GLOBALS['ctx']['user_info'];
+}
+function osc_user_name()
+{
+    return $GLOBALS['ctx']['user_name'];
+}
+function osc_page_title()
+{
+    return 'My Site';
+}
 function osc_is_home_page()
 {
     return $GLOBALS['ctx']['home'];
@@ -224,6 +245,21 @@ harness_section('home page');
 
 pin('unchanged', 'A classifieds site.', (function () {
     ctx(array('home' => true));
+    return meta_description();
+})());
+
+harness_section('public profile and contact page');
+
+pin('a profile uses what the seller wrote', 'Selling tools since 1998.', (function () {
+    ctx(array('profile' => true, 'user_info' => 'Selling tools since 1998.', 'user_name' => 'Ana'));
+    return meta_description();
+})());
+pin('and says whose listings they are when they wrote nothing', 'Listings by Ana on My Site.', (function () {
+    ctx(array('profile' => true, 'user_name' => 'Ana'));
+    return meta_description();
+})());
+pin('the contact page says what it is for', 'Send a message to My Site.', (function () {
+    ctx(array('contact' => true));
     return meta_description();
 })());
 

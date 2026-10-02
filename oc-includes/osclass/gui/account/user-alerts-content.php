@@ -21,6 +21,7 @@ if (!defined('ABS_PATH')) {
 <div class="oe-account">
     <div class="oe-account-main">
         <?php osc_show_flash_message(); ?>
+        <?php osc_run_hook('account_page_before', 'user-alerts'); ?>
 
         <p class="oe-muted"><?php echo osc_esc_html(
             _m('A saved search that emails you when a new listing matches it.')
@@ -33,33 +34,45 @@ if (!defined('ABS_PATH')) {
                     echo osc_esc_html(_m('Browse listings')); ?></a>
             </div>
         <?php } else {
-            while (osc_has_alerts()) { ?>
+            while (osc_has_alerts()) {
+                $alertParts   = osc_alert_criteria();
+                $alertActions = array();
+                if (osc_alert_is_active()) {
+                    $alertActions['unsubscribe'] = array(
+                        'label'   => _m('Stop this alert'),
+                        'url'     => osc_user_unsubscribe_alert_url('', (string) osc_alert_field('s_email')),
+                        'class'   => 'oe-danger-link',
+                        'confirm' => _m('Stop this alert? You will get no more emails for this search.'),
+                    );
+                }
+                $rowActions = (array) osc_apply_filter('alert_row_actions', $alertActions, osc_alert());
+                ?>
                 <section class="oe-panel">
-                    <h2><?php echo osc_esc_html(osc_alert_search()); ?></h2>
+                    <h2><?php echo osc_esc_html(osc_alert_summary()); ?></h2>
                     <p class="oe-meta">
                         <?php if (osc_alert_is_active()) { ?>
                             <span class="oe-badge paid"><?php echo osc_esc_html(_m('Active')); ?></span>
                         <?php } else { ?>
-                            <span class="oe-badge refunded"><?php echo osc_esc_html(_m('Unsubscribed')); ?></span>
-                        <?php } ?>
-                        <a href="<?php echo osc_esc_html(osc_user_unsubscribe_alert_url()); ?>"><?php
-                            echo osc_esc_html(_m('Delete this alert')); ?></a>
+                            <span class="oe-badge refunded"><?php echo osc_esc_html(_m('Stopped')); ?></span>
+                        <?php }
+                        if (!isset($alertParts['held'])) {
+                            foreach ($alertParts as $part) { ?>
+                                <span><?php echo osc_esc_html($part['label'] . ': ' . $part['value']); ?></span>
+                            <?php }
+                        } ?>
                     </p>
+                    <?php require __DIR__ . '/parts/row-actions.php'; ?>
 
                     <?php if (osc_count_items() === 0) { ?>
                         <p class="oe-empty"><?php echo osc_esc_html(_m('Nothing matches it yet.')); ?></p>
                     <?php } else { ?>
-                        <ul class="oe-list">
-                            <?php $rowOwned = false;
-                            while (osc_has_items()) {
-                                require __DIR__ . '/parts/item-row.php';
-                            }
-                            unset($rowOwned); ?>
-                        </ul>
+                        <?php osc_gui_listing_list('alert', false); ?>
                     <?php } ?>
                 </section>
             <?php }
         } ?>
+
+        <?php osc_run_hook('account_page_after', 'user-alerts'); ?>
     </div>
 
     <?php require __DIR__ . '/nav.php'; ?>

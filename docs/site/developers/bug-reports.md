@@ -2,7 +2,7 @@
 title: How to write a bug report
 description: "What to include in a ShopClass bug report so it can actually be reproduced and fixed: versions, environment, steps, and where to file it."
 sidebar:
-  order: 16
+  order: 17
 ---
 
 One rule governs everything below:
@@ -50,7 +50,7 @@ Ten minutes here saves days of back-and-forth:
 - **Switch to the default theme.** If the bug disappears, it is the theme's.
 - **Disable plugins one at a time**: `php oc-cli.php plugin:deactivate
   --plugin=<folder>`. If one makes it stop, name that plugin in the report.
-- **Turn on error logging** and include what it says. See
+- **Turn on error logging** and include what it says: see
   [debug PHP errors](/docs/developers/debug-php-errors/).
 - **Search existing issues.** Your problem may already have a patch or a
   workaround waiting.
@@ -59,7 +59,7 @@ Ten minutes here saves days of back-and-forth:
 
 > **Publishing a listing with more than 4 photos fails silently**
 >
-> ShopClass 6.1.0, PHP 8.2, shared hosting (SiteGround), Storefront theme, no
+> ShopClass 6.4.0, PHP 8.2, shared hosting (SiteGround), Storefront theme, no
 > plugins active.
 >
 > 1. Go to /item/new, fill in the form, attach 5 JPEGs of ~3MB each

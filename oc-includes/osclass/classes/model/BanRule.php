@@ -95,16 +95,17 @@ class BanRule extends DAO
             $orderSql = $order_column . $direction;
         }
 
-        $params = array();
-        $sql    = 'SELECT SQL_CALC_FOUND_ROWS * FROM ' . $this->getTableName();
+        $params   = array();
+        $where    = '';
         if ($name != '') {
             // Mirrors like()'s own escapeStr($v, true): % and _ are escaped in the
             // payload before the wildcard boundaries are added, so a literal
             // wildcard character typed by the caller stays literal.
-            $escaped  = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), (string)$name);
-            $sql     .= ' WHERE s_name LIKE ?';
-            $params[] = '%' . $escaped . '%';
+            $escaped   = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), (string)$name);
+            $where     = 's_name LIKE ?';
+            $params[]  = '%' . $escaped . '%';
         }
+        $sql = 'SELECT * FROM ' . $this->getTableName() . ($where !== '' ? ' WHERE ' . $where : '');
         $sql .= ' ORDER BY ' . $orderSql;
 
         // Mirrors DBCommandClass::limit($start, $end): the clause is omitted
@@ -128,23 +129,11 @@ class BanRule extends DAO
 
         $rules['rules'] = osc_db_stringify_rows($rows);
 
-        // FOUND_ROWS() must run immediately after the SQL_CALC_FOUND_ROWS select
-        // above, on the same connection, with nothing else in between -- it
-        // reports on whichever query last ran with that hint. Both this and the
-        // COUNT(*) below run through osc_db_select_one() with no params, which
-        // shares the singleton connection the main select just used and (like
-        // the legacy dao->query() path) returns plain strings.
-        $total = osc_db_select_one('SELECT FOUND_ROWS() as total');
-        if ($total !== null && $total['total']) {
-            $rules['total_results'] = $total['total'];
+        $counts = $this->pagedCounts($where, $params);
+        if ($counts === null) {
+            return $rules;
         }
-
-        // Unconditional: this always counts the WHOLE table, ignoring the
-        // s_name filter above -- that is what the legacy query did too.
-        $rowsTotal = osc_db_select_one('SELECT COUNT(*) as total FROM ' . $this->getTableName());
-        if ($rowsTotal !== null && $rowsTotal['total']) {
-            $rules['rows'] = $rowsTotal['total'];
-        }
+        [$rules['total_results'], $rules['rows']] = $counts;
 
         return $rules;
     }

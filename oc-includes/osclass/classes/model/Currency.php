@@ -20,6 +20,8 @@
  */
 class Currency extends DAO
 {
+    protected $cacheGroup = 'currency';
+
     /**
      * It references to self object: Currency.
      * It is used as a singleton
@@ -68,23 +70,24 @@ class Currency extends DAO
             return self::$_currencies[$value];
         }
 
-        try {
-            $rows = osc_db_table($this->getTableName())
-                ->select(...$this->getFields())
-                ->where($this->getPrimaryKey(), $value)
-                ->get();
-        } catch (\mindstellar\database\DbException $e) {
+        // The table holds a handful of rows, so it is cached whole.
+        $all = \mindstellar\cache\CacheGroup::remember('currency', 'all', function () {
+            try {
+                $rows = osc_db_table($this->getTableName())->select(...$this->getFields())->get();
+            } catch (\mindstellar\database\DbException $e) {
+                return null;
+            }
+
+            // Upper-cased keys: the old lookup went through a case-insensitive collation.
+            return array_change_key_case(array_column(osc_db_stringify_rows($rows), null, $this->getPrimaryKey()), CASE_UPPER);
+        }) ?? array();
+
+        // A miss is left out of the map, so a currency added later in the same request is found.
+        $code = strtoupper((string)$value);
+        if (!isset($all[$code])) {
             return false;
         }
-
-        // Anything other than exactly one row is treated as not found, and a
-        // miss is deliberately left out of the map so a currency added later in
-        // the same request is still picked up.
-        if (count($rows) !== 1) {
-            return false;
-        }
-
-        self::$_currencies[$value] = osc_db_stringify_row($rows[0]);
+        self::$_currencies[$value] = $all[$code];
 
         return self::$_currencies[$value];
     }

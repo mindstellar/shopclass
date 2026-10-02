@@ -94,6 +94,23 @@ if (!function_exists('osc_gui_tone_icon')) {
     }
 }
 
+if (!function_exists('osc_gui_kept')) {
+    /**
+     * What the visitor typed into a field before a failed submit, else $default.
+     *
+     * @param string $key
+     * @param string $default
+     *
+     * @return string
+     */
+    function osc_gui_kept($key, $default = '')
+    {
+        $kept = (string)Session::newInstance()->_getForm($key);
+
+        return $kept !== '' ? $kept : (string)$default;
+    }
+}
+
 if (!function_exists('osc_gui_print_style')) {
     /**
      * Print the shared stylesheet for core-rendered pages, once per request.
@@ -118,5 +135,90 @@ if (!function_exists('osc_gui_print_style')) {
         $band   = osc_gui_tone_band($tone);
 
         require ABS_PATH . 'oc-includes/osclass/gui/page-style.php';
+    }
+}
+
+if (!function_exists('osc_gui_listing_list')) {
+    /**
+     * Print the current `items` loop as core's listing list, unless a theme or plugin
+     * returns its own markup from the listing_list_html filter.
+     *
+     * @param string $context dashboard, user_items, public_profile or alert
+     * @param bool   $owned   show the owner's status badges and actions
+     */
+    function osc_gui_listing_list(string $context, bool $owned): void
+    {
+        $html = osc_apply_filter('listing_list_html', null, (array) View::newInstance()->_get('items'), $context);
+        if (is_string($html)) {
+            echo $html;
+
+            return;
+        }
+
+        $rowOwned   = $owned;
+        $rowContext = $context;
+        echo '<ul class="oe-list">';
+        while (osc_has_items()) {
+            require ABS_PATH . 'oc-includes/osclass/gui/account/parts/item-row.php';
+        }
+        echo '</ul>';
+    }
+}
+
+if (!function_exists('osc_gui_print_confirm_script')) {
+    /**
+     * Ask before following a link marked data-osc-confirm. Printed once per request.
+     */
+    function osc_gui_print_confirm_script(): void
+    {
+        static $printed = false;
+        if ($printed) {
+            return;
+        }
+        $printed = true;
+
+        echo '<script>document.addEventListener("click",function(e){'
+            . 'var a=e.target.closest&&e.target.closest("[data-osc-confirm]");'
+            . 'if(a&&!window.confirm(a.getAttribute("data-osc-confirm"))){e.preventDefault();}});</script>';
+    }
+}
+
+if (!function_exists('osc_gui_print_pager')) {
+    /**
+     * Print core's pager for the current item list, only when it leads to another page.
+     */
+    function osc_gui_print_pager(): void
+    {
+        $pager = osc_pagination_items();
+        if (strpos($pager, '<a') !== false) {
+            echo '<nav class="oe-pager" aria-label="' . osc_esc_html(_m('Pages')) . '">' . $pager . '</nav>';
+        }
+    }
+}
+
+if (!function_exists('osc_gui_print_dialog_script')) {
+    /**
+     * Turn each dialog[data-osc-dialog] into a modal: [data-osc-dialog-open="id"] opens
+     * it, [data-osc-dialog-close] closes it. Without the script a dialog shows in place.
+     */
+    function osc_gui_print_dialog_script(): void
+    {
+        static $printed = false;
+        if ($printed) {
+            return;
+        }
+        $printed = true;
+
+        echo '<script>(function(){var ds=document.querySelectorAll("dialog[data-osc-dialog]");'
+            . 'if(!ds.length||!ds[0].showModal){return;}'
+            . 'ds.forEach(function(d){d.setAttribute("data-osc-dialog-ready","");'
+            . 'if(d.hasAttribute("data-osc-dialog-show")){d.showModal();}'
+            . 'd.addEventListener("click",function(e){if(e.target===d){d.close();}});});'
+            . 'document.addEventListener("click",function(e){'
+            . 'var o=e.target.closest("[data-osc-dialog-open]");'
+            . 'if(o){var d=document.getElementById(o.getAttribute("data-osc-dialog-open"));'
+            . 'if(d&&d.hasAttribute("data-osc-dialog-ready")){e.preventDefault();d.showModal();}return;}'
+            . 'var c=e.target.closest("[data-osc-dialog-close]");if(c&&c.closest("dialog")){c.closest("dialog").close();}});'
+            . '})();</script>';
     }
 }

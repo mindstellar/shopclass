@@ -79,7 +79,7 @@ function get_absolute_url()
     $pos      = strpos(getServerParam('REQUEST_URI'), 'oc-includes');
     $URI      = rtrim(substr(getServerParam('REQUEST_URI'), 0, $pos), '/') . '/';
 
-    return $protocol . '://' . getServerParam('HTTP_HOST') . $URI;
+    return $protocol . '://' . osc_request_host() . $URI;
 }
 
 /**
@@ -192,6 +192,18 @@ function get_requirements()
         ),
     );
 
+    // Only when a database is already configured (config.php or environment); otherwise
+    // there is nothing to connect to until step 2.
+    $serverInfo = install_configured_server_info();
+    if ($serverInfo !== '') {
+        $array['Database server version'] = array(
+            'requirement' => sprintf(__('MySQL 5.7.5+ or MariaDB 10.2+ (found %s)'), osc_esc_html($serverInfo)),
+            'fn'          => install_db_version_supported($serverInfo),
+            'solution'    => __('Shopclass needs MySQL 5.7.5 or newer, or MariaDB 10.2 or newer. '
+                . 'Ask your hosting to upgrade the database server.')
+        );
+    }
+
     $config_writable = false;
     $root_writable   = false;
     $config_sample   = false;
@@ -231,6 +243,54 @@ function get_requirements()
     }
 
     return $array;
+}
+
+/**
+ * The server version string of the configured database, or '' when none is configured or
+ * it cannot be reached.
+ *
+ * @return string
+ * @since 6.4.0
+ */
+function install_configured_server_info(): string
+{
+    require_once LIB_PATH . 'osclass/config-loader.php';
+    if (!osc_is_configured()) {
+        return '';
+    }
+
+    try {
+        $probe = new \mindstellar\database\ConnectionManager(DB_HOST, DB_USER, DB_PASSWORD, '');
+        if ($probe->getErrorConnectionLevel() > 0 || !$probe->getHandle() instanceof mysqli) {
+            return '';
+        }
+
+        return (new \mindstellar\database\Connection($probe->getHandle()))->serverInfo();
+    } catch (\Throwable $e) {
+        return '';
+    }
+}
+
+/**
+ * Whether a database server version string meets the floor: MySQL 5.7.5+ or MariaDB 10.2+.
+ * 5.7.5 is where GET_LOCK() became reentrant per-connection, which the migration runner relies on.
+ *
+ * @param string $serverInfo as reported by the server, e.g. "8.0.36" or "5.5.5-10.11.6-MariaDB"
+ *
+ * @return bool
+ * @since 6.4.0
+ */
+function install_db_version_supported(string $serverInfo): bool
+{
+    // Older MariaDB clients see a "5.5.5-" prefix in front of the real version.
+    $info = preg_replace('/^5\.5\.5-/', '', trim($serverInfo));
+    if (!preg_match('/^(\d+\.\d+(?:\.\d+)?)/', $info, $m)) {
+        return false;
+    }
+
+    $floor = stripos($info, 'mariadb') !== false ? '10.2.0' : '5.7.5';
+
+    return version_compare($m[1], $floor, '>=');
 }
 
 /**
@@ -310,8 +370,8 @@ function install_db_error_message($code, array $ctx = array())
         case 1044:
             return array(
                 'error' => sprintf(
-                    __("That user connected, but isn't allowed to use the database %s. In your hosting "
-                        . 'panel, give the user access to this database.'),
+                    __("That user connected, but the database %s does not exist or the user isn't allowed "
+                        . 'to use it. In your hosting panel, create the database and give the user access to it.'),
                     $dbname
                 ),
                 'field' => 'dbname',
@@ -357,6 +417,76 @@ function install_db_error_message($code, array $ctx = array())
 }
 
 /**
+ * Whether the database already has Shopclass tables with this prefix. The prefix is escaped so
+ * it cannot act as a LIKE wildcard.
+ *
+ * @param mysqli $db
+ * @param string $prefix
+ *
+ * @return bool
+ */
+function install_prefix_in_use(mysqli $db, string $prefix): bool
+{
+    $count = (new \mindstellar\database\Connection($db))->scalar(
+        'SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME LIKE BINARY ? ESCAPE \'!\'',
+        array(\mindstellar\database\TablePrefix::like($prefix))
+    );
+
+    return (int) $count > 0;
+}
+
+/**
+ * Whether the Shopclass tables under this prefix are an install that never finished: the
+ * sentinel row the last step writes is missing.
+ *
+ * @param mysqli $db
+ * @param string $prefix a validated table prefix
+ *
+ * @return bool
+ */
+function install_is_unfinished(mysqli $db, string $prefix): bool
+{
+    try {
+        $res = $db->query('SELECT COUNT(*) FROM `' . $prefix . "t_preference` WHERE s_name = 'osclass_installed'");
+    } catch (mysqli_sql_exception $e) {
+        // Only a missing table means unfinished; a damaged or locked one may be a real site.
+        return (int) $e->getCode() === 1146;
+    }
+
+    return $res instanceof mysqli_result && (int) $res->fetch_row()[0] === 0;
+}
+
+/**
+ * Drop the tables of an unfinished install: only the tables the installer creates.
+ *
+ * @param mysqli $db
+ * @param string $prefix a validated table prefix
+ *
+ * @return void
+ */
+function install_drop_unfinished(mysqli $db, string $prefix): void
+{
+    preg_match_all('/CREATE TABLE \/\*TABLE_PREFIX\*\/(\w+)/', (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/installer/struct.sql'), $m);
+    $db->query('SET FOREIGN_KEY_CHECKS = 0');
+    foreach (array_merge($m[1], array('t_migration')) as $table) {
+        $db->query('DROP TABLE IF EXISTS `' . $prefix . $table . '`');
+    }
+    $db->query('SET FOREIGN_KEY_CHECKS = 1');
+}
+
+/**
+ * @return array{error: string, field: string}
+ */
+function install_unfinished_message(): array
+{
+    return array(
+        'error' => __('This database has a Shopclass install that did not finish. Turn on "Remove the '
+            . 'unfinished install" under More options to start again.'),
+        'field' => 'reset_unfinished',
+    );
+}
+
+/**
  * Try the database settings entered on step 2 without committing to them, so the
  * owner can confirm the connection works before running the real install. This
  * is the installer's biggest fear-reducer.
@@ -388,6 +518,14 @@ function install_test_db_connection()
             'level'   => 'error',
             'message' => __('Fill in the host, database name and username first.'),
             'field'   => $dbhost === '' ? 'dbhost' : ($dbname === '' ? 'dbname' : 'username'),
+        );
+    }
+    if (!preg_match('/^[A-Za-z0-9_]+$/', $tableprefix)) {
+        return array(
+            'ok'      => false,
+            'level'   => 'error',
+            'message' => __('The table prefix can only contain letters, numbers and underscores.'),
+            'field'   => 'tableprefix',
         );
     }
 
@@ -427,14 +565,25 @@ function install_test_db_connection()
         return array('ok' => false, 'level' => 'error', 'message' => $msg['error'], 'field' => $msg['field']);
     }
 
-    // Connected. Warn early if this prefix already has Shopclass tables — the
-    // 1050 collision the real install would otherwise hit halfway through. The
-    // LIKE pattern is escaped so a literal prefix can't act as a wildcard.
+    // Connected. Warn early if this prefix already has Shopclass tables.
     $db = $probe->getHandle();
     if ($db instanceof mysqli) {
-        $like = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), $tableprefix) . 't_preference';
-        $res  = $db->query("SHOW TABLES LIKE '" . $db->real_escape_string($like) . "'");
-        if ($res instanceof mysqli_result && $res->num_rows > 0) {
+        $prefixInUse = install_prefix_in_use($db, $tableprefix);
+        if ($prefixInUse && install_is_unfinished($db, $tableprefix)) {
+            if (Params::getParam('reset_unfinished') == '') {
+                $msg = install_unfinished_message();
+
+                return array('ok' => false, 'level' => 'warning', 'message' => $msg['error'], 'field' => $msg['field']);
+            }
+
+            return array(
+                'ok'      => true,
+                'level'   => 'success',
+                'message' => sprintf(__('Connected to %s. The unfinished install will be removed when you continue.'), $dbname),
+                'field'   => null,
+            );
+        }
+        if ($prefixInUse) {
             return array(
                 'ok'      => false,
                 'level'   => 'warning',
@@ -442,6 +591,16 @@ function install_test_db_connection()
                     . 'prefix. Choose a different table prefix under More options, or use an empty database.'),
                 'field'   => 'tableprefix',
             );
+        }
+        // Connecting is not enough: the install creates tables, so try one.
+        $table = '`' . $tableprefix . 'install_probe`';
+        try {
+            $db->query('CREATE TABLE ' . $table . ' (i INT)');
+            $db->query('DROP TABLE ' . $table);
+        } catch (mysqli_sql_exception $e) {
+            $msg = install_db_error_message($e->getCode(), $ctx);
+
+            return array('ok' => false, 'level' => 'error', 'message' => $msg['error'], 'field' => $msg['field']);
         }
     }
 
@@ -537,6 +696,20 @@ function oc_install()
         );
     }
 
+    // A site that already has database settings installs only into that database. Without
+    // this, a visitor who reached the form on a live site could point config.php at theirs.
+    if (osc_is_configured() && !(($dbhost === DB_HOST || (defined('DB_PORT') && $dbhost === DB_HOST . ':' . DB_PORT))
+        && $dbname === DB_NAME && $username === DB_USER
+        && $tableprefix === DB_TABLE_PREFIX && hash_equals((string)DB_PASSWORD, (string)$password))
+    ) {
+        return array(
+            'error' => defined('OSC_CONFIG_FROM_ENV') && OSC_CONFIG_FROM_ENV
+                ? __('Enter the database settings this site is configured with in its environment.')
+                : __('This site already has database settings in config.php. Enter the same ones, or delete config.php to use a different database.'),
+            'field' => 'dbname',
+        );
+    }
+
     if (Params::getParam('createdb') != '') {
         $createdb = true;
     }
@@ -568,7 +741,10 @@ function oc_install()
                 $quotedDbName
             ));
         } catch (\mindstellar\database\DbException $e) {
-            return install_db_error_message($e->getCode(), array('dbhost' => $dbhost, 'dbname' => $dbname));
+            // MySQL reports a refused CREATE DATABASE as 1044, access denied to that database.
+            $code = (int) $e->getCode() === 1044 ? 1006 : $e->getCode();
+
+            return install_db_error_message($code, array('dbhost' => $dbhost, 'dbname' => $dbname));
         }
 
         unset($dbInstance, $adminDb, $adminInstance);
@@ -584,6 +760,17 @@ function oc_install()
 
     if ($error_num > 0) {
         return install_db_error_message($error_num, array('dbhost' => $dbhost, 'dbname' => $dbname));
+    }
+    // Stop before anything is created, so an existing site's database is left as it was.
+    $handle = $dbInstance->getHandle();
+    if ($handle instanceof mysqli && install_prefix_in_use($handle, $tableprefix)) {
+        if (!install_is_unfinished($handle, $tableprefix)) {
+            return install_db_error_message(1050, array('dbhost' => $dbhost, 'dbname' => $dbname));
+        }
+        if (Params::getParam('reset_unfinished') == '') {
+            return install_unfinished_message();
+        }
+        install_drop_unfinished($handle, $tableprefix);
     }
 
     // When the configuration comes from the environment there is no config.php
@@ -690,6 +877,10 @@ function oc_install()
 
     try {
         $db->executeScript($sql);
+        // ImageMagick keeps photo colours, so a new site uses it where it is loaded.
+        if (extension_loaded('imagick')) {
+            $db->execute('UPDATE ' . DB_TABLE_PREFIX . "t_preference SET s_value = '1' WHERE s_section = 'osclass' AND s_name = 'use_imagick'");
+        }
     } catch (\mindstellar\database\DbException $e) {
         return install_db_error_message($e->getCode(), array('dbhost' => $dbhost, 'dbname' => $dbname));
     }
@@ -754,6 +945,8 @@ function oc_install()
     if ($writesConfig) {
         copy_config_file($dbname, $username, $password, $dbhost, $tableprefix);
     }
+    // The site step creates the admin; it runs only after this session installed the database.
+    Session::newInstance()->_set('install_db_done', 1);
 
     return false;
 }
@@ -872,9 +1065,11 @@ function define_install_constants($dbhost, $dbname, $username, $password, $table
  */
 function create_config_file($dbname, $username, $password, $dbhost, $tableprefix)
 {
-    $password    = addslashes($password);
-    $abs_url     = get_absolute_url();
-    $rel_url     = get_relative_url();
+    [$abs_url, $rel_url] = install_urls();
+    [$dbname, $username, $password, $dbhost, $tableprefix, $abs_url, $rel_url] = array_map(
+        'install_config_literal',
+        [$dbname, $username, $password, $dbhost, $tableprefix, $abs_url, $rel_url]
+    );
     $config_text = <<<CONFIG
 <?php
 /**
@@ -910,7 +1105,65 @@ defined('WEB_PATH') or define('WEB_PATH', '$abs_url');
 
 CONFIG;
 
-    file_put_contents(ABS_PATH . 'config.php', $config_text);
+    if (file_put_contents(ABS_PATH . 'config.php', $config_text) !== false) {
+        install_config_chmod(ABS_PATH . 'config.php');
+    }
+}
+
+/**
+ * Site URL and path for config.php. A CLI run has no request to derive them from,
+ * so the CLI installer defines them up front.
+ *
+ * @return string[] [absolute URL, relative path]
+ */
+function install_urls()
+{
+    if (PHP_SAPI === 'cli' && defined('WEB_PATH') && defined('REL_WEB_URL')) {
+        return [WEB_PATH, REL_WEB_URL];
+    }
+
+    return [get_absolute_url(), get_relative_url()];
+}
+
+/**
+ * A value made safe to place inside a single-quoted PHP string in config.php.
+ *
+ * @param string $value
+ *
+ * @return string
+ */
+function install_config_literal($value)
+{
+    return addcslashes((string) $value, "'\\");
+}
+
+/**
+ * Whether a site address is a plain http(s) URL that config.php can hold.
+ *
+ * @param string $url
+ *
+ * @return bool
+ */
+function install_web_url_valid($url)
+{
+    return filter_var($url, FILTER_VALIDATE_URL) !== false
+        && preg_match('#^https?://[^\'\\\\?\#]+$#i', (string) $url) === 1;
+}
+
+/**
+ * Make config.php readable by the web server but writable only by its owner.
+ * Skipped when another user owns the file, where chmod() cannot work.
+ *
+ * @param string $path
+ *
+ * @return void
+ */
+function install_config_chmod($path)
+{
+    $owner = @fileowner($path);
+    if ($owner !== false && (!function_exists('posix_geteuid') || $owner === posix_geteuid())) {
+        @chmod($path, 0644);
+    }
 }
 
 /**
@@ -928,9 +1181,11 @@ CONFIG;
 function copy_config_file($dbname, $username, $password, $dbhost, $tableprefix)
 {
     // Prepare variables
-    $password = addslashes($password);
-    $abs_url = get_absolute_url();
-    $rel_url = get_relative_url();
+    [$abs_url, $rel_url] = install_urls();
+    [$dbname, $username, $password, $dbhost, $tableprefix, $abs_url, $rel_url] = array_map(
+        'install_config_literal',
+        [$dbname, $username, $password, $dbhost, $tableprefix, $abs_url, $rel_url]
+    );
 
     // Load config sample
     $config_sample_path = ABS_PATH . 'config-sample.php';
@@ -940,36 +1195,59 @@ function copy_config_file($dbname, $username, $password, $dbhost, $tableprefix)
         return false;
     }
 
-    // Define replacements
-    $replacements = array(
-        'database_name' => $dbname,
-        'username' => $username,
-        'password' => $password,
-        'db_host' => $dbhost,
-        'oc_' => $tableprefix,
-        'rel_here' => $rel_url,
-        'web_path_here' => $abs_url,
-    );
-
-    // Perform replacements
-    foreach ($config_sample as &$line) {
-        foreach ($replacements as $search => $replace) {
-            $line = str_replace($search, $replace, $line);
-        }
-    }
+    // Only the quoted placeholders, in one pass: the bare words also appear in the
+    // sample's comments, and a value already written must not be replaced again.
+    $config_text = strtr(implode('', $config_sample), array(
+        "'database_name'" => "'$dbname'",
+        "'username'"      => "'$username'",
+        "'password'"      => "'$password'",
+        "'db_host'"       => "'$dbhost'",
+        "'oc_'"           => "'$tableprefix'",
+        "'rel_here'"      => "'$rel_url'",
+        "'web_path_here'" => "'$abs_url'",
+    ));
 
     // Write to config.php
     $config_path = ABS_PATH . 'config.php';
-    $write_success = file_put_contents($config_path, implode('', $config_sample));
+    $write_success = file_put_contents($config_path, $config_text);
     if (!$write_success) {
         // Handle write error
         return false;
     }
 
-    // Set file permissions
-    chmod($config_path, 0666);
+    install_config_chmod($config_path);
 
     return true;
+}
+
+/**
+ * Whether the site has database settings but its database cannot be used right now: the
+ * server is down, the password is wrong, or a table is damaged. A missing database or
+ * missing tables is a site to install, not an outage.
+ *
+ * @return bool
+ */
+function install_database_unreachable(): bool
+{
+    require_once LIB_PATH . 'osclass/config-loader.php';
+    if (!osc_is_configured()) {
+        return false;
+    }
+
+    try {
+        $probe = new \mindstellar\database\ConnectionManager(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+        $code  = $probe->getErrorConnectionLevel() ?: $probe->getErrorLevel();
+        if ($code > 0) {
+            return $code !== 1049;
+        }
+        $probe->getHandle()->query('SELECT 1 FROM `' . DB_TABLE_PREFIX . 't_preference` LIMIT 1');
+    } catch (mysqli_sql_exception $e) {
+        return (int) $e->getCode() !== 1146;
+    } catch (\Throwable $e) {
+        return true;
+    }
+
+    return false;
 }
 
 /**
@@ -989,15 +1267,15 @@ function is_osclass_installed()
     }
 
     try {
-        // Establish the shared connection, then ask through the parameterized
-        // API. Any failure — no server, missing table, wrong credentials —
-        // means "not installed", exactly as the previous raw query behaved.
-        // The table prefix is a config constant, never request input.
-        \mindstellar\database\ConnectionManager::newInstance(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
-        $count = osc_db_scalar(
-            'SELECT COUNT(*) FROM ' . DB_TABLE_PREFIX . 't_preference WHERE s_name = ?',
-            array('osclass_installed')
-        );
+        // Its own connection, never the shared one: a failed check must not leave a broken
+        // connection behind for the install that may follow. The prefix is a config constant.
+        $probe = new \mindstellar\database\ConnectionManager(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+        if ($probe->getErrorConnectionLevel() > 0 || $probe->getErrorLevel() > 0) {
+            return false;
+        }
+        $count = $probe->getHandle()->query(
+            'SELECT COUNT(*) FROM `' . DB_TABLE_PREFIX . "t_preference` WHERE s_name = 'osclass_installed'"
+        )->fetch_row()[0];
     } catch (\Throwable $e) {
         return false;
     }
@@ -1155,8 +1433,10 @@ function basic_info()
         . ' ' . 'You can access the administration panel with these details:'), WEB_PATH);
     $body .= '<br/>';
     $body .= '<ul>';
-    $body .= '<li>' . sprintf(__('username: %s'), $admin) . '</li>';
-    $body .= '<li>' . sprintf(__('password: %s'), $password) . '</li>';
+    // The password is raw input and the username may carry "&" or "<"; escaped, both
+    // read exactly as typed in the HTML and in the plain copy made from it.
+    $body .= '<li>' . sprintf(__('username: %s'), htmlspecialchars($admin, ENT_QUOTES, 'UTF-8', false)) . '</li>';
+    $body .= '<li>' . sprintf(__('password: %s'), htmlspecialchars($password, ENT_QUOTES, 'UTF-8')) . '</li>';
     $body .= '</ul>';
     $body .= sprintf(
         __('Remember that for any doubts you might have you can consult our <a href="%1$s">documentation</a>'),
@@ -1178,7 +1458,7 @@ function basic_info()
     $mail->Subject  = 'Shopclass successfully installed!';
     $mail->addAddress(Params::getParam('email'), 'Shopclass administrator');
     $mail->Body    = $body;
-    $mail->AltBody = $body;
+    $mail->AltBody = _osc_mail_text($body);
 
     try {
         $mail->send();

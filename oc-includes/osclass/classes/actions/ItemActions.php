@@ -12,6 +12,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\storage\ResourceUploader;
 use mindstellar\utility\Sanitize;
 
 /**
@@ -35,8 +36,21 @@ class ItemActions
         's_contact_phone' => 40,
     );
 
+    /** Widths of the t_item contact columns a listing form fills. */
+    public const CONTACT_WIDTHS = array(
+        's_contact_name'  => 100,
+        's_contact_email' => 140,
+    );
+
+    /** Highest description length the listing settings accept. */
+    public const DESCRIPTION_MAX = 20000;
+
     public $is_admin;
     public $data;
+    /** @var bool admin mode that still applies listing limits and moderation */
+    private $import = false;
+    /** @var bool the data came through prepareDataFrom(), not a form carrying the secret */
+    private $fromData = false;
     private $manager;
     private $Sanitize;
 
@@ -50,6 +64,20 @@ class ItemActions
         $this->is_admin = $is_admin;
         $this->manager  = Item::newInstance();
         $this->Sanitize = (new Sanitize());
+    }
+
+    /**
+     * Save listings for an importer: no posting wait and no e-mails, as for an admin, but
+     * the owner's listing limit and the site's moderation still apply.
+     *
+     * @return $this
+     */
+    public function asImport(): self
+    {
+        $this->is_admin = true;
+        $this->import   = true;
+
+        return $this;
     }
 
     /**
@@ -211,8 +239,10 @@ class ItemActions
         // Validate
         $flash_error .= ((!osc_validate_max($aItem['contactName'], 35)) ? _m('Name too long.') . PHP_EOL : '');
         $flash_error .= ((!osc_validate_email($aItem['contactEmail'])) ? _m('Email invalid.') . PHP_EOL : '');
+        // The name already has its tighter cap above.
+        $flash_error .= $this->contactWidthErrors(array('contactEmail' => $aItem['contactEmail']));
 
-        $flash_error .= $this->validateCommonInput($flash_error, $aItem);
+        $flash_error .= $this->validateCommonInput('', $aItem);
 
         // The wait is the global preference unless the posting user holds a
         // listing.no_wait entitlement -- osc_items_wait_time_for_user() falls back to
@@ -234,7 +264,8 @@ class ItemActions
             $is_spam = 1;
         }
         $_meta = Field::newInstance()->findByCategory($aItem['catId']);
-        $meta  = Params::getParam('meta');
+        // Custom field values come with the data when there is no form post, as on an import.
+        $meta  = $aItem['meta'] ?? Params::getParam('meta');
         $this->handleMetaField($_meta, $meta, $flash_error);
 
         // hook pre add
@@ -248,7 +279,7 @@ class ItemActions
         // than paying for it twice on every post. Nothing is ever consumed here: a
         // listing.slot entitlement only ever raises the ceiling withinFreeQuota() already
         // checked, so there is nothing left to spend once a post is allowed through.
-        if (!$this->is_admin && osc_billing_enabled() && !empty($aItem['userId'])) {
+        if ((!$this->is_admin || $this->import) && osc_billing_enabled() && !empty($aItem['userId'])) {
             $withinFreeQuota = \mindstellar\billing\Entitlements::withinFreeQuota($aItem['userId']);
             if (!\mindstellar\billing\Entitlements::canPublish($aItem['userId'], array('item' => $aItem), $withinFreeQuota)) {
                 $flash_error .= osc_listing_limit_message((int) $aItem['userId'], $aItem) . PHP_EOL;
@@ -304,6 +335,14 @@ class ItemActions
                 return _m('Your listing could not be saved. Please try again.');
             }
 
+            // Written first so a refused title or description removes the new row again,
+            // rather than leaving a live listing with no text.
+            if (!$this->insertItemLocales('ADD', $aItem['title'], $aItem['description'], $itemId)) {
+                $this->discardNewItem($itemId);
+
+                return _m('Your listing could not be saved. Please try again.');
+            }
+
             if (!$this->is_admin) {
                 // Record the publish so the flood wait is enforced server-side (see the
                 // countByIpContext check above): durable, correct across app servers, and
@@ -326,9 +365,6 @@ class ItemActions
             );
 
             Params::setParam('itemId', $itemId);
-
-            // INSERT title and description locales
-            $this->insertItemLocales('ADD', $aItem['title'], $aItem['description'], $itemId);
 
             $location = array(
                 'fk_i_item_id'      => $itemId,
@@ -403,7 +439,7 @@ class ItemActions
                 $success = 2;
             }
 
-            if (!$this->is_admin && osc_moderate_admin_post()) {
+            if ((!$this->is_admin || $this->import) && osc_moderate_admin_post()) {
                 $this->disable($item['pk_i_id']);
             }
 
@@ -424,48 +460,18 @@ class ItemActions
     private function checkAllowedExt($aResources)
     {
         $success = true;
-        require LIB_PATH . 'osclass/mimes.php';
         if (!empty($aResources)) {
-            // get allowedExt
-            $aMimesAllowed = array();
-            $aExt          = explode(',', osc_allowed_extension());
-            foreach ($aExt as $ext) {
-                if (isset($mimes[$ext])) {
-                    /** @var array $mimes */
-                    $mime = $mimes[$ext];
-                    if (is_array($mime)) {
-                        foreach ($mime as $aux) {
-                            if (!in_array($aux, $aMimesAllowed, false)) {
-                                $aMimesAllowed[] = $aux;
-                            }
-                        }
-                    } elseif (!in_array($mime, $aMimesAllowed, false)) {
-                        $aMimesAllowed[] = $mime;
-                    }
-                }
-            }
             foreach ($aResources['error'] as $key => $error) {
-                $bool_img = false;
-                if ($error == UPLOAD_ERR_OK) {
-                    // Read the type from the file itself; browsers send a wrong or generic type for some real images.
-                    if (function_exists('getimagesize')) {
-                        // check if it is a file
-                        $filePath = $aResources['tmp_name'][$key];
-                        $fileMime = '';
-                        if (file_exists($filePath)) {
-                            $imageInfo = @getimagesize($filePath);
-                            if (isset($imageInfo['mime'])) {
-                                $fileMime = $imageInfo['mime'];
-                                // check if it's in the allowed mimes
-                                if (in_array($fileMime, $aMimesAllowed, false)) {
-                                    $bool_img = true;
-                                }
-                            }
-                        }
-                    }
-                    if (!$bool_img && $success) {
-                        $success = false;
-                    }
+                if ($error !== UPLOAD_ERR_OK) {
+                    continue;
+                }
+                if (\mindstellar\storage\UploadMimes::tooManyPixels((string)$aResources['tmp_name'][$key])) {
+                    osc_add_flash_error_message(\mindstellar\storage\UploadMimes::tooManyPixelsMessage());
+
+                    return false;
+                }
+                if (!\mindstellar\storage\UploadMimes::isAllowedImage((string)$aResources['tmp_name'][$key])) {
+                    $success = false;
                 }
             }
 
@@ -569,18 +575,21 @@ class ItemActions
             $flash_error .= _m('Image is too big. Max. size') . osc_max_size_kb() . ' Kb' . PHP_EOL;
         }
 
-        $title_message = '';
+        // One title is enough, but a too-long one is refused in every language.
+        $maxTitle  = osc_max_characters_per_title();
+        $tooLong   = '';
+        $tooShort  = '';
+        $hasTitle  = false;
         foreach ($aItem['title'] as $key => $value) {
-            if (osc_validate_text($value) && osc_validate_max($value, osc_max_characters_per_title())) {
-                $title_message = '';
-                break;
+            if (!osc_validate_max($value, $maxTitle)) {
+                $tooLong .= sprintf(_m('Title too long (%s).'), $key) . PHP_EOL;
+            } elseif (osc_validate_text($value)) {
+                $hasTitle = true;
+            } else {
+                $tooShort .= sprintf(_m('Title too short (%s).'), $key) . PHP_EOL;
             }
-
-            $title_message .= (!osc_validate_text($value) ? sprintf(_m('Title too short (%s).'), $key) . PHP_EOL : '');
-            $title_message .= (!osc_validate_max($value, osc_max_characters_per_title())
-                ? sprintf(_m('Title too long (%s).'), $key) . PHP_EOL : '');
         }
-        $flash_error .= $title_message;
+        $flash_error .= ($hasTitle || $tooLong !== '' ? '' : $tooShort) . $tooLong;
 
         $desc_message = '';
         foreach ($aItem['description'] as $key => $value) {
@@ -887,19 +896,92 @@ class ItemActions
      * @param array<string,string> $description Description per locale
      * @param int                  $itemId
      *
-     * @return void
+     * @return bool False when a locale could not be written
      */
     public function insertItemLocales($type, $title, $description, $itemId)
     {
         foreach ($title as $k => $_data) {
             $_title       = $_data;
             $_description = $description[$k];
+            $written      = true;
             if ($type === 'ADD') {
-                $this->manager->insertLocale($itemId, $k, $_title, $_description);
+                $written = $this->manager->insertLocale($itemId, $k, $_title, $_description);
             } elseif ($type === 'EDIT') {
-                $this->manager->updateLocaleForce($itemId, $k, $_title, $_description);
+                $written = $this->manager->updateLocaleForce($itemId, $k, $_title, $_description);
+            }
+            if (!$written) {
+                trigger_error('Item locale ' . $k . ' was not written for item ' . $itemId . '.', E_USER_WARNING);
+
+                return false;
             }
         }
+
+        return true;
+    }
+
+    /**
+     * Remove a listing whose add failed half way, before anything else refers to it.
+     *
+     * @param int $itemId
+     *
+     * @return void
+     */
+    private function discardNewItem($itemId)
+    {
+        try {
+            osc_db_transaction(static function () use ($itemId) {
+                osc_db_table(DB_TABLE_PREFIX . 't_item_description')->where('fk_i_item_id', $itemId)->delete();
+                osc_db_table(DB_TABLE_PREFIX . 't_item')->where('pk_i_id', $itemId)->delete();
+            });
+        } catch (\Throwable $e) {
+            trigger_error('Half-made item ' . $itemId . ' could not be removed.', E_USER_WARNING);
+        }
+    }
+
+    /**
+     * Errors for contact values wider than the t_item columns that hold them.
+     *
+     * @param array<string,mixed> $aItem
+     *
+     * @return string
+     */
+    private function contactWidthErrors(array $aItem)
+    {
+        $errors = '';
+        if (!osc_validate_max((string)($aItem['contactName'] ?? ''), self::CONTACT_WIDTHS['s_contact_name'])) {
+            $errors .= _m('Name too long.') . PHP_EOL;
+        }
+        if (!osc_validate_max((string)($aItem['contactEmail'] ?? ''), self::CONTACT_WIDTHS['s_contact_email'])) {
+            $errors .= _m('Email too long.') . PHP_EOL;
+        }
+
+        return $errors;
+    }
+
+    /**
+     * Errors for the listing length settings; empty when both are in range.
+     *
+     * @param mixed $titleLength
+     * @param mixed $descriptionLength
+     *
+     * @return string
+     */
+    public static function lengthSettingErrors($titleLength, $descriptionLength)
+    {
+        $inRange = static function ($value, int $max): bool {
+            return is_scalar($value) && preg_match('/^[0-9]+$/', (string)$value) === 1
+                && (int)$value >= 1 && (int)$value <= $max;
+        };
+
+        $errors = '';
+        if (!$inRange($titleLength, Item::TITLE_WIDTH)) {
+            $errors .= sprintf(_m('Titles can be 1 to %d characters.'), Item::TITLE_WIDTH) . PHP_EOL;
+        }
+        if (!$inRange($descriptionLength, self::DESCRIPTION_MAX)) {
+            $errors .= sprintf(_m('Descriptions can be 1 to %d characters.'), self::DESCRIPTION_MAX) . PHP_EOL;
+        }
+
+        return $errors;
     }
 
     /**
@@ -1008,12 +1090,33 @@ class ItemActions
                         if (!is_dir($folder) && !mkdir($folder, 0755, true) && !is_dir($folder)) {
                             return 3; // PATH CAN NOT BE CREATED
                         }
-                        osc_copy($tmpName . '_normal', $folder . $resourceId . '.' . $extension);
-                        osc_copy($tmpName . '_preview', $folder . $resourceId . '_preview.' . $extension);
-                        osc_copy($tmpName . '_thumbnail', $folder . $resourceId . '_thumbnail.' . $extension);
+                        $copies = array(
+                            $tmpName . '_normal'    => $folder . $resourceId . '.' . $extension,
+                            $tmpName . '_preview'   => $folder . $resourceId . '_preview.' . $extension,
+                            $tmpName . '_thumbnail' => $folder . $resourceId . '_thumbnail.' . $extension,
+                        );
+                        $copied = true;
+                        foreach ($copies as $from => $to) {
+                            $copied = $copied && osc_copy($from, $to);
+                        }
+                        // A photo row without its files shows as a broken image, so undo it.
+                        if (!$copied) {
+                            foreach ($copies as $from => $to) {
+                                @unlink($from);
+                                @unlink($to);
+                            }
+                            @unlink($tmpName);
+                            $itemResourceManager->deleteResourcesIds(array($resourceId));
+                            $totalItemImages--;
+                            osc_add_flash_error_message(
+                                _m('A photo could not be saved. Check that the uploads folder can be written to.'),
+                                $this->is_admin ? 'admin' : 'pubMessages'
+                            );
+                            continue;
+                        }
                         if (osc_keep_original_image()) {
                             $path = $folder . $resourceId . '_original.' . $extension;
-                            osc_copy($tmpName, $path);
+                            ResourceUploader::saveOriginal($tmpName, $path, $extension);
                         }
                         unlink($tmpName . '_normal');
                         unlink($tmpName . '_preview');
@@ -1123,7 +1226,7 @@ class ItemActions
         if ($result == 1) {
             osc_run_hook('disable_item', $id);
             $item = $this->manager->findByPrimaryKey($id);
-            if ($item['b_active'] == 1 && $item['b_spam'] == 0 && !osc_isExpired($item['dt_expiration'])) {
+            if (osc_item_is_counted(array('b_enabled' => 1) + $item)) {
                 $this->_decreaseStats($item);
             }
 
@@ -1131,6 +1234,21 @@ class ItemActions
         }
 
         return false;
+    }
+
+    /**
+     * Take one listing out of the category, location and user totals.
+     *
+     * @param int $id
+     *
+     * @return void
+     */
+    public static function decreaseStatsFor(int $id): void
+    {
+        $item = Item::newInstance()->findByPrimaryKey($id);
+        if ($item) {
+            (new self(true))->_decreaseStats($item);
+        }
     }
 
     /**
@@ -1177,10 +1295,15 @@ class ItemActions
         $aItem['contactPhone'] = $this->Sanitize->phone($aItem['contactPhone']);
 
         // Validate
-        $flash_error .= $this->validateCommonInput($flash_error, $aItem);
+        $flash_error .= $this->validateCommonInput('', $aItem);
+        // Only an admin editing a listing with no owner writes the contact name and e-mail.
+        if ($this->is_admin && !$aItem['userId']) {
+            $flash_error .= $this->contactWidthErrors($aItem);
+        }
 
         $_meta = Field::newInstance()->findByCategory($aItem['catId']);
-        $meta  = Params::getParam('meta');
+        // Custom field values come with the data when there is no form post, as on an import.
+        $meta  = $aItem['meta'] ?? Params::getParam('meta');
         $this->handleMetaField($_meta, $meta, $flash_error);
 
         // hook pre edit
@@ -1191,6 +1314,11 @@ class ItemActions
         if ($flash_error) {
             $success = $flash_error;
         } else {
+            // Text first: when it is refused, nothing else about the listing has changed yet.
+            if (!$this->insertItemLocales('EDIT', $aItem['title'], $aItem['description'], $aItem['idItem'])) {
+                return _m('Your listing could not be saved. Please try again.');
+            }
+
             $location = array(
                 'fk_c_country_code' => $aItem['countryId'],
                 's_country'         => $aItem['countryName'],
@@ -1247,12 +1375,13 @@ class ItemActions
                 $aUpdate['s_ip'] = $aItem['s_ip'];
             }
 
-            $result = $this->manager->update($aUpdate, array(
-                'pk_i_id'  => $aItem['idItem'],
-                's_secret' => $aItem['secret']
-            ));
-            // UPDATE title and description locales
-            $this->insertItemLocales('EDIT', $aItem['title'], $aItem['description'], $aItem['idItem']);
+            // A form carries the listing's secret, and the save must match it. An admin
+            // caller that passed plain data has no form, so it needs no secret.
+            $where = array('pk_i_id' => $aItem['idItem']);
+            if (!($this->is_admin && $this->fromData)) {
+                $where['s_secret'] = $aItem['secret'];
+            }
+            $result = $this->manager->update($aUpdate, $where);
             // UPLOAD item resources
             $this->uploadItemResources($aItem['photos'], $aItem['idItem']);
 
@@ -1278,14 +1407,15 @@ class ItemActions
                 }
             }
 
-            $oldIsExpired  = osc_isExpired($old_item['dt_expiration']);
+            // Premium keeps an expired listing counted, as the recount does.
+            $oldIsExpired  = empty($old_item['b_premium']) && osc_isExpired($old_item['dt_expiration']);
             $dt_expiration = Item::newInstance()
                 ->updateExpirationDate($aItem['idItem'], $aItem['dt_expiration'], false);
             if ($dt_expiration === false) {
                 $dt_expiration          = $old_item['dt_expiration'];
                 $aItem['dt_expiration'] = $old_item['dt_expiration'];
             }
-            $newIsExpired = osc_isExpired($dt_expiration);
+            $newIsExpired = empty($old_item['b_premium']) && osc_isExpired($dt_expiration);
 
             // Recalculate stats related with items
             $this->updateStats(
@@ -1300,7 +1430,7 @@ class ItemActions
 
             unset($old_item);
 
-            if (!$this->is_admin && osc_moderate_admin_edit()) {
+            if ((!$this->is_admin || $this->import) && osc_moderate_admin_edit()) {
                 $this->disable($aItem['idItem']);
             }
 
@@ -1427,8 +1557,7 @@ class ItemActions
             // updated correctly
             if ($result == 1) {
                 osc_run_hook('activate_item', $id);
-                // b_enabled == 1 && b_active == 1
-                if ($item[0]['b_spam'] == 0 && !osc_isExpired($item[0]['dt_expiration'])) {
+                if (osc_item_is_counted(array('b_active' => 1) + $item[0])) {
                     $this->increaseStats($item[0]);
                 }
 
@@ -1460,7 +1589,7 @@ class ItemActions
         if ($result == 1) {
             osc_run_hook('deactivate_item', $id);
             $item = $this->manager->findByPrimaryKey($id);
-            if ($item['b_enabled'] == 1 && $item['b_spam'] == 0 && !osc_isExpired($item['dt_expiration'])) {
+            if (osc_item_is_counted(array('b_active' => 1) + $item)) {
                 $this->_decreaseStats($item);
             }
 
@@ -1489,7 +1618,7 @@ class ItemActions
         if ($result == 1) {
             osc_run_hook('enable_item', $id);
             $item = $this->manager->findByPrimaryKey($id);
-            if ($item['b_active'] == 1 && $item['b_spam'] == 0 && !osc_isExpired($item['dt_expiration'])) {
+            if (osc_item_is_counted(array('b_enabled' => 1) + $item)) {
                 $this->increaseStats($item);
             }
 
@@ -1530,14 +1659,15 @@ class ItemActions
         // not inherit a stale expiry and get swept away an hour after it is made.
         $set['dt_premium_expiration'] = null;
 
-        if ($on && $days !== null) {
-            // Just the two columns, not findByPrimaryKey(): that hydrates locales and
-            // resources this decision has no use for.
-            $current = osc_db_select_one(
-                'SELECT b_premium, dt_premium_expiration FROM ' . DB_TABLE_PREFIX . 't_item WHERE pk_i_id = ?',
-                array((int) $id)
-            );
+        // Just the columns needed here, not findByPrimaryKey(): that hydrates locales and
+        // resources this decision has no use for.
+        $current = osc_db_select_one(
+            'SELECT b_premium, dt_premium_expiration, b_enabled, b_active, b_spam, dt_expiration FROM '
+            . DB_TABLE_PREFIX . 't_item WHERE pk_i_id = ?',
+            array((int) $id)
+        );
 
+        if ($on && $days !== null) {
             if (!empty($current['b_premium']) && empty($current['dt_premium_expiration'])) {
                 // Already premium with no end date. A dated purchase must not turn an
                 // open-ended upgrade into one that expires.
@@ -1562,6 +1692,15 @@ class ItemActions
         );
         // updated correctly
         if ($result == 1) {
+            // An expired listing is counted only while premium, so the switch can move it.
+            if ($current && osc_item_is_counted($current) !== osc_item_is_counted(array('b_premium' => $value) + $current)) {
+                $item = $this->manager->findByPrimaryKey($id);
+                if ($on) {
+                    $this->increaseStats($item);
+                } else {
+                    $this->_decreaseStats($item);
+                }
+            }
             if ($fireHook) {
                 if ($on) {
                     osc_run_hook('item_premium_on', $id);
@@ -1607,20 +1746,11 @@ class ItemActions
                 osc_run_hook('item_spam_off', $id);
             }
 
-            $b_active  = $item['b_active'];
-            $b_enabled = $item['b_enabled'];
-            $b_spam    = $item['b_spam'];
-            $isExpired = osc_isExpired($item['dt_expiration']);
-
-            if (
-                $b_active == 1 && $b_enabled == 1 && $b_spam == 0
-                && !$isExpired
-            ) {
+            $before = osc_item_is_counted($item);
+            $after  = osc_item_is_counted(array('b_spam' => $on ? 1 : 0) + $item);
+            if ($before && !$after) {
                 $this->_decreaseStats($item);
-            } elseif (
-                $b_active == 1 && $b_enabled == 1 && $b_spam == 1
-                && !$isExpired
-            ) {
+            } elseif (!$before && $after) {
                 $this->increaseStats($item);
             }
 
@@ -1745,11 +1875,20 @@ class ItemActions
         $item = $aItem['item'];
         View::newInstance()->_exportVariableToView('item', $item);
 
-        osc_run_hook('hook_email_send_friend', $aItem);
+        $sent = \mindstellar\security\MessageHold::deliver('send_friend', (string) $aItem['yourEmail'], array(
+            'id'          => (int) $item['pk_i_id'],
+            'yourName'    => (string) $aItem['yourName'],
+            'yourEmail'   => (string) $aItem['yourEmail'],
+            'friendName'  => (string) $aItem['friendName'],
+            'friendEmail' => (string) $aItem['friendEmail'],
+            'message'     => (string) $aItem['message'],
+        ));
         $item_url = osc_item_url();
         $item_url = '<a href="' . $item_url . '" >' . $item_url . '</a>';
         Params::setParam('item_url', $item_url);
-        osc_add_flash_ok_message(sprintf(_m('We just sent your message to %s'), $aItem['friendName']));
+        if ($sent) {
+            osc_add_flash_ok_message(sprintf(_m('We just sent your message to %s'), $aItem['friendName']));
+        }
 
         return true;
     }
@@ -1823,9 +1962,9 @@ class ItemActions
     }
 
     /**
-     * Validate the contact form and fire the listing-inquiry email hook.
+     * Validate the contact form and send the inquiry, or hold it until the sender confirms.
      *
-     * @return string|null the validation errors, or null when the inquiry was sent
+     * @return string|bool the validation errors, true when sent, false when held
      */
     public function contact()
     {
@@ -1836,7 +1975,7 @@ class ItemActions
             $flash_error = __('Your name: this field is required') . PHP_EOL;
         }
         if (!osc_validate_email($aItem['yourEmail'])) {
-            $flash_error .= __('Invalid email address' . $aItem['yourEmail']) . PHP_EOL;
+            $flash_error .= __('Invalid email address') . PHP_EOL;
         }
         if (!osc_validate_text($aItem['message'])) {
             $flash_error .= __('Message: this field is required') . PHP_EOL;
@@ -1846,7 +1985,13 @@ class ItemActions
             return $flash_error;
         }
 
-        osc_run_hook('hook_email_item_inquiry', $aItem);
+        return \mindstellar\security\MessageHold::deliver('item_contact', (string) $aItem['yourEmail'], array(
+            'id'          => (int) $aItem['id'],
+            'yourEmail'   => (string) $aItem['yourEmail'],
+            'yourName'    => (string) $aItem['yourName'],
+            'phoneNumber' => (string) $aItem['phoneNumber'],
+            'message'     => (string) $aItem['message'],
+        ));
     }
 
     /**
@@ -1992,6 +2137,40 @@ class ItemActions
     }
 
     /**
+     * prepareData() from plain values instead of the request: the same names the listing
+     * form posts, plus 'meta' (custom field values by id) and 'photos' (local file paths,
+     * which are moved into the listing and deleted). For an edit, 'id' names the listing.
+     *
+     * Every value is trusted as an admin's would be: in admin mode 'id' needs no secret,
+     * and each photo path is read and deleted. Check data from outside before it reaches here.
+     *
+     * @param array<string,mixed> $input
+     * @param bool                $isAdd
+     *
+     * @return void
+     */
+    public function prepareDataFrom(array $input, bool $isAdd): void
+    {
+        $photos = array_values(array_filter((array) ($input['photos'] ?? array()), 'is_string'));
+        unset($input['photos'], $input['ajax_photos']);
+        Params::withRequest($input, function () use ($isAdd) {
+            $this->prepareData($isAdd);
+        });
+
+        $files = array('name' => array(), 'type' => array(), 'tmp_name' => array(), 'error' => array(), 'size' => array());
+        foreach ($photos as $path) {
+            $files['name'][]     = basename($path);
+            $files['type'][]     = 'image/*';
+            $files['tmp_name'][] = $path;
+            $files['error'][]    = UPLOAD_ERR_OK;
+            $files['size'][]     = is_file($path) ? (int) filesize($path) : 0;
+        }
+        $this->data['photos'] = $files;
+        $this->data['meta']   = is_array($input['meta'] ?? null) ? $input['meta'] : array();
+        $this->fromData       = true;
+    }
+
+    /**
      * Return an array with all data necessary for do the action (ADD OR EDIT)
      *
      * @param bool $is_add
@@ -2000,13 +2179,20 @@ class ItemActions
      */
     public function prepareData($is_add)
     {
+        $this->fromData = false;
         $aItem = array();
         $data  = array();
 
         $userId = null;
         if ($this->is_admin) {
-            // user
-            $data = User::newInstance()->findByEmail(Params::getParam('contactEmail'));
+            // An explicit ownerId names the account, 0 for none. Without it the admin
+            // editor's rule applies: the account whose e-mail is the contact e-mail.
+            if (Params::existParam('ownerId')) {
+                $ownerId = Params::getParamInt('ownerId');
+                $data    = $ownerId > 0 ? User::newInstance()->findByPrimaryKey($ownerId) : array();
+            } else {
+                $data = User::newInstance()->findByEmail(Params::getParam('contactEmail'));
+            }
             if (isset($data['pk_i_id']) && is_numeric($data['pk_i_id'])) {
                 $userId = $data['pk_i_id'];
             }
@@ -2092,17 +2278,35 @@ class ItemActions
         $aItem['s_zip']        = Params::getParam('zip') ?: null;
         $aItem['contactPhone'] = Params::getParam('contactPhone');
 
-        // $ajax_photos is an array of filenames of the photos uploaded by ajax to a temporary folder
-        // fake insert them into the array of the form-uploaded photos
+        // Photos uploaded by ajax arrive as names in uploads/temp/, to be folded in with the
+        // form-uploaded ones. The name is the poster's to choose, so two things are checked
+        // before it becomes a path: it is a bare filename, and it was staged under this
+        // form's own upload token. Without the second, any readable image on the server could
+        // be attached to a listing -- and would then be unlinked once the post finished.
         if (is_array($ajax_photos) && !empty($ajax_photos)) {
+            $tmpDir = osc_content_path() . 'uploads/temp/';
+            $staged = ItemTmpUpload::newInstance();
+            $token  = osc_upload_token();
+            // This runs before the CSRF check, so an anonymous POST decides how many
+            // lookups it costs. A zero cap means unlimited, which still needs a ceiling
+            // here -- this bounds the work, it is not the site's photo limit.
+            $cap       = (int)osc_max_images_per_item();
+            $remaining = $cap > 0 ? $cap : 100;
             foreach ($ajax_photos as $photo) {
-                if (file_exists(osc_content_path() . 'uploads/temp/' . $photo)) {
-                    $aItem['photos']['name'][]     = $photo;
-                    $aItem['photos']['type'][]     = 'image/*';
-                    $aItem['photos']['tmp_name'][] = osc_content_path() . 'uploads/temp/' . $photo;
-                    $aItem['photos']['error'][]    = UPLOAD_ERR_OK;
-                    $aItem['photos']['size'][]     = 0;
+                if ($remaining-- <= 0) {
+                    break;
                 }
+                if (!is_string($photo) || $photo === '' || basename($photo) !== $photo) {
+                    continue;
+                }
+                if (!$staged->belongsToToken($token, $photo) || !is_file($tmpDir . $photo)) {
+                    continue;
+                }
+                $aItem['photos']['name'][]     = $photo;
+                $aItem['photos']['type'][]     = 'image/*';
+                $aItem['photos']['tmp_name'][] = $tmpDir . $photo;
+                $aItem['photos']['error'][]    = UPLOAD_ERR_OK;
+                $aItem['photos']['size'][]     = 0;
             }
         }
 

@@ -11,6 +11,7 @@
 
 namespace mindstellar\admin\form\store;
 
+use mindstellar\admin\ui\FormSpec;
 use Preference;
 
 /**
@@ -167,6 +168,9 @@ final class PreferenceStore implements Store
                 if ($value === null) {
                     // "Leave it as it was", declared rather than special-cased inside here.
                     continue;
+                }
+                if ($value === FormSpec::WRITE_NULL) {
+                    $value = '';
                 }
             } elseif ($field['type'] === 'checkbox') {
                 $value = $value ? '1' : '0';

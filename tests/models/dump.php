@@ -29,7 +29,9 @@
  *                      otherwise true, even when the query finds nothing (a
  *                      failed/absent table writes just the header comment).
  *  - table_data()      runs `SELECT * FROM <ident>` and writes INSERT statements
- *                      for every row. It drives per-column quoting off the mysqli
+ *                      for every row, starting a new INSERT every 1000 rows or
+ *                      about 1 MB of values so a restore fits max_allowed_packet.
+ *                      A smaller table is still one INSERT, byte for byte as before. It drives per-column quoting off the mysqli
  *                      RESULT-SET FIELD METADATA (fetch_fields()->type), which the
  *                      parameterized Connection layer does not expose, so its read
  *                      stays on the metadata-bearing legacy path; only the dynamic
@@ -93,12 +95,12 @@ pin(
 );
 pin(
     'table_structure signature is unchanged',
-    'public table_structure($path, $table)',
+    'public table_structure($path, $table, $prefixToken = false)',
     harness_method_signature('Dump', 'table_structure')
 );
 pin(
     'table_data signature is unchanged',
-    'public table_data($path, $table)',
+    'public table_data($path, $table, $prefixToken = false)',
     harness_method_signature('Dump', 'table_data')
 );
 pin(
@@ -289,6 +291,25 @@ pin(
         return $n;
     })()
 );
+
+// 1001 rows: the first INSERT closes at 1000 rows and a second one carries the last.
+$admin->query('TRUNCATE TABLE `oc_dumptest`');
+$admin->query(
+    'INSERT INTO `oc_dumptest` (pk_i_id, s_name, d_when, s_num) '
+    . 'SELECT seq, NULL, NULL, NULL FROM (SELECT a.n + b.n * 10 + c.n * 100 + d.n * 1000 + 1 AS seq FROM '
+    . '(SELECT 0 n UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9) a, '
+    . '(SELECT 0 n UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9) b, '
+    . '(SELECT 0 n UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9) c, '
+    . '(SELECT 0 n UNION SELECT 1) d) s WHERE seq <= 1001 ORDER BY seq'
+);
+$splitFile = $freshFile();
+$model->table_data($splitFile, 'oc_dumptest');
+$splitBody = (string) file_get_contents($splitFile);
+@unlink($splitFile);
+
+pin('table_data starts a new INSERT after 1000 rows', 2, substr_count($splitBody, "insert into `oc_dumptest` values\n"));
+pin('...writing the table comment once', 1, substr_count($splitBody, '/* dumping data'));
+check('...closing the first INSERT on row 1000', strpos($splitBody, "(1000,null,null,null);\ninsert into `oc_dumptest` values\n(1001,null,null,null);\n\n") !== false);
 
 $admin->query('DROP TABLE IF EXISTS `oc_dumptest`');
 

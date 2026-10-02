@@ -96,20 +96,63 @@ function osc_csrf_check()
 }
 
 /**
+ * Whether the current request's REMOTE_ADDR looks like a proxy's address instead of the
+ * visitor's — a forwarding header disagrees with it. Detection only; core still reads the
+ * visitor IP from REMOTE_ADDR alone, see osc_is_banned() and osc_validate_spam_delay().
+ *
+ * @return array{header: string, proxy: string}|null the triggering header and REMOTE_ADDR, or null when nothing disagrees
+ */
+function osc_proxy_ip_mismatch()
+{
+    return \mindstellar\security\ProxyIpMismatch::detect(
+        Params::getServerParam('REMOTE_ADDR'),
+        Params::getServerParamsAsArray()
+    );
+}
+
+/**
+ * The ban rules in force. Expired rules are left out, and so are rules that block
+ * messages only, unless $scope is 'messages'.
+ *
+ * @param string $scope 'all', or 'messages' for the contact and share forms
+ *
+ * @return array<int,array<string,mixed>>
+ */
+function osc_ban_rules(string $scope = 'all'): array
+{
+    // SELECT * so the list still loads before the upgrade has added s_scope and dt_expires.
+    try {
+        $rows = osc_db_select('SELECT * FROM ' . DB_TABLE_PREFIX . 't_ban_rule');
+    } catch (\mindstellar\database\DbException $e) {
+        return array();
+    }
+    $now = date('Y-m-d H:i:s');
+
+    return array_values(array_filter($rows, static function ($rule) use ($scope, $now) {
+        if (!empty($rule['dt_expires']) && $rule['dt_expires'] <= $now) {
+            return false;
+        }
+
+        return ($rule['s_scope'] ?? 'all') !== 'messages' || $scope === 'messages';
+    }));
+}
+
+/**
  * Check if an email and/or IP are banned
  *
  * @param string      $email
  * @param string|null $ip    Defaults to the request's REMOTE_ADDR
+ * @param string      $scope 'messages' also applies the rules that block messages only
  *
  * @return int 0: not banned, 1: email is banned, 2: IP is banned
  * @since 3.1
  */
-function osc_is_banned($email = '', $ip = null)
+function osc_is_banned($email = '', $ip = null, string $scope = 'all')
 {
     if ($ip === null) {
         $ip = Params::getServerParam('REMOTE_ADDR');
     }
-    $rules = BanRule::newInstance()->listAll();
+    $rules = osc_ban_rules($scope);
     if (!osc_is_ip_banned($ip, $rules)) {
         if ($email) {
             return osc_is_email_banned($email, $rules) ? 1 : 0; // 1:Email is banned, 0:not banned
@@ -133,7 +176,7 @@ function osc_is_banned($email = '', $ip = null)
 function osc_is_ip_banned($ip, $rules = null)
 {
     if ($rules === null) {
-        $rules = BanRule::newInstance()->listAll();
+        $rules = osc_ban_rules();
     }
     $ip_blocks = explode('.', $ip);
     if (count($ip_blocks) == 4) {
@@ -176,7 +219,7 @@ function osc_is_ip_banned($ip, $rules = null)
 function osc_is_email_banned($email, $rules = null)
 {
     if ($rules == null) {
-        $rules = BanRule::newInstance()->listAll();
+        $rules = osc_ban_rules();
     }
     $email = strtolower($email);
     foreach ($rules as $rule) {
@@ -363,7 +406,8 @@ function osc_encrypt_alert($alert)
 }
 
 /**
- * Decrypt an alert token, falling back to the legacy unauthenticated format.
+ * Decrypt an alert token. Only the authenticated format is accepted: the legacy CTR one
+ * can be edited without detection, and its search conditions are run as SQL by the alert cron.
  *
  * @param string $string
  *
@@ -386,15 +430,12 @@ function osc_decrypt_alert($string)
             substr($string, $ivLen, $tagLen)
         );
 
-        // A failed tag is the signal that this is not a token of this format --
-        // either an older one, or a forgery. Both fall through to the legacy read,
-        // which is itself checked by the caller.
         if ($plain !== false) {
             return $plain;
         }
     }
 
-    return osc_decrypt_alert_legacy($string);
+    return '';
 }
 
 /**
@@ -405,8 +446,9 @@ function osc_decrypt_alert($string)
  * malleable, so tampering with one of these produces a controlled change to the
  * plaintext rather than the garbage the surrounding code assumed -- the JSON parse
  * on the result is what actually rejects a forgery here, and it is a weaker check
- * than a tag. Kept only so a token already in a rendered page still resolves after
- * an upgrade; nothing mints this format any more.
+ * than a tag. Core no longer reads this format; the function stays for callers outside core.
+ *
+ * @deprecated since 6.4.0; a token of this format is not trustworthy
  *
  * @param string $string
  *

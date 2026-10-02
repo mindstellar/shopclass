@@ -39,6 +39,9 @@ use LogicException;
  */
 final class FormSpec
 {
+    /** What a 'persist' callable returns to store NULL, as null itself means "write nothing". */
+    public const WRITE_NULL = "\0osc:write-null";
+
     /**
      * Emission order for page keys, so builder output does not depend on the order the
      * author happened to chain in. Keys never set are not emitted at all.
@@ -177,6 +180,31 @@ final class FormSpec
     public function store(string $table, string $pk = 'pk_i_id'): self
     {
         return $this->setPage('store', array('table' => $table, 'pk' => $pk));
+    }
+
+    /**
+     * Where the translated fields of a table-bound page go: one row of this table per
+     * locale, keyed by the entity's id and the locale code, in the column each field is
+     * named after. Declared after store().
+     *
+     * @param string $table  Unprefixed locale table.
+     * @param string $fk     Column holding the entity's primary key.
+     * @param string $column Column holding the locale code.
+     *
+     * @return self
+     * @throws LogicException when the page is not bound to a table yet
+     */
+    public function translateTable(string $table, string $fk, string $column = 'fk_c_locale_code'): self
+    {
+        if (!isset($this->page['store']) || !is_array($this->page['store'])) {
+            throw new LogicException('FormSpec: translateTable() needs store() first');
+        }
+
+        return $this->setPage('store', $this->page['store'] + array(
+            'locale_table'  => $table,
+            'locale_fk'     => $fk,
+            'locale_column' => $column,
+        ));
     }
 
     /**
@@ -384,6 +412,20 @@ final class FormSpec
     public function textarea(string $name, string $label = '', string $help = ''): self
     {
         return $this->field($this->base('textarea', $name, $label, $help));
+    }
+
+    /**
+     * Add a rich-text field: a body written with formatting, stored as markup.
+     *
+     * @param string $name
+     * @param string $label
+     * @param string $help
+     *
+     * @return self
+     */
+    public function richtext(string $name, string $label = '', string $help = ''): self
+    {
+        return $this->field($this->base('richtext', $name, $label, $help));
     }
 
     /**
@@ -595,7 +637,7 @@ final class FormSpec
      * box, a control another field is derived from -- collected and validated like any
      * other and never written. A callable is handed the validated value and every other
      * validated value, and returns what is stored; null from it writes nothing, which is
-     * how "blank means unchanged" is declared.
+     * how "blank means unchanged" is declared. FormSpec::WRITE_NULL stores NULL.
      *
      * It says nothing about what the control shows on the way back: that is writeOnly().
      *

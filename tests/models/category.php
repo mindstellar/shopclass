@@ -149,7 +149,9 @@ $rowsScalarStrings = static function (array $rows): bool {
  * files that run after this one start from a clean slate.
  * ------------------------------------------------------------------------- */
 $instanceProp = new ReflectionProperty('Category', 'instance');
-$instanceProp->setAccessible(true);
+if (PHP_VERSION_ID < 80100) {
+    $instanceProp->setAccessible(true);
+}
 
 $resetCategory = static function () use ($instanceProp, $cache): void {
     $instanceProp->setValue(null, null);

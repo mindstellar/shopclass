@@ -72,7 +72,7 @@ map $http_cookie $mc_private {
 CONF
             cat >> "$php_conf" <<'CONF'
 fastcgi_cache            MICROCACHE;
-fastcgi_cache_key        "$scheme$request_method$host$request_uri";
+fastcgi_cache_key        "$request_method$host$request_uri";
 fastcgi_cache_bypass     $mc_private;
 fastcgi_no_cache         $mc_private;
 fastcgi_cache_lock       on;
@@ -98,7 +98,7 @@ location ~ ^/purge(/.*)$ {
     allow 127.0.0.1;
     allow ::1;
     deny all;
-    fastcgi_cache_purge MICROCACHE "$scheme$request_method$host$1$is_args$args";
+    fastcgi_cache_purge MICROCACHE "$request_method$host$1$is_args$args";
 }
 CONF
             echo "entrypoint: public-page micro-cache on, purge location at /purge."
@@ -119,6 +119,9 @@ CONF
     fi
 }
 write_microcache_conf
+
+# Built-in HTTPS: serve the certificate already on the volume from the first request.
+/application/.docker/prod/tls.sh conf
 
 # Outbound mail. The image bundles no MTA; msmtp is a send-only client that relays
 # to a smarthost. So mail works when a relay is configured, and — crucially — is

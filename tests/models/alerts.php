@@ -45,6 +45,12 @@ require_once __DIR__ . '/../lib/harness.php';
 $admin = scratchdb_session('osc_models_alerts');
 $table = DB_TABLE_PREFIX . 't_alerts';
 
+// fk_i_user_id is a foreign key to t_user, so every user id the fixtures name exists.
+foreach (array(11, 22, 33, 44, 55, 66, 77, 99) as $uid) {
+    $admin->query('INSERT INTO ' . DB_TABLE_PREFIX . "t_user (pk_i_id, dt_reg_date, s_name, s_username, s_password, s_email)"
+        . " VALUES ($uid, NOW(), 'u$uid', 'u$uid', '', 'u$uid@example.test')");
+}
+
 /**
  * Insert one alert row with raw mysqli, never through the code under test.
  * scratchdb.php has no seed helper for this table, so it lives here. A null
@@ -187,8 +193,8 @@ $idA2 = $seedAlert('alice@example.test', $uAlice, '{"q":"cars"}', 'secretA2', 'W
 $idB1 = $seedAlert('bob@example.test', $uBob, '{"q":"boats"}', 'secretB1', 'DAILY', 1, '2026-01-03 10:00:00');
 // An unsubscribed row: dt_unsub_date is set, so the default (unsub=false) filter hides it.
 $idB2 = $seedAlert('bob@example.test', $uBob, '{"q":"planes"}', 'secretB2', 'DAILY', 1, '2026-01-04 10:00:00', '2026-02-01 00:00:00');
-// An anonymous alert (fk_i_user_id = 0), the createAlert no-user branch shape.
-$idAnon = $seedAlert('anon@example.test', 0, '{"q":"anon"}', 'secretAnon', 'DAILY', 1, '2026-01-05 10:00:00');
+// An anonymous alert (fk_i_user_id NULL), the createAlert no-user branch shape.
+$idAnon = $seedAlert('anon@example.test', null, '{"q":"anon"}', 'secretAnon', 'DAILY', 1, '2026-01-05 10:00:00');
 // A row whose email contains a literal % so the search() LIKE-escaping is testable.
 $idPct = $seedAlert('a%b@example.test', 33, '{"q":"pct"}', 'secretPct', 'DAILY', 1, '2026-01-06 10:00:00');
 
@@ -384,11 +390,19 @@ harness_section('Alerts::createAlert -- anonymous (userid = 0) branch');
 
 $anonId = $model->createAlert(0, 'newanon@example.test', '{"q":"newanon"}', 'anonSecret2');
 check('an anonymous alert is created and returns an int id', is_int($anonId) && $anonId > 0, describe($anonId));
-pin('the anonymous alert stored fk_i_user_id = 0', '0', $rawColFor((int)$anonId, 'fk_i_user_id'));
+pin('the anonymous alert stores fk_i_user_id as NULL', null, $rawColFor((int)$anonId, 'fk_i_user_id'));
 pin('the anonymous alert defaulted e_type to DAILY', 'DAILY', $rawColFor((int)$anonId, 'e_type'));
 // Same email + same s_search but a different (0) user is still a fresh anonymous alert only if
 // no anonymous row already matches; a repeat of the exact anon pair dedups.
 pin('a repeat anonymous pair (email+search) dedups to false', false, $model->createAlert(0, 'newanon@example.test', '{"q":"newanon"}', 'anonSecret2'));
+
+pin('a null user id is a guest too', false, $model->createAlert(null, 'newanon@example.test', '{"q":"newanon"}', 'x'));
+$seedAlert('nullguest@example.test', null, '{"q":"nullguest"}', 'nullSecret', 'DAILY', 1, '2025-05-02 00:00:00');
+pin('a guest alert dedups against a NULL-user row', false, $model->createAlert(0, 'nullguest@example.test', '{"q":"nullguest"}', 'x'));
+$memberId = $model->createAlert(77, 'nullguest@example.test', '{"q":"nullguest"}', 'x');
+check('a signed-in user with the same email and search is not a duplicate of the guest row', is_int($memberId));
+// Keep the later dt_date ordering pins free of ties.
+$admin->query("UPDATE $table SET dt_date = '2025-05-03 00:00:00' WHERE pk_i_id = " . (int)$memberId);
 
 harness_section('Alerts::createAlert -- query cost');
 
@@ -422,14 +436,23 @@ $targetSub = $seedAlert('sub@example.test', 66, '{"q":"sub"}', 'subSecret', 'DAI
 pin('the target starts subscribed (dt_unsub_date is NULL)', null, $rawColFor($targetSub, 'dt_unsub_date'));
 pin('unsub() reports one changed row', 1, $model->unsub($targetSub));
 check('dt_unsub_date is now populated', $rawColFor($targetSub, 'dt_unsub_date') !== null, 'still null');
-// A second unsub in the same second rewrites dt_unsub_date to the identical
-// value, so MySQL reports zero changed rows (affected_rows counts CHANGED rows).
-pin('a same-second repeat unsub reports zero changed rows (value unchanged)', 0, $model->unsub($targetSub));
+// affected_rows counts CHANGED rows, so a repeat unsub reports zero only while the new
+// dt_unsub_date is identical -- which holds within one second and not across a boundary.
+// Asserting the count alone made this a coin flip, so the stored value decides which
+// answer is correct and the count is checked against that.
+$unsubFirst  = $rawColFor($targetSub, 'dt_unsub_date');
+$unsubRows   = $model->unsub($targetSub);
+$unsubSecond = $rawColFor($targetSub, 'dt_unsub_date');
+pin(
+    'a repeat unsub reports a changed row only when the timestamp actually moved',
+    $unsubFirst === $unsubSecond ? 0 : 1,
+    $unsubRows
+);
 pin('unsubbing a non-existent id reports zero changed rows', 0, $model->unsub(987654));
 
 /* ----------------------------------------------------------------------------
- * search() -- the admin listing. SQL_CALC_FOUND_ROWS + FOUND_ROWS() shape,
- * same as BanRule/KeywordBlock. Returns {rows, total_results, alerts}.
+ * search() -- the admin listing: a data query plus a COUNT(*) with the same WHERE.
+ * Returns {rows, total_results, alerts}.
  * ------------------------------------------------------------------------- */
 harness_section('Alerts::search -- structure and value types');
 
@@ -464,7 +487,7 @@ harness_section('Alerts::search -- total_results / rows counters');
 $whole = $model->search(0, 5);
 $totalRows = $rowCount();
 pin('rows reflects the whole-table count as a string', (string)$totalRows, $whole['rows']);
-pin('total_results reflects the unfiltered SQL_CALC_FOUND_ROWS count as a string', (string)$totalRows, $whole['total_results']);
+pin('total_results reflects the unfiltered count as a string', (string)$totalRows, $whole['total_results']);
 check('the returned page honoured the LIMIT (<= 5 rows)', count($whole['alerts']) <= 5, (string)count($whole['alerts']));
 
 harness_section('Alerts::search -- name filter (LIKE on s_email)');
@@ -476,6 +499,9 @@ foreach ($named['alerts'] as $r) {
 }
 pin('total_results reflects the FILTERED count', (string)count($named['alerts']), $named['total_results']);
 pin('rows still reflects the WHOLE table, ignoring the filter', (string)$rowCount(), $named['rows']);
+$namedPage = $model->search(1, 1, 'dt_date', 'DESC', 'bob@example.test');
+pin('a later page of a filtered search reports the same total', $named['total_results'], $namedPage['total_results']);
+pin('the filtered total matches a raw COUNT(*) with the same LIKE', (string)$admin->query("SELECT COUNT(*) c FROM $table WHERE s_email LIKE '%bob@example.test%'")->fetch_assoc()['c'], $named['total_results']);
 
 harness_section('Alerts::search -- LIKE wildcards are treated literally (escaped)');
 

@@ -122,8 +122,13 @@ pin('extendData signature is unchanged', 'private extendData($items)', harness_m
 pin('getLastComments signature is unchanged', 'public getLastComments($num)', harness_method_signature('ItemComment', 'getLastComments'));
 pin(
     'search signature is unchanged',
-    "public search(\$itemId = NULL, \$start = 0, \$limit = 10, \$order_by = 'c.pk_i_id', \$order = 'DESC', \$all = true)",
+    "public search(\$itemId = NULL, \$start = 0, \$limit = 10, \$order_by = 'c.pk_i_id', \$order = 'DESC', \$all = true, \$term = '')",
     harness_method_signature('ItemComment', 'search')
+);
+pin(
+    'countMatching signature is unchanged',
+    "public countMatching(\$all = true, \$term = '')",
+    harness_method_signature('ItemComment', 'countMatching')
 );
 pin('count signature is unchanged', 'public count($itemId = NULL)', harness_method_signature('ItemComment', 'count'));
 pin('countAll signature is unchanged', 'public countAll($aConditions = NULL)', harness_method_signature('ItemComment', 'countAll'));
@@ -131,13 +136,13 @@ pin('countAll signature is unchanged', 'public countAll($aConditions = NULL)', h
 pin(
     'the public method set is exactly this, nothing added or removed',
     array(
-        'count', 'countAll', 'findByAuthorID', 'findByItemID', 'findByItemIDAll',
+        'count', 'countAll', 'countMatching', 'findByAuthorID', 'findByItemID', 'findByItemIDAll',
         'getAllComments', 'getLastComments', 'newInstance', 'search', 'totalComments', 'total_comments',
     ),
     array_values(array_intersect(
         array_keys(harness_public_method_map('ItemComment')),
         array(
-            'countAll', 'count', 'findByAuthorID', 'findByItemID', 'findByItemIDAll',
+            'countAll', 'count', 'countMatching', 'findByAuthorID', 'findByItemID', 'findByItemIDAll',
             'getAllComments', 'getLastComments', 'newInstance', 'search', 'total_comments', 'totalComments',
         )
     ))

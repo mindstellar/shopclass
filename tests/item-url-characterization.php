@@ -48,6 +48,7 @@ function osc_current_user_locale()
 }
 
 require_once __DIR__ . '/../oc-includes/osclass/formatting.php';   // osc_sanitizeString, remove_accents
+require_once __DIR__ . '/../oc-includes/osclass/classes/routing/CoreRoutes.php'; // osc_core_url's table
 require_once __DIR__ . '/../oc-includes/osclass/helpers/hDefines.php'; // osc_item_url_from_item, osc_base_url
 require_once __DIR__ . '/lib/harness.php';
 

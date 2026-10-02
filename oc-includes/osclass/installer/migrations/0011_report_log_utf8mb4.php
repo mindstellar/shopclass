@@ -10,6 +10,7 @@
 
 use mindstellar\database\Connection;
 use mindstellar\migration\MigrationInterface;
+use mindstellar\migration\SchemaProbes;
 
 /**
  * Normalise t_item_report_log to utf8mb4.
@@ -31,6 +32,8 @@ use mindstellar\migration\MigrationInterface;
  * already-utf8mb4 table is a no-op.
  */
 return new class () implements MigrationInterface {
+    use SchemaProbes;
+
     /**
      * Convert t_item_report_log to utf8mb4, when the table exists.
      *
@@ -49,24 +52,4 @@ return new class () implements MigrationInterface {
         $conn->execute($sql);
     }
 
-    /**
-     * Whether $table exists in the current database.
-     *
-     * @param Connection $conn
-     * @param string     $table
-     *
-     * @return bool
-     * @throws \mindstellar\database\DbException
-     */
-    private function tableExists(Connection $conn, string $table): bool
-    {
-        $count = $conn->scalar(
-            'SELECT COUNT(*) FROM information_schema.TABLES'
-            . ' WHERE TABLE_SCHEMA = DATABASE()'
-            . ' AND TABLE_NAME = ?',
-            array($table)
-        );
-
-        return (int) $count > 0;
-    }
 };

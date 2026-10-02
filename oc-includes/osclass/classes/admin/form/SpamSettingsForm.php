@@ -32,6 +32,9 @@ final class SpamSettingsForm
 
     public const PAGE_LOGIN_THROTTLE = 'core.settings_login_throttle';
 
+    /** Links allowed in a message, and the report link in mail to members. */
+    public const PAGE_MESSAGES = 'core.settings_messages';
+
     /** The sign-in limiter is a security setting and is stored with the others. */
     public const SECURITY_SECTION = 'security';
 
@@ -193,39 +196,36 @@ final class SpamSettingsForm
         CoreSettings::page(self::PAGE_LOGIN_THROTTLE, __('Sign-in protection'), self::SECURITY_SECTION)
             ->checkbox(
                 'login_throttle_enabled',
-                __('Count failed attempts and refuse further ones past the limits below')
+                __('Block sign-ins after too many failures')
             )
-                ->rowLabel(__('Limit sign-in attempts'))
+                ->rowLabel(__('Sign-in limits'))
                 ->default(true)
             ->number(
                 'login_throttle_window',
-                __('Window'),
-                __('How far back failures are counted, and so how long a refusal lasts.')
+                __('Count failures from the last'),
+                __('A block ends once the failures are older than this.')
             )
                 ->clampMin(1)
                 ->suffix(__('minutes'))
                 ->default(15)
             ->number(
                 'login_throttle_max_ip',
-                __('Attempts per address'),
-                __('Failures from one visitor address, across every account it tried. Keep this '
-                   . 'generous: an office or mobile network is many people behind one address.')
+                __('Failures per IP address'),
+                __('Keep this high: many people can share one address at an office or on mobile.')
             )
                 ->clampMin(1)
                 ->default(20)
             ->number(
                 'login_throttle_max_account',
-                __('Attempts per account'),
-                __('Failures against one account name, from anywhere. This is what catches guessing '
-                   . 'spread across many addresses.')
+                __('Failures per account'),
+                __('From any address. This catches guessing spread over many addresses.')
             )
                 ->clampMin(1)
                 ->default(10)
             ->number(
                 'login_attempt_retention_days',
                 __('Keep records for'),
-                __('Pruned by the daily cron. Only the window above affects the limits; the rest is '
-                   . 'history. 0 keeps everything.')
+                __('The daily task deletes older records. 0 keeps them forever.')
             )
                 ->clampMin(0)
                 ->suffix(__('days'))
@@ -236,7 +236,54 @@ final class SpamSettingsForm
     }
 
     /**
-     * What the view needs to draw all four forms, keyed by the div each one sits in.
+     * The contact and share forms: how many links a message may carry, and the
+     * "Report the sender" link added to mail a member receives.
+     *
+     * @return string the page id
+     */
+    public static function registerMessages(): string
+    {
+        if (osc_settings_page(self::PAGE_MESSAGES) !== null) {
+            return self::PAGE_MESSAGES;
+        }
+
+        CoreSettings::page(self::PAGE_MESSAGES, __('Messages'))
+            ->number(
+                'message_max_links',
+                __('Links allowed in a message'),
+                __('Applies to the contact form, contact the seller, contact a user and share a listing. 0 allows none.')
+            )
+                ->clampMin(0)
+                ->default(1)
+            ->number(
+                'message_max_length',
+                __('Longest message'),
+                __('Longer messages are refused. 0 allows any length.')
+            )
+                ->clampMin(0)
+                ->suffix(__('characters'))
+                ->default(5000)
+            ->checkbox(
+                'message_report_link',
+                __('Add a "Report the sender" link to messages members receive')
+            )
+                ->rowLabel(__('Report link'))
+                ->default(true)
+            ->number(
+                'message_report_days',
+                __('A report blocks the sender for'),
+                __('The sender cannot send messages for this long. Sign-in and posting still work. You can lift it under Users → Ban rules.')
+            )
+                ->clampMin(1)
+                ->suffix(__('days'))
+                ->default(30)
+            ->register();
+
+        return self::PAGE_MESSAGES;
+    }
+
+    /**
+     * What the view needs to draw all five forms, keyed by the div each one sits in.
      *
      * @param int|null                 $akismetStatus what Akismet said about the stored key:
      *                                                1 valid, 2 invalid, 3 no key at all
@@ -245,7 +292,7 @@ final class SpamSettingsForm
      * @param array<string,mixed>|null $values        that page's submitted values
      *
      * @return array<string,array<string,mixed>> view variables per div: 'akismet', 'captcha',
-     *         'alerts', 'login_throttle'
+     *         'alerts', 'login_throttle', 'messages'
      */
     public static function formVars($akismetStatus = null, string $rejected = '', ?array $values = null): array
     {
@@ -254,6 +301,7 @@ final class SpamSettingsForm
             'captcha'         => array(self::registerCaptcha(), 'recaptcha_post', 'submit_recaptcha'),
             'alerts'          => array(self::registerAlerts(), 'alerts_post', 'submit_alerts'),
             'login_throttle'  => array(self::registerLoginThrottle(), 'login_throttle_post', 'submit_login_throttle'),
+            'messages'        => array(self::registerMessages(), 'messages_post', 'submit_messages'),
         );
 
         $vars = array();

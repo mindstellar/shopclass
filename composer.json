@@ -49,10 +49,8 @@
         "ezyang/htmlpurifier": "4.19.*",
         "phpmailer/phpmailer": "^7.0",
         "pclzip/pclzip": "2.8.*",
-        "phpseclib/phpseclib": "2.0.*",
         "google/recaptcha": "^1.3",
         "gettext/gettext": "4.8.*",
-        "phpseclib/mcrypt_compat": "^1.0",
         "async-aws/s3": "^2.10"
     },
     "require-dev": {

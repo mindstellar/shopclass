@@ -31,7 +31,7 @@ osc_add_route($id, $regexp, $url, $file);
 | `$url` | Pattern used to *build* the pretty URL, with `{parameters}`. |
 | `$file` | The PHP file to load when it matches. |
 
-Register routes early, on `init` or at the top of your plugin's `index.php`,
+Register routes early (on `init` or at the top of your plugin's `index.php`)
 so they exist before the request is dispatched.
 
 ## Building the URL
@@ -44,10 +44,76 @@ osc_route_url($id, $args = array());        // public site
 osc_route_admin_url($id, $args = array());  // admin panel
 ```
 
+## Linking to a core page
+
+Core's own pages (login, contact, the account screens, the credit wallet) are in
+a shared table, and `osc_core_url()` builds their URLs from it. The same table
+compiles the rewrite rules, so you get the friendly URL when the site has friendly
+URLs on and the query-string form when it does not, without testing for it:
+
+```php
+echo osc_core_url('user_login');                          // login page
+echo osc_core_url('item_edit', array('id' => 42, 'secret' => $secret));
+echo osc_core_url('user_pub_profile', array('username' => 'jo'));
+```
+
+Most core pages also have a named helper (`osc_user_login_url()`,
+`osc_contact_url()`, `osc_billing_wallet_url()`), and those are thin wrappers over
+this. Prefer the named helper where one exists; reach for `osc_core_url()` for a
+page that has none. The route names are the keys of
+`mindstellar\routing\CoreRoutes::all()`.
+
+An unknown name returns an empty string rather than a broken link.
+
+### Permalink structures
+
+Listings, static pages and categories do not have a fixed path: an admin writes
+their shape on **Settings → Permalinks**, with placeholders:
+
+| Structure | Placeholders |
+|---|---|
+| Listing | `{ITEM_ID}` (required), `{ITEM_TITLE}`, `{ITEM_CITY}`, `{CATEGORIES}` |
+| Page | `{PAGE_ID}`, `{PAGE_SLUG}` |
+| Category | `{CATEGORY_ID}`, `{CATEGORY_NAME}`, `{CATEGORIES}` |
+
+These live in the same table, and `CoreRoutes::expand()` fills one in:
+
+```php
+echo \mindstellar\routing\CoreRoutes::expand('page', array(
+    'PAGE_ID'   => 3,
+    'PAGE_SLUG' => 'about-us',
+));
+// → about-us-p3
+```
+
+It returns the path only: no site address and no language prefix, because the
+caller decides both. Use `osc_item_url()`, `osc_static_page_url()` and
+`osc_search_url()` for a finished link; reach for `expand()` when you are
+building something else out of the same structure, such as a sitemap.
+
+Where two placeholders could answer the same thing, the one that appears first in
+the structure wins.
+
+### Next and previous listing
+
+`osc_item_adjacent_url('next')` and `osc_item_adjacent_url('prev')` link to the
+next higher and next lower listing id. They skip listings that search hides: spam,
+disabled, inactive and expired. The answer is `''` when there is no such listing:
+
+```php
+<?php if ($url = osc_item_adjacent_url('prev')) { ?>
+    <a href="<?php echo osc_esc_html($url); ?>">Previous</a>
+<?php } ?>
+```
+
+They default to the current listing; pass an id as the second argument for
+another. `osc_item_adjacent_id()` returns the id instead (`0` for none). The
+lookup is one query and is cached for three minutes.
+
 ## A worked example
 
 ```php
-// Register, in your plugin's index.php
+// Register: in your plugin's index.php
 osc_add_route(
     'dynamic-route',                                  // id
     'dynamic-route/([0-9]+)/(.+)',                    // regexp
@@ -55,7 +121,7 @@ osc_add_route(
     osc_plugin_folder(__FILE__) . 'mydynamicroute.php' // file
 );
 
-// Link to it, anywhere in a theme or plugin
+// Link to it: anywhere in a theme or plugin
 echo osc_route_url('dynamic-route', array(
     'my-numeric-param' => '12345',
     'my-own-param'     => 'my-own-value',
@@ -70,8 +136,10 @@ Inside `mydynamicroute.php`, read the captured groups with `Params::getParam()`.
 - Parameters in `$url` go between braces: `{parameter}`.
 - Parameter names must match **exactly**, case included, between `osc_add_route`
   and `osc_route_url`.
-- Any file in a folder called `admin` is opened in the admin panel and returns
-  404 on the public site.
+- If `$file`'s path has an `admin` folder in it (e.g. `admin/settings.php`),
+  the public site refuses it with a 404. Naming the folder `admin` does not put
+  the page in the admin panel. For that, link to the route with
+  `osc_route_admin_url()` instead of `osc_route_url()`.
 
 :::danger[Make your patterns unique]
 Regular expressions collide easily, and a greedy pattern can swallow core URLs:

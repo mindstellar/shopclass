@@ -10,6 +10,7 @@
 
 use mindstellar\database\Connection;
 use mindstellar\migration\MigrationInterface;
+use mindstellar\migration\SchemaProbes;
 
 /**
  * Billing foundation: the credit wallet, its append-only ledger, and payment orders,
@@ -33,6 +34,8 @@ use mindstellar\migration\MigrationInterface;
  * the same state.
  */
 return new class () implements MigrationInterface {
+    use SchemaProbes;
+
     /**
      * Add t_item.dt_premium_expiration and create the billing wallet, ledger and
      * order tables.
@@ -109,26 +112,4 @@ return new class () implements MigrationInterface {
         );
     }
 
-    /**
-     * Whether $column already exists on $table in the current database.
-     *
-     * @param Connection $conn
-     * @param string     $table
-     * @param string     $column
-     *
-     * @return bool
-     * @throws \mindstellar\database\DbException
-     */
-    private function columnExists(Connection $conn, string $table, string $column): bool
-    {
-        $count = $conn->scalar(
-            'SELECT COUNT(*) FROM information_schema.COLUMNS'
-            . ' WHERE TABLE_SCHEMA = DATABASE()'
-            . ' AND TABLE_NAME = ?'
-            . ' AND COLUMN_NAME = ?',
-            array($table, $column)
-        );
-
-        return (int) $count > 0;
-    }
 };

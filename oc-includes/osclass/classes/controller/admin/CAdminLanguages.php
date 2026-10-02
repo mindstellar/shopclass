@@ -19,6 +19,8 @@ if (!defined('ABS_PATH')) {
 /**
  * Class CAdminLanguages
  */
+use mindstellar\admin\ListPaging;
+
 class CAdminLanguages extends AdminSecBaseModel
 {
     //specific for this class
@@ -51,9 +53,8 @@ class CAdminLanguages extends AdminSecBaseModel
                 $this->doView('languages/add.php');
                 break;
             case ('add_post'):           // adding a new language
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m("This action can't be done because it's a demo site"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=languages')) {
+                    break;
                 }
                 osc_csrf_check();
                 $filePackage = Params::getFiles('package');
@@ -103,9 +104,8 @@ class CAdminLanguages extends AdminSecBaseModel
                 osc_csrf_check();
                 $languageToImport = Params::getParam('language');
                 if ($languageToImport != '') {
-                    if (defined('DEMO')) {
-                        osc_add_flash_warning_message(_m("This action can't be done because it's a demo site"), 'admin');
-                        $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+                    if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=languages')) {
+                        break;
                     }
 
                     $url  = osc_get_i18n_repository_url();
@@ -505,23 +505,16 @@ class CAdminLanguages extends AdminSecBaseModel
                 }
 
                 // -----
-                if (Params::getParam('iDisplayLength') == '') {
-                    Params::setParam('iDisplayLength', 10);
-                }
-                // ?
+                Params::setParam('iDisplayLength', ListPaging::length());
                 $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
 
-                $p_iPage = 1;
-                if (is_numeric(Params::getParam('iPage')) && Params::getParam('iPage') >= 1) {
-                    $p_iPage = Params::getParam('iPage');
-                }
-                Params::setParam('iPage', $p_iPage);
+                $p_iPage = ListPaging::page();
 
                 $aLanguages = OSCLocale::newInstance()->listAll();
 
                 // pagination
-                $start = ($p_iPage - 1) * Params::getParam('iDisplayLength');
-                $limit = Params::getParam('iDisplayLength');
+                $limit = ListPaging::length();
+                $start = ListPaging::start($p_iPage, $limit);
                 $count = count($aLanguages);
 
                 $displayRecords = $limit;

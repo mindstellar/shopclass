@@ -30,7 +30,7 @@ Author: Mindstellar
 Author URI: https://github.com/mindstellar
 Short Name: digital-goods
 Requires Shopclass: 6.0.0
-Tested up to: 6.3
+Tested up to: 6.4
 Requires PHP: 8.0
 Support URI: https://github.com/mindstellar/shopclass-plugin-digital-goods/issues
 */
@@ -59,7 +59,7 @@ version `2`. Values also end at the end of the line; they cannot wrap.
 | `Tested up to` | recommended | Highest core version you have verified. |
 | `Requires PHP` | recommended | Minimum PHP version. |
 | `Author URI` | optional | |
-| `Plugin update URI` | optional | Legacy self-hosted updates, see [auto-update](/docs/developers/auto-update/). |
+| `Plugin update URI` | optional | Legacy self-hosted updates: see [auto-update](/docs/developers/auto-update/). |
 
 ### Theme fields
 
@@ -74,7 +74,7 @@ Same idea, different names, because theme parsing is a separate function:
 | `Theme URI` | recommended | |
 | `Requires Shopclass` | recommended | |
 | `Tested up to` | recommended | |
-| `Parent Theme` | optional | Slug of the theme this one extends. |
+| `Parent Theme` | optional | Slug of the theme this one extends. See [Child themes](/docs/developers/child-themes/). |
 | `Widgets` | optional | Comma-separated widget location ids. |
 | `Author URI` | optional | |
 | `Theme update URI` | optional | Legacy self-hosted updates. |
@@ -98,10 +98,10 @@ The checks run in this order, and the first one that matches wins:
 
 | Badge | When | What to do |
 |---|---|---|
-| **Needs 6.5 or newer** | `Requires Shopclass` is above this install | nothing, the site must upgrade first |
-| **Needs PHP 8.2** | Core is fine, but `Requires PHP` is above this server | nothing, the server must upgrade first |
-| **Tested up to 6.2** | It runs here, but your `Tested up to` minor is behind core's | check it on the new release, then raise `Tested up to` |
-| **Works with 6.4** | It runs here and nothing is behind | nothing, this is the goal |
+| **Needs 6.5 or newer** | `Requires Shopclass` is above this install | nothing: the site must upgrade first |
+| **Needs PHP 8.2** | Core is fine, but `Requires PHP` is above this server | nothing: the server must upgrade first |
+| **Tested up to 6.3** | It runs here, but your `Tested up to` minor is behind core's | check it on the new release, then raise `Tested up to` |
+| **Works with 6.4** | It runs here and nothing is behind | nothing: this is the goal |
 | **No version declared** | You declared none of the three headers | declare at least `Requires Shopclass` |
 
 Two details worth knowing:
@@ -120,14 +120,14 @@ an install is offered: the newest one whose `Requires Shopclass` and
 
 | Asset | Plugin | Theme | Spec |
 |---|---|---|---|
-| Icon | `assets/icon.svg` or `assets/icon.png` | none | Square. SVG preferred; PNG at 256×256. |
+| Icon | `assets/icon.svg` or `assets/icon.png` | None | Square. SVG preferred; PNG at 256×256. |
 | Screenshot | `assets/screenshot-1.png`, … | `screenshot.png` **at the package root** | 4:3, minimum 1200×900. |
 
 The theme screenshot sits at the package root because that is where a decade of
 themes already put it, and where core looks.
 
 **Artwork is optional.** Core renders a built-in placeholder for any package
-without it: a neutral, theme-aware tile tinted from a hash of the slug, so a
+without it (a neutral, theme-aware tile tinted from a hash of the slug), so a
 grid of unillustrated packages still reads as distinct tiles rather than broken
 images. Do not ship a blank or a "no image" graphic of your own; the fallback is
 better than one.
@@ -137,5 +137,5 @@ logos-on-gradients, no before/after collages.
 
 ## Getting listed
 
-Publishing to every install goes through the registries, see
+Publishing to every install goes through the registries: see
 [the market](/docs/developers/market/).

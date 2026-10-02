@@ -47,56 +47,31 @@ class CWebUserNonSecure extends BaseModel
     {
         switch ($this->action) {
             case 'change_email_confirm':    //change email confirm
-                if (Params::getParam('userId') && Params::getParam('code')) {
-                    $userManager = new User();
-                    $user        = $userManager->findByPrimaryKey(Params::getParam('userId'));
+                $change = UserActions::confirmEmailChange(
+                    Params::getParamInt('userId'),
+                    Params::getParamString('code')
+                );
+                if ($change['status'] === 'ok') {
+                    // Request-scoped refresh only — the next request re-resolves the
+                    // email from the database via the signed identity cookie, so no
+                    // physical session is started for this logged-in user.
+                    Session::newInstance()->_setEphemeral('userEmail', $change['new']);
 
-                    if ($user['s_pass_code'] == Params::getParam('code')
-                        && $user['b_enabled'] == 1
-                    ) {
-                        $userOldEmail = $user['s_email'];
-                        $userEmailTmp = UserEmailTmp::newInstance()
-                            ->findByPrimaryKey(Params::getParam('userId'));
-                        $code         = osc_genRandomPassword(50);
-                        $userManager->update(
-                            array('s_email' => $userEmailTmp['s_new_email']),
-                            array('pk_i_id' => $userEmailTmp['fk_i_user_id'])
-                        );
-                        Item::newInstance()
-                            ->update(
-                                array('s_contact_email' => $userEmailTmp['s_new_email']),
-                                array('fk_i_user_id' => $userEmailTmp['fk_i_user_id'])
-                            );
-                        ItemComment::newInstance()
-                            ->update(
-                                array('s_author_email' => $userEmailTmp['s_new_email']),
-                                array('fk_i_user_id' => $userEmailTmp['fk_i_user_id'])
-                            );
-                        Alerts::newInstance()
-                            ->update(
-                                array('s_email' => $userEmailTmp['s_new_email']),
-                                array('fk_i_user_id' => $userEmailTmp['fk_i_user_id'])
-                            );
-                        // Request-scoped refresh only — the next request re-resolves the
-                        // email from the database via the signed identity cookie, so no
-                        // physical session is started for this logged-in user.
-                        Session::newInstance()->_setEphemeral('userEmail', $userEmailTmp['s_new_email']);
-                        UserEmailTmp::newInstance()
-                            ->delete(array('s_new_email' => $userEmailTmp['s_new_email']));
+                    osc_run_hook(
+                        'change_email_confirm',
+                        Params::getParam('userId'),
+                        $change['old'],
+                        $change['new']
+                    );
 
-                        osc_run_hook(
-                            'change_email_confirm',
-                            Params::getParam('userId'),
-                            $userOldEmail,
-                            $userEmailTmp['s_new_email']
-                        );
-
-                        osc_add_flash_ok_message(_m('Your email has been changed successfully'));
-                        $this->redirectTo(osc_user_profile_url());
-                    } else {
-                        osc_add_flash_error_message(_m('Sorry, the link is not valid'));
-                        $this->redirectTo(osc_base_url());
-                    }
+                    osc_add_flash_ok_message(_m('Your email has been changed successfully'));
+                    $this->redirectTo(osc_user_profile_url());
+                } elseif ($change['status'] === 'taken') {
+                    osc_add_flash_error_message(_m('The specified e-mail is already in use'));
+                    $this->redirectTo(osc_base_url());
+                } elseif ($change['status'] === 'failed') {
+                    osc_add_flash_error_message(_m('Your email could not be changed. Please try again.'));
+                    $this->redirectTo(osc_base_url());
                 } else {
                     osc_add_flash_error_message(_m('Sorry, the link is not valid'));
                     $this->redirectTo(osc_base_url());
@@ -109,6 +84,13 @@ class CWebUserNonSecure extends BaseModel
 
                 $alert  = Alerts::newInstance()->findByPrimaryKey($id);
                 $result = 0;
+                // A held alert has no search left to send, so its link no longer works.
+                if (!empty($alert)
+                    && \mindstellar\search\AlertEnvelope::heldReason((string)$alert['s_search']) !== null
+                ) {
+                    osc_add_flash_error_message(_m('Sorry, the link is not valid'));
+                    $this->redirectTo(osc_base_url());
+                }
                 if (!empty($alert) && $email == $alert['s_email']
                     && $secret == $alert['s_secret']
                 ) {
@@ -177,7 +159,7 @@ class CWebUserNonSecure extends BaseModel
 
                 $itemsPerPage = Params::getParam('itemsPerPage');
                 if (is_numeric($itemsPerPage) && (int)$itemsPerPage > 0) {
-                    $itemsPerPage = (int)$itemsPerPage;
+                    $itemsPerPage = min((int)$itemsPerPage, 100);
                 } else {
                     $itemsPerPage = 10;
                 }
@@ -208,6 +190,7 @@ class CWebUserNonSecure extends BaseModel
                 }
 
                 View::newInstance()->_exportVariableToView('user', $user);
+                osc_prime_item_upgrades($items);
                 $this->_exportVariableToView('items', $items);
                 $this->_exportVariableToView('search_total_pages', $total_pages);
                 $this->_exportVariableToView('search_total_items', $total_items);
@@ -221,40 +204,70 @@ class CWebUserNonSecure extends BaseModel
                 $this->doView(osc_locate_template(array('user-public-profile.php'), 'user-public-profile'));
                 break;
             case 'contact_post':
-                $user = User::newInstance()->findByPrimaryKey(Params::getParam('id'));
+                osc_csrf_check();
+                $user = User::newInstance()->findByPrimaryKey(Params::getParamInt('id'));
+                if (!$user || !$user['b_active'] || !$user['b_enabled']) {
+                    $this->do404();
+
+                    return;
+                }
                 View::newInstance()->_exportVariableToView('user', $user);
+                $back = osc_user_public_profile_url((int) $user['pk_i_id']);
+
+                if (osc_reg_user_can_contact() && !osc_is_web_user_logged_in()) {
+                    osc_add_flash_warning_message(_m('Only registered users can send a message.'));
+                    $this->redirectTo($back);
+                }
+
+                $yourEmail = Params::getParamString('yourEmail');
+                $yourName  = Params::getParamString('yourName');
+                $phone     = Params::getParamString('phoneNumber');
+                $message   = Params::getParamString('message');
+                // A failed send keeps what was typed and the reason, so the form can show both.
+                $fail = function (string $error) use ($yourEmail, $yourName, $phone, $message, $back) {
+                    osc_keep_form(array(
+                        'yourEmail'   => $yourEmail, 'yourName' => $yourName,
+                        'phoneNumber' => $phone, 'message_body' => $message,
+                    ), $error);
+                    $this->redirectTo($back);
+                };
+
                 if (osc_captcha_enabled() && !osc_check_captcha()) {
-                    osc_add_flash_error_message(_m('Please complete the security check.'));
-                    Session::newInstance()
-                        ->_setForm('yourEmail', Params::getParam('yourEmail'));
-                    Session::newInstance()->_setForm('yourName', Params::getParam('yourName'));
-                    Session::newInstance()
-                        ->_setForm('phoneNumber', Params::getParam('phoneNumber'));
-                    Session::newInstance()
-                        ->_setForm('message_body', Params::getParam('message'));
-                    $this->redirectTo(osc_user_public_profile_url());
+                    $fail(_m('Please complete the security check.'));
 
-                    return false; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
+                    return;
                 }
-                $banned = osc_is_banned(Params::getParam('yourEmail'));
-                if ($banned == 1) {
-                    osc_add_flash_error_message(_m('Your current email is not allowed'));
-                    $this->redirectTo(osc_user_public_profile_url());
-                } elseif ($banned == 2) {
-                    osc_add_flash_error_message(_m('Your current IP is not allowed'));
-                    $this->redirectTo(osc_user_public_profile_url());
+                if ($yourName === '' || trim($message) === '' || !osc_validate_email($yourEmail)) {
+                    $fail(_m('Please enter your name, a valid email address and a message.'));
+
+                    return;
                 }
 
-                osc_run_hook(
-                    'hook_email_contact_user',
-                    Params::getParam('id'),
-                    Params::getParam('yourEmail'),
-                    Params::getParam('yourName'),
-                    Params::getParam('phoneNumber'),
-                    Params::getParam('message')
-                );
-                osc_add_flash_ok_message(_m('Your email has been sent properly.'));
-                $this->redirectTo(osc_user_public_profile_url());
+                $refused = \mindstellar\security\MessageGuard::refusal($yourEmail, $message, array($yourName), $phone);
+                if ($refused !== null) {
+                    $fail($refused);
+
+                    return;
+                }
+
+                if (\mindstellar\security\ActionThrottle::exceededFor('user_contact', 15)) {
+                    $fail(_m("You've sent too many messages recently. Please try again later."));
+
+                    return;
+                }
+
+                $sent = \mindstellar\security\MessageHold::deliver('user_contact', $yourEmail, array(
+                    'id'          => (int) $user['pk_i_id'],
+                    'yourEmail'   => $yourEmail,
+                    'yourName'    => $yourName,
+                    'phoneNumber' => $phone,
+                    'message'     => $message,
+                ));
+                \mindstellar\security\ActionThrottle::record('user_contact');
+                if ($sent) {
+                    osc_add_flash_ok_message(_m('Your email has been sent properly.'));
+                }
+                $this->redirectTo($back);
                 break;
             default:
                 $this->redirectTo(osc_user_login_url());

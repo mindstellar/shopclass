@@ -32,7 +32,7 @@
 // The counts beside the filters: "128 orders · 96 paid · 12 awaiting payment".
 .billing-summary {
   color: var(--osc-ink-muted);
-  font-size: .8125rem; // Label
+  font-size: $font-size-label; // Label
   margin: 0;
 
   strong {
@@ -70,7 +70,7 @@
 
 .billing-balance-label {
   color: var(--osc-ink-muted);
-  font-size: .8125rem; // Label
+  font-size: $font-size-label; // Label
   letter-spacing: .01em;
   margin: .15rem 0 0;
 }

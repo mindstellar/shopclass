@@ -33,6 +33,9 @@ use mindstellar\database\Connection;
  * Connection throws DbException on a failed statement, so a migration that does
  * nothing special halts the run by default and is not recorded.
  *
+ * Give the file header a `@title` line in plain words; System info > Database lists a waiting
+ * update by it, and by its file name when there is none.
+ *
  * Migrations are forward-only: there is no down()/rollback. Keep each migration
  * to a single logical change so a mid-way failure leaves the least partial state
  * (MySQL auto-commits DDL — a multi-statement step can partially apply).

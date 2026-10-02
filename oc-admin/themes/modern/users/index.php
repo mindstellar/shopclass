@@ -83,36 +83,36 @@ $withFilters = __get('withFilters');
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
     <?php osc_admin_page_head(__('Manage users')); ?>
     <div class="relative">
-        <div id="users-toolbar" class="table-toolbar d-flex justify-content-end">
-            <?php osc_admin_per_page(array('label' => __('%d Users'), 'current' => $iDisplayLength)); ?>
-            <form method="get" action="<?php echo osc_admin_base_url(true); ?>" id="shortcut-filters"
-                  class="inline nocsrf">
-                <fieldset class="input-group input-group-sm">
-                    <input type="hidden" name="page" value="users"/>
-                    <input id="fUser" name="user" type="text" class="fUser input-text input-actions"
-                           value="<?php echo osc_esc_html(Params::getParam('user')); ?>"/>
-                    <input id="fUserId" name="userId" type="hidden"
-                           value="<?php echo osc_esc_html(Params::getParam('userId')); ?>"/>
-                    <?php if ($withFilters) { ?>
-                        <a id="btn-hide-filters" href="<?php echo osc_admin_base_url(true) . '?page=users'; ?>"
-                           class="btn btn-dim"><?php _e('Reset filters'); ?></a>
-                    <?php } ?>
-                    <?php // One class or the other, never both — see items/index.php. Red is for destructive
-                          // actions; "a filter is applied" is a state.?>
-                    <a data-osc-dialog-open="#display-filters" href="#"
-                       class="btn <?php echo $withFilters ? 'btn-primary' : 'btn-dim'; ?>"
-                       title="<?php _e('Show filters'); ?>"><i class="bi bi-filter"></i>
-                    </a>
-                    <button type="submit" class="btn btn-primary" title="<?php echo osc_esc_html(__('Find')); ?>">
-                        <i class="bi bi-search"></i>
-                    </button>
-                </fieldset>
-            </form>
-        </div>
+        <?php osc_admin_list_filter(array(
+                'page'     => 'users',
+                'id'       => 'shortcut-filters',
+                'active'   => $withFilters,
+                'advanced' => '#display-filters',
+                'reset'    => osc_admin_base_url(true) . '?page=users',
+                'fields'   => array(
+                    array(
+                        'type'        => 'search',
+                        'name'        => 'user',
+                        'id'          => 'fUser',
+                        'label'       => __('User'),
+                        'placeholder' => __('User Email'),
+                        'value'       => Params::getParam('user'),
+                    ),
+                    array(
+                        'type'  => 'hidden',
+                        'name'  => 'userId',
+                        'id'    => 'fUserId',
+                        'value' => Params::getParam('userId'),
+                    ),
+                ),
+                'bulk'     => array(
+                    'options' => __get('bulk_options'),
+                    'form'    => 'datatablesForm',
+                ),
+                'per_page' => array('label' => __('%d Users'), 'current' => $iDisplayLength),
+            )); ?>
         <form id="datatablesForm" action="<?php echo osc_admin_base_url(true); ?>" method="post">
             <input type="hidden" name="page" value="users"/>
-
-            <?php osc_admin_bulk_actions(array('options' => __get('bulk_options'))); ?>
             <div class="table-contains-actions">
                 <table class="table" cellpadding="0" cellspacing="0">
                     <thead>
@@ -182,14 +182,17 @@ osc_admin_pagination($aData);
                                 <div class="row-wrapper">
                                     <?php osc_admin_form_row_open(__('Email')); ?>
                                             <input id="s_email" name="s_email" type="text"
+                                                   placeholder="<?php echo osc_esc_html(__('Any e-mail')); ?>"
                                                    value="<?php echo osc_esc_html(Params::getParam('s_email')); ?>"/>
                                     <?php osc_admin_form_row_close(); ?>
                                     <?php osc_admin_form_row_open(__('Name')); ?>
                                             <input id="s_name" name="s_name" type="text"
+                                                   placeholder="<?php echo osc_esc_html(__('Any name')); ?>"
                                                    value="<?php echo osc_esc_html(Params::getParam('s_name')); ?>"/>
                                     <?php osc_admin_form_row_close(); ?>
                                     <?php osc_admin_form_row_open(__('Username')); ?>
                                             <input id="s_username" name="s_username" type="text"
+                                                   placeholder="<?php echo osc_esc_html(__('Any username')); ?>"
                                                    value="<?php echo osc_esc_html(Params::getParam('s_username')); ?>"/>
                                     <?php osc_admin_form_row_close(); ?>
                                     <?php osc_admin_form_row_open(__('Active')); ?>
@@ -206,21 +209,44 @@ osc_admin_pagination($aData);
                             </div>
                             <div class="col">
                                 <div class="row-wrapper">
+                                    <?php // Country picks from a closed list; region and city suggest
+                                          // through the data-ac attributes ui-common.js reads, so this
+                                          // screen no longer carries its own copy of that wiring.?>
                                     <?php osc_admin_form_row_open(__('Country')); ?>
-                                            <input id="countryName" name="countryName" type="text"
-                                                   value="<?php echo osc_esc_html(Params::getParam('countryName')); ?>"/>
-                                            <input id="countryId" name="countryId" type="hidden"
-                                                   value="<?php echo osc_esc_html(Params::getParam('countryId')); ?>"/>
+                                            <select id="countryId" name="countryId" class="form-select"
+                                                    data-osc-clears="#regionId,#region,#cityId,#city">
+                                                <option value=""><?php _e('Any country'); ?></option>
+                                                <?php foreach ((__get('countries') ?: array()) as $c) { ?>
+                                                    <option value="<?php echo osc_esc_html($c['pk_c_code']); ?>"
+                                                        <?php echo Params::getParam('countryId') === $c['pk_c_code']
+                                                            ? ' selected' : ''; ?>>
+                                                        <?php echo osc_esc_html($c['s_name']); ?>
+                                                    </option>
+                                                <?php } ?>
+                                            </select>
                                     <?php osc_admin_form_row_close(); ?>
                                     <?php osc_admin_form_row_open(__('Region')); ?>
-                                            <input id="region" name="region" type="text"
-                                                   value="<?php echo osc_esc_html(Params::getParam('region')); ?>"/>
+                                            <input id="region" name="region" type="text" class="form-control"
+                                                   placeholder="<?php echo osc_esc_html(__('Any region')); ?>"
+                                                   value="<?php echo osc_esc_html(Params::getParam('region')); ?>"
+                                                   autocomplete="off"
+                                                   data-ac="location_regions"
+                                                   data-ac-url="<?php echo osc_esc_html(osc_base_url(true)); ?>"
+                                                   data-ac-target="#regionId"
+                                                   data-ac-scope="#countryId" data-ac-scope-param="country"
+                                                   data-ac-clears="#cityId,#city"/>
                                             <input id="regionId" name="regionId" type="hidden"
                                                    value="<?php echo osc_esc_html(Params::getParam('regionId')); ?>"/>
                                     <?php osc_admin_form_row_close(); ?>
                                     <?php osc_admin_form_row_open(__('City')); ?>
-                                            <input id="city" name="city" type="text"
-                                                   value="<?php echo osc_esc_html(Params::getParam('city')); ?>"/>
+                                            <input id="city" name="city" type="text" class="form-control"
+                                                   placeholder="<?php echo osc_esc_html(__('Any city')); ?>"
+                                                   value="<?php echo osc_esc_html(Params::getParam('city')); ?>"
+                                                   autocomplete="off"
+                                                   data-ac="location_cities"
+                                                   data-ac-url="<?php echo osc_esc_html(osc_base_url(true)); ?>"
+                                                   data-ac-target="#cityId"
+                                                   data-ac-scope="#regionId" data-ac-scope-param="region"/>
                                             <input id="cityId" name="cityId" type="hidden"
                                                    value="<?php echo osc_esc_html(Params::getParam('cityId')); ?>"/>
                                     <?php osc_admin_form_row_close(); ?>
@@ -267,64 +293,5 @@ osc_admin_pagination($aData);
             deleteModal.showModal();
             return false;
         }
-    </script>
-    <script type="text/javascript">
-        document.addEventListener('DOMContentLoaded', function () {
-            function val(id) { var el = document.getElementById(id); return el ? el.value : ''; }
-            function setVal(id, v) { var el = document.getElementById(id); if (el) { el.value = v; } }
-
-            // Selecting a country clears the region/city chain below it.
-            var countryId = document.getElementById('countryId');
-            if (countryId) {
-                countryId.addEventListener('change', function () {
-                    setVal('regionId', ''); setVal('region', '');
-                    setVal('cityId', ''); setVal('city', '');
-                });
-            }
-
-            var countryName = document.getElementById('countryName');
-            if (countryName) {
-                oscAutocomplete(countryName, {
-                    source: "<?php echo osc_base_url(true); ?>?page=ajax&action=location_countries",
-                    minLength: 0,
-                    onSearch: function () { setVal('countryId', ''); },
-                    onSelect: function (item) {
-                        setVal('countryId', item.id);
-                        setVal('regionId', ''); setVal('region', '');
-                        setVal('cityId', ''); setVal('city', '');
-                    }
-                });
-            }
-
-            var region = document.getElementById('region');
-            if (region) {
-                oscAutocomplete(region, {
-                    // Region depends on the chosen country, resolved at fetch time.
-                    source: function () {
-                        var country = val('countryId') || val('countryName');
-                        return "<?php echo osc_base_url(true); ?>?page=ajax&action=location_regions&country=" + encodeURIComponent(country);
-                    },
-                    minLength: 2,
-                    onSearch: function () { setVal('regionId', ''); },
-                    onSelect: function (item) {
-                        setVal('cityId', ''); setVal('city', '');
-                        setVal('regionId', item.id);
-                    }
-                });
-            }
-
-            var city = document.getElementById('city');
-            if (city) {
-                oscAutocomplete(city, {
-                    source: function () {
-                        var reg = val('regionId') || val('region');
-                        return "<?php echo osc_base_url(true); ?>?page=ajax&action=location_cities&region=" + encodeURIComponent(reg);
-                    },
-                    minLength: 2,
-                    onSearch: function () { setVal('cityId', ''); },
-                    onSelect: function (item) { setVal('cityId', item.id); }
-                });
-            }
-        });
     </script>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

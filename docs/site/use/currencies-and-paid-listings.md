@@ -12,7 +12,7 @@ code, name and description; add the ones your market uses and delete the rest.
 
 The list shows how many listings use each currency, so you can see what is safe
 to remove. Deleting a currency that listings are priced in leaves those listings
-without a valid one, so check the count first.
+without a valid one. Check the count first.
 
 A single-country site should offer exactly one. Every extra currency is another
 decision on the publish form and another thing to compare in search results.
@@ -20,7 +20,7 @@ decision on the publish form and another thing to compare in search results.
 ## Paid listings
 
 **New in 6.2.0.** ShopClass can sell credits and charge for listings without a
-payment gateway in core. It is **off by default**: nothing changes until you
+payment gateway in core. It is **off by default**. Nothing changes until you
 turn it on.
 
 The settings move once you switch it on: while billing is **off** they live at
@@ -66,11 +66,11 @@ Test Payments hands out credits for nothing. It is for testing only.
 | **Urgent** | An urgency marker, for a set number of days |
 | **Bump to top** | Back to the top of results, with a cooldown between bumps |
 | **Extra photos** | A raised photo cap on one listing |
-| **Extra runtime** | More days than the category's limit allows |
-| **Extra listing slots** | More listings than the free allowance |
+| **Extra listing runtime** | More days than the category's limit allows |
+| **Extra slots** | More listings than the free allowance |
 | **Skip the posting wait** | Waives the flood-control delay between posts |
 
-Each is sold independently: turn on only what you actually want to sell, and
+Each is sold independently (turn on only what you actually want to sell) and
 each has its own price in credits and, where relevant, its own duration.
 
 ### Credit bundles
@@ -82,12 +82,26 @@ is nothing for a buyer to purchase.
 ### What buyers see
 
 Sellers get a **wallet** page with their credit balance and history, a page to
-buy bundles, and a list of their past orders. On their own listings they get a
-**Feature this listing** action that spends credits to run it as featured for a
-set number of days.
+buy bundles, and a list of their past orders. On their own listings they get an
+action to spend credits on an upgrade, featuring the listing for a set number
+of days, for example.
 
 Orders are visible to you at **Billing → Orders**, and balances at
 **Billing → Credits**.
+
+### Receipts
+
+When an order is paid, the buyer gets a receipt by e-mail, whatever the payment
+method. Each paid or refunded order also has a **Receipt** link on the buyer's
+orders page: a page they can print or save as PDF. You open the same page from
+**View receipt** on the order in **Billing → Orders**.
+
+Under **Settings → Billing → Receipts** you can switch the e-mail off and add your
+business name, address and tax number to every receipt. A receipt is not a tax
+invoice.
+
+If the e-mail cannot be sent, it waits on the background queue and is tried again.
+A buyer gets one receipt per order.
 
 ### Seller limits
 
@@ -102,7 +116,7 @@ Set the free allowance to what a casual seller needs and a dealer does not.
 - Take a [backup](/docs/use/backups-and-maintenance/).
 - Test the whole flow end to end with bank transfer first, including what a
   seller sees when their upgrade expires.
-- Write your refund terms into your [Terms page](/docs/use/pages/); the payment
+- Write your refund terms into your [Terms page](/docs/use/pages/): the payment
   plugin will not do it for you.
 - Confirm that expiry actually runs: entitlements expire on the **hourly cron**.
   Without [cron](/docs/configure/cron/), a featured listing stays featured

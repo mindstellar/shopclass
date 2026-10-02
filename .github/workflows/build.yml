@@ -132,6 +132,7 @@ jobs:
         # Archive from the pushed commit, not a tag — the tag does not exist yet.
         env:
           OSCLASS_REF: ${{ github.sha }}
+          GH_TOKEN: ${{ github.token }}
         run: bash ./.build.sh
 
       # deprecated-api.json and package-lint.php are the registry's copy of the
@@ -160,6 +161,7 @@ jobs:
           cp tools/ci/annotate.php package-ci/
           cp tools/ci/smoke-install.sh package-ci/
           cp tools/ci/build-catalog.php package-ci/
+          cp oc-includes/osclass/classes/market/Markdown.php package-ci/
           cp tools/ci/deprecation-collector/index.php package-ci/deprecation-collector/
           tar czf shopclass-package-ci.tar.gz package-ci
 
@@ -184,7 +186,18 @@ jobs:
           SMOKE_DB_PORT: 3306
           SMOKE_DB_USER: root
           SMOKE_DB_PASS: root
-        run: bash tests/install-smoke.sh "release/osclass_v${OSCLASS_VERSION}.zip"
+        run: bash tests/install-smoke.sh "release/shopclass_v${OSCLASS_VERSION}.zip"
+
+      # The osclass_v zip serves updaters older than 6.4.0. It must hold the same files,
+      # only under osclass/ instead of shopclass/.
+      - name: Both release zips hold the same files
+        run: |
+          test -s "release/shopclass_v${OSCLASS_VERSION}.zip"
+          test -s "release/osclass_v${OSCLASS_VERSION}.zip"
+          # Size, CRC and path of every entry, so a file with different bytes fails too.
+          list() { unzip -v "$1" | awk -v p="$2/" 'NF == 8 && $7 ~ /^[0-9a-f]{8}$/ { sub("^" p, "", $8); print $8, $1, $7 }' | sort; }
+          diff <(list "release/shopclass_v${OSCLASS_VERSION}.zip" shopclass) \
+               <(list "release/osclass_v${OSCLASS_VERSION}.zip" osclass)
 
       - name: Extract release notes from CHANGELOG
         run: |
@@ -203,20 +216,31 @@ jobs:
           # exactly this release.
           printf '\n\nFull changelog: https://github.com/mindstellar/shopclass/blob/%s/CHANGELOG.md\n' "${OSCLASS_VERSION}" >> release_notes.md
 
+      - name: Prepare the install script
+        run: |
+          sed "s/__SHOPCLASS_VERSION__/${OSCLASS_VERSION}/" .docker/install.sh > release/install.sh
+          (cd release && sha256sum install.sh > install.sh.sha256)
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          # The zip's name/shape is the self-updater's compatibility contract
-          # with old installs — it is uploaded as-is. deprecated-api.json,
+          # The osclass_v zip's name/shape is the self-updater's compatibility
+          # contract with old installs — never drop it. deprecated-api.json,
           # package-lint.php, Compatibility.php, and the package-ci bundle that
           # re-packages them (plus the rest of tools/ci/) are separate assets
           # alongside it, never merged in.
+          # Uploaded one by one, osclass_v first: updaters from 5.2.2 and older take
+          # the release's first asset, whatever its name.
+          preserve_order: true
           files: |
             release/osclass_v${{ env.OSCLASS_VERSION }}.zip
+            release/shopclass_v${{ env.OSCLASS_VERSION }}.zip
             deprecated-api.json
             tools/package-lint.php
             oc-includes/osclass/classes/market/Compatibility.php
             shopclass-package-ci.tar.gz
+            release/install.sh
+            release/install.sh.sha256
           tag_name: ${{ env.OSCLASS_VERSION }}
           target_commitish: ${{ github.sha }}
           name: Release ${{ env.OSCLASS_VERSION }}
@@ -237,6 +261,10 @@ jobs:
     env:
       OSCLASS_VERSION: ${{ needs.gate.outputs.version }}
       SUFFIX: ${{ needs.gate.outputs.suffix }}
+      # The same image also goes to Docker Hub when the DOCKERHUB_USERNAME and
+      # DOCKERHUB_TOKEN secrets are set. The namespace is the DOCKERHUB_NAMESPACE
+      # variable, or the username.
+      DOCKERHUB_ENABLED: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7
@@ -248,15 +276,22 @@ jobs:
       - name: Compute image tags
         id: tags
         shell: bash
+        env:
+          DOCKERHUB_NAMESPACE: ${{ vars.DOCKERHUB_NAMESPACE || secrets.DOCKERHUB_USERNAME }}
         run: |
-          IMAGE="ghcr.io/$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')"
-          TAGS="${IMAGE}:${OSCLASS_VERSION}"
-          if [ -n "${SUFFIX}" ]; then
-            CHANNEL=$(printf '%s' "${SUFFIX}" | sed -E 's/^\.//; s/[0-9]+$//')
-            TAGS="${TAGS},${IMAGE}:${CHANNEL}"
-          else
-            TAGS="${TAGS},${IMAGE}:latest"
+          IMAGES="ghcr.io/$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')"
+          if [ "${DOCKERHUB_ENABLED}" = "true" ]; then
+            IMAGES="${IMAGES} docker.io/$(echo "${DOCKERHUB_NAMESPACE}" | tr '[:upper:]' '[:lower:]')/shopclass"
           fi
+          if [ -n "${SUFFIX}" ]; then
+            ALIAS=$(printf '%s' "${SUFFIX}" | sed -E 's/^\.//; s/[0-9]+$//')
+          else
+            ALIAS=latest
+          fi
+          TAGS=""
+          for IMAGE in ${IMAGES}; do
+            TAGS="${TAGS:+${TAGS},}${IMAGE}:${OSCLASS_VERSION},${IMAGE}:${ALIAS}"
+          done
           echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
           echo "Image tags: ${TAGS}"
 
@@ -270,6 +305,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Log in to Docker Hub
+        if: env.DOCKERHUB_ENABLED == 'true'
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Build and push image
         uses: docker/build-push-action@v7
         with:
@@ -280,6 +322,16 @@ jobs:
           labels: |
             org.opencontainers.image.version=${{ env.OSCLASS_VERSION }}
             org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Update the Docker Hub description
+        if: env.DOCKERHUB_ENABLED == 'true'
+        uses: peter-evans/dockerhub-description@v5
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ${{ vars.DOCKERHUB_NAMESPACE || secrets.DOCKERHUB_USERNAME }}/shopclass
+          short-description: Self-hosted classifieds website. One image with nginx, PHP and free HTTPS. Installs on start.
+          readme-filepath: .docker/hub/README.md
 
   # Pre-release image channel: publish a moving :edge tag WITHOUT cutting a
   # versioned release. This is opt-in per push — it runs only when the head

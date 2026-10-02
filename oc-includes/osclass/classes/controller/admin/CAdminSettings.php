@@ -59,8 +59,10 @@ class CAdminSettings
             case ('akismet_post'):
             case ('recaptcha_post'):
             case ('alerts_post'):
+            case ('messages_post'):
             case ('login_throttle_post'):
             case ('login_throttle_reset'):
+            case ('login_throttle_unblock'):
                 $do = new CAdminSettingsSpamnBots();
                 break;
             case ('sitemap'):
@@ -90,6 +92,7 @@ class CAdminSettings
             case ('billing_offline_post'):
             case ('billing_upgrades_post'):
             case ('billing_limits_post'):
+            case ('billing_receipts_post'):
                 $do = new CAdminSettingsBilling();
                 break;
             case ('mailserver'):

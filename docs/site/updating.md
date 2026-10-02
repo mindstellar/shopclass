@@ -5,10 +5,10 @@ sidebar:
   order: 2
 ---
 
-ShopClass updates itself. When a new release lands, a notice appears in the
-admin panel and the built-in updater fetches and applies the package for you.
-The manual route below exists for hosts that block outbound HTTP, and for
-anyone who prefers to see every file move.
+ShopClass updates itself. When a new release comes out, a notice appears in
+the admin panel, and the built-in updater downloads and applies it for you.
+Use the manual route below if your host blocks outgoing web requests, or if
+you would rather move every file yourself.
 
 :::caution[Back up first, every time]
 Take a copy of your **database** and of **`oc-content/`** before you start.
@@ -18,12 +18,46 @@ easier to undo when you can put them back.
 
 ## The one-click update
 
-1. Open **Admin → Tools → Update**.
+1. Open **Admin → Tools → Upgrade Shopclass**.
 2. If a release is available, the page offers it with its changelog.
-3. Press update and wait: the updater downloads the package, replaces core
+3. Press update and wait. The updater downloads the package, replaces core
    files, and runs any pending database migrations.
 
 That is the whole procedure on a healthy install.
+
+The updater checks each download against the checksum GitHub publishes for it, and
+refuses a file that does not match.
+
+## Update channel and automatic security updates
+
+**Settings → General → Software updates** has two choices:
+
+- **Update channel.** *Stable releases only* is the default. *Stable and release
+  candidates* and *Stable, release candidates and betas* are for testing a release
+  before it ships.
+- **Security updates.** Off by default. When on, the nightly cron installs a
+  security release for the version you run (6.4.1 on a 6.4.0 site, never 6.5.0) once
+  it is a day old, and e-mails the contact address whether it worked. A failed
+  attempt is not repeated; update from the admin instead. If your cron runs from the
+  command line, restart PHP-FPM after the e-mail arrives.
+
+## Upgrading to 6.4.0 specifically
+
+Saved search alerts used to store SQL, and it ran as written. The upgrade rewrites
+each alert as the plain search values it stands for.
+
+- **Back up `t_alerts` if you might need the old alerts.** The stored SQL is thrown
+  away as each alert is converted.
+- **An alert holding anything Shopclass did not write** (usually a plugin's own
+  filter) is paused, not deleted. **Users → Alerts** lists them under a notice.
+  The user has to save the search again.
+- **A large site finishes in the background.** The upgrade converts for about ten
+  seconds, then queues the rest for the next cron runs. Alerts not converted yet
+  send no email until they are. To finish at once:
+
+  ```bash
+  php oc-cli.php jobs:work
+  ```
 
 ## Upgrading to 6.3.0 specifically
 
@@ -46,6 +80,27 @@ define('OSC_DB_STRICT_MODE', true);
 behaviour. That is deliberate: a plugin that has been silently truncating a value
 for years would start failing mid-request.
 
+Before you opt in, read the readiness report. It is under **Tools → System info →
+Database**, in the **Strict SQL mode** part, and on the command line:
+
+```
+php oc-cli.php db:doctor --strict
+```
+
+It exits `1` until the site is ready. Fix each line it flags:
+
+- **Zero dates**: columns holding a date like `0000-00-00`. Strict mode refuses that row
+  the next time it is saved.
+- **Zero-date defaults**: columns whose default is a zero date. Strict mode refuses any
+  later change to that table.
+- **Length settings**: a setting such as the title length that is larger than its
+  column. Lower it under **Listings → Settings**.
+- **Refused writes, last 7 days**: writes strict mode refused, by table, column and kind.
+  They are also in the activity log. The value itself is never recorded.
+
+Values that were cut short in the past leave no trace, so a plugin that writes too much
+shows up only as a refused write. After you opt in, check the report again for a week.
+
 To opt your site in, add the line to `config.php` yourself. In a container with no
 `config.php`, set the environment variable instead:
 
@@ -53,7 +108,7 @@ To opt your site in, add the line to `config.php` yourself. In a container with 
 OSC_DB_STRICT_MODE=1
 ```
 
-Remove it to go back: nothing is stored in the database either way.
+Remove it to go back; nothing is stored in the database either way.
 
 :::caution[Try it on a copy first]
 Core is tested under strict modes. Third-party plugins write through the same
@@ -68,10 +123,10 @@ dependent rows along with their parent. Three consequences:
 
 - **Back up the database first.** This is the one release where that instruction
   is not boilerplate.
-- **It takes time proportional to your row count.** Measured over a quarter of a
-  million listings and three quarters of a million custom-field values, the whole
-  rebuild took about six seconds. A much larger site, or slow shared hosting,
-  should expect longer.
+- **It takes time proportional to your row count.** Tests on a quarter of a
+  million listings and three quarters of a million custom-field values show the
+  whole rebuild takes about six seconds. A much larger site, or slow shared
+  hosting, should expect longer.
 - **A timeout page does not mean it failed.** The upgrade is still running and
   will finish. With shell access you can sidestep the browser entirely:
 
@@ -90,7 +145,7 @@ nothing could reach. The backup is what lets you look at them afterwards.
 
 The **Tracking ID** field has been removed from **Settings → General** and no
 measurement snippet is rendered on public pages. If you were using it, paste
-your own snippet into a **Custom Code** widget under
+your own snippet into a **Custom Code (HTML / JavaScript)** widget under
 **Appearance → Manage widgets**, or install a plugin that provides one.
 
 Your saved measurement ID is left in the database untouched, so a theme printing
@@ -127,14 +182,16 @@ Upload the new files over the old ones, replacing:
 ### 3. Run the database migration
 
 Core files alone are not an update: the schema has to catch up. Either open the
-admin panel, which offers the migration as a button, or run it from a shell:
+admin panel, which offers the migration as a button (**Tools → System info → Database** has it
+too, as **Run database update**), or run it from a shell:
 
 ```bash
 php oc-cli.php db:upgrade
 ```
 
-`db:upgrade` reconciles a drifted schema before applying pending migrations, so
-it is also the repair tool when an interrupted update leaves a site half-way.
+`db:upgrade` runs the pending migrations and nothing else. Run it again to finish
+an interrupted update. If the database is still missing a table, column or index
+afterwards, `php oc-cli.php db:repair` (or **Tools → System info → Database**) adds it.
 
 ### 4. Check the site
 

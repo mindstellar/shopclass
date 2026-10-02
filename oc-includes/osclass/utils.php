@@ -36,6 +36,22 @@ function osc_isExpired($dt_expiration)
 }
 
 /**
+ * Whether a listing counts toward the category, location and user totals: enabled,
+ * active, not spam, and premium or not expired. The daily recount uses the same rule.
+ *
+ * @param array<string,mixed> $item
+ *
+ * @return bool
+ */
+function osc_item_is_counted(array $item): bool
+{
+    return (int)($item['b_enabled'] ?? 0) === 1
+        && (int)($item['b_active'] ?? 0) === 1
+        && (int)($item['b_spam'] ?? 0) === 0
+        && (!empty($item['b_premium']) || !osc_isExpired((string)($item['dt_expiration'] ?? '')));
+}
+
+/**
  * Remove resources from disk
  *
  * @param int|array<int,int>       $id       Resource id; an array uses its first element
@@ -108,7 +124,7 @@ function osc_deleteResource($id, $admin, $resource = null)
                 trigger_error($e->getMessage(), E_USER_WARNING);
             }
         } else {
-            \StorageQueue::newInstance()->enqueue('delete', $resource['s_storage'] ?? 'local', $resource);
+            \mindstellar\storage\StorageJobs::enqueue('delete', $resource['s_storage'] ?? 'local', $resource);
         }
         osc_run_hook('delete_resource', $resource);
     }
@@ -267,6 +283,38 @@ function osc_phpmailer_limit_smtp_wait($mail)
 }
 
 /**
+ * A visitor's uploaded file, ready to attach to a mail straight from PHP's temporary upload.
+ *
+ * The file is never copied under the web root. Script types are refused.
+ *
+ * @param string $field upload field name
+ *
+ * @return array{path:string,name:string}|false|null null when nothing was uploaded, false when refused
+ */
+function osc_mail_upload_attachment($field)
+{
+    $file = Params::getFiles($field);
+    if (!isset($file['error']) || $file['error'] === UPLOAD_ERR_NO_FILE) {
+        return null;
+    }
+    if ($file['error'] !== UPLOAD_ERR_OK || !is_string($file['tmp_name'] ?? null)
+        || !is_uploaded_file($file['tmp_name'])) {
+        return false;
+    }
+    $refused = array(
+        'text/php', 'text/x-php', 'application/php', 'application/x-php', 'application/x-httpd-php',
+        'application/x-httpd-php-source', 'application/x-javascript', 'text/javascript',
+        'application/javascript', 'text/html', 'application/x-sh', 'text/x-shellscript',
+    );
+    if (in_array(\mindstellar\storage\UploadMimes::detect($file['tmp_name']), $refused, true)) {
+        return false;
+    }
+    $name = trim(preg_replace('/[\x00-\x1F\x7F"\\\\\/]+/', '', basename((string) ($file['name'] ?? ''))));
+
+    return array('path' => $file['tmp_name'], 'name' => $name !== '' ? $name : 'attachment');
+}
+
+/**
  * Send one email through PHPMailer, using the site's configured mail transport.
  *
  * @param array<string,mixed> $params from, to, to_name, subject, body, alt_body and optional attachment/reply-to keys
@@ -418,7 +466,7 @@ function osc_sendMail($params)
         }
 
         $mail->Subject = $params['subject'];
-        $mail->Body    = $params['body'];
+        $mail->Body    = osc_mail_layout((string) $params['body'], $params);
 
         if (array_key_exists('attachment', $params)) {
             if (!is_array($params['attachment']) || isset($params['attachment']['path'])) {
@@ -446,6 +494,11 @@ function osc_sendMail($params)
 
         $mail->CharSet = 'utf-8';
         $mail->isHTML();
+        // Set ahead of pre_send_mail, so a plugin can still replace it. One a plugin
+        // already set in init_send_mail is kept, as it always was.
+        if ($mail->AltBody === '') {
+            $mail->AltBody = _osc_mail_alt_body($params);
+        }
 
         $mail = osc_apply_filter('pre_send_mail', $mail, $params);
         osc_phpmailer_limit_smtp_wait($mail);
@@ -473,14 +526,8 @@ function osc_sendMail($params)
 function osc_mailBeauty($text, $params)
 {
     $text   = str_ireplace($params[0], $params[1], $text);
-    $kwords = array(
-        '{WEB_URL}',
-        '{WEB_TITLE}',
-        '{WEB_LINK}',
-        '{CURRENT_DATE}',
-        '{HOUR}',
-        '{IP_ADDRESS}'
-    );
+    // In the order of EmailVariables::COMMON, which the template editor lists.
+    $kwords = EmailVariables::COMMON;
     $rwords = array(
         osc_base_url(),
         osc_page_title(),
@@ -492,6 +539,193 @@ function osc_mailBeauty($text, $params)
     $text   = str_ireplace($kwords, $rwords, $text);
 
     return $text;
+}
+
+/**
+ * A plain-text copy of an HTML mail body.
+ *
+ * Link addresses are kept -- "unsubscribe (https://...)" -- because a plain-text
+ * reader has no other way to follow them. Paragraphs, line breaks and list items keep
+ * their shape; everything else a browser would not show is dropped. Tolerant of the
+ * loose markup stored mail templates carry.
+ *
+ * @param string $html
+ *
+ * @return string '' when the body has no text in it
+ */
+function _osc_mail_text($html)
+{
+    $html = (string)$html;
+    if ($html === '') {
+        return '';
+    }
+
+    // ASCII whitespace only, and no /u: an ASCII byte never occurs inside a UTF-8
+    // sequence, so this is safe on any text, including text that is not valid UTF-8.
+    $text = preg_replace(
+        array('#<(head|style|script|title)\b[^>]*>.*?</\1\s*>#is', '/[ \t\r\n\f\v]+/'),
+        array('', ' '),
+        $html
+    );
+
+    if ($text !== null) {
+        // Quoted attribute values are skipped whole, so an href spelled inside another
+        // attribute is not taken for the real one. The address cannot run past a quote
+        // or ">", and a label cannot swallow the next link. A browser ends a link at
+        // "</a" whatever follows it up to ">", so this does too.
+        $text = preg_replace_callback(
+            '#<a\b(?:[^>"\']|"[^"]*"|\'[^\']*\')*?\shref\s*=\s*(["\'])([^"\'>]*)\1[^>]*>'
+            . '((?:(?!<a\b).)*?)</a\b[^>]*>#is',
+            static function ($m) {
+                $url   = trim($m[2]);
+                $label = trim(strip_tags($m[3]));
+                if ($url === '' || $url[0] === '#' || stripos($url, 'javascript:') === 0) {
+                    return $label;
+                }
+                if ($label === '' || $label === $url) {
+                    return $url;
+                }
+
+                return $label . ' (' . $url . ')';
+            },
+            $text
+        );
+    }
+
+    if ($text !== null) {
+        $text = preg_replace(
+            array(
+                '#<br\s*/?>#i',
+                '#<li\b[^>]*>#i',
+                '#</\s*li\s*>#i',
+                '#</\s*(p|div|h[1-6]|tr|table|blockquote|ul|ol)\s*>#i',
+            ),
+            array("\n", "\n- ", '', "\n\n"),
+            $text
+        );
+    }
+
+    // A pattern gave up -- PCRE's backtracking limit on pathological markup. A plainer
+    // copy without link addresses still beats none.
+    if ($text === null) {
+        $text = $html;
+    }
+
+    $text = strip_tags($text);
+    $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $text = str_replace("\xC2\xA0", ' ', $text);
+
+    $lines = array();
+    foreach (explode("\n", $text) as $line) {
+        $lines[] = trim(preg_replace('/[ \t]+/', ' ', $line));
+    }
+
+    return trim(preg_replace("/\n{3,}/", "\n\n", implode("\n", $lines)));
+}
+
+/**
+ * The plain copy a mail is sent with.
+ *
+ * With no alt_body, or HTML in it, the copy is made from the HTML. A plain copy
+ * written by hand is sent as written.
+ *
+ * @param array<string,mixed> $params osc_sendMail() parameters
+ *
+ * @return string
+ */
+function _osc_mail_alt_body(array $params)
+{
+    $body = (string)($params['body'] ?? '');
+    $alt  = (string)($params['alt_body'] ?? '');
+    if ($alt !== '' && $alt !== $body && strip_tags($alt) === $alt) {
+        return $alt;
+    }
+
+    return _osc_mail_text($alt !== '' && $alt !== $body ? $alt : $body);
+}
+
+/**
+ * Wrap an e-mail body in the site's e-mail layout: a theme's templates/email-layout.php,
+ * else core's. A body that is already a whole HTML document, or a send with
+ * 'layout' => false, goes out as it is.
+ *
+ * @param string              $body
+ * @param array<string,mixed> $params the osc_sendMail() parameters
+ *
+ * @return string
+ */
+function osc_mail_layout(string $body, array $params = array()): string
+{
+    if (trim($body) === '' || ($params['layout'] ?? true) === false || stripos($body, '<html') !== false) {
+        return $body;
+    }
+
+    $mail = (array) osc_apply_filter('mail_layout_vars', array(
+        'body'      => $body,
+        'subject'   => (string) ($params['subject'] ?? ''),
+        'preheader' => mb_substr(trim((string) preg_replace('/\s+/u', ' ', _osc_mail_text($body))), 0, 120),
+        'site_name' => osc_page_title(),
+        'site_url'  => osc_base_url(),
+        'logo_url'  => '',
+        'accent'    => '#0b7269',
+        'footer'    => sprintf(__('You received this e-mail from %s.'), osc_page_title()),
+    ), $params);
+
+    $file = osc_mail_layout_file();
+    ob_start();
+    try {
+        (static function (string $file, array $mail): void {
+            include $file;
+        })($file, $mail);
+    } catch (\Throwable $e) {
+        // A broken layout must not stop the mail: it goes out bare.
+        trigger_error('E-mail layout ' . $file . ': ' . $e->getMessage(), E_USER_WARNING);
+        ob_end_clean();
+
+        return $body;
+    }
+    $html = (string) ob_get_clean();
+
+    return (string) osc_apply_filter('mail_layout', $html !== '' ? $html : $body, $mail, $params);
+}
+
+/**
+ * The e-mail layout file: templates/email-layout.php in the active theme or its parent,
+ * else core's own.
+ *
+ * @param string[]|null $bases theme folders to look in, active first; null for the site's
+ *
+ * @return string
+ */
+function osc_mail_layout_file(?array $bases = null): string
+{
+    if ($bases === null) {
+        $bases  = array();
+        $themes = WebThemes::newInstance();
+        // Cron, the admin and the CLI never load the public theme; set it from the site
+        // setting, so the layout and the theme URL helpers it calls both find it.
+        if ((string) $themes->getCurrentTheme() === '' && \mindstellar\utility\Validate::packageName((string) osc_theme())) {
+            $themes->setCurrentTheme((string) osc_theme());
+        }
+        $theme  = (string) $themes->getCurrentTheme();
+        $active = (string) $themes->getCurrentThemePath();
+        if ($active !== '') {
+            $bases[] = $active;
+        }
+        $info = $theme === '' ? false : $themes->loadThemeInfo($theme);
+        if (is_array($info) && !empty($info['template'])
+            && \mindstellar\utility\Validate::packageName((string) $info['template'])
+        ) {
+            $bases[] = osc_themes_path() . $info['template'] . '/';
+        }
+    }
+    foreach ($bases as $base) {
+        if (is_file(rtrim($base, '/') . '/templates/email-layout.php')) {
+            return rtrim($base, '/') . '/templates/email-layout.php';
+        }
+    }
+
+    return LIB_PATH . 'osclass/gui/templates/email-layout.php';
 }
 
 /**
@@ -617,52 +851,11 @@ function osc_dbdump($path, $file)
 
     $tables = array();
     foreach ($result as $_table) {
-        $tableName          = current($_table);
-        $tables[$tableName] = $tableName;
+        $tables[] = current($_table);
     }
 
-    $tables_order = array(
-        't_locale',
-        't_country',
-        't_currency',
-        't_region',
-        't_city',
-        't_city_area',
-        't_widget',
-        't_admin',
-        't_user',
-        't_user_description',
-        't_category',
-        't_category_description',
-        't_category_stats',
-        't_item',
-        't_item_description',
-        't_item_location',
-        't_item_stats',
-        't_item_stats_daily',
-        't_item_resource',
-        't_item_comment',
-        't_preference',
-        't_pages',
-        't_pages_description',
-        't_plugin_category',
-        't_cron',
-        't_alerts',
-        't_meta_fields',
-        't_meta_categories',
-        't_item_meta'
-    );
-    // Backup default Shopclass tables in order, so no problem when importing them back
-    foreach ($tables_order as $table) {
-        if (array_key_exists(DB_TABLE_PREFIX . $table, $tables)) {
-            $dump->table_structure($path, DB_TABLE_PREFIX . $table);
-            $dump->table_data($path, DB_TABLE_PREFIX . $table);
-            unset($tables[DB_TABLE_PREFIX . $table]);
-        }
-    }
-
-    // Backup the rest of tables
-    foreach ($tables as $table) {
+    // Default Shopclass tables first, in order, so no problem when importing them back.
+    foreach (\mindstellar\backup\DatabaseDump::order($tables, DB_TABLE_PREFIX) as $table) {
         $dump->table_structure($path, $table);
         $dump->table_data($path, $table);
     }
@@ -1003,6 +1196,32 @@ function osc_package_installs_disabled()
     }
 
     return filter_var(getenv('OSC_DISABLE_PACKAGE_INSTALLS'), FILTER_VALIDATE_BOOLEAN);
+}
+
+/**
+ * Whether the admin may change plugins and themes from the market at all: not on a demo site,
+ * and not where package installs are disabled.
+ *
+ * @return bool
+ */
+function osc_market_changes_blocked()
+{
+    return defined('DEMO') || osc_package_installs_disabled();
+}
+
+/**
+ * Whether restoring a backup from the admin is turned off (OSC_DISABLE_WEB_RESTORE in
+ * config.php, or the environment). Making backups is not affected.
+ *
+ * @return bool
+ */
+function osc_web_restore_disabled()
+{
+    if (defined('OSC_DISABLE_WEB_RESTORE')) {
+        return (bool) OSC_DISABLE_WEB_RESTORE;
+    }
+
+    return filter_var(getenv('OSC_DISABLE_WEB_RESTORE'), FILTER_VALIDATE_BOOLEAN);
 }
 
 /**

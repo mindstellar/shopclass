@@ -13,8 +13,10 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\admin\BulkAction;
 use mindstellar\admin\form\CoreSettings;
 use mindstellar\admin\form\KeywordBlockSettingsForm;
+use mindstellar\admin\ListPaging;
 
 /**
  * Admin screens for the keyword blocklist (t_keyword_block, KeywordBlock,
@@ -49,14 +51,7 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
         switch ($this->action) {
             case ('keyword_block'):
                 // set default iDisplayLength
-                if (Params::getParam('iDisplayLength') != '') {
-                    Cookie::newInstance()->push('listing_iDisplayLength', Params::getParam('iDisplayLength'));
-                    Cookie::newInstance()->set();
-                } elseif (Cookie::newInstance()->get_value('listing_iDisplayLength') != '') {
-                    Params::setParam('iDisplayLength', Cookie::newInstance()->get_value('listing_iDisplayLength'));
-                } else {
-                    Params::setParam('iDisplayLength', 10);
-                }
+                ListPaging::rememberedLength();
                 $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
 
                 if (Params::getParam('sort') == '') {
@@ -66,11 +61,7 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
                     Params::setParam('direction', 'desc');
                 }
 
-                $page = Params::getParamInt('iPage');
-                if ($page == 0) {
-                    $page = 1;
-                }
-                Params::setParam('iPage', $page);
+                $page = ListPaging::page();
 
                 $params = Params::getParamsAsArray();
 
@@ -150,24 +141,13 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
                     $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=keyword_block');
                 }
 
-                $model    = KeywordBlock::newInstance();
-                $iDeleted = 0;
-                foreach ($ids as $id) {
-                    if ($model->deleteByPrimaryKey((int) $id)) {
-                        $iDeleted++;
-                    }
-                }
-
-                if ($iDeleted == 0) {
-                    $msg = _m('No keywords have been deleted');
-                } else {
-                    $msg = sprintf(
-                        _mn('One keyword has been deleted', '%s keywords have been deleted', $iDeleted),
-                        $iDeleted
-                    );
-                }
-
-                osc_add_flash_ok_message($msg, 'admin');
+                $model = KeywordBlock::newInstance();
+                BulkAction::apply(
+                    static fn ($id) => (bool)$model->deleteByPrimaryKey($id),
+                    'One keyword has been deleted',
+                    '%s keywords have been deleted',
+                    _m('No keywords have been deleted')
+                );
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=keyword_block');
                 break;
             case ('keyword_block_import_post'):

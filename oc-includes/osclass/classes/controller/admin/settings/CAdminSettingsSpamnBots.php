@@ -106,19 +106,62 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
                 osc_add_flash_ok_message(_m('Sign-in protection settings have been updated'), 'admin');
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
                 break;
+            case ('messages_post'):
+                osc_csrf_check();
+
+                $result = CoreSettings::attempt(SpamSettingsForm::registerMessages());
+                if ($result['errors'] !== array()) {
+                    $this->drawForms(SpamSettingsForm::PAGE_MESSAGES, $result['values']);
+                    break;
+                }
+
+                osc_add_flash_ok_message(_m('Message settings have been updated'), 'admin');
+                $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
+                break;
+            case ('login_throttle_unblock'):
+                if ($this->refuseOnDemo(self::securityUrl())) {
+                    break;
+                }
+                osc_csrf_check();
+                $ip      = Params::getParamString('ip');
+                $context = Params::getParamString('context');
+                // Raw: it must match the stored name exactly. It is bound in SQL and escaped below.
+                $account = trim(Params::getParamString('account', false, false, false));
+                if ($ip !== '' && filter_var($ip, FILTER_VALIDATE_IP)) {
+                    \mindstellar\security\LoginThrottle::unblockIp($ip);
+                    osc_add_flash_ok_message(sprintf(_m('%s can sign in again.'), osc_esc_html($ip)), 'admin');
+                } elseif ($account !== '' && in_array($context, \mindstellar\security\LoginThrottle::CONTEXTS, true)) {
+                    \mindstellar\security\LoginThrottle::unblockAccount($context, $account);
+                    osc_add_flash_ok_message(sprintf(_m('%s can sign in again.'), osc_esc_html($account)), 'admin');
+                }
+                $this->redirectTo(self::securityUrl());
+                break;
             case ('login_throttle_reset'):
                 // clearing every recorded attempt, so an operator can let a
                 // locked-out visitor (or themselves) back in immediately
+                if ($this->refuseOnDemo(self::securityUrl())) {
+                    break;
+                }
                 osc_csrf_check();
                 LoginAttempt::newInstance()->pruneBefore(date('Y-m-d H:i:s'));
                 osc_add_flash_ok_message(_m('Recorded sign-in attempts have been cleared'), 'admin');
-                $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
+                $this->redirectTo(self::securityUrl());
                 break;
         }
     }
 
     /**
-     * Draw the screen: four independent forms, at most one of which is being handed back
+     * System info > Security, where the list of failed sign-ins lives.
+     *
+     * @return string
+     */
+    private static function securityUrl(): string
+    {
+        return osc_admin_base_url(true) . '?page=tools&action=system-info&tab=security#signin-activity';
+    }
+
+    /**
+     * Draw the screen: five independent forms, at most one of which is being handed back
      * what was typed into it.
      *
      * @param string     $rejected the page id of the form that was refused, if any

@@ -2,7 +2,7 @@
 title: Caching contract
 description: "How ShopClass drives a reverse proxy or CDN: the cookie allowlist, the Cache-Control it emits, and why the proxy config stays small."
 sidebar:
-  order: 10
+  order: 11
 ---
 
 ShopClass is designed to sit behind a reverse proxy or CDN. This page is the
@@ -17,7 +17,7 @@ version, including the reference nginx config, is
 
 :::note[Not the object cache]
 This is about caching whole HTTP responses in front of PHP. Caching database
-work *inside* PHP is a separate, complementary layer. See
+work *inside* PHP is a separate, complementary layer: see
 [object caching](/docs/configure/cache/).
 :::
 
@@ -59,7 +59,7 @@ view, makes every subsequent request a miss. The decision must be a fixed
 allowlist of **names**.
 :::
 
-The names are guaranteed stable (no `md5(WEB_PATH)` or domain hash in them)
+The names are guaranteed stable (no `md5(WEB_PATH)` or domain hash in them),
 and core will not add or rename a personalisation cookie without updating the
 helper, this list and the reference config together. Plugins can extend the set
 through the `cache_relevant_cookies` filter.
@@ -85,6 +85,13 @@ osc_apply_filter('response_cache_control', $value); // the whole header
 Core calls `session_cache_limiter('')` on the front end so PHP cannot inject its
 own conflicting `no-cache` headers: core owns `Cache-Control` end to end. The
 admin panel keeps PHP's default limiter, and is never cached.
+
+Every HTML response, admin included, also carries how long PHP took to build it:
+`Server-Timing: app;dur=84.2;desc="Page build"` (milliseconds). Browser developer
+tools show it under Network → Timing. It is a header, so the page and its `ETag`
+do not change; a page served from a shared cache repeats the time of its first
+build. A plugin can drop it with
+`osc_remove_filter('response_body', 'osc_response_server_timing')`.
 
 ## Verifying it
 

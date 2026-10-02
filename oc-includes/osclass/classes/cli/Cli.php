@@ -12,7 +12,8 @@
 namespace mindstellar\cli;
 
 use Admin;
-use Cron;
+use mindstellar\admin\DatabaseTools;
+use mindstellar\admin\SystemChecks;
 use mindstellar\database\Connection;
 use mindstellar\market\Catalog;
 use mindstellar\market\Compatibility;
@@ -41,13 +42,22 @@ class Cli
     private array $commands = [
         'install'             => ['cmdInstall', 'Headless install from env/flags (--unattended)'],
         'cron'                => ['cmdCron', 'Run due scheduled tasks (--type=hourly|daily|weekly|all)'],
-        'db:upgrade'          => ['cmdDbUpgrade', 'Run pending migrations, repairing a drifted schema first (--skip-db, --skip-reconcile)'],
+        'db:upgrade'          => ['cmdDbUpgrade', 'Run pending migrations'],
+        'db:doctor'           => ['cmdDbDoctor', 'Report schema differences and strict SQL mode readiness (--strict: readiness only); changes nothing'],
+        'db:repair'           => ['cmdDbRepair', 'Bring the schema back in line with struct.sql; never drops anything (--dry-run)'],
         'package:reconcile'   => ['cmdPackageReconcile', 'Install/refresh bundled plugins & themes onto a persistent oc-content (no-op outside a container image)'],
         'cache:flush'         => ['cmdCacheFlush', 'Flush the object cache'],
-        'storage:work'        => ['cmdStorageWork', 'Drain the storage-offload queue and nothing else (--max-seconds=)'],
+        'jobs:work'           => ['cmdJobsWork', 'Drain the job queue and nothing else (--max-seconds=)'],
+        'jobs:status'         => ['cmdJobsStatus', 'Show what is on the job queue per type, and what stopped retrying (--type=)'],
+        'storage:work'        => ['cmdJobsWork', 'Deprecated alias for jobs:work'],
         'sitemap:warm'        => ['cmdSitemapWarm', 'Pre-generate the XML sitemap into the cache'],
+        'backup:create'       => ['cmdBackupCreate', 'Make a backup ([--what=database|files|everything] [--to=server|s3|<folder>])'],
+        'backup:list'         => ['cmdBackupList', 'List backups ([--to=server|s3|<folder>])'],
+        'backup:restore'      => ['cmdBackupRestore', 'Restore a backup (<name|file.zip|file.sql> [--from=server|s3] [--only=database|files] [--yes])'],
+        'backup:delete'       => ['cmdBackupDelete', 'Delete a backup (<name> [--from=server|s3] [--yes])'],
         'user:create-admin'   => ['cmdUserCreateAdmin', 'Create an admin (--user= --email= [--password=] [--name=])'],
         'user:reset-password' => ['cmdUserResetPassword', 'Reset an admin password (--user=|--email= [--password=])'],
+        'user:2fa-off'        => ['cmdUserTwoFactorOff', 'Turn off an admin\'s two-step sign-in (--user=)'],
         'plugin:list'         => ['cmdPluginList', 'List plugins and their status'],
         'plugin:activate'     => ['cmdPluginActivate', 'Enable an installed plugin (--plugin=<folder>)'],
         'plugin:deactivate'   => ['cmdPluginDeactivate', 'Disable an active plugin (--plugin=<folder>)'],
@@ -64,6 +74,31 @@ class Cli
         'version'             => ['cmdVersion', 'Print the installed Shopclass version'],
         'help'                => ['cmdHelp', 'Show this help'],
     ];
+
+    /**
+     * Commands a plugin added through the `cli_commands` filter.
+     *
+     * @var array<string, array{callback: callable, summary: string}>
+     */
+    private array $added = [];
+
+    /**
+     * Collect the commands plugins add. A plugin cannot take over a core command's name.
+     */
+    public function __construct()
+    {
+        $added = function_exists('osc_apply_filter') ? osc_apply_filter('cli_commands', array()) : array();
+        foreach (is_array($added) ? $added : array() as $name => $spec) {
+            if (is_string($name) && $name !== '' && !isset($this->commands[$name])
+                && is_array($spec) && isset($spec['callback']) && is_callable($spec['callback'])
+            ) {
+                $this->added[$name] = array(
+                    'callback' => $spec['callback'],
+                    'summary'  => (string)($spec['summary'] ?? ''),
+                );
+            }
+        }
+    }
 
     /**
      * Entry point: dispatch one CLI invocation.
@@ -91,17 +126,21 @@ class Cli
             $command = 'help';
         }
 
-        if (!isset($this->commands[$command])) {
+        if (!isset($this->commands[$command]) && !isset($this->added[$command])) {
             $this->err(sprintf("Unknown command: %s\n\n", $command));
             $this->cmdHelp([]);
 
             return 2;
         }
 
-        $args   = $this->parseOptions(array_slice($argv, 1));
-        $method = $this->commands[$command][0];
+        $args = $this->parseOptions(array_slice($argv, 1));
 
         try {
+            if (isset($this->added[$command])) {
+                return (int) call_user_func($this->added[$command]['callback'], $args);
+            }
+            $method = $this->commands[$command][0];
+
             return (int) $this->$method($args);
         } catch (\Throwable $e) {
             $this->err('Error: ' . $e->getMessage() . "\n");
@@ -231,6 +270,11 @@ class Cli
 
             return 2;
         }
+        if (!install_web_url_valid($webUrl)) {
+            $this->err("Invalid site URL (an http:// or https:// address, with no query or fragment).\n");
+
+            return 2;
+        }
         if (!preg_match('/^[A-Za-z0-9_]+$/', (string) $dbPrefix)) {
             $this->err("Invalid table prefix (letters, numbers and underscore only).\n");
 
@@ -336,6 +380,14 @@ class Cli
             return 2;
         }
 
+        // During a restore only the restore's own jobs run; the schedule waits.
+        if (\mindstellar\job\JobWorker::restoring()) {
+            $ran = \mindstellar\job\JobWorker::run(50);
+            $this->out(sprintf("A backup is being restored: ran %d of its jobs and nothing else.\n", $ran));
+
+            return 0;
+        }
+
         // Mirrors index.php's cron dispatch: mark the run so nested code never
         // tries to schedule another auto-cron pass.
         if (!defined('__FROM_CRON__')) {
@@ -355,7 +407,7 @@ class Cli
     }
 
     /**
-     * Repair a drifted schema, then run the pending migrations.
+     * Run the pending migrations. The --skip-db and --skip-reconcile flags are accepted and ignored.
      *
      * @param array<string, mixed> $args
      *
@@ -363,44 +415,273 @@ class Cli
      */
     private function cmdDbUpgrade(array $args): int
     {
-        $skipReconcile = array_key_exists('skip-reconcile', $args);
+        $result = DatabaseTools::upgrade();
 
-        $result  = \mindstellar\upgrade\Osclass::upgradeDB(
-            array_key_exists('skip-db', $args),
-            $skipReconcile
-        );
-        $decoded = json_decode((string) $result, true);
-        $error   = is_array($decoded) ? (int) ($decoded['error'] ?? 1) : 1;
-        $message = is_array($decoded) ? (string) ($decoded['message'] ?? $result) : (string) $result;
-        $repairs = is_array($decoded) && isset($decoded['repairs']) ? (array) $decoded['repairs'] : [];
-
-        // upgradeDB() builds messages for the admin screen, so strip the markup
-        // and collapse whitespace for a terminal.
-        $message = trim(preg_replace('/\s+/', ' ', strip_tags($message)));
-
-        if ($error === 0) {
-            // The repair pass is expected to find nothing: the migrations build the
-            // schema and a release cannot ship unless they reproduce it on their own.
-            // So anything here describes an install that had drifted by some other
-            // route, and saying so is more use than applying it quietly.
-            if ($repairs !== []) {
-                $this->out(sprintf("Repaired %d schema difference(s):\n", count($repairs)));
-                foreach ($repairs as $query) {
-                    $this->out('  ' . trim(preg_replace('/\s+/', ' ', (string) $query)) . "\n");
-                }
-            } elseif (!$skipReconcile) {
-                $this->out("Schema already matched — nothing to repair.\n");
-            }
-
-            $this->out($message . "\n");
+        if ($result['error'] === 0) {
+            $this->out($result['message'] . "\n");
 
             return 0;
         }
 
-        $this->err($message . "\n");
-        if ($error === 2) {
-            $this->err("Re-run with --skip-db to continue past false-positive query errors.\n");
+        $this->err($result['message'] . "\n");
+
+        return 1;
+    }
+
+    /**
+     * Add what struct.sql declares and this database lacks. Refuses while a migration is
+     * pending; --dry-run still runs, since it changes nothing either way.
+     *
+     * @param array<string, mixed> $args
+     *
+     * @return int 0 when nothing failed
+     */
+    private function cmdDbRepair(array $args): int
+    {
+        if (array_key_exists('dry-run', $args)) {
+            $this->schemaReport();
+            $this->out("\nDry run: nothing was changed.\n");
+
+            return 0;
         }
+
+        try {
+            $runner = new \mindstellar\migration\MigrationRunner(
+                Connection::instance(),
+                DatabaseTools::migrationsDir()
+            );
+            $runner->ensureLedger();
+            $pending = $runner->pending();
+        } catch (\Throwable $e) {
+            $this->err('Could not check pending migrations: ' . $e->getMessage() . "\n");
+
+            return 1;
+        }
+        if ($pending !== []) {
+            $this->err("An upgrade is waiting. Run db:upgrade first: it fixes most of these safely.\n");
+
+            return 1;
+        }
+
+        try {
+            $release = DatabaseTools::upgradeLock(Connection::instance());
+        } catch (\Throwable $e) {
+            $release = null;
+        }
+        if ($release === null) {
+            $this->err("An upgrade is running. Try again when it has finished.\n");
+
+            return 1;
+        }
+        try {
+            $result = (new \mindstellar\database\SchemaReconciler(Connection::instance()))->repair();
+        } catch (\Throwable $e) {
+            $this->err('Could not read the schema: ' . $e->getMessage() . "\n");
+
+            return 1;
+        } finally {
+            $release();
+        }
+
+        if ($result['ran'] === [] && $result['failed'] === []) {
+            $this->out("Schema already matches struct.sql — nothing to repair.\n");
+
+            return 0;
+        }
+
+        if ($result['ran'] !== []) {
+            $this->out(sprintf("Ran %d statement(s):\n", count($result['ran'])));
+            foreach ($result['ran'] as $query) {
+                $this->out('  ' . trim(preg_replace('/\s+/', ' ', (string) $query)) . "\n");
+            }
+        }
+
+        if ($result['failed'] !== []) {
+            $this->err(sprintf("%d statement(s) failed:\n", count($result['failed'])));
+            foreach ($result['failed'] as $query) {
+                $this->err('  ' . trim(preg_replace('/\s+/', ' ', (string) $query)) . "\n");
+            }
+
+            return 1;
+        }
+
+        return 0;
+    }
+
+    /**
+     * Report where this database differs from struct.sql, then whether the site is ready for
+     * strict SQL mode. --strict prints only the second part. Reads only; changes nothing.
+     *
+     * @param array<string, mixed> $args
+     *
+     * @return int 0 when the schema matches and the site is ready, 1 otherwise
+     */
+    private function cmdDbDoctor(array $args): int
+    {
+        if (array_key_exists('strict', $args)) {
+            return $this->strictReport();
+        }
+        $schema = $this->schemaReport();
+        $this->out("\n");
+
+        return max($schema, $this->strictReport());
+    }
+
+    /**
+     * Print whether the site is ready for strict SQL mode: the server's mode, the constant,
+     * zero dates, length settings larger than their columns, and writes refused in the last 7 days.
+     *
+     * @return int 0 when ready, 1 when not
+     */
+    private function strictReport(): int
+    {
+        $report = \mindstellar\database\StrictModeReadiness::report(DB_TABLE_PREFIX, time());
+        $line   = function (string $label, string $value): void {
+            $this->out(sprintf("  %-20s %s\n", $label, $value));
+        };
+        $strict = [\mindstellar\database\StrictModeReadiness::class, 'isStrict'];
+
+        $this->out("Strict SQL mode\n");
+        if ($report['error'] !== '') {
+            $this->err('Could not check strict SQL mode readiness: ' . $report['error'] . "\n");
+
+            return 1;
+        }
+        $line('Server mode', ($strict($report['server_mode']) ? 'strict' : 'not strict')
+            . ' (' . ($report['server_mode'] !== '' ? $report['server_mode'] : 'empty') . ')');
+        $line('OSC_DB_STRICT_MODE', $report['constant']
+            ? ($strict($report['session_mode']) ? 'set; the server\'s mode is kept' : 'set, but the server\'s mode is not strict')
+            : 'not set; Shopclass turns the strict modes off');
+
+        $zero = [];
+        foreach ((array) $report['zero_dates'] as $column => $rows) {
+            $zero[] = $column . ' (' . $rows . ' rows)';
+        }
+        $line('Zero dates', $zero === [] ? 'none' : implode(', ', $zero));
+        $line('Zero-date defaults', $report['zero_defaults'] === [] ? 'none' : implode(', ', $report['zero_defaults']));
+
+        $settings = [];
+        foreach ($report['settings'] as $s) {
+            $settings[] = sprintf('%s is %d, %s holds %d', $s['setting'], $s['value'], $s['column'], $s['width']);
+        }
+        $line('Length settings', $settings === [] ? 'fit their columns' : implode('; ', $settings));
+
+        if (empty($report['log_enabled'])) {
+            $line('Refused writes', 'unknown; not recorded while the activity log is off');
+        } else {
+            $total = array_sum(array_column($report['refused'], 'count'));
+            $line('Refused writes', $total === 0 ? 'none in the last 7 days' : $total . ' in the last 7 days');
+            foreach ($report['refused'] as $r) {
+                $this->out(sprintf(
+                    "    %-40s %-16s %d time(s), last %s\n",
+                    $this->cliSafe($r['column'] !== '' ? $r['column'] : '(unknown column)'),
+                    $this->cliSafe($r['kind']),
+                    $r['count'],
+                    $r['last']
+                ));
+            }
+        }
+
+        if (\mindstellar\database\StrictModeReadiness::ready($report)) {
+            $this->out("Ready for strict SQL mode.\n");
+
+            return 0;
+        }
+        $this->out("Not ready: fix the lines above first. Refused writes are listed in the admin activity log.\n");
+
+        return 1;
+    }
+
+    /**
+     * A database-sourced string, safe to print to a terminal: only letters, digits, `_.$ -`.
+     *
+     * @param string $text
+     *
+     * @return string
+     */
+    private function cliSafe(string $text): string
+    {
+        return (string) preg_replace('/[^A-Za-z0-9_.$ -]/', '', $text);
+    }
+
+    /**
+     * Report where this database differs from struct.sql. Reads only; changes nothing.
+     *
+     * db:repair fixes a missing table, column or index, and a column with the wrong type.
+     * It cannot fix a nullability difference or an index with the wrong columns, and it
+     * leaves an extra column or index alone on purpose. Those need a person to look at them.
+     *
+     * @param array<string, mixed> $args
+     *
+     * @return int 0 when the schema matches, 1 when it does not
+     */
+    private function schemaReport(): int
+    {
+        try {
+            $findings = (new \mindstellar\database\SchemaDoctor(Connection::instance()))->diagnose();
+        } catch (\Throwable $e) {
+            $this->err('Could not read the schema: ' . $e->getMessage() . "\n");
+
+            return 1;
+        }
+
+        if ($findings === []) {
+            $this->out("Schema matches struct.sql — nothing to report.\n");
+
+            return 0;
+        }
+
+        $labels = [
+            \mindstellar\database\SchemaDoctor::MISSING_TABLE  => 'missing table',
+            \mindstellar\database\SchemaDoctor::MISSING_COLUMN => 'missing column',
+            \mindstellar\database\SchemaDoctor::MISSING_INDEX  => 'missing index',
+            \mindstellar\database\SchemaDoctor::COLUMN_TYPE    => 'column has a different type',
+            \mindstellar\database\SchemaDoctor::EXTRA_COLUMN   => 'extra column',
+            \mindstellar\database\SchemaDoctor::EXTRA_INDEX    => 'extra index',
+            \mindstellar\database\SchemaDoctor::INDEX_COLUMNS  => 'index has different columns',
+            \mindstellar\database\SchemaDoctor::NULLABILITY    => 'column differs in whether it can be empty',
+        ];
+
+        $byTable = [];
+        foreach ($findings as $f) {
+            $byTable[$f['table']][] = $f;
+        }
+        ksort($byTable);
+
+        $this->out(sprintf(
+            "%d difference(s) in %d table(s), against struct.sql for %s:\n\n",
+            count($findings),
+            count($byTable),
+            OSCLASS_VERSION
+        ));
+
+        foreach ($byTable as $table => $rows) {
+            $this->out($table . "\n");
+            foreach ($rows as $f) {
+                $this->out(sprintf("  %-30s %s\n", $f['name'], $labels[$f['kind']] ?? $f['kind']));
+                if (in_array($f['kind'], DatabaseTools::EXTRA, true)) {
+                    $this->out(sprintf("      this database has %s\n", $f['found']));
+                    continue;
+                }
+                if ($f['found'] === 'absent') {
+                    $this->out(sprintf("      core declares %s; this database has none\n", $f['declared']));
+                    continue;
+                }
+                $this->out(sprintf(
+                    "      core declares %s, this database has %s\n",
+                    $f['declared'],
+                    $f['found']
+                ));
+            }
+            $this->out("\n");
+        }
+
+        $this->out("Nothing was changed, and not every line above is a problem.\n");
+        $this->out("  db:repair fixes a missing table, column or index, and a column with the wrong type.\n");
+        $this->out("  An extra column or index is usually something a plugin or your team added on\n");
+        $this->out("  purpose; db:repair leaves it alone. Delete it only if you are sure nothing uses it.\n");
+        $this->out("  db:repair does not change a nullability difference or an index with the wrong\n");
+        $this->out("  columns. Ask for help before changing those by hand.\n");
 
         return 1;
     }
@@ -456,27 +737,24 @@ class Cli
     }
 
     /**
-     * Turn the storage-offload queue crank, and nothing else.
+     * Turn the job queue crank, and nothing else.
      *
      * The queue is otherwise drained only from the generic `cron` hook, which means
      * `cron --type=hourly` -- and that runs the whole hourly schedule: expiry mail,
      * purges, stats. Nobody can safely run that every two minutes, so the queue got at
-     * most one 20-second pass an hour, which does not keep up with a busy site's uploads
-     * and never clears a backlog. Auto-cron cannot help either: it reaches the site over
-     * HTTP at its own public URL, which an origin behind a proxy cannot hairpin back to.
+     * most one 20-second pass an hour, which does not keep up with a busy site and never
+     * clears a backlog. Auto-cron cannot help either: it reaches the site over HTTP at
+     * its own public URL, which an origin behind a proxy cannot hairpin back to.
      *
      * This runs the worker alone, so it is safe on a tight schedule:
      *
-     *     * * * * * php oc-cli.php storage:work --max-seconds=50
-     *
-     * The remote is registered first, the same way the cron hook does it, so the adapter
-     * resolves regardless of the context this is invoked from.
+     *     * * * * * php oc-cli.php jobs:work --max-seconds=50
      *
      * @param array<string, mixed> $args
      *
-     * @return int Exit code; 0 on success
+     * @return int Exit code; 1 when a job has stopped retrying
      */
-    private function cmdStorageWork(array $args): int
+    private function cmdJobsWork(array $args): int
     {
         $maxSeconds = (int) ($args['max-seconds'] ?? 20);
         if ($maxSeconds < 1) {
@@ -485,37 +763,122 @@ class Cli
             return 2;
         }
 
-        osc_storage_register_remote();
-        if (\mindstellar\storage\StorageManager::instance()->adapter('s3') === null) {
-            // Not an error: a site with no remote configured queues nothing, and a cron
-            // entry left in place through a config change should not start alarming.
-            $this->out("No remote storage configured — nothing to drain.\n");
-
-            return 0;
-        }
-
-        $queue   = \StorageQueue::newInstance();
-        $before  = $queue->countByStatus('pending');
+        $queue   = \mindstellar\job\JobQueue::instance();
         $started = time();
 
-        \mindstellar\storage\StorageWorker::run($maxSeconds);
+        $ran = \mindstellar\job\JobWorker::run($maxSeconds);
 
-        $after   = $queue->countByStatus('pending');
-        $failed  = $queue->countByStatus('failed');
+        $after   = $queue->count(\mindstellar\job\JobQueue::STATUS_PENDING);
+        $stuck   = $queue->count(\mindstellar\job\JobQueue::STATUS_ERROR);
         $elapsed = time() - $started;
 
         $this->out(sprintf(
-            "Drained %d job(s) in %ds — %d pending, %d failed.\n",
-            max(0, $before - $after),
+            "Ran %d job(s) in %ds — %d pending, %d gave up.\n",
+            $ran,
             $elapsed,
             $after,
-            $failed
+            $stuck
         ));
 
-        // A backlog that is still draining is the normal case on a schedule, so it is
-        // not a failure. Jobs the worker gave up on are, and they are what a cron log
-        // should be able to notice.
-        return $failed > 0 ? 1 : 0;
+        // A backlog still draining is the normal case on a schedule, so it is not a
+        // failure. Jobs the worker gave up on are, and they are what a cron log should
+        // be able to notice.
+        return $stuck > 0 ? 1 : 0;
+    }
+
+    /**
+     * Report what is on the queue, and name anything that stopped retrying.
+     *
+     * @param array<string, mixed> $args
+     *
+     * @return int Exit code; 1 when a job has stopped retrying
+     */
+    private function cmdJobsStatus(array $args): int
+    {
+        $queue = \mindstellar\job\JobQueue::instance();
+        $only  = trim((string) ($args['type'] ?? ''));
+        $all   = $queue->stats($only === '' ? null : $only);
+
+        $this->out(sprintf(
+            "pending %d   running %d   gave up %d   oldest pending %s\n",
+            $all['pending'],
+            $all['running'],
+            $all['error'],
+            $all['oldest'] ?? '-'
+        ));
+
+        \mindstellar\job\JobWorker::registerHandlers();
+        $types = $only === '' ? $queue->queuedTypes() : array($only);
+        if ($types !== array()) {
+            $this->out(sprintf("\n  %-40s %8s %8s %8s  %s\n", 'type', 'pending', 'running', 'gave up', 'oldest pending'));
+        }
+        foreach ($types as $type) {
+            $stats = $queue->stats($type);
+            $this->out(sprintf(
+                "  %-40s %8d %8d %8d  %s%s\n",
+                $type,
+                $stats['pending'],
+                $stats['running'],
+                $stats['error'],
+                $stats['oldest'] ?? '-',
+                \mindstellar\job\JobRegistry::has($type) ? '' : '   [no handler registered]'
+            ));
+        }
+
+        $dead = $queue->deadLetters(20);
+        if ($only !== '') {
+            $dead = array_values(array_filter($dead, static fn ($row) => $row['s_type'] === $only));
+        }
+        if ($dead !== array()) {
+            $this->out("\nGave up:\n");
+            foreach ($dead as $row) {
+                $this->out(sprintf(
+                    "  #%-8s %-30s %s\n",
+                    $row['pk_i_id'],
+                    $row['s_type'],
+                    (string) $row['s_last_error']
+                ));
+            }
+        }
+
+        return $all['error'] > 0 ? 1 : 0;
+    }
+
+    /**
+     * The backup:* commands, run by BackupCommands.
+     *
+     * @return BackupCommands
+     */
+    private function backups(): BackupCommands
+    {
+        return new BackupCommands(
+            function (string $text): void {
+                $this->out($text);
+            },
+            function (string $text): void {
+                $this->err($text);
+            }
+        );
+    }
+
+    private function cmdBackupCreate(array $args): int
+    {
+        return $this->backups()->create($args);
+    }
+
+    private function cmdBackupList(array $args): int
+    {
+        return $this->backups()->list($args);
+    }
+
+    private function cmdBackupRestore(array $args): int
+    {
+        return $this->backups()->restore($args);
+    }
+
+    private function cmdBackupDelete(array $args): int
+    {
+        return $this->backups()->delete($args);
     }
 
     /**
@@ -636,6 +999,28 @@ class Cli
         if ($generated) {
             $this->out(sprintf("Generated password: %s\n", $password));
         }
+
+        return 0;
+    }
+
+    /**
+     * Turn off an admin's two-step sign-in, for one locked out of their app and backup codes.
+     *
+     * @param array<string, mixed> $args
+     *
+     * @return int
+     */
+    private function cmdUserTwoFactorOff(array $args): int
+    {
+        $admin = Admin::newInstance()->findByUsername(trim((string) ($args['user'] ?? '')));
+        if (!$admin) {
+            $this->err("Usage: user:2fa-off --user=<username>\nNo matching admin found.\n");
+
+            return 1;
+        }
+
+        \mindstellar\security\AdminTwoFactor::disable((int) $admin['pk_i_id']);
+        $this->out(sprintf("Two-step sign-in turned off for admin '%s'.\n", $admin['s_username']));
 
         return 0;
     }
@@ -1243,7 +1628,7 @@ class Cli
         }
 
         // Required extensions.
-        foreach (['mysqli', 'curl', 'mbstring', 'fileinfo', 'zip', 'json', 'openssl', 'ctype'] as $ext) {
+        foreach (SystemChecks::EXTENSIONS as $ext) {
             extension_loaded($ext)
                 ? $check('ok', 'Extension ' . $ext, 'installed')
                 : $check('fail', 'Extension ' . $ext, 'missing');
@@ -1263,6 +1648,18 @@ class Cli
             $check('fail', 'Database', $e->getMessage());
         }
 
+        // Strict SQL mode — new installs run it; an upgraded one can opt in once `db:doctor --strict` says ready.
+        $strict = \mindstellar\database\StrictModeReadiness::report(DB_TABLE_PREFIX, time());
+        $on     = defined('OSC_DB_STRICT_MODE') && OSC_DB_STRICT_MODE;
+        if ($strict['error'] !== '') {
+            $check('warn', 'Strict SQL mode', ($on ? 'on' : 'off') . '; could not check: ' . $strict['error']);
+        } elseif (\mindstellar\database\StrictModeReadiness::ready($strict)) {
+            $check('ok', 'Strict SQL mode', $on ? 'on' : "off; the site is ready. Add define('OSC_DB_STRICT_MODE', true);"
+                . ' to config.php, then test your plugins');
+        } else {
+            $check('warn', 'Strict SQL mode', ($on ? 'on' : 'off') . '; not ready. Run db:doctor --strict for the list');
+        }
+
         // Base URL resolution — CLI cannot fall back to the Host header.
         defined('WEB_PATH') && WEB_PATH
             ? $check('ok', 'WEB_PATH', (string) WEB_PATH)
@@ -1275,19 +1672,24 @@ class Cli
             : $check('fail', 'Uploads writable', $uploads . ' is not writable');
 
         // Cron freshness — the daily schedule should have run within ~25h.
-        $cronLast = 0;
-        foreach (['HOURLY', 'DAILY', 'WEEKLY'] as $type) {
-            $row = Cron::newInstance()->getCronByType($type);
-            if (is_array($row) && !empty($row['d_last_exec'])) {
-                $cronLast = max($cronLast, (int) strtotime($row['d_last_exec']));
-            }
-        }
+        $cronLast = osc_cron_last_run();
         if ($cronLast === 0) {
             $check('warn', 'Cron', 'no run recorded yet');
-        } elseif ((time() - $cronLast) > 25 * 3600) {
+        } elseif ((time() - $cronLast) > SystemChecks::CRON_MAX_AGE) {
             $check('warn', 'Cron', 'last run ' . date('Y-m-d H:i', $cronLast) . ' — not firing regularly?');
         } else {
             $check('ok', 'Cron', 'last run ' . date('Y-m-d H:i', $cronLast));
+        }
+
+        // Job queue: jobs that stopped retrying, and work left waiting.
+        $jobs   = \mindstellar\job\JobQueue::instance()->stats();
+        $oldest = $jobs['oldest'] !== null ? strtotime((string) $jobs['oldest']) : false;
+        if ($jobs['error'] > 0) {
+            $check('warn', 'Job queue', $jobs['error'] . ' job(s) stopped retrying; run jobs:status');
+        } elseif ($oldest !== false && time() - $oldest > 3600) {
+            $check('warn', 'Job queue', $jobs['pending'] . ' waiting, oldest since ' . date('Y-m-d H:i', $oldest) . '; is cron running?');
+        } else {
+            $check('ok', 'Job queue', $jobs['pending'] . ' waiting');
         }
 
         // Object cache backend.
@@ -1329,6 +1731,12 @@ class Cli
         $this->out("Commands:\n");
         foreach ($this->commands as $name => [, $summary]) {
             $this->out(sprintf("  %-20s %s\n", $name, $summary));
+        }
+        if ($this->added !== array()) {
+            $this->out("\nAdded by plugins:\n");
+            foreach ($this->added as $name => $spec) {
+                $this->out(sprintf("  %-20s %s\n", $name, $spec['summary']));
+            }
         }
 
         return 0;

@@ -22,6 +22,9 @@
  */
 class EmailVariables
 {
+    /** The placeholders osc_mailBeauty() fills in every email, whatever the template. */
+    public const COMMON = array('{WEB_URL}', '{WEB_TITLE}', '{WEB_LINK}', '{CURRENT_DATE}', '{HOUR}', '{IP_ADDRESS}');
+
     private static $instance;
     private $variables;
 
@@ -339,6 +342,21 @@ class EmailVariables
         }
 
         return osc_apply_filter('email_legend_words', $array, @$email['s_internal_name']);
+    }
+
+    /**
+     * The placeholders every email gets, with what each one is.
+     *
+     * @return array<string,string>
+     */
+    public function getCommonVariables()
+    {
+        $array = array();
+        foreach (self::COMMON as $word) {
+            $array[$word] = $this->variables[$word] ?? '';
+        }
+
+        return $array;
     }
 
     /**

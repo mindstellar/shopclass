@@ -52,11 +52,11 @@ pin(
     $cron->getFields()
 );
 pin(
-    'the model adds exactly one method of its own',
-    array('__construct', 'getCronByType', 'newInstance'),
+    'the model adds a lookup and a claim of its own',
+    array('__construct', 'claim', 'getCronByType', 'newInstance'),
     array_values(array_intersect(
         array_keys(harness_public_method_map('Cron')),
-        array('__construct', 'newInstance', 'getCronByType')
+        array('__construct', 'newInstance', 'getCronByType', 'claim')
     ))
 );
 
@@ -90,16 +90,20 @@ pin('an e_type with no row returns bool false', false, $cron->getCronByType('WEE
 pin('a value outside the enum returns bool false', false, $cron->getCronByType('NOT_A_TYPE'));
 pin('the empty string returns bool false', false, $cron->getCronByType(''));
 
-harness_section('Cron::getCronByType — duplicate rows');
+harness_section('Cron::getCronByType — one row per type');
 
-/* t_cron declares no primary key, so the same type can appear twice. The legacy
- * body takes row() off the recordset, which is the first row in result order. */
+/* e_type is the primary key, so a second row for a type is refused. */
 seed_cron($admin, 'CUSTOM', '2026-02-01 00:00:00', '2026-02-01 06:00:00');
-seed_cron($admin, 'CUSTOM', '2026-03-01 00:00:00', '2026-03-01 06:00:00');
+try {
+    seed_cron($admin, 'CUSTOM', '2026-03-01 00:00:00', '2026-03-01 06:00:00');
+    $refused = false;
+} catch (mysqli_sql_exception $e) {
+    $refused = $e->getCode() === 1062;
+}
+check('a second row for the same type is refused', $refused);
 
 $dup = $cron->getCronByType('CUSTOM');
-check('a duplicated type still returns a single row, not a list', is_array($dup) && isset($dup['e_type']));
-pin('the first inserted row wins', '2026-02-01 00:00:00', $dup['d_last_exec']);
+pin('the one row is returned', '2026-02-01 00:00:00', $dup['d_last_exec']);
 
 harness_section('Cron::getCronByType — malformed lookup');
 
@@ -110,6 +114,19 @@ harness_section('Cron::getCronByType — malformed lookup');
 $prevLevel = error_reporting(E_ALL & ~E_WARNING);
 pin('null returns bool false rather than raising', false, $cron->getCronByType(null));
 error_reporting($prevLevel);
+
+harness_section('Cron::claim — two requests that saw the same run due');
+
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . "t_cron WHERE e_type = 'HOURLY'");
+$admin->query('INSERT INTO ' . DB_TABLE_PREFIX . "t_cron (e_type, d_last_exec, d_next_exec) VALUES ('HOURLY', '2026-03-01 09:00:00', '2026-03-01 10:00:00')");
+$seen = $cron->getCronByType('HOURLY');
+pin('the first claim wins', true, $cron->claim('HOURLY', $seen['d_next_exec'], '2026-03-01 10:00:05', '2026-03-01 11:00:00'));
+pin('the second, from the same reading, loses', false, $cron->claim('HOURLY', $seen['d_next_exec'], '2026-03-01 10:00:06', '2026-03-01 11:00:00'));
+pin('and the schedule moved on once', '2026-03-01 10:00:05', $cron->getCronByType('HOURLY')['d_last_exec']);
+// No lock is held: a run that crashed after its claim leaves only the moved schedule behind.
+$next = $cron->getCronByType('HOURLY');
+pin('so the next hour can still be claimed after a crashed run', true, $cron->claim('HOURLY', $next['d_next_exec'], '2026-03-01 11:00:03', '2026-03-01 12:00:00'));
+pin('a type with no row cannot be claimed', false, $cron->claim('MISSING', '2026-03-01 11:00:00', '2026-03-01 12:00:00', '2026-03-01 13:00:00'));
 
 /* ----------------------------------------------------------------------------
  * Query cost — a single lookup is one statement, and stays one.

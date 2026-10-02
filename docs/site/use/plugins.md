@@ -1,6 +1,6 @@
 ---
 title: Plugins
-description: Find, install, update and remove ShopClass plugins from the admin market or the command line, and recover when one breaks the site.
+description: "Find, install, update and remove ShopClass plugins from the admin market or the command line, and recover when one breaks the site."
 sidebar:
   order: 8
 ---
@@ -17,7 +17,7 @@ payment gateways, map providers, storage backends, import tools.
 | Tab | What it shows |
 |---|---|
 | **Installed** | What this site has, as cards with a state badge. |
-| **Browse** | The [plugin registry](/docs/developers/market/): a public, static catalog of packages submitted by pull request and validated by CI. One click installs. |
+| **Browse** | The [plugin registry](/docs/developers/market/): a public catalog of packages, each checked by an automated build before it is listed. One click installs. |
 | **Updates** | Installed plugins with a newer version, with a count in the tab. |
 
 Each card carries the version, the author, a short description, and whether the
@@ -37,18 +37,27 @@ php oc-cli.php market:info better-s3
 php oc-cli.php market:install better-s3
 ```
 
-## Installed, enabled, uninstalled
+## Active, disabled, not installed
 
-Three states, and the difference matters:
+Each card carries one of three state badges, and the difference matters:
 
-| State | Meaning |
+| Badge | Meaning |
 |---|---|
-| **Installed but disabled** | Files present, code not running, settings and data kept. |
-| **Enabled** | Running. |
-| **Uninstalled** | Files removed. Most plugins drop their tables and settings, usually irreversibly. |
+| **Active** | Running. |
+| **Disabled** | Files present, code not running, settings and data kept. |
+| **Not installed** | Files present, but no data. Either never installed, or already uninstalled. |
+
+An active or disabled plugin has two destructive actions, and they do
+different things:
+
+- **Uninstall** drops the plugin's data (its tables and settings), usually
+  for good. The files stay on disk, and the card moves to **Not installed**.
+- **Delete files**, offered once a plugin is not installed, removes its
+  folder entirely.
 
 To stop a plugin temporarily, **disable** it. Uninstall only when you are done
-with it for good.
+with its data for good, and delete the files only once you are done with the
+plugin entirely.
 
 ```bash
 php oc-cli.php plugin:list
@@ -57,7 +66,7 @@ php oc-cli.php plugin:activate --plugin=better-s3
 ```
 
 `plugin:deactivate` is the fix when a plugin fatals on load and takes the admin
-panel down with it. See
+panel down with it: see
 [debugging PHP errors](/docs/developers/debug-php-errors/).
 
 ## Updating

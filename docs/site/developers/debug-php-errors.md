@@ -2,7 +2,7 @@
 title: Debug PHP errors
 description: "Turn on error reporting and logging in ShopClass with OSC_DEBUG and OSC_DEBUG_LOG: including how to debug a white screen."
 sidebar:
-  order: 12
+  order: 13
 ---
 
 By default ShopClass keeps PHP quiet: notices and strict warnings are suppressed
@@ -20,8 +20,9 @@ define('OSC_DEBUG', true);
 Error reporting rises to `E_ALL | E_STRICT` and `display_errors` is turned on,
 so PHP prints what went wrong instead of a blank page.
 
-With `OSC_DEBUG` off (the default), the level is
-`E_ALL ^ E_NOTICE ^ E_USER_NOTICE`.
+With `OSC_DEBUG` off (the default), PHP reports only fatal and parse errors and
+warnings: `E_ERROR | E_WARNING | E_PARSE | E_CORE_ERROR | E_CORE_WARNING |
+E_COMPILE_ERROR | E_USER_ERROR | E_USER_WARNING`.
 
 :::danger[Never leave this on in production]
 Displayed errors leak file paths, database structure and sometimes credentials
@@ -60,7 +61,7 @@ or deny access to `*.log` in your server config.
 
 ## Debugging a white screen
 
-A blank page means PHP died before it could print anything: usually a fatal
+A blank page means PHP died before it could print anything, usually a fatal
 error with display off.
 
 1. Set `OSC_DEBUG` and `OSC_DEBUG_LOG` as above.

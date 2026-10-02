@@ -174,26 +174,14 @@ function osc_static_page_meta($field = null)
 function osc_static_page_url($locale = '')
 {
     if (osc_rewrite_enabled()) {
-        $sanitized_categories = array();
-        $cat                  = Category::newInstance()->hierarchy(osc_item_category_id());
-        for ($i = count($cat); $i > 0; $i--) {
-            $sanitized_categories[] = $cat[$i - 1]['s_slug'];
-        }
-        $url = str_replace(array('{PAGE_ID}', '{PAGE_TITLE}'), array(
-            osc_static_page_id(),
-            osc_static_page_title()
-        ), str_replace('{PAGE_SLUG}', urlencode(osc_static_page_slug()), osc_get_preference('rewrite_page_url')));
-        if ($locale != '') {
-            $path = osc_base_url() . $locale . '/' . $url;
-        } else {
-            $path = osc_base_url() . $url;
-        }
+        $url  = \mindstellar\routing\CoreRoutes::expand('page', array(
+            'PAGE_ID'    => osc_static_page_id(),
+            'PAGE_SLUG'  => osc_static_page_slug(),
+            'PAGE_TITLE' => osc_static_page_title(),
+        ));
+        $path = osc_base_url() . ($locale != '' ? $locale . '/' : '') . $url;
     } else {
-        if ($locale != '') {
-            $path = osc_base_url(true) . '?page=page&id=' . osc_static_page_id() . '&lang=' . $locale;
-        } else {
-            $path = osc_base_url(true) . '?page=page&id=' . osc_static_page_id();
-        }
+        $path = osc_core_url('page', array('id' => osc_static_page_id(), 'lang' => $locale));
     }
 
     return $path;

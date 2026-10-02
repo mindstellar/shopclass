@@ -1,30 +1,203 @@
-// Tools -> System info. A "ledger": every row is a fact with a spelled-out verdict
-// (never colour alone — see DESIGN.md), a note on why it matters, its value, and
-// sometimes one action. Flat at rest; the cards carry the grouping.
+// Tools -> System info: tabs, one verdict box, then quiet label/value facts. The older
+// .sysinfo-* ledger classes below stay defined for plugins that print them.
 
-#system-info {
-  // The tab strip is now the theme's own .osc-tabnav (see tabs.scss).
+.sysinfo {
+  // One reading column; only the tab strip runs the full width.
+  > :not(.osc-tabnav) {
+    max-inline-size: 56rem;
+  }
+
+  > .osc-tabnav {
+    margin-block-end: 1.5rem;
+  }
+
+  > .callout-block,
+  > .flashmessage {
+    margin-block-end: 1rem;
+  }
+
+  > .osc-verdict {
+    margin-block-end: 1.5rem;
+  }
+
   .card-title {
     color: var(--osc-ink);
-    // Title role: 17px / 600 / 1.4 (DESIGN §3).
     font-size: 1.0625rem;
     font-weight: 600;
     line-height: 1.4;
   }
 }
 
-// The cards don't need the full content width on a wide screen. From lg up, flow them
-// into two masonry columns — whole cards, never split — so the ledgers sit side by side
-// and the page reads in half the height. Below lg they stack full width as before.
-.sysinfo-grid {
-  @media (min-width: 992px) {
-    column-count: 2;
-    column-gap: 1rem;
+.sysinfo-group + .sysinfo-group {
+  margin-block-start: 1.75rem;
+}
 
-    > .card {
-      break-inside: avoid;
+.sysinfo-group > .render-title {
+  margin-block-end: .6rem;
+}
+
+.sysinfo-facts {
+  .osc-deflist-row dd {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+// Wide tables scroll inside .table-responsive rather than crushing their columns.
+.sysinfo-table-wide {
+  min-width: 34rem;
+}
+
+.sysinfo-table-findings {
+  min-width: 44rem;
+}
+
+// Lists on the Jobs and Security tabs: plain words, no pills. A phone reads each row as a card.
+.sysinfo-list {
+  td {
+    vertical-align: top;
+  }
+
+  .sysinfo-list-sub {
+    color: var(--osc-ink-muted);
+    display: block;
+    font-size: $font-size-label;
+    overflow-wrap: anywhere;
+  }
+
+  .sysinfo-list-meta {
+    color: var(--osc-ink-emphasis);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .sysinfo-list-reason {
+    color: var(--osc-ink-emphasis);
+    min-inline-size: 14rem;
+    overflow-wrap: anywhere;
+  }
+
+  .sysinfo-list-actions {
+    white-space: nowrap;
+    width: 1%;
+  }
+
+  @media (max-width: 575.98px) {
+    thead {
+      display: none;
+    }
+
+    tr {
+      background-color: var(--osc-bench);
+      border-block-end: 1px solid var(--osc-rule);
+      display: block;
+      padding-block: .75rem;
+    }
+
+    td {
+      background-color: transparent;
+      border: 0;
+      box-shadow: none;
+      display: block;
+      padding: 0 .75rem;
+      text-align: start !important;
+      width: auto;
+    }
+
+    .sysinfo-list-main {
+      padding-block-end: .25rem;
+    }
+
+    .sysinfo-list-meta {
+      color: var(--osc-ink-muted);
+      display: inline;
+      padding-inline: 0;
+
+      & + .sysinfo-list-meta::before {
+        content: " · ";
+      }
+    }
+
+    .sysinfo-list-meta {
+      padding-inline-start: .75rem;
+    }
+
+    .sysinfo-list-meta + .sysinfo-list-meta {
+      padding-inline-start: 0;
+    }
+
+    .sysinfo-list-reason {
+      min-inline-size: 0;
+      padding-block-start: .25rem;
+    }
+
+    .sysinfo-list-actions {
+      padding-block-start: .5rem;
     }
   }
+}
+
+// A section's own buttons, under its list. The destructive one keeps its distance.
+.sysinfo-bulk {
+  align-items: center;
+  clear: both;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem 1rem;
+  margin-block-start: .75rem;
+
+  form {
+    display: inline;
+  }
+}
+
+.sysinfo-bulk-danger {
+  margin-inline-start: auto;
+}
+
+.sysinfo-bulk-note {
+  color: var(--osc-ink-muted);
+  font-size: $font-size-label;
+}
+
+.sysinfo-aside {
+  margin-block-start: 1.75rem;
+
+  code {
+    overflow-wrap: anywhere;
+  }
+}
+
+// A quiet disclosure: the full extension list and the settings help.
+.sysinfo-details {
+  border-block-start: 1px solid var(--osc-rule);
+  margin-block-start: 1.75rem;
+  padding-block-start: 1rem;
+
+  & + & {
+    margin-block-start: 1rem;
+  }
+
+  > summary {
+    color: var(--osc-bronze);
+    cursor: pointer;
+    font-weight: 500;
+    inline-size: fit-content;
+
+    &:focus-visible {
+      border-radius: $border-radius;
+      outline: 2px solid var(--osc-bronze);
+      outline-offset: 2px;
+    }
+  }
+
+  &[open] > summary {
+    margin-block-end: 1rem;
+  }
+}
+
+// Once a masonry grid of cards; kept as a plain block for markup that still uses it.
+.sysinfo-grid {
+  display: block;
 }
 
 .sysinfo-ledger {
@@ -54,7 +227,7 @@
 // the .osc-status badge — a half-step heavier (600) because it is the scan anchor.
 .sysinfo-state {
   border-radius: $border-radius-pill;
-  font-size: .8125rem;
+  font-size: $font-size-label;
   font-weight: 600;
   letter-spacing: .01em;
   line-height: 1.4;
@@ -175,7 +348,7 @@
 // A muted count riding beside the card title.
 .sysinfo-count {
   color: var(--osc-ink-muted);
-  font-size: .8125rem;
+  font-size: $font-size-label;
   font-weight: 500;
 
   &::before {
@@ -198,7 +371,7 @@
   border-radius: $border-radius-pill;
   color: var(--osc-ink-emphasis);
   font-family: var(--bs-font-monospace);
-  font-size: .8125rem;
+  font-size: $font-size-label;
   line-height: 1.5;
   padding: .1rem .5rem;
 }

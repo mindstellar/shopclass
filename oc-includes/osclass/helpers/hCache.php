@@ -253,10 +253,7 @@ function osc_invalidate_user_cache($userId)
  */
 function osc_cache_search_generation()
 {
-    $found = null;
-    $gen   = Object_Cache_Factory::newInstance()->get('osc_search_cache_gen', $found);
-
-    return is_numeric($gen) ? (int)$gen : 0;
+    return \mindstellar\cache\CacheGroup::generation('search');
 }
 
 /**
@@ -269,13 +266,7 @@ function osc_cache_search_generation()
  */
 function osc_invalidate_search_cache()
 {
-    $cache = Object_Cache_Factory::newInstance();
-    $found = null;
-    $gen   = $cache->get('osc_search_cache_gen', $found);
-    $gen   = (is_numeric($gen) ? (int)$gen : 0) + 1;
-    $cache->set('osc_search_cache_gen', $gen, 0);
-
-    return $gen;
+    return \mindstellar\cache\CacheGroup::invalidate('search');
 }
 
 /**
@@ -293,10 +284,7 @@ function osc_invalidate_search_cache()
  */
 function osc_cache_category_generation()
 {
-    $found = null;
-    $gen   = Object_Cache_Factory::newInstance()->get('osc_category_cache_gen', $found);
-
-    return is_numeric($gen) ? (int)$gen : 0;
+    return \mindstellar\cache\CacheGroup::generation('category');
 }
 
 /**
@@ -310,13 +298,7 @@ function osc_cache_category_generation()
  */
 function osc_invalidate_category_cache()
 {
-    $cache = Object_Cache_Factory::newInstance();
-    $found = null;
-    $gen   = $cache->get('osc_category_cache_gen', $found);
-    $gen   = (is_numeric($gen) ? (int)$gen : 0) + 1;
-    $cache->set('osc_category_cache_gen', $gen, 0);
-
-    return $gen;
+    return \mindstellar\cache\CacheGroup::invalidate('category');
 }
 
 /**
@@ -333,6 +315,7 @@ function osc_invalidate_category_cache()
  */
 function osc_invalidate_locale_cache()
 {
+    \mindstellar\cache\CacheGroup::invalidate('locale');
     if (function_exists('osc_settings_locales')) {
         osc_settings_locales(true);
     }

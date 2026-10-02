@@ -84,7 +84,7 @@ if (!function_exists('osc_admin_page')) {
 
         if ($help !== null) {
             osc_add_hook('help_box', static function () use ($help) {
-                if (is_callable($help)) {
+                if (!is_string($help) && is_callable($help)) {
                     $help();
 
                     return;
@@ -121,7 +121,7 @@ if (!function_exists('osc_admin_page_header')) {
      */
     function osc_admin_page_header($section, array $opts = array())
     {
-        if (is_callable($section)) {
+        if (!is_string($section) && is_callable($section)) {
             $section = $section();
         } ?>
         <h1><?php echo osc_esc_html((string) $section); ?>
@@ -197,7 +197,8 @@ if (!function_exists('osc_admin_action_button')) {
      * One action, as a link or a button.
      *
      * Keys: label, url, variant (primary|secondary|danger|dim), icon (bootstrap-icon
-     * name), title, attrs (associative, rendered verbatim as escaped attributes).
+     * name), title, attrs (associative, rendered verbatim as escaped attributes), class
+     * (extra classes, for a button a script has to find).
      *
      * Variant maps to the button vocabulary in DESIGN: one primary per region, secondary
      * for everything routine, danger reserved for genuinely destructive work.
@@ -211,6 +212,11 @@ if (!function_exists('osc_admin_action_button')) {
         $variant = $action['variant'] ?? 'secondary';
         $classes = array('btn', 'btn-sm');
         $classes[] = 'btn-' . ($variant === 'primary' ? 'submit' : $variant);
+        // Its own classes go here, not in attrs: a second class attribute is dropped by
+        // the parser, which silently takes a script's hook off the button.
+        if (!empty($action['class'])) {
+            $classes[] = osc_esc_html($action['class']);
+        }
 
         $attrs = '';
         foreach (($action['attrs'] ?? array()) as $name => $value) {
@@ -280,6 +286,7 @@ if (!function_exists('osc_admin_panel_open')) {
      * Options:
      *   'subtitle' => string  One line under the title, for the thing a header cannot say.
      *   'actions'  => array   Action specs rendered in the header, inline-end.
+     *   'class'    => string  Extra classes on the box, for a panel with a variant.
      *
      * @param string              $title Omit for a panel that needs no header
      * @param array<string,mixed> $opts
@@ -288,7 +295,8 @@ if (!function_exists('osc_admin_panel_open')) {
      */
     function osc_admin_panel_open($title = '', array $opts = array())
     {
-        echo '<div class="widget-box">';
+        echo '<div class="widget-box'
+             . (!empty($opts['class']) ? ' ' . osc_esc_html($opts['class']) : '') . '">';
 
         if ($title !== '') { ?>
             <div class="widget-box-title">
@@ -382,7 +390,7 @@ if (!function_exists('osc_admin_definition')) {
      *
      * Each row is an array with 'label' and 'value'. A row may set 'html' => true to pass
      * markup through (for a status pill or a link), which is why the default escapes:
-     * the unsafe path has to be asked for by name.
+     * the unsafe path has to be asked for by name. 'note' adds a muted line under the value.
      *
      * @param array<int,array<string,mixed>> $rows
      *
@@ -400,11 +408,85 @@ if (!function_exists('osc_admin_definition')) {
                             echo $row['value'];
                         } else {
                             echo osc_esc_html((string) ($row['value'] ?? ''));
-                        } ?>
+                        }
+                        if (!empty($row['note'])) { ?>
+                            <p class="osc-deflist-note"><?php echo osc_esc_html($row['note']); ?></p>
+                        <?php } ?>
                     </dd>
                 </div>
             <?php } ?>
         </dl>
+        <?php
+    }
+}
+
+if (!function_exists('osc_admin_verdict')) {
+    /**
+     * One box that says whether anything needs doing: one line per issue, each with its
+     * own button, the worst tone for the box, red lines first. With no issues it says
+     * $healthyText, or nothing when that is empty.
+     *
+     * Each issue: 'tone' (danger|warning|info), 'text', and an optional 'action' spec
+     * (see osc_admin_action_button()).
+     *
+     * @param array<int,array<string,mixed>> $issues
+     * @param string                         $healthyText
+     *
+     * @return void
+     */
+    function osc_admin_verdict(array $issues, $healthyText = '')
+    {
+        if ($issues === array()) {
+            if ($healthyText !== '') {
+                echo '<div class="callout-success callout-block osc-verdict"><ul class="osc-verdict-list"><li class="osc-verdict-line">'
+                    . '<span class="osc-verdict-text">' . osc_esc_html($healthyText) . '</span></li></ul></div>';
+            }
+
+            return;
+        }
+        $issues = \mindstellar\admin\SystemChecks::rank($issues);
+        $tone   = \mindstellar\admin\SystemChecks::tone($issues); ?>
+        <div class="callout-<?php echo $tone; ?> callout-block osc-verdict">
+            <ul class="osc-verdict-list">
+                <?php foreach ($issues as $issue) { ?>
+                    <li class="osc-verdict-line">
+                        <span class="osc-verdict-text"><?php echo osc_esc_html($issue['text'] ?? ''); ?></span>
+                        <?php if (!empty($issue['action'])) {
+                            osc_admin_action_button($issue['action']);
+                        } ?>
+                    </li>
+                <?php } ?>
+            </ul>
+        </div>
+        <?php
+    }
+}
+
+if (!function_exists('osc_admin_progress')) {
+    /**
+     * Work running in the background: a bar, a line saying where it is (read out by
+     * screen readers as it changes), and an optional cancel button.
+     *
+     * Keys: id, value (0-100, or null when the end is not known), label (names the bar),
+     * status (the line), cancel (an action spec).
+     *
+     * @param array<string,mixed> $opts
+     *
+     * @return void
+     */
+    function osc_admin_progress(array $opts)
+    {
+        $value = $opts['value'] ?? null; ?>
+        <div class="osc-progress"<?php echo !empty($opts['id']) ? ' id="' . osc_esc_html($opts['id']) . '"' : ''; ?>>
+            <div class="osc-progress-main">
+                <progress max="100"<?php echo $value === null ? '' : ' value="' . (int) $value . '"'; ?>
+                          aria-label="<?php echo osc_esc_html($opts['label'] ?? ''); ?>"></progress>
+                <p class="osc-progress-status" aria-live="polite"><?php echo osc_esc_html($opts['status'] ?? ''); ?></p>
+            </div>
+            <?php if (!empty($opts['cancel'])) { ?>
+                <div class="osc-progress-cancel"><?php osc_admin_action_button($opts['cancel']); ?></div>
+            <?php } ?>
+        </div>
         <?php
     }
 }
@@ -541,16 +623,26 @@ if (!function_exists('osc_admin_form_actions')) {
      * settings screens.
      *
      * @param array<int,array<string,mixed>> $actions Action specs; the first defaults to variant 'primary'
+     * @param array<string,mixed>            $opts    'dirty' => true for the unsaved-changes status bar
      *
      * @return void
      */
-    function osc_admin_form_actions(array $actions = array())
+    function osc_admin_form_actions(array $actions = array(), array $opts = array())
     {
         if ($actions === array()) {
             $actions = array(array('label' => __('Save changes'), 'type' => 'submit', 'variant' => 'primary'));
         }
 
-        echo '<div class="form-actions">';
+        // Opt-in, so an existing screen's action row is the markup it has always been.
+        $dirty = !empty($opts['dirty'])
+            ? ' data-osc-dirty-bar data-osc-dirty-one="' . osc_esc_html(__('1 unsaved change')) . '"'
+              . ' data-osc-dirty-many="' . osc_esc_html(__('%d unsaved changes')) . '"'
+            : '';
+
+        echo '<div class="form-actions"' . $dirty . '>';
+        if ($dirty !== '') {
+            echo '<p class="form-actions-status" role="status" aria-live="polite"></p>';
+        }
         foreach ($actions as $i => $action) {
             $action['variant'] = $action['variant'] ?? ($i === 0 ? 'primary' : 'secondary');
             $action['type']    = $action['type'] ?? 'submit';
@@ -600,23 +692,32 @@ if (!function_exists('osc_admin_bulk_actions')) {
      * @return void
      */
     function osc_admin_bulk_actions(array $opts)
-    { ?>
+    {
+        // 'form' lets the group sit in the toolbar row while still submitting the table's
+        // POST form below it. Forms cannot nest, and the row wants the filter beside it.
+        $form = isset($opts['form'])
+            ? ' form="' . osc_esc_html((string) $opts['form']) . '"'
+            : ''; ?>
         <div id="bulk-actions">
+            <?php // Outside the group: a visually-hidden label still counts as its first
+                  // child, and Bootstrap strips the start radius off everything that is not.?>
+            <label class="visually-hidden" for="<?php echo osc_esc_html($opts['id'] ?? 'bulk_actions'); ?>">
+                <?php echo osc_esc_html($opts['label'] ?? __('Bulk actions')); ?>
+            </label>
             <div class="input-group input-group-sm">
-                <label class="visually-hidden" for="<?php echo osc_esc_html($opts['id'] ?? 'bulk_actions'); ?>">
-                    <?php echo osc_esc_html($opts['label'] ?? __('Bulk actions')); ?>
-                </label>
                 <?php if (!empty($opts['options_html'])) {
-                    ($opts['options_html'])();
+                    ($opts['options_html'])($form);
                 } else {
                     osc_print_bulk_actions(
                         $opts['id'] ?? 'bulk_actions',
                         $opts['name'] ?? 'action',
                         $opts['options'] ?? array(),
-                        'select-box-extra'
+                        'select-box-extra',
+                        $form
                     );
                 } ?>
-                <button type="submit" id="bulk_apply" class="btn btn-submit"><?php _e('Apply'); ?></button>
+                <button type="submit" id="bulk_apply" class="btn btn-submit"<?php
+                    echo $form; ?>><?php _e('Apply'); ?></button>
             </div>
         </div>
         <?php
@@ -649,6 +750,170 @@ if (!function_exists('osc_admin_bulk_confirm_dialog')) {
                         class="btn btn-danger btn-sm"><?php echo osc_esc_html($opts['confirm'] ?? __('Delete')); ?></button>
             </div>
         </dialog>
+        <?php
+    }
+}
+
+if (!function_exists('osc_admin_list_filter')) {
+    /**
+     * The filter strip above a list.
+     *
+     * Every list screen had written its own: four different wrappers, the page-size select
+     * before the form on one screen and after it on the next, and the same "which field am
+     * I searching" select rebuilt with its own inline script. The names and ids are the
+     * contract with the controllers and with the CSS, so they are passed in rather than
+     * generated -- this unifies the shape, not the parameters.
+     *
+     * Keys: 'page' (the screen's page parameter), 'fields', 'hidden' => name => value,
+     *       'advanced' => a dialog selector, 'active' => bool, 'reset' => url,
+     *       'id' => form id, 'submit' => the find button's title.
+     *
+     * A field is one of:
+     *   search  name, value, placeholder, id
+     *   select  name, value, options (value => word), placeholder (the "any" row), label, id
+     *   switch  name, value, id, options (value => array(label, name, id, placeholder))
+     *           -- one select choosing which of its own inputs is in play
+     *   hidden  name, value, id
+     *
+     * @param array<string,mixed> $opts
+     *
+     * @return void
+     */
+    function osc_admin_list_filter(array $opts = array())
+    {
+        $fields = $opts['fields'] ?? array();
+        $active = !empty($opts['active']);
+        $row    = isset($opts['bulk']) || isset($opts['per_page']);
+
+        if ($row) {
+            osc_admin_toolbar_open(array('align' => isset($opts['bulk']) ? 'between' : 'end'));
+            if (isset($opts['bulk'])) {
+                osc_admin_bulk_actions($opts['bulk']);
+            }
+            echo '<div class="osc-toolbar-group">';
+        } ?>
+        <form method="get" action="<?php echo osc_esc_html(osc_admin_base_url(true)); ?>"
+              class="osc-filter nocsrf"<?php echo isset($opts['id'])
+                  ? ' id="' . osc_esc_html($opts['id']) . '"' : ''; ?>>
+            <?php if (isset($opts['page'])) { ?>
+                <input type="hidden" name="page" value="<?php echo osc_esc_html($opts['page']); ?>"/>
+            <?php } ?>
+            <?php foreach (($opts['hidden'] ?? array()) as $name => $value) { ?>
+                <input type="hidden" name="<?php echo osc_esc_html($name); ?>"
+                       value="<?php echo osc_esc_html((string) $value); ?>"/>
+            <?php } ?>
+
+            <?php foreach ($fields as $field) {
+                osc_admin_list_filter_field($field);
+            } ?>
+
+            <?php if (!empty($opts['advanced'])) { ?>
+                <?php // One class or the other, never both. Red is for destructive actions;
+                      // "a filter is applied" is a state, so it takes the accent.?>
+                <a href="#" data-osc-dialog-open="<?php echo osc_esc_html($opts['advanced']); ?>"
+                   class="btn btn-sm <?php echo $active ? 'btn-primary' : 'btn-dim'; ?>"
+                   title="<?php echo osc_esc_html(__('Show filters')); ?>"><i class="bi bi-filter"></i></a>
+            <?php } ?>
+
+            <button type="submit" class="btn btn-sm btn-primary"
+                    title="<?php echo osc_esc_html($opts['submit'] ?? __('Find')); ?>">
+                <i class="bi bi-search"></i>
+            </button>
+
+            <?php if ($active && !empty($opts['reset'])) { ?>
+                <a class="btn btn-sm btn-dim osc-filter-reset"
+                   href="<?php echo osc_esc_html($opts['reset']); ?>"><?php _e('Reset'); ?></a>
+            <?php } ?>
+        </form>
+        <?php
+        if ($row) {
+            if (isset($opts['per_page'])) {
+                osc_admin_per_page($opts['per_page']);
+            }
+            echo '</div>';
+            osc_admin_toolbar_close();
+        }
+    }
+}
+
+if (!function_exists('osc_admin_list_filter_field')) {
+    /**
+     * One control inside osc_admin_list_filter(). Split out so a screen with a control
+     * nothing else has can render the rest through the component and print that one itself.
+     *
+     * @param array<string,mixed> $field
+     *
+     * @return void
+     */
+    function osc_admin_list_filter_field(array $field)
+    {
+        $type  = $field['type'] ?? 'search';
+        $name  = (string) ($field['name'] ?? '');
+        $id    = (string) ($field['id'] ?? ('osc-filter-' . $name));
+        $value = (string) ($field['value'] ?? '');
+
+        if ($type === 'hidden') { ?>
+            <input type="hidden" id="<?php echo osc_esc_html($id); ?>"
+                   name="<?php echo osc_esc_html($name); ?>"
+                   value="<?php echo osc_esc_html($value); ?>"/>
+            <?php
+            return;
+        }
+
+        if ($type === 'select') { ?>
+            <label class="visually-hidden" for="<?php echo osc_esc_html($id); ?>">
+                <?php echo osc_esc_html($field['label'] ?? $name); ?>
+            </label>
+            <select id="<?php echo osc_esc_html($id); ?>" name="<?php echo osc_esc_html($name); ?>"
+                    class="form-select form-select-sm">
+                <?php if (isset($field['placeholder'])) { ?>
+                    <option value=""><?php echo osc_esc_html($field['placeholder']); ?></option>
+                <?php } ?>
+                <?php foreach (($field['options'] ?? array()) as $optValue => $word) { ?>
+                    <option value="<?php echo osc_esc_html((string) $optValue); ?>"
+                        <?php echo (string) $optValue === $value ? ' selected' : ''; ?>>
+                        <?php echo osc_esc_html((string) $word); ?>
+                    </option>
+                <?php } ?>
+            </select>
+            <?php
+            return;
+        }
+
+        if ($type === 'switch') {
+            $options = $field['options'] ?? array();
+            $current = isset($options[$value]) ? $value : (string) array_key_first($options); ?>
+            <label class="visually-hidden" for="<?php echo osc_esc_html($id); ?>">
+                <?php echo osc_esc_html($field['label'] ?? __('Search by')); ?>
+            </label>
+            <select id="<?php echo osc_esc_html($id); ?>" name="<?php echo osc_esc_html($name); ?>"
+                    class="form-select form-select-sm" data-osc-filter-switch>
+                <?php foreach ($options as $optValue => $spec) { ?>
+                    <option value="<?php echo osc_esc_html((string) $optValue); ?>"
+                        <?php echo (string) $optValue === $current ? ' selected' : ''; ?>>
+                        <?php echo osc_esc_html((string) ($spec['label'] ?? $optValue)); ?>
+                    </option>
+                <?php } ?>
+            </select>
+            <?php foreach ($options as $optValue => $spec) { ?>
+                <input type="text" data-osc-filter-for="<?php echo osc_esc_html((string) $optValue); ?>"
+                       id="<?php echo osc_esc_html((string) ($spec['id'] ?? ('osc-filter-' . $optValue))); ?>"
+                       name="<?php echo osc_esc_html((string) ($spec['name'] ?? '')); ?>"
+                       class="form-control form-control-sm<?php
+                           echo (string) $optValue === $current ? '' : ' hide'; ?>"
+                       placeholder="<?php echo osc_esc_html((string) ($spec['placeholder'] ?? '')); ?>"
+                       value="<?php echo osc_esc_html((string) ($spec['value'] ?? '')); ?>"/>
+            <?php }
+            return;
+        } ?>
+
+        <label class="visually-hidden" for="<?php echo osc_esc_html($id); ?>">
+            <?php echo osc_esc_html($field['label'] ?? $field['placeholder'] ?? $name); ?>
+        </label>
+        <input type="search" id="<?php echo osc_esc_html($id); ?>"
+               name="<?php echo osc_esc_html($name); ?>" class="form-control form-control-sm"
+               placeholder="<?php echo osc_esc_html((string) ($field['placeholder'] ?? '')); ?>"
+               value="<?php echo osc_esc_html($value); ?>"/>
         <?php
     }
 }
@@ -760,7 +1025,9 @@ if (!function_exists('osc_admin_confirm_dialog')) {
      * would put two identical pairs of hidden inputs in the same form.
      *
      * Keys: id, title, text, confirm (label), confirm_id, method ('get'|'post'), url,
-     * fields (name => value hidden inputs), body_html (extra markup inside the form).
+     * fields (name => value hidden inputs), body_html (extra markup inside the form),
+     * confirm_form (the id of a form on the page that the confirm button submits instead,
+     * for a form the dialog cannot hold, such as a file upload).
      *
      * `text` is escaped, exactly as osc_admin_empty()'s `text` is. Pass `text_html` for
      * the rare sentence that needs a <strong>.
@@ -801,6 +1068,7 @@ if (!function_exists('osc_admin_confirm_dialog')) {
                     <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
                     <button type="submit"
                             <?php if (!empty($opts['confirm_id'])) { ?>id="<?php echo osc_esc_html($opts['confirm_id']); ?>"<?php } ?>
+                            <?php if (!empty($opts['confirm_form'])) { ?>form="<?php echo osc_esc_html($opts['confirm_form']); ?>"<?php } ?>
                             class="btn btn-<?php echo $danger ? 'danger' : 'submit'; ?> btn-sm">
                         <?php echo osc_esc_html($opts['confirm'] ?? __('Delete')); ?>
                     </button>

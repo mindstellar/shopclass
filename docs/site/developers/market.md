@@ -63,7 +63,7 @@ pointer at `external/<slug>.json`:
 
 The builder fetches your releases, picks the matching asset, reads the header
 block **out of the zip**, so name, version and compatibility come from the real
-artifact, never a hand-edited claim. It computes the `sha256`, and emits an entry
+artifact, never a hand-edited claim. It computes its `sha256`, and emits an entry
 identical in shape to an in-repo one. Core never learns the difference.
 
 Both `storefront` and `bender` are registered this way today.
@@ -90,14 +90,14 @@ mirror as a fallback. Core fetches it with a conditional `GET` about once a day
 and caches the result.
 
 This is deliberate: core must never call `api.github.com` per installed package.
-Unauthenticated GitHub API allows 60 requests per hour per IP (a shared budget
-on shared hosting), and a site with fifteen plugins would exhaust it on a single
+Unauthenticated GitHub API allows 60 requests per hour per IP, a shared budget
+on shared hosting, and a site with fifteen plugins would exhaust it on a single
 update check. One cached catalog request answers for every package at once.
 
 ## Requirements for listing
 
 - **GPL-compatible licence.** ShopClass is GPLv3; the ecosystem is too.
-- **A working `index.php` header block**, see the
+- **A working `index.php` header block**: see the
   [package specification](/docs/developers/package-spec/).
 - **A real support URL**, so users have somewhere to go.
 

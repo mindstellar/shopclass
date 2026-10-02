@@ -16,8 +16,7 @@
 /**
  * The chrome around the four declared spam-and-bots forms. Each form -- its route, its
  * fields, their values and the submit row -- is core's, drawn from the declaration the
- * controller saves through. The button that clears recorded sign-in attempts stores
- * nothing and is still its own little form here.
+ * controller saves through.
  */
 
 $forms = __get('spam_forms');
@@ -55,33 +54,28 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     . 'subscribing prevents anonymous email harvesting and confirmation-email abuse through the alert endpoint.'); ?></p>
         <?php osc_admin_settings_form($forms['alerts']['id'], $forms['alerts']); ?>
     </div>
-    <div id="login-throttle-settings" class="separate-top">
-        <?php osc_admin_form_section(__('Sign-in protection')); ?>
-        <p><?php _e('Failed sign-ins and password-reset requests are counted per visitor address and per account '
-                    . 'name. Passing a limit refuses further attempts until the older ones age out of the window, '
-                    . 'which is what stops a stolen password list being tried one guess at a time.'); ?></p>
-        <p><?php _e('The account limit is skipped while a captcha provider is configured above, because every '
-                    . 'attempt already has to solve one. Without that, an attacker could hold someone else\'s '
-                    . 'account shut simply by failing against it.'); ?></p>
-        <?php osc_admin_settings_form($forms['login_throttle']['id'], $forms['login_throttle']); ?>
-        <?php osc_admin_form_open(array(
-            'name'   => 'settings_form',
-            'page'   => 'settings',
-            'action' => 'login_throttle_reset',
+    <div id="messages-settings" class="separate-top">
+        <?php osc_admin_form_section(__('Messages'), array(
+            'intro' => __('Limits for the forms that send e-mail: the contact form, contact the seller, contact a '
+                          . 'user and share a listing.'),
         )); ?>
-                <?php osc_admin_field(array(
-                    'type'   => 'custom',
-                    'label'  => __('Clear recorded attempts'),
-                    'help'   => __('Lets anyone currently refused try again straight away, including you.'),
-                    'render' => static function () {
-                        osc_admin_action_button(array(
-                            'label' => __('Clear now'),
-                            'type'  => 'submit',
-                            'attrs' => array('id' => 'submit_login_throttle_reset'),
-                        ));
-                    },
-                )); ?>
-            <?php osc_admin_form_close(); ?>
+        <?php osc_admin_settings_form($forms['messages']['id'], $forms['messages']); ?>
+    </div>
+    <div id="login-throttle-settings" class="separate-top">
+        <?php osc_admin_form_section(__('Sign-in protection'), array(
+            'intro' => __('After too many failed sign-ins, Shopclass blocks that address or account for a '
+                          . 'while. This stops password guessing on the site and the admin panel.'),
+        )); ?>
+        <?php if (osc_captcha_enabled()) { ?>
+            <p class="text-muted"><?php _e('A captcha is set up above, so the per-account limit is off. '
+                                           . 'Nobody can lock another person out of their account.'); ?></p>
+        <?php } ?>
+        <?php osc_admin_settings_form($forms['login_throttle']['id'], $forms['login_throttle']); ?>
+
+        <p class="text-muted"><?php printf(
+            __('See who is blocked right now, and unblock them, under <a href="%s">Tools > System info > Security</a>.'),
+            osc_esc_html(osc_admin_base_url(true) . '?page=tools&action=system-info&tab=security#signin-activity')
+        ); ?></p>
     </div>
 </div>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

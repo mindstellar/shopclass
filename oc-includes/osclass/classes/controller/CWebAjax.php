@@ -17,6 +17,8 @@ define('IS_AJAX', true);
 /**
  * Class CWebAjax
  */
+use mindstellar\utility\AjaxResponse;
+
 class CWebAjax extends BaseModel
 {
     /**
@@ -45,25 +47,25 @@ class CWebAjax extends BaseModel
                 break;
             case 'regions': //Return regions given a countryId
                 $regions = Region::newInstance()->findByCountry(Params::getParam('countryId'));
-                echo json_encode($regions);
+                AjaxResponse::json($regions);
                 break;
             case 'cities': //Returns cities given a regionId
                 $cities = City::newInstance()->findByRegion(Params::getParam('regionId'));
-                echo json_encode($cities);
+                AjaxResponse::json($cities);
                 break;
             case 'location': // This is the autocomplete AJAX
                 $cities = City::newInstance()->ajax(Params::getParam('term'));
                 foreach ($cities as $k => $city) {
                     $cities[$k]['label'] = $city['label'] . ' (' . $city['region'] . ')';
                 }
-                echo json_encode($cities);
+                AjaxResponse::json($cities);
                 break;
             case 'location_countries': // This is the autocomplete AJAX
                 $countries = Country::newInstance()->ajax(Params::getParam('term'));
-                echo json_encode($countries);
+                AjaxResponse::json($countries);
                 break;
             case 'custom_field_autocomplete': // Suggestions for an AUTOCOMPLETE custom field
-                echo json_encode($this->customFieldAutocomplete(
+                AjaxResponse::json($this->customFieldAutocomplete(
                     (int) Params::getParam('field'),
                     (string) Params::getParam('term')
                 ));
@@ -71,12 +73,12 @@ class CWebAjax extends BaseModel
             case 'location_regions': // This is the autocomplete AJAX
                 $regions = Region::newInstance()
                     ->ajax(Params::getParam('term'), Params::getParam('country'));
-                echo json_encode($regions);
+                AjaxResponse::json($regions);
                 break;
             case 'location_cities': // This is the autocomplete AJAX
                 $cities =
                     City::newInstance()->ajax(Params::getParam('term'), Params::getParam('region'));
-                echo json_encode($cities);
+                AjaxResponse::json($cities);
                 break;
             case 'delete_image': // Delete images via AJAX
                 $ajax_photo = Params::getParam('ajax_photo');
@@ -97,7 +99,7 @@ class CWebAjax extends BaseModel
                         $success = @unlink(osc_content_path() . 'uploads/temp/' . $ajax_photo);
                     }
 
-                    echo json_encode(array(
+                    AjaxResponse::json(array(
                         'success' => $success,
                         'msg'     => _m($success
                             ? 'The selected photo has been successfully deleted'
@@ -122,7 +124,7 @@ class CWebAjax extends BaseModel
                     $json['success'] = false;
                     $json['msg']     =
                         _m("The selected photo couldn't be deleted, the url doesn't exist");
-                    echo json_encode($json);
+                    AjaxResponse::json($json);
 
                     return false;
                 }
@@ -133,7 +135,7 @@ class CWebAjax extends BaseModel
                 if (count($aItem) == 0) {
                     $json['success'] = false;
                     $json['msg']     = _m("The listing doesn't exist");
-                    echo json_encode($json);
+                    AjaxResponse::json($json);
 
                     return false;
                 }
@@ -143,7 +145,7 @@ class CWebAjax extends BaseModel
                     if ($userId != null && $userId != $aItem['fk_i_user_id']) {
                         $json['success'] = false;
                         $json['msg']     = _m("The listing doesn't belong to you");
-                        echo json_encode($json);
+                        AjaxResponse::json($json);
 
                         return false;
                     }
@@ -154,7 +156,7 @@ class CWebAjax extends BaseModel
                     ) {
                         $json['success'] = false;
                         $json['msg']     = _m("The listing doesn't belong to you");
-                        echo json_encode($json);
+                        AjaxResponse::json($json);
 
                         return false;
                     }
@@ -206,95 +208,20 @@ class CWebAjax extends BaseModel
                     $json['success'] = 'false';
                 }
 
-                echo json_encode($json);
+                AjaxResponse::json($json);
 
                 return true;
                 break;
             case 'alerts': // Allow to register to an alert given (not sure it's used on admin)
-                // Optionally require a logged-in user before creating a subscription, to stop
-                // anonymous email harvesting / confirmation-email abuse through this endpoint.
-                if (osc_get_preference('alerts_require_login') && !osc_is_web_user_logged_in()) {
-                    echo '-4';
+                echo (string)osc_subscribe_alert(Params::getParamString('alert'), Params::getParamString('email'));
 
-                    return false;
-                }
-                $encoded_alert = Params::getParam('alert');
-                $alert         = osc_decrypt_alert(base64_decode($encoded_alert));
-
-                // A token of the current format carries an authentication tag, so a forgery
-                // or a tampered token fails to decrypt at all and arrives here as ''. The
-                // JSON test below is what still covers a token minted by the previous
-                // release, whose format has no tag to check — it is the weaker of the two
-                // and the reason nothing mints that format any more.
-                if ($alert === '' || !is_array(json_decode($alert, true))) {
-                    echo '-2';
-
-                    return false;
-                }
-
-                $email  = Params::getParam('email');
-                // Owner id comes from the session, never the request: a caller-supplied
-                // userid would let an anonymous request attach the alert to a live user,
-                // whose active/enabled state then activates it immediately and skips the
-                // confirmation email. Anonymous always means 0 -> the double-opt-in path.
-                $userid = 0;
-
-                if (osc_is_web_user_logged_in()) {
-                    $userid = osc_logged_user_id();
-                    $user   = User::newInstance()->findByPrimaryKey($userid);
-                    $email  = $user['s_email'];
-                }
-
-                if ($alert != '' && $email != '') {
-                    if (osc_validate_email($email)) {
-                        $secret = osc_genRandomPassword();
-
-                        if ($alertID =
-                            Alerts::newInstance()->createAlert($userid, $email, $alert, $secret)
-                        ) {
-                            if ((int)$userid > 0) {
-                                $user = User::newInstance()->findByPrimaryKey($userid);
-                                if ($user['b_active'] == 1 && $user['b_enabled'] == 1) {
-                                    Alerts::newInstance()->activate($alertID);
-                                    echo '1';
-
-                                    return true;
-                                }
-
-                                echo '-1';
-
-                                return false;
-                            }
-
-                            $aAlert = Alerts::newInstance()->findByPrimaryKey($alertID);
-                            osc_run_hook(
-                                'hook_email_alert_validation',
-                                $aAlert,
-                                $email,
-                                $secret
-                            );
-
-                            echo '1';
-                        } else {
-                            echo '0';
-                        }
-
-                        return true;
-                    }
-
-                    echo '-1';
-
-                    return false;
-                }
-                echo '0';
-
-                return false;
+                return true;
                 break;
             case 'runhook': // run hooks
                 $hook = Params::getParam('hook');
 
                 if ($hook == '') {
-                    echo json_encode(array('error' => 'hook parameter not defined'));
+                    AjaxResponse::json(array('error' => 'hook parameter not defined'));
                     break;
                 }
 
@@ -327,7 +254,7 @@ class CWebAjax extends BaseModel
                 }
 
                 if ($file == '') {
-                    echo json_encode(array('error' => 'no action defined'));
+                    AjaxResponse::json(array('error' => 'no action defined'));
                     break;
                 }
 
@@ -335,12 +262,12 @@ class CWebAjax extends BaseModel
                 if (strpos($file, '../') !== false || strpos($file, '..\\') !== false
                     || stripos($file, '/admin/') !== false
                 ) { //If the file is inside an "admin" folder, it should NOT be opened in frontend
-                    echo json_encode(array('error' => 'no valid ajaxFile'));
+                    AjaxResponse::json(array('error' => 'no valid ajaxFile'));
                     break;
                 }
 
                 if (!file_exists(osc_plugins_path() . $file)) {
-                    echo json_encode(array('error' => "ajaxFile doesn't exist"));
+                    AjaxResponse::json(array('error' => "ajaxFile doesn't exist"));
                     break;
                 }
 
@@ -349,7 +276,7 @@ class CWebAjax extends BaseModel
                 // are followed.
                 $resolved = \mindstellar\security\PluginAjaxFile::resolve($file, osc_plugins_path());
                 if ($resolved === null) {
-                    echo json_encode(array('error' => 'no valid ajaxFile'));
+                    AjaxResponse::json(array('error' => 'no valid ajaxFile'));
                     break;
                 }
 
@@ -358,13 +285,13 @@ class CWebAjax extends BaseModel
             case 'check_username_availability':
                 $username = (new \mindstellar\utility\Sanitize())->username(Params::getParam('s_username'));
                 if (osc_is_username_blacklisted($username)) {
-                    echo json_encode(array('exists' => 1, 's_username' => $username));
+                    AjaxResponse::json(array('exists' => 1, 's_username' => $username));
                 } else {
                     $user = User::newInstance()->findByUsername($username);
                     if (isset($user['s_username'])) {
-                        echo json_encode(array('exists' => 1, 's_username' => $username));
+                        AjaxResponse::json(array('exists' => 1, 's_username' => $username));
                     } else {
-                        echo json_encode(array('exists' => 0, 's_username' => $username));
+                        AjaxResponse::json(array('exists' => 0, 's_username' => $username));
                     }
                 }
                 break;
@@ -379,7 +306,7 @@ class CWebAjax extends BaseModel
                         $uploader->handleUpload(osc_content_path() . 'uploads/temp/' . $filename);
                 } catch (Exception $e) {
                     trigger_error($e->getMessage(), E_USER_WARNING);
-                    echo json_encode(array('success' => false));
+                    AjaxResponse::json(array('success' => false));
                     break;
                 }
 
@@ -394,7 +321,7 @@ class CWebAjax extends BaseModel
                     );
                 } catch (Exception $e) {
                     trigger_error($e->getMessage(), E_USER_NOTICE);
-                    echo json_encode(array('success' => false));
+                    AjaxResponse::json(array('success' => false));
                     break;
                 }
                 try {
@@ -404,7 +331,7 @@ class CWebAjax extends BaseModel
                     );
                 } catch (Exception $e) {
                     trigger_error($e->getMessage(), E_USER_NOTICE);
-                    echo json_encode(array('success' => false));
+                    AjaxResponse::json(array('success' => false));
                     break;
                 }
 
@@ -420,7 +347,7 @@ class CWebAjax extends BaseModel
                 echo htmlspecialchars(json_encode($result), ENT_NOQUOTES);
                 break;
             default:
-                echo json_encode(array('error' => __('no action defined')));
+                AjaxResponse::json(array('error' => __('no action defined')));
                 break;
         }
     }

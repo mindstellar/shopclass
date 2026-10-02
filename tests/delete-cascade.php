@@ -25,8 +25,9 @@
  *    what t_meta_categories did to category deletion, and what
  *    t_form_submission_value did to custom-field deletion.
  *  - A child table with no foreign key at all, which nothing blocks and nothing
- *    cleans up: t_alerts, t_item_report_log, t_item_moderation_log,
- *    t_location_slug_history, t_form_submission.
+ *    cleans up: t_item_report_log, t_item_moderation_log, t_location_slug_history.
+ *    t_alerts and t_form_submission were in this list until 0054 gave them keys;
+ *    their models still delete them for installs without the keys.
  *  - t_billing_ledger and t_billing_order carry no foreign key either, but for the
  *    opposite reason: they are deliberately never cleaned up. The audit trail has to
  *    outlive the account it describes, so a row referencing a deleted user is meant
@@ -162,7 +163,7 @@ pin('its form membership went with it', 0, $rows('t_meta_group_fields', "fk_i_fi
 pin('the submission row itself survives the field', 1, $rows('t_form_submission', "pk_i_id = $submission"));
 
 /* ---------------------------------------------------------------------------
- * Form group -- submissions carry no foreign key, so only the model clears them.
+ * Form group -- submissions cascade and fields loosen; the model does both too.
  * ------------------------------------------------------------------------ */
 
 harness_section('FieldGroup::deleteByPrimaryKey — a form with submissions');
@@ -382,7 +383,7 @@ pin('plugin links are gone', 0, $rows('t_plugin_category', "fk_i_category_id = $
 pin('stats are gone', 0, $rows('t_category_stats', "fk_i_category_id = $child"));
 
 /* ---------------------------------------------------------------------------
- * User, including t_alerts which has no foreign key.
+ * User, including t_alerts.
  * ------------------------------------------------------------------------ */
 
 harness_section('User::deleteUser — a user with listings and alerts');
@@ -396,6 +397,19 @@ seed_exec(
      VALUES ('owner@example.test', ?, 'a:0:{}', 'sec', 1, 'DAILY', NOW())",
     'i',
     array($owner)
+);
+$ownerGroup = seed_exec(
+    $admin,
+    "INSERT INTO {$prefix}t_meta_group (s_name, s_slug, i_position) VALUES ('Owner form', 'owner-form', 0)",
+    '',
+    array()
+);
+$ownerSubmission = seed_exec(
+    $admin,
+    "INSERT INTO {$prefix}t_form_submission (fk_i_group_id, s_context_type, i_context_id, fk_i_user_id, s_status, dt_created)
+     VALUES (?, 'test', 0, ?, 'new', NOW())",
+    'ii',
+    array($ownerGroup, $owner)
 );
 seed_exec(
     $admin,
@@ -452,6 +466,8 @@ pin('the user delete reports success', true, $ok);
 pin('the user is gone', 0, $rows('t_user', "pk_i_id = $owner"));
 pin('their listings went with them', 0, $rows('t_item', "pk_i_id = $owned"));
 pin('their alerts went with them', 0, $rows('t_alerts', "fk_i_user_id = $owner"));
+pin('their form submissions went with them', 0, $rows('t_form_submission', "fk_i_user_id = $owner"));
+pin('and their submission id is gone', 0, $rows('t_form_submission', "pk_i_id = $ownerSubmission"));
 pin('their profile went with them', 0, $rows('t_user_description', "fk_i_user_id = $owner"));
 pin('their pending email change went with them', 0, $rows('t_user_email_tmp', "fk_i_user_id = $owner"));
 pin('their wallet went with them', 0, $rows('t_billing_wallet', "fk_i_user_id = $owner"));
@@ -520,7 +536,9 @@ $fks = $admin->query(
 );
 
 $checked = 0;
+$swept   = array();
 while ($fk = $fks->fetch_assoc()) {
+    $swept[] = "{$fk['TABLE_NAME']}.{$fk['COLUMN_NAME']}";
     $orphans = $count(
         "SELECT COUNT(*) c FROM {$fk['TABLE_NAME']} c
            LEFT JOIN {$fk['REFERENCED_TABLE_NAME']} p
@@ -533,13 +551,17 @@ while ($fk = $fks->fetch_assoc()) {
 $fks->free();
 
 check('the sweep actually inspected the schema', $checked > 30, "only $checked keys seen");
+$added = array(
+    "{$prefix}t_item_description.fk_i_item_id",
+    "{$prefix}t_item_description.fk_c_locale_code",
+    "{$prefix}t_meta_fields.fk_i_group_id",
+    "{$prefix}t_form_submission.fk_i_group_id",
+    "{$prefix}t_alerts.fk_i_user_id",
+    "{$prefix}t_form_submission.fk_i_user_id",
+);
+pin('the sweep covers the keys 0054-0057 added', $added, array_values(array_intersect($added, $swept)));
 
 /* The foreign-key-free tables the sweep cannot reach, checked by hand. */
-pin('no alerts for a missing user', 0, $count(
-    "SELECT COUNT(*) c FROM {$prefix}t_alerts a
-       LEFT JOIN {$prefix}t_user u ON a.fk_i_user_id = u.pk_i_id
-      WHERE a.fk_i_user_id IS NOT NULL AND u.pk_i_id IS NULL"
-));
 pin('no report log for a missing item', 0, $count(
     "SELECT COUNT(*) c FROM {$prefix}t_item_report_log r
        LEFT JOIN {$prefix}t_item i ON r.fk_i_item_id = i.pk_i_id
@@ -549,11 +571,6 @@ pin('no moderation log for a missing item', 0, $count(
     "SELECT COUNT(*) c FROM {$prefix}t_item_moderation_log m
        LEFT JOIN {$prefix}t_item i ON m.fk_i_item_id = i.pk_i_id
       WHERE i.pk_i_id IS NULL"
-));
-pin('no submissions for a missing form', 0, $count(
-    "SELECT COUNT(*) c FROM {$prefix}t_form_submission s
-       LEFT JOIN {$prefix}t_meta_group g ON s.fk_i_group_id = g.pk_i_id
-      WHERE g.pk_i_id IS NULL"
 ));
 pin('no city slug history for a missing city', 0, $count(
     "SELECT COUNT(*) c FROM {$prefix}t_location_slug_history h

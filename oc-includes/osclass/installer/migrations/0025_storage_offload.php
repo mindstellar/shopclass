@@ -10,6 +10,7 @@
 
 use mindstellar\database\Connection;
 use mindstellar\migration\MigrationInterface;
+use mindstellar\migration\SchemaProbes;
 
 /**
  * The storage-offload tables, which shipped in 6.0.0 declared only in struct.sql.
@@ -27,6 +28,8 @@ use mindstellar\migration\MigrationInterface;
  * written before any offload existed keep pointing at the filesystem.
  */
 return new class () implements MigrationInterface {
+    use SchemaProbes;
+
     /**
      * Create t_storage_queue and add s_storage to t_item_resource.
      *
@@ -63,26 +66,4 @@ return new class () implements MigrationInterface {
         }
     }
 
-    /**
-     * Whether $column already exists on $table in the current database.
-     *
-     * @param Connection $conn
-     * @param string     $table
-     * @param string     $column
-     *
-     * @return bool
-     * @throws \mindstellar\database\DbException
-     */
-    private function columnExists(Connection $conn, string $table, string $column): bool
-    {
-        $count = $conn->scalar(
-            'SELECT COUNT(*) FROM information_schema.COLUMNS'
-            . ' WHERE TABLE_SCHEMA = DATABASE()'
-            . ' AND TABLE_NAME = ?'
-            . ' AND COLUMN_NAME = ?',
-            array($table, $column)
-        );
-
-        return (int) $count > 0;
-    }
 };

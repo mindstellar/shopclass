@@ -68,7 +68,7 @@ if (!defined('ABS_PATH')) {
      set only on the standalone shell. Inside a theme the page's links are the
      theme's links, which is what makes a core-rendered page read as part of the
      site rather than as a panel dropped into it. */
-  body.oe-page a{color:var(--oe-teal);}
+  body.oe-page a,body.oe-page .oe-link-btn{color:var(--oe-teal);}
   /* Headings carry user text -- a member's name, a listing title -- so one
      long token must wrap rather than widen the page. */
   .oe-page .oe-h1{font-size:1.5rem;font-weight:600;letter-spacing:-.01em;margin:0 0 20px;overflow-wrap:anywhere;}
@@ -154,6 +154,14 @@ if (!defined('ABS_PATH')) {
   }
   .oe-page .oe-num,.oe-page .oe-bill-num{text-align:right;font-variant-numeric:tabular-nums;}
   .oe-page .oe-scroll{overflow-x:auto;}
+  /* On a phone a billing row stacks into label/value pairs instead of scrolling sideways. */
+  @media (max-width:40rem){
+    .oe-page .oe-bill thead{position:absolute;inline-size:1px;block-size:1px;overflow:hidden;clip-path:inset(50%);}
+    .oe-page .oe-bill :is(table,tbody,tr,td){display:block;}
+    .oe-page .oe-bill tr{padding-block:8px;border-block-end:1px solid var(--oe-rule);}
+    .oe-page .oe-bill td{display:flex;justify-content:space-between;gap:16px;padding:4px 0;border:0;text-align:end;}
+    .oe-page .oe-bill td[data-label]::before{content:attr(data-label);color:var(--oe-ink-muted);font-size:.8125rem;text-align:start;}
+  }
 
   /* Un-scoped: the alert form uses .oe-muted for its subscribed notice. */
   .oe-muted,.oe-bill-sub{color:var(--oe-ink-muted);margin:4px 0 0;font-size:.875rem;}
@@ -243,9 +251,41 @@ if (!defined('ABS_PATH')) {
     display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px;
     color:var(--oe-ink-muted); font-size:.875rem; margin:6px 0 0;
   }
+  .oe-page .oe-row-actions{margin-block-start:4px;}
+  .oe-page .oe-dashboard-intro{margin-block-end:12px;}
+  .oe-page .oe-dashboard-actions{margin-block-end:24px;}
+  /* A titled group of form fields; .oe-grid lays its fields two to a row where there is room. */
+  .oe-page .oe-group{border:0;padding:0;margin:0 0 28px;min-inline-size:0;}
+  .oe-page .oe-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,14rem),1fr));gap:0 16px;}
+  .oe-page .oe-avatar-field{display:flex;flex-wrap:wrap;align-items:flex-start;gap:16px;}
+  .oe-page .oe-avatar-empty{opacity:.7;}
+  .oe-page .oe-dashboard-title{margin-block-start:8px;}
+  .oe-page .oe-dashboard-more{margin-block-start:12px;}
+  .oe-page .oe-danger-link{color:var(--oe-danger);}
+  .oe-page .oe-row-promote{font-size:.8125rem;}
+  .oe-page .oe-inline-form{display:inline;margin:0;}
+  .oe-page .oe-link-btn{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;}
+  .oe-page .oe-link-btn.oe-danger-link{color:var(--oe-danger);}
+  /* Status filter over a list. aria-current carries the state; the look follows it. */
+  .oe-page .oe-tabs{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 16px;border-block-end:1px solid var(--oe-rule);}
+  .oe-page .oe-tabs a{padding:8px 12px;text-decoration:none;color:var(--oe-ink-muted);border-block-end:2px solid transparent;margin-block-end:-1px;}
+  .oe-page .oe-tabs a:hover{color:inherit;}
+  .oe-page .oe-tabs [aria-current]{color:inherit;font-weight:600;border-block-end-color:currentColor;}
   /* Set apart from everything routine above it, not decorated. */
   .oe-page .oe-danger{margin-block-start:3rem;padding-block-start:1.5rem;border-block-start:1px solid var(--oe-rule);}
   .oe-page .oe-danger h2{color:var(--oe-danger);}
+  .oe-page .oe-profile-head{margin-block-end:1.5rem;}
+  .oe-page .oe-contact-open{white-space:nowrap;}
+  .oe-page .oe-form-error{margin:0 0 16px;padding:10px 14px;border:1px solid var(--oe-danger);border-radius:6px;background:#ffe9e5;color:var(--oe-danger);}
+  /* Without the dialog script a dialog shows in place, so the page still works. */
+  .oe-page .oe-dialog:not([data-osc-dialog-ready]){display:block;position:static;inset:auto;margin:1.5rem 0 0;padding:0;border:0;max-inline-size:none;background:none;color:inherit;}
+  .oe-page .oe-dialog:not([data-osc-dialog-ready]) .oe-dialog-close{display:none;}
+  .oe-dialog[data-osc-dialog-ready]{inline-size:min(34rem,calc(100% - 32px));padding:0;border:1px solid var(--oe-rule);border-radius:8px;background:var(--oe-bench,#fff);color:inherit;}
+  .oe-dialog[data-osc-dialog-ready]::backdrop{background:rgba(0,0,0,.45);}
+  .oe-dialog-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;border-block-end:1px solid var(--oe-rule);}
+  .oe-dialog-head h2{margin:0;font-size:1.0625rem;}
+  .oe-dialog-close{font:inherit;font-size:1.5rem;line-height:1;background:none;border:0;padding:4px;cursor:pointer;color:inherit;}
+  .oe-dialog-body{padding:16px 20px 20px;}
   .oe-page .oe-avatar{display:block;inline-size:96px;block-size:96px;object-fit:cover;border-radius:50%;background:var(--oe-bench-sunk);margin-block-end:.6rem;}
   .oe-page .oe-thumb{
     flex:none; display:block; inline-size:5.5rem; block-size:auto; aspect-ratio:6/5;
@@ -265,6 +305,9 @@ if (!defined('ABS_PATH')) {
   /* A page that is one form: sign in, register, reset a password. Bounded so a
      single column of fields still reads as one object at any window width. */
   .oe-page .oe-form-page{max-inline-size:30rem;}
+  /* The contact form, and an aside beside it when a theme or plugin fills one. */
+  .oe-page .oe-contact{display:grid;gap:32px;align-items:start;grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr));}
+  .oe-page .oe-contact-main{max-inline-size:30rem;min-inline-size:0;}
   /* Core's register validator writes <li> into #error_list and never changes its
      visibility, so the box is its own switch: nothing at all until it has one. */
   .oe-page #error_list{list-style:none;margin:0;padding:0;}

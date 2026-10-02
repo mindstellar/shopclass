@@ -298,6 +298,18 @@ class AdminSecBaseModel
 
         include $copy;
     }
+
+    /** Mirrors the real guard: flashes, redirects, and says that it refused. */
+    protected function refuseOnDemo($redirectUrl = null)
+    {
+        if (!defined('DEMO')) {
+            return false;
+        }
+        osc_add_flash_warning_message('This action cannot be done because it is a demo site', 'admin');
+        $this->redirectTo($redirectUrl ?? osc_admin_base_url(true));
+
+        return true;
+    }
 }
 
 foreach (array(
@@ -475,7 +487,8 @@ pin(
         'auto_cron'                    => 'osclass/auto_cron',
         'googlemaps_api_key'           => 'osclass/googlemaps_api_key',
         'openstreet_api_key'           => 'osclass/openstreet_api_key',
-        'allow_update_prerelease'      => 'osclass/allow_update_prerelease',
+        'update_channel'               => 'osclass/update_channel',
+        'auto_security_updates'        => 'osclass/auto_security_updates',
     ),
     keymap(MainSettingsForm::register())
 );
@@ -640,7 +653,8 @@ pin(
         'dimPreview'            => 'osclass/dimPreview',
         'dimNormal'             => 'osclass/dimNormal',
         'keep_original_image'   => 'osclass/keep_original_image',
-        'force_jpeg'            => 'osclass/force_jpeg',
+        'browser_resize'        => 'osclass/browser_resize',
+        'image_format'          => 'osclass/image_format',
         'jpeg_quality'          => 'osclass/jpeg_quality',
         'force_aspect_image'    => 'osclass/force_aspect_image',
         'maxSizeKb'             => 'osclass/maxSizeKb',
@@ -676,6 +690,8 @@ pin(
         'storage_s3_signed_urls' => 'osclass/storage_s3_signed_urls',
         'storage_s3_signed_ttl'  => 'osclass/storage_s3_signed_ttl',
         'storage_keep_local'     => 'osclass/storage_keep_local',
+        'storage_s3_backup_bucket' => 'osclass/storage_s3_backup_bucket',
+        'backup_keep'            => 'osclass/backup_keep',
     ),
     keymap(StorageSettingsForm::register())
 );
@@ -702,7 +718,8 @@ $main = array(
     'auto_cron'                    => '1',
     'googlemaps_api_key'           => ' gmk ',
     'openstreet_api_key'           => 'osm',
-    'allow_update_prerelease'      => '1',
+    'update_channel'               => 'beta',
+    'auto_security_updates'        => '1',
 );
 $run = drive('CAdminSettingsMain', 'update', $main);
 
@@ -715,6 +732,8 @@ pin('the latest-listings count lands under the key readers use', array('9', 'INT
 pin('and the search page size under its own', array('20', 'INTEGER'), pref($admin, 'defaultResultsPerPage@search'));
 pin('the attachment switch under contact_attachment', array('1', 'BOOLEAN'), pref($admin, 'contact_attachment'));
 check('and not under the name of its control', pref($admin, 'enabled_attachment') === null);
+pin('the update channel is stored as chosen', array('beta', 'STRING'), pref($admin, 'update_channel'));
+pin('the security updates switch is stored as a boolean', array('1', 'BOOLEAN'), pref($admin, 'auto_security_updates'));
 pin('a hidden date format is stored like any other value', array('Y/m/d', 'STRING'), pref($admin, 'dateFormat'));
 pin('and the time format is stored beside it', array('H:i', 'STRING'), pref($admin, 'timeFormat'));
 pin('a key is trimmed', array('gmk', 'STRING'), pref($admin, 'googlemaps_api_key'));
@@ -1281,6 +1300,7 @@ $media = array(
     'dimPreview'           => '480x340',
     'dimNormal'            => ' 640x480 ',
     'keep_original_image'  => '1',
+    'image_format'         => 'jpeg',
     'jpeg_quality'         => '70',
     'maxSizeKb'            => '1024',
     'use_imagick'          => '1',
@@ -1303,7 +1323,8 @@ pin('and goes back to the screen', array('https://example.test/oc-admin/index.ph
 pin('an image size is lower-cased', array('240x200', 'STRING'), pref($admin, 'dimThumbnail'));
 pin('and trimmed', array('640x480', 'STRING'), pref($admin, 'dimNormal'));
 pin('a ticked switch is a boolean', array('1', 'BOOLEAN'), pref($admin, 'keep_original_image'));
-pin('an unticked one stores a zero', array('0', 'BOOLEAN'), pref($admin, 'force_jpeg'));
+pin('an unticked one stores a zero', array('0', 'BOOLEAN'), pref($admin, 'browser_resize'));
+pin('the photo format is stored', array('jpeg', 'STRING'), pref($admin, 'image_format'));
 pin(
     'ImageMagick is on only where the library is loaded',
     array(extension_loaded('imagick') ? '1' : '0', 'STRING'),
@@ -1609,6 +1630,16 @@ foreach (array(
     array('storage_s3_signed_ttl', '', '900', 'and a blank one'),
     array('storage_s3_signed_ttl', 'soon', '900', 'and one with no number in it'),
     array('storage_s3_signed_ttl', array('3600'), '900', 'and one posted as a list'),
+    array('storage_s3_backup_bucket', 'shop-backups', 'shop-backups', 'a backups bucket name is kept'),
+    array('storage_s3_backup_bucket', ' Shop-Backups ', 'shop-backups', 'trimmed and lowercased'),
+    array('storage_s3_backup_bucket', 'shop/backups', '', 'one with a slash is blank'),
+    array('storage_s3_backup_bucket', 'ab', '', 'and one too short'),
+    array('storage_s3_backup_bucket', '', '', 'a blank one stays blank, meaning the bucket above'),
+    array('storage_s3_backup_bucket', array('x'), '', 'and one posted as a list'),
+    array('backup_keep', '7', '7', 'a number of backups kept is kept'),
+    array('backup_keep', '0', '5', 'zero keeps 5'),
+    array('backup_keep', '1000', '100', 'past 100 is held to 100'),
+    array('backup_keep', 'many', '5', 'and one with no number in it keeps 5'),
 ) as $case) {
     $run = drive('CAdminSettingsStorage', 'storage_post', array($case[0] => $case[1]) + $storage);
     pin($case[3], $case[2], pref($admin, $case[0])[0] ?? null);
@@ -1657,7 +1688,9 @@ pin('lifetime', array(60, 604800, 900, 900), array(StorageSettingsForm::ttl('59'
 // The Better S3 adoption writes the endpoint through the controller's own guard, which has to
 // answer exactly as the declared one does.
 $guard = new ReflectionMethod('CAdminSettingsStorage', '_httpUrlOrEmpty');
-$guard->setAccessible(true);
+if (PHP_VERSION_ID < 80100) {
+    $guard->setAccessible(true);
+}
 foreach (array('https://a.example.test', 'javascript:alert(1)', 'data:text/plain,x', 'https://' . 'x y.test', '') as $url) {
     pin(
         'the adoption guard and the declared one agree on "' . $url . '"',

@@ -6,31 +6,29 @@ sidebar:
 ---
 
 Every classifieds site needs a handful of pages that are not listings: About,
-Terms, Privacy, How it works, Contact. As the admin puts it: *static pages like
-"About Us" or "Info" live here.*
+Terms, Privacy, How it works, Contact.
 
 **Pages** in the admin panel.
 
 ## Creating a page
 
 **Pages → Add page**. A page has a title and body per active language, and a
-URL slug derived from the title.
+URL slug (the name as it appears in web addresses) taken from the title.
 
-Pages are linked from the footer automatically, which is also why deleting one
-warns you: *this permanently removes the page and any link to it in the footer.*
+To link a page from the site footer, tick **Show a link in the footer** in the
+page's settings. It is off for a new page. Deleting a page also removes its
+footer link.
 
 ## Two ways to build one
 
-**The text editor** is the default: a rich-text field, right for prose. Terms
-and Privacy want exactly this.
+Pick the **Page template** field when creating the page:
 
-**Page builder (blocks)** composes the page from widget blocks instead, as the
-admin puts it: *"compose this page from widget blocks instead of the text
-editor"*. Right for a landing page or a How-it-works page with images and
-sections.
+- **Default template**: the text editor. A rich-text field, right for prose.
+  Terms and Privacy want exactly this.
+- **Page builder (blocks)**: composes the page from widget blocks instead.
+  Right for a landing page or a How-it-works page with images and sections.
 
-Pick the template when creating the page. The available blocks are the same
-widget types used elsewhere:
+The available blocks are the same widget types used elsewhere:
 
 | Block | What it is |
 |---|---|
@@ -70,4 +68,4 @@ Beyond taste, some of these are load-bearing:
 - **Custom Code blocks run on visitors' browsers.** Paste only what you
   understand, from a source you trust.
 - **Write each language.** A page with an empty translation shows empty to
-  visitors in that language. See [languages](/docs/use/languages/).
+  visitors in that language: see [languages](/docs/use/languages/).

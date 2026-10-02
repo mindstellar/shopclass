@@ -17,6 +17,9 @@
  */
 class User extends DAO
 {
+    /** Seconds an s_pass_code stays valid, for both password reset and e-mail change. */
+    public const PASS_CODE_TTL = 86400;
+
     /**
      *
      * @var \User
@@ -98,7 +101,10 @@ class User extends DAO
         // term is bound; legacy like(..., 'after') matched a prefix and escaped
         // %/_ in the payload, reproduced here. LIMIT 0, 10 is offset 0, count 10.
         $pattern = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), (string)$query) . '%';
-        $sql     = 'SELECT pk_i_id as id, CONCAT(s_name, \' (\', s_email, \')\') as label, s_name as value'
+        // The e-mail is its own key as well as part of the label: the admin listing editor
+        // resolves a seller by e-mail, and reading it back out of a label is guesswork.
+        $sql     = 'SELECT pk_i_id as id, CONCAT(s_name, \' (\', s_email, \')\') as label, s_name as value,'
+            . ' s_email as email'
             . ' FROM ' . $this->getTableName()
             . ' WHERE s_name LIKE ? OR s_email LIKE ? LIMIT 10';
 
@@ -320,7 +326,7 @@ class User extends DAO
         if ($secret == '') {
             return null;
         }
-        $date = date('Y-m-d H:i:s', time() - (24 * 3600));
+        $date = date('Y-m-d H:i:s', time() - self::PASS_CODE_TTL);
 
         // Same string comparison as findByIdSecret: the reset code is a VARCHAR,
         // and comparing it numerically let "0" match any code beginning with a
@@ -371,18 +377,33 @@ class User extends DAO
 
             ItemComment::newInstance()->delete(array('fk_i_user_id' => $id));
 
-            // t_alerts carries no foreign key to the user, so only this removes it.
-            // The other two are covered by ON DELETE CASCADE as well, and stay listed
-            // for installs whose foreign keys were never created. t_billing_ledger and
-            // t_billing_order are deliberately left alone: the accounting record has to
-            // outlive the account, which is why neither has a foreign key either.
-            $dependents = array('t_user_email_tmp', 't_user_description', 't_alerts');
+            // All four cascade, and stay listed for installs whose foreign keys were
+            // never created. t_billing_ledger and t_billing_order are deliberately left
+            // alone: the accounting record has to outlive the account, so neither has a
+            // foreign key.
+            $dependents = array('t_user_email_tmp', 't_user_description', 't_alerts', 't_form_submission');
+
+            // The user's own t_resource rows (avatars) go in the same transaction; their
+            // stored files are removed only after it commits.
+            $ownerType = \mindstellar\model\Resource::OWNER_USER;
+            try {
+                $resources = osc_db_table(DB_TABLE_PREFIX . 't_resource')
+                    ->where('s_owner_type', $ownerType)
+                    ->where('i_owner_id', (int)$id)
+                    ->get();
+            } catch (\mindstellar\database\DbException $e) {
+                $resources = array();
+            }
 
             try {
-                $deleted = osc_db_transaction(function () use ($id, $dependents) {
+                $deleted = osc_db_transaction(function () use ($id, $dependents, $ownerType) {
                     foreach ($dependents as $depTable) {
                         osc_db_table(DB_TABLE_PREFIX . $depTable)->where('fk_i_user_id', $id)->delete();
                     }
+                    osc_db_table(DB_TABLE_PREFIX . 't_resource')
+                        ->where('s_owner_type', $ownerType)
+                        ->where('i_owner_id', (int)$id)
+                        ->delete();
 
                     return osc_db_table($this->getTableName())->where('pk_i_id', $id)->delete();
                 });
@@ -393,6 +414,11 @@ class User extends DAO
             }
 
             if ($deleted === 1) {
+                try {
+                    (new \mindstellar\storage\ResourceUploader())->purgeDeleted($resources);
+                } catch (\Throwable $e) {
+                    error_log('deleteUser: stored files of user ' . (int)$id . ' not removed: ' . $e->getMessage());
+                }
                 osc_run_hook('after_delete_user', $id);
 
                 return true;
@@ -494,6 +520,9 @@ class User extends DAO
      *         The two counts stay int 0 on failure and are strings otherwise
      * @since  2.4
      */
+    /** The comparisons a structured search condition may ask for. */
+    private const SEARCH_OPERATORS = array('=', '!=', '<>', '<', '<=', '>', '>=', 'LIKE', 'NOT LIKE');
+
     public function search(
         $start = 0,
         $end = 10,
@@ -526,8 +555,7 @@ class User extends DAO
 
         // $order_column is allowlisted; $order_direction reproduces the legacy
         // ASC/DESC/RAND() handling. The where values are bound. LIMIT $start,$end
-        // is offset $start, count $end (the emitted comma form). SQL_CALC_FOUND_ROWS
-        // and the aliased select keep this hand-written.
+        // is offset $start, count $end (the emitted comma form).
         if (!preg_match('/^[A-Za-z0-9_.]+$/', (string)$order_column)) {
             $order_column = 'pk_i_id';
         }
@@ -540,12 +568,40 @@ class User extends DAO
         } else {
             $orderSql = $order_column . $direction;
         }
+        $orderSql .= $this->idTieBreak($order_column, $direction);
 
         $params = array();
-        $sql    = 'SELECT SQL_CALC_FOUND_ROWS * FROM ' . $this->getTableName();
+        $where  = '';
         if (is_array($fields) && count($fields) > 0) {
             $clauses = array();
             foreach ($fields as $k => $v) {
+                // A structured condition: one bound value tested against one or more
+                // columns. Anything beyond equality has to arrive this way -- the admin
+                // search used to pass whole SQL fragments as the array key, which the
+                // column allowlist below then dropped without a word, so every search
+                // quietly returned the unfiltered list.
+                if (is_array($v) && isset($v['columns'])) {
+                    $columns = array();
+                    foreach ((array)$v['columns'] as $column) {
+                        if (preg_match('/^[A-Za-z0-9_.]+$/', (string)$column)) {
+                            $columns[] = (string)$column;
+                        }
+                    }
+                    if ($columns === array()) {
+                        continue;
+                    }
+                    $operator = strtoupper(trim((string)($v['op'] ?? '=')));
+                    if (!in_array($operator, self::SEARCH_OPERATORS, true)) {
+                        $operator = '=';
+                    }
+                    $parts = array();
+                    foreach ($columns as $column) {
+                        $parts[]  = $column . ' ' . $operator . ' ?';
+                        $params[] = $v['value'] ?? null;
+                    }
+                    $clauses[] = count($parts) > 1 ? '(' . implode(' OR ', $parts) . ')' : $parts[0];
+                    continue;
+                }
                 // Each key is a fixed column name supplied by the wrapper methods,
                 // validated against the same allowlist as the sort column; each
                 // value is bound.
@@ -556,11 +612,12 @@ class User extends DAO
                 $params[]  = $v;
             }
             if (count($clauses) > 0) {
-                $sql .= ' WHERE ' . implode(' AND ', $clauses);
+                $where = implode(' AND ', $clauses);
             }
         }
-        $sql .= ' ORDER BY ' . $orderSql;
-        $sql .= ' LIMIT ' . (int)$start . ', ' . (int)$end;
+        $sql = 'SELECT * FROM ' . $this->getTableName() . ($where !== '' ? ' WHERE ' . $where : '')
+            . ' ORDER BY ' . $orderSql
+            . ' LIMIT ' . (int)$start . ', ' . (int)$end;
 
         try {
             $users['users'] = osc_db_stringify_rows(osc_db_select($sql, $params));
@@ -568,15 +625,11 @@ class User extends DAO
             return $users;
         }
 
-        $total = osc_db_scalar('SELECT FOUND_ROWS() as total');
-        if ($total) {
-            $users['total_results'] = (string)$total;
+        $counts = $this->pagedCounts($where, $params);
+        if ($counts === null) {
+            return $users;
         }
-
-        $rows = osc_db_scalar('SELECT COUNT(*) as total FROM ' . $this->getTableName());
-        if ($rows) {
-            $users['rows'] = (string)$rows;
-        }
+        [$users['total_results'], $users['rows']] = $counts;
 
         return $users;
     }

@@ -21,8 +21,8 @@
 
 namespace mindstellar\upgrade;
 
+use mindstellar\admin\DatabaseTools;
 use mindstellar\database\Connection;
-use mindstellar\database\SchemaReconciler;
 use mindstellar\migration\MigrationRunner;
 use mindstellar\utility\FileSystem;
 use mindstellar\utility\Utils;
@@ -48,41 +48,28 @@ class Osclass extends UpgradePackage
         array $package_info,
         bool  $force_upgrade = false
     ) {
-        $enable_prerelease = false;
-        if (osc_get_preference('allow_update_prerelease')) {
-            $enable_prerelease = true;
-        }
-        if (defined('ENABLE_PRERELEASE') && ENABLE_PRERELEASE === true) {
-            $enable_prerelease = true;
-        }
-
-        parent::__construct($package_info, $force_upgrade, $enable_prerelease);
+        parent::__construct($package_info, $force_upgrade, ReleaseChannel::current() !== ReleaseChannel::STABLE);
     }
 
     /**
-     * Upgrade Shopclass Database.
+     * Releases ship shopclass_v*.zip wrapped in shopclass/, and osclass_v*.zip wrapped in
+     * osclass/ for installs whose updater knows only that name.
      *
-     * The migrations are what build the schema. Every change to struct.sql is
-     * required to have a migration behind it, and tests/schema-drift.php holds each
-     * release to that by rebuilding the schema from migrations alone and refusing to
-     * pass if the reconciler is left with anything to do.
+     * @return array<string>
+     */
+    public function getFolderNames(): array
+    {
+        return array('shopclass', 'osclass');
+    }
+
+    /**
+     * Upgrade Shopclass Database by running the pending migrations.
      *
-     * The reconciler still runs first, and still repairs. What it is for is an install
-     * that has drifted by some route the migrations cannot know about -- a
-     * hand-edited column, a plugin's leftovers, an upgrade interrupted half way -- and
-     * on an install in good order it now finds nothing and issues nothing. Anything it
-     * does apply is reported back in `repairs` rather than being applied silently,
-     * because on a healthy install that list is expected to be empty and a non-empty
-     * one is worth seeing.
+     * Migrations alone build the schema; tests/schema-drift.php holds every release to that.
+     * Repairing a drifted install is opt-in: `db:repair` or System info > Database.
      *
-     * It runs before the migrations rather than after, which is the order this has
-     * always used: an install coming from a much older release runs the whole
-     * migration sequence in one go, and repairing the schema first is what has made
-     * that work. The drift check covers the last release only, so there is no evidence
-     * to justify reversing it.
-     *
-     * @param bool $skip_db        continue even when the reconciler reports failed statements
-     * @param bool $skip_reconcile run the migrations alone, without the repair pass
+     * @param bool $skip_db        deprecated since 6.4.0, ignored
+     * @param bool $skip_reconcile deprecated since 6.4.0, ignored
      *
      * @return false|string
      */
@@ -99,44 +86,7 @@ class Osclass extends UpgradePackage
         // tab closed halfway through leaves the schema mid-migration for no reason.
         ignore_user_abort(true);
 
-        $repairs = array();
-
-        if (file_exists(osc_lib_path() . 'osclass/installer/struct.sql')) {
-            if ($skip_reconcile) {
-                $status       = true;
-                $message      = array();
-                $errorQueries = array();
-            } else {
-                $sql = file_get_contents(osc_lib_path() . 'osclass/installer/struct.sql');
-
-                $result = (new SchemaReconciler(Connection::instance()))
-                    ->reconcile(str_replace('/*TABLE_PREFIX*/', DB_TABLE_PREFIX, $sql));
-                list($status, $message, $errorQueries) = $result;
-
-                // The second element is every statement the pass ran, keyed by table
-                // where it creates one. Only the ones that succeeded are a repair.
-                $repairs = array_values(array_diff(array_values($message), $errorQueries));
-            }
-        }
-        if (isset($status, $message, $errorQueries)) {
-            if (!$skip_db && count($errorQueries) > 0) {
-                $skip_db_link = osc_admin_base_url(true) . '?page=upgrade&confirm=true&skipdb=true';
-                $message      = '<p>';
-                $message      .= __('Shopclass &raquo; Has some errors') . PHP_EOL;
-                $message      .= __('We\'ve encountered some problems while updating the database structure. The following queries failed:');
-                $message      .= '</p>' . PHP_EOL;
-                $message      .= '<pre>';
-                $message      .= implode(PHP_EOL, $errorQueries) . PHP_EOL;
-                $message      .= '</pre>';
-                $message      .= __('These errors could be false-positive errors.');
-                $message      .= __(" If you're sure that is the case, you can continue with the upgrade.");
-                $message      .= '<a class="btn btn-sm btn-primary" href="' . $skip_db_link . '">' . __('Continue with upgrade') . '</a>';
-                $message      .= __(" Or you can ask for help in our community discussions");
-                $message      .= ': <a class="btn btn-sm btn-info" href="https://github.com/mindstellar/shopclass/discussions">' . __('Community discussions') . '</a>';
-
-                return json_encode(['error' => 2, 'message' => $message]);
-            }
-
+        if (is_dir(DatabaseTools::migrationsDir())) {
             // Legacy installs store the version as an MMN integer (3.9.0 => 390); modern ones
             // store a dotted string (5.3.0.dev). Only the former can predate 3.9.0, so restrict
             // the numeric comparison to numeric values — a dotted string is always newer.
@@ -151,16 +101,15 @@ class Osclass extends UpgradePackage
 
             osc_set_preference('admin_theme', 'modern');
 
-            $runner = new MigrationRunner(Connection::instance(), osc_lib_path() . 'osclass/installer/migrations');
+            $runner = new MigrationRunner(Connection::instance(), DatabaseTools::migrationsDir());
             $runner->ensureLedger();
             $migrated = $runner->run();
             if (!$migrated['ok']) {
                 return json_encode([
                     'error'   => 3,
-                    'message' => sprintf(
-                        __('Migration failed: %s'),
-                        $migrated['failed']
-                    ) . ' — ' . $migrated['error']
+                    'message' => !empty($migrated['busy'])
+                        ? __('Another upgrade is already running. Wait for it to finish, then try again.')
+                        : sprintf(__('Migration failed: %s'), $migrated['failed']) . ' — ' . $migrated['error'],
                 ]);
             }
 
@@ -187,11 +136,9 @@ class Osclass extends UpgradePackage
             return json_encode([
                 'error'   => 0,
                 'message' => __('Shopclass DB Upgraded Successfully'),
-                // What the upgrade actually did, for the screen to report back. Both
-                // are normally empty on a site that is already current, which is worth
-                // saying out loud rather than leaving the owner to guess.
+                // What the upgrade actually did, for the screen to report back. Empty on a
+                // site that is already current.
                 'applied' => array_values($migrated['applied']),
-                'repairs' => $repairs,
                 'version' => self::newVersionOnDisk(),
             ]);
         }
@@ -207,14 +154,13 @@ class Osclass extends UpgradePackage
      * has already replaced default-constants.php on disk, but OSCLASS_VERSION was
      * defined at the start of the request from the OLD code and cannot be
      * redefined — so recording it would write the pre-upgrade version into the
-     * `version` preference, which then never catches up. This upgrade reconciled
-     * the schema against the struct.sql and migrations already on disk, so the
-     * version it records must come from disk too. Falls back to the constant when
+     * `version` preference, which then never catches up. This upgrade ran the
+     * migrations already on disk, so the version it records must come from disk too. Falls back to the constant when
      * the file can't be read (e.g. a plain in-process db:upgrade, where they match).
      *
      * @return string
      */
-    private static function newVersionOnDisk(): string
+    public static function newVersionOnDisk(): string
     {
         $file = osc_lib_path() . 'osclass/default-constants.php';
         if (is_readable($file)) {
@@ -263,44 +209,12 @@ class Osclass extends UpgradePackage
                 !$preference->get('update_core_json') && (time() - $preference->get('last_version_check')) > (24 * 3600)
             )
         ) {
-            if ((defined('ENABLE_PRERELEASE') && ENABLE_PRERELEASE === true) || osc_get_bool_preference('allow_update_prerelease')) {
-                $json_url                  = 'https://api.github.com/repos/mindstellar/shopclass/releases';
-                $osclass_package_info_json = (new FileSystem())->getContents($json_url);
-                if ($osclass_package_info_json) {
-                    $releases = json_decode($osclass_package_info_json, true);
-                    if (is_array($releases)) {
-                        // GitHub's /releases list is NOT guaranteed newest-first — it has
-                        // returned e.g. beta10 *below* beta9 — so taking the first non-draft
-                        // could pin an older release than one further down the list and never
-                        // offer the real newest. Scan them all and keep the highest version by
-                        // version_compare (drafts skipped; prereleases kept, since this branch
-                        // only runs when prerelease updates are opted in).
-                        foreach ($releases as $release) {
-                            // A GitHub error body (404, rate limit) decodes to an associative
-                            // array of strings, not a list of release objects — is_array()
-                            // guards the offset reads below against those non-array entries.
-                            if (!is_array($release) || !empty($release['draft']) || empty($release['tag_name'])) {
-                                continue;
-                            }
-                            if (
-                                !isset($aSelfPackage)
-                                || version_compare(
-                                    ltrim(trim($release['tag_name']), 'v'),
-                                    ltrim(trim($aSelfPackage['tag_name']), 'v'),
-                                    'gt'
-                                )
-                            ) {
-                                $aSelfPackage = $release;
-                            }
-                        }
-                    }
-                }
-            } else {
-                $json_url                  = 'https://api.github.com/repos/mindstellar/shopclass/releases/latest';
-                $osclass_package_info_json = (new FileSystem())->getContents($json_url);
-                if ($osclass_package_info_json) {
-                    $aSelfPackage = json_decode($osclass_package_info_json, true);
-                }
+            // The whole list, not /releases/latest: that is the newest stable release only, and
+            // the list is not in version order, so the channel picks the highest it allows.
+            $json = (new FileSystem())->getContents('https://api.github.com/repos/mindstellar/shopclass/releases');
+            $list = $json ? json_decode($json, true) : null;
+            if (is_array($list)) {
+                $aSelfPackage = ReleaseChannel::pick($list, ReleaseChannel::current());
             }
 
             // Require a real release payload: a GitHub error body (404 "Not Found", a rate-limit
@@ -310,12 +224,17 @@ class Osclass extends UpgradePackage
                 if (isset($aSelfPackage['name'])) {
                     $package_info['s_title'] = $aSelfPackage['name'];
                 }
-                $s_source_url = self::selectReleaseAssetUrl($aSelfPackage['assets'] ?? array());
-                if ($s_source_url !== null) {
-                    $package_info['s_source_url'] = $s_source_url;
+                $asset = self::selectReleaseAsset($aSelfPackage['assets'] ?? array());
+                if ($asset !== null) {
+                    $package_info['s_source_url'] = $asset['browser_download_url'];
+                    // GitHub's own digest of the file; the download is refused if it differs.
+                    if (preg_match('/^sha256:([a-f0-9]{64})$/i', (string) ($asset['digest'] ?? ''), $digest)) {
+                        $package_info['s_sha256'] = strtolower($digest[1]);
+                    }
                 }
                 if (isset($aSelfPackage['tag_name'])) {
-                    $package_info['s_new_version'] = ltrim(trim($aSelfPackage['tag_name']), 'v');
+                    $package_info['s_new_version'] = ReleaseChannel::version($aSelfPackage);
+                    $package_info['s_published_at'] = (string) ($aSelfPackage['published_at'] ?? '');
                 }
                 $package_info['s_installed_version'] = OSCLASS_VERSION;
                 $package_info['s_short_name']        = 'osclass';
@@ -333,33 +252,39 @@ class Osclass extends UpgradePackage
     }
 
     /**
-     * Pick the Shopclass package asset from a GitHub release's assets list. Prefers the
-     * canonical `osclass_v*.zip`, then any `.zip`, so extra release assets do not break
-     * selection. Never take assets[0].
+     * Pick the Shopclass package asset from a GitHub release's assets list. Prefers
+     * `shopclass_v*.zip`, then `osclass_v*.zip`, then any `.zip`, so extra release assets
+     * do not break selection. Never take assets[0].
      *
      * @param array<int,array<string,mixed>> $assets GitHub release "assets" array
      *
-     * @return string|null browser_download_url, or null if none suitable
+     * @return array<string,mixed>|null the asset, or null if none suitable
      */
-    private static function selectReleaseAssetUrl($assets)
+    public static function selectReleaseAsset($assets): ?array
     {
         if (!is_array($assets)) {
             return null;
         }
-        $firstZip = null;
+        $found = array();
         foreach ($assets as $asset) {
             if (!isset($asset['name'], $asset['browser_download_url'])) {
                 continue;
             }
-            if (preg_match('/^osclass_v.*\.zip$/i', $asset['name'])) {
-                return $asset['browser_download_url'];
+            $name = (string)$asset['name'];
+            if (preg_match('/^shopclass_v.*\.zip$/i', $name)) {
+                $rank = 0;
+            } elseif (preg_match('/^osclass_v.*\.zip$/i', $name)) {
+                $rank = 1;
+            } elseif (substr(strtolower($name), -4) === '.zip') {
+                $rank = 2;
+            } else {
+                continue;
             }
-            if ($firstZip === null && substr(strtolower($asset['name']), -4) === '.zip') {
-                $firstZip = $asset['browser_download_url'];
-            }
+            $found[$rank] = $found[$rank] ?? $asset;
         }
+        ksort($found);
 
-        return $firstZip;
+        return $found === array() ? null : reset($found);
     }
 
     /**

@@ -379,16 +379,15 @@ class CWebItem extends BaseModel
                 $this->redirectTo(osc_item_url());
                 break;
             case 'item_delete':
-                $secret = Params::getParam('secret');
-                $id     = Params::getParam('id');
-                $item   =
-                    $this->itemManager->listWhere(
-                        'i.pk_i_id = %d AND ((i.s_secret = %s) OR (i.fk_i_user_id = %d))',
-                        (int)$id,
-                        $secret,
-                        (int)$this->userId
-                    );
-                if (count($item) == 1) {
+                $secret = Params::getParamString('secret');
+                $item   = $this->itemManager->listWhere('i.pk_i_id = %d', Params::getParamInt('id'));
+                $bySecret = count($item) === 1 && $secret !== '' && hash_equals((string) $item[0]['s_secret'], $secret);
+                $byOwner  = count($item) === 1 && $this->userId && (int) $item[0]['fk_i_user_id'] === (int) $this->userId;
+                if (!$bySecret && $byOwner) {
+                    // The owner's link carries no secret, so it must carry a CSRF token.
+                    osc_csrf_check();
+                }
+                if ($bySecret || $byOwner) {
                     $mItems  = new ItemActions(false);
                     $success = $mItems->delete($item[0]['s_secret'], $item[0]['pk_i_id']);
                     if ($success) {
@@ -566,13 +565,21 @@ class CWebItem extends BaseModel
                     return false; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
                 }
 
+                $refused = \mindstellar\security\MessageGuard::refusal(
+                    Params::getParamString('yourEmail'),
+                    Params::getParamString('message'),
+                    array(Params::getParamString('yourName'), Params::getParamString('friendName'))
+                );
+                if ($refused !== null) {
+                    osc_add_flash_error_message($refused);
+                    $this->redirectTo(osc_item_send_friend_url());
+
+                    return false;
+                }
+
                 // Bound how many listings one source may share per window — the form
                 // relays site-branded mail, so it needs a ceiling regardless of the login.
-                if (\mindstellar\security\ActionThrottle::exceeded(
-                    'send_friend',
-                    (int)osc_apply_filter('send_friend_throttle_max', 5),
-                    (int)osc_apply_filter('send_friend_throttle_window', 3600)
-                )) {
+                if (\mindstellar\security\ActionThrottle::exceededFor('send_friend', 5)) {
                     osc_add_flash_error_message(
                         _m("You've shared too many listings recently. Please try again later.")
                     );
@@ -635,27 +642,33 @@ class CWebItem extends BaseModel
 
                 $item = $this->itemManager->findByPrimaryKey(Params::getParam('id'));
                 $this->_exportVariableToView('item', $item);
+                // A failed check goes back to the form it came from, with what was typed.
+                $contactValues = array(
+                    'yourEmail'    => Params::getParamString('yourEmail'),
+                    'yourName'     => Params::getParamString('yourName'),
+                    'phoneNumber'  => Params::getParamString('phoneNumber'),
+                    'message_body' => Params::getParamString('message'),
+                );
+                $fail = function (string $error) use ($contactValues) {
+                    osc_keep_form($contactValues, $error);
+                    $this->redirectTo(osc_local_referer(osc_item_url()));
+                };
                 if (osc_captcha_enabled() && !osc_check_captcha()) {
-                    osc_add_flash_error_message(_m('Please complete the security check.'));
-                    Session::newInstance()
-                        ->_setForm('yourEmail', Params::getParam('yourEmail'));
-                    Session::newInstance()->_setForm('yourName', Params::getParam('yourName'));
-                    Session::newInstance()
-                        ->_setForm('phoneNumber', Params::getParam('phoneNumber'));
-                    Session::newInstance()
-                        ->_setForm('message_body', Params::getParam('message'));
-                    $this->redirectTo(osc_item_url());
+                    $fail(_m('Please complete the security check.'));
 
-                    return false; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
+                    return false;
                 }
 
-                $banned = osc_is_banned(Params::getParam('yourEmail'));
-                if ($banned == 1) {
-                    osc_add_flash_error_message(_m('Your current email is not allowed'));
-                    $this->redirectTo(osc_item_url());
-                } elseif ($banned == 2) {
-                    osc_add_flash_error_message(_m('Your current IP is not allowed'));
-                    $this->redirectTo(osc_item_url());
+                $refused = \mindstellar\security\MessageGuard::refusal(
+                    $contactValues['yourEmail'],
+                    $contactValues['message_body'],
+                    array($contactValues['yourName']),
+                    $contactValues['phoneNumber']
+                );
+                if ($refused !== null) {
+                    $fail($refused);
+
+                    return false;
                 }
 
                 if (osc_isExpired($item['dt_expiration'])) {
@@ -668,15 +681,20 @@ class CWebItem extends BaseModel
                 // Bound how many enquiries one source may send per window (defence in
                 // depth: contact only reaches a listing's own seller, not an arbitrary
                 // address, so the default ceiling is looser than share-a-listing).
-                if (\mindstellar\security\ActionThrottle::exceeded(
-                    'item_contact',
-                    (int)osc_apply_filter('item_contact_throttle_max', 15),
-                    (int)osc_apply_filter('item_contact_throttle_window', 3600)
-                )) {
-                    osc_add_flash_error_message(
-                        _m("You've sent too many messages recently. Please try again later.")
-                    );
-                    $this->redirectTo(osc_item_url());
+                if (\mindstellar\security\ActionThrottle::exceededFor('item_contact', 15)) {
+                    $fail(_m("You've sent too many messages recently. Please try again later."));
+
+                    return false;
+                }
+
+                $refused = \mindstellar\security\MessageHold::attachmentError(
+                    $contactValues['yourEmail'],
+                    osc_item_attachment() ? osc_mail_upload_attachment('attachment') : null
+                );
+                if ($refused !== null) {
+                    $fail($refused);
+
+                    return false;
                 }
 
                 osc_run_hook('pre_item_contact_post', $item);
@@ -686,11 +704,15 @@ class CWebItem extends BaseModel
 
                 osc_run_hook('post_item_contact_post', $item);
                 if (is_string($result)) {
-                    osc_add_flash_error_message($result);
+                    $fail(trim($result));
+
+                    return false;
                 } else {
                     // Count the accepted enquiry toward the window.
                     \mindstellar\security\ActionThrottle::record('item_contact');
-                    osc_add_flash_ok_message(_m("We've just sent an e-mail to the seller"));
+                    if ($result === true) {
+                        osc_add_flash_ok_message(_m("We've just sent an e-mail to the seller"));
+                    }
                 }
 
                 $this->redirectTo(osc_item_url());

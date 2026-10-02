@@ -33,6 +33,11 @@ final class StorageSettingsForm
     /** What storage_s3_signed_ttl holds when nothing above zero was given. */
     public const DEFAULT_TTL = 900;
 
+    /** Backups kept in each place when nothing above zero was given. */
+    public const DEFAULT_KEEP = 5;
+
+    public const MAX_KEEP = 100;
+
     /** The range S3 signs a URL for, in seconds. */
     public const MIN_TTL = 60;
 
@@ -63,13 +68,9 @@ final class StorageSettingsForm
                 's3'    => __('Amazon S3-compatible'),
             ))
                 ->default('local')
-                ->sanitize(static function ($value) {
-                    return self::backend($value);
-                })
+                ->sanitize(array(self::class, 'backend'))
                 // Again on the way to storage: a value posted as a list skips a field's sanitiser.
-                ->persist(static function ($value) {
-                    return self::backend($value);
-                })
+                ->persist(array(self::class, 'backend'))
             ->select(
                 self::PROVIDER,
                 __('Provider'),
@@ -79,12 +80,8 @@ final class StorageSettingsForm
             )
                 ->set('id', 'storage_provider')
                 ->default(self::DEFAULT_PROVIDER)
-                ->sanitize(static function ($value) {
-                    return self::provider($value);
-                })
-                ->persist(static function ($value) {
-                    return self::provider($value);
-                })
+                ->sanitize(array(self::class, 'provider'))
+                ->persist(array(self::class, 'provider'))
             ->text('storage_s3_bucket', __('Bucket'))
             ->text('storage_s3_region', __('Region'))
                 // At the write, so the provider is the one a before_save listener left.
@@ -103,9 +100,7 @@ final class StorageSettingsForm
             )
                 ->width('key')
                 ->attrs(self::URL_ATTRS)
-                ->sanitize(static function ($value) {
-                    return self::httpUrlOrEmpty($value);
-                })
+                ->sanitize(array(self::class, 'httpUrlOrEmpty'))
             ->text('storage_s3_access_key', __('Access key'))
                 ->width('key')
             ->secret(self::SECRET, __('Secret key'))
@@ -130,9 +125,7 @@ final class StorageSettingsForm
                     . osc_esc_html(__('Optional. Overrides the URL used to serve files, e.g. a CDN domain in front of the bucket.'))
                     . '</span>'
                 )
-                ->sanitize(static function ($value) {
-                    return self::httpUrlOrEmpty($value);
-                })
+                ->sanitize(array(self::class, 'httpUrlOrEmpty'))
             ->checkbox(
                 'storage_s3_signed_urls',
                 __('Serve files through time-limited signed URLs.'),
@@ -145,23 +138,36 @@ final class StorageSettingsForm
                 ->set('max', self::MAX_TTL)
                 ->suffix(__('seconds'))
                 ->default(self::DEFAULT_TTL)
-                ->sanitize(static function ($value) {
-                    return self::ttl($value);
-                })
-                ->persist(static function ($value) {
-                    return self::ttl($value);
-                })
+                ->sanitize(array(self::class, 'ttl'))
+                ->persist(array(self::class, 'ttl'))
             ->select('storage_keep_local', __('Local copies'), array(
                 'all'  => __('Keep local copies'),
                 'none' => __('Delete after upload'),
             ))
                 ->default('all')
-                ->sanitize(static function ($value) {
-                    return self::keepLocal($value);
-                })
-                ->persist(static function ($value) {
-                    return self::keepLocal($value);
-                })
+                ->sanitize(array(self::class, 'keepLocal'))
+                ->persist(array(self::class, 'keepLocal'))
+            ->group(__('Backups'))
+            ->text(
+                'storage_s3_backup_bucket',
+                __('Backups bucket'),
+                __('A private bucket for Tools > Backup and restore, reached with the keys above. '
+                   . 'Leave empty to use the bucket above, under backups/. '
+                   . 'Each site saves in its own folder named from its address. '
+                   . 'Use one backups bucket per site, or leave it to the per-site folder.')
+            )
+                ->sanitize(array(self::class, 'bucketName'))
+                ->persist(array(self::class, 'bucketName'))
+            ->number(
+                'backup_keep',
+                __('Backups kept'),
+                __('How many backups to keep on the server, and in the bucket. Older ones are removed after each new backup.')
+            )
+                ->set('min', 1)
+                ->set('max', self::MAX_KEEP)
+                ->default(self::DEFAULT_KEEP)
+                ->sanitize(array(self::class, 'keep'))
+                ->persist(array(self::class, 'keep'))
             ->custom('storage_clear', static function () {
                 echo '<div class="clear"></div>';
             })
@@ -190,6 +196,7 @@ final class StorageSettingsForm
             $values['storage_active']        = self::backend($values['storage_active']);
             $values['storage_keep_local']    = self::keepLocal($values['storage_keep_local']);
             $values['storage_s3_signed_ttl'] = (int)($values['storage_s3_signed_ttl'] ?: self::DEFAULT_TTL);
+            $values['backup_keep']           = self::keep($values['backup_keep'] ?? null);
         }
         // A refused save hands back what was typed, and a secret is not drawn back even then.
         unset($values[self::SECRET]);
@@ -265,6 +272,35 @@ final class StorageSettingsForm
         }
 
         return $region;
+    }
+
+    /**
+     * A bucket name as S3 allows it (3-63 lowercase letters, digits, dots and dashes), or
+     * blank for anything else.
+     *
+     * @param mixed $value
+     *
+     * @return string
+     */
+    public static function bucketName($value): string
+    {
+        $value = is_string($value) ? strtolower(trim($value)) : '';
+
+        return preg_match('/^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/', $value) ? $value : '';
+    }
+
+    /**
+     * How many backups to keep: above zero is held to 1-100, anything else is 5.
+     *
+     * @param mixed $value
+     *
+     * @return int
+     */
+    public static function keep($value): int
+    {
+        $keep = is_scalar($value) ? (int)$value : 0;
+
+        return $keep > 0 ? min(self::MAX_KEEP, $keep) : self::DEFAULT_KEEP;
     }
 
     /**

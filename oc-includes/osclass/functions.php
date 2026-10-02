@@ -261,6 +261,9 @@ function meta_title()
             break;
     }
 
+    // Parts such as the city are often empty and leave doubled or trailing spaces behind.
+    $text = trim((string) preg_replace('/\s+/u', ' ', (string) $text));
+
     if (!osc_is_home_page()) {
         if ($text != '') {
             $text .= ' - ' . osc_page_title();
@@ -359,6 +362,14 @@ function meta_description()
         }
     } elseif (osc_is_search_page()) {
         $text = osc_search_meta_description();
+    } elseif (osc_is_public_profile()) {
+        // What the seller says about themselves, else who they are and where.
+        $text = osc_highlight(osc_user_info(), OSC_META_DESCRIPTION_LENGTH, '', '');
+        if ($text === '') {
+            $text = sprintf(__('Listings by %1$s on %2$s.'), osc_user_name(), osc_page_title());
+        }
+    } elseif (osc_is_contact_page()) {
+        $text = sprintf(__('Send a message to %s.'), osc_page_title());
     }
 
     return osc_apply_filter('meta_description_filter', $text);
@@ -892,7 +903,6 @@ function osc_admin_toolbar_update_themes($force = false)
     }
 }
 
-// languages todo
 /**
  * Number of languages with an update available, from the cached count unless forced.
  * Without $force it schedules a background re-check once the cached count is a day old.
@@ -1051,33 +1061,27 @@ if (osc_tinymce_frontend()) {
 }
 
 /**
- * Run the enabled Tools > Cleanup rules once — a single batch of the configured size per
- * rule — removing stale listings/users. Returns the total number removed. Shared by the
- * manual "run now" action and the daily cron. The first-class replacement for the Butler
- * plugin's cron.
+ * Run the enabled Tools > Cleanup rules once, in this request: one batch per rule.
+ * Returns the total number removed. The daily task and the admin's "Run cleanup now"
+ * queue background jobs instead, which keep going until nothing matches.
  *
  * @return int
  */
 function osc_run_cleanup()
 {
-    $limit = (int)osc_get_preference('batch_limit', 'osclass');
-    if ($limit < 1) {
-        $limit = 250;
-    }
     $engine = Cleanup::newInstance();
     $total  = 0;
     foreach (Cleanup::RULES as $rule) {
-        if (osc_get_preference('enabled_' . $rule, 'osclass') != 1) {
-            continue;
+        if (Cleanup::isEnabled($rule)) {
+            $total += $engine->purge($rule, Cleanup::days($rule), Cleanup::batchLimit());
         }
-        $days   = $rule === 'reported' ? 0 : (int)osc_get_preference('days_' . $rule, 'osclass');
-        $total += $engine->purge($rule, $days, $limit);
     }
     osc_reset_preferences();
 
     return $total;
 }
-osc_add_hook('cron_daily', 'osc_run_cleanup');
+osc_add_hook('cron_daily', array(\mindstellar\job\CleanupJobs::class, 'queue'));
+osc_add_hook('cron_daily', array(\mindstellar\upgrade\AutoSecurityUpdate::class, 'run'));
 
 /**
  * End time-limited premium upgrades whose date has passed, returning how many were ended.
@@ -1221,4 +1225,7 @@ if (osc_force_jpeg()) {
 
     osc_add_filter('upload_image_extension', 'osc_force_jpeg_extension');
     osc_add_filter('upload_image_mime', 'osc_force_jpeg_mime');
+} elseif (osc_save_webp()) {
+    osc_add_filter('upload_image_extension', static fn ($content) => 'webp');
+    osc_add_filter('upload_image_mime', static fn ($content) => 'image/webp');
 }

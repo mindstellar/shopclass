@@ -99,22 +99,27 @@ final class MediaSettingsForm
         self::dimension($form, 'dimNormal', __('Normal size'));
 
         $form
-            ->checkbox('keep_original_image', __('Keep original image, unaltered after uploading.'), __('Image may occupy more space than usual.'))
+            ->checkbox('keep_original_image', __('Keep the photo at its full size.'), __('Stored alongside the resized copies, so uploads take more space. It is re-saved rather than kept byte for byte, which drops camera metadata.'))
                 ->rowLabel(__('Original size'))
                 ->set('id', 'keep_original_image')
-            ->group(__('Restrictions'))
             ->checkbox(
-                'force_jpeg',
-                __('Force JPEG extension.'),
-                __('Uploaded images will be saved in JPG/JPEG format, '
-                   . 'it saves space but images will not have transparent background.')
+                'browser_resize',
+                __('Shrink photos in the browser before upload.'),
+                __('Photos larger than the normal size are shrunk to it first, so large phone photos '
+                   . 'upload quickly and stay under the maximum size. While the full size is kept, '
+                   . 'only photos over the maximum size are shrunk.')
             )
-                ->rowLabel(__('Force JPEG'))
-                ->set('id', 'force_jpeg')
+                ->rowLabel(__('Browser resize'))
+                ->set('id', 'browser_resize')
+            ->group(__('Restrictions'))
+            ->select('image_format', __('Photo format'), self::formats($imagick), __('How new photos are saved. '
+                   . 'JPEG is small but has no transparent background. WebP is about a third smaller than JPEG and '
+                   . 'keeps transparency. Photos already uploaded keep their format.'))
+                ->default('original')
             ->number(
                 'jpeg_quality',
-                __('JPEG quality'),
-                __('Compression quality for saved JPEGs, from 1 (smallest file) to '
+                __('Photo quality'),
+                __('Compression quality for saved JPEG and WebP photos, from 1 (smallest file) to '
                    . '100 (best quality). 82 is a good balance.')
             )
                 ->set('min', 1)
@@ -124,8 +129,12 @@ final class MediaSettingsForm
                 ->sanitize(static function ($value) {
                     return self::jpegQuality($value);
                 })
-            ->checkbox('force_aspect_image', __('Force image aspect.'), __('No white background will be added to keep the size.'))
-                ->rowLabel(__('Force aspect'))
+            ->checkbox(
+                'force_aspect_image',
+                __('Keep each photo\'s own shape (recommended)'),
+                __('Photos are only made smaller, never filled out to the sizes above. Your theme decides how to frame them. When off, the empty space is filled with white in JPEG and left see-through in PNG and WebP.')
+            )
+                ->rowLabel(__('Photo shape'))
                 ->set('id', 'force_aspect_image')
             ->number('maxSizeKb', __('Maximum size'))
                 ->required()
@@ -347,6 +356,23 @@ final class MediaSettingsForm
     }
 
     /**
+     * The photo formats offered. WebP only where PHP can write it.
+     *
+     * @param bool $imagick whether ImageMagick is loaded
+     *
+     * @return array<string,string>
+     */
+    private static function formats(bool $imagick): array
+    {
+        $formats = array('original' => __('Keep the original format'), 'jpeg' => __('Save as JPEG'));
+        if (\ImageProcessing::canWriteWebp($imagick && osc_use_imagick())) {
+            $formats['webp'] = __('Save as WebP');
+        }
+
+        return $formats;
+    }
+
+    /**
      * An image size box: lower-cased and stripped, and refused unless it is width x height.
      * The browser has always refused the same shape.
      *
@@ -542,10 +568,13 @@ final class MediaSettingsForm
         }
 
         $info = @getimagesize($file['tmp_name']);
+        if ($info === false || $info['mime'] !== 'image/png') {
+            return _m('The watermark image has to be a .PNG file');
+        }
 
-        return $info !== false && $info['mime'] === 'image/png'
-            ? null
-            : _m('The watermark image has to be a .PNG file');
+        return \mindstellar\storage\UploadMimes::tooManyPixels($file['tmp_name'])
+            ? \mindstellar\storage\UploadMimes::tooManyPixelsMessage()
+            : null;
     }
 
     /**

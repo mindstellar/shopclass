@@ -55,6 +55,9 @@ services:
       - OSC_CACHE=memcached
       - OSC_CACHE_HOST=memcached
       - OSC_CACHE_PORT=11211
+      # The site's address for php oc-cli.php only; web requests keep using the
+      # address they came in on (see .env.example).
+      - OSC_CLI_URL=${OSC_CLI_URL:-}
     depends_on:
       mariadb:
         condition: service_healthy

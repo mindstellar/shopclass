@@ -23,7 +23,8 @@ namespace mindstellar\database;
  * Injection safety is structural: every VALUE becomes a bound '?' parameter and
  * every IDENTIFIER (table/column) is validated against a strict allowlist and
  * backtick-quoted before it touches the SQL string. The single documented escape
- * hatch is whereRaw(), whose expression is trusted SQL the CALLER owns.
+ * hatches are whereRaw() and selectRaw(), whose expressions are trusted SQL the
+ * CALLER owns. A table may carry an alias ('t_item AS i') for reads and joins.
  *
  * This sits BESIDE the legacy stateful DBCommandClass, which is untouched. Unlike
  * that class it compiles LIMIT/OFFSET as an explicit `LIMIT <count> OFFSET
@@ -53,9 +54,10 @@ class QueryBuilder
     private $table;
 
     /**
-     * Selected columns (raw identifiers). Empty means SELECT *.
+     * Selected columns: identifiers, or ['sql' => ..., 'params' => [...]] from
+     * selectRaw(). Empty means SELECT *.
      *
-     * @var array<int,string>
+     * @var array<int,string|array{sql:string,params:array<int,mixed>}>
      */
     private $columns = [];
 
@@ -113,7 +115,7 @@ class QueryBuilder
      */
     public function __construct(string $table)
     {
-        $this->assertIdent($table);
+        $this->quoteTable($table);
         $this->table = $table;
     }
 
@@ -133,6 +135,24 @@ class QueryBuilder
         }
         $c = clone $this;
         $c->columns = $columns;
+
+        return $c;
+    }
+
+    /**
+     * Add a raw expression to the selection, e.g. 'COUNT(r.pk_i_id) AS n_pic'. The
+     * expression is TRUSTED SQL the CALLER owns: values go in $params through '?'
+     * placeholders, never into $expr. Adds to select(); does not replace it.
+     *
+     * @param string           $expr
+     * @param array<int,mixed> $params
+     *
+     * @return self A cloned builder
+     */
+    public function selectRaw(string $expr, array $params = []): self
+    {
+        $c = clone $this;
+        $c->columns[] = ['sql' => $expr, 'params' => array_values($params)];
 
         return $c;
     }
@@ -197,6 +217,54 @@ class QueryBuilder
         ];
 
         return $c;
+    }
+
+    /**
+     * AND `column IS NULL`.
+     *
+     * @param string $column
+     *
+     * @return self A cloned builder
+     */
+    public function whereNull(string $column): self
+    {
+        return $this->addNull($column, true, 'AND');
+    }
+
+    /**
+     * AND `column IS NOT NULL`.
+     *
+     * @param string $column
+     *
+     * @return self A cloned builder
+     */
+    public function whereNotNull(string $column): self
+    {
+        return $this->addNull($column, false, 'AND');
+    }
+
+    /**
+     * OR `column IS NULL`.
+     *
+     * @param string $column
+     *
+     * @return self A cloned builder
+     */
+    public function orWhereNull(string $column): self
+    {
+        return $this->addNull($column, true, 'OR');
+    }
+
+    /**
+     * OR `column IS NOT NULL`.
+     *
+     * @param string $column
+     *
+     * @return self A cloned builder
+     */
+    public function orWhereNotNull(string $column): self
+    {
+        return $this->addNull($column, false, 'OR');
     }
 
     /**
@@ -478,7 +546,7 @@ class QueryBuilder
     public function count(): int
     {
         if ($this->groups === []) {
-            $sql = 'SELECT COUNT(*) AS aggregate FROM ' . $this->quoteIdent($this->table);
+            $sql = 'SELECT COUNT(*) AS aggregate FROM ' . $this->quoteTable($this->table);
             $bindings = [];
             $sql .= $this->compileJoins();
             [$whereSql, $whereBindings] = $this->compileWheres();
@@ -490,9 +558,16 @@ class QueryBuilder
 
         // Grouped: count the number of groups by wrapping the grouped query in a
         // derived table, so count() honours GROUP BY (and HAVING) instead of
-        // silently dropping them.
-        $inner = 'SELECT 1 FROM ' . $this->quoteIdent($this->table);
-        $bindings = [];
+        // silently dropping them. A selectRaw() stays in, since HAVING may name it.
+        $selectSql = '1';
+        $bindings  = [];
+        foreach ($this->columns as $column) {
+            if (is_array($column)) {
+                $selectSql .= ', ' . $column['sql'];
+                $bindings   = array_merge($bindings, $column['params']);
+            }
+        }
+        $inner = 'SELECT ' . $selectSql . ' FROM ' . $this->quoteTable($this->table);
         $inner .= $this->compileJoins();
         [$whereSql, $whereBindings] = $this->compileWheres();
         $inner .= $whereSql;
@@ -504,6 +579,183 @@ class QueryBuilder
         $sql = 'SELECT COUNT(*) AS aggregate FROM (' . $inner . ') AS oscsub';
 
         return (int) Connection::instance()->scalar($sql, $bindings);
+    }
+
+    /**
+     * SUM, MIN, MAX or AVG of one column, honouring the wheres and joins set so far.
+     *
+     * The column is a validated identifier, never interpolated text, and the function is
+     * matched against a fixed set -- both halves land inside the SELECT, where a binding
+     * cannot go.
+     *
+     * @param string $function SUM|MIN|MAX|AVG
+     * @param string $column
+     *
+     * @return mixed null when nothing matched
+     * @throws DbException on an unknown function
+     */
+    public function aggregate(string $function, string $column)
+    {
+        $function = strtoupper(trim($function));
+        if (!in_array($function, ['SUM', 'MIN', 'MAX', 'AVG'], true)) {
+            throw new DbException('Unsupported aggregate: ' . $function);
+        }
+
+        $sql = 'SELECT ' . $function . '(' . $this->quoteIdent($column) . ') AS aggregate FROM '
+            . $this->quoteTable($this->table);
+        $sql .= $this->compileJoins();
+        [$whereSql, $bindings] = $this->compileWheres();
+        $sql .= $whereSql;
+
+        return Connection::instance()->scalar($sql, $bindings);
+    }
+
+    /**
+     * @param string $column
+     *
+     * @return float 0.0 when nothing matched
+     * @throws DbException
+     */
+    public function sum(string $column): float
+    {
+        return (float) $this->aggregate('SUM', $column);
+    }
+
+    /**
+     * @param string $column
+     *
+     * @return mixed
+     * @throws DbException
+     */
+    public function min(string $column)
+    {
+        return $this->aggregate('MIN', $column);
+    }
+
+    /**
+     * @param string $column
+     *
+     * @return mixed
+     * @throws DbException
+     */
+    public function max(string $column)
+    {
+        return $this->aggregate('MAX', $column);
+    }
+
+    /**
+     * @param string $column
+     *
+     * @return mixed
+     * @throws DbException
+     */
+    public function avg(string $column)
+    {
+        return $this->aggregate('AVG', $column);
+    }
+
+    /**
+     * Move a numeric column by $amount, in one statement.
+     *
+     * `update(['i_balance' => $new])` has to read the balance first, and two requests that
+     * read the same figure both write it -- one top-up disappears. `i_balance = i_balance + ?`
+     * has no such window, which is why a balance or a counter belongs here rather than there.
+     *
+     * $also sets plain columns in the same statement (a dt_modified, say).
+     *
+     * @param string              $column
+     * @param int|float           $amount  negative to decrease
+     * @param array<string,mixed> $also    column => value, set alongside
+     *
+     * @return int rows changed
+     * @throws DbException without a WHERE clause
+     */
+    public function increment(string $column, $amount = 1, array $also = []): int
+    {
+        if ($this->wheres === []) {
+            throw new DbException('Refusing to UPDATE without a WHERE clause');
+        }
+        if (!is_int($amount) && !is_float($amount)) {
+            throw new DbException('Increment amount must be a number');
+        }
+
+        $quoted      = $this->quoteIdent($column);
+        $assignments = [$quoted . ' = ' . $quoted . ' + ?'];
+        $bindings    = [$amount];
+        foreach ($also as $name => $value) {
+            $assignments[] = $this->quoteIdent((string) $name) . ' = ?';
+            $bindings[]    = $value;
+        }
+
+        $sql = 'UPDATE ' . $this->writeTable() . ' SET ' . implode(', ', $assignments);
+        [$whereSql, $whereBindings] = $this->compileWheres();
+        $sql     .= $whereSql;
+        $bindings = array_merge($bindings, $whereBindings);
+
+        return Connection::instance()->execute($sql, $bindings);
+    }
+
+    /**
+     * @param string    $column
+     * @param int|float $amount positive number to subtract
+     * @param array     $also
+     *
+     * @return int
+     * @throws DbException
+     */
+    public function decrement(string $column, $amount = 1, array $also = []): int
+    {
+        if (!is_int($amount) && !is_float($amount)) {
+            throw new DbException('Decrement amount must be a number');
+        }
+
+        return $this->increment($column, -$amount, $also);
+    }
+
+    /**
+     * INSERT a row, or update the named columns when a unique key already holds it.
+     *
+     * The alternative is SELECT-then-INSERT-or-UPDATE, which two requests can run at once:
+     * both find nothing and both insert, and one gets a duplicate-key error the caller then
+     * has to unpick. This is one statement, so the server decides.
+     *
+     * @param array<string,mixed> $data   the row to insert
+     * @param array<int,string>   $update which of those columns to overwrite on a clash;
+     *                                    every one but the keys, when omitted
+     *
+     * @return int rows affected: 1 inserted, 2 updated, 0 unchanged
+     * @throws DbException when $data is empty
+     */
+    public function upsert(array $data, array $update = []): int
+    {
+        if ($data === []) {
+            throw new DbException('Cannot upsert an empty row');
+        }
+
+        $columns      = [];
+        $placeholders = [];
+        $bindings     = [];
+        foreach ($data as $column => $value) {
+            $columns[]      = $this->quoteIdent((string) $column);
+            $placeholders[] = '?';
+            $bindings[]     = $value;
+        }
+
+        $onUpdate = $update === [] ? array_keys($data) : $update;
+        $sets     = [];
+        foreach ($onUpdate as $column) {
+            $quoted = $this->quoteIdent((string) $column);
+            $sets[] = $quoted . ' = VALUES(' . $quoted . ')';
+        }
+        if ($sets === []) {
+            throw new DbException('Upsert needs at least one column to update');
+        }
+
+        $sql = 'INSERT INTO ' . $this->writeTable()
+            . ' (' . implode(', ', $columns) . ') VALUES (' . implode(', ', $placeholders) . ')'
+            . ' ON DUPLICATE KEY UPDATE ' . implode(', ', $sets);
+
+        return Connection::instance()->execute($sql, $bindings);
     }
 
     /**
@@ -540,7 +792,7 @@ class QueryBuilder
             $columns[] = $this->quoteIdent((string) $column);
         }
         $placeholders = implode(', ', array_fill(0, count($data), '?'));
-        $sql = 'INSERT INTO ' . $this->quoteIdent($this->table)
+        $sql = 'INSERT INTO ' . $this->writeTable()
             . ' (' . implode(', ', $columns) . ') VALUES (' . $placeholders . ')';
 
         return Connection::instance()->insertGetId($sql, array_values($data));
@@ -570,7 +822,7 @@ class QueryBuilder
             $assignments[] = $this->quoteIdent((string) $column) . ' = ?';
             $bindings[] = $val;
         }
-        $sql = 'UPDATE ' . $this->quoteIdent($this->table) . ' SET ' . implode(', ', $assignments);
+        $sql = 'UPDATE ' . $this->writeTable() . ' SET ' . implode(', ', $assignments);
         [$whereSql, $whereBindings] = $this->compileWheres();
         $sql .= $whereSql;
         $bindings = array_merge($bindings, $whereBindings);
@@ -590,7 +842,7 @@ class QueryBuilder
         if ($this->wheres === []) {
             throw new DbException('Refusing to DELETE without a WHERE clause');
         }
-        $sql = 'DELETE FROM ' . $this->quoteIdent($this->table);
+        $sql = 'DELETE FROM ' . $this->writeTable();
         [$whereSql, $whereBindings] = $this->compileWheres();
         $sql .= $whereSql;
 
@@ -658,6 +910,25 @@ class QueryBuilder
     }
 
     /**
+     * Shared whereNull() family implementation.
+     *
+     * @param string $column
+     * @param bool   $null    true for IS NULL, false for IS NOT NULL
+     * @param string $boolean 'AND' or 'OR'
+     *
+     * @return self
+     * @throws DbException on an invalid identifier
+     */
+    private function addNull(string $column, bool $null, string $boolean): self
+    {
+        $this->assertIdent($column);
+        $c = clone $this;
+        $c->wheres[] = ['type' => 'null', 'column' => $column, 'not' => !$null, 'boolean' => $boolean];
+
+        return $c;
+    }
+
+    /**
      * Shared whereGroup()/orWhereGroup() implementation. Runs the callback
      * against a fresh builder for the same table and captures its where
      * descriptors as a nested, parenthesised group.
@@ -694,7 +965,7 @@ class QueryBuilder
      */
     private function addJoin(string $type, string $table, string $first, string $operator, string $second): self
     {
-        $this->assertIdent($table);
+        $this->quoteTable($table);
         $this->assertIdent($first);
         $this->assertIdent($second);
         $operator = $this->normalizeOperator($operator);
@@ -717,12 +988,19 @@ class QueryBuilder
      */
     private function compileSelect(): array
     {
-        $columns = $this->columns === []
-            ? '*'
-            : implode(', ', array_map([$this, 'quoteIdent'], $this->columns));
-
-        $sql = 'SELECT ' . $columns . ' FROM ' . $this->quoteIdent($this->table);
+        $parts    = [];
         $bindings = [];
+        foreach ($this->columns as $column) {
+            if (is_array($column)) {
+                $parts[]  = $column['sql'];
+                $bindings = array_merge($bindings, $column['params']);
+            } else {
+                $parts[] = $this->quoteIdent($column);
+            }
+        }
+        $columns = $parts === [] ? '*' : implode(', ', $parts);
+
+        $sql = 'SELECT ' . $columns . ' FROM ' . $this->quoteTable($this->table);
 
         $sql .= $this->compileJoins();
 
@@ -760,7 +1038,7 @@ class QueryBuilder
     {
         $sql = '';
         foreach ($this->joins as $join) {
-            $sql .= ' ' . $join['type'] . ' JOIN ' . $this->quoteIdent($join['table'])
+            $sql .= ' ' . $join['type'] . ' JOIN ' . $this->quoteTable($join['table'])
                 . ' ON ' . $this->quoteIdent($join['first']) . ' ' . $join['operator'] . ' '
                 . $this->quoteIdent($join['second']);
         }
@@ -812,6 +1090,9 @@ class QueryBuilder
                     $placeholders = implode(', ', array_fill(0, count($where['values']), '?'));
                     $sql .= $this->quoteIdent($where['column']) . ' IN (' . $placeholders . ')';
                     $bindings = array_merge($bindings, $where['values']);
+                    break;
+                case 'null':
+                    $sql .= $this->quoteIdent($where['column']) . ($where['not'] ? ' IS NOT NULL' : ' IS NULL');
                     break;
                 case 'raw':
                     $sql .= '(' . $where['sql'] . ')';
@@ -931,6 +1212,43 @@ class QueryBuilder
         }
 
         return $this->quoteSegment($name);
+    }
+
+    /**
+     * The quoted table for an INSERT, UPDATE or DELETE, which take no alias.
+     *
+     * @return string
+     * @throws DbException when the table carries an alias
+     */
+    private function writeTable(): string
+    {
+        if (preg_match('/\sAS\s/i', $this->table)) {
+            throw new DbException('An aliased table is read-only');
+        }
+
+        return $this->quoteIdent($this->table);
+    }
+
+    /**
+     * Validate and quote a table, optionally with an alias: 't_item' or
+     * 't_item AS i'. The alias follows the same rule as any identifier.
+     *
+     * @param string $table
+     *
+     * @return string
+     * @throws DbException on an invalid table or alias
+     */
+    private function quoteTable(string $table): string
+    {
+        if (preg_match('/^\s*(\S+)\s+AS\s+(\S+)\s*$/i', $table, $m)) {
+            if (strpos($m[1], '.') !== false || strpos($m[2], '.') !== false) {
+                throw new DbException('Invalid identifier');
+            }
+
+            return $this->quoteSegment($m[1]) . ' AS ' . $this->quoteSegment($m[2]);
+        }
+
+        return $this->quoteIdent($table);
     }
 
     /**

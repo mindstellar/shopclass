@@ -14,10 +14,12 @@ if (!defined('ABS_PATH')) {
  */
 
 use mindstellar\billing\Billing;
+use mindstellar\billing\CallbackResult;
 use mindstellar\billing\Order;
 use mindstellar\billing\Orders;
 use mindstellar\billing\Packages;
 use mindstellar\billing\PaymentGatewayRegistry;
+use mindstellar\billing\Receipts;
 use mindstellar\billing\Wallet;
 
 /**
@@ -72,11 +74,17 @@ class CAdminBilling extends AdminSecBaseModel
             case ('order'):
                 $this->orderView();
                 break;
+            case ('receipt'):
+                $this->receiptView();
+                break;
             case ('order_paid'):
                 $this->orderPaidPost();
                 break;
             case ('order_refund'):
                 $this->orderRefundPost();
+                break;
+            case ('order_refund_gateway'):
+                $this->orderRefundGatewayPost();
                 break;
             case ('credits'):
                 $this->creditsView();
@@ -154,10 +162,32 @@ class CAdminBilling extends AdminSecBaseModel
         $this->_exportVariableToView('order', $order);
         $this->_exportVariableToView('user', User::newInstance()->findByPrimaryKey($order->getUserId()));
         $this->_exportVariableToView('gateway', $gateway);
+        $this->_exportVariableToView('refundable', Billing::refundableGateway($order) !== null);
+        $this->_exportVariableToView('dashboardUrl', Billing::dashboardUrl($order));
         $this->_exportVariableToView('entries', $this->ledgerForOrder($order->getId()));
         $this->_exportVariableToView('balance', Wallet::balance($order->getUserId()));
 
         $this->doView('billing/order.php');
+    }
+
+    /**
+     * The printable receipt for any paid or refunded order.
+     *
+     * @return void
+     */
+    private function receiptView()
+    {
+        $order = Orders::find(Params::getParamInt('id'));
+        if ($order === null || !Receipts::canView($order, 0, true)) {
+            osc_add_flash_error_message(_m('That order has no receipt'), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=billing');
+        }
+
+        Receipts::render(
+            $order,
+            osc_admin_base_url(true) . '?page=billing&action=order&id=' . $order->getId(),
+            _m('Back to the order')
+        );
     }
 
     /**
@@ -204,7 +234,7 @@ class CAdminBilling extends AdminSecBaseModel
     }
 
     /**
-     * Record a refund the provider has already made. Core never asks a gateway to refund.
+     * Record a refund the provider has already made, without asking the provider.
      *
      * @return void
      */
@@ -228,6 +258,50 @@ class CAdminBilling extends AdminSecBaseModel
         }
 
         $this->redirectTo(osc_admin_base_url(true) . '?page=billing&action=order&id=' . $order->getId());
+    }
+
+    /**
+     * Ask the order's gateway to refund it. Billing re-reads the order and re-checks the
+     * gateway, so nothing from the form is trusted beyond the order id. Billing writes the
+     * log rows. POST only: osc_csrf_check() also accepts a token in the query string.
+     *
+     * @return void
+     */
+    private function orderRefundGatewayPost()
+    {
+        $id   = Params::getParamInt('id');
+        $back = osc_admin_base_url(true) . '?page=billing&action=order&id=' . $id;
+
+        if (Params::getServerParam('REQUEST_METHOD') !== 'POST') {
+            $this->redirectTo($back);
+        }
+        osc_csrf_check();
+
+        $order = Orders::find($id);
+        if ($order === null) {
+            osc_add_flash_error_message(_m('That order no longer exists'), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=billing');
+        }
+
+        $accepted = false;
+        $result   = Billing::refundThroughGateway($order, $accepted);
+
+        if ($result->getOutcome() === CallbackResult::OUTCOME_REFUNDED) {
+            osc_add_flash_ok_message(
+                sprintf(_m('Order #%d is refunded and the credits have been taken back'), $order->getId()),
+                'admin'
+            );
+        } elseif ($accepted) {
+            osc_add_flash_warning_message(osc_esc_html($result->getMessage()), 'admin');
+        } else {
+            $reason = $result->getMessage() !== '' ? $result->getMessage() : _m('No reason was given');
+            osc_add_flash_error_message(
+                sprintf(_m('The refund was not made: %s'), osc_esc_html($reason)),
+                'admin'
+            );
+        }
+
+        $this->redirectTo($back);
     }
 
     /**

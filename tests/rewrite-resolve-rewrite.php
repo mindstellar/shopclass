@@ -38,11 +38,15 @@ function resolve_rewrite(array $rules, string $uri): array
     global $REF;
     $rw   = $REF->newInstanceWithoutConstructor();
     $prop = $REF->getProperty('rules');
-    $prop->setAccessible(true);
+    if (PHP_VERSION_ID < 80100) {
+        $prop->setAccessible(true);
+    }
     $prop->setValue($rw, $rules);
 
     $m = $REF->getMethod('resolveRewrite');
-    $m->setAccessible(true);
+    if (PHP_VERSION_ID < 80100) {
+        $m->setAccessible(true);
+    }
 
     return $m->invoke($rw, $uri);
 }

@@ -1,7 +1,6 @@
-// Static-page editor (pages/frm.php). A content-first, two-column layout: the
-// title and WYSIWYG body fill the main column; publishing and page settings sit
-// in a rail that stays in reach while you write. Colour goes through tokens so
-// both themes follow (see the Token Indirection Rule in the design system).
+// Static-page editor (pages/frm.php): what belongs to this screen alone — the shell it
+// sits in is editor.scss. Colour goes through tokens so both themes follow (see the Token
+// Indirection Rule in the design system).
 
 #adminPageForm {
   // "View page on site" — a quiet link under the slug in the settings rail.
@@ -20,16 +19,7 @@
     }
   }
 
-  // The title is the page's headline — give it the weight WordPress gives it,
-  // so it reads as the thing you name first, not just another field.
   #left-side {
-    input[id$="#s_title"] {
-      font-size: 1.25rem;
-      font-weight: 600;
-      height: auto;
-      padding-block: 10px;
-    }
-
     // The page template select drives which of these is shown; the mode class is
     // set on load (no flash) and flipped live by the template select. In builder
     // mode the text editor is hidden and the widget canvas takes its place.
@@ -40,16 +30,6 @@
     &.page-mode-classic .js-page-widgets,
     &.page-mode-classic .js-page-widgets-hint {
       display: none;
-    }
-  }
-
-  // Publishing/settings rail. On wide screens it tracks the scroll so the Save
-  // button never leaves the viewport; on narrow screens it stacks under the body.
-  @media (min-width: 992px) {
-    #right-side {
-      align-self: flex-start;
-      position: sticky;
-      top: 1rem;
     }
   }
 
@@ -73,7 +53,7 @@
 
   .page-field-hint {
     color: var(--osc-ink-muted);
-    font-size: .8125rem;
+    font-size: $font-size-label;
     margin-block: .35rem 0;
   }
 
@@ -140,7 +120,7 @@
 
     .page-block-type {
       color: var(--osc-ink-muted);
-      font-size: .8125rem;
+      font-size: $font-size-label;
     }
   }
 
@@ -173,6 +153,22 @@
     .form-check-label {
       color: var(--osc-ink);
       cursor: pointer;
+    }
+  }
+
+  // Below the rail's breakpoint the block row is being tapped, so its handle and its two
+  // links grow to the 24px floor.
+  @media (max-width: 991.98px) {
+    .page-block-handle {
+      justify-content: center;
+      min-block-size: 1.75rem;
+      min-inline-size: 1.75rem;
+    }
+
+    .page-block-actions > * {
+      align-items: center;
+      display: inline-flex;
+      min-block-size: 1.75rem;
     }
   }
 }

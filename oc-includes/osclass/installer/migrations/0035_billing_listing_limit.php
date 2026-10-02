@@ -10,6 +10,7 @@
 
 use mindstellar\database\Connection;
 use mindstellar\migration\MigrationInterface;
+use mindstellar\migration\SchemaProbes;
 
 /**
  * Adds the listing-slot free quota ("N listings live at once") as the seller's
@@ -33,6 +34,8 @@ use mindstellar\migration\MigrationInterface;
  * run, and both index changes are guarded by an information_schema check.
  */
 return new class () implements MigrationInterface {
+    use SchemaProbes;
+
     /** key => [default value, e_type]; mirrors installer/basic_data.sql. */
     private const PREFERENCES = array(
         'billing_free_live_listings' => array('0', 'INTEGER'),
@@ -128,26 +131,4 @@ return new class () implements MigrationInterface {
         }
     }
 
-    /**
-     * Whether an index (unique or not) named $index already exists on $table.
-     *
-     * @param Connection $conn
-     * @param string     $table
-     * @param string     $index
-     *
-     * @return bool
-     * @throws \mindstellar\database\DbException
-     */
-    private function indexExists(Connection $conn, string $table, string $index): bool
-    {
-        $count = $conn->scalar(
-            'SELECT COUNT(*) FROM information_schema.STATISTICS'
-            . ' WHERE TABLE_SCHEMA = DATABASE()'
-            . ' AND TABLE_NAME = ?'
-            . ' AND INDEX_NAME = ?',
-            array($table, $index)
-        );
-
-        return (int) $count > 0;
-    }
 };

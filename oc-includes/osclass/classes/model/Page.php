@@ -17,6 +17,8 @@
  */
 class Page extends DAO
 {
+    protected $cacheGroup = 'page';
+
     /**
      *
      * @var Page
@@ -236,36 +238,40 @@ class Page extends DAO
      */
     public function deleteByPrimaryKey($id)
     {
-        $row = $this->findByPrimaryKey($id);
-
-        osc_run_hook('before_delete_page', $id);
-
-        // An id that matches nothing still runs the delete and reports zero rows
-        // removed, which callers tell apart from the false a failure returns. Only
-        // the reorder is skipped, since there is no gap to close.
-        $order = isset($row['i_order']) ? $row['i_order'] : null;
-
         try {
-            $deleted = osc_db_transaction(function () use ($id, $order) {
-                if ($order !== null) {
-                    // Inside the transaction so a failed delete does not renumber
-                    // the pages that are still there.
-                    $this->reOrderPages($order);
-                }
+            $row = $this->findByPrimaryKey($id);
 
-                osc_db_table($this->getDescriptionTableName())->where('fk_i_pages_id', $id)->delete();
+            osc_run_hook('before_delete_page', $id);
 
-                return osc_db_table($this->tableName)->where('pk_i_id', $id)->delete();
-            });
-        } catch (\Throwable $e) {
-            return false;
+            // An id that matches nothing still runs the delete and reports zero rows
+            // removed, which callers tell apart from the false a failure returns. Only
+            // the reorder is skipped, since there is no gap to close.
+            $order = isset($row['i_order']) ? $row['i_order'] : null;
+
+            try {
+                $deleted = osc_db_transaction(function () use ($id, $order) {
+                    if ($order !== null) {
+                        // Inside the transaction so a failed delete does not renumber
+                        // the pages that are still there.
+                        $this->reOrderPages($order);
+                    }
+
+                    osc_db_table($this->getDescriptionTableName())->where('fk_i_pages_id', $id)->delete();
+
+                    return osc_db_table($this->tableName)->where('pk_i_id', $id)->delete();
+                });
+            } catch (\Throwable $e) {
+                return false;
+            }
+
+            if ($deleted > 0) {
+                osc_run_hook('after_delete_page', $id);
+            }
+
+            return $deleted;
+        } finally {
+            $this->cacheChanged();
         }
-
-        if ($deleted > 0) {
-            osc_run_hook('after_delete_page', $id);
-        }
-
-        return $deleted;
     }
 
     /**
@@ -351,6 +357,26 @@ class Page extends DAO
      */
     public function listAll($indelible = null, $b_link = null, $locale = null, $start = null, $limit = null)
     {
+        $key = 'list:' . json_encode(array($indelible, $b_link, $locale, $start, $limit));
+
+        return \mindstellar\cache\CacheGroup::remember('page', $key, function () use ($indelible, $b_link, $locale, $start, $limit) {
+            return $this->loadList($indelible, $b_link, $locale, $start, $limit);
+        }) ?? array();
+    }
+
+    /**
+     * listAll() without the cache: null when the query fails.
+     *
+     * @param int|null    $indelible
+     * @param int|null    $b_link
+     * @param string|null $locale
+     * @param int|null    $start
+     * @param int|null    $limit
+     *
+     * @return array<int,array<string,mixed>>|null
+     */
+    private function loadList($indelible, $b_link, $locale, $start, $limit)
+    {
         $query = osc_db_table($this->getTableName());
         if (null !== $indelible) {
             $query = $query->where('b_indelible', $indelible);
@@ -374,18 +400,10 @@ class Page extends DAO
         try {
             $aPages = osc_db_stringify_rows($query->get());
         } catch (\mindstellar\database\DbException $e) {
-            return array();
+            return null;
         }
 
-        {
-            if (count($aPages) == 0) {
-                return array();
-            }
-
-            return $this->extendDescriptions($aPages, $locale);
-        }
-
-        return array();
+        return $aPages === array() ? array() : $this->extendDescriptions($aPages, $locale);
     }
 
     /**
@@ -423,43 +441,47 @@ class Page extends DAO
      */
     public function insert($aFields, $aFieldsDescription = null)
     {
-        $order = osc_db_scalar('SELECT MAX(i_order) AS o FROM ' . $this->tableName);
-        if (null === $order) {
-            $order = -1;
-        }
-
-        if (!isset($aFields['b_link'])) {
-            $aFields['b_link'] = 0;
-        }
-
-        if (($aFields['b_link'] == '') && $aFields['b_indelible'] == 1) {
-            $aFields['b_link'] = 0;
-        }
-
-        // The builder hands back the new id directly, and a write that does not raise has
-        // inserted its row -- which is what an affected-row check stands in for.
         try {
-            $id = osc_db_table($this->tableName)->insert(array(
-                's_internal_name' => $aFields['s_internal_name'],
-                'b_indelible'     => $aFields['b_indelible'],
-                'dt_pub_date'     => date('Y-m-d H:i:s'),
-                'dt_mod_date'     => date('Y-m-d H:i:s'),
-                'i_order'         => $order + 1,
-                's_meta'          => $aFields['s_meta'] ?? null,
-                'b_link'          => $aFields['b_link']
-            ));
-        } catch (\mindstellar\database\DbException $e) {
-            return false;
-        }
+            $order = osc_db_scalar('SELECT MAX(i_order) AS o FROM ' . $this->tableName);
+            if (null === $order) {
+                $order = -1;
+            }
 
-        foreach ($aFieldsDescription as $k => $v) {
-            $affected_rows = $this->insertDescription($id, $k, $v['s_title'], $v['s_text']);
-            if (!$affected_rows) {
+            if (!isset($aFields['b_link'])) {
+                $aFields['b_link'] = 0;
+            }
+
+            if (($aFields['b_link'] == '') && $aFields['b_indelible'] == 1) {
+                $aFields['b_link'] = 0;
+            }
+
+            // The builder hands back the new id directly, and a write that does not raise has
+            // inserted its row -- which is what an affected-row check stands in for.
+            try {
+                $id = osc_db_table($this->tableName)->insert(array(
+                    's_internal_name' => $aFields['s_internal_name'],
+                    'b_indelible'     => $aFields['b_indelible'],
+                    'dt_pub_date'     => date('Y-m-d H:i:s'),
+                    'dt_mod_date'     => date('Y-m-d H:i:s'),
+                    'i_order'         => $order + 1,
+                    's_meta'          => $aFields['s_meta'] ?? null,
+                    'b_link'          => $aFields['b_link']
+                ));
+            } catch (\mindstellar\database\DbException $e) {
                 return false;
             }
-        }
 
-        return true;
+            foreach ($aFieldsDescription as $k => $v) {
+                $affected_rows = $this->insertDescription($id, $k, $v['s_title'], $v['s_text']);
+                if (!$affected_rows) {
+                    return false;
+                }
+            }
+
+            return true;
+        } finally {
+            $this->cacheChanged();
+        }
     }
 
     /**
@@ -557,20 +579,24 @@ class Page extends DAO
      */
     public function updateDescription($id, $locale, $title, $text)
     {
-        $conditions = array('fk_c_locale_code' => $locale, 'fk_i_pages_id' => $id);
-        $exist      = $this->existDescription($conditions);
-
-        if (!$exist) {
-            return $this->insertDescription($id, $locale, $title, $text);
-        }
-
         try {
-            return osc_db_table($this->getDescriptionTableName())
-                ->where('fk_c_locale_code', $locale)
-                ->where('fk_i_pages_id', $id)
-                ->update(array('s_title' => $title, 's_text' => $text));
-        } catch (\mindstellar\database\DbException $e) {
-            return false;
+            $conditions = array('fk_c_locale_code' => $locale, 'fk_i_pages_id' => $id);
+            $exist      = $this->existDescription($conditions);
+
+            if (!$exist) {
+                return $this->insertDescription($id, $locale, $title, $text);
+            }
+
+            try {
+                return osc_db_table($this->getDescriptionTableName())
+                    ->where('fk_c_locale_code', $locale)
+                    ->where('fk_i_pages_id', $id)
+                    ->update(array('s_title' => $title, 's_text' => $text));
+            } catch (\mindstellar\database\DbException $e) {
+                return false;
+            }
+        } finally {
+            $this->cacheChanged();
         }
     }
 
@@ -602,16 +628,20 @@ class Page extends DAO
      */
     public function updateInternalName($id, $intName)
     {
-        $fields = array(
-            's_internal_name' => $intName,
-            'dt_mod_date'     => date('Y-m-d H:i:s')
-        );
         try {
-            return osc_db_table($this->tableName)
-                ->where('pk_i_id', $id)
-                ->update($fields);
-        } catch (\mindstellar\database\DbException $e) {
-            return false;
+            $fields = array(
+                's_internal_name' => $intName,
+                'dt_mod_date'     => date('Y-m-d H:i:s')
+            );
+            try {
+                return osc_db_table($this->tableName)
+                    ->where('pk_i_id', $id)
+                    ->update($fields);
+            } catch (\mindstellar\database\DbException $e) {
+                return false;
+            }
+        } finally {
+            $this->cacheChanged();
         }
     }
 
@@ -625,16 +655,20 @@ class Page extends DAO
      */
     public function updateLink($id, $bLink)
     {
-        $fields = array(
-            'b_link'      => $bLink,
-            'dt_mod_date' => date('Y-m-d H:i:s')
-        );
         try {
-            return osc_db_table($this->tableName)
-                ->where('pk_i_id', $id)
-                ->update($fields);
-        } catch (\mindstellar\database\DbException $e) {
-            return false;
+            $fields = array(
+                'b_link'      => $bLink,
+                'dt_mod_date' => date('Y-m-d H:i:s')
+            );
+            try {
+                return osc_db_table($this->tableName)
+                    ->where('pk_i_id', $id)
+                    ->update($fields);
+            } catch (\mindstellar\database\DbException $e) {
+                return false;
+            }
+        } finally {
+            $this->cacheChanged();
         }
     }
 
@@ -649,16 +683,20 @@ class Page extends DAO
      */
     public function updateMeta($id, $meta)
     {
-        $fields = array(
-            's_meta'      => $meta,
-            'dt_mod_date' => date('Y-m-d H:i:s')
-        );
         try {
-            return osc_db_table($this->tableName)
-                ->where('pk_i_id', $id)
-                ->update($fields);
-        } catch (\mindstellar\database\DbException $e) {
-            return false;
+            $fields = array(
+                's_meta'      => $meta,
+                'dt_mod_date' => date('Y-m-d H:i:s')
+            );
+            try {
+                return osc_db_table($this->tableName)
+                    ->where('pk_i_id', $id)
+                    ->update($fields);
+            } catch (\mindstellar\database\DbException $e) {
+                return false;
+            }
+        } finally {
+            $this->cacheChanged();
         }
     }
 

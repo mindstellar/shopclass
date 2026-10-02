@@ -178,6 +178,18 @@ class AdminSecBaseModel
     {
         include ABS_PATH . 'oc-admin/themes/modern/' . $view;
     }
+
+    /** Mirrors the real guard: flashes, redirects, and says that it refused. */
+    protected function refuseOnDemo($redirectUrl = null)
+    {
+        if (!defined('DEMO')) {
+            return false;
+        }
+        osc_add_flash_warning_message('This action cannot be done because it is a demo site', 'admin');
+        $this->redirectTo($redirectUrl ?? osc_admin_base_url(true));
+
+        return true;
+    }
 }
 
 require_once ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminUsers.php';
@@ -334,7 +346,13 @@ while ($res && ($column = $res->fetch_assoc())) {
 if ($res) {
     $res->free();
 }
-pin('the table is the shape the page declares', array('pk_i_id', 's_name', 's_ip', 's_email'), $columns);
+// s_scope and dt_expires are written by a member's report, not by this screen, and a save
+// here leaves them as they were.
+pin(
+    'the table is the shape the page declares, plus the report columns',
+    array('pk_i_id', 's_name', 's_ip', 's_email', 's_scope', 'dt_expires'),
+    $columns
+);
 foreach (array_keys($fields) as $name) {
     check('the column ' . $name . ' writes to is one the table has', in_array($name, $columns, true));
 }
@@ -793,7 +811,8 @@ pin(
     . '<div class="form-row"><div class="form-label"><label for="field-s_email">E-mail rule</label></div>'
     . '<div class="form-controls"><input type="text" id="field-s_email" name="s_email" class="input-text field-text" value="" />'
     . '<div class="help-box">(e.g. *@badsite.com, *@subdomain.badsite.com, *@*badsite.com)</div></div></div>'
-    . '<div class="form-actions"><button type="submit" class="btn btn-sm btn-submit">Add new ban rule</button></div>'
+    . '<div class="form-actions" data-osc-dirty-bar data-osc-dirty-one="1 unsaved change" data-osc-dirty-many="%d unsaved changes"><p class="form-actions-status" role="status" aria-live="polite"></p>'
+    . '<button type="submit" class="btn btn-sm btn-submit">Add new ban rule</button></div>'
     . '</div></fieldset></form>',
     $form
 );

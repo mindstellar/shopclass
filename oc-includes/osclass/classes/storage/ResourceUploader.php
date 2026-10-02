@@ -14,7 +14,6 @@ namespace mindstellar\storage;
 use ImageProcessing;
 use mindstellar\model\Resource;
 use mindstellar\utility\FileSystem;
-use StorageQueue;
 use Throwable;
 
 /**
@@ -36,6 +35,26 @@ use Throwable;
  */
 final class ResourceUploader
 {
+    /**
+     * Re-encode the uploaded source into an "_original" file next to the variants.
+     * A copy stores the upload byte for byte, so anything appended after the image
+     * survives on disk under an image extension; re-encoding strips that.
+     *
+     * @param string $tmpFile  absolute path to the uploaded temp file
+     * @param string $destPath absolute path to write the re-encoded original to
+     * @param string $extension
+     *
+     * @return void
+     */
+    public static function saveOriginal(string $tmpFile, string $destPath, string $extension): void
+    {
+        try {
+            ImageProcessing::fromFile($tmpFile)->autoRotate()->saveToFile($destPath, $extension);
+        } catch (Throwable $e) {
+            @unlink($destPath);
+        }
+    }
+
     /**
      * Validate an image, write its variants and record a t_resource row.
      *
@@ -140,12 +159,23 @@ final class ResourceUploader
             return false;
         }
 
-        osc_copy($normalTmp, $folder . $id . '.' . $extension);
+        $copies = array($normalTmp => $folder . $id . '.' . $extension);
         foreach ($secondary as $suffix => $vtmp) {
-            osc_copy($vtmp, $folder . $id . $suffix . '.' . $extension);
+            $copies[$vtmp] = $folder . $id . $suffix . '.' . $extension;
+        }
+        $copied = true;
+        foreach ($copies as $from => $to) {
+            $copied = $copied && osc_copy($from, $to);
+        }
+        if (!$copied) {
+            array_map(static fn ($to) => @unlink($to), $copies);
+            Resource::newInstance()->deleteResourcesIds(array($id));
+            $this->cleanupTemps($tmpFile, $normalTmp, $secondary);
+
+            return false;
         }
         if ($keepOriginal) {
-            osc_copy($tmpFile, $folder . $id . '_original.' . $extension);
+            self::saveOriginal($tmpFile, $folder . $id . '_original.' . $extension, $extension);
         }
 
         $this->cleanupTemps($tmpFile, $normalTmp, $secondary);
@@ -222,6 +252,30 @@ final class ResourceUploader
     }
 
     /**
+     * Remove the stored files of rows already deleted from t_resource. Call it after the
+     * delete has committed: local files are unlinked, remote ones queued for removal.
+     *
+     * @param array<int,array<string,mixed>> $rows t_resource rows
+     *
+     * @return void
+     */
+    public function purgeDeleted(array $rows): void
+    {
+        $owners = array();
+        foreach ($rows as $row) {
+            $this->purgeFiles($row);
+            osc_run_hook('delete_resource', $row);
+            $owners[($row['s_owner_type'] ?? '') . ':' . ($row['i_owner_id'] ?? 0)] = $row;
+        }
+        foreach ($owners as $row) {
+            Resource::newInstance()->invalidateOwnerCache(
+                (string) ($row['s_owner_type'] ?? ''),
+                (int) ($row['i_owner_id'] ?? 0)
+            );
+        }
+    }
+
+    /**
      * Remove a resource's files, or queue their removal when the row lives on (or
      * an install has configured) a remote adapter. Never touches the database.
      *
@@ -248,7 +302,7 @@ final class ResourceUploader
             return;
         }
 
-        StorageQueue::newInstance()->enqueue('delete', $storage, $row);
+        StorageJobs::enqueue('delete', $storage, $row);
     }
 
     /**

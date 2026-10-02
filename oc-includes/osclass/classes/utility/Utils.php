@@ -10,7 +10,6 @@
 namespace mindstellar\utility;
 
 use Category;
-use CategoryStats;
 use City;
 use CityStats;
 use Country;
@@ -223,14 +222,23 @@ class Utils
         }
         unset($category);
 
-        $sql     = 'REPLACE INTO ' . DB_TABLE_PREFIX . 't_category_stats (fk_i_category_id, i_num_items) VALUES ';
-        $aValues = array();
-        foreach ($categoryTotal as $k => $v) {
-            $aValues[] = "($k, $v)";
+        // Bound and written in chunks; a site with no categories writes nothing.
+        foreach (array_chunk($categoryTotal, 500, true) as $chunk) {
+            $params = array();
+            foreach ($chunk as $categoryId => $total) {
+                $params[] = (int)$categoryId;
+                $params[] = (int)$total;
+            }
+            try {
+                osc_db_execute(
+                    'REPLACE INTO ' . DB_TABLE_PREFIX . 't_category_stats (fk_i_category_id, i_num_items) VALUES '
+                    . implode(', ', array_fill(0, count($chunk), '(?, ?)')),
+                    $params
+                );
+            } catch (\mindstellar\database\DbException $e) {
+                return;
+            }
         }
-        $sql .= implode(',', $aValues);
-
-        CategoryStats::newInstance()->dao->query($sql);
     }
 
     /**
@@ -268,32 +276,48 @@ class Utils
         if (!is_numeric($id)) {
             throw new \InvalidArgumentException(__('Category id is not a valid integer'));
         }
-        // get sub categories
-        $aCategories   = Category::newInstance()->findSubcategories($id);
-        $categoryTotal = 0;
-        $category      = Category::newInstance()->findByPrimaryKey($id);
-
-        if (count($aCategories) > 0) {
-            // sum items in category
-            foreach ($aCategories as $subcategory) {
-                $total         = Item::newInstance()->numItems($subcategory);
-                $categoryTotal += $total;
-            }
-            $categoryTotal += Item::newInstance()->numItems($category);
-        } else {
-            $total         = Item::newInstance()->numItems($category);
-            $categoryTotal += $total;
+        $category = Category::newInstance()->findByPrimaryKey($id);
+        if (!$category) {
+            return;
         }
+        $categoryTotal = self::subtreeItemCount($category);
 
-        $aSet = [
-            'fk_i_category_id' => $id,
-            'i_num_items' => $categoryTotal
-                     ];
-        CategoryStats::newInstance()->dao->replace(DB_TABLE_PREFIX . 't_category_stats', $aSet);
+        try {
+            osc_db_execute(
+                'REPLACE INTO ' . DB_TABLE_PREFIX . 't_category_stats (fk_i_category_id, i_num_items) VALUES (?, ?)',
+                array((int)$id, (int)$categoryTotal)
+            );
+        } catch (\mindstellar\database\DbException $e) {
+            // A failed write leaves the old count, as the legacy query did; the parents still update.
+        }
 
         if ($category['fk_i_parent_id'] != 0) {
             self::updateCategoryStatsById($category['fk_i_parent_id']);
         }
+    }
+
+    /**
+     * Live listings in a category and every category below it, at any depth.
+     *
+     * @param array<string,mixed> $category
+     * @param array<int,bool>     $seen     ids already counted, so a parent loop cannot recurse forever
+     *
+     * @return int
+     */
+    private static function subtreeItemCount(array $category, array &$seen = array())
+    {
+        $id = (int)$category['pk_i_id'];
+        if (isset($seen[$id])) {
+            return 0;
+        }
+        $seen[$id] = true;
+
+        $total = (int)Item::newInstance()->numItems($category);
+        foreach (Category::newInstance()->findSubcategories($id) as $sub) {
+            $total += self::subtreeItemCount($sub, $seen);
+        }
+
+        return $total;
     }
 
     /**
@@ -492,28 +516,14 @@ class Utils
     }
 
     /**
-     * Get Current Client IP Address
+     * The client's IP address: REMOTE_ADDR only. Forwarded-for headers are written by the
+     * client, so a site behind a proxy has the proxy set REMOTE_ADDR instead.
      *
      * @return string
      */
     public static function getClientIp()
     {
-        if (($http_client_ip = (Params::getServerParam('HTTP_CLIENT_IP') !== ''))
-            && filter_var($http_client_ip, FILTER_VALIDATE_IP)
-        ) {
-            return $http_client_ip;
-        }
-
-        if ($http_x_forward_for = (Params::getServerParam('HTTP_X_FORWARDED_FOR') !== '')) {
-            $ip_array = explode(',', $http_x_forward_for);
-            $ip       = trim($ip_array[0]);
-            if (filter_var($ip, FILTER_VALIDATE_IP)) {
-                return $ip;
-            }
-        }
-
-        //Most Reliable
-        return Params::getServerParam('REMOTE_ADDR');
+        return (string)Params::getServerParam('REMOTE_ADDR');
     }
 
     /**

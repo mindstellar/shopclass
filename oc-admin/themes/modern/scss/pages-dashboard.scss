@@ -104,10 +104,18 @@
 // dashboard columns keep an even height. Was an inline style with overflow on the
 // WRONG axis (overflow-x for a vertically-overflowing list) plus a magic height —
 // moved to a class and corrected to overflow-y.
+// Scroll shadows, not a plain cut: the cover layers are attached `local` so they ride
+// with the content and mask the shadow at each end, leaving the hint only while there
+// is more to scroll. A half-cut row then reads as more below, not as a broken panel.
 .dash-category-scroll {
   max-height: 19rem;
   overflow-y: auto;
   overscroll-behavior: contain;
+  background:
+    linear-gradient(var(--osc-bench) 30%, rgba(0, 0, 0, 0)) top    / 100% 1.5rem local no-repeat,
+    linear-gradient(rgba(0, 0, 0, 0), var(--osc-bench) 70%) bottom / 100% 1.5rem local no-repeat,
+    radial-gradient(farthest-side at 50% 0,    rgba(0, 0, 0, .13), rgba(0, 0, 0, 0)) top    / 100% .5rem scroll no-repeat,
+    radial-gradient(farthest-side at 50% 100%, rgba(0, 0, 0, .13), rgba(0, 0, 0, 0)) bottom / 100% .5rem scroll no-repeat;
 }
 
 // ---- System status list -----------------------------------------------------

@@ -253,8 +253,6 @@ if (!$inline) {
             // A widget may legitimately embed a script tag; nothing else may.
             'extended_valid_elements' => 'script[type|src|charset|defer]',
         )); ?>;
-        // JavaScript, so it cannot come through the JSON above.
-        if (window.oscTinymceTheme) { Object.assign(cfg, window.oscTinymceTheme()); }
         tinymce.init(cfg);
     });
 </script>

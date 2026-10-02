@@ -1,6 +1,6 @@
 ---
 title: Spam & abuse
-description: Defend a ShopClass site against spam and bots, Turnstile or reCAPTCHA, the keyword blocklist, login throttling, Akismet and rate limits.
+description: "Defend a ShopClass site against spam and bots: Turnstile or reCAPTCHA, the keyword blocklist, login throttling, Akismet and rate limits."
 sidebar:
   order: 5
 ---
@@ -14,9 +14,9 @@ because each one costs a real visitor something.
 ## CAPTCHA
 
 Pick one provider and fill in its two keys. The admin validates them as you save
-and tells you plainly (*This key is valid*, or *The key you entered is invalid.
-Please double-check it*), so you find out immediately rather than when a visitor
-cannot post.
+and tells you plainly: *This key is valid*, or *The key you entered is invalid.
+Please double-check it*. That way you find out immediately rather than when a
+visitor cannot post.
 
 | Provider | Keys |
 |---|---|
@@ -43,15 +43,21 @@ repository or a support post.
 Repeated failed logins are throttled per IP and per account, so a password
 guesser is slowed to uselessness without locking out a real user who mistyped.
 
+The settings are in **Settings → Spam and bots → Sign-in protection**:
+
 | Setting | Default |
 |---|---|
-| Window | 15 minutes |
-| Maximum attempts per IP | 20 |
-| Maximum attempts per account | 10 |
-| Attempt log retention | 7 days |
+| Count failures from the last | 15 minutes |
+| Failures per IP address | 20 |
+| Failures per account | 10 |
+| Keep records for | 7 days |
 
 The per-account limit is the one that matters against a targeted attack; the
 per-IP limit catches broad scanning.
+
+**Failed sign-ins right now**, under **Tools → System info → Security**, lists every
+address and account with recent failures and says which are blocked. **Unblock** lets one of them try again at
+once; **Unblock everyone** clears them all.
 
 :::danger[Behind a proxy, throttling needs the real client IP]
 If your site sits behind Cloudflare, a tunnel or any reverse proxy and the real
@@ -60,6 +66,33 @@ The per-IP limit then throttles your entire audience as one person, and abuse
 reports all key to the same address. Set the real-IP header before you rely on
 either. See the [caching contract](/docs/developers/caching/).
 :::
+
+## Two-step sign-in for admins
+
+Each admin can add a second step to their sign-in: a 6-digit code from an
+authenticator app, such as Google Authenticator, Microsoft Authenticator or
+Aegis. Open your account menu, top right, and choose **Edit profile**. Under
+**Two-step sign-in**, choose **Set up**, scan the QR code and type the code the
+app shows.
+
+You then get 8 backup codes, shown once. Keep them somewhere safe. Each one
+works once, in place of an app code, if you lose your phone. **New backup
+codes** replaces them, and **Turn off** removes the second step. Both ask for a
+current code.
+
+After 10 wrong codes in 15 minutes, the code step waits until the 15 minutes
+are up. Someone who knows the password can keep an admin waiting this way. After
+5 wrong codes in 15 minutes, or more than 10 in a day, the admin gets an e-mail
+saying so, at most once an hour: change the password when it comes. Changing the site's signing key
+(`OSC_CSRF_SECRET`) makes every backup code stop working; the app codes still
+work, and **New backup codes** issues fresh ones.
+
+If an admin loses both their phone and their backup codes, a full administrator
+can turn it off on that admin's edit screen, or from the command line:
+
+```bash
+php oc-cli.php user:2fa-off --user=<username>
+```
 
 ## The keyword blocklist
 
@@ -84,20 +117,56 @@ An Akismet API key enables comment and listing spam checking through the same
 service WordPress uses. It is worth having on a site with open comments, and
 redundant on a site where comments are closed or moderated.
 
+## Messages
+
+The contact form, contact the seller, contact a user and share a listing all
+send e-mail.
+
+**Confirmed senders only.** Mail leaves only from an address the sender has
+proved is theirs. A signed-in member's own address counts when the site checks
+e-mails at sign-up. Anyone else gets a link at the address they typed. The link
+opens a page showing the message; it is sent when they click *Send my message*,
+or deleted with *This was not me*. It waits at most 24 hours. After one click, that browser sends straight
+away for 30 days. One message per address can wait at a time. A file can be
+attached only once the address is confirmed. The site's own contact form works
+the same way.
+
+**Mail from your contact form** ends with *Report the sender* too. It bans the
+address from the whole site for good: sign-in, posting and messages. Only a
+signed-in admin can use it; anyone else is asked to sign in first.
+
+**Settings → Spam and bots → Messages:**
+
+- **Links allowed in a message.** Default 1, counted in the message. A message
+  with more is refused and the sender is told why. 0 allows none. Names may not
+  hold links or markup, and a phone number may hold only digits, spaces,
+  `+ ( ) - .` and an extension.
+- **Longest message.** Default 5000 characters. A longer message is refused and
+  the sender is told the limit. 0 allows any length.
+- **Report link.** Mail a member receives ends with *Report the sender*. The
+  member confirms on a page, and the sender's address cannot send messages for
+  the set number of days (default 30). Sign-in and posting still work. Each link
+  works once. The rule shows under **Users → Ban rules** as *Messages only, until
+  …*, where you can delete it early.
+
+Each form also has an hourly limit per IP address. The ban list applies to all
+of them, and to e-mail fields on your own forms.
+
 ## Rate limits and registration rules
 
 The settings that do the most, and are easiest to forget:
 
-- **Listings → Settings → wait *n* seconds between listings.** A bulk poster is
-  stopped by a delay long before they are stopped by a CAPTCHA.
-- **Listings → Settings → only logged in users can post.** The single biggest
-  reduction in spam volume, at the cost of some genuine posts.
-- **Listings → Settings → moderate listings.** Holding new listings until they
-  are approved stops spam reaching visitors at all. Set the threshold so a user
-  stops needing moderation after a few approved listings, and the cost falls to
-  almost nothing once your regulars are established.
-- **Users → Settings → users need to validate their account.** The same, for
-  registration.
+- **Listings → Settings → An user has to wait _n_ seconds between each listing
+  added.** A bulk poster is stopped by a delay long before they are stopped by a
+  CAPTCHA.
+- **Listings → Settings → Only logged in users can post listings.** The single
+  biggest reduction in spam volume, at the cost of some genuine posts.
+- **Listings → Settings → Users have to validate their listings.** Holding new
+  listings until they are validated stops spam reaching visitors at all. Set the
+  threshold so a user stops needing to validate after a few approved listings,
+  and the cost falls to almost nothing once your regulars are established.
+- **Users → Settings → Users need to validate their account.** The same idea,
+  for registration.
 - **Users → Ban rules.** Block a returning abuser's address, domain or IP
   pattern.
 

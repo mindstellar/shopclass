@@ -126,6 +126,21 @@ pin('s_data round-trips', 'log payload', $row['s_data'] ?? null);
 pin('s_ip round-trips the ambient REMOTE_ADDR', '203.0.113.9', $row['s_ip'] ?? null);
 pin('s_who round-trips', 'admin', $row['s_who'] ?? null);
 pin('fk_i_who_id round-trips', '7', $row['fk_i_who_id'] ?? null);
+
+harness_section('Log::insertLog — over-long values under strict SQL');
+
+$mode = osc_db_scalar('SELECT @@SESSION.sql_mode');
+osc_db_execute("SET SESSION sql_mode = 'STRICT_ALL_TABLES'");
+$truncateLog();
+$ret  = $log->insertLog(str_repeat('s', 80), 'delete resource backtrace', 1, str_repeat('é', 400), 'admin', 1);
+$rows = $logRows();
+osc_db_execute('SET SESSION sql_mode = ?', array((string) $mode));
+pin('an over-long entry is still written', array(true, 1), array($ret, count($rows)));
+pin(
+    's_data and s_section are cut to their column width, in characters',
+    array(250, 50),
+    array(mb_strlen($rows[0]['s_data'] ?? '', 'UTF-8'), mb_strlen($rows[0]['s_section'] ?? '', 'UTF-8'))
+);
 check(
     'dt_date is populated with a real timestamp',
     isset($row['dt_date']) && (bool) preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $row['dt_date']),

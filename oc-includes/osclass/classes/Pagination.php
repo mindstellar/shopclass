@@ -78,15 +78,11 @@ class Pagination
     {
         if ($this->total > 1) {
             $links = $this->get_links();
-            // Landmark + label on the existing <ul> (no wrapper element, so theme CSS
-            // targeting the list is unaffected) for screen-reader navigation.
-            $nav = ' role="navigation" aria-label="' . osc_esc_html(__('Pagination')) . '"';
-            if ($this->listClass !== false) {
-                return '<ul class="' . osc_esc_html($this->listClass) . '"' . $nav . '>'
-                    . implode($this->delimiter, $links) . '</ul>';
-            }
+            // A list cannot carry the navigation role, so the landmark is a <nav> around it.
+            $class = $this->listClass !== false ? ' class="' . osc_esc_html($this->listClass) . '"' : '';
 
-            return '<ul' . $nav . '>' . implode($this->delimiter, $links) . '</ul>';
+            return '<nav aria-label="' . osc_esc_html(__('Pagination')) . '"><ul' . $class . '>'
+                . implode($this->delimiter, $links) . '</ul></nav>';
         }
 
         return '';

@@ -20,6 +20,9 @@
  */
 class Item extends DAO
 {
+    /** Width of t_item_description.s_title, in characters. */
+    public const TITLE_WIDTH = 100;
+
     /**
      * It references to self object: Item.
      * It is used as a singleton
@@ -480,6 +483,55 @@ class Item extends DAO
     }
 
     /**
+     * The nearest live listing by id, with only the fields the listing URL needs.
+     * The title follows findByPrimaryKey(): $locale first, else the first non-empty one.
+     *
+     * @param int    $itemId Listing to start from
+     * @param bool   $next   true for the next higher id, false for the next lower
+     * @param string $locale Preferred title locale
+     *
+     * @return array{pk_i_id:string,fk_i_category_id:string,s_city:string,s_title:string}|array{}
+     *         Empty when there is no such listing or the query fails
+     */
+    public function findAdjacentLive(int $itemId, bool $next, string $locale): array
+    {
+        $sql = 'SELECT a.pk_i_id, a.fk_i_category_id, l.s_city, d.fk_c_locale_code, d.s_title'
+            . ' FROM (SELECT i.pk_i_id, i.fk_i_category_id FROM ' . $this->getTableName() . ' i'
+            . ' WHERE i.pk_i_id ' . ($next ? '>' : '<') . ' ? AND ' . implode(' AND ', self::liveConditions('i.'))
+            . ' ORDER BY i.pk_i_id ' . ($next ? 'ASC' : 'DESC') . ' LIMIT 1) a'
+            . ' LEFT JOIN ' . DB_TABLE_PREFIX . 't_item_location l ON l.fk_i_item_id = a.pk_i_id'
+            . ' LEFT JOIN ' . DB_TABLE_PREFIX . "t_item_description d ON d.fk_i_item_id = a.pk_i_id AND d.s_title <> ''"
+            . ' ORDER BY d.fk_c_locale_code';
+
+        try {
+            $rows = osc_db_stringify_rows(osc_db_select($sql, array($itemId)));
+        } catch (\mindstellar\database\DbException $e) {
+            return array();
+        }
+        if ($rows === array()) {
+            return array();
+        }
+
+        $title = '';
+        foreach ($rows as $row) {
+            if ($row['fk_c_locale_code'] === $locale) {
+                $title = (string)$row['s_title'];
+                break;
+            }
+            if ($title === '') {
+                $title = (string)$row['s_title'];
+            }
+        }
+
+        return array(
+            'pk_i_id'          => (string)$rows[0]['pk_i_id'],
+            'fk_i_category_id' => (string)$rows[0]['fk_i_category_id'],
+            's_city'           => (string)$rows[0]['s_city'],
+            's_title'          => $title,
+        );
+    }
+
+    /**
      * Count the live items in a category.
      *
      * LEAVE THIS FOR COMPATIBILITIES ISSUES (ONLY SITEMAP GENERATOR)
@@ -542,7 +594,7 @@ class Item extends DAO
         $array_set = array(
             'fk_i_item_id'     => $id,
             'fk_c_locale_code' => $locale,
-            's_title'          => $title,
+            's_title'          => self::fitTitle($title),
             's_description'    => $description
         );
 
@@ -753,7 +805,13 @@ class Item extends DAO
      */
     public function findByHourExpiration($hours = 24)
     {
-        $conditions = ['TIMESTAMPDIFF(HOUR, NOW(), dt_expiration) = ' . (int)$hours, 'b_active = 1', 'b_spam = 0'];
+        // Same rows as TIMESTAMPDIFF(HOUR, NOW(), dt_expiration) = $hours, as a range an index can use.
+        $hours      = (int)$hours;
+        $conditions = [
+            'dt_expiration >= NOW() + INTERVAL ' . $hours . ' HOUR AND dt_expiration < NOW() + INTERVAL ' . ($hours + 1) . ' HOUR',
+            'b_active = 1',
+            'b_spam = 0'
+        ];
 
         return $this->findItemByTypes($conditions);
     }
@@ -768,7 +826,12 @@ class Item extends DAO
      */
     public function findByDayExpiration($days = 1)
     {
-        $conditions = ['TIMESTAMPDIFF(DAY, NOW(), dt_expiration) = ' . (int)$days, 'b_active = 1', 'b_spam = 0'];
+        $days       = (int)$days;
+        $conditions = [
+            'dt_expiration >= NOW() + INTERVAL ' . $days . ' DAY AND dt_expiration < NOW() + INTERVAL ' . ($days + 1) . ' DAY',
+            'b_active = 1',
+            'b_spam = 0'
+        ];
 
         return $this->findItemByTypes($conditions);
     }
@@ -874,6 +937,18 @@ class Item extends DAO
     }
 
     /**
+     * Cut a title to the column width: strict SQL mode refuses an over-long one and loses the row.
+     *
+     * @param mixed $title
+     *
+     * @return string|null
+     */
+    private static function fitTitle($title): ?string
+    {
+        return $title === null ? null : mb_substr((string) $title, 0, self::TITLE_WIDTH, 'UTF-8');
+    }
+
+    /**
      * Update title and description given a item id and locale.
      *
      * @param int    $id
@@ -891,7 +966,7 @@ class Item extends DAO
             . ' (s_title, s_description, fk_c_locale_code, fk_i_item_id) VALUES (?, ?, ?, ?)';
 
         try {
-            osc_db_execute($sql, array($title, $text, $locale, $id));
+            osc_db_execute($sql, array(self::fitTitle($title), $text, $locale, $id));
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
@@ -920,7 +995,10 @@ class Item extends DAO
         }
 
         try {
-            $item = osc_db_select_one('SELECT dt_expiration FROM ' . $this->getTableName() . ' WHERE pk_i_id = ?', array($id));
+            $item = osc_db_select_one(
+                'SELECT dt_expiration, b_enabled, b_active, b_spam, b_premium FROM ' . $this->getTableName() . ' WHERE pk_i_id = ?',
+                array($id)
+            );
         } catch (\mindstellar\database\DbException $e) {
             $item = null;
         }
@@ -931,7 +1009,7 @@ class Item extends DAO
         // null row and converges on the same false, so it is guarded up front.
         if ($item !== null) {
             $item        = osc_db_stringify_row($item);
-            $expired_old = osc_isExpired($item['dt_expiration']);
+            $counted_old = osc_item_is_counted($item);
             if (ctype_digit($expiration_time)) {
                 if ($expiration_time > 0) {
                     // A DATE_ADD(...) expression must reach the column UNquoted:
@@ -987,9 +1065,9 @@ class Item extends DAO
                     return $_item['dt_expiration'];
                 }
 
-                $expired = osc_isExpired($_item['dt_expiration']);
-                if ($expired !== $expired_old) {
-                    if ($expired) {
+                $counted = osc_item_is_counted(array('dt_expiration' => $_item['dt_expiration']) + $item);
+                if ($counted !== $counted_old) {
+                    if (!$counted) {
                         if ($_item['fk_i_user_id'] != null) {
                             User::newInstance()->decreaseNumItems($_item['fk_i_user_id']);
                         }
@@ -1191,10 +1269,9 @@ class Item extends DAO
         $resources = ItemResource::newInstance()->getAllResourcesFromItem($id);
 
         // t_item_moderation_log and t_item_report_log carry no foreign key to the
-        // item, so nothing blocked the delete and nothing removed them either: an
-        // id reused by a later listing would inherit the old listing's report and
-        // moderation history. The rest are covered by ON DELETE CASCADE as well,
-        // and stay listed for installs whose foreign keys were never created.
+        // item, so only this removes them. t_item_comment and t_item_resource are
+        // RESTRICT and must go first; the rest cascade, and stay listed for installs
+        // whose foreign keys were never created.
         $dependents = array(
             't_item_description',
             't_item_comment',
@@ -1231,9 +1308,7 @@ class Item extends DAO
         // Counters are decremented only once the row is really gone. Doing it first
         // meant a delete that failed still took the listing out of every total, and
         // the numbers stayed wrong until the next stats rebuild.
-        if ($item['b_active'] == 1 && $item['b_enabled'] == 1 && $item['b_spam'] == 0
-            && !osc_isExpired($item['dt_expiration'])
-        ) {
+        if (osc_item_is_counted($item)) {
             if ($item['fk_i_user_id'] != null) {
                 User::newInstance()->decreaseNumItems($item['fk_i_user_id']);
             }

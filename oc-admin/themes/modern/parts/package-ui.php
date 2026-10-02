@@ -51,21 +51,25 @@ if (!function_exists('osc_package_state')) {
 
 if (!function_exists('osc_package_art')) {
     /**
-     * The artwork box. Art is fitted, never cropped: a plugin icon is square and a theme
-     * screenshot is wide, and both have to survive the same box.
+     * The artwork box: a plugin's square icon or a theme's screenshot.
      *
      * @param array  $art  {src:string, has:bool} from osc_market_browse_art()/osc_market_installed_art()
      * @param string $slug Used only for the placeholder tint
      * @param string $name Its initial is the placeholder glyph
      * @param string $size 'row' or 'wide'
+     * @param bool   $opensDetail draw it as the button that opens the package's detail dialog
      *
      * @return void
      */
-    function osc_package_art($art, $slug, $name, $size = 'row')
+    function osc_package_art($art, $slug, $name, $size = 'row', $opensDetail = false)
     {
         $has = !empty($art['has']);
+        $tag = $opensDetail ? 'button' : 'div';
         ?>
-        <div class="osc-pkg-art osc-pkg-art--<?php echo osc_esc_html($size); ?>">
+        <<?php echo $tag; ?> class="osc-pkg-art osc-pkg-art--<?php echo osc_esc_html($size); ?><?php
+            echo $opensDetail ? ' osc-pkg-art--button' : ''; ?>"<?php if ($opensDetail) : ?>
+            type="button" data-market-open-detail
+            aria-label="<?php echo osc_esc_html(sprintf(__('Details: %s'), $name)); ?>"<?php endif; ?>>
             <div class="osc-thumb<?php echo $has ? '' : ' osc-thumb--fallback'; ?>"
                  style="--osc-thumb-hue: <?php echo (int) osc_market_thumb_hue($slug); ?>">
                 <?php if ($has) : ?>
@@ -75,7 +79,7 @@ if (!function_exists('osc_package_art')) {
                 <span class="osc-thumb-letter" aria-hidden="true"><?php
                     echo osc_esc_html(mb_strtoupper(mb_substr($name, 0, 1))); ?></span>
             </div>
-        </div>
+        </<?php echo $tag; ?>>
         <?php
     }
 }
@@ -133,28 +137,39 @@ if (!function_exists('osc_package_row')) {
      *
      * @param array $pkg {art:array, slug:string, name:string, state:string, state_word?:string,
      *                    meta?:array<int,string>, description?:string, note?:string,
-     *                    note_variant?:string, actions?:array, size?:string, class?:string}
+     *                    note_variant?:string, actions?:array, size?:string, class?:string,
+     *                    detail?:array} detail: what the market detail dialog shows before it
+     *                    loads the rest -- name, author, version, short_description, tags.
+     *                    With it, the art and a Details link open that dialog.
      *
      * @return void
      */
     function osc_package_row($pkg)
     {
-        $meta = isset($pkg['meta']) ? array_filter($pkg['meta']) : array();
-        $size = isset($pkg['size']) ? $pkg['size'] : 'row';
+        $meta   = isset($pkg['meta']) ? array_filter($pkg['meta']) : array();
+        $size   = isset($pkg['size']) ? $pkg['size'] : 'row';
+        $detail = isset($pkg['detail']) && is_array($pkg['detail']) ? $pkg['detail'] + array('slug' => $pkg['slug']) : null;
+        if ($detail !== null) {
+            $pkg['actions']['links'] = array_merge(
+                array('<a href="#" data-market-open-detail>' . osc_esc_html(__('Details')) . '</a>'),
+                $pkg['actions']['links'] ?? array()
+            );
+        }
         ?>
         <li class="osc-pkg osc-pkg--<?php echo osc_esc_html($size); ?> <?php
-            echo osc_esc_html(isset($pkg['class']) ? $pkg['class'] : ''); ?>">
-            <?php osc_package_art($pkg['art'], $pkg['slug'], $pkg['name'], $size); ?>
+            echo osc_esc_html(isset($pkg['class']) ? $pkg['class'] : ''); ?>"<?php if ($detail !== null) : ?>
+            data-market-item="<?php echo htmlspecialchars((string) json_encode($detail, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT), ENT_QUOTES); ?>"<?php endif; ?>>
+            <?php osc_package_art($pkg['art'], $pkg['slug'], $pkg['name'], $size, $detail !== null); ?>
             <div class="osc-pkg-main">
                 <div class="osc-pkg-head">
-                    <h3 class="osc-pkg-name"><?php echo osc_esc_html($pkg['name']); ?></h3>
+                    <h3 class="osc-pkg-name" dir="auto"><?php echo osc_esc_html($pkg['name']); ?></h3>
                     <?php osc_package_state($pkg['state'], isset($pkg['state_word']) ? $pkg['state_word'] : ''); ?>
                 </div>
                 <?php if ($meta) : ?>
                     <p class="osc-pkg-meta"><?php echo implode(' <span class="osc-pkg-sep">·</span> ', $meta); ?></p>
                 <?php endif; ?>
                 <?php if (!empty($pkg['description'])) : ?>
-                    <p class="osc-pkg-desc"><?php echo osc_esc_html($pkg['description']); ?></p>
+                    <p class="osc-pkg-desc" dir="auto"><?php echo osc_esc_html($pkg['description']); ?></p>
                 <?php endif; ?>
                 <?php if (!empty($pkg['note'])) : ?>
                     <p class="osc-pkg-note osc-pkg-note--<?php

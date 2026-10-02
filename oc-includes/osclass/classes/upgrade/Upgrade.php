@@ -115,6 +115,29 @@ class Upgrade
     }
 
     /**
+     * The folder holding the package's index.php: the zip root, or one of its allowed
+     * top-level folders, or null when there is none.
+     *
+     * @param string        $extracted
+     * @param array<string> $folders
+     *
+     * @return string|null
+     */
+    public static function packageRoot(string $extracted, array $folders): ?string
+    {
+        if (file_exists($extracted . '/index.php')) {
+            return $extracted;
+        }
+        foreach ($folders as $folder) {
+            if ($folder !== '' && file_exists($extracted . '/' . $folder . '/index.php')) {
+                return $extracted . '/' . $folder;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * process package upgrade
      *
      * @return void
@@ -125,7 +148,7 @@ class Upgrade
     {
         $extracted_package_path = $this->downloadPackageAndExtract();
         if (!$extracted_package_path) {
-            return;
+            throw new RuntimeException(__('The download failed, or did not match its checksum. Nothing was changed.'));
         }
 
         try {
@@ -133,13 +156,8 @@ class Upgrade
             // has chosen banner-only maintenance, since files are being replaced.
             $this->FileSystem->writeToFile(ABS_PATH . '.maintenance', OSC_MAINTENANCE_UPGRADE_MARKER);
 
-            if (file_exists($extracted_package_path . '/index.php')) {
-                //make this the origin directory
-                $originDir = $extracted_package_path;
-            } elseif (file_exists($extracted_package_path . '/' . $this->objPackage->getShortName())
-                      && file_exists($extracted_package_path . '/' . $this->objPackage->getShortName().'/index.php')) {
-                $originDir = $extracted_package_path . '/' . $this->objPackage->getShortName();
-            } else {
+            $originDir = self::packageRoot($extracted_package_path, $this->objPackage->getFolderNames());
+            if ($originDir === null) {
                 throw new RuntimeException(
                     __("Invalid Zip package, it's not in valid format.")
                 );
@@ -152,6 +170,10 @@ class Upgrade
                     null,
                     $this->objPackage->getFilteredFiles() //Don't overwrite these files or directory while upgrading
                 );
+                // A server that caches compiled PHP would otherwise keep running the old files.
+                if (function_exists('opcache_reset')) {
+                    @opcache_reset();
+                }
             } else {
                 throw new RuntimeException(
                     $originDir . ' '

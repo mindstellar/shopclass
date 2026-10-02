@@ -240,12 +240,46 @@ function osc_current_web_theme()
  */
 function osc_current_web_theme_url($file = '')
 {
-    $info = WebThemes::newInstance()->loadThemeInfo(WebThemes::newInstance()->getCurrentTheme());
-    if (!file_exists(WebThemes::newInstance()->getCurrentThemePath() . $file) && $info['template'] != '') {
-        WebThemes::newInstance()->setParentTheme();
+    return osc_theme_asset_url($file);
+}
+
+/**
+ * URL of a theme asset, taken from the parent when the active theme does not carry it.
+ *
+ * Resolving used to run through setParentTheme(), which does not describe a file -- it
+ * switches the active theme for the rest of the request. So the first asset only the
+ * parent had flipped every later lookup to the parent too, and a child's own stylesheet
+ * came back as a 404 under the parent's directory. This answers the question and changes
+ * nothing.
+ *
+ * @param string $file path inside the theme, e.g. 'css/style.css'
+ *
+ * @return string
+ */
+function osc_theme_asset_url($file = '')
+{
+    $themes  = WebThemes::newInstance();
+    $ownUrl  = $themes->getCurrentThemeUrl() . $file;
+
+    if ($file === '' || file_exists($themes->getCurrentThemePath() . $file)) {
+        return $ownUrl;
     }
 
-    return WebThemes::newInstance()->getCurrentThemeUrl() . $file;
+    $current = (string) $themes->getCurrentTheme();
+    $info    = $themes->loadThemeInfo($current);
+    if (!is_array($info) || empty($info['template'])
+        || !\mindstellar\utility\Validate::packageName((string) $info['template'])
+        || $info['template'] === $current
+    ) {
+        return $ownUrl;
+    }
+
+    $parentPath = osc_themes_path() . $info['template'] . '/';
+    if (!file_exists($parentPath . $file)) {
+        return $ownUrl;
+    }
+
+    return osc_base_url() . str_replace(osc_base_path(), '', $parentPath) . $file;
 }
 
 /**
@@ -257,26 +291,37 @@ function osc_current_web_theme_url($file = '')
  */
 function osc_current_web_theme_path($file = '')
 {
-    if (file_exists(WebThemes::newInstance()->getCurrentThemePath() . $file)) {
-        require WebThemes::newInstance()->getCurrentThemePath() . $file;
-    } else {
-        $info = WebThemes::newInstance()->loadThemeInfo(WebThemes::newInstance()->getCurrentTheme());
-        if (isset($info['template']) && $info['template'] != '') {
-            WebThemes::newInstance()->setParentTheme();
-            if (file_exists(WebThemes::newInstance()->getCurrentThemePath() . $file)) {
-                require WebThemes::newInstance()->getCurrentThemePath() . $file;
-            } else {
-                WebThemes::newInstance()->setGuiTheme();
-                if (file_exists(WebThemes::newInstance()->getCurrentThemePath() . $file)) {
-                    require WebThemes::newInstance()->getCurrentThemePath() . $file;
-                }
-            }
-        } else {
-            WebThemes::newInstance()->setGuiTheme();
-            if (file_exists(WebThemes::newInstance()->getCurrentThemePath() . $file)) {
-                require WebThemes::newInstance()->getCurrentThemePath() . $file;
-            }
+    $themes = WebThemes::newInstance();
+
+    if (file_exists($themes->getCurrentThemePath() . $file)) {
+        require $themes->getCurrentThemePath() . $file;
+
+        return;
+    }
+
+    // A parent's view is required from the parent's directory, without making the parent
+    // the active theme. Switching used to be how a parent's view got the parent's assets;
+    // osc_theme_asset_url() answers that per file now, so the switch bought nothing and
+    // cost the child every asset it ships -- they resolved under the parent from here on.
+    $current = (string) $themes->getCurrentTheme();
+    $info    = $themes->loadThemeInfo($current);
+    if (is_array($info) && !empty($info['template'])
+        && \mindstellar\utility\Validate::packageName((string) $info['template'])
+        && $info['template'] !== $current
+    ) {
+        $parentPath = osc_themes_path() . $info['template'] . '/';
+        if (file_exists($parentPath . $file)) {
+            require $parentPath . $file;
+
+            return;
         }
+    }
+
+    // Nothing in the stack has it: the bundled fallback theme is the last resort, and
+    // that one IS a theme switch -- the site is no longer rendering its own theme.
+    $themes->setGuiTheme();
+    if (file_exists($themes->getCurrentThemePath() . $file)) {
+        require $themes->getCurrentThemePath() . $file;
     }
 }
 
@@ -289,7 +334,7 @@ function osc_current_web_theme_path($file = '')
  */
 function osc_current_web_theme_styles_url($file = '')
 {
-    return WebThemes::newInstance()->getCurrentThemeStyles() . $file;
+    return osc_theme_asset_url('css/' . $file);
 }
 
 /**
@@ -301,7 +346,7 @@ function osc_current_web_theme_styles_url($file = '')
  */
 function osc_current_web_theme_js_url($file = '')
 {
-    return WebThemes::newInstance()->getCurrentThemeJs() . $file;
+    return osc_theme_asset_url('js/' . $file);
 }
 
 /**
@@ -361,13 +406,7 @@ function osc_asset_url_versioned($url)
  */
 function osc_contact_url()
 {
-    if (osc_rewrite_enabled()) {
-        $path = osc_base_url() . osc_get_preference('rewrite_contact');
-    } else {
-        $path = osc_base_url(true) . '?page=contact';
-    }
-
-    return $path;
+    return osc_core_url('contact');
 }
 
 /**
@@ -378,16 +417,10 @@ function osc_contact_url()
 function osc_item_post_url_in_category()
 {
     if (osc_category_id() > 0) {
-        if (osc_rewrite_enabled()) {
-            $path = osc_base_url() . osc_get_preference('rewrite_item_new') . '/' . osc_category_id();
-        } else {
-            $path = sprintf(osc_base_url(true) . '?page=item&action=item_add&catId=%d', osc_category_id());
-        }
-    } else {
-        $path = osc_item_post_url();
+        return osc_core_url('item_new_in_category', array('catId' => osc_category_id()));
     }
 
-    return $path;
+    return osc_item_post_url();
 }
 
 /**
@@ -397,13 +430,7 @@ function osc_item_post_url_in_category()
  */
 function osc_item_post_url()
 {
-    if (osc_rewrite_enabled()) {
-        $path = osc_base_url() . osc_get_preference('rewrite_item_new');
-    } else {
-        $path = osc_base_url(true) . '?page=item&action=item_add';
-    }
-
-    return $path;
+    return osc_core_url('item_new');
 }
 
 /**
@@ -423,13 +450,7 @@ function osc_search_category_url()
  */
 function osc_user_dashboard_url()
 {
-    if (osc_rewrite_enabled()) {
-        $path = osc_base_url() . osc_get_preference('rewrite_user_dashboard');
-    } else {
-        $path = osc_base_url(true) . '?page=user&action=dashboard';
-    }
-
-    return $path;
+    return osc_core_url('user_dashboard');
 }
 
 /**
@@ -439,13 +460,7 @@ function osc_user_dashboard_url()
  */
 function osc_user_logout_url()
 {
-    if (osc_rewrite_enabled()) {
-        $path = osc_base_url() . osc_get_preference('rewrite_user_logout');
-    } else {
-        $path = osc_base_url(true) . '?page=main&action=logout';
-    }
-
-    return $path;
+    return osc_core_url('user_logout');
 }
 
 /**
@@ -455,13 +470,7 @@ function osc_user_logout_url()
  */
 function osc_user_login_url()
 {
-    if (osc_rewrite_enabled()) {
-        $path = osc_base_url() . osc_get_preference('rewrite_user_login');
-    } else {
-        $path = osc_base_url(true) . '?page=login';
-    }
-
-    return $path;
+    return osc_core_url('user_login');
 }
 
 /**
@@ -471,13 +480,7 @@ function osc_user_login_url()
  */
 function osc_register_account_url()
 {
-    if (osc_rewrite_enabled()) {
-        $path = osc_base_url() . osc_get_preference('rewrite_user_register');
-    } else {
-        $path = osc_base_url(true) . '?page=register&action=register';
-    }
-
-    return $path;
+    return osc_core_url('user_register');
 }
 
 /**
@@ -490,11 +493,7 @@ function osc_register_account_url()
  */
 function osc_user_activate_url($id, $code)
 {
-    if (osc_rewrite_enabled()) {
-        return osc_base_url() . osc_get_preference('rewrite_user_activate') . '/' . $id . '/' . $code;
-    }
-
-    return osc_base_url(true) . '?page=register&action=validate&id=' . $id . '&code=' . $code;
+    return osc_core_url('user_activate', array('id' => $id, 'code' => $code));
 }
 
 /**
@@ -507,7 +506,7 @@ function osc_user_activate_url($id, $code)
  */
 function osc_user_resend_activation_link($id, $email)
 {
-    return osc_base_url(true) . '?page=login&action=resend&id=' . $id . '&email=' . $email;
+    return osc_core_url('user_resend_activation', array('id' => $id, 'email' => $email));
 }
 
 /**
@@ -570,26 +569,14 @@ function osc_item_url_from_item($item, $locale = '')
         $itemTitle = osc_sanitizeString(str_replace(',', '-', $item['s_title']));
 
         if (osc_rewrite_enabled()) {
-            $url = osc_get_preference('rewrite_item_url');
-            if (preg_match('|{CATEGORIES}|', $url)) {
-                $sanitized_categories = array();
-                $cat                  = Category::newInstance()->hierarchy($item['fk_i_category_id']);
-                for ($i = count($cat); $i > 0; $i--) {
-                    $sanitized_categories[] = $cat[$i - 1]['s_slug'];
-                }
-                $url = str_replace('{CATEGORIES}', implode('/', $sanitized_categories), $url);
+            $values = array('ITEM_ID' => $itemId, 'ITEM_CITY' => $itemCity, 'ITEM_TITLE' => $itemTitle);
+            if (stripos((string)osc_get_preference('rewrite_item_url'), '{CATEGORIES}') !== false) {
+                $values['CATEGORIES'] =
+                    \mindstellar\routing\CoreRoutes::categoryPath($item['fk_i_category_id']);
             }
 
-            $url = str_replace(
-                array('{ITEM_ID}', '{ITEM_CITY}', '{ITEM_TITLE}', '?'),
-                array($itemId, $itemCity, $itemTitle, ''),
-                $url
-            );
-            if ($locale != '') {
-                $path = osc_base_url() . $locale . '/' . $url;
-            } else {
-                $path = osc_base_url() . $url;
-            }
+            $url  = \mindstellar\routing\CoreRoutes::expand('item', $values);
+            $path = osc_base_url() . ($locale != '' ? $locale . '/' : '') . $url;
         } else {
             $path = osc_item_url_ns($item['pk_i_id'], $locale);
         }
@@ -626,12 +613,7 @@ function osc_premium_url($locale = '')
  */
 function osc_item_url_ns($id, $locale = '')
 {
-    $path = osc_base_url(true) . '?page=item&id=' . $id;
-    if ($locale != '') {
-        $path .= '&lang=' . $locale;
-    }
-
-    return $path;
+    return osc_core_url('item', array('id' => $id, 'lang' => $locale));
 }
 
 /**
@@ -643,7 +625,7 @@ function osc_item_url_ns($id, $locale = '')
  */
 function osc_item_admin_edit_url($id)
 {
-    return osc_admin_base_url(true) . '?page=items&action=item_edit&id=' . $id;
+    return osc_core_url('admin_item_edit', array('id' => $id));
 }
 
 /**
@@ -653,11 +635,7 @@ function osc_item_admin_edit_url($id)
  */
 function osc_user_alerts_url()
 {
-    if (osc_rewrite_enabled()) {
-        return osc_base_url() . osc_get_preference('rewrite_user_alerts');
-    }
-
-    return osc_base_url(true) . '?page=user&action=alerts';
+    return osc_core_url('user_alerts');
 }
 
 /**
@@ -680,8 +658,7 @@ function osc_user_export_url()
         return '';
     }
 
-    return osc_base_url(true) . '?page=user&action=export&id=' . (int)$user['pk_i_id']
-        . '&secret=' . rawurlencode($user['s_secret']);
+    return osc_core_url('user_export', array('id' => (int)$user['pk_i_id'], 'secret' => $user['s_secret']));
 }
 
 /**
@@ -699,7 +676,7 @@ function osc_user_delete_url()
         return '';
     }
 
-    return osc_base_url(true) . '?page=user&action=delete';
+    return osc_core_url('user_delete');
 }
 
 /**
@@ -723,8 +700,7 @@ function osc_user_unsubscribe_alert_url($id = '', $email = '', $secret = '')
         $email = osc_user_email();
     }
 
-    return osc_base_url(true) . '?page=user&action=unsub_alert&email=' . urlencode($email) . '&secret=' . $secret
-        . '&id=' . $id;
+    return osc_core_url('user_unsub_alert', array('email' => $email, 'secret' => $secret, 'id' => $id));
 }
 
 /**
@@ -738,13 +714,7 @@ function osc_user_unsubscribe_alert_url($id = '', $email = '', $secret = '')
  */
 function osc_user_activate_alert_url($id, $secret, $email)
 {
-    if (osc_rewrite_enabled()) {
-        return osc_base_url() . osc_get_preference('rewrite_user_activate_alert') . '/' . $id . '/' . $secret . '/'
-            . urlencode($email);
-    }
-
-    return osc_base_url(true) . '?page=user&action=activate_alert&email=' . urlencode($email) . '&secret=' . $secret
-        . '&id=' . $id;
+    return osc_core_url('user_activate_alert', array('id' => $id, 'secret' => $secret, 'email' => $email));
 }
 
 /**
@@ -754,11 +724,7 @@ function osc_user_activate_alert_url($id, $secret, $email)
  */
 function osc_user_profile_url()
 {
-    if (osc_rewrite_enabled()) {
-        return osc_base_url() . osc_get_preference('rewrite_user_profile');
-    }
-
-    return osc_base_url(true) . '?page=user&action=profile';
+    return osc_core_url('user_profile');
 }
 
 /**
@@ -771,23 +737,7 @@ function osc_user_profile_url()
  */
 function osc_user_list_items_url($page = '', $typeItem = '')
 {
-    if (osc_rewrite_enabled()) {
-        if ($page == '') {
-            $typeItem = $typeItem != '' ? '?itemType=' . $typeItem : '';
-
-            return osc_base_url() . osc_get_preference('rewrite_user_items') . $typeItem;
-        }
-
-        $typeItem = $typeItem != '' ? '&itemType=' . $typeItem : '';
-
-        return osc_base_url() . osc_get_preference('rewrite_user_items') . '?iPage=' . $page . $typeItem;
-    } else {
-        if ($page == '') {
-            return osc_base_url(true) . '?page=user&action=items';
-        }
-
-        return osc_base_url(true) . '?page=user&action=items&iPage=' . $page;
-    }
+    return osc_core_url('user_items', array('iPage' => $page, 'itemType' => $typeItem));
 }
 
 /**
@@ -797,11 +747,7 @@ function osc_user_list_items_url($page = '', $typeItem = '')
  */
 function osc_change_user_email_url()
 {
-    if (osc_rewrite_enabled()) {
-        return osc_base_url() . osc_get_preference('rewrite_user_change_email');
-    }
-
-    return osc_base_url(true) . '?page=user&action=change_email';
+    return osc_core_url('user_change_email');
 }
 
 /**
@@ -811,11 +757,7 @@ function osc_change_user_email_url()
  */
 function osc_change_user_username_url()
 {
-    if (osc_rewrite_enabled()) {
-        return osc_base_url() . osc_get_preference('rewrite_user_change_username');
-    }
-
-    return osc_base_url(true) . '?page=user&action=change_username';
+    return osc_core_url('user_change_username');
 }
 
 /**
@@ -828,11 +770,7 @@ function osc_change_user_username_url()
  */
 function osc_change_user_email_confirm_url($userId, $code)
 {
-    if (osc_rewrite_enabled()) {
-        return osc_base_url() . osc_get_preference('rewrite_user_change_email_confirm') . '/' . $userId . '/' . $code;
-    }
-
-    return osc_base_url(true) . '?page=user&action=change_email_confirm&userId=' . $userId . '&code=' . $code;
+    return osc_core_url('user_change_email_confirm', array('userId' => $userId, 'code' => $code));
 }
 
 /**
@@ -842,11 +780,7 @@ function osc_change_user_email_confirm_url($userId, $code)
  */
 function osc_change_user_password_url()
 {
-    if (osc_rewrite_enabled()) {
-        return osc_base_url() . osc_get_preference('rewrite_user_change_password');
-    }
-
-    return osc_base_url(true) . '?page=user&action=change_password';
+    return osc_core_url('user_change_password');
 }
 
 /**
@@ -856,11 +790,7 @@ function osc_change_user_password_url()
  */
 function osc_recover_user_password_url()
 {
-    if (osc_rewrite_enabled()) {
-        return osc_base_url() . osc_get_preference('rewrite_user_recover');
-    }
-
-    return osc_base_url(true) . '?page=login&action=recover';
+    return osc_core_url('user_recover');
 }
 
 /**
@@ -873,11 +803,7 @@ function osc_recover_user_password_url()
  */
 function osc_forgot_user_password_confirm_url($userId, $code)
 {
-    if (osc_rewrite_enabled()) {
-        return osc_base_url() . osc_get_preference('rewrite_user_forgot') . '/' . $userId . '/' . $code;
-    }
-
-    return osc_base_url(true) . '?page=login&action=forgot&userId=' . $userId . '&code=' . $code;
+    return osc_core_url('user_forgot', array('userId' => $userId, 'code' => $code));
 }
 
 /**
@@ -890,7 +816,7 @@ function osc_forgot_user_password_confirm_url($userId, $code)
  */
 function osc_forgot_admin_password_confirm_url($adminId, $code)
 {
-    return osc_admin_base_url(true) . '?page=login&action=forgot&adminId=' . $adminId . '&code=' . $code;
+    return osc_core_url('admin_forgot', array('adminId' => $adminId, 'code' => $code));
 }
 
 /**
@@ -902,11 +828,7 @@ function osc_forgot_admin_password_confirm_url($adminId, $code)
  */
 function osc_change_language_url($locale)
 {
-    if (osc_rewrite_enabled()) {
-        return osc_base_url() . osc_get_preference('rewrite_language') . '/' . $locale;
-    }
-
-    return osc_base_url(true) . '?page=language&locale=' . $locale;
+    return osc_core_url('language', array('locale' => $locale));
 }
 
 /////////////////////////////////////
@@ -926,16 +848,12 @@ function osc_item_edit_url($secret = '', $id = '')
     if ($id == '') {
         $id = osc_item_id();
     }
-    if (osc_rewrite_enabled()) {
-        return osc_base_url() . osc_get_preference('rewrite_item_edit') . '/' . $id . '/' . $secret;
-    }
-
-    return osc_base_url(true) . '?page=item&action=item_edit&id=' . $id . ($secret != '' ? '&secret=' . $secret
-        : '');
+    return osc_core_url('item_edit', array('id' => $id, 'secret' => $secret));
 }
 
 /**
- * Gets url for delete an item
+ * Gets url for delete an item. Without $secret the link is for the signed-in owner
+ * and carries a CSRF token, which the delete action requires.
  *
  * @param string     $secret
  * @param int|string $id
@@ -947,12 +865,12 @@ function osc_item_delete_url($secret = '', $id = '')
     if ($id == '') {
         $id = osc_item_id();
     }
-    if (osc_rewrite_enabled()) {
-        return osc_base_url() . osc_get_preference('rewrite_item_delete') . '/' . $id . '/' . $secret;
+    $url = osc_core_url('item_delete', array('id' => $id, 'secret' => $secret));
+    if ($secret === '' || $secret === null) {
+        $url .= (strpos($url, '?') === false ? '?' : '&') . osc_csrf_token_url();
     }
 
-    return osc_base_url(true) . '?page=item&action=item_delete&id=' . $id . ($secret != '' ? '&secret=' . $secret
-        : '');
+    return $url;
 }
 
 /**
@@ -968,12 +886,7 @@ function osc_item_activate_url($secret = '', $id = '')
     if ($id == '') {
         $id = osc_item_id();
     }
-    if (osc_rewrite_enabled()) {
-        return osc_base_url() . osc_get_preference('rewrite_item_activate') . '/' . $id . '/' . $secret;
-    }
-
-    return osc_base_url(true) . '?page=item&action=activate&id=' . $id . ($secret != '' ? '&secret=' . $secret
-        : '');
+    return osc_core_url('item_activate', array('id' => $id, 'secret' => $secret));
 }
 
 /**
@@ -988,13 +901,10 @@ function osc_item_activate_url($secret = '', $id = '')
  */
 function osc_item_resource_delete_url($id, $item, $code, $secret = '')
 {
-    if (osc_rewrite_enabled()) {
-        return osc_base_url() . osc_get_preference('rewrite_item_resource_delete') . '/' . $id . '/' . $item . '/'
-            . $code . ($secret != '' ? '/' . $secret : '');
-    }
-
-    return osc_base_url(true) . '?page=item&action=deleteResource&id=' . $id . '&item=' . $item . '&code=' . $code
-        . ($secret != '' ? '&secret=' . $secret : '');
+    return osc_core_url(
+        'item_resource_delete',
+        array('id' => $id, 'item' => $item, 'code' => $code, 'secret' => $secret)
+    );
 }
 
 /**
@@ -1004,11 +914,24 @@ function osc_item_resource_delete_url($id, $item, $code, $secret = '')
  */
 function osc_item_send_friend_url()
 {
-    if (osc_rewrite_enabled()) {
-        return osc_base_url() . osc_get_preference('rewrite_item_send_friend') . '/' . osc_item_id();
-    }
+    return osc_core_url('item_send_friend', array('id' => osc_item_id()));
+}
 
-    return osc_base_url(true) . '?page=item&action=send_friend&id=' . osc_item_id();
+/**
+ * URL of a core page, built from the shared route table.
+ *
+ * The same table compiles the rewrite rules, so a link built here and the pattern
+ * that answers it cannot disagree.
+ *
+ * @param string              $name Route name, as CoreRoutes::all() keys it
+ * @param array<string,mixed> $args Values for the route's parameters
+ *
+ * @return string Empty string when no core route is named $name
+ * @since 6.4.0
+ */
+function osc_core_url($name, $args = array())
+{
+    return \mindstellar\routing\CoreRoutes::url($name, $args);
 }
 
 /**

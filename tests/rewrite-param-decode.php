@@ -33,7 +33,9 @@ function parse_params(string $uri): array
     $ref  = new ReflectionClass('Rewrite');
     $rw   = $ref->newInstanceWithoutConstructor();
     $meth = $ref->getMethod('parseParams');
-    $meth->setAccessible(true);
+    if (PHP_VERSION_ID < 80100) {
+        $meth->setAccessible(true);
+    }
 
     return $meth->invoke($rw, $uri);
 }

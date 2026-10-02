@@ -37,7 +37,7 @@ final class Premium
         $table = DB_TABLE_PREFIX . 't_item';
 
         $rows = osc_db_select(
-            'SELECT pk_i_id FROM ' . $table
+            'SELECT pk_i_id, b_enabled, b_active, b_spam, b_premium, dt_expiration FROM ' . $table
             . ' WHERE b_premium = 1 AND dt_premium_expiration IS NOT NULL AND dt_premium_expiration <= ?',
             array(date('Y-m-d H:i:s'))
         );
@@ -58,6 +58,13 @@ final class Premium
         // ended it.
         foreach ($ids as $id) {
             osc_run_hook('item_premium_off', $id);
+        }
+
+        // An expired listing was counted only because it was premium.
+        foreach ($rows as $row) {
+            if (osc_item_is_counted($row) && !osc_item_is_counted(array('b_premium' => 0) + $row)) {
+                \ItemActions::decreaseStatsFor((int) $row['pk_i_id']);
+            }
         }
 
         return count($ids);

@@ -45,7 +45,7 @@ function osc_item_view_beacon_enabled()
  */
 function osc_item_view_beacon_url($id)
 {
-    return osc_base_url(true) . '?page=item&action=view_beacon&id=' . (int)$id;
+    return osc_core_url('item_view_beacon', array('id' => (int)$id));
 }
 
 /**

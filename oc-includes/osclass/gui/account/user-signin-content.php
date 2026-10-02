@@ -45,6 +45,7 @@ $signinFocus = static function (string $section) use ($folioSignin): string {
 <div class="oe-account">
     <div class="oe-account-main">
         <?php osc_show_flash_message(); ?>
+        <?php osc_run_hook('account_page_before', 'user-signin'); ?>
 
         <section id="email" class="oe-panel">
             <h2><?php echo osc_esc_html(_m('Email address')); ?></h2>
@@ -81,10 +82,12 @@ $signinFocus = static function (string $section) use ($folioSignin): string {
                     <label class="oe-label" for="oe-username"><?php
                         echo osc_esc_html(_m('Username')); ?></label>
                     <input class="oe-input" id="oe-username" type="text" name="s_username"
-                           autocomplete="username" required aria-describedby="oe-username-hint"<?php echo $signinFocus('username'); ?> />
+                           autocomplete="username" required aria-describedby="oe-username-hint oe-username-status"
+                           data-username-check="<?php echo osc_esc_html(osc_base_url(true) . '?page=ajax&action=check_username_availability'); ?>"<?php echo $signinFocus('username'); ?> />
                     <span class="oe-hint" id="oe-username-hint"><?php echo osc_esc_html(
                         _m('It appears on your public profile and in the address of your listings.')
                     ); ?></span>
+                    <span class="oe-hint" id="oe-username-status" role="status" aria-live="polite"></span>
                 </div>
                 <div class="oe-actions">
                     <button class="oe-btn" type="submit"><?php echo osc_esc_html(_m('Save')); ?></button>
@@ -118,13 +121,16 @@ $signinFocus = static function (string $section) use ($folioSignin): string {
                     <label class="oe-label" for="oe-new-password2"><?php
                         echo osc_esc_html(_m('Repeat the new password')); ?></label>
                     <input class="oe-input" id="oe-new-password2" type="password" name="new_password2"
-                           autocomplete="new-password" required minlength="6" />
+                           autocomplete="new-password" required minlength="6" data-match="new_password"
+                           data-match-message="<?php echo osc_esc_html(_m('The two passwords do not match.')); ?>" />
                 </div>
                 <div class="oe-actions">
                     <button class="oe-btn" type="submit"><?php echo osc_esc_html(_m('Save')); ?></button>
                 </div>
             </form>
         </section>
+
+        <?php osc_run_hook('account_page_after', 'user-signin'); ?>
     </div>
 
     <?php require __DIR__ . '/nav.php'; ?>

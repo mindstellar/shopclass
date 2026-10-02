@@ -14,6 +14,7 @@
 
 use mindstellar\database\Connection;
 use mindstellar\migration\MigrationRunner;
+use mindstellar\utility\AjaxResponse;
 use mindstellar\utility\Utils;
 
 /**
@@ -77,11 +78,7 @@ class AdminSecBaseModel extends SecBaseModel
      * is already complete the version is written here and the request continues to the page
      * that was asked for.
      *
-     * Anything with real work waiting still goes to the screen. So does the schema
-     * reconcile, deliberately: it is the slow half of an upgrade, and meeting a drifted
-     * schema unattended, part-way through somebody's page load, is the wrong way to find
-     * out. An install carried across by this path has therefore not been reconciled --
-     * running the upgrade screen by hand is still what does that.
+     * Anything with real work waiting still goes to the screen.
      *
      * @param string $configVersion the version the code on disk declares
      *
@@ -92,7 +89,7 @@ class AdminSecBaseModel extends SecBaseModel
         try {
             $runner = new MigrationRunner(
                 Connection::instance(),
-                osc_lib_path() . 'osclass/installer/migrations'
+                \mindstellar\admin\DatabaseTools::migrationsDir()
             );
             $runner->ensureLedger();
             if ($runner->pending() !== array()) {
@@ -116,6 +113,25 @@ class AdminSecBaseModel extends SecBaseModel
                 'admin'
             );
         }
+
+        return true;
+    }
+
+    /**
+     * On a demo install, refuse the action and redirect before it changes anything.
+     *
+     * @param string $redirectUrl where to send them; the admin home by default
+     *
+     * @return bool true when this is a demo install and the action was refused
+     */
+    protected function refuseOnDemo($redirectUrl = null)
+    {
+        if (!defined('DEMO')) {
+            return false;
+        }
+
+        osc_add_flash_warning_message(_m('This action cannot be done because it is a demo site'), 'admin');
+        $this->redirectTo($redirectUrl ?? osc_admin_base_url(true));
 
         return true;
     }
@@ -188,7 +204,7 @@ class AdminSecBaseModel extends SecBaseModel
     public function showAuthFailPage()
     {
         if (Params::getParam('page') === 'ajax') {
-            echo json_encode(array('error' => 1, 'msg' => __('Session timed out')));
+            AjaxResponse::json(array('error' => 1, 'msg' => __('Session timed out')));
             exit;
         }
 

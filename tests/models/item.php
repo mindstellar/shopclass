@@ -273,7 +273,7 @@ pin(
         '__construct', 'clearStat', 'countByMarkas', 'countByUserID', 'countByUserIDEnabled',
         'countItemTypesByEmail', 'countItemTypesByUserID', 'deleteByCity', 'deleteByCityArea',
         'deleteByCountry', 'deleteByPrimaryKey', 'deleteByRegion', 'enableByCategory', 'extendCategoryName',
-        'extendData', 'extendDataSingle', 'findByCategoryID', 'findByDayExpiration', 'findByEmail',
+        'extendData', 'extendDataSingle', 'findAdjacentLive', 'findByCategoryID', 'findByDayExpiration', 'findByEmail',
         'findByHourExpiration', 'findByPhone', 'findByPrimaryKey', 'findByUserID', 'findByUserIDEnabled',
         'findItemByTypes', 'findItemTypesByUserID', 'findLocationByID', 'findResourcesByID', 'insertLocale',
         'listAllWithCategories', 'listLatest', 'listWhere', 'liveConditions', 'metaFields', 'mostViewed',
@@ -632,6 +632,63 @@ $flush();
 $dayHits = $model->findByDayExpiration(1);
 check('findByDayExpiration(1) finds the ~1.5-day item', count($dayHits) >= 1, describe(count($dayHits)));
 
+// Boundary parity: the old TIMESTAMPDIFF(...) = N query and the new dt_expiration
+// range must select the same rows right at the edges. Items sit a few seconds off
+// the exact hour so a slow test run can't flip which side of the boundary they land on.
+$oldTimestampDiffIds = static function (string $unit, int $n, array $ids) use ($admin, $itemTable): array {
+    $idList = implode(',', array_map('intval', $ids));
+    $res    = $admin->query(
+        "SELECT pk_i_id FROM $itemTable WHERE TIMESTAMPDIFF($unit, NOW(), dt_expiration) = $n"
+        . " AND b_active = 1 AND b_spam = 0 AND pk_i_id IN ($idList)"
+    );
+    $out = array();
+    while ($row = $res->fetch_assoc()) {
+        $out[] = (int)$row['pk_i_id'];
+    }
+    sort($out);
+
+    return $out;
+};
+$newFinderIds = static function (array $rows, array $ids): array {
+    $ours = array_map(static fn ($r) => (int)$r['pk_i_id'], $rows);
+    $out  = array_values(array_intersect($ours, $ids));
+    sort($out);
+
+    return $out;
+};
+
+$resetDao();
+$hb1 = seed_item($admin, $cat, $user, 'Hour boundary -5s under 24h');
+$hb2 = seed_item($admin, $cat, $user, 'Hour boundary +5s over 24h');
+$hb3 = seed_item($admin, $cat, $user, 'Hour boundary -5s under 25h');
+$hb4 = seed_item($admin, $cat, $user, 'Hour boundary +5s over 25h');
+$setItem($hb1, "dt_expiration = DATE_ADD(NOW(), INTERVAL '23:59:55' HOUR_SECOND)");
+$setItem($hb2, "dt_expiration = DATE_ADD(NOW(), INTERVAL '24:00:05' HOUR_SECOND)");
+$setItem($hb3, "dt_expiration = DATE_ADD(NOW(), INTERVAL '24:59:55' HOUR_SECOND)");
+$setItem($hb4, "dt_expiration = DATE_ADD(NOW(), INTERVAL '25:00:05' HOUR_SECOND)");
+$hourBoundaryIds = array($hb1, $hb2, $hb3, $hb4);
+$flush();
+$oldHour24 = $oldTimestampDiffIds('HOUR', 24, $hourBoundaryIds);
+$newHour24 = $newFinderIds($model->findByHourExpiration(24), $hourBoundaryIds);
+pin('findByHourExpiration(24) matches TIMESTAMPDIFF(HOUR,...) = 24 at the boundary', $oldHour24, $newHour24);
+check('...and it is exactly the two rows inside [24h, 25h)', $newHour24 === array($hb2, $hb3), describe($newHour24));
+
+$resetDao();
+$db1 = seed_item($admin, $cat, $user, 'Day boundary -5s under 1d');
+$db2 = seed_item($admin, $cat, $user, 'Day boundary +5s over 1d');
+$db3 = seed_item($admin, $cat, $user, 'Day boundary -5s under 2d');
+$db4 = seed_item($admin, $cat, $user, 'Day boundary +5s over 2d');
+$setItem($db1, "dt_expiration = DATE_ADD(NOW(), INTERVAL '23:59:55' HOUR_SECOND)");
+$setItem($db2, "dt_expiration = DATE_ADD(NOW(), INTERVAL '24:00:05' HOUR_SECOND)");
+$setItem($db3, "dt_expiration = DATE_ADD(NOW(), INTERVAL '47:59:55' HOUR_SECOND)");
+$setItem($db4, "dt_expiration = DATE_ADD(NOW(), INTERVAL '48:00:05' HOUR_SECOND)");
+$dayBoundaryIds = array($db1, $db2, $db3, $db4);
+$flush();
+$oldDay1 = $oldTimestampDiffIds('DAY', 1, $dayBoundaryIds);
+$newDay1 = $newFinderIds($model->findByDayExpiration(1), $dayBoundaryIds);
+pin('findByDayExpiration(1) matches TIMESTAMPDIFF(DAY,...) = 1 at the boundary', $oldDay1, $newDay1);
+check('...and it is exactly the two rows inside [1d, 2d)', $newDay1 === array($db2, $db3), describe($newDay1));
+
 /* ----------------------------------------------------------------------------
  * metaFields.
  * ------------------------------------------------------------------------- */
@@ -954,6 +1011,49 @@ pin(
    not a filter that drops premium listings. */
 pin('the stranger sees their own premium listing', 1, count($model->findItemTypesByUserID($stranger, 0, 100, false)));
 pin('...and it still counts as premium site-wide', '1', $model->findItemByTypes(null, 'premium', true));
+
+/* ----------------------------------------------------------------------------
+ * A title wider than t_item_description.s_title. Strict SQL mode refused the row,
+ * leaving a live listing with no title or description; the model now cuts it.
+ * ------------------------------------------------------------------------- */
+harness_section('Item::insertLocale / updateLocaleForce — over-long titles under strict SQL');
+
+$longTitle = str_repeat('é', 50) . str_repeat('t', 100);
+$titleOf   = static function (int $id) use ($admin, $descTable): ?string {
+    $row = $admin->query(
+        "SELECT s_title FROM $descTable WHERE fk_i_item_id = $id AND fk_c_locale_code = 'en_US'"
+    )->fetch_assoc();
+
+    return $row['s_title'] ?? null;
+};
+
+$titled = seed_item($admin, $cat, $user, 'Long title');
+$admin->query("DELETE FROM $descTable WHERE fk_i_item_id = $titled");
+
+$mode = osc_db_scalar('SELECT @@SESSION.sql_mode');
+osc_db_execute("SET SESSION sql_mode = 'STRICT_ALL_TABLES'");
+$inserted = $model->insertLocale($titled, 'en_US', $longTitle, 'A description');
+$afterInsert = $titleOf($titled);
+$replaced = $model->updateLocaleForce($titled, 'en_US', str_repeat('ü', 150), 'Another description');
+$afterReplace = $titleOf($titled);
+osc_db_execute('SET SESSION sql_mode = ?', array((string) $mode));
+
+pin('a 150-character title is still written', true, $inserted);
+pin('cut to the column width, in characters', mb_substr($longTitle, 0, 100, 'UTF-8'), $afterInsert);
+pin('updateLocaleForce writes it too', true, $replaced);
+pin('and cuts it the same way', str_repeat('ü', 100), $afterReplace);
+
+harness_section('osc_max_characters_per_title — never wider than the column');
+
+$titlePref = static function ($value): int {
+    Preference::newInstance()->set('title_character_length', $value);
+
+    return osc_max_characters_per_title();
+};
+pin('an unset preference falls back to the column width', 100, $titlePref(''));
+pin('a stored 200 is capped at 100', 100, $titlePref('200'));
+pin('a stored 60 is kept', 60, $titlePref('60'));
+pin('a stored 0 falls back to the column width', 100, $titlePref('0'));
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

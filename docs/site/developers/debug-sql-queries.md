@@ -2,7 +2,7 @@
 title: Debug SQL queries
 description: Inspect the queries ShopClass runs with OSC_DEBUG_DB, log them from AJAX and cron, and EXPLAIN them to find the ones missing an index.
 sidebar:
-  order: 13
+  order: 14
 ---
 
 When a page is slow, or a plugin's data is not appearing, the useful question is
@@ -20,7 +20,9 @@ define('OSC_DEBUG_DB', true);
 ```
 
 Every query is collected and printed at the end of the page, along with how long
-it took and any error code and message.
+it took and any error code and message. This only happens while you are logged
+in as an admin. On a page nobody is logged in to admin for, nothing prints; use
+query logging below instead.
 
 That gives you the two things you usually need at once: the query count (a page
 issuing four hundred queries has a loop doing lookups it should have batched)

@@ -20,6 +20,8 @@
  * @subpackage classes
  * @author     Shopclass
  */
+use mindstellar\admin\ListPaging;
+
 class AlertsDataTable extends DataTable
 {
     private $search;
@@ -50,14 +52,24 @@ class AlertsDataTable extends DataTable
         $this->addTableHeader();
         $this->getDBParams($params);
 
-        $alerts = Alerts::newInstance()
-            ->search(
-                $this->start,
-                $this->limit,
-                $this->order_by['column_name'],
-                $this->order_by['type'],
-                $this->search
+        if ((string)($params['held'] ?? '') === '1') {
+            $alerts = \mindstellar\search\AlertStore::searchHeld(
+                (int)$this->start,
+                (int)$this->limit,
+                (string)$this->order_by['column_name'],
+                (string)$this->order_by['type'],
+                (string)$this->search
             );
+        } else {
+            $alerts = Alerts::newInstance()
+                ->search(
+                    $this->start,
+                    $this->limit,
+                    $this->order_by['column_name'],
+                    $this->order_by['type'],
+                    $this->search
+                );
+        }
         $this->processData($alerts);
         $this->total          = $alerts['rows'];
         $this->total_filtered = $alerts['total_results'];
@@ -96,13 +108,7 @@ class AlertsDataTable extends DataTable
         if (!isset($_get['iDisplayStart'])) {
             $_get['iDisplayStart'] = 0;
         }
-        $p_iPage = 1;
-        if (!is_numeric(Params::getParam('iPage')) || Params::getParam('iPage') < 1) {
-            Params::setParam('iPage', $p_iPage);
-            $this->iPage = $p_iPage;
-        } else {
-            $this->iPage = Params::getParam('iPage');
-        }
+        $this->iPage = ListPaging::page();
 
         $this->order_by = $this->resolveOrder($_get, $this->sortable, 'dt_date');
         foreach ($_get as $k => $v) {
@@ -111,10 +117,8 @@ class AlertsDataTable extends DataTable
             }
         }
         // set start and limit using iPage param
-        $start = ($this->iPage - 1) * $_get['iDisplayLength'];
-
-        $this->start = (int)$start;
-        $this->limit = (int)$_get['iDisplayLength'];
+        $this->limit = ListPaging::length((int)($_get['iDisplayLength'] ?? ListPaging::DEFAULT_LENGTH));
+        $this->start = ListPaging::start($this->iPage, $this->limit);
     }
 
     /**
@@ -138,11 +142,13 @@ class AlertsDataTable extends DataTable
                 $options[] =
                     '<a onclick="return delete_alert(\'' . $aRow['pk_i_id'] . '\');" href="#">' . __('Delete') . '</a>';
 
-                if ($aRow['b_active'] == 1) {
+                // A held alert has no search to switch back on, so it offers only Delete.
+                $held = \mindstellar\search\AlertEnvelope::heldReason((string)$aRow['s_search']);
+                if ($held === null && $aRow['b_active'] == 1) {
                     $options[] =
                         '<a href="' . osc_admin_base_url(true) . '?page=users&action=status_alerts&amp;alert_id[]='
                         . $aRow['pk_i_id'] . '&amp;' . $csrf_token_url . '&amp;status=0" >' . __('Deactivate') . '</a>';
-                } else {
+                } elseif ($held === null) {
                     $options[] =
                         '<a href="' . osc_admin_base_url(true) . '?page=users&action=status_alerts&amp;alert_id[]='
                         . $aRow['pk_i_id'] . '&amp;' . $csrf_token_url . '&amp;status=1" >' . __('Activate') . '</a>';
@@ -165,26 +171,16 @@ class AlertsDataTable extends DataTable
                 // third row
 
                 $pieces     = array();
-                $conditions = osc_get_raw_search((array)json_decode($aRow['s_search'], true));
-                if (isset($conditions['sPattern']) && $conditions['sPattern'] != '') {
-                    $pieces[] = sprintf(__('<b>Pattern:</b> %s'), osc_esc_html($conditions['sPattern']));
-                }
-                if (isset($conditions['aCategories']) && !empty($conditions['aCategories'])) {
-                    $l         = min(count($conditions['aCategories']), 4);
-                    $cat_array = array();
-                    for ($c = 0; $c < $l; $c++) {
-                        $cat_array[] = osc_esc_html($conditions['aCategories'][$c]);
+                if ($held !== null) {
+                    $pieces[] = '<span class="osc-status status-spam">' . osc_esc_html(__('Needs attention'))
+                        . '</span> '
+                        . osc_esc_html(\mindstellar\search\AlertStore::reasonText($held)) . ' '
+                        . osc_esc_html(__('It no longer sends email. Ask the user to save the search again.'));
+                } else {
+                    foreach (osc_alert_criteria($aRow) as $part) {
+                        $pieces[] = '<b>' . osc_esc_html($part['label']) . ':</b> ' . osc_esc_html($part['value']);
                     }
-                    if (count($conditions['aCategories']) > $l) {
-                        $cat_array[] = '<a href="#" class="more-tooltip" categories="' . osc_esc_html(implode(
-                            ', ',
-                            $conditions['aCategories']
-                        )) . '" >' . __('...More') . '</a>';
-                    }
-
-                    $pieces[] = sprintf(__('<b>Categories:</b> %s'), implode(', ', $cat_array));
                 }
-
                 $row['alert'] = implode(', ', $pieces);
                 // fourth row
                 $row['date'] = osc_admin_date($aRow['dt_date'], true);

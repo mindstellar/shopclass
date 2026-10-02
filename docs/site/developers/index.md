@@ -25,16 +25,17 @@ Worth knowing before you port something:
   default. A plugin that assumed `$` was present must now register and enqueue
   its own copy.
 - **A real CLI.** `oc-cli.php` covers cron, migrations, packages and health
-  checks. See the [CLI reference](/docs/cli/).
+  checks: see the [CLI reference](/docs/cli/).
 - **A package registry.** Plugins and themes are published through
   [the market](/docs/developers/market/) instead of ad-hoc update URLs.
 - **`oc-includes/assets/chart-js/` is gone** as of 6.2.0. It was added in 2021
   and never used by anything in core. A plugin loading that path directly must
   bundle its own copy.
-- **Delete cascades run in transactions**, and every record type now has
-  `before_delete_*` / `after_delete_*` hooks. A `before_` hook runs before the
-  transaction opens and an `after_` hook only once it has committed, so your own
-  database work is never rolled back with a failed delete.
+- **Delete cascades run in transactions**, and every record type now fires a
+  hook before the transaction opens and `after_delete_*` only once it has
+  committed, so your own database work is never rolled back with a failed
+  delete. Most types name the first hook `before_delete_*`; category and user
+  deletes name it `delete_category` and `delete_user` instead.
 
 ## Where to start
 
@@ -42,16 +43,23 @@ Worth knowing before you port something:
 |---|---|
 | Publish a plugin or theme | [Package specification](/docs/developers/package-spec/) |
 | Get it listed for every install | [The market](/docs/developers/market/) |
+| Run your code inside core | [Hooks and filters](/docs/developers/hooks/) |
 | Add a page of your own | [Routes](/docs/developers/routes/) |
 | Add admin screens | [Administrator menus](/docs/developers/admin-menus/) |
 | Add an admin settings page | [Settings pages](/docs/developers/settings-pages/) |
+| Build an admin add/edit screen | [Admin editors](/docs/developers/admin-editors/) |
 | Take payments | [Payment gateways](/docs/developers/payment-gateways/) |
 | Add toolbar shortcuts | [Admin toolbar](/docs/developers/admin-toolbar/) |
 | Load CSS and JavaScript | [Scripts and styles](/docs/developers/scripts-and-styles/) |
 | Host core's own pages in your theme | [Theme chrome](/docs/developers/theme-chrome/) |
 | Style the account and sign-in pages | [Account pages](/docs/developers/account-pages/) |
+| Extend a theme without forking it | [Child themes](/docs/developers/child-themes/) |
 | Know which view file core picks | [Template hierarchy](/docs/developers/template-hierarchy/) |
 | Let core write the document head | [Theme head](/docs/developers/theme-head/) |
+| Style the e-mails the site sends | [E-mail layout](/docs/developers/email-layout/) |
+| Run slow work out of the request | [Background jobs](/docs/developers/jobs/) |
+| Keep a search filter working in saved alerts | [Saved-search alerts](/docs/developers/alerts/) |
+| Bring listings in from elsewhere | [Importing listings](/docs/developers/importing-listings/) |
 | Understand the schema | [Database model](/docs/developers/database/) |
 | Debug something | [PHP errors](/docs/developers/debug-php-errors/) · [SQL queries](/docs/developers/debug-sql-queries/) |
 | Contribute to core | [Contributing](/docs/developers/contributing/) |
@@ -73,7 +81,7 @@ A full stack (PHP-FPM, MariaDB, Nginx, Memcached, Mailhog and phpMyAdmin)
 ships in `docker-compose.dev.yml`:
 
 ```bash
-npm run dev:build     # first run, builds the PHP-FPM image
+npm run dev:build     # first run: builds the PHP-FPM image
 npm run dev           # start
 npm run dev:logs      # follow the logs
 ```

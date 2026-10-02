@@ -16,6 +16,7 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\admin\ListPaging;
 use mindstellar\security\PluginAjaxFile;
 
 /**
@@ -51,9 +52,8 @@ class CAdminPlugins extends AdminSecBaseModel
                 $this->doView('plugins/add.php');
                 break;
             case 'add_post':
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m("This action can't be done because it's a demo site"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=plugins')) {
+                    break;
                 }
                 osc_csrf_check();
 
@@ -93,9 +93,8 @@ class CAdminPlugins extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
                 break;
             case 'install':
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m("This action can't be done because it's a demo site"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=plugins')) {
+                    break;
                 }
                 osc_csrf_check();
                 $pn = Params::getParam('plugin');
@@ -139,9 +138,8 @@ class CAdminPlugins extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
                 break;
             case 'uninstall':
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m("This action can't be done because it's a demo site"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=plugins')) {
+                    break;
                 }
                 osc_csrf_check();
 
@@ -154,9 +152,8 @@ class CAdminPlugins extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
                 break;
             case 'enable':
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m("This action can't be done because it's a demo site"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=plugins')) {
+                    break;
                 }
                 osc_csrf_check();
 
@@ -169,9 +166,8 @@ class CAdminPlugins extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
                 break;
             case 'disable':
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m("This action can't be done because it's a demo site"), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=plugins')) {
+                    break;
                 }
                 osc_csrf_check();
 
@@ -309,17 +305,13 @@ class CAdminPlugins extends AdminSecBaseModel
 
                 $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
 
-                $p_iPage = 1;
-                if (is_numeric(Params::getParam('iPage')) && Params::getParam('iPage') >= 1) {
-                    $p_iPage = Params::getParam('iPage');
-                }
-                Params::setParam('iPage', $p_iPage);
+                $p_iPage        = ListPaging::page();
                 $aPlugin        = Plugins::listAll();
                 $active_plugins = osc_get_plugins();
 
                 // pagination
-                $start = ($p_iPage - 1) * Params::getParam('iDisplayLength');
-                $limit = Params::getParam('iDisplayLength');
+                $limit = ListPaging::length();
+                $start = ListPaging::start($p_iPage, $limit);
                 $count = count($aPlugin);
 
                 // --------------------------------------------------------
@@ -610,10 +602,16 @@ class CAdminPlugins extends AdminSecBaseModel
             'last_checked'      => $catalog->lastChecked(),
             'error'             => $catalog->lastError(),
             'writable'          => is_writable(osc_plugins_path()),
-            'disabled'          => osc_package_installs_disabled() || defined('DEMO'),
+            'disabled'          => osc_market_changes_blocked(),
             'categories'        => $categories,
             'catalog_available' => $index !== array() || $updates !== array(),
         );
+
+        // The toolbar count is saved once a day; recount when it disagrees with this list,
+        // so the header drawn next shows the same number as the Updates tab.
+        if ((int) osc_get_preference('plugins_update_count') !== count($marketUpdates)) {
+            osc_admin_toolbar_update_plugins(true);
+        }
 
         return array($browse, $marketUpdates, $meta);
     }

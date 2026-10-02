@@ -28,33 +28,17 @@ $direction = Params::getParam('direction');
 osc_current_admin_theme_path('parts/header.php'); ?>
 <?php osc_admin_page_head(__('Reported listings')); ?>
 <div class="relative">
-    <div id="listing-toolbar">
-        <div class="input-group input-group-sm">
-            <form method="get" action="<?php echo osc_admin_base_url(true); ?>" class="inline" nocsrf>
-                <?php foreach (Params::getParamsAsArray('get') as $key => $value) { ?>
-                    <?php if ($key !== 'iDisplayLength') { ?>
-                        <input type="hidden" name="<?php echo osc_esc_html($key); ?>" value="<?php echo osc_esc_html($value); ?>" />
-                    <?php }
-                    } ?>
-                <select name="iDisplayLength" class="form-select form-select-sm " onchange="this.form.submit();">
-                    <option value="10"><?php printf(__('%d Listings'), 10); ?></option>
-                    <option value="25" <?php if (Params::getParam('iDisplayLength') == 25) {
-                        echo 'selected';
-                    } ?>><?php printf(__('%d Listings'), 25); ?></option>
-                    <option value="50" <?php if (Params::getParam('iDisplayLength') == 50) {
-                        echo 'selected';
-                    } ?>><?php printf(__('%d Listings'), 50); ?></option>
-                    <option value="100" <?php if (Params::getParam('iDisplayLength') == 100) {
-                        echo 'selected';
-                    } ?>><?php printf(__('%d Listings'), 100); ?></option>
-                </select>
-            </form>
-            <?php if ($sort !== 'date') { ?>
-                <a id="btn-reset-filters" class="btn btn-dim" href="<?php
-                   echo osc_admin_base_url(true); ?>?page=items&action=items_reported"><?php _e('Reset filters'); ?></a>
-            <?php } ?>
-        </div>
-    </div>
+    <?php osc_admin_toolbar_open(array('align' => 'end')); ?>
+        <?php if ($sort !== 'date') { ?>
+            <a id="btn-reset-filters" class="btn btn-sm btn-dim" href="<?php
+               echo osc_admin_base_url(true); ?>?page=items&action=items_reported"><?php _e('Reset filters'); ?></a>
+        <?php } ?>
+        <?php osc_admin_per_page(array(
+            'label'   => __('%d Listings'),
+            'options' => array(10, 25, 50, 100),
+            'current' => (int) Params::getParam('iDisplayLength'),
+        )); ?>
+    <?php osc_admin_toolbar_close(); ?>
     <form class="" id="datatablesForm" action="<?php echo osc_admin_base_url(true); ?>" method="post">
         <input type="hidden" name="page" value="items" />
         <input type="hidden" name="action" value="bulk_actions" />

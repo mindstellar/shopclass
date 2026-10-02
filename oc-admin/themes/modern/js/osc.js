@@ -213,17 +213,81 @@ window.addEventListener('load', function () {
         });
     });
 });
-// TinyMCE draws its toolbar from a UI skin and its editing surface from a separate
-// content skin inside an iframe. Neither inherits the admin's dark mode, so an
-// editor sat as a bright white panel in a dark admin. Pick the matching pair at
-// init time; the theme is read from the same data-bs-theme the rest of the admin
-// uses. (Switching theme after an editor is up needs a re-init, so it follows on
-// the next page load rather than live.)
-window.oscTinymceTheme = function () {
-    var dark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+// TinyMCE's toolbar, menus and dialogs are ordinary elements the admin stylesheet
+// paints from the theme tokens, so they follow data-bs-theme on their own. The
+// editing surface is an iframe -- a separate document, where those tokens do not
+// exist -- so the current values are copied onto its root and consumed by a small
+// sheet of the same rules TinyMCE's own content skin sets.
+(function () {
+    'use strict';
 
-    return { skin: dark ? 'oxide-dark' : 'oxide', content_css: dark ? 'dark' : 'default' };
-};
+    var TOKENS = [
+        '--osc-bench', '--osc-bench-sunk', '--osc-ink', '--osc-ink-muted',
+        '--osc-bronze', '--osc-rule-strong'
+    ];
+
+    var SHEET = 'body{background-color:var(--osc-bench);color:var(--osc-ink)}'
+        + 'a{color:var(--osc-bronze)}'
+        + 'hr{border-color:var(--osc-rule-strong)}'
+        + 'code{background-color:var(--osc-bench-sunk);color:var(--osc-ink)}'
+        + 'figure figcaption{color:var(--osc-ink-muted)}'
+        + 'table[border]:not([border="0"]):not([style*=border-color]) td,'
+        + 'table[border]:not([border="0"]):not([style*=border-color]) th'
+        + '{border-color:var(--osc-rule-strong)}'
+        + '.mce-content-body:not([dir=rtl]) blockquote{border-left-color:var(--osc-rule-strong)}'
+        + '.mce-content-body[dir=rtl] blockquote{border-right-color:var(--osc-rule-strong)}';
+
+    function paint(editor) {
+        var doc = editor && editor.getDoc && editor.getDoc();
+        if (!doc || !doc.documentElement || !doc.head) {
+            return;
+        }
+        var style = doc.getElementById('osc-editor-theme');
+        if (!style) {
+            style = doc.createElement('style');
+            style.id = 'osc-editor-theme';
+            style.textContent = SHEET;
+            doc.head.appendChild(style);
+        }
+        var from = getComputedStyle(document.documentElement);
+        var root = doc.documentElement;
+        TOKENS.forEach(function (name) {
+            root.style.setProperty(name, from.getPropertyValue(name).trim());
+        });
+        root.style.colorScheme =
+            document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light';
+    }
+
+    function paintAll() {
+        if (typeof tinymce !== 'undefined') {
+            tinymce.get().forEach(paint);
+        }
+    }
+
+    // Registered before any screen mounts an editor, so every editor on the page is
+    // covered -- including the ones other screens and plugins mount themselves.
+    document.addEventListener('DOMContentLoaded', function () {
+        if (typeof tinymce === 'undefined') {
+            return;
+        }
+        tinymce.on('AddEditor', function (e) {
+            e.editor.on('init', function () {
+                paint(e.editor);
+            });
+        });
+        paintAll();
+
+        new MutationObserver(function (records) {
+            for (var i = 0; i < records.length; i++) {
+                if (records[i].attributeName === 'data-bs-theme') {
+                    paintAll();
+
+                    return;
+                }
+            }
+        }).observe(document.documentElement, { attributes: true });
+    });
+})();
 
 // Select-all for a list's bulk-action column. Every list screen shipped its own
 // copy of this listener; it is one behaviour, so it lives once. Delegated from the
@@ -239,6 +303,50 @@ document.addEventListener('change', function (event) {
             cb.checked = checkAll.checked;
         }
     });
+});
+
+// A control that invalidates the ones below it -- picking a country makes the region and
+// city chosen under the old one meaningless. Declared on the control, so any screen can
+// use it without its own script.
+document.addEventListener('change', function (event) {
+    var source = event.target;
+    if (!source || !source.hasAttribute || !source.hasAttribute('data-osc-clears')) {
+        return;
+    }
+    source.getAttribute('data-osc-clears').split(',').forEach(function (selector) {
+        selector = selector.trim();
+        if (!selector) {
+            return;
+        }
+        var field = document.querySelector(selector);
+        if (field) {
+            field.value = '';
+        }
+    });
+});
+
+// A list filter whose select chooses which of its own inputs is in play. Delegated, so
+// every screen gets it from the component rather than shipping its own inline script.
+document.addEventListener('change', function (event) {
+    var picker = event.target;
+    if (!picker || !picker.hasAttribute || !picker.hasAttribute('data-osc-filter-switch')) {
+        return;
+    }
+    var form = picker.form || picker.closest('form');
+    if (!form) {
+        return;
+    }
+    var shown = null;
+    form.querySelectorAll('[data-osc-filter-for]').forEach(function (input) {
+        var on = input.getAttribute('data-osc-filter-for') === picker.value;
+        input.classList.toggle('hide', !on);
+        if (on) {
+            shown = input;
+        }
+    });
+    if (shown) {
+        shown.focus();
+    }
 });
 
 // A package icon or screenshot that cannot load (a blocked CDN, an offline install) hands
@@ -268,3 +376,147 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 });
+
+/* ===================================================
+ * osc drawer
+ * ===================================================
+ * The slide-over panel the Categories and Locations screens edit in. Both wrote the same
+ * open/close dance -- unhide, force a reflow so the slide starts from the closed position,
+ * toggle a class, then wait for transitionend with a timeout because a reduced-motion
+ * transition never fires one -- and both trapped Tab inside it.
+ *
+ * oscDrawer({
+ *     drawer:      the panel element                              (required)
+ *     backdrop:    the element behind it                          (required)
+ *     openOn:      element the open class goes on (default: both drawer and backdrop)
+ *     openClass:   default 'is-open'
+ *     focusFirst:  fn(drawer) -> what to focus once it is open
+ *     canClose:    fn() -> false to refuse a backdrop or Escape close, e.g. while a
+ *                  <dialog> sits over the panel and owns Escape itself
+ *     beforeClose: fn() -> run before the panel starts closing; abort requests, tidy state
+ *     afterClose:  fn() -> run once it is hidden and emptied
+ *     empty:       false to keep the panel's markup on close
+ * })
+ *
+ * Returns { open(opener), close(restoreFocus), isOpen(), element }.
+ */
+window.oscDrawer = function (options) {
+    var drawer = options.drawer;
+    var backdrop = options.backdrop;
+    var openClass = options.openClass || 'is-open';
+    var targets = options.openOn ? [options.openOn] : [drawer, backdrop];
+    var FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), '
+        + 'select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    var opener = null;
+
+    function isOpen() {
+        return !!drawer && targets.some(function (t) {
+            return t && t.classList.contains(openClass);
+        });
+    }
+
+    function open(from) {
+        // An explicit null means this panel has nothing to give focus back to; only an
+        // absent argument falls back to whatever had focus when it opened.
+        opener = from === undefined ? document.activeElement : (from || null);
+        drawer.hidden = false;
+        backdrop.hidden = false;
+        // Reflow, so the slide runs from the closed position rather than jumping.
+        void drawer.offsetWidth;
+        targets.forEach(function (t) {
+            if (t) { t.classList.add(openClass); }
+        });
+        if (typeof options.focusFirst === 'function') {
+            options.focusFirst(drawer);
+        }
+    }
+
+    function close(restoreFocus) {
+        if (!isOpen()) {
+            return;
+        }
+        if (typeof options.beforeClose === 'function') {
+            options.beforeClose();
+        }
+        targets.forEach(function (t) {
+            if (t) { t.classList.remove(openClass); }
+        });
+
+        var settled = false;
+        var done = function () {
+            if (settled || isOpen()) {
+                return;
+            }
+            settled = true;
+            drawer.hidden = true;
+            backdrop.hidden = true;
+            if (options.empty !== false) {
+                drawer.replaceChildren();
+            }
+            if (typeof options.afterClose === 'function') {
+                options.afterClose();
+            }
+        };
+        // A reduced-motion transition never fires transitionend, so the timeout is the
+        // one that actually lands on those machines -- not a safety net.
+        drawer.addEventListener('transitionend', done, { once: true });
+        window.setTimeout(done, 320);
+
+        if (restoreFocus !== false && opener && opener.isConnected) {
+            opener.focus();
+        }
+        opener = null;
+    }
+
+    function mayClose() {
+        return typeof options.canClose !== 'function' || options.canClose() !== false;
+    }
+
+    backdrop.addEventListener('click', function () {
+        if (mayClose()) {
+            close();
+        }
+    });
+
+    document.addEventListener('keydown', function (event) {
+        if (!isOpen()) {
+            return;
+        }
+        if (event.key === 'Escape') {
+            if (mayClose()) {
+                close();
+            }
+
+            return;
+        }
+        if (event.key !== 'Tab') {
+            return;
+        }
+        // A hidden control still matches the selector, so filter to what is on screen --
+        // otherwise Tab can land somewhere nobody can see.
+        var items = Array.prototype.filter.call(drawer.querySelectorAll(FOCUSABLE), function (node) {
+            return node.getClientRects().length > 0 && node.getAttribute('tabindex') !== '-1';
+        });
+        if (items.length === 0) {
+            event.preventDefault();
+
+            return;
+        }
+        var first = items[0];
+        var last = items[items.length - 1];
+        if (event.shiftKey && (document.activeElement === first || document.activeElement === drawer)) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+        }
+    });
+
+    return {
+        open: open,
+        close: close,
+        isOpen: isOpen,
+        element: drawer
+    };
+};

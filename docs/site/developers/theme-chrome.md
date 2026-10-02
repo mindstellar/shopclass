@@ -2,17 +2,17 @@
 title: Theme chrome
 description: Declare where your theme's header and footer live so ShopClass can render its own pages inside your layout instead of falling back to a standalone one.
 sidebar:
-  order: 17
+  order: 19
 ---
 
 Some pages belong to core rather than to your theme: the account-delete
-confirmation, the credits wallet, the buy and orders screens. Core will use your
+confirmation, the credits wallet, the buy and orders screens. Core uses your
 theme's view if you ship one. If you do not, it needs somewhere to put the page.
 
 **Theme chrome** is the pair of views that opens and closes a page on your site:
 the one printing `<!doctype html>` through the site header, and the one closing
-`</body>`. Tell core where they are and those core-owned pages render inside your
-layout, with your header, your footer, your typography.
+`</body>`. Tell core where they are, and those core-owned pages render inside
+your layout, with your header, your footer, your typography.
 
 ## You probably do not need to do anything
 
@@ -23,15 +23,16 @@ Core finds chrome on its own, first hit wins:
 3. `common/header.php` + `common/footer.php`
 
 Each is tried in your theme first, then in the parent theme when your
-`index.php` names one. A child theme that ships no chrome inherits its parent's.
-The bundled fallback theme is deliberately not in that walk: it knows nothing
-about your site, so core renders its own page instead.
+`index.php` names one. A child theme that ships no chrome inherits its
+parent's. The bundled fallback theme is deliberately not in that walk: it knows
+nothing about your site, so core renders its own page instead.
 
-Both halves must exist. A header with no footer is not chrome: core would leave
-the page unclosed, so it falls through to its own standalone page instead.
+Both halves must exist. A header with no footer is not chrome: core would
+leave the page unclosed, so it falls through to its own standalone page
+instead.
 
-If your theme uses either conventional pair, it already works. Declare only when
-your layout does not match one.
+If your theme uses either conventional pair, it already works. Declare only
+when your layout does not match one.
 
 ## Declaring
 
@@ -46,6 +47,18 @@ osc_add_theme_support('chrome', array(
 
 Both paths are **relative to your theme directory**. An absolute path, or one
 containing `..`, is refused and core falls back to the probes.
+
+Add `'account' => true` when your chrome also draws the account area, so core's
+credits pages (wallet, buy, orders) render inside it rather than through your
+`user-custom.php`:
+
+```php
+osc_add_theme_support('chrome', array(
+    'header'  => 'parts/site-header.php',
+    'footer'  => 'parts/site-footer.php',
+    'account' => true,
+));
+```
 
 ## Rendering chrome yourself
 
@@ -74,7 +87,7 @@ $chrome = osc_theme_chrome();   // ['header' => '/…/common/header.php', 'foote
 ## What core puts between them
 
 Core prints its page markup wrapped in `.oe-page` and `.oe-doc`, and injects one
-small stylesheet through the `header` hook, the same hook your `<head>` already
+small stylesheet through the `header` hook: the same hook your `<head>` already
 runs for enqueued scripts and styles. Every selector in it is `.oe-*` prefixed,
 so it cannot reach your own markup on the same page.
 
@@ -99,7 +112,7 @@ it did before: declaring is always optional.
 ## Declaring extra views
 
 A static page's internal name becomes a URL segment, so core keeps a list of
-names a page may not take, otherwise a page slugged `contact` would shadow the
+names a page may not take. Otherwise a page slugged `contact` would shadow the
 contact route. That list is core's own view vocabulary, and a theme adds to it:
 
 ```php
@@ -120,9 +133,8 @@ offers its own page-naming UI should check against the same list rather than
 hardcoding one.
 
 ```php
-in_array('contact', osc_theme_view_names(), true);   // true: reserved by core
+in_array('contact', osc_theme_view_names(), true);   // true, reserved by core
 ```
-
 
 ## Declaring widget zones
 
@@ -146,8 +158,8 @@ osc_add_theme_support('widget_locations', array(
 ```
 
 The declared order is the order the admin shows them in. `description` is
-optional; a zone with no `label` falls back to its slug. A bare list,
-`array('header', 'footer')`, and a `slug => label` map are both accepted.
+optional; a zone with no `label` falls back to its slug. A bare list
+(`array('header', 'footer')`) and a `slug => label` map are both accepted.
 
 Declare from the `init` hook rather than the top of `functions.php` if your
 labels are translated: core requires `functions.php` before the translation

@@ -689,13 +689,7 @@ function osc_item_is_spam()
  */
 function osc_item_link_spam()
 {
-    if (!osc_rewrite_enabled()) {
-        $url = osc_base_url(true) . '?page=item&action=mark&as=spam&id=' . osc_item_id();
-    } else {
-        $url = osc_base_url() . osc_get_preference('rewrite_item_mark') . '/spam/' . osc_item_id();
-    }
-
-    return (string)$url;
+    return osc_core_url('item_mark', array('as' => 'spam', 'id' => osc_item_id()));
 }
 
 /**
@@ -705,13 +699,7 @@ function osc_item_link_spam()
  */
 function osc_item_link_bad_category()
 {
-    if (!osc_rewrite_enabled()) {
-        $url = osc_base_url(true) . '?page=item&action=mark&as=badcat&id=' . osc_item_id();
-    } else {
-        $url = osc_base_url() . osc_get_preference('rewrite_item_mark') . '/badcat/' . osc_item_id();
-    }
-
-    return (string)$url;
+    return osc_core_url('item_mark', array('as' => 'badcat', 'id' => osc_item_id()));
 }
 
 /**
@@ -721,13 +709,7 @@ function osc_item_link_bad_category()
  */
 function osc_item_link_repeated()
 {
-    if (!osc_rewrite_enabled()) {
-        $url = osc_base_url(true) . '?page=item&action=mark&as=repeated&id=' . osc_item_id();
-    } else {
-        $url = osc_base_url() . osc_get_preference('rewrite_item_mark') . '/repeated/' . osc_item_id();
-    }
-
-    return (string)$url;
+    return osc_core_url('item_mark', array('as' => 'repeated', 'id' => osc_item_id()));
 }
 
 /**
@@ -737,13 +719,7 @@ function osc_item_link_repeated()
  */
 function osc_item_link_offensive()
 {
-    if (!osc_rewrite_enabled()) {
-        $url = osc_base_url(true) . '?page=item&action=mark&as=offensive&id=' . osc_item_id();
-    } else {
-        $url = osc_base_url() . osc_get_preference('rewrite_item_mark') . '/offensive/' . osc_item_id();
-    }
-
-    return (string)$url;
+    return osc_core_url('item_mark', array('as' => 'offensive', 'id' => osc_item_id()));
 }
 
 /**
@@ -753,13 +729,7 @@ function osc_item_link_offensive()
  */
 function osc_item_link_expired()
 {
-    if (!osc_rewrite_enabled()) {
-        $url = osc_base_url(true) . '?page=item&action=mark&as=expired&id=' . osc_item_id();
-    } else {
-        $url = osc_base_url() . osc_get_preference('rewrite_item_mark') . '/expired/' . osc_item_id();
-    }
-
-    return (string)$url;
+    return osc_core_url('item_mark', array('as' => 'expired', 'id' => osc_item_id()));
 }
 
 // DEPRECATED: This function will be removed in version 4.0
@@ -905,8 +875,8 @@ function osc_comment_user_id()
  */
 function osc_delete_comment_url()
 {
-    return (string)osc_base_url(true) . '?page=item&action=delete_comment&id=' . osc_item_id() . '&comment='
-        . osc_comment_id() . '&' . osc_csrf_token_url();
+    return osc_core_url('item_delete_comment', array('id' => osc_item_id(), 'comment' => osc_comment_id()))
+        . '&' . osc_csrf_token_url();
 }
 
 //////////////////////////////
@@ -1122,6 +1092,24 @@ function osc_resource_download_url($variant = '')
     $url = osc_base_url(true) . '?' . http_build_query($params);
 
     return (string)osc_apply_filter('resource_download_url', $url, $resource, $variant);
+}
+
+/**
+ * Alt text for the photo the resource loop is on: the title of the listing it belongs to.
+ *
+ * Core had no answer here, so every theme either wrote `alt=""` on listing photos or left the
+ * attribute off. Costs no query — the listing is already the current one in the loop.
+ *
+ * Returns '' when there is no listing in scope, which is the correct alt for a decorative
+ * image and keeps a theme from printing the word "Array".
+ *
+ * @return string
+ */
+function osc_resource_alt()
+{
+    $title = function_exists('osc_item_title') ? trim((string)osc_item_title()) : '';
+
+    return (string)osc_apply_filter('resource_alt', $title, osc_resource());
 }
 
 /**
@@ -1386,11 +1374,8 @@ function osc_has_latest_items($total_latest_items = null, $options = array(), $w
         }
 
         $items = $search->getLatestItems($total_latest_items, $options, $withPicture);
-        // Batch-load item-upgrade state for the home page's listing the same way
-        // the search/category path does -- gated so billing off costs nothing.
-        if (osc_billing_enabled()) {
-            osc_prime_item_upgrades($items);
-        }
+        // Batch-load item-upgrade state for the home page's listing the same way the search/category path does.
+        osc_prime_item_upgrades($items);
         View::newInstance()->_exportVariableToView('latestItems', $items);
     }
 
@@ -1447,9 +1432,7 @@ function osc_count_latest_items($total_latest_items = null, $options = array())
             $options = array();
         }
         $items = $search->getLatestItems($total_latest_items, $options);
-        if (osc_billing_enabled()) {
-            osc_prime_item_upgrades($items);
-        }
+        osc_prime_item_upgrades($items);
         View::newInstance()->_exportVariableToView('latestItems', $items);
     }
 
@@ -1932,4 +1915,69 @@ function osc_query_item($params = null)
 function osc_item_map_type()
 {
     return osc_get_preference('map_type');
+}
+
+/**
+ * Id of the nearest live listing by id order: 'next' is the next higher id, 'prev' the next lower.
+ * Live means what public search shows: enabled, active, not spam, and premium or not expired.
+ *
+ * @param string   $direction 'next' or 'prev'
+ * @param int|null $itemId    Listing to start from, defaults to the current item
+ *
+ * @return int 0 when there is none
+ * @since 6.4.0
+ */
+function osc_item_adjacent_id(string $direction = 'next', ?int $itemId = null): int
+{
+    return _osc_item_adjacent($direction, $itemId)['id'];
+}
+
+/**
+ * URL of the nearest live listing by id order, as osc_item_url_from_item() builds it.
+ *
+ * @param string   $direction 'next' or 'prev'
+ * @param int|null $itemId    Listing to start from, defaults to the current item
+ *
+ * @return string '' when there is none
+ * @since 6.4.0
+ */
+function osc_item_adjacent_url(string $direction = 'next', ?int $itemId = null): string
+{
+    return _osc_item_adjacent($direction, $itemId)['url'];
+}
+
+/**
+ * Shared lookup for the two helpers above: one query on a cache miss, cached 180 s,
+ * the empty answer too.
+ *
+ * @param string   $direction
+ * @param int|null $itemId
+ *
+ * @return array{id:int,url:string}
+ */
+function _osc_item_adjacent(string $direction, ?int $itemId): array
+{
+    $itemId = $itemId ?? osc_item_id();
+    if ($itemId <= 0) {
+        return array('id' => 0, 'url' => '');
+    }
+
+    $next   = $direction !== 'prev';
+    $locale = OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale();
+    $key    = 'item_adjacent_' . ($next ? 'next' : 'prev') . '_' . $itemId . '_'
+        . (osc_rewrite_enabled() ? '1' : '0') . '_' . $locale;
+
+    $found  = false;
+    $cached = osc_cache_get($key, $found);
+    if ($found && is_array($cached)) {
+        return $cached;
+    }
+
+    $row    = Item::newInstance()->findAdjacentLive($itemId, $next, $locale);
+    $result = $row === array()
+        ? array('id' => 0, 'url' => '')
+        : array('id' => (int)$row['pk_i_id'], 'url' => osc_item_url_from_item($row));
+    osc_cache_set($key, $result, 180);
+
+    return $result;
 }

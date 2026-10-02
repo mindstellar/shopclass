@@ -76,6 +76,7 @@ $seedPages = static function (int $n) use ($admin, $table): array {
 $resetPages = static function () use ($admin, $table, $dtbl): void {
     $admin->query("DELETE FROM $dtbl");
     $admin->query("DELETE FROM $table");
+    scratchdb_forget_cache();
 };
 
 /* ----------------------------------------------------------------------------
@@ -214,6 +215,7 @@ pin('a page with no description row at all returns an empty array', array(), $mo
  * because what it tests is whether the returned array is non-empty. */
 $blank = seed_page($admin, 'blank', '');
 $admin->query("UPDATE $dtbl SET s_title = '', s_text = '' WHERE fk_i_pages_id = $blank");
+scratchdb_forget_cache();
 $blankExt = $model->extendDescription(array('pk_i_id' => $blank));
 check('a blank-description page is still returned', $blankExt !== array(), describe($blankExt));
 pin('its locale block is empty', array(), $blankExt['locale']);

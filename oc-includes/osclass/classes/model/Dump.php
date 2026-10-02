@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\TablePrefix;
+
 /**
  * Model database for Dump database tables
  *
@@ -27,6 +29,15 @@ class Dump extends DAO
      * @var Dump
      */
     private static $instance;
+
+    /** Bytes collected before table_data() writes them out. */
+    private const CHUNK = 1048576;
+
+    /** Rows per INSERT statement, so a restore never holds a whole table. */
+    private const INSERT_ROWS = 1000;
+
+    /** Bytes of values per INSERT statement, kept well under max_allowed_packet. */
+    private const INSERT_BYTES = 1048576;
 
     /**
      * Return the shared Dump model instance, creating it on first use.
@@ -60,6 +71,18 @@ class Dump extends DAO
     }
 
     /**
+     * Whether a table is one of this site's.
+     *
+     * @param string $table
+     *
+     * @return bool
+     */
+    private function hasPrefix($table)
+    {
+        return DB_TABLE_PREFIX !== '' && TablePrefix::owns($table, DB_TABLE_PREFIX);
+    }
+
+    /**
      * Return all tables from database
      *
      * @return array<int,array<string,string>> One single-column row per table
@@ -82,10 +105,11 @@ class Dump extends DAO
      *
      * @param string $path
      * @param string $table
+     * @param bool   $prefixToken write the prefix token in place of this site's table prefix
      *
      * @return bool
      */
-    public function table_structure($path, $table)
+    public function table_structure($path, $table, $prefixToken = false)
     {
         if (!is_writable($path)) {
             return false;
@@ -107,8 +131,15 @@ class Dump extends DAO
         }
 
         foreach ($result as $_line) {
-            $_str .= str_replace('CREATE TABLE', 'CREATE TABLE IF NOT EXISTS', $_line['Create Table'] . ';');
-            $_str .= "\n\n";
+            $create = str_replace('CREATE TABLE', 'CREATE TABLE IF NOT EXISTS', $_line['Create Table'] . ';');
+            if ($prefixToken && $this->hasPrefix($table)) {
+                $create = (string) preg_replace(
+                    '/(CREATE TABLE IF NOT EXISTS |REFERENCES )`' . preg_quote(DB_TABLE_PREFIX, '/') . 't_/',
+                    '$1`' . TablePrefix::TOKEN . 't_',
+                    $create
+                );
+            }
+            $_str .= $create . "\n\n";
         }
         $this->appendFile($path, $_str);
 
@@ -118,118 +149,150 @@ class Dump extends DAO
     /**
      * Dump all table rows into path
      *
+     * Rows are read unbuffered and written in chunks, so memory use does not grow with
+     * the table. A new INSERT starts every 1000 rows or about 1 MB of values, so each
+     * statement fits in max_allowed_packet when restored.
+     *
      * @param string $path
      * @param string $table
+     * @param bool   $prefixToken write the prefix token in place of this site's table prefix
      *
      * @return bool
      */
-    public function table_data($path, $table)
+    public function table_data($path, $table, $prefixToken = false)
     {
         if (!is_writable($path)) {
             return false;
         }
 
-        // SELECT * FROM <ident> discovers the table at runtime; $table is validated
-        // and backtick-quoted before it reaches SQL (previously it was interpolated
-        // raw and unvalidated). The read stays on the metadata-bearing driver path
-        // because the per-column quoting below is driven by the mysqli RESULT-SET
-        // FIELD TYPES (fetch_fields()->type), which the parameterized Connection
-        // layer does not expose. An unusable identifier or a failed query yields no
-        // rows, matching the legacy failed-query branch (just the trailing newline,
-        // true returned).
-        $result = array();
-        $num_rows   = 0;
-        $num_fields = 0;
-        $fields     = array();
+        $handle = @fopen($path, 'ab');
+        if ($handle === false) {
+            trigger_error(sprintf('Could not open %s for writing', $path), E_USER_WARNING);
 
+            return true;
+        }
+
+        // The read stays on the raw mysqli handle: the per-column quoting needs the
+        // result-set field types, which the parameterized Connection layer does not expose.
+        // An unusable identifier or a failed query writes only the trailing newline.
+        $res = false;
         if ($this->isValidTableName($table)) {
             $conn = \mindstellar\database\ConnectionManager::newInstance()->getHandle();
-            $res  = false;
             if ($conn instanceof mysqli) {
                 try {
-                    $res = $conn->query('SELECT * FROM `' . $table . '`');
+                    $res = $conn->query('SELECT * FROM `' . $table . '`', MYSQLI_USE_RESULT);
                 } catch (Exception $e) {
                     $res = false;
                 }
             }
-            if ($res instanceof mysqli_result) {
-                $result     = $res->fetch_all(MYSQLI_ASSOC);
-                $num_rows   = $res->num_rows;
-                $num_fields = $res->field_count;
-                $fields     = $res->fetch_fields();
+        }
+
+        $buffer = '';
+        if ($res instanceof mysqli_result) {
+            $fields = $res->fetch_fields();
+            $target = $prefixToken && $this->hasPrefix($table)
+                ? TablePrefix::TOKEN . substr($table, strlen(DB_TABLE_PREFIX))
+                : $table;
+            $count  = 0;
+            $batch  = 0;
+            $bytes  = 0;
+            $write  = function (array $row) use ($table, $target, $fields, $handle, &$buffer, &$count, &$batch, &$bytes) {
+                if ($count === 0) {
+                    $buffer .= '/* dumping data for table `' . $table . "` */\n";
+                }
+                $buffer .= $batch === 0 ? 'insert into `' . $target . "` values\n" : ",\n";
+                $values  = $this->rowValues($row, $fields);
+                $buffer .= $values;
+                $count++;
+                $batch++;
+                $bytes += strlen($values);
+                if ($batch >= self::INSERT_ROWS || $bytes >= self::INSERT_BYTES) {
+                    $buffer .= ";\n";
+                    $batch   = 0;
+                    $bytes   = 0;
+                }
+                if (strlen($buffer) >= self::CHUNK) {
+                    $this->writeChunk($handle, $buffer);
+                    $buffer = '';
+                }
+            };
+
+            if ($table == DB_TABLE_PREFIX . 't_category') {
+                // Parents must come before their children, so this small table is read whole.
+                $rows = $res->fetch_all(MYSQLI_ASSOC);
+                $res->free();
+                foreach ($this->_dump_table_category($rows) as $row) {
+                    $write($row);
+                }
+            } else {
+                while (($row = $res->fetch_assoc()) !== null) {
+                    $write($row);
+                }
                 $res->free();
             }
-        }
 
-        $_str = '';
-        if ($num_fields > 0) {
-            if ($num_rows > 0) {
-                $_str .= '/* dumping data for table `' . $table . '` */';
-                $_str .= "\n";
-
-                $field_type = array();
-                $i          = 0;
-
-                foreach ($fields as $meta) {
-                    $field_type[] = $meta->type;
-                }
-
-                $_str .= 'insert into `' . $table . '` values';
-                $_str .= "\n";
-
-                $index = 0;
-                if ($table == DB_TABLE_PREFIX . 't_category') {
-                    $this->_dump_table_category($result, $num_fields, $field_type, $fields, $index, $num_rows, $_str);
-                } else {
-                    foreach ($result as $row) {
-                        $_str .= '(';
-                        for ($i = 0; $i < $num_fields; $i++) {
-                            $v = $row[$fields[$i]->name];
-                            if (null === $v) {
-                                $_str .= 'null';
-                            } else {
-                                $this->_quotes($fields[$i]->type, $_str, $row[$fields[$i]->name]);
-                            }
-                            if ($i < $num_fields - 1) {
-                                $_str .= ',';
-                            }
-                        }
-                        $_str .= ')';
-
-                        if ($index < $num_rows - 1) {
-                            $_str .= ',';
-                        } else {
-                            $_str .= ';';
-                        }
-                        $_str .= "\n";
-
-                        $index++;
-                    }
-                }
+            if ($batch > 0) {
+                $buffer .= ";\n";
             }
         }
 
-        $_str .= "\n";
-
-        $this->appendFile($path, $_str);
+        $buffer .= "\n";
+        $this->writeChunk($handle, $buffer);
+        fclose($handle);
 
         return true;
     }
 
     /**
-     * Specific dump for t_category table
+     * One row as its "(v1,v2,...)" tuple.
      *
-     * @param array<int,array<string,mixed>> $result
-     * @param int                             $num_fields
-     * @param array<int,int>                  $field_type Accepted for signature compatibility; unused
-     * @param \stdClass[]                     $fields     mysqli field metadata
-     * @param int                             $index
-     * @param int                             $num_rows
-     * @param string                          $_str       Dump text, appended to in place
+     * @param array<string,mixed> $row
+     * @param \stdClass[]         $fields mysqli field metadata
+     *
+     * @return string
+     */
+    private function rowValues(array $row, array $fields)
+    {
+        $out  = '(';
+        $last = count($fields) - 1;
+        foreach ($fields as $i => $field) {
+            $v = $row[$field->name];
+            if (null === $v) {
+                $out .= 'null';
+            } else {
+                $this->_quotes($field->type, $out, $v);
+            }
+            if ($i < $last) {
+                $out .= ',';
+            }
+        }
+
+        return $out . ')';
+    }
+
+    /**
+     * Write a chunk of dump text, warning rather than throwing on failure.
+     *
+     * @param resource $handle
+     * @param string   $content
      *
      * @return void
      */
-    private function _dump_table_category($result, $num_fields, $field_type, $fields, $index, $num_rows, &$_str)
+    private function writeChunk($handle, $content)
+    {
+        if ($content !== '' && fwrite($handle, $content) === false) {
+            trigger_error('Could not write the database backup', E_USER_WARNING);
+        }
+    }
+
+    /**
+     * t_category rows ordered so every parent comes before its children.
+     *
+     * @param array<int,array<string,mixed>> $result
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private function _dump_table_category($result)
     {
         $short_rows   = array();
         $unshort_rows = array();
@@ -252,30 +315,7 @@ class Dump extends DAO
             }
         }
 
-        foreach ($short_rows as $row) {
-            $_str .= '(';
-            for ($i = 0; $i < $num_fields; $i++) {
-                $v = $row[$fields[$i]->name];
-                if (null === $v) {
-                    $_str .= 'null';
-                } else {
-                    $this->_quotes($fields[$i]->type, $_str, $v);
-                }
-                if ($i < $num_fields - 1) {
-                    $_str .= ',';
-                }
-            }
-            $_str .= ')';
-
-            if ($index < $num_rows - 1) {
-                $_str .= ',';
-            } else {
-                $_str .= ';';
-            }
-            $_str .= "\n";
-
-            $index++;
-        }
+        return $short_rows;
     }
 
     /**

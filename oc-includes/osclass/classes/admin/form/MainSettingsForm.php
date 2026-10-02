@@ -58,13 +58,19 @@ final class MainSettingsForm
             return self::PAGE_ID;
         }
 
-        $form = CoreSettings::page(self::PAGE_ID, __('General Settings'));
+        $form = CoreSettings::page(self::PAGE_ID, __('General Settings'))
+            // A changed channel offers different releases, so the saved answer is dropped and
+            // the next update check asks again.
+            ->onAfterSave(static function () {
+                osc_set_preference('update_core_json', '');
+                osc_set_preference('last_version_check', 0);
+            });
 
         $form
             ->text('pageTitle', __('Page title'))
                 ->required()
                 ->validate(static fn ($value) => osc_validate_text($value) ? null : _m('Page title field is required'))
-            ->text('pageDesc', __('Page description'))
+            ->text('pageDesc', __('Page description'), __('Search engines show it under your home page. Left empty, the home page has no description.'))
             ->email('contactEmail', __('Contact e-mail'))
                 ->required();
 
@@ -154,8 +160,18 @@ final class MainSettingsForm
             ->custom('version_check', static function () {
                 self::drawVersionCheck();
             })
-            ->checkbox('allow_update_prerelease', __('Allow prerelease update'))
-                ->rowLabel(__('Allow Prerelease'))
+            ->select('update_channel', __('Update channel'), array(
+                \mindstellar\upgrade\ReleaseChannel::STABLE => __('Stable releases only'),
+                \mindstellar\upgrade\ReleaseChannel::RC     => __('Stable and release candidates'),
+                \mindstellar\upgrade\ReleaseChannel::BETA   => __('Stable, release candidates and betas'),
+            ), __('Which new versions this site is offered. Betas and release candidates are for testing.'))
+                ->default(\mindstellar\upgrade\ReleaseChannel::STABLE)
+            ->checkbox(
+                'auto_security_updates',
+                __('Install security updates by themselves.'),
+                __('A security fix for the version you run (6.4.0 to 6.4.1) is installed at night once it is a day old, and the contact e-mail is told how it went. Off by default.')
+            )
+                ->rowLabel(__('Security updates'))
             ->custom('layout_clear', static function () {
                 echo '<div class="clear"></div>';
             })

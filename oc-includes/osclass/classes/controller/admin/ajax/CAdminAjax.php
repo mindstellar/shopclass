@@ -18,6 +18,7 @@ use mindstellar\market\PackageIndex;
 use mindstellar\security\PluginAjaxFile;
 use mindstellar\upgrade\Osclass;
 use mindstellar\upgrade\Upgrade;
+use mindstellar\utility\AjaxResponse;
 use mindstellar\utility\FileSystem;
 use mindstellar\utility\Utils;
 
@@ -59,14 +60,13 @@ class CAdminAjax extends AdminSecBaseModel
                 break;
             case 'regions': //Return regions given a countryId
                 $regions = Region::newInstance()->findByCountry(Params::getParam('countryId'));
-                echo json_encode($regions);
+                AjaxResponse::json($regions);
                 break;
             case 'cities': //Returns cities given a regionId
                 $cities = City::newInstance()->findByRegion(Params::getParam('regionId'));
-                echo json_encode($cities);
+                AjaxResponse::json($cities);
                 break;
             case 'location_catalog': // Countries the published catalog offers for import
-                header('Content-Type: application/json');
                 // Read through the catalog rather than letting the browser fetch the
                 // published URL: that URL names the current release rather than listing
                 // countries, and following it is server-side work that is cached here.
@@ -89,19 +89,19 @@ class CAdminAjax extends AdminSecBaseModel
                         'regions'   => (int) ($row['regions'] ?? 0),
                     );
                 }
-                echo json_encode(array(
+                AjaxResponse::json(array(
                     'release'   => $catalog->release(),
                     'countries' => $rows,
                 ));
                 break;
             case 'location': // This is the autocomplete AJAX
                 $cities = City::newInstance()->ajax(Params::getParam('term'));
-                echo json_encode($cities);
+                AjaxResponse::json($cities);
                 break;
             case 'userajax': // This is the autocomplete AJAX
                 $users = User::newInstance()->ajax(Params::getParam('term'));
                 if (count($users) == 0) {
-                    echo json_encode(array(
+                    AjaxResponse::json(array(
                         0 => array(
                             'id'    => '',
                             'label' => __('No results'),
@@ -109,17 +109,16 @@ class CAdminAjax extends AdminSecBaseModel
                         )
                     ));
                 } else {
-                    echo json_encode($users);
+                    AjaxResponse::json($users);
                 }
                 break;
             case 'date_format':
-                echo json_encode(array(
+                AjaxResponse::json(array(
                     'format'        => Params::getParam('format'),
                     'str_formatted' => osc_format_date(date('Y-m-d H:i:s'), Params::getParam('format'))
                 ));
                 break;
             case 'media_list': // JSON media for the editor's media picker (read-only)
-                header('Content-Type: application/json');
                 $type = Params::getParam('type');
                 if ($type === '' || $type === null) {
                     $type = 'all';
@@ -144,7 +143,7 @@ class CAdminAjax extends AdminSecBaseModel
                         'url'        => $urls['full'],
                     );
                 }
-                echo json_encode(array(
+                AjaxResponse::json(array(
                     'items'   => $items,
                     'total'   => (int) $data['total'],
                     'page'    => $iPage,
@@ -154,7 +153,6 @@ class CAdminAjax extends AdminSecBaseModel
                 break;
             case 'resource_upload': // editor image upload -> the resource pipeline
                 osc_csrf_check();
-                header('Content-Type: application/json');
 
                 $ownerType = Params::getParam('owner_type');
                 $ownerId   = Params::getParamInt('owner_id');
@@ -168,13 +166,13 @@ class CAdminAjax extends AdminSecBaseModel
                     || !osc_resource_owner_exists($ownerType, $ownerId)
                 ) {
                     http_response_code(403);
-                    echo json_encode(array('error' => __('Upload target not allowed')));
+                    AjaxResponse::json(array('error' => __('Upload target not allowed')));
                     break;
                 }
 
                 if (!isset($_FILES['file']['tmp_name']) || !is_uploaded_file($_FILES['file']['tmp_name'])) {
                     http_response_code(400);
-                    echo json_encode(array('error' => __('No file was received')));
+                    AjaxResponse::json(array('error' => __('No file was received')));
                     break;
                 }
 
@@ -186,12 +184,12 @@ class CAdminAjax extends AdminSecBaseModel
 
                 if ($row === false) {
                     http_response_code(415);
-                    echo json_encode(array('error' => __('The file is not a valid image')));
+                    AjaxResponse::json(array('error' => __('The file is not a valid image')));
                     break;
                 }
 
                 // TinyMCE expects { location: url }.
-                echo json_encode(array('location' => osc_get_resource_url($row)));
+                AjaxResponse::json(array('location' => osc_get_resource_url($row)));
                 break;
             case 'save_admin_theme': // persist this admin's light/dark choice
                 osc_csrf_check();
@@ -206,7 +204,7 @@ class CAdminAjax extends AdminSecBaseModel
                 // admin under this section is a clean per-user store with no schema change.
                 osc_set_preference((string) osc_logged_admin_id(), $theme, 'admin_theme', 'STRING');
                 osc_reset_preferences();
-                echo json_encode(array('done' => 1, 'theme' => $theme));
+                AjaxResponse::json(array('done' => 1, 'theme' => $theme));
                 break;
             case 'save_sidebar_state': // persist this admin's collapsed/expanded sidebar choice
                 osc_csrf_check();
@@ -219,13 +217,13 @@ class CAdminAjax extends AdminSecBaseModel
                 }
                 osc_set_preference((string) osc_logged_admin_id(), $state, 'admin_sidebar', 'STRING');
                 osc_reset_preferences();
-                echo json_encode(array('done' => 1, 'state' => $state));
+                AjaxResponse::json(array('done' => 1, 'state' => $state));
                 break;
             case 'runhook': // run hooks
                 $hook = Params::getParam('hook');
 
                 if ($hook == '') {
-                    echo json_encode(array('error' => 'hook parameter not defined'));
+                    AjaxResponse::json(array('error' => 'hook parameter not defined'));
                     break;
                 }
 
@@ -273,9 +271,9 @@ class CAdminAjax extends AdminSecBaseModel
                     }
                 }
 
-                // update category stats
-                foreach ($aRecountCat as $rId) {
-                    Utils::updateCategoryStatsById($rId);
+                // A move changes the totals of both the old and the new parents, so recount the tree.
+                if ($aRecountCat !== array()) {
+                    Utils::updateAllCategoriesStats();
                 }
 
                 if ($error) {
@@ -286,7 +284,7 @@ class CAdminAjax extends AdminSecBaseModel
 
                 osc_run_hook('edited_category_order', $error);
 
-                echo json_encode($result);
+                AjaxResponse::json($result);
                 break;
             case 'category_edit_iframe':
                 $this->_exportVariableToView(
@@ -449,7 +447,7 @@ class CAdminAjax extends AdminSecBaseModel
                     );
                 }
 
-                echo json_encode($result);
+                AjaxResponse::json($result);
 
                 break;
             case 'delete_field':
@@ -462,7 +460,7 @@ class CAdminAjax extends AdminSecBaseModel
                     $result = array('error' => __('An error occurred while deleting'));
                 }
 
-                echo json_encode($result);
+                AjaxResponse::json($result);
                 break;
             case 'add_field':
                 osc_csrf_check();
@@ -482,13 +480,13 @@ class CAdminAjax extends AdminSecBaseModel
                 $fieldManager = Field::newInstance();
                 $fieldId      = $fieldManager->insertField($s_name, 'TEXT', $slug, 0, '', array());
                 if ($fieldId) {
-                    echo json_encode(array(
+                    AjaxResponse::json(array(
                         'error'      => 0,
                         'field_id'   => $fieldId,
                         'field_name' => $s_name
                     ));
                 } else {
-                    echo json_encode(array('error' => 1));
+                    AjaxResponse::json(array('error' => 1));
                 }
                 break;
             case 'fields_order':
@@ -516,16 +514,16 @@ class CAdminAjax extends AdminSecBaseModel
                     $result = array('ok' => __('Order saved'));
                 }
 
-                echo json_encode($result);
+                AjaxResponse::json($result);
                 break;
             case 'add_group':
                 osc_csrf_check();
                 $groupManager = FieldGroup::newInstance();
                 $newId        = $groupManager->insertGroup(__('New field group'));
                 if ($newId) {
-                    echo json_encode(array('error' => 0, 'group_id' => $newId, 'group_name' => __('New field group')));
+                    AjaxResponse::json(array('error' => 0, 'group_id' => $newId, 'group_name' => __('New field group')));
                 } else {
-                    echo json_encode(array('error' => 1));
+                    AjaxResponse::json(array('error' => 1));
                 }
                 break;
             case 'group_post':
@@ -561,9 +559,9 @@ class CAdminAjax extends AdminSecBaseModel
                     $groupManager->setMeta($groupId, 'placeable', Params::getParam('group_placeable') == '1' ? 1 : '');
                 }
                 if ($error) {
-                    echo json_encode(array('error' => __('An error occurred while saving the group')));
+                    AjaxResponse::json(array('error' => __('An error occurred while saving the group')));
                 } else {
-                    echo json_encode(array('ok' => __('Saved'), 'group_id' => $groupId, 'text' => $name));
+                    AjaxResponse::json(array('ok' => __('Saved'), 'group_id' => $groupId, 'text' => $name));
                 }
                 break;
             case 'delete_group':
@@ -573,9 +571,9 @@ class CAdminAjax extends AdminSecBaseModel
                 // the deleted form sitting in the list until the page was reloaded.
                 $res = FieldGroup::newInstance()->deleteByPrimaryKey(Params::getParamInt('id'));
                 if ($res > 0) {
-                    echo json_encode(array('ok' => __('The field group has been deleted')));
+                    AjaxResponse::json(array('ok' => __('The field group has been deleted')));
                 } else {
-                    echo json_encode(array('error' => __('An error occurred while deleting')));
+                    AjaxResponse::json(array('error' => __('An error occurred while deleting')));
                 }
                 break;
             case 'form_set_fields':
@@ -585,14 +583,14 @@ class CAdminAjax extends AdminSecBaseModel
                 $formId = Params::getParamInt('form_id');
                 $ids    = json_decode((string)Params::getParam('fields'), true);
                 if ($formId <= 0 || !is_array($ids)) {
-                    echo json_encode(array('error' => __('Invalid request')));
+                    AjaxResponse::json(array('error' => __('Invalid request')));
                     break;
                 }
                 $service = new \mindstellar\forms\FormService();
                 if ($service->setFormFields($formId, $ids)) {
-                    echo json_encode(array('ok' => __('Saved')));
+                    AjaxResponse::json(array('ok' => __('Saved')));
                 } else {
-                    echo json_encode(array('error' => __('An error occurred while saving the form')));
+                    AjaxResponse::json(array('error' => __('An error occurred while saving the form')));
                 }
                 break;
             case 'migrate_loose_fields':
@@ -603,9 +601,9 @@ class CAdminAjax extends AdminSecBaseModel
                 osc_csrf_check();
                 $result = (new \mindstellar\forms\FormService())->migrateLooseFields();
                 if ($result['forms'] === 0) {
-                    echo json_encode(array('ok' => __('There were no fields to move.')));
+                    AjaxResponse::json(array('ok' => __('There were no fields to move.')));
                 } else {
-                    echo json_encode(array('ok' => sprintf(
+                    AjaxResponse::json(array('ok' => sprintf(
                         __('Moved %1$d fields into %2$d forms.'),
                         $result['fields'],
                         $result['forms']
@@ -616,17 +614,17 @@ class CAdminAjax extends AdminSecBaseModel
                 osc_csrf_check();
                 $ok = \mindstellar\model\FormSubmission::newInstance()
                     ->setStatus(Params::getParamInt('id'), (string)Params::getParam('status'));
-                echo json_encode($ok ? array('ok' => __('Saved')) : array('error' => __('An error occurred')));
+                AjaxResponse::json($ok ? array('ok' => __('Saved')) : array('error' => __('An error occurred')));
                 break;
             case 'form_submission_delete':
                 osc_csrf_check();
                 $ok = \mindstellar\model\FormSubmission::newInstance()->delete(Params::getParamInt('id'));
-                echo json_encode($ok ? array('ok' => __('The submission has been deleted')) : array('error' => __('An error occurred while deleting')));
+                AjaxResponse::json($ok ? array('ok' => __('The submission has been deleted')) : array('error' => __('An error occurred while deleting')));
                 break;
             case 'form_submissions_purge':
                 osc_csrf_check();
                 $res = \mindstellar\model\FormSubmission::newInstance()->deleteByForm(Params::getParamInt('form_id'));
-                echo json_encode($res !== false ? array('ok' => __('All submissions for this form have been deleted')) : array('error' => __('An error occurred while deleting')));
+                AjaxResponse::json($res !== false ? array('ok' => __('All submissions for this form have been deleted')) : array('error' => __('An error occurred while deleting')));
                 break;
             case 'group_categories_iframe':
                 $groupId = Params::getParamInt('id');
@@ -649,7 +647,7 @@ class CAdminAjax extends AdminSecBaseModel
 
                 if ($aCategory == false) {
                     $result = array('error' => sprintf(__('No category with id %d exists'), $id));
-                    echo json_encode($result);
+                    AjaxResponse::json($result);
                     break;
                 }
 
@@ -679,7 +677,7 @@ class CAdminAjax extends AdminSecBaseModel
                         );
                     }
                     $result['affectedIds'] = $aUpdated;
-                    echo json_encode($result);
+                    AjaxResponse::json($result);
                     break;
                 }
 
@@ -687,7 +685,7 @@ class CAdminAjax extends AdminSecBaseModel
                 $parentCategory = $mCategory->findRootCategory($id);
                 if (!$parentCategory['b_enabled']) {
                     $result = array('error' => __('Parent category is disabled, you can not enable that category'));
-                    echo json_encode($result);
+                    AjaxResponse::json($result);
                     break;
                 }
 
@@ -702,30 +700,32 @@ class CAdminAjax extends AdminSecBaseModel
                     );
                 }
                 $result['affectedIds'] = array(array('id' => $id));
-                echo json_encode($result);
+                AjaxResponse::json($result);
 
                 break;
             case 'delete_category':
                 osc_csrf_check();
-                $id    = Params::getParam('id');
-                $error = 0;
+                $id = Params::getParamInt('id');
 
-                $categoryManager = Category::newInstance();
-                $res             = $categoryManager->deleteByPrimaryKey($id);
-
-                if ($res > 0) {
-                    $message = __('The categories have been deleted');
-                } else {
-                    $error   = 1;
-                    $message = __('An error occurred while deleting');
+                // A category with more listings than one request can remove is deleted in
+                // the background instead: it is hidden immediately and emptied in batches,
+                // because doing it here holds locks for minutes and a host's
+                // max_execution_time would roll the whole thing back part-way.
+                switch (\mindstellar\job\CategoryJobs::requestDelete($id)) {
+                    case 'done':
+                        $result = array('ok' => __('The categories have been deleted'));
+                        break;
+                    case 'queued':
+                        $result = array('ok' => __(
+                            'The category is too large to delete at once. It has been hidden'
+                            . ' and is being emptied in the background.'
+                        ));
+                        break;
+                    default:
+                        $result = array('error' => __('An error occurred while deleting'));
                 }
 
-                if ($error) {
-                    $result = array('error' => $message);
-                } else {
-                    $result = array('ok' => $message);
-                }
-                echo json_encode($result);
+                AjaxResponse::json($result);
 
                 break;
             case 'edit_category_post':
@@ -793,7 +793,7 @@ class CAdminAjax extends AdminSecBaseModel
                 } elseif ($error == 2) {
                     $msg = __('An error occurred while updating');
                 }
-                echo json_encode(array('error' => $error, 'msg' => $msg, 'text' => $aFieldsDescription[$l]['s_name']));
+                AjaxResponse::json(array('error' => $error, 'msg' => $msg, 'text' => $aFieldsDescription[$l]['s_name']));
 
                 break;
             case 'custom': // Execute via AJAX custom file
@@ -806,18 +806,18 @@ class CAdminAjax extends AdminSecBaseModel
                 }
 
                 if ($file == '') {
-                    echo json_encode(array('error' => 'no action defined'));
+                    AjaxResponse::json(array('error' => 'no action defined'));
                     break;
                 }
 
                 // valid file?
                 if (strpos($file, '../') !== false || strpos($file, '..\\') !== false) {
-                    echo json_encode(array('error' => 'no valid file'));
+                    AjaxResponse::json(array('error' => 'no valid file'));
                     break;
                 }
 
                 if (!file_exists(osc_plugins_path() . $file)) {
-                    echo json_encode(array('error' => "file doesn't exist"));
+                    AjaxResponse::json(array('error' => "file doesn't exist"));
                     break;
                 }
 
@@ -825,13 +825,14 @@ class CAdminAjax extends AdminSecBaseModel
                 // .php only, and inside the plugins directory once symlinks are followed.
                 $resolved = PluginAjaxFile::resolve($file, osc_plugins_path());
                 if ($resolved === null) {
-                    echo json_encode(array('error' => 'no valid file'));
+                    AjaxResponse::json(array('error' => 'no valid file'));
                     break;
                 }
 
                 require_once $resolved;
                 break;
             case 'test_mail':
+                osc_csrf_check();
                 $title = sprintf(__('Test email, %s'), osc_page_title());
                 $body  = __('Test email') . '<br><br>' . osc_page_title();
 
@@ -840,7 +841,6 @@ class CAdminAjax extends AdminSecBaseModel
                     'to'       => osc_contact_email(),
                     'to_name'  => 'admin',
                     'body'     => $body,
-                    'alt_body' => $body
                 );
 
                 $array = array();
@@ -849,10 +849,11 @@ class CAdminAjax extends AdminSecBaseModel
                 } else {
                     $array = array('status' => '0', 'html' => __('An error occurred while sending email'));
                 }
-                echo json_encode($array);
+                AjaxResponse::json($array);
                 break;
             case 'test_mail_template':
-                // replace por valores por defecto
+                // Sends mail to any address, so another site must not be able to trigger it.
+                osc_csrf_check();
                 $email = Params::getParam('email');
                 $title = Params::getParam('title');
                 $body  = Params::getParam('body', false, false);
@@ -862,7 +863,6 @@ class CAdminAjax extends AdminSecBaseModel
                     'to'       => $email,
                     'to_name'  => 'admin',
                     'body'     => $body,
-                    'alt_body' => $body
                 );
 
                 $array = array();
@@ -871,7 +871,7 @@ class CAdminAjax extends AdminSecBaseModel
                 } else {
                     $array = array('status' => '0', 'html' => __('An error occurred while sending email'));
                 }
-                echo json_encode($array);
+                AjaxResponse::json($array);
                 break;
             case 'order_pages':
                 osc_csrf_check();
@@ -914,7 +914,7 @@ class CAdminAjax extends AdminSecBaseModel
                         osc_set_preference('update_core_available', $upgrade_available ? '1' : '');
                         osc_set_preference('update_core_json', json_encode($package_json));
                         osc_set_preference('last_version_check', time());
-                        echo json_encode(array(
+                        AjaxResponse::json(array(
                             'error' => 0,
                             'msg'   => $upgrade_available ? __('Update available') : __('No update available'),
                         ));
@@ -926,25 +926,27 @@ class CAdminAjax extends AdminSecBaseModel
                         // the next attempt one hour out, so the admin footer retries soon without
                         // re-hitting GitHub on every page load (its throttle keys off this stamp).
                         self::scheduleUpdateCheckRetry();
-                        echo json_encode(array('error' => 1, 'msg' => __('Could not check for updates')));
+                        AjaxResponse::json(array('error' => 1, 'msg' => __('Could not check for updates')));
                     }
                 } catch (\Throwable $e) {
                     self::scheduleUpdateCheckRetry();
-                    echo json_encode(array('error' => 1, 'msg' => __('Could not check for updates')));
+                    AjaxResponse::json(array('error' => 1, 'msg' => __('Could not check for updates')));
                 }
 
                 break;
             case 'check_languages':
                 $total = _osc_check_languages_update();
-                echo json_encode(array('msg' => __('Checked updates'), 'total' => $total));
+                AjaxResponse::json(array('msg' => __('Checked updates'), 'total' => $total));
                 break;
             case 'check_themes':
+                $this->refreshCatalogIfDue('theme');
                 $total = _osc_check_themes_update();
-                echo json_encode(array('msg' => __('Checked updates'), 'total' => $total));
+                AjaxResponse::json(array('msg' => __('Checked updates'), 'total' => $total));
                 break;
             case 'check_plugins':
+                $this->refreshCatalogIfDue('plugin');
                 $total = _osc_check_plugins_update();
-                echo json_encode(array('msg' => __('Checked updates'), 'total' => $total));
+                AjaxResponse::json(array('msg' => __('Checked updates'), 'total' => $total));
                 break;
 
                 /**********************
@@ -953,13 +955,11 @@ class CAdminAjax extends AdminSecBaseModel
                  **********************/
             case 'market_refresh':
                 osc_csrf_check();
-                header('Content-Type: application/json');
-                echo json_encode($this->marketRefresh(Params::getParamString('type')));
+                AjaxResponse::json($this->marketRefresh(Params::getParamString('type')));
                 break;
             case 'market_install':
                 osc_csrf_check();
-                header('Content-Type: application/json');
-                echo json_encode($this->marketInstallOrUpdate(
+                AjaxResponse::json($this->marketInstallOrUpdate(
                     'install',
                     Params::getParamString('type'),
                     Params::getParamString('slug'),
@@ -968,8 +968,7 @@ class CAdminAjax extends AdminSecBaseModel
                 break;
             case 'market_update':
                 osc_csrf_check();
-                header('Content-Type: application/json');
-                echo json_encode($this->marketInstallOrUpdate(
+                AjaxResponse::json($this->marketInstallOrUpdate(
                     'update',
                     Params::getParamString('type'),
                     Params::getParamString('slug'),
@@ -978,8 +977,7 @@ class CAdminAjax extends AdminSecBaseModel
                 break;
             case 'market_detail':
                 osc_csrf_check();
-                header('Content-Type: application/json');
-                echo json_encode($this->marketDetail(
+                AjaxResponse::json($this->marketDetail(
                     Params::getParamString('type'),
                     Params::getParamString('slug')
                 ));
@@ -1003,13 +1001,11 @@ class CAdminAjax extends AdminSecBaseModel
                     $upgradeOsclass = new Upgrade($osclassUpgradeObj);
                     try {
                         $upgradeOsclass->doUpgrade();
-                        $db_upgrade_result = json_decode($osclassUpgradeObj::upgradeDB(Params::getParam('skipdb')), true);
+                        $db_upgrade_result = json_decode($osclassUpgradeObj::upgradeDB(), true);
                         $result            = [
                             'error'   => $db_upgrade_result['error'],
                             'message' => $db_upgrade_result['message'],
-                            'repairs' => $db_upgrade_result['repairs'] ?? [],
                         ];
-                        $this->flashSchemaRepairs($result['repairs']);
                     } catch (Exception $e) {
                         $result = ['error' => 1, 'message' => $e->getMessage()];
                         osc_add_flash_error_message($e->getMessage(), 'admin');
@@ -1019,7 +1015,7 @@ class CAdminAjax extends AdminSecBaseModel
                         osc_add_flash_warning_message(__('Error occurred while upgrading osclass Database.'), 'admin');
                     }
                 }
-                echo json_encode($result);
+                AjaxResponse::json($result);
                 break;
             case 'reinstall_osclass': // We are forcing an update
                 osc_csrf_check();
@@ -1040,9 +1036,7 @@ class CAdminAjax extends AdminSecBaseModel
                         $result            = [
                             'error'   => 0,
                             'message' => __('Shopclass upgraded successfully.'),
-                            'repairs' => $db_upgrade_result['repairs'] ?? [],
                         ];
-                        $this->flashSchemaRepairs($result['repairs']);
                     } catch (Exception $e) {
                         $result = ['error' => 1, 'message' => $e->getMessage()];
                         osc_add_flash_error_message($e->getMessage(), 'admin');
@@ -1055,16 +1049,15 @@ class CAdminAjax extends AdminSecBaseModel
                         osc_add_flash_warning_message(__('Error occurred while upgrading osclass Database.'), 'admin');
                     }
                 }
-                echo json_encode($result);
+                AjaxResponse::json($result);
                 break;
             case 'upgrade_db':
                 osc_csrf_check();
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m('This action cannot be done because it is a demo site'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true));
+                if ($this->refuseOnDemo(osc_admin_base_url(true))) {
+                    break;
                 }
                 $this->ajax     = true;
-                $upgrade_result = Osclass::upgradeDB(Params::getParam('skipdb'));
+                $upgrade_result = Osclass::upgradeDB();
                 echo $upgrade_result;
                 break;
             case 'location_stats':
@@ -1076,43 +1069,51 @@ class CAdminAjax extends AdminSecBaseModel
                 } else {
                     $array['status'] = 'done';
                 }
-                echo json_encode($array);
+                AjaxResponse::json($array);
+                break;
+            case 'backup_status':
+                osc_csrf_check();
+                // The poll may run a backup step; it must not hold the session meanwhile.
+                if (session_status() === PHP_SESSION_ACTIVE) {
+                    session_write_close();
+                }
+                header('Cache-Control: no-store');
+                AjaxResponse::json(\mindstellar\backup\BackupManager::poll());
                 break;
             case 'country_slug':
                 $exists = Country::newInstance()->findBySlug(Params::getParam('slug'));
                 if (isset($exists['s_slug'])) {
-                    echo json_encode(array('error' => 1, 'country' => $exists));
+                    AjaxResponse::json(array('error' => 1, 'country' => $exists));
                 } else {
-                    echo json_encode(array('error' => 0));
+                    AjaxResponse::json(array('error' => 0));
                 }
                 break;
             case 'region_slug':
                 $exists = Region::newInstance()->findBySlug(Params::getParam('slug'));
                 if (isset($exists['s_slug'])) {
-                    echo json_encode(array('error' => 1, 'region' => $exists));
+                    AjaxResponse::json(array('error' => 1, 'region' => $exists));
                 } else {
-                    echo json_encode(array('error' => 0));
+                    AjaxResponse::json(array('error' => 0));
                 }
                 break;
             case 'city_slug':
                 $exists = City::newInstance()->findBySlug(Params::getParam('slug'));
                 if (isset($exists['s_slug'])) {
-                    echo json_encode(array('error' => 1, 'city' => $exists));
+                    AjaxResponse::json(array('error' => 1, 'city' => $exists));
                 } else {
-                    echo json_encode(array('error' => 0));
+                    AjaxResponse::json(array('error' => 0));
                 }
                 break;
             case 'location_search':
             case 'location_impact':
             case 'location_record':
-                header('Content-Type: application/json');
-                echo json_encode($this->locationRead($this->action));
+                AjaxResponse::json($this->locationRead($this->action));
                 break;
             case 'error_permissions':
-                echo json_encode(array('error' => __("You don't have the necessary permissions")));
+                AjaxResponse::json(array('error' => __("You don't have the necessary permissions")));
                 break;
             default:
-                echo json_encode(array('error' => __('no action defined')));
+                AjaxResponse::json(array('error' => __('no action defined')));
                 break;
         }
         // clear all keep variables into session
@@ -1322,31 +1323,23 @@ class CAdminAjax extends AdminSecBaseModel
     }
 
     /**
-     * Say so when the upgrade had to repair the schema on its way through.
+     * Fetch the catalog when its last check is over a day old. The daily update check in the
+     * admin footer calls this; without it the catalog only changed on "Check now".
      *
-     * The migrations build the schema and a release cannot ship unless they reproduce
-     * it on their own, so this list is empty on an install in good order. A non-empty
-     * one means the database had drifted by some other route -- a hand-edited column, a
-     * plugin's leftovers, an upgrade interrupted half way -- and the site owner is
-     * better off knowing that happened than having it fixed silently.
-     *
-     * @param array<int,string> $repairs statements the repair pass applied
+     * @param string $type 'plugin' or 'theme'
      *
      * @return void
      */
-    private function flashSchemaRepairs($repairs)
+    private function refreshCatalogIfDue($type)
     {
-        if (!is_array($repairs) || $repairs === array()) {
+        if (osc_market_changes_blocked()) {
             return;
         }
-
-        osc_add_flash_warning_message(
-            sprintf(
-                __('The database schema had drifted and %d difference(s) were repaired during the upgrade.'),
-                count($repairs)
-            ),
-            'admin'
-        );
+        $catalog = self::marketCatalog($type);
+        if (time() - $catalog->lastChecked() > 24 * 3600) {
+            $catalog->updates(true);
+            $catalog->index(true);
+        }
     }
 
     /**
@@ -1431,7 +1424,7 @@ class CAdminAjax extends AdminSecBaseModel
             );
         }
 
-        if (!preg_match('/^[a-z0-9][a-z0-9-]{1,40}$/', $slug)) {
+        if (!preg_match(Installer::SLUG_PATTERN, $slug)) {
             return array(
                 'ok' => false, 'message' => __('Invalid package slug.'),
                 'slug' => $slug, 'version' => null, 'rolled_back' => false,
@@ -1530,19 +1523,92 @@ class CAdminAjax extends AdminSecBaseModel
         }
 
         $slug = trim((string) $slug);
-        if (!preg_match('/^[a-z0-9][a-z0-9-]{1,40}$/', $slug)) {
+        if (!\mindstellar\utility\Validate::packageName($slug)) {
             return array('ok' => false, 'message' => __('Invalid package slug.'), 'detail' => null);
         }
 
-        $raw = self::marketCatalog($type)->detail($slug);
+        // A folder name the catalog could never hold, such as one with an underscore, is local.
+        $inCatalog = preg_match(Installer::SLUG_PATTERN, $slug) === 1;
+        $raw       = $inCatalog ? self::marketCatalog($type)->detail($slug) : null;
         if ($raw === null) {
+            // Not in the catalog, as with a private or hand-installed package: what is on disk.
+            $local = self::marketLocalDetail($type, $slug);
+            if ($local !== null) {
+                return array('ok' => true, 'message' => '', 'detail' => $local);
+            }
+
             return array(
                 'ok' => false, 'message' => __('No details are available for this package yet.'),
                 'detail' => null,
             );
         }
 
-        return array('ok' => true, 'message' => '', 'detail' => self::marketBuildDetail($slug, $raw));
+        $detail = self::marketBuildDetail($slug, $raw);
+        // An installed copy that is up to date shows its own README, read with this site's renderer.
+        $newest = (string) ($detail['versions'][0]['version'] ?? '');
+        $local  = self::marketLocalDetail($type, $slug);
+        if ($local !== null && $local['description_html'] !== '' && $newest !== ''
+            && version_compare((string) $local['version'], $newest, '>=')
+        ) {
+            $detail['description_html'] = $local['description_html'];
+        }
+
+        return array('ok' => true, 'message' => '', 'detail' => $detail);
+    }
+
+    /**
+     * The detail of an installed package, read from its own folder: its header, its README,
+     * the screenshots its shopclass.json lists, and its support links. Null when the slug is
+     * not installed.
+     *
+     * @param string $type 'plugin' or 'theme'
+     * @param string $slug already checked against the slug pattern
+     *
+     * @return array<string,mixed>|null
+     */
+    private static function marketLocalDetail($type, $slug)
+    {
+        $root = ($type === 'theme' ? osc_themes_path() : osc_plugins_path()) . $slug . '/';
+        if (!is_file($root . 'index.php')) {
+            return null;
+        }
+        if ($type === 'theme') {
+            $info   = (array) WebThemes::newInstance()->loadThemeInfo($slug);
+            $name   = (string) ($info['name'] ?? $slug);
+            $author = (string) ($info['author_name'] ?? '');
+        } else {
+            $info   = (array) Plugins::getInfo($slug . '/index.php');
+            $name   = (string) ($info['plugin_name'] ?? $slug);
+            $author = (string) ($info['author'] ?? '');
+        }
+        $version = (string) ($info['version'] ?? '');
+        $manifest = is_file($root . 'shopclass.json') ? json_decode((string) file_get_contents($root . 'shopclass.json'), true) : null;
+        $manifest = is_array($manifest) ? $manifest : array();
+        $readme   = is_file($root . 'README.md') ? (string) file_get_contents($root . 'README.md') : '';
+
+        // Only files that exist in the package's own assets folder; their URL is this site's.
+        $base  = osc_base_url() . 'oc-content/' . ($type === 'theme' ? 'themes/' : 'plugins/') . $slug . '/';
+        $shots = array();
+        foreach ((array) ($manifest['screenshots'] ?? array()) as $shot) {
+            $src = is_array($shot) && is_string($shot['src'] ?? null) ? $shot['src'] : '';
+            if (preg_match('#^assets/screenshot-[A-Za-z0-9._-]+\.(png|jpe?g)$#', $src) === 1 && is_file($root . $src)) {
+                $shots[] = array('src' => $base . $src, 'caption' => is_string($shot['caption'] ?? null) ? $shot['caption'] : '');
+            }
+        }
+
+        return array(
+            'slug'             => $slug,
+            'name'             => $name,
+            'author'           => $author,
+            'version'          => $version,
+            'description_html' => self::marketPurifyDescription(\mindstellar\market\Markdown::toHtml($readme), $base),
+            'screenshots'      => $shots,
+            'versions'         => array(),
+            'links'            => self::marketSanitizeLinks(array('links' => (array) ($manifest['support'] ?? array()))),
+            'categories'       => array_values(array_filter((array) ($manifest['categories'] ?? array()), 'is_string')),
+            'tags'             => array_values(array_filter((array) ($manifest['tags'] ?? array()), 'is_string')),
+            'downloads'        => 0,
+        );
     }
 
     /**
@@ -1712,11 +1778,13 @@ class CAdminAjax extends AdminSecBaseModel
      * every `<img>` that survives purification is re-checked against the same package host
      * allowlist that governs `screenshots[].src` and the support links (marketDropUnallowedHostUrls()).
      *
-     * @param mixed $html
+     * @param mixed       $html
+     * @param string|null $localBase an installed package's own URL: its README's relative
+     *                               images and links resolve inside it
      *
      * @return string
      */
-    private static function marketPurifyDescription($html)
+    private static function marketPurifyDescription($html, $localBase = null)
     {
         if (!is_string($html) || $html === '') {
             return '';
@@ -1726,8 +1794,8 @@ class CAdminAjax extends AdminSecBaseModel
             $config = HTMLPurifier_Config::createDefault();
             $config->set(
                 'HTML.Allowed',
-                'h1,h2,h3,h4,h5,h6,p,br,blockquote,ul,ol,li,strong,b,em,i,code,pre,a[href],img[src|alt|loading],'
-                . 'table,thead,tbody,tr,th[class],td[class]'
+                'h1,h2,h3,h4,h5,h6,p,br,hr,blockquote,ul,ol[start],li,strong,b,em,i,del,code,pre,a[href|title],'
+                . 'img[src|alt|loading|title],table,thead,tbody,tr,th[class],td[class]'
             );
             $config->set('HTML.TargetBlank', true);
             $config->set('HTML.TargetNoopener', true);
@@ -1736,14 +1804,11 @@ class CAdminAjax extends AdminSecBaseModel
             // Only the two alignment classes renderMarkdownSafe() (tools/ci/build-catalog.php)
             // ever emits are let through -- everything else on a class attribute is stripped.
             $config->set('Attr.AllowedClasses', array('text-center' => true, 'text-end' => true));
-            // Stripping down to a small tag set leaves nothing worth persisting a definition
-            // cache for; the in-memory NullCache avoids writing serializer blobs to disk, same
-            // as Params::purify()'s own HTMLPurifier instance.
-            $config->set('Cache.DefinitionImpl', null);
+            \mindstellar\security\PurifierCache::apply($config);
             self::$marketPurifier = new HTMLPurifier($config);
         }
 
-        return self::marketDropUnallowedHostUrls(self::$marketPurifier->purify($html));
+        return self::marketDropUnallowedHostUrls(self::$marketPurifier->purify($html), $localBase);
     }
 
     /**
@@ -1755,11 +1820,12 @@ class CAdminAjax extends AdminSecBaseModel
      * attribute/scheme rules let it through. A malformed fragment DOMDocument can't parse is
      * returned as an empty string rather than passed through.
      *
-     * @param string $html already-purified, well-formed (small allowlist) HTML fragment
+     * @param string      $html      already-purified, well-formed (small allowlist) HTML fragment
+     * @param string|null $localBase an installed package's own URL, for its relative paths
      *
      * @return string
      */
-    private static function marketDropUnallowedHostUrls($html)
+    private static function marketDropUnallowedHostUrls($html, $localBase = null)
     {
         if ($html === '') {
             return '';
@@ -1782,9 +1848,21 @@ class CAdminAjax extends AdminSecBaseModel
 
         $xpath = new DOMXPath($doc);
 
+        // A relative path in an installed package's own README names a file in its folder.
+        $local = static fn ($url) => $localBase === null ? null : \mindstellar\market\Markdown::resolveInPackage($url, $localBase);
+        foreach (iterator_to_array($xpath->query('.//a[@href]', $root)) as $a) {
+            /** @var DOMElement $a */
+            $resolved = $local($a->getAttribute('href'));
+            if ($resolved !== null) {
+                $a->setAttribute('href', $resolved);
+            }
+        }
         foreach (iterator_to_array($xpath->query('.//img[@src]', $root)) as $img) {
             /** @var DOMElement $img */
-            if (!FileSystem::isAllowedPackageHost($img->getAttribute('src'))) {
+            $resolved = $local($img->getAttribute('src'));
+            if ($resolved !== null) {
+                $img->setAttribute('src', $resolved);
+            } elseif (!FileSystem::isAllowedPackageHost($img->getAttribute('src'))) {
                 $img->parentNode->removeChild($img);
             }
         }

@@ -358,7 +358,7 @@ function osc_widget_config_field($typeId, $field, $value, $disabled)
                 break;
             case 'select':
                 $options = array();
-                foreach ((isset($field['options']) && is_array($field['options']) ? $field['options'] : array()) as $opt) {
+                foreach (widgetConfigSelectOptions($field['options'] ?? array()) as $opt) {
                     $options[$opt['value']] = $opt['label'];
                 }
                 osc_admin_select(array_merge($spec, array('options' => $options, 'selected' => $val, 'width' => 'text')));

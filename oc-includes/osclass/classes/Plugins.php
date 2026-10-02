@@ -43,14 +43,15 @@ class Plugins
     {
         if (isset(self::$hooks[$hook])) {
             self::$used_hooks[$hook] = true;
-            for ($priority = 0; $priority <= 10; $priority++) {
-                if (isset(self::$hooks[$hook][$priority]) && is_array(self::$hooks[$hook][$priority])) {
-                    foreach (self::$hooks[$hook][$priority] as $fxName) {
-                        if (is_callable($fxName)) {
-                            $content = $fxName($content, ...$args);
-                        } else {
-                            trigger_error('Unknown filter ' . $fxName, E_USER_WARNING);
-                        }
+            foreach (self::$hooks[$hook] as $bucket) {
+                if (!is_array($bucket)) {
+                    continue;
+                }
+                foreach ($bucket as $fxName) {
+                    if (is_callable($fxName)) {
+                        $content = $fxName($content, ...$args);
+                    } else {
+                        trigger_error('Unknown filter ' . $fxName, E_USER_WARNING);
                     }
                 }
             }
@@ -358,7 +359,7 @@ class Plugins
      *
      * @param string   $hook
      * @param callable $function
-     * @param int      $priority 0-10; lower runs first
+     * @param int      $priority Any integer, negative included; lower runs first
      *
      * @return void
      */
@@ -367,21 +368,22 @@ class Plugins
         $hook         = preg_replace('|/+|', '/', str_replace('\\', '/', $hook));
         $plugin_path  = str_replace('\\', '/', osc_plugins_path());
         $hook         = str_replace($plugin_path, '', $hook);
+        $priority     = (int)$priority;
         $found_plugin = false;
         if (isset(self::$hooks[$hook])) {
-            for ($_priority = 0; $_priority <= 10; $_priority++) {
-                if (isset(self::$hooks[$hook][$_priority])) {
-                    foreach (self::$hooks[$hook][$_priority] as $fxName) {
-                        if ($fxName === $function) {
-                            $found_plugin = true;
-                            break;
-                        }
+            foreach (self::$hooks[$hook] as $bucket) {
+                foreach ($bucket as $fxName) {
+                    if ($fxName === $function) {
+                        $found_plugin = true;
+                        break 2;
                     }
                 }
             }
         }
         if (!$found_plugin) {
             self::$hooks[$hook][$priority][] = $function;
+            // Sorted here, once per registration, so firing a hook never sorts.
+            ksort(self::$hooks[$hook], SORT_NUMERIC);
         }
     }
 
@@ -446,14 +448,15 @@ class Plugins
     {
         if (isset(self::$hooks[$hook])) {
             self::$used_hooks[$hook] = true;
-            for ($priority = 0; $priority <= 10; $priority++) {
-                if (isset(self::$hooks[$hook][$priority]) && is_array(self::$hooks[$hook][$priority])) {
-                    foreach (self::$hooks[$hook][$priority] as $fxName) {
-                        if (is_callable($fxName)) {
-                            $fxName(...$args);
-                        } else {
-                            trigger_error('Invalid callable ' . $fxName . ' on hook ' . $hook, E_USER_WARNING);
-                        }
+            foreach (self::$hooks[$hook] as $bucket) {
+                if (!is_array($bucket)) {
+                    continue;
+                }
+                foreach ($bucket as $fxName) {
+                    if (is_callable($fxName)) {
+                        $fxName(...$args);
+                    } else {
+                        trigger_error('Invalid callable ' . $fxName . ' on hook ' . $hook, E_USER_WARNING);
                     }
                 }
             }
@@ -793,12 +796,13 @@ class Plugins
      */
     public static function removeHook($hook, $function)
     {
-        for ($priority = 0; $priority <= 10; $priority++) {
-            if (isset(self::$hooks[$hook][$priority])) {
-                foreach (self::$hooks[$hook][$priority] as $k => $v) {
-                    if ($v == $function) {
-                        unset(self::$hooks[$hook][$priority][$k]);
-                    }
+        if (!isset(self::$hooks[$hook])) {
+            return;
+        }
+        foreach (self::$hooks[$hook] as $priority => $bucket) {
+            foreach ($bucket as $k => $v) {
+                if ($v == $function) {
+                    unset(self::$hooks[$hook][$priority][$k]);
                 }
             }
         }

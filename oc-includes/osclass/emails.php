@@ -91,13 +91,100 @@ function fn_email_alert_validation($alert, $email, $secret)
         'to_name'  => $user['s_name'],
         'subject'  => $title,
         'body'     => $body,
-        'alt_body' => $body
     );
 
     osc_sendMail($emailParams);
 }
 
 osc_add_hook('hook_email_alert_validation', 'fn_email_alert_validation');
+
+/**
+ * The editable page a digest is written from, in the site's language.
+ *
+ * @param string $internalName alert_email_hourly or alert_email_weekly
+ *
+ * @return array<string,string> The s_title and s_text of that page
+ */
+function _alert_email_template($internalName)
+{
+    $page = Page::newInstance()->findByInternalName($internalName);
+
+    return $page['locale'][osc_language()];
+}
+
+/**
+ * Who a digest goes to, and the placeholder values for their copy of it.
+ *
+ * osc_runAlert() has already looked the account up, so a registered subscriber
+ * arrives as their user row. That row has no fk_i_user_id, and testing for one sent
+ * every registered subscriber into the no-account branch, greeting them by address.
+ * A plugin firing the hook may still hand over an alert row, so that case still
+ * finds the account behind it.
+ *
+ * The subject is plain text and the body is HTML, so the words come twice: as
+ * written for the subject, escaped for the body.
+ *
+ * @param array<string,mixed> $user     A user row, or an alert row
+ * @param string              $ads      Rendered listings block
+ * @param array<string,mixed> $s_search The alert, for its unsubscribe secret
+ *
+ * @return array{user:array<string,mixed>,words:array<int,array<int,string>>,htmlWords:array<int,array<int,string>>}
+ */
+function _alert_email_recipient($user, $ads, $s_search)
+{
+    if (empty($user['s_name']) && !empty($user['fk_i_user_id'])) {
+        $account = User::newInstance()->findByPrimaryKey($user['fk_i_user_id']);
+        if (isset($account['s_email'])) {
+            $user = $account;
+        }
+    }
+    if (empty($user['s_name'])) {
+        $user['s_name'] = $user['s_email'];
+    }
+
+    $unsub_link = osc_user_unsubscribe_alert_url(
+        $s_search['pk_i_id'],
+        $user['s_email'],
+        $s_search['s_secret']
+    );
+    $unsub_link = '<a href="' . $unsub_link . '">' . __('unsubscribe alert') . '</a>';
+
+    [$words, $htmlWords] = _osc_mail_words(
+        array(
+            '{USER_NAME}'  => $user['s_name'],
+            '{USER_EMAIL}' => $user['s_email'],
+            '{ADS}'        => $ads,
+            '{UNSUB_LINK}' => $unsub_link,
+        ),
+        array('{USER_NAME}', '{USER_EMAIL}')
+    );
+
+    return array(
+        'user'      => $user,
+        'words'     => $words,
+        'htmlWords' => $htmlWords,
+    );
+}
+
+/**
+ * Send a finished digest. The plain-text part is the HTML one, as it always was.
+ *
+ * @param array<string,mixed> $user
+ * @param string              $title
+ * @param string              $body
+ *
+ * @return void
+ */
+function _alert_email_deliver($user, $title, $body)
+{
+    osc_sendMail(array(
+        'from'     => _osc_from_email_aux(),
+        'to'       => $user['s_email'],
+        'to_name'  => $user['s_name'],
+        'subject'  => $title,
+        'body'     => $body,
+    ));
+}
 
 /**
  * Email one subscriber the hourly digest of new listings matching their saved search.
@@ -112,15 +199,13 @@ osc_add_hook('hook_email_alert_validation', 'fn_email_alert_validation');
  */
 function fn_alert_email_hourly($user, $ads, $s_search, $items, $totalItems)
 {
-    $prefLocale       = osc_language();
-    $page             = Page::newInstance()->findByInternalName('alert_email_hourly');
-    $page_description = $page['locale'];
+    $template = _alert_email_template('alert_email_hourly');
 
     $_title = osc_apply_filter(
         'email_title',
         osc_apply_filter(
             'alert_email_hourly_title',
-            $page_description[$prefLocale]['s_title'],
+            $template['s_title'],
             $user,
             $ads,
             $s_search,
@@ -132,7 +217,7 @@ function fn_alert_email_hourly($user, $ads, $s_search, $items, $totalItems)
         'email_description',
         osc_apply_filter(
             'alert_email_hourly_description',
-            $page_description[$prefLocale]['s_text'],
+            $template['s_text'],
             $user,
             $ads,
             $s_search,
@@ -141,62 +226,34 @@ function fn_alert_email_hourly($user, $ads, $s_search, $items, $totalItems)
         )
     );
 
-    if ($user['fk_i_user_id'] != 0) {
-        $user = User::newInstance()->findByPrimaryKey($user['fk_i_user_id']);
-    } else {
-        $user['s_name'] = $user['s_email'];
-    }
+    // The two filters above see the alert row; from here $user is the account it
+    // belongs to, which is what the _after filters and the mail itself get.
+    $recipient = _alert_email_recipient($user, $ads, $s_search);
+    $user      = $recipient['user'];
+    $words     = $recipient['words'];
+    $htmlWords = $recipient['htmlWords'];
 
-    $unsub_link = osc_user_unsubscribe_alert_url(
-        $s_search['pk_i_id'],
-        $user['s_email'],
-        $s_search['s_secret']
-    );
-    $unsub_link = '<a href="' . $unsub_link . '">' . __('unsubscribe alert') . '</a>';
-
-    $words   = array();
-    $words[] = array(
-        '{USER_NAME}',
-        '{USER_EMAIL}',
-        '{ADS}',
-        '{UNSUB_LINK}'
-    );
-    $words[] = array(
-        $user['s_name'],
-        $user['s_email'],
-        $ads,
-        $unsub_link
-    );
-
-    $title = osc_apply_filter(
-        'alert_email_hourly_title_after',
-        osc_mailBeauty($_title, $words),
+    _alert_email_deliver(
         $user,
-        $ads,
-        $s_search,
-        $items,
-        $totalItems
+        osc_apply_filter(
+            'alert_email_hourly_title_after',
+            osc_mailBeauty($_title, $words),
+            $user,
+            $ads,
+            $s_search,
+            $items,
+            $totalItems
+        ),
+        osc_apply_filter(
+            'alert_email_hourly_description_after',
+            osc_mailBeauty($_body, $htmlWords),
+            $user,
+            $ads,
+            $s_search,
+            $items,
+            $totalItems
+        )
     );
-    $body  = osc_apply_filter(
-        'alert_email_hourly_description_after',
-        osc_mailBeauty($_body, $words),
-        $user,
-        $ads,
-        $s_search,
-        $items,
-        $totalItems
-    );
-
-    $emailParams = array(
-        'from'     => _osc_from_email_aux(),
-        'to'       => $user['s_email'],
-        'to_name'  => $user['s_name'],
-        'subject'  => $title,
-        'body'     => $body,
-        'alt_body' => $body
-    );
-
-    osc_sendMail($emailParams);
 }
 
 osc_add_hook('hook_alert_email_hourly', 'fn_alert_email_hourly');
@@ -214,15 +271,13 @@ osc_add_hook('hook_alert_email_hourly', 'fn_alert_email_hourly');
  */
 function fn_alert_email_daily($user, $ads, $s_search, $items, $totalItems)
 {
-    $prefLocale       = osc_language();
-    $page             = Page::newInstance()->findByInternalName('alert_email_daily');
-    $page_description = $page['locale'];
+    $template = _alert_email_template('alert_email_daily');
 
     $_title = osc_apply_filter(
         'email_title',
         osc_apply_filter(
             'alert_email_daily_title',
-            $page_description[$prefLocale]['s_title'],
+            $template['s_title'],
             $user,
             $ads,
             $s_search,
@@ -234,7 +289,7 @@ function fn_alert_email_daily($user, $ads, $s_search, $items, $totalItems)
         'email_description',
         osc_apply_filter(
             'alert_email_daily_description',
-            $page_description[$prefLocale]['s_text'],
+            $template['s_text'],
             $user,
             $ads,
             $s_search,
@@ -243,62 +298,34 @@ function fn_alert_email_daily($user, $ads, $s_search, $items, $totalItems)
         )
     );
 
-    if (isset($user['fk_i_user_id']) && $user['fk_i_user_id'] != 0) {
-        $user = User::newInstance()->findByPrimaryKey($user['fk_i_user_id']);
-    } else {
-        $user['s_name'] = $user['s_email'];
-    }
+    // The two filters above see the alert row; from here $user is the account it
+    // belongs to, which is what the _after filters and the mail itself get.
+    $recipient = _alert_email_recipient($user, $ads, $s_search);
+    $user      = $recipient['user'];
+    $words     = $recipient['words'];
+    $htmlWords = $recipient['htmlWords'];
 
-    $unsub_link = osc_user_unsubscribe_alert_url(
-        $s_search['pk_i_id'],
-        $user['s_email'],
-        $s_search['s_secret']
-    );
-    $unsub_link = '<a href="' . $unsub_link . '">' . __('unsubscribe alert') . '</a>';
-
-    $words   = array();
-    $words[] = array(
-        '{USER_NAME}',
-        '{USER_EMAIL}',
-        '{ADS}',
-        '{UNSUB_LINK}'
-    );
-    $words[] = array(
-        $user['s_name'],
-        $user['s_email'],
-        $ads,
-        $unsub_link
-    );
-
-    $title = osc_apply_filter(
-        'alert_email_daily_title_after',
-        osc_mailBeauty($_title, $words),
+    _alert_email_deliver(
         $user,
-        $ads,
-        $s_search,
-        $items,
-        $totalItems
+        osc_apply_filter(
+            'alert_email_daily_title_after',
+            osc_mailBeauty($_title, $words),
+            $user,
+            $ads,
+            $s_search,
+            $items,
+            $totalItems
+        ),
+        osc_apply_filter(
+            'alert_email_daily_description_after',
+            osc_mailBeauty($_body, $htmlWords),
+            $user,
+            $ads,
+            $s_search,
+            $items,
+            $totalItems
+        )
     );
-    $body  = osc_apply_filter(
-        'alert_email_daily_description_after',
-        osc_mailBeauty($_body, $words),
-        $user,
-        $ads,
-        $s_search,
-        $items,
-        $totalItems
-    );
-
-    $emailParams = array(
-        'from'     => _osc_from_email_aux(),
-        'to'       => $user['s_email'],
-        'to_name'  => $user['s_name'],
-        'subject'  => $title,
-        'body'     => $body,
-        'alt_body' => $body
-    );
-
-    osc_sendMail($emailParams);
 }
 
 osc_add_hook('hook_alert_email_daily', 'fn_alert_email_daily');
@@ -316,15 +343,13 @@ osc_add_hook('hook_alert_email_daily', 'fn_alert_email_daily');
  */
 function fn_alert_email_weekly($user, $ads, $s_search, $items, $totalItems)
 {
-    $prefLocale       = osc_language();
-    $page             = Page::newInstance()->findByInternalName('alert_email_weekly');
-    $page_description = $page['locale'];
+    $template = _alert_email_template('alert_email_weekly');
 
     $_title = osc_apply_filter(
         'email_title',
         osc_apply_filter(
             'alert_email_weekly_title',
-            $page_description[$prefLocale]['s_title'],
+            $template['s_title'],
             $user,
             $ads,
             $s_search,
@@ -336,7 +361,7 @@ function fn_alert_email_weekly($user, $ads, $s_search, $items, $totalItems)
         'email_description',
         osc_apply_filter(
             'alert_email_weekly_description',
-            $page_description[$prefLocale]['s_text'],
+            $template['s_text'],
             $user,
             $ads,
             $s_search,
@@ -345,62 +370,34 @@ function fn_alert_email_weekly($user, $ads, $s_search, $items, $totalItems)
         )
     );
 
-    if ($user['fk_i_user_id'] != 0) {
-        $user = User::newInstance()->findByPrimaryKey($user['fk_i_user_id']);
-    } else {
-        $user['s_name'] = $user['s_email'];
-    }
+    // The two filters above see the alert row; from here $user is the account it
+    // belongs to, which is what the _after filters and the mail itself get.
+    $recipient = _alert_email_recipient($user, $ads, $s_search);
+    $user      = $recipient['user'];
+    $words     = $recipient['words'];
+    $htmlWords = $recipient['htmlWords'];
 
-    $unsub_link = osc_user_unsubscribe_alert_url(
-        $s_search['pk_i_id'],
-        $user['s_email'],
-        $s_search['s_secret']
-    );
-    $unsub_link = '<a href="' . $unsub_link . '">' . __('unsubscribe alert') . '</a>';
-
-    $words   = array();
-    $words[] = array(
-        '{USER_NAME}',
-        '{USER_EMAIL}',
-        '{ADS}',
-        '{UNSUB_LINK}'
-    );
-    $words[] = array(
-        $user['s_name'],
-        $user['s_email'],
-        $ads,
-        $unsub_link
-    );
-
-    $title = osc_apply_filter(
-        'alert_email_weekly_title_after',
-        osc_mailBeauty($_title, $words),
+    _alert_email_deliver(
         $user,
-        $ads,
-        $s_search,
-        $items,
-        $totalItems
+        osc_apply_filter(
+            'alert_email_weekly_title_after',
+            osc_mailBeauty($_title, $words),
+            $user,
+            $ads,
+            $s_search,
+            $items,
+            $totalItems
+        ),
+        osc_apply_filter(
+            'alert_email_weekly_description_after',
+            osc_mailBeauty($_body, $htmlWords),
+            $user,
+            $ads,
+            $s_search,
+            $items,
+            $totalItems
+        )
     );
-    $body  = osc_apply_filter(
-        'alert_email_weekly_description_after',
-        osc_mailBeauty($_body, $words),
-        $user,
-        $ads,
-        $s_search,
-        $items,
-        $totalItems
-    );
-
-    $emailParams = array(
-        'from'     => _osc_from_email_aux(),
-        'to'       => $user['s_email'],
-        'to_name'  => $user['s_name'],
-        'subject'  => $title,
-        'body'     => $body,
-        'alt_body' => $body
-    );
-
-    osc_sendMail($emailParams);
 }
 
 osc_add_hook('hook_alert_email_weekly', 'fn_alert_email_weekly');
@@ -468,7 +465,6 @@ function fn_email_comment_validated($aComment)
             'to_name'  => $aComment['s_author_name'],
             'subject'  => $title,
             'body'     => $body,
-            'alt_body' => $body
         );
         osc_sendMail($emailParams);
     }
@@ -549,7 +545,6 @@ function fn_email_new_item_non_register_user($item)
         'to_name'  => $item['s_contact_name'],
         'subject'  => $title,
         'body'     => $body,
-        'alt_body' => $body
     );
 
     osc_sendMail($emailParams);
@@ -629,7 +624,6 @@ function fn_email_user_forgot_password($user, $password_url)
             'to_name'  => $user['s_name'],
             'subject'  => $title,
             'body'     => $body,
-            'alt_body' => $body
         );
 
         osc_sendMail($emailParams);
@@ -694,7 +688,6 @@ function fn_email_user_registration($user)
             'to_name'  => $user['s_name'],
             'subject'  => $title,
             'body'     => $body,
-            'alt_body' => $body
         );
 
         osc_sendMail($emailParams);
@@ -765,7 +758,6 @@ function fn_email_new_email($new_email, $validation_url)
             'to_name'  => Session::newInstance()->_get('userName'),
             'subject'  => $title,
             'body'     => $body,
-            'alt_body' => $body
         );
         osc_sendMail($emailParams);
         osc_add_flash_ok_message(_m("We've sent you an e-mail. Follow its instructions to validate the changes"));
@@ -842,7 +834,6 @@ function fn_email_user_validation($user, $input)
             'to_name'  => $user['s_name'],
             'subject'  => $title,
             'body'     => $body,
-            'alt_body' => $body
         );
         osc_sendMail($emailParams);
     }
@@ -872,32 +863,21 @@ function fn_email_send_friend($aItem)
     $item_url = osc_item_url();
     $item_url = '<a href="' . $item_url . '" >' . $item_url . '</a>';
 
-    $words   = array();
-    $words[] = array(
-        '{FRIEND_NAME}',
-        '{USER_NAME}',
-        '{USER_EMAIL}',
-        '{FRIEND_EMAIL}',
-        '{ITEM_TITLE}',
-        '{COMMENT}',
-        '{ITEM_URL}',
-        '{ITEM_LINK}'
-    );
-    $words[] = array(
-        $aItem['friendName'],
-        $aItem['yourName'],
-        $aItem['yourEmail'],
-        $aItem['friendEmail'],
-        $aItem['s_title'],
-        $aItem['message'],
-        osc_item_url(),
-        $item_url
-    );
+    [$titleWords, $words] = _osc_mail_words(array(
+        '{FRIEND_NAME}'  => $aItem['friendName'],
+        '{USER_NAME}'    => $aItem['yourName'],
+        '{USER_EMAIL}'   => $aItem['yourEmail'],
+        '{FRIEND_EMAIL}' => $aItem['friendEmail'],
+        '{ITEM_TITLE}'   => $aItem['s_title'],
+        '{COMMENT}'      => $aItem['message'],
+        '{ITEM_URL}'     => osc_item_url(),
+        '{ITEM_LINK}'    => $item_url,
+    ), array('{FRIEND_NAME}', '{USER_NAME}', '{USER_EMAIL}', '{FRIEND_EMAIL}', '{COMMENT}'));
 
     $title = osc_apply_filter('email_send_friend_title_after', osc_mailBeauty(osc_apply_filter(
         'email_title',
         osc_apply_filter('email_send_friend_title', $content['s_title'], $aItem)
-    ), $words), $aItem);
+    ), $titleWords), $aItem);
     $body  = osc_apply_filter(
         'email_send_friend_description_after',
         osc_mailBeauty(
@@ -917,7 +897,10 @@ function fn_email_send_friend($aItem)
         'to_name'   => $aItem['friendName'],
         'reply_to'  => $aItem['yourEmail'],
         'subject'   => $title,
-        'body'      => $body
+        'body'      => $body . \mindstellar\security\MessageGuard::reportFooter(
+            (string) $aItem['yourEmail'],
+            (string) $aItem['friendEmail']
+        ),
     );
 
     if (osc_notify_contact_friends()) {
@@ -937,6 +920,31 @@ function fn_email_send_friend($aItem)
 osc_add_hook('hook_email_send_friend', 'fn_email_send_friend');
 
 /**
+ * Placeholder lists for osc_mailBeauty(): one for the subject and one for the body. Text a
+ * visitor typed is escaped in the body, with its line breaks kept, and has its tags removed in
+ * the subject.
+ *
+ * @param array<string,mixed> $values  placeholder => value
+ * @param string[]            $visitor the placeholders that hold what a visitor typed
+ *
+ * @return array{0:array<int,array<int,mixed>>,1:array<int,array<int,mixed>>} subject words, body words
+ */
+function _osc_mail_words(array $values, array $visitor): array
+{
+    $title = $values;
+    $body  = $values;
+    foreach ($visitor as $key) {
+        $title[$key] = strip_tags((string) $values[$key]);
+        $body[$key]  = nl2br(osc_esc_html((string) $values[$key]));
+    }
+
+    return array(
+        array(array_keys($title), array_values($title)),
+        array(array_keys($body), array_values($body)),
+    );
+}
+
+/**
  * Deliver a listing contact-form enquiry to the seller.
  *
  * @param array<string,mixed> $aItem Form payload: id, yourName, yourEmail, phoneNumber, message
@@ -949,7 +957,7 @@ function fn_email_item_inquiry($aItem)
     $yourEmail   = $aItem['yourEmail'];
     $yourName    = $aItem['yourName'];
     $phoneNumber = $aItem['phoneNumber'];
-    $message     = nl2br(strip_tags($aItem['message']));
+    $message     = $aItem['message'];
 
     $path = null;
     $item = Item::newInstance()->findByPrimaryKey($id);
@@ -968,33 +976,21 @@ function fn_email_item_inquiry($aItem)
     $item_url  = osc_item_url();
     $item_link = '<a href="' . $item_url . '" >' . $item_url . '</a>';
 
-    $words   = array();
-    $words[] = array(
-        '{CONTACT_NAME}',
-        '{USER_NAME}',
-        '{USER_EMAIL}',
-        '{USER_PHONE}',
-        '{ITEM_TITLE}',
-        '{ITEM_URL}',
-        '{ITEM_LINK}',
-        '{COMMENT}'
-    );
-
-    $words[] = array(
-        $item['s_contact_name'],
-        $yourName,
-        $yourEmail,
-        $phoneNumber,
-        $item['s_title'],
-        $item_url,
-        $item_link,
-        $message
-    );
+    [$titleWords, $words] = _osc_mail_words(array(
+        '{CONTACT_NAME}' => $item['s_contact_name'],
+        '{USER_NAME}'    => $yourName,
+        '{USER_EMAIL}'   => $yourEmail,
+        '{USER_PHONE}'   => $phoneNumber,
+        '{ITEM_TITLE}'   => $item['s_title'],
+        '{ITEM_URL}'     => $item_url,
+        '{ITEM_LINK}'    => $item_link,
+        '{COMMENT}'      => $message,
+    ), array('{CONTACT_NAME}', '{USER_NAME}', '{USER_EMAIL}', '{USER_PHONE}', '{COMMENT}'));
 
     $title = osc_apply_filter('email_item_inquiry_title_after', osc_mailBeauty(osc_apply_filter(
         'email_title',
         osc_apply_filter('email_item_inquiry_title', $content['s_title'], $aItem)
-    ), $words), $aItem);
+    ), $titleWords), $aItem);
     $body  = osc_apply_filter(
         'email_item_inquiry_description_after',
         osc_mailBeauty(
@@ -1014,8 +1010,10 @@ function fn_email_item_inquiry($aItem)
         'to_name'   => $item['s_contact_name'],
         'reply_to'  => $yourEmail,
         'subject'   => $title,
-        'body'      => $body,
-        'alt_body'  => $body
+        'body'      => $body . \mindstellar\security\MessageGuard::reportFooter(
+            (string) $yourEmail,
+            (string) $item['s_contact_email']
+        ),
     );
 
     if (osc_notify_contact_item()) {
@@ -1030,27 +1028,14 @@ function fn_email_item_inquiry($aItem)
     }
 
     if (osc_item_attachment()) {
-        $attachment   = Params::getFiles('attachment');
-        $resourceName = $attachment['name'];
-        $tmpName      = $attachment['tmp_name'];
-        $path         = osc_uploads_path() . time() . '_' . $resourceName;
-
-        if (!is_writable(osc_uploads_path())) {
-            osc_add_flash_error_message(_m('There has been some errors sending the message'));
+        // CWebItem refuses a bad file before the mail is built.
+        $attachment = osc_mail_upload_attachment('attachment');
+        if (is_array($attachment)) {
+            $emailParams['attachment'] = $attachment;
         }
-
-        if (!move_uploaded_file($tmpName, $path)) {
-            unset($path);
-        }
-    }
-
-    if (isset($path)) {
-        $emailParams['attachment'] = $path;
     }
 
     osc_sendMail($emailParams);
-
-    @unlink($path);
 }
 
 osc_add_hook('hook_email_item_inquiry', 'fn_email_item_inquiry');
@@ -1138,7 +1123,6 @@ function fn_email_new_comment_admin($aItem)
                 'to_name'  => __('Admin'),
                 'subject'  => $title_email,
                 'body'     => $body_email,
-                'alt_body' => $body_email
             );
             osc_sendMail($emailParams);
         }
@@ -1251,7 +1235,6 @@ function fn_email_item_validation($item)
         'to_name'  => $contactName,
         'subject'  => $title,
         'body'     => $body,
-        'alt_body' => $body
     );
     osc_sendMail($emailParams);
 }
@@ -1371,7 +1354,6 @@ function fn_email_admin_new_item($item)
                 'to_name'  => __('Admin'),
                 'subject'  => $title,
                 'body'     => $body,
-                'alt_body' => $body
             );
             osc_sendMail($emailParams);
         }
@@ -1500,7 +1482,6 @@ function fn_email_item_validation_non_register_user($item)
         'to_name'  => $item['s_contact_name'],
         'subject'  => $title,
         'body'     => $body,
-        'alt_body' => $body
     );
 
     osc_sendMail($emailParams);
@@ -1567,7 +1548,6 @@ function fn_email_admin_new_user($user)
                     'to_name'  => osc_page_title(),
                     'subject'  => $title,
                     'body'     => $body,
-                    'alt_body' => $body,
                 );
                 osc_sendMail($emailParams);
             }
@@ -1600,21 +1580,13 @@ function fn_email_contact_user($id, $yourEmail, $yourName, $phoneNumber, $messag
         $content = current($aPage['locale']);
     }
 
-    $words   = array();
-    $words[] = array(
-        '{CONTACT_NAME}',
-        '{USER_NAME}',
-        '{USER_EMAIL}',
-        '{USER_PHONE}',
-        '{COMMENT}'
-    );
-    $words[] = array(
-        osc_user_name(),
-        $yourName,
-        $yourEmail,
-        $phoneNumber,
-        $message
-    );
+    [$titleWords, $words] = _osc_mail_words(array(
+        '{CONTACT_NAME}' => osc_user_name(),
+        '{USER_NAME}'    => $yourName,
+        '{USER_EMAIL}'   => $yourEmail,
+        '{USER_PHONE}'   => $phoneNumber,
+        '{COMMENT}'      => $message,
+    ), array('{CONTACT_NAME}', '{USER_NAME}', '{USER_EMAIL}', '{USER_PHONE}', '{COMMENT}'));
 
     $title = osc_apply_filter('email_item_inquiry_title_after', osc_mailBeauty(osc_apply_filter(
         'email_title',
@@ -1627,7 +1599,7 @@ function fn_email_contact_user($id, $yourEmail, $yourName, $phoneNumber, $messag
             $phoneNumber,
             $message
         )
-    ), $words), $id, $yourEmail, $yourName, $phoneNumber, $message);
+    ), $titleWords), $id, $yourEmail, $yourName, $phoneNumber, $message);
     $body  = osc_apply_filter(
         'email_item_inquiry_description_after',
         osc_mailBeauty(
@@ -1658,8 +1630,7 @@ function fn_email_contact_user($id, $yourEmail, $yourName, $phoneNumber, $messag
         'to_name'  => osc_user_name(),
         'reply_to' => $yourEmail,
         'subject'  => $title,
-        'body'     => $body,
-        'alt_body' => $body
+        'body'     => $body . \mindstellar\security\MessageGuard::reportFooter((string) $yourEmail, (string) osc_user_email()),
     );
 
     if (osc_notify_contact_item()) {
@@ -1764,7 +1735,6 @@ function fn_email_new_comment_user($aItem)
         'to_name'  => $item['s_contact_name'],
         'subject'  => $title_email,
         'body'     => $body_email,
-        'alt_body' => $body_email
     );
     osc_sendMail($emailParams);
 }
@@ -1830,7 +1800,6 @@ function fn_email_new_admin($data)
         'to_name'  => $data['s_name'],
         'subject'  => $title_email,
         'body'     => $body_email,
-        'alt_body' => $body_email
     );
     osc_sendMail($emailParams);
 }
@@ -1917,7 +1886,6 @@ function fn_email_warn_expiration($aItem)
         'to_name'  => $aItem['s_contact_name'],
         'subject'  => $title_email,
         'body'     => $body_email,
-        'alt_body' => $body_email
     );
     osc_sendMail($emailParams);
 }
@@ -1985,7 +1953,6 @@ function fn_email_auto_upgrade($result)
                 'to_name'  => osc_page_title(),
                 'subject'  => $title,
                 'body'     => $body,
-                'alt_body' => $body,
             );
             osc_sendMail($emailParams);
         }

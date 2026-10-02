@@ -14,6 +14,7 @@ if (!defined('ABS_PATH')) {
 
 use mindstellar\billing\Order;
 use mindstellar\billing\Orders;
+use mindstellar\billing\Receipts;
 
 /**
  * The buyer's own orders -- markup only: no page chrome, no heading
@@ -60,9 +61,19 @@ $formatMoney = static function (int $micros, string $currency): string {
     return number_format($micros / 1000000, 2, osc_locale_dec_point(), osc_locale_thousands_sep())
            . ' ' . strtoupper($currency);
 };
+
+// Column headings, also each cell's label when a row stacks on a phone.
+$col = array(
+    'date'    => _m('Date'),
+    'method'  => _m('Payment method'),
+    'amount'  => _m('Amount'),
+    'credits' => _m('Credits'),
+    'status'  => _m('Status'),
+);
 ?>
 <div class="oe-account">
 <div class="oe-account-main">
+<?php osc_run_hook('account_page_before', 'billing-orders'); ?>
 <div class="oe-bill">
 
 
@@ -79,26 +90,29 @@ $formatMoney = static function (int $micros, string $currency): string {
             <table>
                 <thead>
                 <tr>
-                    <th scope="col"><?php echo osc_esc_html(_m('Date')); ?></th>
-                    <th scope="col"><?php echo osc_esc_html(_m('Payment method')); ?></th>
-                    <th scope="col" class="oe-num oe-bill-num"><?php echo osc_esc_html(_m('Amount')); ?></th>
-                    <th scope="col" class="oe-num oe-bill-num"><?php echo osc_esc_html(_m('Credits')); ?></th>
-                    <th scope="col"><?php echo osc_esc_html(_m('Status')); ?></th>
+                    <th scope="col"><?php echo osc_esc_html($col['date']); ?></th>
+                    <th scope="col"><?php echo osc_esc_html($col['method']); ?></th>
+                    <th scope="col" class="oe-num oe-bill-num"><?php echo osc_esc_html($col['amount']); ?></th>
+                    <th scope="col" class="oe-num oe-bill-num"><?php echo osc_esc_html($col['credits']); ?></th>
+                    <th scope="col"><?php echo osc_esc_html($col['status']); ?></th>
                 </tr>
                 </thead>
                 <tbody>
                 <?php foreach ($orders as $order) { ?>
                     <tr>
-                        <td><?php echo osc_esc_html(osc_format_date($order->getDate())); ?></td>
-                        <td><?php echo osc_esc_html(osc_billing_gateway_name($order->getGateway())); ?></td>
-                        <td class="oe-num oe-bill-num">
+                        <td data-label="<?php echo osc_esc_html($col['date']); ?>"><?php echo osc_esc_html(osc_format_date($order->getDate())); ?></td>
+                        <td data-label="<?php echo osc_esc_html($col['method']); ?>"><?php echo osc_esc_html(osc_billing_gateway_name($order->getGateway())); ?></td>
+                        <td class="oe-num oe-bill-num" data-label="<?php echo osc_esc_html($col['amount']); ?>">
                             <?php echo osc_esc_html($formatMoney($order->getAmount(), $order->getCurrency())); ?>
                         </td>
-                        <td class="oe-num oe-bill-num"><?php echo osc_esc_html(number_format($order->getCredits())); ?></td>
-                        <td>
+                        <td class="oe-num oe-bill-num" data-label="<?php echo osc_esc_html($col['credits']); ?>"><?php echo osc_esc_html(number_format($order->getCredits())); ?></td>
+                        <td data-label="<?php echo osc_esc_html($col['status']); ?>">
                             <span class="oe-badge oe-bill-badge <?php echo osc_esc_html($order->getStatus()); ?>">
                                 <?php echo osc_esc_html($statusWords[$order->getStatus()] ?? $order->getStatus()); ?>
                             </span>
+                            <?php if (Receipts::available($order)) { ?>
+                                <a href="<?php echo osc_esc_html(Receipts::url($order->getId())); ?>"><?php echo osc_esc_html(_m('Receipt')); ?></a>
+                            <?php } ?>
                         </td>
                     </tr>
                 <?php } ?>
@@ -131,6 +145,7 @@ $formatMoney = static function (int $micros, string $currency): string {
     </p>
 <?php } ?>
 </div>
+<?php osc_run_hook('account_page_after', 'billing-orders'); ?>
 </div>
 
 <?php require ABS_PATH . 'oc-includes/osclass/gui/account/nav.php'; ?>

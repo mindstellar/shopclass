@@ -10,6 +10,7 @@
 
 use mindstellar\database\Connection;
 use mindstellar\migration\MigrationInterface;
+use mindstellar\migration\SchemaProbes;
 
 /**
  * The location admin lists one level at a time: a region's cities or a country's regions,
@@ -22,6 +23,8 @@ use mindstellar\migration\MigrationInterface;
  * upgrade is safe.
  */
 return new class () implements MigrationInterface {
+    use SchemaProbes;
+
     /** Table => [index name, column list]. */
     private const INDEXES = array(
         't_city'   => array('idx_region_name', 'fk_i_region_id, s_name'),
@@ -45,26 +48,4 @@ return new class () implements MigrationInterface {
         }
     }
 
-    /**
-     * Whether an index named $index already exists on $table.
-     *
-     * @param Connection $conn
-     * @param string     $table
-     * @param string     $index
-     *
-     * @return bool
-     * @throws \mindstellar\database\DbException
-     */
-    private function indexExists(Connection $conn, string $table, string $index): bool
-    {
-        $count = $conn->scalar(
-            'SELECT COUNT(*) FROM information_schema.STATISTICS'
-            . ' WHERE TABLE_SCHEMA = DATABASE()'
-            . ' AND TABLE_NAME = ?'
-            . ' AND INDEX_NAME = ?',
-            array($table, $index)
-        );
-
-        return (int) $count > 0;
-    }
 };

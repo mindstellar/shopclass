@@ -36,7 +36,7 @@ jobs:
       fail-fast: false
       matrix:
         operating-system: [ubuntu-latest]
-        php-versions: [ '8.3', '8.4', '8.5' ]
+        php-versions: [ '8.0', '8.1', '8.3', '8.4', '8.5' ]
         experimental: [false]
         include:
           # Unreleased PHP, for information only. It reports what is coming --
@@ -97,6 +97,14 @@ jobs:
       # run no build step), so the autoloader is present straight from checkout.
       - name: Params typed accessors
         run: php tests/params-typed-accessors.php
+      - name: Browser photo resize config
+        run: php tests/browser-resize-config.php
+      - name: Admin two-step codes
+        run: php tests/totp.php
+      - name: WebP images
+        run: php tests/image-webp.php
+      - name: Photo colours
+        run: php tests/image-colour.php
       # Storefront -- the default theme -- keeps its chrome in common/, so a probe
       # for a root header.php/footer.php missed on a default install and every
       # core-rendered page dropped to the standalone shell.
@@ -132,13 +140,83 @@ jobs:
         run: php tests/rewrite-route-match.php
       - name: Rewrite resolve rewrite
         run: php tests/rewrite-resolve-rewrite.php
+      # Core page URLs and the rules that answer them come from one table. Pins both
+      # ends: a link changed on its own is a broken link in an email already sent.
+      - name: Core routing
+        run: php tests/core-routing.php
+      # Every filter link, facet and canonical tag on the public site comes out of
+      # osc_search_url(). Pins its output, quirks included.
+      - name: Search URLs
+        run: php tests/search-url.php
+      # The eight alert_email_* filters are a published contract: a plugin rewrites
+      # a digest through them. Pins the names, their order and what each is handed.
+      - name: Alert emails
+        run: php tests/alert-emails.php
+      # Core finds a template to send by its internal name, so a save must never rename it.
+      - name: Email template save
+        run: php tests/admin-email-save.php
+      # A plugin adds oc-cli.php commands through a filter; it must never replace a core one.
+      - name: CLI commands filter
+        run: php tests/cli-commands-filter.php
+      # Every mail used to go out HTML-only: the plain copy each builder handed over
+      # was never read. Pins the conversion, and that link addresses survive it.
+      - name: Mail plain-text copy
+        run: php tests/mail-plain-text.php
+      # An English install reads the language copy; the translations repository is fed
+      # the installer copy. Fixing one and not the other goes unnoticed without this.
+      - name: Email templates match in both copies
+        run: diff oc-content/languages/en_US/mail.json oc-includes/osclass/installer/mail.json
       # page=route takes the hook name from the request. Unchecked, anyone can fire cron_hourly.
       - name: Route hook dispatch
         run: php tests/route-hook-dispatch.php
+      - name: Symlinked plugin paths
+        run: php tests/plugin-path-symlink.php
+      - name: Private-network address guard
+        run: php tests/address-guard.php
+      - name: Proxy IP mismatch detection
+        run: php tests/proxy-ip-mismatch.php
+      - name: Theme list and preview allowlist
+        run: php tests/theme-preview.php
+      - name: Plugin screen headers
+        run: php tests/admin-plugin-page.php
+      - name: README renderer
+        run: php tests/market-markdown.php
+      # A priority outside the old 0-10 loop was stored and never run, with no warning.
+      - name: Hook priority
+        run: php tests/hook-priority.php
+      # Plugins on sites we cannot see register against these names, so a rename has to
+      # be a deliberate edit of the fixture rather than a silent break.
+      - name: Hook name pin
+        run: php tests/hook-contract.php
+      # Paging params come straight from a URL; a bad one used to 500 the screen.
+      - name: Admin list paging
+        run: php tests/admin-list-paging.php
+      # One loop behind 21 bulk actions; the counts it reports used to be wrong three ways.
+      - name: Admin bulk actions
+        run: php tests/admin-bulk-apply.php
+      # ajax_photos[] names become paths, and every temp file handed in is unlinked after.
+      - name: Ajax photo attach
+        run: php tests/ajax-photo-attach.php
+      # The hooks reference is generated, so it cannot drift from what core fires.
+      - name: Hooks reference is current
+        run: php tools/gen-hooks-doc.php --check
+      # Copying the upload stored whatever was appended after the image, under a .jpg name.
+      - name: Keep-original re-encodes
+        run: php tests/keep-original-reencode.php
       - name: Item URL characterization
         run: php tests/item-url-characterization.php
       - name: Pagination
         run: php tests/pagination.php
+      - name: Installer config values
+        run: php tests/install-config.php
+      - name: Request host keeps its port
+        run: php tests/request-host.php
+      - name: Params XSS check matches the purifier
+        run: php tests/params-purify.php
+      - name: HTMLPurifier definition cache
+        run: php tests/purifier-cache.php
+      - name: Mail attachments come only from real uploads
+        run: php tests/mail-upload-attachment.php
       # The location sitemaps synthesise URLs while the sitemap route's own params are
       # still in the request; one leaking in silently doubles every category-location
       # page into a second, self-canonicalising URL that Google indexes separately.
@@ -168,6 +246,19 @@ jobs:
       # two different result sets at the same canonical, de-indexing one of them.
       - name: Canonical params
         run: php tests/canonical-params.php
+      # The request normalisation CWebSearch::doModel() used to do inline, now a builder
+      # both the live controller and (later) alert replay share -- splitting, arrays,
+      # empty values, strip_tags, the search_pattern filter, bPic/bPremium coercion.
+      - name: Search criteria normalisation
+        run: php tests/search-criteria.php
+      # A saved alert is stored as search values in one canonical string (it is also the
+      # de-duplication key); anything else, SQL included, must fail validation.
+      - name: Alert envelope
+        run: php tests/alert-envelope.php
+      # Old alerts held SQL fragments. The upgrade reads back only the exact fragments core
+      # wrote; anything else must be held, never guessed into a search.
+      - name: Legacy alert parser
+        run: php tests/alert-legacy-parser.php
       # Resolving sCategory by slug alone 404s a category that exists whenever the value
       # is an id -- which is what osc_search_url() emits and what a category <select> submits.
       - name: Search category resolution
@@ -278,6 +369,20 @@ jobs:
       # Add always failed with an invalid-email error.
       - name: Admin user form
         run: php tests/admin-user-form.php
+      # The listing and page editors are hand-built screens whose fields nothing declares.
+      # A field renamed, dropped or turned into another kind of control is silent: the form
+      # draws, the save runs, and the column it fed keeps its old value.
+      - name: Admin editor fields
+        run: php tests/admin-editor-fields.php
+      # The other end of the same contract -- what each field's save actually writes,
+      # including both locale rows, which a single-locale check cannot see.
+      - name: Admin editor save
+        run: php tests/admin-editor-save.php
+      # The composites both editors are assembled from. A dropped rail class stops the
+      # status panel coming first on a phone; a dropped dirty attribute turns the save bar
+      # back into a row that counts nothing.
+      - name: Admin editor components
+        run: php tests/admin-editor-components.php
       # The twelve settings screens that save through their declarations. Four of their
       # controls keep the name their page's script knows while the value lives under a
       # different preference key -- maxLatestItems@home, defaultResultsPerPage@search,
@@ -362,6 +467,9 @@ jobs:
       # after a storage offload rewrites its image URLs, which fires nothing else.
       - name: Item cache invalidation hook
         run: php tests/item-cache-invalidation.php
+      # A cache server that is down must read as a miss, and cost one timeout per request.
+      - name: Cache driver miss
+        run: php tests/cache-driver-miss.php
       # The validator masks the CSRF pair so it survives a fresh token. Masking a
       # character too much and an edited page keeps its ETag, which serves stale content.
       - name: Response ETag
@@ -422,6 +530,15 @@ jobs:
         run: php tests/test-gateway.php
       - name: Delete cascades
         run: php tests/delete-cascade.php
+      # Upgrades run migrations only; db:repair is the opt-in reconciler.
+      - name: Schema repair
+        run: php tests/schema-repair.php
+      # A backup is written and restored without holding a table in memory.
+      - name: Backup and restore
+        run: php tests/backup-restore.php
+      # backup:create, list and restore run the real engine; a restore asks first and waits for an upgrade.
+      - name: Backup commands
+        run: php tests/cli-backup.php
       # ONLY_FULL_GROUP_BY rejects a grouped query outright, and every one of them is
       # wrapped in a catch that returns an empty array — so a site that turns the strict
       # modes on loses its alert emails, its custom fields and its statistics charts with
@@ -429,6 +546,10 @@ jobs:
       # ONLY_FULL_GROUP_BY entirely and the file would otherwise pass without testing it.
       - name: Strict SQL mode
         run: php tests/db-strict-mode.php
+      - name: Connection setup
+        run: php tests/db-connect-setup.php
+      - name: Strict mode readiness
+        run: php tests/db-strict-readiness.php
       # DAO::insertGetId() answers 0 on a rejected write and DAO::update() answers
       # false, so an unchecked return turned a refused registration into "check your
       # inbox" for an account that was never created. Nothing throws, nothing logs,
@@ -436,11 +557,20 @@ jobs:
       # long — which is also why the column widths are pinned against the live schema.
       - name: Strict write guards
         run: php tests/strict-write-guards.php
+      # A balance read and written back loses a concurrent top-up; increment() cannot.
+      - name: QueryBuilder writes
+        run: php tests/querybuilder-writes.php
+      - name: QueryBuilder reads
+        run: php tests/querybuilder-reads.php
       # The upgrade screen and upgradeDB() are replaced at different moments — an
       # opcode cache can serve the previous class behind the new template — so the
       # screen has to stay truthful when the answer predates it.
       - name: Upgrade payload contract
         run: php tests/upgrade-payload-contract.php
+      - name: Upgrade release zip
+        run: php tests/upgrade-release-zip.php
+      - name: Update channel and automatic security install
+        run: php tests/update-channel.php
       # Needs no database or network: the catalog's pointer and its manifest both carry a
       # `countries` key, and telling them apart on presence rather than type has broken
       # the catalog twice, both times hidden by a warm cache.
@@ -465,3 +595,40 @@ jobs:
       # name with brackets makes invalid is one browsers silently skip.
       - name: Location admin view
         run: php tests/location-admin-view.php
+      # Repair is offered and run only when something is fixable, and old Tools URLs resolve.
+      - name: Admin database page
+        run: php tests/admin-database-page.php
+      # System info: the verdict's tone and order, each issue's action, the backup and cron rules.
+      - name: System checks
+        run: php tests/system-checks.php
+      # System info tabs, the old Database URL redirect, the menu, and the update and Repair posts.
+      - name: Admin system info page
+        run: php tests/admin-system-info-page.php
+      # A script is split statement by statement from a stream, quoted values intact.
+      - name: SQL stream
+        run: php tests/sql-stream.php
+      # A backup zip survives a stop between runs, never follows a link out of the site,
+      # and a restore writes only under oc-content.
+      - name: Backup archive
+        run: php tests/backup-archive.php
+      # A newer backup, or an old dump with another table prefix, is refused before anything changes.
+      - name: Backup manifest
+        run: php tests/backup-manifest.php
+      # Backups run in batches and can be cancelled; a failed restore puts the safety copy back.
+      - name: Backup jobs
+        run: php tests/backup-jobs.php
+      # Old backup URLs route, the demo refuses first, and downloads take listed names only.
+      - name: Admin backup page
+        run: php tests/admin-backup-page.php
+      # Bucket backup keys carry a random name and a manifest; the prune keeps N per kind there too.
+      - name: Backup S3 keys
+        run: php tests/backup-s3-keys.php
+      # A site address taken from the Host header is flagged, and the backup bucket refuses it.
+      - name: Site address from the request
+        run: php tests/web-path-from-request.php
+      # A large upload resumes at the next part, never sends an ACL, and is checked by size.
+      - name: S3 multipart resume
+        run: php tests/s3-multipart-resume.php
+      # An adapter without the bucket methods hides the bucket option; the interface is unchanged.
+      - name: Storage adapter optional methods
+        run: php tests/storage-adapter-optional-methods.php

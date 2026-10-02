@@ -12,6 +12,8 @@
  * KeywordBlocksDataTable — admin listing of the keyword blocklist.
  * BanRulesDataTable-shaped.
  */
+use mindstellar\admin\ListPaging;
+
 class KeywordBlocksDataTable extends DataTable
 {
     private $order_by;
@@ -81,20 +83,12 @@ class KeywordBlocksDataTable extends DataTable
         if (!isset($_get['iDisplayStart'])) {
             $_get['iDisplayStart'] = 0;
         }
-        $p_iPage = 1;
-        if (!is_numeric(Params::getParam('iPage')) || Params::getParam('iPage') < 1) {
-            Params::setParam('iPage', $p_iPage);
-            $this->iPage = $p_iPage;
-        } else {
-            $this->iPage = Params::getParam('iPage');
-        }
+        $this->iPage = ListPaging::page();
 
         $this->order_by = $this->resolveOrder($_get, $this->sortable, 'pk_i_id');
         // set start and limit using iPage param
-        $start = ($this->iPage - 1) * $_get['iDisplayLength'];
-
-        $this->start = (int)$start;
-        $this->limit = (int)$_get['iDisplayLength'];
+        $this->limit = ListPaging::length((int)($_get['iDisplayLength'] ?? ListPaging::DEFAULT_LENGTH));
+        $this->start = ListPaging::start($this->iPage, $this->limit);
     }
 
     /**

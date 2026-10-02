@@ -2,17 +2,17 @@
 title: Coding style
 description: "The PHP coding standard for ShopClass core: PSR-12, the pinned php-cs-fixer, the PHP 8.0 floor, and the legacy naming conventions you will meet in older files."
 sidebar:
-  order: 14
+  order: 15
 ---
 
 ShopClass core follows **PSR-12**, enforced by a pinned `php-cs-fixer` that CI
-runs on every pull request. You do not have to memorise the rules. Run the
+runs on every pull request. You do not have to memorise the rules: run the
 formatter.
 
 ## Running the formatter
 
 ```bash
-composer cs:check    # dry run with a diff, exactly what CI enforces
+composer cs:check    # dry run with a diff: exactly what CI enforces
 composer cs:fix      # apply
 ```
 
@@ -94,7 +94,7 @@ $sSomeText        = 'This is some text';
 $aVariable        = array(1, 2, 3);
 ```
 
-New code does not need to adopt it. Write plain, descriptive names, but do not
+New code does not need to adopt it (write plain, descriptive names), but do not
 rewrite existing variables just to change their style. A rename that touches a
 hundred lines hides the one line that mattered.
 
@@ -114,6 +114,26 @@ fk_i_category_id     -- foreign key
 
 Follow it in any table you add: the DAO layer and the schema reconciler both
 assume it.
+
+## Reading request values
+
+Read a request value with the `Params` method for its type. The typed ones never return an
+array, so `?id[]=1` cannot sneak an array into SQL or a template. `getParamInt()`,
+`getParamBool()`, `getParamEmail()` and `getParamEnum()` skip HTMLPurifier.
+
+| Value | Method | Bad or missing input gives |
+|---|---|---|
+| id, page, count | `Params::getParamInt('id', 0)` | the default |
+| yes/no flag | `Params::getParamBool('b_enabled', false)` | the default |
+| email address | `Params::getParamEmail('email', '')` | the default |
+| one of a fixed list | `Params::getParamEnum('direction', ['asc', 'desc'], 'asc')` | the default |
+| free text | `Params::getParamString('title')` | `''` |
+| a list | `Params::getParamArray('ids')` | `[]` |
+
+`getParamString()` and `getParamArray()` still strip tags, but that is not your XSS guard.
+Escape every value when you print it, with `osc_esc_html()` or `osc_esc_js()`, and bind every
+value in SQL. An email address can legally contain `'`. `getParamEnum()` matches the list's
+values, not its keys, so hard-code the list.
 
 ## Documentation blocks
 

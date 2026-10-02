@@ -102,7 +102,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_city (
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_city_area (
-    pk_i_id INT UNSIGNED NOT NULL,
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     fk_i_city_id INT UNSIGNED NOT NULL,
     s_name VARCHAR(255) NOT NULL,
 
@@ -132,6 +132,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_admin (
     s_password CHAR(60) NOT NULL,
     s_email VARCHAR(100) NULL,
     s_secret VARCHAR(40) NULL,
+    s_2fa TEXT NULL,
     b_moderator TINYINT(1) NOT NULL DEFAULT 0,
 
         PRIMARY KEY (pk_i_id),
@@ -177,7 +178,8 @@ CREATE TABLE /*TABLE_PREFIX*/t_user (
         PRIMARY KEY (pk_i_id),
         UNIQUE KEY uk_user_email (s_email),
         INDEX idx_s_name (s_name(6)),
-        INDEX idx_s_username (s_username),
+        UNIQUE KEY uk_user_username (s_username),
+        INDEX idx_reg_date (dt_reg_date),
         FOREIGN KEY (fk_c_country_code) REFERENCES /*TABLE_PREFIX*/t_country (pk_c_code),
         FOREIGN KEY (fk_i_region_id) REFERENCES /*TABLE_PREFIX*/t_region (pk_i_id),
         FOREIGN KEY (fk_i_city_id) REFERENCES /*TABLE_PREFIX*/t_city (pk_i_id),
@@ -263,6 +265,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_item (
     -- unrecoverable once dt_pub_date moves.
     dt_first_pub_date DATETIME NULL,
     dt_mod_date DATETIME NULL,
+    -- No longer written by core -- i_price holds the price. Kept for readers.
     f_price FLOAT NULL,
     i_price BIGINT(20) NULL,
     fk_c_currency_code CHAR(3) NULL,
@@ -292,7 +295,10 @@ CREATE TABLE /*TABLE_PREFIX*/t_item (
         INDEX idx_pub_date (dt_pub_date),
         INDEX idx_price (i_price),
         -- What Entitlements::liveListings() filters on: a seller's rows not yet expired.
-        INDEX idx_user_expiration (fk_i_user_id, dt_expiration)
+        INDEX idx_user_expiration (fk_i_user_id, dt_expiration),
+        INDEX idx_expiration (dt_expiration),
+        -- Search::makeSQL() by category: live listings in a category, newest first, and their count.
+        INDEX idx_category_live (fk_i_category_id, b_enabled, b_active, b_spam, dt_pub_date, dt_expiration, b_premium)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_item_description (
@@ -302,7 +308,9 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_description (
     s_description MEDIUMTEXT NOT NULL,
         PRIMARY KEY (fk_i_item_id, fk_c_locale_code),
         FULLTEXT s_description (s_description, s_title),
-        FULLTEXT s_title (s_title)
+        FULLTEXT s_title (s_title),
+        FOREIGN KEY (fk_i_item_id) REFERENCES /*TABLE_PREFIX*/t_item (pk_i_id) ON DELETE CASCADE,
+        FOREIGN KEY (fk_c_locale_code) REFERENCES /*TABLE_PREFIX*/t_locale (pk_c_code) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 
@@ -370,14 +378,14 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_resource (
 
         PRIMARY KEY (pk_i_id),
         INDEX fk_i_item_id (fk_i_item_id),
-        INDEX idx_s_content_type (pk_i_id,s_content_type(10)),
         FOREIGN KEY (fk_i_item_id) REFERENCES /*TABLE_PREFIX*/t_item (pk_i_id)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
-CREATE TABLE /*TABLE_PREFIX*/t_storage_queue (
+CREATE TABLE /*TABLE_PREFIX*/t_job_queue (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    s_type VARCHAR(20) NOT NULL,
-    s_storage VARCHAR(30) NOT NULL,
+    s_type VARCHAR(60) NOT NULL,
+    s_unique VARCHAR(100) CHARACTER SET ascii COLLATE ascii_bin NULL,
+    s_storage VARCHAR(30) NULL,
     s_payload TEXT NOT NULL,
     s_status VARCHAR(10) NOT NULL DEFAULT 'pending',
     i_attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,
@@ -388,6 +396,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_storage_queue (
     dt_created DATETIME NOT NULL,
 
         PRIMARY KEY (pk_i_id),
+        UNIQUE KEY uk_type_unique (s_type, s_unique),
         INDEX idx_status_next (s_status, dt_next_run)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
@@ -464,6 +473,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_plugin_category (
     s_plugin_name VARCHAR(40) NOT NULL,
     fk_i_category_id INT UNSIGNED NOT NULL,
 
+        PRIMARY KEY (s_plugin_name, fk_i_category_id),
         INDEX fk_i_category_id (fk_i_category_id),
         FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
@@ -471,7 +481,9 @@ CREATE TABLE /*TABLE_PREFIX*/t_plugin_category (
 CREATE TABLE /*TABLE_PREFIX*/t_cron (
   e_type enum('INSTANT','HOURLY','DAILY','WEEKLY','CUSTOM') NOT NULL,
   d_last_exec DATETIME NOT NULL DEFAULT  '1000-01-01 00:00:00',
-  d_next_exec DATETIME NOT NULL DEFAULT  '1000-01-01 00:00:00'
+  d_next_exec DATETIME NOT NULL DEFAULT  '1000-01-01 00:00:00',
+
+  PRIMARY KEY (e_type)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_alerts (
@@ -485,7 +497,11 @@ CREATE TABLE /*TABLE_PREFIX*/t_alerts (
     dt_date DATETIME NULL,
     dt_unsub_date DATETIME NULL DEFAULT NULL,
 
-    PRIMARY KEY (pk_i_id)
+    PRIMARY KEY (pk_i_id),
+    INDEX idx_type (e_type, b_active, dt_unsub_date),
+    INDEX idx_user (fk_i_user_id),
+    INDEX idx_email (s_email),
+    FOREIGN KEY (fk_i_user_id) REFERENCES /*TABLE_PREFIX*/t_user (pk_i_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_alerts_sent (
@@ -497,7 +513,9 @@ CREATE TABLE /*TABLE_PREFIX*/t_alerts_sent (
 
 CREATE TABLE /*TABLE_PREFIX*/t_latest_searches (
   d_date DATETIME NOT NULL,
-  s_search VARCHAR(255) NOT NULL
+  s_search VARCHAR(255) NOT NULL,
+
+  INDEX idx_date (d_date)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_meta_group (
@@ -522,7 +540,8 @@ CREATE TABLE /*TABLE_PREFIX*/t_meta_fields (
     i_position INT(2) UNSIGNED NOT NULL DEFAULT 0,
     fk_i_group_id INT UNSIGNED NULL DEFAULT NULL,
 
-        PRIMARY KEY (pk_i_id)
+        PRIMARY KEY (pk_i_id),
+        FOREIGN KEY (fk_i_group_id) REFERENCES /*TABLE_PREFIX*/t_meta_group (pk_i_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_meta_group_categories (
@@ -559,7 +578,9 @@ CREATE TABLE /*TABLE_PREFIX*/t_form_submission (
         PRIMARY KEY (pk_i_id),
         INDEX idx_form (fk_i_group_id, dt_created),
         INDEX idx_context (s_context_type, i_context_id),
-        INDEX idx_status (s_status)
+        INDEX idx_status (s_status),
+        FOREIGN KEY (fk_i_group_id) REFERENCES /*TABLE_PREFIX*/t_meta_group (pk_i_id) ON DELETE CASCADE,
+        FOREIGN KEY (fk_i_user_id) REFERENCES /*TABLE_PREFIX*/t_user (pk_i_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_form_submission_value (
@@ -603,7 +624,9 @@ CREATE TABLE /*TABLE_PREFIX*/t_log (
     s_data VARCHAR(250) NOT NULL,
     s_ip VARCHAR(50) NOT NULL,
     s_who VARCHAR(50) NOT NULL,
-    fk_i_who_id INT UNSIGNED NOT NULL
+    fk_i_who_id INT UNSIGNED NOT NULL,
+
+        INDEX idx_date (dt_date)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_city_stats (
@@ -644,6 +667,8 @@ CREATE TABLE /*TABLE_PREFIX*/t_ban_rule (
   s_name VARCHAR(250) NOT NULL DEFAULT '',
   s_ip VARCHAR(50) NOT NULL DEFAULT '',
   s_email VARCHAR(250) NOT NULL DEFAULT '',
+  s_scope VARCHAR(20) NOT NULL DEFAULT 'all',
+  dt_expires DATETIME NULL DEFAULT NULL,
 
   PRIMARY KEY (pk_i_id)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
@@ -667,8 +692,6 @@ CREATE TABLE /*TABLE_PREFIX*/t_keyword_block (
         PRIMARY KEY (pk_i_id)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
--- Charset kept at UTF8 to stay byte-compatible with the report-log table an
--- already installed classifieds theme creates via its own IF NOT EXISTS import.
 CREATE TABLE /*TABLE_PREFIX*/t_item_report_log (
     fk_i_item_id INT UNSIGNED NOT NULL,
     s_reporter   VARCHAR(70) NOT NULL,
@@ -707,6 +730,16 @@ CREATE TABLE /*TABLE_PREFIX*/t_login_attempt (
         INDEX idx_ip (s_ip, dt_date),
         INDEX idx_account (s_context, s_account(64), dt_date),
         INDEX idx_date (dt_date)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+CREATE TABLE /*TABLE_PREFIX*/t_rate_counter (
+    s_bucket VARCHAR(100) NOT NULL,
+    i_window INT UNSIGNED NOT NULL,
+    i_expires INT UNSIGNED NOT NULL,
+    i_count INT UNSIGNED NOT NULL DEFAULT 0,
+
+        PRIMARY KEY (s_bucket, i_window),
+        INDEX idx_expires (i_expires)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_item_upload_tmp (

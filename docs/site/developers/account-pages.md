@@ -2,7 +2,7 @@
 title: Account pages
 description: ShopClass renders every account and sign-in page itself when your theme does not, using a published set of class names you can restyle without shipping a line of PHP.
 sidebar:
-  order: 20
+  order: 22
 ---
 
 Thirteen views make up the account section: the dashboard, the seller's
@@ -34,13 +34,13 @@ nothing to declare.
 
 Step 3 is the interesting one: it is the same header, the same footer, the same
 typography and the same widgets as the rest of your site, wrapped around markup
-core owns. The whole of the theming job is CSS.
+core owns. The whole theming job is CSS.
 
 ## The class vocabulary
 
 Core's markup carries the classes below. **These names are a permanent contract**,
-the same promise as the `osc_*` helpers and the admin's class names. They can
-be restyled freely; they will not be renamed or removed.
+the same promise as the `osc_*` helpers and the admin's class names. You can
+restyle them freely; they will not be renamed or removed.
 
 Every rule core ships is scoped `.oe-page .name`, so match that specificity when
 you override. A bare `.oe-list-item {}` loses to core's `.oe-page .oe-list-item {}`.
@@ -56,6 +56,7 @@ you override. A bare `.oe-list-item {}` loses to core's `.oe-page .oe-list-item 
 | `.oe-account-main` | the content column of `.oe-account` | the page's own markup, nothing else |
 | `.oe-account-nav` | the account section nav | a `<nav>` holding an `<h2>` and one `<ul>`; the current entry carries `aria-current="page"` |
 | `.oe-form-page` | a page that is one form: sign in, register, reset | no nav beside it |
+| `.oe-contact` | the contact page | holds `.oe-contact-main` and, when filled, `.oe-contact-aside` |
 
 ### Records
 
@@ -65,6 +66,15 @@ you override. A bare `.oe-list-item {}` loses to core's `.oe-page .oe-list-item 
 | `.oe-list-item` | one record | an `<li>`; holds a thumb, an `.oe-list-body` and an `.oe-price` |
 | `.oe-list-body` | the middle column of a record | holds the `<h3>` title and `.oe-meta` |
 | `.oe-meta` | a record's secondary line | date, status, category, row actions; wraps freely |
+| `.oe-dashboard-intro` | the dashboard's "Signed in as" line | a `<p>` |
+| `.oe-dashboard-actions` | the dashboard's two buttons under it | also carries `.oe-actions` |
+| `.oe-dashboard-title` | the dashboard's "Your latest listings" heading | an `<h2>` |
+| `.oe-dashboard-more` | the dashboard's "See all" link line | also carries `.oe-muted` |
+| `.oe-row-actions` | a record's action links | also carries `.oe-meta`; `.oe-danger-link` marks the destructive one |
+| `.oe-row-promote` | the paid-upgrades line under a listing | also carries `.oe-row-actions` |
+| `.oe-link-btn` | a button that looks like a link | inside an `.oe-inline-form` |
+| `.oe-inline-form` | a one-button form in a line of links | `display: inline` |
+| `.oe-tabs` | a status filter over a list | a `<nav>` of links; the current one carries `aria-current="page"` |
 | `.oe-thumb` | a record's image | fixed 6/5 ratio; also on the placeholder |
 | `.oe-thumb-empty` | the no-image placeholder | carries `.oe-thumb` too |
 | `.oe-price` | a listing's price | one already-formatted string, currency included |
@@ -82,6 +92,15 @@ you override. A bare `.oe-list-item {}` loses to core's `.oe-page .oe-list-item 
 | `.oe-label` | the field's `<label>` | `for` always matches a real control id |
 | `.oe-input` | a control core renders itself | absent on controls `UserForm` renders (see below) |
 | `.oe-hint` | help text under a field | bound with `aria-describedby` |
+| `.oe-profile-head` | the top of a public profile | holds the `.oe-avatar`, an `.oe-meta` line, and the owner's Edit button |
+| `.oe-dialog-close` | a dialog's close button | carries `data-osc-dialog-close` |
+| `.oe-contact-open` | the profile head's Message button | a link to `#oe-contact-dialog` |
+| `.oe-form-error` | why a contact form's send failed, inside the form | `role="alert"`; the same text is also a flash message |
+| `.oe-dialog` | a `<dialog>` core opens as a modal | holds `.oe-dialog-head` and `.oe-dialog-body`; shows in place without JavaScript |
+| `.oe-group` | a titled group of form fields | a `<fieldset>` with a `<legend>` |
+| `.oe-grid` | fields laid out two to a row where there is room | inside an `.oe-group` |
+| `.oe-avatar-field` | the profile picture and its upload control | holds the `.oe-avatar` and the file input |
+| `.oe-avatar-empty` | the placeholder picture when the member has none | also carries `.oe-avatar` |
 | `.oe-avatar` | the account holder's current picture on the profile page | a square image; core sizes and rounds it |
 | `.oe-danger` | the destructive block at the foot of a page | separated by a rule; holds a heading, a line of copy and one danger button |
 | `.oe-check` | a checkbox and its label on one line | the `<label>` wraps the control |
@@ -95,13 +114,16 @@ Core's flash messages keep the class names they have always had:
 `flashmessage` and `flashmessage-{ok,error,warning,info}`. Style those; there is
 no second name for the same thing.
 
-They now carry `role="status"`, or `role="alert"` on an error, so the message
-announces itself with no JavaScript. Core renders no dismiss control: the message
-is dropped from the session as it is printed, so it never returns on the next
-page.
+They carry `role="status"`, or `role="alert"` on an error, so the message
+announces itself with no JavaScript. Each message includes a dismiss link
+(`.flashmessage a.ico-close`), but core does not wire it up. Clicking it does
+nothing until your theme's own script binds click and keyboard handling to it,
+the way bender and storefront do. Core renders no dismiss behaviour of its own
+because a message is one-shot anyway: it is dropped from the session as it is
+printed, so it never returns on the next page.
 
 If your header already calls `osc_show_flash_message()`, core's own call is a
-no-op. Whichever runs first prints the message, and there is no double render.
+no-op: whichever runs first prints the message, and there is no double render.
 
 ### Controls `UserForm` renders
 
@@ -114,7 +136,7 @@ hand-roll them. Reach them through the wrapper:
 ```
 
 Core's own defaults for those controls are declared inside `:where()`, which
-gives them **zero specificity**, so any rule you write wins, including a bare
+gives them **zero specificity**. So any rule you write wins, including a bare
 `input {}`. That is deliberate: inside your theme these should look like your
 fields, not like core's.
 
@@ -136,8 +158,8 @@ The whole of what makes these pages look native to a theme:
 
 ## Rendering one yourself
 
-`osc_gui_account_view(string $view): bool` runs the resolution above for one view
-name and returns `false` when core has no page for it:
+`osc_gui_account_view(string $themeView): bool` runs the resolution above for
+one view name and returns `false` when core has no page for it:
 
 ```php
 if (!osc_gui_account_view('user-login.php')) {
@@ -149,10 +171,10 @@ Controllers call it; a plugin serving its own account route can too.
 
 ## What core's pages do not do
 
-- **No JavaScript**, with one exception: the profile form calls
+- **Almost no JavaScript.** The profile form calls
   `UserForm::location_javascript()` so the region list follows the country
-  without a reload. The form works without it: choose a country, save, and the
-  page comes back with that country's regions.
+  without a reload. A listing list prints one line that asks before a link
+  marked `data-osc-confirm` is followed. Both pages work without them.
 - **No assets.** One small stylesheet, printed inline once per request through
   the `header` hook. Nothing to enqueue, nothing to cache-bust.
 - **No layout opinions you cannot undo.** Every rule is one class deep.
@@ -176,6 +198,92 @@ osc_add_filter('user_menu_filter', function ($options) {
 ```
 
 The `opt_logout` entry is always moved last, whatever the filter returns.
+
+## Adding to a page
+
+Every account page fires two actions inside its content column. The argument is
+the page: `user-dashboard`, `user-items`, `user-alerts`, `user-profile`,
+`user-signin`, `user-custom`, `user-delete_account`, and on the credits pages
+`billing-wallet`, `billing-buy` or `billing-orders`.
+
+```php
+osc_add_hook('account_page_before', function ($page) {
+    if ($page === 'user-items') {
+        echo '<p class="oe-muted">Listings renew for free for 30 days.</p>';
+    }
+});
+```
+
+`account_page_after` is the same, at the foot of the column.
+
+## The profile form
+
+Core's profile form has the account type (`b_company`), the neighbourhood
+(`cityArea`) and an About field for each language. Other languages sit in a
+`<details>` under the current one. The form is grouped in `<fieldset class="oe-group">`s: Photo, Your details,
+Contact, Location and About you. The Location group carries `data-location-cascade`,
+so a theme script can find the address fields.
+`user_avatar_form($user)` fires after the picture field and its Remove box. A
+"Your data" panel links to `osc_user_export_url()`.
+
+## The public profile contact form
+
+The public profile has a contact form, unless the visitor owns the profile, or
+only registered users may write and the visitor is signed out; then the head shows
+a "Sign in to message" link. It posts `page=user&action=contact_post` with
+`yourName`, `yourEmail`, `phoneNumber` and `message`. After a failed send,
+`osc_gui_kept()` gives back what was typed.
+
+The form sits in `<dialog id="oe-contact-dialog" class="oe-dialog">`, with
+`.oe-dialog-head` (the `<h2>` and a close button marked `data-osc-dialog-close`)
+and `.oe-dialog-body`. The `.oe-contact-open` button in the profile head opens it
+through `data-osc-dialog-open="oe-contact-dialog"`. The dialog opens by itself after
+a failed send, with the reason in `.oe-form-error` at the top of the form. Without
+JavaScript it shows in place and the button jumps to it.
+
+`user_contact_form($user)` fires inside the form, before the button, and
+`user_contact_form_after($user)` after it. Sends are limited to 15 an hour per visitor. The
+`action_throttle_limit` filter changes it for `'user_contact'`.
+
+## Changing the listing rows
+
+Listing lists pass a context: `dashboard`, `user_items`, `public_profile` or
+`alert`. Three filters change a row; each gets the list, the item and the context.
+
+| Filter | Entries |
+|---|---|
+| `listing_row_badges` | `['label' => …, 'class' => …]`; the class is an `.oe-badge` modifier. Core's keys: `status`, `premium`, `highlight`, `urgent` |
+| `listing_row_meta` | `['text' => …]`, plus `'url'` for a link or `'datetime'` for a `<time>`. Core's keys: `category`, `date`, `views` |
+| `listing_row_actions` | `['label' => …, 'url' => …, 'class' => …, 'confirm' => …]`. Add `'method' => 'post'` and `'fields' => [name => value]` for a button in a form with the CSRF token. `'group' => 'promote'` puts it on the paid-upgrades line. Core's keys: `edit`, `delete`, and on `user_items` only `upgrade_<feature>` for each upgrade the owner can buy |
+
+Core escapes every value. Add a Renew link on expired listings:
+
+```php
+osc_add_filter('listing_row_actions', function ($actions, $item, $context) {
+    if ($context === 'user_items' && osc_item_is_expired()) {
+        $actions['renew'] = array(
+            'label'  => __('Renew', 'my-theme'),
+            'url'    => my_renew_url(),
+            'method' => 'post',
+            'fields' => array('id' => $item['pk_i_id']),
+        );
+    }
+
+    return $actions;
+});
+```
+
+Each saved alert has its own actions through `alert_row_actions($actions, $alert)`,
+in the same entry shape. Core's key is `unsubscribe`. To show an alert yourself,
+`osc_alert_criteria()` gives its search as `['label', 'value']` parts and
+`osc_alert_summary()` gives it as one line.
+
+`osc_item_upgrade_offers($item)` gives the upgrades as `['feature', 'label', 'credits']`
+data, for a list you draw yourself. `osc_gui_listing_list($context, $owned)` prints
+core's list for the current `items` loop, filters included.
+
+To draw the whole list yourself, return a string from `listing_list_html`. It
+gets `null`, the item rows and the context; anything but a string keeps core's list.
 
 ## Rendering your own page in the theme's chrome
 
@@ -202,14 +310,14 @@ action, so nothing about the controllers changed; the route that was asked for g
 `autofocus` on its field, so an old link still lands where it used to.
 
 A theme that ships any one of those three views still wins for that route, exactly as
-before. The consolidation is core's fallback shape, not a rule imposed on themes.
+before: the consolidation is core's fallback shape, not a rule imposed on themes.
 
 Deleting an account stays on its own page. It is destructive and irreversible, and nothing
 dangerous should sit a misclick away from changing an email address.
 
 ## Pages outside the account section
 
-`osc_gui_page_view()` does the same job for two pages that are not account pages:
+`osc_gui_page_view()` does the same job for four pages that are not account pages:
 
 | View | What it is |
 |---|---|
@@ -218,11 +326,26 @@ dangerous should sit a misclick away from changing an email address.
 | `item-contact.php` | writing to a seller about one listing |
 | `item-send-friend.php` | passing a listing on to someone else |
 
-Both contact forms and the share form fire `contact_form` and then
-`admin_contact_form`, in the places the bundled themes put them, so a plugin that
-adds a field to one contact form gets it on all of them.
+`contact-message.php` is the page the links in message mail open: *Send my message* for a
+held message, and *Report the sender*. Core's fallback is `gui/contact-message-content.php`;
+it reads `message_mode` (`confirm` or `report`), `message_done` and `message_token`.
+
+The contact page, the seller contact page and the public profile draw one shared
+form. After a failed send, each shows the reason in `.oe-form-error` and refills what
+was typed. A plugin handling its own contact-style form can do the same with
+`osc_keep_form($values, $error)` before it redirects back.
+
+The contact page and the share form fire `contact_form` and then
+`admin_contact_form` inside the form. The seller contact form fires
+`item_contact_form`. The contact page also fires `contact_form_top` before the
+Subject field and `contact_form_after` below the form.
+
+The contact page is `<div class="oe-contact">`, holding `.oe-contact-main` with the
+form. Whatever `contact_page_aside` prints goes in an `<aside class="oe-contact-aside">`
+beside it, for an address or links; the aside is left out when nothing prints.
 
 Ship either view and yours wins, exactly as with the account pages. The
 save-this-search field `osc_alert_form()` prints falls back the same way, so a
 theme that calls it without shipping `alert-form.php` gets core's field rather
-than nothing.
+than nothing. Core's form carries `data-osc-alert-form`, so a theme script can find it
+without depending on its class.

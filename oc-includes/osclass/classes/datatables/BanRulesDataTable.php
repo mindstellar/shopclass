@@ -20,6 +20,8 @@
  * @subpackage classes
  * @author     Shopclass
  */
+use mindstellar\admin\ListPaging;
+
 class BanRulesDataTable extends DataTable
 {
     private $order_by;
@@ -80,6 +82,7 @@ class BanRulesDataTable extends DataTable
         $this->addColumn('name', __('Ban name / Reason'));
         $this->addColumn('ip', __('IP rule'));
         $this->addColumn('email', __('E-mail rule'));
+        $this->addColumn('blocks', __('Blocks'));
 
         $dummy = &$this;
         osc_run_hook('admin_rules_table', $dummy);
@@ -98,13 +101,7 @@ class BanRulesDataTable extends DataTable
         if (!isset($_get['iDisplayStart'])) {
             $_get['iDisplayStart'] = 0;
         }
-        $p_iPage = 1;
-        if (!is_numeric(Params::getParam('iPage')) || Params::getParam('iPage') < 1) {
-            Params::setParam('iPage', $p_iPage);
-            $this->iPage = $p_iPage;
-        } else {
-            $this->iPage = Params::getParam('iPage');
-        }
+        $this->iPage = ListPaging::page();
 
         $this->order_by = $this->resolveOrder($_get, $this->sortable, 'pk_i_id');
         foreach ($_get as $k => $v) {
@@ -117,10 +114,8 @@ class BanRulesDataTable extends DataTable
             }
         }
         // set start and limit using iPage param
-        $start = ($this->iPage - 1) * $_get['iDisplayLength'];
-
-        $this->start = (int)$start;
-        $this->limit = (int)$_get['iDisplayLength'];
+        $this->limit = ListPaging::length((int)($_get['iDisplayLength'] ?? ListPaging::DEFAULT_LENGTH));
+        $this->start = ListPaging::start($this->iPage, $this->limit);
     }
 
     /**
@@ -178,6 +173,7 @@ class BanRulesDataTable extends DataTable
                 $row['name']        = osc_esc_html($aRow['s_name']) . $actions;
                 $row['ip']          = osc_esc_html($aRow['s_ip']);
                 $row['email']       = osc_esc_html($aRow['s_email']);
+                $row['blocks']      = osc_esc_html(self::blocks($aRow));
 
                 $row = osc_apply_filter('rules_processing_row', $row, $aRow);
 
@@ -185,5 +181,22 @@ class BanRulesDataTable extends DataTable
                 $this->rawRows[] = $aRow;
             }
         }
+    }
+
+    /**
+     * What a rule blocks, and until when.
+     *
+     * @param array<string,mixed> $rule
+     *
+     * @return string
+     */
+    private static function blocks(array $rule): string
+    {
+        $what = ($rule['s_scope'] ?? 'all') === 'messages' ? __('Messages only') : __('Everything');
+        if (empty($rule['dt_expires'])) {
+            return $what;
+        }
+
+        return sprintf(__('%1$s, until %2$s'), $what, osc_format_date($rule['dt_expires']));
     }
 }

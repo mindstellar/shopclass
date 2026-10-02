@@ -19,6 +19,7 @@ $finder = PhpCsFixer\Finder::create()
         'oc-includes/osclass/gui',
         'node_modules',
         'tools',
+        'docs/private',
     ])
     ->notName('*.min.php')
     ->notPath('config.php')

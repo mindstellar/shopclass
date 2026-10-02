@@ -154,7 +154,7 @@ class Csrf
      *
      * @return bool
      */
-    private static function isHtmlResponse($body, array $headers): bool
+    public static function isHtmlResponse($body, array $headers): bool
     {
         $type = '';
         foreach ($headers as $header) {
@@ -285,7 +285,7 @@ class Csrf
 
         // check ajax request
         if (defined('IS_AJAX') && IS_AJAX === true) {
-            echo json_encode(array(
+            \mindstellar\utility\AjaxResponse::json(array(
                 'error'   => 1,
                 'expired' => $expired ? 1 : 0,
                 'msg'     => $str_error

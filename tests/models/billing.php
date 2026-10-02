@@ -36,6 +36,9 @@ require_once __DIR__ . '/../lib/harness.php';
 
 $admin = scratchdb_session('osc_models_billing');
 
+// Premium::expire() and Item::updateExpirationDate() read osc_item_is_counted() and osc_isExpired().
+require_once ABS_PATH . 'oc-includes/osclass/utils.php';
+
 // hBilling.php registers the built-in features and a couple of hooks the moment it is
 // included, and Plugins::addHook() resolves the caller against PLUGINS_PATH -- the
 // same stand-in tests/models/item.php uses, since hDefines.php pulls in far more than
@@ -47,6 +50,14 @@ if (!function_exists('osc_plugins_path')) {
     function osc_plugins_path()
     {
         return PLUGINS_PATH;
+    }
+}
+// The billing URL helpers delegate to the core route table; hDefines.php, where
+// osc_core_url() lives, pulls in far more than this file needs.
+if (!function_exists('osc_core_url')) {
+    function osc_core_url($name, $args = array())
+    {
+        return \mindstellar\routing\CoreRoutes::url($name, $args);
     }
 }
 // hBilling.php also registers the wallet/buy/orders render targets, which needs
@@ -84,6 +95,14 @@ if (!function_exists('_m')) {
         return $key;
     }
 }
+// Billing::refundThroughGateway() words its refusals with __(); hTranslations.php is
+// never loaded here.
+if (!function_exists('__')) {
+    function __($key, $domain = 'core')
+    {
+        return $key;
+    }
+}
 // Entitlements::withinFreeQuota()/canPublish() read osc_billing_free_live_listings()
 // and friends, which live here rather than in the default bootstrap requires.
 require_once __DIR__ . '/../../oc-includes/osclass/helpers/hBilling.php';
@@ -91,6 +110,7 @@ require_once __DIR__ . '/../../oc-includes/osclass/helpers/hBilling.php';
 use mindstellar\billing\Billing;
 use mindstellar\billing\CallbackResult;
 use mindstellar\billing\CheckoutIntent;
+use mindstellar\billing\DashboardLinkGateway;
 use mindstellar\billing\Entitlements;
 use mindstellar\billing\Feature;
 use mindstellar\billing\FeatureRegistry;
@@ -101,6 +121,8 @@ use mindstellar\billing\Packages;
 use mindstellar\billing\PaymentGateway;
 use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\billing\Premium;
+use mindstellar\billing\Receipts;
+use mindstellar\billing\RefundableGateway;
 use mindstellar\billing\Wallet;
 
 /**
@@ -145,6 +167,78 @@ final class FakeGateway implements PaymentGateway
         return $this->verdict ?? CallbackResult::ignored();
     }
 }
+
+/**
+ * A gateway that can refund. The test sets what refund() does and counts the calls.
+ */
+final class FakeRefundGateway implements RefundableGateway, DashboardLinkGateway
+{
+    /** @var callable(Order):CallbackResult|null */
+    public $onRefund = null;
+
+    public int $calls = 0;
+
+    public bool $throwOnCheckout = false;
+
+    /** @var callable(Order):?string|null */
+    public $onDashboard = null;
+
+    public function __construct(private string $id = 'refundy')
+    {
+    }
+
+    public function getId(): string
+    {
+        return $this->id;
+    }
+
+    public function getName(): string
+    {
+        return 'Refundy';
+    }
+
+    public function getSupportedCurrencies(): array
+    {
+        return array('USD');
+    }
+
+    public function isConfigured(): bool
+    {
+        return true;
+    }
+
+    public function createCheckout(Order $order): CheckoutIntent
+    {
+        if ($this->throwOnCheckout) {
+            throw new RuntimeException('secret detail', 42);
+        }
+
+        return CheckoutIntent::redirect('https://example.test/pay/' . $order->getId());
+    }
+
+    public function handleCallback(array $request): CallbackResult
+    {
+        return CallbackResult::ignored();
+    }
+
+    public function dashboardUrl(Order $order): ?string
+    {
+        return $this->onDashboard !== null ? ($this->onDashboard)($order) : null;
+    }
+
+    public function refund(Order $order): CallbackResult
+    {
+        $this->calls++;
+
+        return $this->onRefund !== null
+            ? ($this->onRefund)($order)
+            : CallbackResult::refunded($order->getId(), 're_' . $order->getId());
+    }
+}
+
+// Receipts are e-mailed by default; only the receipts section below turns them on.
+osc_set_preference(Receipts::PREF_EMAIL, '0', Billing::PREF_GROUP, 'BOOLEAN');
+osc_reset_preferences();
 
 $userId  = seed_user($admin, 'buyer', 'buyer@example.test');
 $otherId = seed_user($admin, 'other', 'other@example.test');
@@ -374,6 +468,300 @@ check(
     Billing::refund(Orders::find($order->getId())) === false
 );
 pin('a repeated refund takes nothing further', $balance, Wallet::balance($userId));
+
+/* ----------------------------------------------------------------------------
+ * Refund through the gateway: the admin Refund button.
+ * ------------------------------------------------------------------------- */
+harness_section('Billing: refundThroughGateway');
+
+$refundy = new FakeRefundGateway('refundy');
+PaymentGatewayRegistry::instance()->register($refundy);
+
+$orderStatus = static fn (Order $o): string => Orders::find($o->getId())->getStatus();
+
+$plainOrder = Orders::create($userId, 'fake', 1_000_000, 'USD', 5);
+Billing::markPaid($plainOrder, 'ext_plain');
+check('a paid order of a plain gateway offers no gateway refund', Billing::refundableGateway(Orders::find($plainOrder->getId())) === null);
+
+$balance = Wallet::balance($userId);
+$order   = Orders::create($userId, 'refundy', 1_000_000, 'USD', 70);
+check('a pending order offers none', Billing::refundableGateway($order) === null);
+Billing::markPaid($order, 'ext_r1');
+check('a paid order of a refundable gateway offers one', Billing::refundableGateway(Orders::find($order->getId())) === $refundy);
+
+$result = Billing::refundThroughGateway($order);
+pin('a refunded answer is accepted', CallbackResult::OUTCOME_REFUNDED, $result->getOutcome());
+pin('the order is refunded', Order::STATUS_REFUNDED, $orderStatus($order));
+pin('the credits are taken back', $balance, Wallet::balance($userId));
+
+/* $order is the stale pending copy; the order is read again, so the press is refused. */
+$calls  = $refundy->calls;
+$result = Billing::refundThroughGateway($order);
+pin('a second press is refused', CallbackResult::OUTCOME_IGNORED, $result->getOutcome());
+pin('a second press does not ask the provider', $calls, $refundy->calls);
+pin('a second press takes nothing further', $balance, Wallet::balance($userId));
+
+$paidRefundy = static function (int $credits = 5) use ($userId): Order {
+    $o = Orders::create($userId, 'refundy', 1_000_000, 'USD', $credits);
+    Billing::markPaid($o, 'ext_' . bin2hex(random_bytes(4)));
+
+    return Orders::find($o->getId());
+};
+
+$refused = $paidRefundy(30);
+$balance = Wallet::balance($userId);
+
+$refundy->onRefund = static fn (Order $o): CallbackResult => CallbackResult::ignored('card expired');
+$result = Billing::refundThroughGateway($refused);
+pin('an ignored answer is passed back', CallbackResult::OUTCOME_IGNORED, $result->getOutcome());
+pin('with the provider\'s reason', 'card expired', $result->getMessage());
+pin('an ignored answer leaves the order paid', Order::STATUS_PAID, $orderStatus($refused));
+pin('an ignored answer takes no credits', $balance, Wallet::balance($userId));
+pin('an ignored answer leaves no sent mark', null, Orders::find($refused->getId())->meta(Orders::REFUND_REQUESTED));
+check('so the button stays', Billing::refundableGateway(Orders::find($refused->getId())) === $refundy);
+$calls = $refundy->calls;
+Billing::refundThroughGateway($refused);
+pin('and the admin can try again', $calls + 1, $refundy->calls);
+
+$mismatched = $paidRefundy();
+$balance    = Wallet::balance($userId);
+$refundy->onRefund = static fn (Order $o): CallbackResult => CallbackResult::refunded($o->getId() + 1000);
+$result = Billing::refundThroughGateway($mismatched);
+pin('a refund for another order id is refused', CallbackResult::OUTCOME_IGNORED, $result->getOutcome());
+pin('the order stays paid after a mismatched answer', Order::STATUS_PAID, $orderStatus($mismatched));
+pin('a mismatched answer takes no credits', $balance, Wallet::balance($userId));
+
+$wrongOutcome = $paidRefundy();
+$refundy->onRefund = static fn (Order $o): CallbackResult => CallbackResult::paid($o->getId());
+pin('an answer that is not a refund is refused', CallbackResult::OUTCOME_IGNORED, Billing::refundThroughGateway($wrongOutcome)->getOutcome());
+pin('the order stays paid after a wrong outcome', Order::STATUS_PAID, $orderStatus($wrongOutcome));
+
+$withMeta = Orders::create($userId, 'refundy', 1_000_000, 'USD', 1, array('session' => 'cs_keep'));
+Billing::markPaid($withMeta, 'ext_meta');
+check('the sent mark can be set', Orders::markRefundRequested($withMeta->getId()));
+pin('the plugin\'s own meta is kept', 'cs_keep', Orders::find($withMeta->getId())->meta('session'));
+check('and cleared', Orders::markRefundRequested($withMeta->getId(), false));
+pin('clearing keeps the plugin\'s meta', array('session' => 'cs_keep'), Orders::find($withMeta->getId())->getMeta());
+check('a pending order cannot be marked', !Orders::markRefundRequested(Orders::create($userId, 'refundy', 1, 'USD', 1)->getId()));
+
+$threw   = $paidRefundy();
+$balance = Wallet::balance($userId);
+$refundy->onRefund = static function (Order $o): CallbackResult {
+    throw new RuntimeException('provider down');
+};
+$logged = ini_get('error_log');
+ini_set('error_log', tempnam(sys_get_temp_dir(), 'billing-refund'));
+$result = Billing::refundThroughGateway($threw);
+$errorLog = (string) file_get_contents(ini_get('error_log'));
+@unlink(ini_get('error_log'));
+ini_set('error_log', (string) $logged);
+pin('a throwing gateway is caught', CallbackResult::OUTCOME_IGNORED, $result->getOutcome());
+check('the exception class is logged', strpos($errorLog, 'RuntimeException') !== false);
+check('the exception text is not logged', strpos($errorLog, 'provider down') === false);
+check('the provider\'s exception text is not shown', strpos($result->getMessage(), 'provider down') === false);
+pin('a throwing gateway leaves the order paid', Order::STATUS_PAID, $orderStatus($threw));
+pin('a throwing gateway takes no credits', $balance, Wallet::balance($userId));
+
+/* The provider may have taken the refund before it threw: no second call. */
+check('after a throw the order is marked as sent', Orders::find($threw->getId())->meta(Orders::REFUND_REQUESTED) !== null);
+pin('the button is gone', null, Billing::refundableGateway(Orders::find($threw->getId())));
+$refundy->onRefund = null;
+$calls  = $refundy->calls;
+$result = Billing::refundThroughGateway($threw);
+pin('a second press after a throw is refused', CallbackResult::OUTCOME_IGNORED, $result->getOutcome());
+pin('a second press after a throw does not call the provider', $calls, $refundy->calls);
+check('Record a refund still works', Billing::refund(Orders::find($threw->getId())));
+pin('and takes the credits back', $balance - 5, Wallet::balance($userId));
+
+pin('a gateway that cannot refund is refused', CallbackResult::OUTCOME_IGNORED, Billing::refundThroughGateway($plainOrder)->getOutcome());
+pin('that order stays paid', Order::STATUS_PAID, $orderStatus($plainOrder));
+
+$refundy->onRefund = null;
+$calls   = $refundy->calls;
+$pending = Orders::create($userId, 'refundy', 1_000_000, 'USD', 5);
+pin('a pending order is refused', CallbackResult::OUTCOME_IGNORED, Billing::refundThroughGateway($pending)->getOutcome());
+pin('the provider is not asked for a pending order', $calls, $refundy->calls);
+pin('the pending order is unchanged', Order::STATUS_PENDING, $orderStatus($pending));
+
+/* A second request holding the order's lock: refused without asking the provider. */
+$refundy->onRefund = null;
+$locked = Orders::create($userId, 'refundy', 1_000_000, 'USD', 5);
+Billing::markPaid($locked, 'ext_lock');
+$admin->query("SELECT GET_LOCK('" . Billing::refundLockName($locked->getId()) . "', 0)");
+$calls  = $refundy->calls;
+$result = Billing::refundThroughGateway($locked);
+$admin->query("SELECT RELEASE_LOCK('" . Billing::refundLockName($locked->getId()) . "')");
+pin('a refund already running is refused', CallbackResult::OUTCOME_IGNORED, $result->getOutcome());
+pin('with that reason', 'A refund for this order is already running', $result->getMessage());
+pin('the provider is not asked while another refund runs', $calls, $refundy->calls);
+pin('the locked order stays paid', Order::STATUS_PAID, $orderStatus($locked));
+pin('the lock is released afterwards', CallbackResult::OUTCOME_REFUNDED, Billing::refundThroughGateway($locked)->getOutcome());
+
+/* A deleted order is refused, not a fatal. */
+$gone = Orders::create($userId, 'refundy', 1_000_000, 'USD', 5);
+Billing::markPaid($gone, 'ext_gone');
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . 't_billing_order WHERE pk_i_id = ' . $gone->getId());
+pin('an order that no longer exists is refused', CallbackResult::OUTCOME_IGNORED, Billing::refundThroughGateway($gone)->getOutcome());
+
+/* The provider accepts, but another request (a refund webhook) records it first. */
+$raced = Orders::create($userId, 'refundy', 1_000_000, 'USD', 20);
+Billing::markPaid($raced, 'ext_race');
+$balance = Wallet::balance($userId);
+$refundy->onRefund = static function (Order $o): CallbackResult {
+    Billing::refund(Orders::find($o->getId()));
+
+    return CallbackResult::refunded($o->getId(), 're_race');
+};
+$accepted = null;
+$result   = Billing::refundThroughGateway($raced, $accepted);
+pin('a refund recorded by another request is not reported as success', CallbackResult::OUTCOME_IGNORED, $result->getOutcome());
+check('but the provider accepted it', $accepted === true);
+pin('the order is refunded', Order::STATUS_REFUNDED, $orderStatus($raced));
+pin('the credits are reversed once', $balance - 20, Wallet::balance($userId));
+
+/* The provider accepts, but the write fails: nothing is recorded and the admin is told. */
+$unrecorded = Orders::create($userId, 'refundy', 1_000_000, 'USD', 20);
+Billing::markPaid($unrecorded, 'ext_unrec');
+$balance = Wallet::balance($userId);
+$ledger  = DB_TABLE_PREFIX . 't_billing_ledger';
+$refundy->onRefund = static function (Order $o) use ($admin, $ledger): CallbackResult {
+    $admin->query("RENAME TABLE $ledger TO {$ledger}_away");
+
+    return CallbackResult::refunded($o->getId(), 're_unrec');
+};
+$accepted = null;
+ini_set('error_log', tempnam(sys_get_temp_dir(), 'billing-refund'));
+$result   = Billing::refundThroughGateway($unrecorded, $accepted);
+$errorLog = (string) file_get_contents(ini_get('error_log'));
+@unlink(ini_get('error_log'));
+ini_set('error_log', (string) $logged);
+$admin->query("RENAME TABLE {$ledger}_away TO $ledger");
+pin('a failed write is not reported as success', CallbackResult::OUTCOME_IGNORED, $result->getOutcome());
+check('the provider accepted it', $accepted === true);
+check('the admin is told to record it', strpos($result->getMessage(), 'Record a refund') !== false);
+check('the provider reference is logged', strpos($errorLog, 're_unrec') !== false);
+pin('the order stays paid', Order::STATUS_PAID, $orderStatus($unrecorded));
+pin('no credits are taken', $balance, Wallet::balance($userId));
+$refundy->onRefund = null;
+$calls = $refundy->calls;
+pin('a second press after a failed write is refused', CallbackResult::OUTCOME_IGNORED, Billing::refundThroughGateway($unrecorded)->getOutcome());
+pin('a second press after a failed write does not call the provider', $calls, $refundy->calls);
+pin('the button is gone after a failed write', null, Billing::refundableGateway(Orders::find($unrecorded->getId())));
+
+/* A paid copy of an order that is in fact pending is still refused. */
+$stale = Orders::create($userId, 'refundy', 1_000_000, 'USD', 5);
+Billing::markPaid($stale, 'ext_r4');
+$stalePaid = Orders::find($stale->getId());
+Billing::refund($stalePaid);
+$balance = Wallet::balance($userId);
+pin('a stale paid copy of a refunded order is refused', CallbackResult::OUTCOME_IGNORED, Billing::refundThroughGateway($stalePaid)->getOutcome());
+pin('and takes nothing', $balance, Wallet::balance($userId));
+
+/* ----------------------------------------------------------------------------
+ * Orders::attachRef() and a checkout that throws.
+ * ------------------------------------------------------------------------- */
+harness_section('Orders: attachRef');
+
+$attach = Orders::create($userId, 'refundy', 1_000_000, 'USD', 5);
+check('a pending order takes a ref', Orders::attachRef($attach->getId(), 'refundy', 'cs_test_123'));
+pin('the ref is stored', 'cs_test_123', Orders::find($attach->getId())->getExternalRef());
+pin('the order stays pending', Order::STATUS_PENDING, Orders::find($attach->getId())->getStatus());
+pin('a callback finds the order by it', $attach->getId(), Orders::findByGatewayRef('refundy', 'cs_test_123')->getId());
+check('another gateway cannot attach a ref', !Orders::attachRef($attach->getId(), 'fake', 'cs_other'));
+check('a re-checkout replaces the ref', Orders::attachRef($attach->getId(), 'refundy', 'cs_test_456') && Orders::attachRef($attach->getId(), 'refundy', 'cs_test_123'));
+check('a ref with a space is refused', !Orders::attachRef($attach->getId(), 'refundy', 'cs test'));
+check('an empty ref is refused', !Orders::attachRef($attach->getId(), 'refundy', ''));
+check('a ref over 191 characters is refused', !Orders::attachRef($attach->getId(), 'refundy', str_repeat('a', 192)));
+
+$twin = Orders::create($userId, 'refundy', 1_000_000, 'USD', 5);
+check('another order\'s ref is refused', !Orders::attachRef($twin->getId(), 'refundy', 'cs_test_123'));
+
+check('settle still stores the paid ref', Billing::markPaid(Orders::find($attach->getId()), 'pi_paid_123'));
+pin('the paid ref replaces the session ref', 'pi_paid_123', Orders::find($attach->getId())->getExternalRef());
+check('a paid order takes no ref', !Orders::attachRef($attach->getId(), 'refundy', 'cs_later'));
+pin('the paid ref is kept', 'pi_paid_123', Orders::find($attach->getId())->getExternalRef());
+
+Orders::settle($twin->getId(), Order::STATUS_FAILED);
+check('a failed order takes no ref', !Orders::attachRef($twin->getId(), 'refundy', 'cs_failed'));
+
+harness_section('Billing: checkout that throws');
+
+$thrower = new FakeRefundGateway('thrower');
+$thrower->throwOnCheckout = true;
+PaymentGatewayRegistry::instance()->register($thrower);
+$broken = Orders::create($userId, 'thrower', 1_000_000, 'USD', 5);
+$logged = ini_get('error_log');
+ini_set('error_log', tempnam(sys_get_temp_dir(), 'billing-checkout'));
+$intent   = Billing::checkout($broken);
+$errorLog = (string) file_get_contents(ini_get('error_log'));
+@unlink(ini_get('error_log'));
+ini_set('error_log', (string) $logged);
+pin('a throwing checkout reads as unavailable', null, $intent);
+check('the class and code are logged', strpos($errorLog, 'RuntimeException (code 42)') !== false);
+check('the message is not logged', strpos($errorLog, 'secret detail') === false);
+pin('the order stays pending', Order::STATUS_PENDING, Orders::find($broken->getId())->getStatus());
+
+harness_section('Orders: setMeta');
+
+$metaOrder = Orders::create($userId, 'refundy', 1_000_000, 'USD', 1, array('session' => 'cs_1'));
+$metaOf    = static fn (): array => Orders::find($metaOrder->getId())->getMeta();
+check('a value is set', Orders::setMeta($metaOrder->getId(), 'stripe_livemode', false));
+pin('it reads back typed, other keys kept', array('session' => 'cs_1', 'stripe_livemode' => false), $metaOf());
+check('a value is overwritten', Orders::setMeta($metaOrder->getId(), 'stripe_livemode', true));
+pin('the new value reads back', true, Orders::find($metaOrder->getId())->meta('stripe_livemode'));
+check('setting the same value again reports success', Orders::setMeta($metaOrder->getId(), 'stripe_livemode', true));
+check('null removes the key', Orders::setMeta($metaOrder->getId(), 'stripe_livemode', null));
+pin('only the other key is left', array('session' => 'cs_1'), $metaOf());
+check('a reserved key is refused', !Orders::setMeta($metaOrder->getId(), Orders::REFUND_REQUESTED, 'x'));
+check('any key starting with _ is refused', !Orders::setMeta($metaOrder->getId(), '_mine', 1));
+check('an upper-case key is refused', !Orders::setMeta($metaOrder->getId(), 'Mode', 1));
+check('a key over 64 characters is refused', !Orders::setMeta($metaOrder->getId(), str_repeat('k', 65), 1));
+check('an array value is refused', !Orders::setMeta($metaOrder->getId(), 'list', array(1)));
+check('a string over 255 characters is refused', !Orders::setMeta($metaOrder->getId(), 'long', str_repeat('x', 256)));
+check('a missing order is refused', !Orders::setMeta(999999, 'k', 1));
+pin('nothing refused was written', array('session' => 'cs_1'), $metaOf());
+
+$markedOrder = Orders::create($userId, 'refundy', 1_000_000, 'USD', 1);
+Billing::markPaid($markedOrder, 'ext_marked');
+Orders::markRefundRequested($markedOrder->getId());
+$mark = Orders::find($markedOrder->getId())->meta(Orders::REFUND_REQUESTED);
+check('a plugin key can sit beside the sent mark', Orders::setMeta($markedOrder->getId(), 'stripe_livemode', false));
+pin('the sent mark is untouched', $mark, Orders::find($markedOrder->getId())->meta(Orders::REFUND_REQUESTED));
+check('removing a plugin key keeps the sent mark', Orders::setMeta($markedOrder->getId(), 'stripe_livemode', null)
+    && Orders::find($markedOrder->getId())->meta(Orders::REFUND_REQUESTED) === $mark);
+
+harness_section('Billing: dashboardUrl');
+
+$linked = Orders::create($userId, 'refundy', 1_000_000, 'USD', 1);
+pin('no link when the gateway gives none', null, Billing::dashboardUrl($linked));
+$linkTo = static function (?string $url) use ($refundy, $linked): ?string {
+    $refundy->onDashboard = static fn (Order $o): ?string => $url;
+
+    return Billing::dashboardUrl($linked);
+};
+pin('an https link is kept', 'https://dashboard.example.test/p/1?x=1', $linkTo('https://dashboard.example.test/p/1?x=1'));
+pin('upper-case HTTPS is kept', 'HTTPS://dashboard.example.test/', $linkTo('HTTPS://dashboard.example.test/'));
+pin('http is refused', null, $linkTo('http://dashboard.example.test/'));
+pin('javascript: is refused', null, $linkTo('javascript:alert(1)'));
+pin('a relative link is refused', null, $linkTo('/p/1'));
+pin('a scheme-relative link is refused', null, $linkTo('//dashboard.example.test/'));
+pin('https without a host is refused', null, $linkTo('https:///p/1'));
+pin('a link with a space is refused', null, $linkTo('https://dashboard.example.test/a b'));
+pin('a link with a newline is refused', null, $linkTo("https://dashboard.example.test/\n"));
+$refundy->onDashboard = static function (Order $o): ?string {
+    throw new RuntimeException('secret detail', 7);
+};
+$logged = ini_get('error_log');
+ini_set('error_log', tempnam(sys_get_temp_dir(), 'billing-dashboard'));
+$link     = Billing::dashboardUrl($linked);
+$errorLog = (string) file_get_contents(ini_get('error_log'));
+@unlink(ini_get('error_log'));
+ini_set('error_log', (string) $logged);
+pin('a throwing gateway gives no link', null, $link);
+check('the class and code are logged', strpos($errorLog, 'RuntimeException (code 7)') !== false);
+check('the message is not logged', strpos($errorLog, 'secret detail') === false);
+$refundy->onDashboard = null;
+pin('a gateway without the interface gives no link', null, Billing::dashboardUrl(Orders::create($userId, 'fake', 1, 'USD', 1)));
 
 /* ----------------------------------------------------------------------------
  * Reopening a failed order. Orders::settle()/Billing::markPaid() are guarded on
@@ -679,7 +1067,9 @@ date_default_timezone_set('America/New_York');
 // raw seconds span one hour less of wall-clock offset than 30 calendar days
 // actually cover once the clocks spring forward partway through.
 $addDays = new ReflectionMethod(Entitlements::class, 'addDays');
-$addDays->setAccessible(true);
+if (PHP_VERSION_ID < 80100) {
+    $addDays->setAccessible(true);
+}
 pin(
     'Entitlements::addDays() preserves wall-clock time across a DST boundary',
     '2024-03-10 10:00:00',
@@ -687,7 +1077,9 @@ pin(
 );
 
 $nextExpiration = new ReflectionMethod(ItemUpgrades::class, 'nextExpiration');
-$nextExpiration->setAccessible(true);
+if (PHP_VERSION_ID < 80100) {
+    $nextExpiration->setAccessible(true);
+}
 pin(
     'ItemUpgrades::nextExpiration() days offset preserves wall-clock time across the same boundary',
     '2024-03-10 10:00:00',
@@ -1016,10 +1408,10 @@ check(
 
 /* ----------------------------------------------------------------------------
  * osc_prime_item_upgrades(): the public helper. Accepts item rows and bare ids
- * in the same call, since a theme has whichever is already to hand, and must
- * cost a site with billing switched off nothing at all.
+ * in the same call, since a theme has whichever is already to hand. It primes with
+ * billing off too, since themes read upgrades on every card either way.
  * ------------------------------------------------------------------------- */
-harness_section('osc_prime_item_upgrades(): rows or ids, no-op while billing is off');
+harness_section('osc_prime_item_upgrades(): rows or ids, billing on or off');
 
 $helperItemId  = seed_item($admin, $categoryId, $primeUserId, 'Helper primed by id');
 $helperItemId2 = seed_item($admin, $categoryId, $primeUserId, 'Helper primed by row');
@@ -1034,8 +1426,8 @@ $admin->query(
     . $helperItemId
 );
 check(
-    'osc_prime_item_upgrades() is a no-op while billing is off -- the delete is visible, nothing was cached',
-    ItemUpgrades::has($helperItemId, 'test.helper') === false
+    'osc_prime_item_upgrades() primes while billing is off too -- it read the cache, not the table',
+    ItemUpgrades::has($helperItemId, 'test.helper') === true
 );
 ItemUpgrades::grant($helperItemId, 'test.helper', 10, null); // restore for the next check
 
@@ -1064,7 +1456,7 @@ osc_reset_preferences();
 // all reused by more than one section from here on.
 
 // ItemActions::add() reaches sanitisation, validation and Item::updateExpirationDate()
-// (-> osc_isExpired()) -- none of hValidate.php/hSanitize.php/hSecurity.php/utils.php
+// -- none of hValidate.php/hSanitize.php/hSecurity.php
 // is pulled in by the requires above, unlike tests/models/item.php's stand-ins, because
 // nothing else in this file needed them until now.
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hValidate.php';
@@ -1073,7 +1465,6 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hSecurity.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hLocale.php'; // Category::__construct() -> osc_current_user_locale()
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hCache.php';  // Category::__construct() -> toTree() -> the category cache
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hUsers.php';  // Log::insertLog() -> osc_logged_user_id()
-require_once ABS_PATH . 'oc-includes/osclass/utils.php';
 
 // osc_validate_category() requires a non-root category (or osc_selectable_parent_categories()),
 // so the fixture needs a parent, unlike $categoryId above.
@@ -1317,6 +1708,133 @@ osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
 osc_reset_preferences();
 
 /* ----------------------------------------------------------------------------
+ * ItemActions::add(): custom field values handed over with the data are saved.
+ * An importer has no form post, so 'meta' in the data stands in for the posted one.
+ * ------------------------------------------------------------------------- */
+harness_section('ItemActions::add(): custom field values from the data');
+
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hFields.php'; // handleMetaField() -> osc_field_type()
+
+$metaFieldId = seed_exec(
+    $admin,
+    'INSERT INTO ' . DB_TABLE_PREFIX . "t_meta_fields (s_name, e_type, b_required, b_searchable, s_slug, i_position, s_meta)
+     VALUES ('Colour', 'TEXT', 0, 0, 'colour', 0, '')",
+    '',
+    array()
+);
+seed_exec(
+    $admin,
+    'INSERT INTO ' . DB_TABLE_PREFIX . 't_meta_categories (fk_i_category_id, fk_i_field_id) VALUES (?, ?)',
+    'ii',
+    array($chokeCat, $metaFieldId)
+);
+
+$metaUser             = seed_user($admin, 'metadata', 'metadata@example.test');
+$metaAction           = new ItemActions(true);
+$metaAction->data     = $makeChokeItemData($metaUser, $chokeCat, 'Custom field from the data');
+$metaAction->data['meta'] = array($metaFieldId => 'Blue');
+Params::setParam('meta', null);
+$captureWarnings();
+$metaAction->add();
+restore_error_handler();
+
+$metaItemId = (int)$admin->query(
+    'SELECT MAX(pk_i_id) FROM ' . DB_TABLE_PREFIX . 't_item WHERE fk_i_user_id = ' . (int)$metaUser
+)->fetch_row()[0];
+$metaRow = $admin->query(
+    'SELECT s_value FROM ' . DB_TABLE_PREFIX . 't_item_meta WHERE fk_i_item_id = ' . $metaItemId
+    . ' AND fk_i_field_id = ' . (int)$metaFieldId
+)->fetch_row();
+check('the listing was created', $metaItemId > 0);
+pin('the custom field value in the data is saved', 'Blue', $metaRow[0] ?? null);
+
+/* ----------------------------------------------------------------------------
+ * ItemActions for an importer: asImport() is admin mode that still applies the
+ * listing limit and moderation, an admin edit needs no secret, and
+ * prepareDataFrom() reads plain data with ownerId naming the account.
+ * ------------------------------------------------------------------------- */
+harness_section('ItemActions: import mode, admin edit, data in');
+
+$itemCol = static function (int $id, string $col) use ($admin) {
+    $row = $admin->query('SELECT ' . $col . ' FROM ' . DB_TABLE_PREFIX . 't_item WHERE pk_i_id = ' . $id)->fetch_row();
+
+    return $row[0] ?? null;
+};
+$lastItem = static function (int $userId) use ($admin): int {
+    return (int)$admin->query('SELECT MAX(pk_i_id) FROM ' . DB_TABLE_PREFIX . 't_item WHERE fk_i_user_id = ' . $userId)->fetch_row()[0];
+};
+
+osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');
+osc_set_preference('billing_free_live_listings', '1', 'osclass', 'INTEGER');
+osc_reset_preferences();
+$fullUser = seed_user($admin, 'importfull', 'importfull@example.test');
+
+$captureWarnings();
+$plain       = new ItemActions(true);
+$plain->data = $makeChokeItemData($fullUser, $chokeCat, 'Admin post over the limit');
+$plainResult = $plain->add();
+$import       = (new ItemActions(true))->asImport();
+$import->data = $makeChokeItemData($fullUser, $chokeCat, 'Import over the limit');
+$importResult = $import->add();
+restore_error_handler();
+pin('a plain admin post is not metered, and takes the one slot', 2, $plainResult);
+check('an import is held to the owner\'s listing limit', is_string($importResult) && $importResult !== '');
+
+osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
+osc_set_preference('moderate_admin_post', '1', 'osclass', 'BOOLEAN');
+osc_reset_preferences();
+$modUser = seed_user($admin, 'importmod', 'importmod@example.test');
+$captureWarnings();
+$import       = (new ItemActions(true))->asImport();
+$import->data = $makeChokeItemData($modUser, $chokeCat, 'Import under moderation');
+$import->add();
+$modItem      = $lastItem($modUser);
+$plain        = new ItemActions(true);
+$plain->data  = $makeChokeItemData($modUser, $chokeCat, 'Admin post under moderation');
+$plain->add();
+$plainItem    = $lastItem($modUser);
+restore_error_handler();
+pin('an import waits for moderation', '0', $itemCol($modItem, 'b_enabled'));
+pin('a plain admin post does not', '1', $itemCol($plainItem, 'b_enabled'));
+osc_set_preference('moderate_admin_post', '0', 'osclass', 'BOOLEAN');
+osc_reset_preferences();
+
+$captureWarnings();
+$edit = new ItemActions(true);
+Params::withRequest(array(), static function () use ($edit, $plainItem, $chokeCat) {
+    $edit->prepareDataFrom(array(
+        'id'           => $plainItem,
+        'title'        => array('en_US' => 'Edited from data'),
+        'description'  => array('en_US' => 'Edited from data, with a description long enough.'),
+        'catId'        => $chokeCat,
+        'price'        => '99',
+        'contactEmail' => 'importmod@example.test',
+    ), false);
+});
+$edit->edit();
+restore_error_handler();
+pin('an admin edit from plain data saves without the secret', '99000000', $itemCol($plainItem, 'i_price'));
+
+$seen = Params::withRequest(array(), static function () use ($modUser, $chokeCat) {
+    $in = new ItemActions(true);
+    $in->prepareDataFrom(array(
+        'title'        => array('en_US' => 'From data'),
+        'catId'        => $chokeCat,
+        'contactEmail' => 'someone@example.test',
+        'ownerId'      => $modUser,
+        'photos'       => array('/tmp/a.jpg', 42),
+        'meta'         => array(7 => 'Red'),
+    ), true);
+
+    return array($in->data['title'], (int)$in->data['userId'], $in->data['photos']['tmp_name'], $in->data['meta'], Params::getParam('title'));
+});
+pin('prepareDataFrom reads the plain values', array('en_US' => 'From data'), $seen[0]);
+pin('ownerId names the account, whatever the contact e-mail', $modUser, $seen[1]);
+pin('photos are local paths, and nothing else', array('/tmp/a.jpg'), $seen[2]);
+pin('meta comes with the data', array(7 => 'Red'), $seen[3]);
+pin('and the request is left as it was', '', $seen[4]);
+
+/* ----------------------------------------------------------------------------
  * Bump: the cooldown IS the item.bump row's own expiry, not a second concept.
  * Billing::spend('item.bump') has to move dt_pub_date and debit together, and
  * a failed apply -- an item that does not exist -- has to roll both back.
@@ -1438,8 +1956,122 @@ pin(
     $bumpHookFired
 );
 
+/* A free bump is not a way past the listing limit; a paid one is. */
+harness_section('Billing: free bumps respect the listing limit');
+
+$overUser  = seed_user($admin, 'overlimit', 'overlimit@example.test');
+$overItems = array();
+for ($i = 0; $i < 3; $i++) {
+    $overItems[] = seed_item($admin, $categoryId, $overUser, 'Over limit ' . $i);
+}
+// Back-dated so a bump has a date to move.
+$admin->query('UPDATE ' . DB_TABLE_PREFIX . 't_item SET dt_pub_date = DATE_SUB(NOW(), INTERVAL 2 DAY)'
+    . ' WHERE fk_i_user_id = ' . $overUser);
+$overItem = static function (int $n) use ($admin, $overItems): array {
+    return $admin->query('SELECT * FROM ' . DB_TABLE_PREFIX . 't_item WHERE pk_i_id = ' . $overItems[$n])->fetch_assoc();
+};
+$offerIds = static function (array $item): array {
+    return array_column(osc_item_upgrade_offers($item), 'feature');
+};
+$freeBump = static function (int $userId, int $itemId): bool {
+    return Billing::spend($userId, 'item.bump', array('itemId' => $itemId, 'ref_type' => 'item', 'ref_id' => $itemId));
+};
+\Session::newInstance()->_setEphemeral('userId', $overUser);
+
+osc_set_preference('billing_bump_credits', '0', 'osclass', 'INTEGER');
+osc_set_preference('billing_free_live_listings', '3', 'osclass', 'INTEGER');
+osc_reset_preferences();
+osc_billing_bump_paused_reset();
+check('at the limit (3 of 3) a free bump is allowed', Entitlements::withinFreeCeiling($overUser) && !osc_billing_bump_paused($overUser));
+check('and offered', osc_item_can_bump($overItem(0)) && in_array('item.bump', $offerIds($overItem(0)), true));
+check('and the spend goes through', $freeBump($overUser, $overItems[0]));
+
+osc_set_preference('billing_free_live_listings', '2', 'osclass', 'INTEGER');
+osc_reset_preferences();
+osc_billing_bump_paused_reset();
+check('over the limit (3 of 2) free bumps are paused', osc_billing_bump_paused($overUser));
+check('can_bump says no', !osc_item_can_bump($overItem(1)));
+check('the Bump offer is gone', !in_array('item.bump', $offerIds($overItem(1)), true));
+check('the other offers stay', $offerIds($overItem(1)) === array_values(array_diff($offerIds($overItem(1)), array('item.bump'))));
+$pubBefore = $pubDateOf($overItems[1]);
+check('a crafted spend is refused', !$freeBump($overUser, $overItems[1]));
+pin('and the listing does not move', $pubBefore, $pubDateOf($overItems[1]));
+check('the seller is told why', strpos(osc_billing_bump_paused_message($overUser), '3') !== false
+    && strpos(osc_billing_bump_paused_message($overUser), '2') !== false);
+
+Entitlements::grant($overUser, 'listing.slot', 1, null);
+osc_billing_bump_paused_reset();
+check('a bought listing slot raises the limit, so free bumps come back', !osc_billing_bump_paused($overUser)
+    && osc_item_can_bump($overItem(1)));
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . "t_user_entitlement WHERE fk_i_user_id = " . $overUser);
+osc_billing_bump_paused_reset();
+
+osc_set_preference('billing_free_live_listings', '0', 'osclass', 'INTEGER');
+osc_reset_preferences();
+osc_billing_bump_paused_reset();
+check('a limit of 0 means unlimited: no pause', !osc_billing_bump_paused($overUser) && osc_item_can_bump($overItem(1)));
+
+osc_set_preference('billing_free_live_listings', '2', 'osclass', 'INTEGER');
+osc_set_preference('billing_bump_credits', '5', 'osclass', 'INTEGER');
+osc_reset_preferences();
+osc_billing_bump_paused_reset();
+Wallet::credit($overUser, 20, Wallet::REASON_GRANT);
+check('a paid bump over the limit is not paused', !osc_billing_bump_paused($overUser));
+check('and is offered', in_array('item.bump', $offerIds($overItem(2)), true));
+check('and the spend goes through', $freeBump($overUser, $overItems[2]));
+pin('for its price', 15, Wallet::balance($overUser));
+check('another user is never paused by this one', !osc_billing_bump_paused($bumpUserId));
+
+/* The display check is remembered per user; the bump itself always looks again. */
+osc_set_preference('billing_bump_credits', '0', 'osclass', 'INTEGER');
+osc_reset_preferences();
+osc_billing_bump_paused_reset();
+check('over the limit the display check says paused', osc_billing_bump_paused($overUser));
+osc_set_preference('billing_free_live_listings', '0', 'osclass', 'INTEGER');
+osc_reset_preferences();
+check('the remembered answer stays for the page', osc_billing_bump_paused($overUser));
+check('a fresh check sees the change', !osc_billing_bump_paused($overUser, true));
+osc_billing_bump_paused_reset();
+check('with no limit the display check says not paused', !osc_billing_bump_paused($overUser));
+osc_set_preference('billing_free_live_listings', '2', 'osclass', 'INTEGER');
+osc_reset_preferences();
+check('the display check keeps that answer', !osc_billing_bump_paused($overUser));
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . 't_item_upgrade WHERE fk_i_item_id = ' . $overItems[2]);
+$admin->query('UPDATE ' . DB_TABLE_PREFIX . 't_item SET dt_pub_date = DATE_SUB(NOW(), INTERVAL 2 DAY) WHERE pk_i_id = ' . $overItems[2]);
+check('but the bump itself looks again and refuses', !$freeBump($overUser, $overItems[2]));
+osc_billing_bump_paused_reset();
+
+$manyUser  = seed_user($admin, 'manylistings', 'many@example.test');
+$manyItems = array();
+for ($i = 0; $i < 8; $i++) {
+    $manyItems[] = $admin->query('SELECT * FROM ' . DB_TABLE_PREFIX . 't_item WHERE pk_i_id = '
+        . seed_item($admin, $categoryId, $manyUser, 'Many ' . $i))->fetch_assoc();
+}
+\Session::newInstance()->_setEphemeral('userId', $manyUser);
+harness_assert_no_n_plus_1(
+    'drawing the offers for N listings costs the same queries for any N',
+    static function (int $n) use ($manyItems) {
+        osc_billing_bump_paused_reset();
+        $rows = array_slice($manyItems, 0, $n);
+        osc_prime_item_upgrades($rows);
+        foreach ($rows as $row) {
+            osc_item_upgrade_offers($row);
+        }
+        osc_billing_bump_paused_message();
+    },
+    1,
+    8
+);
+
+\Session::newInstance()->_setEphemeral('userId', 0);
+osc_set_preference('billing_free_live_listings', '0', 'osclass', 'INTEGER');
+osc_set_preference('billing_bump_credits', '5', 'osclass', 'INTEGER');
+osc_reset_preferences();
+osc_billing_bump_paused_reset();
+
 osc_set_preference('billing_bump_enabled', '0', 'osclass', 'BOOLEAN');
 osc_reset_preferences();
+osc_billing_bump_paused_reset();
 
 /* ----------------------------------------------------------------------------
  * CWebBilling::decideUpgrade(): the rest of the route-level decision -- a
@@ -1822,6 +2454,283 @@ pin(
 osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
 osc_reset_preferences();
 pin('billing off -> neither link, whatever is on sale', array(), $menuClasses());
+
+/* ----------------------------------------------------------------------------
+ * Premium and the category counts. An expired listing counts only while premium,
+ * the same rule the daily recount uses, so switching premium must move the count.
+ * ------------------------------------------------------------------------- */
+harness_section('Premium: category counts follow the switch');
+
+$countRoot  = seed_category($admin, 'Count root');
+$countChild = seed_category($admin, 'Count child', $countRoot);
+$catCount   = static function (int $catId) use ($admin): int {
+    $row = $admin->query(
+        'SELECT i_num_items FROM ' . DB_TABLE_PREFIX . 't_category_stats WHERE fk_i_category_id = ' . $catId
+    )->fetch_assoc();
+
+    return (int) ($row['i_num_items'] ?? 0);
+};
+
+$lapsed = seed_item($admin, $countChild, $userId, 'Lapsed listing');
+$admin->query('UPDATE ' . DB_TABLE_PREFIX . 't_item SET dt_expiration = DATE_SUB(NOW(), INTERVAL 1 DAY) WHERE pk_i_id = ' . $lapsed);
+$live = seed_item($admin, $countChild, $userId, 'Live listing');
+\mindstellar\utility\Utils::updateCategoryStatsById($countChild);
+pin('only the unexpired listing counts to start', 1, $catCount($countChild));
+
+$actions = new ItemActions(true);
+$actions->premium($lapsed, true);
+pin('premium on an expired listing adds it', 2, $catCount($countChild));
+pin('the parent follows', 2, $catCount($countRoot));
+
+$actions->premium($lapsed, false);
+pin('premium off an expired listing takes it away', 1, $catCount($countChild));
+
+$actions->premium($live, true);
+pin('premium on an unexpired listing changes nothing', 1, $catCount($countChild));
+$actions->premium($live, false);
+pin('premium off an unexpired listing changes nothing', 1, $catCount($countChild));
+
+$actions->premium($lapsed, true);
+$actions->spam($lapsed, true);
+pin('spam takes an expired premium listing away', 1, $catCount($countChild));
+$actions->spam($lapsed, false);
+pin('unspam brings it back', 2, $catCount($countChild));
+
+$admin->query('UPDATE ' . DB_TABLE_PREFIX . 't_item SET b_spam = 1 WHERE pk_i_id = ' . $lapsed);
+\mindstellar\utility\Utils::updateCategoryStatsById($countChild);
+pin('a spam listing is not counted', 1, $catCount($countChild));
+$actions->spam($lapsed, false);
+pin('unspam counts an expired premium listing', 2, $catCount($countChild));
+
+Item::newInstance()->updateExpirationDate($lapsed, date('Y-m-d H:i:s', time() + 86400));
+pin('extending an expired premium listing does not count it twice', 2, $catCount($countChild));
+Item::newInstance()->updateExpirationDate($lapsed, date('Y-m-d H:i:s', time() - 86400));
+pin('expiring a premium listing keeps it counted', 2, $catCount($countChild));
+
+$admin->query(
+    'UPDATE ' . DB_TABLE_PREFIX . 't_item SET dt_premium_expiration = DATE_SUB(NOW(), INTERVAL 1 HOUR)'
+    . ' WHERE pk_i_id = ' . $lapsed
+);
+Premium::expire();
+pin('the sweep ending premium takes an expired listing away', 1, $catCount($countChild));
+pin('the parent follows the sweep', 1, $catCount($countRoot));
+
+/* ----------------------------------------------------------------------------
+ * Receipts: e-mailed once per paid order, retried from the job queue, and a page
+ * only the buyer or an admin can open.
+ * ------------------------------------------------------------------------- */
+harness_section('Receipts');
+
+// Defined before hJobs.php, whose own copy is guarded: a test can make the queue throw.
+if (!function_exists('osc_job_enqueue')) {
+    function osc_job_enqueue(string $type, array $payload = array(), array $options = array()): int
+    {
+        if (isset($GLOBALS['enqueueThrows'])) {
+            throw $GLOBALS['enqueueThrows'];
+        }
+
+        return \mindstellar\job\JobQueue::instance()->enqueue($type, $payload, $options);
+    }
+}
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hJobs.php';
+if (!function_exists('_osc_from_email_aux')) {
+    function _osc_from_email_aux()
+    {
+        return 'site@example.test';
+    }
+}
+foreach (array('osc_page_title' => 'Test site', 'osc_locale_dec_point' => '.', 'osc_locale_thousands_sep' => ',',
+    'osc_current_user_locale' => 'en_US') as $fn => $value) {
+    if (!function_exists($fn)) {
+        eval('function ' . $fn . '() { return ' . var_export($value, true) . '; }');
+    }
+}
+if (!function_exists('osc_format_date')) {
+    function osc_format_date($date, $format = null)
+    {
+        return substr((string) $date, 0, 10);
+    }
+}
+
+$mails = array();
+$mailWorks = true;
+Receipts::$mailer = static function (array $params) use (&$mails, &$mailWorks): bool {
+    if ($mailWorks) {
+        $mails[] = $params;
+    }
+
+    return $mailWorks;
+};
+$receiptJobs = static function (int $orderId) use ($admin): int {
+    return (int) $admin->query(
+        'SELECT COUNT(*) c FROM ' . DB_TABLE_PREFIX . "t_job_queue WHERE s_type = 'billing.receipt'"
+        . " AND s_unique = 'order:" . $orderId . "'"
+    )->fetch_assoc()['c'];
+};
+
+osc_set_preference(Receipts::PREF_EMAIL, '0', Billing::PREF_GROUP, 'BOOLEAN');
+osc_reset_preferences();
+$quiet = Orders::create($userId, 'refundy', 2_500_000, 'USD', 30);
+Billing::markPaid($quiet, 'ext_quiet');
+pin('with receipts off nothing is sent', 0, count($mails));
+pin('and nothing is queued', 0, $receiptJobs($quiet->getId()));
+
+osc_set_preference(Receipts::PREF_EMAIL, '', Billing::PREF_GROUP);
+osc_reset_preferences();
+check('receipts are on until an admin switches them off', Receipts::emailEnabled());
+
+$bought = Orders::create($userId, 'refundy', 2_500_000, 'USD', 30);
+Billing::markPaid($bought, 'pi_receipt_1');
+pin('paying an order sends one receipt', 1, count($mails));
+pin('to the buyer', 'buyer@example.test', $mails[0]['to'] ?? null);
+check('the subject names the order', strpos((string) ($mails[0]['subject'] ?? ''), '#' . $bought->getId()) !== false);
+check('the body has the amount', strpos((string) ($mails[0]['body'] ?? ''), '2.50 USD') !== false);
+check('the body has the credits', strpos((string) ($mails[0]['body'] ?? ''), '30 credits') !== false);
+check('the body has the provider reference', strpos((string) ($mails[0]['body'] ?? ''), 'pi_receipt_1') !== false);
+check('the order records the receipt as sent', Orders::find($bought->getId())->meta(Orders::RECEIPT_SENT) !== null);
+
+Billing::markPaid(Orders::find($bought->getId()), 'pi_receipt_1');
+Billing::markPaid(Orders::find($bought->getId()), 'pi_receipt_1', true);
+pin('a replay and an admin mark-paid send nothing more', 1, count($mails));
+check('sending again by hand sends nothing more', Receipts::send($bought->getId()));
+pin('still one receipt', 1, count($mails));
+
+$mailWorks = false;
+$retried   = Orders::create($userId, 'refundy', 1_000_000, 'USD', 10);
+Billing::markPaid($retried, 'pi_receipt_2');
+pin('a failed send settles the order anyway', Order::STATUS_PAID, Orders::find($retried->getId())->getStatus());
+pin('and queues one retry job', 1, $receiptJobs($retried->getId()));
+pin('no receipt is marked sent', null, Orders::find($retried->getId())->meta(Orders::RECEIPT_SENT));
+
+Receipts::registerJobs();
+$handler = \mindstellar\job\JobRegistry::handler(Receipts::JOB);
+$job     = new \mindstellar\job\Job(array('pk_i_id' => 1, 's_type' => Receipts::JOB, 'i_attempts' => 0), array('order_id' => $retried->getId()));
+$threw = false;
+try {
+    $handler($job);
+} catch (RuntimeException $e) {
+    $threw = true;
+}
+check('the job throws while mail still fails, so the queue retries', $threw);
+
+$mailWorks = true;
+$mails     = array();
+$handler($job);
+pin('the job sends the receipt', 1, count($mails));
+$handler($job);
+pin('running the job again sends nothing more', 1, count($mails));
+
+$thrower = static function (array $params): bool {
+    throw new RuntimeException('smtp down');
+};
+Receipts::$mailer = $thrower;
+$crashed = Orders::create($userId, 'refundy', 1_000_000, 'USD', 10);
+check('a mailer that throws does not break settlement', Billing::markPaid($crashed, 'pi_receipt_3'));
+pin('and the receipt is queued', 1, $receiptJobs($crashed->getId()));
+Receipts::$mailer = $thrower;
+$noQueue = Orders::create($userId, 'refundy', 1_000_000, 'USD', 10);
+Orders::settle($noQueue->getId(), Order::STATUS_PAID, 'pi_receipt_4');
+$GLOBALS['enqueueThrows'] = new RuntimeException('queue down');
+$escaped = null;
+try {
+    Receipts::afterPaid(Orders::find($noQueue->getId()));
+} catch (Throwable $e) {
+    $escaped = get_class($e);
+}
+unset($GLOBALS['enqueueThrows']);
+pin('a queue that throws as well does not escape afterPaid()', null, $escaped);
+pin('the order stays paid', Order::STATUS_PAID, Orders::find($noQueue->getId())->getStatus());
+
+$GLOBALS['enqueueThrows'] = new RuntimeException('queue down');
+$escaped = null;
+try {
+    $settledAnyway = Billing::markPaid(Orders::create($userId, 'refundy', 1_000_000, 'USD', 10), 'pi_receipt_5');
+} catch (Throwable $e) {
+    $escaped = get_class($e);
+}
+unset($GLOBALS['enqueueThrows']);
+pin('markPaid survives a failing mailer and a failing queue', null, $escaped);
+check('and reports the order settled', !empty($settledAnyway));
+
+$sendCalls = 0;
+Receipts::$mailer = static function (array $params) use (&$mails, &$sendCalls): bool {
+    $sendCalls++;
+    $mails[] = $params;
+
+    return true;
+};
+
+$stillPending = Orders::create($userId, 'refundy', 1_000_000, 'USD', 1);
+check('send() on a pending order reports nothing to do', Receipts::send($stillPending->getId()));
+pin('and calls no mailer', 0, $sendCalls);
+pin('and leaves no sent mark', null, Orders::find($stillPending->getId())->meta(Orders::RECEIPT_SENT));
+
+$refundedFirst = Orders::create($userId, 'refundy', 1_000_000, 'USD', 1);
+Orders::settle($refundedFirst->getId(), Order::STATUS_PAID, 'pi_receipt_6');
+Orders::refund($refundedFirst->getId());
+check('send() on a refunded order reports nothing to do', Receipts::send($refundedFirst->getId()));
+pin('and calls no mailer either', 0, $sendCalls);
+pin('and leaves no sent mark either', null, Orders::find($refundedFirst->getId())->meta(Orders::RECEIPT_SENT));
+
+$other = seed_user($admin, 'stranger', 'stranger@example.test');
+$paidOrder = Orders::find($bought->getId());
+check('the buyer can view the receipt', Receipts::canView($paidOrder, $userId, false));
+check('another user cannot', !Receipts::canView($paidOrder, $other, false));
+check('a guest cannot', !Receipts::canView($paidOrder, 0, false));
+check('an admin can', Receipts::canView($paidOrder, 0, true));
+$pendingOrder = Orders::create($userId, 'refundy', 1_000_000, 'USD', 1);
+check('a pending order has no receipt, even for its buyer', !Receipts::canView($pendingOrder, $userId, false));
+check('or an admin', !Receipts::canView($pendingOrder, 0, true));
+Billing::refund($paidOrder);
+check('a refunded order keeps its receipt', Receipts::canView(Orders::find($bought->getId()), $userId, false));
+
+osc_set_preference(Receipts::PREF_BUSINESS, "Acme <b>Ltd</b>\n1 High St & Co", Billing::PREF_GROUP);
+osc_reset_preferences();
+pin('business details are escaped, line breaks kept', 'Acme &lt;b&gt;Ltd&lt;/b&gt;<br>' . "\n" . '1 High St &amp; Co', Receipts::businessHtml());
+ob_start();
+Receipts::render(Orders::find($bought->getId()), 'https://example.test/back', 'Back');
+$page = (string) ob_get_clean();
+check('the page escapes the business details', strpos($page, 'Acme &lt;b&gt;Ltd&lt;/b&gt;') !== false && strpos($page, '<b>Ltd') === false);
+check('a refunded order says so', strpos($page, 'rc-status') !== false && strpos($page, 'Refunded') !== false);
+check('the page has the print button', strpos($page, 'window.print()') !== false);
+check('the e-mail body escapes the business details', strpos(Receipts::emailBody(Receipts::vars(Orders::find($bought->getId()))), '<b>Ltd') === false);
+$hostile = array(
+    'site'     => 'Site <b>x</b>&',
+    'number'   => 7,
+    'date'     => 'Date <b>x</b>&',
+    'credits'  => 'Credits <b>x</b>&',
+    'amount'   => 'Amount <b>x</b>&',
+    'method'   => 'Gateway <b>x</b>&',
+    'ref'      => 'Ref <b>x</b>&',
+    'email'    => 'Mail <b>x</b>&',
+    'name'     => 'Name',
+    'url'      => 'https://example.test/r?a=1&b="2"',
+    'business' => '',
+    'refunded' => false,
+);
+$hostileBody = Receipts::emailBody($hostile);
+foreach (array('Site', 'Date', 'Credits', 'Amount', 'Gateway', 'Ref', 'Mail') as $what) {
+    check('the e-mail escapes the ' . strtolower($what) . ' value', strpos($hostileBody, $what . ' &lt;b&gt;x&lt;/b&gt;&amp;') !== false);
+}
+check('the e-mail has no raw tag from a value', strpos($hostileBody, '<b>x') === false);
+check('the e-mail escapes the receipt link', strpos($hostileBody, 'href="https://example.test/r?a=1&amp;b=&quot;2&quot;"') !== false);
+
+$receipt   = $hostile;
+$backUrl   = 'https://example.test/back?a=1&b="2"';
+$backLabel = 'Back <b>x</b>&';
+ob_start();
+require ABS_PATH . 'oc-includes/osclass/gui/billing/receipt.php';
+$hostilePage = (string) ob_get_clean();
+foreach (array('Site', 'Date', 'Credits', 'Amount', 'Gateway', 'Ref', 'Mail', 'Back') as $what) {
+    check('the page escapes the ' . strtolower($what) . ' value', strpos($hostilePage, $what . ' &lt;b&gt;x&lt;/b&gt;&amp;') !== false);
+}
+check('the page has no raw tag from a value', strpos($hostilePage, '<b>x') === false);
+check('the page escapes the back link', strpos($hostilePage, 'href="https://example.test/back?a=1&amp;b=&quot;2&quot;"') !== false);
+
+osc_set_preference(Receipts::PREF_BUSINESS, '', Billing::PREF_GROUP);
+osc_set_preference(Receipts::PREF_EMAIL, '0', Billing::PREF_GROUP, 'BOOLEAN');
+osc_reset_preferences();
+Receipts::$mailer = null;
 
 osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
 

@@ -70,7 +70,9 @@ function fresh_translation()
     $r = new ReflectionClass('Translation');
     $t = $r->newInstanceWithoutConstructor();
     $p = $r->getProperty('translator');
-    $p->setAccessible(true);
+    if (PHP_VERSION_ID < 80100) {
+        $p->setAccessible(true);
+    }
     $p->setValue($t, new Gettext\Translator());
 
     return $t;

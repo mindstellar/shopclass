@@ -41,6 +41,23 @@ use Params;
 class ActionThrottle
 {
     /**
+     * exceeded() with default limits that the action_throttle_limit filter may change per
+     * $context, e.g. array('max' => 5, 'window' => 3600).
+     *
+     * @param string $context
+     * @param int    $max
+     * @param int    $window seconds
+     *
+     * @return bool true when the action should be refused
+     */
+    public static function exceededFor(string $context, int $max, int $window = 3600): bool
+    {
+        $limit = (array) osc_apply_filter('action_throttle_limit', array('max' => $max, 'window' => $window), $context);
+
+        return self::exceeded($context, (int) ($limit['max'] ?? $max), max(1, (int) ($limit['window'] ?? $window)));
+    }
+
+    /**
      * Has this source already used its allowance of $max events for $context in
      * the trailing $windowSeconds? Checked before the action runs.
      *
@@ -115,11 +132,6 @@ class ActionThrottle
      */
     private static function unavailable(\Throwable $e)
     {
-        static $logged = false;
-
-        if (!$logged) {
-            $logged = true;
-            error_log('ActionThrottle unavailable, allowing the action: ' . $e->getMessage());
-        }
+        FailOpen::log('ActionThrottle', 'the action', $e);
     }
 }

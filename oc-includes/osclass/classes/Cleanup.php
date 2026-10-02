@@ -10,8 +10,8 @@
 
 /**
  * Core maintenance engine: finds and removes stale content — expired, unactivated, spam,
- * blocked and reported listings, and unactivated users. Powers the Tools > Cleanup screen
- * and the scheduled (cron) cleanup. The vanilla, first-class replacement for the Butler plugin.
+ * blocked and reported listings, unactivated users and avatars left by deleted users.
+ * Powers the Tools > Cleanup screen and the scheduled (cron) cleanup. The vanilla, first-class replacement for the Butler plugin.
  */
 class Cleanup extends DAO
 {
@@ -23,7 +23,14 @@ class Cleanup extends DAO
         'spam',
         'blocked',
         'inactive_users',
+        'orphan_avatars',
     );
+
+    /** Age threshold, in days, when a rule has none saved. */
+    public const DEFAULT_DAYS = 30;
+
+    /** Rows per batch when none is saved. */
+    public const DEFAULT_BATCH = 250;
 
     private static $instance;
 
@@ -42,6 +49,62 @@ class Cleanup extends DAO
     }
 
     /**
+     * Each rule's name, translated, in run order.
+     *
+     * @return array<string,string>
+     */
+    public static function ruleLabels()
+    {
+        return array(
+            'reported'          => __('Reported listings'),
+            'expired'           => __('Expired listings'),
+            'inactive_listings' => __('Unactivated listings'),
+            'spam'              => __('Spam listings'),
+            'blocked'           => __('Blocked listings'),
+            'inactive_users'    => __('Unactivated users'),
+            'orphan_avatars'    => __('Avatars of deleted users'),
+        );
+    }
+
+    /**
+     * Whether a rule is switched on in Tools > Cleanup.
+     *
+     * @param string $rule
+     *
+     * @return bool
+     */
+    public static function isEnabled($rule)
+    {
+        return osc_get_preference('enabled_' . $rule, 'osclass') == 1;
+    }
+
+    /**
+     * The age threshold for a rule, in days.
+     *
+     * @param string $rule
+     *
+     * @return int
+     */
+    public static function days($rule)
+    {
+        $days = (int)osc_get_preference('days_' . $rule, 'osclass');
+
+        return $days > 0 ? $days : self::DEFAULT_DAYS;
+    }
+
+    /**
+     * How many rows one batch removes.
+     *
+     * @return int
+     */
+    public static function batchLimit()
+    {
+        $limit = (int)osc_get_preference('batch_limit', 'osclass');
+
+        return $limit > 0 ? $limit : self::DEFAULT_BATCH;
+    }
+
+    /**
      * Whether a rule targets users (vs listings).
      *
      * @param string $rule
@@ -51,6 +114,18 @@ class Cleanup extends DAO
     public static function isUserRule($rule)
     {
         return $rule === 'inactive_users';
+    }
+
+    /**
+     * Whether a rule targets t_resource rows (vs listings or users).
+     *
+     * @param string $rule
+     *
+     * @return bool
+     */
+    public static function isResourceRule($rule)
+    {
+        return $rule === 'orphan_avatars';
     }
 
     /**
@@ -74,7 +149,7 @@ class Cleanup extends DAO
 
     /**
      * The next batch of rows a rule matches: [{pk_i_id, s_secret}] for listings,
-     * [{pk_i_id}] for users.
+     * [{pk_i_id}] for users, whole t_resource rows for orphan avatars.
      *
      * @param string $rule
      * @param int    $days
@@ -132,11 +207,13 @@ class Cleanup extends DAO
                 // per listing, so the join cannot multiply a listing out — it could
                 // when the table was keyed by date as well, and a listing reported on
                 // several days was then counted and offered for deletion once per day.
+                // Aged by the listing's last change, so the owner's fix after a report
+                // gives it more time. A listing never edited uses its publish date.
                 return array(
                     $item . ' AS i INNER JOIN ' . DB_TABLE_PREFIX . 't_item_stats AS s'
                         . ' ON s.fk_i_item_id = i.pk_i_id',
-                    's.i_num_spam > 0',
-                    array(),
+                    's.i_num_spam > 0 AND COALESCE(i.dt_mod_date, i.dt_pub_date) < ?',
+                    array($before),
                     'i.pk_i_id AS pk_i_id, i.s_secret AS s_secret'
                 );
             case 'inactive_users':
@@ -145,6 +222,15 @@ class Cleanup extends DAO
                     'b_active = 0 AND dt_reg_date < ?',
                     array($before),
                     'pk_i_id'
+                );
+            case 'orphan_avatars':
+                // User-owned resources whose user row is gone, aged by upload date.
+                return array(
+                    DB_TABLE_PREFIX . 't_resource AS r LEFT JOIN ' . DB_TABLE_PREFIX . 't_user AS u'
+                        . ' ON u.pk_i_id = r.i_owner_id',
+                    'r.s_owner_type = ? AND u.pk_i_id IS NULL AND r.dt_created < ?',
+                    array(\mindstellar\model\Resource::OWNER_USER, $before),
+                    'r.*'
                 );
             default:
                 // Unknown rule: an impossible condition, so nothing is ever matched/deleted.
@@ -168,7 +254,17 @@ class Cleanup extends DAO
             return 0;
         }
         $deleted = 0;
-        if (self::isUserRule($rule)) {
+        if (self::isResourceRule($rule)) {
+            $ids     = array_map('intval', array_column($rows, 'pk_i_id'));
+            $deleted = (int)\mindstellar\model\Resource::newInstance()->deleteResourcesIds($ids);
+            if ($deleted > 0) {
+                try {
+                    (new \mindstellar\storage\ResourceUploader())->purgeDeleted($rows);
+                } catch (\Throwable $e) {
+                    error_log('Cleanup: stored avatar files not removed: ' . $e->getMessage());
+                }
+            }
+        } elseif (self::isUserRule($rule)) {
             $users = User::newInstance();
             foreach ($rows as $row) {
                 if ($users->deleteUser($row['pk_i_id'])) {

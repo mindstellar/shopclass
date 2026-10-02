@@ -77,19 +77,16 @@ $helper = ($start !== false && $end !== false && $end > $start)
     : '';
 check('the helper body was parsed', $helper !== '');
 check(
-    'the helper does not put secret in the URL',
-    $helper !== '' && !preg_match("/action=delete.*secret/", $helper)
-        && strpos($helper, '&secret') === false
-        && strpos($helper, "s_secret") === false
+    'the helper builds the user_delete route and nothing else',
+    $helper !== '' && strpos($helper, "osc_core_url('user_delete')") !== false
 );
-check(
-    'the helper does not put id in the URL',
-    $helper !== '' && strpos($helper, 'id=') === false
-);
-check(
-    'the helper points at the GET confirm action',
-    $helper !== '' && strpos($helper, 'action=delete') !== false
-        && strpos($helper, 'delete_post') === false
-);
+
+// The URL itself is declared in the route table now, so that is where the
+// no-id, no-secret, confirm-view-only shape has to be checked.
+require_once __DIR__ . '/../oc-includes/osclass/classes/routing/CoreRoutes.php';
+$route = \mindstellar\routing\CoreRoutes::all()['user_delete'] ?? array();
+check('the route exists', $route !== array());
+pin('the route points at the GET confirm action', 'delete', $route['to']['action'] ?? null);
+pin('the route carries no parameters at all', array(), $route['params'] ?? array());
 
 exit(harness_result());

@@ -108,7 +108,7 @@ class Session
         if (!isset($_SESSION)) {
             session_name('osclass');
             if (!$this->_session_start()) {
-                session_id(uniqid('', true));
+                session_id(session_create_id());
                 session_start();
                 session_regenerate_id();
             }
@@ -179,7 +179,7 @@ class Session
             return session_start();
         }
 
-        if (!preg_match('/^[a-zA-Z0-9,\-]{22,40}$/', $sessid)) {
+        if (!preg_match('/^[a-zA-Z0-9,\-]{22,256}$/', $sessid)) {
             return false;
         }
 

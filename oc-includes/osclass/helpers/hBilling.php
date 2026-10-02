@@ -638,6 +638,18 @@ function osc_billing_packages(): array
 }
 
 /**
+ * Whether buying credits leads anywhere: a payment method is on and a package is for sale.
+ * Gateways are preference reads, so they gate the packages query.
+ *
+ * @return bool
+ */
+function osc_billing_can_buy(): bool
+{
+    return PaymentGatewayRegistry::instance()->available() !== array()
+        && osc_billing_packages() !== array();
+}
+
+/**
  * Balance and ledger history. Rewritten like every other account route when the site
  * has rewriting on (rewrite_billing_wallet, 'user/credits' by default); the
  * query-string form still resolves either way, so links already out there keep working.
@@ -646,11 +658,7 @@ function osc_billing_packages(): array
  */
 function osc_billing_wallet_url(): string
 {
-    if (osc_rewrite_enabled()) {
-        return osc_base_url() . osc_get_preference('rewrite_billing_wallet');
-    }
-
-    return osc_base_url(true) . '?page=billing';
+    return osc_core_url('billing_wallet');
 }
 
 /**
@@ -660,11 +668,7 @@ function osc_billing_wallet_url(): string
  */
 function osc_billing_buy_url(): string
 {
-    if (osc_rewrite_enabled()) {
-        return osc_base_url() . osc_get_preference('rewrite_billing_buy');
-    }
-
-    return osc_base_url(true) . '?page=billing&action=buy';
+    return osc_core_url('billing_buy');
 }
 
 /**
@@ -674,11 +678,7 @@ function osc_billing_buy_url(): string
  */
 function osc_billing_orders_url(): string
 {
-    if (osc_rewrite_enabled()) {
-        return osc_base_url() . osc_get_preference('rewrite_billing_orders');
-    }
-
-    return osc_base_url(true) . '?page=billing&action=orders';
+    return osc_core_url('billing_orders');
 }
 
 /**
@@ -692,7 +692,7 @@ function osc_billing_orders_url(): string
  */
 function osc_billing_upgrade_url(int $itemId): string
 {
-    return osc_base_url(true) . '?page=billing&action=upgrade&itemId=' . $itemId;
+    return osc_core_url('billing_upgrade', array('itemId' => $itemId));
 }
 
 /**
@@ -752,14 +752,14 @@ function osc_item_can_be_featured(?array $item = null): bool
  *
  * $items may be item rows (as a search returns) or bare ids, since a caller has
  * whichever is already to hand -- a row's 'pk_i_id' is read when present,
- * otherwise the value itself is taken as the id. A no-op while billing is off,
- * since nothing reads ItemUpgrades in that state and the query would be waste.
+ * otherwise the value itself is taken as the id. It runs with billing off too: upgrades
+ * granted while billing was on still show, and themes read them on every card.
  *
  * @param array $items item rows and/or int ids, mixed within one call is fine
  */
 function osc_prime_item_upgrades(array $items): void
 {
-    if (!osc_billing_enabled() || $items === array()) {
+    if ($items === array()) {
         return;
     }
 
@@ -856,7 +856,140 @@ function osc_item_can_bump(?array $item = null): bool
         return false;
     }
 
-    return !ItemUpgrades::has((int) $item['pk_i_id'], 'item.bump');
+    return !ItemUpgrades::has((int) $item['pk_i_id'], 'item.bump') && !osc_billing_bump_paused((int) $userId);
+}
+
+/**
+ * Whether free bumps are paused for $userId: a bump costs them nothing and they hold
+ * more live listings than their ceiling. A paid bump is never paused.
+ *
+ * Remembered per user for the request, so a list of listings costs one check. Pass
+ * $fresh to recompute, as the bump itself does.
+ *
+ * @param int|null $userId Defaults to the logged-in user
+ * @param bool     $fresh  Ignore the remembered answer
+ *
+ * @return bool
+ */
+function osc_billing_bump_paused(?int $userId = null, bool $fresh = false): bool
+{
+    return _osc_billing_bump_pause((int) ($userId ?? osc_logged_user_id()), $fresh)['paused'];
+}
+
+/**
+ * Why a seller cannot bump for free, or '' when they can.
+ *
+ * @param int|null $userId Defaults to the logged-in user
+ *
+ * @return string
+ */
+function osc_billing_bump_paused_message(?int $userId = null): string
+{
+    $state = _osc_billing_bump_pause((int) ($userId ?? osc_logged_user_id()), false);
+    if (!$state['paused']) {
+        return '';
+    }
+
+    return sprintf(
+        _m('Free bumps are paused: you have %1$d live listings and your limit is %2$d.'),
+        $state['live'],
+        $state['ceiling']
+    );
+}
+
+/**
+ * Forget the remembered free-bump answers, so the next check reads the database.
+ *
+ * @return void
+ */
+function osc_billing_bump_paused_reset(): void
+{
+    $memo = &_osc_billing_bump_pause_memo();
+    $memo = array();
+}
+
+/**
+ * The free-bump state for one user: paused, live count and ceiling.
+ *
+ * @param int  $userId
+ * @param bool $fresh
+ *
+ * @return array{paused:bool,live:int,ceiling:int}
+ */
+function _osc_billing_bump_pause(int $userId, bool $fresh): array
+{
+    $none = array('paused' => false, 'live' => 0, 'ceiling' => -1);
+    if ($userId === 0 || !osc_billing_enabled() || !osc_billing_bump_enabled()) {
+        return $none;
+    }
+
+    $memo = &_osc_billing_bump_pause_memo();
+    if (!$fresh && isset($memo[$userId])) {
+        return $memo[$userId];
+    }
+
+    $feature = FeatureRegistry::instance()->get('item.bump');
+    $price   = $feature !== null ? $feature->price($userId) : osc_billing_bump_credits();
+    $state   = $none;
+    if ($price <= 0) {
+        $ceiling = Entitlements::listingCeiling($userId);
+        if ($ceiling !== -1) {
+            $live  = Entitlements::liveListings($userId);
+            $state = array('paused' => $live > $ceiling, 'live' => $live, 'ceiling' => $ceiling);
+        }
+    }
+
+    return $memo[$userId] = $state;
+}
+
+/**
+ * The per-request store behind _osc_billing_bump_pause().
+ *
+ * @return array<int,array{paused:bool,live:int,ceiling:int}>
+ */
+function &_osc_billing_bump_pause_memo(): array
+{
+    static $memo = array();
+
+    return $memo;
+}
+
+/**
+ * The paid upgrades the logged-in owner can buy for an item right now, as data:
+ * each entry is ['feature', 'label', 'credits']. Empty unless the item is the
+ * owner's own and is live (enabled, active, not expired).
+ *
+ * @param array<string,mixed>|null $item
+ *
+ * @return array<int,array{feature:string,label:string,credits:int}>
+ */
+function osc_item_upgrade_offers(?array $item = null): array
+{
+    $item   = $item ?? osc_item();
+    $userId = (int) osc_logged_user_id();
+    if (!osc_billing_enabled() || !is_array($item) || empty($item['pk_i_id']) || $userId === 0
+        || (int) ($item['fk_i_user_id'] ?? 0) !== $userId
+        || empty($item['b_enabled']) || empty($item['b_active'])
+        || (empty($item['b_premium']) && osc_isExpired((string) ($item['dt_expiration'] ?? '')))
+    ) {
+        return array();
+    }
+
+    $offers = array();
+    if (osc_item_can_bump($item)) {
+        $offers[] = array('feature' => 'item.bump', 'label' => _m('Bump'), 'credits' => osc_billing_bump_credits());
+    }
+    if (osc_item_can_be_featured($item)) {
+        $offers[] = array('feature' => 'listing.premium', 'label' => _m('Feature'), 'credits' => osc_billing_premium_credits());
+    }
+    if (osc_billing_highlight_enabled() && !osc_item_is_highlighted($item)) {
+        $offers[] = array('feature' => 'item.highlight', 'label' => _m('Highlight'), 'credits' => osc_billing_highlight_credits());
+    }
+    if (osc_billing_urgent_enabled() && !osc_item_is_urgent($item)) {
+        $offers[] = array('feature' => 'item.urgent', 'label' => _m('Urgent'), 'credits' => osc_billing_urgent_credits());
+    }
+
+    return $offers;
 }
 
 /**
@@ -871,7 +1004,7 @@ function osc_item_can_bump(?array $item = null): bool
  */
 function osc_item_upgrade_url(int $itemId, string $feature): string
 {
-    return osc_base_url(true) . '?page=billing&action=upgrade&itemId=' . $itemId . '&feature=' . rawurlencode($feature);
+    return osc_core_url('billing_upgrade', array('itemId' => $itemId, 'feature' => $feature));
 }
 
 /**
@@ -997,6 +1130,11 @@ function osc_register_billing_item_upgrades(): void
                     return false;
                 }
                 $itemId = (int) $itemId;
+
+                // A free bump is not a way past the listing limit; a paid one is.
+                if (osc_billing_bump_paused($userId, true)) {
+                    return false;
+                }
 
                 // Bump re-sorts the listing by moving the date every "newest first"
                 // query already orders by. It carries no state of its own beyond
@@ -1163,12 +1301,8 @@ osc_add_hook('user_menu_filter', static function (array $options): array {
 
     // Both entries used to appear on the billing switch alone, so a site that enabled
     // billing only to cap listings gave every seller two links to "no payment method is
-    // set up yet". Offer them only where they lead somewhere. Gateways are preference
-    // reads, so they gate the packages query rather than the other way round.
-    $canBuy = PaymentGatewayRegistry::instance()->available() !== array()
-              && osc_billing_packages() !== array();
-
-    if ($canBuy) {
+    // set up yet". Offer them only where they lead somewhere.
+    if (osc_billing_can_buy()) {
         $options[] = array('name' => _m('Credits'), 'url' => osc_billing_wallet_url(), 'class' => 'opt_billing_wallet');
         $options[] = array('name' => _m('Buy credits'), 'url' => osc_billing_buy_url(), 'class' => 'opt_billing_buy');
 

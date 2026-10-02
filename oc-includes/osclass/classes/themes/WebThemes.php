@@ -52,8 +52,15 @@ class WebThemes extends Themes
      */
     private function loadActive()
     {
-        if (Params::getParam('theme') != '' && Session::newInstance()->_get('adminId') != '') {
-            $this->setCurrentTheme(Params::getParam('theme'));
+        // ?theme= is request input that decides which directory functions.php is
+        // required from, so it is matched against the installed themes rather than
+        // trusted. An admin session was the only gate: "../../../tmp/evil" resolved
+        // and its functions.php ran, which is arbitrary code from a query string.
+        $preview = Params::getParamString('theme');
+        if ($preview !== '' && Session::newInstance()->_get('adminId') != ''
+            && in_array($preview, $this->getListThemes(), true)
+        ) {
+            $this->setCurrentTheme($preview);
         } else {
             $this->setCurrentTheme(osc_theme());
         }
@@ -64,11 +71,22 @@ class WebThemes extends Themes
         }
 
         $info = $this->loadThemeInfo($this->theme);
-        if (isset($info['template']) && $info['template'] != '') {
-            //$this->setCurrentTheme($info['template']);
+        if (isset($info['template']) && $info['template'] !== ''
+            && \mindstellar\utility\Validate::packageName((string) $info['template'])
+            && $info['template'] !== $this->theme
+        ) {
             $parent_functions_path = osc_base_path() . 'oc-content/themes/' . $info['template'] . '/functions.php';
             if (file_exists($parent_functions_path)) {
-                require_once $parent_functions_path;
+                // The parent fills in what the child left unsaid. Its declarations run
+                // second, so without this marker the newest value wins and the parent
+                // overrules the child on everything they both declare.
+                $supports = \mindstellar\theme\ThemeSupports::instance();
+                $supports->beginInherited();
+                try {
+                    require_once $parent_functions_path;
+                } finally {
+                    $supports->endInherited();
+                }
             }
         }
     }
@@ -213,7 +231,12 @@ class WebThemes extends Themes
      */
     public function setCurrentThemePath()
     {
-        if (file_exists($this->path . $this->theme . '/')) {
+        // A theme is a directory name, never a path. Belt and braces behind the
+        // caller-side checks: nothing may resolve outside oc-content/themes/.
+        if (\mindstellar\utility\Validate::packageName((string) $this->theme)
+            && strpos((string) $this->theme, '..') === false
+            && file_exists($this->path . $this->theme . '/')
+        ) {
             $this->theme_exists = true;
             $this->theme_path   = $this->path . $this->theme . '/';
         } else {
@@ -307,11 +330,9 @@ class WebThemes extends Themes
         $themes = array();
         $dir    = opendir($this->path);
         while ($file = readdir($dir)) {
-            // Hyphens are allowed: a theme distributed as `my-theme` is ordinary,
-            // and rejecting the directory name made the theme invisible to both
-            // this screen and the CLI rather than reporting anything. Dots stay
-            // out, so `.` and `..` still fall through with no special case.
-            if (preg_match('/^[a-zA-Z0-9_-]+$/', $file)
+            // The installer's own name rule, so any folder it accepts is listed.
+            // It refuses `.` and `..`.
+            if (\mindstellar\utility\Validate::packageName($file)
                 && file_exists($this->path . '/' . $file . '/index.php')
                 && $this->loadThemeInfo($file)
             ) {

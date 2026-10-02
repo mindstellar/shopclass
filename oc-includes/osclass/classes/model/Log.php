@@ -88,14 +88,17 @@ class Log extends DAO
             $_SERVER['REMOTE_ADDR'] = $ip;
         }
 
+        // Cut each text to its column width: strict SQL mode refuses an over-long value
+        // and would lose the whole row.
+        $fit       = static fn ($value, int $max): ?string => $value === null ? null : mb_substr((string) $value, 0, $max, 'UTF-8');
         $array_set = array(
             'dt_date'     => date('Y-m-d H:i:s'),
-            's_section'   => $section,
-            's_action'    => $action,
+            's_section'   => $fit($section, 50),
+            's_action'    => $fit($action, 50),
             'fk_i_id'     => $id,
-            's_data'      => $data,
-            's_ip'        => $ip,
-            's_who'       => $who,
+            's_data'      => $fit($data, 250),
+            's_ip'        => $fit($ip, 50),
+            's_who'       => $fit($who, 50),
             'fk_i_who_id' => $whoId
         );
 
@@ -111,10 +114,8 @@ class Log extends DAO
     /**
      * Paginated, filterable list for the admin activity-log datatable.
      *
-     * Hand-written SELECT (SQL_CALC_FOUND_ROWS is not a column identifier the
-     * query builder's allowlist will pass), with every value bound and the
-     * ORDER BY column checked against the known column set. Mirrors
-     * KeywordBlock::search().
+     * Hand-written SELECT, with every value bound and the ORDER BY column
+     * checked against the known column set. Mirrors KeywordBlock::search().
      *
      * @param int    $start
      * @param int    $end
@@ -160,10 +161,12 @@ class Log extends DAO
             $params[] = $pattern;
         }
 
-        $sql = 'SELECT SQL_CALC_FOUND_ROWS * FROM ' . $table;
+        $whereSql = '';
         if (!empty($where)) {
-            $sql .= ' WHERE ' . implode(' AND ', $where);
+            $whereSql = ' WHERE ' . implode(' AND ', $where);
         }
+
+        $sql = 'SELECT * FROM ' . $table . $whereSql;
         // $order_column and $direction are both validated against fixed allowlists
         // above; only those literals ever reach the SQL text.
         $sql .= ' ORDER BY ' . $order_column . ' ' . $direction;
@@ -182,18 +185,11 @@ class Log extends DAO
 
         $result['logs'] = osc_db_stringify_rows($rows);
 
-        // FOUND_ROWS() reads off the SQL_CALC_FOUND_ROWS query just run, on the
-        // same connection with nothing in between.
-        $total = osc_db_scalar('SELECT FOUND_ROWS() as total');
-        if ($total) {
-            $result['total_results'] = $total;
+        $counts = $this->pagedCounts(implode(' AND ', $where), $params);
+        if ($counts === null) {
+            return $result;
         }
-
-        // $table is fixed in the constructor, never runtime input.
-        $rowsTotal = osc_db_scalar('SELECT COUNT(*) as total FROM ' . $table);
-        if ($rowsTotal) {
-            $result['rows'] = $rowsTotal;
-        }
+        [$result['total_results'], $result['rows']] = $counts;
 
         return $result;
     }

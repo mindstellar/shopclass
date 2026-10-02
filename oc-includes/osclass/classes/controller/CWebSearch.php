@@ -128,6 +128,9 @@ class CWebSearch extends BaseModel
      */
     public function doModel()
     {
+        if ($this->action === 'alert_post') {
+            $this->saveAlert();
+        }
         osc_run_hook('before_search');
 
         if (osc_rewrite_enabled()) {
@@ -196,10 +199,8 @@ class CWebSearch extends BaseModel
             }
         }
 
-        // Self-referential canonical for every search/category page — the unsorted, page-1
-        // friendly URL for this result set. Dropping the paging and sort/order params
-        // consolidates paginated and sort permutations of the same set onto one indexable
-        // URL, and gives page 1 a canonical it previously lacked (SEO CORE-1/CORE-2).
+        // Self-referential canonical for every search/category page: this page of the result
+        // set, unsorted, so sort and order permutations of the same page share one URL.
         if ($this->uri !== 'feed' && !Params::existParam('sFeed')) {
             $this->_exportVariableToView('canonical', osc_search_url(self::canonicalParams($uriParams)));
         }
@@ -207,71 +208,20 @@ class CWebSearch extends BaseModel
         ////////////////////////////////
         //GETTING AND FIXING SENT DATA//
         ////////////////////////////////
-        $p_sCategory = Params::getParam('sCategory');
-        if (!is_array($p_sCategory)) {
-            if ($p_sCategory == '') {
-                $p_sCategory = array();
-            } else {
-                $p_sCategory = explode(',', $p_sCategory);
-            }
-        }
+        $criteria = \mindstellar\search\SearchCriteria::fromRequest($uriParams);
 
-        $p_sCityArea = Params::getParam('sCityArea');
-        if (!is_array($p_sCityArea)) {
-            if ($p_sCityArea == '') {
-                $p_sCityArea = array();
-            } else {
-                $p_sCityArea = explode(',', $p_sCityArea);
-            }
+        $p_sCategory = $criteria->categories();
+        // A category that does not exist is a missing page, not every listing on the site.
+        if ($p_sCategory !== array()
+            && array_filter($p_sCategory, static fn ($c) => self::findCategory((string)$c) !== array()) === array()
+        ) {
+            $this->do404();
         }
-
-        $p_sCity = Params::getParam('sCity');
-        if (!is_array($p_sCity)) {
-            if ($p_sCity == '') {
-                $p_sCity = array();
-            } else {
-                $p_sCity = explode(',', $p_sCity);
-            }
-        }
-
-        $p_sRegion = Params::getParam('sRegion');
-        if (!is_array($p_sRegion)) {
-            if ($p_sRegion == '') {
-                $p_sRegion = array();
-            } else {
-                $p_sRegion = explode(',', $p_sRegion);
-            }
-        }
-
-        $p_sCountry = Params::getParam('sCountry');
-        if (!is_array($p_sCountry)) {
-            if ($p_sCountry == '') {
-                $p_sCountry = array();
-            } else {
-                $p_sCountry = explode(',', $p_sCountry);
-            }
-        }
-
-        $p_sUser = Params::getParam('sUser');
-        if (!is_array($p_sUser)) {
-            if ($p_sUser == '') {
-                $p_sUser = '';
-            } else {
-                $p_sUser = explode(',', $p_sUser);
-            }
-        }
-
-        $p_sLocale = Params::getParam('sLocale');
-        if (!is_array($p_sLocale)) {
-            if ($p_sLocale == '') {
-                $p_sLocale = '';
-            } else {
-                $p_sLocale = explode(',', $p_sLocale);
-            }
-        }
-
-        $p_sPattern =
-            osc_apply_filter('search_pattern', trim(strip_tags(Params::getParam('sPattern'))));
+        $p_sCity     = implode(', ', $criteria->cities());
+        $p_sRegion   = implode(', ', $criteria->regions());
+        $p_sCountry  = implode(', ', $criteria->countries());
+        $p_sUser     = $criteria->users();
+        $p_sPattern  = $criteria->pattern();
 
         // ADD TO THE LIST OF LAST SEARCHES
         if (osc_save_latest_searches()
@@ -287,14 +237,11 @@ class CWebSearch extends BaseModel
             }
         }
 
-        $p_bPic = Params::getParam('bPic');
-        $p_bPic = ($p_bPic == 1) ? 1 : 0;
+        $p_bPic     = $criteria->withPicture() ? 1 : 0;
+        $p_bPremium = $criteria->onlyPremium() ? 1 : 0;
 
-        $p_bPremium = Params::getParam('bPremium');
-        $p_bPremium = ($p_bPremium == 1) ? 1 : 0;
-
-        $p_sPriceMin = Params::getParam('sPriceMin');
-        $p_sPriceMax = Params::getParam('sPriceMax');
+        $p_sPriceMin = $criteria->priceMin();
+        $p_sPriceMax = $criteria->priceMax();
 
         //WE CAN ONLY USE THE FIELDS RETURNED BY Search::getAllowedColumnsForSorting()
         $p_sOrder = Params::getParam('sOrder');
@@ -341,50 +288,10 @@ class CWebSearch extends BaseModel
             $p_iPageSize = osc_default_results_per_page_at_search();
         }
 
-        //FILTERING CATEGORY
-        $bAllCategoriesChecked = false;
-        $successCat            = false;
-        if (count($p_sCategory) > 0) {
-            foreach ($p_sCategory as $category) {
-                try {
-                    $successCat = ($this->mSearch->addCategory($category) || $successCat);
-                } catch (Exception $e) {
-                    trigger_error($e->getMessage(), E_USER_WARNING);
-                }
-            }
-        } else {
-            $bAllCategoriesChecked = true;
-        }
-
-        //FILTERING CITY_AREA
-        foreach ($p_sCityArea as $city_area) {
-            $this->mSearch->addCityArea($city_area);
-        }
-        $p_sCityArea = implode(', ', $p_sCityArea);
-
-        //FILTERING CITY
-        foreach ($p_sCity as $city) {
-            $this->mSearch->addCity($city);
-        }
-        $p_sCity = implode(', ', $p_sCity);
-
-        //FILTERING REGION
-        foreach ($p_sRegion as $region) {
-            $this->mSearch->addRegion($region);
-        }
-        $p_sRegion = implode(', ', $p_sRegion);
-
-        //FILTERING COUNTRY
-        foreach ($p_sCountry as $country) {
-            $this->mSearch->addCountry($country);
-        }
-        $p_sCountry = implode(', ', $p_sCountry);
-
-        // FILTERING PATTERN
-        if ($p_sPattern != '') {
-            $this->mSearch->addPattern($p_sPattern);
-            $osc_request['sPattern'] = $p_sPattern;
-        } elseif ($p_sOrder === 'relevance') {
+        // A pattern-less "relevance" sort falls back to newest-first; needs to run
+        // before order() below either way, so it is settled from the criteria object
+        // rather than from inside the addPattern()/no-pattern branch it used to share.
+        if (!$criteria->hasPattern() && $p_sOrder === 'relevance') {
             $p_sOrder = 'dt_pub_date';
             foreach ($allowedTypesForSorting as $k => $v) {
                 if ($p_iOrderType === 'desc') {
@@ -395,26 +302,7 @@ class CWebSearch extends BaseModel
             $p_iOrderType = $orderType;
         }
 
-        // FILTERING USER
-        if ($p_sUser != '') {
-            $this->mSearch->fromUser($p_sUser);
-        }
-
-        // FILTERING LOCALE
-        $this->mSearch->addLocale($p_sLocale);
-
-        // FILTERING IF WE ONLY WANT ITEMS WITH PICS
-        if ($p_bPic) {
-            $this->mSearch->withPicture(true);
-        }
-
-        // FILTERING IF WE ONLY WANT PREMIUM ITEMS
-        if ($p_bPremium) {
-            $this->mSearch->onlyPremium(true);
-        }
-
-        //FILTERING BY RANGE PRICE
-        $this->mSearch->priceRange($p_sPriceMin, $p_sPriceMax);
+        \mindstellar\search\SearchBuilder::apply($criteria, $this->mSearch);
 
         //ORDERING THE SEARCH RESULTS
         $this->mSearch->order($p_sOrder, $allowedTypesForSorting[$p_iOrderType]);
@@ -427,110 +315,7 @@ class CWebSearch extends BaseModel
             $this->mSearch->page($p_iPage, $p_iPageSize);
         }
 
-        // CUSTOM FIELDS
-        $custom_fields = Params::getParam('meta');
-
-        $fields = Field::newInstance()->findIDSearchableByCategories($p_sCategory);
-
-        $table = DB_TABLE_PREFIX . 't_item_meta';
-        if (is_array($custom_fields)) {
-            foreach ($custom_fields as $key => $aux) {
-                if (in_array($key, $fields)) {
-                    $field = Field::newInstance()->findByPrimaryKey($key);
-                    switch ($field['e_type']) {
-                        case 'TEXTAREA':
-                        case 'TEXT':
-                        case 'URL':
-                            if ($aux != '') {
-                                $aux         = "%$aux%";
-                                $sql         = "SELECT fk_i_item_id FROM $table WHERE ";
-                                $str_escaped = Search::newInstance()->dao->escape($aux);
-                                $sql         .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
-                                $sql         .= $table . '.s_value LIKE ' . $str_escaped;
-                                $this->mSearch->addConditions(DB_TABLE_PREFIX
-                                    . 't_item.pk_i_id IN (' . $sql . ')');
-                            }
-                            break;
-                        case 'DROPDOWN':
-                        case 'RADIO':
-                            if ($aux != '') {
-                                $sql         = "SELECT fk_i_item_id FROM $table WHERE ";
-                                $str_escaped = Search::newInstance()->dao->escape($aux);
-                                $sql         .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
-                                $sql         .= $table . '.s_value = ' . $str_escaped;
-                                $this->mSearch->addConditions(DB_TABLE_PREFIX
-                                    . 't_item.pk_i_id IN (' . $sql . ')');
-                            }
-                            break;
-                        case 'CHECKBOX':
-                            if ($aux != '') {
-                                $sql = "SELECT fk_i_item_id FROM $table WHERE ";
-                                $sql .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
-                                $sql .= $table . '.s_value = 1';
-                                $this->mSearch->addConditions(DB_TABLE_PREFIX
-                                    . 't_item.pk_i_id IN (' . $sql . ')');
-                            }
-                            break;
-                        case 'DATE':
-                            if ($aux != '') {
-                                $y     = (int)date('Y', $aux);
-                                $m     = (int)date('n', $aux);
-                                $d     = (int)date('j', $aux);
-                                $start = mktime('0', '0', '0', $m, $d, $y);
-                                $end   = mktime('23', '59', '59', $m, $d, $y);
-                                $sql   = "SELECT fk_i_item_id FROM $table WHERE ";
-                                $sql   .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
-                                $sql   .= $table . '.s_value >= ' . $start . ' AND ';
-                                $sql   .= $table . '.s_value <= ' . $end;
-                                $this->mSearch->addConditions(DB_TABLE_PREFIX
-                                    . 't_item.pk_i_id IN (' . $sql . ')');
-                            }
-                            break;
-                        case 'DATEINTERVAL':
-                            if (is_array($aux) && (!empty($aux['from']) && !empty($aux['to']))
-                                && is_numeric($aux['from']) && is_numeric($aux['to'])
-                            ) {
-                                // s_value stores unix timestamps for DATEINTERVAL fields
-                                $from         = (int)$aux['from'];
-                                $to           = (int)$aux['to'];
-                                $start        = $from;
-                                $end          = $to;
-                                $sql          = "SELECT fk_i_item_id FROM $table WHERE ";
-                                $sql          .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
-                                $sql          .= $start . ' >= ' . $table
-                                    . ".s_value AND s_multi = 'from'";
-                                $sql1         = "SELECT fk_i_item_id FROM $table WHERE ";
-                                $sql1         .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
-                                $sql1         .= $end . ' <= ' . $table
-                                    . ".s_value AND s_multi = 'to'";
-                                $sql_interval = 'select a.fk_i_item_id from (' . $sql
-                                    . ') a where a.fk_i_item_id IN (' . $sql1 . ')';
-                                $this->mSearch->addConditions(DB_TABLE_PREFIX
-                                    . 't_item.pk_i_id IN (' . $sql_interval . ')');
-                            }
-                            break;
-                        case 'NUMBER':
-                            if (is_array($aux) && (!empty($aux['from']) && !empty($aux['to']))
-                                && is_numeric($aux['from']) && is_numeric($aux['to'])
-                            ) {
-                                $min   = (float)$aux['from'];
-                                $max   = (float)$aux['to'];
-                                $sql   = "SELECT fk_i_item_id FROM $table WHERE ";
-                                $sql   .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
-                                $sql   .= $table . '.s_value >= ' . $min . ' AND ';
-                                $sql   .= $table . '.s_value <= ' . $max;
-                                $this->mSearch->addConditions(DB_TABLE_PREFIX
-                                    . 't_item.pk_i_id IN (' . $sql . ')');
-                            }
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
-        }
-
-        osc_run_hook('search_conditions', Params::getParamsAsArray());
+        \mindstellar\search\SearchBuilder::fireConditions($this->mSearch);
 
         // RETRIEVE ITEMS AND TOTAL
         // A search backend may answer the query itself: a listener on 'search_results' receives
@@ -576,11 +361,8 @@ class CWebSearch extends BaseModel
 
         // Batch-load highlight/urgent/bump state for the whole page in one query,
         // instead of the two per card osc_item_is_highlighted()/osc_item_is_urgent()
-        // would otherwise cost inside the theme's listing loop. Gated so a site with
-        // billing off never runs the query at all.
-        if (osc_billing_enabled()) {
-            osc_prime_item_upgrades($aItems);
-        }
+        // would otherwise cost inside the theme's listing loop, with billing on or off.
+        osc_prime_item_upgrades($aItems);
 
         $iStart    = $p_iPage * $p_iPageSize;
         $iEnd      = min(($p_iPage + 1) * $p_iPageSize, $iTotalItems);
@@ -640,8 +422,8 @@ class CWebSearch extends BaseModel
         // build a fresh core Search, which on a delegated page is the wrong engine.
         $this->_exportVariableToView('search', $searchModel);
 
-        // json
-        $json          = $this->mSearch->toJson();
+        // The alert stores the search values in canonical form, not the SQL of toJson().
+        $json          = \mindstellar\search\AlertEnvelope::build($criteria, Params::getParamsAsArray());
         // The alert is encrypted with a persistent per-install key, so it is a self-contained
         // server-issued token: verifiable and decryptable on the later subscribe request
         // without stashing anything in the session (which would force a cookie on every search
@@ -786,6 +568,31 @@ class CWebSearch extends BaseModel
     }
 
     /**
+     * The alert form without JavaScript: save the search, say how it went, and go back.
+     *
+     * @return void
+     */
+    private function saveAlert(): void
+    {
+        $code = osc_subscribe_alert(Params::getParamString('alert'), Params::getParamString('alert_email'));
+        if ($code === 1) {
+            osc_add_flash_ok_message(osc_is_web_user_logged_in()
+                ? _m('You are subscribed to this search.')
+                : _m('Check your email to confirm the alert.'));
+        } else {
+            $messages = array(
+                -1 => _m('Enter a valid email address.'),
+                -2 => _m('This search could not be saved. Search again and try once more.'),
+                -4 => _m('Sign in to save a search.'),
+                -5 => _m('Too many alerts were saved from here. Please try again later.'),
+            );
+            osc_add_flash_error_message($messages[$code] ?? _m('This search could not be saved.'));
+        }
+        // Back to the search it came from; anything off-site goes to the search page.
+        $this->redirectTo(osc_local_referer(osc_search_url()));
+    }
+
+    /**
      * Resolve an sCategory value, which may be either a slug or an id.
      *
      * Slug first, because that is what a friendly URL carries. An id is just as
@@ -825,16 +632,22 @@ class CWebSearch extends BaseModel
      */
     public static function canonicalParams(array $params)
     {
+        // Each page of results is its own page to index, so a page after the first keeps its
+        // number; pointing every page at page 1 hides the listings only deeper pages show.
+        $page = isset($params['iPage']) && is_numeric($params['iPage']) ? (int) $params['iPage'] : 0;
         $drop = array(
             // routing
             'page', 'action', 'sParams', 'sFeed',
-            // same set, different slice or order
+            // same set, different order or size
             'iPage', 'iPagesize', 'sOrder', 'iOrderType', 'sShowAs',
             // same set, narrowed
             'sPriceMin', 'sPriceMax', 'meta', 'bPic', 'bPremium',
         );
         foreach ($drop as $key) {
             unset($params[$key]);
+        }
+        if ($page > 1) {
+            $params['iPage'] = $page;
         }
 
         return $params;
@@ -877,5 +690,3 @@ class CWebSearch extends BaseModel
         $this->redirectTo(osc_search_url(array('sCategory' => $currentSlug)), 301);
     }
 }
-
-/* file end: ./CWebSearch.php */

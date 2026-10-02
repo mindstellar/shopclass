@@ -131,14 +131,16 @@ abstract class DataTable
      *
      * @param string $id
      * @param string $text
-     * @param int    $priority Lower values sort earlier; 1 to 10
+     * @param int    $priority Any integer, negative included; lower sorts earlier
      *
      * @return void
      */
     public function addColumn($id, $text, $priority = 5)
     {
+        $priority = (int)$priority;
         $this->removeColumn($id);
         $this->aColumns[$priority][$id] = $text;
+        ksort($this->aColumns, SORT_NUMERIC);
     }
 
     /**
@@ -150,7 +152,7 @@ abstract class DataTable
      */
     public function removeColumn($id)
     {
-        for ($priority = 1; $priority <= 10; $priority++) {
+        foreach (array_keys($this->aColumns) as $priority) {
             unset($this->aColumns[$priority][$id]);
         }
     }
@@ -185,11 +187,12 @@ abstract class DataTable
     public function sortedColumns()
     {
         $columns_ordered = array();
-        for ($priority = 1; $priority <= 10; $priority++) {
-            if (isset($this->aColumns[$priority]) && is_array($this->aColumns[$priority])) {
-                foreach ($this->aColumns[$priority] as $k => $v) {
-                    $columns_ordered[$k] = $v;
-                }
+        foreach ($this->aColumns as $bucket) {
+            if (!is_array($bucket)) {
+                continue;
+            }
+            foreach ($bucket as $k => $v) {
+                $columns_ordered[$k] = $v;
             }
         }
 

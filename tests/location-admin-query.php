@@ -379,7 +379,9 @@ pin('junk id', null, $q->record('region', 'x'));
 harness_section('index use and cost');
 
 $listQuery = new ReflectionMethod(LocationAdminQuery::class, 'listQuery');
-$listQuery->setAccessible(true);
+if (PHP_VERSION_ID < 80100) {
+    $listQuery->setAccessible(true);
+}
 
 /** EXPLAIN rows for the query at $index (0 count, 1 page) of listQuery(). */
 $explain = static function (array $args, int $index) use ($q, $listQuery): array {

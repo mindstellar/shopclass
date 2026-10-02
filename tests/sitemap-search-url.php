@@ -133,6 +133,14 @@ foreach (array('generateCatRegionSitemap', 'generateCatCitySitemap') as $method)
     check("$method() does not use osc_update_search_url()", strpos($body, '$url = osc_update_search_url(') === false);
 }
 
+harness_section('itemUrl() delegates instead of duplicating the helper');
+
+// itemUrl() used to rebuild osc_item_url_from_item()'s logic and missed its
+// comma-to-dash title sanitisation. Pin that it now delegates instead.
+$from = strpos($src, 'function itemUrl(');
+$body = $from === false ? '' : substr($src, $from, 600);
+check('itemUrl() calls osc_item_url_from_item()', strpos($body, 'osc_item_url_from_item(') !== false);
+
 exit(harness_result());
 
 /* file end: ./tests/sitemap-search-url.php */

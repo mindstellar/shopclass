@@ -51,11 +51,11 @@ class KeywordBlock extends DAO
     /**
      * Paginated list for the admin datatable.
      *
-     * The main listing can't go through the query builder: SQL_CALC_FOUND_ROWS
-     * isn't a column identifier the builder's allowlist will pass, so the whole
-     * SELECT is hand-written with every value bound and every identifier either
-     * a literal or validated a few lines above. $start/$end are kept in the
-     * exact "LIMIT $start, $end" text legacy produced (MySQL reads that
+     * The main listing can't go through the query builder: it needs a LIMIT
+     * clause and a matching COUNT(*) the builder's allowlist won't pass, so the
+     * whole SELECT is hand-written with every value bound and every identifier
+     * either a literal or validated a few lines above. $start/$end are kept in
+     * the exact "LIMIT $start, $end" text legacy produced (MySQL reads that
      * two-argument form as OFFSET=$start, ROW_COUNT=$end) rather than
      * reinterpreted through the builder's LIMIT/OFFSET, so a non-numeric $start
      * still disables the clause entirely, same as before.
@@ -100,17 +100,18 @@ class KeywordBlock extends DAO
             $orderSql = $order_column . $direction;
         }
 
-        $table  = $this->getTableName();
-        $params = array();
-        $sql    = 'SELECT SQL_CALC_FOUND_ROWS * FROM ' . $table;
+        $table    = $this->getTableName();
+        $params   = array();
+        $where    = '';
         if ($keyword != '') {
             // Same wildcard escaping DBCommandClass::escapeStr($v, true) applied
             // before the legacy LIKE: a literal % or _ typed by an admin stays
             // literal rather than acting as a SQL wildcard.
             $pattern  = '%' . str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), $keyword) . '%';
-            $sql     .= ' WHERE s_keyword LIKE ?';
+            $where    = 's_keyword LIKE ?';
             $params[] = $pattern;
         }
+        $sql = 'SELECT * FROM ' . $table . ($where !== '' ? ' WHERE ' . $where : '');
         $sql .= ' ORDER BY ' . $orderSql;
         if (is_numeric($start)) {
             $sql .= ' LIMIT ' . (int)$start;
@@ -127,20 +128,11 @@ class KeywordBlock extends DAO
 
         $result['keywords'] = osc_db_stringify_rows($rows);
 
-        // FOUND_ROWS() reads off the SQL_CALC_FOUND_ROWS query just run above; it
-        // needs no value of its own and must execute on the same connection with
-        // nothing in between, which holds here since Connection shares the
-        // singleton mysqli handle $this->dao also uses.
-        $total = osc_db_scalar('SELECT FOUND_ROWS() as total');
-        if ($total) {
-            $result['total_results'] = $total;
+        $counts = $this->pagedCounts($where, $params);
+        if ($counts === null) {
+            return $result;
         }
-
-        // $table is fixed in the constructor, never runtime input.
-        $rowsTotal = osc_db_scalar('SELECT COUNT(*) as total FROM ' . $table);
-        if ($rowsTotal) {
-            $result['rows'] = $rowsTotal;
-        }
+        [$result['total_results'], $result['rows']] = $counts;
 
         return $result;
     }

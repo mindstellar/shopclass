@@ -135,6 +135,7 @@ foreach ($partials as $file) {
 
     preg_match_all('/class="([^"]*)"/', $src, $cm);
     foreach ($cm[1] as $attr) {
+        $attr = (string) preg_replace('/<\?php.*?\?>/s', ' ', $attr);
         foreach (preg_split('/\s+/', trim($attr)) as $token) {
             if (strpos($token, 'oe-') === 0) {
                 $emitted[$token] = true;
@@ -170,5 +171,94 @@ check(
 // Frozen names. Themes and plugins nobody here can see style these exact strings.
 check('the flashmessage-<type> class is still emitted', strpos($messages, "strtolower(\$class) . '-'") !== false);
 check('the flash_js mount is printed once, not once per message', substr_count($messages, "<div id=\"flash_js\"></div>") === 1);
+
+harness_section('extension points');
+
+$slotPages = array(
+    'user-dashboard'      => $accountIn . 'user-dashboard-content.php',
+    'user-items'          => $accountIn . 'user-items-content.php',
+    'user-alerts'         => $accountIn . 'user-alerts-content.php',
+    'user-profile'        => $accountIn . 'user-profile-content.php',
+    'user-signin'         => $accountIn . 'user-signin-content.php',
+    'user-custom'         => $accountIn . 'user-custom-content.php',
+    'user-delete_account' => $guiDir . 'user-delete_account-content.php',
+    'billing-wallet'      => $guiDir . 'billing/wallet-content.php',
+    'billing-buy'         => $guiDir . 'billing/buy-content.php',
+    'billing-orders'      => $guiDir . 'billing/orders-content.php',
+);
+foreach ($slotPages as $slug => $file) {
+    $src = (string) file_get_contents($file);
+    check("{$slug} fires account_page_before", strpos($src, "osc_run_hook('account_page_before', '{$slug}')") !== false);
+    check("{$slug} fires account_page_after", strpos($src, "osc_run_hook('account_page_after', '{$slug}')") !== false);
+}
+
+$row = (string) file_get_contents($accountIn . 'parts/item-row.php');
+foreach (array('listing_row_badges', 'listing_row_meta', 'listing_row_actions') as $filter) {
+    check("the row applies {$filter}", strpos($row, "osc_apply_filter('{$filter}'") !== false);
+}
+// A blocked listing read "Published" when the row never asked whether it was enabled.
+check('the row checks the blocked state before Published', strpos($row, 'osc_item_is_enabled()') !== false
+    && strpos($row, 'osc_item_is_enabled()') < strpos($row, "_m('Published')"));
+
+foreach (array('user-dashboard', 'user-items', 'user-alerts', 'user-public-profile') as $page) {
+    $src = (string) file_get_contents($accountIn . $page . '-content.php');
+    check("{$page} draws its list through osc_gui_listing_list()", strpos($src, 'osc_gui_listing_list(') !== false
+        && strpos($src, 'parts/item-row.php') === false);
+}
+
+$rowParts = $row . (string) file_get_contents($accountIn . 'parts/row-actions.php');
+check('a POST row action carries the CSRF token', strpos($rowParts, "osc_csrf_token_form()") !== false
+    && strpos($rowParts, "'method'] ?? 'get') === 'post'") !== false);
+check('the row offers paid upgrades on the owner list', strpos($row, 'osc_item_upgrade_offers(') !== false);
+// A <form> inside a <p> closes the paragraph, so action lines must not be one.
+check('action lines are not paragraphs', strpos($rowParts, '<p class="oe-meta oe-row-actions') === false);
+
+$profile = (string) file_get_contents($accountIn . 'user-public-profile-content.php');
+check('the public profile posts user contact_post', strpos($profile, "'hidden'  => array('page' => 'user', 'action' => 'contact_post'") !== false);
+check('the public profile form fires user_contact_form', strpos($profile, "osc_run_hook('user_contact_form', ") !== false);
+$contactPart = (string) file_get_contents($guiDir . 'parts/contact-form.php');
+check('the shared contact form refills after a failed send', strpos($contactPart, "osc_gui_kept('message_body')") !== false);
+foreach (array($guiDir . 'contact-content.php', $guiDir . 'item-contact-content.php', $accountIn . 'user-public-profile-content.php') as $file) {
+    $src = (string) file_get_contents($file);
+    check(basename($file) . ' uses the shared contact form', strpos($src, "parts/contact-form.php'") !== false
+        && strpos($src, 'name="yourName"') === false);
+}
+$nonSecure = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebUserNonSecure.php');
+preg_match("/case 'contact_post':.*?break;/s", $nonSecure, $contactCase);
+check('user contact_post checks the CSRF token', isset($contactCase[0]) && strpos($contactCase[0], 'osc_csrf_check()') !== false);
+check('user contact_post is throttled', isset($contactCase[0]) && strpos($contactCase[0], "ActionThrottle::exceededFor('user_contact'") !== false);
+
+$alertsSrc = (string) file_get_contents($accountIn . 'user-alerts-content.php');
+check('alerts apply alert_row_actions', strpos($alertsSrc, "osc_apply_filter('alert_row_actions'") !== false);
+check('alerts draw actions through the shared row-actions part', strpos($alertsSrc, "parts/row-actions.php") !== false);
+
+$profileForm = (string) file_get_contents($accountIn . 'user-profile-content.php');
+// Without these fields, profile_post saved b_company = 0 and an empty city area.
+check('the profile form posts b_company', strpos($profileForm, 'UserForm::is_company_select(') !== false);
+check('the profile form posts cityArea', strpos($profileForm, 'UserForm::city_area_text(') !== false);
+check('the profile form fires user_avatar_form', strpos($profileForm, "osc_run_hook('user_avatar_form', ") !== false);
+check('the profile form never lists every city', strpos(
+    $profileForm,
+    "osc_user_field('fk_i_region_id') ? osc_get_cities(osc_user_field('fk_i_region_id')) : array()"
+) !== false);
+
+// A token in a delete URL lands in logs, so core's own Delete posts a form.
+check("core's Delete is a POST action", (bool) preg_match("/'delete'\\] = array\\(.*?'method'\\s*=> 'post'/s", $row));
+check('the CSRF token is posted only to this site', strpos($rowParts, 'strpos($actionUrl, $siteRoot) === 0') !== false);
+
+check('the profile contact form is a dialog the head button opens', strpos($profile, 'id="oe-contact-dialog"') !== false
+    && strpos($profile, 'data-osc-dialog-open="oe-contact-dialog"') !== false);
+
+// Every contact form's controller keeps the typed values and the reason through one helper.
+$hUtils = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/helpers/hUtils.php');
+check('osc_keep_form() stores the reason the form reads', strpos($hUtils, '_setForm(\'contact_error\', $error)') !== false
+    && strpos($contactPart, "osc_gui_kept('contact_error')") !== false);
+foreach (array('CWebUserNonSecure', 'CWebContact', 'CWebItem') as $controller) {
+    $src = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/' . $controller . '.php');
+    check("{$controller} keeps a failed contact send through osc_keep_form()", strpos($src, 'osc_keep_form(') !== false);
+}
+$contactCtl = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebContact.php');
+check('the contact page refuses an empty message, and only that', strpos($contactCtl, 'if (trim($message) === \'\') {') !== false
+    && strpos($contactCtl, 'trim($subject) === ') === false);
 
 exit(harness_result());

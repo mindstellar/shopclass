@@ -104,19 +104,6 @@ class UserActions
             $error[]     = 11;
         }
 
-        if (is_array(Params::getParam('s_info'))) {
-            foreach (Params::getParam('s_info') as $key => $value) {
-                // s_info is TEXT, so the limit is 65535 *bytes*, not characters.
-                // osc_validate_text() is a minimum-length gate: at 256 it demanded
-                // 256 consecutive alphanumerics, which no prose containing a space
-                // can satisfy, and reported the failure as "too long".
-                if (strlen((string) $value) > 65535) {
-                    $flash_error .= sprintf(_m('The field %s is too long'), osc_esc_html($key)) . PHP_EOL;
-                    $error[]     = 11;
-                }
-            }
-        }
-
         $email_taken = $this->manager->findByEmail($input['s_email']);
         if ($email_taken != false) {
             osc_run_hook('register_email_taken', $input['s_email']);
@@ -125,12 +112,11 @@ class UserActions
         }
 
         if ($input['s_username'] != '') {
-            $username_taken = $this->manager->findByUsername($input['s_username']);
-            if (!$error && $username_taken != false) {
-                $flash_error .= _m('Username is already taken') . PHP_EOL;
-                $error[]     = 8;
-            }
-            if (osc_is_username_blacklisted($input['s_username'])) {
+            $numeric = self::numericUsernameError($input['s_username']);
+            if ($numeric !== '') {
+                $flash_error .= $numeric . PHP_EOL;
+                $error[]     = 13;
+            } elseif (osc_is_username_blacklisted($input['s_username'])) {
                 $flash_error .= _m('The specified username is not valid, it contains some invalid words') . PHP_EOL;
                 $error[]     = 9;
             }
@@ -159,6 +145,10 @@ class UserActions
             $input['s_secret'] = \mindstellar\security\ActionToken::hash($activation_plain);
         }
 
+        // Insert with a unique placeholder, then claim the real name under the username lock.
+        $chosen_username     = (string) $input['s_username'];
+        $input['s_username'] = '_' . bin2hex(random_bytes(10));
+
         $userId = $this->manager->insertGetId($input);
 
         // insertGetId() swallows the database error and answers 0, so an unchecked call
@@ -172,11 +162,24 @@ class UserActions
             return _m('Your account could not be created. Please try again.') . PHP_EOL;
         }
 
-        if ($input['s_username'] == '') {
-            $this->manager->update(
-                array('s_username' => $userId),
-                array('pk_i_id' => $userId)
-            );
+        if ($chosen_username === '') {
+            $input['s_username'] = self::assignDefaultUsername((int) $userId);
+        } else {
+            $claim = self::claimUsername((int) $userId, $chosen_username);
+            if ($claim !== 'ok') {
+                $this->manager->deleteByPrimaryKey($userId);
+                Session::newInstance()->_setForm('user_s_name', $input['s_name']);
+                Session::newInstance()->_setForm('user_s_username', $chosen_username);
+                Session::newInstance()->_setForm('user_s_email', $input['s_email']);
+                Session::newInstance()->_setForm('user_s_phone_land', $input['s_phone_land']);
+                Session::newInstance()->_setForm('user_s_phone_mobile', $input['s_phone_mobile']);
+                osc_run_hook('user_register_failed', array($claim === 'taken' ? 8 : 12));
+
+                return $claim === 'taken'
+                    ? _m('Username is already taken') . PHP_EOL
+                    : _m('Your account could not be created. Please try again.') . PHP_EOL;
+            }
+            $input['s_username'] = $chosen_username;
         }
 
         if (is_array(Params::getParam('s_info'))) {
@@ -304,10 +307,13 @@ class UserActions
         $input['s_address']         = $this->Sanitize->string(Params::getParam('address'));
         $input['s_zip']             = $this->Sanitize->string(Params::getParam('zip'));
 
-        $latitude = $this->Sanitize->string(Params::getParam('d_coord_lat'));
-        $input['d_coord_lat']       = ($latitude) ?: null;
-        $longitude = $this->Sanitize->string(Params::getParam('d_coord_long'));
-        $input['d_coord_long']      = ($longitude) ?: null;
+        // No user form posts coordinates, so a save without them keeps the stored ones.
+        foreach (array('d_coord_lat' => 90, 'd_coord_long' => 180) as $coord => $limit) {
+            if (Params::existParam($coord)) {
+                $value         = Params::getParamString($coord);
+                $input[$coord] = is_numeric($value) && abs((float) $value) <= $limit ? (float) $value : null;
+            }
+        }
 
         $input['b_company']         = (Params::getParam('b_company')) ? 1 : 0;
 
@@ -350,6 +356,13 @@ class UserActions
             }
             $flash_error .= sprintf(_m('%s is too long, the maximum is %d characters'), $labels[$column], $width)
                 . PHP_EOL;
+        }
+
+        // s_info is TEXT, so its limit is 65535 bytes, not characters.
+        foreach (Params::getParamArray('s_info') as $key => $value) {
+            if (strlen(is_string($value) ? $value : '') > 65535) {
+                $flash_error .= sprintf(_m('The field %s is too long'), osc_esc_html((string) $key)) . PHP_EOL;
+            }
         }
 
         return $flash_error;
@@ -402,9 +415,36 @@ class UserActions
             $error[]     = 11;
         }
 
+        // Only an admin edit carries s_username. A missing or unchanged name is left alone,
+        // so an old id-based username still saves.
+        $new_username = null;
+        if (isset($input['s_username']) && Params::existParam('s_username')) {
+            $current = $this->manager->findByPrimaryKey($userId);
+            if (isset($current['s_username']) && $input['s_username'] !== $current['s_username']) {
+                $new_username = $input['s_username'];
+                $numeric      = self::numericUsernameError($new_username);
+                if ($new_username === '') {
+                    $flash_error .= _m('The specified username could not be empty') . PHP_EOL;
+                    $error[]     = 14;
+                } elseif ($numeric !== '') {
+                    $flash_error .= $numeric . PHP_EOL;
+                    $error[]     = 13;
+                }
+            }
+        }
+        unset($input['s_username']);
+
         $flash_error = osc_apply_filter('user_edit_flash_error', $flash_error, $userId);
         if ($flash_error != '') {
             return $flash_error;
+        }
+
+        $claim = $new_username !== null ? self::claimUsername((int) $userId, $new_username) : 'ok';
+        if ($claim === 'taken') {
+            return _m('The specified username is already in use') . PHP_EOL;
+        }
+        if ($claim !== 'ok') {
+            return _m('Your profile could not be saved. Please try again.') . PHP_EOL;
         }
 
         if ($this->manager->update($input, array('pk_i_id' => $userId)) === false) {
@@ -750,5 +790,175 @@ class UserActions
         osc_web_user_login($user);
 
         return 3;
+    }
+
+    /**
+     * Apply a pending e-mail change once its confirmation code checks out.
+     *
+     * The code must match and be younger than User::PASS_CODE_TTL, and it is cleared on use.
+     * The user row, their listings, comments and alerts switch in one transaction.
+     *
+     * @param int    $userId
+     * @param string $code
+     *
+     * @return array{status:string,old:string,new:string} status is 'ok', 'invalid', 'taken' or 'failed'
+     */
+    public static function confirmEmailChange(int $userId, string $code): array
+    {
+        $result  = array('status' => 'invalid', 'old' => '', 'new' => '');
+        $manager = User::newInstance();
+        $user    = $userId > 0 && $code !== '' ? $manager->findByPrimaryKey($userId) : false;
+        if (empty($user['pk_i_id'])) {
+            return $result;
+        }
+
+        $stored = (string) ($user['s_pass_code'] ?? '');
+        $issued = strtotime((string) ($user['s_pass_date'] ?? ''));
+        if ($stored === '' || !hash_equals($stored, $code)
+            || (int) $user['b_enabled'] !== 1
+            || $issued === false || $issued < time() - User::PASS_CODE_TTL
+        ) {
+            return $result;
+        }
+
+        $pending = UserEmailTmp::newInstance()->findByPrimaryKey($userId);
+        $new     = (string) ($pending['s_new_email'] ?? '');
+        if ($new === '') {
+            return $result;
+        }
+        $result['old'] = (string) $user['s_email'];
+        $result['new'] = $new;
+
+        $holder = $manager->findByEmail($new);
+        if (!empty($holder['pk_i_id']) && (int) $holder['pk_i_id'] !== $userId) {
+            $result['status'] = 'taken';
+
+            return $result;
+        }
+
+        $status = 'failed';
+        try {
+            osc_db_transaction(static function () use ($userId, $stored, $new, &$status) {
+                // Matching on the code as well makes the link single-use under a double click.
+                try {
+                    $switched = osc_db_table(DB_TABLE_PREFIX . 't_user')
+                        ->where('pk_i_id', $userId)
+                        ->where('s_pass_code', $stored)
+                        ->update(array('s_email' => $new, 's_pass_code' => null, 's_pass_date' => null));
+                } catch (\mindstellar\database\DbException $e) {
+                    $status = (int) $e->getCode() === 1062 ? 'taken' : 'failed';
+                    throw $e;
+                }
+                if ($switched !== 1) {
+                    $status = 'invalid';
+                    throw new \RuntimeException('E-mail change not applied.');
+                }
+                osc_db_table(DB_TABLE_PREFIX . 't_item')->where('fk_i_user_id', $userId)->update(array('s_contact_email' => $new));
+                osc_db_table(DB_TABLE_PREFIX . 't_item_comment')->where('fk_i_user_id', $userId)->update(array('s_author_email' => $new));
+                osc_db_table(DB_TABLE_PREFIX . 't_alerts')->where('fk_i_user_id', $userId)->update(array('s_email' => $new));
+                osc_db_table(DB_TABLE_PREFIX . 't_user_email_tmp')->where('s_new_email', $new)->delete();
+            });
+        } catch (\Throwable $e) {
+            $result['status'] = $status;
+
+            return $result;
+        }
+
+        $result['status'] = 'ok';
+
+        return $result;
+    }
+
+    /**
+     * The error for a username made only of digits, or '' when it has a letter or symbol.
+     * Digit-only names are kept for the id-based name a blank registration gets.
+     *
+     * @param string $username Already sanitised
+     *
+     * @return string
+     */
+    public static function numericUsernameError(string $username): string
+    {
+        if ($username === '' || !ctype_digit($username)) {
+            return '';
+        }
+
+        return _m('The username cannot be only numbers. Please add at least one letter.');
+    }
+
+    /**
+     * Give a user a username unless another account already holds it.
+     *
+     * The check and the write run under a named lock; if the lock is not had within 5
+     * seconds nothing is written. A duplicate-key error from a unique index on s_username
+     * counts as taken.
+     *
+     * @param int    $userId
+     * @param string $username
+     *
+     * @return string 'ok', 'taken' or 'failed'
+     */
+    public static function claimUsername(int $userId, string $username): string
+    {
+        $table  = DB_TABLE_PREFIX . 't_user';
+        $lock   = 'osc_username_' . md5((defined('DB_NAME') ? DB_NAME : '') . $table);
+        $locked = false;
+        try {
+            $locked = (int) osc_db_scalar('SELECT GET_LOCK(?, 5)', array($lock)) === 1;
+        } catch (\mindstellar\database\DbException $e) {
+            $locked = false;
+        }
+        if (!$locked) {
+            return 'failed';
+        }
+
+        try {
+            $taken = osc_db_table($table)
+                ->where('s_username', $username)
+                ->where('pk_i_id', '!=', $userId)
+                ->count() > 0;
+            if ($taken) {
+                return 'taken';
+            }
+            osc_db_table($table)->where('pk_i_id', $userId)->update(array('s_username' => $username));
+        } catch (\mindstellar\database\DbException $e) {
+            return (int) $e->getCode() === 1062 ? 'taken' : 'failed';
+        } finally {
+            try {
+                osc_db_scalar('SELECT RELEASE_LOCK(?)', array($lock));
+            } catch (\mindstellar\database\DbException $e) {
+                // The lock is dropped with the connection anyway.
+            }
+            if (function_exists('osc_invalidate_user_cache')) {
+                osc_invalidate_user_cache($userId);
+            }
+        }
+
+        return 'ok';
+    }
+
+    /**
+     * Set the username a registration without one gets: the user id, or the id with a
+     * suffix (_2, _3, ...) when an older account already holds it.
+     *
+     * @param int $userId
+     *
+     * @return string The name set, or '' when none could be written
+     */
+    private static function assignDefaultUsername(int $userId): string
+    {
+        for ($n = 1; $n <= 20; $n++) {
+            $name   = $n === 1 ? (string) $userId : $userId . '_' . $n;
+            $result = self::claimUsername($userId, $name);
+            if ($result === 'ok') {
+                return $name;
+            }
+            if ($result === 'failed') {
+                break;
+            }
+        }
+        trigger_error('No default username could be set for user ' . $userId . '.', E_USER_WARNING);
+
+        return '';
     }
 }

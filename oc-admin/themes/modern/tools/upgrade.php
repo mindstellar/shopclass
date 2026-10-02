@@ -6,184 +6,198 @@ if (!defined('OC_ADMIN')) {
     exit('Direct access is not allowed.');
 }
 
-//customize Head
-/**
- * Emit the upgrade tool's script, or the "in-app updates are disabled" notice on an immutable deployment.
- *
- * @return void
- */
-function customHead()
-{
-    // Immutable deployments (the Docker image) disable the in-app updater: a
-    // file-writing upgrade would be discarded on the next redeploy. Show how to
-    // update instead of the upgrade flow.
-    if (osc_self_update_disabled()) {
-        ?>
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                var stepsDiv = document.getElementById('steps_div');
-                var steps = document.getElementById('steps');
-                if (steps) {
-                    steps.innerHTML = '<div class="step"><h3><?php echo osc_esc_js(__('In-app updates are disabled')); ?></h3>' +
-                        '<div class="callout-info"><?php echo osc_esc_js(__('This installation runs from a container image. Update by deploying a newer image tag; the database is migrated automatically when the container starts.')); ?></div></div>';
-                }
-                if (stepsDiv) { stepsDiv.style.display = 'block'; }
-            });
-        </script>
-        <?php
+$updateJson    = osc_get_preference('update_core_json');
+$isAvailable   = false;
+$remoteVersion = '';
+if (!empty($updateJson)) {
+    $osclassUpgrade = new Osclass(json_decode($updateJson, true));
+    $isAvailable    = $osclassUpgrade->isUpgradable();
+    $remoteVersion  = (string) $osclassUpgrade->getNewVersion();
+}
+$selfUpdateOff = osc_self_update_disabled();
+$running       = !$selfUpdateOff && $isAvailable && __get('upgrade_start') === true;
+
+// The run itself after confirm, the release notes before it, and a fresh version check when
+// nothing is waiting.
+osc_add_hook('admin_footer', static function () use ($selfUpdateOff, $isAvailable, $remoteVersion, $running) {
+    if ($selfUpdateOff) {
         return;
     }
+    $strings = array(
+        'upgraded'  => sprintf(__('Shopclass is upgraded to %s.'), $remoteVersion),
+        'failed'    => __('The upgrade failed.'),
+        'noReply'   => __('The upgrade did not report back. Reload the page to check which version you have.'),
+        'notes'     => __('Check release notes'),
+        'notesUrl'  => osc_admin_base_url(true) . '?page=tools&action=version',
+    );
     ?>
     <script>
-        // #steps_div hide
-        var steps_div = document.getElementById('steps_div');
-        if (steps_div) {
-            steps_div.style.display = 'none';
-        }
+        (function () {
+            var steps = document.getElementById('steps');
+            var t = <?php echo json_encode($strings); ?>;
 
-        <?php
-        $update_core_json = osc_get_preference('update_core_json');
-        $is_upgrade_available = false;
-        $remoteVersion = '';
-        if (!empty($update_core_json)) {
-            $OsclassUpgrade = (new Osclass(json_decode($update_core_json, true)));
-            $is_upgrade_available = $update_core_json && $OsclassUpgrade->isUpgradable();
-            $remoteVersion = $OsclassUpgrade->getNewVersion();
-        }
-        ?>
-        var steps = document.getElementById('steps');
-        var remoteVersion = '<?php echo $remoteVersion; ?>';
-        // get release body from github api url using remote version as tag
-        var releaseUrl = 'https://api.github.com/repos/mindstellar/Shopclass/releases/tags/' + remoteVersion;
-        var isUpgradeAvailable = <?php echo $is_upgrade_available ? 'true' : 'false'; ?>;
-        var upgradeUrl = '<?php echo osc_admin_base_url(true) . '?page=tools&action=upgrade&confirm=true'; ?>';
-        var upgradeActionUrl = '<?php echo osc_admin_base_url(true) . '?page=ajax&action=upgrade&' . osc_csrf_token_url(); ?>';
-        // check current url has confirm argument and is set to true
-        var isConfirm = false;
-        if (window.location.href.indexOf('confirm=true') !== -1) {
-            isConfirm = true;
-        }
-        // if upgrade available and not confirm, show that upgrade is available with remote version and a button to upgrade
-        if (isUpgradeAvailable && !isConfirm) {
-            // append to steps
-            var message1 = document.createElement('div');
-            message1.className = 'step';
-            message1.innerHTML = '<h3><?php sprintf(__('Upgrade is available for (Current version %s)'), osc_get_preference('version')); ?></h3>' +
-                '<h3><?php echo sprintf(__('Hey, a new version %s is available for download. Check details below.'), $remoteVersion); ?></h3>'
-            steps.appendChild(message1);
-            steps.appendChild(document.createElement('hr'));
-            // read body from upgradeJson and parse Markdown
-            var message2 = document.createElement('div');
-            message2.className = 'step';
-            message2.innerHTML = '<h3><?php _e('Upgrade Notes:'); ?></h3>' +
-                '<p><?php _e('Please note that this upgrade may take a few minutes to complete.'); ?> ' +
-                '<?php _e('Once the upgrade is complete, you will be redirected to the Admin Control Panel.'); ?> ' +
-                '<?php _e('Please be aware that this upgrade will overwrite any existing modification you have made to core files.'); ?></p>' +
-                '<p id="releaseChangelog"></p>' +
-                '<p><a href="' + upgradeUrl + '" class="button btn btn-warning"><?php _e('Upgrade Now to ') ?>' + remoteVersion + '</a></p>';
-            steps.appendChild(message2);
-            // make fetch request to github api to get release body
-            fetch(releaseUrl)
-                .then(function(response) {
-                    return response.json();
-                })
-                .then(function(json) {
-                    var md = json.body;
-                    // any string start with #, ##, ###  <h3>
-                    md = md.replace(/^(#{1,6})(.*)/gm, '<h3>$2</h3>');
-                    // any string start with new line and followed by * will be converted to list item
-                    md = md.replace(/^\n\*(.*)/gm, '<li>$1</li>');
-                    // any string start with new line followed by /r/n will be converted to <br>
-                    md = md.replace(/^\n(\/r\/n)/gm, '<br>$1');
-                    document.getElementById('releaseChangelog').innerHTML = md;
-                })
-                .catch(function(error) {
-                    console.log(error);
-                });
-            // display steps div
-            steps_div.style.display = 'block';
+            // The same markup osc_admin_verdict() prints, built here for the result of the run.
+            var verdict = function (tone, text, action) {
+                var box = document.createElement('div');
+                box.className = 'callout-' + tone + ' callout-block osc-verdict';
+                box.setAttribute('role', tone === 'success' ? 'status' : 'alert');
+                var list = document.createElement('ul');
+                list.className = 'osc-verdict-list';
+                var line = document.createElement('li');
+                line.className = 'osc-verdict-line';
+                var span = document.createElement('span');
+                span.className = 'osc-verdict-text';
+                span.textContent = text;
+                line.appendChild(span);
+                if (action) {
+                    var link = document.createElement('a');
+                    link.className = 'btn btn-sm btn-secondary';
+                    link.href = action.url;
+                    link.textContent = action.label;
+                    line.appendChild(link);
+                }
+                list.appendChild(line);
+                box.appendChild(list);
+                return box;
+            };
+            var report = function (box, message) {
+                steps.replaceChildren(box);
+                if (message) {
+                    var more = document.createElement('p');
+                    more.className = 'upgrade-tool-message';
+                    more.textContent = message;
+                    steps.appendChild(more);
+                }
+            };
 
-        } else if (isUpgradeAvailable && isConfirm) {
-            steps_div.style.display = 'block';
-            // append a spinner to steps
-            var message1 = document.createElement('div');
-            message1.className = 'step';
-            message1.innerHTML = '<h3><span class="spinner-border text-secondary" style="width:1.2rem;height:1.2rem" role="status"></span>' +
-                '<?php echo osc_esc_js(__('Upgrading your Shopclass installation (this could take a while):')); ?>' +
-                '</h3>';
-            steps.innerHTML = '';
-            steps.appendChild(message1);
-            // make fetch request to upgradeActionUrl
-            fetch(upgradeActionUrl)
-                .then(function(response) {
-                    return response.json();
+            <?php if ($running) { ?>
+            fetch(<?php echo json_encode(osc_admin_base_url(true) . '?page=ajax&action=upgrade&' . osc_csrf_token_url()); ?>, {credentials: 'same-origin'})
+                .then(function (response) {
+                    return response.json().catch(function () {
+                        return null;
+                    });
                 })
-                .then(function(json) {
-                    // if upgrade is successful
-                    if (json.error == 0 || json.error == 2) {
-                        if (json.error == 0) {
-                            // append to steps
-                            var message2 = document.createElement('div');
-                            message2.className = 'step';
-                            message2.innerHTML = '<h3 class="text-success strong"><?php _e('Upgrade Successful'); ?></h3>' +
-                                '<p><?php _e('Your Shopclass installation has been upgraded to version ') ?>' + remoteVersion + '</p>' +
-                                '<p><a href="<?php echo osc_esc_js(osc_admin_base_url(true)); ?>?page=tools&action=version" class="button btn btn-success"><?php _e('Check release notes'); ?></a></p>';
-                            steps.innerHTML = '';
-                            steps.appendChild(message2);
-                        } else {
-                            // append to steps
-                            var message2 = document.createElement('div');
-                            message2.className = 'step';
-                            message2.innerHTML = '<h3 class="text-danger"><?php _e('Upgrade completed with few errors'); ?></h3>'
-                            message2.innerHTML += json.message;
-                            steps.innerHTML = '';
-                            steps.appendChild(message2);
-                        }
-
-                        //window.location = '<?php echo osc_admin_base_url(true); ?>?page=tools&action=version';
+                .then(function (json) {
+                    // A fatal error or a timeout mid-run answers with something other than JSON.
+                    if (!json || typeof json !== 'object') {
+                        report(verdict('warning', t.noReply));
+                    } else if (json.error == 0) {
+                        report(verdict('success', t.upgraded, {label: t.notes, url: t.notesUrl}));
                     } else {
-                        // if upgrade failed
-                        var message3 = document.createElement('div');
-                        message3.className = 'step';
-                        message3.innerHTML = '<h3 class=text-danger strong><?php _e('Upgrade Failed'); ?></h3>'
-                        // append error message html
-                        var message4 = document.createElement('div');
-                        message4.className = 'step';
-                        message4.innerHTML = json.message
-                        steps.innerHTML = '';
-                        steps.appendChild(message3);
-                        steps.appendChild(message4);
+                        report(verdict('danger', t.failed), json.message);
                     }
-                }).catch(function(error) {
-                    console.log(error);
+                })
+                .catch(function () {
+                    report(verdict('warning', t.noReply));
                 });
-        } else {
-            // make a fetch request to get the latest version
-            var checkVersionUrl = '<?php echo osc_admin_base_url(true); ?>?page=ajax&action=check_version'
-            fetch(checkVersionUrl, {
-                method: 'GET',
-                credentials: 'include'
-            }).then(function(response) {
-                return response.json();
-            }).then(function(json) {
-                console.log(json.error === 0 ? json.msg : ('error: ' + json.msg));
-            });
-            // append a message to steps
-            var message1 = document.createElement('div');
-            message1.className = 'step';
-            message1.innerHTML = '<h3><?php _e('No Upgrade Available'); ?></h3>' +
-                '<div class="callout-success"><?php echo osc_esc_js(__('Congratulations! Your Shopclass installation is up to date!')); ?></div>'
-            steps.innerHTML = '';
-            steps.appendChild(message1);
-            steps_div.style.display = 'block';
-        }
+            <?php } elseif ($isAvailable) { ?>
+            var notes = document.getElementById('upgrade-release-notes');
+            fetch(<?php echo json_encode('https://api.github.com/repos/mindstellar/Shopclass/releases/tags/' . rawurlencode($remoteVersion)); ?>)
+                .then(function (response) {
+                    return response.ok ? response.json() : null;
+                })
+                .then(function (json) {
+                    if (!notes || !json || typeof json.body !== 'string' || json.body.trim() === '') {
+                        return;
+                    }
+                    // Built as elements, never as HTML: paragraphs, bullets, headings, bold, code and project links.
+                    var inline = function (parent, text) {
+                        var re = /\*\*([^*]+)\*\*|`([^`]+)`|(https:\/\/github\.com\/mindstellar\/[^\s<>"'`)]*[^\s<>"'`).,;:!?])/g;
+                        var last = 0;
+                        var m;
+                        while ((m = re.exec(text)) !== null) {
+                            parent.appendChild(document.createTextNode(text.slice(last, m.index)));
+                            var el;
+                            if (m[1] !== undefined) {
+                                el = document.createElement('strong');
+                                el.textContent = m[1];
+                            } else if (m[2] !== undefined) {
+                                el = document.createElement('code');
+                                el.textContent = m[2];
+                            } else {
+                                el = document.createElement('a');
+                                el.href = m[3];
+                                el.rel = 'noopener';
+                                el.target = '_blank';
+                                el.textContent = m[3];
+                            }
+                            parent.appendChild(el);
+                            last = re.lastIndex;
+                        }
+                        parent.appendChild(document.createTextNode(text.slice(last)));
+                    };
+                    var list = null;
+                    var block = null;
+                    var started = false;
+                    var close = function () {
+                        if (!block) {
+                            return;
+                        }
+                        var el = document.createElement(block.tag);
+                        inline(el, block.parts.join(' '));
+                        (block.tag === 'li' ? list : notes).appendChild(el);
+                        block = null;
+                        started = true;
+                    };
+                    json.body.replace(/\r\n?/g, '\n').split('\n').forEach(function (raw) {
+                        var line = raw.trim();
+                        if (line === '') {
+                            close();
+                            return;
+                        }
+                        var heading = line.match(/^(#{1,6})\s+(.*)$/);
+                        if (heading) {
+                            close();
+                            list = null;
+                            // The section title already names the release.
+                            if (heading[1].length > 2 || started) {
+                                block = {tag: 'h4', parts: [heading[2]]};
+                                close();
+                            }
+                            return;
+                        }
+                        var bullet = line.match(/^[-*]\s+(.*)$/);
+                        if (bullet) {
+                            close();
+                            if (!list) {
+                                list = document.createElement('ul');
+                                notes.appendChild(list);
+                                started = true;
+                            }
+                            block = {tag: 'li', parts: [bullet[1]]};
+                            return;
+                        }
+                        if (block && (block.tag === 'p' || /^\s/.test(raw))) {
+                            block.parts.push(line);
+                            return;
+                        }
+                        close();
+                        list = null;
+                        block = {tag: 'p', parts: [line]};
+                    });
+                    close();
+                    notes.hidden = false;
+                })
+                .catch(function () {
+                });
+            <?php } else { ?>
+            fetch(<?php echo json_encode(osc_admin_base_url(true) . '?page=ajax&action=check_version'); ?>, {credentials: 'include'})
+                .catch(function () {
+                });
+            <?php } ?>
+        })();
     </script>
     <?php
-}
+});
 
-
-//TODO Not using it right now
-osc_add_hook('admin_footer', 'customHead', 10);
+// The files backup moved to Tools > Backup and restore; old links to it follow. Remove in 7.0.
+osc_add_hook('admin_footer', static function () { ?>
+    <script>
+        if (location.hash === '#backup-files') {
+            location.replace(<?php echo json_encode(osc_admin_base_url(true) . '?page=tools&action=backup'); ?>);
+        }
+    </script>
+<?php });
 
 /**
  * Filter callback for `render-wrapper`: the CSS class the page wrapper renders with.
@@ -195,7 +209,6 @@ function render_offset()
     return 'row-offset';
 }
 
-
 osc_admin_page(array(
     'section' => __('Tools'),
     'title'   => __('Upgrade'),
@@ -204,35 +217,64 @@ osc_admin_page(array(
 ));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-<div id="backup-setting">
-    <!-- settings form -->
-    <div id="backup-settings">
-        <?php osc_admin_page_head(__('Upgrade')); ?>
-        <form>
-            <fieldset>
-                <div class="form-horizontal">
-                    <div class="tools upgrade">
-                        <p class="form-intro">
-                            <?php
-                            printf(
-                                __('Your Shopclass installation can be auto-upgraded.
-                                        Please, back up your database and the folder oc-content before attempting to
-                                        upgrade your Shopclass installation.
-                                        You can also upgrade Shopclass manually, more information in the %s'),
-                                '<a href="https://docs.mindstellar.com/">Documentation</a>'
-                            );
-                            ?>
-                        </p>
-                        <div id="steps_div">
-                            <div id="steps">
-
-                            </div>
+    <?php osc_admin_page_head(__('Upgrade Shopclass')); ?>
+    <div class="upgrade-tool">
+        <p class="form-intro">
+            <?php
+            printf(
+                osc_esc_html(__('Your Shopclass installation can be auto-upgraded. %1$s: the database and oc-content. You can also upgrade Shopclass manually, more information in the %2$s.')),
+                '<a href="' . osc_esc_html(osc_admin_base_url(true) . '?page=tools&action=backup') . '">' . osc_esc_html(__('Back up first')) . '</a>',
+                '<a href="https://docs.mindstellar.com/">' . osc_esc_html(__('Documentation')) . '</a>'
+            );
+            ?>
+        </p>
+        <div id="steps_div">
+            <div id="steps">
+                <?php if ($selfUpdateOff) {
+                    osc_admin_verdict(array(array(
+                        'tone' => 'info',
+                        'text' => __('This installation runs from a container image. Update by deploying a newer image tag; the database is migrated automatically when the container starts.'),
+                    )));
+                } elseif (!$isAvailable) {
+                    osc_admin_verdict(array(), sprintf(__('Shopclass is up to date. You have version %s.'), osc_get_preference('version')));
+                } elseif ($running) { ?>
+                    <div class="upgrade-running" role="status">
+                        <span class="spinner-border upgrade-running-spinner" aria-hidden="true"></span>
+                        <div>
+                            <p class="upgrade-running-line"><?php echo osc_esc_html(sprintf(__('Upgrading Shopclass to %s.'), $remoteVersion)); ?></p>
+                            <p class="upgrade-running-note"><?php _e('This can take a few minutes. Keep this page open.'); ?></p>
                         </div>
                     </div>
-                </div>
-            </fieldset>
-        </form>
+                <?php } else {
+                    osc_admin_verdict(array(array(
+                        'tone'   => 'info',
+                        'text'   => sprintf(__('Shopclass %1$s is available. You have %2$s.'), $remoteVersion, osc_get_preference('version')),
+                        'action' => array(
+                            'label'   => sprintf(__('Upgrade to %s'), $remoteVersion),
+                            'variant' => 'primary',
+                            'attrs'   => array('data-osc-dialog-open' => '#upgrade-dialog'),
+                        ),
+                    )));
+                    osc_admin_confirm_dialog(array(
+                        'id'        => 'upgrade-dialog',
+                        'tone'      => 'plain',
+                        'method'    => 'post',
+                        'url'       => osc_admin_base_url(true) . '?page=tools&action=upgrade',
+                        'fields'    => array('confirm' => 'true'),
+                        'title'     => sprintf(__('Upgrade Shopclass to %s?'), $remoteVersion),
+                        'text'      => __('The Shopclass files are replaced with the new version, and any change made to core files is lost. Visitors see a maintenance page for a few minutes while it runs.'),
+                        'body_html' => '<p class="osc-dialog-text">' . sprintf(
+                            osc_esc_html(__('Back up first: %s.')),
+                            '<a href="' . osc_esc_html(osc_admin_base_url(true) . '?page=tools&action=backup') . '">'
+                            . osc_esc_html(__('Tools > Backup and restore')) . '</a>'
+                        ) . '</p>',
+                        'confirm'   => sprintf(__('Upgrade to %s'), $remoteVersion),
+                    )); ?>
+                    <section class="upgrade-tool-notes" id="upgrade-release-notes" hidden>
+                        <?php osc_admin_form_section(sprintf(__("What's new in %s"), $remoteVersion), array('spaced' => true)); ?>
+                    </section>
+                <?php } ?>
+            </div>
+        </div>
     </div>
-    <!-- /settings form -->
-</div>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

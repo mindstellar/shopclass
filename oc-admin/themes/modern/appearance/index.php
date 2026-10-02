@@ -106,6 +106,61 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 
             return $meta;
         };
+
+        // The parent a theme declares, when it names one that is actually installed.
+        $parentOf = static function ($slug) {
+            $i = WebThemes::newInstance()->loadThemeInfo($slug);
+            if (!is_array($i) || empty($i['template'])
+                || !\mindstellar\utility\Validate::packageName((string) $i['template'])
+                || $i['template'] === $slug
+            ) {
+                return null;
+            }
+
+            return (string) $i['template'];
+        };
+
+        /** A theme's display name, falling back to its directory name. */
+        $nameOf = static function ($slug) {
+            $i = WebThemes::newInstance()->loadThemeInfo($slug);
+
+            return is_array($i) && $i['name'] !== '' ? ucfirst($i['name']) : $slug;
+        };
+
+        $activeParent  = $parentOf(osc_theme());
+        $parentMissing = $activeParent !== null && !in_array($activeParent, $themes, true);
+
+        // Function names a theme and its parent would both declare with no guard between
+        // them. PHP cannot recover from that -- the request is over before anything can
+        // catch it -- so it has to be said before the theme is switched on, not after.
+        $clashesOf = static function ($slug) use ($parentOf) {
+            $parent = $parentOf($slug);
+            if ($parent === null) {
+                return array();
+            }
+
+            return \mindstellar\theme\ThemeFunctions::collisions(
+                osc_themes_path() . $slug . '/functions.php',
+                osc_themes_path() . $parent . '/functions.php'
+            );
+        };
+
+        $clashNote = static function (array $clashes, $parent) {
+            return sprintf(
+                __('Cannot run with "%1$s": both declare %2$s.'),
+                $parent,
+                '<code>' . implode('</code>, <code>', array_map('osc_esc_html', $clashes)) . '</code>'
+            );
+        };
+        ?>
+        <?php
+        // What the detail dialog shows before it loads the rest.
+        $themeDetail = static fn ($i) => array(
+            'name'              => ucfirst((string) ($i['name'] ?? '')),
+            'author'            => (string) ($i['author_name'] ?? ''),
+            'version'           => (string) ($i['version'] ?? ''),
+            'short_description' => (string) ($i['description'] ?? ''),
+        );
         ?>
         <?php osc_admin_page_head(__('Current theme')); ?>
         <?php osc_package_list_open('osc-pkg-list--themes'); ?>
@@ -116,14 +171,30 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             'state'       => 'live',
             'size'        => 'wide',
             'class'       => 'current-theme',
-            'meta'        => $themeMeta($info),
+            'meta'        => array_merge(
+                $themeMeta($info),
+                $activeParent !== null && !$parentMissing
+                    ? array(sprintf(__('extends %s'), osc_esc_html($nameOf($activeParent))))
+                    : array()
+            ),
             'description' => $info['description'],
+            'note'        => $parentMissing
+                ? osc_esc_html(sprintf(
+                    __('This theme extends "%s", which is not installed. '
+                       . 'Anything it does not carry itself is coming from the default theme.'),
+                    $activeParent
+                ))
+                : ($clashesOf(osc_theme()) !== array()
+                    ? $clashNote($clashesOf(osc_theme()), $activeParent)
+                    : ''),
+            'note_variant' => 'warning',
             'actions'     => array(
                 'links' => array(
                     '<a target="_blank" rel="noopener" href="' . osc_esc_html(osc_base_url(true)) . '">'
                         . osc_esc_html(__('View site')) . '</a>',
                 ),
             ),
+            'detail'      => $themeDetail($info),
         )); ?>
         <?php osc_package_list_close(); ?>
 
@@ -139,6 +210,10 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 $tInfo  = WebThemes::newInstance()->loadThemeInfo($theme);
                 $tName  = ucfirst($tInfo['name']);
                 $update = $bThemesToUpdate && in_array($theme, $aThemesToUpdate, true);
+                // Deleting this one would leave the active theme rendering on the default.
+                $isParent  = $activeParent === $theme;
+                $ownParent = $parentOf($theme);
+                $clashes   = $clashesOf($theme);
                 osc_package_row(array(
                     'art'         => array(
                         'src' => osc_theme_screenshot_url($theme),
@@ -148,12 +223,23 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     'name'        => $tName,
                     'state'       => 'disabled',
                     'state_word'  => __('Installed'),
-                    'meta'        => $themeMeta($tInfo),
+                    'meta'        => array_merge(
+                        $themeMeta($tInfo),
+                        $ownParent !== null
+                            ? array(sprintf(__('extends %s'), osc_esc_html($nameOf($ownParent))))
+                            : array()
+                    ),
                     'description' => $tInfo['description'],
-                    'note'        => $update
-                        ? osc_esc_html(__('An update is ready for this theme. Open the Updates tab to apply it.'))
-                        : '',
-                    'note_variant' => 'update',
+                    'note'        => $clashes !== array()
+                        ? $clashNote($clashes, $ownParent)
+                        : ($isParent
+                            ? osc_esc_html(__('The active theme extends this one. Deleting it would leave '
+                                              . 'your site rendering on the default theme.'))
+                            : ($update
+                                ? osc_esc_html(__('An update is ready for this theme. '
+                                                  . 'Open the Updates tab to apply it.'))
+                                : '')),
+                    'note_variant' => ($clashes !== array() || $isParent) ? 'warning' : 'update',
                     'actions'     => array(
                         'primary' => array(
                             'label' => __('Activate'),
@@ -169,6 +255,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                 . osc_esc_html(__('Delete')) . '</a>',
                         ),
                     ),
+                    'detail'      => $themeDetail($tInfo),
                 ));
             endforeach; ?>
             <?php osc_package_list_close(); ?>
@@ -176,7 +263,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             <?php osc_admin_empty(array(
                 'icon'  => 'bi-palette',
                 'title' => __('No other themes installed'),
-                'text'  => __('Find one in Browse, or upload a theme package.'),
+                'text'  => __('Find one in Browse, or upload its zip file.'),
                 'action' => array(
                     'label'   => __('Add theme'),
                     'url'     => osc_admin_base_url(true) . '?page=appearance&amp;action=add',

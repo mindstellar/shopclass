@@ -20,6 +20,8 @@
  * @subpackage classes
  * @author     Shopclass
  */
+use mindstellar\admin\ListPaging;
+
 class UsersDataTable extends DataTable
 {
     private $withUserId;
@@ -107,6 +109,28 @@ class UsersDataTable extends DataTable
     }
 
     /**
+     * A contains-search over one or more columns, as a condition User::search() binds.
+     *
+     * A bare word matches anywhere in the value, which is what somebody typing half an
+     * address expects. `*` stays the explicit wildcard it has always been, and a `%` or
+     * `_` the admin actually typed is escaped so it matches itself.
+     *
+     * @param array<int,string> $columns
+     * @param string            $term
+     *
+     * @return array{columns:array<int,string>,op:string,value:string}
+     */
+    private function like(array $columns, $term)
+    {
+        $value = str_replace(array('\\', '%', '_'), array('\\\\', '\%', '\_'), (string)$term);
+        $value = strpos($term, '*') === false
+            ? '%' . $value . '%'
+            : str_replace('*', '%', $value);
+
+        return array('columns' => $columns, 'op' => 'LIKE', 'value' => $value);
+    }
+
+    /**
      * Derives page, start, limit, ordering and the search conditions from the request params.
      *
      * @param array<string,mixed> $_get
@@ -120,13 +144,7 @@ class UsersDataTable extends DataTable
             $_get['iDisplayStart'] = 0;
         }
         # Paging
-        $p_iPage = 1;
-        if (!is_numeric(Params::getParam('iPage')) || Params::getParam('iPage') < 1) {
-            Params::setParam('iPage', $p_iPage);
-            $this->iPage = $p_iPage;
-        } else {
-            $this->iPage = Params::getParam('iPage');
-        }
+        $this->iPage = ListPaging::page();
         # Sorting column and order
         $this->order_by = $this->resolveOrder($_get, $this->sortable, 'pk_i_id');
 
@@ -138,31 +156,26 @@ class UsersDataTable extends DataTable
         }
         # condition for s_email
         if (isset($_get['s_email']) && $_get['s_email']) {
-            // escape value
-            $esc_email                                             =
-                User::newInstance()->dao->escape(str_replace('*', '%', $_get['s_email']));
-            $this->conditions["s_email LIKE " . $esc_email ] = null;
-            $this->withFilters                                     = true;
+            $this->conditions[] = $this->like(array('s_email'), $_get['s_email']);
+            $this->withFilters  = true;
         }
         # condition for s_name
         if (isset($_get['s_name']) && $_get['s_name']) {
-            $this->conditions['s_name'] = str_replace('*', '%', $_get['s_name']);
-            $this->withFilters          = true;
+            $this->conditions[] = $this->like(array('s_name'), $_get['s_name']);
+            $this->withFilters  = true;
         } elseif (isset($_get['user']) && $_get['user']) {
-            if (!isset($_get['userId']) || $_get['userId'] == '') {
-                // escape value
-                $esc_user                                                                                =
-                    User::newInstance()->dao->escape(str_replace('*', '%', $_get['user']));
-                $this->conditions["s_email LIKE " . $esc_user . " OR s_name LIKE " . $esc_user ] = null;
-            } else {
-                $this->conditions['s_name'] = str_replace('*', '%', $_get['user']);
-            }
-            $this->withFilters = true;
+            // The one search box on the screen. With a user already pinned by id the
+            // name is all that is left to narrow by; otherwise it looks in both.
+            $columns = (!isset($_get['userId']) || $_get['userId'] === '')
+                ? array('s_email', 's_name')
+                : array('s_name');
+            $this->conditions[] = $this->like($columns, $_get['user']);
+            $this->withFilters  = true;
         }
         # condition for s_username
         if (isset($_get['s_username']) && $_get['s_username'] != '') {
-            $this->conditions['s_username'] = str_replace('*', '%', $_get['s_username']);
-            $this->withFilters              = true;
+            $this->conditions[] = $this->like(array('s_username'), $_get['s_username']);
+            $this->withFilters  = true;
         }
         # condition for countryId
         if (isset($_get['countryId']) && $_get['countryId'] != '') {
@@ -201,10 +214,8 @@ class UsersDataTable extends DataTable
         }
 
         // set start and limit using iPage param
-        $start = ($this->iPage - 1) * $_get['iDisplayLength'];
-
-        $this->start = (int)$start;
-        $this->limit = (int)$_get['iDisplayLength'];
+        $this->limit = ListPaging::length((int)($_get['iDisplayLength'] ?? ListPaging::DEFAULT_LENGTH));
+        $this->start = ListPaging::start($this->iPage, $this->limit);
     }
 
     /**

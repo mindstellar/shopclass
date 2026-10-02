@@ -238,9 +238,7 @@ class UserForm extends Form
         if (count($locales) > 1) {
             echo '<ul>';
             foreach ($locales as $locale) {
-                $active = ($locale['pk_c_code'] === osc_current_admin_locale()) ? ' class="ui-tabs-active ui-state-active"' : '';
-                echo '<li' . $active . '><a href="#' . osc_esc_html($locale['pk_c_code']) . '">'
-                     . osc_esc_html($locale['s_name']) . '</a></li>';
+                echo \mindstellar\admin\ui\Field::localeTab($locale['pk_c_code'], $locale['s_name'], $locale['pk_c_code']);
             }
             echo '</ul>';
         }
@@ -653,10 +651,13 @@ class UserForm extends Form
                     }).then(function (r) { return r.json(); }).catch(function () { return []; });
                 }
 
-                var country = byId('countryId');
-                if (country) {
-                    country.addEventListener('change', function () {
-                        var code = this.value;
+                // Delegated, like the region handler below it. This script is emitted from
+                // customHead(), so it runs in <head> before the form exists -- binding
+                // straight to #countryId attached nothing and picking a country did not
+                // reload the regions.
+                document.addEventListener('change', function (e) {
+                    if (e.target && e.target.id === 'countryId') {
+                        var code = e.target.value;
                         if (code === '') {
                             // No country: reset region + city to empty, disabled selects.
                             if (byId('region')) { replaceEl('region', makeControl('select', 'regionId')); }
@@ -679,8 +680,8 @@ class UserForm extends Form
                                 if (byId('cityId')) { replaceEl('cityId', makeControl('input', 'city')); }
                             }
                         });
-                    });
-                }
+                    }
+                });
 
                 // Delegated so it keeps working after #regionId is recreated by the country
                 // handler (the old jQuery bound directly and lost the handler on rebuild).
@@ -703,10 +704,19 @@ class UserForm extends Form
                 });
 
                 // Initial disabled state.
-                var region = byId('regionId');
-                if (region && region.value === '' && byId('cityId')) { byId('cityId').disabled = true; }
-                if (country && country.tagName === 'SELECT' && country.value === '' && byId('regionId')) {
-                    byId('regionId').disabled = true;
+                // Also deferred: in <head> none of these elements exist yet.
+                function initialState() {
+                    var region = byId('regionId');
+                    var country = byId('countryId');
+                    if (region && region.value === '' && byId('cityId')) { byId('cityId').disabled = true; }
+                    if (country && country.tagName === 'SELECT' && country.value === '' && byId('regionId')) {
+                        byId('regionId').disabled = true;
+                    }
+                }
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', initialState);
+                } else {
+                    initialState();
                 }
             })();
         </script>

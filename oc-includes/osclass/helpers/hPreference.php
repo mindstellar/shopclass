@@ -41,13 +41,40 @@ function osc_comments_enabled()
 }
 
 /**
+ * How new photos are saved: original, jpeg or webp.
+ *
+ * @return string
+ */
+function osc_image_format()
+{
+    $format = (string) osc_get_preference('image_format');
+    // Until the database update adds image_format, the old Force JPEG switch still counts.
+    if ($format === '' && getBoolPreference('force_jpeg')) {
+        return 'jpeg';
+    }
+
+    return in_array($format, array('jpeg', 'webp'), true) ? $format : 'original';
+}
+
+/**
  * Force uploaded images to be JPEG
  *
  * @return boolean
  */
 function osc_force_jpeg()
 {
-    return getBoolPreference('force_jpeg');
+    return osc_image_format() === 'jpeg';
+}
+
+/**
+ * Whether new photos are stored as WebP. Only when the server can write WebP.
+ *
+ * @return boolean
+ */
+function osc_save_webp()
+{
+    return osc_image_format() === 'webp'
+           && ImageProcessing::canWriteWebp(extension_loaded('imagick') && osc_use_imagick());
 }
 
 /**
@@ -389,15 +416,16 @@ function osc_max_images_per_item()
 }
 
 /**
- * Gets how many characters are allowed for the listings title
+ * Gets how many characters are allowed for the listings title.
+ * Never more than the title column holds, whatever is stored.
  *
  * @return int
  */
 function osc_max_characters_per_title()
 {
-    $value = getPreference('title_character_length');
+    $value = (int)getPreference('title_character_length');
 
-    return (!empty($value) ? (int)$value : 128);
+    return $value > 0 ? min($value, Item::TITLE_WIDTH) : Item::TITLE_WIDTH;
 }
 
 /**

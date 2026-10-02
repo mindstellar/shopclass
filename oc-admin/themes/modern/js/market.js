@@ -171,6 +171,19 @@
         if (search) {
             search.addEventListener('input', applyFilters);
         }
+        var clearSearch = app.querySelector('.market-clear-search');
+        if (clearSearch) {
+            clearSearch.addEventListener('click', function () {
+                if (search) {
+                    search.value = '';
+                    search.focus();
+                }
+                if (categoryFilter) {
+                    categoryFilter.value = '';
+                }
+                applyFilters();
+            });
+        }
         if (categoryFilter) {
             categoryFilter.addEventListener('change', applyFilters);
         }
@@ -705,7 +718,7 @@
             }
             dStatus.innerHTML = '';
             if (statusSrc) {
-                var wrap = statusSrc.classList.contains('market-card-status') ? statusSrc : statusSrc.closest('.market-card-status');
+                var wrap = statusSrc.classList.contains('market-card-status') ? statusSrc : statusSrc.closest('.market-card-status, .osc-pkg-state');
                 dStatus.appendChild((wrap || statusSrc).cloneNode(true));
             }
             dTitle.textContent = data.name || '';
@@ -771,7 +784,7 @@
                 return;
             }
             e.preventDefault();
-            var container = trigger.closest('.market-card, .market-update-item');
+            var container = trigger.closest('.market-card, .market-update-item, .osc-pkg[data-market-item]');
             if (container) {
                 openDetail(container);
             }

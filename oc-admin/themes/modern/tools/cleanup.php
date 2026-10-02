@@ -18,26 +18,51 @@ osc_admin_page(array(
                     . 'it must be, then run it now or let the daily task handle it.'),
 ));
 
-// Rule metadata, in run order. `days` = whether the rule has an age threshold.
+// What each rule removes, in run order; the names come from Cleanup::ruleLabels().
 $cleanup_rules = array(
-    'reported'          => array('label' => __('Reported listings'),    'desc' => __('Listings visitors have flagged as spam.'),            'days' => false),
-    'expired'           => array('label' => __('Expired listings'),     'desc' => __('Listings past their expiration date.'),               'days' => true),
-    'inactive_listings' => array('label' => __('Unactivated listings'), 'desc' => __('Listings never activated from the confirmation email.'), 'days' => true),
-    'spam'              => array('label' => __('Spam listings'),        'desc' => __('Listings marked as spam.'),                          'days' => true),
-    'blocked'           => array('label' => __('Blocked listings'),     'desc' => __('Listings that are disabled/blocked.'),                'days' => true),
-    'inactive_users'    => array('label' => __('Unactivated users'),    'desc' => __('Accounts never activated from the confirmation email.'), 'days' => true),
+    'reported'          => __('Listings visitors have flagged as spam, unchanged since.'),
+    'expired'           => __('Listings past their expiration date.'),
+    'inactive_listings' => __('Listings never activated from the confirmation email.'),
+    'spam'              => __('Listings marked as spam.'),
+    'blocked'           => __('Listings that are disabled/blocked.'),
+    'inactive_users'    => __('Accounts never activated from the confirmation email.'),
+    'orphan_avatars'    => __('Profile pictures left behind by deleted accounts.'),
 );
+$rule_labels = Cleanup::ruleLabels();
 
 $engine      = Cleanup::newInstance();
-$batch_limit = (int)osc_get_preference('batch_limit', 'osclass');
-if ($batch_limit < 1) {
-    $batch_limit = 250;
-}
+$batch_limit = Cleanup::batchLimit();
+$running     = \mindstellar\job\CleanupJobs::isRunning();
+$history     = View::newInstance()->_get('cleanup_history') ?: array();
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-    <?php osc_admin_page_head(__('Cleanup')); ?>
+    <?php osc_admin_page_head(__('Cleanup'), array(array(
+        'label'   => __('Run cleanup now'),
+        'icon'    => 'bi-trash3',
+        'variant' => 'outline-danger',
+        'attrs'   => array('data-osc-dialog-open' => '#cleanup-run-dialog'),
+    ))); ?>
+
+    <p class="text-muted">
+        <?php if ($running) {
+            osc_admin_status('active', __('Running'));
+            echo ' ';
+            _e('Cleanup is running in the background. Reload this page to see the counts go down.');
+        } else { ?>
+            <i class="bi bi-clock-history" aria-hidden="true"></i>
+            <?php if ($history !== array()) {
+                printf(__('Enabled rules run once a day. The last cleanup finished %s.'), osc_admin_when($history[0]['dt_date']));
+            } else {
+                _e('Enabled rules run once a day.');
+            }
+        } ?>
+    </p>
 
     <?php osc_admin_form_open(array('page' => 'tools', 'action' => 'cleanup_post')); ?>
+
+        <?php osc_admin_form_section(__('What to remove'), array(
+            'intro' => __('Tick what to clean and how old it must be. Everything removed is gone for good.'),
+        )); ?>
 
         <div class="table-responsive">
         <table class="table" style="min-width:34rem">
@@ -50,34 +75,27 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             </tr>
             </thead>
             <tbody>
-            <?php foreach ($cleanup_rules as $rule => $meta) {
-                $enabled = osc_get_preference('enabled_' . $rule, 'osclass') == 1;
-                $days    = (int)osc_get_preference('days_' . $rule, 'osclass');
-                if ($days < 1) {
-                    $days = 30;
-                }
-                $matching = $engine->countFor($rule, $meta['days'] ? $days : 0); ?>
+            <?php foreach ($cleanup_rules as $rule => $desc) {
+                $enabled  = Cleanup::isEnabled($rule);
+                $days     = Cleanup::days($rule);
+                $matching = $engine->countFor($rule, $days); ?>
                 <tr>
                     <td>
                         <input type="checkbox" id="enabled_<?php echo $rule; ?>"
                                name="enabled_<?php echo $rule; ?>" value="1" <?php echo $enabled ? 'checked' : ''; ?>>
                     </td>
                     <td>
-                        <label for="enabled_<?php echo $rule; ?>"><strong><?php echo osc_esc_html($meta['label']); ?></strong></label>
-                        <div class="text-muted"><?php echo osc_esc_html($meta['desc']); ?></div>
+                        <label for="enabled_<?php echo $rule; ?>"><strong><?php echo osc_esc_html($rule_labels[$rule]); ?></strong></label>
+                        <div class="text-muted"><?php echo osc_esc_html($desc); ?></div>
                     </td>
                     <td>
-                        <?php if ($meta['days']) {
-                            osc_admin_number(array(
-                                'row'    => false,
-                                'name'   => 'days_' . $rule,
-                                'value'  => $days,
-                                'min'    => 1,
-                                'suffix' => __('days'),
-                            ));
-                        } else { ?>
-                            <span class="text-muted">&mdash;</span>
-                        <?php } ?>
+                        <?php osc_admin_number(array(
+                            'row'    => false,
+                            'name'   => 'days_' . $rule,
+                            'value'  => $days,
+                            'min'    => 1,
+                            'suffix' => __('days'),
+                        )); ?>
                     </td>
                     <td class="text-end"><?php echo number_format($matching); ?></td>
                 </tr>
@@ -86,23 +104,22 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         </table>
         </div>
 
-        <?php osc_admin_form_row_open(__('Maximum items removed per run'), array('for' => 'batch_limit')); ?>
+        <?php osc_admin_form_row_open(__('Items removed per batch'), array('for' => 'batch_limit')); ?>
             <?php osc_admin_number(array(
                 'row'   => false,
                 'id'    => 'batch_limit',
                 'name'  => 'batch_limit',
                 'value' => $batch_limit,
                 'min'   => 1,
-                'help'  => __('Keeps each run bounded so it never times out; run again to clear a larger backlog.'),
+                'help'  => __('Cleanup runs in the background, one batch at a time, until nothing matches.'),
             )); ?>
         <?php osc_admin_form_row_close(); ?>
 
-        <?php osc_admin_page_head(__('Listing statistics')); ?>
-
-        <p class="form-intro">
-            <?php _e('View counts are written on every page render, so they are the busiest '
-                     . 'write on a large site. Turn them off if you do not use them.'); ?>
-        </p>
+        <?php osc_admin_form_section(__('Listing statistics'), array(
+            'spaced' => true,
+            'intro'  => __('View counts are written on every page render, so they are the busiest '
+                           . 'write on a large site. Turn them off if you do not use them.'),
+        )); ?>
 
         <?php osc_admin_form_row_open(__('View counting')); ?>
             <?php osc_admin_checkbox(array(
@@ -138,25 +155,38 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 
     <?php osc_admin_form_close(array(
         array('label' => __('Save settings'), 'type' => 'submit', 'variant' => 'primary'),
-        array(
-            'label'   => __('Run cleanup now'),
-            'type'    => 'button',
-            'variant' => 'danger',
-            'attrs'   => array('data-osc-dialog-open' => '#cleanup-run-dialog'),
-        ),
     )); ?>
 
-    <p class="text-muted mt-2">
-        <i class="bi bi-clock-history"></i>
-        <?php _e('Enabled rules also run automatically once a day.'); ?>
-    </p>
+    <?php osc_admin_form_section(__('Recent cleanups'), array('spaced' => true)); ?>
+    <?php if ($history === array()) { ?>
+        <p class="text-muted"><?php _e('Nothing has been cleaned up yet.'); ?></p>
+    <?php } else { ?>
+        <div class="table-responsive">
+            <table class="table" style="min-width:30rem">
+                <thead>
+                <tr>
+                    <th><?php _e('When'); ?></th>
+                    <th><?php _e('Details'); ?></th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($history as $entry) { ?>
+                    <tr>
+                        <td class="text-nowrap"><?php echo osc_admin_when($entry['dt_date']); ?></td>
+                        <td><?php echo osc_esc_html((string) $entry['s_data']); ?></td>
+                    </tr>
+                <?php } ?>
+                </tbody>
+            </table>
+        </div>
+    <?php } ?>
 
     <?php osc_admin_confirm_dialog(array(
             'id'      => 'cleanup-run-dialog',
             'method'  => 'post',
             'fields'  => array('page' => 'tools', 'action' => 'cleanup_run'),
             'title'   => __('Run cleanup now?'),
-            'text'    => __("This permanently deletes the matching listings and users for every enabled rule (up to the per-run limit). This can't be undone."),
+            'text'    => __("This permanently deletes the matching listings, users and profile pictures for every enabled rule. It runs in the background. This can't be undone."),
             'confirm' => __('Delete matching items'),
         )); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

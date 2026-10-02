@@ -28,6 +28,12 @@ final class Orders
     /** Unprefixed table name. */
     private const TABLE = 't_billing_order';
 
+    /** s_meta key core sets when a refund was sent to the provider. */
+    public const REFUND_REQUESTED = '_refund_requested';
+
+    /** s_meta key core sets once the order's receipt e-mail went out. */
+    public const RECEIPT_SENT = '_receipt_sent';
+
     /**
      * Record a new pending order.
      *
@@ -154,6 +160,158 @@ final class Orders
         }
 
         return $changed === 1;
+    }
+
+    /**
+     * Store the gateway's reference on an order that is still pending, such as a checkout
+     * session id made in createCheckout(). A paid callback can then find the order by it.
+     * Attaching again replaces the ref, so a re-checkout can store its new session.
+     *
+     * @param int    $orderId
+     * @param string $gatewayId The gateway the order must belong to
+     * @param string $ref       Printable ASCII without spaces, up to 191 characters
+     *
+     * @return bool whether a row changed: false when the order is not pending or not
+     *              this gateway's, the ref is malformed, or another order already has it
+     */
+    public static function attachRef(int $orderId, string $gatewayId, string $ref): bool
+    {
+        if (!preg_match('/^[\x21-\x7E]{1,191}$/', $ref)) {
+            return false;
+        }
+
+        try {
+            $changed = self::table()
+                ->where('pk_i_id', $orderId)
+                ->where('s_gateway', $gatewayId)
+                ->where('s_status', Order::STATUS_PENDING)
+                ->update(array('s_external_ref' => $ref));
+        } catch (DbException $e) {
+            return false; // uq_gateway_ref: the ref belongs to another order
+        }
+
+        return $changed === 1;
+    }
+
+    /**
+     * Mark a paid order as sent to the provider for a refund, or clear the mark. While
+     * it is set, core does not ask the provider again; see Billing::refundThroughGateway().
+     *
+     * @param int  $orderId
+     * @param bool $on
+     *
+     * @return bool whether the mark is now as asked
+     */
+    public static function markRefundRequested(int $orderId, bool $on = true): bool
+    {
+        return self::changeMeta($orderId, static function (array $meta) use ($on): array {
+            if ($on) {
+                $meta[self::REFUND_REQUESTED] = date('Y-m-d H:i:s');
+            } else {
+                unset($meta[self::REFUND_REQUESTED]);
+            }
+
+            return $meta;
+        }, Order::STATUS_PAID);
+    }
+
+    /**
+     * Record that the order's receipt e-mail was sent.
+     *
+     * @param int $orderId
+     *
+     * @return bool whether the mark is stored
+     */
+    public static function markReceiptSent(int $orderId): bool
+    {
+        return self::changeMeta($orderId, static function (array $meta): array {
+            $meta[self::RECEIPT_SENT] = date('Y-m-d H:i:s');
+
+            return $meta;
+        });
+    }
+
+    /**
+     * Store one metadata value on an order, for a gateway plugin. Other keys are kept.
+     *
+     * Keys starting with an underscore belong to core and are refused.
+     *
+     * @param int                        $orderId
+     * @param string                     $key   Lower-case letters, digits, _ . - (up to 64), not starting with _
+     * @param bool|int|float|string|null $value A scalar (a string up to 255 characters), or null to remove the key
+     *
+     * @return bool whether the value is now stored (false on a bad key or value, or a missing order)
+     */
+    public static function setMeta(int $orderId, string $key, $value): bool
+    {
+        if (!preg_match('/^[a-z0-9.-][a-z0-9_.-]{0,63}$/', $key)) {
+            return false;
+        }
+        if ($value !== null && !is_bool($value) && !is_int($value) && !is_float($value) && !is_string($value)) {
+            return false;
+        }
+        if (is_string($value) && mb_strlen($value, 'UTF-8') > 255) {
+            return false;
+        }
+        if (is_float($value) && !is_finite($value)) {
+            return false;
+        }
+
+        return self::changeMeta($orderId, static function (array $meta) use ($key, $value): array {
+            if ($value === null) {
+                unset($meta[$key]);
+            } else {
+                $meta[$key] = $value;
+            }
+
+            return $meta;
+        });
+    }
+
+    /**
+     * Read s_meta, apply $change and write it back only if s_meta is unchanged since the
+     * read. Tried twice, so one write racing this one does not lose either change.
+     *
+     * @param int                   $orderId
+     * @param callable(array):array $change
+     * @param string|null           $status  Only an order in this status is changed
+     *
+     * @return bool whether the change is stored
+     */
+    private static function changeMeta(int $orderId, callable $change, ?string $status = null): bool
+    {
+        for ($try = 0; $try < 2; $try++) {
+            $read = self::table()->select('s_meta')->where('pk_i_id', $orderId);
+            if ($status !== null) {
+                $read = $read->where('s_status', $status);
+            }
+            $row = $read->first();
+            if ($row === null) {
+                return false;
+            }
+
+            $old  = $row['s_meta'];
+            $meta = $old !== null && $old !== '' ? json_decode((string) $old, true) : array();
+            if (!is_array($meta)) {
+                $meta = array();
+            }
+            $new = $change($meta);
+            $new = $new === array() ? null : json_encode($new);
+            if ($new === $old) {
+                return true;
+            }
+
+            $write = self::table()->where('pk_i_id', $orderId);
+            if ($status !== null) {
+                $write = $write->where('s_status', $status);
+            }
+            $write = $old === null ? $write->whereNull('s_meta') : $write->where('s_meta', $old);
+            if ($write->update(array('s_meta' => $new)) === 1) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

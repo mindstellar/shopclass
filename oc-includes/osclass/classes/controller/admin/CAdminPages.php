@@ -19,6 +19,9 @@ if (!defined('ABS_PATH')) {
 /**
  * Class CAdminPages
  */
+use mindstellar\admin\form\StaticPageForm;
+use mindstellar\admin\ListPaging;
+
 class CAdminPages extends AdminSecBaseModel
 {
     //specific for this class
@@ -69,68 +72,9 @@ class CAdminPages extends AdminSecBaseModel
                 break;
             case 'edit_post':
                 osc_csrf_check();
-                $id              = Params::getParam('id');
-                $b_link          = (Params::getParam('b_link') != '') ? 1 : 0;
-                $s_internal_name = Params::getParam('s_internal_name');
-                $s_internal_name = osc_sanitizeString($s_internal_name);
+                $this->savePage(Params::getParam('id'));
 
-                $meta = Params::getParam('meta');
-                $this->pageManager->updateMeta($id, json_encode($meta));
-
-                $aFieldsDescription = array();
-                $postParams         = Params::getParamsAsArray('', false);
-                $not_empty          = false;
-                foreach ($postParams as $k => $v) {
-                    if (preg_match('|(.+?)#(.+)|', $k, $m)) {
-                        if ($m[2] == 's_title' && $v != '') {
-                            $not_empty = true;
-                        }
-                        $aFieldsDescription[$m[1]][$m[2]] = $v;
-                    }
-                }
-                Session::newInstance()->_setForm('aFieldsDescription', $aFieldsDescription);
-
-                if ($s_internal_name == '') {
-                    osc_add_flash_error_message(_m('You have to set an internal name'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=pages&action=edit&id=' . $id);
-                }
-
-                // Core's view vocabulary grows between releases, so a page can hold a name
-                // that was free when it was created and is reserved now. Only a rename has
-                // to clear the reserved set; keeping the old name leaves the page editable.
-                $currentName = $this->pageManager->findByPrimaryKey($id)['s_internal_name'] ?? '';
-                if ($s_internal_name !== $currentName
-                    && !WebThemes::newInstance()->isValidPage($s_internal_name)
-                ) {
-                    osc_add_flash_error_message(_m('You have to set a different internal name'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=pages&action=edit&id=' . $id);
-                }
-                Session::newInstance()->_setForm('s_internal_name', $s_internal_name);
-
-                if ($not_empty) {
-                    foreach ($aFieldsDescription as $k => $_data) {
-                        $this->pageManager->updateDescription($id, $k, $_data['s_title'], $_data['s_text']);
-                    }
-
-                    if (!$this->pageManager->internalNameExists($id, $s_internal_name)) {
-                        if (!$this->pageManager->isIndelible($id)) {
-                            $this->pageManager->updateInternalName($id, $s_internal_name);
-                            $this->pageManager->updateLink($id, $b_link);
-                        }
-                        osc_run_hook('edit_page', $id);
-                        Session::newInstance()->_clearVariables();
-                        osc_add_flash_ok_message(_m('The page has been updated'), 'admin');
-                        $this->redirectTo(osc_admin_base_url(true) . '?page=pages');
-                    }
-                    osc_add_flash_error_message(_m("You can't repeat internal name"), 'admin');
-                } else {
-                    osc_add_flash_error_message(
-                        _m("The page couldn't be updated, at least one title should not be empty"),
-                        'admin'
-                    );
-                }
-                $this->redirectTo(osc_admin_base_url(true) . '?page=pages&action=edit&id=' . $id);
-                break;
+                return;
             case 'add':
                 $form     = count(Session::newInstance()->_getForm());
                 $keepForm = count(Session::newInstance()->_getKeepForm());
@@ -146,63 +90,9 @@ class CAdminPages extends AdminSecBaseModel
                 break;
             case 'add_post':
                 osc_csrf_check();
-                $s_internal_name = Params::getParam('s_internal_name');
-                $b_link          = (Params::getParam('b_link') != '') ? 1 : 0;
-                $s_internal_name = osc_sanitizeString($s_internal_name);
+                $this->savePage(null);
 
-                $meta = Params::getParam('meta');
-
-                $aFieldsDescription = array();
-                $postParams         = Params::getParamsAsArray('', false);
-                $not_empty          = false;
-                foreach ($postParams as $k => $v) {
-                    if (preg_match('|(.+?)#(.+)|', $k, $m)) {
-                        if ($m[2] == 's_title' && $v != '') {
-                            $not_empty = true;
-                        }
-                        $aFieldsDescription[$m[1]][$m[2]] = $v;
-                    }
-                }
-                Session::newInstance()->_setForm('aFieldsDescription', $aFieldsDescription);
-
-                if ($s_internal_name == '') {
-                    osc_add_flash_error_message(_m('You have to set an internal name'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=pages&action=add');
-                }
-
-                if (!WebThemes::newInstance()->isValidPage($s_internal_name)) {
-                    osc_add_flash_error_message(_m('You have to set a different internal name'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=pages&action=add');
-                }
-                $aFields = array(
-                    's_internal_name' => $s_internal_name,
-                    'b_indelible'     => '0',
-                    's_meta'          => json_encode($meta),
-                    'b_link'          => $b_link
-                );
-                Session::newInstance()->_setForm('s_internal_name', $s_internal_name);
-
-                $page = $this->pageManager->findByInternalName($s_internal_name);
-                if (!isset($page['pk_i_id'])) {
-                    if ($not_empty) {
-                        $result = $this->pageManager->insert($aFields, $aFieldsDescription);
-                        Session::newInstance()->_clearVariables();
-                        osc_add_flash_ok_message(_m('The page has been added'), 'admin');
-                        $this->redirectTo(osc_admin_base_url(true) . '?page=pages');
-                    } else {
-                        osc_add_flash_error_message(
-                            _m("The page couldn't be added, at least one title should not be empty"),
-                            'admin'
-                        );
-                    }
-                } else {
-                    osc_add_flash_error_message(
-                        _m("Oops! That internal name is already in use. We can't make the changes"),
-                        'admin'
-                    );
-                }
-                $this->redirectTo(osc_admin_base_url(true) . '?page=pages&action=add');
-                break;
+                return;
             case 'delete':
                 osc_csrf_check();
                 $id                    = Params::getParam('id');
@@ -275,18 +165,7 @@ class CAdminPages extends AdminSecBaseModel
 
                 require_once osc_lib_path() . 'osclass/classes/datatables/PagesDataTable.php';
 
-                // set default iDisplayLength
-                if (Params::getParam('iDisplayLength') != '') {
-                    Cookie::newInstance()->push('listing_iDisplayLength', Params::getParam('iDisplayLength'));
-                    Cookie::newInstance()->set();
-                } else {
-                    // set a default value if it's set in the cookie
-                    $listing_iDisplayLength = (int)Cookie::newInstance()->get_value('listing_iDisplayLength');
-                    if ($listing_iDisplayLength == 0) {
-                        $listing_iDisplayLength = 10;
-                    }
-                    Params::setParam('iDisplayLength', $listing_iDisplayLength);
-                }
+                ListPaging::rememberedLength();
                 $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
 
                 // Table header order by related
@@ -297,11 +176,7 @@ class CAdminPages extends AdminSecBaseModel
                     Params::setParam('direction', 'desc');
                 }
 
-                $page = Params::getParamInt('iPage');
-                if ($page == 0) {
-                    $page = 1;
-                }
-                Params::setParam('iPage', $page);
+                $page = ListPaging::page();
 
                 $params = Params::getParamsAsArray();
 
@@ -350,6 +225,100 @@ class CAdminPages extends AdminSecBaseModel
 
     //hopefully generic...
 
+    /**
+     * Save the page the editor posted, through the form it is declared as.
+     *
+     * The declaration owns the whole write: which request keys are read, how each is
+     * sanitised, the rules that can refuse it, the row and the per-locale rows it lands
+     * in. What is left here is the screen around it -- the message, the submission kept
+     * for a redraw, and where the administrator goes next.
+     *
+     * @param int|string|null $id The page being edited, null when one is being added
+     *
+     * @return void
+     */
+    private function savePage($id)
+    {
+        $formId = StaticPageForm::register($id);
+        $result = osc_settings_save($formId, $id);
+        // The form store writes the page tables directly, not through the Page model.
+        \mindstellar\cache\CacheGroup::invalidate('page');
+
+        $values = $result['values'];
+        $titles = is_array($values['s_title'] ?? null) ? $values['s_title'] : array();
+        $bodies = is_array($values['s_text'] ?? null) ? $values['s_text'] : array();
+
+        // The form the view redraws from: one entry per locale, in the shape the screen
+        // has always read it back out of.
+        $submitted = array();
+        foreach ($titles as $code => $title) {
+            $submitted[$code] = array('s_title' => $title, 's_text' => $bodies[$code] ?? '');
+        }
+        Session::newInstance()->_setForm('aFieldsDescription', $submitted);
+
+        $name    = (string)($values['s_internal_name'] ?? '');
+        $link    = empty($values['b_link']) ? 0 : 1;
+        $failure = StaticPageForm::failure();
+
+        if ($result['errors'] !== array()) {
+            // The name is remembered only once it has passed: a refused one must not come
+            // back on the next form the administrator opens.
+            if (!in_array($failure['rule'] ?? '', array('empty', 'reserved'), true)) {
+                Session::newInstance()->_setForm('s_internal_name', $name);
+            }
+
+            foreach ($result['errors'] as $error) {
+                osc_add_flash_error_message($error, 'admin');
+            }
+            $field  = $failure['field'] ?? 's_internal_name';
+            $errors = array($field => ($field === 's_title'
+                ? StaticPageForm::emptyTitles($titles)
+                : ($failure['message'] ?? $result['errors'][0])));
+            $this->drawForm($id, $name, $link, $errors);
+
+            return;
+        }
+
+        Session::newInstance()->_setForm('s_internal_name', $name);
+        if ($id !== null) {
+            osc_run_hook('edit_page', $id);
+        }
+        Session::newInstance()->_clearVariables();
+        osc_add_flash_ok_message(
+            $id === null ? _m('The page has been added') : _m('The page has been updated'),
+            'admin'
+        );
+        $this->redirectTo(osc_admin_base_url(true) . '?page=pages');
+    }
+
+    /**
+     * Draw the page form again over a rejected save, with what was submitted still in it
+     * rather than thrown away with a redirect. The per-locale titles and bodies are
+     * already in the session form; the rest is handed over here.
+     *
+     * @param int|string|null      $id     The page being edited, null when adding
+     * @param string               $name   The submitted internal name
+     * @param int                  $link   The submitted footer-link choice
+     * @param array<string,mixed>  $errors field name => message, or locale code => message
+     *
+     * @return void
+     */
+    private function drawForm($id, $name, $link, array $errors)
+    {
+        $page = $id === null ? array() : $this->pageManager->findByPrimaryKey($id);
+        // What was typed wins over what is stored: a rejected save is still the
+        // administrator's work in progress.
+        $page['s_internal_name'] = $name;
+        $page['b_link']          = $link;
+        $page['s_meta']          = json_encode(Params::getParam('meta'));
+
+        $templates = osc_apply_filter('page_templates', WebThemes::newInstance()->getAvailableTemplates());
+        $this->_exportVariableToView('templates', $templates);
+        $this->_exportVariableToView('registeredTemplates', osc_page_templates());
+        $this->_exportVariableToView('page', $page);
+        $this->_exportVariableToView('editorErrors', $errors);
+        $this->doView('pages/frm.php');
+    }
 }
 
 /* file end: ./oc-admin/CAdminPages.php */

@@ -65,6 +65,15 @@ check(
     osc_response_etag_value($page) !== osc_response_etag_value($page . '<!-- 12 ms -->')
 );
 
+harness_section('Server-Timing reports the build time without touching the page');
+
+pin('milliseconds with one decimal', 'app;dur=84.2;desc="Page build"', osc_server_timing_value(100.0, 100.0842));
+pin('a clock that went backwards reads zero', 'app;dur=0.0;desc="Page build"', osc_server_timing_value(100.0, 99.0));
+pin('the body passes through unchanged', '<html><body>hello</body></html>', osc_response_server_timing('<html><body>hello</body></html>'));
+check('HTML is HTML', \mindstellar\Csrf::isHtmlResponse('<html></html>', array('Content-Type: text/html; charset=UTF-8')));
+check('JSON is not', !\mindstellar\Csrf::isHtmlResponse('{"a":1}', array('Content-Type: application/json')));
+check('undeclared JSON is not', !\mindstellar\Csrf::isHtmlResponse('{"a":1}', array()));
+
 harness_section('the token stamp is bucketed, which is what makes a render repeatable');
 
 $ref    = new ReflectionClass('mindstellar\\Csrf');
@@ -72,7 +81,9 @@ $bucket = $ref->getConstant('ISSUE_BUCKET');
 $life   = $ref->getConstant('TOKEN_LIFETIME');
 $skew   = $ref->getConstant('CLOCK_SKEW');
 $issued = $ref->getMethod('issuedAt');
-$issued->setAccessible(true);
+if (PHP_VERSION_ID < 80100) {
+    $issued->setAccessible(true);
+}
 
 check('a bucket is configured', is_int($bucket) && $bucket > 0);
 pin('the stamp is a multiple of the bucket', 0, $issued->invoke(null) % $bucket);

@@ -14,6 +14,7 @@
  */
 
 osc_enqueue_script('tiny_mce');
+osc_enqueue_script('admin-editor');
 
 $page      = __get('page');
 $templates = __get('templates');
@@ -86,55 +87,6 @@ function customPageTitle($string)
 
 osc_add_filter('admin_title', 'customPageTitle');
 
-// TinyMCE 7 — scoped to the per-language content editors only (name ends with
-// "#s_text"), never the whole page, so plugin textareas in the meta rail are
-// left alone. Paste is cleaned the way a WYSIWYG should: Word/Docs style cruft
-// is dropped, semantic tags are kept, and images are not inlined as data URIs.
-/**
- * Emit the page form's TinyMCE setup for the per-language content editors.
- *
- * @return void
- */
-function customHead()
-{
-    // Editor images go to the media library (unattached, reusable), so the flow
-    // works on unsaved pages and the same images are pickable elsewhere.
-    $uploadUrl = osc_admin_base_url(true)
-        . '?page=ajax&action=resource_upload&owner_type=library&owner_id=0&' . osc_csrf_token_url();
-    ?>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            if (typeof tinymce === 'undefined') {
-                return;
-            }
-            var uploadUrl = <?php echo json_encode($uploadUrl); ?>;
-            var cfg = <?php echo osc_tinymce_config('full', array(
-                'selector' => 'textarea[name$="#s_text"]',
-                'height'   => 460,
-            )); ?>;
-            // Drag/drop and paste auto-upload straight to the library; the image
-            // dialog's picker opens the media library (browse existing or upload).
-            cfg.automatic_uploads = true;
-            cfg.images_upload_credentials = true;
-            cfg.images_upload_url = uploadUrl;
-            cfg.file_picker_types = 'image';
-            cfg.file_picker_callback = function (cb, value, meta) {
-                if (meta.filetype !== 'image' || !window.oscMediaPicker) {
-                    return;
-                }
-                window.oscMediaPicker.open(function (url) {
-                    cb(url, { title: '' });
-                });
-            };
-            if (window.oscTinymceTheme) { Object.assign(cfg, window.oscTinymceTheme()); }
-            tinymce.init(cfg);
-        });
-    </script>
-    <?php
-}
-
-osc_add_hook('admin_header', 'customHead', 10);
-
 /**
  * Add the content column offset used by the other admin editors.
  *
@@ -147,217 +99,305 @@ function pageFrmRenderOffset()
 
 osc_add_filter('render-wrapper', 'pageFrmRenderOffset');
 
+// The editor's content fields: one value per locale, with what was typed winning over
+// what is stored, so a rejected save comes back with the submission still in it.
+$pageErrors   = __get('editorErrors');
+$pageErrors   = is_array($pageErrors) ? $pageErrors : array();
+$pageLocales  = array();
+$pageTitles   = array();
+$pageBodies   = array();
+$pageSubmitted = Session::newInstance()->_getForm('aFieldsDescription');
+// What was typed wins here too, the way PageForm::internal_name_input_text() reads it.
+$pageInternalName = $page['s_internal_name'] ?? '';
+if (Session::newInstance()->_getForm('s_internal_name') != '') {
+    $pageInternalName = Session::newInstance()->_getForm('s_internal_name');
+}
+foreach (osc_get_admin_locales() as $pageLocale) {
+    $code                = $pageLocale['pk_c_code'];
+    $pageLocales[$code]  = $pageLocale['s_name'];
+    // Named before the filter runs, because the hook reference is generated from these
+    // call sites and a plugin author should read what it is given, not how it was found.
+    $title               = $pageSubmitted[$code]['s_title'] ?? $page['locale'][$code]['s_title'] ?? '';
+    $description         = $pageSubmitted[$code]['s_text'] ?? $page['locale'][$code]['s_text'] ?? '';
+    $pageTitles[$code]   = osc_apply_filter('admin_page_title', $title, $page, $pageLocale);
+    $pageBodies[$code]   = osc_apply_filter('admin_page_description', $description, $page, $pageLocale);
+}
+
+// Editor images go to the media library (unattached, reusable), so the flow works on
+// unsaved pages and the same images are pickable elsewhere.
+$pageUploadUrl = osc_admin_base_url(true)
+    . '?page=ajax&action=resource_upload&owner_type=library&owner_id=0&' . osc_csrf_token_url();
+
+$pageBackUrl = osc_admin_base_url(true) . '?page=pages';
+$pageViewUrl = customFrmText('edit')
+    ? osc_base_url(true) . '?page=page&id=' . $page['pk_i_id']
+    : '';
+
 osc_current_admin_theme_path('parts/header.php'); ?>
-<div id="adminPageForm" class="col-xl-10">
-    <div class="row">
-        <div class="col">
-            <?php osc_admin_page_head(customFrmText('title')); ?>
-        </div>
+<div id="adminPageForm">
+    <?php
+    $headActions = array();
+    if ($pageViewUrl !== '') {
+        $headActions[] = array(
+            'label' => __('View page'),
+            'url'   => $pageViewUrl,
+            'icon'  => 'bi-box-arrow-up-right',
+            'attrs' => array('target' => '_blank', 'rel' => 'noopener'),
+        );
+    }
+    $headActions[] = array('label' => __('Back to pages'), 'url' => $pageBackUrl, 'variant' => 'dim');
+    osc_admin_page_head(customFrmText('title'), $headActions);
+
+    // The mode class sets the initial view; the template select toggles it live (see the
+    // mode script + .page-mode-* CSS). The title always shows; the text editor and the
+    // widget canvas swap.
+    osc_admin_editor_open(array(
+        'id'           => 'item-form',
+        'class'        => 'page-editor',
+        'page'         => 'pages',
+        'action'       => customFrmText('action_frm'),
+        'main_id'      => 'left-side',
+        'main_class'   => 'page-mode-' . ($pb_is_builder ? 'builder' : 'classic'),
+        'errors'       => $pageErrors,
+        'error_labels' => array(
+            's_title'         => __('Title'),
+            's_text'          => __('Body'),
+            's_internal_name' => __('Internal name'),
+        ),
+        'error_ids'    => array(
+            's_title'         => osc_admin_field_id(array('name' => 's_title')),
+            's_text'          => osc_admin_field_id(array('name' => 's_text')),
+            's_internal_name' => 's_internal_name',
+        ),
+    ));
+
+    PageForm::primary_input_hidden($page);
+
+    // The posted names are the ones the save has always read; only what draws them is new.
+    // No 'required': the rule is that one locale carries a title, not that this one does,
+    // and the browser would refuse to submit a page titled in another language.
+    osc_admin_field(array(
+        'type'           => 'text',
+        'name'           => 's_title',
+        'translate_name' => '%s#s_title',
+        'label'          => __('Title'),
+        'layout'         => 'stacked',
+        'translate'      => true,
+        'locales'        => $pageLocales,
+        'value'          => $pageTitles,
+        'error'          => $pageErrors['s_title'] ?? '',
+        'class'          => 'osc-editor-title',
+        'placeholder'    => __('Enter title here'),
+    ));
+
+    // The wrapper is what the builder mode hides: a page composed from widgets has no
+    // body to write.
+    echo '<div class="multilang-description">';
+    osc_admin_field(array(
+        'type'           => 'richtext',
+        'name'           => 's_text',
+        'translate_name' => '%s#s_text',
+        'label'          => __('Body'),
+        'layout'         => 'stacked',
+        'translate'      => true,
+        // The title's strip above switches this field too; a second strip could disagree with it.
+        'tabs'           => false,
+        'locales'        => $pageLocales,
+        'value'          => $pageBodies,
+        'error'          => $pageErrors['s_text'] ?? '',
+        'preset'         => 'full',
+        'height'         => 460,
+        'media'          => true,
+        'upload_url'     => $pageUploadUrl,
+    ));
+    echo '</div>';
+
+    // Functional widget canvas — rendered only for a page already saved with a builder
+    // template, so its page.{id} widgets are real and an Add widget lands on a builder
+    // page. Add/edit happen inline in the dialog below; delete goes through the
+    // appearance action, threaded with page_builder_id so it returns here.
+    if ($pb_is_builder) {
+        $blockLocation = $pb_location;
+        $pageId        = $pb_page_id;
+        $blocks        = Widget::newInstance()->findByLocation($blockLocation);
+        $widgetTypes   = osc_widget_types();
+
+        osc_admin_panel_open(__('Widgets'), array(
+            'class'   => 'page-blocks-card js-page-widgets',
+            'actions' => array(array(
+                'label' => __('Add widget'),
+                'icon'  => 'bi-plus-lg',
+                'class' => 'js-page-block-add',
+            )),
+        )); ?>
+        <p class="page-field-hint">
+            <?php _e('The widgets below make up this page. Widgets can also appear in your'
+                . ' theme areas — manage those under Appearance.'); ?>
+        </p>
+        <div class="page-blocks-reorder-error alert alert-danger py-1 px-2 small d-none" role="alert"></div>
+        <?php if (count($blocks) > 0) { ?>
+            <ul class="page-blocks-list js-page-blocks"
+                data-location="<?php echo osc_esc_html($blockLocation); ?>">
+                <?php foreach ($blocks as $b) {
+                    $wid       = (int)$b['pk_i_id'];
+                    $isTyped   = !empty($b['s_type']) && isset($widgetTypes[$b['s_type']]);
+                    $typeLabel = $isTyped
+                        ? $widgetTypes[$b['s_type']]['label']
+                        : __('Custom HTML');
+                    // The inline dialog can edit a block only if the user may author its
+                    // type (registered, and not a super_admin type for a moderator).
+                    // Everything else falls back to the appearance widget editor, which
+                    // enforces the same gate server-side.
+                    $inlineEdit = $isTyped
+                        && !(($widgetTypes[$b['s_type']]['capability'] ?? 'admin') === 'super_admin'
+                            && osc_is_moderator());
+                    $editUrl   = osc_admin_base_url(true) . '?page=appearance'
+                        . '&action=edit_widget&id=' . $wid
+                        . '&location=' . rawurlencode($blockLocation)
+                        . '&page_builder_id=' . $pageId;
+                    $deleteUrl = osc_admin_base_url(true) . '?page=appearance'
+                        . '&action=delete_widget&id=' . $wid
+                        . '&page_builder_id=' . $pageId . '&' . osc_csrf_token_url();
+                    ?>
+                    <li class="page-block-row" data-widget-id="<?php echo $wid; ?>"
+                        data-type="<?php echo osc_esc_html((string)($b['s_type'] ?? '')); ?>"
+                        data-description="<?php echo osc_esc_html($b['s_description']); ?>"
+                        data-config="<?php echo osc_esc_html((string)($b['s_config'] ?? '')); ?>">
+                        <span class="page-block-handle" draggable="true" tabindex="0"
+                              role="button"
+                              aria-label="<?php echo osc_esc_html(sprintf(
+                                  __('Reorder widget %s. Drag, or focus and press the up'
+                                            . ' or down arrow keys.'),
+                                  $b['s_description']
+                              )); ?>">
+                            <i class="bi bi-grip-vertical" aria-hidden="true"></i>
+                        </span>
+                        <span class="page-block-main">
+                            <span class="page-block-desc">
+                                <?php echo osc_esc_html($b['s_description']); ?>
+                            </span>
+                            <span class="page-block-type">
+                                <?php echo osc_esc_html($typeLabel); ?>
+                            </span>
+                        </span>
+                        <span class="page-block-actions">
+                            <?php if ($inlineEdit) { ?>
+                                <button type="button" class="btn btn-link btn-sm p-0
+                                        js-page-block-edit"><?php _e('Edit'); ?></button>
+                            <?php } else { ?>
+                                <a href="<?php echo osc_esc_html($editUrl); ?>">
+                                    <?php _e('Edit'); ?>
+                                </a>
+                            <?php } ?>
+                            <a href="<?php echo osc_esc_html($deleteUrl); ?>"
+                               class="page-block-delete"
+                               data-confirm="<?php echo osc_esc_html(
+                                   __('Delete this widget?')
+                               ); ?>"><?php _e('Delete'); ?></a>
+                        </span>
+                    </li>
+                <?php } ?>
+            </ul>
+        <?php } else { ?>
+            <p class="page-blocks-empty">
+                <?php _e('No widgets yet. Add your first widget to build this page.'); ?>
+            </p>
+        <?php }
+        osc_admin_panel_close();
+    } else {
+        // Placeholder shown when the template select is switched to a builder template but
+        // the page is not yet saved as one.
+        osc_admin_panel_open(__('Widgets'), array('class' => 'page-blocks-card js-page-widgets-hint')); ?>
+        <p class="page-field-hint">
+            <?php _e('Save this page with the Page builder template to compose it from'
+                . ' widgets instead of the text editor.'); ?>
+        </p>
+        <?php
+        osc_admin_panel_close();
+    }
+
+    // Plugin fields render full-width here, as they did before the rail existed.
+    osc_run_hook('page_meta');
+
+    osc_admin_editor_rail(array('id' => 'right-side'));
+
+    // The pill says the state; the rows say the dates behind it, so neither repeats the other.
+    $publishRows = array();
+    if (!empty($page['dt_pub_date'])) {
+        $publishRows[] = array('label' => __('Added'), 'value' => osc_format_date($page['dt_pub_date']));
+    }
+    if (!empty($page['dt_mod_date'])) {
+        $publishRows[] = array('label' => __('Last saved'), 'value' => osc_format_date($page['dt_mod_date']));
+    }
+    osc_admin_publish_panel(array(
+        'status' => customFrmText('edit')
+            ? array(array('active', __('Published')))
+            : array(array('inactive', __('Not saved yet'))),
+        'rows'   => $publishRows,
+    ));
+
+    osc_admin_panel_open(__('Page settings'));
+
+    if (count($templates) > 0 || count($registeredTemplates) > 0) {
+        $templateOptions = array('default' => __('Default template'));
+        foreach ($registeredTemplates as $id => $spec) {
+            $templateOptions[$id] = $spec['label'];
+        }
+        foreach ($templates as $template) {
+            $templateOptions[$template] = $template;
+        }
+        echo '<div class="osc-field">';
+        echo '<label class="form-label" for="page_template">' . osc_esc_html(__('Page template')) . '</label>';
+        osc_admin_select(array(
+            'row'     => false,
+            'id'      => 'page_template',
+            'name'    => 'meta[template]',
+            'options' => $templateOptions,
+            'value'   => $template_selected,
+        ));
+        echo '</div>';
+    } ?>
+
+    <div class="page-footer-toggle">
+        <?php osc_admin_checkbox(array(
+            'name'    => 'b_link',
+            'id'      => 'b_link',
+            'value'   => '1',
+            'checked' => !empty($page['b_link']),
+            'label'   => __('Show a link in the footer'),
+        )); ?>
     </div>
-    <div class="row">
-        <div class="col">
-            <div id="item-form">
-                <form class="row page-editor" action="<?php echo osc_admin_base_url(true); ?>" method="post">
-                    <input type="hidden" name="page" value="pages"/>
-                    <input type="hidden" name="action" value="<?php echo customFrmText('action_frm'); ?>"/>
-                    <?php PageForm::primary_input_hidden($page); ?>
 
-                    <?php // The mode class sets the initial view; the template select toggles
-                    // it live (see the mode script + .page-mode-* CSS). The title always
-                    // shows; the text editor and the widget canvas swap.?>
-                    <div id="left-side" class="col page-mode-<?php echo $pb_is_builder ? 'builder' : 'classic'; ?>">
-                        <?php PageForm::printMultiLangTitleDesc($page); ?>
-                        <?php
-                        // Functional widget canvas — rendered only for a page already saved
-                        // with a builder template, so its page.{id} widgets are real and an
-                        // Add widget lands on a builder page. Add/edit happen inline in the
-                        // dialog below; delete goes through the appearance action, threaded
-                        // with page_builder_id so it returns here.
-                        if ($pb_is_builder) {
-                            $blockLocation = $pb_location;
-                            $pageId        = $pb_page_id;
-                            $blocks        = Widget::newInstance()->findByLocation($blockLocation);
-                            $widgetTypes   = osc_widget_types();
-                            ?>
-                            <div class="card mb-3 page-blocks-card js-page-widgets">
-                                <div class="card-body">
-                                    <div class="page-blocks-head">
-                                        <h3 class="label"><?php _e('Widgets'); ?></h3>
-                                        <button type="button" class="btn btn-secondary btn-sm js-page-block-add">
-                                            <i class="bi bi-plus-lg" aria-hidden="true"></i> <?php _e('Add widget'); ?>
-                                        </button>
-                                    </div>
-                                    <p class="page-field-hint">
-                                        <?php _e('The widgets below make up this page. Widgets can also appear in your'
-                                            . ' theme areas — manage those under Appearance.'); ?>
-                                    </p>
-                                    <div class="page-blocks-reorder-error alert alert-danger py-1 px-2 small d-none"
-                                         role="alert"></div>
-                                    <?php if (count($blocks) > 0) { ?>
-                                        <ul class="page-blocks-list js-page-blocks"
-                                            data-location="<?php echo osc_esc_html($blockLocation); ?>">
-                                            <?php foreach ($blocks as $b) {
-                                                $wid       = (int)$b['pk_i_id'];
-                                                $isTyped   = !empty($b['s_type']) && isset($widgetTypes[$b['s_type']]);
-                                                $typeLabel = $isTyped
-                                                    ? $widgetTypes[$b['s_type']]['label']
-                                                    : __('Custom HTML');
-                                                // The inline dialog can edit a block only if the user may author its
-                                                // type (registered, and not a super_admin type for a moderator).
-                                                // Everything else falls back to the appearance widget editor, which
-                                                // enforces the same gate server-side.
-                                                $inlineEdit = $isTyped
-                                                    && !(($widgetTypes[$b['s_type']]['capability'] ?? 'admin') === 'super_admin'
-                                                        && osc_is_moderator());
-                                                $editUrl   = osc_admin_base_url(true) . '?page=appearance'
-                                                    . '&action=edit_widget&id=' . $wid
-                                                    . '&location=' . rawurlencode($blockLocation)
-                                                    . '&page_builder_id=' . $pageId;
-                                                $deleteUrl = osc_admin_base_url(true) . '?page=appearance'
-                                                    . '&action=delete_widget&id=' . $wid
-                                                    . '&page_builder_id=' . $pageId . '&' . osc_csrf_token_url();
-                                                ?>
-                                                <li class="page-block-row" data-widget-id="<?php echo $wid; ?>"
-                                                    data-type="<?php echo osc_esc_html((string)($b['s_type'] ?? '')); ?>"
-                                                    data-description="<?php echo osc_esc_html($b['s_description']); ?>"
-                                                    data-config="<?php echo osc_esc_html((string)($b['s_config'] ?? '')); ?>">
-                                                    <span class="page-block-handle" draggable="true" tabindex="0"
-                                                          role="button"
-                                                          aria-label="<?php echo osc_esc_html(sprintf(
-                                                              __('Reorder widget %s. Drag, or focus and press the up'
-                                                                        . ' or down arrow keys.'),
-                                                              $b['s_description']
-                                                          )); ?>">
-                                                        <i class="bi bi-grip-vertical" aria-hidden="true"></i>
-                                                    </span>
-                                                    <span class="page-block-main">
-                                                        <span class="page-block-desc">
-                                                            <?php echo osc_esc_html($b['s_description']); ?>
-                                                        </span>
-                                                        <span class="page-block-type">
-                                                            <?php echo osc_esc_html($typeLabel); ?>
-                                                        </span>
-                                                    </span>
-                                                    <span class="page-block-actions">
-                                                        <?php if ($inlineEdit) { ?>
-                                                            <button type="button" class="btn btn-link btn-sm p-0
-                                                                    js-page-block-edit"><?php _e('Edit'); ?></button>
-                                                        <?php } else { ?>
-                                                            <a href="<?php echo osc_esc_html($editUrl); ?>">
-                                                                <?php _e('Edit'); ?>
-                                                            </a>
-                                                        <?php } ?>
-                                                        <a href="<?php echo osc_esc_html($deleteUrl); ?>"
-                                                           class="page-block-delete"
-                                                           data-confirm="<?php echo osc_esc_html(
-                                                               __('Delete this widget?')
-                                                           ); ?>"><?php _e('Delete'); ?></a>
-                                                    </span>
-                                                </li>
-                                            <?php } ?>
-                                        </ul>
-                                    <?php } else { ?>
-                                        <p class="page-blocks-empty">
-                                            <?php _e('No widgets yet. Add your first widget to build this page.'); ?>
-                                        </p>
-                                    <?php } ?>
-                                </div>
-                            </div>
-                        <?php } else { ?>
-                            <?php // Placeholder shown when the template select is switched to a
-                            // builder template but the page is not yet saved as one.?>
-                            <div class="card mb-3 page-blocks-card js-page-widgets-hint">
-                                <div class="card-body">
-                                    <div class="page-blocks-head">
-                                        <h3 class="label"><?php _e('Widgets'); ?></h3>
-                                    </div>
-                                    <p class="page-field-hint">
-                                        <?php _e('Save this page with the Page builder template to compose it from'
-                                            . ' widgets instead of the text editor.'); ?>
-                                    </p>
-                                </div>
-                            </div>
-                        <?php } ?>
-                        <?php // Plugin fields render full-width here, as they did before the rail existed.?>
-                        <?php osc_run_hook('page_meta'); ?>
-                    </div>
+    <?php
+    // Open on a rejected save, so the message is not behind a closed summary.
+    osc_admin_disclosure_open(__('Advanced'), array(
+        'summary_hint' => __('Internal name'),
+        'open'         => isset($pageErrors['s_internal_name']),
+    ));
+    // Drawn here rather than through PageForm::internal_name_input_text(), which has no
+    // slot for an error; the posted name and the id are the same either way.
+    $pageIndelible = isset($page['b_indelible']) && $page['b_indelible'] == 1;
+    osc_admin_field(array(
+        'type'   => 'text',
+        'id'     => 's_internal_name',
+        'name'   => 's_internal_name',
+        'label'  => __('Internal name') . ' / ' . __('Slug'),
+        'layout' => 'stacked',
+        'value'  => $pageInternalName,
+        'help'   => __('Used to quickly identify this page'),
+        'error'  => $pageErrors['s_internal_name'] ?? '',
+        // Readonly, never disabled: a disabled control posts nothing, and the save refuses
+        // a page whose internal name is empty -- so a system page could not be saved at all.
+        'attrs'  => $pageIndelible ? array('readonly' => true) : array(),
+    ));
+    osc_admin_disclosure_close();
 
-                    <div id="right-side" class="col-xl-4 col-lg-4">
-                        <div class="card mb-3 page-publish-card">
-                            <div class="card-body">
-                                <h3 class="label"><?php _e('Publish'); ?></h3>
-                                <div class="page-publish-actions">
-                                    <button type="submit" class="btn btn-submit">
-                                        <?php echo osc_esc_html(customFrmText('btn_text')); ?>
-                                    </button>
-                                    <?php if (customFrmText('edit')) { ?>
-                                        <a href="javascript:history.go(-1)" class="btn btn-dim">
-                                            <?php _e('Cancel'); ?>
-                                        </a>
-                                    <?php } ?>
-                                </div>
-                            </div>
-                        </div>
+    osc_admin_panel_close();
 
-                        <div class="card mb-3">
-                            <div class="card-body">
-                                <h3 class="label"><?php _e('Page settings'); ?></h3>
-
-                                <?php if (count($templates) > 0 || count($registeredTemplates) > 0) { ?>
-                                    <div class="mb-3">
-                                        <label for="page_template"><?php _e('Page template'); ?></label>
-                                        <select id="page_template" class="form-select form-select-sm"
-                                                name="meta[template]">
-                                            <option value="default" <?php echo $template_selected === 'default'
-                                                ? 'selected' : ''; ?>><?php _e('Default template'); ?></option>
-                                            <?php foreach ($registeredTemplates as $id => $spec) { ?>
-                                                <option value="<?php echo osc_esc_html($id); ?>"
-                                                    <?php echo $template_selected === $id ? 'selected' : ''; ?>>
-                                                    <?php echo osc_esc_html($spec['label']); ?>
-                                                </option>
-                                            <?php } ?>
-                                            <?php foreach ($templates as $template) { ?>
-                                                <option value="<?php echo osc_esc_html($template); ?>"
-                                                    <?php echo $template_selected === $template ? 'selected' : ''; ?>>
-                                                    <?php echo osc_esc_html($template); ?>
-                                                </option>
-                                            <?php } ?>
-                                        </select>
-                                    </div>
-                                <?php } ?>
-
-                                <div class="mb-3">
-                                    <label for="s_internal_name">
-                                        <?php _e('Internal name'); ?> / <?php echo osc_esc_html(__('Slug')); ?>
-                                    </label>
-                                    <?php PageForm::internal_name_input_text($page); ?>
-                                    <p class="page-field-hint"><?php _e('Used to quickly identify this page'); ?></p>
-                                    <span class="help"></span>
-                                    <?php if (customFrmText('edit')) { ?>
-                                        <a class="page-view-link"
-                                           href="<?php echo osc_esc_html(osc_base_url(true) . '?page=page&id='
-                                               . $page['pk_i_id']); ?>" target="_blank" rel="noopener">
-                                            <i class="bi bi-arrow-up-right-square me-1" aria-hidden="true"></i>
-                                            <?php _e('View page on site'); ?>
-                                        </a>
-                                    <?php } ?>
-                                </div>
-
-                                <div class="form-check form-switch page-footer-toggle">
-                                    <?php $b_link = (isset($page['b_link']) && $page['b_link']); ?>
-                                    <input class="form-check-input" type="checkbox" role="switch" id="b_link"
-                                           name="b_link" value="1" <?php echo $b_link ? 'checked' : ''; ?>/>
-                                    <label class="form-check-label" for="b_link">
-                                        <?php _e('Show a link in the footer'); ?>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+    osc_admin_editor_close(array(
+        array('label' => customFrmText('btn_text'), 'type' => 'submit', 'variant' => 'primary'),
+        array('label' => __('Back to pages'), 'url' => $pageBackUrl, 'variant' => 'dim'),
+    )); ?>
 </div>
 <script>
     // Live-switch the editor to match the chosen page template: a builder template

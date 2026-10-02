@@ -2,11 +2,11 @@
 title: Head and body
 description: Hand the document head to ShopClass with osc_head(), and let core name the page for you with osc_body_class() and osc_language_attributes().
 sidebar:
-  order: 19
+  order: 21
 ---
 
 The `<head>` used to belong entirely to the theme. Core could not put a title, a
-description or a canonical on a page (not even on a page core rendered itself)
+description or a canonical on a page, not even on a page core rendered itself,
 unless the theme happened to print one. Every theme therefore reimplemented the
 same block, and a theme that got it slightly wrong got it wrong on every page.
 
@@ -31,6 +31,7 @@ It prints, in order:
 | `description` | `<meta name="description">`, omitted when there is none |
 | `keywords` | `<meta name="keywords">`, omitted when there is none |
 | `canonical` | `<link rel="canonical">`, omitted when there is none |
+| `pagination` | `<link rel="prev">` / `<link rel="next">` on a search results page, omitted elsewhere |
 | `feed` | `<link rel="alternate" type="application/rss+xml">`: the current search's feed on a results page, the site's elsewhere |
 
 and then runs the `header` hook, which is where enqueued styles and scripts, the
@@ -80,7 +81,7 @@ Pass your own alongside them, as a string or a list:
 
 `osc_body_class_list()` returns the same classes as an array. Both pass through
 the `body_class` filter, which receives the computed list and whatever the caller
-passed, that is where a plugin adds one.
+passed. That is where a plugin adds one.
 
 Every class is lowercased and reduced to `[a-z0-9_-]`; a static page's internal
 name is typed by an admin and lands in an attribute, so it is not trusted.

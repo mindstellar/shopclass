@@ -67,7 +67,7 @@ final class WidgetRegistry
      *   'fields'      => array     Optional declarative config schema. Each entry:
      *                              ['name'=>string, 'label'=>string,
      *                               'type'=>'text'|'number'|'select'|'checkbox'|'textarea',
-     *                               'default'=>mixed, 'options'=>array (select only)].
+     *                               'default'=>mixed, 'options'=>array or a callable returning one (select only)].
      *   'form'        => callable  Optional callable(array $config): void that renders
      *                              a custom admin form, overriding 'fields'.
      *   'capability'  => string    'admin' (default) or 'super_admin'. A 'super_admin'
