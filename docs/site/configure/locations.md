@@ -107,6 +107,9 @@ The catalog lives at `https://geo.mindstellar.com/releases/latest.json`.
 ShopClass always reads the latest release. So a fixed place name reaches your site
 without waiting for a new ShopClass version.
 
+Prefer an API to a local copy? The same data is served free at [placedb](https://placedb.org):
+plain JSON, no key, no account, for example `https://api.placedb.org/v1/countries.json`.
+
 ### Using another source
 
 To use a local mirror, a test copy or one fixed release, set this environment
