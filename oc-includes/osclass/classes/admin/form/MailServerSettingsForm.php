@@ -37,14 +37,10 @@ final class MailServerSettingsForm
             return self::PAGE_ID;
         }
 
-        // apache_mod_loaded() exists only under mod_php, so on any other SAPI the answer is
-        // "cannot tell" rather than a call that is not there.
-        $sslWarning = '';
-        if (!function_exists('apache_mod_loaded')) {
-            $sslWarning = __('Cannot be sure that Apache Module <b>mod_ssl</b> is loaded.');
-        } elseif (!@\apache_mod_loaded('mod_ssl')) {
-            $sslWarning = __('Apache Module <b>mod_ssl</b> is not loaded');
-        }
+        // SMTP over SSL/TLS goes through PHP's openssl extension, not Apache's mod_ssl.
+        $sslWarning = extension_loaded('openssl')
+            ? ''
+            : __('The PHP <b>openssl</b> extension is not loaded, so SSL and TLS will not work.');
 
         CoreSettings::page(self::PAGE_ID, __('Mail Settings'))
             ->select('mailserver_type', __('Server type'), array(

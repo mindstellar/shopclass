@@ -10,6 +10,10 @@ In development.
 
 - A nightly `:edge` Docker image built from develop, versioned with its build time; the in-app updater is off on it.
 
+### Fixed
+
+- Mail settings no longer warn that Apache `mod_ssl` is missing; they check PHP's `openssl` extension instead (#548).
+
 ## Shopclass 6.4.0
 
 This release makes your site safer to run, easier to keep up to date, and faster.
