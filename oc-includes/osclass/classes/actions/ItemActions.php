@@ -664,7 +664,14 @@ class ItemActions
      */
     private function handleMetaField(array $_meta, &$meta, string &$flash_error)
     {
-        if (!empty($_meta) && is_array($meta)) {
+        // A category with no custom fields takes no values, or they would be stored under
+        // other categories' field ids unchecked.
+        if (empty($_meta)) {
+            $meta = array();
+
+            return;
+        }
+        if (is_array($meta)) {
             $valid_id = array_column($_meta, 'pk_i_id');
             // special case for checkboxes
             foreach ($_meta as $value) {

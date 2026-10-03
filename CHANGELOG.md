@@ -13,7 +13,7 @@ In development.
 ### Security
 
 - An e-mail change link also worked as a password-reset link. Each account code is now bound to its purpose and stored hashed; links sent before the upgrade stop working.
-- A URL custom field could break out of its link and run script on the listing page; URL, dropdown and radio values are now escaped.
+- A listing could store custom-field values meant for another category, and a URL field could break out of its link and run script; such values are now dropped, and URL, dropdown and radio values are escaped.
 
 ### Fixed
 
