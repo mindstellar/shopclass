@@ -11077,6 +11077,10 @@ msgstr ""
 msgid "This is a demo site, so nothing can be installed or updated here."
 msgstr ""
 
+#: oc-admin/themes/modern/tools/upgrade.php
+msgid "This is an edge build. Update it by pulling the :edge image."
+msgstr ""
+
 #: oc-includes/osclass/installer/basic_data.php
 msgid ""
 "This is an example page description. This is a good place to put your Terms "

@@ -20,6 +20,7 @@ use mindstellar\market\Compatibility;
 use mindstellar\market\Installer;
 use mindstellar\market\PackageIndex;
 use mindstellar\market\PackageReconciler;
+use mindstellar\upgrade\BuildInfo;
 use Params;
 use Plugins;
 use Sitemap;
@@ -1698,7 +1699,7 @@ class Cli
             ? $check('warn', 'Object cache', 'per-request only (no persistent backend)')
             : $check('ok', 'Object cache', $driver);
 
-        $this->out(sprintf("\nShopclass %s — %s\n", osc_version(), strtoupper($worst) === 'OK' ? 'healthy' : 'issues found'));
+        $this->out(sprintf("\nShopclass %s — %s\n", BuildInfo::label((string) osc_version()), strtoupper($worst) === 'OK' ? 'healthy' : 'issues found'));
 
         return $worst === 'fail' ? 1 : 0;
     }
@@ -1712,7 +1713,7 @@ class Cli
      */
     private function cmdVersion(array $args): int
     {
-        $this->out(osc_version() . "\n");
+        $this->out(BuildInfo::label((string) osc_version()) . "\n");
 
         return 0;
     }

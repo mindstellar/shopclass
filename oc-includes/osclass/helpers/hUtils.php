@@ -1176,7 +1176,7 @@ function osc_get_i18n_repository_url($path = '')
     // try str_replace to remove all version tags from string if string changed than it's dev
     $version = str_replace(array('dev', 'alpha', 'beta', 'rc'), '', strtolower($installed));
     // if version string changed than it's dev
-    if ($version !== strtolower($installed)) {
+    if ($version !== strtolower($installed) || \mindstellar\upgrade\BuildInfo::isEdge()) {
         $is_dev = true;
     }
     if ($is_dev) {

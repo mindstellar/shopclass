@@ -167,7 +167,7 @@ function check_market_compatibility($versions)
  */
 function check_version_admin_footer()
 {
-    if ((time() - osc_last_version_check()) > (24 * 3600)) {
+    if ((time() - osc_last_version_check()) > (24 * 3600) && !\mindstellar\upgrade\BuildInfo::isEdge()) {
         ?>
         <script type="text/javascript">
             document.addEventListener('DOMContentLoaded', function () {

@@ -973,6 +973,7 @@ return array(
     'mindstellar\\theme\\ThemeSupports' => $baseDir . '/oc-includes/osclass/classes/theme/ThemeSupports.php',
     'mindstellar\\theme\\ThemeViews' => $baseDir . '/oc-includes/osclass/classes/theme/ThemeViews.php',
     'mindstellar\\upgrade\\AutoSecurityUpdate' => $baseDir . '/oc-includes/osclass/classes/upgrade/AutoSecurityUpdate.php',
+    'mindstellar\\upgrade\\BuildInfo' => $baseDir . '/oc-includes/osclass/classes/upgrade/BuildInfo.php',
     'mindstellar\\upgrade\\Osclass' => $baseDir . '/oc-includes/osclass/classes/upgrade/Osclass.php',
     'mindstellar\\upgrade\\Plugin' => $baseDir . '/oc-includes/osclass/classes/upgrade/Plugin.php',
     'mindstellar\\upgrade\\ReleaseChannel' => $baseDir . '/oc-includes/osclass/classes/upgrade/ReleaseChannel.php',

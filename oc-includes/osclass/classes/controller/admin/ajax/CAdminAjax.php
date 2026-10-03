@@ -16,6 +16,7 @@ use mindstellar\market\Compatibility;
 use mindstellar\market\Installer;
 use mindstellar\market\PackageIndex;
 use mindstellar\security\PluginAjaxFile;
+use mindstellar\upgrade\BuildInfo;
 use mindstellar\upgrade\Osclass;
 use mindstellar\upgrade\Upgrade;
 use mindstellar\utility\AjaxResponse;
@@ -898,6 +899,10 @@ class CAdminAjax extends AdminSecBaseModel
                 }
                 break;
             case 'check_version':
+                if (BuildInfo::isEdge()) {
+                    AjaxResponse::json(array('error' => 0, 'msg' => __('No update available')));
+                    break;
+                }
                 // The whole flow is wrapped: getPackageInfo() reaches out to GitHub, and both
                 // it and the Osclass constructor can throw when the API returns an unexpected
                 // payload (rate limit, outage, a release with no downloadable asset). An

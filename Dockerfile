@@ -93,6 +93,22 @@ RUN mkdir -p /application/oc-content/uploads /application/oc-content/downloads \
     && chmod +x /application/.docker/prod/entrypoint.sh /application/.docker/prod/healthcheck.sh \
         /application/.docker/prod/tls.sh
 
+# Edge builds only: append the build time (YYYYMMDDHHMM) to the version, so every edge
+# build sorts after the last and the database upgrade runs, and record the build marker.
+# A release builds without these arguments and is unchanged.
+ARG EDGE_STAMP=
+ARG EDGE_REVISION=
+RUN set -eu; \
+    if [ -n "$EDGE_STAMP" ]; then \
+        echo "$EDGE_STAMP" | grep -Eq '^[0-9]{12}$' || { echo "EDGE_STAMP must be 12 digits" >&2; exit 1; }; \
+        echo "$EDGE_REVISION" | grep -Eq '^[0-9a-f]{7,40}$' || { echo "EDGE_REVISION must be a commit hash" >&2; exit 1; }; \
+        f=/application/oc-includes/osclass/default-constants.php; \
+        sed -i -E "s/(define\('OSCLASS_VERSION', '[^']+)'/\1.${EDGE_STAMP}'/" "$f"; \
+        grep -Eq "define\('OSCLASS_VERSION', '[^']+\.${EDGE_STAMP}'\)" "$f" || { echo "could not stamp OSCLASS_VERSION" >&2; exit 1; }; \
+        printf "<?php\n\nreturn array('channel' => 'edge', 'revision' => '%s', 'built' => '%s');\n" \
+            "$EDGE_REVISION" "$EDGE_STAMP" > /application/oc-includes/osclass/build-info.php; \
+    fi
+
 COPY .docker/prod/nginx.conf      /etc/nginx/nginx.conf
 COPY .docker/prod/supervisord.conf /etc/supervisord.conf
 # Empty defaults so nginx's includes are no-ops until the entrypoint (re)generates

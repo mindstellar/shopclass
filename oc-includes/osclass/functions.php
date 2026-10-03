@@ -695,7 +695,7 @@ function osc_admin_toolbar_update_core($force = false)
         if ($force) {
             AdminToolbar::newInstance()->remove_menu('update_core');
         }
-        if (getPreference('update_core_available')) {
+        if (getPreference('update_core_available') && !\mindstellar\upgrade\BuildInfo::isEdge()) {
             $update_json = json_decode(Preference::newInstance()->get('update_core_json'), false);
             // The core can also be replaced outside the admin (a new container image, a manual
             // deploy), which leaves this announcing a version already running.

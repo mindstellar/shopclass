@@ -1172,6 +1172,10 @@ function osc_changeVersionTo($version = null)
  */
 function osc_self_update_disabled()
 {
+    // An edge image is updated by pulling the image again, never by a release zip.
+    if (\mindstellar\upgrade\BuildInfo::isEdge()) {
+        return true;
+    }
     if (defined('OSC_DISABLE_SELF_UPDATE')) {
         return (bool) OSC_DISABLE_SELF_UPDATE;
     }

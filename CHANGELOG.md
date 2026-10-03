@@ -2,6 +2,14 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 6.4.1
+
+In development.
+
+### New
+
+- A nightly `:edge` Docker image built from develop, versioned with its build time; the in-app updater is off on it.
+
 ## Shopclass 6.4.0
 
 This release makes your site safer to run, easier to keep up to date, and faster.
