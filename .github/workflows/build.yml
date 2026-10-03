@@ -312,6 +312,17 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      # The same picker as the release zip, authenticated so the GitHub API does not refuse it.
+      - name: Pick the Storefront release
+        id: storefront
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG=$(bash scripts/storefront-release.sh "${OSCLASS_VERSION}" | cut -f1)
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
       - name: Build and push image
         uses: docker/build-push-action@v7
         with:
@@ -319,6 +330,8 @@ jobs:
           push: true
           tags: ${{ steps.tags.outputs.tags }}
           provenance: false
+          build-args: |
+            STOREFRONT_VERSION=${{ steps.storefront.outputs.tag }}
           labels: |
             org.opencontainers.image.version=${{ env.OSCLASS_VERSION }}
             org.opencontainers.image.revision=${{ github.sha }}

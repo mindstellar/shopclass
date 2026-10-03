@@ -69,6 +69,18 @@ jobs:
           } >> "$GITHUB_OUTPUT"
           echo "Edge ${BASE}.${STAMP} from ${REVISION} -> ${TAGS}"
 
+      # The same picker as the release zip, authenticated so the GitHub API does not refuse it.
+      - name: Pick the Storefront release
+        id: storefront
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CORE_VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          TAG=$(bash scripts/storefront-release.sh "${CORE_VERSION}" | cut -f1)
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
@@ -96,6 +108,7 @@ jobs:
           build-args: |
             EDGE_STAMP=${{ steps.meta.outputs.stamp }}
             EDGE_REVISION=${{ steps.meta.outputs.revision }}
+            STOREFRONT_VERSION=${{ steps.storefront.outputs.tag }}
           labels: |
             org.opencontainers.image.version=${{ steps.meta.outputs.version }}
             org.opencontainers.image.revision=${{ steps.meta.outputs.revision }}
