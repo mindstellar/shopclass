@@ -1,0 +1,93 @@
+# Nightly :edge image, plus a Run button. Scheduled runs start from the default branch
+# (master), so this file must exist there too; it reads develop through the API and builds
+# with develop's own edge-image.yml.
+#
+# It builds only when develop has a newer tested commit than the one the current :edge image
+# was built from. The commit is the one behind develop's newest Release Workflow push run,
+# which is HEAD unless HEAD only touched prose (that workflow ignores those paths). A run
+# still going or not green means no build tonight.
+name: Edge nightly
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: edge-nightly
+  cancel-in-progress: false
+
+jobs:
+  decide:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      packages: read
+    outputs:
+      build: ${{ steps.decide.outputs.build }}
+      sha: ${{ steps.decide.outputs.sha }}
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Decide whether develop has something new
+        id: decide
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          skip() {
+            echo "::notice::$1"
+            echo "$1" >> "$GITHUB_STEP_SUMMARY"
+            echo "build=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          }
+
+          HEAD=$(gh api "repos/${REPO}/commits/develop" --jq .sha)
+
+          # The newest Release Workflow push run on develop: the tests, drift, lint, i18n and
+          # vendor checks all run inside it.
+          RUN=$(gh api "repos/${REPO}/actions/workflows/build.yml/runs?branch=develop&event=push&per_page=1" \
+            --jq '.workflow_runs[0] // empty | [.head_sha, .status, (.conclusion // "none"), .html_url] | @tsv')
+          [ -n "${RUN}" ] || skip "No Release Workflow run on develop yet. Nothing to build."
+          IFS=$'\t' read -r SHA STATUS CONCLUSION URL <<< "${RUN}"
+
+          # The revision the current :edge image was built from; empty when there is none yet.
+          BUILT=""
+          if CONFIG=$(docker buildx imagetools inspect "ghcr.io/${REPO,,}:edge" --format '{{json .Image}}' 2>/dev/null); then
+            BUILT=$(jq -r '(if has("config") then . else (to_entries[0].value // {}) end)
+                           | .config.Labels["org.opencontainers.image.revision"] // empty' <<< "${CONFIG}")
+          fi
+
+          echo "develop HEAD ${HEAD}; newest tested commit ${SHA} (${STATUS} ${CONCLUSION}); :edge built from ${BUILT:-nothing}"
+          [ "${SHA}" != "${BUILT}" ] || skip ":edge is already built from ${SHA}. Nothing new."
+          [ "${STATUS}" = "completed" ] || skip "Checks for ${SHA} are still running (${URL}). Skipped."
+          [ "${CONCLUSION}" = "success" ] || skip "Checks for ${SHA} ended ${CONCLUSION} (${URL}). Skipped."
+
+          echo "Building :edge from ${SHA}." >> "$GITHUB_STEP_SUMMARY"
+          echo "build=true" >> "$GITHUB_OUTPUT"
+          echo "sha=${SHA}" >> "$GITHUB_OUTPUT"
+
+  image:
+    needs: decide
+    if: needs.decide.outputs.build == 'true'
+    permissions:
+      contents: read
+      packages: write
+    # develop's copy, so the build steps live in one place and master only needs this file.
+    uses: mindstellar/shopclass/.github/workflows/edge-image.yml@develop
+    with:
+      ref: ${{ needs.decide.outputs.sha }}
+    secrets:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
