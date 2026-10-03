@@ -1676,13 +1676,14 @@ function osc_item_meta_value()
                 $attributes .= ' target="_blank"';
             }
 
-            if (stripos($value, 'http://') !== false || stripos($value, 'https://') !== false) {
-                return '<a href="' . html_entity_decode($value, ENT_COMPAT, 'UTF-8') . '" ' . $attributes . '>'
-                    . html_entity_decode($value, ENT_COMPAT, 'UTF-8') . '</a>';
+            // The stored value is user input: only an http(s) URL becomes a link, and both the
+            // link and its text are escaped.
+            $url = trim(html_entity_decode((string) $value, ENT_QUOTES, 'UTF-8'));
+            if (!preg_match('~^https?://~i', $url)) {
+                $url = 'http://' . preg_replace('~^[a-z][a-z0-9+.-]*:/*~i', '', $url);
             }
 
-            return '<a href="http://' . html_entity_decode($value, ENT_COMPAT, 'UTF-8') . '" ' . $attributes . '>'
-                . html_entity_decode($value, ENT_COMPAT, 'UTF-8') . '</a>';
+            return '<a href="' . osc_esc_html($url) . '" ' . $attributes . '>' . osc_esc_html($url) . '</a>';
         } else {
             return '';
         }
@@ -1692,7 +1693,7 @@ function osc_item_meta_value()
 
         return $value;
     } elseif ($meta['e_type'] == 'DROPDOWN' || $meta['e_type'] == 'RADIO') {
-        return osc_field(osc_item_meta(), 's_value', '');
+        return osc_esc_html(html_entity_decode((string) $value, ENT_QUOTES, 'UTF-8'));
     } else {
         $value = nl2br(htmlentities($value));
         $value = osc_apply_filter('osc_item_meta_value_filter', $value, $meta);
