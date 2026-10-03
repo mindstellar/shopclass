@@ -1,11 +1,11 @@
 <p align="center">
   <a href="https://github.com/mindstellar/shopclass-brand">
-    <img src="https://raw.githubusercontent.com/mindstellar/shopclass-brand/main/brand/shopclass-logo.svg" alt="Shopclass" width="360">
+    <img src="https://raw.githubusercontent.com/mindstellar/shopclass-brand/main/brand/shopclass-logo.svg" alt="ShopClass" width="360">
   </a>
 </p>
 
 <p align="center">
-  <strong>Open-source, self-hosted listing CMS — by Mindstellar.</strong><br>
+  <strong>Open-source, self-hosted listing CMS, by Mindstellar.</strong><br>
   Run classifieds, a job board, a property portal, a directory: any site built on listings.
 </p>
 
@@ -25,16 +25,16 @@
 
 ---
 
-## What is Shopclass?
+## What is ShopClass?
 
-Shopclass is a PHP application for running a listing site on your own hosting —
+ShopClass is a PHP application for running a listing site on your own hosting:
 listings with photos, categories and locations, custom fields per category, user
 accounts, search and filtering, paid plans, pages, multi-language support, and an
 admin panel to run it all. Classifieds is where it started; the same parts fit any
 site where people post and browse listings. It ships as a zip you install on
 ordinary shared or VPS hosting; there is no build step or bundler to run on the server.
 
-Shopclass is the modernised, maintained successor to **Osclass**. It
+ShopClass is the modernised, maintained successor to **Osclass**. It
 keeps Osclass's plugin and theme APIs (the `osc_*` helpers, hook names, and asset
 paths) so existing extensions keep working, while replacing the legacy frontend:
 a Bootstrap 5 admin theme, jQuery removed from the core, PHP 8 throughout, and a
@@ -64,7 +64,7 @@ walks through the history, what carries over, and the upgrade path from a 3.x or
 - 🔍 Search, filtering, and SEO-friendly URLs
 - 👥 User registration, accounts, and moderation
 - 🎨 Themeable frontend + a modern, accessible (WCAG-checked) admin panel
-- 🧩 Plugin & theme system — compatible with the Osclass extension API
+- 🧩 Plugin & theme system, compatible with the Osclass extension API
 - 🌎 Multi-language / i18n support
 - 🔒 CSRF protection, CAPTCHA, admin two-step sign-in, and hardened sessions
 - ☁️ Photo storage on disk or S3-compatible object storage
@@ -80,38 +80,38 @@ walks through the history, what carries over, and the upgrade path from a 3.x or
 
 ## Install
 
-> Deploy from a **release zip**, never from a branch — `master`/`develop` may
+> Deploy from a **release zip**, never from a branch. `master`/`develop` may
 > contain untested code, and releases carry the compiled CSS/JS the branches
 > don't rebuild for you.
 
 1. Download the latest package from the [**Releases**](https://github.com/mindstellar/shopclass/releases) page and unpack it into your web root (e.g. `public_html`).
-2. Open your site in a browser — `https://example.com/` — and the installer starts automatically (or go straight to `oc-includes/osclass/install.php`).
+2. Open your site in a browser (`https://example.com/`) and the installer starts automatically (or go straight to `oc-includes/osclass/install.php`).
 3. Follow the four steps below.
 4. Sign in at `https://example.com/oc-admin/` with the admin password shown on the final screen.
 
 ### The installer, step by step
 
-**1 · Check server** — the installer confirms your PHP version, extensions and folder permissions up front, so nothing fails halfway through.
+**1 · Check server**: the installer confirms your PHP version, extensions and folder permissions up front, so nothing fails halfway through.
 
-<img src="docs/site/images/install/1-check-server.png" width="640" alt="Installer step 1 — server requirements check">
+<img src="docs/site/images/install/1-check-server.png" width="640" alt="Installer step 1: server requirements check">
 
-**2 · Connect database** — enter the details from your hosting panel and press **Test connection** to confirm they work *before* anything is written. A database on a non-default port can be entered as `host:port`.
+**2 · Connect database**: enter the details from your hosting panel and press **Test connection** to confirm they work *before* anything is written. A database on a non-default port can be entered as `host:port`.
 
-<img src="docs/site/images/install/2-connect-database.png" width="640" alt="Installer step 2 — connect the database with a test-connection check">
+<img src="docs/site/images/install/2-connect-database.png" width="640" alt="Installer step 2: connect the database with a test-connection check">
 
-**3 · Your site** — pick an admin username (leave the password blank and a strong one is generated for you), your site title, contact e-mail and country.
+**3 · Your site**: pick an admin username (leave the password blank and a strong one is generated for you), your site title, contact e-mail and country.
 
-<img src="docs/site/images/install/3-your-site.png" width="640" alt="Installer step 3 — admin account and site details">
+<img src="docs/site/images/install/3-your-site.png" width="640" alt="Installer step 3: admin account and site details">
 
-**4 · Done** — copy your admin password (it's also e-mailed to you) and open the admin panel.
+**4 · Done**: copy your admin password (it's also e-mailed to you) and open the admin panel.
 
-<img src="docs/site/images/install/4-done.png" width="640" alt="Installer step 4 — finished, with admin credentials">
+<img src="docs/site/images/install/4-done.png" width="640" alt="Installer step 4: finished, with admin credentials">
 
 The installer runs once; if the site is already set up it shows a short notice instead of re-running.
 
 ## Command-line interface
 
-Shopclass ships a small CLI for maintenance tasks, run from the install root with
+ShopClass ships a small CLI for maintenance tasks, run from the install root with
 the PHP binary. It refuses to run over HTTP, so the commands are only reachable
 from a shell on the server.
 
@@ -124,13 +124,13 @@ php oc-cli.php help          # list every command
 |---|---|
 | `cron [--type=hourly\|daily\|weekly\|all]` | Run due scheduled tasks (alerts, cleanup, sitemap warm). Default runs all three. |
 | `db:upgrade` | Run pending migrations after an update. |
-| `db:doctor [--strict]` | Report where the database differs from what Shopclass declares, and whether the site is ready for strict SQL mode. Changes nothing. |
+| `db:doctor [--strict]` | Report where the database differs from what ShopClass declares, and whether the site is ready for strict SQL mode. Changes nothing. |
 | `db:repair [--dry-run]` | Add missing tables, columns, indexes and foreign keys, and correct column types and defaults. `--dry-run` only reports. |
-| `package:reconcile` | Install/refresh bundled plugins & themes onto a persistent `oc-content` — a no-op outside a container image. |
+| `package:reconcile` | Install/refresh bundled plugins & themes onto a persistent `oc-content`. A no-op outside a container image. |
 | `cache:flush` | Flush the object cache. |
 | `sitemap:warm` | Pre-generate the XML sitemap into the cache. |
 | `user:create-admin --user= --email= [--password=] [--name=]` | Create an admin account. A password is generated and printed when `--password` is omitted. |
-| `user:reset-password --user=\|--email= [--password=]` | Reset an admin's password — the way back in when you're locked out. |
+| `user:reset-password --user=\|--email= [--password=]` | Reset an admin's password: the way back in when you're locked out. |
 | `user:2fa-off --user=` | Turn off an admin's two-step sign-in, for one who lost their phone and backup codes. |
 | `plugin:list` | List plugins with their enabled/disabled status, version, and folder. |
 | `plugin:activate --plugin=<folder>` | Enable an installed plugin (accepts the folder name or `folder/index.php`). |
@@ -169,7 +169,7 @@ npm run watch        # rebuild CSS on change while developing
 ```
 
 Compiled output (`oc-admin/themes/modern/css/main.css`, `oc-includes/assets/…`)
-is **committed** — releases are cut with `git archive`, so whatever is committed
+is **committed**. Releases are cut with `git archive`, so whatever is committed
 is exactly what users receive. Rebuild and commit the output with any SCSS/JS
 change.
 
@@ -185,12 +185,12 @@ PHP is newer.
 
 ### Run it with Docker
 
-A full local stack — PHP-FPM, MariaDB, Nginx, Memcached, Mailhog and phpMyAdmin —
+A full local stack (PHP-FPM, MariaDB, Nginx, Memcached, Mailhog and phpMyAdmin)
 ships in `docker-compose.dev.yml`, alongside `docker-compose.prod.yml` for the
 production image:
 
 ```bash
-npm run dev:build     # first run — builds the PHP-FPM image
+npm run dev:build     # first run: builds the PHP-FPM image
 npm run dev           # start
 npm run dev:down      # stop
 npm run dev:logs      # follow the logs
@@ -209,7 +209,7 @@ docker compose exec php-fpm php oc-cli.php market:install storefront --type=them
 ```
 
 To work on a theme or plugin you have checked out locally, put the mounts in
-`docker-compose.local.yml` and append it to `COMPOSE_FILE` — `.env.example` shows the
+`docker-compose.local.yml` and append it to `COMPOSE_FILE`. `.env.example` shows the
 shape. Keep them out of the committed file: where the path is missing Docker creates an
 empty directory at the mount point rather than failing, and an empty theme directory
 looks broken rather than absent.
@@ -224,7 +224,7 @@ details (leave the admin password blank on step 3 for a generated one):
 | User | `shopclass` |
 | Password | `shopclass` |
 
-Outgoing e-mail — including the installer's welcome message — is caught by
+Outgoing e-mail (including the installer's welcome message) is caught by
 **Mailhog**, so you can read it in a browser instead of it silently failing.
 
 | Service | Address |
@@ -243,8 +243,8 @@ compose file).
 
 ### Run the production image
 
-For a deployment rather than development there is a self-contained image — Nginx,
-PHP-FPM and Supervisor in one container, with the Storefront theme baked in — that
+For a deployment rather than development there is a self-contained image (Nginx,
+PHP-FPM and Supervisor in one container, with the Storefront theme baked in) that
 provisions itself on first boot. Bring it up with a database:
 
 ```bash
@@ -265,8 +265,8 @@ It comes up **already installed** at **http://localhost:8080** (admin at
 |---|---|
 | `DB_HOST` / `DB_NAME` / `DB_USER` / `DB_PASSWORD` | Database connection |
 | `WEB_PATH` | Public base URL of the site |
-| `OSC_ADMIN_USER` / `OSC_ADMIN_EMAIL` / `OSC_ADMIN_PASSWORD` | First admin account — leave the password unset to have one generated and printed to the logs |
-| `OSC_DISABLE_PACKAGE_INSTALLS` | Set to `1` to turn off installing/updating plugins and themes from the admin market and `oc-cli.php market:*` — unset (the default) leaves them on |
+| `OSC_ADMIN_USER` / `OSC_ADMIN_EMAIL` / `OSC_ADMIN_PASSWORD` | First admin account. Leave the password unset to have one generated and printed to the logs |
+| `OSC_DISABLE_PACKAGE_INSTALLS` | Set to `1` to turn off installing/updating plugins and themes from the admin market and `oc-cli.php market:*`. Unset (the default) leaves them on |
 
 For a real deployment, point `DB_HOST` at a managed database, set a strong admin
 password, set `WEB_PATH` to your public URL, and offload uploads to S3 so more than
@@ -280,8 +280,8 @@ themes are different: `docker-compose.prod.yml` mounts `oc-content/plugins` and
 `oc-content/themes` as named volumes alongside `uploads`/`downloads`, so a package
 installed or updated from the admin market (or `oc-cli.php market:install` /
 `market:update`) survives a redeploy. On every start, the entrypoint reconciles that
-volume against the bundled packages baked into the new image — installing any that
-are missing and refreshing any the image ships a newer version of — without ever
+volume against the bundled packages baked into the new image. It installs any that
+are missing and refreshes any the image ships a newer version of, without ever
 touching a package installed through the market.
 
 > **Upgrading from an image released before those two volumes existed:** copy
@@ -304,40 +304,40 @@ Logos, the mark, the favicon set, and the palette live in the
 | Warm Off-White | surface | `#F7F5F1` |
 | Coral | accent | `#FF6B4A` |
 
-Brand assets are licensed **CC BY-ND 4.0**: use them to refer to Shopclass, but
+Brand assets are licensed **CC BY-ND 4.0**: use them to refer to ShopClass, but
 please don't modify the marks or imply endorsement.
 
 ## Documentation
 
-**[mindstellar.com/docs](https://mindstellar.com/docs/)** — installing, configuring
-and extending Shopclass. The pages are written in [`docs/site/`](docs/site/) and
+**[mindstellar.com/docs](https://mindstellar.com/docs/)**: installing, configuring
+and extending ShopClass. The pages are written in [`docs/site/`](docs/site/) and
 published from there, so corrections are a pull request against this repository.
 
-- [Changelog](CHANGELOG.md) — what changed in each release; also the source for the admin upgrade screen.
-- [Security policy](SECURITY.md) — supported versions and how to report a vulnerability.
+- [Changelog](CHANGELOG.md): what changed in each release; also the source for the admin upgrade screen.
+- [Security policy](SECURITY.md): supported versions and how to report a vulnerability.
 
 **Guides**
 
-- [Caching contract](docs/CACHING.md) — how Shopclass drives a reverse-proxy/CDN cache: the cookie allowlist, the `Cache-Control` it emits, and the reference nginx micro-cache config.
-- [Page builder](docs/PAGE-BUILDER.md) — the page-template registry and the widget-based page composition model.
-- [Custom fields](docs/CUSTOM-FIELDS.md) — field inheritance down the category tree, reusable groups, conditional logic, and the field-type registry.
-- [Market](docs/MARKET.md) — the GitHub-native plugin & theme ecosystem: the [`shopclass-plugins`](https://github.com/mindstellar/shopclass-plugins) / [`shopclass-themes`](https://github.com/mindstellar/shopclass-themes) registries, the static catalog they publish, and how core browses, installs, and updates from it.
-- [Package spec](docs/PACKAGE-SPEC.md) — the contract a plugin or theme must satisfy to be listed in the market: header fields, compatibility, versioning, artwork, and security requirements.
+- [Caching contract](docs/CACHING.md): how ShopClass drives a reverse-proxy/CDN cache: the cookie allowlist, the `Cache-Control` it emits, and the reference nginx micro-cache config.
+- [Page builder](docs/PAGE-BUILDER.md): the page-template registry and the widget-based page composition model.
+- [Custom fields](docs/CUSTOM-FIELDS.md): field inheritance down the category tree, reusable groups, conditional logic, and the field-type registry.
+- [Market](docs/MARKET.md): the GitHub-native plugin & theme ecosystem: the [`shopclass-plugins`](https://github.com/mindstellar/shopclass-plugins) / [`shopclass-themes`](https://github.com/mindstellar/shopclass-themes) registries, the static catalog they publish, and how core browses, installs, and updates from it.
+- [Package spec](docs/PACKAGE-SPEC.md): the contract a plugin or theme must satisfy to be listed in the market: header fields, compatibility, versioning, artwork, and security requirements.
 
 Installation, local development, and the production image are covered in the sections above.
 
 ## Contributing
 
-Contributions are welcome — bug fixes, features, translations, docs.
+Contributions are welcome: bug fixes, features, translations, docs.
 
 1. Open an issue describing the change before you start.
 2. Branch from **`develop`** (never target `master`).
 3. Make your change; if it touches the admin theme, run `npm run build` and commit the compiled output.
 4. Open a pull request against `develop`.
 
-Because Shopclass runs on installs with third-party themes and plugins, treat the
+Because ShopClass runs on installs with third-party themes and plugins, treat the
 `osc_*` helpers, hook names, admin CSS class names, and `oc-includes/assets/`
-paths as a public API — restyle freely, but don't rename or remove them.
+paths as a public API. Restyle freely, but don't rename or remove them.
 
 ## Support
 
@@ -347,7 +347,7 @@ For reproducible bugs, open an [issue](https://github.com/mindstellar/shopclass/
 
 ## License
 
-Shopclass is distributed under the **GNU General Public License v3.0 or later**
+ShopClass is distributed under the **GNU General Public License v3.0 or later**
 ([LICENSE](LICENSE)). It derives from Osclass, whose original code is licensed
 under the **Apache License 2.0** ([LICENSE-APACHE](LICENSE-APACHE)); those
 notices are retained in [NOTICE](NOTICE) as that license requires.
