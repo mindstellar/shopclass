@@ -73,7 +73,7 @@ check('that account still authenticates with its real secret', is_array($realDig
 harness_section('User::findByIdPasswordSecret — same comparison, same rule');
 
 $admin->query(
-    "UPDATE {$prefix}t_user SET s_pass_code = 'rQ8vNmT1', s_pass_date = NOW() WHERE pk_i_id = $userId"
+    "UPDATE {$prefix}t_user SET s_pass_code = '" . User::passCodeHash(User::PASS_CODE_RESET, 'rQ8vNmT1') . "', s_pass_date = NOW() WHERE pk_i_id = $userId"
 );
 
 $reset = $user->findByIdPasswordSecret($userId, 'rQ8vNmT1');
@@ -82,6 +82,7 @@ check('the real reset code still works', is_array($reset) && ($reset['pk_i_id'] 
 pin('a reset code of "0" matches nothing', array(), $user->findByIdPasswordSecret($userId, '0'));
 pin('an int 0 matches no id-password either', array(), $user->findByIdPasswordSecret($userId, 0));
 pin('a wrong code matches nothing', array(), $user->findByIdPasswordSecret($userId, 'wrong'));
+pin('the stored hash itself is not a code', array(), $user->findByIdPasswordSecret($userId, User::passCodeHash(User::PASS_CODE_RESET, 'rQ8vNmT1')));
 
 /* The 24-hour window still applies. */
 $admin->query(

@@ -20,11 +20,51 @@ class User extends DAO
     /** Seconds an s_pass_code stays valid, for both password reset and e-mail change. */
     public const PASS_CODE_TTL = 86400;
 
+    /** Purposes an s_pass_code is bound to, so a code issued for one never passes as the other. */
+    public const PASS_CODE_RESET = 'reset';
+    public const PASS_CODE_EMAIL = 'email';
+
     /**
      *
      * @var \User
      */
     private static $instance;
+
+    /**
+     * The stored form of an account code: its purpose plus a SHA-256 of the code.
+     *
+     * @param string $purpose self::PASS_CODE_RESET or self::PASS_CODE_EMAIL
+     * @param string $code    the code as sent in the link
+     *
+     * @return string
+     */
+    public static function passCodeHash(string $purpose, string $code): string
+    {
+        return $purpose . ':' . hash('sha256', $code);
+    }
+
+    /**
+     * Issue a fresh account code for one purpose, replacing any pending one.
+     *
+     * @param int    $userId
+     * @param string $purpose self::PASS_CODE_RESET or self::PASS_CODE_EMAIL
+     *
+     * @return string the plain code for the link; only its hash is stored
+     */
+    public function issuePassCode(int $userId, string $purpose): string
+    {
+        $code = osc_genRandomPassword(30);
+        $this->update(
+            array(
+                's_pass_code' => self::passCodeHash($purpose, $code),
+                's_pass_date' => date('Y-m-d H:i:s'),
+                's_pass_ip'   => Params::getServerParam('REMOTE_ADDR'),
+            ),
+            array('pk_i_id' => $userId)
+        );
+
+        return $code;
+    }
 
     /**
      * User constructor.
@@ -334,7 +374,7 @@ class User extends DAO
         try {
             $row = osc_db_table($this->getTableName())
                 ->where('pk_i_id', $id)
-                ->where('s_pass_code', (string)$secret)
+                ->where('s_pass_code', self::passCodeHash(self::PASS_CODE_RESET, (string)$secret))
                 ->where('s_pass_date', '>=', $date)
                 ->limit(2)
                 ->get();

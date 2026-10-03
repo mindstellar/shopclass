@@ -10,6 +10,10 @@ In development.
 
 - A nightly `:edge` Docker image built from develop, versioned with its build time; the in-app updater is off on it.
 
+### Security
+
+- An e-mail change link also worked as a password-reset link. Each account code is now bound to its purpose and stored hashed; links sent before the upgrade stop working.
+
 ### Fixed
 
 - Mail settings no longer warn that Apache `mod_ssl` is missing; they check PHP's `openssl` extension instead (#548).

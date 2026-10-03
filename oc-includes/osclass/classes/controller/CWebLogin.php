@@ -314,15 +314,15 @@ class CWebLogin extends BaseModel
 
                 $user = User::newInstance()
                     ->findByIdPasswordSecret(Params::getParam('userId'), Params::getParam('code'));
-                if ($user['b_enabled'] == 1) {
+                if (!empty($user) && $user['b_enabled'] == 1) {
                     if (Params::getParam('new_password', false, false)
                         == Params::getParam('new_password2', false, false)
                     ) {
                         User::newInstance()->update(
                             array(
-                                's_pass_code' => osc_genRandomPassword(50)
+                                's_pass_code' => null
                                 ,
-                                's_pass_date' => date('Y-m-d H:i:s', 0)
+                                's_pass_date' => null
                                 ,
                                 's_pass_ip'   => Params::getServerParam('REMOTE_ADDR')
                                 ,
@@ -332,7 +332,11 @@ class CWebLogin extends BaseModel
                                     false
                                 ))
                             ),
-                            array('pk_i_id' => $user['pk_i_id'])
+                            // Matching on the code too keeps the link single-use under two posts at once.
+                            array(
+                                'pk_i_id'     => $user['pk_i_id'],
+                                's_pass_code' => User::passCodeHash(User::PASS_CODE_RESET, (string)Params::getParam('code')),
+                            )
                         );
                         osc_add_flash_ok_message(_m('The password has been changed'));
                         $this->redirectTo(osc_user_login_url());

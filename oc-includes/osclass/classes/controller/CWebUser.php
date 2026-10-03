@@ -146,17 +146,9 @@ class CWebUser extends WebSecBaseModel
 
                         UserEmailTmp::newInstance()->insertOrUpdate($userEmailTmp);
 
-                        $code = osc_genRandomPassword(30);
-                        $date = date('Y-m-d H:i:s');
-
-                        $userManager = new User();
-                        $userManager->update(
-                            array(
-                                's_pass_code' => $code,
-                                's_pass_date' => $date,
-                                's_pass_ip'   => Params::getServerParam('REMOTE_ADDR')
-                            ),
-                            array('pk_i_id' => Session::newInstance()->_get('userId'))
+                        $code = User::newInstance()->issuePassCode(
+                            (int)Session::newInstance()->_get('userId'),
+                            User::PASS_CODE_EMAIL
                         );
 
                         $validation_url = osc_change_user_email_confirm_url(Session::newInstance()
