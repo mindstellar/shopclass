@@ -577,7 +577,7 @@ with too: every listing index now has its own description and a single canonical
 
 ### Security
 
-- **A listing description was stored exactly as submitted on sites using the rich editor.**
+- **A listing description was stored exactly as submitted on sites using the rich editor (CVE-2026-104479).**
   Params' XSS check strips every tag, so it is switched off wherever a rich editor is in
   use, and nothing replaced it — a script in a description ran for every visitor who opened
   the listing, the listing's author included. Descriptions are now sanitised against an
