@@ -4,7 +4,9 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 ## Shopclass 6.4.2
 
-In development.
+This release fixes several security issues on listing pages: photo deletion, spam listings shown to
+the public, an unescaped edit link and the contact pages. Site-wide changes such as a new theme or
+settings now clear the whole page cache, so visitors see them at once.
 
 ### New
 
