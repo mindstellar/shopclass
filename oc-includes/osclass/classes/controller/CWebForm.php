@@ -63,7 +63,7 @@ class CWebForm extends BaseModel
 
         $formId = Params::getParamInt('osc_form_id');
         $form   = $formId > 0 ? FieldGroup::newInstance()->findByPrimaryKey($formId) : array();
-        if (empty($form)) {
+        if (!osc_form_is_public($form)) {
             osc_add_flash_error_message(_m('That form is no longer available.'));
             $this->redirectTo($return);
 
@@ -83,6 +83,13 @@ class CWebForm extends BaseModel
         // IP ban (same gate as the contact form).
         if (osc_is_banned('', get_ip()) === 2) {
             osc_add_flash_error_message(_m('Your current IP is not allowed'));
+            $this->redirectTo($return);
+
+            return;
+        }
+
+        if (\mindstellar\security\ActionThrottle::exceededFor('form_submit', 10)) {
+            osc_add_flash_error_message(_m('Too many tries from your connection. Please try again later.'));
             $this->redirectTo($return);
 
             return;
@@ -149,6 +156,8 @@ class CWebForm extends BaseModel
 
             return;
         }
+
+        \mindstellar\security\ActionThrottle::record('form_submit');
 
         osc_run_hook('form_submitted', $submissionId, $form, $result['values'], $contextType, $contextId);
 
