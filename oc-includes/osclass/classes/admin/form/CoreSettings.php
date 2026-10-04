@@ -73,6 +73,8 @@ final class CoreSettings
      *
      * @param string $pageId
      *
+     * A save that changed something clears the page cache, since settings show on every page.
+     *
      * @return array{errors:string[],updated:int,values:array<string,mixed>,id:mixed} the
      *         osc_settings_save() result; 'errors' empty means it was written
      */
@@ -81,6 +83,9 @@ final class CoreSettings
         $result = osc_settings_save($pageId);
         foreach ($result['errors'] as $error) {
             osc_add_flash_warning_message($error, 'admin');
+        }
+        if ($result['errors'] === array() && (int)($result['updated'] ?? 0) > 0) {
+            osc_purge_page_cache('settings');
         }
 
         return $result;

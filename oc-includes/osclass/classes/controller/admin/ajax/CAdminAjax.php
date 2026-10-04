@@ -667,6 +667,7 @@ class CAdminAjax extends AdminSecBaseModel
                     }
 
                     Item::newInstance()->enableByCategory($enabled, $aIds);
+                    osc_purge_page_cache('category');
 
                     if ($enabled) {
                         $result = array(
@@ -691,6 +692,7 @@ class CAdminAjax extends AdminSecBaseModel
                 }
 
                 $mCategory->update(array('b_enabled' => $enabled), array('pk_i_id' => $id));
+                osc_purge_page_cache('category');
                 if ($enabled) {
                     $result = array(
                         'ok' => __('The subcategory has been enabled')

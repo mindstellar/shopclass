@@ -282,6 +282,8 @@ class CAdminPages extends AdminSecBaseModel
         Session::newInstance()->_setForm('s_internal_name', $name);
         if ($id !== null) {
             osc_run_hook('edit_page', $id);
+        } else {
+            osc_purge_page_cache('page');
         }
         Session::newInstance()->_clearVariables();
         osc_add_flash_ok_message(

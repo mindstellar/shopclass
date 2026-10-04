@@ -548,6 +548,7 @@ final class BackupJobs
                 $when = self::when((string) ($arg['source_created'] ?? ''));
                 JobWorker::log('backup', 0, $when !== '' ? sprintf(__('Restore finished from the backup of %s'), $when) : __('Restore finished'));
                 osc_job_enqueue(self::PRUNE, array(), array('unique_key' => 'prune'));
+                osc_purge_page_cache('restore');
 
                 return true;
             case 'requeue':

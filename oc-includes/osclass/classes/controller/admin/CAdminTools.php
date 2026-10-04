@@ -271,6 +271,7 @@ class CAdminTools extends AdminSecBaseModel
                     $fileHandler      = @fopen($maintenance_file, 'wb');
                     if ($fileHandler) {
                         fclose($fileHandler);
+                        osc_purge_page_cache('maintenance');
                         osc_add_flash_ok_message(_m('Maintenance mode is ON'), 'admin');
                     } else {
                         osc_add_flash_error_message(
@@ -283,6 +284,7 @@ class CAdminTools extends AdminSecBaseModel
                     osc_csrf_check();
                     $deleted = @unlink(osc_base_path() . '.maintenance');
                     if ($deleted) {
+                        osc_purge_page_cache('maintenance');
                         osc_add_flash_ok_message(_m('Maintenance mode is OFF'), 'admin');
                     } else {
                         osc_add_flash_error_message(
@@ -306,6 +308,7 @@ class CAdminTools extends AdminSecBaseModel
                         'STRING'
                     );
                     osc_reset_preferences();
+                    osc_purge_page_cache('maintenance');
                     osc_add_flash_ok_message(_m('Maintenance settings saved'), 'admin');
                     $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=maintenance');
                 }
