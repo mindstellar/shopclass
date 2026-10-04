@@ -23,7 +23,7 @@ In development.
 - City autocomplete returns at most 10 results and nothing for an empty term.
 - A new account takes over guest listings with its e-mail only after the address is confirmed.
 - Photo uploads on the listing form follow the registered-users-only setting, 100 an hour per address and the listing photo limit.
-- E-mail links never use the address from the request's Host header.
+- With no `WEB_PATH`, e-mail links use `OSC_CLI_URL`; without it, mails with a secret link are not sent.
 - The Docker image no longer ships the `tests` and `scripts` folders, and nginx denies them and log files under `oc-content`.
 - The Docker image warns at start when `OSC_REAL_IP_HEADER` is set without `OSC_REAL_IP_TRUSTED`, since any client can then fake its address.
 - File downloads follow redirects over HTTP and HTTPS only.

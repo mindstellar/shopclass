@@ -274,6 +274,7 @@ final class MessageHold
             'to'        => $email,
             'subject'   => sprintf(__('Confirm your message on %s'), osc_page_title()),
             'body'      => $body,
+            'secret_link' => true,
         ));
     }
 

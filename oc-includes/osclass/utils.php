@@ -317,7 +317,8 @@ function osc_mail_upload_attachment($field)
 /**
  * Send one email through PHPMailer, using the site's configured mail transport.
  *
- * @param array<string,mixed> $params from, to, to_name, subject, body, alt_body and optional attachment/reply-to keys
+ * @param array<string,mixed> $params from, to, to_name, subject, body, alt_body and optional attachment/reply-to keys;
+ *                                    secret_link => true marks a mail whose link carries a secret
  *
  * @return bool False on a demo install or when the send fails
  */
@@ -503,7 +504,7 @@ function osc_sendMail($params)
         $mail = osc_apply_filter('pre_send_mail', $mail, $params);
         osc_phpmailer_limit_smtp_wait($mail);
 
-        if (!osc_mail_links_trusted($mail)) {
+        if (!osc_mail_links_trusted($mail, (array) $params)) {
             return false;
         }
 
@@ -519,40 +520,31 @@ function osc_sendMail($params)
 }
 
 /**
- * Keep a mail from carrying links to an address the visitor chose. When the site address
- * came from the Host header, links are moved to OSC_CLI_URL; with none set, the mail is
- * refused and an error is logged.
+ * Keep mail links off an address taken from the request Host header. With OSC_CLI_URL set,
+ * links to the request address point at it instead; without it, a mail that carries a secret
+ * link (params 'secret_link') is refused.
  *
  * @param \PHPMailer\PHPMailer\PHPMailer $mail
+ * @param array<string,mixed>            $params osc_sendMail() parameters
  *
  * @return bool False when the mail must not be sent
  */
-function osc_mail_links_trusted($mail): bool
+function osc_mail_links_trusted($mail, array $params = array()): bool
 {
-    if (!defined('OSC_WEB_PATH_FROM_REQUEST') || !OSC_WEB_PATH_FROM_REQUEST
-        || !defined('WEB_PATH')) {
-        return true;
-    }
-    $untrusted = (string) WEB_PATH;
-    $host      = (string) parse_url($untrusted, PHP_URL_HOST);
-    $hasLink   = static function ($text) use ($host) {
-        return $host !== '' && stripos((string) $text, $host) !== false;
-    };
-    if (!$hasLink($mail->Body) && !$hasLink($mail->AltBody)) {
+    if (!defined('OSC_WEB_PATH_FROM_REQUEST') || !OSC_WEB_PATH_FROM_REQUEST || !defined('WEB_PATH')) {
         return true;
     }
     if (defined('OSC_TRUSTED_WEB_PATH')) {
-        if (strcasecmp((string) parse_url(OSC_TRUSTED_WEB_PATH, PHP_URL_HOST), $host) === 0) {
-            return true;
-        }
-        $mail->Body    = str_ireplace($untrusted, OSC_TRUSTED_WEB_PATH, (string) $mail->Body);
-        $mail->AltBody = str_ireplace($untrusted, OSC_TRUSTED_WEB_PATH, (string) $mail->AltBody);
-        if (!$hasLink($mail->Body) && !$hasLink($mail->AltBody)) {
-            return true;
-        }
+        $mail->Body    = str_replace((string) WEB_PATH, OSC_TRUSTED_WEB_PATH, (string) $mail->Body);
+        $mail->AltBody = str_replace((string) WEB_PATH, OSC_TRUSTED_WEB_PATH, (string) $mail->AltBody);
+
+        return true;
+    }
+    if (empty($params['secret_link'])) {
+        return true;
     }
     trigger_error(
-        'E-mail not sent: it links to an address taken from the request Host header. Set WEB_PATH or OSC_CLI_URL to the site address.',
+        'E-mail not sent: it carries a secret link, and the site address comes from the request Host header. Set WEB_PATH or OSC_CLI_URL to the site address.',
         E_USER_WARNING
     );
 

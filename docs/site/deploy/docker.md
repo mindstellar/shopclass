@@ -80,7 +80,7 @@ Everything is set from environment variables:
 | `OSC_RATE_LIMIT` / `OSC_RATE_LIMIT_BURST` | Requests per second per client IP, e.g. `10r/s`. Unset is off |
 | `OSC_TLS_DOMAIN` / `OSC_TLS_REDIRECT_FROM` / `OSC_TLS_EMAIL` | [Built-in HTTPS](#built-in-https): the domain, other names to send to it (comma-separated), and the e-mail for expiry notices (default `OSC_ADMIN_EMAIL`) |
 
-With no `WEB_PATH`, the address is taken from the request's `Host` header, which a visitor can fake. E-mail links then use `OSC_CLI_URL`; with neither set, any mail that links to the site (password reset, activation, alerts) is not sent and an error is logged.
+With no `WEB_PATH`, the address is taken from the request's `Host` header, which a visitor can fake. E-mail links then use `OSC_CLI_URL`. With neither set, mails with a secret link (password reset, e-mail change, account and listing activation) are not sent and a warning is logged; other mails still go out.
 
 For a real deployment: point `DB_HOST` at a managed database, set `WEB_PATH` to
 the public URL, set a strong admin password, and

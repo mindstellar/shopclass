@@ -9,8 +9,8 @@
  */
 
 /**
- * When the site address comes from the Host header, a mail must not link to it: links
- * move to OSC_CLI_URL, and with none set the mail is not sent.
+ * When the site address comes from the Host header, mail links move to OSC_CLI_URL. With
+ * none set, only a mail that carries a secret link is refused.
  *
  * DB-free.  Usage:  php tests/mail-host-links.php
  */
@@ -169,33 +169,58 @@ class WebThemes
 }
 
 require_once __DIR__ . '/../oc-includes/osclass/utils.php';
-define('OSC_WEB_PATH_FROM_REQUEST', true);
-define('WEB_PATH', 'http://attacker.example/');
 
-$errors = array();
-set_error_handler(static function ($no, $str) use (&$errors) {
-    $errors[] = $str;
+// Constants cannot change within one run, so each set-up runs in its own process.
+if (isset($argv[1])) {
+    if ($argv[1] !== 'config-file') {
+        define('OSC_WEB_PATH_FROM_REQUEST', true);
+        define('WEB_PATH', 'http://example.com/');
+    }
+    if ($argv[1] === 'cli-url') {
+        define('OSC_TRUSTED_WEB_PATH', 'https://shop.example.com/');
+    }
+    $errors = array();
+    set_error_handler(static function ($no, $str) use (&$errors) {
+        $errors[] = $str;
 
-    return true;
-});
-$send = static function (string $body): ?array {
-    RecordingMailer::$last = null;
-    osc_sendMail(array('to' => 'a@b.example', 'subject' => 's', 'body' => $body, 'alt_body' => $body));
+        return true;
+    });
+    $out = array();
+    foreach (array('secret' => true, 'plain' => false) as $kind => $secret) {
+        RecordingMailer::$last = null;
+        $body = '<a href="http://example.com/user/recover/1/abc">reset</a> <a href="http://www.example.com/x">www</a>';
+        osc_sendMail(array('to' => 'a@b.example', 'subject' => 's', 'body' => $body, 'secret_link' => $secret));
+        $out[$kind] = RecordingMailer::$last;
+    }
+    $out['errors'] = $errors;
+    echo json_encode($out);
+    exit(0);
+}
 
-    return RecordingMailer::$last;
+$run = static function (string $setup): array {
+    $json = shell_exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__FILE__) . ' ' . escapeshellarg($setup));
+
+    return (array) json_decode((string) $json, true);
 };
 
-harness_section('no trusted address configured');
-$sent = $send('<a href="http://attacker.example/user/recover?x=1">reset</a>');
-pin('a mail linking to the request host is not sent', null, $sent);
-check('...and an error is logged', count($errors) === 1 && strpos($errors[0], 'WEB_PATH') !== false);
-$sent = $send('Your ad was received.');
-check('a mail with no link to it still goes out', is_array($sent));
+harness_section('config.php install');
+$r = $run('config-file');
+check('a mail with a secret link goes out', is_array($r['secret'] ?? null));
+check('...with its links unchanged', strpos($r['secret']['Body'] ?? '', 'http://example.com/user/recover/1/abc') !== false);
+pin('...and no warning', array(), $r['errors'] ?? null);
 
-harness_section('OSC_CLI_URL configured');
-define('OSC_TRUSTED_WEB_PATH', 'https://shop.example.com/');
-$sent = $send('<a href="http://attacker.example/user/recover?x=1">reset</a>');
-check('the link moves to the trusted address', is_array($sent) && strpos($sent['Body'], 'https://shop.example.com/user/recover?x=1') !== false);
-check('...and nothing points at the request host', is_array($sent) && stripos($sent['Body'] . $sent['AltBody'], 'attacker.example') === false);
+harness_section('address from the Host header, no OSC_CLI_URL');
+$r = $run('host-only');
+pin('a mail with a secret link is not sent', null, array_key_exists('secret', $r) ? $r['secret'] : 'missing');
+check('...and a warning is logged', count($r['errors'] ?? array()) === 1 && strpos($r['errors'][0], 'OSC_CLI_URL') !== false);
+check('a mail without one still goes out, though it links to www.example.com', is_array($r['plain'] ?? null));
+
+harness_section('address from the Host header, OSC_CLI_URL set');
+$r = $run('cli-url');
+check('a mail with a secret link goes out', is_array($r['secret'] ?? null));
+check('...linking to OSC_CLI_URL', strpos($r['secret']['Body'] ?? '', 'https://shop.example.com/user/recover/1/abc') !== false);
+check('...and no longer to the request address', strpos(($r['secret']['Body'] ?? '') . ($r['secret']['AltBody'] ?? ''), 'http://example.com/') === false);
+check('a different host that contains it is left alone', strpos($r['secret']['Body'] ?? '', 'http://www.example.com/x') !== false);
+pin('no warning', array(), $r['errors'] ?? null);
 
 exit(harness_result());
