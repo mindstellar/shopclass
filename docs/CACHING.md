@@ -199,9 +199,9 @@ and exports `OSC_PAGE_CACHE_PURGE_URL=http://127.0.0.1:8089/` to the web stack. 
 is set, core sends one `PURGE` there with the site's host (2 s timeout, no redirects, no proxy).
 200 means cleared; 404 and 412 mean nothing was cached; anything else is logged.
 
-A command run with `docker exec ... php oc-cli.php` does not inherit the variable, because it is
-exported only to the processes the entrypoint starts. Pass it yourself when that matters:
-`docker exec -e OSC_PAGE_CACHE_PURGE_URL=http://127.0.0.1:8089/ ...`.
+Without the variable, core derives the same address when `OSC_MICROCACHE` is on, so commands run with
+`docker exec ... php oc-cli.php`, cron and the job worker clear the cache too. Set
+`OSC_PAGE_CACHE_PURGE_URL` to override it.
 
 ## Implementation
 

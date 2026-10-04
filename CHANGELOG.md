@@ -2,6 +2,14 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 6.4.3
+
+In development.
+
+### Fixed
+
+- Cron, the job worker and CLI commands in the Docker image also clear the whole page cache; the purge address is derived from `OSC_MICROCACHE` when not set.
+
 ## Shopclass 6.4.2
 
 This release fixes several security issues on listing pages: photo deletion, spam listings shown to

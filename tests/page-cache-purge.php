@@ -76,6 +76,7 @@ function fresh(): void
     $GLOBALS['enabled'] = true;
     unset($GLOBALS['hooks']['page_cache_purge']);
     putenv('OSC_PAGE_CACHE_PURGE_URL');
+    putenv('OSC_MICROCACHE');
     file_put_contents($GLOBALS['log'], '');
 }
 
@@ -261,6 +262,31 @@ foreach (array(403, 0) as $status) {
 }
 $purge = new \mindstellar\cache\PagePurge(recorder($requests, 403));
 check('403 reports failure', !$purge->purge('http://127.0.0.1/index.php', 'a.test'));
+
+harness_section('purge address');
+
+fresh();
+pin('both unset: no address', '', osc_page_cache_purge_url());
+putenv('OSC_PAGE_CACHE_PURGE_URL=http://10.0.0.1/p');
+putenv('OSC_MICROCACHE=1');
+pin('the env URL wins', 'http://10.0.0.1/p', osc_page_cache_purge_url());
+putenv('OSC_PAGE_CACHE_PURGE_URL');
+foreach (array('1', 'on', 'true', 'yes') as $on) {
+    putenv("OSC_MICROCACHE=$on");
+    pin("OSC_MICROCACHE=$on gives the internal address", 'http://127.0.0.1:8089/', osc_page_cache_purge_url());
+}
+foreach (array('0', 'off', '') as $off) {
+    putenv("OSC_MICROCACHE=$off");
+    pin("OSC_MICROCACHE='$off' gives none", '', osc_page_cache_purge_url());
+}
+
+fresh();
+putenv('OSC_MICROCACHE=1');
+$requests = array();
+osc_purge_page_cache('theme');
+osc_page_cache_purge_flush(recorder($requests, 200));
+pin('flush uses the derived address', 'http://127.0.0.1:8089/', $requests[0]['url'] ?? null);
+fresh();
 
 harness_section('changes that ask for a purge');
 

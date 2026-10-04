@@ -300,6 +300,27 @@ function osc_page_cache_purge_pending(): bool
 }
 
 /**
+ * Where to send the whole-cache PURGE: OSC_PAGE_CACHE_PURGE_URL when set, else the Docker
+ * image's internal address when OSC_MICROCACHE is on (so `docker exec` commands find it too).
+ * Empty when there is nothing to purge.
+ *
+ * @return string
+ */
+function osc_page_cache_purge_url(): string
+{
+    $url = getenv('OSC_PAGE_CACHE_PURGE_URL');
+    if (is_string($url) && $url !== '') {
+        return $url;
+    }
+    $micro = getenv('OSC_MICROCACHE');
+    if (is_string($micro) && in_array($micro, array('1', 'on', 'true', 'yes', 'On', 'TRUE', 'YES'), true)) {
+        return 'http://127.0.0.1:8089/';
+    }
+
+    return '';
+}
+
+/**
  * Send the purge osc_purge_page_cache() asked for: fire `page_cache_purge` with the
  * reasons, then, when OSC_PAGE_CACHE_PURGE_URL is set (the Docker image), clear nginx's
  * own cache there. Runs at shutdown, after the response has gone; never throws.
@@ -333,8 +354,8 @@ function osc_page_cache_purge_flush($http = null): void
             error_log('page_cache_purge: ' . get_class($e) . ': ' . $e->getMessage());
         }
 
-        $url = getenv('OSC_PAGE_CACHE_PURGE_URL');
-        if (!is_string($url) || $url === '') {
+        $url = osc_page_cache_purge_url();
+        if ($url === '') {
             return;
         }
         try {
