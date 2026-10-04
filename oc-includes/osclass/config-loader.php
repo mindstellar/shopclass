@@ -172,16 +172,6 @@ if (!$oscHasConfigFile && defined('DB_NAME')
     && PHP_SAPI !== 'cli'
 ) {
     $oscHost = isset($_SERVER['HTTP_HOST']) ? (string)$_SERVER['HTTP_HOST'] : '';
-    $oscAllowed = $oscEnv('OSC_ALLOWED_HOSTS');
-    if ($oscAllowed !== null && !in_array(
-        strtolower((string)preg_replace('/:\d+$/', '', $oscHost)),
-        array_map('trim', explode(',', strtolower((string)$oscAllowed))),
-        true
-    )) {
-        http_response_code(400);
-        exit('Unknown host');
-    }
-    unset($oscAllowed);
     // Only trust a syntactically valid host[:port]; a missing or malformed Host
     // header (CLI, some proxies) yields no definition rather than a broken URL.
     if ($oscHost !== '' && preg_match('/^[A-Za-z0-9.\-]+(:\d+)?$/', $oscHost)) {

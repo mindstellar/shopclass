@@ -68,7 +68,6 @@ Everything is set from environment variables:
 | `DB_HOST` / `DB_NAME` / `DB_USER` / `DB_PASSWORD` | Database connection |
 | `WEB_PATH` | The site's public base URL |
 | `OSC_CLI_URL` | The site's address for `oc-cli.php`, when `WEB_PATH` is left unset so web pages keep the address they were opened on. Also the address e-mail links use in that case. Use the exact address visitors use |
-| `OSC_ALLOWED_HOSTS` | Comma-separated host names (no port). When `WEB_PATH` is unset, requests for any other host get a 400 |
 | `OSC_ADMIN_USER` / `OSC_ADMIN_EMAIL` / `OSC_ADMIN_PASSWORD` | The first admin account. Leave the password unset and a strong one is generated and printed to the logs |
 | `OSC_SITE_TITLE` | Site title at provisioning time |
 | `OSC_IGNORE_CONFIG_FILE` | Set to `1` so the image configures itself from the environment rather than a `config.php` |

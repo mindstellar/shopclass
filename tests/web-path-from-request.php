@@ -85,13 +85,6 @@ $got = ask_site($site, array('OSC_CLI_URL' => 'https://shop.example.com/'), 'evi
 pin('pages keep the request address', 'http://evil.example/', $got['web_path'] ?? null);
 pin('...and e-mail links get the trusted one', 'https://shop.example.com/', $got['trusted'] ?? null);
 
-harness_section('OSC_ALLOWED_HOSTS');
-
-$got = ask_site($site, array('OSC_ALLOWED_HOSTS' => 'shop.example.com'), 'evil.example');
-pin('another host is refused', null, $got);
-$got = ask_site($site, array('OSC_ALLOWED_HOSTS' => 'shop.example.com'), 'Shop.Example.com:8080');
-pin('a listed host is served, whatever its case or port', 'http://Shop.Example.com:8080/', $got['web_path'] ?? null);
-
 harness_section('An address set in the environment');
 
 $got = ask_site($site, array('WEB_PATH' => 'https://shop.example.com/'), 'evil.example');
