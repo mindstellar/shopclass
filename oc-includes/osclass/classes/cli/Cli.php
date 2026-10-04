@@ -1684,7 +1684,7 @@ class Cli
         }
 
         // Job queue: jobs that stopped retrying, and work left waiting.
-        $jobs   = \mindstellar\job\JobQueue::instance()->stats();
+        $jobs     = \mindstellar\job\JobQueue::instance()->stats();
         $dueSince = $jobs['due_since'] !== null ? strtotime((string) $jobs['due_since']) : false;
         if ($jobs['error'] > 0) {
             $check('warn', 'Job queue', $jobs['error'] . ' job(s) stopped retrying; run jobs:status');
