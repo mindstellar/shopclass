@@ -767,7 +767,7 @@ class CWebItem extends BaseModel
             case 'delete_comment':
                 osc_csrf_check();
 
-                $commentId = Params::getParam('comment');
+                $commentId = Params::getParamInt('comment');
                 $itemId    = Params::getParam('id');
                 $item      = Item::newInstance()->findByPrimaryKey($itemId);
 

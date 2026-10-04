@@ -11,7 +11,7 @@
 /**
  * Pins the public delete_comment action. It used to call add_comment() on every delete,
  * so a delete request that also carried comment fields inserted a comment. It also has to
- * fire `delete_comment` with the comment id after the delete, as the admin delete does.
+ * fire `delete_comment` with the comment id, as an int, after the delete, as the admin delete does.
  *
  * DB-free and source-level.  Usage: php tests/item-comment-delete.php
  */
@@ -28,6 +28,7 @@ check('the case was parsed', $body !== '');
 check('it checks CSRF', strpos($body, 'osc_csrf_check()') !== false);
 check('it inserts nothing: no add_comment() call', $body !== '' && strpos($body, 'add_comment') === false);
 check('it builds no ItemActions', $body !== '' && strpos($body, 'ItemActions') === false);
+check('it reads the comment id as an int', strpos($body, "\$commentId = Params::getParamInt('comment')") !== false);
 check('it deletes by the comment id', strpos($body, 'deleteByPrimaryKey($commentId)') !== false);
 
 harness_section('the delete_comment hook');
