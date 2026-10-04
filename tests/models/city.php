@@ -249,6 +249,19 @@ harness_section('City::ajax — no match');
 
 pin('an unknown prefix returns an empty array', array(), $model->ajax('Nowhereville'));
 
+harness_section('City::ajax — an empty term loads nothing, and matches stop at 10');
+
+pin('an empty term returns an empty array', array(), $model->ajax(''));
+pin('a blank term returns an empty array', array(), $model->ajax('   '));
+pin('a null term returns an empty array', array(), $model->ajax(null));
+$zedRegionId = seed_region($admin, $country, 'Zed region');
+for ($i = 1; $i <= 12; $i++) {
+    seed_city($admin, $zedRegionId, sprintf('Zed %02d', $i), $country);
+}
+pin('no more than 10 rows come back with 12 matches available', 10, count($model->ajax('Zed')));
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . 't_city WHERE fk_i_region_id = ' . (int) $zedRegionId);
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . 't_region WHERE pk_i_id = ' . (int) $zedRegionId);
+
 /* ----------------------------------------------------------------------------
  * getByRegion() / findByRegion() — the return ledger.
  * ------------------------------------------------------------------------- */

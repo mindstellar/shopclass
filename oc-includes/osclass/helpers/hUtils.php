@@ -728,26 +728,14 @@ function osc_request_counts_as_view()
 }
 
 /**
- * Where the visitor came from: the rewrite's referer, the stored one, then a validated Referer header.
+ * Where the visitor came from, when it is on this site: the rewrite's referer, the stored
+ * one, then the Referer header.
  *
  * @return string Empty string when none is known
  */
 function osc_get_http_referer()
 {
-    $ref = Rewrite::newInstance()->get_http_referer();
-    if ($ref != '') {
-        return $ref;
-    }
-
-    if (Session::newInstance()->_getReferer() != '') {
-        return Session::newInstance()->_getReferer();
-    } elseif (Params::existServerParam('HTTP_REFERER')) {
-        if (filter_var(Params::getServerParam('HTTP_REFERER', false, false), FILTER_VALIDATE_URL)) {
-            return Params::getServerParam('HTTP_REFERER', false, false);
-        }
-    }
-
-    return '';
+    return \mindstellar\utility\Utils::getHttpReferer();
 }
 
 /**
@@ -1358,15 +1346,8 @@ function osc_keep_form(array $values, string $error): void
 function osc_local_referer($fallback)
 {
     $referer = (string)Params::getServerParam('HTTP_REFERER', false, false);
-    if ($referer !== '') {
-        $refHost  = parse_url($referer, PHP_URL_HOST);
-        $baseHost = parse_url(osc_base_url(), PHP_URL_HOST);
-        if (is_string($refHost) && is_string($baseHost) && strcasecmp($refHost, $baseHost) === 0) {
-            return $referer;
-        }
-    }
 
-    return (string)$fallback;
+    return \mindstellar\utility\Utils::isLocalUrl($referer) ? $referer : (string)$fallback;
 }
 
 if (!function_exists('osc_cron_last_run')) {

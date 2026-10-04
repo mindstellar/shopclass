@@ -61,10 +61,15 @@ class City extends DAO
      * @param int|null $regionId Region id
      *
      * @return array<int,array{id:string,label:string,value:string,region:string|null}>
-     *         If there's an error or 0 results, it returns an empty array
+     *         At most 10 rows; empty on an error, no match or an empty query
      */
     public function ajax($query, $regionId = null)
     {
+        $query = trim((string) $query);
+        // An empty term would match, and load, every city.
+        if ($query === '') {
+            return array();
+        }
         // Table names are fixed internal identifiers set in each model's own
         // constructor, never user input, so they are safe to concatenate.
         $sql = 'SELECT a.pk_i_id AS id, a.s_name AS label, a.s_name AS value, aux.s_name AS region'
@@ -85,6 +90,7 @@ class City extends DAO
             }
             $params[] = $regionId;
         }
+        $sql .= ' LIMIT 10';
 
         try {
             $rows = osc_db_select($sql, $params);

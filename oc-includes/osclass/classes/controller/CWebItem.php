@@ -696,8 +696,9 @@ class CWebItem extends BaseModel
             case 'add_comment':
                 osc_csrf_check();
 
-                $itemId = Params::getParam('id');
+                $itemId = Params::getParamInt('id');
                 $item   = Item::newInstance()->findByPrimaryKey($itemId);
+                $this->notFoundIfHidden($item);
                 $this->_exportVariableToView('item', $item);
 
                 if (osc_recaptcha_comments_enabled() && osc_captcha_enabled()
@@ -746,6 +747,9 @@ class CWebItem extends BaseModel
                     case 7:
                         $msg = _m('Sorry, comments are disabled');
                         osc_add_flash_error_message($msg);
+                        break;
+                    case 8:
+                        osc_add_flash_error_message(_m('Too many comments in an hour. Try again later.'));
                         break;
                 }
 

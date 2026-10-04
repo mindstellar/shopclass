@@ -86,14 +86,30 @@ function osc_form_widget_options()
 {
     $out = array(array('value' => '', 'label' => __('— Select a form —')));
     foreach (FieldGroup::newInstance()->listAll() as $form) {
-        $meta = (isset($form['s_meta']) && $form['s_meta'] !== '')
-            ? json_decode($form['s_meta'], true) : array();
-        if (is_array($meta) && !empty($meta['placeable'])) {
+        if (osc_form_is_public($form)) {
             $out[] = array('value' => (string)$form['pk_i_id'], 'label' => $form['s_name']);
         }
     }
 
     return $out;
+}
+
+/**
+ * Whether a form (a t_meta_group row) is flagged "available as a block", so the public may
+ * submit it. Listing field groups are not.
+ *
+ * @param array<string,mixed>|false|null $form
+ *
+ * @return bool
+ */
+function osc_form_is_public($form)
+{
+    if (!is_array($form) || empty($form['s_meta'])) {
+        return false;
+    }
+    $meta = json_decode((string)$form['s_meta'], true);
+
+    return is_array($meta) && !empty($meta['placeable']);
 }
 
 /**
