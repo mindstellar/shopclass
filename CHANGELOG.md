@@ -9,6 +9,7 @@ In development.
 ### New
 
 - Settings → Spam and bots has hourly limits for comments, uploads, forms, contact and alerts.
+- The item form fires `osc:item-fields-loaded` on `#plugin-hook` when custom fields load or clear.
 
 ### Security
 
@@ -36,6 +37,10 @@ In development.
 ### Fixed
 
 - Cron, the job worker and CLI commands in the Docker image also clear the whole page cache; the purge address is derived from `OSC_MICROCACHE` when not set.
+- Custom date and date range fields work without jQuery UI.
+- Custom-field labels name their control; date ranges and radio lists are labelled groups.
+- Changing or clearing the category no longer leaves the previous category's custom fields.
+- A failed custom-field request no longer puts an error page into the item form.
 
 ## Shopclass 6.4.2
 

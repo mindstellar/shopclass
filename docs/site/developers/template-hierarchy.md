@@ -108,6 +108,22 @@ The two `selected_*` calls prefer the **posted** value, which matters without
 JavaScript: change country, submit, and the re-rendered form offers that
 country's regions rather than the previous one's.
 
+The plugin fields load into `<div id="plugin-hook"></div>` when the category
+changes. The wrapper is printed with nothing inside, so `#plugin-hook:empty` can
+hide a "Details" heading before any script runs. After the fields are in (or
+cleared, when the category is cleared), core fires a bubbling
+`osc:item-fields-loaded` event on it, with the category in `detail.catId`:
+
+```js
+document.addEventListener('osc:item-fields-loaded', (e) => {
+    const details = document.querySelector('.post-details');
+    details.hidden = e.target.children.length === 0;
+});
+```
+
+A failed request keeps the fields already shown and fires nothing. Custom date
+fields are native date inputs and need no jQuery UI.
+
 `osc_show_item_comments()` renders the comment thread and its form inside your
 listing page: see [The comment block](#the-comment-block) below.
 

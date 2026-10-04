@@ -4721,6 +4721,7 @@ msgstr ""
 msgid "Friendship - Activity Partners"
 msgstr ""
 
+#: oc-includes/osclass/classes/form/FieldForm.php
 #: oc-includes/osclass/helpers/hItems.php
 msgid "From"
 msgstr ""
@@ -11385,6 +11386,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/items/settings.php
 msgid "Titles can be 1 to %d characters."
+msgstr ""
+
+#: oc-includes/osclass/classes/form/FieldForm.php
+msgid "To"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/cache.php
