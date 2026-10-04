@@ -828,35 +828,29 @@ class CWebItem extends BaseModel
                     return;
                 }
 
-                if ($item['b_active'] != 1) {
-                    if ((($this->userId == $item['fk_i_user_id']) && ($this->userId != ''))
-                        || osc_is_admin_user_logged_in()
-                    ) {
-                        osc_add_flash_warning_message(
-                            _m("The listing hasn't been validated. Please validate it in order to make it public")
-                        );
-                    } else {
-                        // Not public yet: 404, not 400. It is a well-formed URL for a listing
-                        // that may be published later, so nothing permanent is signalled.
-                        $this->do404();
+                // Not validated, disabled or spam: only the owner and admins see it. A 404, not
+                // 400 or 410, as the listing may still be published later.
+                if (!ItemAccess::canView($item, $this->userId, osc_is_admin_user_logged_in())) {
+                    $this->do404();
 
-                        return;
-                    }
-                } elseif ($item['b_enabled'] == 0) {
+                    return;
+                }
+
+                if ($item['b_active'] != 1) {
+                    osc_add_flash_warning_message(
+                        _m("The listing hasn't been validated. Please validate it in order to make it public")
+                    );
+                } elseif ($item['b_enabled'] == 0 || ($item['b_spam'] ?? 0) == 1) {
                     if (osc_is_admin_user_logged_in()) {
                         osc_add_flash_warning_message(
-                            _m("The listing hasn't been enabled. Please enable it in order to make it public")
+                            $item['b_enabled'] == 0
+                                ? _m("The listing hasn't been enabled. Please enable it in order to make it public")
+                                : _m('The listing is marked as spam. Unmark it in order to make it public')
                         );
-                    } elseif (osc_is_web_user_logged_in()
-                        && osc_logged_user_id() == $item['fk_i_user_id']
-                    ) {
+                    } else {
                         osc_add_flash_warning_message(
                             _m('The listing has been blocked or is awaiting moderation from the admin')
                         );
-                    } else {
-                        $this->do404();
-
-                        return;
                     }
                 }
 

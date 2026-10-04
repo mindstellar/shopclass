@@ -9,8 +9,11 @@
  */
 
 /**
- * ItemAccess, the owner check for deleting a listing's photo from the public site, and the
- * two places that use it (CWebItem deleteResources, CWebAjax delete_image).
+ * ItemAccess: who may see a hidden listing on its public page, and who may delete a
+ * listing's photo from the public site, with the controllers that use it.
+ *
+ * The item page hid listings that were not validated or were disabled, but showed spam
+ * listings to everyone. A spam listing is now hidden like a disabled one.
  *
  * The old check only refused a signed-in stranger or a guest listing with a wrong secret. A
  * signed-out visitor on a registered user's listing matched neither branch, so the photo
@@ -30,6 +33,38 @@ $registered = array('pk_i_id' => '10', 'fk_i_user_id' => '7', 's_secret' => 'reg
 $guest      = array('pk_i_id' => '11', 'fk_i_user_id' => null, 's_secret' => 'guestsecret');
 $photo      = array('pk_i_id' => '50', 'fk_i_item_id' => '10', 's_name' => 'abc123');
 $guestPhoto = array('pk_i_id' => '51', 'fk_i_item_id' => '11', 's_name' => 'def456');
+
+$live  = array('fk_i_user_id' => '7', 'b_active' => 1, 'b_enabled' => 1, 'b_spam' => 0);
+$spam  = array_merge($live, array('b_spam' => 1));
+$off   = array_merge($live, array('b_enabled' => 0));
+$unval = array_merge($live, array('b_active' => 0));
+
+harness_section('who may see a listing');
+check('a live listing is public', ItemAccess::canView($live, null, false));
+check('a spam listing is hidden', ItemAccess::isHidden($spam));
+check('a spam listing: the public gets nothing', !ItemAccess::canView($spam, null, false));
+check('a spam listing: another user gets nothing', !ItemAccess::canView($spam, 8, false));
+check('a spam listing: the owner can view it', ItemAccess::canView($spam, 7, false));
+check('a spam listing: an admin can view it', ItemAccess::canView($spam, null, true));
+check('a disabled listing: the public gets nothing', !ItemAccess::canView($off, null, false));
+check('a disabled listing: the owner can view it', ItemAccess::canView($off, 7, false));
+check('an unvalidated listing: the public gets nothing', !ItemAccess::canView($unval, null, false));
+check('an unvalidated listing: the owner can view it', ItemAccess::canView($unval, '7', false));
+check(
+    'a guest listing that is spam: nobody signed out sees it',
+    !ItemAccess::canView(array_merge($spam, array('fk_i_user_id' => null)), null, false)
+);
+
+harness_section('the item page uses it');
+$webSrc = file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/controller/CWebItem.php');
+preg_match("/\n            default:(.*?)osc_run_hook\('show_item'/s", $webSrc, $v);
+$view  = $v[1] ?? '';
+$gate  = strpos($view, 'ItemAccess::canView(');
+$after = $gate === false ? '' : substr($view, $gate, 200);
+check('the view was parsed', $view !== '');
+check('it gates on canView', $gate !== false);
+check('a refused visitor gets the 404', strpos($after, '$this->do404()') !== false);
+check('the gate runs before the view is counted', $gate !== false && $gate < (int)strpos($view, 'ItemStats'));
 
 harness_section('who may delete a photo');
 check('the owner, signed in', ItemAccess::canManage($registered, 7, false, ''));

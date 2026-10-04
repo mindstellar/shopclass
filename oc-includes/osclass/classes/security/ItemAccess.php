@@ -11,11 +11,23 @@
 namespace mindstellar\security;
 
 /**
- * Who may change a listing from the public site. The owner is the signed-in user the
+ * Who may see or change a listing from the public site. The owner is the signed-in user the
  * listing belongs to or, for a listing posted as a guest, whoever holds its secret.
  */
 final class ItemAccess
 {
+    /**
+     * @param array<string,mixed> $item a t_item row
+     *
+     * @return bool true when the public may not see the listing: not validated, disabled or spam
+     */
+    public static function isHidden(array $item): bool
+    {
+        return (int)($item['b_active'] ?? 0) !== 1
+            || (int)($item['b_enabled'] ?? 0) === 0
+            || (int)($item['b_spam'] ?? 0) === 1;
+    }
+
     /**
      * @param array<string,mixed> $item
      * @param int|string|null     $userId the signed-in user's id, or null
@@ -23,6 +35,15 @@ final class ItemAccess
     public static function isOwner(array $item, $userId): bool
     {
         return (int)$userId > 0 && (int)($item['fk_i_user_id'] ?? 0) === (int)$userId;
+    }
+
+    /**
+     * @param array<string,mixed> $item
+     * @param int|string|null     $userId
+     */
+    public static function canView(array $item, $userId, bool $isAdmin): bool
+    {
+        return $isAdmin || !self::isHidden($item) || self::isOwner($item, $userId);
     }
 
     /**
