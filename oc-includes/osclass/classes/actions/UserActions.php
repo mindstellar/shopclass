@@ -213,17 +213,11 @@ class UserActions
                 array('pk_i_id' => $userId)
             );
 
-            // update items with s_contact_email the same as new user email
-            $items_updated =
-                Item::newInstance()->update(
-                    array('fk_i_user_id' => $userId, 's_contact_name' => $input['s_name']),
-                    array('s_contact_email' => $input['s_email'])
-                );
-            if ($items_updated !== false && $items_updated > 0) {
-                User::newInstance()->increaseNumItems($userId, $items_updated);
+            // A visitor's address is unconfirmed here, so only an admin-made account takes the
+            // guest listings and alerts under it.
+            if ($this->is_admin) {
+                self::claimGuestListings((int) $userId);
             }
-            // update alerts user id with the same email
-            Alerts::newInstance()->update(array('fk_i_user_id' => $userId), array('s_email' => $input['s_email']));
 
             $success = 2;
         }
@@ -592,21 +586,43 @@ class UserActions
             }
         }
 
-        // update items with s_contact_email the same as new user email
-        $items_updated =
-            Item::newInstance()->update(
-                array('fk_i_user_id' => $user_id, 's_contact_name' => $user['s_name']),
-                array('s_contact_email' => $user['s_email'])
-            );
-        if ($items_updated !== false && $items_updated > 0) {
-            User::newInstance()->increaseNumItems($user_id, $items_updated);
-        }
-        // update alerts user id with the same email
-        Alerts::newInstance()->update(array('fk_i_user_id' => $user_id), array('s_email' => $user['s_email']));
+        self::claimGuestListings((int) $user_id);
 
         osc_run_hook('activate_user', $user);
 
         return true;
+    }
+
+    /**
+     * Move the guest listings and alerts posted with this account's e-mail to the account.
+     * Call only once the address is confirmed, or for an account an admin made.
+     *
+     * @param int $userId
+     *
+     * @return void
+     */
+    public static function claimGuestListings(int $userId): void
+    {
+        $user = User::newInstance()->findByPrimaryKey($userId);
+        if (!$user || (string) $user['s_email'] === '') {
+            return;
+        }
+
+        try {
+            $claimed = osc_db_table(Item::newInstance()->getTableName())
+                ->where('s_contact_email', $user['s_email'])
+                ->whereNull('fk_i_user_id')
+                ->update(array('fk_i_user_id' => $userId, 's_contact_name' => $user['s_name']));
+            if ($claimed > 0) {
+                User::newInstance()->increaseNumItems($userId, $claimed);
+            }
+            osc_db_table(Alerts::newInstance()->getTableName())
+                ->where('s_email', $user['s_email'])
+                ->whereRaw('(fk_i_user_id IS NULL OR fk_i_user_id = 0)')
+                ->update(array('fk_i_user_id' => $userId));
+        } catch (\mindstellar\database\DbException $e) {
+            trigger_error('Claiming guest listings failed: ' . $e->getMessage(), E_USER_WARNING);
+        }
     }
 
     /**
