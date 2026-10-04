@@ -217,15 +217,21 @@ final class JobQueue
     }
 
     /**
-     * Counts per status, and when the oldest pending job was created.
+     * Counts per status, when the oldest pending job was created, and how many pending jobs
+     * are due now and since when. A job held for later is pending but not due, so only
+     * `due` and `due_since` say whether the queue is behind.
      *
      * @param string|null $type narrow to one type
      *
-     * @return array{pending:int,running:int,error:int,oldest:?string}
+     * @return array{pending:int,running:int,error:int,oldest:?string,due:int,due_since:?string}
      */
     public function stats(?string $type = null): array
     {
-        $stats = array(self::STATUS_PENDING => 0, self::STATUS_RUNNING => 0, self::STATUS_ERROR => 0, 'oldest' => null);
+        $stats = array(
+            self::STATUS_PENDING => 0, self::STATUS_RUNNING => 0, self::STATUS_ERROR => 0,
+            'oldest' => null, 'due' => 0, 'due_since' => null,
+        );
+        $now = date('Y-m-d H:i:s');
 
         try {
             $q = self::whereType(
@@ -233,6 +239,8 @@ final class JobQueue
                     ->select('s_status')
                     ->selectRaw('COUNT(*) AS i_count')
                     ->selectRaw('MIN(dt_created) AS dt_oldest')
+                    ->selectRaw('SUM(dt_next_run <= ?) AS i_due', array($now))
+                    ->selectRaw('MIN(CASE WHEN dt_next_run <= ? THEN dt_next_run END) AS dt_due', array($now))
                     ->groupBy('s_status'),
                 $type
             );
@@ -247,7 +255,9 @@ final class JobQueue
                 $stats[$status] = (int) $row['i_count'];
             }
             if ($status === self::STATUS_PENDING) {
-                $stats['oldest'] = $row['dt_oldest'] === null ? null : (string) $row['dt_oldest'];
+                $stats['oldest']    = $row['dt_oldest'] === null ? null : (string) $row['dt_oldest'];
+                $stats['due']       = (int) $row['i_due'];
+                $stats['due_since'] = $row['dt_due'] === null ? null : (string) $row['dt_due'];
             }
         }
 
@@ -696,7 +706,7 @@ final class JobQueue
     public function summary(): array
     {
         $stats = $this->stats();
-        unset($stats['oldest']);
+        unset($stats['oldest'], $stats['due'], $stats['due_since']);
 
         return $stats;
     }

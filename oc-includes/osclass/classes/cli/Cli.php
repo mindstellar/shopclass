@@ -801,17 +801,18 @@ class Cli
         $all   = $queue->stats($only === '' ? null : $only);
 
         $this->out(sprintf(
-            "pending %d   running %d   gave up %d   oldest pending %s\n",
+            "pending %d (due %d)   running %d   gave up %d   oldest due %s\n",
             $all['pending'],
+            $all['due'],
             $all['running'],
             $all['error'],
-            $all['oldest'] ?? '-'
+            $all['due_since'] ?? '-'
         ));
 
         \mindstellar\job\JobWorker::registerHandlers();
         $types = $only === '' ? $queue->queuedTypes() : array($only);
         if ($types !== array()) {
-            $this->out(sprintf("\n  %-40s %8s %8s %8s  %s\n", 'type', 'pending', 'running', 'gave up', 'oldest pending'));
+            $this->out(sprintf("\n  %-40s %8s %8s %8s  %s\n", 'type', 'pending', 'running', 'gave up', 'oldest due'));
         }
         foreach ($types as $type) {
             $stats = $queue->stats($type);
@@ -821,7 +822,7 @@ class Cli
                 $stats['pending'],
                 $stats['running'],
                 $stats['error'],
-                $stats['oldest'] ?? '-',
+                $stats['due_since'] ?? '-',
                 \mindstellar\job\JobRegistry::has($type) ? '' : '   [no handler registered]'
             ));
         }
@@ -1684,11 +1685,11 @@ class Cli
 
         // Job queue: jobs that stopped retrying, and work left waiting.
         $jobs   = \mindstellar\job\JobQueue::instance()->stats();
-        $oldest = $jobs['oldest'] !== null ? strtotime((string) $jobs['oldest']) : false;
+        $dueSince = $jobs['due_since'] !== null ? strtotime((string) $jobs['due_since']) : false;
         if ($jobs['error'] > 0) {
             $check('warn', 'Job queue', $jobs['error'] . ' job(s) stopped retrying; run jobs:status');
-        } elseif ($oldest !== false && time() - $oldest > 3600) {
-            $check('warn', 'Job queue', $jobs['pending'] . ' waiting, oldest since ' . date('Y-m-d H:i', $oldest) . '; is cron running?');
+        } elseif ($dueSince !== false && time() - $dueSince > 3600) {
+            $check('warn', 'Job queue', $jobs['due'] . ' due, the oldest since ' . date('Y-m-d H:i', $dueSince) . '; is cron running?');
         } else {
             $check('ok', 'Job queue', $jobs['pending'] . ' waiting');
         }

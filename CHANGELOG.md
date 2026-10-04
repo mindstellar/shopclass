@@ -2,6 +2,14 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 6.4.2
+
+In development.
+
+### Fixed
+
+- `doctor`, `jobs:status` and System info no longer report a job held for later as a stuck queue; they count only jobs that are due.
+
 ## Shopclass 6.4.1
 
 This release fixes two security issues: custom-field values that could run script on a listing
