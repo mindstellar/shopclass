@@ -13,7 +13,8 @@
  * listing's photo from the public site, with the controllers that use it.
  *
  * The item page hid listings that were not validated or were disabled, but showed spam
- * listings to everyone. A spam listing is now hidden like a disabled one.
+ * listings to everyone. A spam listing is now hidden like a disabled one, and the contact and
+ * send-to-friend pages refuse every hidden listing the same way.
  *
  * The old check only refused a signed-in stranger or a guest listing with a wrong secret. A
  * signed-out visitor on a registered user's listing matched neither branch, so the photo
@@ -65,6 +66,21 @@ check('the view was parsed', $view !== '');
 check('it gates on canView', $gate !== false);
 check('a refused visitor gets the 404', strpos($after, '$this->do404()') !== false);
 check('the gate runs before the view is counted', $gate !== false && $gate < (int)strpos($view, 'ItemStats'));
+
+harness_section('contact and send-to-friend use it');
+preg_match('/private function notFoundIfHidden.*?\n    }/s', $webSrc, $h);
+$helper = $h[0] ?? '';
+check('the helper checks canView', strpos($helper, 'ItemAccess::canView(') !== false);
+check('the helper sends the 404', strpos($helper, '$this->do404()') !== false);
+foreach (array('send_friend', 'send_friend_post', 'contact', 'contact_post') as $action) {
+    preg_match("/case '$action':(.*?)\n            case '/s", $webSrc, $c);
+    $body = $c[1] ?? '';
+    $find = strpos($body, 'findByPrimaryKey(');
+    $gate = strpos($body, '$this->notFoundIfHidden($item)');
+    $view = strpos($body, "_exportVariableToView('item'");
+    check("$action was parsed", $body !== '');
+    check("$action 404s a hidden listing before using it", $find !== false && $gate !== false && $gate > $find && $gate < $view);
+}
 
 harness_section('who may delete a photo');
 check('the owner, signed in', ItemAccess::canManage($registered, 7, false, ''));

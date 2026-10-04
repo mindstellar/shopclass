@@ -500,6 +500,7 @@ class CWebItem extends BaseModel
                 break;
             case 'send_friend':
                 $item = $this->itemManager->findByPrimaryKey(Params::getParam('id'));
+                $this->notFoundIfHidden($item);
 
                 $this->_exportVariableToView('item', $item);
 
@@ -534,6 +535,7 @@ class CWebItem extends BaseModel
                     $this->redirectTo(osc_user_login_url());
                 }
                 $item = $this->itemManager->findByPrimaryKey(Params::getParam('id'));
+                $this->notFoundIfHidden($item);
                 $this->_exportVariableToView('item', $item);
 
                 Session::newInstance()->_setForm('yourEmail', Params::getParam('yourEmail'));
@@ -594,6 +596,7 @@ class CWebItem extends BaseModel
                     osc_add_flash_error_message(_m("This listing doesn't exist"));
                     $this->redirectTo(osc_base_url(true));
                 } else {
+                    $this->notFoundIfHidden($item);
                     $this->_exportVariableToView('item', $item);
 
                     if (osc_item_is_expired()) {
@@ -625,6 +628,7 @@ class CWebItem extends BaseModel
                 }
 
                 $item = $this->itemManager->findByPrimaryKey(Params::getParam('id'));
+                $this->notFoundIfHidden($item);
                 $this->_exportVariableToView('item', $item);
                 // A failed check goes back to the form it came from, with what was typed.
                 $contactValues = array(
@@ -993,6 +997,23 @@ class CWebItem extends BaseModel
         }
         Session::newInstance()->_clearVariables();
         osc_run_hook('after_html');
+    }
+
+    /**
+     * Ends the request with a 404 when the listing is one the public may not see (not
+     * validated, disabled or spam), unless the visitor is its owner or an admin.
+     *
+     * @param array<string,mixed>|mixed $item
+     *
+     * @return void
+     */
+    private function notFoundIfHidden($item)
+    {
+        if (is_array($item) && $item !== array()
+            && !ItemAccess::canView($item, $this->userId, osc_is_admin_user_logged_in())
+        ) {
+            $this->do404();
+        }
     }
 }
 

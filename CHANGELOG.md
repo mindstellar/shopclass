@@ -12,6 +12,7 @@ In development.
 - A signed-out visitor could delete a photo from a member's listing with only the photo's code; now only the owner, the holder of a guest listing's secret, or an admin can.
 - A listing marked as spam was still shown on its page to everyone; now only its owner and admins can see it, as with a disabled listing.
 - The photo delete links on the listing edit form printed the `secret` from the URL unescaped, so a crafted link could run script; they now use the listing's stored secret, escaped.
+- The contact and send-to-friend pages worked for listings that are not validated, disabled or spam; the public now gets a not-found page there too.
 
 ### Fixed
 
