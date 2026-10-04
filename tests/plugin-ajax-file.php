@@ -89,6 +89,26 @@ if (function_exists('symlink')) {
     }
 }
 
+harness_section('resolveWithin: .php inside one of the allowed roots, relative to a base');
+@mkdir($base . '/themes/t', 0777, true);
+file_put_contents($base . '/themes/t/view.php', '<?php // theme file');
+file_put_contents($base . '/index.php', '<?php // install root file');
+$roots = array($base . '/themes/', $base . '/plugins/');
+pin(
+    'file in the themes root resolves',
+    realpath($base . '/themes/t/view.php'),
+    PluginAjaxFile::resolveWithin('themes/t/view.php', $base . '/', $roots)
+);
+pin(
+    'file in the plugins root resolves',
+    realpath($root . 'demo/ajax.php'),
+    PluginAjaxFile::resolveWithin('plugins/demo/ajax.php', $base . '/', $roots)
+);
+pin('install-root file rejected', null, PluginAjaxFile::resolveWithin('index.php', $base . '/', $roots));
+pin('outside file rejected', null, PluginAjaxFile::resolveWithin('outside/evil.php', $base . '/', $roots));
+pin('traversal rejected', null, PluginAjaxFile::resolveWithin('themes/../index.php', $base . '/', $roots));
+pin('non-php in a root rejected', null, PluginAjaxFile::resolveWithin('plugins/demo/README.md', $base . '/', $roots));
+
 // tidy up
 @unlink($root . 'demo/link.php');
 @unlink($root . 'demo/ajax.php');
@@ -97,6 +117,10 @@ if (function_exists('symlink')) {
 @unlink($root . 'demo/README.md');
 @unlink($root . 'demo/composer.lock');
 @unlink($base . '/outside/evil.php');
+@unlink($base . '/themes/t/view.php');
+@unlink($base . '/index.php');
+@rmdir($base . '/themes/t');
+@rmdir($base . '/themes');
 @rmdir($root . 'demo/admin');
 @rmdir($root . 'demo');
 @rmdir($base . '/plugins');
