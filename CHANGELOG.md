@@ -6,6 +6,10 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 In development.
 
+### Security
+
+- A signed-in user could overwrite the title, description, custom fields and photos of the next listing by id when editing their own.
+
 ### Fixed
 
 - Cron, the job worker and CLI commands in the Docker image also clear the whole page cache; the purge address is derived from `OSC_MICROCACHE` when not set.

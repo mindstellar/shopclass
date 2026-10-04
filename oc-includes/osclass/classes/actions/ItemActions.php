@@ -2251,7 +2251,7 @@ class ItemActions
             $aItem['active'] = $active;
         } else {          // EDIT
             $aItem['secret'] = Params::getParam('secret');
-            $aItem['idItem'] = Params::getParam('id');
+            $aItem['idItem'] = Params::getParamInt('id');
         }
 
         // get params
