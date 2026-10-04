@@ -195,9 +195,9 @@ $EXPECTED_OFF = array(
     'item delete no secret'    => 'http://example.com/index.php?page=item&action=item_delete&id=42&CSRFName=N&CSRFToken=T',
     'item activate'            => 'http://example.com/index.php?page=item&action=activate&id=42&secret=SEC',
     'item activate no secret'  => 'http://example.com/index.php?page=item&action=activate&id=42',
-    'resource delete'          => 'http://example.com/index.php?page=item&action=deleteResource'
+    'resource delete'          => 'http://example.com/index.php?page=item&action=deleteResources'
         . '&id=8&item=42&code=CD&secret=SEC',
-    'resource delete no secret' => 'http://example.com/index.php?page=item&action=deleteResource'
+    'resource delete no secret' => 'http://example.com/index.php?page=item&action=deleteResources'
         . '&id=8&item=42&code=CD',
     'send to friend'           => 'http://example.com/index.php?page=item&action=send_friend&id=42',
     'item no friendly url'     => 'http://example.com/index.php?page=item&id=42',
@@ -578,12 +578,12 @@ $PARSE = array(
     ),
     'delete a photo'     => array(
         'resource/delete/8/42/CD/SEC',
-        array('page' => 'item', 'action' => 'deleteResource', 'id' => '8', 'item' => '42',
+        array('page' => 'item', 'action' => 'deleteResources', 'id' => '8', 'item' => '42',
             'code' => 'CD', 'secret' => 'SEC')
     ),
     'delete a photo, no secret' => array(
         'resource/delete/8/42/CD',
-        array('page' => 'item', 'action' => 'deleteResource', 'id' => '8', 'item' => '42',
+        array('page' => 'item', 'action' => 'deleteResources', 'id' => '8', 'item' => '42',
             'code' => 'CD', 'secret' => '')
     ),
     'listing'            => array('blue-bike_i42', array('page' => 'item', 'id' => '42')),
@@ -647,6 +647,20 @@ foreach ($PARSE as $label => $case) {
     $want = $case[1];
     ksort($want);
     pin($label . '  (' . $case[0] . ')', $want, resolve($case[0]));
+}
+
+harness_section('every item route points at an action the controller has');
+$itemController = file_get_contents(dirname(__DIR__) . '/oc-includes/osclass/classes/controller/CWebItem.php');
+foreach (CoreRoutes::all() as $name => $route) {
+    $to = $route['to'] ?? array();
+    if (($to['page'] ?? '') !== 'item' || !isset($to['action'])) {
+        continue;
+    }
+    check(
+        "$name -> {$to['action']}",
+        strpos($itemController, "case '{$to['action']}':") !== false
+            || strpos($itemController, "\$this->action === '{$to['action']}'") !== false
+    );
 }
 
 exit(harness_result());
