@@ -61,7 +61,15 @@ should not be readable:
 
 - `debug.log`, `queries.log`, `explain_queries.log`: see
   [debugging](/docs/developers/debug-php-errors/). Delete them when you are done
-  and deny `*.log` in your server config.
+  and deny `*.log` in your server config. For nginx:
+
+  ```nginx
+  location ~* ^/oc-content/.*\.log$ {
+      deny all;
+  }
+  ```
+
+  The container image already does this.
 - Database dumps. Never leave a backup in the web root, except in the backups
   folder below.
 
