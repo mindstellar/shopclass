@@ -20,6 +20,9 @@ use mindstellar\utility\Sanitize;
  */
 class ItemActions
 {
+    /** Comments one user, or one address for a guest, may post in an hour. */
+    public const COMMENTS_PER_HOUR = 20;
+
     /**
      * Widths of the t_item_location and t_item columns a submitted listing fills, from
      * struct.sql. A value wider than its column is cut short on a relaxed connection and
@@ -2002,9 +2005,27 @@ class ItemActions
     }
 
     /**
+     * Count one comment and say whether it is over COMMENTS_PER_HOUR: per user, or per address
+     * for a guest. Fails open, as RateLimit does.
+     *
+     * @param int|string|null $userId
+     *
+     * @return bool
+     */
+    public static function commentLimitReached($userId): bool
+    {
+        $key = (int) $userId > 0
+            ? 'user:' . (int) $userId
+            : 'ip:' . Params::getServerParam('REMOTE_ADDR');
+
+        return !\mindstellar\security\RateLimit::hit('comment_post', $key, self::COMMENTS_PER_HOUR, 3600);
+    }
+
+    /**
      * Validate and store a comment on a listing.
      *
-     * @return int a status code; 7 when comments are disabled
+     * @return int a status code; -1 for a listing the visitor cannot see, 7 when comments are
+     *             disabled, 8 past COMMENTS_PER_HOUR
      */
     public function add_comment()
     {
@@ -2013,6 +2034,12 @@ class ItemActions
         }
 
         $aItem = $this->prepareDataForFunction('add_comment');
+        // A listing that is not live takes comments only from its owner (or an admin).
+        if (empty($aItem['item'])
+            || !\mindstellar\security\ItemAccess::canView($aItem['item'], $aItem['userId'], osc_is_admin_user_logged_in())
+        ) {
+            return -1;
+        }
 
         $authorName  = trim(strip_tags($aItem['authorName']));
         $authorEmail = trim(strip_tags($aItem['authorEmail']));
@@ -2064,6 +2091,10 @@ class ItemActions
             Session::newInstance()->_setForm('commentTitle', $title);
 
             return 4;
+        }
+
+        if (self::commentLimitReached($userId)) {
+            return 8;
         }
 
         $num_moderate_comments = osc_moderate_comments();
