@@ -278,8 +278,8 @@ class CWebUser extends WebSecBaseModel
 
                 $alert  = Alerts::newInstance()->findByPrimaryKey($id);
                 $result = 0;
-                if (!empty($alert) && $email == $alert['s_email']
-                    && $secret == $alert['s_secret']
+                if (!empty($alert) && hash_equals((string)$alert['s_email'], (string)$email)
+                    && hash_equals((string)$alert['s_secret'], (string)$secret)
                 ) {
                     $result = Alerts::newInstance()->unsub($id);
                 }

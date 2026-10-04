@@ -91,8 +91,8 @@ class CWebUserNonSecure extends BaseModel
                     osc_add_flash_error_message(_m('Sorry, the link is not valid'));
                     $this->redirectTo(osc_base_url());
                 }
-                if (!empty($alert) && $email == $alert['s_email']
-                    && $secret == $alert['s_secret']
+                if (!empty($alert) && hash_equals((string)$alert['s_email'], (string)$email)
+                    && hash_equals((string)$alert['s_secret'], (string)$secret)
                 ) {
                     $user = User::newInstance()->findByEmail($alert['s_email']);
                     if (isset($user['pk_i_id'])) {
@@ -119,8 +119,8 @@ class CWebUserNonSecure extends BaseModel
 
                 $alert  = Alerts::newInstance()->findByPrimaryKey($id);
                 $result = 0;
-                if (!empty($alert) && $email == $alert['s_email']
-                    && $secret == $alert['s_secret']
+                if (!empty($alert) && hash_equals((string)$alert['s_email'], (string)$email)
+                    && hash_equals((string)$alert['s_secret'], (string)$secret)
                 ) {
                     $result = Alerts::newInstance()->unsub($id);
                 }
