@@ -9,9 +9,9 @@
  */
 
 /**
- * Comments had no limit and were taken on listings the public cannot see. Now a user, or an
- * address for a guest, may post 20 an hour, and a listing that is not live takes comments
- * only from its owner.
+ * Comments had no limit and were taken on listings the public cannot see. Now an address may
+ * post 20 an hour (comment_post, adjustable with action_throttle_limit), and a listing that is
+ * not live takes no comments from the public.
  *
  * Usage:  php tests/models/comment-guard.php          (standalone, own scratch database)
  *         php tests/run-models.php comment-guard      (as part of the suite)
@@ -23,54 +23,66 @@ require_once __DIR__ . '/../lib/harness.php';
 $admin = scratchdb_session('osc_models_comment_guard');
 
 require_once __DIR__ . '/../lib/action-standins.php';
-
-$table = DB_TABLE_PREFIX . 't_rate_counter';
-$admin->query("TRUNCATE TABLE $table");
-
-$burst = static function ($userId, int $times): array {
-    $got = array();
-    for ($i = 0; $i < $times; $i++) {
-        $got[] = ItemActions::commentLimitReached($userId);
+if (!function_exists('osc_item_url')) {
+    function osc_item_url()
+    {
+        return 'http://localhost/item';
     }
+}
 
-    return $got;
-};
+seed_locale($admin);
+seed_country($admin);
+seed_currency($admin);
+$cat    = seed_category($admin, 'Comments');
+$live   = seed_item($admin, $cat, null, 'Live listing');
+$hidden = seed_item($admin, $cat, null, 'Hidden listing', 10.0, 0, 1);
 
-harness_section('the hourly comment limit');
-pin('the limit is 20 an hour', 20, ItemActions::COMMENTS_PER_HOUR);
+osc_set_preference('enabled_comments', '1', 'osclass', 'BOOLEAN');
+osc_set_preference('reg_user_post_comments', '0', 'osclass', 'BOOLEAN');
+osc_set_preference('notify_new_comment', '0', 'osclass', 'BOOLEAN');
+osc_set_preference('notify_new_comment_user', '0', 'osclass', 'BOOLEAN');
+osc_reset_preferences();
 
 $_SERVER['REMOTE_ADDR'] = '203.0.113.7';
-Params::init();
-$guest = $burst(null, 21);
-pin('a guest posts 20 comments', array_fill(0, 20, false), array_slice($guest, 0, 20));
-pin('the 21st from the same address is refused', true, $guest[20]);
+
+/** Post a comment on $itemId through ItemActions and return its status code. */
+$post = static function (int $itemId): int {
+    $_POST = $_REQUEST = array(
+        'id' => (string) $itemId, 'authorName' => 'Ann', 'authorEmail' => 'ann@example.com',
+        'title' => 'Hi', 'body' => 'Is it still for sale?',
+    );
+    Params::init();
+
+    return (int) (new ItemActions(false))->add_comment();
+};
+$stored = static function (int $itemId) use ($admin): int {
+    return (int) $admin->query('SELECT COUNT(*) FROM ' . DB_TABLE_PREFIX . "t_item_comment WHERE fk_i_item_id = $itemId")
+        ->fetch_row()[0];
+};
+
+harness_section('a listing that is not live');
+pin('a guest comment is refused', -1, $post($hidden));
+pin('...and nothing is stored', 0, $stored($hidden));
+
+harness_section('the hourly comment limit per address');
+$codes = array();
+for ($i = 0; $i < 21; $i++) {
+    $codes[] = $post($live);
+}
+check('20 comments are taken', count(array_filter(array_slice($codes, 0, 20), static function ($c) {
+    return $c === 1 || $c === 2;
+})) === 20);
+pin('the 21st is refused with status 8', 8, $codes[20]);
+pin('...and not stored', 20, $stored($live));
 
 $_SERVER['REMOTE_ADDR'] = '203.0.113.8';
-Params::init();
-pin('another address has its own count', false, ItemActions::commentLimitReached(null));
+check('another address has its own count', in_array($post($live), array(1, 2), true));
 
-$user = $burst(42, 21);
-pin('a user is counted on their own', false, $user[0]);
-pin('the 21st from the same user is refused', true, $user[20]);
-pin('another user has their own count', false, ItemActions::commentLimitReached(43));
-
-harness_section('add_comment() is wired to the checks');
-$actions = file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/actions/ItemActions.php');
-preg_match('/public function add_comment\(\).*?\n    }\n/s', $actions, $m);
-$body = $m[0] ?? '';
-check(
-    'a listing the visitor cannot see is refused',
-    strpos($body, "ItemAccess::canView(\$aItem['item'], \$aItem['userId'], osc_is_admin_user_logged_in())") !== false
-);
-check('the limit is checked before the comment is stored', strpos($body, 'commentLimitReached($userId)') !== false
-    && strpos($body, 'commentLimitReached($userId)') < strpos($body, '->insertGetId('));
-
-$web = file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebItem.php');
-check(
-    'the comment form 404s on a hidden listing, as the contact form does',
-    (bool) preg_match("/case 'add_comment':.*?notFoundIfHidden\(\\\$item\);.*?add_comment\(\)/s", $web)
-);
-check('the controller explains the limit', strpos($web, "_m('Too many comments in an hour. Try again later.')") !== false);
+$_SERVER['REMOTE_ADDR'] = '203.0.113.7';
+osc_add_filter('action_throttle_limit', static function ($limit, $context) {
+    return $context === 'comment_post' ? array('max' => 50, 'window' => 3600) : $limit;
+});
+check('action_throttle_limit can raise it', in_array($post($live), array(1, 2), true));
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

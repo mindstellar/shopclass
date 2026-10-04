@@ -20,9 +20,6 @@ use mindstellar\utility\Sanitize;
  */
 class ItemActions
 {
-    /** Comments one user, or one address for a guest, may post in an hour. */
-    public const COMMENTS_PER_HOUR = 20;
-
     /**
      * Widths of the t_item_location and t_item columns a submitted listing fills, from
      * struct.sql. A value wider than its column is cut short on a relaxed connection and
@@ -2005,27 +2002,10 @@ class ItemActions
     }
 
     /**
-     * Count one comment and say whether it is over COMMENTS_PER_HOUR: per user, or per address
-     * for a guest. Fails open, as RateLimit does.
-     *
-     * @param int|string|null $userId
-     *
-     * @return bool
-     */
-    public static function commentLimitReached($userId): bool
-    {
-        $key = (int) $userId > 0
-            ? 'user:' . (int) $userId
-            : 'ip:' . Params::getServerParam('REMOTE_ADDR');
-
-        return !\mindstellar\security\RateLimit::hit('comment_post', $key, self::COMMENTS_PER_HOUR, 3600);
-    }
-
-    /**
      * Validate and store a comment on a listing.
      *
      * @return int a status code; -1 for a listing the visitor cannot see, 7 when comments are
-     *             disabled, 8 past COMMENTS_PER_HOUR
+     *             disabled, 8 past 20 an hour per address (comment_post, see action_throttle_limit)
      */
     public function add_comment()
     {
@@ -2093,7 +2073,7 @@ class ItemActions
             return 4;
         }
 
-        if (self::commentLimitReached($userId)) {
+        if (\mindstellar\security\ActionThrottle::exceededFor('comment_post', 20)) {
             return 8;
         }
 
@@ -2147,6 +2127,7 @@ class ItemActions
 
         $commentID = $mComments->insertGetId($aComment);
         if ($commentID) {
+            \mindstellar\security\ActionThrottle::record('comment_post');
             if ($status_num == 2 && $userId != null) { // COMMENT IS ACTIVE
                 $user = User::newInstance()->findByPrimaryKey($userId);
                 if ($user) {

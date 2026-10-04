@@ -19,7 +19,7 @@ In development.
 - Redirects after a failed security check, and after sign-in, stay on the site.
 - Forms sent from another site are refused for visitors who are not signed in.
 - Listing field groups no longer take submissions as public forms; forms take 10 an hour per address.
-- Comments are limited to 20 an hour and refused on hidden listings.
+- Comments are limited to 20 an hour per address and refused on hidden listings.
 - City autocomplete returns at most 10 results and nothing for an empty term.
 - A new account takes over guest listings with its e-mail only after the address is confirmed.
 - Photo uploads on the listing form follow the registered-users-only setting; guests may upload 100 an hour per address.
