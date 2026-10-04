@@ -17,6 +17,7 @@ define('IS_AJAX', true);
 /**
  * Class CWebAjax
  */
+use mindstellar\security\ItemAccess;
 use mindstellar\utility\AjaxResponse;
 
 class CWebAjax extends BaseModel
@@ -84,8 +85,8 @@ class CWebAjax extends BaseModel
                 $ajax_photo = Params::getParam('ajax_photo');
                 $id         = Params::getParam('id');
                 $item       = Params::getParam('item');
-                $code       = Params::getParam('code');
-                $secret     = Params::getParam('secret');
+                $code       = Params::getParamString('code');
+                $secret     = Params::getParamString('secret');
                 $json       = array();
 
                 if ($ajax_photo != '') {
@@ -109,13 +110,7 @@ class CWebAjax extends BaseModel
                     return false;
                 }
 
-                if (Session::newInstance()->_get('userId') != '') {
-                    $userId = Session::newInstance()->_get('userId');
-                    $user   = User::newInstance()->findByPrimaryKey($userId);
-                } else {
-                    $userId = null;
-                    $user   = null;
-                }
+                $userId = osc_is_web_user_logged_in() ? osc_logged_user_id() : null;
 
                 // Check for required fields
                 if (!(is_numeric($id) && is_numeric($item)
@@ -140,26 +135,12 @@ class CWebAjax extends BaseModel
                     return false;
                 }
 
-                if (!osc_is_admin_user_logged_in()) {
-                    // Check if the item belong to the user
-                    if ($userId != null && $userId != $aItem['fk_i_user_id']) {
-                        $json['success'] = false;
-                        $json['msg']     = _m("The listing doesn't belong to you");
-                        AjaxResponse::json($json);
+                if (!ItemAccess::canManage($aItem, $userId, osc_is_admin_user_logged_in(), $secret)) {
+                    $json['success'] = false;
+                    $json['msg']     = _m("The listing doesn't belong to you");
+                    AjaxResponse::json($json);
 
-                        return false;
-                    }
-
-                    // Check if the secret passphrase match with the item
-                    if ($userId == null && $aItem['fk_i_user_id'] == null
-                        && $secret != $aItem['s_secret']
-                    ) {
-                        $json['success'] = false;
-                        $json['msg']     = _m("The listing doesn't belong to you");
-                        AjaxResponse::json($json);
-
-                        return false;
-                    }
+                    return false;
                 }
 
                 // Does id & code combination exist?
@@ -168,7 +149,7 @@ class CWebAjax extends BaseModel
                 if ($result > 0) {
                     $resource = ItemResource::newInstance()->findByPrimaryKey($id);
 
-                    if ($resource['fk_i_item_id'] == $item) {
+                    if (ItemAccess::isPhotoOf($resource, $aItem, $code)) {
                         // Delete: file, db table entry
                         if (defined('OC_ADMIN') && OC_ADMIN) {
                             osc_deleteResource($id, true);

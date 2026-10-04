@@ -12,6 +12,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\security\ItemAccess;
 use mindstellar\utility\Validate;
 
 /**
@@ -408,16 +409,8 @@ class CWebItem extends BaseModel
             case 'deleteResources': // Delete images via AJAX
                 $id     = Params::getParam('id');
                 $item   = Params::getParam('item');
-                $code   = Params::getParam('code');
-                $secret = Params::getParam('secret');
-
-                if (Session::newInstance()->_get('userId') != '') {
-                    $userId = Session::newInstance()->_get('userId');
-                    $user   = User::newInstance()->findByPrimaryKey($userId);
-                } else {
-                    $userId = null;
-                    $user   = null;
-                }
+                $code   = Params::getParamString('code');
+                $secret = Params::getParamString('secret');
 
                 if (!(is_numeric($id) && is_numeric($item)
                     && preg_match('/^([a-z0-9]+)$/i', $code))
@@ -432,18 +425,9 @@ class CWebItem extends BaseModel
                     $this->redirectTo(osc_item_edit_url($secret, $item));
                 }
 
-                if (!osc_is_admin_user_logged_in()) {
-                    if ($userId != null && $userId != $aItem['fk_i_user_id']) {
-                        osc_add_flash_error_message(_m("The listing doesn't belong to you"));
-                        $this->redirectTo(osc_item_edit_url($secret, $item));
-                    }
-
-                    if ($userId == null && $aItem['fk_i_user_id'] == null
-                        && $secret != $aItem['s_secret']
-                    ) {
-                        osc_add_flash_error_message(_m("The listing doesn't belong to you"));
-                        $this->redirectTo(osc_item_edit_url($secret, $item));
-                    }
+                if (!ItemAccess::canManage($aItem, $this->userId, osc_is_admin_user_logged_in(), $secret)) {
+                    osc_add_flash_error_message(_m("The listing doesn't belong to you"));
+                    $this->redirectTo(osc_item_edit_url($secret, $item));
                 }
 
                 $result = ItemResource::newInstance()->existResource($id, $code);
@@ -451,7 +435,7 @@ class CWebItem extends BaseModel
                 if ($result > 0) {
                     $resource = ItemResource::newInstance()->findByPrimaryKey($id);
 
-                    if ($resource['fk_i_item_id'] == $item) {
+                    if (ItemAccess::isPhotoOf($resource, $aItem, $code)) {
                         osc_deleteResource($id, false);
                         Log::newInstance()->insertLog(
                             'item',

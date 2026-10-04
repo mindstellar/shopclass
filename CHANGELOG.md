@@ -9,6 +9,7 @@ In development.
 ### Security
 
 - Changing the password now goes through the sign-in throttle, so the current password cannot be guessed without limit; a malformed form no longer causes an error page.
+- A signed-out visitor could delete a photo from a member's listing with only the photo's code; now only the owner, the holder of a guest listing's secret, or an admin can.
 
 ### Fixed
 
