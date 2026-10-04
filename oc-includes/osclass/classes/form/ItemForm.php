@@ -1654,8 +1654,22 @@ class ItemForm extends Form
                     }
                 }
 
+                let controller = null;
+
                 function loadHook(catId) {
-                    var body = new URLSearchParams();
+                    const hook = document.getElementById('plugin-hook');
+                    if (!hook) { return; }
+                    // A newer pick wins; a late reply for an older category is dropped.
+                    if (controller) { controller.abort(); }
+                    controller = null;
+                    const loaded = () => hook.dispatchEvent(new CustomEvent('osc:item-fields-loaded', {bubbles: true, detail: {catId}}));
+                    if (catId === '') {
+                        hook.replaceChildren();
+                        loaded();
+                        return;
+                    }
+                    const ctrl = controller = new AbortController();
+                    const body = new URLSearchParams();
                     body.set('page', 'ajax');
                     body.set('action', 'runhook');
                     body.set('hook', 'item_<?php echo osc_esc_js($case); ?>');
@@ -1663,39 +1677,45 @@ class ItemForm extends Form
                     <?php foreach ($hookExtra as $hookKey => $hookValue) { ?>
                     body.set(<?php echo json_encode((string)$hookKey); ?>, <?php echo json_encode((string)$hookValue); ?>);
                     <?php } ?>
-                    fetch(url, {method: 'POST', credentials: 'same-origin', headers: {'X-Requested-With': 'XMLHttpRequest'}, body: body})
-                        .then(function (r) { return r.text(); })
-                        .then(function (html) {
-                            var hook = document.getElementById('plugin-hook');
-                            if (!hook) { return; }
+                    fetch(url, {method: 'POST', credentials: 'same-origin', signal: ctrl.signal, headers: {'X-Requested-With': 'XMLHttpRequest'}, body})
+                        .then((r) => {
+                            if (!r.ok) { throw new Error('HTTP ' + r.status); }
+                            return r.text();
+                        })
+                        .then((html) => {
+                            if (ctrl.signal.aborted) { return; }
+                            controller = null;
                             hook.innerHTML = html;
-                            // innerHTML does not execute <script> tags; re-create them so
-                            // custom-field logic and plugin scripts emitted through the
-                            // item_form hook actually run (conditional/cascade fields,
-                            // datepickers, third-party field plugins).
-                            hook.querySelectorAll('script').forEach(function (old) {
-                                var s = document.createElement('script');
-                                if (old.src) { s.src = old.src; } else { s.textContent = old.textContent; }
-                                old.parentNode.replaceChild(s, old);
+                            // innerHTML does not run <script> tags, so re-create them for field and plugin scripts.
+                            hook.querySelectorAll('script').forEach((old) => {
+                                const s = document.createElement('script');
+                                for (const {name, value} of old.attributes) { s.setAttribute(name, value); }
+                                s.textContent = old.textContent;
+                                old.replaceWith(s);
                             });
+                            loaded();
+                        })
+                        .catch((err) => {
+                            // Keep the fields already shown; never put an error page into the form.
+                            if (err.name !== 'AbortError') { console.error('plugin-hook:', err); }
                         });
                 }
 
                 function apply(catId, fireEvents) {
-                    if (catId !== '') { updatePrice(catId, fireEvents); loadHook(catId); }
+                    if (catId !== '') { updatePrice(catId, fireEvents); }
+                    loadHook(catId);
                 }
 
                 function init() {
-                    var catId = document.getElementById('catId');
+                    const catId = document.getElementById('catId');
                     if (!catId) { return; }
-                    catId.addEventListener('change', function () { apply(this.value, true); });
-                    apply(catId.value, false);
+                    catId.addEventListener('change', () => apply(catId.value, true));
+                    if (catId.value !== '') { apply(catId.value, false); }
                 }
                 if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
             })();
         </script>
-        <div id="plugin-hook">
-        </div>
+        <div id="plugin-hook"></div>
         <?php
     }
 

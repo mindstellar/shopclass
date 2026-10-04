@@ -318,6 +318,9 @@ jobs:
           exit 1
       - name: Admin form depends and translate
         run: php tests/admin-form-depends-translate.php
+      # Custom-field labels and date inputs, and the #plugin-hook loader driven in Chrome.
+      - name: Item form custom fields
+        run: php tests/item-form-custom-fields.php
       # The enabled-locale list is memoised for the request, so a locale added, enabled,
       # disabled or deleted leaves every translated field on the page working from the list
       # as it was -- and the languages screen redirects to itself, so the stale row is the
