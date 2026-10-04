@@ -230,17 +230,10 @@ class CWebItem extends BaseModel
                 }
                 break;
             case 'item_edit':   // edit item
-                $secret = Params::getParam('secret');
-                $id     = Params::getParam('id');
-                $item   =
-                    $this->itemManager->listWhere(
-                        'i.pk_i_id = %d AND ((i.s_secret = %s AND i.fk_i_user_id IS NULL) OR (i.fk_i_user_id = %d))',
-                        (int)$id,
-                        $secret,
-                        (int)$this->userId
-                    );
-                if (count($item) == 1) {
-                    $item = Item::newInstance()->findByPrimaryKey($id);
+                $secret = Params::getParamString('secret');
+                $id     = Params::getParamInt('id');
+                $item   = ItemAccess::manageable($id, $this->userId, false, $secret);
+                if ($item !== array()) {
 
                     $form     = count(Session::newInstance()->_getForm());
                     $keepForm = count(Session::newInstance()->_getKeepForm());
@@ -294,18 +287,12 @@ class CWebItem extends BaseModel
 
                 osc_csrf_check();
 
-                $secret = Params::getParam('secret');
-                $id     = Params::getParam('id');
-                $item   =
-                    $this->itemManager->listWhere(
-                        'i.pk_i_id = %d AND ((i.s_secret = %s AND i.fk_i_user_id IS NULL) OR (i.fk_i_user_id = %d))',
-                        (int)$id,
-                        $secret,
-                        (int)$this->userId
-                    );
+                $secret = Params::getParamString('secret');
+                $id     = Params::getParamInt('id');
+                $item   = ItemAccess::manageable($id, $this->userId, false, $secret);
 
-                if (count($item) == 1) {
-                    $this->_exportVariableToView('item', $item[0]);
+                if ($item !== array()) {
+                    $this->_exportVariableToView('item', $item);
 
                     if (osc_recaptcha_items_enabled() && osc_captcha_enabled()
                         && !osc_check_captcha()
@@ -345,15 +332,16 @@ class CWebItem extends BaseModel
                 }
                 break;
             case 'activate':
-                $secret = Params::getParam('secret');
-                $id     = Params::getParam('id');
-                $item   =
-                    $this->itemManager->listWhere(
-                        'i.pk_i_id = %d AND ((i.s_secret = %s) OR (i.fk_i_user_id = %d))',
-                        (int)$id,
-                        $secret,
-                        (int)$this->userId
-                    );
+                $secret = Params::getParamString('secret');
+                $id     = Params::getParamInt('id');
+                $row    = $id > 0 ? Item::newInstance()->findByPrimaryKey($id) : array();
+                $item   = array();
+                if (is_array($row) && $row !== array()
+                    && (ItemAccess::isOwner($row, $this->userId)
+                        || ($secret !== '' && hash_equals((string)$row['s_secret'], $secret)))
+                ) {
+                    $item = array($row);
+                }
 
                 // item doesn't exist
                 if (count($item) == 0) {

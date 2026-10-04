@@ -98,6 +98,10 @@ check(
     (bool)preg_match("/getParamInt\\('itemId'\\).*?ItemAccess::manageable\\(.*?\\\$itemId = 0;/s", $ajax)
 );
 
+$web = file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebItem.php');
+check('no guest secret is matched in SQL', strpos($web, 'i.s_secret = %s') === false);
+check('the edit id is read as an integer', strpos($web, "(int)Params::getParam('id')") === false);
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }
