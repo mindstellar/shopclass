@@ -338,7 +338,9 @@ class CWebAjax extends BaseModel
                     Params::getParam('qquuid'),
                     $result['uploadName']
                 );
-                \mindstellar\security\ActionThrottle::record('ajax_upload');
+                if (!osc_is_web_user_logged_in() && !osc_is_admin_user_logged_in()) {
+                    \mindstellar\security\ActionThrottle::record('ajax_upload');
+                }
                 echo htmlspecialchars(json_encode($result), ENT_NOQUOTES);
                 break;
             default:
@@ -348,25 +350,20 @@ class CWebAjax extends BaseModel
     }
 
     /**
-     * Why this visitor may not stage another photo, or '' when they may. Admins are not limited.
+     * Why this visitor may not stage another photo, or '' when they may. Only guests have an hourly limit.
      *
      * @return string
      */
     private function uploadRefusal(): string
     {
-        if (osc_is_admin_user_logged_in()) {
+        if (osc_is_admin_user_logged_in() || osc_is_web_user_logged_in()) {
             return '';
         }
-        if (osc_reg_user_post() && !osc_is_web_user_logged_in()) {
+        if (osc_reg_user_post()) {
             return _m('Only registered users are allowed to post listings');
         }
         if (\mindstellar\security\ActionThrottle::exceededFor('ajax_upload', 100)) {
             return _m('Too many tries from your connection. Please try again later.');
-        }
-        // 0 and -1 mean no photo limit; the ceiling still bounds what one form can stage.
-        $cap = osc_max_images_for_user();
-        if (ItemTmpUpload::newInstance()->countByToken(osc_upload_token()) >= ($cap > 0 ? $cap : 100)) {
-            return _m('You have reached the photo limit for this listing.');
         }
 
         return '';

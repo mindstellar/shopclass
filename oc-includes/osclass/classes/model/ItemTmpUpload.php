@@ -113,25 +113,6 @@ class ItemTmpUpload extends DAO
     }
 
     /**
-     * How many files are staged under this token.
-     *
-     * @param string $token
-     *
-     * @return int
-     */
-    public function countByToken($token)
-    {
-        try {
-            return (int) osc_db_scalar(
-                'SELECT COUNT(*) FROM ' . $this->getTableName() . ' WHERE s_token = ?',
-                array((string)$token)
-            );
-        } catch (\mindstellar\database\DbException $e) {
-            return 0;
-        }
-    }
-
-    /**
      * Forget every file staged under a token (e.g. on a fresh form or after a successful post).
      *
      * @param string $token
