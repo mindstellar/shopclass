@@ -3054,10 +3054,6 @@ msgstr ""
 msgid "You have not published anything yet."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/CWebAjax.php
-msgid "You have reached the photo limit for this listing."
-msgstr ""
-
 #: oc-includes/osclass/classes/admin/form/StaticPageForm.php
 msgid "You have to set a different internal name"
 msgstr ""
