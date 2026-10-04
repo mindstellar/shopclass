@@ -44,6 +44,11 @@ osc_set_preference('notify_new_comment_user', '0', 'osclass', 'BOOLEAN');
 osc_reset_preferences();
 
 $_SERVER['REMOTE_ADDR'] = '203.0.113.7';
+$_GET = array();
+// Comment as a guest, whatever an earlier file in the suite left signed in.
+Session::newInstance()->_drop('userId');
+Session::newInstance()->_dropEphemeral('userId');
+View::newInstance()->_erase('_loggedUser');
 
 /** Post a comment on $itemId through ItemActions and return its status code. */
 $post = static function (int $itemId): int {
@@ -83,6 +88,8 @@ osc_add_filter('action_throttle_limit', static function ($limit, $context) {
     return $context === 'comment_post' ? array('max' => 50, 'window' => 3600) : $limit;
 });
 check('action_throttle_limit can raise it', in_array($post($live), array(1, 2), true));
+
+View::newInstance()->_erase('item');
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

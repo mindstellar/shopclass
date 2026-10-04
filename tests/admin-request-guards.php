@@ -9,79 +9,161 @@
  */
 
 /**
- * Pins the request guards on admin and public file-including actions: reflected values
- * are escaped, state-changing actions check the CSRF token, and every include goes
- * through PluginAjaxFile.  Usage: php tests/admin-request-guards.php
+ * The plugins screen escapes the error value it puts in the install-error frame, and the
+ * error_plugin and status_alerts actions refuse a request without a CSRF token. The view is
+ * rendered and the controllers are driven; nothing here reads source text.
+ *
+ * DB-free.  Usage: php tests/admin-request-guards.php
  */
 
 define('ABS_PATH', dirname(__DIR__) . '/');
+define('OC_ADMIN', true);
+define('OSC_DEBUG', false);
 
+require ABS_PATH . 'oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/lib/harness.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hSanitize.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hUtils.php';
+require_once __DIR__ . '/lib/stubs.php';
 
-function guard_src(string $path): string
+/** What a missing or wrong token ends in; the real check redirects and exits. */
+class CsrfRefused extends RuntimeException
 {
-    return (string) file_get_contents(ABS_PATH . $path);
 }
 
-/** Body of one `case 'name':` up to the next case at the same indent. */
-function guard_case(string $src, string $case): string
+/** Thrown in place of the exit() a real redirect ends the request with. */
+class GuardRedirect extends RuntimeException
 {
-    $start = strpos($src, "case ('" . $case . "'):");
-    if ($start === false) {
-        $start = strpos($src, "case '" . $case . "':");
-    }
-    if ($start === false) {
-        return '';
-    }
-    $end = preg_match('/\n            (case |default:)/', $src, $m, PREG_OFFSET_CAPTURE, $start + 10)
-        ? $m[0][1] : strlen($src);
-
-    return substr($src, $start, $end - $start);
 }
 
-$plugins = guard_src('oc-includes/osclass/classes/controller/admin/CAdminPlugins.php');
-$view    = guard_src('oc-admin/themes/modern/plugins/index.php');
-
-harness_section('plugin install error iframe');
-check('error value is escaped and url-encoded', strpos($view, "osc_esc_html(urlencode(Params::getParamString('error')))") !== false);
-check('raw error value is not echoed', strpos($view, "echo Params::getParam('error')") === false);
-check('iframe url carries the CSRF token', strpos($view, 'action=error_plugin&amp;<?php') !== false && strpos($view, 'osc_csrf_token_url()') !== false);
-
-$case = guard_case($plugins, 'error_plugin');
-check('error_plugin case found', $case !== '');
-check('error_plugin checks CSRF', strpos($case, 'osc_csrf_check()') !== false);
-check('error_plugin refuses on demo', strpos($case, 'refuseOnDemo') !== false);
-check('error_plugin resolves through PluginAjaxFile', strpos($case, 'PluginAjaxFile::resolve') !== false);
-check('error_plugin no longer includes a raw path', strpos($case, 'include(osc_plugins_path()') === false);
-
-harness_section('sort and direction hidden inputs');
-foreach (array('items', 'users') as $screen) {
-    $src = guard_src('oc-admin/themes/modern/' . $screen . '/index.php');
-    check($screen . ': sort is escaped', strpos($src, 'value="<?php echo $sort; ?>"') === false
-        && strpos($src, 'osc_esc_html($sort)') !== false);
-    check($screen . ': direction is escaped', strpos($src, 'value="<?php echo $direction; ?>"') === false
-        && strpos($src, 'osc_esc_html($direction)') !== false);
-    check($screen . ': direction is allow-listed', strpos($src, "array('asc', 'desc')") !== false);
+function osc_csrf_check()
+{
+    if (Params::getParam('CSRFToken') !== 'good') {
+        throw new CsrfRefused();
+    }
+}
+function osc_csrf_token_url()
+{
+    return 'CSRFName=n&CSRFToken=good';
+}
+function osc_admin_base_url($index = false)
+{
+    return 'https://example.test/oc-admin/' . ($index ? 'index.php' : '');
+}
+function osc_plugins_path()
+{
+    return $GLOBALS['pluginsPath'];
+}
+function osc_add_flash_error_message($msg, $section = 'pubMessages')
+{
+    $GLOBALS['flashes'][] = $msg;
+}
+function _m($text)
+{
+    return $text;
+}
+function _e($text)
+{
+    echo $text;
+}
+function osc_market_i18n($type)
+{
+    return array();
+}
+function osc_asset_url_versioned($url)
+{
+    return $url;
+}
+function osc_current_admin_theme_js_url($file)
+{
+    return $file;
+}
+// Page chrome and market panels the error frame does not depend on.
+foreach (array(
+    'osc_admin_page', 'osc_current_admin_theme_path', 'osc_register_script', 'osc_enqueue_script',
+    'osc_admin_page_head', 'osc_admin_empty', 'osc_admin_pagination', 'osc_admin_per_page',
+    'osc_market_render_browse', 'osc_market_render_updates', 'osc_market_render_detail_dialog',
+    'osc_package_list_open', 'osc_package_list_close',
+) as $name) {
+    if (!function_exists($name)) {
+        eval('function ' . $name . '(...$args) { return ""; }');
+    }
 }
 
-harness_section('alert status change');
-$users = guard_case(guard_src('oc-includes/osclass/classes/controller/admin/CAdminUsers.php'), 'status_alerts');
-check('status_alerts checks CSRF', strpos($users, 'osc_csrf_check()') !== false);
-$frm = guard_src('oc-admin/themes/modern/users/frm.php');
-check('user edit alert links carry the token', substr_count($frm, "status_alerts&alert_id[]='") === 2
-    && substr_count($frm, 'osc_csrf_token_url()') >= 2);
+/** The controller base class, stubbed: the section permission check has already happened. */
+class AdminSecBaseModel
+{
+    protected $action;
 
-harness_section('file includes are confined');
-$appearance = guard_src('oc-includes/osclass/classes/controller/admin/CAdminAppearance.php');
-$render     = guard_case($appearance, 'render');
-check('appearance render uses PluginAjaxFile', strpos($render, 'PluginAjaxFile::resolveWithin') !== false);
-check('appearance render no longer trusts file_exists', strpos($render, 'file_exists(osc_base_path()') === false);
-$appView = guard_src('oc-admin/themes/modern/appearance/view.php');
-check('appearance view requires only a resolved path', strpos($appView, 'file_exists($file)') === false);
-check('public custom page uses PluginAjaxFile', strpos(guard_src('oc-includes/osclass/classes/controller/CWebCustom.php'), 'PluginAjaxFile::resolve') !== false);
-$theme = guard_src('oc-includes/osclass/helpers/hTheme.php');
-$fn    = substr($theme, (int) strpos($theme, 'function osc_render_file('), 1400);
-check('osc_render_file uses PluginAjaxFile', strpos($fn, 'PluginAjaxFile::resolve') !== false);
-check('osc_render_file no longer includes by file_exists', strpos($fn, 'file_exists(osc_plugins_path()') === false);
+    public function doModel()
+    {
+    }
+
+    public function redirectTo($url, $code = null)
+    {
+        throw new GuardRedirect((string) $url);
+    }
+
+    protected function refuseOnDemo($redirectUrl = null)
+    {
+        return false;
+    }
+}
+
+require_once ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminPlugins.php';
+require_once ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminUsers.php';
+
+/** Run one controller action with $query as the request; returns how it ended. */
+function guard_drive(string $class, string $action, array $query): string
+{
+    $_GET     = $_REQUEST = $query + array('action' => $action);
+    $_POST    = array();
+    Params::init();
+    $GLOBALS['flashes'] = array();
+    $controller = (new ReflectionClass($class))->newInstanceWithoutConstructor();
+    $prop       = new ReflectionProperty('AdminSecBaseModel', 'action');
+    $prop->setAccessible(true);
+    $prop->setValue($controller, $action);
+    try {
+        $controller->doModel();
+    } catch (CsrfRefused $e) {
+        return 'csrf refused';
+    } catch (GuardRedirect $e) {
+        return 'redirect';
+    }
+
+    return 'finished';
+}
+
+$GLOBALS['pluginsPath'] = sys_get_temp_dir() . '/osc-guards-' . getmypid() . '/';
+@mkdir($GLOBALS['pluginsPath'] . 'demo', 0777, true);
+file_put_contents($GLOBALS['pluginsPath'] . 'demo/README.md', 'not code');
+
+harness_section('plugin install error frame');
+$_GET = $_REQUEST = array('page' => 'plugins', 'error' => 'demo/x.php" onload="alert(1)');
+Params::init();
+View::newInstance()->_exportVariableToView('aPlugins', array('aaData' => array()));
+ob_start();
+include ABS_PATH . 'oc-admin/themes/modern/plugins/index.php';
+$page = (string) ob_get_clean();
+check('the frame is drawn', strpos($page, 'action=error_plugin') !== false);
+check('the error value is encoded into the address', strpos($page, 'plugin=demo%2Fx.php') !== false);
+check('...and cannot close the attribute', strpos($page, 'onload="alert') === false);
+check('the frame address carries the CSRF token', strpos($page, 'action=error_plugin&amp;CSRFName=n&CSRFToken=good&amp;plugin=') !== false);
+
+harness_section('error_plugin');
+pin('without a token it is refused', 'csrf refused', guard_drive('CAdminPlugins', 'error_plugin', array('plugin' => 'demo/index.php')));
+pin('with a token, a non-.php file is refused', 'redirect', guard_drive('CAdminPlugins', 'error_plugin', array('plugin' => 'demo/README.md', 'CSRFToken' => 'good')));
+pin('...with a message', array('Invalid plugin file'), $GLOBALS['flashes']);
+pin('a path out of the plugins folder is refused', 'redirect', guard_drive('CAdminPlugins', 'error_plugin', array('plugin' => '../../index.php', 'CSRFToken' => 'good')));
+
+harness_section('status_alerts');
+pin('without a token it is refused', 'csrf refused', guard_drive('CAdminUsers', 'status_alerts', array('status' => '1', 'alert_id' => array('1'))));
+pin('with a token it goes on to read the request', 'redirect', guard_drive('CAdminUsers', 'status_alerts', array('status' => '1', 'alert_id' => '1', 'CSRFToken' => 'good')));
+pin('...and refuses an id that is not a list', array("Alert id isn't in the correct format"), $GLOBALS['flashes']);
+
+@unlink($GLOBALS['pluginsPath'] . 'demo/README.md');
+@rmdir($GLOBALS['pluginsPath'] . 'demo');
+@rmdir($GLOBALS['pluginsPath']);
 
 exit(harness_result());

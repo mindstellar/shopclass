@@ -88,6 +88,10 @@ $blockOnCats  = $group('block', '{"placeable":1}', true);
 $codeForm     = $group('code', null, false);
 
 $_SERVER['REMOTE_ADDR'] = '198.51.100.20';
+// A guest, whatever an earlier file in the suite left signed in.
+Session::newInstance()->_drop('userId');
+Session::newInstance()->_dropEphemeral('userId');
+View::newInstance()->_erase('_loggedUser');
 
 /** Post the form and return the flash message the visitor is sent back with. */
 $submit = static function (int $formId): string {

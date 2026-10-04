@@ -78,17 +78,16 @@ pin('a listing another account owns is left alone', $other, $ownerOf('t_item', $
 UserActions::claimGuestListings($newId);
 pin('claiming twice counts the listing once', '1', $itemsOf($newId));
 
-harness_section('who calls it');
-$actions = file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/actions/UserActions.php');
-check(
-    'add() claims only for an account an admin makes',
-    (bool)preg_match('/if \(\$this->is_admin\) \{\s*self::claimGuestListings\(\(int\) \$userId\);/', $actions)
-);
-$register = file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebRegister.php');
-check(
-    'the e-mail validation link claims them',
-    (bool)preg_match("/case \('validate'\):.*?UserActions::claimGuestListings\(\\\$id\);/s", $register)
-);
+harness_section('an account an admin makes');
+$adminGuest = seed_item($admin, $cat, null, 'Another guest listing');
+$admin->query("UPDATE {$prefix}t_item SET s_contact_email = 'made@example.test' WHERE pk_i_id = $adminGuest");
+Params::setParam('s_name', 'Made by admin');
+Params::setParam('s_email', 'made@example.test');
+Params::setParam('s_username', 'madebyadmin');
+(new UserActions(true))->add();
+$madeId = (int)(User::newInstance()->findByEmail('made@example.test')['pk_i_id'] ?? 0);
+check('the account exists', $madeId > 0);
+pin('it takes the guest listing at once', $madeId, $ownerOf('t_item', $adminGuest));
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

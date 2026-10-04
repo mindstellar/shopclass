@@ -30,6 +30,29 @@ require_once __DIR__ . '/lib/harness.php';
 
 use mindstellar\Csrf;
 
+// check() ends the request on a refusal, so each case runs in its own process.
+if (isset($argv[1])) {
+    function _m($text)
+    {
+        return $text;
+    }
+    define('OSC_CSRF_SECRET', 'test-secret');
+    define('IS_AJAX', true);
+    $case = json_decode($argv[1], true);
+    if ($case['user'] !== '') {
+        Session::newInstance()->_setEphemeral('userId', $case['user']);
+    }
+    $csrf  = new Csrf();
+    $_POST = $_REQUEST = array('CSRFName' => $csrf->getCsrfTokenName(), 'CSRFToken' => $csrf->getCsrfTokenValue());
+    $_SERVER = $case['headers'];
+    Params::init();
+    ob_start();
+    $csrf->check();
+    ob_end_clean();
+    echo 'PASSED';
+    exit(0);
+}
+
 $cross = static function (array $headers): bool {
     $_SERVER = $headers;
     Params::init();
@@ -61,10 +84,13 @@ check('Origin: null passes', !$cross(array('HTTP_ORIGIN' => 'null')));
 check('no headers at all pass (older browsers)', !$cross(array()));
 
 harness_section('check() applies it to logged-out visitors only');
-$src = file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/Csrf.php');
-check(
-    'a valid token from an anonymous cross-site request is turned into a failure',
-    (bool) preg_match("/\\\$status === 'ok' && \\\$this->bind\(\) === '' && self::isCrossSite\(\)\)\s*\{\s*\\\$status = 'invalid';/", $src)
-);
+$checkPasses = static function (array $headers, string $user = ''): bool {
+    $arg = json_encode(array('headers' => $headers, 'user' => $user));
+
+    return trim((string) shell_exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__FILE__) . ' ' . escapeshellarg($arg))) === 'PASSED';
+};
+check('a valid token from the same site passes', $checkPasses(array('HTTP_SEC_FETCH_SITE' => 'same-origin')));
+check('a valid token from another site is refused when logged out', !$checkPasses(array('HTTP_SEC_FETCH_SITE' => 'cross-site')));
+check('a signed-in user\'s valid token passes from another site', $checkPasses(array('HTTP_SEC_FETCH_SITE' => 'cross-site'), '5'));
 
 exit(harness_result());

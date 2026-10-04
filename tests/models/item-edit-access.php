@@ -91,16 +91,70 @@ pin('the secret does not open a registered listing', '', $storedValue($ajaxItemI
 pin('the owner gets the stored values', 'secret-value-' . $userItem, $storedValue($ajaxItemId($userItem, $owner, '')));
 pin('a missing listing yields nothing', array(), ItemAccess::manageable(999999, $owner, false, ''));
 
-harness_section('the controllers use it');
-$ajax = file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebAjax.php');
-check(
-    'the item_edit hook checks access before it passes the id on',
-    (bool)preg_match("/getParamInt\\('itemId'\\).*?ItemAccess::manageable\\(.*?\\\$itemId = 0;/s", $ajax)
-);
+harness_section('the public edit screen');
 
-$web = file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebItem.php');
-check('no guest secret is matched in SQL', strpos($web, 'i.s_secret = %s') === false);
-check('the edit id is read as an integer', strpos($web, "(int)Params::getParam('id')") === false);
+/** Thrown in place of the exit() a real redirect ends the request with. */
+class EditRedirect extends RuntimeException
+{
+}
+
+/** The real controller, with the view and the redirect recorded instead of taken. */
+class TestWebItem extends CWebItem
+{
+    public function doView($file)
+    {
+        $GLOBALS['editView'] = $file;
+    }
+
+    public function redirectTo($url, $code = null)
+    {
+        throw new EditRedirect((string) $url);
+    }
+}
+if (!defined('OSC_DEBUG')) {
+    define('OSC_DEBUG', false);
+}
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hMessages.php';
+if (!function_exists('_m')) {
+    function _m($text)
+    {
+        return $text;
+    }
+}
+if (!function_exists('osc_locate_template')) {
+    function osc_locate_template($names, $fallback = '')
+    {
+        return $fallback;
+    }
+}
+
+/** Open the edit screen as a guest; the listing id it shows, or 0 when refused. */
+$openEdit = static function (string $id, string $secret): int {
+    $_GET = $_REQUEST = array('page' => 'item', 'action' => 'item_edit', 'id' => $id, 'secret' => $secret);
+    $_POST = array();
+    Params::init();
+    View::newInstance()->_erase('item');
+    $GLOBALS['editView'] = null;
+    $web = (new ReflectionClass('TestWebItem'))->newInstanceWithoutConstructor();
+    foreach (array('action' => 'item_edit', 'itemManager' => Item::newInstance(), 'userId' => null, 'user' => null) as $name => $value) {
+        $prop = new ReflectionProperty('CWebItem', $name);
+        $prop->setAccessible(true);
+        $prop->setValue($web, $value);
+    }
+    try {
+        $web->doModel();
+    } catch (EditRedirect $e) {
+        return 0;
+    }
+    $item = View::newInstance()->_get('item');
+
+    return $GLOBALS['editView'] !== null ? (int) ($item['pk_i_id'] ?? 0) : 0;
+};
+pin('the secret holder gets the form', $guestItem, $openEdit((string) $guestItem, $secret));
+pin('a secret in the wrong case is refused', 0, $openEdit((string) $guestItem, strtoupper($secret)));
+pin('a fractional id opens the listing the owner check passed', $guestItem, $openEdit($guestItem . '.9', $secret));
+
+View::newInstance()->_erase('item');
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

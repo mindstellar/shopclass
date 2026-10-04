@@ -41,6 +41,10 @@ if (!defined('OSC_DEBUG')) {
 }
 
 $_SERVER['REMOTE_ADDR'] = '198.51.100.9';
+// A guest, whatever an earlier file in the suite left signed in.
+Session::newInstance()->_drop('userId');
+Session::newInstance()->_dropEphemeral('userId');
+View::newInstance()->_erase('_loggedUser');
 Params::init();
 
 $refusal = static function (): string {

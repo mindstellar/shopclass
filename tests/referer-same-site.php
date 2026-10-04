@@ -93,10 +93,13 @@ pin('an off-site Referer header is ignored', '', $referer('', '', 'https://evil.
 pin('a local stored referer is used', 'https://shop.example/s', $referer('', 'https://shop.example/s', ''));
 
 harness_section('osc_get_http_referer() uses the same rule');
-$src = file_get_contents(ABS_PATH . 'oc-includes/osclass/helpers/hUtils.php');
-check(
-    'osc_get_http_referer() delegates to Utils::getHttpReferer()',
-    (bool) preg_match('/function osc_get_http_referer\(\)\s*\{\s*return \\\\mindstellar\\\\utility\\\\Utils::getHttpReferer\(\);/', $src)
-);
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hUtils.php';
+Rewrite::$ref = 'https://evil.example/phish';
+Session::$ref = '';
+$_SERVER['HTTP_REFERER'] = '';
+Params::init();
+pin('an off-site ?http_referer= is ignored', '', osc_get_http_referer());
+Rewrite::$ref = 'https://shop.example/a';
+pin('a local one is used', 'https://shop.example/a', osc_get_http_referer());
 
 exit(harness_result());
