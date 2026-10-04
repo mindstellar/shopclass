@@ -221,7 +221,8 @@ function osc_is_email_banned($email, $rules = null)
     if ($rules == null) {
         $rules = osc_ban_rules();
     }
-    $email = strtolower($email);
+    // Match the address as it will be stored, so spaces or stray symbols cannot slip past a rule.
+    $email = strtolower(trim((string) filter_var((string) $email, FILTER_SANITIZE_EMAIL)));
     foreach ($rules as $rule) {
         $rule = str_replace(array('*', '|'), array('.*', "\\"), str_replace('.', "\.", strtolower($rule['s_email'])));
         if ($rule != '') {
