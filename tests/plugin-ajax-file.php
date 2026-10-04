@@ -9,7 +9,8 @@
  */
 
 /**
- * Pins PluginAjaxFile::resolve(), the guard on the `custom` ajax action.
+ * Pins PluginAjaxFile, the guard on every request-named include (custom ajax action,
+ * ?page=custom, osc_render_file(), appearance render).
  *
  * That action ends in require_once, so the two directions both matter: what a
  * working plugin asks for still resolves, and everything that would execute a
@@ -108,6 +109,57 @@ pin('install-root file rejected', null, PluginAjaxFile::resolveWithin('index.php
 pin('outside file rejected', null, PluginAjaxFile::resolveWithin('outside/evil.php', $base . '/', $roots));
 pin('traversal rejected', null, PluginAjaxFile::resolveWithin('themes/../index.php', $base . '/', $roots));
 pin('non-php in a root rejected', null, PluginAjaxFile::resolveWithin('plugins/demo/README.md', $base . '/', $roots));
+
+harness_section('a plugin or theme folder that is a symlink');
+$linked = false;
+if (function_exists('symlink')) {
+    @mkdir($base . '/repos/plugin/sub', 0777, true);
+    @mkdir($base . '/repos/theme', 0777, true);
+    file_put_contents($base . '/repos/plugin/ajax.php', '<?php // endpoint in a linked folder');
+    file_put_contents($base . '/repos/plugin/upload.jpg', '<?php // an upload named like an image');
+    file_put_contents($base . '/repos/theme/view.php', '<?php // view in a linked theme');
+    @symlink($base . '/repos/plugin', $root . 'linked');
+    @symlink($base . '/repos/theme', $base . '/themes/linked');
+    @symlink($base . '/outside/evil.php', $base . '/repos/plugin/sub/out.php');
+    $linked = is_link($root . 'linked') && is_link($base . '/themes/linked');
+}
+if ($linked) {
+    pin(
+        'a file in a symlinked plugin folder resolves',
+        realpath($base . '/repos/plugin/ajax.php'),
+        PluginAjaxFile::resolve('linked/ajax.php', $root)
+    );
+    pin(
+        '...and through resolveWithin',
+        realpath($base . '/repos/plugin/ajax.php'),
+        PluginAjaxFile::resolveWithin('plugins/linked/ajax.php', $base . '/', $roots)
+    );
+    pin(
+        'a file in a symlinked theme folder resolves',
+        realpath($base . '/repos/theme/view.php'),
+        PluginAjaxFile::resolveWithin('themes/linked/view.php', $base . '/', $roots)
+    );
+    pin('a non-.php upload in it is refused', null, PluginAjaxFile::resolve('linked/upload.jpg', $root));
+    pin('a link inside it pointing out is refused', null, PluginAjaxFile::resolve('linked/sub/out.php', $root));
+    pin('traversal through it is refused', null, PluginAjaxFile::resolve('linked/../../outside/evil.php', $root));
+    pin(
+        'traversal out of the roots is refused',
+        null,
+        PluginAjaxFile::resolveWithin('plugins/linked/../../outside/evil.php', $base . '/', $roots)
+    );
+} else {
+    echo "SKIP  symlinks are not available here\n";
+}
+@unlink($base . '/repos/plugin/sub/out.php');
+@unlink($root . 'linked');
+@unlink($base . '/themes/linked');
+@unlink($base . '/repos/plugin/ajax.php');
+@unlink($base . '/repos/plugin/upload.jpg');
+@unlink($base . '/repos/theme/view.php');
+@rmdir($base . '/repos/plugin/sub');
+@rmdir($base . '/repos/plugin');
+@rmdir($base . '/repos/theme');
+@rmdir($base . '/repos');
 
 // tidy up
 @unlink($root . 'demo/link.php');
