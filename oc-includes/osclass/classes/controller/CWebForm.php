@@ -50,6 +50,27 @@ class CWebForm extends BaseModel
     }
 
     /**
+     * Whether a t_meta_group row may be submitted here. A listing field group (bound to
+     * categories and not marked as a block) may not; every other form may.
+     *
+     * @param array<string,mixed>|false|null $form
+     *
+     * @return bool
+     */
+    private function takesSubmissions($form): bool
+    {
+        if (!is_array($form) || empty($form['pk_i_id'])) {
+            return false;
+        }
+        $meta = !empty($form['s_meta']) ? json_decode((string)$form['s_meta'], true) : array();
+        if (is_array($meta) && !empty($meta['placeable'])) {
+            return true;
+        }
+
+        return FieldGroup::newInstance()->categories((int)$form['pk_i_id']) === array();
+    }
+
+    /**
      * Validates and stores one off-item form submission, then redirects back to the
      * referring page with a flash message. Honeypot hits and banned IPs store nothing.
      *
@@ -63,7 +84,7 @@ class CWebForm extends BaseModel
 
         $formId = Params::getParamInt('osc_form_id');
         $form   = $formId > 0 ? FieldGroup::newInstance()->findByPrimaryKey($formId) : array();
-        if (!osc_form_is_public($form)) {
+        if (!$this->takesSubmissions($form)) {
             osc_add_flash_error_message(_m('That form is no longer available.'));
             $this->redirectTo($return);
 

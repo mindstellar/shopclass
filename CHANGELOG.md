@@ -18,7 +18,7 @@ In development.
 - The theme preview and `?page=custom` pages only load PHP files inside the themes or plugins folders.
 - Redirects after a failed security check, and after sign-in, stay on the site.
 - Forms sent from another site are refused for visitors who are not signed in.
-- Only forms marked as available as a block take submissions, 10 an hour per address.
+- Listing field groups no longer take submissions as public forms; forms take 10 an hour per address.
 - Comments are limited to 20 an hour and refused on hidden listings.
 - City autocomplete returns at most 10 results and nothing for an empty term.
 - A new account takes over guest listings with its e-mail only after the address is confirmed.
