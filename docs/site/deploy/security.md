@@ -148,7 +148,7 @@ real_ip_header    CF-Connecting-IP; # or X-Real-IP, X-Forwarded-For, ...
 ```
 
 The container image does this for you: set `OSC_REAL_IP_HEADER` (and
-`OSC_REAL_IP_TRUSTED` for the CIDR ranges) and it writes the block above; see
+`OSC_REAL_IP_TRUSTED` for the CIDR ranges, which it requires) and it writes the block above; see
 [Docker](/docs/deploy/docker/#putting-it-behind-tls).
 
 **Apache** (`mod_remoteip`):
