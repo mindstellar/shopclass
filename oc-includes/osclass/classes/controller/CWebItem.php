@@ -816,6 +816,7 @@ class CWebItem extends BaseModel
                 }
 
                 $commentManager->deleteByPrimaryKey($commentId);
+                osc_run_hook('delete_comment', $commentId);
                 osc_add_flash_ok_message(_m('The comment has been deleted'));
                 $this->redirectTo(osc_item_url());
                 break;

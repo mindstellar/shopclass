@@ -10,7 +10,8 @@
 
 /**
  * Pins the public delete_comment action. It used to call add_comment() on every delete,
- * so a delete request that also carried comment fields inserted a comment.
+ * so a delete request that also carried comment fields inserted a comment. It also has to
+ * fire `delete_comment` with the comment id after the delete, as the admin delete does.
  *
  * DB-free and source-level.  Usage: php tests/item-comment-delete.php
  */
@@ -28,6 +29,15 @@ check('it checks CSRF', strpos($body, 'osc_csrf_check()') !== false);
 check('it inserts nothing: no add_comment() call', $body !== '' && strpos($body, 'add_comment') === false);
 check('it builds no ItemActions', $body !== '' && strpos($body, 'ItemActions') === false);
 check('it deletes by the comment id', strpos($body, 'deleteByPrimaryKey($commentId)') !== false);
+
+harness_section('the delete_comment hook');
+$delete = strpos($body, 'deleteByPrimaryKey($commentId)');
+$hook   = strpos($body, "osc_run_hook('delete_comment', \$commentId)");
+check('it fires delete_comment with the comment id', $hook !== false);
+check('the hook fires after the delete', $delete !== false && $hook !== false && $hook > $delete);
+
+$admin = file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/controller/admin/CAdminItemComments.php');
+check('the admin delete still fires it too', strpos($admin, "osc_run_hook('delete_comment', Params::getParam('id'))") !== false);
 
 harness_section('who may delete');
 check('a signed-out visitor is refused', strpos($body, '$this->userId == null') !== false);

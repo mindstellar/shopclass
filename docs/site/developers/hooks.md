@@ -242,7 +242,7 @@ Core fires 530 names. Generated from the source; do not edit by hand.
 | `comments_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/CommentsDataTable.php` |
 | `datatable_comment_class` | filter | `array(), $aRawRows[$key], $row` | `oc-admin/themes/modern/comments/index.php` |
 | `deactivate_comment` | action | `$id` | `oc-includes/osclass/classes/controller/admin/CAdminItemComments.php` |
-| `delete_comment` | action | `$id` | `oc-includes/osclass/classes/controller/admin/CAdminItemComments.php` |
+| `delete_comment` | action | `$commentId` | `oc-includes/osclass/classes/controller/CWebItem.php` |
 | `disable_comment` | action | `$id` | `oc-includes/osclass/classes/controller/admin/CAdminItemComments.php` |
 | `edit_comment` | action | `Params::getParam('id')` | `oc-includes/osclass/classes/controller/admin/CAdminItemComments.php` |
 | `enable_comment` | action | `$id` | `oc-includes/osclass/classes/controller/admin/CAdminItemComments.php` |

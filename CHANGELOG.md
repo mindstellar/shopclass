@@ -14,6 +14,7 @@ In development.
 
 - `doctor`, `jobs:status` and System info no longer report a job held for later as a stuck queue; they count only jobs that are due.
 - Deleting your own comment on a listing no longer also tries to post a new comment.
+- A member deleting their own comment now fires the `delete_comment` hook, as an admin delete does.
 
 ## Shopclass 6.4.1
 
