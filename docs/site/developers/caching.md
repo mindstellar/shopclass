@@ -106,10 +106,16 @@ osc_add_hook('page_cache_purge', function (array $reasons) {
 });
 ```
 
-It fires at most once per request, also on the command line. A listener that
-throws is logged and does not break the page. To ask for one yourself, call
-`osc_purge_page_cache('my_reason')`. The filter `page_cache_purge_enabled`
-(default `true`) turns it off.
+It fires once at the end of the request, however many changes asked for it,
+also on the command line. A listener that throws is logged and does not break
+the page. To ask for one yourself, call `osc_purge_page_cache('my_reason')`. The
+filter `page_cache_purge_enabled` (default `true`) turns it off.
+
+:::caution[Only for changes an admin makes]
+Each call empties the whole cache. Never call it on something a visitor does,
+such as a new comment, a page view or a search: on a busy site the cache would
+then never hold anything.
+:::
 
 The Docker image clears its own micro-cache without a plugin: when
 `OSC_PAGE_CACHE_PURGE_URL` is set, core sends one `PURGE` request there.

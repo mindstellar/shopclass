@@ -148,5 +148,5 @@ as **nginx Cache**) does it.
 | Test purge says a host is not in the list | Visitors reach the site under a name you did not list. Add it, with the port if there is one. |
 | Test purge says the key does not match | The purge address uses a different scheme (`http` or `https`) from the one nginx serves on. The scheme is part of each page's cache key, so a purge on the wrong one matches nothing. |
 | Test purge returns 404 | Your nginx settings are missing the purge address. The **Setup** page prints it. |
-| A theme or settings change does not show (Docker) | Look in the container log for `Page cache purge`. A `403` means the PURGE did not come from inside the container; check `OSC_REAL_IP_TRUSTED`. |
+| A theme or settings change does not show (Docker) | Look in the container log for `Page cache purge`. A connection error means nginx is not listening on the purge port (8089); check that `OSC_MICROCACHE` is on. A `403` means the request went somewhere other than nginx's loopback, such as an outbound proxy. |
 | An edit does not show | Check **Purges waiting** on the plugin's settings page. Each entry is a page the plugin could not purge. It tries again on the next cron run. |
