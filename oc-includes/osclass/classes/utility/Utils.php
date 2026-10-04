@@ -673,27 +673,46 @@ class Utils
     }
 
     /**
-     * The best available referring URL: the rewrite layer's, then the session's, then the header.
+     * The best available referring URL on this site: the rewrite layer's, then the session's,
+     * then the header. An off-site candidate is skipped, so callers can redirect to the result.
      *
      * @return string
      */
     public static function getHttpReferer()
     {
-        $ref = Rewrite::newInstance()->get_http_referer();
-        if ($ref !== '') {
-            return $ref;
-        }
-
-        if (Session::newInstance()->_getReferer() !== '') {
-            return Session::newInstance()->_getReferer();
-        }
-
-        if (Params::existServerParam('HTTP_REFERER')
-            && filter_var(Params::getServerParam('HTTP_REFERER', false, false), FILTER_VALIDATE_URL)
-        ) {
-            return Params::getServerParam('HTTP_REFERER', false, false);
+        $candidates = array(
+            (string) Rewrite::newInstance()->get_http_referer(),
+            (string) Session::newInstance()->_getReferer(),
+            (string) Params::getServerParam('HTTP_REFERER', false, false),
+        );
+        foreach ($candidates as $url) {
+            if (self::isLocalUrl($url)) {
+                return $url;
+            }
         }
 
         return '';
+    }
+
+    /**
+     * Whether $url is an http(s) URL on this site's host.
+     *
+     * @param string $url
+     *
+     * @return bool
+     */
+    public static function isLocalUrl($url)
+    {
+        $url = (string) $url;
+        if ($url === '' || !filter_var($url, FILTER_VALIDATE_URL)) {
+            return false;
+        }
+        $scheme   = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+        $host     = parse_url($url, PHP_URL_HOST);
+        $baseHost = parse_url(osc_base_url(), PHP_URL_HOST);
+
+        return in_array($scheme, array('http', 'https'), true)
+            && is_string($host) && is_string($baseHost)
+            && strcasecmp($host, $baseHost) === 0;
     }
 }
