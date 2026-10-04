@@ -148,7 +148,7 @@ class CoreRoutes
             'item_resource_delete' => array(
                 'group' => 'listing',
                 'pref'   => 'rewrite_item_resource_delete',
-                'to'     => array('page' => 'item', 'action' => 'deleteResource'),
+                'to'     => array('page' => 'item', 'action' => 'deleteResources'),
                 'params' => array(
                     'id'     => array('re' => '([0-9]+)'),
                     'item'   => array('re' => '([0-9]+)'),

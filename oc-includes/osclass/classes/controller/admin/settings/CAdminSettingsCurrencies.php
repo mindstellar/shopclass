@@ -77,6 +77,7 @@ class CAdminSettingsCurrencies extends AdminSecBaseModel
                 $isInserted = Currency::newInstance()->insert($fields);
 
                 if ($isInserted) {
+                    osc_purge_page_cache('currency');
                     osc_add_flash_ok_message(_m('Currency added'), 'admin');
                 } else {
                     osc_add_flash_error_message(_m("Currency couldn't be added"), 'admin');
@@ -137,6 +138,7 @@ class CAdminSettingsCurrencies extends AdminSecBaseModel
                 );
 
                 if ($updated == 1) {
+                    osc_purge_page_cache('currency');
                     osc_add_flash_ok_message(_m('Currency updated'), 'admin');
                 } else {
                     osc_add_flash_info_message(_m('No changes were made'), 'admin');
@@ -167,6 +169,10 @@ class CAdminSettingsCurrencies extends AdminSecBaseModel
                         $msg_current .= sprintf('</p><p>'
                             . _m("%s couldn't be deleted because it's the default currency"), $currencyCode);
                     }
+                }
+
+                if ($rowChanged > 0) {
+                    osc_purge_page_cache('currency');
                 }
 
                 $msg    = '';

@@ -153,11 +153,14 @@ class LoginThrottle
      * it holds the password. Called after a sign-in succeeds.
      *
      * @param string $context
-     * @param string $account identifier as submitted
+     * @param string $account     identifier as submitted
+     * @param bool   $withAddress false keeps the address's failures: an API client can
+     *                            hold one account's password and guess at others from the
+     *                            same address
      *
      * @return void
      */
-    public static function clear($context, $account)
+    public static function clear($context, $account, $withAddress = true)
     {
         if (!osc_login_throttle_enabled()) {
             return;
@@ -170,7 +173,7 @@ class LoginThrottle
                 $model->clearAccount($context, $account);
             }
             $ip = self::ip();
-            if ($ip !== '') {
+            if ($withAddress && $ip !== '') {
                 self::clearSignInIp($ip);
             }
         } catch (\Throwable $e) {

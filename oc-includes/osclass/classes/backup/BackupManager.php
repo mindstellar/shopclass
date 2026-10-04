@@ -558,6 +558,7 @@ final class BackupManager
         }
         @unlink($file);
         BackupStore::site()->clearState();
+        osc_purge_page_cache('restore');
 
         return true;
     }

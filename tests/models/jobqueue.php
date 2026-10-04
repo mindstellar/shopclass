@@ -600,9 +600,12 @@ $seed('test.s', 'pending');
 $seed('test.s', 'error');
 $seed('test.t', 'running', '2000-01-01 00:00:00', date('Y-m-d H:i:s'));
 $admin->query("UPDATE $table SET dt_created = '2001-02-03 04:05:06' WHERE s_type = 'test.s' AND s_status = 'pending' LIMIT 1");
-pin('stats counts one type', array('pending' => 2, 'running' => 0, 'error' => 1, 'oldest' => '2001-02-03 04:05:06'), $queue->stats('test.s'));
+pin('stats counts one type', array('pending' => 2, 'running' => 0, 'error' => 1, 'oldest' => '2001-02-03 04:05:06', 'due' => 2, 'due_since' => '2000-01-01 00:00:00'), $queue->stats('test.s'));
+$seed('test.held', 'pending', date('Y-m-d H:i:s', time() + 86400));
+$held = $queue->stats('test.held');
+pin('a job held for later is pending but not due', array(1, 0, null), array($held['pending'], $held['due'], $held['due_since']));
 $all = $queue->stats();
-pin('stats without a type counts all', array(2, 1, 1), array($all['pending'], $all['running'], $all['error']));
+pin('stats without a type counts all', array(3, 1, 1), array($all['pending'], $all['running'], $all['error']));
 pin('an empty queue has no oldest', null, $queue->stats('test.none')['oldest']);
 
 harness_section('Health');

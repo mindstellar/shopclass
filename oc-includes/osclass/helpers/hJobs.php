@@ -99,11 +99,12 @@ if (!function_exists('osc_job_ensure')) {
 
 if (!function_exists('osc_job_stats')) {
     /**
-     * Pending, running and failed counts, and when the oldest pending job was created.
+     * Pending, running and failed counts, when the oldest pending job was created, and how
+     * many pending jobs are due now and since when.
      *
      * @param string|null $type narrow to one type
      *
-     * @return array{pending:int,running:int,error:int,oldest:?string}
+     * @return array{pending:int,running:int,error:int,oldest:?string,due:int,due_since:?string}
      */
     function osc_job_stats(?string $type = null): array
     {

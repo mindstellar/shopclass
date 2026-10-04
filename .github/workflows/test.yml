@@ -476,6 +476,9 @@ jobs:
       # character too much and an edited page keeps its ETag, which serves stale content.
       - name: Response ETag
         run: php tests/response-etag.php
+      # A purge that fires twice, or throws, or never reaches nginx is invisible: pages just stay old.
+      - name: Page cache purge
+        run: php tests/page-cache-purge.php
       # A form that validates addresses on its own drifts: the comment form refused every
       # .info and .online address for years while accepting a local part with a space in it.
       - name: Email validation

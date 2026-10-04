@@ -62,7 +62,7 @@ $env = static function (array $over = array()) use ($now): array {
         'cache_driver'     => 'default',
         'cache_supported'  => true,
         'cache_working'    => null,
-        'jobs'             => array('pending' => 0, 'running' => 0, 'error' => 0, 'oldest' => null, 'stuck' => 0, 'overdue' => null, 'orphans' => array()),
+        'jobs'             => array('pending' => 0, 'running' => 0, 'error' => 0, 'oldest' => null, 'due' => 0, 'due_since' => null, 'stuck' => 0, 'overdue' => null, 'orphans' => array()),
         'me'               => 1,
         'admins'           => array(array('id' => 1, 'name' => 'Owner', 'username' => 'owner', 'moderator' => false, 'two_factor' => true)),
         'throttle'         => array('enabled' => true, 'window' => 15, 'max_ip' => 20, 'max_account' => 10, 'captcha' => false, 'blocked' => 0),
@@ -248,8 +248,8 @@ check('a minute more: stuck', $issue('jobs', $env(array('jobs' => array('overdue
 pin('from the Overview, stuck points at the queue', $base . '?page=tools&action=system-info&tab=jobs', $issue('overview', $env(array('jobs' => array('stuck' => 1))), 'jobs_summary')['action']['url']);
 pin('failed jobs are counted', '2 background jobs stopped after failing again and again.', $issue('jobs', $env(array('jobs' => array('error' => 2))), 'jobs_failed')['text']);
 pin('unhandled types are named', 'Queued work has nothing to run it: a.b, c.d. A plugin was probably turned off with jobs still waiting.', $issue('jobs', $env(array('jobs' => array('orphans' => array('a.b', 'c.d')))), 'jobs_orphans')['text']);
-$jobFacts = array_column(SystemChecks::report('jobs', $env(array('jobs' => array('pending' => 3, 'oldest' => date('Y-m-d H:i:s', $now - 7200), 'error' => 1))))['groups'][0]['rows'], 'value', 'label');
-pin('the facts', array('Waiting' => '3 · the oldest for 2 hours', 'Running' => '0', 'Gave up' => '1', 'Cron' => 'ran 5 minutes ago'), $jobFacts);
+$jobFacts = array_column(SystemChecks::report('jobs', $env(array('jobs' => array('pending' => 3, 'oldest' => date('Y-m-d H:i:s', $now - 90000), 'due' => 2, 'due_since' => date('Y-m-d H:i:s', $now - 7200), 'error' => 1))))['groups'][0]['rows'], 'value', 'label');
+pin('the facts', array('Waiting' => '3 · the oldest due for 2 hours', 'Running' => '0', 'Gave up' => '1', 'Cron' => 'ran 5 minutes ago'), $jobFacts);
 
 harness_section('Security');
 

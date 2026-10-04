@@ -908,10 +908,10 @@ final class SystemChecks
     {
         $jobs    = (array) ($env['jobs'] ?? array());
         $pending = (int) ($jobs['pending'] ?? 0);
-        $oldest  = strtotime((string) ($jobs['oldest'] ?? ''));
-        $waiting = number_format($pending);
-        if ($pending > 0 && $oldest !== false) {
-            $waiting .= ' · ' . sprintf(__('the oldest for %s'), osc_admin_duration(max(0, self::now($env) - $oldest)));
+        $dueSince = strtotime((string) ($jobs['due_since'] ?? ''));
+        $waiting  = number_format($pending);
+        if ((int) ($jobs['due'] ?? 0) > 0 && $dueSince !== false) {
+            $waiting .= ' · ' . sprintf(__('the oldest due for %s'), osc_admin_duration(max(0, self::now($env) - $dueSince)));
         }
 
         return array(array('title' => '', 'rows' => array(

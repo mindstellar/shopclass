@@ -187,6 +187,7 @@ class Upgrade
             // behind on a thrown error is its own follow-up problem for the next request.
             $this->FileSystem->remove($extracted_package_path);
             $this->FileSystem->remove(ABS_PATH . '.maintenance');
+            osc_purge_page_cache('upgrade');
         }
     }
 

@@ -321,6 +321,7 @@ class CAdminLanguages extends AdminSecBaseModel
                 $iUpdated = $this->localeManager->update($array, array('pk_c_code' => $languageCode));
                 osc_invalidate_locale_cache();
                 if ($iUpdated > 0) {
+                    osc_purge_page_cache('language');
                     osc_add_flash_ok_message(sprintf(_m('%s has been updated'), $languageShortName), 'admin');
                 }
                 $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
@@ -345,6 +346,7 @@ class CAdminLanguages extends AdminSecBaseModel
                 osc_invalidate_locale_cache();
 
                 if ($iUpdated > 0) {
+                    osc_purge_page_cache('language');
                     osc_add_flash_ok_message($msg, 'admin');
                 }
 
@@ -373,6 +375,9 @@ class CAdminLanguages extends AdminSecBaseModel
                     $iUpdated += $this->localeManager->update($aValues, array('pk_c_code' => $i));
                 }
                 osc_invalidate_locale_cache();
+                if ($iUpdated > 0) {
+                    osc_purge_page_cache('language');
+                }
 
                 if ($msg_warning != '') {
                     if ($iUpdated > 0) {
@@ -473,6 +478,7 @@ class CAdminLanguages extends AdminSecBaseModel
                                 );
                             }
                         } elseif ($this->localeManager->deleteLocale($code)) {
+                            osc_purge_page_cache('language');
                             if (!osc_deleteDir(osc_translations_path() . $code)) {
                                 osc_add_flash_error_message(sprintf(
                                     _m("Directory '%s' couldn't be removed"),

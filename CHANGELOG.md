@@ -2,6 +2,31 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 6.4.2
+
+This release fixes several security issues on listing pages: photo deletion, spam listings shown to
+the public, an unescaped edit link and the contact pages. Site-wide changes such as a new theme or
+settings now clear the whole page cache, so visitors see them at once.
+
+### New
+
+- Changing the theme, site settings, permalinks, maintenance mode, plugins, languages, currencies, widgets, categories or pages now clears the whole page cache through one hook, `page_cache_purge` (or `osc_purge_page_cache()`); the Docker image clears its own micro-cache.
+
+### Security
+
+- Changing the password now goes through the sign-in throttle, so the current password cannot be guessed without limit; a malformed form no longer causes an error page.
+- A signed-out visitor could delete a photo from a member's listing with only the photo's code; now only the owner, the holder of a guest listing's secret, or an admin can.
+- A listing marked as spam was still shown on its page to everyone; now only its owner and admins can see it, as with a disabled listing.
+- The photo delete links on the listing edit form printed the `secret` from the URL unescaped, so a crafted link could run script; they now use the listing's stored secret, escaped.
+- The contact and send-to-friend pages worked for listings that are not validated, disabled or spam; the public now gets a not-found page there too.
+
+### Fixed
+
+- `doctor`, `jobs:status` and System info no longer report a job held for later as a stuck queue; they count only jobs that are due.
+- Deleting your own comment on a listing no longer also tries to post a new comment.
+- A member deleting their own comment now fires the `delete_comment` hook, as an admin delete does.
+- Photo delete links built with `osc_item_resource_delete_url()` now reach the delete action.
+
 ## Shopclass 6.4.1
 
 This release fixes two security issues: custom-field values that could run script on a listing

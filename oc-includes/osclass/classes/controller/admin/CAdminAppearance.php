@@ -194,6 +194,7 @@ class CAdminAppearance extends AdminSecBaseModel
                 // Saving a widget without changing any value affects 0 rows, which is
                 // success with nothing to do — not a failure.
                 if ($res !== false) {
+                    osc_purge_page_cache('widget');
                     osc_add_flash_ok_message(_m('Widget updated correctly'), 'admin');
                 } else {
                     osc_add_flash_error_message(_m('Widget cannot be updated correctly'), 'admin');
@@ -233,6 +234,7 @@ class CAdminAppearance extends AdminSecBaseModel
                         )
                     );
                 }
+                osc_purge_page_cache('widget');
                 osc_add_flash_ok_message(_m('Widget added correctly'), 'admin');
                 $this->redirectTo($this->widgetReturnUrl());
                 break;
@@ -271,6 +273,9 @@ class CAdminAppearance extends AdminSecBaseModel
                     $newId = 0;
                 }
                 \mindstellar\cache\CacheGroup::invalidate('widget');
+                if ($newId > 0) {
+                    osc_purge_page_cache('widget');
+                }
 
                 AjaxResponse::json($newId > 0
                     ? array(
@@ -317,6 +322,7 @@ class CAdminAppearance extends AdminSecBaseModel
                         return isset($validIds[$id]);
                     }));
                     $ok = Widget::newInstance()->reorder($ids);
+                    osc_purge_page_cache('widget');
                 }
 
                 AjaxResponse::json(array('error' => $ok ? 0 : 1));
@@ -345,6 +351,9 @@ class CAdminAppearance extends AdminSecBaseModel
                 }));
 
                 $ok = Widget::newInstance()->reorder($ids);
+                if ($ok) {
+                    osc_purge_page_cache('widget');
+                }
 
                 AjaxResponse::json(array('error' => $ok ? 0 : 1));
                 exit;

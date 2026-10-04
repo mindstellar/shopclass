@@ -200,6 +200,14 @@ if (!function_exists('osc_sitemap_default_robots_txt')) {
         return "User-agent: *\nDisallow: /oc-admin/\n";
     }
 }
+// A save that changed something clears the page cache; counted apart from the effects above.
+$GLOBALS['purges'] = 0;
+if (!function_exists('osc_purge_page_cache')) {
+    function osc_purge_page_cache($reason = '')
+    {
+        $GLOBALS['purges']++;
+    }
+}
 if (!function_exists('osc_base_url')) {
     function osc_base_url($withIndex = false)
     {
@@ -740,13 +748,19 @@ pin('a key is trimmed', array('gmk', 'STRING'), pref($admin, 'googlemaps_api_key
 
 // A checkbox that was not ticked submits nothing at all, and the preference has to say so
 // rather than keeping the value from the last save.
+$GLOBALS['purges'] = 0;
 $run = drive('CAdminSettingsMain', 'update', array_diff_key($main, array('auto_cron' => 1)));
 pin('an unticked switch stores a zero, not an empty string', array('0', 'BOOLEAN'), pref($admin, 'auto_cron'));
+pin('a save that changed something clears the page cache', 1, $GLOBALS['purges']);
+$GLOBALS['purges'] = 0;
+drive('CAdminSettingsMain', 'update', array_diff_key($main, array('auto_cron' => 1)));
+pin('the same save again changes nothing and clears nothing', 0, $GLOBALS['purges']);
 
 // The one rule the hand-written screen had that a type cannot express: a title of
 // punctuation is not a title.
 $run = drive('CAdminSettingsMain', 'update', array('pageTitle' => '...') + $main);
 pin('a title with no letter or digit is refused', array('warning:Page title field is required'), flashed($run));
+pin('a refused save clears nothing', 0, $GLOBALS['purges']);
 pin('nothing is stored for it', array('My Classifieds', 'STRING'), pref($admin, 'pageTitle'));
 pin('and the screen is redrawn rather than redirected away from', array('settings/index.php'), $run['views']);
 pin('with no redirect at all', array(), $run['redirects']);

@@ -271,6 +271,7 @@ class CAdminTools extends AdminSecBaseModel
                     $fileHandler      = @fopen($maintenance_file, 'wb');
                     if ($fileHandler) {
                         fclose($fileHandler);
+                        osc_purge_page_cache('maintenance');
                         osc_add_flash_ok_message(_m('Maintenance mode is ON'), 'admin');
                     } else {
                         osc_add_flash_error_message(
@@ -283,6 +284,7 @@ class CAdminTools extends AdminSecBaseModel
                     osc_csrf_check();
                     $deleted = @unlink(osc_base_path() . '.maintenance');
                     if ($deleted) {
+                        osc_purge_page_cache('maintenance');
                         osc_add_flash_ok_message(_m('Maintenance mode is OFF'), 'admin');
                     } else {
                         osc_add_flash_error_message(
@@ -306,6 +308,7 @@ class CAdminTools extends AdminSecBaseModel
                         'STRING'
                     );
                     osc_reset_preferences();
+                    osc_purge_page_cache('maintenance');
                     osc_add_flash_ok_message(_m('Maintenance settings saved'), 'admin');
                     $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=maintenance');
                 }
@@ -1050,11 +1053,13 @@ class CAdminTools extends AdminSecBaseModel
             'cache_stats'      => $cacheOn ? osc_cache_stats() : null,
             'cache_drivers'    => $drivers,
             'jobs'             => array(
-                'pending' => (int) $stats['pending'],
-                'running' => (int) $stats['running'],
-                'error'   => (int) $stats['error'],
-                'oldest'  => $stats['oldest'],
-                'orphans' => array_values(array_diff($queue->queuedTypes(), \mindstellar\job\JobRegistry::types())),
+                'pending'   => (int) $stats['pending'],
+                'running'   => (int) $stats['running'],
+                'error'     => (int) $stats['error'],
+                'oldest'    => $stats['oldest'],
+                'due'       => (int) $stats['due'],
+                'due_since' => $stats['due_since'],
+                'orphans'   => array_values(array_diff($queue->queuedTypes(), \mindstellar\job\JobRegistry::types())),
             ) + $queue->health(),
             'me'               => (int) osc_logged_admin_id(),
             'admins'           => \mindstellar\security\AdminTwoFactor::admins(),

@@ -163,6 +163,46 @@ bypassing.
 - **Don't add `Vary: Cookie`.** Unnecessary once the bypass keys on the allowlist, and it would
   fragment the cache per unique cookie jar (i.e. per visitor).
 
+## 9. Purging everything
+
+Some changes alter every public page: the theme, site settings (permalinks included),
+maintenance mode, a plugin, languages, currencies, widgets, categories, static pages, an upgrade
+or a restore. Core then asks for the whole cache to be cleared:
+
+- `osc_purge_page_cache(string $reason = '')` records the reason. Call it as often as you like.
+- At the end of the request core fires one action, `page_cache_purge`, with the list of unique
+  reasons. It runs after every other shutdown function and after the response has gone
+  (`fastcgi_finish_request()` when available, then the session is released). It runs on the CLI
+  too. A listener that throws is logged, never fatal. A purge asked for after that, by later
+  shutdown work such as a cron job, gets a flush of its own.
+- The filter `page_cache_purge_enabled` (default `true`) turns it off.
+- `osc_page_cache_purge_pending()` says whether one is waiting.
+
+A plugin that fronts a proxy or CDN listens to `page_cache_purge` and clears its cache there.
+
+The Docker image clears its own micro-cache without a plugin. With `OSC_MICROCACHE` on, the
+entrypoint adds a server that listens only on the loopback, with real-IP rewriting turned off:
+
+    server {
+        listen 127.0.0.1:8089;
+        listen [::1]:8089;
+        set_real_ip_from 0.0.0.0/32;
+        location / {
+            if ($request_method != PURGE) { return 405; }
+            fastcgi_cache MICROCACHE;
+            fastcgi_cache_key "$request_method$host$request_uri";
+            fastcgi_cache_purge PURGE purge_all from 127.0.0.1 ::1;
+        }
+    }
+
+and exports `OSC_PAGE_CACHE_PURGE_URL=http://127.0.0.1:8089/` to the web stack. When that variable
+is set, core sends one `PURGE` there with the site's host (2 s timeout, no redirects, no proxy).
+200 means cleared; 404 and 412 mean nothing was cached; anything else is logged.
+
+A command run with `docker exec ... php oc-cli.php` does not inherit the variable, because it is
+exported only to the processes the entrypoint starts. Pass it yourself when that matters:
+`docker exec -e OSC_PAGE_CACHE_PURGE_URL=http://127.0.0.1:8089/ ...`.
+
 ## Implementation
 
 - `osc_mark_response_cacheable()` -- a controller opts the current response in (called in the
@@ -171,5 +211,7 @@ bypassing.
 - `osc_send_response_cache_headers()` -- emits the header; called once after dispatch in the
   front-end `index.php`, while output is still buffered by `Csrf::init`.
 - `osc_cache_relevant_cookies()` -- the section-2 allowlist, shared with the proxy config.
+- `osc_purge_page_cache()` / `osc_page_cache_purge_flush()` -- section 9; the Docker fallback
+  is `mindstellar\cache\PagePurge`.
 - Filters: `public_cache_max_age`, `response_cache_control`, `response_is_cacheable`,
-  `cache_relevant_cookies`.
+  `cache_relevant_cookies`, `page_cache_purge_enabled`. Action: `page_cache_purge`.

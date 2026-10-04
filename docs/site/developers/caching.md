@@ -93,6 +93,33 @@ do not change; a page served from a shared cache repeats the time of its first
 build. A plugin can drop it with
 `osc_remove_filter('response_body', 'osc_response_server_timing')`.
 
+## Purging everything
+
+Some changes alter every public page: the theme, site settings (permalinks
+included), maintenance mode, a plugin, languages, currencies, widgets,
+categories, static pages, an upgrade or a restore. Core then fires one action at
+the end of the request, after the response has gone:
+
+```php
+osc_add_hook('page_cache_purge', function (array $reasons) {
+    // e.g. array('theme', 'plugin'). Clear your proxy or CDN here.
+});
+```
+
+It fires once at the end of the request, however many changes asked for it,
+also on the command line. A listener that throws is logged and does not break
+the page. To ask for one yourself, call `osc_purge_page_cache('my_reason')`. The
+filter `page_cache_purge_enabled` (default `true`) turns it off.
+
+:::caution[Only for changes an admin makes]
+Each call empties the whole cache. Never call it on something a visitor does,
+such as a new comment, a page view or a search: on a busy site the cache would
+then never hold anything.
+:::
+
+The Docker image clears its own micro-cache without a plugin: when
+`OSC_PAGE_CACHE_PURGE_URL` is set, core sends one `PURGE` request there.
+
 ## Verifying it
 
 ```bash

@@ -216,42 +216,28 @@ class CWebUser extends WebSecBaseModel
                 $user =
                     User::newInstance()->findByPrimaryKey(Session::newInstance()->_get('userId'));
 
-                if ((Params::getParam('password', false, false) == '')
-                    || (Params::getParam('new_password', false, false) == '')
-                    || (Params::getParam('new_password2', false, false) == '')
-                ) {
+                $password     = Params::getParamString('password', false, false);
+                $newPassword  = Params::getParamString('new_password', false, false);
+                $newPassword2 = Params::getParamString('new_password2', false, false);
+                if ($password === '' || $newPassword === '' || $newPassword2 === '') {
                     osc_add_flash_warning_message(_m('Password cannot be blank'));
                     $this->redirectTo(osc_change_user_password_url());
                 }
 
-                if (!osc_verify_password(
-                    Params::getParam('password', false, false),
-                    $user['s_password']
-                )
-                ) {
-                    osc_add_flash_error_message(_m("Current password doesn't match"));
+                $refused = \mindstellar\security\UserReauth::verify((array)$user, $password);
+                if ($refused !== '') {
+                    osc_add_flash_error_message($refused);
                     $this->redirectTo(osc_change_user_password_url());
                 }
 
-                if (!Params::getParam('new_password', false, false)) {
-                    osc_add_flash_error_message(_m("Passwords can't be empty"));
-                    $this->redirectTo(osc_change_user_password_url());
-                }
-
-                if (Params::getParam('new_password', false, false)
-                    != Params::getParam('new_password2', false, false)
-                ) {
+                if ($newPassword !== $newPassword2) {
                     osc_add_flash_error_message(_m("Passwords don't match"));
                     $this->redirectTo(osc_change_user_password_url());
                 }
 
                 User::newInstance()->update(
                     array(
-                        's_password' => osc_hash_password(Params::getParam(
-                            'new_password',
-                            false,
-                            false
-                        ))
+                        's_password' => osc_hash_password($newPassword)
                     ),
                     array('pk_i_id' => Session::newInstance()->_get('userId'))
                 );

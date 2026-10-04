@@ -80,6 +80,28 @@ fastcgi_cache_use_stale  updating error timeout http_500 http_503;
 fastcgi_cache_background_update on;
 add_header X-Cache $upstream_cache_status always;
 CONF
+            # A PURGE here clears the whole cache; core sends one after a site-wide
+            # change (theme, settings, plugins). Its own server on the loopback only, so
+            # nothing outside the container can reach it, whatever the real-IP settings.
+            # set_real_ip_from is replaced by an address no client has, so a forwarded
+            # header cannot rewrite the address the allow list checks either.
+            cat >> "$http_conf" <<'CONF'
+server {
+    listen 127.0.0.1:8089;
+    listen [::1]:8089;
+    set_real_ip_from 0.0.0.0/32;
+    access_log off;
+    location / {
+        if ($request_method != PURGE) {
+            return 405;
+        }
+        fastcgi_cache MICROCACHE;
+        fastcgi_cache_key "$request_method$host$request_uri";
+        fastcgi_cache_purge PURGE purge_all from 127.0.0.1 ::1;
+    }
+}
+CONF
+            page_cache_purge_url=http://127.0.0.1:8089/
             # Where an entry can be removed before its window is up. Purging is what
             # makes a window longer than thirty seconds defensible, so the location
             # is written whenever the cache is: the nginx-cache plugin finds it
@@ -93,6 +115,8 @@ CONF
             #
             # No credentials, so the allow list is the whole of the access control.
             # php-fpm runs in this container and reaches nginx over the loopback.
+            # With OSC_REAL_IP_HEADER set, a client in OSC_REAL_IP_TRUSTED can name
+            # itself 127.0.0.1 in that header, so keep that list to the real proxy.
             cat >> "$server_conf" <<'CONF'
 location ~ ^/purge(/.*)$ {
     allow 127.0.0.1;
@@ -245,4 +269,8 @@ if ! php "$CLI" db:upgrade; then
 fi
 
 echo "entrypoint: startup checks complete; starting web stack."
+# Exported only now: nginx is not running during the CLI steps above.
+if [ -n "${page_cache_purge_url:-}" ]; then
+    export OSC_PAGE_CACHE_PURGE_URL="$page_cache_purge_url"
+fi
 exec "$@"

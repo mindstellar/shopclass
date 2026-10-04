@@ -12,6 +12,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\security\ItemAccess;
 use mindstellar\utility\Validate;
 
 /**
@@ -408,16 +409,8 @@ class CWebItem extends BaseModel
             case 'deleteResources': // Delete images via AJAX
                 $id     = Params::getParam('id');
                 $item   = Params::getParam('item');
-                $code   = Params::getParam('code');
-                $secret = Params::getParam('secret');
-
-                if (Session::newInstance()->_get('userId') != '') {
-                    $userId = Session::newInstance()->_get('userId');
-                    $user   = User::newInstance()->findByPrimaryKey($userId);
-                } else {
-                    $userId = null;
-                    $user   = null;
-                }
+                $code   = Params::getParamString('code');
+                $secret = Params::getParamString('secret');
 
                 if (!(is_numeric($id) && is_numeric($item)
                     && preg_match('/^([a-z0-9]+)$/i', $code))
@@ -432,18 +425,9 @@ class CWebItem extends BaseModel
                     $this->redirectTo(osc_item_edit_url($secret, $item));
                 }
 
-                if (!osc_is_admin_user_logged_in()) {
-                    if ($userId != null && $userId != $aItem['fk_i_user_id']) {
-                        osc_add_flash_error_message(_m("The listing doesn't belong to you"));
-                        $this->redirectTo(osc_item_edit_url($secret, $item));
-                    }
-
-                    if ($userId == null && $aItem['fk_i_user_id'] == null
-                        && $secret != $aItem['s_secret']
-                    ) {
-                        osc_add_flash_error_message(_m("The listing doesn't belong to you"));
-                        $this->redirectTo(osc_item_edit_url($secret, $item));
-                    }
+                if (!ItemAccess::canManage($aItem, $this->userId, osc_is_admin_user_logged_in(), $secret)) {
+                    osc_add_flash_error_message(_m("The listing doesn't belong to you"));
+                    $this->redirectTo(osc_item_edit_url($secret, $item));
                 }
 
                 $result = ItemResource::newInstance()->existResource($id, $code);
@@ -451,7 +435,7 @@ class CWebItem extends BaseModel
                 if ($result > 0) {
                     $resource = ItemResource::newInstance()->findByPrimaryKey($id);
 
-                    if ($resource['fk_i_item_id'] == $item) {
+                    if (ItemAccess::isPhotoOf($resource, $aItem, $code)) {
                         osc_deleteResource($id, false);
                         Log::newInstance()->insertLog(
                             'item',
@@ -516,6 +500,7 @@ class CWebItem extends BaseModel
                 break;
             case 'send_friend':
                 $item = $this->itemManager->findByPrimaryKey(Params::getParam('id'));
+                $this->notFoundIfHidden($item);
 
                 $this->_exportVariableToView('item', $item);
 
@@ -550,6 +535,7 @@ class CWebItem extends BaseModel
                     $this->redirectTo(osc_user_login_url());
                 }
                 $item = $this->itemManager->findByPrimaryKey(Params::getParam('id'));
+                $this->notFoundIfHidden($item);
                 $this->_exportVariableToView('item', $item);
 
                 Session::newInstance()->_setForm('yourEmail', Params::getParam('yourEmail'));
@@ -610,6 +596,7 @@ class CWebItem extends BaseModel
                     osc_add_flash_error_message(_m("This listing doesn't exist"));
                     $this->redirectTo(osc_base_url(true));
                 } else {
+                    $this->notFoundIfHidden($item);
                     $this->_exportVariableToView('item', $item);
 
                     if (osc_item_is_expired()) {
@@ -641,6 +628,7 @@ class CWebItem extends BaseModel
                 }
 
                 $item = $this->itemManager->findByPrimaryKey(Params::getParam('id'));
+                $this->notFoundIfHidden($item);
                 $this->_exportVariableToView('item', $item);
                 // A failed check goes back to the form it came from, with what was typed.
                 $contactValues = array(
@@ -779,15 +767,11 @@ class CWebItem extends BaseModel
             case 'delete_comment':
                 osc_csrf_check();
 
-                $commentId = Params::getParam('comment');
-                $itemId    = Params::getParam('id');
+                $commentId = Params::getParamInt('comment');
+                $itemId    = Params::getParamInt('id');
                 $item      = Item::newInstance()->findByPrimaryKey($itemId);
 
                 osc_run_hook('pre_item_delete_comment_post', $item, $commentId);
-
-                $mItem = new ItemActions(false);
-
-                $mItem->add_comment();
 
                 if (count($item) == 0) {
                     osc_add_flash_error_message(_m("This listing doesn't exist"));
@@ -820,6 +804,7 @@ class CWebItem extends BaseModel
                 }
 
                 $commentManager->deleteByPrimaryKey($commentId);
+                osc_run_hook('delete_comment', $commentId);
                 osc_add_flash_ok_message(_m('The comment has been deleted'));
                 $this->redirectTo(osc_item_url());
                 break;
@@ -847,35 +832,29 @@ class CWebItem extends BaseModel
                     return;
                 }
 
-                if ($item['b_active'] != 1) {
-                    if ((($this->userId == $item['fk_i_user_id']) && ($this->userId != ''))
-                        || osc_is_admin_user_logged_in()
-                    ) {
-                        osc_add_flash_warning_message(
-                            _m("The listing hasn't been validated. Please validate it in order to make it public")
-                        );
-                    } else {
-                        // Not public yet: 404, not 400. It is a well-formed URL for a listing
-                        // that may be published later, so nothing permanent is signalled.
-                        $this->do404();
+                // Not validated, disabled or spam: only the owner and admins see it. A 404, not
+                // 400 or 410, as the listing may still be published later.
+                if (!ItemAccess::canView($item, $this->userId, osc_is_admin_user_logged_in())) {
+                    $this->do404();
 
-                        return;
-                    }
-                } elseif ($item['b_enabled'] == 0) {
+                    return;
+                }
+
+                if ($item['b_active'] != 1) {
+                    osc_add_flash_warning_message(
+                        _m("The listing hasn't been validated. Please validate it in order to make it public")
+                    );
+                } elseif ($item['b_enabled'] == 0 || ($item['b_spam'] ?? 0) == 1) {
                     if (osc_is_admin_user_logged_in()) {
                         osc_add_flash_warning_message(
-                            _m("The listing hasn't been enabled. Please enable it in order to make it public")
+                            $item['b_enabled'] == 0
+                                ? _m("The listing hasn't been enabled. Please enable it in order to make it public")
+                                : _m('The listing is marked as spam. Unmark it in order to make it public')
                         );
-                    } elseif (osc_is_web_user_logged_in()
-                        && osc_logged_user_id() == $item['fk_i_user_id']
-                    ) {
+                    } else {
                         osc_add_flash_warning_message(
                             _m('The listing has been blocked or is awaiting moderation from the admin')
                         );
-                    } else {
-                        $this->do404();
-
-                        return;
                     }
                 }
 
@@ -1018,6 +997,23 @@ class CWebItem extends BaseModel
         }
         Session::newInstance()->_clearVariables();
         osc_run_hook('after_html');
+    }
+
+    /**
+     * Ends the request with a 404 when the listing is one the public may not see (not
+     * validated, disabled or spam), unless the visitor is its owner or an admin.
+     *
+     * @param array<string,mixed>|mixed $item
+     *
+     * @return void
+     */
+    private function notFoundIfHidden($item)
+    {
+        if (is_array($item) && $item !== array()
+            && !ItemAccess::canView($item, $this->userId, osc_is_admin_user_logged_in())
+        ) {
+            $this->do404();
+        }
     }
 }
 
