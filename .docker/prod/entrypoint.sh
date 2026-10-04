@@ -79,7 +79,11 @@ fastcgi_cache_lock       on;
 fastcgi_cache_use_stale  updating error timeout http_500 http_503;
 fastcgi_cache_background_update on;
 add_header X-Cache $upstream_cache_status always;
+fastcgi_cache_purge PURGE purge_all from 127.0.0.1 ::1;
 CONF
+            # A PURGE to any PHP URL from inside the container clears the whole cache.
+            # Core sends one there after a site-wide change (theme, settings, plugins).
+            page_cache_purge_url=http://127.0.0.1/index.php
             # Where an entry can be removed before its window is up. Purging is what
             # makes a window longer than thirty seconds defensible, so the location
             # is written whenever the cache is: the nginx-cache plugin finds it
@@ -245,4 +249,8 @@ if ! php "$CLI" db:upgrade; then
 fi
 
 echo "entrypoint: startup checks complete; starting web stack."
+# Exported only now: nginx is not running during the CLI steps above.
+if [ -n "${page_cache_purge_url:-}" ]; then
+    export OSC_PAGE_CACHE_PURGE_URL="$page_cache_purge_url"
+fi
 exec "$@"
