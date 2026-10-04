@@ -1,0 +1,37 @@
+<?php
+/*
+ * This file is part of Shopclass (Mindstellar).
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
+ *
+ * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+/**
+ * Pins the public delete_comment action. It used to call add_comment() on every delete,
+ * so a delete request that also carried comment fields inserted a comment.
+ *
+ * DB-free and source-level.  Usage: php tests/item-comment-delete.php
+ */
+
+require_once __DIR__ . '/lib/harness.php';
+
+$controller = file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/controller/CWebItem.php');
+
+preg_match("/case 'delete_comment':(.*?)\n            default:/s", $controller, $m);
+$body = $m[1] ?? '';
+
+harness_section('delete_comment');
+check('the case was parsed', $body !== '');
+check('it checks CSRF', strpos($body, 'osc_csrf_check()') !== false);
+check('it inserts nothing: no add_comment() call', $body !== '' && strpos($body, 'add_comment') === false);
+check('it builds no ItemActions', $body !== '' && strpos($body, 'ItemActions') === false);
+check('it deletes by the comment id', strpos($body, 'deleteByPrimaryKey($commentId)') !== false);
+
+harness_section('who may delete');
+check('a signed-out visitor is refused', strpos($body, '$this->userId == null') !== false);
+check('only an active comment', strpos($body, "\$aComment['b_active'] != 1") !== false);
+check('only the comment\'s own author', strpos($body, "\$aComment['fk_i_user_id'] != \$this->userId") !== false);
+
+exit(harness_result());

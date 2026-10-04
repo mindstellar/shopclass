@@ -13,6 +13,7 @@ In development.
 ### Fixed
 
 - `doctor`, `jobs:status` and System info no longer report a job held for later as a stuck queue; they count only jobs that are due.
+- Deleting your own comment on a listing no longer also tries to post a new comment.
 
 ## Shopclass 6.4.1
 

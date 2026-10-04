@@ -785,10 +785,6 @@ class CWebItem extends BaseModel
 
                 osc_run_hook('pre_item_delete_comment_post', $item, $commentId);
 
-                $mItem = new ItemActions(false);
-
-                $mItem->add_comment();
-
                 if (count($item) == 0) {
                     osc_add_flash_error_message(_m("This listing doesn't exist"));
                     $this->redirectTo(osc_base_url(true));
