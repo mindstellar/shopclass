@@ -2005,7 +2005,7 @@ class ItemActions
      * Validate and store a comment on a listing.
      *
      * @return int a status code; -1 for a listing the visitor cannot see, 7 when comments are
-     *             disabled, 8 past 20 an hour per address (comment_post, see action_throttle_limit)
+     *             disabled, 8 past 20 an hour per guest address (comment_post, see action_throttle_limit)
      */
     public function add_comment()
     {
@@ -2073,7 +2073,8 @@ class ItemActions
             return 4;
         }
 
-        if (\mindstellar\security\ActionThrottle::exceededFor('comment_post', 20)) {
+        // Counted by address, so only guests: signed-in users behind one proxy would share it.
+        if ($userId == null && \mindstellar\security\ActionThrottle::exceededFor('comment_post', 20)) {
             return 8;
         }
 
@@ -2127,7 +2128,9 @@ class ItemActions
 
         $commentID = $mComments->insertGetId($aComment);
         if ($commentID) {
-            \mindstellar\security\ActionThrottle::record('comment_post');
+            if ($userId == null) {
+                \mindstellar\security\ActionThrottle::record('comment_post');
+            }
             if ($status_num == 2 && $userId != null) { // COMMENT IS ACTIVE
                 $user = User::newInstance()->findByPrimaryKey($userId);
                 if ($user) {

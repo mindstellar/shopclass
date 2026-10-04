@@ -80,6 +80,15 @@ check('20 comments are taken', count(array_filter(array_slice($codes, 0, 20), st
 pin('the 21st is refused with status 8', 8, $codes[20]);
 pin('...and not stored', 20, $stored($live));
 
+$admin->query('INSERT INTO ' . DB_TABLE_PREFIX . "t_user (dt_reg_date, s_name, s_username, s_password, s_secret, s_email, b_enabled, b_active) VALUES (NOW(), 'Sue', 'sue_cg', '', 'x', 'sue_cg@example.com', 1, 1)");
+$sue = (int) $admin->insert_id;
+Session::newInstance()->_setEphemeral('userId', (string) $sue);
+check('a signed-in user on the same full address is not limited', in_array($post($live), array(1, 2), true));
+Session::newInstance()->_dropEphemeral('userId');
+View::newInstance()->_erase('_loggedUser');
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . "t_item_comment WHERE fk_i_user_id = $sue");
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . "t_user WHERE pk_i_id = $sue");
+
 $_SERVER['REMOTE_ADDR'] = '203.0.113.8';
 check('another address has its own count', in_array($post($live), array(1, 2), true));
 
