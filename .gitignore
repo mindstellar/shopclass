@@ -48,6 +48,8 @@ nbproject/
 
 # Release
 release
+# Written into the edge image at build time
+oc-includes/osclass/build-info.php
 
 # npm
 node_modules

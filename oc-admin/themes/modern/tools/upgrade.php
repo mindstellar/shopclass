@@ -1,5 +1,6 @@
 <?php
 
+use mindstellar\upgrade\BuildInfo;
 use mindstellar\upgrade\Osclass;
 
 if (!defined('OC_ADMIN')) {
@@ -230,7 +231,12 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         </p>
         <div id="steps_div">
             <div id="steps">
-                <?php if ($selfUpdateOff) {
+                <?php if (BuildInfo::isEdge()) {
+                    osc_admin_verdict(array(array(
+                        'tone' => 'info',
+                        'text' => __('This is an edge build. Update it by pulling the :edge image.'),
+                    )));
+                } elseif ($selfUpdateOff) {
                     osc_admin_verdict(array(array(
                         'tone' => 'info',
                         'text' => __('This installation runs from a container image. Update by deploying a newer image tag; the database is migrated automatically when the container starts.'),

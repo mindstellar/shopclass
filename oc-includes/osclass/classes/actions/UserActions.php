@@ -545,12 +545,7 @@ class UserActions
             return 1;
         }
 
-        $code = osc_genRandomPassword(30);
-        $date = date('Y-m-d H:i:s');
-        User::newInstance()->update(
-            array('s_pass_code' => $code, 's_pass_date' => $date, 's_pass_ip' => Params::getServerParam('REMOTE_ADDR')),
-            array('pk_i_id' => $user['pk_i_id'])
-        );
+        $code = User::newInstance()->issuePassCode((int)$user['pk_i_id'], User::PASS_CODE_RESET);
 
         $password_url = osc_forgot_user_password_confirm_url($user['pk_i_id'], $code);
         osc_run_hook('hook_email_user_forgot_password', $user, $password_url);
@@ -814,7 +809,7 @@ class UserActions
 
         $stored = (string) ($user['s_pass_code'] ?? '');
         $issued = strtotime((string) ($user['s_pass_date'] ?? ''));
-        if ($stored === '' || !hash_equals($stored, $code)
+        if ($stored === '' || !hash_equals($stored, User::passCodeHash(User::PASS_CODE_EMAIL, $code))
             || (int) $user['b_enabled'] !== 1
             || $issued === false || $issued < time() - User::PASS_CODE_TTL
         ) {

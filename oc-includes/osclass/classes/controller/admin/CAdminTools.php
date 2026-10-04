@@ -27,6 +27,7 @@ use mindstellar\backup\BackupJobs;
 use mindstellar\backup\BackupManager;
 use mindstellar\backup\BackupStore;
 use mindstellar\security\AdminReauth;
+use mindstellar\upgrade\BuildInfo;
 use mindstellar\utility\AjaxResponse;
 
 class CAdminTools extends AdminSecBaseModel
@@ -1009,7 +1010,7 @@ class CAdminTools extends AdminSecBaseModel
         $env = array(
             'admin_url'        => osc_admin_base_url(true),
             'now'              => time(),
-            'version'          => OSCLASS_VERSION,
+            'version'          => BuildInfo::label(OSCLASS_VERSION),
             'db_version'       => (string) osc_version(),
             'php'              => PHP_VERSION,
             'os'               => PHP_OS . ' (' . php_uname('m') . ')',

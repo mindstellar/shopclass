@@ -247,7 +247,8 @@ final class Compatibility
     /**
      * The release a prerelease core belongs to: "6.1.0.beta2" -> "6.1.0". A site running the
      * 6.1 beta already has 6.1's code, so a package declaring `Requires Shopclass: 6.1.0` must
-     * install there rather than being refused for the whole prerelease series.
+     * install there rather than being refused for the whole prerelease series. An edge build's
+     * 12-digit build time goes too: "6.4.0.rc6.202610022159" -> "6.4.0".
      *
      * @param string $version
      *
@@ -255,7 +256,9 @@ final class Compatibility
      */
     private static function releaseVersion(string $version): string
     {
-        return (string) preg_replace('/[.-](dev|beta|rc|alpha)\\d*$/i', '', trim($version));
+        $version = (string) preg_replace('/^(\d+\.\d+\.\d+(?:[.-](?:dev|beta|rc|alpha)\d*)?)\.\d{12}$/i', '$1', trim($version));
+
+        return (string) preg_replace('/[.-](dev|beta|rc|alpha)\\d*$/i', '', $version);
     }
 
     /**

@@ -2,6 +2,25 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 6.4.1
+
+This release fixes two security issues: custom-field values that could run script on a listing
+page, and an e-mail change link that also worked as a password-reset link. It also fixes a false
+mod_ssl warning on the mail settings page.
+
+### New
+
+- A nightly `:edge` Docker image built from develop, versioned with its build time; the in-app updater is off on it.
+
+### Security
+
+- An e-mail change link also worked as a password-reset link. Each account code is now bound to its purpose and stored hashed; links sent before the upgrade stop working.
+- A listing could store custom-field values meant for another category, and a URL field could break out of its link and run script; such values are now dropped, and URL, dropdown and radio values are escaped.
+
+### Fixed
+
+- Mail settings no longer warn that Apache `mod_ssl` is missing; they check PHP's `openssl` extension instead (#548).
+
 ## Shopclass 6.4.0
 
 This release makes your site safer to run, easier to keep up to date, and faster.
@@ -565,7 +584,7 @@ with too: every listing index now has its own description and a single canonical
 
 ### Security
 
-- **A listing description was stored exactly as submitted on sites using the rich editor.**
+- **A listing description was stored exactly as submitted on sites using the rich editor (CVE-2026-104479).**
   Params' XSS check strips every tag, so it is switched off wherever a rich editor is in
   use, and nothing replaced it — a script in a description ran for every visitor who opened
   the listing, the listing's author included. Descriptions are now sanitised against an

@@ -1,0 +1,114 @@
+# Builds and pushes the :edge image from one commit. Called by build.yml (a develop push
+# marked [publish-edge]) and by edge-nightly.yml. No zip, no tag, no GitHub release.
+#
+# The image's version is the commit's OSCLASS_VERSION plus the UTC build time, digits only
+# (6.4.0.202610030200), so each build sorts after the one before and the database upgrade
+# runs. The Dockerfile writes it and the edge build marker from EDGE_STAMP / EDGE_REVISION.
+name: Edge image
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Commit to build
+        required: true
+        type: string
+    secrets:
+      DOCKERHUB_USERNAME:
+        required: false
+      DOCKERHUB_TOKEN:
+        required: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: edge-image
+      cancel-in-progress: false
+    env:
+      # Docker Hub too when its secrets are set, as for releases.
+      DOCKERHUB_ENABLED: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Compute version and tags
+        id: meta
+        shell: bash
+        env:
+          DOCKERHUB_NAMESPACE: ${{ vars.DOCKERHUB_NAMESPACE || secrets.DOCKERHUB_USERNAME }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          BASE=$(grep -oP "(?<=define\('OSCLASS_VERSION', ')[^']+" oc-includes/osclass/default-constants.php)
+          if [[ ! "${BASE}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(\.(dev|beta|rc)[0-9]*)?$ ]]; then
+            echo "::error::Invalid OSCLASS_VERSION format: ${BASE}"
+            exit 1
+          fi
+          STAMP=$(date -u +%Y%m%d%H%M)
+          REVISION=$(git rev-parse HEAD)
+          IMAGES="ghcr.io/${REPOSITORY,,}"
+          if [ "${DOCKERHUB_ENABLED}" = "true" ]; then
+            IMAGES="${IMAGES} docker.io/${DOCKERHUB_NAMESPACE,,}/shopclass"
+          fi
+          TAGS=""
+          for IMAGE in ${IMAGES}; do
+            TAGS="${TAGS:+${TAGS},}${IMAGE}:edge"
+          done
+          {
+            echo "version=${BASE}.${STAMP}"
+            echo "stamp=${STAMP}"
+            echo "revision=${REVISION}"
+            echo "tags=${TAGS}"
+          } >> "$GITHUB_OUTPUT"
+          echo "Edge ${BASE}.${STAMP} from ${REVISION} -> ${TAGS}"
+
+      # The same picker as the release zip, authenticated so the GitHub API does not refuse it.
+      - name: Pick the Storefront release
+        id: storefront
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CORE_VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          TAG=$(bash scripts/storefront-release.sh "${CORE_VERSION}" | cut -f1)
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to Docker Hub
+        if: env.DOCKERHUB_ENABLED == 'true'
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push :edge
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          provenance: false
+          build-args: |
+            EDGE_STAMP=${{ steps.meta.outputs.stamp }}
+            EDGE_REVISION=${{ steps.meta.outputs.revision }}
+            STOREFRONT_VERSION=${{ steps.storefront.outputs.tag }}
+          labels: |
+            org.opencontainers.image.version=${{ steps.meta.outputs.version }}
+            org.opencontainers.image.revision=${{ steps.meta.outputs.revision }}

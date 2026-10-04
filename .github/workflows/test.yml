@@ -259,6 +259,8 @@ jobs:
       # wrote; anything else must be held, never guessed into a search.
       - name: Legacy alert parser
         run: php tests/alert-legacy-parser.php
+      - name: Custom field escaping
+        run: php tests/item-meta-escape.php
       # Resolving sCategory by slug alone 404s a category that exists whenever the value
       # is an id -- which is what osc_search_url() emits and what a category <select> submits.
       - name: Search category resolution
@@ -571,6 +573,8 @@ jobs:
         run: php tests/upgrade-release-zip.php
       - name: Update channel and automatic security install
         run: php tests/update-channel.php
+      - name: Edge builds
+        run: php tests/edge-build.php
       # Needs no database or network: the catalog's pointer and its manifest both carry a
       # `countries` key, and telling them apart on presence rather than type has broken
       # the catalog twice, both times hidden by a warm cache.

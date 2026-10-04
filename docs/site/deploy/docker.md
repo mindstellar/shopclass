@@ -130,6 +130,26 @@ that step yourself:
 docker compose exec app php oc-cli.php package:reconcile
 ```
 
+## Edge builds
+
+`:edge` is built from the `develop` branch: the next release, before it is
+released. It is rebuilt each night when `develop` has a new commit that passed
+its tests, and sometimes in between. There is no zip and no GitHub release for
+it, and the in-app updater stays off.
+
+Its version is the develop version plus the build time in UTC, for example
+`6.4.0.202610030200` or `6.4.0.rc6.202610022159`. **Tools → System info** and
+`php oc-cli.php version` show it with the commit, for example
+`6.4.0.202610030200 (edge, a65dcfe)`.
+
+To switch, set the image to `ghcr.io/mindstellar/shopclass:edge` and redeploy.
+To update, pull `:edge` again and redeploy; the database upgrade runs on start.
+
+:::caution
+There is no way back from edge to stable on the same database. Edge runs
+migrations a stable release may not have yet. Use it on a test copy only.
+:::
+
 ## Running commands
 
 Every [CLI command](/docs/cli/) works inside the container:

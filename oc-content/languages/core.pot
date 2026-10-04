@@ -1490,10 +1490,6 @@ msgstr ""
 msgid "Anyone can register"
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/MailServerSettingsForm.php
-msgid "Apache Module <b>mod_ssl</b> is not loaded"
-msgstr ""
-
 #: oc-admin/themes/modern/appearance/add.php
 #: oc-admin/themes/modern/appearance/add_widget.php
 #: oc-admin/themes/modern/appearance/index.php
@@ -2193,10 +2189,6 @@ msgstr ""
 #: oc-admin/themes/modern/billing/index.php
 #: oc-admin/themes/modern/billing/order.php
 msgid "Cancelled"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/MailServerSettingsForm.php
-msgid "Cannot be sure that Apache Module <b>mod_ssl</b> is loaded."
 msgstr ""
 
 #: oc-admin/themes/modern/plugins/add.php
@@ -10306,6 +10298,12 @@ msgid ""
 "before turning on "
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/MailServerSettingsForm.php
+msgid ""
+"The PHP <b>openssl</b> extension is not loaded, so SSL and TLS will not "
+"work."
+msgstr ""
+
 #: oc-admin/themes/modern/tools/upgrade.php
 msgid ""
 "The Shopclass files are replaced with the new version, and any change made "
@@ -11075,6 +11073,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
 msgid "This is a demo site, so nothing can be installed or updated here."
+msgstr ""
+
+#: oc-admin/themes/modern/tools/upgrade.php
+msgid "This is an edge build. Update it by pulling the :edge image."
 msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php

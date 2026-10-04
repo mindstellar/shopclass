@@ -36,6 +36,7 @@ seed_currency($admin);
 $category = seed_category($admin, 'Things');
 
 $code  = 'c0de' . bin2hex(random_bytes(10));
+$hash  = 'email:' . hash('sha256', $code);
 $field = static function (string $sql) use ($admin) {
     $row = $admin->query($sql)->fetch_row();
 
@@ -45,10 +46,10 @@ $emailOf = static function (int $id) use ($field, $prefix) {
     return $field("SELECT s_email FROM {$prefix}t_user WHERE pk_i_id = $id");
 };
 /** A user with a pending change to $new, a listing, a comment and an alert. */
-$pending = static function (string $name, string $new, string $issued = 'NOW()') use ($admin, $prefix, $code, $category): int {
+$pending = static function (string $name, string $new, string $issued = 'NOW()') use ($admin, $prefix, $hash, $category): int {
     $id   = seed_user($admin, $name, $name . '@old.test');
     $item = seed_item($admin, $category, $id);
-    $admin->query("UPDATE {$prefix}t_user SET s_pass_code = '$code', s_pass_date = $issued WHERE pk_i_id = $id");
+    $admin->query("UPDATE {$prefix}t_user SET s_pass_code = '$hash', s_pass_date = $issued WHERE pk_i_id = $id");
     $admin->query("UPDATE {$prefix}t_item SET s_contact_email = '{$name}@old.test' WHERE pk_i_id = $item");
     $admin->query("INSERT INTO {$prefix}t_item_comment (fk_i_item_id, dt_pub_date, s_title, s_author_name, s_author_email, s_body, fk_i_user_id)
                    VALUES ($item, NOW(), 't', 'n', '{$name}@old.test', 'b', $id)");
@@ -68,6 +69,7 @@ $repointed = static function (int $id, string $email) use ($field, $prefix): arr
 harness_section('A matching, fresh code switches everything');
 
 $ann    = $pending('ann', 'ann@new.test');
+pin('a pending e-mail change code is not a password-reset code', array(), User::newInstance()->findByIdPasswordSecret($ann, $code));
 $result = UserActions::confirmEmailChange($ann, $code);
 pin('the change is applied', array('status' => 'ok', 'old' => 'ann@old.test', 'new' => 'ann@new.test'), $result);
 pin('the user has the new address', 'ann@new.test', $emailOf($ann));
@@ -97,6 +99,23 @@ pin('nothing changed for cid', 'cid@old.test', $emailOf($cid));
 $dan = $pending('dan', 'dan@new.test');
 $admin->query("UPDATE {$prefix}t_user SET b_enabled = 0 WHERE pk_i_id = $dan");
 pin('a disabled account is refused', 'invalid', UserActions::confirmEmailChange($dan, $code)['status']);
+
+$hal = $pending('hal', 'hal@new.test');
+$admin->query("UPDATE {$prefix}t_user SET s_pass_code = 'reset:" . hash('sha256', $code) . "' WHERE pk_i_id = $hal");
+pin('a password-reset code does not confirm an e-mail change', 'invalid', UserActions::confirmEmailChange($hal, $code)['status']);
+
+harness_section('issuePassCode binds each code to its purpose');
+
+$ivy   = $pending('ivy', 'ivy@new.test');
+$reset = User::newInstance()->issuePassCode($ivy, User::PASS_CODE_RESET);
+$saved = $field("SELECT s_pass_code FROM {$prefix}t_user WHERE pk_i_id = $ivy");
+check('only the hash of the issued code is stored', $saved === User::passCodeHash(User::PASS_CODE_RESET, $reset) && $saved !== $reset);
+check('an issued reset code opens the reset form', (User::newInstance()->findByIdPasswordSecret($ivy, $reset)['pk_i_id'] ?? null) == $ivy);
+pin('an issued reset code does not confirm an e-mail change', 'invalid', UserActions::confirmEmailChange($ivy, $reset)['status']);
+$jay   = $pending('jay', 'jay@new.test');
+$email = User::newInstance()->issuePassCode($jay, User::PASS_CODE_EMAIL);
+pin('an issued e-mail code does not open the reset form', array(), User::newInstance()->findByIdPasswordSecret($jay, $email));
+pin('an issued e-mail code confirms the change', 'ok', UserActions::confirmEmailChange($jay, $email)['status']);
 
 $eve = $pending('eve', 'eve@new.test');
 $admin->query("DELETE FROM {$prefix}t_user_email_tmp WHERE fk_i_user_id = $eve");

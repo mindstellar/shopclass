@@ -33,3 +33,5 @@ oc-content/plugins/test-gateway
 oc-admin/themes/modern/scss
 oc-includes/assets/bootstrap-icons/*.scss
 oc-includes/assets/bootstrap-icons/*.json
+# Written only by an edge build, never copied from a checkout.
+oc-includes/osclass/build-info.php

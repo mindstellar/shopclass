@@ -1090,6 +1090,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\theme\\ThemeSupports' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/theme/ThemeSupports.php',
         'mindstellar\\theme\\ThemeViews' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/theme/ThemeViews.php',
         'mindstellar\\upgrade\\AutoSecurityUpdate' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/upgrade/AutoSecurityUpdate.php',
+        'mindstellar\\upgrade\\BuildInfo' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/upgrade/BuildInfo.php',
         'mindstellar\\upgrade\\Osclass' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/upgrade/Osclass.php',
         'mindstellar\\upgrade\\Plugin' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/upgrade/Plugin.php',
         'mindstellar\\upgrade\\ReleaseChannel' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/upgrade/ReleaseChannel.php',

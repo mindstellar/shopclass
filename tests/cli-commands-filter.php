@@ -50,6 +50,7 @@ function osc_version()
     return OSCLASS_VERSION;
 }
 
+require_once ABS_PATH . 'oc-includes/osclass/classes/upgrade/BuildInfo.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/cli/Cli.php';
 
 $GLOBALS['okCount']    = 0;
