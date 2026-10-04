@@ -4,7 +4,9 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 ## Shopclass 6.4.1
 
-In development.
+This release fixes two security issues: custom-field values that could run script on a listing
+page, and an e-mail change link that also worked as a password-reset link. It also fixes a false
+mod_ssl warning on the mail settings page.
 
 ### New
 
