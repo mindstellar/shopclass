@@ -633,6 +633,7 @@ msgid "Current password"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebUser.php
+#: oc-includes/osclass/classes/security/UserReauth.php
 msgid "Current password doesn't match"
 msgstr ""
 
@@ -1490,10 +1491,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebUser.php
 msgid "Password has been changed"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/CWebUser.php
-msgid "Passwords can't be empty"
 msgstr ""
 
 #: oc-includes/osclass/classes/actions/UserActions.php

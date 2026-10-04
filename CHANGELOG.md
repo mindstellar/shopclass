@@ -6,6 +6,10 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 In development.
 
+### Security
+
+- Changing the password now goes through the sign-in throttle, so the current password cannot be guessed without limit; a malformed form no longer causes an error page.
+
 ### Fixed
 
 - `doctor`, `jobs:status` and System info no longer report a job held for later as a stuck queue; they count only jobs that are due.
