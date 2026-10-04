@@ -503,6 +503,10 @@ function osc_sendMail($params)
         $mail = osc_apply_filter('pre_send_mail', $mail, $params);
         osc_phpmailer_limit_smtp_wait($mail);
 
+        if (!osc_mail_links_trusted($mail)) {
+            return false;
+        }
+
         // send email!
         $mail->send();
     } catch (\PHPMailer\PHPMailer\Exception $e) {
@@ -512,6 +516,47 @@ function osc_sendMail($params)
     }
 
     return true;
+}
+
+/**
+ * Keep a mail from carrying links to an address the visitor chose. When the site address
+ * came from the Host header, links are moved to OSC_CLI_URL; with none set, the mail is
+ * refused and an error is logged.
+ *
+ * @param \PHPMailer\PHPMailer\PHPMailer $mail
+ *
+ * @return bool False when the mail must not be sent
+ */
+function osc_mail_links_trusted($mail): bool
+{
+    if (!defined('OSC_WEB_PATH_FROM_REQUEST') || !OSC_WEB_PATH_FROM_REQUEST
+        || !defined('WEB_PATH')) {
+        return true;
+    }
+    $untrusted = (string) WEB_PATH;
+    $host      = (string) parse_url($untrusted, PHP_URL_HOST);
+    $hasLink   = static function ($text) use ($host) {
+        return $host !== '' && stripos((string) $text, $host) !== false;
+    };
+    if (!$hasLink($mail->Body) && !$hasLink($mail->AltBody)) {
+        return true;
+    }
+    if (defined('OSC_TRUSTED_WEB_PATH')) {
+        if (strcasecmp((string) parse_url(OSC_TRUSTED_WEB_PATH, PHP_URL_HOST), $host) === 0) {
+            return true;
+        }
+        $mail->Body    = str_ireplace($untrusted, OSC_TRUSTED_WEB_PATH, (string) $mail->Body);
+        $mail->AltBody = str_ireplace($untrusted, OSC_TRUSTED_WEB_PATH, (string) $mail->AltBody);
+        if (!$hasLink($mail->Body) && !$hasLink($mail->AltBody)) {
+            return true;
+        }
+    }
+    trigger_error(
+        'E-mail not sent: it links to an address taken from the request Host header. Set WEB_PATH or OSC_CLI_URL to the site address.',
+        E_USER_WARNING
+    );
+
+    return false;
 }
 
 /**
