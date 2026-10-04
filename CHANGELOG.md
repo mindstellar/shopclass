@@ -11,6 +11,7 @@ In development.
 - Changing the password now goes through the sign-in throttle, so the current password cannot be guessed without limit; a malformed form no longer causes an error page.
 - A signed-out visitor could delete a photo from a member's listing with only the photo's code; now only the owner, the holder of a guest listing's secret, or an admin can.
 - A listing marked as spam was still shown on its page to everyone; now only its owner and admins can see it, as with a disabled listing.
+- The photo delete links on the listing edit form printed the `secret` from the URL unescaped, so a crafted link could run script; they now use the listing's stored secret, escaped.
 
 ### Fixed
 

@@ -1472,9 +1472,15 @@ class ItemForm extends Form
         if ($resources == null) {
             $resources = osc_get_item_resources();
         }
-        if ($resources != null && is_array($resources) && count($resources) > 0) { ?>
+        if ($resources != null && is_array($resources) && count($resources) > 0) {
+            // The stored secret, not the request's: the edit page was only reached by its owner.
+            $itemId = (int)osc_item_id();
+            $secret = $itemId > 0 ? osc_item_secret() : ''; ?>
             <div class="photos_div">
-                <?php foreach ($resources as $_r) { ?>
+                <?php foreach ($resources as $_r) {
+                    $deleteJs = 'delete_image(' . (int)$_r['pk_i_id'] . ', ' . (int)$_r['fk_i_item_id']
+                        . ", '" . osc_esc_js((string)$_r['s_name']) . "', '"
+                        . ((int)$_r['fk_i_item_id'] === $itemId ? osc_esc_js($secret) : '') . "');"; ?>
                     <div id="<?php echo $_r['pk_i_id']; ?>"
                          fkid="<?php echo $_r['fk_i_item_id']; ?>"
                          name="<?php echo $_r['s_name']; ?>">
@@ -1486,9 +1492,7 @@ class ItemForm extends Form
                         )
                             . $_r['pk_i_id'] . '_thumbnail.'
                             . $_r['s_extension']; ?>"/><a
-                                href="javascript:delete_image(<?php echo $_r['pk_i_id'] . ', '
-                                                    . $_r['fk_i_item_id'] . ", '" . $_r['s_name'] . "', '"
-                                                    . Params::getParam('secret') . "'"; ?>);"
+                                href="javascript:<?php echo osc_esc_html($deleteJs); ?>"
                                 class="delete"><?php _e('Delete'); ?></a>
                     </div>
                 <?php } ?>
