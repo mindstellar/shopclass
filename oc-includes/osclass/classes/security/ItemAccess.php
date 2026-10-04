@@ -64,6 +64,23 @@ final class ItemAccess
     }
 
     /**
+     * @param int|string|null $userId
+     *
+     * @return array<string,mixed> the listing when the caller may manage it, else an empty array
+     */
+    public static function manageable(int $id, $userId, bool $isAdmin, string $secret): array
+    {
+        if ($id <= 0) {
+            return array();
+        }
+        $item = \Item::newInstance()->findByPrimaryKey($id);
+
+        return is_array($item) && $item !== array() && self::canManage($item, $userId, $isAdmin, $secret)
+            ? $item
+            : array();
+    }
+
+    /**
      * @param array<string,mixed>|mixed $resource a t_item_resource row, or what a failed lookup returned
      * @param array<string,mixed>       $item
      * @param string                    $code     the photo's s_name as sent

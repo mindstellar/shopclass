@@ -212,7 +212,16 @@ class CWebAjax extends BaseModel
                         break;
                     case 'item_edit':
                         $catId  = Params::getParam('catId');
-                        $itemId = Params::getParam('itemId');
+                        $itemId = Params::getParamInt('itemId');
+                        // Stored values go only to someone who may edit the listing.
+                        if ($itemId > 0 && ItemAccess::manageable(
+                            $itemId,
+                            osc_is_web_user_logged_in() ? osc_logged_user_id() : null,
+                            osc_is_admin_user_logged_in(),
+                            Params::getParamString('secret')
+                        ) === array()) {
+                            $itemId = 0;
+                        }
                         osc_run_hook('item_edit', $catId, $itemId);
                         break;
                     default:

@@ -1590,7 +1590,9 @@ class ItemForm extends Form
      */
     public static function plugin_edit_item()
     {
-        self::plugin_post_item('edit&itemId=' . osc_item_id());
+        $secret = preg_replace('/[^A-Za-z0-9_-]/', '', Params::getParamString('secret'));
+
+        self::plugin_post_item('edit&itemId=' . osc_item_id() . ($secret !== '' ? '&secret=' . $secret : ''));
     }
 
     /**
