@@ -11,6 +11,23 @@ In development.
 - A signed-in user could overwrite the title, description, custom fields and photos of the next listing by id when editing their own.
 - The edit form no longer shows saved custom-field values of a hidden listing to people who cannot edit it.
 - A banned e-mail address could sign up, post or comment by adding a space or stray symbol to it.
+- A crafted link to the admin plugins screen could run script in the admin's browser.
+- Installing a plugin from the plugins screen error frame needs a security token.
+- The admin listings and users screens escape the sort values from the address bar.
+- Turning user alerts on or off in the admin needs a security token.
+- The theme preview and `?page=custom` pages only load PHP files inside the themes or plugins folders.
+- Redirects after a failed security check, and after sign-in, stay on the site.
+- Forms sent from another site are refused for visitors who are not signed in.
+- Only forms marked as available as a block take submissions, 10 an hour per address.
+- Comments are limited to 20 an hour and refused on hidden listings.
+- City autocomplete returns at most 10 results and nothing for an empty term.
+- A new account takes over guest listings with its e-mail only after the address is confirmed.
+- Photo uploads on the listing form follow the registered-users-only setting, 100 an hour per address and the listing photo limit.
+- E-mail links never use the address from the request's Host header; `OSC_ALLOWED_HOSTS` limits accepted hosts.
+- The Docker image no longer ships the `tests` and `scripts` folders, and nginx denies them and log files under `oc-content`.
+- The Docker image refuses to start when `OSC_REAL_IP_HEADER` is set without `OSC_REAL_IP_TRUSTED`.
+- File downloads follow redirects over HTTP and HTTPS only.
+- Plugin and theme update backups are protected from download.
 
 ### Fixed
 
