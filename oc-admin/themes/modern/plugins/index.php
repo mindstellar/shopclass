@@ -84,8 +84,9 @@ $marketRefreshUrl = osc_admin_base_url(true) . '?page=ajax&action=market_refresh
         <?php _e("Plugin couldn't be installed because it triggered a <strong>fatal error</strong>"); ?>
         <a class="btn ico btn-mini ico-close">x</a>
         <iframe style="border:0;" width="100%" height="60"
-                src="<?php echo osc_admin_base_url(true); ?>?page=plugins&amp;action=error_plugin&amp;plugin=<?php
-                echo Params::getParam('error'); ?>"></iframe>
+                src="<?php echo osc_admin_base_url(true); ?>?page=plugins&amp;action=error_plugin&amp;<?php
+                echo osc_csrf_token_url(); ?>&amp;plugin=<?php
+                echo osc_esc_html(urlencode(Params::getParamString('error'))); ?>"></iframe>
     </div>
     <!-- /flash message -->
 <?php } ?>

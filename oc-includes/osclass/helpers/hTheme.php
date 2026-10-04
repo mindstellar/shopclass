@@ -882,10 +882,11 @@ function osc_render_file($file = '')
         return;
     }
 
-    if (file_exists(osc_themes_path() . osc_theme() . '/plugins/' . $file)) {
-        include osc_themes_path() . osc_theme() . '/plugins/' . $file;
-    } elseif (file_exists(osc_plugins_path() . $file)) {
-        include osc_plugins_path() . $file;
+    // Only a .php file inside the theme's plugins folder or the plugins folder is included.
+    $path = \mindstellar\security\PluginAjaxFile::resolve($file, osc_themes_path() . osc_theme() . '/plugins/')
+        ?? \mindstellar\security\PluginAjaxFile::resolve($file, osc_plugins_path());
+    if ($path !== null) {
+        include $path;
     }
 }
 

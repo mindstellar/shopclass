@@ -77,6 +77,8 @@ $sort           = Params::getParam('sort');
 $direction      = Params::getParam('direction');
 
 $columns     = $aData['aColumns'];
+$sort      = in_array($sort, array_keys($columns), true) ? $sort : '';
+$direction = in_array($direction, array('asc', 'desc'), true) ? $direction : '';
 $rows        = $aData['aRows'];
 $withFilters = __get('withFilters');
 ?>
@@ -174,8 +176,8 @@ osc_admin_pagination($aData);
                     <p class="osc-dialog-title"><?php _e('Filters') ?></p>
                     <input type="hidden" name="page" value="users"/>
                     <input type="hidden" name="iDisplayLength" value="<?php echo $iDisplayLength; ?>"/>
-                    <input type="hidden" name="sort" value="<?php echo $sort; ?>"/>
-                    <input type="hidden" name="direction" value="<?php echo $direction; ?>"/>
+                    <input type="hidden" name="sort" value="<?php echo osc_esc_html($sort); ?>"/>
+                    <input type="hidden" name="direction" value="<?php echo osc_esc_html($direction); ?>"/>
                     <div class="form-horizontal">
                         <div class="row row-cols-lg-2">
                             <div class="col-lg-6">

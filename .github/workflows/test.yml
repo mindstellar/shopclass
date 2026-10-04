@@ -498,6 +498,8 @@ jobs:
       # remote file execution that still returns a perfectly normal-looking response.
       - name: Plugin ajax file allowlist
         run: php tests/plugin-ajax-file.php
+      - name: Admin request guards
+        run: php tests/admin-request-guards.php
       # A GET form carries no CSRF token, so a dialog sending one to a checked action fails every time.
       - name: Plugin install repair and admin GET forms
         run: php tests/plugin-install-repair.php
