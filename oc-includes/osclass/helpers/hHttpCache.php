@@ -257,11 +257,111 @@ function osc_response_server_timing($body)
     return $body;
 }
 
+/**
+ * Ask for the whole page cache to be cleared once this request ends.
+ *
+ * For a change that can alter every public page: the theme, site settings, a plugin.
+ * Nothing is sent here; however many times it is called, one `page_cache_purge` action
+ * fires at the end of the request with every reason given.
+ *
+ * @param string $reason a short word naming the change, e.g. 'theme'
+ *
+ * @return void
+ */
+function osc_purge_page_cache(string $reason = ''): void
+{
+    if (!empty($GLOBALS['osc_page_cache_purged'])) {
+        return;
+    }
+    if (!isset($GLOBALS['osc_page_cache_purge'])) {
+        $GLOBALS['osc_page_cache_purge'] = array();
+        register_shutdown_function('osc_page_cache_purge_flush');
+    }
+    $reason = trim($reason);
+    if ($reason !== '' && !in_array($reason, $GLOBALS['osc_page_cache_purge'], true)) {
+        $GLOBALS['osc_page_cache_purge'][] = $reason;
+    }
+}
+
+/**
+ * Whether a whole-cache purge is waiting for the end of this request.
+ *
+ * @return bool
+ */
+function osc_page_cache_purge_pending(): bool
+{
+    return isset($GLOBALS['osc_page_cache_purge']) && empty($GLOBALS['osc_page_cache_purged']);
+}
+
+/**
+ * Send the purge osc_purge_page_cache() asked for: fire `page_cache_purge` with the
+ * reasons, then, when OSC_PAGE_CACHE_PURGE_URL is set (the Docker image), clear nginx's
+ * own cache there. Runs at shutdown, after the response has gone; never throws.
+ *
+ * @param \Symfony\Contracts\HttpClient\HttpClientInterface|null $http for tests
+ *
+ * @return void
+ */
+function osc_page_cache_purge_flush($http = null): void
+{
+    if (!osc_page_cache_purge_pending()) {
+        return;
+    }
+    $reasons                          = $GLOBALS['osc_page_cache_purge'];
+    $GLOBALS['osc_page_cache_purged'] = true;
+
+    try {
+        if (!osc_apply_filter('page_cache_purge_enabled', true)) {
+            return;
+        }
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
+        }
+        osc_run_hook('page_cache_purge', $reasons);
+    } catch (\Throwable $e) {
+        error_log('page_cache_purge: ' . get_class($e) . ': ' . $e->getMessage());
+    }
+
+    $url = getenv('OSC_PAGE_CACHE_PURGE_URL');
+    if (!is_string($url) || $url === '') {
+        return;
+    }
+    try {
+        $host = function_exists('osc_base_url') ? (string)parse_url(osc_base_url(), PHP_URL_HOST) : '';
+        (new \mindstellar\cache\PagePurge($http))->purge($url, $host);
+    } catch (\Throwable $e) {
+        error_log('page_cache_purge: ' . get_class($e) . ': ' . $e->getMessage());
+    }
+}
+
 // Guarded so this file stays includable on its own -- the test suite loads it without a
 // plugin layer, and so does early boot.
 if (function_exists('osc_add_filter')) {
     osc_add_filter('response_body', 'osc_response_etag');
     osc_add_filter('response_body', 'osc_response_server_timing');
+
+    // Changes that can alter every public page. Places with no hook call
+    // osc_purge_page_cache() directly.
+    osc_add_hook('theme_activate', static function () {
+        osc_purge_page_cache('theme');
+    });
+    foreach (array('after_plugin_activate', 'after_plugin_deactivate', 'after_plugin_uninstall') as $hook) {
+        osc_add_hook($hook, static function () {
+            osc_purge_page_cache('plugin');
+        });
+    }
+    osc_add_hook('after_delete_widget', static function () {
+        osc_purge_page_cache('widget');
+    });
+    foreach (array('add_category', 'edited_category', 'after_delete_category', 'edited_category_order') as $hook) {
+        osc_add_hook($hook, static function () {
+            osc_purge_page_cache('category');
+        });
+    }
+    osc_add_hook('after_delete_page', static function () {
+        osc_purge_page_cache('page');
+    });
+    unset($hook);
 }
 
 /* file end: ./oc-includes/osclass/helpers/hHttpCache.php */

@@ -228,6 +228,7 @@ action logout
 action logout_admin
 action manage_item_search_conditions
 action manage_user_search_conditions
+action page_cache_purge
 action page_meta
 action post_item
 action post_item_contact_post
@@ -472,6 +473,7 @@ filter osc_item_meta_value_filter
 filter osc_item_meta_value_pre_filter
 filter osclass_upgrade_package
 filter page_bulk_filter
+filter page_cache_purge_enabled
 filter page_templates
 filter pages_processing_row
 filter phpmailer_smtp_timeout

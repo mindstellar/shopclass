@@ -130,13 +130,19 @@ the session or prints must return early when the context is `'alert'`.
 To store your own filter with an alert, add it with the `alert_search_params` filter, then read
 it back with `Params::getParam()` in your `search_conditions` callback.
 
+`page_cache_purge` fires once at the end of a request that changed something every public page
+shows: the theme, settings, a plugin, a category. It runs after the response has gone, and on the
+command line too. Its one argument is the list of reasons, such as `array('theme', 'plugin')`.
+Clear your cache there. Do not print, send headers or read the session. To ask for one yourself,
+call `osc_purge_page_cache('my_reason')`. See [the caching contract](/docs/developers/caching/).
+
 ## Reference
 
 Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 530 names. Generated from the source; do not edit by hand.
+Core fires 532 names. Generated from the source; do not edit by hand.
 
 ### Admin (77)
 
@@ -424,7 +430,7 @@ Core fires 530 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/osclass/classes/model/Search.php` |
 
-### Other (197)
+### Other (199)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -581,6 +587,8 @@ Core fires 530 names. Generated from the source; do not edit by hand.
 | `non_remember_login_ttl` | filter | `2 * 3600` | `oc-includes/osclass/helpers/hUsers.php` |
 | `osclass_upgrade_package` | filter | `$package_info` | `oc-includes/osclass/classes/upgrade/Osclass.php` |
 | `page_bulk_filter` | filter | `$bulk_options` | `oc-includes/osclass/classes/controller/admin/CAdminPages.php` |
+| `page_cache_purge` | action | `$reasons` | `oc-includes/osclass/helpers/hHttpCache.php` |
+| `page_cache_purge_enabled` | filter | `true` | `oc-includes/osclass/helpers/hHttpCache.php` |
 | `page_meta` | action | none | `oc-admin/themes/modern/pages/frm.php` |
 | `page_templates` | filter | `WebThemes::newInstance()->getAvailableTemplates()` | `oc-includes/osclass/classes/controller/admin/CAdminPages.php` |
 | `pages_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/PagesDataTable.php` |
