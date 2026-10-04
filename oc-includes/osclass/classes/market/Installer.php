@@ -11,6 +11,7 @@
 
 namespace mindstellar\market;
 
+use mindstellar\backup\BackupStore;
 use mindstellar\utility\FileSystem;
 use mindstellar\utility\Zip;
 use RuntimeException;
@@ -427,7 +428,7 @@ final class Installer
      */
     private function backupExisting(string $slug, string $targetDir): ?string
     {
-        if (!is_dir($this->backupsPath) && !@mkdir($this->backupsPath, 0755, true) && !is_dir($this->backupsPath)) {
+        if (!(new BackupStore($this->backupsPath))->protect()) {
             return null;
         }
 

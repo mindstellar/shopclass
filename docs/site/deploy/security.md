@@ -61,7 +61,15 @@ should not be readable:
 
 - `debug.log`, `queries.log`, `explain_queries.log`: see
   [debugging](/docs/developers/debug-php-errors/). Delete them when you are done
-  and deny `*.log` in your server config.
+  and deny `*.log` in your server config. For nginx:
+
+  ```nginx
+  location ~* ^/oc-content/.*\.log$ {
+      deny all;
+  }
+  ```
+
+  The container image already does this.
 - Database dumps. Never leave a backup in the web root, except in the backups
   folder below.
 
@@ -140,7 +148,7 @@ real_ip_header    CF-Connecting-IP; # or X-Real-IP, X-Forwarded-For, ...
 ```
 
 The container image does this for you: set `OSC_REAL_IP_HEADER` (and
-`OSC_REAL_IP_TRUSTED` for the CIDR ranges) and it writes the block above; see
+`OSC_REAL_IP_TRUSTED` for the CIDR ranges, which it requires) and it writes the block above; see
 [Docker](/docs/deploy/docker/#putting-it-behind-tls).
 
 **Apache** (`mod_remoteip`):

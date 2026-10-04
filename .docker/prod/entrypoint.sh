@@ -13,9 +13,10 @@ CLI="/application/oc-cli.php"
 # not the proxy — login throttling and abuse keying depend on it. Off unless
 # OSC_REAL_IP_HEADER is set (e.g. "CF-Connecting-IP" behind a Cloudflare tunnel,
 # or "X-Forwarded-For" behind a load balancer). OSC_REAL_IP_TRUSTED is the
-# comma-separated CIDR allowlist of proxies to trust; the default trusts any peer,
-# which is correct only when the sole ingress is that proxy (e.g. a tunnel with no
-# published port). Narrow it if the container is directly reachable.
+# comma-separated CIDR allowlist of proxies to trust. It is required: with no list
+# the header would be trusted from anyone, so the container refuses to start. Set
+# 0.0.0.0/0,::/0 only when the proxy is the sole ingress (e.g. a tunnel with no
+# published port).
 write_real_ip_conf() {
     conf=/etc/nginx/real_ip.conf
     header="${OSC_REAL_IP_HEADER:-}"
@@ -23,8 +24,12 @@ write_real_ip_conf() {
         : > "$conf"
         return 0
     fi
+    if [ -z "${OSC_REAL_IP_TRUSTED:-}" ]; then
+        echo "entrypoint: OSC_REAL_IP_HEADER is set but OSC_REAL_IP_TRUSTED is not. Set it to your proxy's address range, e.g. 172.16.0.0/12 (0.0.0.0/0,::/0 trusts every client)." >&2
+        exit 1
+    fi
     {
-        printf '%s\n' "${OSC_REAL_IP_TRUSTED:-0.0.0.0/0,::/0}" | tr ',' '\n' | while IFS= read -r cidr; do
+        printf '%s\n' "$OSC_REAL_IP_TRUSTED" | tr ',' '\n' | while IFS= read -r cidr; do
             cidr=$(printf '%s' "$cidr" | tr -d ' ')
             [ -n "$cidr" ] && printf 'set_real_ip_from %s;\n' "$cidr"
         done

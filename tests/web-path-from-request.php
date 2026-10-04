@@ -35,6 +35,7 @@ header("Content-Type: application/json");
 echo json_encode(array(
     "web_path" => defined("WEB_PATH") ? WEB_PATH : null,
     "flag"     => defined("OSC_WEB_PATH_FROM_REQUEST") && OSC_WEB_PATH_FROM_REQUEST,
+    "trusted"  => defined("OSC_TRUSTED_WEB_PATH") ? OSC_TRUSTED_WEB_PATH : null,
     "known"    => \mindstellar\backup\BackupBucket::addressKnown(),
     "adapter"  => \mindstellar\backup\BackupBucket::addressKnown() ? null : \mindstellar\backup\BackupBucket::adapter() !== null,
 ));
@@ -77,6 +78,19 @@ pin('the site still boots on it', 'http://evil.example/', $got['web_path'] ?? nu
 pin('...and it is flagged as taken from the request', true, $got['flag'] ?? null);
 pin('the bucket does not trust it', false, $got['known'] ?? null);
 pin('...so no bucket adapter is handed out', false, $got['adapter'] ?? null);
+
+harness_section('OSC_CLI_URL set, no WEB_PATH');
+
+$got = ask_site($site, array('OSC_CLI_URL' => 'https://shop.example.com/'), 'evil.example');
+pin('pages keep the request address', 'http://evil.example/', $got['web_path'] ?? null);
+pin('...and e-mail links get the trusted one', 'https://shop.example.com/', $got['trusted'] ?? null);
+
+harness_section('OSC_ALLOWED_HOSTS');
+
+$got = ask_site($site, array('OSC_ALLOWED_HOSTS' => 'shop.example.com'), 'evil.example');
+pin('another host is refused', null, $got);
+$got = ask_site($site, array('OSC_ALLOWED_HOSTS' => 'shop.example.com'), 'Shop.Example.com:8080');
+pin('a listed host is served, whatever its case or port', 'http://Shop.Example.com:8080/', $got['web_path'] ?? null);
 
 harness_section('An address set in the environment');
 

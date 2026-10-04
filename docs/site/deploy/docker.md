@@ -67,18 +67,21 @@ Everything is set from environment variables:
 |---|---|
 | `DB_HOST` / `DB_NAME` / `DB_USER` / `DB_PASSWORD` | Database connection |
 | `WEB_PATH` | The site's public base URL |
-| `OSC_CLI_URL` | The site's address for `oc-cli.php` only, when `WEB_PATH` is left unset so web pages keep the address they were opened on. Use the exact address visitors use |
+| `OSC_CLI_URL` | The site's address for `oc-cli.php`, when `WEB_PATH` is left unset so web pages keep the address they were opened on. Also the address e-mail links use in that case. Use the exact address visitors use |
+| `OSC_ALLOWED_HOSTS` | Comma-separated host names (no port). When `WEB_PATH` is unset, requests for any other host get a 400 |
 | `OSC_ADMIN_USER` / `OSC_ADMIN_EMAIL` / `OSC_ADMIN_PASSWORD` | The first admin account. Leave the password unset and a strong one is generated and printed to the logs |
 | `OSC_SITE_TITLE` | Site title at provisioning time |
 | `OSC_IGNORE_CONFIG_FILE` | Set to `1` so the image configures itself from the environment rather than a `config.php` |
 | `OSC_DISABLE_WEB_RESTORE` | Set to `1` to turn off restoring backups from the admin. Backups still work: see [backups](/docs/use/backups-and-maintenance/#turning-web-restore-off) |
 | `OSC_DISABLE_PACKAGE_INSTALLS` | Set to `1` to turn off installing and updating plugins and themes from the admin market and `oc-cli.php market:*` |
-| `OSC_REAL_IP_HEADER` / `OSC_REAL_IP_TRUSTED` | The header carrying the real client IP behind a proxy, e.g. `X-Real-IP` or `CF-Connecting-IP`, and the address ranges to trust it from (in CIDR notation, e.g. `172.16.0.0/12`): see [putting it behind TLS](#putting-it-behind-tls) |
+| `OSC_REAL_IP_HEADER` / `OSC_REAL_IP_TRUSTED` | The header carrying the real client IP behind a proxy, e.g. `X-Real-IP` or `CF-Connecting-IP`, and the address ranges to trust it from (in CIDR notation, e.g. `172.16.0.0/12`). The container will not start with the header set and no ranges: see [putting it behind TLS](#putting-it-behind-tls) |
 | `OSC_CACHE` / `OSC_CACHE_HOST` / `OSC_CACHE_PORT` | [Object cache](/docs/configure/cache/) |
 | `OSC_MICROCACHE` | Set to `1` to cache public pages in nginx: see [page caching](/docs/configure/page-cache/). The image already carries the purge module (lets a cached page be removed early), so the nginx Cache plugin works with nothing further to configure |
 | `OSC_PAGE_CACHE_PURGE_URL` | Where core sends one `PURGE` to clear the whole cache after a theme, settings or plugin change. When `OSC_MICROCACHE` is on it defaults to `http://127.0.0.1:8089/` (a server that listens only inside the container), also for `docker exec`, cron and the job worker. Set it only to override that |
 | `OSC_RATE_LIMIT` / `OSC_RATE_LIMIT_BURST` | Requests per second per client IP, e.g. `10r/s`. Unset is off |
 | `OSC_TLS_DOMAIN` / `OSC_TLS_REDIRECT_FROM` / `OSC_TLS_EMAIL` | [Built-in HTTPS](#built-in-https): the domain, other names to send to it (comma-separated), and the e-mail for expiry notices (default `OSC_ADMIN_EMAIL`) |
+
+With no `WEB_PATH`, the address is taken from the request's `Host` header, which a visitor can fake. E-mail links then use `OSC_CLI_URL`; with neither set, any mail that links to the site (password reset, activation, alerts) is not sent and an error is logged.
 
 For a real deployment: point `DB_HOST` at a managed database, set `WEB_PATH` to
 the public URL, set a strong admin password, and
@@ -288,7 +291,7 @@ TLS is invisible to ShopClass unless these are set:
 |---|---|
 | `WEB_PATH` | `https://example.com/`: the app builds every URL and cookie path from this |
 | `OSC_REAL_IP_HEADER` | `X-Real-IP`, matching the `proxy_set_header` above |
-| `OSC_REAL_IP_TRUSTED` | `172.16.0.0/12`: see below |
+| `OSC_REAL_IP_TRUSTED` | `172.16.0.0/12`: required with `OSC_REAL_IP_HEADER`, see below |
 
 `X-Forwarded-Proto` is what makes the app treat the request as secure: it sets
 `HTTPS=on` for PHP, so `osc_is_ssl()` is true and the login cookie is issued with
@@ -323,9 +326,9 @@ visitors send and therefore what the cache is keyed on. See
 
 The `/purge` address is allowed only from `127.0.0.1` and `::1`. With
 `OSC_REAL_IP_HEADER` set, nginx takes the client address from the header it
-names for anyone in `OSC_REAL_IP_TRUSTED`. The default trusts every address, so
+names for anyone in `OSC_REAL_IP_TRUSTED`. If you set it to `0.0.0.0/0,::/0`,
 anyone who can reach the container directly can put `127.0.0.1` in that header
-and purge pages. Narrow `OSC_REAL_IP_TRUSTED` to your proxy whenever the
+and purge pages. Keep `OSC_REAL_IP_TRUSTED` to your proxy whenever the
 container's port is reachable from outside. The whole-cache purge does not have
 this problem: its server listens only on the container's loopback (port 8089)
 and ignores that header.
