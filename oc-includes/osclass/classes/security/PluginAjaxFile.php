@@ -82,4 +82,32 @@ class PluginAjaxFile
 
         return $realFile;
     }
+
+    /**
+     * Resolve a file given relative to $base, accepting it only when it is a .php file
+     * inside one of $roots.
+     *
+     * @param string   $file  path relative to $base
+     * @param string   $base  absolute base directory
+     * @param string[] $roots absolute directories the file may live in
+     *
+     * @return string|null the absolute path, or null when it is not safe to include
+     */
+    public static function resolveWithin($file, $base, array $roots)
+    {
+        $realFile = self::resolve($file, $base);
+        if ($realFile === null) {
+            return null;
+        }
+        foreach ($roots as $root) {
+            $realRoot = realpath((string) $root);
+            if ($realRoot !== false
+                && strncmp($realFile, $realRoot . DIRECTORY_SEPARATOR, strlen($realRoot) + 1) === 0
+            ) {
+                return $realFile;
+            }
+        }
+
+        return null;
+    }
 }

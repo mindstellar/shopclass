@@ -23,7 +23,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <!-- theme files -->
     <div class="theme-files">
         <?php
-        if (strpos($file, '../') === false && strpos($file, '..\\') == false && file_exists($file)) {
+        if ($file !== null) {
             require_once $file;
         }
 ?>

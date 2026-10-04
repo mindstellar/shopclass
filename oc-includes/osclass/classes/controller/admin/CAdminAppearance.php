@@ -19,6 +19,7 @@ if (!defined('ABS_PATH')) {
 /**
  * Class CAdminAppearance
  */
+use mindstellar\security\PluginAjaxFile;
 use mindstellar\utility\AjaxResponse;
 
 class CAdminAppearance extends AdminSecBaseModel
@@ -400,13 +401,16 @@ class CAdminAppearance extends AdminSecBaseModel
                     }
                 }
 
-                if (strpos($file, '../') !== false
-                    || strpos($file, '..\\') !== false
-                    || !file_exists(osc_base_path() . $file)
-                ) {
+                // Only a .php file inside the themes or plugins folder may be rendered.
+                $resolved = PluginAjaxFile::resolveWithin(
+                    (string) $file,
+                    osc_base_path(),
+                    array(osc_themes_path(), osc_plugins_path())
+                );
+                if ($resolved === null) {
                     osc_add_flash_warning_message(__('Error loading theme custom file'), 'admin');
                 }
-                $this->_exportVariableToView('file', osc_base_path() . $file);
+                $this->_exportVariableToView('file', $resolved);
                 $this->doView('appearance/view.php');
                 break;
             default:
