@@ -61,6 +61,12 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         )); ?>
         <?php osc_admin_settings_form($forms['messages']['id'], $forms['messages']); ?>
     </div>
+    <div id="limits-settings" class="separate-top">
+        <?php osc_admin_form_section(__('Limits'), array(
+            'intro' => __('How many times one visitor address may use each public form or upload in an hour.'),
+        )); ?>
+        <?php osc_admin_settings_form($forms['limits']['id'], $forms['limits']); ?>
+    </div>
     <div id="login-throttle-settings" class="separate-top">
         <?php osc_admin_form_section(__('Sign-in protection'), array(
             'intro' => __('After too many failed sign-ins, Shopclass blocks that address or account for a '

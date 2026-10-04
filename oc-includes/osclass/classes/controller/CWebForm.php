@@ -109,7 +109,7 @@ class CWebForm extends BaseModel
             return;
         }
 
-        if (\mindstellar\security\ActionThrottle::exceededFor('form_submit', 10)) {
+        if (\mindstellar\security\ActionThrottle::exceededFor('form_submit')) {
             osc_add_flash_error_message(_m('Too many tries from your connection. Please try again later.'));
             $this->redirectTo($return);
 

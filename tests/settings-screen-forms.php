@@ -630,6 +630,20 @@ pin(
     keymap(SpamSettingsForm::registerLoginThrottle())
 );
 pin(
+    'the hourly limits, one number per public action',
+    array(
+        'throttle_comment_post'    => 'osclass/throttle_comment_post',
+        'throttle_ajax_upload'     => 'osclass/throttle_ajax_upload',
+        'throttle_form_submit'     => 'osclass/throttle_form_submit',
+        'throttle_site_contact'    => 'osclass/throttle_site_contact',
+        'throttle_item_contact'    => 'osclass/throttle_item_contact',
+        'throttle_user_contact'    => 'osclass/throttle_user_contact',
+        'throttle_send_friend'     => 'osclass/throttle_send_friend',
+        'throttle_alert_subscribe' => 'osclass/throttle_alert_subscribe',
+    ),
+    keymap(SpamSettingsForm::registerLimits())
+);
+pin(
     'and the Akismet key and the search-alert rule',
     array('akismetKey' => 'osclass/akismetKey', 'alerts_require_login' => 'osclass/alerts_require_login'),
     keymap(SpamSettingsForm::registerAkismet()) + keymap(SpamSettingsForm::registerAlerts())
@@ -959,6 +973,11 @@ $run = drive('CAdminSettingsSpamnBots', 'recaptcha_post', array(
 pin('the provider lands', array('turnstile', 'STRING'), pref($admin, 'captchaProvider'));
 pin('the hidden version keeps the key it has always had', array('2', 'STRING'), pref($admin, 'recaptcha_version'));
 pin('and a blank key is cleared rather than left alone', array('', 'STRING'), pref($admin, 'recaptchaPubKey'));
+
+$run = drive('CAdminSettingsSpamnBots', 'limits_post', array('throttle_send_friend' => '0', 'throttle_form_submit' => '-3'));
+pin('a limit of 0 is stored, switching it off', array('0', 'INTEGER'), pref($admin, 'throttle_send_friend'));
+pin('a negative limit is floored at 0', array('0', 'INTEGER'), pref($admin, 'throttle_form_submit'));
+pin('the limits save reports itself once', array('ok:Limits have been updated'), flashed($run));
 
 $run = drive('CAdminSettingsSpamnBots', 'alerts_post', array('alerts_require_login' => '1'));
 pin('the alert rule is a boolean', array('1', 'BOOLEAN'), pref($admin, 'alerts_require_login'));
@@ -1994,7 +2013,7 @@ $screens = array(
     'settings/mailserver.php'   => array('CAdminSettingsMailserver.php', array('mailserver_host', 'mailserver_password')),
     'settings/searches.php'     => array('CAdminSettingsLatestSearches.php', array('save_latest_searches', 'customPurge')),
     'settings/advanced.php'     => array('CAdminSettingsAdvanced.php', array('e_type', 's_host')),
-    'settings/spamNbots.php'    => array('CAdminSettingsSpamnBots.php', array('akismetKey', 'login_throttle_window')),
+    'settings/spamNbots.php'    => array('CAdminSettingsSpamnBots.php', array('akismetKey', 'login_throttle_window', 'throttle_send_friend')),
     'settings/billing.php'      => array('CAdminSettingsBilling.php', array('billing_currency', 'billing_enabled')),
     'settings/keywordBlock.php' => array('CAdminSettingsKeywordBlock.php', array('report_threshold', 'report_autoblock')),
     'settings/permalinks.php'   => array(

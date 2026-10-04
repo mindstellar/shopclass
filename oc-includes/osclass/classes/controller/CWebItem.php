@@ -553,7 +553,7 @@ class CWebItem extends BaseModel
 
                 // Bound how many listings one source may share per window — the form
                 // relays site-branded mail, so it needs a ceiling regardless of the login.
-                if (\mindstellar\security\ActionThrottle::exceededFor('send_friend', 5)) {
+                if (\mindstellar\security\ActionThrottle::exceededFor('send_friend')) {
                     osc_add_flash_error_message(
                         _m("You've shared too many listings recently. Please try again later.")
                     );
@@ -657,7 +657,7 @@ class CWebItem extends BaseModel
                 // Bound how many enquiries one source may send per window (defence in
                 // depth: contact only reaches a listing's own seller, not an arbitrary
                 // address, so the default ceiling is looser than share-a-listing).
-                if (\mindstellar\security\ActionThrottle::exceededFor('item_contact', 15)) {
+                if (\mindstellar\security\ActionThrottle::exceededFor('item_contact')) {
                     $fail(_m("You've sent too many messages recently. Please try again later."));
 
                     return false;

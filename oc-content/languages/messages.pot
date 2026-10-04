@@ -1065,6 +1065,10 @@ msgstr ""
 msgid "Leave a comment"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSpamnBots.php
+msgid "Limits have been updated"
+msgstr ""
+
 #: oc-includes/osclass/classes/security/MessageGuard.php
 msgid "Links are not allowed in messages."
 msgstr ""

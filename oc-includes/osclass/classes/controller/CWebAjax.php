@@ -362,7 +362,7 @@ class CWebAjax extends BaseModel
         if (osc_reg_user_post()) {
             return _m('Only registered users are allowed to post listings');
         }
-        if (\mindstellar\security\ActionThrottle::exceededFor('ajax_upload', 100)) {
+        if (\mindstellar\security\ActionThrottle::exceededFor('ajax_upload')) {
             return _m('Too many tries from your connection. Please try again later.');
         }
 

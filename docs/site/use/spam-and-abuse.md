@@ -152,6 +152,12 @@ signed-in admin can use it; anyone else is asked to sign in first.
 Each form also has an hourly limit per IP address. The ban list applies to all
 of them, and to e-mail fields on your own forms.
 
+**Settings → Spam and bots → Limits** sets those hourly limits: guest comments
+(20), guest photo uploads (100), form submissions (10), contact the site (5),
+contact a seller (15), contact a user (15), send to a friend (5) and search alert
+sign-ups (10). 0 means no limit. Developers can still change them with the
+`action_throttle_limit` filter.
+
 ## Rate limits and registration rules
 
 The settings that do the most, and are easiest to forget:

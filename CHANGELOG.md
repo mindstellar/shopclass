@@ -6,6 +6,10 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 In development.
 
+### New
+
+- Settings → Spam and bots has hourly limits for comments, uploads, forms, contact and alerts.
+
 ### Security
 
 - A signed-in user could overwrite the title, description, custom fields and photos of the next listing by id when editing their own.

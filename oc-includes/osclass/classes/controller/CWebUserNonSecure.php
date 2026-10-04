@@ -250,7 +250,7 @@ class CWebUserNonSecure extends BaseModel
                     return;
                 }
 
-                if (\mindstellar\security\ActionThrottle::exceededFor('user_contact', 15)) {
+                if (\mindstellar\security\ActionThrottle::exceededFor('user_contact')) {
                     $fail(_m("You've sent too many messages recently. Please try again later."));
 
                     return;

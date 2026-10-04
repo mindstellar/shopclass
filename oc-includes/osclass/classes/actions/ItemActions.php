@@ -2074,7 +2074,7 @@ class ItemActions
         }
 
         // Counted by address, so only guests: signed-in users behind one proxy would share it.
-        if ($userId == null && \mindstellar\security\ActionThrottle::exceededFor('comment_post', 20)) {
+        if ($userId == null && \mindstellar\security\ActionThrottle::exceededFor('comment_post')) {
             return 8;
         }
 
