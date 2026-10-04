@@ -6,6 +6,10 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 In development.
 
+### New
+
+- Changing the theme, site settings, permalinks, maintenance mode, plugins, languages, currencies, widgets, categories or pages now clears the whole page cache through one hook, `page_cache_purge` (or `osc_purge_page_cache()`); the Docker image clears its own micro-cache.
+
 ### Security
 
 - Changing the password now goes through the sign-in throttle, so the current password cannot be guessed without limit; a malformed form no longer causes an error page.

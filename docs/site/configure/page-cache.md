@@ -119,6 +119,25 @@ comment) would answer *your session has expired*. Purging would still work
 perfectly, so nothing would look wrong. That is why the plugin sets a maximum
 instead of just showing a warning.
 
+## Changes that clear the whole cache
+
+Some changes show on every page. After any of these, ShopClass clears the whole
+page cache:
+
+- switching the theme
+- saving settings, permalinks included
+- turning maintenance mode on or off, or saving its message
+- installing, enabling, disabling or removing a plugin
+- editing, enabling, disabling or deleting a language
+- adding, editing or deleting a currency
+- adding, editing, moving or deleting a widget
+- adding, editing, enabling, reordering or deleting a category
+- adding or deleting a static page
+- an upgrade or a backup restore
+
+In the Docker image this needs nothing set up. Elsewhere, a cache plugin (such
+as **nginx Cache**) does it.
+
 ## Troubleshooting
 
 | What you see | What it means |
@@ -129,4 +148,5 @@ instead of just showing a warning.
 | Test purge says a host is not in the list | Visitors reach the site under a name you did not list. Add it, with the port if there is one. |
 | Test purge says the key does not match | The purge address uses a different scheme (`http` or `https`) from the one nginx serves on. The scheme is part of each page's cache key, so a purge on the wrong one matches nothing. |
 | Test purge returns 404 | Your nginx settings are missing the purge address. The **Setup** page prints it. |
+| A theme or settings change does not show (Docker) | Look in the container log for `Page cache purge`. A `403` means the PURGE did not come from inside the container; check `OSC_REAL_IP_TRUSTED`. |
 | An edit does not show | Check **Purges waiting** on the plugin's settings page. Each entry is a page the plugin could not purge. It tries again on the next cron run. |

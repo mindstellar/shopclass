@@ -76,6 +76,7 @@ Everything is set from environment variables:
 | `OSC_REAL_IP_HEADER` / `OSC_REAL_IP_TRUSTED` | The header carrying the real client IP behind a proxy, e.g. `X-Real-IP` or `CF-Connecting-IP`, and the address ranges to trust it from (in CIDR notation, e.g. `172.16.0.0/12`): see [putting it behind TLS](#putting-it-behind-tls) |
 | `OSC_CACHE` / `OSC_CACHE_HOST` / `OSC_CACHE_PORT` | [Object cache](/docs/configure/cache/) |
 | `OSC_MICROCACHE` | Set to `1` to cache public pages in nginx: see [page caching](/docs/configure/page-cache/). The image already carries the purge module (lets a cached page be removed early), so the nginx Cache plugin works with nothing further to configure |
+| `OSC_PAGE_CACHE_PURGE_URL` | Set by the entrypoint when `OSC_MICROCACHE` is on (`http://127.0.0.1/index.php`). Core sends one `PURGE` there to clear the whole cache after a theme, settings or plugin change. Do not set it yourself |
 | `OSC_RATE_LIMIT` / `OSC_RATE_LIMIT_BURST` | Requests per second per client IP, e.g. `10r/s`. Unset is off |
 | `OSC_TLS_DOMAIN` / `OSC_TLS_REDIRECT_FROM` / `OSC_TLS_EMAIL` | [Built-in HTTPS](#built-in-https): the domain, other names to send to it (comma-separated), and the e-mail for expiry notices (default `OSC_ADMIN_EMAIL`) |
 
@@ -319,6 +320,13 @@ built-in HTTPS. The
 plugin's host list is the **public** hostname, because that is the `Host`
 visitors send and therefore what the cache is keyed on. See
 [page caching](/docs/configure/page-cache/).
+
+Purging is allowed only from `127.0.0.1` and `::1`. With `OSC_REAL_IP_HEADER`
+set, nginx takes the client address from that header for anyone in
+`OSC_REAL_IP_TRUSTED`. The default trusts every address, so anyone who can reach
+the container directly can send `X-Real-IP: 127.0.0.1` and clear your cache.
+Narrow `OSC_REAL_IP_TRUSTED` to your proxy whenever the container's port is
+reachable from outside.
 
 ## Running more than one instance
 
