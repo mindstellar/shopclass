@@ -39,7 +39,8 @@ final class PagePurge
      */
     public function purge(string $url, string $host): bool
     {
-        $options = array('timeout' => 2, 'max_duration' => 2, 'max_redirects' => 0);
+        // Never through a proxy: the purge address is on this machine.
+        $options = array('timeout' => 2, 'max_duration' => 2, 'max_redirects' => 0, 'no_proxy' => '*');
         if ($host !== '') {
             $options['headers'] = array('Host' => $host);
         }

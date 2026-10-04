@@ -71,7 +71,7 @@ ini_set('error_log', $log);
 /** Forget the pending purge and everything recorded, as a new request would. */
 function fresh(): void
 {
-    unset($GLOBALS['osc_page_cache_purge'], $GLOBALS['osc_page_cache_purged']);
+    unset($GLOBALS['osc_page_cache_purge'], $GLOBALS['osc_page_cache_purge_running']);
     $GLOBALS['fired']   = array();
     $GLOBALS['enabled'] = true;
     unset($GLOBALS['hooks']['page_cache_purge']);
@@ -91,7 +91,12 @@ function purges(): array
 function recorder(array &$requests, int $status): MockHttpClient
 {
     return new MockHttpClient(static function (string $method, string $url, array $options) use (&$requests, $status) {
-        $requests[] = array('method' => $method, 'url' => $url, 'headers' => $options['headers'] ?? array());
+        $requests[] = array(
+            'method'   => $method,
+            'url'      => $url,
+            'headers'  => $options['headers'] ?? array(),
+            'no_proxy' => $options['no_proxy'] ?? null,
+        );
 
         // 0 stands for no answer at all: the connection failed.
         return $status === 0
@@ -113,9 +118,22 @@ pin('...carrying its reason', array('theme'), $p[0]['args'][0] ?? null);
 check('...and nothing is pending after', !osc_page_cache_purge_pending());
 osc_page_cache_purge_flush();
 pin('a second flush fires nothing', 1, count(purges()));
-osc_purge_page_cache('late');
+osc_purge_page_cache('restore');
+check('a call after the flush is not dropped', osc_page_cache_purge_pending());
 osc_page_cache_purge_flush();
-pin('a call after the flush fires nothing', 1, count(purges()));
+$p = purges();
+pin('...it fires a flush of its own', 2, count($p));
+pin('...with only its own reason', array('restore'), $p[1]['args'][0] ?? null);
+
+fresh();
+$GLOBALS['hooks']['page_cache_purge'][] = static function () {
+    osc_purge_page_cache('again');
+};
+osc_purge_page_cache('theme');
+osc_page_cache_purge_flush();
+osc_page_cache_purge_flush();
+pin('a listener asking for a purge does not start another', 1, count(purges()));
+check('...and leaves nothing pending', !osc_page_cache_purge_pending());
 
 fresh();
 foreach (array('settings', 'plugin', 'settings', '', ' plugin ', 'theme') as $r) {
@@ -140,6 +158,37 @@ $GLOBALS['enabled'] = false;
 osc_purge_page_cache('theme');
 osc_page_cache_purge_flush();
 pin('page_cache_purge_enabled = false fires nothing', 0, count(purges()));
+
+harness_section('the flush runs last, with the session released');
+
+// Shutdown order and the session lock only exist in a real request end, so a child
+// process runs one.
+$script = tempnam(sys_get_temp_dir(), 'purge-order');
+file_put_contents($script, '<?php
+function osc_add_hook($h, $c = null, $p = 5) {}
+function osc_add_filter($h, $c = null, $p = 5) {}
+function osc_apply_filter($h, $c = "", ...$a) { return $c; }
+function osc_run_hook($hook, ...$a) {
+    if ($hook === "page_cache_purge") {
+        echo "purge:" . implode(",", $a[0]) . ":"
+            . (session_status() === PHP_SESSION_ACTIVE ? "locked" : "released") . "\n";
+    }
+}
+require ' . var_export(ABS_PATH . 'oc-includes/osclass/helpers/hHttpCache.php', true) . ';
+register_shutdown_function(function () { echo "page\n"; });
+ini_set("session.save_path", sys_get_temp_dir());
+ini_set("session.use_cookies", "0");
+session_start();
+osc_purge_page_cache("theme");
+register_shutdown_function(function () { echo "late\n"; osc_purge_page_cache("cron"); });
+');
+$out = (string)shell_exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($script) . ' 2>&1');
+@unlink($script);
+pin(
+    'after the page and every later shutdown function, with their reasons',
+    "page\nlate\npurge:theme,cron:released\n",
+    $out
+);
 
 harness_section('a failing listener');
 
@@ -178,6 +227,7 @@ check(
     '...with the site host',
     in_array('Host: shop.example.test', $requests[0]['headers'] ?? array(), true)
 );
+pin('...never through a proxy', '*', $requests[0]['no_proxy'] ?? null);
 pin('...and nothing logged on 200', '', (string)file_get_contents($log));
 
 fresh();

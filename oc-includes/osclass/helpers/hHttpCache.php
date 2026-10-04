@@ -261,8 +261,9 @@ function osc_response_server_timing($body)
  * Ask for the whole page cache to be cleared once this request ends.
  *
  * For a change that can alter every public page: the theme, site settings, a plugin.
- * Nothing is sent here; however many times it is called, one `page_cache_purge` action
- * fires at the end of the request with every reason given.
+ * Nothing is sent here. However many times it is called, one `page_cache_purge` action
+ * fires at the end of the request with every reason given. A call made after that, by
+ * later shutdown work such as a cron job, gets a flush of its own.
  *
  * @param string $reason a short word naming the change, e.g. 'theme'
  *
@@ -270,12 +271,17 @@ function osc_response_server_timing($body)
  */
 function osc_purge_page_cache(string $reason = ''): void
 {
-    if (!empty($GLOBALS['osc_page_cache_purged'])) {
+    // A listener asking for a purge while one runs would otherwise loop forever.
+    if (!empty($GLOBALS['osc_page_cache_purge_running'])) {
         return;
     }
     if (!isset($GLOBALS['osc_page_cache_purge'])) {
         $GLOBALS['osc_page_cache_purge'] = array();
-        register_shutdown_function('osc_page_cache_purge_flush');
+        // Registered from inside a shutdown function, so it runs after every other one,
+        // including the one that sends the page.
+        register_shutdown_function(static function () {
+            register_shutdown_function('osc_page_cache_purge_flush');
+        });
     }
     $reason = trim($reason);
     if ($reason !== '' && !in_array($reason, $GLOBALS['osc_page_cache_purge'], true)) {
@@ -290,7 +296,7 @@ function osc_purge_page_cache(string $reason = ''): void
  */
 function osc_page_cache_purge_pending(): bool
 {
-    return isset($GLOBALS['osc_page_cache_purge']) && empty($GLOBALS['osc_page_cache_purged']);
+    return isset($GLOBALS['osc_page_cache_purge']) && empty($GLOBALS['osc_page_cache_purge_running']);
 }
 
 /**
@@ -307,30 +313,39 @@ function osc_page_cache_purge_flush($http = null): void
     if (!osc_page_cache_purge_pending()) {
         return;
     }
-    $reasons                          = $GLOBALS['osc_page_cache_purge'];
-    $GLOBALS['osc_page_cache_purged'] = true;
+    $reasons                                 = $GLOBALS['osc_page_cache_purge'];
+    $GLOBALS['osc_page_cache_purge_running'] = true;
 
     try {
-        if (!osc_apply_filter('page_cache_purge_enabled', true)) {
+        try {
+            if (!osc_apply_filter('page_cache_purge_enabled', true)) {
+                return;
+            }
+            if (function_exists('fastcgi_finish_request')) {
+                fastcgi_finish_request();
+            }
+            // Release the session lock: the visitor's next request should not wait for this.
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_write_close();
+            }
+            osc_run_hook('page_cache_purge', $reasons);
+        } catch (\Throwable $e) {
+            error_log('page_cache_purge: ' . get_class($e) . ': ' . $e->getMessage());
+        }
+
+        $url = getenv('OSC_PAGE_CACHE_PURGE_URL');
+        if (!is_string($url) || $url === '') {
             return;
         }
-        if (function_exists('fastcgi_finish_request')) {
-            fastcgi_finish_request();
+        try {
+            $host = function_exists('osc_base_url') ? (string)parse_url(osc_base_url(), PHP_URL_HOST) : '';
+            (new \mindstellar\cache\PagePurge($http))->purge($url, $host);
+        } catch (\Throwable $e) {
+            error_log('page_cache_purge: ' . get_class($e) . ': ' . $e->getMessage());
         }
-        osc_run_hook('page_cache_purge', $reasons);
-    } catch (\Throwable $e) {
-        error_log('page_cache_purge: ' . get_class($e) . ': ' . $e->getMessage());
-    }
-
-    $url = getenv('OSC_PAGE_CACHE_PURGE_URL');
-    if (!is_string($url) || $url === '') {
-        return;
-    }
-    try {
-        $host = function_exists('osc_base_url') ? (string)parse_url(osc_base_url(), PHP_URL_HOST) : '';
-        (new \mindstellar\cache\PagePurge($http))->purge($url, $host);
-    } catch (\Throwable $e) {
-        error_log('page_cache_purge: ' . get_class($e) . ': ' . $e->getMessage());
+    } finally {
+        // Cleared, so a purge asked for by later shutdown work registers a flush of its own.
+        unset($GLOBALS['osc_page_cache_purge'], $GLOBALS['osc_page_cache_purge_running']);
     }
 }
 
