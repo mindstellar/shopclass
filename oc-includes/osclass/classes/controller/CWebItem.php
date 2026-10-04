@@ -768,7 +768,7 @@ class CWebItem extends BaseModel
                 osc_csrf_check();
 
                 $commentId = Params::getParamInt('comment');
-                $itemId    = Params::getParam('id');
+                $itemId    = Params::getParamInt('id');
                 $item      = Item::newInstance()->findByPrimaryKey($itemId);
 
                 osc_run_hook('pre_item_delete_comment_post', $item, $commentId);

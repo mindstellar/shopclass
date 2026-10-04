@@ -1828,7 +1828,7 @@ class ItemForm extends Form
         $maxSize           = osc_max_size_kb() * 1024;
         $maxImages         = self::maxImagesForForm();
         $isAdd             = Params::getParam('action') === 'item_add';
-        $secret            = Params::getParam('secret');
+        $secret            = Params::getParamString('secret');
         ?>
         <div class="osc-uploader" id="osc-uploader">
             <div class="osc-uploader-grid">
