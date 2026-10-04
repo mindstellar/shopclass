@@ -55,6 +55,8 @@ harness_section('URL fields');
 check('a quote cannot leave the href', !str_contains($render('URL', 'x&quot; onmouseover=&quot;alert(1)'), '" onmouseover'));
 check('a javascript: scheme never becomes the link', !preg_match('~href="javascript:~i', $render('URL', 'javascript:alert(1)//http://a')));
 pin('an https link is kept and escaped', '<a href="https://ok.example/a?b=1&amp;c=2" rel="noopener nofollow">https://ok.example/a?b=1&amp;c=2</a>', $render('URL', 'https://ok.example/a?b=1&amp;c=2'));
+pin('a host with a port keeps it', '<a href="http://example.com:8080/x" rel="noopener nofollow">http://example.com:8080/x</a>', $render('URL', 'example.com:8080/x'));
+pin('a protocol-relative URL gets one http://', '<a href="http://a.com" rel="noopener nofollow">http://a.com</a>', $render('URL', '//a.com'));
 pin('a bare host gets http://', '<a href="http://example.com" rel="noopener nofollow">http://example.com</a>', $render('URL', 'example.com'));
 
 harness_section('Dropdown and radio fields');
