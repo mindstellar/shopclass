@@ -33,7 +33,7 @@ final class AdminPassword
         $values = ['s_password' => osc_hash_password($new)] + $also;
 
         return (bool) osc_db_transaction(static function () use ($adminId, $values): bool {
-            if (!\Admin::newInstance()->update($values, ['pk_i_id' => $adminId])) {
+            if (osc_db_table(DB_TABLE_PREFIX . 't_admin')->where('pk_i_id', $adminId)->update($values) === 0) {
                 return false;
             }
 

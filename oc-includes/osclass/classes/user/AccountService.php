@@ -279,13 +279,13 @@ final class AccountService
             }
 
             if ($admin) {
-                \Item::newInstance()->update(['s_contact_name' => $input['s_name'], 's_contact_email' => $input['s_email']], ['fk_i_user_id' => $userId]);
-                \ItemComment::newInstance()->update(['s_author_name' => $input['s_name'], 's_author_email' => $input['s_email']], ['fk_i_user_id' => $userId]);
-                \Alerts::newInstance()->update(['s_email' => $input['s_email']], ['fk_i_user_id' => $userId]);
+                self::byUser('t_item', $userId)->update(['s_contact_name' => $input['s_name'], 's_contact_email' => $input['s_email']]);
+                self::byUser('t_item_comment', $userId)->update(['s_author_name' => $input['s_name'], 's_author_email' => $input['s_email']]);
+                self::byUser('t_alerts', $userId)->update(['s_email' => $input['s_email']]);
                 $email = $input['s_email'];
             } else {
-                \Item::newInstance()->update(['s_contact_name' => $input['s_name']], ['fk_i_user_id' => $userId]);
-                \ItemComment::newInstance()->update(['s_author_name' => $input['s_name']], ['fk_i_user_id' => $userId]);
+                self::byUser('t_item', $userId)->update(['s_contact_name' => $input['s_name']]);
+                self::byUser('t_item_comment', $userId)->update(['s_author_name' => $input['s_name']]);
                 $email = (string) ($this->users->findByPrimaryKey($userId)['s_email'] ?? '');
             }
             \Log::newInstance()->insertLog('user', 'edit', $userId, $email, $actor->logRole(), $actor->logId());
@@ -827,5 +827,14 @@ final class AccountService
         }
 
         return InvalidException::all($errors);
+    }
+
+    /**
+     * A query on one of the user's rows in a core table; it throws on failure, so a
+     * transaction rolls back.
+     */
+    private static function byUser(string $table, int $userId): \mindstellar\database\QueryBuilder
+    {
+        return osc_db_table(DB_TABLE_PREFIX . $table)->where('fk_i_user_id', $userId);
     }
 }

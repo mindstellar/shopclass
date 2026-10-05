@@ -330,11 +330,11 @@ final class PhotoService
         // One transaction, so the files go only when the row is gone too.
         try {
             return DeferredMail::transaction(function () use ($resource, $photoId, $actor): bool {
-                $deleted = \ItemResource::newInstance()->delete(array(
-                    'pk_i_id'      => $photoId,
-                    'fk_i_item_id' => (int) $resource['fk_i_item_id'],
-                ));
-                if ($deleted === false || $deleted === 0) {
+                $deleted = osc_db_table(DB_TABLE_PREFIX . 't_item_resource')
+                    ->where('pk_i_id', $photoId)
+                    ->where('fk_i_item_id', (int) $resource['fk_i_item_id'])
+                    ->delete();
+                if ($deleted === 0) {
                     throw new \RuntimeException('The photo row was not deleted.');
                 }
                 $this->removeFiles($resource, $actor);
