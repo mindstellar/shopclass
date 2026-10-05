@@ -36,8 +36,9 @@ In development.
 
 ### Fixed
 
+- Sites updating from 6.3 no longer keep running 6.3 after the update when PHP's OPcache does not re-check files (#550).
+- The listing activation link validates a listing that waits for admin approval and says so, instead of three conflicting messages (#549).
 - Cron, the job worker and CLI commands in the Docker image also clear the whole page cache; the purge address is derived from `OSC_MICROCACHE` when not set.
-- Custom date and date range fields work without jQuery UI.
 - Custom-field labels name their control; date ranges and radio lists are labelled groups.
 - Changing or clearing the category no longer leaves the previous category's custom fields.
 - A failed custom-field request no longer puts an error page into the item form.
