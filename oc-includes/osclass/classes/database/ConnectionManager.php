@@ -403,7 +403,7 @@ class ConnectionManager
         // as debug-only detail.
         if (class_exists('\\mindstellar\\logger\\OsclassErrors')) {
             $detail = $this->connErrorDesc ?: ($this->errorDesc ?: $message);
-            \mindstellar\logger\OsclassErrors::newInstance()->renderDbError((string)$detail);
+            \mindstellar\logger\OsclassErrors::instance()->renderDbError((string)$detail);
             exit(1);
         }
 
@@ -468,7 +468,7 @@ class ConnectionManager
      *
      * The shared instance is a DBConnectionClass (the compat subclass) so that a
      * single physical connection backs both entry points: new code calling
-     * ConnectionManager::newInstance() and legacy/plugin code calling
+     * ConnectionManager::instance() and legacy/plugin code calling
      * DBConnectionClass::newInstance() get the same object. Instantiating the
      * subclass here is the one deliberate parent-knows-child coupling that keeps
      * the old public name a first-class, fully-working alias on one connection.
@@ -482,7 +482,7 @@ class ConnectionManager
      *
      * @return ConnectionManager
      */
-    public static function newInstance(
+    public static function instance(
         $server = DB_HOST,
         $user = DB_USER,
         $password = DB_PASSWORD,
@@ -494,6 +494,19 @@ class ConnectionManager
         }
 
         return self::$instance;
+    }
+
+    /**
+     * @deprecated 7.0.0 Use instance().
+     */
+    public static function newInstance(
+        $server = DB_HOST,
+        $user = DB_USER,
+        $password = DB_PASSWORD,
+        $database = DB_NAME,
+        $port = null
+    ) {
+        return self::instance($server, $user, $password, $database, $port);
     }
 
     /**

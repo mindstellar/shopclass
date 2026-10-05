@@ -47,6 +47,13 @@ class Db
     private static $leakGuardArmed = false;
 
     /**
+     * Callbacks waiting for the outermost commit, keyed by the nesting level that queued them.
+     *
+     * @var array<int,array<int,callable>>
+     */
+    private static $afterCommit = array();
+
+    /**
      * Resolve the singleton mysqli connection through the Connection wrapper, which
      * owns the sole sanctioned access to the raw handle. Keeps this class off the
      * deprecated DBConnectionClass::getOsclassDb() path.
@@ -120,20 +127,34 @@ class Db
     {
         if (self::$depth > 1) {
             $result = self::releaseSavepoint('oscsp' . (self::$depth - 1));
+            // The savepoint's work now belongs to the enclosing level, and so do its callbacks.
+            if (isset(self::$afterCommit[self::$depth])) {
+                foreach (self::$afterCommit[self::$depth] as $fn) {
+                    self::$afterCommit[self::$depth - 1][] = $fn;
+                }
+                unset(self::$afterCommit[self::$depth]);
+            }
             self::$depth--;
 
             return $result;
         }
 
         try {
-            return self::conn()->commit();
+            $result = self::conn()->commit();
         } catch (Throwable $e) {
-            return false;
+            $result = false;
         } finally {
             if (self::$depth > 0) {
                 self::$depth--;
             }
         }
+        $queued             = self::$afterCommit[1] ?? array();
+        self::$afterCommit = array();
+        if ($result) {
+            self::runCallbacks($queued);
+        }
+
+        return $result;
     }
 
     /**
@@ -146,11 +167,13 @@ class Db
     {
         if (self::$depth > 1) {
             $result = self::rollbackToSavepoint('oscsp' . (self::$depth - 1));
+            unset(self::$afterCommit[self::$depth]);
             self::$depth--;
 
             return $result;
         }
 
+        self::$afterCommit = array();
         try {
             return self::conn()->rollback();
         } catch (Throwable $e) {
@@ -158,6 +181,44 @@ class Db
         } finally {
             if (self::$depth > 0) {
                 self::$depth--;
+            }
+        }
+    }
+
+    /**
+     * Run $fn once the outermost transaction commits, or now when none is open. It is dropped
+     * if the level that queued it rolls back, so work that cannot be undone, like removing a
+     * file, never outruns a write that may still be rolled back.
+     *
+     * @param callable $fn
+     *
+     * @return void
+     */
+    public static function afterCommit(callable $fn): void
+    {
+        if (self::$depth <= 0) {
+            $fn();
+
+            return;
+        }
+        self::$afterCommit[self::$depth][] = $fn;
+    }
+
+    /**
+     * Run callbacks queued for a commit that has happened. One that throws is logged, not
+     * thrown: the write is committed, so the caller must still see success.
+     *
+     * @param array<int,callable> $callbacks
+     *
+     * @return void
+     */
+    private static function runCallbacks(array $callbacks): void
+    {
+        foreach ($callbacks as $fn) {
+            try {
+                $fn();
+            } catch (Throwable $e) {
+                error_log('Db: an after-commit callback failed: ' . $e->getMessage());
             }
         }
     }

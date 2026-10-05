@@ -59,7 +59,7 @@ class Connection
     public function __construct(?\mysqli $conn = null)
     {
         if ($conn === null) {
-            $conn = ConnectionManager::newInstance()->getHandle();
+            $conn = ConnectionManager::instance()->getHandle();
         }
         if (!$conn instanceof mysqli) {
             throw new DbException('No database connection available');
