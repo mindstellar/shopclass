@@ -99,7 +99,7 @@ class CAdminTools extends AdminSecBaseModel
                 }
 
                 $started = (float) (Params::getServerParam('REQUEST_TIME_FLOAT') ?: microtime(true));
-                $queued  = (int) LocationsTmp::newInstance()->count();
+                $queued  = \mindstellar\location\LocationRecountJobs::pending();
                 $pending = (int) osc_update_location_stats(true);
                 $total   = $queued === 0 ? $pending : max($pending, (int) osc_get_preference('location_todo'));
 

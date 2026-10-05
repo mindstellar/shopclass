@@ -658,12 +658,6 @@ CREATE TABLE /*TABLE_PREFIX*/t_country_stats (
         FOREIGN KEY (fk_c_country_code) REFERENCES /*TABLE_PREFIX*/t_country (pk_c_code) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
-CREATE TABLE /*TABLE_PREFIX*/t_locations_tmp (
-    id_location varchar(10) NOT NULL,
-    e_type enum('COUNTRY','REGION','CITY') NOT NULL,
-    PRIMARY KEY (id_location, e_type)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
-
 CREATE TABLE /*TABLE_PREFIX*/t_ban_rule (
   pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   s_name VARCHAR(250) NOT NULL DEFAULT '',

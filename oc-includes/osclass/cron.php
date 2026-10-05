@@ -45,7 +45,6 @@ if (is_array($cron)) {
         } elseif (!in_array($purge, array('forever', 'day', 'week'))) {
             LatestSearches::newInstance()->purgeNumber($purge);
         }
-        osc_update_location_stats(true, 'auto');
 
         // WARN EXPIRATION EACH HOUR (COMMENT TO DISABLE)
         // NOTE: IF THIS IS ENABLE, SAME CODE SHOULD BE DISABLE ON CRON DAILY
@@ -176,6 +175,8 @@ if (is_array($cron)) {
     }
     if ($claimed) {
         osc_runAlert('WEEKLY', $cron['d_last_exec']);
+        // Correct drift in the listing counts of every country, region and city.
+        osc_update_location_stats(true);
 
         // Run cron AFTER updating the next execution time to avoid double run of cron
         $purge = osc_purge_latest_searches();

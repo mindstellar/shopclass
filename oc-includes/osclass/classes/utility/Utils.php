@@ -11,17 +11,14 @@ namespace mindstellar\utility;
 
 use Category;
 use City;
-use CityStats;
 use Country;
-use CountryStats;
 use DateTimeZone;
 use Item;
-use LocationsTmp;
-use mindstellar\database\DbException;
+use mindstellar\job\JobWorker;
+use mindstellar\location\LocationRecountJobs;
 use Params;
 use Preference;
 use Region;
-use RegionStats;
 use Rewrite;
 use RuntimeException;
 use Session;
@@ -331,143 +328,23 @@ class Utils
     }
 
     /**
-     * Update locations stats.
+     * Recount listings per country, region and city on the job queue.
      *
-     * @param bool $force
-     * @param int  $limit
+     * @param bool       $force queue a full recount when none is queued
+     * @param int|string $limit unused; kept for callers of the old signature
      *
-     * @return int
+     * @return int locations still to count
      */
     public static function updateLocationStats($force = false, $limit = 1000)
     {
-        $loctmp   = LocationsTmp::newInstance();
-        $workToDo = $loctmp->count();
-
-        if ($workToDo > 0) {
-            // there is work to do
-            if ($limit === 'auto') {
-                $total_cities = City::newInstance()->count();
-                $limit        = max(1000, ceil($total_cities / 22));
-            }
-            $aLocations = self::dropDeletedLocations($loctmp, $loctmp->getLocations($limit));
-            $regionIds = [];
-            $cityIds = [];
-            foreach ($aLocations as $location) {
-                $id   = $location['id_location'];
-                $type = $location['e_type'];
-                $data = null;
-                // update locations stats
-                switch ($type) {
-                    case 'COUNTRY':
-                        $numItems = CountryStats::newInstance()->calculateNumItems($id);
-                        $data     = CountryStats::newInstance()->setNumItems($id, $numItems);
-                        unset($numItems);
-                        break;
-                    case 'REGION':
-                        $regionIds[] = $id;
-                        break;
-                    case 'CITY':
-                        $cityIds[] = $id;
-                        break;
-                    default:
-                        break;
-                }
-
-                // Strict: these return bool, and a failed write must not be
-                // dequeued or it never gets retried.
-                if ($type === 'COUNTRY' && $data === true) {
-                    $loctmp->delete(array(
-                        'e_type'      => $location['e_type'],
-                        'id_location' => $location['id_location']
-                    ));
-                }
-            }
-            if (count($regionIds) > 0) {
-                $regionUpdate = RegionStats::newInstance()->updateAllStats($regionIds);
-                if ($regionUpdate === true) {
-                    // batch delete $regionIds from locations_tmp
-                    $loctmp->batchDelete($regionIds, 'REGION');
-                }
-            }
-
-            if (count($cityIds) > 0) {
-                $cityUpdate = CityStats::newInstance()->updateAllStats($cityIds);
-                if ($cityUpdate === true) {
-                    // batch delete $cityIds from locations_tmp
-                    $loctmp->batchDelete($cityIds, 'CITY');
-                }
-            }
-            unset($regionIds, $cityIds);
-        } elseif ($force) {
-            // we need to populate location tmp table
-            LocationsTmp::newInstance()->populateCountries();
-            LocationsTmp::newInstance()->populateRegions();
-            LocationsTmp::newInstance()->populateCities();
-
-            Preference::newInstance()->replace('location_todo', LocationsTmp::newInstance()->count());
+        if ($force) {
+            return LocationRecountJobs::queue();
+        }
+        if (LocationRecountJobs::pending() > 0) {
+            JobWorker::run(10);
         }
 
-        return LocationsTmp::newInstance()->count();
-    }
-
-    /**
-     * Remove queued locations whose row was deleted after they were queued.
-     *
-     * Their stats rows can no longer be written, so each batch would fail on them.
-     *
-     * @param LocationsTmp                    $loctmp
-     * @param array<int,array<string,string>> $queued Rows from LocationsTmp::getLocations()
-     *
-     * @return array<int,array<string,string>> The rows that still exist
-     */
-    private static function dropDeletedLocations(LocationsTmp $loctmp, array $queued): array
-    {
-        $tables = [
-            'COUNTRY' => [Country::newInstance()->getTableName(), 'pk_c_code'],
-            'REGION'  => [Region::newInstance()->getTableName(), 'pk_i_id'],
-            'CITY'    => [City::newInstance()->getTableName(), 'pk_i_id'],
-        ];
-
-        $byType = [];
-        foreach ($queued as $row) {
-            $byType[$row['e_type']][] = $row['id_location'];
-        }
-
-        $exists = [];
-        foreach ($byType as $type => $ids) {
-            if (!isset($tables[$type])) {
-                continue;
-            }
-            [$table, $pk] = $tables[$type];
-            foreach (array_chunk($ids, 1000) as $chunk) {
-                try {
-                    $rows = osc_db_table($table)->select($pk)->whereIn($pk, $chunk)->get();
-                } catch (DbException $e) {
-                    return $queued;
-                }
-                foreach ($rows as $row) {
-                    $exists[$type][strtoupper((string)$row[$pk])] = true;
-                }
-            }
-        }
-
-        $kept = [];
-        $gone = [];
-        foreach ($queued as $row) {
-            $type = $row['e_type'];
-            if (!isset($tables[$type]) || isset($exists[$type][strtoupper((string)$row['id_location'])])) {
-                $kept[] = $row;
-            } elseif ($type === 'COUNTRY') {
-                $loctmp->delete(['e_type' => $type, 'id_location' => $row['id_location']]);
-            } else {
-                $gone[$type][] = $row['id_location'];
-            }
-        }
-        foreach ($gone as $type => $ids) {
-            $loctmp->batchDelete($ids, $type);
-        }
-
-        return $kept;
+        return LocationRecountJobs::pending();
     }
 
     /**

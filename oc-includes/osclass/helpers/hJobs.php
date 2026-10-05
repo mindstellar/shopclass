@@ -261,6 +261,7 @@ osc_add_hook('register_jobs', static function () {
     \mindstellar\storage\StorageJobs::register();
     \mindstellar\job\CategoryJobs::register();
     \mindstellar\job\CleanupJobs::register();
+    \mindstellar\location\LocationRecountJobs::register();
     \mindstellar\search\AlertJobs::register();
     \mindstellar\backup\BackupJobs::register();
     \mindstellar\security\MessageHold::registerJobs();

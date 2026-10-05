@@ -748,7 +748,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
             'show'      => $filter['show'],
             'preview'   => $preview,
             'recalc'    => LocationAdminView::recalcProgress(
-                (int) LocationsTmp::newInstance()->count(),
+                \mindstellar\location\LocationRecountJobs::pending(),
                 (int) osc_get_preference('location_todo')
             ),
         );
