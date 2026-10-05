@@ -123,24 +123,34 @@ foreach (array(
 /* The sitemap screen's two forms moved into a declaration, so the scan now finds their actions
    there and nowhere else; name them so the move cannot take them out of its sight. */
 foreach (array('sitemap_settings_post', 'sitemap_robots_post') as $action) {
-    pin('scanned from SitemapSettingsForm.php: ' . $action, 'SitemapSettingsForm.php', $posted[$action] ?? '');
+    pin('scanned from SitemapSettingsScreen.php: ' . $action, 'SitemapSettingsScreen.php', $posted[$action] ?? '');
     check('routed: ' . $action, isset($routed[$action]));
 }
 
 /* The media save moved into a declaration as well, while regenerating is a link the view builds
    from a URL rather than a form either scan reads, so it is named here or nobody checks it. */
-pin('scanned from MediaSettingsForm.php: media_post', 'MediaSettingsForm.php', $posted['media_post'] ?? '');
+pin('scanned from MediaSettingsScreen.php: media_post', 'MediaSettingsScreen.php', $posted['media_post'] ?? '');
 foreach (array('media', 'media_post', 'images_post') as $action) {
     check('routed: ' . $action, isset($routed[$action]));
 }
 
 /* The storage save moved into a declaration too. The connection test, the queue run and the
    migrations stay forms in the view, and each is still named so none drops out of routing. */
-pin('scanned from StorageSettingsForm.php: storage_post', 'StorageSettingsForm.php', $posted['storage_post'] ?? '');
+pin('scanned from StorageSettingsScreen.php: storage_post', 'StorageSettingsScreen.php', $posted['storage_post'] ?? '');
 foreach (array('storage_test_post', 'storage_queue_run', 'storage_migrate_post') as $action) {
     pin('scanned from storage.php: ' . $action, 'storage.php', $posted[$action] ?? '');
 }
 foreach (array('storage', 'storage_post', 'storage_test_post', 'storage_queue_run', 'storage_migrate_post') as $action) {
+    check('routed: ' . $action, isset($routed[$action]));
+}
+
+/* Settings -> API: the declared settings save, and the key actions the view posts. */
+pin('scanned from ApiSettingsScreen.php: api_post', 'ApiSettingsScreen.php', $posted['api_post'] ?? '');
+$webhookActions = array('api_webhook_create', 'api_webhook_update', 'api_webhook_toggle', 'api_webhook_rotate', 'api_webhook_test', 'api_webhook_delete');
+foreach (array_merge(array('api_key_create', 'api_key_rotate', 'api_key_revoke'), $webhookActions) as $action) {
+    pin('scanned from api.php: ' . $action, 'api.php', $posted[$action] ?? '');
+}
+foreach (array_merge(array('api', 'api_post', 'api_key_create', 'api_key_rotate', 'api_key_revoke'), $webhookActions) as $action) {
     check('routed: ' . $action, isset($routed[$action]));
 }
 

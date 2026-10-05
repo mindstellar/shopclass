@@ -11,6 +11,8 @@
 
 namespace mindstellar\admin\form;
 
+use mindstellar\base\SettingsScreen;
+
 /**
  * The latest-searches settings screen: whether visitors' queries are kept, and for how long.
  *
@@ -21,24 +23,17 @@ namespace mindstellar\admin\form;
  *
  * @package mindstellar\admin\form
  */
-final class LatestSearchSettingsForm
+final class LatestSearchSettingsScreen extends SettingsScreen
 {
     public const PAGE_ID = 'core.settings_latest_searches';
+    protected const ACTION    = 'latestsearches_post';
+    protected const FORM_NAME = 'searches_form';
 
     /** The retention answers offered as presets; anything else is the free number. */
     public const PRESETS = array('hour', 'day', 'week', 'forever', '1000');
 
-    /**
-     * Declare the form, once per request.
-     *
-     * @return string the page id
-     */
-    public static function register(): string
+    protected static function declareFields(): void
     {
-        if (osc_settings_page(self::PAGE_ID) !== null) {
-            return self::PAGE_ID;
-        }
-
         $stored   = osc_purge_latest_searches();
         $isCustom = !in_array($stored, self::PRESETS, true);
 
@@ -78,25 +73,5 @@ final class LatestSearchSettingsForm
                 ->column('purge_latest_searches')
                 ->required()
             ->register();
-
-        return self::PAGE_ID;
-    }
-
-    /**
-     * What the view needs to draw the form.
-     *
-     * @param array<string,mixed>|null $values values a rejected save is handing back, or null
-     *                                         for the stored ones
-     *
-     * @return array<string,mixed> view variables for osc_admin_settings_form()
-     */
-    public static function formVars(?array $values = null): array
-    {
-        return CoreSettings::vars(
-            self::register(),
-            'latestsearches_post',
-            $values,
-            array('name' => 'searches_form')
-        );
     }
 }

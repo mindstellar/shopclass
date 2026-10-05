@@ -17,7 +17,7 @@ if (!defined('ABS_PATH')) {
  */
 
 use mindstellar\admin\form\CoreSettings;
-use mindstellar\admin\form\MediaSettingsForm;
+use mindstellar\admin\form\MediaSettingsScreen;
 
 /**
  * Class CAdminSettingsMedia
@@ -51,13 +51,13 @@ class CAdminSettingsMedia extends AdminSecBaseModel
                 // A bad watermark file is refused in validation with everything else, so
                 // nothing is written; a good one that cannot be moved is reported by the
                 // after_save, beside the values that did save.
-                $result = CoreSettings::attempt(MediaSettingsForm::register());
+                $result = CoreSettings::attempt(MediaSettingsScreen::register());
                 if ($result['errors'] !== array()) {
                     $this->drawForm($result['values']);
                     break;
                 }
 
-                $lowered = MediaSettingsForm::lowered();
+                $lowered = MediaSettingsScreen::lowered();
                 if ($lowered !== null) {
                     osc_add_flash_warning_message(
                         sprintf(
@@ -66,7 +66,7 @@ class CAdminSettingsMedia extends AdminSecBaseModel
                         ),
                         'admin'
                     );
-                } elseif (!MediaSettingsForm::uploadFailed()) {
+                } elseif (!MediaSettingsScreen::uploadFailed()) {
                     osc_add_flash_ok_message(_m('Media config has been updated'), 'admin');
                 }
 
@@ -84,7 +84,7 @@ class CAdminSettingsMedia extends AdminSecBaseModel
                     $skipped = 0;
                     foreach (ItemResource::newInstance()->getAllResources() as $resource) {
                         try {
-                            ItemActions::regenerateResourceImages($resource);
+                            \mindstellar\listing\PhotoService::regenerateImages($resource);
                         } catch (Throwable $e) {
                             $skipped++;
                         }
@@ -141,8 +141,8 @@ class CAdminSettingsMedia extends AdminSecBaseModel
     private function drawForm(?array $values = null)
     {
         // The name a replaced admin theme's own copy of the view still reads.
-        $this->_exportVariableToView('max_size_upload', MediaSettingsForm::uploadLimitKb());
-        $this->_exportVariableToView('media_form', MediaSettingsForm::formVars($values));
+        $this->_exportVariableToView('max_size_upload', MediaSettingsScreen::uploadLimitKb());
+        $this->_exportVariableToView('media_form', MediaSettingsScreen::formVars($values));
         $this->doView('settings/media.php');
     }
 
@@ -155,7 +155,7 @@ class CAdminSettingsMedia extends AdminSecBaseModel
      */
     public function _sizeToKB($sSize)
     {
-        return MediaSettingsForm::sizeToKb((string)$sSize);
+        return MediaSettingsScreen::sizeToKb((string)$sSize);
     }
 }
 

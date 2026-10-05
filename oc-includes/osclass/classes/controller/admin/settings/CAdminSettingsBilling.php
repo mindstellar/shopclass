@@ -13,7 +13,7 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\admin\form\BillingSettingsForm;
+use mindstellar\admin\form\BillingSettingsScreen;
 use mindstellar\admin\form\CoreSettings;
 use mindstellar\billing\PaymentGatewayRegistry;
 
@@ -127,17 +127,17 @@ class CAdminSettingsBilling extends AdminSecBaseModel
     {
         switch ($action) {
             case 'billing_pricing_post':
-                return BillingSettingsForm::registerPricing();
+                return BillingSettingsScreen::registerPricing();
             case 'billing_offline_post':
-                return BillingSettingsForm::registerOffline();
+                return BillingSettingsScreen::registerOffline();
             case 'billing_upgrades_post':
-                return BillingSettingsForm::registerUpgrades();
+                return BillingSettingsScreen::registerUpgrades();
             case 'billing_limits_post':
-                return BillingSettingsForm::registerLimits();
+                return BillingSettingsScreen::registerLimits();
             case 'billing_receipts_post':
-                return BillingSettingsForm::registerReceipts();
+                return BillingSettingsScreen::registerReceipts();
             default:
-                return BillingSettingsForm::registerSwitch();
+                return BillingSettingsScreen::registerSwitch();
         }
     }
 
@@ -156,7 +156,7 @@ class CAdminSettingsBilling extends AdminSecBaseModel
         // switch would draw unticked and the next save would turn billing off.
         $this->_exportVariableToView('billing_enabled', osc_billing_enabled());
         $this->_exportVariableToView('gateways', PaymentGatewayRegistry::instance()->all());
-        $this->_exportVariableToView('billing_forms', BillingSettingsForm::formVars($rejected, $values));
+        $this->_exportVariableToView('billing_forms', BillingSettingsScreen::formVars($rejected, $values));
         $this->doView('settings/billing.php');
     }
 }

@@ -12,6 +12,7 @@
 namespace mindstellar\admin\form;
 
 use mindstellar\admin\ui\FormSpec;
+use mindstellar\base\SettingsScreen;
 use Params;
 
 /**
@@ -24,7 +25,7 @@ use Params;
  *
  * @package mindstellar\admin\form
  */
-final class MediaSettingsForm
+final class MediaSettingsScreen extends SettingsScreen
 {
     public const PAGE_ID = 'core.settings_media';
 
@@ -56,17 +57,8 @@ final class MediaSettingsForm
     /** @var bool whether the last save had a PNG it could not put in place */
     private static bool $uploadFailed = false;
 
-    /**
-     * Declare the form, once per request.
-     *
-     * @return string the page id
-     */
-    public static function register(): string
+    protected static function declareFields(): void
     {
-        if (osc_settings_page(self::PAGE_ID) !== null) {
-            return self::PAGE_ID;
-        }
-
         $imagick  = extension_loaded('imagick');
         $gd       = function_exists('gd_info') ? gd_info() : array();
         $freeType = array_key_exists('FreeType Support', $gd);
@@ -244,8 +236,6 @@ final class MediaSettingsForm
             })
                 ->set('row', false)
             ->register();
-
-        return self::PAGE_ID;
     }
 
     /**

@@ -11,6 +11,7 @@
 
 namespace mindstellar\admin\form;
 
+use mindstellar\base\SettingsScreen;
 use Rewrite;
 
 /**
@@ -28,9 +29,11 @@ use Rewrite;
  *
  * @package mindstellar\admin\form
  */
-final class PermalinkSettingsForm
+final class PermalinkSettingsScreen extends SettingsScreen
 {
     public const PAGE_ID = 'core.settings_permalinks';
+    protected const ACTION    = 'permalinks_post';
+    protected const FORM_NAME = 'settings_form';
 
     /** The switch every structure field hangs off. */
     private const MASTER = 'rewrite_enabled';
@@ -38,17 +41,8 @@ final class PermalinkSettingsForm
     /** At least one letter or digit, which is what osc_validate_text() asked of these. */
     private const NOT_BLANK = '/[\p{L}\p{N}]/u';
 
-    /**
-     * Declare the form, once per request.
-     *
-     * @return string the page id
-     */
-    public static function register(): string
+    protected static function declareFields(): void
     {
-        if (osc_settings_page(self::PAGE_ID) !== null) {
-            return self::PAGE_ID;
-        }
-
         $form = CoreSettings::page(self::PAGE_ID, __('Permalinks'))
             ->onAfterSave(static function (array $values) {
                 self::apply($values);
@@ -159,26 +153,6 @@ final class PermalinkSettingsForm
             })
                 ->set('row', false)
             ->register();
-
-        return self::PAGE_ID;
-    }
-
-    /**
-     * What the view needs to draw the form.
-     *
-     * @param array<string,mixed>|null $values values a rejected save is handing back, or null
-     *                                         for the stored ones
-     *
-     * @return array<string,mixed> view variables for osc_admin_settings_form()
-     */
-    public static function formVars(?array $values = null): array
-    {
-        return CoreSettings::vars(
-            self::register(),
-            'permalinks_post',
-            $values,
-            array('name' => 'settings_form')
-        );
     }
 
     /**

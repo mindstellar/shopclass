@@ -11,6 +11,7 @@
 
 namespace mindstellar\admin\form;
 
+use mindstellar\base\SettingsScreen;
 use mindstellar\storage\ProviderPresets;
 
 /**
@@ -19,7 +20,7 @@ use mindstellar\storage\ProviderPresets;
  *
  * @package mindstellar\admin\form
  */
-final class StorageSettingsForm
+final class StorageSettingsScreen extends SettingsScreen
 {
     public const PAGE_ID = 'core.settings_storage';
 
@@ -46,17 +47,8 @@ final class StorageSettingsForm
     /** The browser's half of the URL rule, on both URL boxes. */
     private const URL_ATTRS = array('inputmode' => 'url', 'pattern' => '[Hh][Tt][Tt][Pp][Ss]?://.*');
 
-    /**
-     * Declare the form, once per request.
-     *
-     * @return string the page id
-     */
-    public static function register(): string
+    protected static function declareFields(): void
     {
-        if (osc_settings_page(self::PAGE_ID) !== null) {
-            return self::PAGE_ID;
-        }
-
         $providers = array();
         foreach (ProviderPresets::PRESETS as $id => $preset) {
             $providers[$id] = $preset['label'];
@@ -173,8 +165,6 @@ final class StorageSettingsForm
             })
                 ->set('row', false)
             ->register();
-
-        return self::PAGE_ID;
     }
 
     /**

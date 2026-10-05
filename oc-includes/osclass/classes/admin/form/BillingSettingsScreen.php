@@ -29,7 +29,7 @@ use mindstellar\billing\Receipts;
  *
  * @package mindstellar\admin\form
  */
-final class BillingSettingsForm
+final class BillingSettingsScreen
 {
     public const PAGE_SWITCH = 'core.settings_billing';
 

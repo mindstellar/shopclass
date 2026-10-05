@@ -11,6 +11,8 @@
 
 namespace mindstellar\admin\form;
 
+use mindstellar\base\SettingsScreen;
+
 /**
  * The mail-server settings screen.
  *
@@ -22,21 +24,14 @@ namespace mindstellar\admin\form;
  *
  * @package mindstellar\admin\form
  */
-final class MailServerSettingsForm
+final class MailServerSettingsScreen extends SettingsScreen
 {
     public const PAGE_ID = 'core.settings_mailserver';
+    protected const ACTION    = 'mailserver_post';
+    protected const FORM_NAME = 'settings_form';
 
-    /**
-     * Declare the form, once per request.
-     *
-     * @return string the page id
-     */
-    public static function register(): string
+    protected static function declareFields(): void
     {
-        if (osc_settings_page(self::PAGE_ID) !== null) {
-            return self::PAGE_ID;
-        }
-
         // SMTP over SSL/TLS goes through PHP's openssl extension, not Apache's mod_ssl.
         $sslWarning = extension_loaded('openssl')
             ? ''
@@ -76,25 +71,5 @@ final class MailServerSettingsForm
             ->checkbox('mailserver_pop', __('Use POP before SMTP'))
                 ->rowLabel(__('POP'))
             ->register();
-
-        return self::PAGE_ID;
-    }
-
-    /**
-     * What the view needs to draw the form.
-     *
-     * @param array<string,mixed>|null $values values a rejected save is handing back, or null
-     *                                         for the stored ones
-     *
-     * @return array<string,mixed> view variables for osc_admin_settings_form()
-     */
-    public static function formVars(?array $values = null): array
-    {
-        return CoreSettings::vars(
-            self::register(),
-            'mailserver_post',
-            $values,
-            array('name' => 'settings_form')
-        );
     }
 }

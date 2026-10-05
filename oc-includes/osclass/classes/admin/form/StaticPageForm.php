@@ -11,6 +11,7 @@
 
 namespace mindstellar\admin\form;
 
+use mindstellar\routing\ReservedSlugs;
 use Page;
 use Params;
 use WebThemes;
@@ -203,6 +204,9 @@ final class StaticPageForm
         // reserved set; keeping the old name leaves the page editable.
         if (($adding || $name !== self::$currentName) && !WebThemes::newInstance()->isValidPage($name)) {
             return self::fail('s_internal_name', 'reserved', _m('You have to set a different internal name'));
+        }
+        if (($adding || $name !== self::$currentName) && ReservedSlugs::taken($name)) {
+            return self::fail('s_internal_name', 'reserved', ReservedSlugs::message());
         }
 
         if ($adding && isset(Page::newInstance()->findByInternalName($name)['pk_i_id'])) {

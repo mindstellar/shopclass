@@ -19,7 +19,7 @@ use Sitemap;
  *
  * @package mindstellar\admin\form
  */
-final class SitemapSettingsForm
+final class SitemapSettingsScreen
 {
     public const PAGE_ID = 'core.settings_sitemap';
 

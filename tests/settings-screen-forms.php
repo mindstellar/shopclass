@@ -336,17 +336,17 @@ foreach (array(
     require_once ABS_PATH . 'oc-includes/osclass/classes/controller/admin/settings/CAdminSettings' . $screen . '.php';
 }
 
-use mindstellar\admin\form\AdvancedSettingsForm;
-use mindstellar\admin\form\CommentSettingsForm;
-use mindstellar\admin\form\KeywordBlockSettingsForm;
-use mindstellar\admin\form\LatestSearchSettingsForm;
-use mindstellar\admin\form\MailServerSettingsForm;
-use mindstellar\admin\form\MainSettingsForm;
-use mindstellar\admin\form\MediaSettingsForm;
-use mindstellar\admin\form\PermalinkSettingsForm;
-use mindstellar\admin\form\SitemapSettingsForm;
-use mindstellar\admin\form\SpamSettingsForm;
-use mindstellar\admin\form\StorageSettingsForm;
+use mindstellar\admin\form\AdvancedSettingsScreen;
+use mindstellar\admin\form\CommentSettingsScreen;
+use mindstellar\admin\form\KeywordBlockSettingsScreen;
+use mindstellar\admin\form\LatestSearchSettingsScreen;
+use mindstellar\admin\form\MailServerSettingsScreen;
+use mindstellar\admin\form\MainSettingsScreen;
+use mindstellar\admin\form\MediaSettingsScreen;
+use mindstellar\admin\form\PermalinkSettingsScreen;
+use mindstellar\admin\form\SitemapSettingsScreen;
+use mindstellar\admin\form\SpamSettingsScreen;
+use mindstellar\admin\form\StorageSettingsScreen;
 use mindstellar\admin\form\store\PreferenceStore;
 use mindstellar\settings\SettingsPageRegistry;
 
@@ -498,7 +498,7 @@ pin(
         'update_channel'               => 'osclass/update_channel',
         'auto_security_updates'        => 'osclass/auto_security_updates',
     ),
-    keymap(MainSettingsForm::register())
+    keymap(MainSettingsScreen::register())
 );
 pin(
     'the comment screen, where the moderation count is the switch and not the box',
@@ -512,7 +512,7 @@ pin(
         'notify_new_comment'         => 'osclass/notify_new_comment',
         'notify_new_comment_user'    => 'osclass/notify_new_comment_user',
     ),
-    keymap(CommentSettingsForm::register())
+    keymap(CommentSettingsScreen::register())
 );
 pin(
     'the latest-searches screen, where the presets pick and the hidden field carries',
@@ -521,7 +521,7 @@ pin(
         'purge_searches'       => '(not stored)',
         'customPurge'          => 'osclass/purge_latest_searches',
     ),
-    keymap(LatestSearchSettingsForm::register())
+    keymap(LatestSearchSettingsScreen::register())
 );
 pin(
     'the advanced screen',
@@ -529,7 +529,7 @@ pin(
         'e_type' => 'osclass/subdomain_type',
         's_host' => 'osclass/subdomain_host',
     ),
-    keymap(AdvancedSettingsForm::register())
+    keymap(AdvancedSettingsScreen::register())
 );
 // Only the switch is renamed on the way to storage, and it is the one whose key nothing
 // else spells: every reader asks getBoolPreference('rewriteEnabled'), and a control called
@@ -577,7 +577,7 @@ pin(
         'rewrite_user_change_email_confirm' => 'osclass/rewrite_user_change_email_confirm',
         'rewrite_user_change_username'      => 'osclass/rewrite_user_change_username',
     ),
-    keymap(PermalinkSettingsForm::register())
+    keymap(PermalinkSettingsScreen::register())
 );
 pin(
     'the mail-server screen',
@@ -593,7 +593,7 @@ pin(
         'mailserver_auth'      => 'osclass/mailserver_auth',
         'mailserver_pop'       => 'osclass/mailserver_pop',
     ),
-    keymap(MailServerSettingsForm::register())
+    keymap(MailServerSettingsScreen::register())
 );
 pin(
     'the keyword-blocklist moderation switches',
@@ -604,7 +604,7 @@ pin(
         'report_threshold'          => 'osclass/report_threshold',
         'enabled_recaptcha_reports' => 'osclass/enabled_recaptcha_reports',
     ),
-    keymap(KeywordBlockSettingsForm::register())
+    keymap(KeywordBlockSettingsScreen::register())
 );
 pin(
     'the captcha screen, whose version is a hidden constant',
@@ -616,7 +616,7 @@ pin(
         'turnstileSiteKey'   => 'osclass/turnstileSiteKey',
         'turnstileSecretKey' => 'osclass/turnstileSecretKey',
     ),
-    keymap(SpamSettingsForm::registerCaptcha())
+    keymap(SpamSettingsScreen::registerCaptcha())
 );
 pin(
     'the sign-in limiter, which is the one screen here that is not an osclass preference',
@@ -627,7 +627,7 @@ pin(
         'login_throttle_max_account'   => 'security/login_throttle_max_account',
         'login_attempt_retention_days' => 'security/login_attempt_retention_days',
     ),
-    keymap(SpamSettingsForm::registerLoginThrottle())
+    keymap(SpamSettingsScreen::registerLoginThrottle())
 );
 pin(
     'the hourly limits, one number per public action',
@@ -641,12 +641,12 @@ pin(
         'throttle_send_friend'     => 'osclass/throttle_send_friend',
         'throttle_alert_subscribe' => 'osclass/throttle_alert_subscribe',
     ),
-    keymap(SpamSettingsForm::registerLimits())
+    keymap(SpamSettingsScreen::registerLimits())
 );
 pin(
     'and the Akismet key and the search-alert rule',
     array('akismetKey' => 'osclass/akismetKey', 'alerts_require_login' => 'osclass/alerts_require_login'),
-    keymap(SpamSettingsForm::registerAkismet()) + keymap(SpamSettingsForm::registerAlerts())
+    keymap(SpamSettingsScreen::registerAkismet()) + keymap(SpamSettingsScreen::registerAlerts())
 );
 // The sitemap readers ask for these exact keys in the osclass section, and robots.txt is a
 // file: a preference row under its name would be a second copy nothing reads.
@@ -662,9 +662,9 @@ pin(
         'sitemap_cat_regions' => 'osclass/sitemap_cat_regions',
         'sitemap_cat_city'    => 'osclass/sitemap_cat_city',
     ),
-    keymap(SitemapSettingsForm::register())
+    keymap(SitemapSettingsScreen::register())
 );
-pin('and the robots.txt box, which is no preference at all', array('sitemap_robots' => '(not stored)'), keymap(SitemapSettingsForm::registerRobots()));
+pin('and the robots.txt box, which is no preference at all', array('sitemap_robots' => '(not stored)'), keymap(SitemapSettingsScreen::registerRobots()));
 // Two position selects write one preference, each only while its watermark type is chosen.
 // The type itself and the text options are no preference: the type is read back from which
 // watermark is set, and the options travel as one JSON preference the after_save writes.
@@ -693,7 +693,7 @@ pin(
         'watermark_text_place'  => 'osclass/watermark_place',
         'watermark_image_place' => 'osclass/watermark_place',
     ),
-    keymap(MediaSettingsForm::register())
+    keymap(MediaSettingsScreen::register())
 );
 // The storage adapter, the worker and the connection test all read these exact keys, and the
 // Better S3 adoption writes the same ones by hand.
@@ -715,7 +715,7 @@ pin(
         'storage_s3_backup_bucket' => 'osclass/storage_s3_backup_bucket',
         'backup_keep'            => 'osclass/backup_keep',
     ),
-    keymap(StorageSettingsForm::register())
+    keymap(StorageSettingsScreen::register())
 );
 
 /* ------------------------------------------------------------------------------------ */
@@ -1320,7 +1320,7 @@ foreach (array(
 }
 osc_reset_preferences();
 
-$limitKb = MediaSettingsForm::uploadLimitKb();
+$limitKb = MediaSettingsScreen::uploadLimitKb();
 $run     = drive('CAdminSettingsMedia', 'media');
 pin('the media screen is drawn', array('settings/media.php'), $run['views']);
 check('with an image set, Image is the type shown', strpos($run['drawn'], 'id="watermark_image" name="watermark_type" value="image" checked') !== false);
@@ -1454,7 +1454,7 @@ pin('and the screen is gone back to', 1, count($run['redirects']));
 // switches the type afterwards must not get an unchecked file moved into place.
 file_put_contents($watermark, $png);
 $toImage = static function ($values, $pageId) {
-    if ($pageId === MediaSettingsForm::PAGE_ID) {
+    if ($pageId === MediaSettingsScreen::PAGE_ID) {
         $values['watermark_type'] = 'image';
     }
 
@@ -1517,26 +1517,26 @@ pin('while the rest still saves', array('500x500', 'STRING'), pref($admin, 'dimP
 pin('and goes back to the screen', 1, count($run['redirects']));
 
 // The limit arithmetic. The hand-written save read "1G" as 1 and multiplied: 1024 KB.
-pin('a gigabyte is a million kilobytes, not 1024', 1048576, MediaSettingsForm::sizeToKb('1G'));
-pin('megabytes', 8192, MediaSettingsForm::sizeToKb('8M'));
-pin('a lower-case suffix', 8192, MediaSettingsForm::sizeToKb('8m'));
-pin('kilobytes as they are', 512, MediaSettingsForm::sizeToKb('512K'));
-pin('a bare number is bytes, as php.ini reads it', 1024, MediaSettingsForm::sizeToKb('1048576'));
+pin('a gigabyte is a million kilobytes, not 1024', 1048576, MediaSettingsScreen::sizeToKb('1G'));
+pin('megabytes', 8192, MediaSettingsScreen::sizeToKb('8M'));
+pin('a lower-case suffix', 8192, MediaSettingsScreen::sizeToKb('8m'));
+pin('kilobytes as they are', 512, MediaSettingsScreen::sizeToKb('512K'));
+pin('a bare number is bytes, as php.ini reads it', 1024, MediaSettingsScreen::sizeToKb('1048576'));
 pin('and the controller\'s own converter answers the same', 1048576, (new CAdminSettingsMedia())->_sizeToKB('1G'));
 $memory = (string)ini_get('memory_limit');
 ini_set('memory_limit', '-1');
-check('an unlimited memory_limit is no limit, not a limit of -1', MediaSettingsForm::uploadLimitKb() > 0);
+check('an unlimited memory_limit is no limit, not a limit of -1', MediaSettingsScreen::uploadLimitKb() > 0);
 pin(
     'so the smallest limit left is the one that applies',
-    min(MediaSettingsForm::sizeToKb((string)ini_get('upload_max_filesize')), MediaSettingsForm::sizeToKb((string)ini_get('post_max_size')) ?: PHP_INT_MAX),
-    MediaSettingsForm::uploadLimitKb()
+    min(MediaSettingsScreen::sizeToKb((string)ini_get('upload_max_filesize')), MediaSettingsScreen::sizeToKb((string)ini_get('post_max_size')) ?: PHP_INT_MAX),
+    MediaSettingsScreen::uploadLimitKb()
 );
 ini_set('memory_limit', $memory);
 
-pin('the maximum size names PHP\'s limit', '<span class="callout-warning">Maximum size PHP configuration allows: 2048 KB</span>', MediaSettingsForm::sizeHelp(2048));
-pin('and says nothing when PHP sets none', '', MediaSettingsForm::sizeHelp(PHP_INT_MAX));
+pin('the maximum size names PHP\'s limit', '<span class="callout-warning">Maximum size PHP configuration allows: 2048 KB</span>', MediaSettingsScreen::sizeHelp(2048));
+pin('and says nothing when PHP sets none', '', MediaSettingsScreen::sizeHelp(PHP_INT_MAX));
 $unlimited = shell_exec(escapeshellarg(PHP_BINARY) . ' -d upload_max_filesize=0 -d post_max_size=0 -d memory_limit=-1 -r '
-    . escapeshellarg('require "' . ABS_PATH . 'oc-includes/vendor/autoload.php"; echo mindstellar\admin\form\MediaSettingsForm::uploadLimitKb();'));
+    . escapeshellarg('require "' . ABS_PATH . 'oc-includes/vendor/autoload.php"; echo mindstellar\admin\form\MediaSettingsScreen::uploadLimitKb();'));
 pin('which is what every limit set to unlimited answers', (string)PHP_INT_MAX, trim((string)$unlimited));
 
 $run = drive('CAdminSettingsMedia', 'images_post');
@@ -1599,7 +1599,7 @@ pin('and local copies', array('none', 'STRING'), pref($admin, 'storage_keep_loca
 // Each of the three is handed the submission; not one of them is handed the secret key.
 pin('before_save, after_save and settings_page_saved each ran once', 3, count($payloads));
 foreach ($payloads as $args) {
-    $values = $args[0] === StorageSettingsForm::PAGE_ID ? $args[1] : $args[0];
+    $values = $args[0] === StorageSettingsScreen::PAGE_ID ? $args[1] : $args[0];
     check('a hook payload carries no secret key', is_array($values) && !array_key_exists('storage_s3_secret_key', $values));
     check('while it still carries the rest', is_array($values) && ($values['storage_s3_bucket'] ?? null) === 'my-bucket');
 }
@@ -1624,7 +1624,7 @@ check(
 );
 check('the form reopens on the stored provider', strpos($run['drawn'], '<option value="aws" selected>') !== false);
 ob_start();
-$redraw = StorageSettingsForm::formVars(array('storage_s3_secret_key' => 'typed-then-refused') + $storage);
+$redraw = StorageSettingsScreen::formVars(array('storage_s3_secret_key' => 'typed-then-refused') + $storage);
 osc_admin_settings_form($redraw['id'], $redraw);
 check('nor is a typed one on a refused redraw', strpos((string)ob_get_clean(), 'typed-then-refused') === false);
 
@@ -1701,7 +1701,7 @@ foreach (array(
 pin('the fallback follows the provider that was stored', array('custom', 'STRING'), pref($admin, 'storage_s3_provider'));
 
 $toR2 = static function ($values, $pageId) {
-    if ($pageId === StorageSettingsForm::PAGE_ID) {
+    if ($pageId === StorageSettingsScreen::PAGE_ID) {
         $values['storage_s3_provider'] = 'r2';
     }
 
@@ -1712,11 +1712,11 @@ $run = drive('CAdminSettingsStorage', 'storage_post', array('storage_s3_provider
 osc_remove_filter('admin_form_before_save', $toR2);
 pin('a provider a before_save listener switches to r2 is stored', array('r2', 'STRING'), pref($admin, 'storage_s3_provider'));
 pin('and a blank region under it is the preset region', array('auto', 'STRING'), pref($admin, 'storage_s3_region'));
-check('the form reads nothing out of the request', strpos((string)file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/admin/form/StorageSettingsForm.php'), 'Params::') === false);
+check('the form reads nothing out of the request', strpos((string)file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/admin/form/StorageSettingsScreen.php'), 'Params::') === false);
 
-pin('the corrections, called directly: provider', array('r2', 'custom', 'custom'), array(StorageSettingsForm::provider('r2'), StorageSettingsForm::provider('nope'), StorageSettingsForm::provider(null)));
-pin('region', array('auto', '', 'x'), array(StorageSettingsForm::region('', 'r2'), StorageSettingsForm::region('', 'custom'), StorageSettingsForm::region('x', 'r2')));
-pin('lifetime', array(60, 604800, 900, 900), array(StorageSettingsForm::ttl('59'), StorageSettingsForm::ttl('604801'), StorageSettingsForm::ttl('0'), StorageSettingsForm::ttl(array())));
+pin('the corrections, called directly: provider', array('r2', 'custom', 'custom'), array(StorageSettingsScreen::provider('r2'), StorageSettingsScreen::provider('nope'), StorageSettingsScreen::provider(null)));
+pin('region', array('auto', '', 'x'), array(StorageSettingsScreen::region('', 'r2'), StorageSettingsScreen::region('', 'custom'), StorageSettingsScreen::region('x', 'r2')));
+pin('lifetime', array(60, 604800, 900, 900), array(StorageSettingsScreen::ttl('59'), StorageSettingsScreen::ttl('604801'), StorageSettingsScreen::ttl('0'), StorageSettingsScreen::ttl(array())));
 
 // The Better S3 adoption writes the endpoint through the controller's own guard, which has to
 // answer exactly as the declared one does.
@@ -1727,7 +1727,7 @@ if (PHP_VERSION_ID < 80100) {
 foreach (array('https://a.example.test', 'javascript:alert(1)', 'data:text/plain,x', 'https://' . 'x y.test', '') as $url) {
     pin(
         'the adoption guard and the declared one agree on "' . $url . '"',
-        StorageSettingsForm::httpUrlOrEmpty($url),
+        StorageSettingsScreen::httpUrlOrEmpty($url),
         $guard->invoke(new CAdminSettingsStorage(), $url)
     );
 }
@@ -1806,7 +1806,7 @@ foreach (array(
 ) as $needle) {
     check('the sitemap screen still draws ' . $needle, strpos($drawn['settings/sitemap.php'], $needle) !== false);
 }
-foreach (array_keys(SitemapSettingsForm::TOGGLES) as $toggle) {
+foreach (array_keys(SitemapSettingsScreen::TOGGLES) as $toggle) {
     check('and the toggle id "' . $toggle . '"', strpos($drawn['settings/sitemap.php'], 'id="' . $toggle . '"') !== false);
 }
 check(
@@ -1942,7 +1942,7 @@ pin(
 );
 unlink($GLOBALS['fakeRoot'] . '/robots.txt');
 drive('CAdminSettingsMedia', 'media');
-pin('the media screen still exports the PHP upload limit, in kilobytes', MediaSettingsForm::uploadLimitKb(), __get('max_size_upload'));
+pin('the media screen still exports the PHP upload limit, in kilobytes', MediaSettingsScreen::uploadLimitKb(), __get('max_size_upload'));
 foreach (array(
     array('storage_active', 's3'),
     array('storage_s3_provider', 'r2'),
@@ -2033,7 +2033,7 @@ $screens = array(
     // it lives in, never a key name: a key-name allowance would hide the same write anywhere.
     'settings/storage.php'      => array(
         'CAdminSettingsStorage.php',
-        array_keys(SettingsPageRegistry::instance()->fields(StorageSettingsForm::register())),
+        array_keys(SettingsPageRegistry::instance()->fields(StorageSettingsScreen::register())),
         array(),
         array('adopt_better_s3'),
     ),
@@ -2117,7 +2117,7 @@ $storageSrc = (string)file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/
 $storagePost = without_case($storageSrc, 'storage_post');
 check('CAdminSettingsStorage.php has one storage_post arm', $storagePost !== null);
 $storagePost = (string)($storagePost['cut'] ?? '');
-check('storage_post saves through the declaration', strpos($storagePost, 'CoreSettings::attempt(StorageSettingsForm::register())') !== false);
+check('storage_post saves through the declaration', strpos($storagePost, 'CoreSettings::attempt(StorageSettingsScreen::register())') !== false);
 check('and writes no preference of its own', strpos($storagePost, 'osc_set_preference') === false);
 check('and reads nothing out of the request', strpos($storagePost, 'Params::') === false);
 check('the adoption still writes its keys by hand, where the allowance says', strpos((string)(without_case($storageSrc, 'adopt_better_s3')['cut'] ?? ''), "osc_set_preference('storage_s3_secret_key'") !== false);
@@ -2133,12 +2133,12 @@ check(
 // The four keys that are not the field's own name are the ones a rename would break
 // silently, so the declarations are held to spelling them.
 foreach (array(
-    'MainSettingsForm.php'         => array('maxLatestItems@home', 'defaultResultsPerPage@search', 'contact_attachment'),
-    'LatestSearchSettingsForm.php' => array('purge_latest_searches'),
-    'AdvancedSettingsForm.php'     => array('subdomain_type', 'subdomain_host'),
-    'SpamSettingsForm.php'         => array('recaptcha_version'),
-    'PermalinkSettingsForm.php'    => array('rewriteEnabled'),
-    'MediaSettingsForm.php'        => array('watermark_place', 'watermark_text_options', "'/watermark.png'"),
+    'MainSettingsScreen.php'         => array('maxLatestItems@home', 'defaultResultsPerPage@search', 'contact_attachment'),
+    'LatestSearchSettingsScreen.php' => array('purge_latest_searches'),
+    'AdvancedSettingsScreen.php'     => array('subdomain_type', 'subdomain_host'),
+    'SpamSettingsScreen.php'         => array('recaptcha_version'),
+    'PermalinkSettingsScreen.php'    => array('rewriteEnabled'),
+    'MediaSettingsScreen.php'        => array('watermark_place', 'watermark_text_options', "'/watermark.png'"),
 ) as $file => $keys) {
     $src = (string)file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/admin/form/' . $file);
     foreach ($keys as $key) {

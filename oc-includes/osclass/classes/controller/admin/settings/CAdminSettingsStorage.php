@@ -14,7 +14,7 @@ if (!defined('ABS_PATH')) {
  */
 
 use mindstellar\admin\form\CoreSettings;
-use mindstellar\admin\form\StorageSettingsForm;
+use mindstellar\admin\form\StorageSettingsScreen;
 use mindstellar\job\JobQueue;
 use mindstellar\storage\ProviderPresets;
 use mindstellar\storage\S3Storage;
@@ -50,7 +50,7 @@ class CAdminSettingsStorage extends AdminSecBaseModel
             case ('storage_post'):
                 osc_csrf_check();
 
-                $result = CoreSettings::attempt(StorageSettingsForm::register());
+                $result = CoreSettings::attempt(StorageSettingsScreen::register());
                 if ($result['errors'] !== array()) {
                     $this->drawForm($result['values']);
                     break;
@@ -179,7 +179,7 @@ class CAdminSettingsStorage extends AdminSecBaseModel
      */
     private function drawForm(?array $values = null)
     {
-        $form  = StorageSettingsForm::formVars($values);
+        $form  = StorageSettingsScreen::formVars($values);
         $shown = $form['values'];
 
         // The names these have always had: a replaced admin theme's own view still reads them.
@@ -268,7 +268,7 @@ class CAdminSettingsStorage extends AdminSecBaseModel
      */
     private function _httpUrlOrEmpty($value)
     {
-        return StorageSettingsForm::httpUrlOrEmpty((string) $value);
+        return StorageSettingsScreen::httpUrlOrEmpty((string) $value);
     }
 }
 

@@ -11,6 +11,7 @@
 
 namespace mindstellar\admin\form;
 
+use mindstellar\base\SettingsScreen;
 use mindstellar\utility\Utils;
 
 /**
@@ -28,9 +29,11 @@ use mindstellar\utility\Utils;
  *
  * @package mindstellar\admin\form
  */
-final class MainSettingsForm
+final class MainSettingsScreen extends SettingsScreen
 {
     public const PAGE_ID = 'core.settings_main';
+    protected const ACTION    = 'update';
+    protected const FORM_NAME = 'settings_form';
 
     /** The date formats offered as samples; anything else is the free-text box. */
     public const DATE_FORMATS = array('F j, Y', 'Y/m/d', 'm/d/Y', 'd/m/Y');
@@ -47,17 +50,8 @@ final class MainSettingsForm
      */
     private static array $shown = array();
 
-    /**
-     * Declare the form, once per request.
-     *
-     * @return string the page id
-     */
-    public static function register(): string
+    protected static function declareFields(): void
     {
-        if (osc_settings_page(self::PAGE_ID) !== null) {
-            return self::PAGE_ID;
-        }
-
         $form = CoreSettings::page(self::PAGE_ID, __('General Settings'))
             // A changed channel offers different releases, so the saved answer is dropped and
             // the next update check asks again.
@@ -177,8 +171,6 @@ final class MainSettingsForm
             })
                 ->set('row', false)
             ->register();
-
-        return self::PAGE_ID;
     }
 
     /**
@@ -191,12 +183,7 @@ final class MainSettingsForm
      */
     public static function formVars(?array $values = null): array
     {
-        $vars = CoreSettings::vars(
-            self::register(),
-            'update',
-            $values,
-            array('name' => 'settings_form')
-        );
+        $vars = parent::formVars($values);
 
         // The samples are drawn against whatever the hidden fields are carrying, so a
         // refused save redraws the choice that was made rather than the one on file.

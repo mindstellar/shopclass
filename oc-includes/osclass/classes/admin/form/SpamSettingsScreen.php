@@ -24,7 +24,7 @@ use mindstellar\security\ActionThrottle;
  *
  * @package mindstellar\admin\form
  */
-final class SpamSettingsForm
+final class SpamSettingsScreen
 {
     public const PAGE_AKISMET = 'core.settings_akismet';
 
@@ -301,7 +301,7 @@ final class SpamSettingsForm
 
         // In the same order as ActionThrottle::DEFAULT_LIMITS.
         $labels = array_combine(array_keys(ActionThrottle::DEFAULT_LIMITS), array(
-            __('Comments from guests'),
+            __('Comments'),
             __('Photo uploads from guests'),
             __('Form submissions'),
             __('Contact the site'),
@@ -313,7 +313,10 @@ final class SpamSettingsForm
 
         $page = CoreSettings::page(self::PAGE_LIMITS, __('Limits'));
         foreach ($labels as $context => $label) {
-            $page->number('throttle_' . $context, $label, __('Per visitor address, per hour. 0 means no limit.'))
+            $help = $context === \mindstellar\comment\CommentPolicy::LIMIT_CONTEXT
+                ? __('Per signed-in user, or per address for guests, per hour. 0 means no limit.')
+                : __('Per visitor address, per hour. 0 means no limit.');
+            $page->number('throttle_' . $context, $label, $help)
                 ->clampMin(0)
                 ->default(ActionThrottle::DEFAULT_LIMITS[$context]);
         }

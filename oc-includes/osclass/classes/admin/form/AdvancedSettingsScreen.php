@@ -11,6 +11,8 @@
 
 namespace mindstellar\admin\form;
 
+use mindstellar\base\SettingsScreen;
+
 /**
  * The advanced settings screen: which part of a URL becomes a subdomain, and the host the
  * subdomains hang off.
@@ -26,24 +28,17 @@ namespace mindstellar\admin\form;
  *
  * @package mindstellar\admin\form
  */
-final class AdvancedSettingsForm
+final class AdvancedSettingsScreen extends SettingsScreen
 {
     public const PAGE_ID = 'core.settings_advanced';
+    protected const ACTION    = 'advanced_post';
+    protected const FORM_NAME = 'settings_form';
 
     /** The parts of a URL a subdomain may stand for. Anything else is no subdomains at all. */
     public const TYPES = array('category', 'country', 'region', 'city', 'user');
 
-    /**
-     * Declare the form, once per request.
-     *
-     * @return string the page id
-     */
-    public static function register(): string
+    protected static function declareFields(): void
     {
-        if (osc_settings_page(self::PAGE_ID) !== null) {
-            return self::PAGE_ID;
-        }
-
         $host = parse_url(\Params::getServerParam('HTTP_HOST'), PHP_URL_HOST);
         if ($host === null) {
             $host = \Params::getServerParam('HTTP_HOST');
@@ -78,25 +73,5 @@ final class AdvancedSettingsForm
             })
                 ->set('row', false)
             ->register();
-
-        return self::PAGE_ID;
-    }
-
-    /**
-     * What the view needs to draw the form.
-     *
-     * @param array<string,mixed>|null $values values a rejected save is handing back, or null
-     *                                         for the stored ones
-     *
-     * @return array<string,mixed> view variables for osc_admin_settings_form()
-     */
-    public static function formVars(?array $values = null): array
-    {
-        return CoreSettings::vars(
-            self::register(),
-            'advanced_post',
-            $values,
-            array('name' => 'settings_form')
-        );
     }
 }

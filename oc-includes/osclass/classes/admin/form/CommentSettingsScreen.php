@@ -11,6 +11,8 @@
 
 namespace mindstellar\admin\form;
 
+use mindstellar\base\SettingsScreen;
+
 /**
  * The comment settings screen.
  *
@@ -22,24 +24,17 @@ namespace mindstellar\admin\form;
  *
  * @package mindstellar\admin\form
  */
-final class CommentSettingsForm
+final class CommentSettingsScreen extends SettingsScreen
 {
     public const PAGE_ID = 'core.settings_comments';
+    protected const ACTION    = 'comments_post';
+    protected const FORM_NAME = 'comments_form';
 
     /** What 'moderate_comments' holds while moderation is switched off. */
     public const MODERATION_OFF = '-1';
 
-    /**
-     * Declare the form, once per request.
-     *
-     * @return string the page id
-     */
-    public static function register(): string
+    protected static function declareFields(): void
     {
-        if (osc_settings_page(self::PAGE_ID) !== null) {
-            return self::PAGE_ID;
-        }
-
         $moderated = osc_moderate_comments();
 
         $form = CoreSettings::page(self::PAGE_ID, __('Comment Settings'));
@@ -116,25 +111,5 @@ final class CommentSettingsForm
             ->checkbox('notify_new_comment_user', __("There's a new comment on his listing"))
                 ->rowLabel(__('E-mail user whenever'))
             ->register();
-
-        return self::PAGE_ID;
-    }
-
-    /**
-     * What the view needs to draw the form.
-     *
-     * @param array<string,mixed>|null $values values a rejected save is handing back, or null
-     *                                         for the stored ones
-     *
-     * @return array<string,mixed> view variables for osc_admin_settings_form()
-     */
-    public static function formVars(?array $values = null): array
-    {
-        return CoreSettings::vars(
-            self::register(),
-            'comments_post',
-            $values,
-            array('name' => 'comments_form')
-        );
     }
 }
