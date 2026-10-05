@@ -1,0 +1,778 @@
+<?php
+/*
+ * This file is part of Shopclass (Mindstellar).
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
+ *
+ * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+/**
+ * The seller's writes end to end through Kernel::handle() on a seeded site: posting a
+ * listing through ItemActions (identity from the token, moderation, the listing limit, the
+ * posting wait, the hourly cap, hooks once, an Idempotency-Key replayed), editing one with
+ * the stored values kept, deleting, photos (staged tokens, uploads, the cap, bad images,
+ * photo_urls), comments, saved searches, and the account's "API access" page.
+ *
+ * Usage:  php tests/models/api-listing-writes.php        (standalone, own scratch database)
+ *         php tests/run-models.php api-listing-writes    (as part of the suite)
+ */
+
+require_once __DIR__ . '/../lib/harness.php';
+require_once __DIR__ . '/../lib/api-doubles.php';
+
+// This file loads page helpers that earlier files in the suite stub, so under the runner it
+// runs in a process of its own.
+if (defined('MODELS_RUNNER')) {
+    $lwOut = array();
+    exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__FILE__) . ' 2>&1', $lwOut, $lwCode);
+    $lwOut = implode("\n", $lwOut);
+    echo $lwOut, "\n";
+    $lwFound = preg_match('/RESULT: (\d+) passed, (\d+) failed/', $lwOut, $lwM) === 1;
+    $lwFail  = $lwFound ? (int)$lwM[2] : 0;
+    if (!$lwFound || ($lwCode !== 0 && $lwFail === 0)) {
+        $lwFail = max(1, $lwFail);
+    }
+    $GLOBALS['okCount']   += $lwFound ? (int)$lwM[1] : 0;
+    $GLOBALS['failCount'] += $lwFail;
+    if ($lwFail > 0) {
+        $GLOBALS['failLabels'][] = 'api-listing-writes: ' . $lwFail . ' failed (exit ' . $lwCode . ')';
+    }
+
+    return;
+}
+
+$lwRoot = sys_get_temp_dir() . '/osc-api-writes-' . getmypid() . '/';
+@mkdir($lwRoot . 'uploads/', 0777, true);
+@mkdir($lwRoot . 'stage/', 0777, true);
+define('UPLOADS_PATH', $lwRoot . 'uploads/');
+register_shutdown_function(static function () use ($lwRoot): void {
+    $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($lwRoot, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
+    foreach ($it as $f) {
+        $f->isDir() ? @rmdir($f->getPathname()) : @unlink($f->getPathname());
+    }
+    @rmdir($lwRoot);
+});
+
+require_once __DIR__ . '/../lib/scratchdb.php';
+
+$admin = scratchdb_session('osc_models_api_listing_writes');
+
+foreach (array(
+    'OSC_CACHE_TTL'   => 60,
+    'WEB_PATH'        => 'http://localhost/',
+    'REL_WEB_URL'     => '/',
+    'PLUGINS_PATH'    => ABS_PATH . 'oc-content/plugins/',
+    'OC_ADMIN'        => false,
+    'OSC_DEBUG'       => false,
+    'OSC_CSRF_SECRET' => 'api-writes-test-secret',
+    'BCRYPT_COST'     => 4,
+) as $const => $value) {
+    if (!defined($const)) {
+        define($const, $value);
+    }
+}
+if (!function_exists('osc_base_url')) {
+    function osc_base_url($with_index = false)
+    {
+        return WEB_PATH . ($with_index ? 'index.php' : '');
+    }
+}
+if (!function_exists('osc_base_path')) {
+    function osc_base_path()
+    {
+        return $GLOBALS['lwRoot'];
+    }
+}
+if (!function_exists('osc_plugins_path')) {
+    function osc_plugins_path()
+    {
+        return PLUGINS_PATH;
+    }
+}
+if (!function_exists('_m')) {
+    function _m($text)
+    {
+        return $text;
+    }
+}
+if (!function_exists('osc_item_url')) {
+    function osc_item_url($locale = '')
+    {
+        return WEB_PATH . 'item';
+    }
+}
+if (!function_exists('osc_core_url')) {
+    function osc_core_url($name, $args = array())
+    {
+        return WEB_PATH . 'route/' . $name;
+    }
+}
+if (!function_exists('osc_register_render_target')) {
+    function osc_register_render_target($id, $path)
+    {
+    }
+}
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hPlugins.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hPreference.php';
+require_once __DIR__ . '/../lib/action-standins.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hHttpCache.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hBilling.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hFields.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hSearch.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hApi.php';
+
+use mindstellar\api\ApiServices;
+use mindstellar\api\ApiSettings;
+use mindstellar\api\auth\AccountAccess;
+use mindstellar\api\auth\ApiKeys;
+use mindstellar\api\auth\KeyOwner;
+use mindstellar\api\auth\Scopes;
+use mindstellar\api\auth\UserRows;
+use mindstellar\api\idempotency\Idempotency;
+use mindstellar\api\idempotency\KvIdempotencyStore;
+use mindstellar\api\identity\WebIdentity;
+use mindstellar\api\Kernel;
+use mindstellar\api\ratelimit\RateLimiter;
+use mindstellar\api\ratelimit\RatePolicy;
+use mindstellar\api\read\SiteFacts;
+use mindstellar\api\Request;
+use mindstellar\api\Response;
+use mindstellar\api\routing\Router;
+use mindstellar\api\routing\RouteTable;
+use mindstellar\api\schema\Schema;
+use mindstellar\api\schema\Validator;
+use mindstellar\api\serializer\Links;
+use mindstellar\api\write\CheckedPhoto;
+use mindstellar\api\write\ImageFetcher;
+use mindstellar\api\write\PhotoStage;
+use mindstellar\billing\Billing;
+use mindstellar\model\ApiCredential;
+use mindstellar\security\AddressGuard;
+use mindstellar\utility\SystemClock;
+
+/** A mailer that records what it would send. */
+final class HeldMailer extends PHPMailer\PHPMailer\PHPMailer
+{
+    /** @var string[] subjects sent */
+    public static array $sent = array();
+
+    public function send()
+    {
+        self::$sent[] = $this->Subject;
+
+        return true;
+    }
+}
+
+/** Links without the theme helpers. */
+final class WriteLinks implements Links
+{
+    public function listing(array $item): string
+    {
+        return 'http://localhost/item/' . $item['pk_i_id'];
+    }
+
+    public function photo(array $resource, string $variant): string
+    {
+        return 'http://localhost/' . $resource['s_path'] . $resource['pk_i_id'] . ($variant === '' ? '' : '_' . $variant) . '.' . $resource['s_extension'];
+    }
+
+    public function user(int $id, string $username): string
+    {
+        return 'http://localhost/user/' . $id;
+    }
+
+    public function avatar(int $userId): string
+    {
+        return 'http://localhost/avatar/' . $userId;
+    }
+
+    public function api(string $path): string
+    {
+        return 'http://localhost/api/v1/' . $path;
+    }
+
+    public function price(?int $micros, string $symbol): string
+    {
+        return '';
+    }
+}
+
+/* ----------------------------------------------------------------------------
+ * Fixture: Vehicles > Cars with a required custom field, a region and city, two sellers
+ * with passwords, a JPEG and a file that only claims to be one.
+ * ------------------------------------------------------------------------- */
+$p        = DB_TABLE_PREFIX;
+$locale   = seed_locale($admin);
+seed_currency($admin);
+$country  = seed_country($admin, 'US', 'United States');
+$region   = seed_region($admin, $country, 'Alpha');
+$city     = seed_city($admin, $region, 'Aville', $country);
+$vehicles = seed_category($admin, 'Vehicles', null, $locale);
+$cars     = seed_category($admin, 'Cars', $vehicles, $locale);
+$sue      = seed_user($admin, 'sue', 'sue@example.test');
+$tom      = seed_user($admin, 'tom', 'tom@example.test');
+$hash     = password_hash('open sesame', PASSWORD_BCRYPT, array('cost' => BCRYPT_COST));
+$admin->query("UPDATE {$p}t_user SET s_password = '" . $admin->real_escape_string($hash) . "', s_phone_mobile = '5550100'");
+$colour = seed_exec($admin, "INSERT INTO {$p}t_meta_fields (s_name, s_slug, e_type, b_required, b_searchable, i_position, s_meta) VALUES ('Colour', 'colour', 'TEXT', 1, 1, 1, '')", '', array());
+seed_exec($admin, "INSERT INTO {$p}t_meta_categories (fk_i_category_id, fk_i_field_id) VALUES (?, ?)", 'ii', array($cars, $colour));
+$boats = seed_category($admin, 'Boats', null, $locale);
+$misc  = seed_category($admin, 'Misc', seed_category($admin, 'Other', null, $locale), $locale);
+$hull  = seed_exec($admin, "INSERT INTO {$p}t_meta_fields (s_name, s_slug, e_type, b_required, b_searchable, i_position, s_meta) VALUES ('Hull', 'hull', 'TEXT', 0, 0, 2, '')", '', array());
+seed_exec($admin, "INSERT INTO {$p}t_meta_categories (fk_i_category_id, fk_i_field_id) VALUES (?, ?)", 'ii', array($boats, $hull));
+foreach (array(
+    'enabled_users'     => '1',
+    'enabled_comments'  => '1',
+    'moderate_items'    => '-1',
+    'moderate_comments' => '-1',
+    'items_wait_time'   => '0',
+    'numImages@items'   => '3',
+    'maxSizeKb'         => '2048',
+    'allowedExt'        => 'png,gif,jpg,jpeg,webp',
+    'language'          => 'en_US',
+    'title_character_length'       => '100',
+    'description_character_length' => '5000',
+    'dimNormal'         => '640x480',
+    'dimPreview'        => '480x340',
+    'dimThumbnail'      => '240x200',
+) as $k => $v) {
+    Preference::newInstance()->set($k, $v);
+}
+scratchdb_forget_cache();
+osc_reset_preferences();
+$_SERVER['REMOTE_ADDR'] = '192.0.2.60';
+Params::init();
+
+$jpeg = $lwRoot . 'car.jpg';
+$img  = imagecreatetruecolor(64, 48);
+imagefilledrectangle($img, 0, 0, 63, 47, imagecolorallocate($img, 200, 30, 30));
+imagejpeg($img, $jpeg, 80);
+$fake = $lwRoot . 'fake.jpg';
+file_put_contents($fake, "<?php echo 'not an image';");
+
+/** Every hook a test cares about, counted. */
+$fired = array();
+foreach (array('posted_item', 'edited_item', 'before_delete_item', 'after_delete_item', 'hook_email_item_validation', 'add_comment', 'pre_item_add_comment_post', 'pre_item_delete_comment_post', 'uploaded_file') as $hook) {
+    osc_add_hook($hook, static function (...$args) use (&$fired, $hook): void {
+        $fired[$hook] = ($fired[$hook] ?? 0) + 1;
+    });
+}
+// A plugin that fails part way through a save, when told to.
+osc_add_hook('posted_item', static function (): void {
+    if (!empty($GLOBALS['lw_fail_posted'])) {
+        throw new RuntimeException('A plugin failed.');
+    }
+});
+$postedBy = null;
+osc_add_hook('posted_item', static function ($item) use (&$postedBy): void {
+    $postedBy = array((int) $item['fk_i_user_id'], (int) osc_logged_user_id());
+});
+
+/* ----------------------------------------------------------------------------
+ * The kernel, wired as ApiServices wires the site's, one per request.
+ * ------------------------------------------------------------------------- */
+$validator = new Validator(Schema::components());
+$facts     = new SiteFacts('en_US', array('en_US' => array('name' => 'English', 'direction' => 'ltr')), true, true, 10, 12, 50, false, false);
+$settings  = new ApiSettings(true);
+$fetches   = 0;
+$transport = static function (string $url, string $ip, string $file, int $max) use ($jpeg, &$fetches): ?string {
+    $fetches++;
+
+    return copy($jpeg, $file) ? null : 'copy failed';
+};
+$call = static function (string $method, string $path, ?array $body = null, ?string $token = null, array $headers = array(), array $files = array(), ?string $raw = null, ?Closure $reader = null) use ($validator, $facts, &$settings, $lwRoot, $transport): Response {
+    $users    = new UserRows();
+    $guard    = new AddressGuard(static fn (string $host): array => $host === 'photos.example.com' ? array('93.184.216.34') : array('10.0.0.5'));
+    $services = new ApiServices(
+        $settings,
+        new Scopes(),
+        new ApiCredential(),
+        $users,
+        new SystemClock(),
+        $GLOBALS['lw_limiter'] ?? api_test_limiter(static fn () => 1),
+        $facts,
+        new WriteLinks(),
+        new PhotoStage($lwRoot . 'stage/', new SystemClock()),
+        new ImageFetcher($guard, $transport),
+        2048 * 1024
+    );
+    $kernel   = new Kernel(
+        new Router($validator, RouteTable::core(), handlers: $services->handlers()),
+        $services->authenticator(),
+        api_test_limiter(),
+        $validator,
+        $settings,
+        $users,
+        $services->admins(),
+        new Idempotency(new KvIdempotencyStore(), $services->clock())
+    );
+    if ($token !== null) {
+        $headers['Authorization'] = 'Bearer ' . $token;
+    }
+    $content = $raw ?? '';
+    if ($body !== null) {
+        $headers['Content-Type'] = 'application/json';
+        $content                 = (string) json_encode($body);
+    }
+    Params::init();
+    WebIdentity::forget();
+
+    return $kernel->handle(new Request($method, 'v1/' . $path, array(), $headers, '192.0.2.60', $content, $files, $reader));
+};
+$login = static fn (string $user): string => (string) ($call('POST', 'auth/token', array('grant_type' => 'password', 'username' => $user, 'password' => 'open sesame'))->body()['access_token'] ?? '');
+$code  = static fn (Response $r): string => $r->status() . ' ' . (string) ($r->body()['code'] ?? '');
+$first = static fn (Response $r): string => (string) ($r->body()['errors'][0]['message'] ?? '');
+$schemaErrors = static fn (string $schema, Response $r): array => $validator->check(Schema::ref($schema), $r->body());
+$itemRow = static fn (int $id): ?array => $admin->query("SELECT * FROM {$p}t_item WHERE pk_i_id = $id")->fetch_assoc();
+$photoFile = static function (string $path) use ($lwRoot): array {
+    $copy = $lwRoot . 'up-' . bin2hex(random_bytes(4));
+    copy($path, $copy);
+
+    return array('photo' => array('name' => 'car.jpg', 'type' => 'image/jpeg', 'tmp_name' => $copy, 'error' => UPLOAD_ERR_OK, 'size' => filesize($copy)));
+};
+$listing = static fn (array $extra = array()): array => $extra + array(
+    'category_id'   => $cars,
+    'title'         => 'Red hatchback',
+    'description'   => 'A small red car, one owner, full service history.',
+    'price'         => '1500.50',
+    'currency'      => 'USD',
+    'country'       => 'US',
+    'region_id'     => $region,
+    'city_id'       => $city,
+    'contact_phone' => '5550199',
+    'fields'        => array((string) $colour => 'red'),
+);
+
+$sueToken = $login('sue');
+$tomToken = $login('tom');
+check('both sellers signed in', $sueToken !== '' && $tomToken !== '');
+
+harness_section('posting a listing');
+$fired = array();
+$r     = $call('POST', 'listings', $listing(), $sueToken);
+$made  = (int) ($r->body()['data']['id'] ?? 0);
+pin('201 with the listing in the owner view', array(201, 'active', 'Red hatchback', '1500.50', 'US'), array(
+    $r->status(), $r->body()['data']['status'] ?? null, $r->body()['data']['title'] ?? null, $r->body()['data']['price']['amount'] ?? null, $r->body()['data']['location']['country']['code'] ?? null,
+));
+pin('Location names it', 'http://localhost/api/v1/listings/' . $made, $r->header('Location'));
+pin('matches the schema', array(), $schemaErrors('SavedListing', $r));
+pin('owned by the token\'s user, who core saw as signed in', array($sue, $sue), $postedBy);
+pin('posted_item fires once', 1, $fired['posted_item'] ?? 0);
+pin('the custom field and the phone are stored', array('red', '5550199'), array(
+    $admin->query("SELECT s_value FROM {$p}t_item_meta WHERE fk_i_item_id = $made")->fetch_row()[0] ?? null, $itemRow($made)['s_contact_phone'],
+));
+check('the owner view carries the e-mail, which only owners see', ($r->body()['data']['contact']['email'] ?? null) === 'sue@example.test');
+
+pin('a missing title is 422 from the schema', array(422, '/title'), array(
+    $call('POST', 'listings', array_diff_key($listing(), array('title' => 1)), $sueToken)->status(),
+    $call('POST', 'listings', array_diff_key($listing(), array('title' => 1)), $sueToken)->body()['errors'][0]['pointer'] ?? null,
+));
+pin('an unknown member is 422', '422 validation_failed', $code($call('POST', 'listings', $listing(array('owner' => 1)), $sueToken)));
+pin('an unknown city is 422', array(422, '/city_id'), (static fn (Response $r): array => array($r->status(), $r->body()['errors'][0]['pointer'] ?? null))($call('POST', 'listings', $listing(array('city_id' => 99999)), $sueToken)));
+pin('ItemActions\' own refusal is 422 with its message', array(422, 'Description too short (en_US).'), (static fn (Response $r): array => array($r->status(), $r->body()['errors'][0]['message'] ?? null))($call('POST', 'listings', $listing(array('description' => 'ab')), $sueToken)));
+pin('a refusal carries the member and code of each error', array('validation_failed', '/description', 'too_short'), (static fn (Response $r): array => array($r->body()['code'] ?? null, $r->body()['errors'][0]['pointer'] ?? null, $r->body()['errors'][0]['code'] ?? null))($call('POST', 'listings', $listing(array('description' => 'ab')), $sueToken)));
+pin('a language the site does not have is 422', array(422, '/translations/fr_FR'), (static fn (Response $r): array => array($r->status(), $r->body()['errors'][0]['pointer'] ?? null))($call('POST', 'listings', $listing(array('translations' => array('fr_FR' => array('title' => 'Voiture')))), $sueToken)));
+pin('a required custom field left out is refused as on the form', 422, $call('POST', 'listings', $listing(array('fields' => array())), $sueToken)->status());
+pin('without a credential it is 401', 401, $call('POST', 'listings', $listing())->status());
+$readOnly = (new ApiKeys(new ApiCredential(), new Scopes(), new SystemClock()))->create('key', 'reader', array('listings:read'), KeyOwner::user($sue))->token();
+pin('without listings:write it is 403', '403 insufficient_scope', $code($call('POST', 'listings', $listing(), $readOnly)));
+
+harness_section('an Idempotency-Key');
+$fired = array();
+$one   = $call('POST', 'listings', $listing(array('title' => 'Blue van')), $sueToken, array('Idempotency-Key' => 'van-1'));
+$two   = $call('POST', 'listings', $listing(array('title' => 'Blue van')), $sueToken, array('Idempotency-Key' => 'van-1'));
+pin('a repeat answers the first listing again', array(201, 'true', $one->body()['data']['id'] ?? null), array($two->status(), $two->header('Idempotency-Replayed'), $two->body()['data']['id'] ?? null));
+pin('only one listing was made, and posted_item fired once', array(1, 1), array(
+    (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_description WHERE s_title = 'Blue van'")->fetch_row()[0], $fired['posted_item'] ?? 0,
+));
+
+harness_section('moderation, the listing limit, the posting wait and the hourly cap');
+Preference::newInstance()->set('moderate_items', '0');
+osc_reset_preferences();
+$fired = array();
+$r     = $call('POST', 'listings', $listing(array('title' => 'Moderated wagon')), $sueToken);
+pin('with moderation on the listing waits: pending, with a warning', array(201, 'pending', 'listing_pending'), array($r->status(), $r->body()['data']['status'] ?? null, $r->body()['warnings'][0]['code'] ?? null));
+pin('and the activation e-mail goes out as from the form', 1, $fired['hook_email_item_validation'] ?? 0);
+$pendingId = (int) $r->body()['data']['id'];
+Preference::newInstance()->set('moderate_items', '-1');
+
+osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');
+osc_set_preference('billing_free_live_listings', '1', 'osclass', 'INTEGER');
+osc_reset_preferences();
+$r = $call('POST', 'listings', $listing(array('title' => 'Over the limit')), $tomToken);
+$r = $call('POST', 'listings', $listing(array('title' => 'Over the limit two')), $tomToken);
+pin('past the listing limit it is 422 listing_limit', '422 listing_limit', $code($r));
+osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
+osc_reset_preferences();
+
+Preference::newInstance()->set('items_wait_time', '600');
+osc_reset_preferences();
+$r = $call('POST', 'listings', $listing(array('title' => 'Too soon')), $sueToken);
+pin('the posting wait applies', array(422, 'Too fast. You should wait a little to publish your ad.'), array($r->status(), $first($r)));
+Preference::newInstance()->set('items_wait_time', '0');
+osc_reset_preferences();
+
+$GLOBALS['lw_limiter'] = api_test_limiter(static fn (string $bucket) => $bucket === 'api_listing_post' ? ApiSettings::LISTINGS_PER_HOUR + 1 : 1);
+pin('past the hourly cap it is 429, as there is no captcha', '429 rate_limited', $code($call('POST', 'listings', $listing(array('title' => 'One too many')), $sueToken)));
+unset($GLOBALS['lw_limiter']);
+
+harness_section('editing a listing');
+$fired = array();
+$r     = $call('PATCH', 'listings/' . $made, array('price' => '1200'), $sueToken);
+pin('PATCH answers the saved listing', array(200, '1200.00'), array($r->status(), $r->body()['data']['price']['amount'] ?? null));
+pin('members not sent keep their values', array('Red hatchback', 'A small red car, one owner, full service history.', '5550199', 'red', (string) $city, 'USD'), array(
+    $admin->query("SELECT s_title FROM {$p}t_item_description WHERE fk_i_item_id = $made")->fetch_row()[0],
+    $admin->query("SELECT s_description FROM {$p}t_item_description WHERE fk_i_item_id = $made")->fetch_row()[0],
+    $itemRow($made)['s_contact_phone'],
+    $admin->query("SELECT s_value FROM {$p}t_item_meta WHERE fk_i_item_id = $made")->fetch_row()[0],
+    $admin->query("SELECT fk_i_city_id FROM {$p}t_item_location WHERE fk_i_item_id = $made")->fetch_row()[0],
+    $itemRow($made)['fk_c_currency_code'],
+));
+pin('edited_item fires once', 1, $fired['edited_item'] ?? 0);
+pin('matches the schema', array(), $schemaErrors('SavedListing', $r));
+$r = $call('PATCH', 'listings/' . $made, array('title' => 'Red hatchback with new tyres', 'fields' => array((string) $colour => 'crimson'), 'price' => null), $sueToken);
+pin('what is sent changes; a null price removes it', array('Red hatchback with new tyres', 'crimson', null, null), array(
+    $r->body()['data']['title'] ?? null, $admin->query("SELECT s_value FROM {$p}t_item_meta WHERE fk_i_item_id = $made")->fetch_row()[0],
+    array_key_exists('price', $r->body()['data'] ?? array()) ? $r->body()['data']['price'] : 'x', $itemRow($made)['i_price'],
+));
+pin('another seller\'s live listing is 403 not_owner', '403 not_owner', $code($call('PATCH', 'listings/' . $made, array('price' => '1'), $tomToken)));
+pin('another seller\'s pending listing is 404', 404, $call('PATCH', 'listings/' . $pendingId, array('price' => '1'), $tomToken)->status());
+pin('an unknown listing is 404', 404, $call('PATCH', 'listings/999999', array('price' => '1'), $sueToken)->status());
+pin('an edit is refused as the form refuses it', 422, $call('PATCH', 'listings/' . $made, array('title' => ''), $sueToken)->status());
+$colourOf = static fn (): ?string => $admin->query("SELECT s_value FROM {$p}t_item_meta WHERE fk_i_item_id = $made AND fk_i_field_id = $colour")->fetch_row()[0] ?? null;
+$call('PATCH', 'listings/' . $made, array('fields' => array((string) $colour => 'Black & white < "grey"')), $sueToken);
+$once = $colourOf();
+$call('PATCH', 'listings/' . $made, array('price' => '1250'), $sueToken);
+$call('PATCH', 'listings/' . $made, array('price' => '1200'), $sueToken);
+check('the value was stored', (string) $once !== '');
+pin('a text field not sent is stored again as it was, not encoded once more', $once, $colourOf());
+$call('PATCH', 'listings/' . $made, array('fields' => array((string) $colour => 'crimson')), $sueToken);
+
+harness_section('photos');
+$stage = $call('POST', 'photos', null, $sueToken, array(), $photoFile($jpeg));
+$token = (string) ($stage->body()['data']['token'] ?? '');
+pin('POST /photos keeps a photo and answers its token: 200, as a token is not a resource to GET', array(200, 32, null), array($stage->status(), strlen($token), $stage->header('Location')));
+pin('matches the schema', array(), $schemaErrors('PhotoTokenDocument', $stage));
+pin('a file that is not an image is refused', array(422, '/photo'), (static fn (Response $r): array => array($r->status(), $r->body()['errors'][0]['pointer'] ?? null))($call('POST', 'photos', null, $sueToken, array(), $photoFile($fake))));
+pin('a JSON body is not a photo', '415 unsupported_media_type', $code($call('POST', 'photos', array('photo' => 'x'), $sueToken)));
+$fired = array();
+$r     = $call('POST', 'listings', $listing(array('title' => 'With a photo', 'photo_tokens' => array($token))), $sueToken);
+$withPhoto = (int) ($r->body()['data']['id'] ?? 0);
+pin('every error of a refused edit is listed, not one joined line', true, count($call('PATCH', 'listings/' . $withPhoto, array('title' => str_repeat('t', 150), 'description' => 'ab'), $sueToken)->body()['errors'] ?? array()) >= 2);
+pin('photo_tokens attach the staged photo', array(201, 1, 1), array($r->status(), count($r->body()['data']['photos'] ?? array()), $fired['uploaded_file'] ?? 0));
+pin('a token works once', array(422, '/photo_tokens/0'), (static fn (Response $r): array => array($r->status(), $r->body()['errors'][0]['pointer'] ?? null))($call('POST', 'listings', $listing(array('title' => 'Again', 'photo_tokens' => array($token))), $sueToken)));
+$tomsToken = (string) $call('POST', 'photos', null, $tomToken, array(), $photoFile($jpeg))->body()['data']['token'];
+pin('another user\'s token is refused', 422, $call('POST', 'listings', $listing(array('title' => 'Stolen', 'photo_tokens' => array($tomsToken))), $sueToken)->status());
+
+$r = $call('POST', 'listings/' . $withPhoto . '/photos', null, $sueToken, array('Content-Type' => 'image/jpeg'), array(), (string) file_get_contents($jpeg));
+pin('a raw image body adds a photo', array(201, true), array($r->status(), is_int($r->body()['data']['id'] ?? null)));
+pin('Location names it', 'http://localhost/api/v1/listings/' . $withPhoto . '/photos/' . ($r->body()['data']['id'] ?? ''), $r->header('Location'));
+$one = $call('GET', 'listings/' . $withPhoto . '/photos/' . ($r->body()['data']['id'] ?? ''), null, $sueToken);
+pin('and it can be read', array(200, $r->body()['data']['id'] ?? null), array($one->status(), $one->body()['data']['id'] ?? null));
+pin('matches the schema', array(), $schemaErrors('PhotoDocument', $one));
+pin('a photo of another listing is 404 there', 404, $call('GET', 'listings/' . $made . '/photos/' . ($r->body()['data']['id'] ?? ''), null, $sueToken)->status());
+pin('matches the schema', array(), $schemaErrors('PhotoDocument', $r));
+$third = $call('POST', 'listings/' . $withPhoto . '/photos', null, $sueToken, array(), $photoFile($jpeg));
+pin('a multipart photo too, up to the cap of 3', 201, $third->status());
+$over = $call('POST', 'listings/' . $withPhoto . '/photos', null, $sueToken, array(), $photoFile($jpeg));
+pin('a photo over the cap is refused', array(422, 'limit'), array($over->status(), $over->body()['errors'][0]['code'] ?? null));
+pin('the listing holds 3', 3, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_resource WHERE fk_i_item_id = $withPhoto")->fetch_row()[0]);
+pin('a bad image on a listing is refused', 422, $call('POST', 'listings/' . $made . '/photos', null, $sueToken, array(), $photoFile($fake))->status());
+pin('another seller cannot add one', '403 not_owner', $code($call('POST', 'listings/' . $withPhoto . '/photos', null, $tomToken, array(), $photoFile($jpeg))));
+$photoId = (int) $third->body()['data']['id'];
+pin('another seller cannot remove one', '403 not_owner', $code($call('DELETE', 'listings/' . $withPhoto . '/photos/' . $photoId, null, $tomToken)));
+pin('the owner removes one', 204, $call('DELETE', 'listings/' . $withPhoto . '/photos/' . $photoId, null, $sueToken)->status());
+pin('it is gone', 0, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_resource WHERE pk_i_id = $photoId")->fetch_row()[0]);
+pin('a photo of another listing is 404 here', 404, $call('DELETE', 'listings/' . $made . '/photos/' . $photoId, null, $sueToken)->status());
+$tokens = array();
+for ($i = 0; $i < 3; $i++) {
+    $tokens[] = (string) $call('POST', 'photos', null, $sueToken, array(), $photoFile($jpeg))->body()['data']['token'];
+}
+$tokens[] = (string) $call('POST', 'photos', null, $sueToken, array(), $photoFile($jpeg))->body()['data']['token'];
+$r = $call('POST', 'listings', $listing(array('title' => 'Four photos', 'photo_tokens' => $tokens)), $sueToken);
+pin('more tokens than the cap: three are added and a warning says so', array(201, 3, 'photo_skipped'), array($r->status(), count($r->body()['data']['photos'] ?? array()), $r->body()['warnings'][0]['code'] ?? null));
+
+pin('photo_urls is off by default', array(422, '/photo_urls'), (static fn (Response $r): array => array($r->status(), $r->body()['errors'][0]['pointer'] ?? null))($call('POST', 'listings', $listing(array('title' => 'By URL', 'photo_urls' => array('https://photos.example.com/car.jpg'))), $sueToken)));
+$settings = new ApiSettings(true, photoUrls: true);
+pin('when on, a private address is refused', array(422, '/photo_urls/0'), (static fn (Response $r): array => array($r->status(), $r->body()['errors'][0]['pointer'] ?? null))($call('POST', 'listings', $listing(array('title' => 'By URL', 'photo_urls' => array('https://intranet.example.com/car.jpg'))), $sueToken)));
+$r = $call('POST', 'listings', $listing(array('title' => 'By URL', 'photo_urls' => array('https://photos.example.com/car.jpg'))), $sueToken);
+pin('a public one is downloaded and attached', array(201, 1), array($r->status(), count($r->body()['data']['photos'] ?? array())));
+$settings = new ApiSettings(true);
+
+harness_section('custom fields are the category\'s own, cleaned as the form cleans them');
+$r = $call('POST', 'listings', $listing(array('category_id' => $misc, 'title' => 'No fields here', 'fields' => array((string) $colour => '<script>alert(1)</script>'))), $sueToken);
+$noFields = (int) ($r->body()['data']['id'] ?? 0);
+pin('a category with no fields takes none: nothing is stored', array(201, 0), array($r->status(), (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_meta WHERE fk_i_item_id = $noFields")->fetch_row()[0]));
+$r = $call('POST', 'listings', $listing(array('title' => 'Foreign field', 'fields' => array((string) $colour => '<b onmouseover="x()">red</b>', (string) $hull => '<script>alert(1)</script>'))), $sueToken);
+$foreign = (int) ($r->body()['data']['id'] ?? 0);
+pin('another category\'s field is dropped; a value is purified as the form\'s', array(201, array((string) $colour => 'red')), array(
+    $r->status(), array_column($admin->query("SELECT fk_i_field_id, s_value FROM {$p}t_item_meta WHERE fk_i_item_id = $foreign")->fetch_all(MYSQLI_ASSOC), 's_value', 'fk_i_field_id'),
+));
+$r = $call('PATCH', 'listings/' . $foreign, array('category_id' => $misc), $sueToken);
+pin('moving a listing to a category with no fields stores nothing new', array(200, 0), array($r->status(), (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_meta WHERE fk_i_item_id = $foreign AND fk_i_field_id <> $colour")->fetch_row()[0]));
+
+$direct = static function (int $category, array $meta) use ($region, $city): int {
+    $actions = new ItemActions(true);
+    $actions->prepareDataFrom(array(
+        'catId' => (string) $category, 'title' => array('en_US' => 'Plain data car'), 'description' => array('en_US' => 'Saved straight through ItemActions.'),
+        'contactName' => 'Sue', 'contactEmail' => 'sue@example.test', 'countryId' => 'US', 'regionId' => (string) $region, 'cityId' => (string) $city,
+        'contactPhone' => '5550100', 'meta' => $meta,
+    ), true);
+    $actions->add();
+
+    return $actions->lastItemId();
+};
+$plain = $direct($misc, array($colour => '<script>alert(1)</script>'));
+pin('prepareDataFrom(): a category with no fields stores no value', array(true, 0), array($plain > 0, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_meta WHERE fk_i_item_id = $plain")->fetch_row()[0]));
+$plain = $direct($cars, array($colour => '<i>blue</i>', $hull => 'oak'));
+pin('prepareDataFrom(): only the category\'s fields, purified as the form\'s', array((string) $colour => 'blue'), array_column($admin->query("SELECT fk_i_field_id, s_value FROM {$p}t_item_meta WHERE fk_i_item_id = $plain")->fetch_all(MYSQLI_ASSOC), 's_value', 'fk_i_field_id'));
+
+harness_section('bans and hourly caps');
+$admin->query("INSERT INTO {$p}t_ban_rule (s_name, s_email) VALUES ('test', 'sue@example.test')");
+pin('a banned e-mail cannot post a listing', '403 forbidden', $code($call('POST', 'listings', $listing(array('title' => 'Banned car')), $sueToken)));
+$admin->query("DELETE FROM {$p}t_ban_rule");
+$admin->query("INSERT INTO {$p}t_ban_rule (s_name, s_ip) VALUES ('test', '192.0.2.60')");
+pin('nor a banned address', '403 forbidden', $code($call('POST', 'listings', $listing(array('title' => 'Banned car')), $sueToken)));
+$admin->query("DELETE FROM {$p}t_ban_rule");
+pin('none of it was saved', 0, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_description WHERE s_title = 'Banned car'")->fetch_row()[0]);
+
+$GLOBALS['lw_limiter'] = api_test_limiter(static fn (string $bucket) => $bucket === 'api_listing_post' ? 3 : 1);
+$settings = new ApiSettings(true, listingRate: 2);
+pin('the hourly listing cap is a setting', '429 rate_limited', $code($call('POST', 'listings', $listing(array('title' => 'Third this hour')), $sueToken)));
+$settings = new ApiSettings(true, listingRate: 5);
+pin('a higher one lets it through', 201, $call('POST', 'listings', $listing(array('title' => 'Third this hour')), $sueToken)->status());
+$settings = new ApiSettings(true);
+pin('the default is 30 an hour, 10 while the listing form asks for a captcha', array(30, 10, 7), array(
+    (new ApiSettings(true))->listingsPerHour(), (new ApiSettings(true, listingCaptcha: true))->listingsPerHour(), (new ApiSettings(true, listingRate: 7, listingCaptcha: true))->listingsPerHour(),
+));
+$GLOBALS['lw_limiter'] = api_test_limiter(static fn (string $bucket) => $bucket === 'api_listing_ip' ? 1000 : 1);
+pin('one address is capped across accounts too', '429 rate_limited', $code($call('POST', 'listings', $listing(array('title' => 'From a busy address')), $sueToken)));
+unset($GLOBALS['lw_limiter']);
+for ($i = 0; $i < \mindstellar\comment\CommentPolicy::PER_HOUR; $i++) {
+    \mindstellar\security\RateLimit::hit('comment_post', 'user:' . $tom, 1000, 3600);
+}
+pin('comments have an hourly cap per user, shared with the comment form', '429 rate_limited', $code($call('POST', 'listings/' . $withPhoto . '/comments', array('body' => 'Another question'), $tomToken)));
+$admin->query("DELETE FROM {$p}t_rate_counter");
+
+harness_section('photo URLs on an edit');
+$settings = new ApiSettings(true, photoUrls: true);
+$GLOBALS['lw_limiter'] = api_test_limiter(static fn (string $bucket) => $bucket === 'api_photo_fetch' ? RatePolicy::PHOTO_FETCHES_PER_HOUR + 1 : 1);
+pin('fetches on an edit have an hourly cap per user', '429 rate_limited', $code($call('PATCH', 'listings/' . $withPhoto, array('photo_urls' => array('https://photos.example.com/car.jpg')), $sueToken)));
+pin('so do fetches for a new listing, in the same count', '429 rate_limited', $code($call('POST', 'listings', $listing(array('title' => 'Fetched', 'photo_urls' => array('https://photos.example.com/car.jpg'))), $sueToken)));
+unset($GLOBALS['lw_limiter']);
+$fetches = 0;
+$r = $call('PATCH', 'listings/' . $withPhoto, array('photo_urls' => array('https://photos.example.com/a.jpg', 'https://photos.example.com/b.jpg')), $sueToken);
+pin('only what the listing has room for is fetched; the rest is a warning', array(200, 1, 3, 'photo_skipped'), array(
+    $r->status(), $fetches, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_resource WHERE fk_i_item_id = $withPhoto")->fetch_row()[0], $r->body()['warnings'][0]['code'] ?? null,
+));
+$fetches = 0;
+$r = $call('PATCH', 'listings/' . $withPhoto, array('photo_urls' => array('https://photos.example.com/c.jpg')), $sueToken);
+pin('a full listing fetches nothing', array(200, 0), array($r->status(), $fetches));
+$settings = new ApiSettings(true);
+
+harness_section('a save is all or nothing');
+$GLOBALS['lw_fail_posted'] = true;
+$logged  = ini_set('error_log', '/dev/null');
+$threwUp = $call('POST', 'listings', $listing(array('title' => 'Half saved')), $sueToken)->status() === 500;
+ini_set('error_log', (string) $logged);
+unset($GLOBALS['lw_fail_posted']);
+pin('a failure part way through rolls the listing back', array(true, 0, 0), array(
+    $threwUp, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_description WHERE s_title = 'Half saved'")->fetch_row()[0],
+    (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item i LEFT JOIN {$p}t_item_description d ON d.fk_i_item_id = i.pk_i_id WHERE d.fk_i_item_id IS NULL")->fetch_row()[0],
+));
+
+harness_section('a save rolled back sends no e-mail and leaves no photo behind');
+osc_add_filter('init_send_mail', static fn ($mail) => new HeldMailer(true));
+osc_add_hook('hook_email_item_validation', static function ($item): void {
+    osc_sendMail(array('to' => 'sue@example.test', 'to_name' => 'Sue', 'subject' => 'Activate your listing', 'body' => 'Click.', 'layout' => false));
+});
+$uploads = static function () use ($lwRoot): int {
+    $n = 0;
+    foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($lwRoot . 'uploads/', FilesystemIterator::SKIP_DOTS)) as $f) {
+        $n += $f->isFile() ? 1 : 0;
+    }
+
+    return $n;
+};
+Preference::newInstance()->set('moderate_items', '0');
+Preference::newInstance()->set('mailserver_mail_from', 'site@example.test');
+osc_reset_preferences();
+$token  = (string) $call('POST', 'photos', null, $sueToken, array(), $photoFile($jpeg))->body()['data']['token'];
+$before = $uploads();
+$fired  = array();
+$GLOBALS['lw_fail_posted'] = true;
+try {
+    $call('POST', 'listings', $listing(array('title' => 'Rolled back with a photo', 'photo_tokens' => array($token))), $sueToken);
+} catch (RuntimeException $e) {
+}
+unset($GLOBALS['lw_fail_posted']);
+pin('the e-mail was written but not sent', array(1, 1, array()), array($fired['hook_email_item_validation'] ?? 0, $fired['uploaded_file'] ?? 0, HeldMailer::$sent));
+pin('the photo\'s copies in the uploads folder are removed', $before, $uploads());
+$r = $call('POST', 'listings', $listing(array('title' => 'Saved with a photo', 'photo_tokens' => array($token))), $sueToken);
+pin('the staged photo is still there, so its token works again', array(201, 1), array($r->status(), count($r->body()['data']['photos'] ?? array())));
+pin('and the e-mail goes out once the save is committed', array('Activate your listing'), HeldMailer::$sent);
+Preference::newInstance()->set('moderate_items', '-1');
+osc_reset_preferences();
+
+harness_section('bodies');
+$caps   = array();
+$reader = static function (int $cap) use (&$caps, $jpeg): ?string {
+    $caps[] = $cap;
+
+    return (string) file_get_contents($jpeg);
+};
+$r = $call('POST', 'photos', null, $sueToken, array('Content-Type' => 'image/jpeg'), array(), null, $reader);
+pin('an upload route reads up to 16 MB', array(200, array(Request::MAX_UPLOAD)), array($r->status(), $caps));
+$caps = array();
+pin('any other route reads 1 MB at most, even for an image', array(415, array(Request::MAX_BODY)), array(
+    $call('POST', 'listings', null, $sueToken, array('Content-Type' => 'image/jpeg'), array(), null, $reader)->status(), $caps,
+));
+$r = $call('PATCH', 'listings/' . $foreign, null, $sueToken, array('Content-Type' => Request::MERGE_PATCH), array(), (string) json_encode(array('price' => '77')));
+pin('PATCH takes a JSON Merge Patch and says so', array(200, '77.00', Request::MERGE_PATCH), array($r->status(), $r->body()['data']['price']['amount'] ?? null, $r->header('Accept-Patch')));
+$r = $call('POST', 'listings', null, $sueToken, array('Content-Type' => Request::MERGE_PATCH), array(), (string) json_encode($listing()));
+pin('POST does not', '415 unsupported_media_type', $code($r));
+
+harness_section('the photo stage');
+$stageRows = static fn (int $userId): int => (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_upload_tmp WHERE s_token = 'api:$userId'")->fetch_row()[0];
+$admin->query("DELETE FROM {$p}t_item_upload_tmp WHERE s_token = 'api:$tom'");
+for ($i = 0; $i < PhotoStage::MAX_PENDING; $i++) {
+    $admin->query("INSERT INTO {$p}t_item_upload_tmp (s_token, s_uuid, s_file, dt_date) VALUES ('api:$tom', '" . md5((string) $i) . "', 'none', NOW())");
+}
+$extra = $lwRoot . 'extra.jpg';
+copy($jpeg, $extra);
+try {
+    (new PhotoStage($lwRoot . 'stage/', new SystemClock()))->stage($tom, new CheckedPhoto($extra, 'jpg'));
+    $overflow = false;
+} catch (OverflowException $e) {
+    $overflow = true;
+}
+pin('one photo past the cap is taken back out, even when it raced the count', array(true, PhotoStage::MAX_PENDING), array($overflow, $stageRows($tom)));
+pin('and the API answers 422', array(422, 'limit'), (static fn (Response $r): array => array($r->status(), $r->body()['errors'][0]['code'] ?? null))($call('POST', 'photos', null, $tomToken, array(), $photoFile($jpeg))));
+$admin->query("DELETE FROM {$p}t_item_upload_tmp WHERE s_token = 'api:$tom'");
+$fetcher = ImageFetcher::curlOptions('https://photos.example.com/car.jpg', '93.184.216.34', 1024);
+pin('a download never goes through a proxy, so it reaches the checked address', array('', '*'), array($fetcher[CURLOPT_PROXY] ?? null, $fetcher[CURLOPT_NOPROXY] ?? null));
+
+harness_section('queries');
+$qMade = 0;
+$qPost = harness_query_count(static function () use ($call, $listing, $sueToken, &$qMade): void {
+    $qMade = (int) ($call('POST', 'listings', $listing(array('title' => 'Counted car')), $sueToken)->body()['data']['id'] ?? 0);
+});
+$qPatch = harness_query_count(static fn () => $call('PATCH', 'listings/' . $qMade, array('price' => '999'), $sueToken));
+echo "  POST /listings: $qPost queries, PATCH: $qPatch\n";
+pin('POST /listings, no photos: 33 queries', 33, $qPost);
+pin('PATCH /listings/{id}, no photos: 31 queries', 31, $qPatch);
+
+harness_section('deleting a listing');
+pin('another seller cannot delete it', '403 not_owner', $code($call('DELETE', 'listings/' . $made, null, $tomToken)));
+$writer = (new ApiKeys(new ApiCredential(), new Scopes(), new SystemClock()))->create('key', 'writer', array('listings:write'), KeyOwner::user($sue))->token();
+pin('listings:write alone may not delete', '403 insufficient_scope', $code($call('DELETE', 'listings/' . $made, null, $writer)));
+$fired = array();
+pin('the owner deletes it: 204', 204, $call('DELETE', 'listings/' . $made, null, $sueToken)->status());
+pin('the row is gone and the hooks fired once', array(null, 1, 1), array($itemRow($made), $fired['before_delete_item'] ?? 0, $fired['after_delete_item'] ?? 0));
+pin('again it is 404', 404, $call('DELETE', 'listings/' . $made, null, $sueToken)->status());
+
+harness_section('comments');
+$fired = array();
+$r     = $call('POST', 'listings/' . $withPhoto . '/comments', array('title' => 'Hi', 'body' => 'Is it still for sale?'), $tomToken);
+$commentId = (int) ($r->body()['data']['id'] ?? 0);
+pin('a comment is posted through the form\'s action', array(201, 'Is it still for sale?', $tom, 1), array($r->status(), $r->body()['data']['body'] ?? null, $r->body()['data']['author']['user_id'] ?? null, $fired['add_comment'] ?? 0));
+pin('after the hook anti-spam plugins use, with a Location', array(1, 'http://localhost/api/v1/comments/' . $commentId), array($fired['pre_item_add_comment_post'] ?? 0, $r->header('Location')));
+pin('matches the schema', array(), $schemaErrors('SavedComment', $r));
+$one = $call('GET', 'comments/' . $commentId, null, $sueToken);
+pin('Location can be read', array(200, $commentId, 'Is it still for sale?'), array($one->status(), $one->body()['data']['id'] ?? null, $one->body()['data']['body'] ?? null));
+pin('matches the schema', array(), $schemaErrors('CommentDocument', $one));
+Preference::newInstance()->set('moderate_comments', '0');
+osc_reset_preferences();
+$r = $call('POST', 'listings/' . $withPhoto . '/comments', array('body' => 'Second question'), $tomToken);
+$waiting = (int) ($r->body()['data']['id'] ?? 0);
+pin('a comment waiting for approval: its author reads it, others get 404', array(200, 404), array($call('GET', 'comments/' . $waiting, null, $tomToken)->status(), $call('GET', 'comments/' . $waiting, null, $sueToken)->status()));
+pin('with moderation on it waits, and says so', array(201, 'comment_pending', '0'), array(
+    $r->status(), $r->body()['warnings'][0]['code'] ?? null, $admin->query("SELECT b_active FROM {$p}t_item_comment WHERE pk_i_id = " . (int) $r->body()['data']['id'])->fetch_row()[0],
+));
+Preference::newInstance()->set('moderate_comments', '-1');
+pin('an empty body is 422', 422, $call('POST', 'listings/' . $withPhoto . '/comments', array('body' => '<b></b>'), $tomToken)->status());
+pin('a pending listing takes no comments from others', 404, $call('POST', 'listings/' . $pendingId . '/comments', array('body' => 'Hello'), $tomToken)->status());
+Preference::newInstance()->set('enabled_comments', '0');
+osc_reset_preferences();
+pin('with comments off it is 403', '403 forbidden', $code($call('POST', 'listings/' . $withPhoto . '/comments', array('body' => 'Hello'), $tomToken)));
+Preference::newInstance()->set('enabled_comments', '1');
+osc_reset_preferences();
+pin('only the author deletes a comment', '403 forbidden', $code($call('DELETE', 'comments/' . $commentId, null, $sueToken)));
+$fired = array();
+pin('the author does: 204', array(204, 1), array($call('DELETE', 'comments/' . $commentId, null, $tomToken)->status(), $fired['pre_item_delete_comment_post'] ?? 0));
+pin('it is gone', 0, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_comment WHERE pk_i_id = $commentId")->fetch_row()[0]);
+
+harness_section('saved searches');
+$r = $call('POST', 'account/alerts', array('filters' => array('category' => array($cars), 'q' => 'hatchback', 'with_photos' => true)), $sueToken);
+$alertId = (int) ($r->body()['data']['id'] ?? 0);
+pin('an alert is saved from GET /listings filters', array(201, array($cars), 'hatchback', true, true), array(
+    $r->status(), $r->body()['data']['filters']['category'] ?? null, $r->body()['data']['filters']['q'] ?? null, $r->body()['data']['filters']['with_photos'] ?? null, $r->body()['data']['active'] ?? null,
+));
+pin('matches the schema', array(), $schemaErrors('AlertDocument', $r));
+pin('Location names it', 'http://localhost/api/v1/account/alerts/' . $alertId, $r->header('Location'));
+pin('and it can be read', array(200, $alertId), (static fn (Response $one): array => array($one->status(), $one->body()['data']['id'] ?? null))($call('GET', 'account/alerts/' . $alertId, null, $sueToken)));
+pin('by its owner only', 404, $call('GET', 'account/alerts/' . $alertId, null, $tomToken)->status());
+pin('it is the account page\'s alert too', array($alertId), array_map('intval', array_column(Alerts::newInstance()->findByUser($sue), 'pk_i_id')));
+$again = $call('POST', 'account/alerts', array('filters' => array('q' => 'hatchback', 'category' => (string) $cars, 'with_photos' => true)), $sueToken);
+pin('the same search again answers the existing alert', array(200, $alertId), array($again->status(), $again->body()['data']['id'] ?? null));
+$list = $call('GET', 'account/alerts', null, $sueToken);
+pin('GET lists it', array(200, array($alertId)), array($list->status(), array_column($list->body()['data'] ?? array(), 'id')));
+pin('matches the schema', array(), $schemaErrors('AlertList', $list));
+pin('no filter at all is 422', 422, $call('POST', 'account/alerts', array('filters' => array()), $sueToken)->status());
+pin('an unknown category is 422', 422, $call('POST', 'account/alerts', array('filters' => array('category' => 'nope')), $sueToken)->status());
+pin('an unknown filter is 422', 422, $call('POST', 'account/alerts', array('filters' => array('colour' => 'red')), $sueToken)->status());
+pin('another user cannot stop it', 404, $call('DELETE', 'account/alerts/' . $alertId, null, $tomToken)->status());
+pin('its owner can', 204, $call('DELETE', 'account/alerts/' . $alertId, null, $sueToken)->status());
+pin('then it is no longer listed', array(), $call('GET', 'account/alerts', null, $sueToken)->body()['data']);
+
+harness_section('the account\'s API access page');
+$pageFor = static function (ApiSettings $settings) use ($facts): AccountAccess {
+
+    return (new ApiServices($settings, new Scopes(), new ApiCredential(), new UserRows(), new SystemClock(), RateLimiter::fromSite(new SystemClock()), $facts, new WriteLinks()))->accountAccess();
+};
+$page     = $pageFor($settings);
+$sessions = $page->sessions($sue);
+$types    = array_count_values(array_column($sessions, 'type'));
+check('it lists the sign-ins and the keys', ($types['token'] ?? 0) >= 1 && ($types['key'] ?? 0) >= 2);
+check('no secret is in the list', !str_contains((string) json_encode($sessions), $readOnly) && !str_contains((string) json_encode($sessions), substr($sueToken, 4, 40)));
+check('the menu entry shows for a user with access', $page->relevant($sue));
+$userRow = $admin->query("SELECT * FROM {$p}t_user WHERE pk_i_id = $sue")->fetch_assoc();
+$threw   = static function (callable $fn): string {
+    try {
+        $fn();
+    } catch (\InvalidArgumentException $e) {
+        return $e->getMessage();
+    }
+
+    return '';
+};
+pin('making a key is off unless the site allows it', 'This site does not let users make API keys.', $threw(static fn () => $page->createKey($userRow, 'open sesame', 'Script', array('listings:read'), date('Y-m-d', time() + 86400 * 30))));
+$settings = new ApiSettings(true, userKeys: true);
+$page     = $pageFor($settings);
+pin('a wrong password is refused', 'The password is not right.', $threw(static fn () => $page->createKey($userRow, 'wrong', 'Script', array('listings:read'), date('Y-m-d', time() + 86400 * 30))));
+pin('account:write cannot go on a key', true, $threw(static fn () => $page->createKey($userRow, 'open sesame', 'Script', array('account:write'), date('Y-m-d', time() + 86400 * 30))) !== '');
+pin('an expiry past a year is refused', 'Choose an expiry date within a year.', $threw(static fn () => $page->createKey($userRow, 'open sesame', 'Script', array('listings:read'), date('Y-m-d', time() + 86400 * 400))));
+$made = $page->createKey($userRow, 'open sesame', 'Backup script', array('listings:read', 'account:read'), date('Y-m-d', time() + 86400 * 30));
+pin('a key made on the page works on the API', 200, $call('GET', 'account', null, $made)->status());
+$keyRow = array_values(array_filter($page->sessions($sue), static fn (array $s): bool => $s['label'] === 'Backup script'))[0] ?? array('id' => '');
+check('and is listed by its prefix', str_starts_with($made, (string) ($keyRow['prefix'] ?? '-')));
+pin('revoking it from the page ends it', array(true, 401), array($page->end($sue, $keyRow['id']), $call('GET', 'account', null, $made)->status()));
+$family = array_values(array_filter($page->sessions($sue), static fn (array $s): bool => $s['type'] === 'token'))[0]['id'] ?? '';
+pin('another user cannot end it', false, $pageFor($settings)->end($tom, $family));
+pin('ending a sign-in revokes its refresh family', array(true, 0), array(
+    $page->end($sue, $family), (int) $admin->query("SELECT COUNT(*) FROM {$p}t_api_credential WHERE s_family = '" . $admin->real_escape_string($family) . "' AND dt_revoked IS NULL")->fetch_row()[0],
+));
+pin('an unknown session is refused', false, $page->end($sue, 'nope'));
+$settings = new ApiSettings(true);
+$web      = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebUser.php');
+preg_match("/case 'api_access_post':.*?break;/s", $web, $postCase);
+check('the page\'s POST checks the CSRF token', isset($postCase[0]) && str_contains($postCase[0], 'osc_csrf_check()'));
+preg_match('/private function apiAccessPost\(.*?\n    }\n/s', $web, $postMethod);
+check('and does nothing while the API is off', isset($postMethod[0]) && str_contains($postMethod[0], 'if (!osc_api_enabled())'));
+$partial = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/gui/account/user-api_access-content.php');
+pin('every form on the page posts the CSRF token', substr_count($partial, '<form'), substr_count($partial, 'osc_csrf_token_form()'));
+check('no session was started', session_status() !== PHP_SESSION_ACTIVE);
+
+exit(harness_result());
