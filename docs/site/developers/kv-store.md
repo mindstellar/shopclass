@@ -71,6 +71,7 @@ Name your group after your plugin slug, such as `acme`. Do not use a name core u
 |---|---|
 | `api_idempotency` | The REST API's `Idempotency-Key` replay |
 | `api_webhook` | The REST API's webhook endpoints: one key per endpoint (`ep_…`), holding its address, events, secret and failure count. It has no expiry. |
+| `market` | The plugin and theme catalogue cache from the market, so it is not loaded on every page. |
 
 ## Expiry
 

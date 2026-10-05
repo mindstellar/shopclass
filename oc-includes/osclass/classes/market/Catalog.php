@@ -19,7 +19,7 @@ use mindstellar\utility\FileSystem;
  * Reads the static `v1/*.json` catalog published by the plugin/theme registry
  * (see docs/MARKET.md §5) — conditional GET with ETag/Last-Modified, a 24h
  * clock with a 1h retry on failure, and a raw.githubusercontent.com mirror
- * when GitHub Pages is unreachable. Every write goes to preferences and every
+ * when GitHub Pages is unreachable. Every write goes to the key-value store and every
  * failure is non-fatal: a broken catalog degrades to stale-but-present data,
  * never a fatal error and never a reset "last checked" clock.
  *
@@ -32,6 +32,8 @@ use mindstellar\utility\FileSystem;
  */
 final class Catalog
 {
+    private const KV_GROUP = 'market';
+
     private const TYPE_PLUGINS = 'plugins';
     private const TYPE_THEMES  = 'themes';
 
@@ -127,8 +129,8 @@ final class Catalog
             return null;
         }
 
-        $metaAll = $this->decodeMap(osc_get_preference($this->key('detail_meta')));
-        $dataAll = $this->decodeMap(osc_get_preference($this->key('detail_data')));
+        $metaAll = $this->decodeMap($this->read('detail_meta'));
+        $dataAll = $this->decodeMap($this->read('detail_data'));
 
         $meta    = $metaAll[$slug] ?? [];
         $source  = (string) ($meta['source'] ?? '');
@@ -147,7 +149,7 @@ final class Catalog
 
         if ($result['ok'] && $result['status'] === 304) {
             $metaAll[$slug]['checked_at'] = time();
-            osc_set_preference($this->key('detail_meta'), json_encode($metaAll));
+            $this->write('detail_meta', (string) json_encode($metaAll));
 
             return $dataAll[$slug] ?? null;
         }
@@ -165,8 +167,8 @@ final class Catalog
                 ];
                 $dataAll[$slug] = $sanitized;
 
-                osc_set_preference($this->key('detail_meta'), json_encode($metaAll));
-                osc_set_preference($this->key('detail_data'), json_encode($dataAll));
+                $this->write('detail_meta', (string) json_encode($metaAll));
+                $this->write('detail_data', (string) json_encode($dataAll));
 
                 return $sanitized;
             }
@@ -184,7 +186,7 @@ final class Catalog
      */
     public function lastChecked(): int
     {
-        $value = osc_get_preference($this->key(self::RESOURCE_UPDATES . '_checked_at'));
+        $value = $this->read(self::RESOURCE_UPDATES . '_checked_at');
 
         return $value === '' ? 0 : (int) $value;
     }
@@ -196,7 +198,7 @@ final class Catalog
      */
     public function lastError(): ?string
     {
-        $value = osc_get_preference($this->key(self::RESOURCE_UPDATES . '_error'));
+        $value = $this->read(self::RESOURCE_UPDATES . '_error');
 
         return $value === '' ? null : $value;
     }
@@ -215,11 +217,11 @@ final class Catalog
      */
     private function fetch(string $resource, string $file, bool $force): array
     {
-        $jsonKey = $this->key($resource . '_json');
-        $cached  = $this->decodeMap(osc_get_preference($jsonKey));
+        $jsonSuffix = $resource . '_json';
+        $cached  = $this->decodeMap($this->read($jsonSuffix));
 
-        $hasCache    = osc_get_preference($jsonKey) !== '';
-        $checkedAt   = (int) osc_get_preference($this->key($resource . '_checked_at'));
+        $hasCache    = $this->read($jsonSuffix) !== '';
+        $checkedAt   = (int) $this->read($resource . '_checked_at');
         $dueForCheck = (time() - $checkedAt) > self::DAY_SECONDS;
 
         // Cache-only read: this is the branch every front-end-reachable call must land
@@ -230,9 +232,9 @@ final class Catalog
             return $cached;
         }
 
-        $storedSource  = osc_get_preference($this->key($resource . '_source'));
-        $storedEtag    = osc_get_preference($this->key($resource . '_etag'));
-        $storedLastMod = osc_get_preference($this->key($resource . '_last_modified'));
+        $storedSource  = $this->read($resource . '_source');
+        $storedEtag    = $this->read($resource . '_etag');
+        $storedLastMod = $this->read($resource . '_last_modified');
 
         $requestHeaders = [];
         if ($storedEtag !== '') {
@@ -245,8 +247,8 @@ final class Catalog
         $result = $this->requestFromSources($file, $storedSource, $requestHeaders);
 
         if ($result['ok'] && $result['status'] === 304) {
-            osc_set_preference($this->key($resource . '_checked_at'), (string) time());
-            osc_set_preference($this->key($resource . '_error'), '');
+            $this->write($resource . '_checked_at', (string) time());
+            $this->write($resource . '_error', '');
 
             return $cached;
         }
@@ -258,12 +260,12 @@ final class Catalog
                     ? $this->sanitizeUpdates($decoded)
                     : $this->sanitizeIndex($decoded);
 
-                osc_set_preference($jsonKey, json_encode($sanitized));
-                osc_set_preference($this->key($resource . '_etag'), $result['headers']['etag'] ?? '');
-                osc_set_preference($this->key($resource . '_last_modified'), $result['headers']['last-modified'] ?? '');
-                osc_set_preference($this->key($resource . '_source'), $result['source']);
-                osc_set_preference($this->key($resource . '_checked_at'), (string) time());
-                osc_set_preference($this->key($resource . '_error'), '');
+                $this->write($jsonSuffix, (string) json_encode($sanitized));
+                $this->write($resource . '_etag', (string) ($result['headers']['etag'] ?? ''));
+                $this->write($resource . '_last_modified', (string) ($result['headers']['last-modified'] ?? ''));
+                $this->write($resource . '_source', (string) $result['source']);
+                $this->write($resource . '_checked_at', (string) time());
+                $this->write($resource . '_error', '');
 
                 return $sanitized;
             }
@@ -291,11 +293,8 @@ final class Catalog
      */
     private function fail(string $resource, string $message): void
     {
-        osc_set_preference($this->key($resource . '_error'), $message);
-        osc_set_preference(
-            $this->key($resource . '_checked_at'),
-            (string) (time() - (self::DAY_SECONDS - self::RETRY_SECONDS))
-        );
+        $this->write($resource . '_error', $message);
+        $this->write($resource . '_checked_at', (string) (time() - (self::DAY_SECONDS - self::RETRY_SECONDS)));
     }
 
     /**
@@ -390,7 +389,7 @@ final class Catalog
     }
 
     /**
-     * Preference key for this catalog type, e.g. "market_plugins_updates_json".
+     * Key for this catalog type in the `market` group, e.g. "market_plugins_updates_json".
      *
      * @param string $suffix
      *
@@ -399,6 +398,20 @@ final class Catalog
     private function key(string $suffix): string
     {
         return 'market_' . $this->type . '_' . $suffix;
+    }
+
+    /**
+     * A cached value from the `market` key-value group; '' when there is none. Kept out of
+     * preferences, which every request loads.
+     */
+    private function read(string $suffix): string
+    {
+        return (string) osc_kv_get(self::KV_GROUP, $this->key($suffix), '');
+    }
+
+    private function write(string $suffix, string $value): void
+    {
+        osc_kv_set(self::KV_GROUP, $this->key($suffix), $value);
     }
 
     /**

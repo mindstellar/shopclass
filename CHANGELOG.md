@@ -38,6 +38,10 @@ Plugin authors should read the Breaking section before upgrading.
 - A new password (changed, reset or set by an admin) signs the user out of every device, API sign-ins and keys included.
 - API sign-ins and the web sign-in form share one limit on wrong passwords.
 
+### Performance
+
+- The market catalogue cache moved out of the site preferences, which every page loads (about 140 KB on a site that has browsed the market).
+
 ### Changed
 
 - The search page is split into a URI resolver and a search runner the API reuses. Its hooks and filters are unchanged.
