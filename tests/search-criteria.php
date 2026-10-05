@@ -12,7 +12,8 @@
  * Pins mindstellar\search\SearchCriteria::fromRequest() — the request normalisation
  * CWebSearch::doModel() used to do inline (sCategory/sCityArea/sCity/sRegion/sCountry
  * comma-split, sUser/sLocale split-or-stay-empty, sPattern through strip_tags()+trim()+
- * the `search_pattern` filter, bPic/bPremium loose-== 1).
+ * the `search_pattern` filter, bPic/bPremium loose-== 1), plus the sort, paging, show-as
+ * and feed options checked against the limits passed in.
  *
  * Runs the real class (via the composer autoloader), not a copy. Only osc_apply_filter()
  * is stubbed; it is the one helper the class calls, and the stub here can switch into a
@@ -179,6 +180,74 @@ pin(
     SearchCriteria::fromRequest(array('meta' => array(7 => 'diesel', 9 => 'automatic')))->meta()
 );
 pin('a meta value that is not a list is dropped', '', SearchCriteria::fromRequest(array('meta' => 'oops'))->meta());
+
+harness_section('sort -- allowed columns only, iOrderType asc/desc to its key');
+
+$site = array('orderField' => 'dt_pub_date', 'orderType' => '1', 'showAs' => 'list', 'pageSize' => 12, 'maxPageSize' => 50, 'rssItems' => 30);
+
+pin('absent -> the default column', 'dt_pub_date', SearchCriteria::fromRequest(array(), $site)->order());
+pin('an allowed column is kept', 'i_price', SearchCriteria::fromRequest(array('sOrder' => 'i_price'), $site)->order());
+pin('a column outside the allowlist -> default', 'dt_pub_date', SearchCriteria::fromRequest(array('sOrder' => 's_secret'), $site)->order());
+pin('an array -> default', 'dt_pub_date', SearchCriteria::fromRequest(array('sOrder' => array('i_price')), $site)->order());
+pin("absent -> the default type, as the preference stores it", '1', SearchCriteria::fromRequest(array(), $site)->orderType());
+pin("'asc' -> 0", 0, SearchCriteria::fromRequest(array('iOrderType' => 'asc'), $site)->orderType());
+pin("'desc' -> 1", 1, SearchCriteria::fromRequest(array('iOrderType' => 'desc'), $site)->orderType());
+pin("'sideways' -> default", '1', SearchCriteria::fromRequest(array('iOrderType' => 'sideways'), $site)->orderType());
+pin('sortDirection() for the default', 'desc', SearchCriteria::fromRequest(array(), $site)->sortDirection());
+pin('sortDirection() for asc', 'asc', SearchCriteria::fromRequest(array('iOrderType' => 'asc'), $site)->sortDirection());
+pin('sortDirection() is null for a default that is no sort type', null, SearchCriteria::fromRequest(array(), array('orderType' => 'x'))->sortDirection());
+
+harness_section('relevance -- newest first without a pattern, order() keeps what was asked');
+
+$rel = SearchCriteria::fromRequest(array('sOrder' => 'relevance', 'iOrderType' => 'asc'), $site);
+pin('order() is still relevance', 'relevance', $rel->order());
+pin('sortColumn() falls back to dt_pub_date', 'dt_pub_date', $rel->sortColumn());
+pin('the order type is untouched', 0, $rel->orderType());
+pin(
+    'with a pattern, relevance is the column',
+    'relevance',
+    SearchCriteria::fromRequest(array('sOrder' => 'relevance', 'sPattern' => 'bike'), $site)->sortColumn()
+);
+pin('any other column sorts as asked', 'i_price', SearchCriteria::fromRequest(array('sOrder' => 'i_price'), $site)->sortColumn());
+
+harness_section('page -- iPage is 1-based in, 0-based out');
+
+pin('absent -> 0', 0, SearchCriteria::fromRequest(array(), $site)->page());
+pin("'1' -> 0", 0, SearchCriteria::fromRequest(array('iPage' => '1'), $site)->page());
+pin("'3' -> 2", 2, SearchCriteria::fromRequest(array('iPage' => '3'), $site)->page());
+pin("'0' -> 0", 0, SearchCriteria::fromRequest(array('iPage' => '0'), $site)->page());
+pin("'-2' -> 0", 0, SearchCriteria::fromRequest(array('iPage' => '-2'), $site)->page());
+pin("'two' -> 0", 0, SearchCriteria::fromRequest(array('iPage' => 'two'), $site)->page());
+pin('an array -> 0', 0, SearchCriteria::fromRequest(array('iPage' => array('3')), $site)->page());
+
+harness_section('page size -- default when unset, capped at the maximum');
+
+pin('absent -> the default', 12, SearchCriteria::fromRequest(array(), $site)->pageSize());
+pin("'20' -> 20", 20, SearchCriteria::fromRequest(array('iPagesize' => '20'), $site)->pageSize());
+pin("'99' -> the cap", 50, SearchCriteria::fromRequest(array('iPagesize' => '99'), $site)->pageSize());
+pin("'0' -> the default", 12, SearchCriteria::fromRequest(array('iPagesize' => '0'), $site)->pageSize());
+pin("'-5' -> the default", 12, SearchCriteria::fromRequest(array('iPagesize' => '-5'), $site)->pageSize());
+pin('an array -> the default', 12, SearchCriteria::fromRequest(array('iPagesize' => array('20')), $site)->pageSize());
+
+harness_section('show-as and feed');
+
+pin('absent -> the default', 'list', SearchCriteria::fromRequest(array(), $site)->showAs());
+pin("'gallery' is kept", 'gallery', SearchCriteria::fromRequest(array('sShowAs' => 'gallery'), $site)->showAs());
+pin("'bogus' -> the default", 'list', SearchCriteria::fromRequest(array('sShowAs' => 'bogus'), $site)->showAs());
+pin("no feed -> ''", '', SearchCriteria::fromRequest(array(), $site)->feed());
+pin("'rss' is kept", 'rss', SearchCriteria::fromRequest(array('sFeed' => 'rss'), $site)->feed());
+pin('a plugin feed name is kept', 'atom', SearchCriteria::fromRequest(array('sFeed' => 'atom'), $site)->feed());
+pin('pageSizeForFeed() is the rss item count', 30, SearchCriteria::fromRequest(array('sFeed' => 'rss'), $site)->pageSizeForFeed());
+
+harness_section('limits -- missing keys fall back to the install defaults');
+
+$bare = SearchCriteria::fromRequest(array('iPagesize' => '80'));
+pin('default column', 'dt_pub_date', $bare->order());
+pin('default type', 1, $bare->orderType());
+pin('default cap', 50, $bare->pageSize());
+pin('default show-as', 'list', SearchCriteria::fromRequest(array())->showAs());
+pin('default page size', 12, SearchCriteria::fromRequest(array())->pageSize());
+pin('default rss items', 50, SearchCriteria::fromRequest(array())->pageSizeForFeed());
 
 exit(harness_result());
 
