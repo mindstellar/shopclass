@@ -85,6 +85,7 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hPlugins.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hPreference.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hLocale.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hCache.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hKv.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hUsers.php';
 require_once ABS_PATH . 'oc-includes/osclass/utils.php';
 
@@ -357,12 +358,7 @@ seed_exec(
     'i',
     array($child)
 );
-seed_exec(
-    $admin,
-    "INSERT INTO {$prefix}t_plugin_category (s_plugin_name, fk_i_category_id) VALUES ('demo', ?)",
-    'i',
-    array($child)
-);
+(new PluginCategory())->add('demo', array($child));
 seed_exec(
     $admin,
     "INSERT INTO {$prefix}t_category_stats (fk_i_category_id, i_num_items) VALUES (?, 1)",
@@ -379,7 +375,7 @@ pin('the subcategory items went too', 0, $rows('t_item', "pk_i_id = $childItem")
 pin('descriptions are gone', 0, $rows('t_category_description', "fk_i_category_id IN ($parent, $child)"));
 pin('field assignments are gone', 0, $rows('t_meta_categories', "fk_i_category_id = $child"));
 pin('slug history is gone', 0, $rows('t_category_slug_history', "fk_i_category_id = $child"));
-pin('plugin links are gone', 0, $rows('t_plugin_category', "fk_i_category_id = $child"));
+pin('plugin links are gone', 0, count((new PluginCategory())->findByCategoryId($child)));
 pin('stats are gone', 0, $rows('t_category_stats', "fk_i_category_id = $child"));
 
 /* ---------------------------------------------------------------------------

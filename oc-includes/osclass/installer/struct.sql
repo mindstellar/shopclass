@@ -471,15 +471,6 @@ CREATE TABLE /*TABLE_PREFIX*/t_pages_description (
         FOREIGN KEY (fk_c_locale_code) REFERENCES /*TABLE_PREFIX*/t_locale (pk_c_code) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
-CREATE TABLE /*TABLE_PREFIX*/t_plugin_category (
-    s_plugin_name VARCHAR(40) NOT NULL,
-    fk_i_category_id INT UNSIGNED NOT NULL,
-
-        PRIMARY KEY (s_plugin_name, fk_i_category_id),
-        INDEX fk_i_category_id (fk_i_category_id),
-        FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
-
 CREATE TABLE /*TABLE_PREFIX*/t_cron (
   e_type enum('INSTANT','HOURLY','DAILY','WEEKLY','CUSTOM') NOT NULL,
   d_last_exec DATETIME NOT NULL DEFAULT  '1000-01-01 00:00:00',

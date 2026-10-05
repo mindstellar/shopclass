@@ -700,9 +700,7 @@ class Plugins
      */
     public static function cleanCategoryFromPlugin($plugin)
     {
-        $dao_pluginCategory = new PluginCategory();
-        $dao_pluginCategory->delete(array('s_plugin_name' => $plugin));
-        unset($dao_pluginCategory);
+        (new PluginCategory())->clear($plugin);
     }
 
     /**
@@ -715,7 +713,7 @@ class Plugins
      */
     public static function isThisCategory($name, $id)
     {
-        return PluginCategory::newInstance()->isThisCategory($name, $id);
+        return (new PluginCategory())->isThisCategory($name, $id);
     }
 
     /**
@@ -778,29 +776,24 @@ class Plugins
      */
     public static function addToCategoryPlugin($categories, $plugin)
     {
-        $dao_pluginCategory = new PluginCategory();
-        $dao_category       = new Category();
-        if (!empty($categories)) {
-            foreach ($categories as $catId) {
-                $result = $dao_pluginCategory->isThisCategory($plugin, $catId);
-                if ($result == 0) {
-                    $fields                     = array();
-                    $fields['s_plugin_name']    = $plugin;
-                    $fields['fk_i_category_id'] = $catId;
-                    $dao_pluginCategory->insert($fields);
-
-                    $subs = $dao_category->findSubcategories($catId);
-                    if (is_array($subs) && count($subs) > 0) {
-                        $cats = array();
-                        foreach ($subs as $sub) {
-                            $cats[] = $sub['pk_i_id'];
-                        }
-                        self::addToCategoryPlugin($cats, $plugin);
-                    }
-                }
+        if (empty($categories)) {
+            return;
+        }
+        $dao_category = new Category();
+        $ids          = array();
+        $todo         = array_map('intval', (array) $categories);
+        while ($todo !== array()) {
+            $catId = array_shift($todo);
+            if (isset($ids[$catId])) {
+                continue;
+            }
+            $ids[$catId] = $catId;
+            $subs        = $dao_category->findSubcategories($catId);
+            foreach (is_array($subs) ? $subs : array() as $sub) {
+                $todo[] = (int) $sub['pk_i_id'];
             }
         }
-        unset($dao_pluginCategory, $dao_category);
+        (new PluginCategory())->add($plugin, array_values($ids));
     }
 
     /**

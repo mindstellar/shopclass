@@ -496,7 +496,6 @@ class Category extends DAO
         // would clear it regardless. They stay here for an install whose foreign
         // keys were never created, where nothing else would.
         $dependents = array(
-            't_plugin_category',
             't_category_description',
             't_category_stats',
             't_meta_categories',
@@ -519,6 +518,9 @@ class Category extends DAO
             return false;
         }
 
+        if ($deleted) {
+            (new PluginCategory())->removeCategory($pkInt);
+        }
         osc_run_hook('after_delete_category', $pkInt);
 
         return $deleted;

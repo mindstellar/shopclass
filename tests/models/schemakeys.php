@@ -46,7 +46,8 @@ $count = static function (string $sql) use ($admin): int {
 harness_section('migration 0051');
 
 $admin->query("ALTER TABLE {$p}t_cron DROP PRIMARY KEY");
-$admin->query("ALTER TABLE {$p}t_plugin_category DROP PRIMARY KEY");
+// t_plugin_category is gone from struct.sql (0067); 0051 met it without a key.
+$admin->query("CREATE TABLE {$p}t_plugin_category (s_plugin_name VARCHAR(40) NOT NULL, fk_i_category_id INT UNSIGNED NOT NULL)");
 // WEEKLY has no row at all, as after a lost dedupe race.
 $admin->query("INSERT INTO {$p}t_cron VALUES
     ('HOURLY', '2026-01-01 00:00:00', '2026-01-01 01:00:00'),
@@ -165,7 +166,7 @@ $admin->query("ALTER TABLE {$p}t_user DROP INDEX site_reg_date, ADD INDEX idx_re
 $admin->query("ALTER TABLE {$p}t_item DROP INDEX site_expiration, ADD INDEX idx_expiration (dt_expiration)");
 $admin->query("ALTER TABLE {$p}t_alerts DROP INDEX s_email_prefix");
 $admin->query("DELETE FROM {$p}t_cron");
-$admin->query("DELETE FROM {$p}t_plugin_category");
+$admin->query("DROP TABLE {$p}t_plugin_category");
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
