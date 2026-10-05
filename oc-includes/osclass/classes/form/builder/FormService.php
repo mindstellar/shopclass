@@ -9,7 +9,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-namespace mindstellar\forms;
+namespace mindstellar\form\builder;
 
 use Throwable;
 
@@ -25,7 +25,7 @@ use Throwable;
  * rather than the legacy DAO. The legacy Field / FieldGroup models keep their own
  * resolution/CRUD; this class is the write path the drag-and-drop builder calls.
  *
- * @package mindstellar\forms
+ * @package mindstellar\form\builder
  */
 final class FormService
 {

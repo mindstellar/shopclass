@@ -13,6 +13,7 @@ namespace mindstellar\settings;
 
 use InvalidArgumentException;
 use mindstellar\admin\form\store\TableStore;
+use mindstellar\base\Registry;
 
 /**
  * Class SettingsPageRegistry
@@ -33,7 +34,7 @@ use mindstellar\admin\form\store\TableStore;
  *
  * @package mindstellar\settings
  */
-final class SettingsPageRegistry
+final class SettingsPageRegistry extends Registry
 {
     /** Field types a declared page may use. Anything else is a spec error, not a fallback. */
     public const FIELD_TYPES = array(
@@ -95,37 +96,11 @@ final class SettingsPageRegistry
         'stats',
     );
 
-    private static ?SettingsPageRegistry $instance = null;
-
-    /** @var array<string,array> normalised page specs, keyed by id */
-    private array $pages = array();
-
     /** @var array<string,int> ids a second registration tried to claim */
     private array $conflicts = array();
 
     /** Whether admin_menu_init has already placed the declared pages in the menu. */
     private bool $menuReady = false;
-
-    /**
-     * Singleton: obtain the registry through instance().
-     */
-    private function __construct()
-    {
-    }
-
-    /**
-     * Shared registry instance, created on first use.
-     *
-     * @return self
-     */
-    public static function instance(): self
-    {
-        if (self::$instance === null) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
-    }
 
     /**
      * Record that the admin menu has been built, or ask whether it has.
@@ -275,7 +250,7 @@ final class SettingsPageRegistry
         // reads, both silently. Throwing is not the answer either -- plugins are included
         // unguarded from oc-load.php, so an exception here white-screens the whole site,
         // front end included, over a name collision. See conflicts().
-        if (isset($this->pages[$id])) {
+        if (isset($this->entries[$id])) {
             $this->conflicts[$id] = ($this->conflicts[$id] ?? 0) + 1;
 
             return;
@@ -307,7 +282,7 @@ final class SettingsPageRegistry
 
         $store = $this->normaliseStore($id, $spec['store'] ?? 'preference');
 
-        $this->pages[$id] = array(
+        $this->entries[$id] = array(
             'id'         => $id,
             'title'      => $spec['title'],
             'menu'       => $menu,
@@ -325,29 +300,6 @@ final class SettingsPageRegistry
             'validate'   => isset($spec['validate']) && is_callable($spec['validate']) ? $spec['validate'] : null,
             'after_save' => isset($spec['after_save']) && is_callable($spec['after_save']) ? $spec['after_save'] : null,
         );
-    }
-
-    /**
-     * The spec for a registered page, or null when the id is not registered (e.g. its
-     * plugin is deactivated -- which is exactly when a bookmarked URL is still requested).
-     *
-     * @param string $id
-     *
-     * @return array<string,mixed>|null
-     */
-    public function get(string $id): ?array
-    {
-        return $this->pages[$id] ?? null;
-    }
-
-    /**
-     * All registered pages, keyed by id, in registration order.
-     *
-     * @return array<string,array>
-     */
-    public function all(): array
-    {
-        return $this->pages;
     }
 
     /**
@@ -385,18 +337,6 @@ final class SettingsPageRegistry
     public function conflicts(): array
     {
         return $this->conflicts;
-    }
-
-    /**
-     * Whether $id is a well-formed page id.
-     *
-     * @param string $id
-     *
-     * @return bool
-     */
-    public static function isValidId(string $id): bool
-    {
-        return (bool)preg_match('/^[a-z0-9_.-]{1,60}$/', $id);
     }
 
     /**

@@ -9,7 +9,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\forms\FieldValidator;
+use mindstellar\form\builder\FieldValidator;
 use mindstellar\model\FormSubmission;
 
 /**
@@ -162,7 +162,7 @@ class CWebForm extends BaseModel
         osc_run_hook('form_submit', $form, $result['values'], $contextType, $contextId);
 
         $userId = osc_is_web_user_logged_in() ? (int) osc_logged_user_id() : null;
-        $submissionId = FormSubmission::newInstance()->create(
+        $submissionId = (new FormSubmission())->create(
             $formId,
             $contextType,
             $contextId,

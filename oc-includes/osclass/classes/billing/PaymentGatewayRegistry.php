@@ -12,6 +12,7 @@
 namespace mindstellar\billing;
 
 use InvalidArgumentException;
+use mindstellar\base\Registry;
 
 /**
  * Registry of payment gateways.
@@ -26,32 +27,8 @@ use InvalidArgumentException;
  *
  * @package mindstellar\billing
  */
-final class PaymentGatewayRegistry
+final class PaymentGatewayRegistry extends Registry
 {
-    private static ?PaymentGatewayRegistry $instance = null;
-
-    /** @var array<string,PaymentGateway> registered gateways, keyed by id */
-    private array $gateways = array();
-
-    /** Private: the registry is a singleton, reached through instance(). */
-    private function __construct()
-    {
-    }
-
-    /**
-     * The shared registry.
-     *
-     * @return self
-     */
-    public static function instance(): self
-    {
-        if (self::$instance === null) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
-    }
-
     /**
      * Register a gateway. Re-registering an id replaces the previous implementation,
      * which is what lets a site override a bundled gateway with its own.
@@ -77,7 +54,7 @@ final class PaymentGatewayRegistry
             }
         }
 
-        $this->gateways[$id] = $gateway;
+        $this->entries[$id] = $gateway;
     }
 
     /**
@@ -89,17 +66,7 @@ final class PaymentGatewayRegistry
      */
     public function get(string $id): ?PaymentGateway
     {
-        return $this->gateways[$id] ?? null;
-    }
-
-    /**
-     * Every registered gateway, configured or not, keyed by id.
-     *
-     * @return array<string,PaymentGateway>
-     */
-    public function all(): array
-    {
-        return $this->gateways;
+        return $this->entries[$id] ?? null;
     }
 
     /**
@@ -114,7 +81,7 @@ final class PaymentGatewayRegistry
     public function available(?string $currency = null): array
     {
         $out = array();
-        foreach ($this->gateways as $id => $gateway) {
+        foreach ($this->entries as $id => $gateway) {
             if (!$gateway->isConfigured()) {
                 continue;
             }
@@ -125,18 +92,6 @@ final class PaymentGatewayRegistry
         }
 
         return $out;
-    }
-
-    /**
-     * Lower-case slug, matching the spelling used for widget and field type ids.
-     *
-     * @param string $id
-     *
-     * @return bool
-     */
-    public static function isValidId(string $id): bool
-    {
-        return (bool) preg_match('/^[a-z0-9_.-]{1,60}$/', $id);
     }
 }
 

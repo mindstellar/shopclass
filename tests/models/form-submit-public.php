@@ -95,7 +95,7 @@ View::newInstance()->_erase('_loggedUser');
 
 /** Post the form and return the flash message the visitor is sent back with. */
 $submit = static function (int $formId): string {
-    $csrf = new \mindstellar\Csrf();
+    $csrf = new \mindstellar\security\Csrf();
     $_POST = $_REQUEST = array(
         'page' => 'form', 'action' => 'submit', 'osc_form_id' => (string) $formId,
         'CSRFName' => $csrf->getCsrfTokenName(), 'CSRFToken' => $csrf->getCsrfTokenValue(),

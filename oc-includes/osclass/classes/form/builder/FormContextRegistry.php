@@ -9,7 +9,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-namespace mindstellar\forms;
+namespace mindstellar\form\builder;
 
 use InvalidArgumentException;
 
@@ -26,7 +26,7 @@ use InvalidArgumentException;
  * sensibly. Deliberately mirrors mindstellar\widgets\WidgetRegistry and
  * mindstellar\fields\FieldTypeRegistry.
  *
- * @package mindstellar\forms
+ * @package mindstellar\form\builder
  */
 final class FormContextRegistry
 {

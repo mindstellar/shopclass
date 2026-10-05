@@ -12,6 +12,7 @@
 namespace mindstellar\widgets;
 
 use InvalidArgumentException;
+use mindstellar\base\Registry;
 
 /**
  * Class WidgetRegistry
@@ -26,34 +27,8 @@ use InvalidArgumentException;
  *
  * @package mindstellar\widgets
  */
-final class WidgetRegistry
+final class WidgetRegistry extends Registry
 {
-    private static ?WidgetRegistry $instance = null;
-
-    /** @var array<string,array> registered type specs, keyed by type id */
-    private array $types = [];
-
-    /**
-     * Singleton: obtain the registry through instance().
-     */
-    private function __construct()
-    {
-    }
-
-    /**
-     * Shared registry instance, created on first use.
-     *
-     * @return self
-     */
-    public static function instance(): self
-    {
-        if (self::$instance === null) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
-    }
-
     /**
      * Register a widget type.
      *
@@ -120,7 +95,7 @@ final class WidgetRegistry
                 ? ucfirst(str_replace(array('_', '-'), ' ', substr($id, 0, strpos($id, '.'))))
                 : 'General');
 
-        $this->types[$id] = [
+        $this->entries[$id] = [
             'id'          => $id,
             'label'       => $spec['label'],
             'group'       => $group,
@@ -130,40 +105,5 @@ final class WidgetRegistry
             'form'        => $spec['form'] ?? null,
             'capability'  => $capability,
         ];
-    }
-
-    /**
-     * The spec for a registered type, or null when the id is not registered
-     * (e.g. its plugin is deactivated).
-     *
-     * @param string $id
-     *
-     * @return array<string,mixed>|null
-     */
-    public function get(string $id): ?array
-    {
-        return $this->types[$id] ?? null;
-    }
-
-    /**
-     * All registered type specs, keyed by id.
-     *
-     * @return array<string,array>
-     */
-    public function all(): array
-    {
-        return $this->types;
-    }
-
-    /**
-     * Whether $id is a well-formed widget type id.
-     *
-     * @param string $id
-     *
-     * @return bool
-     */
-    public static function isValidId(string $id): bool
-    {
-        return (bool) preg_match('/^[a-z0-9_.-]{1,60}$/', $id);
     }
 }

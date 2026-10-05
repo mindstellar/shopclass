@@ -65,6 +65,11 @@ class WebThemes extends Themes
             $this->setCurrentTheme(osc_theme());
         }
 
+        // The API renders nothing, so it skips the theme's code unless a plugin asks for it.
+        if (osc_is_api_request() && !osc_apply_filter('api_theme_functions_enabled', false)) {
+            return;
+        }
+
         $functions_path = $this->getCurrentThemePath() . 'functions.php';
         if (file_exists($functions_path)) {
             require_once $functions_path;

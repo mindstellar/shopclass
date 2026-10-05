@@ -9,7 +9,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-namespace mindstellar\forms;
+namespace mindstellar\form\builder;
 
 use mindstellar\utility\Sanitize;
 
@@ -27,7 +27,7 @@ use mindstellar\utility\Sanitize;
  * sharing its private methods, so the item write path — the compatibility contract
  * — is untouched. The client engine is UX only; this is the authority.
  *
- * @package mindstellar\forms
+ * @package mindstellar\form\builder
  */
 final class FieldValidator
 {
