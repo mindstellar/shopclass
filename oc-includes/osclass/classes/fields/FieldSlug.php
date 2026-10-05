@@ -1,0 +1,44 @@
+<?php
+
+/*
+ * This file is part of Shopclass (Mindstellar).
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
+ *
+ * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+declare(strict_types=1);
+
+namespace mindstellar\fields;
+
+use Field;
+
+/**
+ * A custom field's slug: lower case letters, digits, `_` and `-`, and not another field's.
+ */
+final class FieldSlug
+{
+    private function __construct()
+    {
+    }
+
+    /**
+     * The slug for a name or a typed slug, with `_1`, `_2`... added while another field holds it.
+     *
+     * @param int $self the field being saved, which may keep its own slug; 0 for a new one
+     */
+    public static function unique(string $wanted, int $self = 0): string
+    {
+        $base = (string) preg_replace('|([-]+)|', '-', (string) preg_replace('|[^a-z0-9_-]|', '-', strtolower($wanted)));
+        $slug = $base;
+        for ($n = 1; ; $n++) {
+            $field = Field::newInstance()->findBySlug($slug);
+            if (!$field || (int) $field['pk_i_id'] === $self) {
+                return $slug;
+            }
+            $slug = $base . '_' . $n;
+        }
+    }
+}

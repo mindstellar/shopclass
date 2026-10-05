@@ -57,6 +57,37 @@ class SearchCriteria
     /** @var array<int|string,mixed>|string */
     private $meta;
 
+    /** @var mixed */
+    private $order;
+
+    /** @var int|string */
+    private $orderType;
+
+    /** @var int */
+    private $page = 0;
+
+    /** @var int */
+    private $pageSize;
+
+    /** @var mixed */
+    private $showAs;
+
+    /** @var mixed */
+    private $feed;
+
+    /** @var int */
+    private $rssItems;
+
+    /** Defaults for the listing options; the search page passes the site's preferences. */
+    private const LIMITS = array(
+        'orderField'  => 'dt_pub_date',
+        'orderType'   => 1,
+        'showAs'      => 'list',
+        'pageSize'    => 12,
+        'maxPageSize' => 50,
+        'rssItems'    => 50,
+    );
+
     /**
      * @param array<int,mixed>        $categories
      * @param array<int,mixed>        $cityAreas
@@ -108,16 +139,20 @@ class SearchCriteria
     /**
      * Build from a purified request bag — feed it Params::getParamsAsArray(), not $_GET/$_POST.
      *
+     * $limits sets the listing defaults and caps: orderField, orderType, showAs, pageSize,
+     * maxPageSize, rssItems. A missing key falls back to the install defaults.
+     *
      * @param array<string,mixed> $params
+     * @param array<string,mixed> $limits
      *
      * @return self
      */
-    public static function fromRequest(array $params): self
+    public static function fromRequest(array $params, array $limits = array()): self
     {
         $params['sPattern'] = self::scalar($params['sPattern'] ?? '');
         $rawPattern         = trim(strip_tags($params['sPattern']));
 
-        return new self(
+        $criteria = new self(
             self::splitOrKeep($params['sCategory'] ?? ''),
             self::splitOrKeep($params['sCityArea'] ?? ''),
             self::splitOrKeep($params['sCity'] ?? ''),
@@ -133,6 +168,52 @@ class SearchCriteria
             self::scalar($params['sPriceMax'] ?? ''),
             is_array($params['meta'] ?? null) ? $params['meta'] : ''
         );
+        $criteria->setListing($params, array_merge(self::LIMITS, $limits));
+
+        return $criteria;
+    }
+
+    /**
+     * Sort, paging, display and feed options, each checked against what core allows.
+     *
+     * @param array<string,mixed> $params
+     * @param array<string,mixed> $limits
+     *
+     * @return void
+     */
+    private function setListing(array $params, array $limits): void
+    {
+        $order       = $params['sOrder'] ?? '';
+        $this->order = in_array($order, \Search::getAllowedColumnsForSorting()) ? $order : $limits['orderField'];
+
+        // iOrderType is 'asc' or 'desc'; it is stored as the sort-type key.
+        $this->orderType = $limits['orderType'];
+        $orderType       = $params['iOrderType'] ?? '';
+        foreach (\Search::getAllowedTypesForSorting() as $k => $v) {
+            if ($orderType == $v) {
+                $this->orderType = $k;
+                break;
+            }
+        }
+
+        $page = $params['iPage'] ?? '';
+        if (is_numeric($page) && $page > 0) {
+            $this->page = (int)$page - 1;
+        }
+
+        $pageSize = $params['iPagesize'] ?? null;
+        $pageSize = ($pageSize === null || is_array($pageSize)) ? 0 : (int)$pageSize;
+        if ($pageSize > 0) {
+            $this->pageSize = min($pageSize, (int)$limits['maxPageSize']);
+        } else {
+            $this->pageSize = (int)$limits['pageSize'];
+        }
+
+        $showAs       = $params['sShowAs'] ?? '';
+        $this->showAs = in_array($showAs, array('list', 'gallery')) ? $showAs : $limits['showAs'];
+
+        $this->feed     = $params['sFeed'] ?? '';
+        $this->rssItems = (int)$limits['rssItems'];
     }
 
     /**
@@ -289,5 +370,82 @@ class SearchCriteria
     public function meta()
     {
         return $this->meta;
+    }
+
+    /**
+     * The requested sort column, or the default when it is not allowed. 'relevance' is
+     * kept even without a pattern; sortColumn() is what the query uses.
+     *
+     * @return mixed
+     */
+    public function order()
+    {
+        return $this->order;
+    }
+
+    /**
+     * The sort-type key (0 asc, 1 desc), or the default preference value as stored.
+     *
+     * @return int|string
+     */
+    public function orderType()
+    {
+        return $this->orderType;
+    }
+
+    /**
+     * The column the query sorts by: a pattern-less 'relevance' sort is newest first.
+     *
+     * @return mixed
+     */
+    public function sortColumn()
+    {
+        return (!$this->hasPattern() && $this->order === 'relevance') ? 'dt_pub_date' : $this->order;
+    }
+
+    /**
+     * 'asc' or 'desc' for orderType(), or null when the default is not a sort type.
+     */
+    public function sortDirection(): ?string
+    {
+        return \Search::getAllowedTypesForSorting()[$this->orderType] ?? null;
+    }
+
+    /** Zero-based page number. */
+    public function page(): int
+    {
+        return $this->page;
+    }
+
+    /** Results per page, capped at maxPageSize. */
+    public function pageSize(): int
+    {
+        return $this->pageSize;
+    }
+
+    /**
+     * 'list' or 'gallery', or the default.
+     *
+     * @return mixed
+     */
+    public function showAs()
+    {
+        return $this->showAs;
+    }
+
+    /**
+     * The sFeed value as sent: '' for none, 'rss', or a plugin feed name.
+     *
+     * @return mixed
+     */
+    public function feed()
+    {
+        return $this->feed;
+    }
+
+    /** Items an rss feed lists, from the first one. */
+    public function pageSizeForFeed(): int
+    {
+        return $this->rssItems;
     }
 }

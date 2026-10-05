@@ -29,93 +29,34 @@ class CWebSearch extends BaseModel
         parent::__construct();
 
         $this->mSearch = Search::newInstance();
-        $this->uri     = Params::getRequestURI(false, false, false);
 
-        //Check if request is not having index.php
-        if (!(stripos($this->uri, 'index.php') === 0)) {
-            // remove ending '/'
-            $this->uri = rtrim($this->uri, '/');
-
-            // redirect if it ends with a slash NOT NEEDED ANYMORE, SINCE WE CHECK WITH osc_search_url
-            if (($this->uri !== osc_get_preference('rewrite_search_url')
-                    && stripos($this->uri, osc_get_preference('rewrite_search_url') . '/')
-                    === false)
-                && osc_rewrite_enabled()
-                && !Params::existParam('sFeed')
-            ) {
-                if (!is_numeric($this->uri)) {
-                    // clean GET html params
-                    $this->uri  = preg_replace('/(\/?)\?.*$/', '', $this->uri);
-                    $search_uri = preg_replace('|/\d+$|', '', $this->uri);
-                    $this->_exportVariableToView('search_uri', $search_uri);
-                    $iPage = preg_replace('|.*/(\d+)$|', '$01', $this->uri);
-
-                    if (is_numeric($iPage) && $iPage > 0) {
-                        Params::setParam('iPage', $iPage);
-                        // redirect without number of pages
-                        if ($iPage == 1) {
-                            $this->redirectTo(osc_base_url() . $search_uri);
-                        }
-                    }
-                    // The canonical is exported for every search page (page 1 included) and
-                    // normalised in doModel(); see the self-canonical block there.
-                } else {
-                    $search_uri = $this->uri;
-                }
-
-                // get only the last segment
-                $search_uri = preg_replace('|.*?/|', '', $search_uri);
-                if (preg_match('|-r(\d+)$|', $search_uri, $r)) {
-                    $region = Region::newInstance()->findByPrimaryKey($r[1]);
-                    if (!$region) {
-                        $this->do404();
-                    }
-                    Params::setParam('sRegion', $region['pk_i_id']);
-                    Params::unsetParam('sCategory');
-                    if (preg_match('|(.*?)_.*?-r\d+|', $search_uri, $match)) {
-                        Params::setParam('sCategory', $match[1]);
-                    }
-                } elseif (preg_match('|-c(\d+)$|', $search_uri, $c)) {
-                    $city = City::newInstance()->findByPrimaryKey($c[1]);
-                    if (!$city) {
-                        $this->do404();
-                    }
-                    Params::setParam('sCity', $city['pk_i_id']);
-                    Params::unsetParam('sCategory');
-                    if (preg_match('|(.*?)_.*?-c\d+|', $search_uri, $match)) {
-                        Params::setParam('sCategory', $match[1]);
-                    }
-                } elseif (Params::existParam('sCategory')) {
-                    if (strpos(Params::getParam('sCategory'), '/') !== false) {
-                        $tmp = explode(
-                            '/',
-                            preg_replace('|/$|', '', Params::getParam('sCategory'))
-                        );
-
-                        $categorySlug = $tmp[count($tmp) - 1];
-                        Params::setParam('sCategory', $categorySlug);
-                    } else {
-                        $categorySlug = Params::getParam('sCategory');
-                        Params::setParam('sCategory', $categorySlug);
-                    }
-                    $category = self::findCategory($categorySlug);
-                    if (empty($category)) {
-                        $this->categorySlugRedirect($categorySlug);
-                        $this->do404();
-                    }
-                } elseif ($search_uri !== osc_get_preference('rewrite_search_url')) {
-                    // A bare /search route carrying query-string params (e.g. /search?sPattern=x)
-                    // is not a category slug — leave it for doModel() to 301 onto the friendly
-                    // URL, instead of resolving 'search' as a category and 404ing.
-                    $category = Category::newInstance()->findBySlug($search_uri);
-
-                    if (count($category) === 0) {
-                        $this->categorySlugRedirect($search_uri);
-                        $this->do404();
-                    }
-                    Params::setParam('sCategory', $search_uri);
-                }
+        $request = array();
+        foreach (array('sCategory', 'sFeed') as $key) {
+            if (Params::existParam($key)) {
+                $request[$key] = Params::getParam($key);
             }
+        }
+        $resolved  = $this->uriResolver()->resolve(
+            (string)Params::getRequestURI(false, false, false),
+            $request,
+            osc_rewrite_enabled()
+        );
+        $this->uri = $resolved['uri'];
+        if (isset($resolved['exports']['search_uri'])) {
+            $this->_exportVariableToView('search_uri', $resolved['exports']['search_uri']);
+        }
+        foreach ($resolved['params'] as $op) {
+            if ($op[0] === 'set') {
+                Params::setParam($op[1], $op[2]);
+            } else {
+                Params::unsetParam($op[1]);
+            }
+        }
+        if ($resolved['redirect'] !== null) {
+            $this->redirectTo($resolved['redirect']['url'], $resolved['redirect']['code']);
+        }
+        if ($resolved['notFound']) {
+            $this->do404();
         }
     }
 
@@ -128,68 +69,56 @@ class CWebSearch extends BaseModel
      */
     public function doModel()
     {
-        if ($this->action === 'alert_post') {
-            $this->saveAlert();
-        }
+        $this->saveAlertIfPosted();
         osc_run_hook('before_search');
 
         if (osc_rewrite_enabled()) {
-            // IF rewrite is not enabled, skip this part, preg_match is always time&resources consuming task
-            $p_sParams = '/' . Params::getParam('sParams', false, false);
-            if (preg_match_all('|/([^,]+),([^/]*)|', $p_sParams, $m)) {
-                $l = count($m[0]);
-                for ($k = 0; $k < $l; $k++) {
-                    switch ($m[1][$k]) {
-                        case osc_get_preference('rewrite_search_country'):
-                            $m[1][$k] = 'sCountry';
-                            break;
-                        case osc_get_preference('rewrite_search_region'):
-                            $m[1][$k] = 'sRegion';
-                            break;
-                        case osc_get_preference('rewrite_search_city'):
-                            $m[1][$k] = 'sCity';
-                            break;
-                        case osc_get_preference('rewrite_search_city_area'):
-                            $m[1][$k] = 'sCityArea';
-                            break;
-                        case osc_get_preference('rewrite_search_category'):
-                            $m[1][$k] = 'sCategory';
-                            break;
-                        case osc_get_preference('rewrite_search_user'):
-                            $m[1][$k] = 'sUser';
-                            break;
-                        case osc_get_preference('rewrite_search_pattern'):
-                            $m[1][$k] = 'sPattern';
-                            break;
-                        default:
-                            // custom fields
-                            if (preg_match("/meta(\d+)-?(.*)?/", $m[1][$k], $results)) {
-                                $meta_key   = $m[1][$k];
-                                $meta_value = $m[2][$k];
-                                $array_r    = Params::getParamArray('meta');
-                                if ($results[2] == '') {
-                                    // meta[meta_id] = meta_value
-                                    $meta_key           = $results[1];
-                                    $array_r[$meta_key] = $meta_value;
-                                } else {
-                                    // meta[meta_id][meta_key] = meta_value
-                                    $meta_key                       = $results[1];
-                                    $meta_key2                      = $results[2];
-                                    $array_r[$meta_key][$meta_key2] = $meta_value;
-                                }
-                                $m[1][$k] = 'meta';
-                                $m[2][$k] = $array_r;
-                            }
-                            break;
-                    }
-
-                    Params::setParam($m[1][$k], $m[2][$k]);
-                }
-                Params::unsetParam('sParams');
-            }
+            $this->applyFriendlyParams();
         }
 
         $uriParams = Params::getParamsAsArray();
+        $this->redirectToCanonical($uriParams);
+
+        $criteria = $this->buildCriteria($uriParams);
+        $this->recordLatestSearch($criteria);
+
+        $result = \mindstellar\search\SearchRunner::run($criteria, $this->mSearch, 'request');
+        osc_run_hook('search', $this->mSearch);
+
+        $this->exportResults($criteria, $result);
+        $this->exportAlert($criteria);
+        $this->markEmptyResult($criteria, $result->items());
+
+        osc_run_hook('after_search');
+
+        if (Params::existParam('sFeed')) {
+            $this->renderFeed($criteria->feed(), $result->items());
+        } else {
+            $this->renderPage($criteria->categories());
+        }
+    }
+
+    /**
+     * The alert form posted without JavaScript.
+     *
+     * @return void
+     */
+    private function saveAlertIfPosted()
+    {
+        if ($this->action === 'alert_post') {
+            $this->saveAlert();
+        }
+    }
+
+    /**
+     * 301 to the friendly URL of these params, then export this page's canonical.
+     *
+     * @param array<string,mixed> $uriParams
+     *
+     * @return void
+     */
+    private function redirectToCanonical(array $uriParams)
+    {
         $searchUri = osc_search_url($uriParams);
         if ($this->uri !== 'feed') {
             $_base_url = WEB_PATH;
@@ -204,30 +133,51 @@ class CWebSearch extends BaseModel
         if ($this->uri !== 'feed' && !Params::existParam('sFeed')) {
             $this->_exportVariableToView('canonical', osc_search_url(self::canonicalParams($uriParams)));
         }
+    }
 
-        ////////////////////////////////
-        //GETTING AND FIXING SENT DATA//
-        ////////////////////////////////
-        $criteria = \mindstellar\search\SearchCriteria::fromRequest($uriParams);
+    /**
+     * The search values, 404ing when every category asked for is missing.
+     *
+     * @param array<string,mixed> $uriParams
+     *
+     * @return \mindstellar\search\SearchCriteria
+     */
+    private function buildCriteria(array $uriParams)
+    {
+        $criteria = \mindstellar\search\SearchCriteria::fromRequest($uriParams, array(
+            'orderField'  => osc_default_order_field_at_search(),
+            'orderType'   => osc_default_order_type_at_search(),
+            'showAs'      => osc_default_show_as_at_search(),
+            'pageSize'    => osc_default_results_per_page_at_search(),
+            'maxPageSize' => osc_max_results_per_page_at_search(),
+            'rssItems'    => osc_num_rss_items(),
+        ));
 
-        $p_sCategory = $criteria->categories();
+        $categories = $criteria->categories();
         // A category that does not exist is a missing page, not every listing on the site.
-        if ($p_sCategory !== array()
-            && array_filter($p_sCategory, static fn ($c) => self::findCategory((string)$c) !== array()) === array()
+        if ($categories !== array()
+            && array_filter($categories, static fn ($c) => self::findCategory((string)$c) !== array()) === array()
         ) {
             $this->do404();
         }
-        $p_sCity     = implode(', ', $criteria->cities());
-        $p_sRegion   = implode(', ', $criteria->regions());
-        $p_sCountry  = implode(', ', $criteria->countries());
-        $p_sUser     = $criteria->users();
-        $p_sPattern  = $criteria->pattern();
 
-        // ADD TO THE LIST OF LAST SEARCHES
+        return $criteria;
+    }
+
+    /**
+     * Add the pattern to the latest searches, on the first page only.
+     *
+     * @param \mindstellar\search\SearchCriteria $criteria
+     *
+     * @return void
+     */
+    private function recordLatestSearch($criteria)
+    {
         if (osc_save_latest_searches()
             && (!Params::existParam('iPage')
                 || Params::getParam('iPage') == 1)
         ) {
+            $p_sPattern  = $criteria->pattern();
             $savePattern = osc_apply_filter('save_latest_searches_pattern', $p_sPattern);
             if ($savePattern != '') {
                 LatestSearches::newInstance()->insert(array(
@@ -236,142 +186,23 @@ class CWebSearch extends BaseModel
                 ));
             }
         }
+    }
 
-        $p_bPic     = $criteria->withPicture() ? 1 : 0;
-        $p_bPremium = $criteria->onlyPremium() ? 1 : 0;
+    /**
+     * Export the results, the paging and the search values to the view.
+     *
+     * @param \mindstellar\search\SearchCriteria $criteria
+     * @param \mindstellar\search\SearchResult   $result
+     *
+     * @return void
+     */
+    private function exportResults($criteria, $result)
+    {
+        $page        = $criteria->page();
+        $pageSize    = $criteria->pageSize();
+        $iTotalItems = $result->total();
 
-        $p_sPriceMin = $criteria->priceMin();
-        $p_sPriceMax = $criteria->priceMax();
-
-        //WE CAN ONLY USE THE FIELDS RETURNED BY Search::getAllowedColumnsForSorting()
-        $p_sOrder = Params::getParam('sOrder');
-        if (!in_array($p_sOrder, Search::getAllowedColumnsForSorting())) {
-            $p_sOrder = osc_default_order_field_at_search();
-        }
-        $old_order = $p_sOrder;
-
-        //ONLY 0 ( => 'asc' ), 1 ( => 'desc' ) AS ALLOWED VALUES
-        $p_iOrderType           = Params::getParam('iOrderType');
-        $allowedTypesForSorting = Search::getAllowedTypesForSorting();
-        $orderType              = osc_default_order_type_at_search();
-        foreach ($allowedTypesForSorting as $k => $v) {
-            if ($p_iOrderType == $v) {
-                $orderType = $k;
-                break;
-            }
-        }
-        $p_iOrderType = $orderType;
-
-        $p_sFeed = Params::getParam('sFeed');
-        $p_iPage = 0;
-        if (is_numeric(Params::getParam('iPage')) && Params::getParam('iPage') > 0) {
-            $p_iPage = Params::getParamInt('iPage') - 1;
-        }
-
-        if ($p_sFeed != '') {
-            $p_sPageSize = 1000;
-        }
-
-        $p_sShowAs          = Params::getParam('sShowAs');
-        $aValidShowAsValues = array('list', 'gallery');
-        if (!in_array($p_sShowAs, $aValidShowAsValues)) {
-            $p_sShowAs = osc_default_show_as_at_search();
-        }
-
-        // search results: it's blocked with the maxResultsPerPage@search defined in t_preferences
-        $p_iPageSize = Params::getParamInt('iPagesize');
-        if ($p_iPageSize > 0) {
-            if ($p_iPageSize > osc_max_results_per_page_at_search()) {
-                $p_iPageSize = osc_max_results_per_page_at_search();
-            }
-        } else {
-            $p_iPageSize = osc_default_results_per_page_at_search();
-        }
-
-        // A pattern-less "relevance" sort falls back to newest-first; needs to run
-        // before order() below either way, so it is settled from the criteria object
-        // rather than from inside the addPattern()/no-pattern branch it used to share.
-        if (!$criteria->hasPattern() && $p_sOrder === 'relevance') {
-            $p_sOrder = 'dt_pub_date';
-            foreach ($allowedTypesForSorting as $k => $v) {
-                if ($p_iOrderType === 'desc') {
-                    $orderType = $k;
-                    break;
-                }
-            }
-            $p_iOrderType = $orderType;
-        }
-
-        \mindstellar\search\SearchBuilder::apply($criteria, $this->mSearch);
-
-        //ORDERING THE SEARCH RESULTS
-        $this->mSearch->order($p_sOrder, $allowedTypesForSorting[$p_iOrderType]);
-
-        //SET PAGE
-        if ($p_sFeed === 'rss') {
-            // If param sFeed=rss, just output last 'osc_num_rss_items()'
-            $this->mSearch->page(0, osc_num_rss_items());
-        } else {
-            $this->mSearch->page($p_iPage, $p_iPageSize);
-        }
-
-        \mindstellar\search\SearchBuilder::fireConditions($this->mSearch);
-
-        // RETRIEVE ITEMS AND TOTAL
-        // A search backend may answer the query itself: a listener on 'search_results' receives
-        // the fully-parsed Search model and the request params and returns
-        // ['items' => array, 'total' => int] to take over — or null to leave core's MySQL search
-        // in charge. This lets a plugin or theme delegate to an external engine (Manticore,
-        // Elasticsearch, …) while core keeps ownership of URL parsing, the view export and the
-        // feeds. A backend owns its own caching, so core's result cache is bypassed when one
-        // responds. It may also return a 'model' — its own query object — which core exports as
-        // the page's 'search' so the premium rail and osc_search() run against the same engine.
-        $backend     = osc_apply_filter('search_results', null, $this->mSearch, Params::getParamsAsArray());
-        $aItems      = null;
-        $iTotalItems = null;
-        $searchModel = $this->mSearch;
-        if (is_array($backend) && isset($backend['items'])) {
-            $aItems      = $backend['items'];
-            $iTotalItems = (int)($backend['total'] ?? count($aItems));
-            if (isset($backend['model']) && $backend['model'] instanceof Search) {
-                $searchModel = $backend['model'];
-            }
-        } else {
-            // Fold in the search-cache generation so an item lifecycle event (post/edit/disable/
-            // enable/spam/delete) that bumps it makes every stored search result unreachable at
-            // once — the same immediate invalidation getLatestItems() already gets. Without it a
-            // persistent backend serves a deleted or quarantined listing here until the TTL lapses.
-            $key   = md5(osc_cache_search_generation() . osc_base_url() . $this->mSearch->toJson());
-            $found = null;
-            $cache = osc_cache_get($key, $found);
-            if ($cache) {
-                $aItems      = $cache['aItems'];
-                $iTotalItems = $cache['iTotalItems'];
-            } else {
-                $aItems                = $this->mSearch->doSearch();
-                $iTotalItems           = $this->mSearch->count();
-                $_cache['aItems']      = $aItems;
-                $_cache['iTotalItems'] = $iTotalItems;
-
-                osc_cache_set($key, $_cache, OSC_CACHE_TTL);
-            }
-        }
-
-        $aItems = osc_apply_filter('pre_show_items', $aItems);
-
-        // Batch-load highlight/urgent/bump state for the whole page in one query,
-        // instead of the two per card osc_item_is_highlighted()/osc_item_is_urgent()
-        // would otherwise cost inside the theme's listing loop, with billing on or off.
-        osc_prime_item_upgrades($aItems);
-
-        $iStart    = $p_iPage * $p_iPageSize;
-        $iEnd      = min(($p_iPage + 1) * $p_iPageSize, $iTotalItems);
-        $iNumPages = ceil($iTotalItems / $p_iPageSize);
-
-        // works with cache enabled ?
-        osc_run_hook('search', $this->mSearch);
-
-        //preparing variables...
+        $p_sCountry  = implode(', ', $criteria->countries());
         $countryName = $p_sCountry;
         if (strlen($p_sCountry) == 2) {
             $c = Country::newInstance()->findByCode($p_sCountry);
@@ -379,6 +210,7 @@ class CWebSearch extends BaseModel
                 $countryName = $c['s_name'];
             }
         }
+        $p_sRegion  = implode(', ', $criteria->regions());
         $regionName = $p_sRegion;
         if (is_numeric($p_sRegion)) {
             $r = Region::newInstance()->findByPrimaryKey($p_sRegion);
@@ -386,6 +218,7 @@ class CWebSearch extends BaseModel
                 $regionName = $r['s_name'];
             }
         }
+        $p_sCity  = implode(', ', $criteria->cities());
         $cityName = $p_sCity;
         if (is_numeric($p_sCity)) {
             $c = City::newInstance()->findByPrimaryKey($p_sCity);
@@ -394,40 +227,45 @@ class CWebSearch extends BaseModel
             }
         }
 
-        $this->_exportVariableToView('search_start', $iStart);
-        $this->_exportVariableToView('search_end', $iEnd);
-        $this->_exportVariableToView('search_category', $p_sCategory);
-        // hardcoded - non pattern and order by relevance
-        $p_sOrder = $old_order;
-        $this->_exportVariableToView('search_order_type', $p_iOrderType);
-        $this->_exportVariableToView('search_order', $p_sOrder);
+        $this->_exportVariableToView('search_start', $page * $pageSize);
+        $this->_exportVariableToView('search_end', min(($page + 1) * $pageSize, $iTotalItems));
+        $this->_exportVariableToView('search_category', $criteria->categories());
+        $this->_exportVariableToView('search_order_type', $criteria->orderType());
+        $this->_exportVariableToView('search_order', $criteria->order());
 
-        $this->_exportVariableToView('search_pattern', $p_sPattern);
-        $this->_exportVariableToView('search_from_user', $p_sUser);
-        $this->_exportVariableToView('search_total_pages', $iNumPages);
-        $this->_exportVariableToView('search_page', $p_iPage);
-        $this->_exportVariableToView('search_has_pic', $p_bPic);
-        $this->_exportVariableToView('search_only_premium', $p_bPremium);
+        $this->_exportVariableToView('search_pattern', $criteria->pattern());
+        $this->_exportVariableToView('search_from_user', $criteria->users());
+        $this->_exportVariableToView('search_total_pages', ceil($iTotalItems / $pageSize));
+        $this->_exportVariableToView('search_page', $page);
+        $this->_exportVariableToView('search_has_pic', $criteria->withPicture() ? 1 : 0);
+        $this->_exportVariableToView('search_only_premium', $criteria->onlyPremium() ? 1 : 0);
         $this->_exportVariableToView('search_country', $countryName);
         $this->_exportVariableToView('search_region', $regionName);
         $this->_exportVariableToView('search_city', $cityName);
-        $this->_exportVariableToView('search_price_min', $p_sPriceMin);
-        $this->_exportVariableToView('search_price_max', $p_sPriceMax);
+        $this->_exportVariableToView('search_price_min', $criteria->priceMin());
+        $this->_exportVariableToView('search_price_max', $criteria->priceMax());
         $this->_exportVariableToView('search_total_items', $iTotalItems);
-        $this->_exportVariableToView('items', $aItems);
-        $this->_exportVariableToView('search_show_as', $p_sShowAs);
+        $this->_exportVariableToView('items', $result->items());
+        $this->_exportVariableToView('search_show_as', $criteria->showAs());
 
-        // Export the search model the page was built from, always — not only under
-        // OSC_DEBUG. osc_get_premiums()/osc_search() read this 'search' key and otherwise
-        // build a fresh core Search, which on a delegated page is the wrong engine.
-        $this->_exportVariableToView('search', $searchModel);
+        // The model the page was built from, always: osc_get_premiums()/osc_search() read it,
+        // and on a page a search_results backend answered it is that backend's model.
+        $this->_exportVariableToView('search', $result->model());
+    }
 
+    /**
+     * Export the encrypted alert token and whether the visitor already has this alert.
+     *
+     * @param \mindstellar\search\SearchCriteria $criteria
+     *
+     * @return void
+     */
+    private function exportAlert($criteria)
+    {
         // The alert stores the search values in canonical form, not the SQL of toJson().
-        $json          = \mindstellar\search\AlertEnvelope::build($criteria, Params::getParamsAsArray());
-        // The alert is encrypted with a persistent per-install key, so it is a self-contained
-        // server-issued token: verifiable and decryptable on the later subscribe request
-        // without stashing anything in the session (which would force a cookie on every search
-        // page and make it uncacheable).
+        $json = \mindstellar\search\AlertEnvelope::build($criteria, Params::getParamsAsArray());
+        // Encrypted with a persistent per-install key, so the later subscribe request can
+        // verify it without the session (which would make every search page uncacheable).
         $encoded_alert = base64_encode(osc_encrypt_alert($json));
 
         $this->_exportVariableToView('search_alert', $encoded_alert);
@@ -439,114 +277,186 @@ class CWebSearch extends BaseModel
             }
         }
         $this->_exportVariableToView('search_alert_subscribed', $alerts_sub);
+    }
 
-        // calling the view...
-        if (count($aItems) === 0) {
-            // An empty *refined* search (free-text pattern, price range, custom-field facet,
-            // has-photo / premium filter) is a genuine no-match — 404 it so those thin,
-            // infinite result pages are not indexed. An empty *browse* page (a valid category
-            // or location with no listings yet) is a real, stable URL: keep it 200 so it is
-            // not de-indexed, but noindex it while empty so the thin page is not indexed.
-            $metaFacets     = Params::getParam('meta');
-            $isRefinedSearch = ($p_sPattern !== '')
-                || ($p_sPriceMin !== '' && $p_sPriceMin !== null)
-                || ($p_sPriceMax !== '' && $p_sPriceMax !== null)
-                || (is_array($metaFacets) && count($metaFacets) > 0)
-                || $p_bPic
-                || $p_bPremium;
-
-            if ($isRefinedSearch) {
-                header('HTTP/1.1 404 Not Found');
-            } else {
-                $this->_exportVariableToView('meta_noindex', true);
-                // Drop the self-canonical: noindex + canonical on the same URL is a
-                // contradictory signal, and the page is being told not to index.
-                $this->_exportVariableToView('canonical', '');
-            }
+    /**
+     * No results: a refined search is a 404, a browse page stays 200 but is noindexed.
+     *
+     * @param \mindstellar\search\SearchCriteria $criteria
+     * @param array<int,array<string,mixed>>     $items
+     *
+     * @return void
+     */
+    private function markEmptyResult($criteria, array $items)
+    {
+        if (count($items) !== 0) {
+            return;
         }
+        // A pattern, price range, custom-field facet or photo/premium filter with no match
+        // is thin and unbounded, so it is not indexed. A valid category or location with no
+        // listings yet is a stable URL: keep it 200, noindexed while empty.
+        $p_sPriceMin     = $criteria->priceMin();
+        $p_sPriceMax     = $criteria->priceMax();
+        $metaFacets      = Params::getParam('meta');
+        $isRefinedSearch = ($criteria->pattern() !== '')
+            || ($p_sPriceMin !== '' && $p_sPriceMin !== null)
+            || ($p_sPriceMax !== '' && $p_sPriceMax !== null)
+            || (is_array($metaFacets) && count($metaFacets) > 0)
+            || $criteria->withPicture()
+            || $criteria->onlyPremium();
 
-        osc_run_hook('after_search');
+        if ($isRefinedSearch) {
+            header('HTTP/1.1 404 Not Found');
+        } else {
+            $this->_exportVariableToView('meta_noindex', true);
+            // noindex and a canonical on the same URL contradict each other.
+            $this->_exportVariableToView('canonical', '');
+        }
+    }
 
-        if (Params::existParam('sFeed')) {
-            if ($p_sFeed == '' || $p_sFeed === 'rss') {
-                // FEED REQUESTED!
-                header('Content-type: text/xml; charset=utf-8');
+    /**
+     * The rss feed, or a plugin's feed through its feed_<name> hook.
+     *
+     * @param mixed                          $p_sFeed the sFeed value
+     * @param array<int,array<string,mixed>> $aItems
+     *
+     * @return void
+     */
+    private function renderFeed($p_sFeed, array $aItems)
+    {
+        if ($p_sFeed == '' || $p_sFeed === 'rss') {
+            header('Content-type: text/xml; charset=utf-8');
 
-                $feed = new RSSFeed();
-                $feed->setTitle(__('Latest listings added') . ' - ' . osc_page_title());
-                $feed->setLink(osc_base_url());
-                $feed->setDescription(__('Latest listings added in') . ' ' . osc_page_title());
+            $feed = new RSSFeed();
+            $feed->setTitle(__('Latest listings added') . ' - ' . osc_page_title());
+            $feed->setLink(osc_base_url());
+            $feed->setDescription(__('Latest listings added in') . ' ' . osc_page_title());
 
-                if (osc_count_items() > 0) {
-                    while (osc_has_items()) {
-                        // Raw values: RSSFeed handles all XML/HTML escaping.
-                        $itemArray = array(
-                            'title'       => osc_item_title(),
-                            'link'        => osc_item_url(),
-                            'description' => osc_item_description(),
-                            'country'     => osc_item_country(),
-                            'region'      => osc_item_region(),
-                            'city'        => osc_item_city(),
-                            'city_area'   => osc_item_city_area(),
-                            'category'    => osc_item_category(),
-                            'dt_pub_date' => osc_item_pub_date()
+            if (osc_count_items() > 0) {
+                while (osc_has_items()) {
+                    // Raw values: RSSFeed handles all XML/HTML escaping.
+                    $itemArray = array(
+                        'title'       => osc_item_title(),
+                        'link'        => osc_item_url(),
+                        'description' => osc_item_description(),
+                        'country'     => osc_item_country(),
+                        'region'      => osc_item_region(),
+                        'city'        => osc_item_city(),
+                        'city_area'   => osc_item_city_area(),
+                        'category'    => osc_item_category(),
+                        'dt_pub_date' => osc_item_pub_date()
+                    );
+
+                    if (osc_count_item_resources() > 0) {
+                        osc_has_item_resources();
+
+                        // Thumbnail rendered into the description (legacy behaviour).
+                        $itemArray['image'] = array(
+                            'url'   => osc_resource_thumbnail_url(),
+                            'title' => osc_item_title(),
+                            'link'  => osc_item_url()
                         );
 
-                        if (osc_count_item_resources() > 0) {
-                            osc_has_item_resources();
-
-                            // Thumbnail rendered into the description (legacy behaviour).
-                            $itemArray['image'] = array(
-                                'url'   => osc_resource_thumbnail_url(),
-                                'title' => osc_item_title(),
-                                'link'  => osc_item_url()
-                            );
-
-                            // Spec-correct RSS enclosure for the first resource.
-                            // No size is stored (t_item_resource has no size column),
-                            // so length is best-effort 0.
-                            $itemArray['enclosure'] = array(
-                                'url'    => osc_resource_url(),
-                                'type'   => osc_resource_type(),
-                                'length' => 0
-                            );
-                        }
-
-                        // Per-item extension seam (citizen parity with the sitemap's
-                        // per-URL filters): a plugin can adjust or drop feed entries.
-                        $itemArray = osc_apply_filter('rss_feed_item', $itemArray, osc_item());
-
-                        $feed->addItem($itemArray);
+                        // RSS enclosure for the first resource. No size is stored, so length is 0.
+                        $itemArray['enclosure'] = array(
+                            'url'    => osc_resource_url(),
+                            'type'   => osc_resource_type(),
+                            'length' => 0
+                        );
                     }
-                }
 
-                osc_run_hook('feed', $feed);
-                $feed->dumpXML();
-            } else {
-                osc_run_hook('feed_' . $p_sFeed, $aItems);
+                    // A plugin can adjust or drop feed entries.
+                    $itemArray = osc_apply_filter('rss_feed_item', $itemArray, osc_item());
+
+                    $feed->addItem($itemArray);
+                }
             }
+
+            osc_run_hook('feed', $feed);
+            $feed->dumpXML();
         } else {
-            // Public search / category results: cacheable for anonymous visitors.
-            osc_mark_response_cacheable();
+            osc_run_hook('feed_' . $p_sFeed, $aItems);
+        }
+    }
 
-            // A theme may specialise a single category's results page. The token
-            // comes from the request as it stands -- resolving it to a row would
-            // cost a query on every search, and a file that does not exist is not
-            // worth one.
-            $viewCandidates = array();
-            if (count($p_sCategory) === 1) {
-                $viewCategory = reset($p_sCategory);
-                if (is_string($viewCategory)) {
-                    $segments     = explode('/', trim($viewCategory, '/'));
-                    $viewCategory = end($segments);
-                    if (preg_match('/^[a-zA-Z0-9_-]+$/', $viewCategory)) {
-                        $viewCandidates[] = 'search-' . $viewCategory . '.php';
-                    }
+    /**
+     * Render the results page; a theme may ship search-<category-slug>.php for one category.
+     *
+     * @param array<int,mixed> $categories
+     *
+     * @return void
+     */
+    private function renderPage(array $categories)
+    {
+        // Public search / category results: cacheable for anonymous visitors.
+        osc_mark_response_cacheable();
+
+        // The token comes from the request as it stands: resolving it to a row would cost a
+        // query on every search, and a file that does not exist is not worth one.
+        $viewCandidates = array();
+        if (count($categories) === 1) {
+            $viewCategory = reset($categories);
+            if (is_string($viewCategory)) {
+                $segments     = explode('/', trim($viewCategory, '/'));
+                $viewCategory = end($segments);
+                if (preg_match('/^[a-zA-Z0-9_-]+$/', $viewCategory)) {
+                    $viewCandidates[] = 'search-' . $viewCategory . '.php';
                 }
             }
-            $viewCandidates[] = 'search.php';
+        }
+        $viewCandidates[] = 'search.php';
 
-            $this->doView(osc_locate_template($viewCandidates, 'search'));
+        $this->doView(osc_locate_template($viewCandidates, 'search'));
+    }
+
+    /**
+     * The URI resolver, wired to the location and category models.
+     *
+     * @return \mindstellar\search\SearchUriResolver
+     */
+    private function uriResolver()
+    {
+        return new \mindstellar\search\SearchUriResolver(
+            (string)osc_get_preference('rewrite_search_url'),
+            osc_base_url(),
+            static fn ($id) => Region::newInstance()->findByPrimaryKey($id),
+            static fn ($id) => City::newInstance()->findByPrimaryKey($id),
+            static fn ($value) => self::findCategory($value),
+            static fn ($slug) => Category::newInstance()->findBySlug($slug),
+            fn ($slug) => $this->categorySlugRedirectUrl($slug)
+        );
+    }
+
+    /**
+     * Decode the friendly search params ("/region,7/pattern,bike") into request params.
+     *
+     * @return void
+     */
+    private function applyFriendlyParams()
+    {
+        $names = array();
+        foreach (array(
+            'rewrite_search_country'   => 'sCountry',
+            'rewrite_search_region'    => 'sRegion',
+            'rewrite_search_city'      => 'sCity',
+            'rewrite_search_city_area' => 'sCityArea',
+            'rewrite_search_category'  => 'sCategory',
+            'rewrite_search_user'      => 'sUser',
+            'rewrite_search_pattern'   => 'sPattern',
+        ) as $preference => $param) {
+            $names[] = array(osc_get_preference($preference), $param);
+        }
+        $ops = \mindstellar\search\SearchUriResolver::decodeFriendlyParams(
+            '/' . Params::getParam('sParams', false, false),
+            $names,
+            Params::getParam('meta', false, false, false),
+            static fn ($value) => Params::purifyText($value)
+        );
+        foreach ($ops as $op) {
+            Params::setParam($op[0], $op[1]);
+        }
+        if ($ops !== array()) {
+            Params::unsetParam('sParams');
         }
     }
 
@@ -654,18 +564,18 @@ class CWebSearch extends BaseModel
     }
 
     /**
-     * If $slug is a category's former slug, 301 to its current URL. No-op (returns) when
-     * there is no history row or the target category is gone/disabled - the caller then 404s.
+     * The current URL of a category whose former slug is $slug, or null when there is no
+     * history row or the category is gone/disabled (the caller then 404s).
      *
      * @param string $slug
      *
-     * @return void
+     * @return string|null
      */
-    private function categorySlugRedirect($slug)
+    private function categorySlugRedirectUrl($slug)
     {
         $slug = trim((string)$slug);
         if ($slug === '') {
-            return;
+            return null;
         }
         try {
             $rows = osc_db_select(
@@ -674,19 +584,19 @@ class CWebSearch extends BaseModel
                 array($slug)
             );
         } catch (\mindstellar\database\DbException $e) {
-            return;
+            return null;
         }
         if (count($rows) === 0) {
-            return;
+            return null;
         }
         $category = Category::newInstance()->findByPrimaryKey((int)$rows[0]['fk_i_category_id']);
         if (!$category || (int)$category['b_enabled'] === 0) {
-            return; // deleted/disabled -> let the caller 404
+            return null; // deleted/disabled -> let the caller 404
         }
         $currentSlug = $category['s_slug'];
         if ($currentSlug === '' || $currentSlug === $slug) {
-            return; // loop guard
+            return null; // loop guard
         }
-        $this->redirectTo(osc_search_url(array('sCategory' => $currentSlug)), 301);
+        return osc_search_url(array('sCategory' => $currentSlug));
     }
 }

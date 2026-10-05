@@ -44,6 +44,7 @@ Worth knowing before you port something:
 | Publish a plugin or theme | [Package specification](/docs/developers/package-spec/) |
 | Get it listed for every install | [The market](/docs/developers/market/) |
 | Run your code inside core | [Hooks and filters](/docs/developers/hooks/) |
+| Know which core class to call, and where hooks fire | [Architecture](/docs/developers/architecture/) |
 | Add a page of your own | [Routes](/docs/developers/routes/) |
 | Add admin screens | [Administrator menus](/docs/developers/admin-menus/) |
 | Add an admin settings page | [Settings pages](/docs/developers/settings-pages/) |
@@ -58,8 +59,14 @@ Worth knowing before you port something:
 | Let core write the document head | [Theme head](/docs/developers/theme-head/) |
 | Style the e-mails the site sends | [E-mail layout](/docs/developers/email-layout/) |
 | Run slow work out of the request | [Background jobs](/docs/developers/jobs/) |
+| Keep a small value, flag or lock without a table | [Key-value store](/docs/developers/kv-store/) |
 | Keep a search filter working in saved alerts | [Saved-search alerts](/docs/developers/alerts/) |
 | Bring listings in from elsewhere | [Importing listings](/docs/developers/importing-listings/) |
+| Call the site from another program | [REST API](/docs/developers/api/) |
+| Post listings and comments through the API | [Writes](/docs/developers/api/writes/) |
+| Moderate and manage a site with an admin key | [Admin endpoints](/docs/developers/api/admin/) |
+| Get a signed POST when a listing or user changes | [Webhooks](/docs/developers/api/webhooks/) |
+| Add your own REST API endpoints | [Plugin endpoints](/docs/developers/api/plugin-endpoints/) |
 | Understand the schema | [Database model](/docs/developers/database/) |
 | Debug something | [PHP errors](/docs/developers/debug-php-errors/) · [SQL queries](/docs/developers/debug-sql-queries/) |
 | Contribute to core | [Contributing](/docs/developers/contributing/) |

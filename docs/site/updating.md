@@ -28,6 +28,15 @@ That is the whole procedure on a healthy install.
 The updater checks each download against the checksum GitHub publishes for it, and
 refuses a file that does not match.
 
+It also checks that PHP can write every file it would replace, before it changes anything.
+When it cannot, it stops and lists the files. This happens when PHP runs as another user than
+the one that owns the files (often `nobody`). **Tools → System info → Server** shows
+"PHP runs as" and "Read-only folders". Update from a shell as the file owner instead:
+
+```bash
+php oc-cli.php core:update
+```
+
 ## Update channel and automatic security updates
 
 **Settings → General → Software updates** has two choices:
@@ -215,6 +224,10 @@ Disable it from a shell and update it afterwards:
 ```bash
 php oc-cli.php plugin:deactivate --plugin=<folder>
 ```
+
+**The updater says PHP cannot write the files.**
+PHP runs as another user than the one that owns them. Run `php oc-cli.php core:update` as the
+file owner, or ask your host to run PHP as your user.
 
 **You are locked out of the admin panel.**
 

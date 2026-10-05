@@ -17,7 +17,7 @@ if (!defined('ABS_PATH')) {
  */
 
 use mindstellar\admin\form\CoreSettings;
-use mindstellar\admin\form\SpamSettingsForm;
+use mindstellar\admin\form\SpamSettingsScreen;
 
 /**
  * Class CAdminSettingsSpamnBots
@@ -50,9 +50,9 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
                 // updating the Akismet key
                 osc_csrf_check();
 
-                $result = CoreSettings::attempt(SpamSettingsForm::registerAkismet());
+                $result = CoreSettings::attempt(SpamSettingsScreen::registerAkismet());
                 if ($result['errors'] !== array()) {
-                    $this->drawForms(SpamSettingsForm::PAGE_AKISMET, $result['values']);
+                    $this->drawForms(SpamSettingsScreen::PAGE_AKISMET, $result['values']);
                     break;
                 }
 
@@ -67,9 +67,9 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
                 // updating the captcha provider and its keys
                 osc_csrf_check();
 
-                $result = CoreSettings::attempt(SpamSettingsForm::registerCaptcha());
+                $result = CoreSettings::attempt(SpamSettingsScreen::registerCaptcha());
                 if ($result['errors'] !== array()) {
-                    $this->drawForms(SpamSettingsForm::PAGE_CAPTCHA, $result['values']);
+                    $this->drawForms(SpamSettingsScreen::PAGE_CAPTCHA, $result['values']);
                     break;
                 }
 
@@ -84,9 +84,9 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
                 // updating search-alert subscription option
                 osc_csrf_check();
 
-                $result = CoreSettings::attempt(SpamSettingsForm::registerAlerts());
+                $result = CoreSettings::attempt(SpamSettingsScreen::registerAlerts());
                 if ($result['errors'] !== array()) {
-                    $this->drawForms(SpamSettingsForm::PAGE_ALERTS, $result['values']);
+                    $this->drawForms(SpamSettingsScreen::PAGE_ALERTS, $result['values']);
                     break;
                 }
 
@@ -97,9 +97,9 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
                 // updating the sign-in rate limit
                 osc_csrf_check();
 
-                $result = CoreSettings::attempt(SpamSettingsForm::registerLoginThrottle());
+                $result = CoreSettings::attempt(SpamSettingsScreen::registerLoginThrottle());
                 if ($result['errors'] !== array()) {
-                    $this->drawForms(SpamSettingsForm::PAGE_LOGIN_THROTTLE, $result['values']);
+                    $this->drawForms(SpamSettingsScreen::PAGE_LOGIN_THROTTLE, $result['values']);
                     break;
                 }
 
@@ -109,9 +109,9 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
             case ('messages_post'):
                 osc_csrf_check();
 
-                $result = CoreSettings::attempt(SpamSettingsForm::registerMessages());
+                $result = CoreSettings::attempt(SpamSettingsScreen::registerMessages());
                 if ($result['errors'] !== array()) {
-                    $this->drawForms(SpamSettingsForm::PAGE_MESSAGES, $result['values']);
+                    $this->drawForms(SpamSettingsScreen::PAGE_MESSAGES, $result['values']);
                     break;
                 }
 
@@ -121,9 +121,9 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
             case ('limits_post'):
                 osc_csrf_check();
 
-                $result = CoreSettings::attempt(SpamSettingsForm::registerLimits());
+                $result = CoreSettings::attempt(SpamSettingsScreen::registerLimits());
                 if ($result['errors'] !== array()) {
-                    $this->drawForms(SpamSettingsForm::PAGE_LIMITS, $result['values']);
+                    $this->drawForms(SpamSettingsScreen::PAGE_LIMITS, $result['values']);
                     break;
                 }
 
@@ -197,7 +197,7 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
         // view reads it, and View::_get() answers '' for a key nobody exported -- which
         // reads as "no key configured" rather than as anything being wrong.
         $this->_exportVariableToView('akismet_status', $akismetStatus);
-        $this->_exportVariableToView('spam_forms', SpamSettingsForm::formVars($akismetStatus, $rejected, $values));
+        $this->_exportVariableToView('spam_forms', SpamSettingsScreen::formVars($akismetStatus, $rejected, $values));
         $this->doView('settings/spamNbots.php');
     }
 }

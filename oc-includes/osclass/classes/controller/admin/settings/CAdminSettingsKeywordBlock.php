@@ -15,7 +15,7 @@ if (!defined('ABS_PATH')) {
 
 use mindstellar\admin\BulkAction;
 use mindstellar\admin\form\CoreSettings;
-use mindstellar\admin\form\KeywordBlockSettingsForm;
+use mindstellar\admin\form\KeywordBlockSettingsScreen;
 use mindstellar\admin\ListPaging;
 
 /**
@@ -92,7 +92,7 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
                 // own view reads it, and View::_get() answers '' for a key nobody exported --
                 // so every switch would draw unticked and the next save would clear them.
                 $this->_exportVariableToView('moderation_prefs', $this->moderationPrefs());
-                $this->_exportVariableToView('moderation_form', KeywordBlockSettingsForm::formVars());
+                $this->_exportVariableToView('moderation_form', KeywordBlockSettingsScreen::formVars());
 
                 $bulk_options = array(
                     array('value' => '', 'data-dialog-content' => '', 'label' => __('Bulk actions')),
@@ -173,7 +173,7 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
                 // sorting, so a rejection goes back to it rather than redrawing it. Nothing
                 // here can be rejected in practice: four switches and a number that is
                 // floored rather than refused.
-                if (CoreSettings::attempt(KeywordBlockSettingsForm::register())['errors'] === array()) {
+                if (CoreSettings::attempt(KeywordBlockSettingsScreen::register())['errors'] === array()) {
                     osc_add_flash_ok_message(_m('Moderation settings have been updated'), 'admin');
                 }
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=keyword_block');

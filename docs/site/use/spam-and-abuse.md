@@ -94,6 +94,20 @@ can turn it off on that admin's edit screen, or from the command line:
 php oc-cli.php user:2fa-off --user=<username>
 ```
 
+## Sign out of all devices
+
+Signing out ends the sign-in in that browser only. A stolen copy of a sign-in
+cookie keeps working until it expires. **Sign out of all devices** ends every
+sign-in at once, this browser included.
+
+| Who | Where | What ends |
+|---|---|---|
+| A user | **My account → Sign-in details → Sign out of all devices**, with their password | Every web sign-in, every app signed in through the API, and their personal API keys |
+| An admin | **Edit profile → Sign out of all devices**, with their password and a code when two-step sign-in is on | Every admin sign-in of that account, remembered or not, and every API key that admin made. The page says how many keys first. |
+| An admin, for a user | **Users**, the user's row, **More → Sign out of all devices** | The same as the user's own button |
+
+Changing the password does the same for that account.
+
 ## The keyword blocklist
 
 **Settings → Keyword blocklist** rejects listings containing words you choose.

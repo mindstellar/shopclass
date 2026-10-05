@@ -59,8 +59,8 @@ $posted = array(
     $rangeField => array('from' => '1775001600', 'to' => (string) (1775174400 + 86399)),
 );
 
-$actions  = (new ReflectionClass('ItemActions'))->newInstanceWithoutConstructor();
-$sanitize = new ReflectionMethod('ItemActions', 'sanitizeMetaField');
+$actions  = (new ReflectionClass(\mindstellar\listing\ListingValidator::class))->newInstanceWithoutConstructor();
+$sanitize = new ReflectionMethod(\mindstellar\listing\ListingValidator::class, 'sanitizeMeta');
 $sanitize->setAccessible(true);
 $model = Field::newInstance();
 foreach ($posted as $fieldId => $value) {

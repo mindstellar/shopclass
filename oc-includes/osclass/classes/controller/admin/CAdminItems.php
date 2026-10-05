@@ -21,6 +21,13 @@ if (!defined('ABS_PATH')) {
  */
 use mindstellar\admin\BulkAction;
 use mindstellar\admin\ListPaging;
+use mindstellar\auth\Actor;
+use mindstellar\listing\ListingInput;
+use mindstellar\listing\ListingService;
+use mindstellar\listing\PhotoService;
+use mindstellar\moderation\ListingModeration;
+use mindstellar\validation\ConflictException;
+use mindstellar\validation\RefusedException;
 
 class CAdminItems extends AdminSecBaseModel
 {
@@ -62,62 +69,42 @@ class CAdminItems extends AdminSecBaseModel
             case 'bulk_actions':
                 osc_csrf_check();
                 $mItems = new ItemActions(true);
+                $moderate = static function (string $action) {
+                    $moderation = ListingModeration::make();
+                    $adminId    = (int) osc_logged_admin_id();
+
+                    return static function ($id) use ($moderation, $action, $adminId): bool {
+                        try {
+                            return $moderation->apply($action, (int) $id, $adminId, '');
+                        } catch (RefusedException $e) {
+                            return false;
+                        }
+                    };
+                };
                 switch (Params::getParam('bulk_actions')) {
                     case 'enable_all':
-                        BulkAction::apply(
-                            static fn ($id) => $mItems->enable($id),
-                            '%d listing has been enabled',
-                            '%d listings have been enabled'
-                        );
+                        BulkAction::apply($moderate('enable'), '%d listing has been enabled', '%d listings have been enabled');
                         break;
                     case 'disable_all':
-                        BulkAction::apply(
-                            static fn ($id) => $mItems->disable((int)$id),
-                            '%d listing has been disabled',
-                            '%d listings have been disabled'
-                        );
+                        BulkAction::apply($moderate('disable'), '%d listing has been disabled', '%d listings have been disabled');
                         break;
                     case 'activate_all':
-                        BulkAction::apply(
-                            static fn ($id) => $mItems->activate($id) === true,
-                            '%d listing has been activated',
-                            '%d listings have been activated'
-                        );
+                        BulkAction::apply($moderate('activate'), '%d listing has been activated', '%d listings have been activated');
                         break;
                     case 'deactivate_all':
-                        BulkAction::apply(
-                            static fn ($id) => $mItems->deactivate($id),
-                            '%d listing has been deactivated',
-                            '%d listings have been deactivated'
-                        );
+                        BulkAction::apply($moderate('deactivate'), '%d listing has been deactivated', '%d listings have been deactivated');
                         break;
                     case 'premium_all':
-                        BulkAction::apply(
-                            static fn ($id) => $mItems->premium($id, true),
-                            '%d listing has been marked as premium',
-                            '%d listings have been marked as premium'
-                        );
+                        BulkAction::apply($moderate('premium'), '%d listing has been marked as premium', '%d listings have been marked as premium');
                         break;
                     case 'depremium_all':
-                        BulkAction::apply(
-                            static fn ($id) => $mItems->premium($id, false),
-                            '%d listing is no longer premium',
-                            '%d listings are no longer premium'
-                        );
+                        BulkAction::apply($moderate('unpremium'), '%d listing is no longer premium', '%d listings are no longer premium');
                         break;
                     case 'spam_all':
-                        BulkAction::apply(
-                            static fn ($id) => $mItems->spam($id, true),
-                            '%d listing has been marked as spam',
-                            '%d listings have been marked as spam'
-                        );
+                        BulkAction::apply($moderate('spam'), '%d listing has been marked as spam', '%d listings have been marked as spam');
                         break;
                     case 'despam_all':
-                        BulkAction::apply(
-                            static fn ($id) => $mItems->spam($id, false),
-                            '%d listing is no longer marked as spam',
-                            '%d listings are no longer marked as spam'
-                        );
+                        BulkAction::apply($moderate('unspam'), '%d listing is no longer marked as spam', '%d listings are no longer marked as spam');
                         break;
                     case 'delete_all':
                         $manager = $this->itemManager;
@@ -199,128 +186,31 @@ class CAdminItems extends AdminSecBaseModel
                 break;
             case 'status':          //status
                 osc_csrf_check();
-                $id    = Params::getParam('id');
-                $value = Params::getParam('value');
-
-                if (!$id) {
+                $id     = Params::getParamInt('id');
+                $value  = Params::getParamString('value');
+                $action = array('ACTIVE' => 'activate', 'INACTIVE' => 'deactivate', 'ENABLE' => 'enable', 'DISABLE' => 'disable')[$value] ?? '';
+                if ($id <= 0 || $action === '') {
                     return false;
                 }
-
-                $id = (int)$id;
-
-                if (!is_numeric($id)) {
-                    return false;
-                }
-
-                if (!in_array($value, array('ACTIVE', 'INACTIVE', 'ENABLE', 'DISABLE'))) {
-                    return false;
-                }
-
-                $item   = $this->itemManager->findByPrimaryKey($id);
-                $mItems = new ItemActions(true);
-
-                switch ($value) {
-                    case 'ACTIVE':
-                        $success = $mItems->activate($id);
-                        if ($success && $success > 0) {
-                            osc_add_flash_ok_message(_m('The listing has been activated'), 'admin');
-                        } elseif (!$success) {
-                            osc_add_flash_error_message(_m('An error has occurred'), 'admin');
-                        } else {
-                            osc_add_flash_error_message(
-                                _m("The listing can't be activated because it's blocked"),
-                                'admin'
-                            );
-                        }
-
-                        break;
-                    case 'INACTIVE':
-                        $success = $mItems->deactivate($id);
-                        if ($success && $success > 0) {
-                            osc_add_flash_ok_message(_m('The listing has been deactivated'), 'admin');
-                        } else {
-                            osc_add_flash_error_message(_m('An error has occurred'), 'admin');
-                        }
-
-                        break;
-                    case 'ENABLE':
-                        $success = $mItems->enable($id);
-                        if ($success && $success > 0) {
-                            osc_add_flash_ok_message(_m('The listing has been enabled'), 'admin');
-                        } else {
-                            osc_add_flash_error_message(_m('An error has occurred'), 'admin');
-                        }
-
-                        break;
-                    case 'DISABLE':
-                        $success = $mItems->disable($id);
-                        if ($success && $success > 0) {
-                            osc_add_flash_ok_message(_m('The listing has been disabled'), 'admin');
-                        } else {
-                            osc_add_flash_error_message(_m('An error has occurred'), 'admin');
-                        }
-
-                        break;
-                }
-
+                $done = array(
+                    'activate'   => _m('The listing has been activated'),
+                    'deactivate' => _m('The listing has been deactivated'),
+                    'enable'     => _m('The listing has been enabled'),
+                    'disable'    => _m('The listing has been disabled'),
+                );
+                $this->moderate($action, $id, $done[$action], _m("The listing can't be activated because it's blocked"));
                 $this->redirectTo(Params::getServerParam('HTTP_REFERER', false, false));
                 break;
             case 'status_premium':  //status premium
-                osc_csrf_check();
-                $id    = Params::getParam('id');
-                $value = Params::getParam('value');
-
-                if (!$id) {
-                    return false;
-                }
-
-                $id = (int)$id;
-
-                if (!is_numeric($id)) {
-                    return false;
-                }
-
-                if (!in_array($value, array(0, 1))) {
-                    return false;
-                }
-
-                $mItems = new ItemActions(true);
-
-                if ($mItems->premium($id, $value == 1 ? true : false)) {
-                    osc_add_flash_ok_message(_m('Changes have been applied'), 'admin');
-                } else {
-                    osc_add_flash_error_message(_m('An error has occurred'), 'admin');
-                }
-
-                $this->redirectTo(Params::getServerParam('HTTP_REFERER', false, false));
-                break;
             case 'status_spam':  //status spam
                 osc_csrf_check();
-                $id    = Params::getParam('id');
-                $value = Params::getParam('value');
-
-                if (!$id) {
+                $id    = Params::getParamInt('id');
+                $value = Params::getParamString('value');
+                if ($id <= 0 || !in_array($value, array('0', '1'), true)) {
                     return false;
                 }
-
-                $id = (int)$id;
-
-                if (!is_numeric($id)) {
-                    return false;
-                }
-
-                if (!in_array($value, array(0, 1))) {
-                    return false;
-                }
-
-                $mItems = new ItemActions(true);
-
-                if ($mItems->spam($id, $value == 1 ? true : false)) {
-                    osc_add_flash_ok_message(_m('Changes have been applied'), 'admin');
-                } else {
-                    osc_add_flash_error_message(_m('An error has occurred'), 'admin');
-                }
-
+                $action = ($value === '1' ? '' : 'un') . ($this->action === 'status_spam' ? 'spam' : 'premium');
+                $this->moderate($action, $id, _m('Changes have been applied'), _m('An error has occurred'));
                 $this->redirectTo(Params::getServerParam('HTTP_REFERER', false, false));
                 break;
             case 'clear_reports':
@@ -411,11 +301,9 @@ class CAdminItems extends AdminSecBaseModel
                 break;
             case 'item_edit_post':
                 osc_csrf_check();
-                $mItems = new ItemActions(true);
-
-                $mItems->prepareData(false);
+                $formData = ListingInput::read(true, false);
                 // set all parameters into session
-                foreach ($mItems->data as $key => $value) {
+                foreach ($formData as $key => $value) {
                     Session::newInstance()->_setForm($key, $value);
                 }
 
@@ -427,7 +315,7 @@ class CAdminItems extends AdminSecBaseModel
                     }
                 }
 
-                $success = $mItems->edit();
+                $success = $this->saveListing($formData, false);
 
                 // edit() answers with the number of rows it changed, or with the message it
                 // refused on. A save that changed nothing affected no rows and is still a
@@ -449,30 +337,23 @@ class CAdminItems extends AdminSecBaseModel
                     $this->redirectTo($url);
                 } else {
                     // Drawn again with what was typed still in it, rather than thrown away
-                    // with a redirect. prepareData() has already put the submission in the
+                    // with a redirect. ListingInput::read() has already put the submission in the
                     // session form, which is where the view reads the content fields from.
                     osc_add_flash_error_message($success, 'admin');
-                    $this->drawItemForm(false, $this->itemErrors($success, $mItems->data));
+                    $this->drawItemForm(false, $this->itemErrors($success, $formData));
 
                     return;
                 }
                 break;
             case 'deleteResource':  //delete resource
                 osc_csrf_check();
-                $id   = Params::getParam('id');
-                $name = Params::getParam('name');
-                $fkid = Params::getParam('fkid');
-
-                // delete files
-                osc_deleteResource($id, true);
-                Log::newInstance()->insertLog('items', 'deleteResource', $id, $id, 'admin', osc_logged_admin_id());
-
-                $result = ItemResource::newInstance()->delete(array(
-                    'pk_i_id'      => $id,
-                    'fk_i_item_id' => $fkid,
-                    's_name'       => $name
-                ));
-                if ($result === false) {
+                $deleted = (new PhotoService())->delete(
+                    Params::getParamInt('id'),
+                    Params::getParamInt('fkid'),
+                    Actor::fromSession(true),
+                    Params::getParamString('name')
+                );
+                if (!$deleted) {
                     osc_add_flash_error_message(_m('An error has occurred'), 'admin');
                 } else {
                     osc_add_flash_ok_message(_m('Resource deleted'), 'admin');
@@ -492,11 +373,9 @@ class CAdminItems extends AdminSecBaseModel
                 break;
             case 'post_item':       //post item
                 osc_csrf_check();
-                $mItem = new ItemActions(true);
-
-                $mItem->prepareData(true);
+                $formData = ListingInput::read(true, true);
                 // set all parameters into session
-                foreach ($mItem->data as $key => $value) {
+                foreach ($formData as $key => $value) {
                     Session::newInstance()->_setForm($key, $value);
                 }
 
@@ -509,7 +388,7 @@ class CAdminItems extends AdminSecBaseModel
                     }
                 }
 
-                $success = $mItem->add();
+                $success = $this->saveListing($formData, true);
 
                 if ($success == 1 || $success == 2) {
                     $url = osc_admin_base_url(true) . '?page=items';
@@ -529,7 +408,7 @@ class CAdminItems extends AdminSecBaseModel
                     $this->redirectTo($url);
                 } else {
                     osc_add_flash_error_message($success, 'admin');
-                    $this->drawItemForm(true, $this->itemErrors($success, $mItem->data));
+                    $this->drawItemForm(true, $this->itemErrors($success, $formData));
 
                     return;
                 }
@@ -1020,13 +899,26 @@ class CAdminItems extends AdminSecBaseModel
     }
 
     /**
+     * Save the listing form as the admin: a new listing answers 1 when it waits for validation
+     * and 2 otherwise, an edit the rows it changed; a refusal answers with its message.
+     *
+     * @param array<string,mixed> $data
+     *
+     * @return int|string
+     */
+    private function saveListing(array $data, bool $isAdd)
+    {
+        return (new ListingService())->saveForm($data, Actor::fromSession(true), $isAdd);
+    }
+
+    /**
      * What a refused save has to say, split into the summary's lines plus the fields the
-     * screen can name. ItemActions reports one message with a line per problem, so the
+     * screen can name. The listing service reports one message with a line per problem, so the
      * lines are what the summary lists; an empty title is named per locale, because the
      * field promises one and the tab strip is where it has to be pointed out.
      *
-     * @param string              $message The message ItemActions refused with
-     * @param array<string,mixed> $data    The submission, as prepareData() left it
+     * @param string              $message The message the save refused with
+     * @param array<string,mixed> $data    The submission, as ListingInput::read() left it
      *
      * @return array<array-key,mixed>
      */
@@ -1060,6 +952,22 @@ class CAdminItems extends AdminSecBaseModel
     }
 
     //hopefully generic...
+
+    /**
+     * Run one moderation action on a listing and flash the outcome. A listing already in the
+     * asked state counts as done.
+     */
+    private function moderate(string $action, int $id, string $done, string $conflict): void
+    {
+        try {
+            ListingModeration::make()->apply($action, $id, (int) osc_logged_admin_id(), '');
+            osc_add_flash_ok_message($done, 'admin');
+        } catch (ConflictException $e) {
+            osc_add_flash_error_message($conflict, 'admin');
+        } catch (RefusedException | RuntimeException $e) {
+            osc_add_flash_error_message(_m('An error has occurred'), 'admin');
+        }
+    }
 
     /**
      * Clear one moderation counter on the selected listings.

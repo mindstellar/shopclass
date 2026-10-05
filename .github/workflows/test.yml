@@ -102,6 +102,56 @@ jobs:
         run: php tests/browser-resize-config.php
       - name: Admin two-step codes
         run: php tests/totp.php
+      - name: API request and response
+        run: php tests/api-request-response.php
+      - name: API cursors
+        run: php tests/api-cursor.php
+      - name: API schema validator
+        run: php tests/api-validator.php
+      - name: API router
+        run: php tests/api-router.php
+      - name: API authentication
+        run: php tests/api-auth.php
+      - name: API ignores browser identity
+        run: php tests/api-web-identity.php
+      - name: API CORS
+        run: php tests/api-cors.php
+      - name: API OpenAPI document
+        run: php tests/api-openapi.php
+      - name: API OpenAPI cache
+        run: php tests/api-openapi-cache.php
+      - name: API query parameters
+        run: php tests/api-query-params.php
+      - name: API serializers
+        run: php tests/api-serializers.php
+      - name: API plugin fields
+        run: php tests/api-extensions.php
+      - name: API listing query
+        run: php tests/api-listing-query.php
+      - name: API sign-in tokens
+        run: php tests/api-tokens.php
+      - name: API Idempotency-Key
+        run: php tests/api-idempotency.php
+      - name: API If-Match
+        run: php tests/api-if-match.php
+      - name: API listing form
+        run: php tests/api-listing-body.php
+      - name: Listing live rule and actor
+        run: php tests/listing-status.php
+      - name: Listing view and manage policy
+        run: php tests/item-access.php
+      - name: API webhooks
+        run: php tests/api-webhooks.php
+      - name: API request id and password-grant switch
+        run: php tests/api-request-id.php
+      - name: API skips the theme
+        run: php tests/api-skips-theme.php
+      - name: Held e-mails after a commit
+        run: php tests/deferred-mail.php
+      - name: Old backup class names
+        run: php tests/backup-aliases.php
+      - name: .htaccess refresh and reserved slugs
+        run: php tests/server-rules.php
       - name: WebP images
         run: php tests/image-webp.php
       - name: Photo colours
@@ -201,6 +251,18 @@ jobs:
       # The hooks reference is generated, so it cannot drift from what core fires.
       - name: Hooks reference is current
         run: php tools/gen-hooks-doc.php --check
+      # The OpenAPI file and the endpoint reference are generated from the route table.
+      - name: OpenAPI document is current
+        run: php tools/gen-openapi.php --check
+      - name: API reference is current
+        run: php tools/gen-api-doc.php --check
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      # The OpenAPI rules a client generator or gateway relies on, beyond what core checks.
+      - name: OpenAPI document passes Redocly lint
+        run: npx -y @redocly/cli@2.57.0 lint docs/site/developers/api/openapi.json
       # Copying the upload stored whatever was appended after the image, under a .jpg name.
       - name: Keep-original re-encodes
         run: php tests/keep-original-reencode.php
@@ -266,6 +328,13 @@ jobs:
       # is an id -- which is what osc_search_url() emits and what a category <select> submits.
       - name: Search category resolution
         run: php tests/search-category-resolve.php
+      # Themes read the search page's view exports and plugins listen on its hooks; a
+      # refactor that drops or reorders one breaks them silently.
+      - name: Search exports contract
+        run: php tests/search-exports-contract.php
+      # Every friendly search URI shape: category, page, region, city, former slug, 404.
+      - name: Search URI resolver
+        run: php tests/search-uri-resolver.php
       # A page built from blocks rendered through the theme's root header.php, which is not
       # part of the view contract -- the page shipped as a fragment with no <head> at all.
       - name: Page builder render
@@ -410,6 +479,10 @@ jobs:
       # authenticating. It drives the controllers and reads t_preference back with raw SQL.
       - name: Settings screen forms
         run: php tests/settings-screen-forms.php
+      # Settings -> API: a key needs the password, is shown once, a moderator cannot grant admin
+      # scopes, a public key only reads, and every key action needs the CSRF token.
+      - name: API keys screen
+        run: php tests/admin-api-keys.php
       # A declared text field is read with the XSS check off, so without the default here
       # every migrated screen stores markup the hand-written controller it replaced had
       # always stripped -- and nothing shows it, because core escapes on the way out
@@ -469,6 +542,9 @@ jobs:
       # bounded time limit -- are one small block that is easy to undo while tidying.
       - name: Auto-cron dispatch
         run: php tests/autocron-dispatch.php
+      # API answers end in exit, so they tick the queue themselves once the response has gone.
+      - name: API auto-cron tick
+        run: php tests/api-auto-cron.php
       # The only signal a proxy or CDN gets that a listing's page went stale -- including
       # after a storage offload rewrites its image URLs, which fires nothing else.
       - name: Item cache invalidation hook
@@ -550,6 +626,9 @@ jobs:
       # backup:create, list and restore run the real engine; a restore asks first and waits for an upgrade.
       - name: Backup commands
         run: php tests/cli-backup.php
+      # api:key:create, list and revoke; the key is printed once and the list never prints a secret.
+      - name: API key commands
+        run: php tests/cli-api-keys.php
       # ONLY_FULL_GROUP_BY rejects a grouped query outright, and every one of them is
       # wrapped in a catch that returns an empty array — so a site that turns the strict
       # modes on loses its alert emails, its custom fields and its statistics charts with
@@ -584,6 +663,10 @@ jobs:
         run: php tests/upgrade-opcache-reset.php
       - name: Upgrade stops on unwritable files
         run: php tests/upgrade-unwritable.php
+      - name: Shared helpers (notices, actor, PHP user, filtered iterator)
+        run: php tests/shared-helpers.php
+      - name: New classes declare strict types
+        run: php tests/strict-types.php
       - name: Update channel and automatic security install
         run: php tests/update-channel.php
       - name: Edge builds
@@ -606,8 +689,8 @@ jobs:
         run: php tests/location-admin-query.php
       # A place deleted during a recount must leave the queue, not fail each batch and
       # take the counts of the live places in that batch with it.
-      - name: Location stats queue
-        run: php tests/location-stats-queue.php
+      - name: DAO public method surface
+        run: php tests/dao-surface.php
       # A delete that removes listings must ask for a typed confirm, and a confirm pattern a
       # name with brackets makes invalid is one browsers silently skip.
       - name: Location admin view

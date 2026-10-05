@@ -68,29 +68,8 @@ class ItemReport extends DAO
             return 'u:' . (int)osc_logged_user_id();
         }
 
-        return 'ip:' . self::ipReporterScope((string)Params::getServerParam('REMOTE_ADDR'));
-    }
-
-    /**
-     * Collapse an anonymous reporter's address to the block one actor realistically
-     * controls, so IP rotation cannot manufacture distinct votes toward the auto-block
-     * threshold. An IPv6 host is routinely handed a whole /64 (2^64 addresses), so those
-     * key on the /64 network prefix; IPv4 is left whole (a distinct IPv4 has real cost,
-     * and collapsing further would fold CGNAT'd users onto a single vote).
-     *
-     * @param string $ip
-     *
-     * @return string
-     */
-    private static function ipReporterScope($ip)
-    {
-        $packed = @inet_pton($ip);
-        if ($packed !== false && strlen($packed) === 16) {
-            // IPv6: keep the 64-bit network prefix, zero the interface identifier.
-            return inet_ntop(substr($packed, 0, 8) . str_repeat("\x00", 8)) . '/64';
-        }
-
-        return substr($ip, 0, 64);
+        // An IPv6 host holds a whole /64, so rotating addresses inside it gives no extra votes.
+        return 'ip:' . substr(\mindstellar\security\AddressBucket::of((string)Params::getServerParam('REMOTE_ADDR')), 0, 64);
     }
 
     /**

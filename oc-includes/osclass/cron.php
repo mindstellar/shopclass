@@ -45,7 +45,6 @@ if (is_array($cron)) {
         } elseif (!in_array($purge, array('forever', 'day', 'week'))) {
             LatestSearches::newInstance()->purgeNumber($purge);
         }
-        osc_update_location_stats(true, 'auto');
 
         // WARN EXPIRATION EACH HOUR (COMMENT TO DISABLE)
         // NOTE: IF THIS IS ENABLE, SAME CODE SHOULD BE DISABLE ON CRON DAILY
@@ -70,6 +69,8 @@ if (is_array($cron)) {
         // Drop the tracking rows abandoned uploads leave in t_item_upload_tmp, on the same
         // window as the temp files swept above.
         ItemTmpUpload::newInstance()->pruneBefore(date('Y-m-d H:i:s', time() - (2 * 3600)));
+
+        \mindstellar\security\RateLimit::prune();
 
         osc_run_hook('cron_hourly');
     }
@@ -121,7 +122,14 @@ if (is_array($cron)) {
         // anything; what is left is history, and under a sustained guessing run
         // the table is the fastest-growing one in the schema.
         \mindstellar\security\LoginThrottle::prune();
-        \mindstellar\security\RateLimit::prune();
+
+        // Expired key-value rows (API Idempotency-Keys among them), and refresh tokens that can no longer be used.
+        try {
+            (new \mindstellar\model\KeyValue())->prune(time());
+            (new \mindstellar\model\ApiCredential())->pruneRefresh(time() - (7 * 24 * 3600));
+        } catch (\mindstellar\database\DbException $e) {
+            error_log('Key-value and API prune failed: ' . $e->getMessage());
+        }
 
         // Pending e-mail changes are dropped after 7 days; their confirmation link then stops working.
         try {
@@ -167,6 +175,8 @@ if (is_array($cron)) {
     }
     if ($claimed) {
         osc_runAlert('WEEKLY', $cron['d_last_exec']);
+        // Correct drift in the listing counts of every country, region and city.
+        osc_update_location_stats(true);
 
         // Run cron AFTER updating the next execution time to avoid double run of cron
         $purge = osc_purge_latest_searches();

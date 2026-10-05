@@ -25,6 +25,9 @@ namespace mindstellar\security;
  * hash: changing the password (or any reset that rewrites it) silently invalidates every
  * outstanding remember-me cookie for that account — "log out everywhere", with no storage.
  *
+ * The account's sign-out stamp ({@see \mindstellar\auth\AuthStamp}) is signed in too, so "sign out of all
+ * devices" ends every cookie the same way. A stamp of 0 signs exactly as before it existed.
+ *
  * Trade-off: revocation is all-or-nothing per account (there is no per-device series), which is
  * the deliberate cost of staying storage-free.
  */
@@ -44,14 +47,15 @@ class RememberMe
      * @param int|string $id           account primary key
      * @param string     $passwordHash the account's current s_password
      * @param int        $lifetime     seconds until the token expires
+     * @param int        $stamp        the account's sign-out stamp
      *
      * @return string the value to store in the cookie
      */
-    public static function issue($context, $id, $passwordHash, $lifetime)
+    public static function issue($context, $id, $passwordHash, $lifetime, int $stamp = 0)
     {
         $expires = time() + (int)$lifetime;
 
-        return $expires . '.' . self::sign($context, (string)$id, $expires, (string)$passwordHash);
+        return $expires . '.' . self::sign($context, (string)$id, $expires, (string)$passwordHash, $stamp);
     }
 
     /**
@@ -61,10 +65,11 @@ class RememberMe
      * @param int|string $id           account primary key from the cookie
      * @param string     $token        the cookie value produced by {@see issue()}
      * @param string     $passwordHash the account's current s_password
+     * @param int        $stamp        the account's current sign-out stamp
      *
      * @return bool
      */
-    public static function verify($context, $id, $token, $passwordHash)
+    public static function verify($context, $id, $token, $passwordHash, int $stamp = 0)
     {
         if ($token === '' || strpos($token, '.') === false) {
             return false;
@@ -75,7 +80,7 @@ class RememberMe
         }
 
         return hash_equals(
-            self::sign($context, (string)$id, (int)$expires, (string)$passwordHash),
+            self::sign($context, (string)$id, (int)$expires, (string)$passwordHash, $stamp),
             $signature
         );
     }
@@ -87,12 +92,17 @@ class RememberMe
      * @param string $id
      * @param int    $expires
      * @param string $passwordHash
+     * @param int    $stamp
      *
      * @return string
      */
-    private static function sign($context, $id, $expires, $passwordHash)
+    private static function sign($context, $id, $expires, $passwordHash, $stamp)
     {
-        $message = implode('|', array(self::VERSION, $context, $id, $expires, $passwordHash));
+        $parts = array(self::VERSION, $context, $id, $expires, $passwordHash);
+        if ($stamp > 0) {
+            $parts[] = $stamp;
+        }
+        $message = implode('|', $parts);
 
         return hash_hmac('sha256', $message, SigningKey::get());
     }

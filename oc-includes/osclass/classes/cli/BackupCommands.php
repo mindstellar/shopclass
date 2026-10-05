@@ -13,7 +13,7 @@ namespace mindstellar\cli;
 use mindstellar\admin\DatabaseTools;
 use mindstellar\backup\BackupBucket;
 use mindstellar\backup\BackupJobs;
-use mindstellar\backup\BackupManager;
+use mindstellar\backup\BackupService;
 use mindstellar\backup\BackupStore;
 use mindstellar\backup\Builder;
 use mindstellar\backup\Restorer;
@@ -64,9 +64,9 @@ final class BackupCommands
             'site'      => ABS_PATH,
             'content'   => null,
             'store'     => null,
-            'busy'      => array(BackupManager::class, 'busy'),
-            'lock_free' => array(BackupManager::class, 'lockFree'),
-            'facts'     => array(BackupManager::class, 'siteFacts'),
+            'busy'      => array(BackupService::class, 'busy'),
+            'lock_free' => array(BackupService::class, 'lockFree'),
+            'facts'     => array(BackupService::class, 'siteFacts'),
             'builder'   => array(),
             'restorer'  => array(),
             'effects'   => array(),
@@ -87,7 +87,7 @@ final class BackupCommands
     {
         $what = $args['what'] ?? 'everything';
         $to   = $args['to'] ?? 'server';
-        if (!in_array($what, BackupManager::WHAT, true)) {
+        if (!in_array($what, BackupService::WHAT, true)) {
             return $this->fail("--what must be database, files or everything.\n", 2);
         }
         if (!is_string($to) || $to === '') {
@@ -103,7 +103,7 @@ final class BackupCommands
         if ($to === 's3') {
             $bucket = BackupBucket::adapter();
             if ($bucket === null) {
-                return $this->fail(BackupManager::noBucket() . "\n");
+                return $this->fail(BackupService::noBucket() . "\n");
             }
             if (BackupBucket::insecure()) {
                 return $this->fail("Your S3 endpoint uses plain http. Use an https endpoint.\n");
@@ -178,7 +178,7 @@ final class BackupCommands
         if ($to === 's3') {
             $bucket = BackupBucket::adapter();
             if ($bucket === null) {
-                return $this->fail(BackupManager::noBucket() . "\n");
+                return $this->fail(BackupService::noBucket() . "\n");
             }
             $rows  = $this->store()->bucketAll($bucket, true);
             $place = 'the bucket ' . BackupBucket::label();
@@ -252,7 +252,7 @@ final class BackupCommands
                 return $this->fail("Give the name of a backup in the bucket, as backup:list --to=s3 shows it.\n", 2);
             }
             $bucket = BackupBucket::adapter();
-            $check  = BackupManager::checkBucket($target);
+            $check  = BackupService::checkBucket($target);
         } else {
             $name = $this->nameIn($site, $target);
             if ($name === null) {
@@ -268,7 +268,7 @@ final class BackupCommands
                 $target = $name;
                 $file   = (string) $site->path($name);
             }
-            $check = BackupManager::checkFile($file);
+            $check = BackupService::checkFile($file);
         }
         if ($check['reason'] !== '') {
             return $this->fail($check['reason'] . "\n");
@@ -345,7 +345,7 @@ final class BackupCommands
         if ($from === 's3') {
             $bucket = BackupBucket::adapter();
             if ($bucket === null) {
-                return $this->fail(BackupManager::noBucket() . "\n");
+                return $this->fail(BackupService::noBucket() . "\n");
             }
             $rows = $site->bucketAll($bucket, true);
             if ($rows === null) {
@@ -520,7 +520,7 @@ final class BackupCommands
      */
     private function report(array $state): void
     {
-        $words = BackupManager::progress($state);
+        $words = BackupService::progress($state);
         $stage = (string) ($state['stage'] ?? '');
         $now   = microtime(true);
         if ($words['line'] === $this->lastLine
@@ -546,7 +546,7 @@ final class BackupCommands
         if (($state['status'] ?? '') === 'cancelled') {
             return $this->fail("The backup was cancelled. Nothing was saved.\n");
         }
-        $failure = BackupManager::failure($state);
+        $failure = BackupService::failure($state);
         foreach ($failure['lines'] as $line) {
             ($this->err)($line . "\n");
         }

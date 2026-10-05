@@ -135,7 +135,7 @@ UNIQUE (fk_i_user_id, s_feature)
 INDEX (dt_expiration)
 ```
 
-`uq_user_feature` is what makes `Entitlements::grant()` a single atomic
+`uq_user_feature` is what makes `EntitlementStore::grant()` a single atomic
 `INSERT … ON DUPLICATE KEY UPDATE` rather than a SELECT-then-UPDATE: two concurrent
 purchases of the same feature can no longer race each other into losing one grant, because
 MySQL applies the merge itself. It is also what keeps the one-row-per-`(user, feature)`
@@ -237,15 +237,15 @@ All under `mindstellar\billing` (`oc-includes/osclass/classes/billing/`):
 | `CheckoutIntent` | `redirect(url)` or `html(markup)` |
 | `CallbackResult` | `paid()` / `failed()` / `refunded()` / `ignored()` |
 | `Order` | Immutable payment intent |
-| `Orders` | Persistence for `t_billing_order` |
+| `OrderStore` | Persistence for `t_billing_order` |
 | `Wallet` | `balance()` / `credit()` / `debit()` / `reverse()` / `history()` |
 | `Billing` | `checkout()` / `handleCallback()` / `markPaid()` / `refund()` / `spend()` |
 | `Premium` | `expire()` — the sweep behind the hourly cron |
 | `Feature` | One registered feature spec — `price()` / `duration()` / `apply()` |
 | `FeatureRegistry` | `instance()` / `register()` / `get()` / `all()` / `isValidId()` — what credits can be spent on |
-| `Entitlements` | `grant()` / `has()` / `quantity()` / `capacity()` / `consume()` / `canPublish()` — what a user holds |
-| `ItemUpgrades` | `grant()` / `active()` / `has()` / `expiresAt()` / `prime()` / `purge()` — what an item holds |
-| `Packages` | Persistence for `t_billing_package` — the price list a buyer chooses from at checkout |
+| `EntitlementStore` | `grant()` / `has()` / `quantity()` / `capacity()` / `consume()` / `canPublish()` — what a user holds |
+| `ItemUpgradeStore` | `grant()` / `active()` / `has()` / `expiresAt()` / `prime()` / `purge()` — what an item holds |
+| `PackageStore` | Persistence for `t_billing_package` — the price list a buyer chooses from at checkout |
 | `gateway\OfflineGateway` | Core's reference `PaymentGateway`: bank transfer, settled by hand |
 
 `Wallet::reverse()` is the chargeback path and is deliberately not `debit()`: by the time a
@@ -302,7 +302,7 @@ unreachable through that route, no matter what the request names.
 `consumes = Feature::CONSUMES_CAPACITY` is a third kind, alongside quantity (spent down by
 `consume()`) and duration (expires): a ceiling that is *read*, never spent. Buying "10
 photos" does not mean ten uploads against a shrinking balance; it means the cap is 10 for as
-long as the entitlement is live. `Entitlements::capacity(int $userId, string $feature, int
+long as the entitlement is live. `EntitlementStore::capacity(int $userId, string $feature, int
 $default = 0): int` returns the **larger** of `$default` and the biggest `i_quantity` among
 the user's unexpired rows for that feature — `$default` is a floor, not merely the answer
 for "no row at all". A capacity entitlement can therefore only ever *raise* a seller's
@@ -313,7 +313,7 @@ would be capped outright by the very upsell meant to raise it. A row with `i_qua
 NULL` (unlimited) returns `-1` unconditionally — it already beats any finite `$default` —
 and every caller must treat `-1` as unlimited rather than compare it numerically, or
 unlimited reads as "less than everything". A capacity feature's own `apply` grants the
-entitlement (`Entitlements::grant()`), the same as a quantity or duration feature's does;
+entitlement (`EntitlementStore::grant()`), the same as a quantity or duration feature's does;
 nothing calls `consume()` on a capacity row, and nothing should. The grant itself carries
 no duration — see "Seller limits" below for what that means on repurchase.
 
@@ -332,14 +332,14 @@ admin Upgrades save re-runs it):
 | `item.highlight` | duration | item | Grants an `item.highlight` row expiring `billing_highlight_days` days out |
 | `item.urgent` | duration | item | Grants an `item.urgent` row expiring `billing_urgent_days` days out |
 
-All three persist through `ItemUpgrades` (`oc-includes/osclass/classes/billing/ItemUpgrades.php`),
+All three persist through `ItemUpgradeStore` (`oc-includes/osclass/classes/billing/ItemUpgradeStore.php`),
 backed by `t_item_upgrade` — one row per `(item, upgrade)`, extended on repurchase rather
 than duplicated, thanks to a unique key on that pair. Deliberately not a JSON column on
 `t_item`: the expiry sweep needs an indexed `dt_expiration`, and two upgrades bought on one
 listing at once would be a read-modify-write race on a shared blob. Deliberately not in
 `t_item` at all, unlike `dt_premium_expiration` — none of the three sit in the
 listing-visibility predicate every search/category/home query runs, so a join table costs
-nothing on that hot path. `ItemUpgrades::prime(array $itemIds)` batch-loads a request-scoped
+nothing on that hot path. `ItemUpgradeStore::prime(array $itemIds)` batch-loads a request-scoped
 cache so a theme helper called inside a listing loop costs one query per page rather than
 one per item; `active()`/`has()`/`expiresAt()` read that cache when an id was primed and
 fall back to a fresh single-item query otherwise, so they are correct even when nothing was
@@ -349,7 +349,7 @@ not two — the single-item fallback memoizes its own read into the same cache `
 fills, keeping "primed with no rows" distinct from "never looked up".
 
 `osc_prime_item_upgrades(array $items): void` is the theme-facing entry point —
-`ItemUpgrades::prime()` itself is not exported by name, so a theme with no `osc_*` helper
+`ItemUpgradeStore::prime()` itself is not exported by name, so a theme with no `osc_*` helper
 to reach it had no way to batch at all. It accepts item rows or bare ids in the same call,
 whichever a theme already has to hand, and is a no-op while `osc_billing_enabled()` is off,
 so a site that never turned billing on pays nothing for it. Core calls it itself wherever a
@@ -382,13 +382,13 @@ until an admin turns one on:
 | `listing.runtime` | capacity | Extra days of listing runtime, on top of the category's `i_expiration_days` ceiling | The category expiration ceiling |
 
 **A capacity grant is permanent, and a repurchase adds rather than renews.** Both
-`apply` callables above call `Entitlements::grant()` with `$days = null`, so the row's
+`apply` callables above call `EntitlementStore::grant()` with `$days = null`, so the row's
 `dt_expiration` is never set and the entitlement never lapses on its own — there is no
 "30-day photo cap" the way `listing.highlight` has a 30-day highlight. Buying the raised
 cap a second time does not restart a clock; it adds another `osc_billing_photos_quantity()`
 on top of whatever the seller already holds (`i_quantity = i_quantity + …`, the same merge
-`Entitlements::grant()` uses everywhere), so five separate 10-photo purchases leave a
-seller holding 50, forever, not 10 with a later expiry. `Entitlements::capacity()` still
+`EntitlementStore::grant()` uses everywhere), so five separate 10-photo purchases leave a
+seller holding 50, forever, not 10 with a later expiry. `EntitlementStore::capacity()` still
 floors at the global default rather than reading this figure as an absolute cap (above), so
 none of this can ever go backwards either. Price a capacity feature with this in mind: it
 is a one-way, permanent upsell, not a subscription.
@@ -424,7 +424,7 @@ and the "keep the old expiration on edit" path are both untouched by this).
 
 Exactly one choke point, because a quota with two enforcement sites has none.
 
-`Entitlements::canPublish(int $userId, array $ctx): bool` is consulted in
+`EntitlementStore::canPublish(int $userId, array $ctx): bool` is consulted in
 `ItemActions::add()`, beside the existing `pre_item_add` hook, and failure flows into the
 same `$flash_error` that plugins already hook.
 
@@ -432,7 +432,7 @@ Nothing is consumed on a successful post. The quota is a slot ceiling
 (`osc_billing_free_live_listings()` plus whatever `listing.slot` capacity a seller holds,
 §13), not a balance — `withinFreeQuota()` already checked it before the insert, and there
 is nothing left to spend afterwards. A listing occupies its slot simply by existing and
-not having expired (`Entitlements::liveListings()`); it is freed the same way, by
+not having expired (`EntitlementStore::liveListings()`); it is freed the same way, by
 expiring or being deleted, with no sweep and no bookkeeping on either side.
 
 **Setting a limit never touches an existing listing.** Lowering
@@ -561,7 +561,7 @@ the feature is not simply turned away: a duration feature (`listing.premium`,
 `item.highlight`, `item.urgent`) still in force lets the purchase go through, and the
 flash message says "extended" rather than "applied" on that path — because a seller
 topping up a highlight before it lapses is a better outcome than making them wait it out
-first. `item.highlight` and `item.urgent` genuinely compound: `ItemUpgrades::grant()`
+first. `item.highlight` and `item.urgent` genuinely compound: `ItemUpgradeStore::grant()`
 extends from whichever is later, now or the row's current expiry, so the seller keeps
 whatever time was left plus what they just bought. `listing.premium` does not — it goes
 through `ItemActions::premium()` unchanged (§4), which always sets the expiration to a
@@ -662,7 +662,7 @@ listings live at once", not "N publications per M days". It prices shelf space, 
 a physical noticeboard would: a space is either taken or it is not, and it is freed the
 moment the listing leaves, by expiry or by deletion. There is nothing to reset and
 nothing to count over time; the ceiling is `osc_billing_free_live_listings()` plus
-whatever `listing.slot` capacity a seller holds, and `Entitlements::liveListings()` is
+whatever `listing.slot` capacity a seller holds, and `EntitlementStore::liveListings()` is
 just a `COUNT(*)` against `t_item` at the instant it is asked.
 
 **What occupies a slot:** a listing occupies one from the moment it publishes until it

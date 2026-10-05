@@ -15591,6 +15591,88 @@ table.table-small td {
   text-align: center;
 }
 
+.api-key-issued {
+  margin-block-end: 20px;
+  max-width: 48rem;
+}
+
+.api-key-token {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block-start: 12px;
+}
+.api-key-token code {
+  background: var(--osc-bench-sunk);
+  border: 1px solid var(--osc-rule);
+  border-radius: 4px;
+  color: var(--osc-ink);
+  padding: 6px 10px;
+  word-break: break-all;
+}
+
+.api-key-prefix,
+.api-key-scopes {
+  font-size: 0.8125rem;
+}
+
+.api-key-scopes {
+  color: var(--osc-ink-emphasis);
+}
+
+.api-key-actions {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.api-scopes {
+  display: grid;
+  gap: 2px;
+}
+.api-scopes .form-label-checkbox {
+  margin: 0;
+}
+
+.api-reauth {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem 1.25rem;
+}
+.osc-dialog .api-reauth {
+  flex-direction: column;
+  margin-block-start: 1.1rem;
+}
+
+.api-reauth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.api-reauth-field .form-label {
+  color: var(--osc-ink);
+  margin: 0;
+}
+
+.api-inline-form {
+  display: inline-flex;
+  margin: 0;
+}
+
+.api-webhook-url {
+  overflow-wrap: anywhere;
+}
+
+.api-webhook-paused {
+  margin-block-end: 16px;
+  max-width: 48rem;
+}
+
+.api-webhooks-table .api-key-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 /*
  * This file is part of Shopclass (Mindstellar).
  * Copyright (c) 2014 Osclass (original work, licensed under the Apache License 2.0)

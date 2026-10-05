@@ -127,6 +127,27 @@ class Item extends DAO
      */
     public function extendData($items, $prefLocale = null)
     {
+        $items = $this->extendRows($items, $prefLocale);
+
+        // Batch-prime the resource cache for the whole page so the theme's
+        // per-item osc_get_item_resources() calls are cache hits, not an N+1.
+        if (is_array($items) && count($items) > 1) {
+            ItemResource::newInstance()->primeResourcesCache(array_column($items, 'pk_i_id'));
+        }
+
+        return $items;
+    }
+
+    /**
+     * extendData() without priming the photo cache, for a caller that loads photos itself.
+     *
+     * @param array<int,array<string,mixed>> $items
+     * @param string|null                    $prefLocale Defaults to the current locale
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function extendRows($items, $prefLocale = null)
+    {
         if (!empty($items)) {
             if (null === $prefLocale) {
                 $prefLocale = OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale();
@@ -174,12 +195,6 @@ class Item extends DAO
                     }
                 }
                 $items[$k] = $aItem;
-            }
-
-            // Batch-prime the resource cache for the whole page so the theme's
-            // per-item osc_get_item_resources() calls are cache hits, not an N+1.
-            if (count($itemIds) > 1) {
-                ItemResource::newInstance()->primeResourcesCache($itemIds);
             }
         }
 
@@ -459,14 +474,9 @@ class Item extends DAO
     }
 
     /**
-     * SQL predicate for "this listing is publicly live": enabled, active, not flagged spam, and
-     * either premium or not yet expired. Single source of truth for the visibility rule that
-     * search, category counts and any integrator must agree on — copy it by hand and the copies
-     * drift, which is exactly what makes search disagree with the counts about what is live.
+     * SQL fragments for "this listing is publicly live", to join with AND.
      *
-     * Returns an array of SQL fragments to join with AND. The expiry bound carries PHP's clock
-     * as a quoted literal (matching how the search builder consumes it). Pass an $alias ending
-     * in a dot (e.g. 'i.' or DB_TABLE_PREFIX . 't_item.') to qualify the columns.
+     * Compatibility: use \mindstellar\listing\ListingStatus::liveConditions(), which holds the rule.
      *
      * @param string $alias column qualifier ending in a dot, or '' for none
      *
@@ -474,12 +484,7 @@ class Item extends DAO
      */
     public static function liveConditions($alias = '')
     {
-        return array(
-            $alias . 'b_enabled = 1',
-            $alias . 'b_active = 1',
-            $alias . 'b_spam = 0',
-            sprintf("(%sb_premium = 1 || %sdt_expiration >= '%s')", $alias, $alias, date('Y-m-d H:i:s')),
-        );
+        return \mindstellar\listing\ListingStatus::liveConditions((string) $alias);
     }
 
     /**
@@ -1302,8 +1307,8 @@ class Item extends DAO
             return false;
         }
 
-        // The row is gone for good, so the files can go too.
-        ItemActions::deleteResourcesFromHD($id, $isAdmin, $resources);
+        // The files go once the outermost transaction commits, and stay if it rolls back.
+        \mindstellar\listing\PhotoService::deleteFilesFromDisk($id, $isAdmin, $resources);
 
         // Counters are decremented only once the row is really gone. Doing it first
         // meant a delete that failed still took the listing out of every total, and

@@ -12,8 +12,20 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\storage\ResourceUploader;
-use mindstellar\utility\Sanitize;
+use mindstellar\auth\Actor;
+use mindstellar\comment\CommentPolicy;
+use mindstellar\comment\CommentService;
+use mindstellar\listing\ListingInput;
+use mindstellar\listing\ListingMailService;
+use mindstellar\listing\ListingNotices;
+use mindstellar\listing\ListingService;
+use mindstellar\listing\ListingStats;
+use mindstellar\listing\ListingValidator;
+use mindstellar\listing\PhotoService;
+use mindstellar\validation\BlockedException;
+use mindstellar\validation\ForbiddenException;
+use mindstellar\validation\InvalidException;
+use mindstellar\validation\RefusedException;
 
 /**
  * Class ItemActions
@@ -21,26 +33,12 @@ use mindstellar\utility\Sanitize;
 class ItemActions
 {
     /**
-     * Widths of the t_item_location and t_item columns a submitted listing fills, from
-     * struct.sql. A value wider than its column is cut short on a relaxed connection and
-     * rejects the whole insert on a strict one, so each is refused by name first;
-     * tests/strict-write-guards.php reads this and pins it against the live schema.
+     * Widths of the t_item_location and t_item columns a submitted listing fills.
      */
-    public const COLUMN_WIDTHS = array(
-        's_country'       => 80,
-        's_region'        => 100,
-        's_city'          => 100,
-        's_city_area'     => 200,
-        's_address'       => 100,
-        's_zip'           => 15,
-        's_contact_phone' => 40,
-    );
+    public const COLUMN_WIDTHS = ListingValidator::COLUMN_WIDTHS;
 
     /** Widths of the t_item contact columns a listing form fills. */
-    public const CONTACT_WIDTHS = array(
-        's_contact_name'  => 100,
-        's_contact_email' => 140,
-    );
+    public const CONTACT_WIDTHS = ListingValidator::CONTACT_WIDTHS;
 
     /** Highest description length the listing settings accept. */
     public const DESCRIPTION_MAX = 20000;
@@ -52,7 +50,12 @@ class ItemActions
     /** @var bool the data came through prepareDataFrom(), not a form carrying the secret */
     private $fromData = false;
     private $manager;
-    private $Sanitize;
+    /** @var int the listing the last add() made, 0 when it made none */
+    private $lastItemId = 0;
+    /** @var int the comment the last add_comment() saved, 0 when it saved none */
+    private $lastCommentId = 0;
+    /** @var int[] the photos the last uploadItemResources() call saved */
+    private $uploadedIds = array();
 
     /**
      * ItemActions constructor.
@@ -63,7 +66,36 @@ class ItemActions
     {
         $this->is_admin = $is_admin;
         $this->manager  = Item::newInstance();
-        $this->Sanitize = (new Sanitize());
+    }
+
+    /**
+     * The id of the listing the last add() made.
+     *
+     * @return int 0 when it made none
+     */
+    public function lastItemId(): int
+    {
+        return $this->lastItemId;
+    }
+
+    /**
+     * The id of the comment the last add_comment() saved.
+     *
+     * @return int 0 when it saved none
+     */
+    public function lastCommentId(): int
+    {
+        return $this->lastCommentId;
+    }
+
+    /**
+     * The photo (t_item_resource) ids the last uploadItemResources() call saved, in order.
+     *
+     * @return int[]
+     */
+    public function uploadedResourceIds(): array
+    {
+        return $this->uploadedIds;
     }
 
     /**
@@ -81,56 +113,23 @@ class ItemActions
     }
 
     /**
-     * Delete resources from the hard drive
+     * Delete resources from the hard drive.
+     * Compatibility: use \mindstellar\listing\PhotoService::deleteFilesFromDisk().
      *
      * @param int                                 $itemId
      * @param bool                                $is_admin
-     * @param array<int,array<string,mixed>>|null $resources Rows the caller read before the
-     *                                                       delete; looked up when null
+     * @param array<int,array<string,mixed>>|null $resources Rows read before the delete; looked up when null
      *
      * @return void
      */
     public static function deleteResourcesFromHD($itemId, $is_admin = false, $resources = null)
     {
-        // $resources lets the caller supply rows it read earlier. The item delete reads
-        // them before its transaction and calls this after the commit, when the rows are
-        // gone and a fresh lookup would find nothing to unlink.
-        if (!is_array($resources)) {
-            $resources = ItemResource::newInstance()->getAllResourcesFromItem($itemId);
-        }
-        Log::newInstance()
-            ->insertLog(
-                'itemActions',
-                'deleteResourcesFromHD',
-                $itemId,
-                $itemId,
-                $is_admin ? 'admin' : 'user',
-                $is_admin ? osc_logged_admin_id() : osc_logged_user_id()
-            );
-        $log_ids = '';
-        foreach ($resources as $resource) {
-            osc_deleteResource($resource['pk_i_id'], $is_admin, $resource);
-            $log_ids .= $resource['pk_i_id'] . ',';
-        }
-        Log::newInstance()->insertLog(
-            'itemActions',
-            'deleteResourcesFromHD',
-            $itemId,
-            substr($log_ids, 0, 250),
-            $is_admin ? 'admin' : 'user',
-            $is_admin ? osc_logged_admin_id() : osc_logged_user_id()
-        );
+        PhotoService::deleteFilesFromDisk($itemId, $is_admin, $resources);
     }
 
     /**
-     * Regenerate the normal/preview/thumbnail variants of a single resource
-     * from its best available local source (preferring the original, then
-     * the current normal, then the preview). No-op when none of those exist
-     * locally or the resource isn't an image.
-     *
-     * Used by the "Regenerate images" admin action, run inline for every
-     * resource on local installs and via the storage queue 'regenerate' job,
-     * one resource at a time, on installs backed by a remote adapter.
+     * Regenerate the normal, preview and thumbnail variants of one resource.
+     * Compatibility: use \mindstellar\listing\PhotoService::regenerateImages().
      *
      * @param array $resource
      *
@@ -138,765 +137,31 @@ class ItemActions
      */
     public static function regenerateResourceImages(array $resource): void
     {
-        osc_run_hook('regenerate_image', $resource);
-        if (strpos($resource['s_content_type'], 'image') === false) {
-            return;
-        }
-
-        if (file_exists(osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '_original.'
-            . $resource['s_extension'])
-        ) {
-            $image_tmp    = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '_original.'
-                . $resource['s_extension'];
-            $use_original = true;
-        } elseif (file_exists(osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '.'
-            . $resource['s_extension'])
-        ) {
-            $image_tmp    = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '.'
-                . $resource['s_extension'];
-            $use_original = false;
-        } elseif (file_exists(osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '_preview.'
-            . $resource['s_extension'])
-        ) {
-            $image_tmp    = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '_preview.'
-                . $resource['s_extension'];
-            $use_original = false;
-        } else {
-            return;
-        }
-
-        // Create normal size
-        $path        = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '.'
-            . $resource['s_extension'];
-        $path_normal = $path;
-        $size        = explode('x', osc_normal_dimensions());
-        $img         = ImageProcessing::fromFile($image_tmp)->resizeTo($size[0], $size[1]);
-        if ($use_original) {
-            if (osc_is_watermark_text()) {
-                $img->doWatermarkText(osc_watermark_text(), osc_watermark_text_color());
-            } elseif (osc_is_watermark_image()) {
-                $img->doWatermarkImage();
-            }
-        }
-        $img->saveToFile($path);
-
-        // Create preview
-        $path = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '_preview.'
-            . $resource['s_extension'];
-        $size = explode('x', osc_preview_dimensions());
-        ImageProcessing::fromFile($path_normal)->resizeTo($size[0], $size[1])->saveToFile($path);
-
-        // Create thumbnail
-        $path = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '_thumbnail.'
-            . $resource['s_extension'];
-        $size = explode('x', osc_thumbnail_dimensions());
-        ImageProcessing::fromFile($path_normal)->resizeTo($size[0], $size[1])->saveToFile($path);
-
-        osc_run_hook(
-            'regenerated_image',
-            ItemResource::newInstance()->findByPrimaryKey($resource['pk_i_id'])
-        );
+        PhotoService::regenerateImages($resource);
     }
 
     /**
      * Insert a listing from $this->data, with its locales, location, images, meta and stats.
      *
+     * Compatibility: use \mindstellar\listing\ListingService::create().
+     *
      * @return int|string 1 on success, 2 when it still needs validation, else an error message
      */
     public function add()
     {
-        $aItem       = $this->data;
-        $aItem       = osc_apply_filter('item_add_prepare_data', $aItem);
-        $is_spam     = 0;
-        $enabled     = 1;
-        $code        = osc_genRandomPassword();
-        $flash_error = '';
-
-        // Requires email validation?
-        $has_to_validate = osc_moderate_items() !== -1;
-
-        // Check status
-        $active = $aItem['active'];
-
-        // Sanitize
-        foreach ($aItem['title'] as $key => $value) {
-            $aItem['title'][$key] = $this->Sanitize->title($value);
+        $this->lastItemId = 0;
+        $result           = (new ListingService())->saveForm((array) $this->data, $this->actor(), true, $this->import);
+        if (is_int($result)) {
+            $this->lastItemId = Params::getParamInt('itemId');
         }
 
-        if ($aItem['price'] !== null) {
-            $aItem['price'] = $this->Sanitize->price($aItem['price']);
-        }
-
-        $aItem['contactName']       = trim($this->Sanitize->string($aItem['contactName']));
-        $aItem['contactEmail']      = $this->Sanitize->email($aItem['contactEmail']);
-        $aItem['contactPhone']      = $this->Sanitize->phone($aItem['contactPhone']);
-        $aItem['cityArea'] = $aItem['cityArea'] ? osc_sanitize_name(strip_tags(trim($aItem['cityArea']))) : '';
-        $aItem['address']  = $aItem['address'] ? osc_sanitize_name(strip_tags(trim($aItem['address']))) : '';
-
-        // Anonymous
-        $aItem['contactName'] = osc_validate_text($aItem['contactName'], 3) ? $aItem['contactName'] : __('Anonymous');
-
-        // Validate
-        $flash_error .= ((!osc_validate_max($aItem['contactName'], 35)) ? _m('Name too long.') . PHP_EOL : '');
-        $flash_error .= ((!osc_validate_email($aItem['contactEmail'])) ? _m('Email invalid.') . PHP_EOL : '');
-        // The name already has its tighter cap above.
-        $flash_error .= $this->contactWidthErrors(array('contactEmail' => $aItem['contactEmail']));
-
-        $flash_error .= $this->validateCommonInput('', $aItem);
-
-        // The wait is the global preference unless the posting user holds a
-        // listing.no_wait entitlement -- osc_items_wait_time_for_user() falls back to
-        // the global value for a guest (no userId), so anonymous posting is never
-        // weakened by this check.
-        $waitTime = osc_items_wait_time_for_user($aItem['userId'] ?? null);
-        $flash_error .= ((!$this->is_admin
-            && $waitTime > 0
-            && LoginAttempt::newInstance()->countByIpContext(
-                'item_post',
-                (string)Params::getServerParam('REMOTE_ADDR'),
-                date('Y-m-d H:i:s', time() - $waitTime)
-            ) > 0)
-            ? _m('Too fast. You should wait a little to publish your ad.')
-            . PHP_EOL : '');
-
-        // akismet check spam ...
-        if ($this->akismetText($aItem['title'], $aItem['description'], $aItem['contactName'], $aItem['contactEmail'])) {
-            $is_spam = 1;
-        }
-        $_meta = Field::newInstance()->findByCategory($aItem['catId']);
-        // Custom field values come with the data when there is no form post, as on an import.
-        $meta  = $aItem['meta'] ?? Params::getParam('meta');
-        $this->handleMetaField($_meta, $meta, $flash_error);
-
-        // hook pre add
-        osc_run_hook('pre_item_add', $aItem, $flash_error);
-        $flash_error = osc_apply_filter('pre_item_add_error', $flash_error, $aItem);
-
-        // The one choke point for the listing quota. Guest posts (no user id) have no
-        // wallet to charge and admin posts are never metered, so both skip enforcement
-        // entirely. withinFreeQuota() is the same COUNT canPublish() would otherwise run
-        // again internally, so it is computed once here and handed to canPublish() rather
-        // than paying for it twice on every post. Nothing is ever consumed here: a
-        // listing.slot entitlement only ever raises the ceiling withinFreeQuota() already
-        // checked, so there is nothing left to spend once a post is allowed through.
-        if ((!$this->is_admin || $this->import) && osc_billing_enabled() && !empty($aItem['userId'])) {
-            $withinFreeQuota = \mindstellar\billing\Entitlements::withinFreeQuota($aItem['userId']);
-            if (!\mindstellar\billing\Entitlements::canPublish($aItem['userId'], array('item' => $aItem), $withinFreeQuota)) {
-                $flash_error .= osc_listing_limit_message((int) $aItem['userId'], $aItem) . PHP_EOL;
-            }
-        }
-
-        // Handle error
-        if ($flash_error) {
-            $success = $flash_error;
-        } else {
-            if (empty($aItem['price'])) {
-                $aItem['currency'] = null;
-            }
-
-            // Capture the new id from the insert itself (see DAO::insertGetId), not a later
-            // decoupled read of the shared connection's insert_id, which intermittently came
-            // back 0 and cascaded into FK-failing child inserts and an empty posted_item hook.
-            // dt_first_pub_date records the listing's original publish date, distinct from
-            // dt_pub_date (the sort key a bump is free to move) -- this insert is the ONLY
-            // place that ever writes it, so it stays the one durable record of when the
-            // listing first went live even after a later bump moves dt_pub_date forward.
-            $publishedAt = date('Y-m-d H:i:s');
-            $itemId = $this->manager->insertGetId(array(
-                'fk_i_user_id'       => $aItem['userId'],
-                'dt_pub_date'        => $publishedAt,
-                'dt_first_pub_date'  => $publishedAt,
-                'fk_i_category_id'   => $aItem['catId'],
-                'i_price'            => $aItem['price'],
-                'fk_c_currency_code' => $aItem['currency'],
-                's_contact_name'     => $aItem['contactName'],
-                's_contact_email'    => $aItem['contactEmail'],
-                's_contact_phone'    => $aItem['contactPhone'],
-                's_secret'           => $code,
-                'b_active'           => $active === 'ACTIVE' ? 1 : 0,
-                'b_enabled'          => $enabled,
-                'b_show_email'       => $aItem['showEmail'],
-                'b_spam'             => $is_spam,
-                's_ip'               => $aItem['s_ip']
-            ));
-
-            // The parent insert must have produced a row before any of the child inserts
-            // below run. On production the parent has been seen to leave no durable row while
-            // insertedId() returns 0 and nothing logs a failure; carrying on then FK-fails all
-            // five child inserts (locales, location, resources, meta, stats) against a
-            // non-existent item and fires posted_item with an empty payload. Abort cleanly with
-            // an error the caller shows and redirects on, and make the silent failure visible.
-            if (!$itemId) {
-                trigger_error(
-                    'Item insert produced no row (insertedId=0); aborting before child inserts.',
-                    E_USER_WARNING
-                );
-
-                return _m('Your listing could not be saved. Please try again.');
-            }
-
-            // Written first so a refused title or description removes the new row again,
-            // rather than leaving a live listing with no text.
-            if (!$this->insertItemLocales('ADD', $aItem['title'], $aItem['description'], $itemId)) {
-                $this->discardNewItem($itemId);
-
-                return _m('Your listing could not be saved. Please try again.');
-            }
-
-            if (!$this->is_admin) {
-                // Record the publish so the flood wait is enforced server-side (see the
-                // countByIpContext check above): durable, correct across app servers, and
-                // not resettable by clearing cookies the way the old session/cookie was.
-                LoginAttempt::newInstance()->record(
-                    'item_post',
-                    (string)$aItem['contactEmail'],
-                    (string)Params::getServerParam('REMOTE_ADDR'),
-                    date('Y-m-d H:i:s')
-                );
-            }
-
-            Log::newInstance()->insertLog(
-                'item',
-                'add',
-                $itemId,
-                current(array_values($aItem['title'])),
-                $this->is_admin ? 'admin' : 'user',
-                $this->is_admin ? osc_logged_admin_id() : osc_logged_user_id()
-            );
-
-            Params::setParam('itemId', $itemId);
-
-            $location = array(
-                'fk_i_item_id'      => $itemId,
-                'fk_c_country_code' => $aItem['countryId'],
-                's_country'         => $aItem['countryName'],
-                'fk_i_region_id'    => $aItem['regionId'],
-                's_region'          => $aItem['regionName'],
-                'fk_i_city_id'      => $aItem['cityId'],
-                's_city'            => $aItem['cityName'],
-                's_city_area'       => $aItem['cityArea'],
-                's_address'         => $aItem['address'],
-                'd_coord_lat'       => $aItem['d_coord_lat'],
-                'd_coord_long'      => $aItem['d_coord_long'],
-                's_zip'             => $aItem['s_zip']
-            );
-            $location = array_merge($location, $this->getItemCoordinates($location));
-
-            $locationManager = ItemLocation::newInstance();
-            // The listing row already exists, so there is nothing useful to tell the
-            // poster here -- but a refused location write leaves a listing that no
-            // location search will ever return, and DAO::insert() reports it only in
-            // its return value. The length checks above make user input a clean
-            // rejection instead; what is left is a filtered or plugin-supplied value.
-            if (!$locationManager->insert($location)) {
-                trigger_error('Item location insert wrote no row for item ' . $itemId . '.', E_USER_WARNING);
-            }
-
-            $this->uploadItemResources($aItem['photos'], $itemId);
-
-            // update dt_expiration at t_item
-            Item::newInstance()->updateExpirationDate($itemId, $aItem['dt_expiration']);
-
-            /**
-             * META FIELDS
-             */
-            if ($meta && count($meta) > 0) {
-                $mField = Field::newInstance();
-                foreach ($meta as $k => $v) {
-                    // if dateinterval
-                    if (is_array($v) && !isset($v['from']) && !isset($v['to'])) {
-                        $v = implode(',', $v);
-                    }
-                    $mField->replace($itemId, $k, $v);
-                }
-            }
-
-            // We need at least one record in t_item_stats
-            $mStats = new ItemStats();
-            $mStats->emptyRow($itemId);
-
-            $item          = $this->manager->findByPrimaryKey($itemId);
-            $aItem['item'] = $item;
-
-            if (!$this->is_admin) {
-                $this->sendEmails($aItem);
-            }
-
-            if ($active === 'INACTIVE') {
-                $success = 1;
-            } else {
-                $aAux = array(
-                    'fk_i_user_id'      => $aItem['userId'],
-                    'fk_i_category_id'  => $aItem['catId'],
-                    'fk_c_country_code' => $location['fk_c_country_code'],
-                    'fk_i_region_id'    => $location['fk_i_region_id'],
-                    'fk_i_city_id'      => $location['fk_i_city_id']
-                );
-                // if is_spam not increase stats
-                if ($is_spam == 0) {
-                    $this->increaseStats($aAux);
-                }
-                $success = 2;
-            }
-
-            if ((!$this->is_admin || $this->import) && osc_moderate_admin_post()) {
-                $this->disable($item['pk_i_id']);
-            }
-
-            // THIS HOOK IS FINE, YAY!
-            osc_run_hook('posted_item', $item);
-        }
-
-        return $success;
-    }
-
-    /**
-     * Whether every uploaded file's MIME type is in the allowed-extension list.
-     *
-     * @param array<string,array<int,mixed>> $aResources A $_FILES entry
-     *
-     * @return bool
-     */
-    private function checkAllowedExt($aResources)
-    {
-        $success = true;
-        if (!empty($aResources)) {
-            foreach ($aResources['error'] as $key => $error) {
-                if ($error !== UPLOAD_ERR_OK) {
-                    continue;
-                }
-                if (\mindstellar\storage\UploadMimes::tooManyPixels((string)$aResources['tmp_name'][$key])) {
-                    osc_add_flash_error_message(\mindstellar\storage\UploadMimes::tooManyPixelsMessage());
-
-                    return false;
-                }
-                if (!\mindstellar\storage\UploadMimes::isAllowedImage((string)$aResources['tmp_name'][$key])) {
-                    $success = false;
-                }
-            }
-
-            if (!$success) {
-                osc_add_flash_error_message(_m('The file you tried to upload does not have a valid extension'));
-            }
-        }
-
-        return $success;
-    }
-
-    /**
-     * Whether every uploaded file is within the configured maximum size.
-     *
-     * @param array<string,array<int,mixed>> $aResources A $_FILES entry
-     *
-     * @return bool
-     */
-    private function checkSize($aResources)
-    {
-        $success = true;
-
-        if (!empty($aResources)) {
-            // get allowedExt
-            $maxSize = osc_max_size_kb() * 1024;
-            foreach ($aResources['error'] as $key => $error) {
-                if ($error == UPLOAD_ERR_OK) {
-                    $size = $aResources['size'][$key];
-                    if ($size >= $maxSize) {
-                        $success = false;
-                    }
-                }
-            }
-            if (!$success) {
-                osc_add_flash_error_message(_m('One of the files you tried to upload exceeds the maximum size'));
-            }
-        }
-
-        return $success;
-    }
-
-    /**
-     * Whether Akismet judges any locale of this listing to be spam.
-     *
-     * @param array<string,string> $title       Title per locale
-     * @param array<string,string> $description Description per locale
-     * @param string               $author
-     * @param string               $email
-     *
-     * @return bool
-     *
-     */
-    private function akismetText($title, $description, $author, $email)
-    {
-        $spam = false;
-        if (osc_akismet_key()) {
-            foreach ($title as $k => $_data) {
-                $_title       = $_data;
-                $_description = $description[$k];
-                $content      = $_title . ' ' . $_description;
-
-                $akismet = new Akismet(osc_base_url(), osc_akismet_key());
-
-                $akismet->setCommentContent($content);
-                $akismet->setCommentAuthor($author);
-                $akismet->setCommentAuthorEmail($email);
-                $akismet->setUserIP(get_ip());
-
-                $status = '';
-                try {
-                    if ($akismet->isCommentSpam()) {
-                        $status = 'SPAM';
-                    }
-                } catch (exception $e) {
-                    trigger_error($e->getMessage(), E_USER_NOTICE);
-                }
-                if ($status === 'SPAM') {
-                    $spam = true;
-                    break;
-                }
-            }
-        }
-
-        return $spam;
-    }
-
-    /**
-     * Validate common inputs while editing/publishing
-     *
-     * @param string $flash_error
-     * @param        $aItem
-     *
-     * @return string
-     */
-    private function validateCommonInput(string $flash_error, $aItem)
-    {
-        if (!$this->checkAllowedExt($aItem['photos'])) {
-            $flash_error .= _m('Image with an incorrect extension.') . PHP_EOL;
-        }
-        if (!$this->checkSize($aItem['photos'])) {
-            $flash_error .= _m('Image is too big. Max. size') . osc_max_size_kb() . ' Kb' . PHP_EOL;
-        }
-
-        // One title is enough, but a too-long one is refused in every language.
-        $maxTitle  = osc_max_characters_per_title();
-        $tooLong   = '';
-        $tooShort  = '';
-        $hasTitle  = false;
-        foreach ($aItem['title'] as $key => $value) {
-            if (!osc_validate_max($value, $maxTitle)) {
-                $tooLong .= sprintf(_m('Title too long (%s).'), $key) . PHP_EOL;
-            } elseif (osc_validate_text($value)) {
-                $hasTitle = true;
-            } else {
-                $tooShort .= sprintf(_m('Title too short (%s).'), $key) . PHP_EOL;
-            }
-        }
-        $flash_error .= ($hasTitle || $tooLong !== '' ? '' : $tooShort) . $tooLong;
-
-        $desc_message = '';
-        foreach ($aItem['description'] as $key => $value) {
-            if (osc_validate_text($value, 3) && osc_validate_max($value, osc_max_characters_per_description())) {
-                $desc_message = '';
-                break;
-            }
-            $desc_message .= (!osc_validate_text($value, 3) ? sprintf(_m('Description too short (%s).'), $key) . PHP_EOL
-                : '');
-            $desc_message .= (!osc_validate_max($value, osc_max_characters_per_description())
-                ? sprintf(_m('Description too long (%s).'), $key) . PHP_EOL : '');
-        }
-        $flash_error .= $desc_message;
-
-        $flash_error .= ((!osc_validate_category($aItem['catId'])) ? _m('Category invalid.') . PHP_EOL : '');
-        $flash_error .= ((!osc_validate_number($aItem['price'])) ? _m('Price must be a number.') . PHP_EOL : '');
-        if ($aItem['price'] !== null) {
-            $flash_error .= ((!osc_validate_max(number_format($aItem['price'], 0, '', ''), 15))
-            ? _m('Price too long.')
-            . PHP_EOL : '');
-        }
-        $flash_error .= (($aItem['price'] !== null && (float)$aItem['price'] < 0)
-            ? _m('Price must be positive number.') . PHP_EOL : '');
-        $flash_error .= ((!osc_validate_text($aItem['countryName'], 3, false))
-            ? _m('Country too short.') . PHP_EOL
-            : '');
-        $flash_error .= ((!osc_validate_text($aItem['regionName'], 2, false))
-            ? _m('Region too short.') . PHP_EOL
-            : '');
-        $flash_error .= ((!osc_validate_text($aItem['cityName'], 2, false))
-            ? _m('City too short.') . PHP_EOL : '');
-        $flash_error .= ((!osc_validate_text($aItem['cityArea'], 3, false))
-            ? _m('Municipality too short.')
-            . PHP_EOL : '');
-        $flash_error .= ((!osc_validate_text($aItem['address'], 3, false))
-            ? _m('Address too short.') . PHP_EOL
-            : '');
-        // The input key each capped column is filled from, and what to say when it does
-        // not fit. The widths themselves are COLUMN_WIDTHS, pinned against the live schema.
-        $capped = array(
-            's_country'       => array('countryName', _m('Country too long.')),
-            's_region'        => array('regionName', _m('Region too long.')),
-            's_city'          => array('cityName', _m('City too long.')),
-            's_city_area'     => array('cityArea', _m('Municipality too long.')),
-            's_address'       => array('address', _m('Address too long.')),
-            's_zip'           => array('s_zip', _m('Zip code too long.')),
-            's_contact_phone' => array('contactPhone', _m('Phone too long.')),
-        );
-        foreach (self::COLUMN_WIDTHS as $column => $width) {
-            list($key, $message) = $capped[$column];
-            if (!osc_validate_max((string)($aItem[$key] ?? ''), $width)) {
-                $flash_error .= $message . PHP_EOL;
-            }
-        }
-        // Checked after Sanitize::phone() has reduced the input to digits and a leading
-        // plus, so this is the format of what would be stored, not of what was typed.
-        if (!osc_validate_phone((string)($aItem['contactPhone'] ?? ''), 4)) {
-            $flash_error .= _m('Phone invalid.') . PHP_EOL;
-        }
-
-        return $flash_error;
-    }
-
-    /**
-     * Validate Item meta field and check required fields are not empty
-     *
-     * @param array<int,array<string,mixed>> $_meta       The category's field definitions
-     * @param array<int,mixed>|mixed          $meta        Submitted values, sanitised in place
-     * @param string                          $flash_error Appended to in place
-     *
-     * @return void
-     */
-    private function handleMetaField(array $_meta, &$meta, string &$flash_error)
-    {
-        // A category with no custom fields takes no values, or they would be stored under
-        // other categories' field ids unchecked.
-        if (empty($_meta)) {
-            $meta = array();
-
-            return;
-        }
-        if (is_array($meta)) {
-            $valid_id = array_column($_meta, 'pk_i_id');
-            // special case for checkboxes
-            foreach ($_meta as $value) {
-                if (isset($value['e_type']) && $value['e_type'] === 'CHECKBOX') {
-                    $meta[$value['pk_i_id']] = ($meta[$value['pk_i_id']] ?? 0);
-                }
-            }
-            foreach ($meta as $k => $v) {
-                if (!in_array($k, $valid_id, false)) {
-                    unset($meta[$k]);
-                } else {
-                    $key = array_search($k, array_column($_meta, 'pk_i_id'), false);
-                    // Sanitize by type
-                    $meta[$k] = $this->sanitizeMetaField($_meta[$key]['e_type'], $v);
-                }
-                unset($k, $v);
-            }
-            list($meta, $flash_error) = $this->validateMetaFields($_meta, $meta, $flash_error);
-        }
-    }
-
-    /**
-     * Sanitise one submitted custom-field value according to its field type.
-     *
-     * @param string $e_type
-     * @param mixed  $metaValue
-     *
-     * @return mixed same shape as $metaValue
-     */
-    private function sanitizeMetaField($e_type, $metaValue)
-    {
-        switch ($e_type) {
-            case 'DATEINTERVAL':
-                if (!empty($metaValue)) {
-                    if ($metaValue['from']) {
-                        $metaValue['from'] = (int)$metaValue['from'];
-                    }
-                    if ($metaValue['to']) {
-                        $metaValue['to'] = (int)$metaValue['to'];
-                    }
-                }
-                break;
-            case 'DATE':
-                if (!empty($metaValue)) {
-                    $metaValue = (int)$metaValue;
-                }
-                break;
-            case 'CHECKBOX':
-                $metaValue = (int)$metaValue;
-                break;
-            case 'URL':
-                $metaValue = $this->Sanitize->websiteUrl($metaValue);
-                break;
-            default:
-                // sanitize string safe for html
-                $metaValue = $this->Sanitize->html($metaValue);
-                break;
-        }
-
-        return $metaValue;
-    }
-
-    /**
-     * Apply the conditional and required rules to the submitted custom-field values.
-     *
-     * @param array<int,array<string,mixed>> $_meta       The category's field definitions
-     * @param array<int,mixed>               $meta        Submitted values
-     * @param string                         $flash_error
-     *
-     * @return array{0:array<int,mixed>,1:string} the surviving values and the error text
-     */
-    private function validateMetaFields($_meta, $meta, $flash_error)
-    {
-        // Map slug -> submitted value so conditional rules (stored by slug) can be
-        // re-evaluated server-side; the client engine is UX only.
-        $slugValues = array();
-        foreach ($_meta as $_m) {
-            $slugValues[$_m['s_slug']] = $meta[$_m['pk_i_id']] ?? null;
-        }
-
-        foreach ($_meta as $_m) {
-            // Conditional logic: a field hidden by its show_when rule is not part of
-            // this submission — drop any value and never require it. A required_when
-            // rule overrides the field's static required flag.
-            $rules = (isset($_m['rules']) && is_array($_m['rules'])) ? $_m['rules'] : array();
-            if (isset($rules['show_when']) && !$this->evaluateFieldCondition($rules['show_when'], $slugValues)) {
-                unset($meta[$_m['pk_i_id']]);
-                continue;
-            }
-            $isMetaRequired = $_m['b_required'];
-            if (isset($rules['required_when'])) {
-                $isMetaRequired = $this->evaluateFieldCondition($rules['required_when'], $slugValues) ? 1 : 0;
-            }
-            $isMetaValueSet = isset($meta[$_m['pk_i_id']]);
-            $metaValue      = $meta[$_m['pk_i_id']] ?? null;
-
-            // Registry-defined types (e.g. EMAIL) validate their stored value here,
-            // on top of the storage primitive's required/format checks below.
-            if ($isMetaValueSet && $metaValue !== '' && $metaValue !== null) {
-                $typeSpec = osc_field_type(osc_field_resolve_type($_m));
-                if ($typeSpec !== null && is_callable($typeSpec['validate'])) {
-                    $typeError = call_user_func($typeSpec['validate'], $metaValue, $_m);
-                    if (is_string($typeError) && $typeError !== '') {
-                        $flash_error .= $typeError . PHP_EOL;
-                    }
-                }
-            }
-
-            switch ($_m['e_type']) {
-                case 'DATEINTERVAL':
-                    if ($isMetaValueSet && $metaValue) {
-                        if ($metaValue['from'] && $metaValue['to']) {
-                            if (!is_numeric($metaValue['from']) || !is_numeric($metaValue['to'])) {
-                                $flash_error .= sprintf(_m('%s is invalid.'), $_m['s_name']) . PHP_EOL;
-                            }
-                        } elseif ($isMetaRequired) {
-                            $flash_error .= sprintf(_m('%s is required.'), $_m['s_name']) . PHP_EOL;
-                        }
-                    } elseif ($isMetaRequired) {
-                        $flash_error .= sprintf(_m('%s is required.'), $_m['s_name']) . PHP_EOL;
-                    }
-                    break;
-                case 'CHECKBOX':
-                case 'NUMBER':
-                case 'DATE':
-                    if ($isMetaValueSet && $metaValue > 0) {
-                        if (!is_numeric($metaValue)) {
-                            $flash_error .= sprintf(_m('%s is invalid.'), $_m['s_name']) . PHP_EOL;
-                        }
-                    } elseif ($isMetaRequired) {
-                        $flash_error .= sprintf(_m('%s is required.'), $_m['s_name']) . PHP_EOL;
-                    }
-                    break;
-                case 'RADIO':
-                case 'DROPDOWN':
-                    if ($isMetaValueSet && $metaValue) {
-                        // Cascading option fields validate against the option set for
-                        // the parent's submitted value (falling back to the union), not
-                        // the flat s_options list (which is empty for a cascade child).
-                        if (!empty($_m['cascade_map']) && is_array($_m['cascade_map'])) {
-                            $parentSlug  = $_m['cascade_parent'] ?? '';
-                            $parentValue = $slugValues[$parentSlug] ?? '';
-                            if (isset($_m['cascade_map'][$parentValue])) {
-                                $allowed = $_m['cascade_map'][$parentValue];
-                            } else {
-                                $allowed = array();
-                                foreach ($_m['cascade_map'] as $opts) {
-                                    $allowed = array_merge($allowed, (array)$opts);
-                                }
-                            }
-                            if (!in_array($metaValue, $allowed, false)) {
-                                $flash_error .= sprintf(_m('%s is invalid.'), $_m['s_name']) . PHP_EOL;
-                            }
-                        } elseif (!in_array($metaValue, explode(',', $_m['s_options']), false)) {
-                            // check value exist in options csv
-                            $flash_error .= sprintf(_m('%s is invalid.'), $_m['s_name']) . PHP_EOL;
-                        }
-                    } elseif ($isMetaRequired) {
-                        $flash_error .= sprintf(_m('%s is required.'), $_m['s_name']) . PHP_EOL;
-                    }
-                    break;
-                case 'URL':
-                    if ($isMetaValueSet && $metaValue) {
-                        // first validate using filter_var than osc_validate_url
-                        if (!filter_var($metaValue, FILTER_VALIDATE_URL)) {
-                            $flash_error .= sprintf(_m('%s is invalid.'), $_m['s_name']) . PHP_EOL;
-                        } elseif (!osc_validate_url($metaValue)) {
-                            $flash_error .= sprintf(_m('%s is invalid.'), $_m['s_name']) . PHP_EOL;
-                        }
-                    } elseif ($isMetaRequired) {
-                        $flash_error .= sprintf(_m('%s is required.'), $_m['s_name']) . PHP_EOL;
-                    }
-                    break;
-                case 'TEXTAREA':
-                case 'TEXT':
-                default:
-                    if ($isMetaRequired && (!$isMetaValueSet || !$metaValue)) {
-                        $flash_error .= sprintf(_m('%s is required.'), $_m['s_name']) . PHP_EOL;
-                    }
-                    break;
-            }
-        }
-
-        return array($meta, $flash_error);
-    }
-
-    /**
-     * Evaluate a single conditional-logic condition (the value stored under a rule's
-     * show_when/required_when key) against the submitted field values, keyed by the
-     * controlling field's slug. Mirrors the client engine so client and server agree.
-     *
-     * @param array $cond       {field: slug, op: eq|neq|filled|gt|lt, value?: mixed}
-     * @param array $slugValues submitted meta values keyed by field slug
-     *
-     * @return bool
-     */
-    private function evaluateFieldCondition($cond, $slugValues)
-    {
-        if (!is_array($cond) || empty($cond['field'])) {
-            return true;
-        }
-        $actual   = $slugValues[$cond['field']] ?? '';
-        if (is_array($actual)) {
-            // interval/number ranges have no single scalar; treat as filled/empty only
-            $actual = implode('', array_map('strval', $actual));
-        }
-        $expected = isset($cond['value']) ? (string)$cond['value'] : '';
-        $op       = $cond['op'] ?? 'eq';
-        switch ($op) {
-            case 'neq':
-                return (string)$actual !== $expected;
-            case 'filled':
-                return trim((string)$actual) !== '';
-            case 'gt':
-                return is_numeric($actual) && is_numeric($expected) && (float)$actual > (float)$expected;
-            case 'lt':
-                return is_numeric($actual) && is_numeric($expected) && (float)$actual < (float)$expected;
-            case 'eq':
-            default:
-                return (string)$actual === $expected;
-        }
+        return $result;
     }
 
     /**
      * Write one title/description row per locale for a listing.
+     *
+     * Compatibility: use \mindstellar\listing\ListingService::writeLocales().
      *
      * @param string               $type        'ADD' or 'EDIT'
      * @param array<string,string> $title       Title per locale
@@ -907,62 +172,7 @@ class ItemActions
      */
     public function insertItemLocales($type, $title, $description, $itemId)
     {
-        foreach ($title as $k => $_data) {
-            $_title       = $_data;
-            $_description = $description[$k];
-            $written      = true;
-            if ($type === 'ADD') {
-                $written = $this->manager->insertLocale($itemId, $k, $_title, $_description);
-            } elseif ($type === 'EDIT') {
-                $written = $this->manager->updateLocaleForce($itemId, $k, $_title, $_description);
-            }
-            if (!$written) {
-                trigger_error('Item locale ' . $k . ' was not written for item ' . $itemId . '.', E_USER_WARNING);
-
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Remove a listing whose add failed half way, before anything else refers to it.
-     *
-     * @param int $itemId
-     *
-     * @return void
-     */
-    private function discardNewItem($itemId)
-    {
-        try {
-            osc_db_transaction(static function () use ($itemId) {
-                osc_db_table(DB_TABLE_PREFIX . 't_item_description')->where('fk_i_item_id', $itemId)->delete();
-                osc_db_table(DB_TABLE_PREFIX . 't_item')->where('pk_i_id', $itemId)->delete();
-            });
-        } catch (\Throwable $e) {
-            trigger_error('Half-made item ' . $itemId . ' could not be removed.', E_USER_WARNING);
-        }
-    }
-
-    /**
-     * Errors for contact values wider than the t_item columns that hold them.
-     *
-     * @param array<string,mixed> $aItem
-     *
-     * @return string
-     */
-    private function contactWidthErrors(array $aItem)
-    {
-        $errors = '';
-        if (!osc_validate_max((string)($aItem['contactName'] ?? ''), self::CONTACT_WIDTHS['s_contact_name'])) {
-            $errors .= _m('Name too long.') . PHP_EOL;
-        }
-        if (!osc_validate_max((string)($aItem['contactEmail'] ?? ''), self::CONTACT_WIDTHS['s_contact_email'])) {
-            $errors .= _m('Email too long.') . PHP_EOL;
-        }
-
-        return $errors;
+        return (new ListingService())->writeLocales($type, $title, $description, $itemId);
     }
 
     /**
@@ -992,44 +202,9 @@ class ItemActions
     }
 
     /**
-     * Return item location array with geocoded coords if maps are enabled and coords data isn't already filled.
-     *
-     * @param array $location
-     *
-     * @return array
-     */
-    private function getItemCoordinates($location)
-    {
-        if ($location['d_coord_lat'] && $location['d_coord_long']) {
-            return array();
-        }
-        if (!function_exists('osc_item_map_type') || !in_array(osc_item_map_type(), ['google', 'openstreet'])) {
-            return array();
-        }
-        $mapType = osc_item_map_type();
-        $address = sprintf('%s, %s, %s, %s', $location['s_address'], $location['s_city'], $location['s_region'], $location['s_country']);
-
-        if ($mapType === 'google') {
-            $res = json_decode(osc_file_get_contents(osc_google_maps_geocode_url($address)));
-            if (isset($res->results[0]->geometry->location) && count($res->results[0]->geometry->location)) {
-                $coords                   = $res->results[0]->geometry->location;
-                $location['d_coord_lat']  = $coords->lat;
-                $location['d_coord_long'] = $coords->lng;
-            }
-        } elseif ($mapType === 'openstreet') {
-            $res = json_decode(osc_file_get_contents(osc_openstreet_geocode_url($address)));
-            if (isset($res->results[0]->locations[0]->latLng) && count($res->results[0]->locations[0]->latLng)) {
-                $coords                   = $res->results[0]->locations[0]->latLng;
-                $location['d_coord_lat']  = $coords->lat;
-                $location['d_coord_long'] = $coords->lng;
-            }
-        }
-
-        return $location;
-    }
-
-    /**
      * Store the uploaded images for a listing, honouring the per-item image cap.
+     *
+     * Compatibility: use \mindstellar\listing\PhotoService::store().
      *
      * @param array<string,array<int,mixed>> $aResources A $_FILES entry
      * @param int                            $itemId
@@ -1038,123 +213,18 @@ class ItemActions
      */
     public function uploadItemResources($aResources, $itemId)
     {
-        if (!empty($aResources)) {
-            $itemResourceManager = ItemResource::newInstance();
-            $folder              = osc_uploads_path() . floor($itemId / 100) . '/';
+        $photos            = new PhotoService();
+        $result            = $photos->store($aResources, $itemId);
+        $this->uploadedIds = $photos->storedIds();
+        ListingNotices::flash($photos->notices(), (bool) $this->is_admin);
 
-            // The cap is the global preference unless the item's own owner (not the
-            // session -- an admin may be uploading on a seller's behalf) holds a
-            // listing.photos entitlement. -1 (from the entitlement) and 0 (the
-            // preference's own convention) both mean unlimited here.
-            $itemOwner        = $this->manager->findByPrimaryKey($itemId);
-            $maxImagesPerItem = osc_max_images_for_user(
-                !empty($itemOwner['fk_i_user_id']) ? (int) $itemOwner['fk_i_user_id'] : null
-            );
-            $totalItemImages  = $itemResourceManager->countResources($itemId);
-            foreach ($aResources['error'] as $key => $error) {
-                if (
-                    $maxImagesPerItem == -1
-                    || $maxImagesPerItem == 0
-                    || ($maxImagesPerItem > 0 && $totalItemImages < $maxImagesPerItem)
-                ) {
-                    if ($error == UPLOAD_ERR_OK) {
-                        $tmpName   = $aResources['tmp_name'][$key];
-                        $imgres    = ImageProcessing::fromFile($tmpName);
-                        $extension = osc_apply_filter('upload_image_extension', $imgres->getExt());
-                        $mime      = osc_apply_filter('upload_image_mime', $imgres->getMime());
-
-                        // Create normal size
-                        $path        = $tmpName . '_normal';
-                        $normal_path = $path;
-                        $size        = explode('x', osc_normal_dimensions());
-                        $img         = $imgres->autoRotate();
-
-                        $img = $img->resizeTo($size[0], $size[1]);
-                        if (osc_is_watermark_text()) {
-                            $img->doWatermarkText(osc_watermark_text(), osc_watermark_text_color());
-                        } elseif (osc_is_watermark_image()) {
-                            $img->doWatermarkImage();
-                        }
-                        $img->saveToFile($path, $extension);
-                        // Create preview
-                        $path = $tmpName . '_preview';
-                        $size = explode('x', osc_preview_dimensions());
-                        ImageProcessing::fromFile($normal_path)->resizeTo($size[0], $size[1])
-                            ->saveToFile($path, $extension);
-
-                        // Create thumbnail
-                        $path = $tmpName . '_thumbnail';
-                        $size = explode('x', osc_thumbnail_dimensions());
-                        ImageProcessing::fromFile($normal_path)->resizeTo($size[0], $size[1])
-                            ->saveToFile($path, $extension);
-
-                        $totalItemImages++;
-
-                        $resourceId = $itemResourceManager->insertGetId(array(
-                            'fk_i_item_id' => $itemId
-                        ));
-
-                        if (!is_dir($folder) && !mkdir($folder, 0755, true) && !is_dir($folder)) {
-                            return 3; // PATH CAN NOT BE CREATED
-                        }
-                        $copies = array(
-                            $tmpName . '_normal'    => $folder . $resourceId . '.' . $extension,
-                            $tmpName . '_preview'   => $folder . $resourceId . '_preview.' . $extension,
-                            $tmpName . '_thumbnail' => $folder . $resourceId . '_thumbnail.' . $extension,
-                        );
-                        $copied = true;
-                        foreach ($copies as $from => $to) {
-                            $copied = $copied && osc_copy($from, $to);
-                        }
-                        // A photo row without its files shows as a broken image, so undo it.
-                        if (!$copied) {
-                            foreach ($copies as $from => $to) {
-                                @unlink($from);
-                                @unlink($to);
-                            }
-                            @unlink($tmpName);
-                            $itemResourceManager->deleteResourcesIds(array($resourceId));
-                            $totalItemImages--;
-                            osc_add_flash_error_message(
-                                _m('A photo could not be saved. Check that the uploads folder can be written to.'),
-                                $this->is_admin ? 'admin' : 'pubMessages'
-                            );
-                            continue;
-                        }
-                        if (osc_keep_original_image()) {
-                            $path = $folder . $resourceId . '_original.' . $extension;
-                            ResourceUploader::saveOriginal($tmpName, $path, $extension);
-                        }
-                        unlink($tmpName . '_normal');
-                        unlink($tmpName . '_preview');
-                        unlink($tmpName . '_thumbnail');
-                        unlink($tmpName);
-
-                        $s_path = str_replace(osc_base_path(), '', $folder);
-                        $itemResourceManager->update(
-                            array(
-                                's_path'         => $s_path,
-                                's_name'         => osc_genRandomPassword(),
-                                's_extension'    => $extension,
-                                's_content_type' => $mime
-                            ),
-                            array(
-                                'pk_i_id'      => $resourceId,
-                                'fk_i_item_id' => $itemId
-                            )
-                        );
-                        osc_run_hook('uploaded_file', ItemResource::newInstance()->findByPrimaryKey($resourceId));
-                    }
-                }
-            }
-            unset($itemResourceManager);
-        }
-
-        return 0; // NO PROBLEMS
+        return $result;
     }
 
     /**
      * Fire the notification hooks a newly posted listing needs.
+     *
+     * Compatibility: use \mindstellar\listing\ListingService::notifyNew().
      *
      * @param array<string,mixed> $aItem The prepared listing data, with its 'item' rows
      *
@@ -1162,61 +232,14 @@ class ItemActions
      */
     public function sendEmails($aItem)
     {
-        $item = $aItem['item'];
-        View::newInstance()->_exportVariableToView('item', $item);
-
-        $userId     = Session::newInstance()->_get('userId');
-        $itemActive = $aItem['active'];
-        /**
-         * Send email to non-reg user requesting item activation
-         */
-        if ($itemActive === 'INACTIVE' && !$userId) {
-            osc_run_hook('hook_email_item_validation_non_register_user', $item);
-        } elseif ($itemActive === 'INACTIVE') { //  USER IS REGISTERED
-            osc_run_hook('hook_email_item_validation', $item);
-        } elseif (!$userId) { // USER IS NOT REGISTERED
-            osc_run_hook('hook_email_new_item_non_register_user', $item);
-        }
-
-        /**
-         * Send email to admin about the new item
-         */
-        if (osc_notify_new_item()) {
-            osc_run_hook('hook_email_admin_new_item', $item);
-        }
-    }
-
-    /**
-     * Private function for increment stats.
-     * tables: t_user/t_category_stats/t_country_stats/t_region_stats/t_city_stats
-     *
-     * @param array<string,mixed> $item
-     *
-     * @return void
-     */
-    private function increaseStats($item)
-    {
-        if ($item['fk_i_user_id'] !== null) {
-            User::newInstance()->increaseNumItems($item['fk_i_user_id']);
-        }
-        if ($item['fk_i_category_id'] !== null && $item['fk_i_category_id'] !== '') {
-            CategoryStats::newInstance()->increaseNumItems($item['fk_i_category_id']);
-        }
-        if ($item['fk_c_country_code'] !== null && $item['fk_c_country_code'] !== '') {
-            CountryStats::newInstance()->increaseNumItems($item['fk_c_country_code']);
-        }
-        if ($item['fk_i_region_id'] !== null && $item['fk_i_region_id'] !== '') {
-            RegionStats::newInstance()->increaseNumItems($item['fk_i_region_id']);
-        }
-        if ($item['fk_i_city_id'] !== null && $item['fk_i_city_id'] !== '') {
-            CityStats::newInstance()->increaseNumItems($item['fk_i_city_id']);
-        }
-        osc_run_hook('item_increase_stat', $item);
+        (new ListingService())->notifyNew($aItem['item'], (string) $aItem['active'], new Actor((int) Session::newInstance()->_get('userId'), null));
     }
 
     /**
      * Disable an item.
      * Set s_enabled value to 0, for a given item id
+     *
+     * Compatibility: use \mindstellar\listing\ListingService::disable().
      *
      * @param int $id
      *
@@ -1224,23 +247,7 @@ class ItemActions
      */
     public function disable($id)
     {
-        $result = $this->manager->update(
-            array('b_enabled' => 0),
-            array('pk_i_id' => $id)
-        );
-
-        // updated correctly
-        if ($result == 1) {
-            osc_run_hook('disable_item', $id);
-            $item = $this->manager->findByPrimaryKey($id);
-            if (osc_item_is_counted(array('b_enabled' => 1) + $item)) {
-                $this->_decreaseStats($item);
-            }
-
-            return true;
-        }
-
-        return false;
+        return (new ListingService())->disable($id);
     }
 
     /**
@@ -1254,329 +261,41 @@ class ItemActions
     {
         $item = Item::newInstance()->findByPrimaryKey($id);
         if ($item) {
-            (new self(true))->_decreaseStats($item);
+            ListingStats::decrease($item);
         }
-    }
-
-    /**
-     * Private function for decrease stats.
-     * tables: t_user/t_category_stats/t_country_stats/t_region_stats/t_city_stats
-     *
-     * @param array<string,mixed> $item
-     *
-     * @return void
-     */
-    private function _decreaseStats($item)
-    {
-        if ($item['fk_i_user_id'] != null) {
-            User::newInstance()->decreaseNumItems($item['fk_i_user_id']);
-        }
-        CategoryStats::newInstance()->decreaseNumItems($item['fk_i_category_id']);
-        CountryStats::newInstance()->decreaseNumItems($item['fk_c_country_code']);
-        RegionStats::newInstance()->decreaseNumItems($item['fk_i_region_id']);
-        CityStats::newInstance()->decreaseNumItems($item['fk_i_city_id']);
-        osc_run_hook('item_decrease_stat', $item);
     }
 
     /**
      * Update a listing from $this->data, with its locales, location, images, meta and stats.
      *
+     * Compatibility: use \mindstellar\listing\ListingService::update().
+     *
      * @return int|string|false rows updated on success, an error message, or false
      */
     public function edit()
     {
-        $aItem       = $this->data;
-        $aItem       = osc_apply_filter('item_edit_prepare_data', $aItem);
-        $flash_error = '';
-
-        // Sanitize
-        foreach ($aItem['title'] as $key => $value) {
-            $aItem['title'][$key] = $this->Sanitize->title($value);
-        }
-
-        if ($aItem['price'] !== null) {
-            $aItem['price'] = $this->Sanitize->price($aItem['price']);
-        }
-        $aItem['cityArea']     = osc_sanitize_name(strip_tags(trim($aItem['cityArea'])));
-        $aItem['address']      = osc_sanitize_name(strip_tags(trim($aItem['address'])));
-        $aItem['contactPhone'] = $this->Sanitize->phone($aItem['contactPhone']);
-
-        // Validate
-        $flash_error .= $this->validateCommonInput('', $aItem);
-        // Only an admin editing a listing with no owner writes the contact name and e-mail.
-        if ($this->is_admin && !$aItem['userId']) {
-            $flash_error .= $this->contactWidthErrors($aItem);
-        }
-
-        $_meta = Field::newInstance()->findByCategory($aItem['catId']);
-        // Custom field values come with the data when there is no form post, as on an import.
-        $meta  = $aItem['meta'] ?? Params::getParam('meta');
-        $this->handleMetaField($_meta, $meta, $flash_error);
-
-        // hook pre edit
-        osc_run_hook('pre_item_edit', $aItem, $flash_error);
-        $flash_error = osc_apply_filter('pre_item_edit_error', $flash_error, $aItem);
-
-        // Handle error
-        if ($flash_error) {
-            $success = $flash_error;
-        } else {
-            // Text first: when it is refused, nothing else about the listing has changed yet.
-            if (!$this->insertItemLocales('EDIT', $aItem['title'], $aItem['description'], $aItem['idItem'])) {
-                return _m('Your listing could not be saved. Please try again.');
-            }
-
-            $location = array(
-                'fk_c_country_code' => $aItem['countryId'],
-                's_country'         => $aItem['countryName'],
-                'fk_i_region_id'    => $aItem['regionId'],
-                's_region'          => $aItem['regionName'],
-                'fk_i_city_id'      => $aItem['cityId'],
-                's_city'            => $aItem['cityName'],
-                's_city_area'       => $aItem['cityArea'],
-                's_address'         => $aItem['address'],
-                'd_coord_lat'       => $aItem['d_coord_lat'],
-                'd_coord_long'      => $aItem['d_coord_long'],
-                's_zip'             => $aItem['s_zip']
-            );
-            $location = array_merge($location, $this->getItemCoordinates($location));
-
-            $locationManager   = ItemLocation::newInstance();
-            $old_item_location = $locationManager->findByPrimaryKey($aItem['idItem']);
-
-            // A rejected update leaves the previous location in place and every hook
-            // below still fires, so the only trace it left was the unread return value.
-            if ($locationManager->update($location, array('fk_i_item_id' => $aItem['idItem'])) === false) {
-                trigger_error('Item location update wrote no row for item ' . $aItem['idItem'] . '.', E_USER_WARNING);
-            }
-
-            $old_item = $this->manager->findByPrimaryKey($aItem['idItem']);
-
-            if ($aItem['userId']) {
-                $user                  = User::newInstance()->findByPrimaryKey($aItem['userId']);
-                $aItem['contactName']  = $user['s_name'];
-                $aItem['contactEmail'] = $user['s_email'];
-            } else {
-                $aItem['userId'] = null;
-            }
-
-            if (empty($aItem['price'])) {
-                $aItem['currency'] = null;
-            }
-
-            $aUpdate = array(
-                'dt_mod_date'        => date('Y-m-d H:i:s'),
-                'fk_i_category_id'   => $aItem['catId'],
-                'i_price'            => $aItem['price'],
-                'fk_c_currency_code' => $aItem['currency'],
-                'b_show_email'       => $aItem['showEmail'],
-                's_contact_phone'    => $aItem['contactPhone'],
-            );
-
-            // only can change the user if you're an admin
-            if ($this->is_admin) {
-                $aUpdate['fk_i_user_id']    = $aItem['userId'];
-                $aUpdate['s_contact_name']  = $aItem['contactName'];
-                $aUpdate['s_contact_email'] = $aItem['contactEmail'];
-            } else {
-                $aUpdate['s_ip'] = $aItem['s_ip'];
-            }
-
-            // A form carries the listing's secret, and the save must match it. An admin
-            // caller that passed plain data has no form, so it needs no secret.
-            $where = array('pk_i_id' => $aItem['idItem']);
-            if (!($this->is_admin && $this->fromData)) {
-                $where['s_secret'] = $aItem['secret'];
-            }
-            $result = $this->manager->update($aUpdate, $where);
-            // UPLOAD item resources
-            $this->uploadItemResources($aItem['photos'], $aItem['idItem']);
-
-            Log::newInstance()->insertLog(
-                'item',
-                'edit',
-                $aItem['idItem'],
-                current(array_values($aItem['title'])),
-                $this->is_admin ? 'admin' : 'user',
-                $this->is_admin ? osc_logged_admin_id() : osc_logged_user_id()
-            );
-            /**
-             * META FIELDS
-             */
-            if ($meta && count($meta) > 0) {
-                $mField = Field::newInstance();
-                foreach ($meta as $k => $v) {
-                    // if dateinterval
-                    if (is_array($v) && !isset($v['from']) && !isset($v['to'])) {
-                        $v = implode(',', $v);
-                    }
-                    $mField->replace($aItem['idItem'], $k, $v);
-                }
-            }
-
-            // Premium keeps an expired listing counted, as the recount does.
-            $oldIsExpired  = empty($old_item['b_premium']) && osc_isExpired($old_item['dt_expiration']);
-            $dt_expiration = Item::newInstance()
-                ->updateExpirationDate($aItem['idItem'], $aItem['dt_expiration'], false);
-            if ($dt_expiration === false) {
-                $dt_expiration          = $old_item['dt_expiration'];
-                $aItem['dt_expiration'] = $old_item['dt_expiration'];
-            }
-            $newIsExpired = empty($old_item['b_premium']) && osc_isExpired($dt_expiration);
-
-            // Recalculate stats related with items
-            $this->updateStats(
-                $result,
-                $old_item,
-                $oldIsExpired,
-                $old_item_location,
-                $aItem,
-                $newIsExpired,
-                $location
-            );
-
-            unset($old_item);
-
-            if ((!$this->is_admin || $this->import) && osc_moderate_admin_edit()) {
-                $this->disable($aItem['idItem']);
-            }
-
-            // THIS HOOK IS FINE, YAY!
-            osc_run_hook('edited_item', Item::newInstance()->findByPrimaryKey($aItem['idItem']));
-            $success = $result;
-        }
-
-        return $success;
+        return (new ListingService())->saveForm((array) $this->data, $this->actor(), false, $this->import, !($this->is_admin && $this->fromData));
     }
 
     /**
-     * Increment or decrement stats related with items.
+     * Activates (validates) an item: the owner confirmed it.
      *
-     * User item stats, Category item stats,
-     *  country item stats, region item stats, city item stats
-     *
-     * @param bool|int            $result What the item update returned
-     * @param array<string,mixed> $old_item
-     * @param bool                $oldIsExpired
-     * @param array<string,mixed> $old_item_location
-     * @param array<string,mixed> $aItem
-     * @param bool                $newIsExpired
-     * @param array<string,mixed> $location
-     *
-     * @return void
-     */
-    private function updateStats(
-        $result,
-        $old_item,
-        $oldIsExpired,
-        $old_item_location,
-        $aItem,
-        $newIsExpired,
-        $location
-    ) {
-        if ($result == 1 && $old_item['b_enabled'] == 1 && $old_item['b_active'] == 1 && $old_item['b_spam'] == 0) {
-            // if old item is expired and new item is not expired.
-            if ($oldIsExpired && !$newIsExpired) {
-                // increment new item stats (user, category, location_stats)
-                if (is_numeric($aItem['userId'])) {
-                    User::newInstance()->increaseNumItems($aItem['userId']);
-                }
-                CategoryStats::newInstance()->increaseNumItems($aItem['catId']);
-                CountryStats::newInstance()->increaseNumItems($location['fk_c_country_code']);
-                RegionStats::newInstance()->increaseNumItems($location['fk_i_region_id']);
-                CityStats::newInstance()->increaseNumItems($location['fk_i_city_id']);
-            }
-            // if old is not expired and new is expired
-            if (!$oldIsExpired && $newIsExpired) {
-                // decrement new item stats (user, category, location_stats)
-                if (is_numeric($old_item['fk_i_user_id'])) {
-                    User::newInstance()->decreaseNumItems($old_item['fk_i_user_id']);
-                }
-                CategoryStats::newInstance()->decreaseNumItems($aItem['catId']);
-                CountryStats::newInstance()->decreaseNumItems($location['fk_c_country_code']);
-                RegionStats::newInstance()->decreaseNumItems($location['fk_i_region_id']);
-                CityStats::newInstance()->decreaseNumItems($location['fk_i_city_id']);
-            }
-            // if old item is not expired and new item is not expired
-            if (!$oldIsExpired && !$newIsExpired) {
-                // Update user stats - if old user diferent to actual user, update user stats
-                if ($old_item['fk_i_user_id'] != $aItem['userId']) {
-                    if (is_numeric($old_item['fk_i_user_id'])) {
-                        User::newInstance()->decreaseNumItems($old_item['fk_i_user_id']);
-                    }
-                    if (is_numeric($aItem['userId'])) {
-                        User::newInstance()->increaseNumItems($aItem['userId']);
-                    }
-                }
-                // Update category numbers
-                if ($old_item['fk_i_category_id'] != $aItem['catId']) {
-                    CategoryStats::newInstance()->increaseNumItems($aItem['catId']);
-                    CategoryStats::newInstance()->decreaseNumItems($old_item['fk_i_category_id']);
-                }
-                // Update location stats
-                if ($old_item_location['fk_c_country_code'] != $location['fk_c_country_code']) {
-                    CountryStats::newInstance()->decreaseNumItems($old_item_location['fk_c_country_code']);
-                    CountryStats::newInstance()->increaseNumItems($location['fk_c_country_code']);
-                }
-                if ($old_item_location['fk_i_region_id'] != $location['fk_i_region_id']) {
-                    RegionStats::newInstance()->decreaseNumItems($old_item_location['fk_i_region_id']);
-                    RegionStats::newInstance()->increaseNumItems($location['fk_i_region_id']);
-                }
-                if ($old_item_location['fk_i_city_id'] != $location['fk_i_city_id']) {
-                    CityStats::newInstance()->decreaseNumItems($old_item_location['fk_i_city_id']);
-                    CityStats::newInstance()->increaseNumItems($location['fk_i_city_id']);
-                }
-            }
-            // if old and new items are expired [nothing to do]
-            // if($oldIsExpired && $newIsExpired) { }
-        }
-    }
-
-    /**
-     * Activates (validates) an item: the owner confirmed it. A listing the admin has not
-     * enabled yet is still marked validated, and stays hidden until the admin enables it.
+     * Compatibility: use \mindstellar\listing\ListingService::activate().
      *
      * @param int           $id
-     *
      * @param string | null $secret
      *
-     * @return bool
+     * @return bool|int -1 when there was nothing to do
      */
     public function activate($id, $secret = null)
     {
-        if ($secret === null) {
-            $item[0] = $this->manager->findByPrimaryKey($id);
-            $aWhere  = array('pk_i_id' => $id);
-        } else {
-            $item   = $this->manager->listWhere('i.s_secret = %s AND i.pk_i_id = %d ', $secret, (int)$id);
-            $aWhere = array('s_secret' => $secret, 'pk_i_id' => $id);
-        }
-
-        if (isset($item[0]['b_active']) && $item[0]['b_active'] == 0) {
-            $result = $this->manager->update(
-                array('b_active' => 1),
-                $aWhere
-            );
-
-            // updated correctly
-            if ($result == 1) {
-                osc_run_hook('activate_item', $id);
-                if (osc_item_is_counted(array('b_active' => 1) + $item[0])) {
-                    $this->increaseStats($item[0]);
-                }
-
-                return true;
-            }
-
-            return false;
-        }
-
-        return -1;
+        return (new ListingService())->activate((int) $id, $secret === null ? null : (string) $secret) ?? -1;
     }
 
     /**
-     * Deactivates an item
-     * Set s_active value to 0, for a given item id
+     * Deactivates an item.
+     *
+     * Compatibility: use \mindstellar\listing\ListingService::deactivate().
      *
      * @param int $id
      *
@@ -1584,28 +303,13 @@ class ItemActions
      */
     public function deactivate($id)
     {
-        $result = $this->manager->update(
-            array('b_active' => 0),
-            array('pk_i_id' => $id)
-        );
-
-        // updated correctly
-        if ($result == 1) {
-            osc_run_hook('deactivate_item', $id);
-            $item = $this->manager->findByPrimaryKey($id);
-            if (osc_item_is_counted(array('b_active' => 1) + $item)) {
-                $this->_decreaseStats($item);
-            }
-
-            return true;
-        }
-
-        return false;
+        return (new ListingService())->deactivate((int) $id);
     }
 
     /**
-     * Enable an item
-     * Set s_enabled value to 1, for a given item id
+     * Enable an item.
+     *
+     * Compatibility: use \mindstellar\listing\ListingService::enable().
      *
      * @param int $id
      *
@@ -1613,114 +317,30 @@ class ItemActions
      */
     public function enable($id)
     {
-        $result = $this->manager->update(
-            array('b_enabled' => 1),
-            array('pk_i_id' => $id)
-        );
-
-        // updated correctly
-        if ($result == 1) {
-            osc_run_hook('enable_item', $id);
-            $item = $this->manager->findByPrimaryKey($id);
-            if (osc_item_is_counted(array('b_enabled' => 1) + $item)) {
-                $this->increaseStats($item);
-            }
-
-            return true;
-        }
-
-        return false;
+        return (new ListingService())->enable((int) $id);
     }
 
     /**
-     * Set premium value depending on $on, for a given item id
+     * Set premium on or off for an item.
      *
-     * $days makes the upgrade time-limited: the listing stops being premium once
-     * dt_premium_expiration passes and the hourly sweep flips it back. Omitting it keeps
-     * the historical behaviour of a permanent, admin-granted upgrade with no end date.
+     * Compatibility: use \mindstellar\listing\ListingService::premium().
      *
      * @param int      $id
      * @param bool     $on
-     * @param int|null $days     Days the upgrade lasts, or null for no expiry
-     * @param bool     $fireHook Whether to fire item_premium_on/item_premium_off on
-     *                           success. False lets a caller that will announce the
-     *                           change itself once its own work has fully landed --
-     *                           the billing feature that drives this, once its spend
-     *                           has committed -- skip the immediate one here.
+     * @param int|null $days
+     * @param bool     $fireHook
      *
      * @return bool
      */
     public function premium($id, $on = true, $days = null, bool $fireHook = true)
     {
-        $value = 0;
-        if ($on) {
-            $value = 1;
-        }
-
-        $set = array('b_premium' => $value);
-
-        // Turning premium off always clears the date, so a later permanent grant does
-        // not inherit a stale expiry and get swept away an hour after it is made.
-        $set['dt_premium_expiration'] = null;
-
-        // Just the columns needed here, not findByPrimaryKey(): that hydrates locales and
-        // resources this decision has no use for.
-        $current = osc_db_select_one(
-            'SELECT b_premium, dt_premium_expiration, b_enabled, b_active, b_spam, dt_expiration FROM '
-            . DB_TABLE_PREFIX . 't_item WHERE pk_i_id = ?',
-            array((int) $id)
-        );
-
-        if ($on && $days !== null) {
-            if (!empty($current['b_premium']) && empty($current['dt_premium_expiration'])) {
-                // Already premium with no end date. A dated purchase must not turn an
-                // open-ended upgrade into one that expires.
-                unset($set['dt_premium_expiration']);
-            } else {
-                // Extend from whatever time is left, never from now: a repurchase must
-                // add to the spot the seller already paid for rather than replace it,
-                // which a shortened billing_premium_days would otherwise make a downgrade.
-                // Calendar arithmetic, not $days * 86400, so a DST change cannot move it.
-                $remaining = isset($current['dt_premium_expiration'])
-                    ? strtotime((string) $current['dt_premium_expiration'])
-                    : false;
-                $base      = ($remaining !== false && $remaining > time()) ? $remaining : time();
-
-                $set['dt_premium_expiration'] = date('Y-m-d H:i:s', strtotime('+' . (int) $days . ' days', $base));
-            }
-        }
-
-        $result = $this->manager->update(
-            $set,
-            array('pk_i_id' => $id)
-        );
-        // updated correctly
-        if ($result == 1) {
-            // An expired listing is counted only while premium, so the switch can move it.
-            if ($current && osc_item_is_counted($current) !== osc_item_is_counted(array('b_premium' => $value) + $current)) {
-                $item = $this->manager->findByPrimaryKey($id);
-                if ($on) {
-                    $this->increaseStats($item);
-                } else {
-                    $this->_decreaseStats($item);
-                }
-            }
-            if ($fireHook) {
-                if ($on) {
-                    osc_run_hook('item_premium_on', $id);
-                } else {
-                    osc_run_hook('item_premium_off', $id);
-                }
-            }
-
-            return true;
-        }
-
-        return false;
+        return (new ListingService())->premium((int) $id, (bool) $on, $days === null ? null : (int) $days, $fireHook);
     }
 
     /**
-     * Set spam value depending on $on, for a given item id
+     * Set spam on or off for an item.
+     *
+     * Compatibility: use \mindstellar\listing\ListingService::spam().
      *
      * @param int  $id
      * @param bool $on
@@ -1729,78 +349,28 @@ class ItemActions
      */
     public function spam($id, $on = true)
     {
-        $item = $this->manager->findByPrimaryKey($id);
-        if ($on) {
-            $result = $this->manager->update(
-                array('b_spam' => '1'),
-                array('pk_i_id' => $id)
-            );
-        } else {
-            $result = $this->manager->update(
-                array('b_spam' => '0'),
-                array('pk_i_id' => $id)
-            );
-        }
-
-        // updated corretcly
-        if ($result == 1) {
-            if ($on) {
-                osc_run_hook('item_spam_on', $id);
-            } else {
-                osc_run_hook('item_spam_off', $id);
-            }
-
-            $before = osc_item_is_counted($item);
-            $after  = osc_item_is_counted(array('b_spam' => $on ? 1 : 0) + $item);
-            if ($before && !$after) {
-                $this->_decreaseStats($item);
-            } elseif (!$before && $after) {
-                $this->increaseStats($item);
-            }
-
-            return true;
-        }
-
-        return false;
+        return (new ListingService())->spam((int) $id, (bool) $on);
     }
 
     /**
      * Delete an item, given s_secret and item id.
      *
+     * Compatibility: use \mindstellar\listing\ListingService::delete().
+     *
      * @param string $secret
      * @param int    $itemId
      *
-     * @return bool
+     * @return int|false
      */
     public function delete($secret, $itemId)
     {
-        $item = $this->manager->findByPrimaryKey($itemId);
-
-        osc_run_hook('before_delete_item', $itemId);
-
-        if ($item['s_secret'] == $secret) {
-            Log::newInstance()
-                ->insertLog(
-                    'item',
-                    'delete',
-                    $itemId,
-                    $item['s_title'],
-                    $this->is_admin ? 'admin' : 'user',
-                    $this->is_admin ? osc_logged_admin_id() : osc_logged_user_id()
-                );
-            $result = $this->manager->deleteByPrimaryKey($itemId);
-            if ($result !== false) {
-                osc_run_hook('after_delete_item', $itemId, $item);
-            }
-
-            return $result;
-        }
-
-        return false;
+        return (new ListingService())->delete((int) $itemId, (string) $secret, $this->actor());
     }
 
     /**
-     * Mark an item
+     * Count a visitor's report on an item.
+     *
+     * Compatibility: use \mindstellar\listing\ListingService::mark().
      *
      * @param int    $id
      * @param string $as 'spam' | 'badcat' | 'offensive' | 'repeated' | 'expired'
@@ -1809,359 +379,120 @@ class ItemActions
      */
     public function mark($id, $as)
     {
-        switch ($as) {
-            case 'spam':
-                $column = 'i_num_spam';
-                break;
-            case 'badcat':
-                $column = 'i_num_bad_classified';
-                break;
-            case 'offensive':
-                $column = 'i_num_offensive';
-                break;
-            case 'repeated':
-                $column = 'i_num_repeated';
-                break;
-            case 'expired':
-                $column = 'i_num_expired';
-                break;
-        }
-
-        if (isset($column)) {
-            // Gate the mark before it counts: a listener returns false to block it (per-reporter
-            // dedup, rate-limit, captcha) — core applies no such control of its own. Only when it
-            // passes does the counter move and the after-hook fire for the reaction (threshold
-            // auto-block, logging, notifications).
-            if (osc_apply_filter('item_mark', true, $id, $as) === false) {
-                return;
-            }
-            if (ItemStats::newInstance()->increase($column, $id) !== false) {
-                osc_run_hook('item_marked', $id, $as);
-            }
-        }
+        (new ListingService())->mark((int) $id, (string) $as);
     }
 
     /**
-     * Send listed item details to friend
+     * Send the listing in the request to a friend.
      *
-     * @return bool
+     * Compatibility: use \mindstellar\listing\ListingMailService::shareWithFriend().
+     *
+     * @return string|bool the reasons it was refused, or true
      */
     public function send_friend()
     {
-        // get data for this function
-        $aItem = $this->prepareDataForFunction('send_friend');
-
-        // The listing must exist — prepareDataForFunction() returns no 'item' otherwise.
-        if (empty($aItem['item'])) {
+        $item = $this->manager->findByPrimaryKey(Params::getParamInt('id'));
+        if (!is_array($item) || $item === array()) {
             return __("This listing doesn't exist");
         }
-
-        // Validate before dispatch, mirroring contact(): an empty or malformed address
-        // otherwise reaches PHPMailer, which throws an uncaught exception and 500s the
-        // request instead of returning a field-level error.
-        $flash_error = '';
-        if (!osc_validate_text($aItem['yourName'])) {
-            $flash_error .= __('Your name: this field is required') . PHP_EOL;
-        }
-        if (!osc_validate_email($aItem['yourEmail'])) {
-            $flash_error .= __('Your email: invalid email address') . PHP_EOL;
-        }
-        if (!osc_validate_text($aItem['friendName'])) {
-            $flash_error .= __("Your friend's name: this field is required") . PHP_EOL;
-        }
-        if (!osc_validate_email($aItem['friendEmail'])) {
-            $flash_error .= __("Your friend's email: invalid email address") . PHP_EOL;
-        }
-        if ($flash_error !== '') {
-            return $flash_error;
-        }
-
-        $item = $aItem['item'];
         View::newInstance()->_exportVariableToView('item', $item);
 
-        $sent = \mindstellar\security\MessageHold::deliver('send_friend', (string) $aItem['yourEmail'], array(
-            'id'          => (int) $item['pk_i_id'],
-            'yourName'    => (string) $aItem['yourName'],
-            'yourEmail'   => (string) $aItem['yourEmail'],
-            'friendName'  => (string) $aItem['friendName'],
-            'friendEmail' => (string) $aItem['friendEmail'],
-            'message'     => (string) $aItem['message'],
-        ));
-        $item_url = osc_item_url();
-        $item_url = '<a href="' . $item_url . '" >' . $item_url . '</a>';
-        Params::setParam('item_url', $item_url);
+        try {
+            $sent = (new ListingMailService())->shareWithFriend($item, $this->mailForm(array('yourName', 'yourEmail', 'friendName', 'friendEmail', 'message')));
+        } catch (InvalidException $e) {
+            return ListingMailService::messages($e);
+        } catch (RefusedException $e) {
+            return $e->getMessage() . PHP_EOL;
+        }
         if ($sent) {
-            osc_add_flash_ok_message(sprintf(_m('We just sent your message to %s'), $aItem['friendName']));
+            osc_add_flash_ok_message(sprintf(_m('We just sent your message to %s'), Params::getParamString('friendName')));
         }
 
         return true;
     }
 
     /**
-     * Return an array with all data necessary for do the action
+     * Send the contact form in the request to the seller, or hold it until the sender confirms.
      *
-     * @param string $action
+     * Compatibility: use \mindstellar\listing\ListingMailService::contactSeller().
      *
-     * @return array
-     */
-    private function prepareDataForFunction($action)
-    {
-        $aItem = array();
-
-        switch ($action) {
-            case 'send_friend':
-                $item = $this->manager->findByPrimaryKey(Params::getParam('id'));
-                if ($item === false || !is_array($item) || count($item) == 0) {
-                    break;
-                }
-
-                $aItem['item'] = $item;
-                View::newInstance()->_exportVariableToView('item', $aItem['item']);
-                $aItem['yourName']  = Params::getParam('yourName');
-                $aItem['yourEmail'] = Params::getParam('yourEmail');
-
-                $aItem['friendName']  = Params::getParam('friendName');
-                $aItem['friendEmail'] = Params::getParam('friendEmail');
-
-                $aItem['s_title'] = $item['s_title'];
-                $aItem['message'] = Params::getParam('message');
-                break;
-            case 'contact':
-                $item = $this->manager->findByPrimaryKey(Params::getParam('id'));
-                if ($item === false || !is_array($item) || count($item) == 0) {
-                    break;
-                }
-
-                $aItem['item'] = $item;
-                View::newInstance()->_exportVariableToView('item', $aItem['item']);
-                $aItem['id']          = Params::getParam('id');
-                $aItem['yourEmail']   = Params::getParam('yourEmail');
-                $aItem['yourName']    = Params::getParam('yourName');
-                $aItem['message']     = Params::getParam('message');
-                $aItem['phoneNumber'] = Params::getParam('phoneNumber');
-                break;
-            case 'add_comment':
-                $item = $this->manager->findByPrimaryKey(Params::getParam('id'));
-                if ($item === false || !is_array($item) || count($item) == 0) {
-                    break;
-                }
-
-                $aItem['item'] = $item;
-                View::newInstance()->_exportVariableToView('item', $aItem['item']);
-                $aItem['authorName']  = Params::getParam('authorName');
-                $aItem['authorEmail'] = Params::getParam('authorEmail');
-                $aItem['body']        = Params::getParam('body');
-                $aItem['title']       = Params::getParam('title');
-                $aItem['id']          = Params::getParam('id');
-                $aItem['userId']      = Session::newInstance()->_get('userId');
-                if ($aItem['userId'] == '') {
-                    $aItem['userId'] = null;
-                }
-
-                break;
-            default:
-        }
-
-        return $aItem;
-    }
-
-    /**
-     * Validate the contact form and send the inquiry, or hold it until the sender confirms.
-     *
-     * @return string|bool the validation errors, true when sent, false when held
+     * @return string|bool the reasons it was refused, true when sent, false when held
      */
     public function contact()
     {
-        $aItem       = $this->prepareDataForFunction('contact');
-        $flash_error = '';
-        // check parameters
-        if (!osc_validate_text($aItem['yourName'])) {
-            $flash_error = __('Your name: this field is required') . PHP_EOL;
+        $item = $this->manager->findByPrimaryKey(Params::getParamInt('id'));
+        if (!is_array($item) || $item === array()) {
+            return __("This listing doesn't exist");
         }
-        if (!osc_validate_email($aItem['yourEmail'])) {
-            $flash_error .= __('Invalid email address') . PHP_EOL;
-        }
-        if (!osc_validate_text($aItem['message'])) {
-            $flash_error .= __('Message: this field is required') . PHP_EOL;
-        }
+        View::newInstance()->_exportVariableToView('item', $item);
 
-        if (!empty($flash_error)) {
-            return $flash_error;
+        try {
+            return (new ListingMailService())->contactSeller($item, $this->mailForm(array('yourName', 'yourEmail', 'phoneNumber', 'message')));
+        } catch (InvalidException $e) {
+            return ListingMailService::messages($e);
+        } catch (RefusedException $e) {
+            return $e->getMessage() . PHP_EOL;
         }
-
-        return \mindstellar\security\MessageHold::deliver('item_contact', (string) $aItem['yourEmail'], array(
-            'id'          => (int) $aItem['id'],
-            'yourEmail'   => (string) $aItem['yourEmail'],
-            'yourName'    => (string) $aItem['yourName'],
-            'phoneNumber' => (string) $aItem['phoneNumber'],
-            'message'     => (string) $aItem['message'],
-        ));
     }
 
     /**
-     * Validate and store a comment on a listing.
+     * @param string[] $names
      *
-     * @return int a status code; -1 for a listing the visitor cannot see, 7 when comments are
-     *             disabled, 8 past 20 an hour per guest address (comment_post, see action_throttle_limit)
+     * @return array<string,string>
+     */
+    private function mailForm(array $names): array
+    {
+        $form = array();
+        foreach ($names as $name) {
+            $form[$name] = Params::getParamString($name);
+        }
+
+        return $form;
+    }
+
+    /**
+     * Post the comment form a request carries, as the signed-in user or a guest.
+     * Compatibility: use \mindstellar\comment\CommentService::post().
+     *
+     * @return int 1 waiting for approval, 2 live, 5 spam or banned, 3 a bad e-mail, 4 an empty
+     *             body, 6 only users may comment, 7 comments are off, 8 past the hourly comment
+     *             limit (comment_post, see action_throttle_limit), -1 not saved or a listing the
+     *             visitor cannot see
      */
     public function add_comment()
     {
-        if (!osc_comments_enabled()) {
-            return 7;
-        }
-
-        $aItem = $this->prepareDataForFunction('add_comment');
-        // A listing that is not live takes comments only from its owner (or an admin).
-        if (empty($aItem['item'])
-            || !\mindstellar\security\ItemAccess::canView($aItem['item'], $aItem['userId'], osc_is_admin_user_logged_in())
-        ) {
+        $this->lastCommentId = 0;
+        $input = array(
+            'author_name'  => Params::getParamString('authorName'),
+            'author_email' => Params::getParamString('authorEmail'),
+            'title'        => Params::getParamString('title'),
+            'body'         => Params::getParamString('body'),
+        );
+        $actor = new Actor((int) osc_logged_user_id(), null, (string) Params::getServerParam('REMOTE_ADDR'));
+        try {
+            $saved = (new CommentService())->post(Params::getParamInt('id'), $input, $actor);
+        } catch (InvalidException $e) {
+            return $e->pointer() === '/body' ? 4 : 3;
+        } catch (ForbiddenException $e) {
+            return match (CommentPolicy::mayPost($actor, $input['author_email'])) {
+                CommentPolicy::DISABLED        => 7,
+                CommentPolicy::REGISTERED_ONLY => 6,
+                default                        => 5,
+            };
+        } catch (BlockedException $e) {
+            return 8;
+        } catch (RefusedException | RuntimeException $e) {
             return -1;
         }
+        $this->lastCommentId = $saved->id();
 
-        $authorName  = trim(strip_tags($aItem['authorName']));
-        $authorEmail = trim(strip_tags($aItem['authorEmail']));
-        $body        = trim(strip_tags($aItem['body']));
-        $title       = trim(strip_tags($aItem['title']));
-        $itemId      = $aItem['id'];
-        $userId      = $aItem['userId'];
-
-        $banned = osc_is_banned(trim(strip_tags($aItem['authorEmail'])));
-        if ($banned === 1 || $banned === 2) {
-            Session::newInstance()->_setForm('commentAuthorName', $authorName);
-            Session::newInstance()->_setForm('commentTitle', $title);
-            Session::newInstance()->_setForm('commentBody', $body);
-            Session::newInstance()->_setForm('commentAuthorEmail', $authorEmail);
-
-            return 5;
-        }
-
-        $item = $this->manager->findByPrimaryKey($itemId);
-        View::newInstance()->_exportVariableToView('item', $item);
-        $itemURL = osc_item_url();
-        $itemURL = '<a href="' . $itemURL . '" >' . $itemURL . '</a>';
-
-        Params::setParam('itemURL', $itemURL);
-
-        if (osc_reg_user_post_comments() && !osc_is_web_user_logged_in()) {
-            Session::newInstance()->_setForm('commentAuthorName', $authorName);
-            Session::newInstance()->_setForm('commentTitle', $title);
-            Session::newInstance()->_setForm('commentBody', $body);
-
-            return 6;
-        }
-
-        // osc_validate_email(), the same check the contact form and registration use. The
-        // pattern that stood here required a two or three character top-level domain, so it
-        // turned away every .info, .online, .store and .agency address while accepting a
-        // local part containing spaces.
-        if (!osc_validate_email($authorEmail)) {
-            Session::newInstance()->_setForm('commentAuthorName', $authorName);
-            Session::newInstance()->_setForm('commentTitle', $title);
-            Session::newInstance()->_setForm('commentBody', $body);
-
-            return 3;
-        }
-
-        if ($body == '') {
-            Session::newInstance()->_setForm('commentAuthorName', $authorName);
-            Session::newInstance()->_setForm('commentAuthorEmail', $authorEmail);
-            Session::newInstance()->_setForm('commentTitle', $title);
-
-            return 4;
-        }
-
-        // Counted by address, so only guests: signed-in users behind one proxy would share it.
-        if ($userId == null && \mindstellar\security\ActionThrottle::exceededFor('comment_post')) {
-            return 8;
-        }
-
-        $num_moderate_comments = osc_moderate_comments();
-        if ($userId == null) {
-            $num_comments = 0;
-        } else {
-            $user         = User::newInstance()->findByPrimaryKey($userId);
-            $num_comments = $user['i_comments'];
-        }
-
-        if (
-            $num_moderate_comments == -1
-            || ($num_moderate_comments != 0
-                && $num_comments >= $num_moderate_comments)
-        ) {
-            $status     = 'ACTIVE';
-            $status_num = 2;
-        } else {
-            $status     = 'INACTIVE';
-            $status_num = 1;
-        }
-
-        if (osc_akismet_key()) {
-            $akismet = new Akismet(osc_base_url(), osc_akismet_key());
-            $akismet->setCommentAuthor($authorName);
-            $akismet->setCommentAuthorEmail($authorEmail);
-            $akismet->setCommentContent($body);
-            $akismet->setPermalink($itemURL);
-
-            $status = $akismet->isCommentSpam() ? 'SPAM' : $status;
-            if ($status === 'SPAM') {
-                $status_num = 5;
-            }
-        }
-
-        $mComments = ItemComment::newInstance();
-        $aComment  = array(
-            'dt_pub_date'    => date('Y-m-d H:i:s'),
-            'fk_i_item_id'   => $itemId,
-            's_author_name'  => $authorName,
-            's_author_email' => $authorEmail,
-            's_title'        => $title,
-            's_body'         => $body,
-            'b_active'       => $status === 'ACTIVE' ? 1 : 0,
-            'b_enabled'      => 1,
-            'fk_i_user_id'   => $userId
-        );
-
-        osc_run_hook('before_add_comment', $aComment);
-
-        $commentID = $mComments->insertGetId($aComment);
-        if ($commentID) {
-            if ($userId == null) {
-                \mindstellar\security\ActionThrottle::record('comment_post');
-            }
-            if ($status_num == 2 && $userId != null) { // COMMENT IS ACTIVE
-                $user = User::newInstance()->findByPrimaryKey($userId);
-                if ($user) {
-                    User::newInstance()->update(
-                        array('i_comments' => $user['i_comments'] + 1),
-                        array('pk_i_id' => $user['pk_i_id'])
-                    );
-                }
-                //Notify user (only if comment is active)
-                if (osc_notify_new_comment_user()) {
-                    osc_run_hook('hook_email_new_comment_user', $aItem);
-                }
-            }
-
-            //Notify admin
-            if (osc_notify_new_comment()) {
-                osc_run_hook('hook_email_new_comment_admin', $aItem);
-            }
-
-            osc_run_hook('add_comment', $commentID);
-
-            return $status_num;
-        }
-
-        return -1;
+        return $saved->status();
     }
 
     /**
-     * prepareData() from plain values instead of the request: the same names the listing
-     * form posts, plus 'meta' (custom field values by id) and 'photos' (local file paths,
-     * which are moved into the listing and deleted). For an edit, 'id' names the listing.
+     * prepareData() from plain values instead of the request.
      *
-     * Every value is trusted as an admin's would be: in admin mode 'id' needs no secret,
-     * and each photo path is read and deleted. Check data from outside before it reaches here.
+     * Compatibility: use \mindstellar\listing\ListingInput::fromValues().
      *
      * @param array<string,mixed> $input
      * @param bool                $isAdd
@@ -2170,27 +501,23 @@ class ItemActions
      */
     public function prepareDataFrom(array $input, bool $isAdd): void
     {
-        $photos = array_values(array_filter((array) ($input['photos'] ?? array()), 'is_string'));
-        unset($input['photos'], $input['ajax_photos']);
-        Params::withRequest($input, function () use ($isAdd) {
-            $this->prepareData($isAdd);
-        });
-
-        $files = array('name' => array(), 'type' => array(), 'tmp_name' => array(), 'error' => array(), 'size' => array());
-        foreach ($photos as $path) {
-            $files['name'][]     = basename($path);
-            $files['type'][]     = 'image/*';
-            $files['tmp_name'][] = $path;
-            $files['error'][]    = UPLOAD_ERR_OK;
-            $files['size'][]     = is_file($path) ? (int) filesize($path) : 0;
-        }
-        $this->data['photos'] = $files;
-        $this->data['meta']   = is_array($input['meta'] ?? null) ? $input['meta'] : array();
-        $this->fromData       = true;
+        $this->data     = ListingInput::fromValues($input, (bool) $this->is_admin, $isAdd);
+        $this->fromData = true;
     }
 
     /**
-     * Return an array with all data necessary for do the action (ADD OR EDIT)
+     * The acting user as this class has always taken it: admin rights in admin mode,
+     * otherwise the signed-in user, from this request's address.
+     */
+    private function actor(): Actor
+    {
+        return Actor::fromSession((bool) $this->is_admin);
+    }
+
+    /**
+     * Read the posted listing form into $this->data.
+     *
+     * Compatibility: use \mindstellar\listing\ListingInput::read().
      *
      * @param bool $is_add
      *
@@ -2199,302 +526,6 @@ class ItemActions
     public function prepareData($is_add)
     {
         $this->fromData = false;
-        $aItem = array();
-        $data  = array();
-
-        $userId = null;
-        if ($this->is_admin) {
-            // An explicit ownerId names the account, 0 for none. Without it the admin
-            // editor's rule applies: the account whose e-mail is the contact e-mail.
-            if (Params::existParam('ownerId')) {
-                $ownerId = Params::getParamInt('ownerId');
-                $data    = $ownerId > 0 ? User::newInstance()->findByPrimaryKey($ownerId) : array();
-            } else {
-                $data = User::newInstance()->findByEmail(Params::getParam('contactEmail'));
-            }
-            if (isset($data['pk_i_id']) && is_numeric($data['pk_i_id'])) {
-                $userId = $data['pk_i_id'];
-            }
-        } else {
-            $userId = Session::newInstance()->_get('userId');
-            if ($userId == '') {
-                $userId = null;
-            } elseif ($userId != null) {
-                $data = User::newInstance()->findByPrimaryKey($userId);
-            }
-        }
-
-        if ($userId != null) {
-            $aItem['contactName']  = $data['s_name'];
-            $aItem['contactEmail'] = $data['s_email'];
-            Params::setParam('contactName', $data['s_name']);
-            Params::setParam('contactEmail', $data['s_email']);
-        } else {
-            $aItem['contactName']  = Params::getParam('contactName');
-            $aItem['contactEmail'] = Params::getParam('contactEmail');
-        }
-        $aItem['userId'] = $userId;
-
-        if ($is_add) {   // ADD
-            if ($this->is_admin) {
-                $active = 'ACTIVE';
-            } elseif (osc_moderate_items() > 0) { // HAS TO VALIDATE
-                if (!osc_is_web_user_logged_in()) { // NO USER IS LOGGED, VALIDATE
-                    $active = 'INACTIVE';
-                } elseif (osc_logged_user_item_validation()) { //USER IS LOGGED, BUT NO NEED TO VALIDATE
-                    $active = 'ACTIVE';
-                } else { // USER IS LOGGED, NEED TO VALIDATE, CHECK NUMBER OF PREVIOUS ITEMS
-                    $user = User::newInstance()->findByPrimaryKey(osc_logged_user_id());
-                    if ($user['i_items'] < osc_moderate_items()) {
-                        $active = 'INACTIVE';
-                    } else {
-                        $active = 'ACTIVE';
-                    }
-                }
-            } elseif (osc_moderate_items() == 0) {
-                if (osc_is_web_user_logged_in() && osc_logged_user_item_validation()) {
-                    $active = 'ACTIVE';
-                } else {
-                    $active = 'INACTIVE';
-                }
-            } else {
-                $active = 'ACTIVE';
-            }
-            $aItem['active'] = $active;
-        } else {          // EDIT
-            $aItem['secret'] = Params::getParam('secret');
-            $aItem['idItem'] = Params::getParamInt('id');
-        }
-
-        // get params
-        $aItem['catId']        = Params::getParam('catId');
-        $aItem['countryId']    = Params::getParam('countryId');
-        $aItem['country']      = Params::getParam('country');
-        $aItem['region']       = Params::getParam('region');
-        $aItem['regionId']     = Params::getParam('regionId');
-        $aItem['city']         = Params::getParam('city');
-        $aItem['cityId']       = Params::getParam('cityId');
-        $aItem['price']        = Params::getParam('price') ?: null;
-        $aItem['cityArea']     = Params::getParam('cityArea');
-        $aItem['address']      = Params::getParam('address');
-        $aItem['currency']     = Params::getParam('currency');
-        $aItem['showEmail']    = Params::getParam('showEmail') ? 1 : 0;
-        $aItem['title']        = Params::getParam('title');
-        // A rich editor needs its markup to survive, so Params' XSS check -- which strips
-        // every tag -- is off on that path; osc_sanitize_html() is what keeps it safe, an
-        // allow-list of exactly what the toolbars emit. Without it a description was stored
-        // as submitted, and a <script> in one ran for every visitor who opened the listing.
-        // The plain-textarea path keeps stripping everything, as it always has.
-        $aItem['description']  =
-            (osc_tinymce_frontend() || (defined('OC_ADMIN') && OC_ADMIN))
-                ? osc_sanitize_html(Params::getParam('description', false, false))
-                : Params::getParam('description');
-        $aItem['photos']       = Params::getFiles('photos');
-        $ajax_photos           = Params::getParam('ajax_photos');
-        $aItem['s_ip']         = get_ip();
-        $aItem['d_coord_lat']  = Params::getParam('d_coord_lat') ?: null;
-        $aItem['d_coord_long'] = Params::getParam('d_coord_long') ?: null;
-        $aItem['s_zip']        = Params::getParam('zip') ?: null;
-        $aItem['contactPhone'] = Params::getParam('contactPhone');
-
-        // Photos uploaded by ajax arrive as names in uploads/temp/, to be folded in with the
-        // form-uploaded ones. The name is the poster's to choose, so two things are checked
-        // before it becomes a path: it is a bare filename, and it was staged under this
-        // form's own upload token. Without the second, any readable image on the server could
-        // be attached to a listing -- and would then be unlinked once the post finished.
-        if (is_array($ajax_photos) && !empty($ajax_photos)) {
-            $tmpDir = osc_content_path() . 'uploads/temp/';
-            $staged = ItemTmpUpload::newInstance();
-            $token  = osc_upload_token();
-            // This runs before the CSRF check, so an anonymous POST decides how many
-            // lookups it costs. A zero cap means unlimited, which still needs a ceiling
-            // here -- this bounds the work, it is not the site's photo limit.
-            $cap       = (int)osc_max_images_per_item();
-            $remaining = $cap > 0 ? $cap : 100;
-            foreach ($ajax_photos as $photo) {
-                if ($remaining-- <= 0) {
-                    break;
-                }
-                if (!is_string($photo) || $photo === '' || basename($photo) !== $photo) {
-                    continue;
-                }
-                if (!$staged->belongsToToken($token, $photo) || !is_file($tmpDir . $photo)) {
-                    continue;
-                }
-                $aItem['photos']['name'][]     = $photo;
-                $aItem['photos']['type'][]     = 'image/*';
-                $aItem['photos']['tmp_name'][] = $tmpDir . $photo;
-                $aItem['photos']['error'][]    = UPLOAD_ERR_OK;
-                $aItem['photos']['size'][]     = 0;
-            }
-        }
-
-        if ($is_add || $this->is_admin) {
-            // The ceiling is the category's own i_expiration_days unless the poster
-            // holds a listing.runtime entitlement, which raises it by their extra
-            // days -- -1 means unlimited extra runtime, so the clamp below is skipped
-            // entirely for that user, the same as it already is for an admin.
-            $extraRuntimeDays = osc_item_extra_runtime_days($aItem['userId'] ?? null);
-
-            $dt_expiration = Params::getParam('dt_expiration');
-            if ($dt_expiration == -1) {
-                $aItem['dt_expiration'] = '';
-            } elseif (
-                $dt_expiration != ''
-                && (
-                    ctype_digit($dt_expiration)
-                    || preg_match(
-                        '|^([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2}):([0-9]{2})$|',
-                        $dt_expiration,
-                        $match
-                    )
-                    || preg_match('|^([0-9]{4})-([0-9]{2})-([0-9]{2})$|', $dt_expiration, $match)
-                )
-            ) {
-                $aItem['dt_expiration'] = $dt_expiration;
-                $_category              = Category::newInstance()->findByPrimaryKey($aItem['catId']);
-                $categoryDays           = (int) ($_category['i_expiration_days'] ?? 0);
-                // A category of 0 days never expires, so it is already the most generous
-                // ceiling there is -- raising it by an entitlement's days would start
-                // expiring listings that never did.
-                $expirationCeiling = $categoryDays;
-                if ($categoryDays > 0 && $extraRuntimeDays !== 0) {
-                    $expirationCeiling = $extraRuntimeDays === -1 ? null : $categoryDays + $extraRuntimeDays;
-                }
-                if (ctype_digit($dt_expiration)) {
-                    if (!$this->is_admin && $expirationCeiling !== null && $dt_expiration > $expirationCeiling) {
-                        $aItem['dt_expiration'] = $expirationCeiling;
-                    }
-                } else {
-                    if (preg_match('|^([0-9]{4})-([0-9]{2})-([0-9]{2})$|', $dt_expiration, $match)) {
-                        $aItem['dt_expiration'] .= ' 23:59:59';
-                    }
-                    if (
-                        !$this->is_admin
-                        && $expirationCeiling !== null
-                        && strtotime($dt_expiration) > (time() + $expirationCeiling * 24 * 3600)
-                    ) {
-                        $aItem['dt_expiration'] = $expirationCeiling;
-                    }
-                }
-            } else {
-                // No expiration asked for, which is every public posting form -- the
-                // runtime a seller paid for has to land here or it never applies at all.
-                $_category              = Category::newInstance()->findByPrimaryKey($aItem['catId']);
-                $categoryDays           = (int) ($_category['i_expiration_days'] ?? 0);
-                $aItem['dt_expiration'] = $_category['i_expiration_days'] ?? null;
-
-                if ($categoryDays > 0 && $extraRuntimeDays !== 0) {
-                    $aItem['dt_expiration'] = $extraRuntimeDays === -1 ? '' : $categoryDays + $extraRuntimeDays;
-                }
-            }
-            unset($dt_expiration);
-        } else {
-            $aItem['dt_expiration'] = '';
-        }
-
-        // check params
-        $country = Country::newInstance()->findByCode($aItem['countryId']);
-        if (count($country) > 0) {
-            $countryId   = $country['pk_c_code'];
-            $countryName = $country['s_name'];
-        } else {
-            $countryId   = null;
-            $countryName = $aItem['country'];
-        }
-        $aItem['countryId']   = $countryId;
-        $aItem['countryName'] = $countryName;
-
-        if ($aItem['regionId'] != '') {
-            if ((int)$aItem['regionId']) {
-                $region = Region::newInstance()->findByPrimaryKey($aItem['regionId']);
-                if (count($region) > 0) {
-                    $regionId   = $region['pk_i_id'];
-                    $regionName = $region['s_name'];
-                }
-            }
-        } else {
-            $regionId   = null;
-            $regionName = $aItem['region'];
-            if ($aItem['countryId'] != '') {
-                $auxRegion = Region::newInstance()->findByName($aItem['region'], $aItem['countryId']);
-                if ($auxRegion) {
-                    $regionId   = $auxRegion['pk_i_id'];
-                    $regionName = $auxRegion['s_name'];
-                }
-            }
-        }
-
-        if (isset($regionId)) {
-            $aItem['regionId'] = $regionId;
-        } else {
-            $aItem['regionId'] = null;
-        }
-
-        if (isset($regionName)) {
-            $aItem['regionName'] = $regionName;
-        }
-
-        if ($aItem['cityId'] != '') {
-            if ((int)$aItem['cityId']) {
-                $city = City::newInstance()->findByPrimaryKey($aItem['cityId']);
-                if (count($city) > 0) {
-                    $cityId   = $city['pk_i_id'];
-                    $cityName = $city['s_name'];
-                }
-            }
-        } else {
-            $cityId   = null;
-            $cityName = $aItem['city'];
-            if ($aItem['countryId'] != '') {
-                $auxCity = City::newInstance()->findByName($aItem['city'], $aItem['regionId']);
-                if ($auxCity) {
-                    $cityId   = $auxCity['pk_i_id'];
-                    $cityName = $auxCity['s_name'];
-                }
-            }
-        }
-
-        if (isset($cityId)) {
-            $aItem['cityId'] = $cityId;
-        } else {
-            $aItem['cityId'] = null;
-        }
-
-        if (isset($cityName)) {
-            $aItem['cityName'] = $cityName;
-        }
-
-        if ($aItem['cityArea'] == '') {
-            $aItem['cityArea'] = null;
-        }
-
-        if ($aItem['address'] == '') {
-            $aItem['address'] = null;
-        }
-
-        if ($aItem['price'] !== null) {
-            $price          = str_replace(
-                array(osc_locale_thousands_sep(), osc_locale_dec_point()),
-                array('', '.'),
-                trim($aItem['price'])
-            );
-            // A non-numeric price (stray currency symbol, letters, or nothing
-            // left after normalising) must not reach the multiplication: under
-            // PHP 8 that raises a TypeError and 500s the whole submission. Treat
-            // it as "no price" instead. Stored as an integer in millionths.
-            $aItem['price'] = is_numeric($price) ? (int)round((float)$price * 1000000) : null;
-        }
-
-        if ($aItem['catId'] == '') {
-            $aItem['catId'] = 0;
-        }
-
-        if ($aItem['currency'] == '') {
-            $aItem['currency'] = null;
-        }
-
-        $aItem      = osc_apply_filter('item_prepare_data', $aItem);
-        $this->data = $aItem;
+        $this->data     = ListingInput::read((bool) $this->is_admin, (bool) $is_add);
     }
 }

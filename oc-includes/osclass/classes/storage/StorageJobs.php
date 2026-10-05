@@ -284,7 +284,7 @@ final class StorageJobs
      * action instead of run inline, one job per resource, when a remote adapter is
      * active -- that keeps each regeneration, and any pull-back of a remote-only source,
      * off the request thread. The `regenerated_image` hook fired from inside
-     * regenerateResourceImages() queues the offload back to remote storage.
+     * PhotoService::regenerateImages() queues the offload back to remote storage.
      *
      * @param Job $job
      *
@@ -297,7 +297,7 @@ final class StorageJobs
             return; // resource deleted meanwhile; nothing to regenerate
         }
 
-        \ItemActions::regenerateResourceImages($resource);
+        \mindstellar\listing\PhotoService::regenerateImages($resource);
     }
 
     /**
@@ -357,7 +357,7 @@ final class StorageJobs
         }
 
         $model = !empty($snapshot['s_owner_type'])
-            ? Resource::newInstance()
+            ? (new Resource())
             : ItemResource::newInstance();
 
         $row = $model->findByPrimaryKey($pk);
@@ -384,7 +384,7 @@ final class StorageJobs
         }
 
         if (!empty($snapshot['s_owner_type'])) {
-            Resource::newInstance()->updateResource($pk, array('s_storage' => $storageId));
+            (new Resource())->updateResource($pk, array('s_storage' => $storageId));
 
             return;
         }
@@ -404,7 +404,7 @@ final class StorageJobs
     private static function invalidateOwnerCaches(array $snapshot): void
     {
         if (!empty($snapshot['s_owner_type'])) {
-            Resource::newInstance()->invalidateOwnerCache(
+            (new Resource())->invalidateOwnerCache(
                 (string) $snapshot['s_owner_type'],
                 (int) ($snapshot['i_owner_id'] ?? 0)
             );

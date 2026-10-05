@@ -26,8 +26,10 @@
 error_reporting(E_ALL & ~E_DEPRECATED);
 
 require_once __DIR__ . '/lib/harness.php';
-require_once __DIR__ . '/../oc-includes/osclass/classes/security/ItemAccess.php';
+require_once __DIR__ . '/../oc-includes/vendor/autoload.php';
 
+use mindstellar\auth\Actor;
+use mindstellar\listing\ListingPolicy;
 use mindstellar\security\ItemAccess;
 
 $registered = array('pk_i_id' => '10', 'fk_i_user_id' => '7', 's_secret' => 'regsecret');
@@ -60,7 +62,7 @@ harness_section('the item page uses it');
 $webSrc = file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/controller/CWebItem.php');
 preg_match("/\n            default:(.*?)osc_run_hook\('show_item'/s", $webSrc, $v);
 $view  = $v[1] ?? '';
-$gate  = strpos($view, 'ItemAccess::canView(');
+$gate  = strpos($view, 'ListingPolicy::canView(');
 $after = $gate === false ? '' : substr($view, $gate, 200);
 check('the view was parsed', $view !== '');
 check('it gates on canView', $gate !== false);
@@ -70,7 +72,7 @@ check('the gate runs before the view is counted', $gate !== false && $gate < (in
 harness_section('contact and send-to-friend use it');
 preg_match('/private function notFoundIfHidden.*?\n    }/s', $webSrc, $h);
 $helper = $h[0] ?? '';
-check('the helper checks canView', strpos($helper, 'ItemAccess::canView(') !== false);
+check('the helper checks canView', strpos($helper, 'ListingPolicy::canView(') !== false);
 check('the helper sends the 404', strpos($helper, '$this->do404()') !== false);
 foreach (array('send_friend', 'send_friend_post', 'contact', 'contact_post') as $action) {
     preg_match("/case '$action':(.*?)\n            case '/s", $webSrc, $c);
@@ -109,6 +111,14 @@ check('an empty code is refused', !ItemAccess::isPhotoOf($photo, $registered, ''
 check('a missing photo is refused', !ItemAccess::isPhotoOf(false, $registered, 'abc123'));
 check('an empty row is refused', !ItemAccess::isPhotoOf(array(), $registered, 'abc123'));
 
+harness_section('ListingPolicy, which ItemAccess now answers through');
+$expired = array_merge($live, array('b_premium' => 0, 'dt_expiration' => '2020-01-01 00:00:00'));
+check('an expired listing is not hidden: its page still shows it', !ListingPolicy::isHidden($expired) && ListingPolicy::canView($expired, Actor::guest()));
+check('the secret alone opens a guest listing', ListingPolicy::canManage($guest, Actor::guest('', 'guestsecret')));
+check('the secret is held for any listing, as delete links carry it', ListingPolicy::holdsSecret($registered, Actor::guest('', 'regsecret')));
+check('but it does not manage a registered listing', !ListingPolicy::canManage($registered, Actor::guest('', 'regsecret')));
+check('admin rights with no admin signed in still count', ListingPolicy::canView($spam, Actor::admin(0)));
+
 harness_section('both delete paths use it');
 $root = __DIR__ . '/../oc-includes/osclass/classes/controller/';
 $web  = file_get_contents($root . 'CWebItem.php');
@@ -116,9 +126,9 @@ $ajax = file_get_contents($root . 'CWebAjax.php');
 preg_match("/case 'deleteResources':(.*?)case 'mark':/s", $web, $w);
 preg_match("/case 'delete_image':(.*?)case 'alerts':/s", $ajax, $a);
 foreach (array('CWebItem deleteResources' => $w[1] ?? '', 'CWebAjax delete_image' => $a[1] ?? '') as $name => $body) {
-    $manage = strpos($body, 'ItemAccess::canManage(');
-    $photoOf = strpos($body, 'ItemAccess::isPhotoOf(');
-    $delete = strpos($body, 'osc_deleteResource(');
+    $manage = strpos($body, 'ListingPolicy::canManage(');
+    $photoOf = strpos($body, 'ListingPolicy::isPhotoOf(');
+    $delete = strpos($body, 'PhotoService())->delete(');
     check("$name was parsed", $body !== '');
     check("$name checks the owner before deleting", $manage !== false && $delete !== false && $manage < $delete);
     check("$name checks the photo is the item's before deleting", $photoOf !== false && $photoOf < $delete);

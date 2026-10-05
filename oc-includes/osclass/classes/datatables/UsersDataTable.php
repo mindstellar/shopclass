@@ -261,6 +261,8 @@ class UsersDataTable extends DataTable
                     $options_more[] = '<a href="' . osc_admin_base_url(true) . '?page=users&action=enable&amp;id[]='
                         . $aRow['pk_i_id'] . '&amp;' . $csrf_token_url . '">' . __('Unblock') . '</a>';
                 }
+                $options_more[] = '<a href="' . osc_admin_base_url(true) . '?page=users&action=sign_out_all&amp;id[]='
+                    . $aRow['pk_i_id'] . '&amp;' . $csrf_token_url . '">' . __('Sign out of all devices') . '</a>';
                 if (osc_user_validation_enabled() && ($aRow['b_active'] == 0)) {
                     $options_more[] =
                         '<a href="' . osc_admin_base_url(true) . '?page=users&action=resend_activation&amp;id[]='

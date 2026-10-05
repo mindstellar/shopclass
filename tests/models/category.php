@@ -105,6 +105,7 @@ require_once __DIR__ . '/../lib/stubs.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hPreference.php'; // osc_language
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hLocale.php';     // osc_current_user_locale
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hCache.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hKv.php';
 require_once ABS_PATH . 'oc-includes/osclass/formatting.php';          // osc_sanitizeString (slug generation in insert/updateByPrimaryKey)
 
 Preference::newInstance(); // osc_current_user_locale() -> osc_language() reads a preference; warm it so it is never charged to a query-count pin
@@ -113,7 +114,6 @@ $cache      = Object_Cache_Factory::newInstance();
 $catTable   = DB_TABLE_PREFIX . 't_category';
 $descTable  = DB_TABLE_PREFIX . 't_category_description';
 $statsTable = DB_TABLE_PREFIX . 't_category_stats';
-$pluginCatT = DB_TABLE_PREFIX . 't_plugin_category';
 $metaCatT   = DB_TABLE_PREFIX . 't_meta_categories';
 $locale     = 'en_US';
 
@@ -177,14 +177,10 @@ $seedStats = static function (int $categoryId, int $numItems) use ($admin, $stat
         array($categoryId, $numItems)
     );
 };
-$seedPluginCat = static function (int $categoryId, string $plugin = 'demo_plugin') use ($admin, $pluginCatT): void {
-    seed_exec(
-        $admin,
-        "INSERT INTO $pluginCatT (s_plugin_name, fk_i_category_id) VALUES (?, ?)",
-        'si',
-        array($plugin, $categoryId)
-    );
+$seedPluginCat = static function (int $categoryId, string $plugin = 'demo_plugin'): void {
+    (new PluginCategory())->add($plugin, array($categoryId));
 };
+$pluginsOn = static fn (int $categoryId): int => count((new PluginCategory())->findByCategoryId($categoryId));
 $seedMetaCat = static function (int $categoryId, int $fieldId) use ($admin, $metaCatT): void {
     seed_exec(
         $admin,
@@ -697,7 +693,8 @@ harness_section('Category::deleteByPrimaryKey — cascade + survivor subtree');
 
 // Wipe the category tables and build an isolated doomed/survivor pair.
 $admin->query("SET FOREIGN_KEY_CHECKS = 0");
-foreach (array($metaCatT, $pluginCatT, $statsTable, $descTable, $catTable) as $t) {
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . "t_key_value WHERE s_group = 'plugin_categories'");
+foreach (array($metaCatT, $statsTable, $descTable, $catTable) as $t) {
     $admin->query("TRUNCATE TABLE $t");
 }
 
@@ -729,14 +726,14 @@ check('the doomed middle category is gone (recursion)', !$catExists($doomMid));
 check('the doomed leaf is gone (recursion)', !$catExists($doomLeaf));
 pin('every doomed description row is gone', 0, $countWhere($descTable, 'fk_i_category_id', $doomRoot) + $countWhere($descTable, 'fk_i_category_id', $doomMid) + $countWhere($descTable, 'fk_i_category_id', $doomLeaf));
 pin('every doomed stats row is gone', 0, $countWhere($statsTable, 'fk_i_category_id', $doomRoot) + $countWhere($statsTable, 'fk_i_category_id', $doomMid) + $countWhere($statsTable, 'fk_i_category_id', $doomLeaf));
-pin('every doomed plugin-category row is gone', 0, $countWhere($pluginCatT, 'fk_i_category_id', $doomRoot) + $countWhere($pluginCatT, 'fk_i_category_id', $doomLeaf));
+pin('every doomed plugin-category row is gone', 0, $pluginsOn($doomRoot) + $pluginsOn($doomLeaf));
 pin('every doomed meta-category row is gone', 0, $countWhere($metaCatT, 'fk_i_category_id', $doomRoot) + $countWhere($metaCatT, 'fk_i_category_id', $doomLeaf));
 
 check('the survivor root is untouched', $catExists($survRoot));
 check('the survivor child is untouched', $catExists($survChild));
 pin('the survivor description rows are untouched', 2, $countWhere($descTable, 'fk_i_category_id', $survRoot) + $countWhere($descTable, 'fk_i_category_id', $survChild));
 pin('the survivor stats row is untouched', 1, $countWhere($statsTable, 'fk_i_category_id', $survRoot));
-pin('the survivor plugin-category row is untouched', 1, $countWhere($pluginCatT, 'fk_i_category_id', $survRoot));
+pin('the survivor plugin-category row is untouched', 1, $pluginsOn($survRoot));
 pin('the survivor meta-category row is untouched', 1, $countWhere($metaCatT, 'fk_i_category_id', $survRoot));
 
 harness_section('Category::deleteByPrimaryKey — the tree cache is not invalidated by the delete');

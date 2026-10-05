@@ -250,7 +250,7 @@ function osc_server_timing_value(float $start, float $now): string
 function osc_response_server_timing($body)
 {
     $start = (float) ($_SERVER['REQUEST_TIME_FLOAT'] ?? 0);
-    if ($start > 0 && !headers_sent() && \mindstellar\Csrf::isHtmlResponse((string) $body, headers_list())) {
+    if ($start > 0 && !headers_sent() && \mindstellar\security\Csrf::isHtmlResponse((string) $body, headers_list())) {
         header('Server-Timing: ' . osc_server_timing_value($start, microtime(true)), false);
     }
 

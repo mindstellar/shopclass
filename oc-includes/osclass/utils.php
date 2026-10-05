@@ -45,10 +45,7 @@ function osc_isExpired($dt_expiration)
  */
 function osc_item_is_counted(array $item): bool
 {
-    return (int)($item['b_enabled'] ?? 0) === 1
-        && (int)($item['b_active'] ?? 0) === 1
-        && (int)($item['b_spam'] ?? 0) === 0
-        && (!empty($item['b_premium']) || !osc_isExpired((string)($item['dt_expiration'] ?? '')));
+    return \mindstellar\listing\ListingStatus::isLive($item);
 }
 
 /**
@@ -68,65 +65,14 @@ function osc_deleteResource($id, $admin, $resource = null)
     if (is_array($id)) {
         $id = $id[0];
     }
-    // $resource lets a caller hand over the row it already read. Deleting a listing
-    // removes the resource rows inside a transaction and only unlinks the files once
-    // that commits, by which point this could no longer look the row up — and without
-    // the row there are no paths to remove and no resource to hand to the hook.
+    // $resource lets a caller hand over the row it already read: a listing delete unlinks
+    // the files after its transaction removed the rows.
     if (!is_array($resource)) {
         $resource = ItemResource::newInstance()->findByPrimaryKey($id);
     }
-    if ($resource !== null) {
-        Log::newInstance()->insertLog(
-            'item',
-            'delete resource',
-            $resource['pk_i_id'],
-            $id,
-            $admin ? 'admin' : 'user',
-            $admin ? osc_logged_admin_id() : osc_logged_user_id()
-        );
-
-        $backtracel = '';
-        foreach (debug_backtrace() as $k => $v) {
-            if ($v['function'] === 'include' || $v['function'] === 'include_once' || $v['function'] === 'require_once'
-                || $v['function'] === 'require'
-            ) {
-                $backtracel .= '#' . $k . ' ' . $v['function'] . '(' . $v['args'][0] . ') called@ [' . $v['file'] . ':'
-                               . $v['line'] . '] / ';
-            } else {
-                $backtracel .= '#' . $k . ' ' . $v['function'] . ' called@ [' . $v['file'] . ':' . $v['line'] . '] / ';
-            }
-        }
-
-        Log::newInstance()->insertLog(
-            'item',
-            'delete resource backtrace',
-            $resource['pk_i_id'],
-            $backtracel,
-            $admin ? 'admin' : 'user',
-            $admin ? osc_logged_admin_id() : osc_logged_user_id()
-        );
-        // check if resource s_path, pk_i_id and s_extension are set and not empty
-        if (($resource['s_storage'] ?? 'local') === 'local'
-            && \mindstellar\storage\StorageManager::instance()->remote() === null) {
-            try {
-                $filesToRemove = [
-                    $resource['s_path'] . $resource['pk_i_id'] . '.' . $resource['s_extension'],
-                    $resource['s_path'] . $resource['pk_i_id'] . '_original.' . $resource['s_extension'],
-                    $resource['s_path'] . $resource['pk_i_id'] . '_thumbnail.' . $resource['s_extension'],
-                    $resource['s_path'] . $resource['pk_i_id'] . '_preview.' . $resource['s_extension'],
-                ];
-                foreach ($filesToRemove as $file) {
-                    if (file_exists($file) && !is_dir($file)) {
-                        (new mindstellar\utility\FileSystem())->remove($file);
-                    }
-                }
-            } catch (Exception $e) {
-                trigger_error($e->getMessage(), E_USER_WARNING);
-            }
-        } else {
-            \mindstellar\storage\StorageJobs::enqueue('delete', $resource['s_storage'] ?? 'local', $resource);
-        }
-        osc_run_hook('delete_resource', $resource);
+    if (is_array($resource)) {
+        $actor = \mindstellar\auth\Actor::fromSession((bool) $admin);
+        (new \mindstellar\listing\PhotoService())->removeFiles($resource, $actor);
     }
 }
 
@@ -327,6 +273,10 @@ function osc_sendMail($params)
     // DO NOT send mail if it's a demo
     if (defined('DEMO')) {
         return false;
+    }
+    // Held while a database write is open; sent once it commits.
+    if (\mindstellar\utility\DeferredMail::hold($params)) {
+        return true;
     }
 
     $mail = new PHPMailer(true);

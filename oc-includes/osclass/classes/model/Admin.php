@@ -49,27 +49,21 @@ class Admin extends DAO
         // SHOW COLUMNS cannot go through the query builder (it is not a
         // SELECT/INSERT/UPDATE/DELETE statement). $this->getTableName() is fixed
         // by setTableName() immediately above and is never runtime input.
+        // Columns added by upgrades are read only once they exist, so an admin can still sign
+        // in to run the upgrade that adds them.
         try {
             $columns = osc_db_select(
-                'SHOW COLUMNS FROM ' . $this->getTableName() . ' where Field = "b_moderator" '
+                'SHOW COLUMNS FROM ' . $this->getTableName() . ' WHERE Field IN ("b_moderator", "i_auth_stamp")'
             );
         } catch (\mindstellar\database\DbException $e) {
             throw new mysqli_sql_exception($e->getMessage(), (int)$e->getCode(), $e);
         }
 
-        if (count($columns) > 0) {
-            $this->setFields(array(
-                'pk_i_id',
-                's_name',
-                's_username',
-                's_password',
-                's_email',
-                's_secret',
-                'b_moderator'
-            ));
-        } else {
-            $this->setFields(array('pk_i_id', 's_name', 's_username', 's_password', 's_email', 's_secret'));
+        $fields = array('pk_i_id', 's_name', 's_username', 's_password', 's_email', 's_secret');
+        foreach ($columns as $column) {
+            $fields[] = (string)$column['Field'];
         }
+        $this->setFields($fields);
     }
 
     /**

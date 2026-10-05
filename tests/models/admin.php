@@ -146,8 +146,8 @@ check('$model->dao is a live DBCommandClass (C5)', $model->dao instanceof DBComm
 pin('table name is unchanged', $table, $model->getTableName());
 pin('primary key is unchanged', 'pk_i_id', $model->getPrimaryKey());
 pin(
-    'field allowlist includes b_moderator on the seeded schema',
-    array('pk_i_id', 's_name', 's_username', 's_password', 's_email', 's_secret', 'b_moderator'),
+    'field allowlist includes b_moderator and i_auth_stamp on the seeded schema',
+    array('pk_i_id', 's_name', 's_username', 's_password', 's_email', 's_secret', 'b_moderator', 'i_auth_stamp'),
     $model->getFields()
 );
 pin(
@@ -192,7 +192,7 @@ $row = $model->findByEmail('alice@example.test');
 check('a match returns an array', is_array($row), describe($row));
 pin(
     'the row carries every schema column (SELECT * with no explicit column list)',
-    array('pk_i_id', 's_name', 's_username', 's_password', 's_email', 's_secret', 's_2fa', 'b_moderator'),
+    array('pk_i_id', 's_name', 's_username', 's_password', 's_email', 's_secret', 's_2fa', 'b_moderator', 'i_auth_stamp'),
     array_keys($row)
 );
 pin('pk_i_id round-trips as a string, not an int (C4)', (string) $idAlice, $row['pk_i_id']);
@@ -464,7 +464,7 @@ if (!$admin->query("ALTER TABLE $table DROP COLUMN b_moderator")) {
 $freshWithout = new Admin();
 pin(
     'fields omit b_moderator when SHOW COLUMNS finds no such column',
-    array('pk_i_id', 's_name', 's_username', 's_password', 's_email', 's_secret'),
+    array('pk_i_id', 's_name', 's_username', 's_password', 's_email', 's_secret', 'i_auth_stamp'),
     $freshWithout->getFields()
 );
 
@@ -475,8 +475,8 @@ if (!$admin->query("ALTER TABLE $table ADD COLUMN b_moderator TINYINT(1) NOT NUL
 
 $freshWith = new Admin();
 pin(
-    'fields include b_moderator again once the column is restored',
-    array('pk_i_id', 's_name', 's_username', 's_password', 's_email', 's_secret', 'b_moderator'),
+    'fields include b_moderator again once the column is restored, in table order',
+    array('pk_i_id', 's_name', 's_username', 's_password', 's_email', 's_secret', 'i_auth_stamp', 'b_moderator'),
     $freshWith->getFields()
 );
 

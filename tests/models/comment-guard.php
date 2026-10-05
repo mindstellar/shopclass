@@ -17,12 +17,24 @@
  *         php tests/run-models.php comment-guard      (as part of the suite)
  */
 
+if (!function_exists('_m')) {
+    function _m($text)
+    {
+        return $text;
+    }
+}
+
 require_once __DIR__ . '/../lib/scratchdb.php';
 require_once __DIR__ . '/../lib/harness.php';
 
 $admin = scratchdb_session('osc_models_comment_guard');
 
 require_once __DIR__ . '/../lib/action-standins.php';
+
+use mindstellar\auth\Actor;
+use mindstellar\comment\CommentPolicy;
+
+$admin->query('TRUNCATE TABLE ' . DB_TABLE_PREFIX . 't_rate_counter');
 if (!function_exists('osc_item_url')) {
     function osc_item_url()
     {
@@ -69,7 +81,7 @@ harness_section('a listing that is not live');
 pin('a guest comment is refused', -1, $post($hidden));
 pin('...and nothing is stored', 0, $stored($hidden));
 
-harness_section('the hourly comment limit per address');
+harness_section('the hourly comment limit');
 $codes = array();
 for ($i = 0; $i < 21; $i++) {
     $codes[] = $post($live);
@@ -83,7 +95,15 @@ pin('...and not stored', 20, $stored($live));
 $admin->query('INSERT INTO ' . DB_TABLE_PREFIX . "t_user (dt_reg_date, s_name, s_username, s_password, s_secret, s_email, b_enabled, b_active) VALUES (NOW(), 'Sue', 'sue_cg', '', 'x', 'sue_cg@example.com', 1, 1)");
 $sue = (int) $admin->insert_id;
 Session::newInstance()->_setEphemeral('userId', (string) $sue);
-check('a signed-in user on the same full address is not limited', in_array($post($live), array(1, 2), true));
+$sueCodes = array();
+for ($i = 0; $i < 21; $i++) {
+    $sueCodes[] = $post($live);
+}
+check('a signed-in user on the same full address has their own count of 20', count(array_filter(array_slice($sueCodes, 0, 20), static function ($c) {
+    return $c === 1 || $c === 2;
+})) === 20);
+pin('...and their 21st is refused with status 8', 8, $sueCodes[20]);
+pin('another user has their own count', false, CommentPolicy::tooMany(Actor::user($sue + 1)));
 Session::newInstance()->_dropEphemeral('userId');
 View::newInstance()->_erase('_loggedUser');
 $admin->query('DELETE FROM ' . DB_TABLE_PREFIX . "t_item_comment WHERE fk_i_user_id = $sue");

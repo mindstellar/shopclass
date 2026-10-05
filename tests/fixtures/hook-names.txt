@@ -33,6 +33,7 @@ action admin_post
 action admin_profile_form
 action admin_rules_table
 action admin_scripts_loaded
+action admin_signout_all_after
 action admin_users_table
 action after_admin_html
 action after_delete_category
@@ -58,6 +59,9 @@ action after_rewrite_rules
 action after_search
 action after_show_pagination_admin
 action after_username_change
+action api_listings_prefetch
+action api_request_before
+action api_webhook_delivered
 action before_add_comment
 action before_admin_html
 action before_delete_city
@@ -202,6 +206,7 @@ action init_user
 action init_user_non_secure
 action invalidate_item_cache
 action invalidate_locale_cache
+action item_bumped
 action item_comments_after
 action item_comments_before
 action item_contact_form
@@ -272,6 +277,7 @@ action user_register_completed
 action user_register_failed
 action user_register_form
 action user_register_form_after
+action user_signout_all_after
 action validate_user
 filter action_throttle_limit
 filter actions_manage_alerts
@@ -308,6 +314,19 @@ filter alert_email_weekly_title_after
 filter alert_row_actions
 filter alert_search_params
 filter alerts_processing_row
+filter api_category
+filter api_cors_origins
+filter api_fields
+filter api_listing
+filter api_listing_input
+filter api_rate_limit
+filter api_response
+filter api_routes
+filter api_scopes
+filter api_theme_functions_enabled
+filter api_user
+filter api_webhook_events
+filter api_webhook_payload
 filter ban_rule_bulk_filter
 filter base_url
 filter billing_can_publish

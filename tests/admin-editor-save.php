@@ -562,6 +562,16 @@ pin(
     row($admin, 't_pages', 'pk_i_id', $pageId)['s_internal_name']
 );
 
+$apiSlug                    = $pagePost;
+$apiSlug['s_internal_name'] = 'api';
+$result                     = drive('CAdminPages', $apiSlug, array('page' => 'pages', 'action' => 'edit_post'));
+pin(
+    'the API\'s /api/ prefix is refused as an internal name',
+    array(array('error', 'A slug of "api", or one starting with "api/", is reserved for the site\'s API. Choose another.')),
+    $result['flashes']
+);
+pin('and the page keeps its name', 'about-our-shop', row($admin, 't_pages', 'pk_i_id', $pageId)['s_internal_name']);
+
 /* ----------------------------------------------------------------------------
  * The page editor's save is the declaration's, not the controller's.
  * ------------------------------------------------------------------------- */

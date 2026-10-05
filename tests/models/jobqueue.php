@@ -239,6 +239,24 @@ $queue->fail($id, 'last straw');
 pin('the final failure gives up', 'error:a' . JobQueue::MAX_ATTEMPTS . ':wNULL:lkNULL', $rowState($id));
 
 $truncate();
+$id = $seed('test.one');
+$before = time();
+$queue->fail($id, 'slow', 7200, 12);
+pin('a handler\'s own wait replaces the standard backoff', true, abs(strtotime((string) $column($id, 'dt_next_run')) - ($before + 7200)) <= 5);
+
+$truncate();
+$id = $seed('test.one', 'pending', '2000-01-01 00:00:00', null, 8);
+check('a handler\'s own limit replaces MAX_ATTEMPTS: the 9th failure is not the last', !$queue->fail($id, 'more', 60, 12));
+$id = $seed('test.one', 'pending', '2000-01-01 00:00:00', null, 11);
+check('...and the 12th is', $queue->fail($id, 'enough', 60, 12));
+
+$truncate();
+$id = $seed('test.one', 'pending', '2000-01-01 00:00:00', null, 2);
+$before = time();
+$queue->fail($id, 'plain');
+pin('without them the standard backoff holds: 4 minutes after the third', true, abs(strtotime((string) $column($id, 'dt_next_run')) - ($before + 240)) <= 5);
+
+$truncate();
 $queue->fail(999999, 'no such job');
 check('failing a job that is gone is a no-op', true);
 

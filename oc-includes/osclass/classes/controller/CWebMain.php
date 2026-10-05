@@ -43,6 +43,7 @@ class CWebMain extends BaseModel
             Session::newInstance()->_drop('userName');
             Session::newInstance()->_drop('userEmail');
             Session::newInstance()->_drop('userPhone');
+            Session::newInstance()->session_end();
 
             Cookie::newInstance()->pop('oc_userId');
             Cookie::newInstance()->pop('oc_userSecret');

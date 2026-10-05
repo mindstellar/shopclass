@@ -78,7 +78,7 @@ $groupFld  = DB_TABLE_PREFIX . 't_meta_group_fields';
 $groupCat  = DB_TABLE_PREFIX . 't_meta_group_categories';
 
 $fieldModel = Field::newInstance();
-$service    = new \mindstellar\forms\FormService();
+$service    = new \mindstellar\form\builder\FormService();
 
 $seedField = static function (string $name, string $slug, int $position = 0) use ($admin, $fieldsTbl): int {
     return seed_exec(

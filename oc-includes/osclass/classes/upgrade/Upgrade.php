@@ -152,12 +152,7 @@ class Upgrade
     {
         $originDir = rtrim($originDir, '/\\');
         $targetDir = rtrim($targetDir, '/\\');
-        $iterator  = new \RecursiveIteratorIterator(
-            new \RecursiveCallbackFilterIterator(
-                new \RecursiveDirectoryIterator($originDir, \FilesystemIterator::SKIP_DOTS),
-                static fn ($file) => !in_array($file->getBasename(), $filter, false)
-            )
-        );
+        $iterator  = (new \mindstellar\utility\FileSystem())->filteredIterator($originDir, $filter, \RecursiveIteratorIterator::LEAVES_ONLY);
 
         $blocked = [];
         $checked = [];
@@ -191,8 +186,7 @@ class Upgrade
      */
     private static function unwritableMessage(array $paths): string
     {
-        $user = function_exists('posix_geteuid') && function_exists('posix_getpwuid')
-            ? (posix_getpwuid(posix_geteuid())['name'] ?? '') : '';
+        $user = \mindstellar\admin\SystemChecks::userName(function_exists('posix_geteuid') ? posix_geteuid() : null);
 
         return sprintf(
             __('Nothing was changed. The web server user (%1$s) cannot write to: %2$s. Give that user write access, or run "php oc-cli.php core:update" as the owner of the files.'),

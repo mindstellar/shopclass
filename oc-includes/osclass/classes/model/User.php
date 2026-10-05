@@ -424,7 +424,7 @@ class User extends DAO
             $dependents = array('t_user_email_tmp', 't_user_description', 't_alerts', 't_form_submission');
 
             // The user's own t_resource rows (avatars) go in the same transaction; their
-            // stored files are removed only after it commits.
+            // stored files are removed only after the outermost transaction commits.
             $ownerType = \mindstellar\model\Resource::OWNER_USER;
             try {
                 $resources = osc_db_table(DB_TABLE_PREFIX . 't_resource')
@@ -454,11 +454,13 @@ class User extends DAO
             }
 
             if ($deleted === 1) {
-                try {
-                    (new \mindstellar\storage\ResourceUploader())->purgeDeleted($resources);
-                } catch (\Throwable $e) {
-                    error_log('deleteUser: stored files of user ' . (int)$id . ' not removed: ' . $e->getMessage());
-                }
+                \mindstellar\database\Db::afterCommit(static function () use ($resources, $id): void {
+                    try {
+                        (new \mindstellar\storage\ResourceUploader())->purgeDeleted($resources);
+                    } catch (\Throwable $e) {
+                        error_log('deleteUser: stored files of user ' . (int)$id . ' not removed: ' . $e->getMessage());
+                    }
+                });
                 osc_run_hook('after_delete_user', $id);
 
                 return true;

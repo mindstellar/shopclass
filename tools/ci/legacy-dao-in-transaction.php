@@ -79,15 +79,15 @@ function stripComments(string $src): string
 }
 
 /**
- * Byte ranges of every osc_db_transaction( ... ) call, found by matching brackets from
- * the opening one.
+ * Byte ranges of every osc_db_transaction( ... ) or DeferredMail::transaction( ... ) call,
+ * found by matching brackets from the opening one.
  *
  * @return array<int, array{0:int,1:int}>
  */
 function transactionRanges(string $src): array
 {
     $ranges = [];
-    if (!preg_match_all('/osc_db_transaction\s*\(/', $src, $m, PREG_OFFSET_CAPTURE)) {
+    if (!preg_match_all('/(?:osc_db_transaction|DeferredMail::transaction)\s*\(/', $src, $m, PREG_OFFSET_CAPTURE)) {
         return $ranges;
     }
 

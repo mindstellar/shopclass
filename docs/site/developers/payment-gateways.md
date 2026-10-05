@@ -61,7 +61,7 @@ Return `CheckoutIntent::html($markup)` instead to render in place, as core's ban
 transfer gateway does. Core prints that markup unescaped, so escape everything in it.
 
 To keep the provider's id for the checkout (a session id, say), call
-`Orders::attachRef($order->getId(), $this->getId(), $ref)`; it works only while the
+`OrderStore::attachRef($order->getId(), $this->getId(), $ref)`; it works only while the
 order is pending, and a new checkout for the same order replaces it.
 If `createCheckout()` throws, core logs it, leaves the order pending and tells the buyer
 the payment method is not available.
@@ -69,7 +69,7 @@ the payment method is not available.
 Implement `DashboardLinkGateway::dashboardUrl()` to put a **View payment** link to the payment
 in your provider's dashboard on the admin order screen; core shows only an https URL.
 To keep a small value of your own on an order, such as whether it was a live or test
-payment, call `Orders::setMeta($orderId, 'my_key', $value)`; keys starting with `_` are
+payment, call `OrderStore::setMeta($orderId, 'my_key', $value)`; keys starting with `_` are
 core's, and `null` removes the key. Start the key with your gateway id and `_` (for example
 `stripe_livemode`) to keep it off the order screen.
 

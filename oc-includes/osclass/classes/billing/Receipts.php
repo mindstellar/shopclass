@@ -118,9 +118,9 @@ final class Receipts
      */
     public static function send(int $orderId): bool
     {
-        $order = Orders::find($orderId);
+        $order = OrderStore::find($orderId);
         if ($order === null || $order->getStatus() !== Order::STATUS_PAID
-            || $order->meta(Orders::RECEIPT_SENT) !== null
+            || $order->meta(OrderStore::RECEIPT_SENT) !== null
         ) {
             return true;
         }
@@ -141,7 +141,7 @@ final class Receipts
 
         $sent = self::$mailer !== null ? (bool) (self::$mailer)($params) : (bool) osc_sendMail($params);
         if ($sent) {
-            Orders::markReceiptSent($orderId);
+            OrderStore::markReceiptSent($orderId);
         }
 
         return $sent;

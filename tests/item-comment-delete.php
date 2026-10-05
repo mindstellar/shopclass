@@ -10,8 +10,8 @@
 
 /**
  * Pins the public delete_comment action. It used to call add_comment() on every delete,
- * so a delete request that also carried comment fields inserted a comment. It also has to
- * fire `delete_comment` with the comment id, as an int, after the delete, as the admin delete does.
+ * so a delete request that also carried comment fields inserted a comment. CommentService
+ * has to fire `delete_comment` with the comment id, as an int, after the delete, as the admin delete does.
  *
  * DB-free and source-level.  Usage: php tests/item-comment-delete.php
  */
@@ -29,20 +29,25 @@ check('it checks CSRF', strpos($body, 'osc_csrf_check()') !== false);
 check('it inserts nothing: no add_comment() call', $body !== '' && strpos($body, 'add_comment') === false);
 check('it builds no ItemActions', $body !== '' && strpos($body, 'ItemActions') === false);
 check('it reads the comment id as an int', strpos($body, "\$commentId = Params::getParamInt('comment')") !== false);
-check('it deletes by the comment id', strpos($body, 'deleteByPrimaryKey($commentId)') !== false);
+check('it deletes through CommentService', strpos($body, '(new CommentService())->delete($commentId') !== false);
+
+$service = file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/comment/CommentService.php');
+preg_match('/public function delete\(int \$commentId.*?\n    }\n/s', $service, $d);
+$delete = $d[0] ?? '';
 
 harness_section('the delete_comment hook');
-$delete = strpos($body, 'deleteByPrimaryKey($commentId)');
-$hook   = strpos($body, "osc_run_hook('delete_comment', \$commentId)");
+$row  = strpos($delete, 'deleteByPrimaryKey($commentId)');
+$hook = strpos($delete, "osc_run_hook('delete_comment', \$commentId)");
+check('the service delete was parsed', $delete !== '');
 check('it fires delete_comment with the comment id', $hook !== false);
-check('the hook fires after the delete', $delete !== false && $hook !== false && $hook > $delete);
+check('the hook fires after the delete', $row !== false && $hook !== false && $hook > $row);
 
-$admin = file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/controller/admin/CAdminItemComments.php');
-check('the admin delete still fires it too', strpos($admin, "osc_run_hook('delete_comment', Params::getParam('id'))") !== false);
+$admin = file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/moderation/CommentModeration.php');
+check('the admin delete still fires it too', (bool) preg_match("/osc_run_hook\\('delete_comment', \\\$/", $admin));
 
 harness_section('who may delete');
-check('a signed-out visitor is refused', strpos($body, '$this->userId == null') !== false);
-check('only an active comment', strpos($body, "\$aComment['b_active'] != 1") !== false);
-check('only the comment\'s own author', strpos($body, "\$aComment['fk_i_user_id'] != \$this->userId") !== false);
+check('a signed-out visitor is refused', strpos($delete, '$actor->userId() === null') !== false);
+check('only an active comment', strpos($delete, "(int) \$comment['b_active'] !== 1") !== false);
+check('only the comment\'s own author', strpos($delete, 'CommentPolicy::isAuthor($comment, $actor)') !== false);
 
 exit(harness_result());

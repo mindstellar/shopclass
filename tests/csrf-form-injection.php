@@ -41,7 +41,7 @@ final class CsrfMatcher
 
     public function replaceForms($form_data_html)
     {
-        $src = file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/Csrf.php');
+        $src = file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/security/Csrf.php');
         preg_match('/public function replaceForms.*?\n    }/s', $src, $m);
         $body = preg_replace('/^\s*public function replaceForms\([^)]*\)\s*\{/', '', $m[0]);
         $body = preg_replace('/\}\s*$/', '', $body);
@@ -97,9 +97,9 @@ pin('the GET form between them is untouched', 1, substr_count($csrf->replaceForm
 
 harness_section('only HTML responses are rewritten');
 // A form inside a JSON string used to get token inputs spliced in, breaking the JSON.
-require_once ABS_PATH . 'oc-includes/osclass/classes/Csrf.php';
+require_once ABS_PATH . 'oc-includes/osclass/classes/security/Csrf.php';
 
-final class CsrfResponse extends \mindstellar\Csrf
+final class CsrfResponse extends \mindstellar\security\Csrf
 {
     public function __construct()
     {

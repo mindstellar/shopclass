@@ -11,7 +11,7 @@
  */
 
 use mindstellar\billing\Order;
-use mindstellar\billing\Orders;
+use mindstellar\billing\OrderStore;
 use mindstellar\billing\Receipts;
 
 osc_admin_page(array(
@@ -25,7 +25,7 @@ $entries = __get('entries');
 $balance = (int)__get('balance');
 $refundable = (bool)__get('refundable');
 $dashboardUrl = (string) __get('dashboardUrl');
-$refundSent = $order->isPaid() && $order->meta(Orders::REFUND_REQUESTED) !== null;
+$refundSent = $order->isPaid() && $order->meta(OrderStore::REFUND_REQUESTED) !== null;
 
 // The view layer hands back '' for anything exported as null, so "absent" has to be
 // tested for what it is rather than compared against null. Both of these are genuinely
@@ -102,7 +102,7 @@ $rows[] = array(
     'mono'  => (bool)$order->getExternalRef(),
 );
 if (Receipts::available($order)) {
-    $receiptSent = $order->meta(Orders::RECEIPT_SENT);
+    $receiptSent = $order->meta(OrderStore::RECEIPT_SENT);
     $rows[] = array(
         'label' => __('Receipt'),
         'value' => '<a href="' . osc_esc_html($base . '&action=receipt&id=' . $order->getId()) . '" target="_blank" rel="noopener">'
@@ -260,7 +260,7 @@ foreach ($order->getMeta() as $key => $value) {
                                 <?php printf(
                                     osc_esc_html(__('A refund was sent to the payment provider on %s, but it was not '
                                                     . 'recorded here. Check the provider\'s dashboard, then record it.')),
-                                    osc_esc_html((string) $order->meta(Orders::REFUND_REQUESTED))
+                                    osc_esc_html((string) $order->meta(OrderStore::REFUND_REQUESTED))
                                 ); ?>
                             </p>
                         <?php } ?>

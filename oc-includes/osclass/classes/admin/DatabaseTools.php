@@ -11,7 +11,7 @@
 namespace mindstellar\admin;
 
 use Closure;
-use mindstellar\admin\form\MediaSettingsForm;
+use mindstellar\admin\form\MediaSettingsScreen;
 use mindstellar\database\Connection;
 use mindstellar\database\SchemaDoctor;
 use mindstellar\database\SqlStream;
@@ -287,7 +287,7 @@ final class DatabaseTools
     {
         $limits = array();
         foreach (array('upload_max_filesize', 'post_max_size') as $setting) {
-            $kb = MediaSettingsForm::sizeToKb((string) ini_get($setting));
+            $kb = MediaSettingsScreen::sizeToKb((string) ini_get($setting));
             if ($kb > 0) {
                 $limits[] = $kb * 1024;
             }

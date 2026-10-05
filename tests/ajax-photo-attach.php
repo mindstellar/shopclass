@@ -70,7 +70,7 @@ class ItemTmpUpload
 }
 
 /**
- * The guard as ItemActions applies it, reading the same source so the two cannot drift.
+ * The guard as ListingInput applies it, reading the same source so the two cannot drift.
  *
  * @param array $ajaxPhotos
  *
@@ -81,9 +81,9 @@ function attach(array $ajaxPhotos): array
     $photos = array('name' => array(), 'type' => array(), 'tmp_name' => array(), 'error' => array(), 'size' => array());
     $aItem  = array('photos' => $photos);
 
-    $src = file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/actions/ItemActions.php');
+    $src = file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/listing/ListingInput.php');
     if (!preg_match('/\n        if \(is_array\(\$ajax_photos\).*?\n        \}\n/s', $src, $m)) {
-        fwrite(STDERR, "Could not find the attach block in ItemActions.php\n");
+        fwrite(STDERR, "Could not find the attach block in ListingInput.php\n");
         exit(1);
     }
     $ajax_photos = $ajaxPhotos;

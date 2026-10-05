@@ -34,4 +34,5 @@ osc_admin_page(array(
     <?php osc_admin_settings_form($form['id'], $form); ?>
 </div>
 <?php osc_current_admin_theme_path('admins/two_factor.php'); ?>
+<?php osc_current_admin_theme_path('admins/sign_out_all.php'); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

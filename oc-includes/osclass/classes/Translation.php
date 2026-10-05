@@ -52,6 +52,9 @@ class Translation
             $core_file = osc_apply_filter('mo_core_path', osc_translations_path() . $locale . '/core.mo', $locale);
             $this->_load($core_file, 'core');
 
+            // The API sends no themed text, so it skips the theme's catalogues.
+            $themed = !function_exists('osc_is_api_request') || !osc_is_api_request();
+
             // load messages
             $domain        = osc_apply_filter('theme', osc_theme());
             $messages_file = osc_apply_filter(
@@ -61,7 +64,7 @@ class Translation
                 $domain
             );
 
-            if (!file_exists($messages_file)) {
+            if (!$themed || !file_exists($messages_file)) {
                 $messages_file =
                     osc_apply_filter(
                         'mo_core_messages_path',
@@ -85,7 +88,9 @@ class Translation
                 }
                 $theme_file = osc_translations_path() . $locale . '/theme.mo';
             }
-            $this->_load($theme_file, $domain);
+            if ($themed) {
+                $this->_load($theme_file, $domain);
+            }
 
             // load plugins
             $aPlugins = Plugins::listEnabled();

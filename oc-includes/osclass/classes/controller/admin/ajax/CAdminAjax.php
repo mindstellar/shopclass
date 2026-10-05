@@ -317,7 +317,7 @@ class CAdminAjax extends AdminSecBaseModel
                 // will change the field in more than one form.
                 $this->_exportVariableToView(
                     'form_count',
-                    (new \mindstellar\forms\FormService())->formCountForField(Params::getParamInt('id'))
+                    (new \mindstellar\form\builder\FormService())->formCountForField(Params::getParamInt('id'))
                 );
                 $this->doView('fields/iframe.php');
                 break;
@@ -328,33 +328,19 @@ class CAdminAjax extends AdminSecBaseModel
                 // category placement are managed by drag-drop / on the form, so those
                 // controls are absent from the post and must not be cleared here.
                 $builderMode = Params::getParam('builder') == '1';
-                $field = Field::newInstance()->findByName(Params::getParam('s_name'));
+                $fieldService = \mindstellar\fields\FieldService::make(osc_language());
 
-                if (!isset($field['pk_i_id'])
-                    || (isset($field['pk_i_id'])
-                        && $field['pk_i_id'] == Params::getParam('id'))
-                ) {
+                if (!$fieldService->nameTaken(Params::getParamString('s_name'), Params::getParamInt('id'))) {
                     // remove categories from a field (definition-only saves keep them)
                     if (!$builderMode) {
                         Field::newInstance()->cleanCategoriesFromField(Params::getParam('id'));
                     }
                     // no error... continue updating fields
                     if ($error == 0) {
-                        $slug     = Params::getParam('field_slug') != '' ? Params::getParam('field_slug')
-                            : Params::getParam('s_name');
-                        $slug     =
-                            preg_replace('|([-]+)|', '-', preg_replace('|[^a-z0-9_-]|', '-', strtolower($slug)));
-                        $slug_tmp = $slug;
-                        $slug_k   = 0;
-                        while (true) {
-                            $field = Field::newInstance()->findBySlug($slug);
-                            if (!$field || $field['pk_i_id'] == Params::getParam('id')) {
-                                break;
-                            }
-
-                            $slug_k++;
-                            $slug = $slug_tmp . '_' . $slug_k;
-                        }
+                        $slug = \mindstellar\fields\FieldSlug::unique(
+                            Params::getParam('field_slug') != '' ? Params::getParam('field_slug') : Params::getParam('s_name'),
+                            Params::getParamInt('id')
+                        );
                         // prepare multi locale data
                         $currentAdminLocale = osc_current_admin_locale();
                         $aMetaNames        = Params::getParamArray('meta_s_name');
@@ -453,11 +439,10 @@ class CAdminAjax extends AdminSecBaseModel
                 break;
             case 'delete_field':
                 osc_csrf_check();
-                $res = Field::newInstance()->deleteByPrimaryKey(Params::getParam('id'));
-
-                if ($res > 0) {
+                try {
+                    \mindstellar\fields\FieldService::make(osc_language())->delete(Params::getParamInt('id'));
                     $result = array('ok' => __('The custom field has been deleted'));
-                } else {
+                } catch (\mindstellar\validation\RefusedException | \RuntimeException $e) {
                     $result = array('error' => __('An error occurred while deleting'));
                 }
 
@@ -465,19 +450,8 @@ class CAdminAjax extends AdminSecBaseModel
                 break;
             case 'add_field':
                 osc_csrf_check();
-                $s_name   = __('NEW custom field');
-                $slug     = preg_replace('|([-]+)|', '-', preg_replace('|[^a-z0-9_-]|', '-', strtolower($s_name)));
-                $slug_tmp = $slug;
-                $slug_k   = 0;
-                while (true) {
-                    $field = Field::newInstance()->findBySlug($slug);
-                    if (!$field || $field['pk_i_id'] == Params::getParam('id')) {
-                        break;
-                    }
-
-                    $slug_k++;
-                    $slug = $slug_tmp . '_' . $slug_k;
-                }
+                $s_name       = __('NEW custom field');
+                $slug         = \mindstellar\fields\FieldSlug::unique($s_name);
                 $fieldManager = Field::newInstance();
                 $fieldId      = $fieldManager->insertField($s_name, 'TEXT', $slug, 0, '', array());
                 if ($fieldId) {
@@ -587,7 +561,7 @@ class CAdminAjax extends AdminSecBaseModel
                     AjaxResponse::json(array('error' => __('Invalid request')));
                     break;
                 }
-                $service = new \mindstellar\forms\FormService();
+                $service = new \mindstellar\form\builder\FormService();
                 if ($service->setFormFields($formId, $ids)) {
                     AjaxResponse::json(array('ok' => __('Saved')));
                 } else {
@@ -600,7 +574,7 @@ class CAdminAjax extends AdminSecBaseModel
                 // distinct category set), so the builder can manage them. Reversible —
                 // see FormService::migrateLooseFields().
                 osc_csrf_check();
-                $result = (new \mindstellar\forms\FormService())->migrateLooseFields();
+                $result = (new \mindstellar\form\builder\FormService())->migrateLooseFields();
                 if ($result['forms'] === 0) {
                     AjaxResponse::json(array('ok' => __('There were no fields to move.')));
                 } else {
@@ -613,18 +587,18 @@ class CAdminAjax extends AdminSecBaseModel
                 break;
             case 'form_submission_status':
                 osc_csrf_check();
-                $ok = \mindstellar\model\FormSubmission::newInstance()
+                $ok = (new \mindstellar\model\FormSubmission())
                     ->setStatus(Params::getParamInt('id'), (string)Params::getParam('status'));
                 AjaxResponse::json($ok ? array('ok' => __('Saved')) : array('error' => __('An error occurred')));
                 break;
             case 'form_submission_delete':
                 osc_csrf_check();
-                $ok = \mindstellar\model\FormSubmission::newInstance()->delete(Params::getParamInt('id'));
+                $ok = (new \mindstellar\model\FormSubmission())->delete(Params::getParamInt('id'));
                 AjaxResponse::json($ok ? array('ok' => __('The submission has been deleted')) : array('error' => __('An error occurred while deleting')));
                 break;
             case 'form_submissions_purge':
                 osc_csrf_check();
-                $res = \mindstellar\model\FormSubmission::newInstance()->deleteByForm(Params::getParamInt('form_id'));
+                $res = (new \mindstellar\model\FormSubmission())->deleteByForm(Params::getParamInt('form_id'));
                 AjaxResponse::json($res !== false ? array('ok' => __('All submissions for this form have been deleted')) : array('error' => __('An error occurred while deleting')));
                 break;
             case 'group_categories_iframe':
@@ -639,9 +613,6 @@ class CAdminAjax extends AdminSecBaseModel
                 osc_csrf_check();
                 $id       = strip_tags(Params::getParam('id'));
                 $enabled  = (Params::getParam('enabled') != '') ? Params::getParam('enabled') : 0;
-                $error    = 0;
-                $result   = array();
-                $aUpdated = array();
 
                 $mCategory = Category::newInstance();
                 $aCategory = $mCategory->findByPrimaryKey($id);
@@ -652,80 +623,32 @@ class CAdminAjax extends AdminSecBaseModel
                     break;
                 }
 
-                // root category
+                $affected = \mindstellar\category\CategoryService::make()->setEnabled((int) $id, (bool) $enabled, $aCategory);
+                if ($affected === null) {
+                    AjaxResponse::json(array('error' => __('Parent category is disabled, you can not enable that category')));
+                    break;
+                }
                 if ($aCategory['fk_i_parent_id'] == '') {
-                    $mCategory->update(array('b_enabled' => $enabled), array('pk_i_id' => $id));
-                    $mCategory->update(array('b_enabled' => $enabled), array('fk_i_parent_id' => $id));
-
-                    $subCategories = $mCategory->findSubcategories($id);
-
-                    $aIds       = array($id);
-                    $aUpdated[] = array('id' => $id);
-                    foreach ($subCategories as $subcategory) {
-                        $aIds[]     = $subcategory['pk_i_id'];
-                        $aUpdated[] = array('id' => $subcategory['pk_i_id']);
-                    }
-
-                    Item::newInstance()->enableByCategory($enabled, $aIds);
-                    osc_purge_page_cache('category');
-
-                    if ($enabled) {
-                        $result = array(
-                            'ok' => __('The category as well as its subcategories have been enabled')
-                        );
-                    } else {
-                        $result = array(
-                            'ok' => __('The category as well as its subcategories have been disabled')
-                        );
-                    }
-                    $result['affectedIds'] = $aUpdated;
-                    AjaxResponse::json($result);
-                    break;
-                }
-
-                // subcategory
-                $parentCategory = $mCategory->findRootCategory($id);
-                if (!$parentCategory['b_enabled']) {
-                    $result = array('error' => __('Parent category is disabled, you can not enable that category'));
-                    AjaxResponse::json($result);
-                    break;
-                }
-
-                $mCategory->update(array('b_enabled' => $enabled), array('pk_i_id' => $id));
-                osc_purge_page_cache('category');
-                if ($enabled) {
-                    $result = array(
-                        'ok' => __('The subcategory has been enabled')
-                    );
+                    $result = array('ok' => $enabled
+                        ? __('The category as well as its subcategories have been enabled')
+                        : __('The category as well as its subcategories have been disabled'));
                 } else {
-                    $result = array(
-                        'ok' => __('The subcategory has been disabled')
-                    );
+                    $result = array('ok' => $enabled
+                        ? __('The subcategory has been enabled')
+                        : __('The subcategory has been disabled'));
                 }
-                $result['affectedIds'] = array(array('id' => $id));
+                $result['affectedIds'] = array_map(static fn (int $affectedId): array => array('id' => $affectedId), $affected);
                 AjaxResponse::json($result);
 
                 break;
             case 'delete_category':
                 osc_csrf_check();
-                $id = Params::getParamInt('id');
-
-                // A category with more listings than one request can remove is deleted in
-                // the background instead: it is hidden immediately and emptied in batches,
-                // because doing it here holds locks for minutes and a host's
-                // max_execution_time would roll the whole thing back part-way.
-                switch (\mindstellar\job\CategoryJobs::requestDelete($id)) {
-                    case 'done':
-                        $result = array('ok' => __('The categories have been deleted'));
-                        break;
-                    case 'queued':
-                        $result = array('ok' => __(
-                            'The category is too large to delete at once. It has been hidden'
-                            . ' and is being emptied in the background.'
-                        ));
-                        break;
-                    default:
-                        $result = array('error' => __('An error occurred while deleting'));
+                try {
+                    $result = \mindstellar\category\CategoryService::make()->delete(Params::getParamInt('id')) === 'queued'
+                        ? array('ok' => __('The category is too large to delete at once. It has been hidden and is being emptied in the background.'))
+                        : array('ok' => __('The categories have been deleted'));
+                } catch (\mindstellar\validation\RefusedException | \RuntimeException $e) {
+                    $result = array('error' => __('An error occurred while deleting'));
                 }
 
                 AjaxResponse::json($result);
@@ -761,28 +684,20 @@ class CAdminAjax extends AdminSecBaseModel
                 }
 
                 $l = osc_language();
+                // The editor fires edited_category with the outcome, saved or not.
+                $editor = \mindstellar\category\CategoryService::make();
                 if ($error == 0 || ($error == 1 && $has_one_title == 1)) {
-                    $categoryManager = Category::newInstance();
-                    $res             = $categoryManager->updateByPrimaryKey(array(
-                        'fields'             => $fields,
-                        'aFieldsDescription' => $aFieldsDescription
-                    ), $id);
-                    $categoryManager->updateExpiration(
-                        $id,
-                        $fields['i_expiration_days'],
-                        $apply_changes_to_subcategories
-                    );
-                    $categoryManager->updatePriceEnabled(
-                        $id,
-                        $fields['b_price_enabled'],
-                        $apply_changes_to_subcategories
-                    );
-                    if (is_bool($res)) {
-                        $error = 2;
+                    try {
+                        if (!$editor->update((int) $id, $fields, $aFieldsDescription, $apply_changes_to_subcategories, (int) $error)) {
+                            $error = 2;
+                        }
+                    } catch (\mindstellar\validation\InvalidException $e) {
+                        AjaxResponse::json(array('error' => 3, 'msg' => $e->getMessage()));
+                        break;
                     }
+                } else {
+                    $editor->edited((int) $id, (int) $error);
                 }
-
-                osc_run_hook('edited_category', (int)($id), $error);
 
                 if ($error == 0) {
                     $msg = __('Category updated correctly');
@@ -1085,7 +1000,7 @@ class CAdminAjax extends AdminSecBaseModel
                     session_write_close();
                 }
                 header('Cache-Control: no-store');
-                AjaxResponse::json(\mindstellar\backup\BackupManager::poll());
+                AjaxResponse::json(\mindstellar\backup\BackupService::poll());
                 break;
             case 'country_slug':
                 $exists = Country::newInstance()->findBySlug(Params::getParam('slug'));

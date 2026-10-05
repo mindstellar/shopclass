@@ -47,7 +47,7 @@ class CWebUserNonSecure extends BaseModel
     {
         switch ($this->action) {
             case 'change_email_confirm':    //change email confirm
-                $change = UserActions::confirmEmailChange(
+                $change = (new \mindstellar\user\AccountService())->confirmEmailChange(
                     Params::getParamInt('userId'),
                     Params::getParamString('code')
                 );

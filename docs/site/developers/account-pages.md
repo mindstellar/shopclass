@@ -5,12 +5,12 @@ sidebar:
   order: 22
 ---
 
-Thirteen views make up the account section: the dashboard, the seller's
+Fourteen views make up the account section: the dashboard, the seller's
 listings, alerts, the profile form, the three settings pages, sign in, register,
-the two password-reset steps, a member's public page, and the slot a plugin's
-account page renders into.
+the two password-reset steps, a member's public page, the slot a plugin's
+account page renders into, and API access.
 
-A theme that ships all thirteen never sees any of this. A theme that ships none
+A theme that ships all fourteen never sees any of this. A theme that ships none
 of them used to produce **blank pages**: core asked for a file, found nothing,
 and printed an empty document.
 
@@ -203,7 +203,7 @@ The `opt_logout` entry is always moved last, whatever the filter returns.
 
 Every account page fires two actions inside its content column. The argument is
 the page: `user-dashboard`, `user-items`, `user-alerts`, `user-profile`,
-`user-signin`, `user-custom`, `user-delete_account`, and on the credits pages
+`user-signin`, `user-custom`, `user-api_access`, `user-delete_account`, and on the credits pages
 `billing-wallet`, `billing-buy` or `billing-orders`.
 
 ```php
@@ -301,6 +301,35 @@ osc_gui_view(
 Resolution is the same three steps core uses: the active theme's view if it has
 one, otherwise your file inside the theme's chrome, otherwise core's own shell.
 Your file is markup only: no `<html>`, no header, no footer.
+
+## The API access page
+
+`user-api_access.php` lists the apps signed in to the account through the
+[REST API](/docs/developers/api/authentication/) and the personal keys the member made. The
+member can end any of them, and make a key when the site allows it.
+
+| | |
+|---|---|
+| Fallback file | `oc-includes/osclass/gui/account/user-api_access-content.php` |
+| URL | `osc_user_api_access_url()` |
+| Nav entry | "API access", class `opt_api_access`. Shown only when the API is on and the member has a sign-in or key, or the site lets members make keys. |
+| Redirects | To the dashboard when the API is switched off. |
+
+A theme that ships its own `user-api_access.php` gets these view variables:
+
+| Variable | Holds |
+|---|---|
+| `api_sessions` | A list of sign-ins and keys, newest first. Each has `id`, `type` (`token` or `key`), `label`, `prefix` (keys only), `scopes`, `created_at`, `last_used_at`, `last_ip` and `expires_at`. Times are Unix times or `null`. |
+| `api_user_keys` | `true` when members may make keys. |
+| `api_key_scopes` | Scope name to description, for the make-a-key form. Empty when keys are off. |
+| `api_new_key` | The key just made, as text. Empty on every other request. It is shown once. |
+
+Every form posts `page=user`, `action=api_access_post` and the CSRF token from
+`osc_csrf_token_form()`. The `do` field is `end` (with `session` set to the session `id`)
+or `create` (with `name`, `expires` as `YYYY-MM-DD`, `scopes[]` and `password`).
+
+The page reuses `.oe-panel`, `.oe-badge`, `.oe-group`, `.oe-field`, `.oe-check` and
+`.oe-link-btn`. The two page hooks fire as on the other account pages.
 
 ## One page, three routes
 

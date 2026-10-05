@@ -312,6 +312,49 @@ $s = new Search();
 $s->order('i_price', 'DESC');
 pin('sort by price descending puts the dearest first', $car2, $ids($s->doSearch())[0]);
 
+harness_section('Search: orderBy and addCondition');
+
+$s = new Search();
+$s->orderBy(array(array('i_price', 'DESC'), array('pk_i_id', 'ASC')));
+pin('orderBy orders by several columns, each in its direction', $car2, $ids($s->doSearch())[0]);
+$rec = json_decode($s->toJson(), true);
+pin('and records the order as order() would', array($prefix . 't_item.i_price DESC, ' . $prefix . 't_item.pk_i_id', 'ASC'), array($rec['order_column'], $rec['order_direction']));
+$refused = static function (callable $fn): string {
+    try {
+        $fn();
+    } catch (InvalidArgumentException $e) {
+        return 'refused';
+    }
+
+    return 'accepted';
+};
+pin('orderBy refuses a column outside its list, a bad direction and nothing at all', array('refused', 'refused', 'refused'), array(
+    $refused(static fn () => (new Search())->orderBy(array(array('s_secret', 'ASC')))),
+    $refused(static fn () => (new Search())->orderBy(array(array('pk_i_id', 'ASC; DROP')))),
+    $refused(static fn () => (new Search())->orderBy(array())),
+));
+
+$s = new Search();
+$s->addCondition($prefix . 't_item.i_price >= ? AND ' . $prefix . 't_item.pk_i_id <> ?', array(0, $bike1));
+$found = $ids($s->doSearch());
+pin('addCondition inlines its values', array(4, false), array(count($found), in_array((int)$bike1, $found, true)));
+$rec = json_decode($s->toJson(), true);
+pin('as typed SQL text', array($prefix . 't_item.i_price >= 0 AND ' . $prefix . 't_item.pk_i_id <> ' . $bike1), $rec['no_catched_conditions']);
+$s = new Search();
+$s->addCondition($prefix . 't_item.dt_pub_date < ?', array("2026-01-01' OR '1'='1"));
+pin('a string is escaped and quoted', 0, count($s->doSearch()));
+pin('addCondition refuses quotes in the SQL, a count that does not match, and an array value', array('refused', 'refused', 'refused'), array(
+    $refused(static fn () => (new Search())->addCondition("pk_i_id = '1'")),
+    $refused(static fn () => (new Search())->addCondition('pk_i_id = ? AND pk_i_id = ?', array(1))),
+    $refused(static fn () => (new Search())->addCondition('pk_i_id IN (?)', array(array(1, 2)))),
+));
+pin('addCondition refuses backticks and comment markers in the SQL', array('refused', 'refused', 'refused', 'refused'), array(
+    $refused(static fn () => (new Search())->addCondition('`pk_i_id` = ?', array(1))),
+    $refused(static fn () => (new Search())->addCondition('pk_i_id = ? -- ?', array(1, 2))),
+    $refused(static fn () => (new Search())->addCondition('pk_i_id = ? # ?', array(1, 2))),
+    $refused(static fn () => (new Search())->addCondition('pk_i_id = ? /* ? */', array(1, 2))),
+));
+
 /* ----------------------------------------------------------------------------
  * Pagination (offset and count differ so a swap would fail).
  * ------------------------------------------------------------------------- */
@@ -627,6 +670,21 @@ $twoLocales = new Search();
 $twoLocales->addPattern('se');
 $twoLocales->addLocale(array('en_US', 'es_ES'));
 check('two locales build valid SQL (they used to lack an OR)', count($twoLocales->doSearch()) > 0);
+
+harness_section('Search: toJson() names the locale filter');
+$plain = new Search();
+$en    = new Search();
+$en->addLocale('en_US');
+$es = new Search();
+$es->addLocale('es_ES');
+$both = new Search();
+$both->addLocale(array('es_ES', 'en_US'));
+$bothReversed = new Search();
+$bothReversed->addLocale(array('en_US', 'es_ES'));
+check('a search with no locale filter keeps its old record', !array_key_exists('locale_code', json_decode($plain->toJson(), true)));
+pin('a locale filter is in the record', array('en_US'), json_decode($en->toJson(), true)['locale_code'] ?? null);
+check('so two locales give two result cache keys', md5($en->toJson()) !== md5($es->toJson()));
+pin('the same locales in another order give the same key', $both->toJson(), $bothReversed->toJson());
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

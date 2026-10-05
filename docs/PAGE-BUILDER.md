@@ -26,7 +26,7 @@ registry is the right substrate to unify on.
 
 ### 2.1 Page templates
 
-- `WebThemes::getAvailableTemplates()` (`classes/themes/WebThemes.php:306`) scans the
+- `WebThemes::getAvailableTemplates()` (`classes/theme/WebThemes.php:306`) scans the
   active theme directory for files matching `template-*` and returns the filenames.
 - The page editor's "Page template" dropdown is those filenames, passed through
   `osc_apply_filter('page_templates', …)` (`CAdminPages.php`). The chosen value is

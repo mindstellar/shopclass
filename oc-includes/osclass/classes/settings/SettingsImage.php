@@ -244,7 +244,7 @@ final class SettingsImage
 
         $found = null;
         try {
-            foreach (Resource::newInstance()->findByOwner(Resource::OWNER_SETTING, 0) as $row) {
+            foreach ((new Resource())->findByOwner(Resource::OWNER_SETTING, 0) as $row) {
                 if ((int)($row['pk_i_id'] ?? 0) === $id) {
                     $found = $row;
                     break;

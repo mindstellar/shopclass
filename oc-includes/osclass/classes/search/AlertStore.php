@@ -10,6 +10,7 @@
 
 namespace mindstellar\search;
 
+use mindstellar\base\Model;
 use mindstellar\database\Connection;
 use mindstellar\database\DbException;
 
@@ -17,21 +18,15 @@ use mindstellar\database\DbException;
  * t_alerts queries for the stored-search format: converting old rows, and finding the
  * ones that were held.
  */
-final class AlertStore
+final class AlertStore extends Model
 {
+    protected const TABLE = 't_alerts';
+
     /** Rows converted per batch. */
     public const BATCH = 500;
 
     /** s_search of a held row starts with this. */
     private const HELD_LIKE = '{"v":2,"held":%';
-
-    /**
-     * @return string
-     */
-    private static function table(): string
-    {
-        return DB_TABLE_PREFIX . 't_alerts';
-    }
 
     /**
      * Convert the next rows after $after that need it, in primary-key order.
@@ -61,7 +56,7 @@ final class AlertStore
     ): array {
         $limit = max(1, $limit);
         $rows  = $conn->select(
-            'SELECT pk_i_id, s_search FROM ' . self::table() . ' WHERE pk_i_id > ? ORDER BY pk_i_id LIMIT ' . $limit,
+            'SELECT pk_i_id, s_search FROM ' . self::tableName() . ' WHERE pk_i_id > ? ORDER BY pk_i_id LIMIT ' . $limit,
             array($after)
         );
 
@@ -86,7 +81,7 @@ final class AlertStore
                 $beforeWrite($pk);
             }
             $written = $conn->execute(
-                'UPDATE ' . self::table() . ' SET s_search = ?' . ($new['held'] !== null ? ', b_active = 0' : '')
+                'UPDATE ' . self::tableName() . ' SET s_search = ?' . ($new['held'] !== null ? ', b_active = 0' : '')
                 . ' WHERE pk_i_id = ? AND s_search <=> ?',
                 array($new['json'], $pk, $old)
             );
@@ -131,7 +126,7 @@ final class AlertStore
         }
         try {
             $rows = Connection::instance()->select(
-                'SELECT pk_i_id FROM ' . self::table() . ' WHERE pk_i_id IN ('
+                'SELECT pk_i_id FROM ' . self::tableName() . ' WHERE pk_i_id IN ('
                 . implode(', ', array_fill(0, count($ids), '?')) . ') AND s_search LIKE ?',
                 array_merge($ids, array(self::HELD_LIKE))
             );
@@ -177,7 +172,7 @@ final class AlertStore
     {
         try {
             return (int)Connection::instance()->scalar(
-                'SELECT COUNT(*) FROM ' . self::table() . ' WHERE s_search LIKE ?',
+                'SELECT COUNT(*) FROM ' . self::tableName() . ' WHERE s_search LIKE ?',
                 array(self::HELD_LIKE)
             );
         } catch (DbException $e) {
@@ -219,10 +214,10 @@ final class AlertStore
 
         try {
             $conn                 = Connection::instance();
-            $out['rows']          = (int)$conn->scalar('SELECT COUNT(*) FROM ' . self::table());
-            $out['total_results'] = (int)$conn->scalar('SELECT COUNT(*) FROM ' . self::table() . $where, $params);
+            $out['rows']          = (int)$conn->scalar('SELECT COUNT(*) FROM ' . self::tableName());
+            $out['total_results'] = (int)$conn->scalar('SELECT COUNT(*) FROM ' . self::tableName() . $where, $params);
             $out['alerts']        = osc_db_stringify_rows($conn->select(
-                'SELECT * FROM ' . self::table() . $where . ' ORDER BY ' . $orderColumn . ' ' . $direction
+                'SELECT * FROM ' . self::tableName() . $where . ' ORDER BY ' . $orderColumn . ' ' . $direction
                 . ', pk_i_id ' . $direction . ' LIMIT ' . max(0, $start) . ', ' . max(1, $limit),
                 $params
             ));

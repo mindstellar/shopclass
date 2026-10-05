@@ -204,3 +204,91 @@ table.table-small td {
     text-align: center;
   }
 }
+
+// Settings -> API: the key shown once, the scope list and the password boxes.
+.api-key-issued {
+  margin-block-end: 20px;
+  max-width: 48rem;
+}
+
+.api-key-token {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block-start: 12px;
+
+  code {
+    background: var(--osc-bench-sunk);
+    border: 1px solid var(--osc-rule);
+    border-radius: $border-radius;
+    color: var(--osc-ink);
+    padding: 6px 10px;
+    word-break: break-all;
+  }
+}
+
+.api-key-prefix,
+.api-key-scopes {
+  font-size: $font-size-label;
+}
+
+.api-key-scopes {
+  color: var(--osc-ink-emphasis);
+}
+
+.api-key-actions {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.api-scopes {
+  display: grid;
+  gap: 2px;
+
+  .form-label-checkbox {
+    margin: 0;
+  }
+}
+
+.api-reauth {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .85rem 1.25rem;
+
+  .osc-dialog & {
+    flex-direction: column;
+    margin-block-start: 1.1rem;
+  }
+}
+
+.api-reauth-field {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+
+  .form-label {
+    color: var(--osc-ink);
+    margin: 0;
+  }
+}
+
+// Settings -> API: webhook endpoints. Their one-button forms sit in the actions row.
+.api-inline-form {
+  display: inline-flex;
+  margin: 0;
+}
+
+.api-webhook-url {
+  overflow-wrap: anywhere;
+}
+
+.api-webhook-paused {
+  margin-block-end: 16px;
+  max-width: 48rem;
+}
+
+.api-webhooks-table .api-key-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}

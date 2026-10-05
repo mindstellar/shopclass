@@ -17,7 +17,7 @@ if (!defined('ABS_PATH')) {
  */
 
 use mindstellar\admin\form\CoreSettings;
-use mindstellar\admin\form\MailServerSettingsForm;
+use mindstellar\admin\form\MailServerSettingsScreen;
 
 /**
  * Class CAdminSettingsMailserver
@@ -53,7 +53,7 @@ class CAdminSettingsMailserver extends AdminSecBaseModel
 
                 osc_csrf_check();
 
-                $result = CoreSettings::attempt(MailServerSettingsForm::register());
+                $result = CoreSettings::attempt(MailServerSettingsScreen::register());
                 if ($result['errors'] !== array()) {
                     // Redrawn with what was typed rather than thrown away with a redirect.
                     $this->drawForm($result['values']);
@@ -75,7 +75,7 @@ class CAdminSettingsMailserver extends AdminSecBaseModel
      */
     private function drawForm(?array $values = null)
     {
-        $this->_exportVariableToView('mailserver_form', MailServerSettingsForm::formVars($values));
+        $this->_exportVariableToView('mailserver_form', MailServerSettingsScreen::formVars($values));
         $this->doView('settings/mailserver.php');
     }
 }

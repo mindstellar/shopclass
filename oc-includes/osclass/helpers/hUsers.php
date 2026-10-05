@@ -95,7 +95,13 @@ function osc_resolve_web_user()
     if ($cookieId != '' && $cookieSecret != '') {
         $candidate = User::newInstance()->findByPrimaryKey($cookieId);
         if (isset($candidate['pk_i_id'])
-            && \mindstellar\security\RememberMe::verify('web', $cookieId, $cookieSecret, $candidate['s_password'])
+            && \mindstellar\security\RememberMe::verify(
+                'web',
+                $cookieId,
+                $cookieSecret,
+                $candidate['s_password'],
+                \mindstellar\auth\AuthStamp::of($candidate)
+            )
         ) {
             View::newInstance()->_exportVariableToView('_loggedUser', $candidate);
 
@@ -104,11 +110,11 @@ function osc_resolve_web_user()
     }
 
     // Transitional: honour identity still held in a physical session from before the cookie
-    // mechanism shipped, so upgrading does not log anyone out.
+    // mechanism shipped, so upgrading does not log anyone out. Signing out of all devices ends it.
     $sessionId = Session::newInstance()->_get('userId');
     if ($sessionId != '') {
         $candidate = User::newInstance()->findByPrimaryKey($sessionId);
-        if (isset($candidate['pk_i_id'])) {
+        if (isset($candidate['pk_i_id']) && \mindstellar\auth\AuthStamp::of($candidate) === 0) {
             View::newInstance()->_exportVariableToView('_loggedUser', $candidate);
 
             return $candidate;
@@ -173,7 +179,8 @@ function osc_web_user_login($user, $remember = false)
         'web',
         $user['pk_i_id'],
         $user['s_password'],
-        $tokenTtl
+        $tokenTtl,
+        \mindstellar\auth\AuthStamp::of($user)
     ));
     $cookie->set();
 
@@ -314,7 +321,10 @@ function osc_is_admin_user_logged_in()
 {
     if (Session::newInstance()->_get('adminId') != '') {
         $admin = Admin::newInstance()->findByPrimaryKey(Session::newInstance()->_get('adminId'));
-        if (isset($admin['pk_i_id'])) {
+        // A session from before the admin signed out of all devices no longer counts.
+        if (isset($admin['pk_i_id'])
+            && (int) Session::newInstance()->_get('adminStamp') === \mindstellar\auth\AuthStamp::of($admin)
+        ) {
             return true;
         }
 
@@ -332,7 +342,8 @@ function osc_is_admin_user_logged_in()
                 'admin',
                 $adminId,
                 Cookie::newInstance()->get_value('oc_adminSecret'),
-                \mindstellar\security\AdminTwoFactor::rememberBinding($admin)
+                \mindstellar\security\AdminTwoFactor::rememberBinding($admin),
+                \mindstellar\auth\AuthStamp::of($admin)
             )
         ) {
             if (session_status() === PHP_SESSION_ACTIVE) {
@@ -342,6 +353,7 @@ function osc_is_admin_user_logged_in()
             Session::newInstance()->_set('adminUserName', $admin['s_username']);
             Session::newInstance()->_set('adminName', $admin['s_name']);
             Session::newInstance()->_set('adminEmail', $admin['s_email']);
+            Session::newInstance()->_set('adminStamp', \mindstellar\auth\AuthStamp::of($admin));
             Session::newInstance()->_set('adminLocale', Cookie::newInstance()->get_value('oc_adminLocale'));
 
             return true;

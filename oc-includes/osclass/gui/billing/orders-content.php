@@ -13,7 +13,7 @@ if (!defined('ABS_PATH')) {
  */
 
 use mindstellar\billing\Order;
-use mindstellar\billing\Orders;
+use mindstellar\billing\OrderStore;
 use mindstellar\billing\Receipts;
 
 /**
@@ -44,9 +44,9 @@ if (!osc_is_web_user_logged_in()) {
     $offset  = ($pageNum - 1) * $perPage;
 
     /** @var Order[] $orders */
-    $orders = Orders::forUser($userId, $perPage, $offset);
+    $orders = OrderStore::forUser($userId, $perPage, $offset);
     $orders = is_array($orders) ? $orders : array();
-    $total  = Orders::searchCount(array('user_id' => $userId));
+    $total  = OrderStore::searchCount(array('user_id' => $userId));
 }
 
 $statusWords = array(

@@ -179,7 +179,7 @@ harness_section('A restore asks for the password again');
 
 $restore = $body('backup_restore');
 $verify  = strpos($restore, 'AdminReauth::verify(');
-$start   = strpos($restore, 'BackupManager::startRestore(');
+$start   = strpos($restore, 'BackupService::startRestore(');
 check('backup_restore checks the password before it starts anything', $verify !== false && $start !== false && $verify < $start);
 check('...with the posted password and code', strpos($restore, "Params::getParamString('password', false, false)") !== false
     && strpos($restore, "Params::getParamString('code')") !== false);
@@ -188,7 +188,7 @@ check('...and a refusal leaves before startRestore', (bool) preg_match(
     substr($restore, 0, (int) $start)
 ));
 check('an uploaded file reaches a restore only through backup_restore', strpos($body('backupUpload'), 'startRestore') === false
-    && substr_count($controller, 'BackupManager::startRestore(') === 1);
+    && substr_count($controller, 'BackupService::startRestore(') === 1);
 check('the dialog has a password field', strpos($view, "'name'     => 'password'") !== false && strpos($view, "'type'     => 'secret'") !== false);
 check('...and a code field when 2FA is on', (bool) preg_match("/if \\(\\\$twoStep\\) \\{.*?'name'     => 'code'/s", $view));
 check('the page learns whether 2FA is on', strpos($body('backupPage'), 'AdminTwoFactor::enabled($me)') !== false);
@@ -256,7 +256,7 @@ check('an open bucket and a plain http endpoint are warned about in the verdict'
 $delete = $body('backup_delete');
 check('a bucket delete comes after the token', strpos($delete, 'osc_csrf_check()') < strpos($delete, 'bucketDelete('));
 check('...and deletes nothing here when no bucket is set', strpos($delete, "\$bucket === false ? BackupStore::site()->delete(\$name) : \$bucket !== null && BackupStore::site()->bucketDelete(\$bucket, \$name)") !== false);
-check('a bucket restore goes through the same password check, the one startRestore call', (bool) preg_match('/BackupManager::startRestore\(\s*\$name,.*?\$fromBucket\s*\);/s', $restore));
+check('a bucket restore goes through the same password check, the one startRestore call', (bool) preg_match('/BackupService::startRestore\(\s*\$name,.*?\$fromBucket\s*\);/s', $restore));
 check('...and a refusal reopens the bucket dialog', strpos($restore, "(\$fromBucket ? '&from=bucket' : '')") !== false);
 check('the Where column says Bucket for a bucket backup', strpos($view, "=== 'bucket' ? osc_esc_html(__('Bucket')) : osc_esc_html(__('Server'))") !== false);
 check('the public photo bucket warning is part of the one verdict', (bool) preg_match("/\\\$issues\\[\\] = array\\(\\s*'tone'\\s*=> 'warning',\\s*'text'\\s*=> __\\('Your photo bucket is public\\./", $view)

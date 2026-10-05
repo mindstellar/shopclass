@@ -45,7 +45,6 @@ final class DatabaseDump
         't_preference',
         't_pages',
         't_pages_description',
-        't_plugin_category',
         't_cron',
         't_alerts',
         't_meta_fields',

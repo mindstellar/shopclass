@@ -87,7 +87,7 @@ class ItemForm extends Form
 
         foreach ($categories as $c) {
             if (!osc_selectable_parent_categories() && !$parent_selectable) {
-                echo '<optgroup label="' . $c['s_name'] . '">';
+                echo '<optgroup label="' . osc_esc_html((string) $c['s_name']) . '">';
                 if (isset($c['categories']) && is_array($c['categories'])) {
                     self::subcategory_select($c['categories'], $item, $default_item, 1);
                 }
@@ -96,7 +96,7 @@ class ItemForm extends Form
                         && $item['fk_i_category_id'] == $c['pk_i_id'])
                     || (isset($catId) && $catId == $c['pk_i_id']));
                 echo '<option value="' . $c['pk_i_id'] . '"' . ($selected ? ' selected="selected"'
-                        : '') . '>' . $c['s_name'] . '</option>';
+                        : '') . '>' . osc_esc_html((string) $c['s_name']) . '</option>';
                 if (isset($c['categories']) && is_array($c['categories'])) {
                     self::subcategory_select($c['categories'], $item, $default_item, 1);
                 }
@@ -135,7 +135,7 @@ class ItemForm extends Form
 
             echo '<option value="' . $c['pk_i_id'] . '"' . ($selected ? ' selected="selected'
                     . ($item['fk_i_category_id'] ?? '') . '"' : '') . '>'
-                    . $deep_string . $c['s_name']
+                    . $deep_string . osc_esc_html((string) $c['s_name'])
                 . '</option>';
             if (isset($c['categories']) && is_array($c['categories'])) {
                 self::subcategory_select($c['categories'], $item, $default_item, $deep);

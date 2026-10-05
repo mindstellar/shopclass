@@ -17,7 +17,7 @@ if (!defined('ABS_PATH')) {
  */
 
 use mindstellar\admin\form\CoreSettings;
-use mindstellar\admin\form\LatestSearchSettingsForm;
+use mindstellar\admin\form\LatestSearchSettingsScreen;
 
 /**
  * Class CAdminSettingsLatestSearches
@@ -49,7 +49,7 @@ class CAdminSettingsLatestSearches extends AdminSecBaseModel
             case ('latestsearches_post'):
                 osc_csrf_check();
 
-                $result = CoreSettings::attempt(LatestSearchSettingsForm::register());
+                $result = CoreSettings::attempt(LatestSearchSettingsScreen::register());
                 if ($result['errors'] !== array()) {
                     // Nothing was written, not even the switch: a rejected save is not half
                     // a save. Redrawn with what was typed rather than thrown away.
@@ -72,7 +72,7 @@ class CAdminSettingsLatestSearches extends AdminSecBaseModel
      */
     private function drawForm(?array $values = null)
     {
-        $this->_exportVariableToView('searches_form', LatestSearchSettingsForm::formVars($values));
+        $this->_exportVariableToView('searches_form', LatestSearchSettingsScreen::formVars($values));
         $this->doView('settings/searches.php');
     }
 }

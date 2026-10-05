@@ -10,9 +10,11 @@
 
 namespace mindstellar\security;
 
+use mindstellar\auth\Actor;
+use mindstellar\listing\ListingPolicy;
+
 /**
- * Who may see or change a listing from the public site. The owner is the signed-in user the
- * listing belongs to or, for a listing posted as a guest, whoever holds its secret.
+ * @deprecated 7.0.0 compatibility: use \mindstellar\listing\ListingPolicy.
  */
 final class ItemAccess
 {
@@ -23,9 +25,7 @@ final class ItemAccess
      */
     public static function isHidden(array $item): bool
     {
-        return (int)($item['b_active'] ?? 0) !== 1
-            || (int)($item['b_enabled'] ?? 0) === 0
-            || (int)($item['b_spam'] ?? 0) === 1;
+        return ListingPolicy::isHidden($item);
     }
 
     /**
@@ -34,7 +34,7 @@ final class ItemAccess
      */
     public static function isOwner(array $item, $userId): bool
     {
-        return (int)$userId > 0 && (int)($item['fk_i_user_id'] ?? 0) === (int)$userId;
+        return ListingPolicy::isOwner($item, self::actor($userId, false));
     }
 
     /**
@@ -43,7 +43,7 @@ final class ItemAccess
      */
     public static function canView(array $item, $userId, bool $isAdmin): bool
     {
-        return $isAdmin || !self::isHidden($item) || self::isOwner($item, $userId);
+        return ListingPolicy::canView($item, self::actor($userId, $isAdmin));
     }
 
     /**
@@ -54,13 +54,7 @@ final class ItemAccess
      */
     public static function canManage(array $item, $userId, bool $isAdmin, string $secret): bool
     {
-        if ($isAdmin || self::isOwner($item, $userId)) {
-            return true;
-        }
-
-        return empty($item['fk_i_user_id'])
-            && $secret !== ''
-            && hash_equals((string)($item['s_secret'] ?? ''), $secret);
+        return ListingPolicy::canManage($item, self::actor($userId, $isAdmin)->withSecret($secret));
     }
 
     /**
@@ -70,14 +64,7 @@ final class ItemAccess
      */
     public static function manageable(int $id, $userId, bool $isAdmin, string $secret): array
     {
-        if ($id <= 0) {
-            return array();
-        }
-        $item = \Item::newInstance()->findByPrimaryKey($id);
-
-        return is_array($item) && $item !== array() && self::canManage($item, $userId, $isAdmin, $secret)
-            ? $item
-            : array();
+        return ListingPolicy::manageable($id, self::actor($userId, $isAdmin)->withSecret($secret)) ?? array();
     }
 
     /**
@@ -87,10 +74,14 @@ final class ItemAccess
      */
     public static function isPhotoOf($resource, array $item, string $code): bool
     {
-        return is_array($resource)
-            && isset($resource['fk_i_item_id'], $resource['s_name'], $item['pk_i_id'])
-            && (int)$resource['fk_i_item_id'] === (int)$item['pk_i_id']
-            && $code !== ''
-            && hash_equals((string)$resource['s_name'], $code);
+        return ListingPolicy::isPhotoOf($resource, $item, $code);
+    }
+
+    /**
+     * @param int|string|null $userId
+     */
+    private static function actor($userId, bool $isAdmin): Actor
+    {
+        return new Actor((int) $userId, $isAdmin ? 0 : null);
     }
 }

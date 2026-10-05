@@ -57,7 +57,7 @@
  * hDefines.php cannot be required from a model test (it redeclares the
  * bootstrap's osc_uploads_path()). This mirrors tests/models/itemresource.php and
  * tests/models/category.php. hUsers.php and utils.php are the REAL files: the
- * delete cascade reaches ItemActions::deleteResourcesFromHD() -> osc_logged_user_id()
+ * delete cascade reaches PhotoService::deleteFilesFromDisk() -> osc_logged_user_id()
  * and osc_isExpired(), and requiring the real files (idempotent) exercises the true
  * paths rather than a fake (amendment L). DEMO is defined so osc_deleteResource()
  * short-circuits instead of touching the filesystem.
@@ -273,7 +273,7 @@ pin(
         '__construct', 'clearStat', 'countByMarkas', 'countByUserID', 'countByUserIDEnabled',
         'countItemTypesByEmail', 'countItemTypesByUserID', 'deleteByCity', 'deleteByCityArea',
         'deleteByCountry', 'deleteByPrimaryKey', 'deleteByRegion', 'enableByCategory', 'extendCategoryName',
-        'extendData', 'extendDataSingle', 'findAdjacentLive', 'findByCategoryID', 'findByDayExpiration', 'findByEmail',
+        'extendData', 'extendDataSingle', 'extendRows', 'findAdjacentLive', 'findByCategoryID', 'findByDayExpiration', 'findByEmail',
         'findByHourExpiration', 'findByPhone', 'findByPrimaryKey', 'findByUserID', 'findByUserIDEnabled',
         'findItemByTypes', 'findItemTypesByUserID', 'findLocationByID', 'findResourcesByID', 'insertLocale',
         'listAllWithCategories', 'listLatest', 'listWhere', 'liveConditions', 'metaFields', 'mostViewed',

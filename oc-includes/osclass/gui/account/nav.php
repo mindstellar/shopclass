@@ -77,6 +77,8 @@ if (osc_is_user_dashboard()) {
           || osc_is_change_username_page()
 ) {
     $navCurrent = 'opt_signin';
+} elseif (osc_is_current_page('user', 'api_access') || osc_is_current_page('user', 'api_access_post')) {
+    $navCurrent = 'opt_api_access';
 } elseif (osc_is_current_page('user', 'delete')) {
     // No entry of its own; it hangs off the profile page that links to it.
     $navCurrent = 'opt_account';

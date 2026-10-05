@@ -21,6 +21,7 @@ $demo     = defined('DEMO');
 $contexts = array(
     'admin'          => __('Admin panel'),
     'web'            => __('Website'),
+    'api'            => __('Apps signing in through the API'),
     'admin-recover'  => __('Admin password reset'),
     'web-recover'    => __('Website password reset'),
     'restore_reauth' => __('Password check before a restore'),

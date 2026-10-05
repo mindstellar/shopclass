@@ -13,6 +13,7 @@ namespace mindstellar\admin;
 use mindstellar\backup\BackupJobs;
 use mindstellar\backup\BackupStore;
 use mindstellar\database\StrictModeReadiness;
+use mindstellar\routing\ServerRules;
 
 /**
  * The checks behind Tools > System info. Each tab gets the issues to act on and the
@@ -404,6 +405,19 @@ final class SystemChecks
         if (is_numeric($disk) && $disk > 0 && $disk < self::DISK_FLOOR) {
             $issues[] = self::issue('disk_low', 'warning', sprintf(__('Only %s of disk space is left. Uploads and backups fail when it runs out.'), self::size((int) $disk)));
         }
+        if (($env['htaccess_auth'] ?? null) === false) {
+            $issues[] = self::issue('htaccess_no_authorization', 'warning', sprintf(
+                __('The .htaccess file does not pass the Authorization header to PHP, so the API cannot see keys sent in it. Add this line after "RewriteEngine On": %s'),
+                ServerRules::AUTHORIZATION
+            ));
+        }
+        $reserved = array_merge((array) ($env['reserved_slugs']['pages'] ?? array()), (array) ($env['reserved_slugs']['categories'] ?? array()));
+        if ($reserved !== array()) {
+            $issues[] = self::issue('api_slug_taken', 'warning', sprintf(
+                __('/api/ belongs to the site\'s API, so these static pages or categories cannot be reached. Give them another slug: %s'),
+                implode(', ', $reserved)
+            ));
+        }
         $maintenance = (string) ($env['maintenance'] ?? '');
         if ($maintenance !== '') {
             $issues[] = self::issue(
@@ -643,6 +657,19 @@ final class SystemChecks
         return array_values(array_filter(self::EXTENSIONS, static function ($ext) use ($loaded) {
             return !in_array($ext, $loaded, true);
         }));
+    }
+
+    /**
+     * The name of the system user with this id; '#id' when it has none, '' with no id.
+     */
+    public static function userName(?int $uid): string
+    {
+        if ($uid === null) {
+            return '';
+        }
+        $info = function_exists('posix_getpwuid') ? @posix_getpwuid($uid) : false;
+
+        return is_array($info) ? (string) $info['name'] : '#' . $uid;
     }
 
     /**

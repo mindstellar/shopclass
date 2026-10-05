@@ -246,12 +246,10 @@ class CAdminLogin extends AdminBaseModel
                 )) {
                     // Consume the reset code (single-use) by replacing its fingerprint with a
                     // fresh dead one, alongside the new password.
-                    Admin::newInstance()->update(
-                        array(
-                            's_secret'   => \mindstellar\security\ActionToken::hash(osc_genRandomPassword(40)),
-                            's_password' => osc_hash_password(Params::getParam('new_password', false, false))
-                        ),
-                        array('pk_i_id' => $admin['pk_i_id'])
+                    \mindstellar\auth\AdminPassword::set(
+                        (int)$admin['pk_i_id'],
+                        Params::getParamString('new_password', false, false),
+                        array('s_secret' => \mindstellar\security\ActionToken::hash(osc_genRandomPassword(40)))
                     );
                     osc_add_flash_ok_message(_m('The password has been changed'), 'admin');
                     $this->redirectTo(osc_admin_base_url(true) . '?page=login');
@@ -302,7 +300,8 @@ class CAdminLogin extends AdminBaseModel
                     'admin',
                     $admin['pk_i_id'],
                     \mindstellar\security\AdminTwoFactor::rememberBinding($admin),
-                    osc_time_cookie()
+                    osc_time_cookie(),
+                    \mindstellar\auth\AuthStamp::of($admin)
                 )
             );
             if ($is_valid_locale === true) {
@@ -318,6 +317,7 @@ class CAdminLogin extends AdminBaseModel
         Session::newInstance()->_set('adminUserName', $admin['s_username']);
         Session::newInstance()->_set('adminName', $admin['s_name']);
         Session::newInstance()->_set('adminEmail', $admin['s_email']);
+        Session::newInstance()->_set('adminStamp', \mindstellar\auth\AuthStamp::of($admin));
         if ($is_valid_locale === true) {
             Session::newInstance()->_set('adminLocale', $locale);
         } else {

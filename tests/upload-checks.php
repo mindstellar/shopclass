@@ -13,7 +13,7 @@
  *
  * - AjaxUploader matches the file extension against the allowed list exactly. It used a
  *   substring search, so "x.pn", "x.jp" and a name with no extension passed.
- * - ItemActions reads the image type from the file, not from the browser. A real photo
+ * - The listing photo check reads the image type from the file, not from the browser. A real photo
  *   sent as application/octet-stream was refused.
  *
  * Usage: php tests/upload-checks.php
@@ -120,23 +120,19 @@ pin('a partial extension "jp" is refused', 'bad-ext', $attempt('photo.jp', $png)
 pin('a name with no extension is refused', 'bad-ext', $attempt('photo', $png));
 pin('photo.php is refused', 'bad-ext', $attempt('photo.php', $png));
 
-harness_section('ItemActions reads the image type from the file');
+harness_section('The listing photo check reads the image type from the file');
 
-$actions = (new ReflectionClass(ItemActions::class))->newInstanceWithoutConstructor();
-$check   = new ReflectionMethod(ItemActions::class, 'checkAllowedExt');
-if (PHP_VERSION_ID < 80100) {
-    $check->setAccessible(true);
-}
+$check = static fn (array $files): bool => \mindstellar\listing\PhotoService::checkTypes($files);
 $files = static fn (string $path, string $type): array => array(
     'error'    => array(UPLOAD_ERR_OK),
     'type'     => array($type),
     'tmp_name' => array($path),
 );
 
-check('a real PNG sent as image/png passes', $check->invoke($actions, $files($png, 'image/png')));
-check('a real PNG sent as application/octet-stream passes', $check->invoke($actions, $files($png, 'application/octet-stream')));
-check('a script sent as image/png is refused', !$check->invoke($actions, $files($text, 'image/png')));
-check('a script sent as application/octet-stream is refused', !$check->invoke($actions, $files($text, 'application/octet-stream')));
+check('a real PNG sent as image/png passes', $check($files($png, 'image/png')));
+check('a real PNG sent as application/octet-stream passes', $check($files($png, 'application/octet-stream')));
+check('a script sent as image/png is refused', !$check($files($text, 'image/png')));
+check('a script sent as application/octet-stream is refused', !$check($files($text, 'application/octet-stream')));
 
 harness_section('UploadMimes: one allowed list, one way of reading a file');
 
@@ -186,9 +182,9 @@ check('an image over the pixel limit is caught from its header', UploadMimes::to
 check('and is not an allowed image', !UploadMimes::isAllowedImage($bomb));
 check('a normal PNG is under the limit', !UploadMimes::tooManyPixels($png));
 pin('the uploader refuses it with the size message', 'too-big', $attempt('bomb.png', $bomb));
-$GLOBALS['flashes'] = array();
-check('the listing photo check refuses it', !$check->invoke($actions, $files($bomb, 'image/png')));
-check('and says why', strpos((string) end($GLOBALS['flashes']), 'megapixels') !== false);
+$notices = array();
+check('the listing photo check refuses it', !\mindstellar\listing\PhotoService::checkTypes($files($bomb, 'image/png'), $notices));
+check('and says why', strpos((string) end($notices), 'megapixels') !== false);
 $threw = false;
 try {
     ImageProcessing::fromFile($bomb);

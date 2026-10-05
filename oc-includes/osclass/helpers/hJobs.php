@@ -261,10 +261,12 @@ osc_add_hook('register_jobs', static function () {
     \mindstellar\storage\StorageJobs::register();
     \mindstellar\job\CategoryJobs::register();
     \mindstellar\job\CleanupJobs::register();
+    \mindstellar\location\LocationRecountJobs::register();
     \mindstellar\search\AlertJobs::register();
     \mindstellar\backup\BackupJobs::register();
     \mindstellar\security\MessageHold::registerJobs();
     \mindstellar\billing\Receipts::registerJobs();
+    \mindstellar\webhook\Delivery::register();
 });
 
 // A job queued by a web request would otherwise wait for the next cron tick. The worker
@@ -272,3 +274,93 @@ osc_add_hook('register_jobs', static function () {
 osc_add_hook('cron', static function () {
     JobWorker::run();
 });
+
+/**
+ * Runs scheduled tasks after the response when auto-cron is on, at most once per five minutes.
+ * Web pages queue the work to run at shutdown; an API response is already sent, so it runs now.
+ *
+ * @param bool $responseSent true when the caller has already written the whole response
+ */
+function osc_auto_cron_dispatch(bool $responseSent = false): void
+{
+    if (defined('__FROM_CRON__') || !osc_auto_cron() || osc_maintenance_is_restoring(ABS_PATH . '.maintenance')) {
+        return;
+    }
+
+    // Auto-cron sends a fire-and-forget self request to run scheduled tasks. Left ungated it
+    // fires on EVERY page view, so a busy site hammers itself with one internal POST per hit
+    // (each spawns an FPM worker). Throttle it to at most one dispatch per 5 minutes.
+    //
+    // Prefer the object cache as the lock: with a real backend (memcached/apcu) the window is
+    // shared across every web node and every locale (Object_Cache_Factory directly, not the
+    // locale-suffixed osc_cache_* helpers). The default driver is a per-request array that never
+    // survives between requests and so cannot throttle anything, so there fall back to the
+    // modification time of a stamp file under uploads/, no cache backend required. Either path
+    // fails open (write fails or file unwritable => cron still runs), never closed.
+    $window = 300;
+    $fire   = false;
+    $cache  = Object_Cache_Factory::newInstance();
+
+    if (!($cache instanceof Object_Cache_default)) {
+        $found = false;
+        if ($cache->get('osclass_autocron_tick', $found) === false) {
+            $cache->set('osclass_autocron_tick', 1, $window);
+            $fire = true;
+        }
+    } else {
+        // A dotfile, so a "deny hidden files" web-server rule keeps it unreadable; it carries no
+        // data anyway, only its mtime matters.
+        $stamp = osc_uploads_path() . '.autocron_tick';
+        if (!file_exists($stamp) || (time() - (int)@filemtime($stamp)) >= $window) {
+            @touch($stamp);
+            $fire = true;
+        }
+    }
+
+    if (!$fire) {
+        return;
+    }
+
+    $finish = null;
+    if (function_exists('fastcgi_finish_request')) {
+        $finish = 'fastcgi_finish_request';
+    } elseif (function_exists('litespeed_finish_request')) {
+        $finish = 'litespeed_finish_request';
+    }
+
+    if ($finish === null) {
+        // No way to detach on this SAPI, so the self request stays -- unchanged, including
+        // its inability to reach a proxied origin. Shared hosting is where it is still the
+        // only option, and it is also where nobody can add a real crontab.
+        \mindstellar\utility\Utils::doRequest(osc_base_url(), array('page' => 'cron'));
+
+        return;
+    }
+
+    // Under FPM the work runs here, after the response has gone, instead of asking the site to
+    // call itself over HTTP. That self request is only a way to detach, and it cannot survive an
+    // origin behind a proxy, which resolves its own public host to the edge and never hairpins
+    // back. Running it here needs no network and puts failures in the site's own error log.
+    $run = static function () use ($finish, $window) {
+        $finish();
+        // The visitor already has their response, so nothing is waiting on this.
+        ignore_user_abort(true);
+        // Bounded, never 0: this occupies an FPM worker, and one that hangs is one the pool
+        // cannot serve from. The throttle window is the ceiling, so a run cannot overlap the next.
+        @set_time_limit($window);
+        if (!defined('__FROM_CRON__')) {
+            define('__FROM_CRON__', true);
+        }
+        require_once LIB_PATH . 'osclass/cron.php';
+    };
+
+    if ($responseSent) {
+        $run();
+
+        return;
+    }
+
+    // A shutdown function, not an inline call: the CSRF guard holds the page in an output buffer
+    // and injects tokens from its own shutdown function, which must run before the request ends.
+    register_shutdown_function($run);
+}

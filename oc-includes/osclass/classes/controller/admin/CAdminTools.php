@@ -24,7 +24,7 @@ use mindstellar\admin\ListPaging;
 use mindstellar\admin\SystemChecks;
 use mindstellar\backup\BackupBucket;
 use mindstellar\backup\BackupJobs;
-use mindstellar\backup\BackupManager;
+use mindstellar\backup\BackupService;
 use mindstellar\backup\BackupStore;
 use mindstellar\security\AdminReauth;
 use mindstellar\upgrade\BuildInfo;
@@ -99,7 +99,7 @@ class CAdminTools extends AdminSecBaseModel
                 }
 
                 $started = (float) (Params::getServerParam('REQUEST_TIME_FLOAT') ?: microtime(true));
-                $queued  = (int) LocationsTmp::newInstance()->count();
+                $queued  = \mindstellar\location\LocationRecountJobs::pending();
                 $pending = (int) osc_update_location_stats(true);
                 $total   = $queued === 0 ? $pending : max($pending, (int) osc_get_preference('location_todo'));
 
@@ -187,7 +187,7 @@ class CAdminTools extends AdminSecBaseModel
                     break;
                 }
                 osc_csrf_check();
-                BackupManager::cancel();
+                BackupService::cancel();
                 $this->redirectTo(self::backupUrl());
                 break;
             case ('backup_download'):
@@ -230,7 +230,7 @@ class CAdminTools extends AdminSecBaseModel
                 }
                 $parts  = Params::getParamArray('parts');
                 $choose = Params::getParamInt('choose') === 1;
-                $error  = BackupManager::startRestore(
+                $error  = BackupService::startRestore(
                     $name,
                     !$choose || in_array('database', $parts, true),
                     !$choose || in_array('files', $parts, true),
@@ -243,7 +243,7 @@ class CAdminTools extends AdminSecBaseModel
                 break;
             case ('backup_dismiss'):
                 osc_csrf_check();
-                BackupManager::dismiss();
+                BackupService::dismiss();
                 $this->redirectTo(self::backupUrl());
                 break;
             case ('backup_reopen'):
@@ -251,7 +251,7 @@ class CAdminTools extends AdminSecBaseModel
                     break;
                 }
                 osc_csrf_check();
-                if (BackupManager::reopen()) {
+                if (BackupService::reopen()) {
                     osc_add_flash_ok_message(_m('The site is open again. Check the database below.'), 'admin');
                     $this->redirectTo(self::databaseUrl());
                     break;
@@ -519,8 +519,8 @@ class CAdminTools extends AdminSecBaseModel
     private function backupPage(): void
     {
         $store  = BackupStore::site();
-        $state  = BackupManager::current();
-        $busy   = BackupManager::busy();
+        $state  = BackupService::current();
+        $busy   = BackupService::busy();
         $keep   = '';
         $notice = null;
         $status = (string) ($state['status'] ?? '');
@@ -565,7 +565,7 @@ class CAdminTools extends AdminSecBaseModel
         $reauth     = (string) Session::newInstance()->_get('backupReauthError');
         Session::newInstance()->_drop('backupReauthError');
         if ($name !== '' && !$busy && !osc_web_restore_disabled()) {
-            $check = $fromBucket ? BackupManager::checkBucket($name) : BackupManager::check($name);
+            $check = $fromBucket ? BackupService::checkBucket($name) : BackupService::check($name);
             if ($check['reason'] !== '') {
                 osc_add_flash_error_message(osc_esc_html($check['reason']), 'admin');
             } else {
@@ -588,7 +588,7 @@ class CAdminTools extends AdminSecBaseModel
         $this->_exportVariableToView('backup_reauth_error', $confirm !== null ? $reauth : '');
         $me = $confirm !== null ? Admin::newInstance()->findByPrimaryKey(osc_logged_admin_id()) : null;
         $this->_exportVariableToView('backup_reauth_2fa', is_array($me) && \mindstellar\security\AdminTwoFactor::enabled($me));
-        $this->_exportVariableToView('backup_probe', $list !== array() ? BackupManager::probe() : null);
+        $this->_exportVariableToView('backup_probe', $list !== array() ? BackupService::probe() : null);
         $this->doView('tools/backup.php');
     }
 
@@ -652,10 +652,10 @@ class CAdminTools extends AdminSecBaseModel
             'backup-zip_file' => array('files', 'download'),
         );
         list($what, $where) = $aliases[$this->action] ?? array(
-            (string) Params::getParamEnum('what', BackupManager::WHAT, ''),
-            (string) Params::getParamEnum('where', BackupManager::WHERE, ''),
+            (string) Params::getParamEnum('what', BackupService::WHAT, ''),
+            (string) Params::getParamEnum('where', BackupService::WHERE, ''),
         );
-        $error = BackupManager::startBackup($what, $where);
+        $error = BackupService::startBackup($what, $where);
         if ($error !== '') {
             osc_add_flash_error_message(osc_esc_html($error), 'admin');
         }
@@ -773,7 +773,7 @@ class CAdminTools extends AdminSecBaseModel
             return;
         }
         @chmod($store->dir() . $name, 0600);
-        $check = BackupManager::check($name);
+        $check = BackupService::check($name);
         if ($check['reason'] !== '') {
             @unlink($store->dir() . $name);
             osc_add_flash_error_message(osc_esc_html($check['reason']), 'admin');
@@ -1009,6 +1009,15 @@ class CAdminTools extends AdminSecBaseModel
         $cacheOn  = $cacheDriver === 'default' || self::cacheSupported($cacheDriver);
         $prefs   = Preference::newInstance()->listAll();
         $last    = json_decode((string) osc_get_preference('backup_last'), true);
+        $htaccess     = osc_base_path() . '.htaccess';
+        $htaccessAuth = osc_rewrite_enabled() && !osc_server_is_nginx() && is_file($htaccess)
+            ? \mindstellar\routing\ServerRules::passesAuthorization($htaccess)
+            : null;
+        try {
+            $reservedSlugs = \mindstellar\routing\ReservedSlugs::conflicts();
+        } catch (Throwable $e) {
+            $reservedSlugs = array();
+        }
 
         $env = array(
             'admin_url'        => osc_admin_base_url(true),
@@ -1043,8 +1052,8 @@ class CAdminTools extends AdminSecBaseModel
             'opcache'          => function_exists('opcache_get_status') && ini_get('opcache.enable'),
             'allow_url_fopen'  => (bool) ini_get('allow_url_fopen'),
             'uploads_writable' => @is_writable($uploads),
-            'php_user'         => self::userName(function_exists('posix_geteuid') ? posix_geteuid() : null),
-            'file_owner'       => self::userName(@fileowner(ABS_PATH . 'index.php') ?: null),
+            'php_user'         => \mindstellar\admin\SystemChecks::userName(function_exists('posix_geteuid') ? posix_geteuid() : null),
+            'file_owner'       => \mindstellar\admin\SystemChecks::userName(@fileowner(ABS_PATH . 'index.php') ?: null),
             'self_update_off'  => osc_self_update_disabled(),
             'read_only'        => array_keys(array_filter(array(
                 'core'      => ABS_PATH . 'oc-includes',
@@ -1057,6 +1066,8 @@ class CAdminTools extends AdminSecBaseModel
             'config_writable'  => @is_writable(ABS_PATH . 'config.php'),
             'debug'            => defined('OSC_DEBUG') && OSC_DEBUG,
             'maintenance'      => $maintenance,
+            'htaccess_auth'    => $htaccessAuth,
+            'reserved_slugs'   => $reservedSlugs,
             'cache_driver'     => $cacheDriver,
             'cache_supported'  => $cacheOn,
             'cache_working'    => $cacheDriver !== 'default' && $cacheOn ? self::cacheAnswers() : null,
@@ -1090,7 +1101,7 @@ class CAdminTools extends AdminSecBaseModel
             // This request came through the same proxy every visitor does.
             'proxy'            => osc_proxy_ip_mismatch(),
             'backup_last'      => is_array($last) ? $last : null,
-            'backup_probe'     => BackupManager::probe(),
+            'backup_probe'     => BackupService::probe(),
             'storage'          => array(
                 'active'     => (string) osc_get_preference('storage_active'),
                 'bucket'     => (string) osc_get_preference('storage_s3_bucket'),
@@ -1117,16 +1128,6 @@ class CAdminTools extends AdminSecBaseModel
      *
      * @return bool
      */
-    private static function userName(?int $uid): string
-    {
-        if ($uid === null) {
-            return '';
-        }
-        $info = function_exists('posix_getpwuid') ? @posix_getpwuid($uid) : false;
-
-        return is_array($info) ? (string) $info['name'] : '#' . $uid;
-    }
-
     private static function cacheSupported(string $driver): bool
     {
         $class = 'Object_Cache_' . $driver;

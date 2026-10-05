@@ -183,7 +183,7 @@ class CWebResource extends BaseModel
                 return null;
             }
 
-            $row = Resource::newInstance()->findByPrimaryKey($id);
+            $row = (new Resource())->findByPrimaryKey($id);
             if (!is_array($row) || empty($row['pk_i_id'])) {
                 return null;
             }

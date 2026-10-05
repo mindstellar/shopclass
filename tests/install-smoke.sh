@@ -292,9 +292,41 @@ grep -qi "page=login" "$WORK/dash.html" && grep -qi "user_login\|loginform" "$WO
 ok "admin responds to the signed-in session"
 
 # ---------------------------------------------------------------------------
+# The REST API, through the query-string form that works without rewrite rules.
+echo "==> checking the REST API"
+API="${BASE}/index.php?page=api&path=v1"
+
+[ "$(code "${API}/openapi.json" "$WORK/openapi.json")" = "403" ] \
+  || fail "the API answers before an admin switches it on"
+ok "API is off on a new site"
+
+H="$DB_HOST" P="$DB_PORT" U="$DB_USER" W="$DB_PASS" \
+  Q="UPDATE \`$DB_NAME\`.oc_t_preference SET s_value = '1' WHERE s_section = 'api' AND s_name = 'api_enabled'" \
+  db_exec || fail "could not switch the API on"
+
+[ "$(code "${API}/openapi.json" "$WORK/openapi.json")" = "200" ] \
+  || fail "the API description does not return 200"
+grep -q '"openapi":"3.1' "$WORK/openapi.json" || fail "the API description is not OpenAPI 3.1"
+ok "API description serves"
+
+[ "$(curl -s -o "$WORK/api-anon.json" -w '%{http_code}' "${API}/")" = "401" ] \
+  || fail "the API answers a call with no key"
+grep -q '"code":"unauthorized"' "$WORK/api-anon.json" || fail "a call with no key gets no problem body"
+ok "API refuses a call with no key"
+
+KEY_OUT="$(php "$ROOT/oc-cli.php" api:key:create --admin="$ADMIN_USER" --name=smoke --kind=public 2>&1)" \
+  || fail "api:key:create failed: $KEY_OUT"
+API_KEY="$(printf '%s\n' "$KEY_OUT" | grep -oE '^scp_[A-Za-z0-9]+\.[A-Za-z0-9]+' | head -1)"
+[ -n "$API_KEY" ] || fail "api:key:create printed no key"
+[ "$(curl -s -o "$WORK/api-listings.json" -w '%{http_code}' -H "Authorization: Bearer ${API_KEY}" "${API}/listings&limit=1")" = "200" ] \
+  || fail "the API does not answer a call with a public key"
+grep -q '"data":\[' "$WORK/api-listings.json" || fail "the listings answer has no data member"
+ok "API answers a call with a public key"
+
+# ---------------------------------------------------------------------------
 # A PHP warning or notice on any page above would have been rendered into the
 # body. None of these pages should produce one.
-for page in "$WORK/home.html" "$WORK/login.html" "$WORK/dash.html"; do
+for page in "$WORK/home.html" "$WORK/login.html" "$WORK/dash.html" "$WORK/api-listings.json"; do
   if grep -qiE '(Fatal error|Parse error|Warning:|Notice:|Deprecated:)' "$page"; then
     grep -oiE '(Fatal error|Parse error|Warning:|Notice:|Deprecated:)[^<]{0,120}' "$page" | head -3 >&2
     fail "PHP diagnostics rendered into $(basename "$page")"

@@ -1302,17 +1302,7 @@ if (!function_exists('osc_server_rewrite_rules')) {
                    . '}';
         }
 
-        return "<IfModule mod_rewrite.c>\n"
-               . "RewriteEngine On\n"
-               . "RewriteBase {$base}\n"
-               . "RewriteRule ^index\\.php$ - [L]\n"
-               . "RewriteCond %{REQUEST_FILENAME} !-f\n"
-               . "RewriteCond %{REQUEST_FILENAME} !-d\n"
-               . "RewriteRule . {$base}index.php [L]\n"
-               . "</IfModule>\n"
-               . "<IfModule mod_mime.c>\n"
-               . "AddType text/xsl .xsl\n"
-               . '</IfModule>';
+        return \mindstellar\routing\ServerRules::apache($base);
     }
 }
 

@@ -1095,8 +1095,8 @@ osc_add_hook('cron_daily', array(\mindstellar\upgrade\AutoSecurityUpdate::class,
  */
 function osc_expire_premium_items()
 {
-    \mindstellar\billing\Entitlements::purge();
-    \mindstellar\billing\ItemUpgrades::purge();
+    \mindstellar\billing\EntitlementStore::purge();
+    \mindstellar\billing\ItemUpgradeStore::purge();
 
     return \mindstellar\billing\Premium::expire();
 }

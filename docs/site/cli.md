@@ -49,6 +49,7 @@ full setup):
 | Command | What it does |
 |---|---|
 | `install --unattended` | Install with no browser: settings come from environment variables or flags. |
+| `core:update [--reinstall]` | Update ShopClass to the newest release on the site's channel, then run the migrations. Run it as the owner of the files when the admin updater cannot write them. `--reinstall` copies the current release again. |
 | `db:upgrade` | Run pending migrations. Also in the admin under **Tools → System info → Database**. |
 | `db:doctor [--strict]` | Report where this database differs from what ShopClass expects, then whether the site is ready for strict SQL mode. `--strict` prints only the readiness part. Changes nothing. Exits `1` when it finds anything. |
 | `db:repair [--dry-run]` | Add missing tables, columns, indexes and foreign keys, and correct column types and defaults. Exits `1` when a statement fails. `--dry-run` prints the `db:doctor` report and changes nothing. Also in the admin under **Tools → System info → Database**. |
@@ -92,6 +93,25 @@ without opening the admin panel:
 | `market:info <slug> [--type=…]` | Show catalog details for a package. |
 | `market:install <slug> [--type=…]` | Install a package from the catalog. |
 | `market:update <slug>\|--all [--type=…]` | Update installed packages. |
+
+## API keys
+
+Make, list and revoke [REST API](/docs/configure/api/) keys. No password is asked: shell
+access is the permission.
+
+| Command | What it does |
+|---|---|
+| `api:key:create --admin=<username>\|id:<n> --name=<label> [--kind=admin\|public] [--scopes=a,b] [--expires=YYYY-MM-DD\|90d]` | Make a key for that admin and print it once. `--kind` defaults to `admin`. A public key always gets `listings:read`. With no `--scopes`, an admin key is refused: name at least one. |
+| `api:key:list` | List keys: id, type, status, name, owner, last used, expiry and scopes. Never the secret. |
+| `api:key:revoke <id>` | Revoke a key at once. |
+
+```bash
+php oc-cli.php api:key:create --admin=jane --name="Mobile app" --kind=public
+php oc-cli.php api:key:create --admin=jane --name="Stock sync" --scopes=listings:read,admin:listings --expires=90d
+php oc-cli.php api:key:revoke 4
+```
+
+`--admin` takes a username. Write `id:7` to pick an admin by number.
 
 ## Location data
 

@@ -13,36 +13,25 @@
  */
 
 /**
- * Model database for the t_plugin_category table (per-plugin category selections).
+ * The categories each plugin is limited to: one list of category ids per plugin, in the
+ * `plugin_categories` group of t_key_value. No list means the admin chose none.
  *
  * @package    Shopclass
  * @subpackage Model
  */
-class PluginCategory extends DAO
+class PluginCategory
 {
-    /**
-     * It references to self object: PluginCategory.
-     * It is used as a singleton
-     *
-     * @var PluginCategory
-     */
+    public const KV_GROUP = 'plugin_categories';
+
+    /** @var PluginCategory|null */
     private static $instance;
 
-    /**
-     * Set data related to t_plugin_category table
-     */
-    public function __construct()
-    {
-        parent::__construct();
-        $this->setTableName('t_plugin_category');
-        /* $this->setPrimaryKey('pk_i_id'); */
-        $this->setFields(array('s_plugin_name', 'fk_i_category_id'));
-    }
+    /** @var array<string,int[]> lists read this request, by plugin */
+    private static array $lists = array();
 
     /**
-     * Return the shared PluginCategory model instance, creating it on first use.
-     *
      * @return \PluginCategory
+     * @deprecated 7.0.0 Use new PluginCategory().
      */
     public static function newInstance()
     {
@@ -54,73 +43,203 @@ class PluginCategory extends DAO
     }
 
     /**
-     * Return all information given a category id
+     * The plugins limited to a category, as the old table rows.
      *
      * @param int $categoryId
      *
-     * @return array<int,array<string,string|null>> Empty when nothing matches or the query failed
+     * @return array<int,array<string,string>> s_plugin_name and fk_i_category_id per plugin
      */
     public function findByCategoryId($categoryId)
     {
-        try {
-            $rows = osc_db_table($this->getTableName())
-                ->select(...$this->getFields())
-                ->where('fk_i_category_id', $categoryId)
-                ->get();
-        } catch (\mindstellar\database\DbException $e) {
-            return array();
+        $rows = array();
+        foreach ($this->all() as $plugin => $ids) {
+            if (in_array((int) $categoryId, $ids, true)) {
+                $rows[] = array('s_plugin_name' => $plugin, 'fk_i_category_id' => (string) (int) $categoryId);
+            }
         }
 
-        return osc_db_stringify_rows($rows);
+        return $rows;
     }
 
     /**
-     * Return list of categories asociated with a plugin
+     * The categories a plugin is limited to.
      *
      * @param string $plugin
      *
-     * @return array<int,string> Category ids
+     * @return array<int,string> category ids
      */
     public function listSelected($plugin)
     {
-        try {
-            $rows = osc_db_table($this->getTableName())
-                ->select(...$this->getFields())
-                ->where('s_plugin_name', $plugin)
-                ->get();
-        } catch (\mindstellar\database\DbException $e) {
-            return array();
-        }
-
-        $list = array();
-        foreach (osc_db_stringify_rows($rows) as $sel) {
-            $list[] = $sel['fk_i_category_id'];
-        }
-
-        return $list;
+        return array_map('strval', $this->ids((string) $plugin));
     }
 
     /**
-     * Check if a category is asociated with a plugin
+     * Whether a plugin is on for a category.
      *
      * @param string $pluginName
      * @param int    $categoryId
      *
-     * @return bool False when the pairing does not exist or the query failed
+     * @return bool
      */
     public function isThisCategory($pluginName, $categoryId)
     {
-        try {
-            $count = osc_db_table($this->getTableName())
-                ->where('fk_i_category_id', $categoryId)
-                ->where('s_plugin_name', $pluginName)
-                ->count();
-        } catch (\mindstellar\database\DbException $e) {
+        return in_array((int) $categoryId, $this->ids((string) $pluginName), true);
+    }
+
+    /**
+     * Add categories to a plugin's list.
+     *
+     * @param string $plugin
+     * @param int[]  $categoryIds
+     */
+    public function add($plugin, array $categoryIds): void
+    {
+        $plugin = (string) $plugin;
+        $this->save($plugin, array_merge($this->ids($plugin), array_map('intval', $categoryIds)));
+    }
+
+    /**
+     * Forget a plugin's list, as when it is uninstalled or its categories are reset.
+     *
+     * @param string $plugin
+     */
+    public function clear($plugin): void
+    {
+        unset(self::$lists[(string) $plugin]);
+        osc_kv_delete(self::KV_GROUP, (string) $plugin);
+    }
+
+    /**
+     * Take a deleted category out of every plugin's list.
+     *
+     * @param int $categoryId
+     */
+    public function removeCategory($categoryId): void
+    {
+        foreach ($this->all() as $plugin => $ids) {
+            if (in_array((int) $categoryId, $ids, true)) {
+                $this->save($plugin, array_diff($ids, array((int) $categoryId)));
+            }
+        }
+    }
+
+    /**
+     * The old table insert: one plugin and category pair.
+     *
+     * @param array<string,mixed> $values s_plugin_name and fk_i_category_id
+     *
+     * @return bool
+     * @deprecated 7.0.0 Use add().
+     */
+    public function insert($values)
+    {
+        if (!isset($values['s_plugin_name'], $values['fk_i_category_id'])) {
             return false;
         }
+        $this->add((string) $values['s_plugin_name'], array((int) $values['fk_i_category_id']));
 
-        return $count > 0;
+        return true;
+    }
+
+    /**
+     * The old table delete, by plugin or by category.
+     *
+     * @param array<string,mixed> $where s_plugin_name or fk_i_category_id
+     *
+     * @return bool
+     * @deprecated 7.0.0 Use clear() or removeCategory().
+     */
+    public function delete($where)
+    {
+        if (isset($where['s_plugin_name'], $where['fk_i_category_id'])) {
+            $plugin = (string) $where['s_plugin_name'];
+            $this->save($plugin, array_diff($this->ids($plugin), array((int) $where['fk_i_category_id'])));
+
+            return true;
+        }
+        if (isset($where['s_plugin_name'])) {
+            $this->clear((string) $where['s_plugin_name']);
+
+            return true;
+        }
+        if (isset($where['fk_i_category_id'])) {
+            $this->removeCategory((int) $where['fk_i_category_id']);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Every plugin and category pair, as the old table rows.
+     *
+     * @return array<int,array<string,string>>
+     * @deprecated 7.0.0 Use listSelected() or findByCategoryId().
+     */
+    public function listAll()
+    {
+        $rows = array();
+        foreach ($this->all() as $plugin => $ids) {
+            foreach ($ids as $id) {
+                $rows[] = array('s_plugin_name' => (string) $plugin, 'fk_i_category_id' => (string) $id);
+            }
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @return int[]
+     */
+    private function ids(string $plugin): array
+    {
+        if ($plugin === '') {
+            return array();
+        }
+        if (!isset(self::$lists[$plugin])) {
+            self::$lists[$plugin] = self::decode(osc_kv_get(self::KV_GROUP, $plugin, array()));
+        }
+
+        return self::$lists[$plugin];
+    }
+
+    /**
+     * @return array<string,int[]> every plugin's list
+     */
+    private function all(): array
+    {
+        $all = array();
+        foreach ((new \mindstellar\model\KeyValue())->group(self::KV_GROUP) as $key => $row) {
+            $all[$key] = self::decode(json_decode((string) ($row['value'] ?? ''), true));
+        }
+
+        return $all;
+    }
+
+    /**
+     * @param mixed $stored a decoded list
+     *
+     * @return int[]
+     */
+    private static function decode($stored): array
+    {
+        return is_array($stored) ? array_map('intval', $stored) : array();
+    }
+
+    /**
+     * @param int[] $ids
+     */
+    private function save(string $plugin, array $ids): void
+    {
+        $ids = array_values(array_unique(array_filter($ids, static fn (int $id): bool => $id > 0)));
+        sort($ids);
+        self::$lists[$plugin] = $ids;
+        if ($ids === array()) {
+            osc_kv_delete(self::KV_GROUP, $plugin);
+
+            return;
+        }
+        osc_kv_set(self::KV_GROUP, $plugin, $ids);
     }
 }
-
-/* file end: ./oc-includes/osclass/model/PluginCategory.php */

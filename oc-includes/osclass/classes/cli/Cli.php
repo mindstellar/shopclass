@@ -62,6 +62,9 @@ class Cli
         'user:create-admin'   => ['cmdUserCreateAdmin', 'Create an admin (--user= --email= [--password=] [--name=])'],
         'user:reset-password' => ['cmdUserResetPassword', 'Reset an admin password (--user=|--email= [--password=])'],
         'user:2fa-off'        => ['cmdUserTwoFactorOff', 'Turn off an admin\'s two-step sign-in (--user=)'],
+        'api:key:create'      => ['cmdApiKeyCreate', 'Make an API key and print it once (--admin=<username>|id:<n> --name= [--kind=admin|public] [--scopes=] [--expires=YYYY-MM-DD|90d])'],
+        'api:key:list'        => ['cmdApiKeyList', 'List API keys'],
+        'api:key:revoke'      => ['cmdApiKeyRevoke', 'Revoke an API key (<id>)'],
         'plugin:list'         => ['cmdPluginList', 'List plugins and their status'],
         'plugin:activate'     => ['cmdPluginActivate', 'Enable an installed plugin (--plugin=<folder>)'],
         'plugin:deactivate'   => ['cmdPluginDeactivate', 'Disable an active plugin (--plugin=<folder>)'],
@@ -936,6 +939,36 @@ class Cli
     }
 
     /**
+     * The api:key:* commands, run by ApiKeyCommands.
+     */
+    private function apiKeys(): ApiKeyCommands
+    {
+        return new ApiKeyCommands(
+            function (string $text): void {
+                $this->out($text);
+            },
+            function (string $text): void {
+                $this->err($text);
+            }
+        );
+    }
+
+    private function cmdApiKeyCreate(array $args): int
+    {
+        return $this->apiKeys()->create($args);
+    }
+
+    private function cmdApiKeyList(array $args): int
+    {
+        return $this->apiKeys()->list($args);
+    }
+
+    private function cmdApiKeyRevoke(array $args): int
+    {
+        return $this->apiKeys()->revoke($args);
+    }
+
+    /**
      * Pre-generate every sitemap document into the cache.
      *
      * @param array<string, mixed> $args
@@ -1039,17 +1072,13 @@ class Cli
 
         [$password, $generated] = $this->resolvePassword($args);
 
-        $updated = Admin::newInstance()->update(
-            ['s_password' => osc_hash_password($password)],
-            ['pk_i_id' => $admin['pk_i_id']]
-        );
-        if ($updated === false) {
+        if (!\mindstellar\auth\AdminPassword::set((int) $admin['pk_i_id'], $password)) {
             $this->err("Could not update the password.\n");
 
             return 1;
         }
 
-        $this->out(sprintf("Password reset for admin '%s'.\n", $admin['s_username']));
+        $this->out(sprintf("Password reset for admin '%s'; every sign-in of theirs has ended.\n", $admin['s_username']));
         if ($generated) {
             $this->out(sprintf("Generated password: %s\n", $password));
         }
@@ -1751,6 +1780,25 @@ class Cli
         $driver === 'default'
             ? $check('warn', 'Object cache', 'per-request only (no persistent backend)')
             : $check('ok', 'Object cache', $driver);
+
+        // Apache hides the Authorization header from PHP unless .htaccess passes it on.
+        $htaccess = osc_base_path() . '.htaccess';
+        if (osc_rewrite_enabled() && is_file($htaccess)) {
+            \mindstellar\routing\ServerRules::passesAuthorization($htaccess)
+                ? $check('ok', 'API Authorization header', '.htaccess passes it to PHP')
+                : $check('warn', 'API Authorization header', '.htaccess does not pass it to PHP; add after RewriteEngine On: ' . \mindstellar\routing\ServerRules::AUTHORIZATION);
+        }
+
+        // /api/ is the REST API's, so a page or category slugged api cannot be reached.
+        try {
+            $reserved = \mindstellar\routing\ReservedSlugs::conflicts();
+            $taken    = array_merge($reserved['pages'], $reserved['categories']);
+            $taken === []
+                ? $check('ok', 'Reserved slugs', 'no page or category uses /api/')
+                : $check('warn', 'Reserved slugs', 'rename these, /api/ belongs to the API: ' . implode(', ', $taken));
+        } catch (\Throwable $e) {
+            $check('warn', 'Reserved slugs', 'could not check: ' . $e->getMessage());
+        }
 
         $this->out(sprintf("\nShopclass %s — %s\n", BuildInfo::label((string) osc_version()), strtoupper($worst) === 'OK' ? 'healthy' : 'issues found'));
 

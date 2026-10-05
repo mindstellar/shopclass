@@ -134,6 +134,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_admin (
     s_secret VARCHAR(40) NULL,
     s_2fa TEXT NULL,
     b_moderator TINYINT(1) NOT NULL DEFAULT 0,
+    i_auth_stamp INT UNSIGNED NOT NULL DEFAULT 0,
 
         PRIMARY KEY (pk_i_id),
         UNIQUE KEY uk_admin_username (s_username),
@@ -174,6 +175,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_user (
     i_comments INT UNSIGNED NULL DEFAULT 0,
     dt_access_date DATETIME NOT NULL DEFAULT  '1000-01-01 00:00:00',
     s_access_ip VARCHAR(50) NOT NULL DEFAULT '',
+    i_auth_stamp INT UNSIGNED NOT NULL DEFAULT 0,
 
         PRIMARY KEY (pk_i_id),
         UNIQUE KEY uk_user_email (s_email),
@@ -469,15 +471,6 @@ CREATE TABLE /*TABLE_PREFIX*/t_pages_description (
         FOREIGN KEY (fk_c_locale_code) REFERENCES /*TABLE_PREFIX*/t_locale (pk_c_code) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
-CREATE TABLE /*TABLE_PREFIX*/t_plugin_category (
-    s_plugin_name VARCHAR(40) NOT NULL,
-    fk_i_category_id INT UNSIGNED NOT NULL,
-
-        PRIMARY KEY (s_plugin_name, fk_i_category_id),
-        INDEX fk_i_category_id (fk_i_category_id),
-        FOREIGN KEY (fk_i_category_id) REFERENCES /*TABLE_PREFIX*/t_category (pk_i_id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
-
 CREATE TABLE /*TABLE_PREFIX*/t_cron (
   e_type enum('INSTANT','HOURLY','DAILY','WEEKLY','CUSTOM') NOT NULL,
   d_last_exec DATETIME NOT NULL DEFAULT  '1000-01-01 00:00:00',
@@ -656,12 +649,6 @@ CREATE TABLE /*TABLE_PREFIX*/t_country_stats (
         FOREIGN KEY (fk_c_country_code) REFERENCES /*TABLE_PREFIX*/t_country (pk_c_code) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
-CREATE TABLE /*TABLE_PREFIX*/t_locations_tmp (
-    id_location varchar(10) NOT NULL,
-    e_type enum('COUNTRY','REGION','CITY') NOT NULL,
-    PRIMARY KEY (id_location, e_type)
-) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
-
 CREATE TABLE /*TABLE_PREFIX*/t_ban_rule (
   pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   s_name VARCHAR(250) NOT NULL DEFAULT '',
@@ -740,6 +727,52 @@ CREATE TABLE /*TABLE_PREFIX*/t_rate_counter (
 
         PRIMARY KEY (s_bucket, i_window),
         INDEX idx_expires (i_expires)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+-- REST API keys ('key', 'public') and refresh tokens. The secret is stored as a sha256 hash
+-- and looked up by s_token_id, the public half of the token.
+CREATE TABLE /*TABLE_PREFIX*/t_api_credential (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    e_kind ENUM('key', 'public', 'refresh') NOT NULL,
+    s_token_id CHAR(16) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    s_secret_hash CHAR(64) NOT NULL,
+    s_name VARCHAR(100) NOT NULL DEFAULT '',
+    s_scopes VARCHAR(500) NOT NULL,
+    fk_i_user_id INT UNSIGNED NULL,
+    fk_i_admin_id INT UNSIGNED NULL,
+    s_family CHAR(16) NULL,
+    i_rate_limit INT UNSIGNED NULL,
+    b_enabled TINYINT(1) NOT NULL DEFAULT 1,
+    dt_expires DATETIME NULL,
+    dt_revoked DATETIME NULL,
+    dt_last_used DATETIME NULL,
+    s_last_ip VARCHAR(45) NOT NULL DEFAULT '',
+    dt_created DATETIME NOT NULL,
+    i_auth_stamp INT UNSIGNED NULL,
+
+        PRIMARY KEY (pk_i_id),
+        UNIQUE KEY uk_token_id (s_token_id),
+        INDEX idx_user (fk_i_user_id),
+        INDEX idx_admin (fk_i_admin_id),
+        INDEX idx_family (s_family),
+        FOREIGN KEY (fk_i_user_id) REFERENCES /*TABLE_PREFIX*/t_user (pk_i_id) ON DELETE CASCADE,
+        FOREIGN KEY (fk_i_admin_id) REFERENCES /*TABLE_PREFIX*/t_admin (pk_i_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+-- Shared key-value store for core and plugins: values by group and key, with an optional
+-- expiry (pruned daily) and state. Keys compare byte for byte. No user column: whoever
+-- stores personal data here handles its export and erasure.
+CREATE TABLE /*TABLE_PREFIX*/t_key_value (
+    s_group VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    s_key VARCHAR(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+    s_value MEDIUMTEXT NULL,
+    s_state VARCHAR(16) CHARACTER SET ascii COLLATE ascii_bin NULL,
+    dt_created DATETIME NOT NULL,
+    dt_updated DATETIME NULL,
+    dt_expires DATETIME NULL,
+
+        PRIMARY KEY (s_group, s_key),
+        INDEX idx_expires (dt_expires)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_item_upload_tmp (

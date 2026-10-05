@@ -2,6 +2,90 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 7.0.0
+
+This release adds a REST API. Apps, scripts and other sites can read your listings, let users post and comment, run the site with an admin key, and get a signed webhook when something changes.
+
+Site owners make keys and webhook endpoints in **Settings → API**, and users manage their own sign-ins on a new **API access** page. The API is off by default; switch it on there.
+
+Plugin authors should read the Breaking section before upgrading.
+
+### New
+
+- A REST API at `/api/v1` reads listings, categories, custom fields, locations, currencies and public profiles, with API keys, paging, ETags, CORS and an OpenAPI document. See [REST API](https://shopclass.org/docs/developers/api/).
+- Users can sign in through the API with a password and a refresh token, then post, edit and delete listings, upload photos, comment and save searches. `Idempotency-Key` makes a retried write safe.
+- Admin keys run the site through `/api/v1/admin/`: listings, comments, users and their sign-ins, categories, currencies, custom fields, locations, a list of settings, API keys and the job queue. Moderators' keys are limited to listings and comments.
+- Webhooks send a signed POST (Standard Webhooks) for listing, comment and user events, with retries, auto-pause, an e-mail on pause, secret rotation and a **Send test** button. See [Webhooks](https://shopclass.org/docs/developers/api/webhooks/).
+- **Settings → API** makes, rotates and revokes keys and manages webhook endpoints. `oc-cli.php api:key:create`, `api:key:list` and `api:key:revoke` do the keys from a shell.
+- Users get an **API access** page to see the apps signed in to their account and, when you allow it, to make personal keys.
+- **Sign out of all devices** for users (account page and `POST /api/v1/account/sign-out-everywhere`), for admins (their profile; also revokes their API keys), and for any user from the admin Users screen and `POST /api/v1/admin/users/{id}/sign-out-everywhere`.
+- Theme JavaScript can call the API as the signed-in user from the site's own pages with `osc_api_session_meta()`. See [Authentication](https://shopclass.org/docs/developers/api/authentication/#same-site-session-theme-javascript).
+- Plugins can add API routes, scopes, listing fields and webhook events (`api_routes`, `api_scopes`, `api_webhook_events`). `osc_webhook_emit()` sends a plugin's event. See [Plugin endpoints](https://shopclass.org/docs/developers/api/plugin-endpoints/).
+- A small shared key-value store, `t_key_value`, with `osc_kv_get()`, `osc_kv_set()`, `osc_kv_delete()`, `osc_kv_claim()` and `osc_kv_delete_group()`. See [Key-value store](https://shopclass.org/docs/developers/kv-store/).
+
+### Breaking
+
+- `PluginCategory` no longer extends `DAO`, and the `t_plugin_category` table is removed: each plugin's categories are a list in the key-value store. `osc_is_this_category()`, `listSelected()`, `findByCategoryId()`, `isThisCategory()` and the old `insert()`, `delete()` and `listAll()` calls still work.
+- Listing Import 0.3 needs Shopclass 7.0. Its old plugin keys stop working: make new keys in **Settings → API**.
+- Listing Import's API lives under `/api/v1/ext/listing-import/`. The plugin redirects its old paths until its next minor release, and a record it cannot import is a `422 validation_failed`.
+- The `/api/` path is reserved; a page or category with the slug `api` must be renamed. System info and `doctor` list any.
+
+### Security
+
+- Webhooks go only to ports 80 and 443, and only to public addresses unless you allow a private network. The site connects to the address it checked.
+- A webhook for a listing or comment that is not live carries only its id and url.
+- API keys and refresh tokens are stored hashed, and a cookie alone never signs in to the API.
+- Signing out also deletes the session cookie, on the site and in the admin.
+- A new password (changed, reset or set by an admin) signs the user out of every device, API sign-ins and keys included.
+- API sign-ins and the web sign-in form share one limit on wrong passwords.
+
+### Performance
+
+- The market catalogue cache moved out of the site preferences, which every page loads (about 140 KB on a site that has browsed the market).
+
+### Changed
+
+- Listing counts per country, region and city are recounted once a week as background jobs, instead of a slow hourly pass; the `t_locations_tmp` table is removed.
+- The search page is split into a URI resolver and a search runner the API reuses. Its hooks and filters are unchanged.
+- Unblocking one comment e-mails its author when it goes live.
+- Enabling a category refreshes the caches that list it.
+- A subcategory under a disabled parent can be disabled.
+- Mail for a listing posted or edited through the API is sent after the change is saved.
+- Category and custom field labels are escaped in core forms.
+- Comment hooks receive the comment id as an int.
+- Upgrading refreshes an `.htaccess` Shopclass wrote so Apache passes the `Authorization` header to the API; a hand-edited one is left alone.
+- Web sign-in checks bans against the account's e-mail.
+- A failed sign-in no longer uses up the saved return address.
+- Changing a password (user or admin) signs out every device.
+- New actions `user_signout_all_after` and `admin_signout_all_after`.
+- Posting, editing and deleting a listing on the site runs in one transaction, and its e-mails go out once it is saved.
+- `ItemActions::add()` refuses a banned e-mail or address, as the post form does.
+- The API answers an expired listing with status `expired` instead of 404, as its page shows it.
+- Adding a photo through the API fires `edited_item`.
+- Every photo delete is logged the same way, as `item` / `deleteResource`.
+- Listing writes, photos and the live rule move to `mindstellar\listing`, and the sign-in classes to `mindstellar\auth`. `ItemActions` calls them; `ItemAccess` and `UserReauth` are deprecated. See [Architecture](https://shopclass.org/docs/developers/architecture/).
+- Accounts, comments, moderation, categories, currencies and custom fields move to their own `mindstellar\` modules, and the site and the API call the same ones. See [Architecture](https://shopclass.org/docs/developers/architecture/).
+- A user may post 20 comments an hour (a guest, 20 per address; an IPv6 /64 counts as one address), on the site and through the API together.
+- A signed-in user comments under their account's name and e-mail, and a listing that is not live takes comments only from its owner.
+- Asking to change your e-mail to an address another account holds no longer says it is taken; no link is sent.
+- A user may ask for 5 e-mail changes an hour on the site, as through the API.
+- Deleting your account asks for your password under the same wrong-password limit as other password checks.
+- `before_user_delete` fires for an admin's delete too, and every account delete is logged.
+- Admin listing status changes (activate, block, spam, premium) are logged, as through the API.
+- Currency codes must be three letters; a currency change through the API clears the page cache.
+- Deleting your own comment through the API fires `delete_comment` and, as on the site, works only on an approved comment.
+- An admin comment edit needs a valid author e-mail and a body, on the screen and through the API.
+- Sign-up on the site, through the API and on the Users screen runs in one transaction, so a failed sign-up leaves no account behind.
+- API paging cursors work for a day.
+- `mindstellar\Csrf` is now `mindstellar\security\Csrf`; the old name still works.
+- `BackupManager` is now `BackupService`, and `BackupFailure` is now `BackupException`.
+
+### Fixed
+
+- An unknown place id in a listing no longer causes a server error.
+- The ban rules are read once per request, not once per address checked.
+- The search result cache key includes the locale, so a language filter no longer shows another language's cached results.
+
 ## Shopclass 6.4.4.beta1
 
 This beta helps sites where PHP cannot write the site's files: the updater now stops before it

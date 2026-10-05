@@ -242,12 +242,17 @@ class CAdminPlugins extends AdminSecBaseModel
                 break;
             case 'configure_post':
                 osc_csrf_check();
-                $plugin_short_name = Params::getParam('plugin_short_name');
+                $plugin_short_name = Params::getParamString('plugin_short_name');
                 $categories        = Params::getParam('categories');
                 if ($plugin_short_name != '') {
-                    Plugins::cleanCategoryFromPlugin($plugin_short_name);
-                    if (isset($categories)) {
-                        Plugins::addToCategoryPlugin($categories, $plugin_short_name);
+                    try {
+                        Plugins::cleanCategoryFromPlugin($plugin_short_name);
+                        if (isset($categories)) {
+                            Plugins::addToCategoryPlugin($categories, $plugin_short_name);
+                        }
+                    } catch (\InvalidArgumentException $e) {
+                        osc_add_flash_error_message(_m('No plugin selected'), 'admin');
+                        $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
                     }
                     osc_run_hook('plugin_categories_' . Params::getParam('plugin'), $categories);
                     osc_add_flash_ok_message(_m('Configuration was saved'), 'admin');

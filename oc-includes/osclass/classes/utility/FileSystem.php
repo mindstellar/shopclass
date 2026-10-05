@@ -211,6 +211,25 @@ class FileSystem
     }
 
     /**
+     * The entries under $originDir that sync() would copy: everything but the names in $filter.
+     *
+     * @param array<int,string> $filter
+     * @param int               $mode   a RecursiveIteratorIterator mode
+     */
+    public function filteredIterator(string $originDir, array $filter = [], int $mode = RecursiveIteratorIterator::SELF_FIRST, bool $followLinks = false): RecursiveIteratorIterator
+    {
+        $flags = $followLinks ? FilesystemIterator::SKIP_DOTS | FilesystemIterator::FOLLOW_SYMLINKS : FilesystemIterator::SKIP_DOTS;
+
+        return new RecursiveIteratorIterator(
+            new RecursiveCallbackFilterIterator(
+                new RecursiveDirectoryIterator($originDir, $flags),
+                static fn ($file) => !in_array($file->getBasename(), $filter, false)
+            ),
+            $mode
+        );
+    }
+
+    /**
      * Sync a directory to another.
      *
      * Copies files and directories from the origin directory into the target directory. By default:
@@ -269,24 +288,7 @@ class FileSystem
         $copyOnWindows = $options['copy_on_windows'] ?? false;
 
         if (null === $iterator) {
-            $flags = $copyOnWindows ? FilesystemIterator::SKIP_DOTS | FilesystemIterator::FOLLOW_SYMLINKS
-                : FilesystemIterator::SKIP_DOTS;
-            /**
-             * $iterator = new RecursiveIteratorIterator(
-             * new RecursiveDirectoryIterator($originDir, $flags),
-             * RecursiveIteratorIterator::SELF_FIRST
-             * );
-             */
-            $iterator = new RecursiveIteratorIterator(
-                new RecursiveCallbackFilterIterator(
-                    new RecursiveDirectoryIterator($originDir, $flags),
-                    static function ($filterIterator) use ($filter) {
-                        /** @var FilesystemIterator $filterIterator */
-                        return !in_array($filterIterator->getBaseName(), $filter, false);
-                    }
-                ),
-                RecursiveIteratorIterator::SELF_FIRST
-            );
+            $iterator = $this->filteredIterator($originDir, $filter, RecursiveIteratorIterator::SELF_FIRST, $copyOnWindows);
         }
 
         $this->mkdir($targetDir);

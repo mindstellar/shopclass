@@ -19,7 +19,7 @@
 namespace mindstellar\form\base;
 
 use Exception;
-use mindstellar\Csrf;
+use mindstellar\security\Csrf;
 
 /**
  * Class FormBuilder
@@ -40,7 +40,7 @@ class FormBuilder
     private $formSchema;
 
     /**
-     * @var \mindstellar\Csrf
+     * @var \mindstellar\security\Csrf
      */
     private $csrf;
 
@@ -92,7 +92,7 @@ class FormBuilder
             $this->formInputs = $formInputs;
         }
         $this->formInputs = $formInputs;
-        $this->csrf       = Csrf::newInstance();
+        $this->csrf       = Csrf::instance();
 
         $defaultSchema    = [
             'attributes'            => [
