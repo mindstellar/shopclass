@@ -2,6 +2,23 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 6.4.4.beta1
+
+This beta helps sites where PHP cannot write the site's files: the updater now stops before it
+changes anything and says which folders are blocked, and `php oc-cli.php core:update` updates from
+the shell as the file owner. It also runs on PHP 8.5 without deprecation notices.
+
+### New
+
+- `php oc-cli.php core:update` downloads and installs the latest release, then upgrades the database, as the user who runs it (#550).
+- System info shows the user PHP runs as, the files' owner and any folders PHP cannot write.
+
+### Fixed
+
+- The updater checks it can write every file before it changes anything, and names the blocked folders instead of reporting success (#550).
+- CLI commands print one line, not an HTML error page, when the database cannot be reached.
+- No deprecation notices on PHP 8.4 and 8.5 (#551).
+
 ## Shopclass 6.4.3
 
 This release fixes security issues in the admin plugins screen, listing editing, password reset
