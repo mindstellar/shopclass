@@ -52,6 +52,12 @@ if (CLI) {
     }
 }
 
+// A cookie never authenticates an API call: forget the browser's identity before anything reads it.
+$osc_api_request = Params::getParamString('page') === 'api';
+if ($osc_api_request) {
+    \mindstellar\api\identity\WebIdentity::forget();
+}
+
 if (file_exists(ABS_PATH . '.maintenance')) {
     // Default is a public 503 (same as before this option existed). Unchecking
     // lockout in Tools → Maintenance leaves the site up and shows a banner.
@@ -60,10 +66,14 @@ if (file_exists(ABS_PATH . '.maintenance')) {
     if (osc_maintenance_should_lockout_request(
         true,
         osc_maintenance_lockout_enabled(),
-        osc_is_admin_user_logged_in(),
+        !$osc_api_request && osc_is_admin_user_logged_in(),
         CLI,
         osc_maintenance_locks_everyone(ABS_PATH . '.maintenance')
     )) {
+        if ($osc_api_request) {
+            \mindstellar\api\Problem::maintenance()->send();
+        }
+
         header('HTTP/1.1 503 Service Temporarily Unavailable');
         header('Status: 503 Service Temporarily Unavailable');
         header('Retry-After: 900');
@@ -98,7 +108,7 @@ if (file_exists(ABS_PATH . '.maintenance')) {
     }
 }
 
-if (!osc_users_enabled() && osc_is_web_user_logged_in()) {
+if (!$osc_api_request && !osc_users_enabled() && osc_is_web_user_logged_in()) {
     Session::newInstance()->_drop('userId');
     Session::newInstance()->_drop('userName');
     Session::newInstance()->_drop('userEmail');
@@ -109,7 +119,7 @@ if (!osc_users_enabled() && osc_is_web_user_logged_in()) {
     Cookie::newInstance()->set();
 }
 
-if (osc_is_web_user_logged_in()) {
+if (!$osc_api_request && osc_is_web_user_logged_in()) {
     User::newInstance()->lastAccess(
         osc_logged_user_id(),
         date('Y-m-d H:i:s'),
@@ -197,6 +207,10 @@ switch (Params::getParam('page')) {
         $do = new CWebRoute();
         $do->doModel();
         break;
+    case ('api'):       // REST API (/api/v1/...)
+        $do = new CWebApi();
+        $do->doModel();
+        break;
     case ('sitemap'):   // core XML sitemap (index + child sitemaps)
         Sitemap::newInstance()->serve();
         break;
@@ -211,70 +225,6 @@ switch (Params::getParam('page')) {
 // a file, redirected, or exited never reaches here and keeps its own headers.
 osc_send_response_cache_headers();
 
-if (!defined('__FROM_CRON__') && osc_auto_cron() && !osc_maintenance_is_restoring(ABS_PATH . '.maintenance')) {
-    // Auto-cron sends a fire-and-forget self request to run scheduled tasks. Left ungated it
-    // fires on EVERY page view, so a busy site hammers itself with one internal POST per hit
-    // (each spawns an FPM worker). Throttle it to at most one dispatch per 5 minutes.
-    //
-    // Prefer the object cache as the lock: with a real backend (memcached/apcu) the window is
-    // shared across every web node and every locale (Object_Cache_Factory directly, not the
-    // locale-suffixed osc_cache_* helpers). The default driver is a per-request array that never
-    // survives between requests and so cannot throttle anything, so there fall back to the
-    // modification time of a stamp file under uploads/, no cache backend required. Either path
-    // fails open (write fails or file unwritable => cron still runs), never closed.
-    $autocron_window = 300;
-    $autocron_fire   = false;
-    $autocron_cache  = Object_Cache_Factory::newInstance();
-
-    if (!($autocron_cache instanceof Object_Cache_default)) {
-        $autocron_found = false;
-        if ($autocron_cache->get('osclass_autocron_tick', $autocron_found) === false) {
-            $autocron_cache->set('osclass_autocron_tick', 1, $autocron_window);
-            $autocron_fire = true;
-        }
-    } else {
-        // A dotfile, so a "deny hidden files" web-server rule keeps it unreadable; it carries no
-        // data anyway, only its mtime matters.
-        $autocron_stamp = osc_uploads_path() . '.autocron_tick';
-        if (!file_exists($autocron_stamp) || (time() - (int)@filemtime($autocron_stamp)) >= $autocron_window) {
-            @touch($autocron_stamp);
-            $autocron_fire = true;
-        }
-    }
-
-    if ($autocron_fire) {
-        if (function_exists('fastcgi_finish_request')) {
-            // Under FPM the work runs here, after the response has gone, instead of asking
-            // the site to call itself over HTTP. That self request is only a way to detach
-            // -- the "is it time" decision is the throttle above -- and it cannot survive an
-            // origin behind a proxy, which resolves its own public host to the edge and
-            // never hairpins back: no page=cron ever arrives, silently, forever. Running it
-            // here needs no network, occupies one worker instead of two, and puts failures
-            // in the site's own error log where doctor's cron-freshness check can see them.
-            //
-            // Registered as a shutdown function, not called inline: the CSRF guard holds the
-            // page in an output buffer and injects tokens from its own shutdown function.
-            // Finishing the request before that runs would send the page without them.
-            register_shutdown_function(static function () use ($autocron_window) {
-                fastcgi_finish_request();
-                // The visitor already has their page, so nothing is waiting on this.
-                ignore_user_abort(true);
-                // Bounded, never 0: this occupies an FPM worker, and one that hangs is one
-                // the pool cannot serve from. The throttle window is the natural ceiling --
-                // a run that outlives it would overlap the next dispatch.
-                @set_time_limit($autocron_window);
-                if (!defined('__FROM_CRON__')) {
-                    define('__FROM_CRON__', true);
-                }
-                require_once LIB_PATH . 'osclass/cron.php';
-            });
-        } else {
-            // No way to detach on this SAPI, so the self request stays -- unchanged, including
-            // its inability to reach a proxied origin. Shared hosting is where it is still the
-            // only option, and it is also where nobody can add a real crontab.
-            \mindstellar\utility\Utils::doRequest(osc_base_url(), array('page' => 'cron'));
-        }
-    }
-}
+osc_auto_cron_dispatch();
 
 /* file end: ./index.php */

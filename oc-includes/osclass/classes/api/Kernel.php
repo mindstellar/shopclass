@@ -1,0 +1,436 @@
+<?php
+/*
+ * This file is part of Shopclass (Mindstellar).
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
+ *
+ * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+declare(strict_types=1);
+
+namespace mindstellar\api;
+
+use mindstellar\api\auth\AdminRows;
+use mindstellar\api\auth\Authenticator;
+use mindstellar\api\auth\Authorizer;
+use mindstellar\api\auth\Credential;
+use mindstellar\api\auth\OAuthError;
+use mindstellar\api\auth\PageTokenAuth;
+use mindstellar\api\auth\Scopes;
+use mindstellar\api\auth\UserRows;
+use mindstellar\api\http\CachePolicy;
+use mindstellar\api\http\Cors;
+use mindstellar\api\idempotency\Idempotency;
+use mindstellar\api\identity\WebIdentity;
+use mindstellar\api\ratelimit\RateBucket;
+use mindstellar\api\ratelimit\RateLimiter;
+use mindstellar\api\ratelimit\RateLimitResult;
+use mindstellar\api\ratelimit\RatePolicy;
+use mindstellar\api\routing\RouteMatch;
+use mindstellar\api\routing\Router;
+use mindstellar\api\schema\Validator;
+use mindstellar\validation\BlockedException;
+use mindstellar\validation\ConflictException;
+use mindstellar\validation\ForbiddenException;
+use mindstellar\validation\InvalidException;
+use mindstellar\validation\NotFoundException;
+use mindstellar\validation\RefusedException;
+
+/**
+ * Answers one API request as an ordered pipeline: switched on, route match, authentication,
+ * authorization, rate limits, taking on the token user's identity, `api_request_before`,
+ * Idempotency-Key, validation, handler, `api_response`, caching. Any step refuses by throwing
+ * ProblemException. handle() builds the Response; serve() is the only place that sends one.
+ */
+final class Kernel
+{
+    public const VERSION = 'v1';
+
+    /** Where deprecations are announced. */
+    public const CHANGELOG = 'https://mindstellar.com/docs/developers/api/changelog/';
+
+    private Authorizer $authorizer;
+
+    private RatePolicy $ratePolicy;
+
+    private CachePolicy $cachePolicy;
+
+    public function __construct(
+        private Router $router,
+        private Authenticator $authenticator,
+        private RateLimiter $limiter,
+        private Validator $validator,
+        private ApiSettings $settings,
+        private UserRows $users,
+        private AdminRows $admins,
+        private Idempotency $idempotency
+    ) {
+        $this->authorizer  = new Authorizer();
+        $this->ratePolicy  = new RatePolicy($settings);
+        $this->cachePolicy = new CachePolicy($settings->cacheMaxAge());
+    }
+
+    /**
+     * The kernel for this site, from its composition root.
+     */
+    public static function fromSite(): self
+    {
+        return ApiServices::site()->kernel();
+    }
+
+    /**
+     * Answer the current request and stop.
+     */
+    public static function serve(): void
+    {
+        $request   = Request::fromGlobals();
+        $requestId = RequestId::for($request);
+        try {
+            $settings = ApiServices::site()->settings();
+            $response = $settings->enabled()
+                ? self::fromSite()->handle($request, $requestId)
+                : self::disabled($settings, $request, $requestId);
+        } catch (\Throwable $e) {
+            error_log('api: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine() . ' (request ' . $requestId . ')');
+            $response = self::withInstance(Problem::make('server_error'), $requestId)->withHeader(RequestId::HEADER, $requestId);
+        }
+        $response->send($request);
+    }
+
+    /**
+     * The answer while the API is off, built without the router or any service.
+     */
+    private static function disabled(ApiSettings $settings, Request $request, string $requestId): Response
+    {
+        $cors     = Cors::fromSettings($settings, $request);
+        $response = ProblemException::of('api_disabled', 'Ask the site owner to switch the API on.')->response();
+        $response = $response->withHeader(RequestId::HEADER, $requestId)->withDefaultHeaders($cors->headers($request));
+
+        return self::withInstance($response, $requestId);
+    }
+
+    public function handle(Request $request, ?string $requestId = null): Response
+    {
+        $requestId ??= RequestId::for($request);
+        $cors        = Cors::fromSettings($this->settings, $request);
+        $rateHeaders = [];
+        $route       = null;
+        try {
+            if ($request->method() === 'OPTIONS') {
+                $methods  = $this->methodsForOptions($request);
+                $response = $cors->preflight($request, $methods);
+                if (in_array('PATCH', $methods, true)) {
+                    $response = $response->withDefaultHeaders(['Accept-Patch' => Request::MERGE_PATCH]);
+                }
+
+                return $this->finish($response, $request, $cors, $requestId);
+            }
+            $match      = $this->match($request);
+            $route      = $match->route();
+            if ($route->upload()) {
+                $request = $request->forUpload();
+            }
+            if ($route->oauth()) {
+                $request = $request->withFormAsJson();
+            }
+            $credential = $this->credentialFor($request, $route);
+            $this->authorizer->check($route, $credential);
+            $rateHeaders = $this->countRequest($request, $route, $credential);
+            $this->assumeIdentity($credential, $route);
+            osc_run_hook('api_request_before', $request, $route, $credential);
+            $run = function () use (&$request, $route, $credential, $match): Response {
+                $request = $this->validate($request, $route);
+                $this->checkIfMatch($request, $route, $credential);
+
+                return $route->call($request, $credential, $match->args());
+            };
+            $response = $route->replayable() ? $this->idempotency->run($request, $credential, $run) : $run();
+            $filtered = osc_apply_filter('api_response', $response, $request, $route);
+            $response = $filtered instanceof Response ? $filtered : $response;
+            if ($credential->isSession()) {
+                // Never stored anywhere, whatever a handler or filter asked for.
+                $response = $response->withHeader('Cache-Control', $this->cachePolicy->header($request, $credential));
+            } elseif (!$response->isProblem()) {
+                $response = $response->withDefaultHeaders(['Cache-Control' => $this->cachePolicy->header($request, $credential)]);
+                if ($this->cachePolicy->isPublic($request, $credential)) {
+                    // A shared cache serves this to everyone, so one caller's counters do not belong in it.
+                    $rateHeaders = [];
+                }
+            }
+        } catch (ProblemException $e) {
+            $response = $route !== null && $route->oauth() ? OAuthError::from($e->response()) : $e->response();
+        } catch (RefusedException $e) {
+            $response = self::refusal($e);
+        } catch (\Throwable $e) {
+            // Still finished below, so a 500 carries the CORS, Vary and rate-limit headers.
+            error_log('api: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine() . ' (request ' . $requestId . ')');
+            $response = Problem::make('server_error');
+        }
+
+        $response = $response->withDefaultHeaders($rateHeaders + self::lifecycleHeaders($route));
+        if ($route !== null && $route->method() === 'PATCH') {
+            $response = $response->withDefaultHeaders(['Accept-Patch' => Request::MERGE_PATCH]);
+        }
+        if (PageTokenAuth::applies($request)) {
+            $response = $response->withDefaultHeaders(['Vary' => implode(', ', CachePolicy::SESSION_VARY)]);
+        } elseif ($response->status() < 300 || $response->status() === 304) {
+            $vary = $this->cachePolicy->vary($request, $cors->enabled());
+            if ($vary !== []) {
+                $response = $response->withDefaultHeaders(['Vary' => implode(', ', $vary)]);
+            }
+        }
+
+        return $this->finish($response, $request, $cors, $requestId);
+    }
+
+    /**
+     * A PATCH or DELETE that sent If-Match goes through only while the same path's GET still
+     * answers with that ETag (`*`: any existing resource). A path with no GET is not checked.
+     *
+     * @throws ProblemException 412 when the resource has changed
+     */
+    private function checkIfMatch(Request $request, RouteSpec $route, Credential $credential): void
+    {
+        $header = trim($request->ifMatch());
+        if ($header === '' || !in_array($route->method(), ['PATCH', 'DELETE'], true)) {
+            return;
+        }
+        $read = $this->router->match('GET', $this->routePath($request));
+        if ($read === null) {
+            return;
+        }
+        try {
+            $this->authorizer->check($read->route(), $credential);
+        } catch (ProblemException $e) {
+            return;
+        }
+        $current = $read->route()->call($request->asRead(), $credential, $read->args());
+        $filtered = osc_apply_filter('api_response', $current, $request->asRead(), $read->route());
+        $current = $filtered instanceof Response ? $filtered : $current;
+        $etag    = $current->etag();
+        if ($etag !== null && !Response::etagMatches($header, $etag)) {
+            throw ProblemException::of('precondition_failed', 'Fetch the resource again and retry with its new ETag.');
+        }
+    }
+
+    /**
+     * Deprecation (RFC 9745), Sunset (RFC 8594) and a link to the API changelog for a route
+     * that is on its way out.
+     *
+     * @return array<string,string>
+     */
+    private static function lifecycleHeaders(?RouteSpec $route): array
+    {
+        if ($route === null || ($route->deprecated() === null && $route->sunset() === null)) {
+            return [];
+        }
+        $headers = ['Link' => '<' . self::CHANGELOG . '>; rel="deprecation"'];
+        if ($route->deprecated() !== null) {
+            $headers['Deprecation'] = '@' . (int) strtotime($route->deprecated() . ' 00:00:00 UTC');
+        }
+        if ($route->sunset() !== null) {
+            $headers['Sunset'] = gmdate('D, d M Y H:i:s', (int) strtotime($route->sunset() . ' 00:00:00 UTC')) . ' GMT';
+        }
+
+        return $headers;
+    }
+
+    /**
+     * The request id, the CORS grant and the problem's `instance`, on every answer. A session
+     * call never gets a CORS grant: only the site's own pages may make one.
+     */
+    private function finish(Response $response, Request $request, Cors $cors, string $requestId): Response
+    {
+        $response = $response->withHeader(RequestId::HEADER, $requestId);
+        if (PageTokenAuth::applies($request)) {
+            return self::withInstance($response, $requestId);
+        }
+        $response = $response->withDefaultHeaders($cors->headers($request));
+        if ($cors->enabled() && $response->header('Vary') === null) {
+            $response = $response->withHeader('Vary', 'Origin');
+        }
+
+        return self::withInstance($response, $requestId);
+    }
+
+    /**
+     * The methods the requested path answers, for an OPTIONS request; no credential needed.
+     *
+     * @return string[]
+     * @throws ProblemException 403 when the API is off, 404 when the path answers nothing
+     */
+    private function methodsForOptions(Request $request): array
+    {
+        $methods = $this->router->methodsFor($this->routePath($request));
+        if ($methods === []) {
+            throw ProblemException::of('not_found', 'No such endpoint.');
+        }
+
+        return $methods;
+    }
+
+    /**
+     * @throws ProblemException 403 when the API is off, 404 or 405 when nothing matches
+     */
+    private function match(Request $request): RouteMatch
+    {
+        $path  = $this->routePath($request);
+        $match = $this->router->match($request->method(), $path);
+        if ($match !== null) {
+            return $match;
+        }
+        $allowed = $this->router->methodsFor($path);
+
+        throw $allowed === []
+            ? ProblemException::of('not_found', 'No such endpoint.')
+            : ProblemException::from(Problem::methodNotAllowed($allowed));
+    }
+
+    /**
+     * The request's path below the version, e.g. `listings/12`.
+     *
+     * @throws ProblemException 403 when the API is off, 404 for a refused path or another version
+     */
+    private function routePath(Request $request): string
+    {
+        if (!$this->settings->enabled()) {
+            throw ProblemException::of('api_disabled', 'Ask the site owner to switch the API on.');
+        }
+        $path = $request->path();
+        if ($path === null) {
+            throw ProblemException::of('not_found', 'No such endpoint.');
+        }
+        $segments = explode('/', $path, 2);
+        if ($segments[0] !== self::VERSION) {
+            throw ProblemException::of('not_found', 'No such API version.');
+        }
+
+        return $segments[1] ?? '';
+    }
+
+    /**
+     * @throws ProblemException 401 when a credential is needed and none (or a bad one) came
+     */
+    private function credentialFor(Request $request, RouteSpec $route): Credential
+    {
+        if ($route->auth() === RouteSpec::AUTH_NONE) {
+            return Credential::anonymous();
+        }
+        $credential = $this->authenticator->authenticate($request);
+        if ($credential !== null) {
+            return $credential;
+        }
+        if ($route->auth() === RouteSpec::AUTH_PUBLIC && $this->settings->publicReads()) {
+            return Credential::anonymous(Scopes::PUBLIC);
+        }
+
+        throw ProblemException::from(Problem::unauthorized(false));
+    }
+
+    /**
+     * Let core code act for the user or admin a token or key stands for, for this request
+     * only. The browser's identity was already forgotten (WebIdentity::forget() in index.php).
+     * An admin is taken on for admin routes only, so a public route an admin key calls runs
+     * as nobody.
+     */
+    private function assumeIdentity(Credential $credential, RouteSpec $route): void
+    {
+        if ($credential->isAdmin()) {
+            $admin = $route->auth() === RouteSpec::AUTH_ADMIN ? $this->admins->find((int) $credential->adminId()) : null;
+            if ($admin !== null) {
+                WebIdentity::assumeAdmin($admin);
+            }
+
+            return;
+        }
+        if (!$credential->isUser()) {
+            return;
+        }
+        $user = $this->users->find((int) $credential->userId());
+        if ($user !== null) {
+            WebIdentity::assume($user);
+        }
+    }
+
+    /**
+     * @return array<string,string> the rate limit headers
+     * @throws ProblemException 429 past a limit
+     */
+    private function countRequest(Request $request, RouteSpec $route, Credential $credential): array
+    {
+        $results = array_map(
+            fn (RateBucket $bucket): RateLimitResult => $this->limiter->hit($bucket),
+            $this->ratePolicy->bucketsFor($request, $route, $credential)
+        );
+        $headers = $this->limiter->headers($results);
+        foreach ($results as $result) {
+            if (!$result->allowed()) {
+                throw ProblemException::from(ProblemException::tooMany('Too many requests. Try again shortly.', $result->reset())->response()->withDefaultHeaders($headers));
+            }
+        }
+
+        return $headers;
+    }
+
+    /**
+     * Check the query and body against the route's schemas.
+     *
+     * @return Request the request with typed query values
+     * @throws ProblemException 422, or the body's own 400/413/415
+     */
+    private function validate(Request $request, RouteSpec $route): Request
+    {
+        $query = $request->query();
+        unset($query['api_key']);
+        $errors = [];
+
+        $schema = $route->query();
+        if ($schema !== null) {
+            $query = $this->validator->coerceQuery($schema, $query);
+            foreach ($this->validator->check($schema, $query) as $error) {
+                $errors[] = $error + ['in' => 'query'];
+            }
+        }
+        $schema = $route->body();
+        if ($schema !== null) {
+            foreach ($this->validator->check($schema, $request->input()) as $error) {
+                $errors[] = $error + ['in' => 'body'];
+            }
+        }
+        if ($errors !== []) {
+            throw ProblemException::from(Problem::validation($errors));
+        }
+
+        return $request->withQuery($query);
+    }
+
+    /**
+     * A core service's refusal as a problem: 403, 404, 409, 429, or 422 with its reason.
+     */
+    private static function refusal(RefusedException $e): Response
+    {
+        return match (true) {
+            $e instanceof NotFoundException  => Problem::make('not_found', $e->getMessage()),
+            $e instanceof ConflictException  => Problem::make('conflict', $e->getMessage()),
+            $e instanceof ForbiddenException => Problem::make('forbidden', $e->getMessage()),
+            $e instanceof BlockedException   => Problem::make($e->isRateLimit() ? 'rate_limited' : 'login_blocked', $e->getMessage())->withHeader('Retry-After', (string) $e->retryAfter()),
+            $e instanceof InvalidException   => Problem::validation($e->errors()),
+            default                 => Problem::rejected($e->getMessage()),
+        };
+    }
+
+    /**
+     * Add `instance` (`urn:request:<id>`) to a problem body that has none.
+     */
+    private static function withInstance(Response $response, string $requestId): Response
+    {
+        $body = $response->body();
+        if (!$response->isProblem() || !isset($body['code']) || isset($body['instance'])) {
+            return $response;
+        }
+
+        return $response->withBodyMember('instance', 'urn:request:' . $requestId);
+    }
+}
