@@ -151,6 +151,12 @@ class PluginCategory
      */
     public function delete($where)
     {
+        if (isset($where['s_plugin_name'], $where['fk_i_category_id'])) {
+            $plugin = (string) $where['s_plugin_name'];
+            $this->save($plugin, array_diff($this->ids($plugin), array((int) $where['fk_i_category_id'])));
+
+            return true;
+        }
         if (isset($where['s_plugin_name'])) {
             $this->clear((string) $where['s_plugin_name']);
 
@@ -166,6 +172,24 @@ class PluginCategory
     }
 
     /**
+     * Every plugin and category pair, as the old table rows.
+     *
+     * @return array<int,array<string,string>>
+     * @deprecated 7.0.0 Use listSelected() or findByCategoryId().
+     */
+    public function listAll()
+    {
+        $rows = array();
+        foreach ($this->all() as $plugin => $ids) {
+            foreach ($ids as $id) {
+                $rows[] = array('s_plugin_name' => (string) $plugin, 'fk_i_category_id' => (string) $id);
+            }
+        }
+
+        return $rows;
+    }
+
+    /**
      * @return int[]
      */
     private function ids(string $plugin): array
@@ -174,8 +198,7 @@ class PluginCategory
             return array();
         }
         if (!isset(self::$lists[$plugin])) {
-            $stored               = osc_kv_get(self::KV_GROUP, $plugin, array());
-            self::$lists[$plugin] = is_array($stored) ? array_map('intval', $stored) : array();
+            self::$lists[$plugin] = self::decode(osc_kv_get(self::KV_GROUP, $plugin, array()));
         }
 
         return self::$lists[$plugin];
@@ -188,11 +211,20 @@ class PluginCategory
     {
         $all = array();
         foreach ((new \mindstellar\model\KeyValue())->group(self::KV_GROUP) as $key => $row) {
-            $ids       = json_decode((string) ($row['value'] ?? ''), true);
-            $all[$key] = is_array($ids) ? array_map('intval', $ids) : array();
+            $all[$key] = self::decode(json_decode((string) ($row['value'] ?? ''), true));
         }
 
         return $all;
+    }
+
+    /**
+     * @param mixed $stored a decoded list
+     *
+     * @return int[]
+     */
+    private static function decode($stored): array
+    {
+        return is_array($stored) ? array_map('intval', $stored) : array();
     }
 
     /**

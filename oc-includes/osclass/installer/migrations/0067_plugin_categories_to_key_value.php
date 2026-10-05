@@ -41,6 +41,11 @@ return new class () implements MigrationInterface {
         }
         $now = gmdate('Y-m-d H:i:s');
         foreach ($lists as $plugin => $ids) {
+            $plugin = (string) $plugin;
+            if ($plugin === '' || trim($plugin) !== $plugin || preg_match('/[\x00-\x1f\x7f]/', $plugin) === 1) {
+                // A name the key-value store would refuse to read back.
+                continue;
+            }
             $ids = array_values(array_unique($ids));
             sort($ids);
             $conn->execute(

@@ -403,9 +403,9 @@ final class AccountService
                     $status = 'invalid';
                     throw new \RuntimeException('E-mail change not applied.');
                 }
-                osc_db_table(DB_TABLE_PREFIX . 't_item')->where('fk_i_user_id', $userId)->update(['s_contact_email' => $new]);
-                osc_db_table(DB_TABLE_PREFIX . 't_item_comment')->where('fk_i_user_id', $userId)->update(['s_author_email' => $new]);
-                osc_db_table(DB_TABLE_PREFIX . 't_alerts')->where('fk_i_user_id', $userId)->update(['s_email' => $new]);
+                self::byUser('t_item', $userId)->update(['s_contact_email' => $new]);
+                self::byUser('t_item_comment', $userId)->update(['s_author_email' => $new]);
+                self::byUser('t_alerts', $userId)->update(['s_email' => $new]);
                 osc_db_table(DB_TABLE_PREFIX . 't_user_email_tmp')->where('s_new_email', $new)->delete();
             });
         } catch (\Throwable $e) {

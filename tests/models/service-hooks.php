@@ -462,4 +462,21 @@ $adminCreate = $record(static fn () => Params::withRequest($form('Oz', 'oz@examp
 pin('the users screen creates without the new-user e-mail', ['user_add_flash_error', 'pre_user_post', 'user_register_completed'], $adminCreate);
 $admin->query("DELETE FROM {$p}t_rate_counter");
 
+harness_section('a failed write inside the profile save rolls back');
+$nameOf = static fn (string $sql): string => (string) $admin->query($sql)->fetch_row()[0];
+$tomBefore  = $nameOf("SELECT s_name FROM {$p}t_user WHERE pk_i_id = $tom");
+$carBefore  = $nameOf("SELECT s_contact_name FROM {$p}t_item WHERE pk_i_id = $tomCar");
+// The last of the user-row cascades now fails, after the user row and the listing were written.
+$admin->query("ALTER TABLE {$p}t_alerts RENAME COLUMN s_email TO s_email_off");
+$threw = false;
+try {
+    $web['adminEdit']($bossId, $tom, ['name' => 'Tom Rolled', 'email' => 'tom.rolled@example.test']);
+} catch (\Throwable $e) {
+    $threw = true;
+}
+$admin->query("ALTER TABLE {$p}t_alerts RENAME COLUMN s_email_off TO s_email");
+check('the failed alert update stops the save', $threw);
+pin('the user row is rolled back', $tomBefore, $nameOf("SELECT s_name FROM {$p}t_user WHERE pk_i_id = $tom"));
+pin('the listing contact name is rolled back', $carBefore, $nameOf("SELECT s_contact_name FROM {$p}t_item WHERE pk_i_id = $tomCar"));
+
 exit(harness_result());

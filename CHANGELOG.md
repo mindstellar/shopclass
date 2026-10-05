@@ -25,6 +25,7 @@ Plugin authors should read the Breaking section before upgrading.
 
 ### Breaking
 
+- `PluginCategory` no longer extends `DAO`, and the `t_plugin_category` table is removed: each plugin's categories are a list in the key-value store. `osc_is_this_category()`, `listSelected()`, `findByCategoryId()`, `isThisCategory()` and the old `insert()`, `delete()` and `listAll()` calls still work.
 - Listing Import 0.3 needs Shopclass 7.0. Its old plugin keys stop working: make new keys in **Settings → API**.
 - Listing Import's API lives under `/api/v1/ext/listing-import/`. The plugin redirects its old paths until its next minor release, and a record it cannot import is a `422 validation_failed`.
 - The `/api/` path is reserved; a page or category with the slug `api` must be renamed. System info and `doctor` list any.
@@ -44,7 +45,6 @@ Plugin authors should read the Breaking section before upgrading.
 
 ### Changed
 
-- The categories each plugin is limited to are kept in the key-value store; the `t_plugin_category` table is removed. `osc_is_this_category()` answers as before.
 - Listing counts per country, region and city are recounted once a week as background jobs, instead of a slow hourly pass; the `t_locations_tmp` table is removed.
 - The search page is split into a URI resolver and a search runner the API reuses. Its hooks and filters are unchanged.
 - Unblocking one comment e-mails its author when it goes live.

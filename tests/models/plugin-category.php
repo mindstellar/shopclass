@@ -104,6 +104,9 @@ pin('an uninstalled plugin has no row left', 0, $num("SELECT COUNT(*) FROM {$p}t
 harness_section('old table calls');
 $legacy = $fresh();
 check('insert() adds a pair', $legacy->insert(array('s_plugin_name' => 'old', 'fk_i_category_id' => $bikes)) && $fresh()->isThisCategory('old', $bikes));
+$legacy->insert(array('s_plugin_name' => 'old', 'fk_i_category_id' => $cars));
+pin('listAll() gives the old rows', array(array('s_plugin_name' => 'digital-goods', 'fk_i_category_id' => (string) $cars), array('s_plugin_name' => 'old', 'fk_i_category_id' => (string) min($cars, $bikes)), array('s_plugin_name' => 'old', 'fk_i_category_id' => (string) max($cars, $bikes))), $fresh()->listAll());
+check('delete() with both keys removes only that pair', $fresh()->delete(array('s_plugin_name' => 'old', 'fk_i_category_id' => $cars)) && $fresh()->isThisCategory('old', $bikes) && !$fresh()->isThisCategory('old', $cars));
 check('delete() by plugin clears it', $legacy->delete(array('s_plugin_name' => 'old')) && !$fresh()->isThisCategory('old', $bikes));
 
 if (!defined('MODELS_RUNNER')) {
