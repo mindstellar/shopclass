@@ -1533,8 +1533,8 @@ class ItemActions
     }
 
     /**
-     * Activates an item.
-     * Set s_enabled value to 1, for a given item id
+     * Activates (validates) an item: the owner confirmed it. A listing the admin has not
+     * enabled yet is still marked validated, and stays hidden until the admin enables it.
      *
      * @param int           $id
      *
@@ -1552,10 +1552,7 @@ class ItemActions
             $aWhere = array('s_secret' => $secret, 'pk_i_id' => $id);
         }
 
-        if (
-            isset($item[0]['b_enabled'], $item[0]['b_active']) && $item[0]['b_enabled'] == 1
-            && $item[0]['b_active'] == 0
-        ) {
+        if (isset($item[0]['b_active']) && $item[0]['b_active'] == 0) {
             $result = $this->manager->update(
                 array('b_active' => 1),
                 $aWhere
