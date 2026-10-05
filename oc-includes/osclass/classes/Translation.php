@@ -33,7 +33,13 @@ class Translation
      */
     public function __construct($install = false)
     {
-        $this->translator = new Translator();
+        // gettext 4 looks up context-free strings with a null key, which PHP 8.5 deprecates.
+        $this->translator = new class () extends Translator {
+            protected function getTranslation($domain, $context, $original)
+            {
+                return parent::getTranslation($domain, $context ?? '', $original);
+            }
+        };
         if (!$install) {
             // get user/admin locale
             if (defined('OC_ADMIN') && OC_ADMIN) {
