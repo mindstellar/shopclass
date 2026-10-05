@@ -1052,7 +1052,7 @@ class CAdminTools extends AdminSecBaseModel
                 'plugins'   => osc_plugins_path(),
                 'themes'    => osc_themes_path(),
                 'languages' => osc_translations_path(),
-            ), static fn($dir) => is_dir($dir) && !@is_writable($dir))),
+            ), static fn ($dir) => is_dir($dir) && !@is_writable($dir))),
             'free_disk'        => is_numeric($free) ? (int) $free : null,
             'config_writable'  => @is_writable(ABS_PATH . 'config.php'),
             'debug'            => defined('OSC_DEBUG') && OSC_DEBUG,

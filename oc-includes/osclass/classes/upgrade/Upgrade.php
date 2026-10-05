@@ -155,7 +155,7 @@ class Upgrade
         $iterator  = new \RecursiveIteratorIterator(
             new \RecursiveCallbackFilterIterator(
                 new \RecursiveDirectoryIterator($originDir, \FilesystemIterator::SKIP_DOTS),
-                static fn($file) => !in_array($file->getBasename(), $filter, false)
+                static fn ($file) => !in_array($file->getBasename(), $filter, false)
             )
         );
 
@@ -197,7 +197,7 @@ class Upgrade
         return sprintf(
             __('Nothing was changed. The web server user (%1$s) cannot write to: %2$s. Give that user write access, or run "php oc-cli.php core:update" as the owner of the files.'),
             $user !== '' ? $user : __('unknown'),
-            implode(', ', array_map(static fn($p) => str_replace(ABS_PATH, '', $p), $paths))
+            implode(', ', array_map(static fn ($p) => str_replace(ABS_PATH, '', $p), $paths))
         );
     }
 
