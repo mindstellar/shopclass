@@ -47,6 +47,12 @@ msgstr[1] ""
 msgid "%1$s and %2$s stay as they are."
 msgstr ""
 
+#: oc-includes/osclass/classes/webhook/Delivery.php
+msgid ""
+"%1$s answered 410 Gone, so the site stopped sending to it. Switch the "
+"endpoint on again in Settings, then API, if this was a mistake."
+msgstr ""
+
 #: oc-admin/themes/modern/settings/locations/list.php
 msgid "%1$s city starting with “%2$s”"
 msgid_plural "%1$s cities starting with “%2$s”"
@@ -265,6 +271,10 @@ msgstr[1] ""
 msgid "%d done"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
+msgid "%d failed in a row"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/system-info/security.php
 msgid "%d failure"
 msgid_plural "%d failures"
@@ -464,6 +474,10 @@ msgstr ""
 msgid "%s is not a valid image"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "%s is not an origin. Write it as https://example.com, with no path."
+msgstr ""
+
 #: oc-includes/osclass/helpers/hSettings.php
 msgid "%s is not in the expected format"
 msgstr ""
@@ -554,8 +568,18 @@ msgstr ""
 msgid "...More"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/SystemChecks.php
+msgid ""
+"/api/ belongs to the site's API, so these static pages or categories cannot "
+"be reached. Give them another slug: %s"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/cleanup.php
 msgid "0 keeps it forever. This is the history behind the statistics charts, which "
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "0 uses the default: %1$d, or %2$d while the listing form asks for a captcha."
 msgstr ""
 
 #: oc-admin/themes/modern/functions.php
@@ -697,7 +721,7 @@ msgstr ""
 msgid "A custom field it filtered on has changed type."
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 #: oc-includes/osclass/classes/backup/Restorer.php
 msgid "A database update is running. Try again in a few minutes."
 msgstr ""
@@ -776,6 +800,12 @@ msgid ""
 "by default."
 msgstr ""
 
+#: oc-includes/osclass/classes/routing/ReservedSlugs.php
+msgid ""
+"A slug of \"api\", or one starting with \"api/\", is reserved for the "
+"site's API. Choose another."
+msgstr ""
+
 #: oc-includes/osclass/classes/backup/BackupJobs.php
 msgid "A statement in the backup failed (MySQL error %d)."
 msgstr ""
@@ -784,8 +814,22 @@ msgstr ""
 msgid "A statement in the backup failed."
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
+msgid ""
+"A webhook tells another system when something happens here, such as a new "
+"listing, by sending it a signed POST. A delivery that fails is tried again "
+"for about two hours; an endpoint that fails 8 times in a row is paused and "
+"you get an e-mail."
+msgstr ""
+
 #: oc-includes/osclass/helpers/hUtils.php
 msgid "AM"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+#: oc-includes/osclass/classes/AdminMenu.php
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "API"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
@@ -802,6 +846,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/PermalinkSettingsForm.php
 msgid "Accepted keywords: %s"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "Access"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
@@ -832,6 +880,7 @@ msgstr ""
 #: oc-admin/themes/modern/billing/credits.php
 #: oc-admin/themes/modern/billing/packages.php
 #: oc-admin/themes/modern/media/index.php
+#: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/settings/locations/data.php
 #: oc-admin/themes/modern/settings/locations/list.php
 #: oc-admin/themes/modern/tools/backup.php
@@ -862,6 +911,7 @@ msgstr ""
 #: oc-admin/themes/modern/comments/frm.php
 #: oc-admin/themes/modern/items/index.php
 #: oc-admin/themes/modern/parts/package-ui.php
+#: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/settings/locations/form.php
 #: oc-admin/themes/modern/settings/locations/list.php
 #: oc-admin/themes/modern/users/index.php
@@ -947,6 +997,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/currency_form.php
 msgid "Add currency"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid "Add endpoint"
 msgstr ""
 
 #: oc-admin/themes/modern/fields/index.php
@@ -1097,6 +1151,7 @@ msgstr ""
 msgid "Additional information"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/users/frm.php
 msgid "Address"
 msgstr ""
@@ -1121,12 +1176,23 @@ msgid ""
 "left alone."
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
 #: oc-includes/osclass/emails.php
 msgid "Admin"
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-target.php
 msgid "Admin account"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid "Admin key: acts as you, with the scopes below"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid ""
+"Admin keys act as you, with the scopes you give them. Public keys only read "
+"public data and are safe to put in an app or a web page."
 msgstr ""
 
 #: oc-admin/themes/modern/users/settings.php
@@ -1318,6 +1384,10 @@ msgid ""
 "rel=\"noopener\">cron</a>"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "Allow apps to sign in with a password"
+msgstr ""
+
 #: oc-admin/themes/modern/items/settings.php
 msgid "Allow attached files in contact publisher form"
 msgstr ""
@@ -1334,10 +1404,26 @@ msgstr ""
 msgid "Allow people to post comments on listings"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "Allow reading public data without a key"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "Allow sign-up through the API"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/MainSettingsForm.php
 msgid ""
 "Allow users to select a parent category as a category\n"
 "                            when inserting or editing a listing "
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "Allow webhook addresses on a private network"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "Allowed origins (CORS)"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
@@ -1435,8 +1521,12 @@ msgstr[1] ""
 msgid "Animals"
 msgstr ""
 
-#: oc-includes/osclass/classes/actions/ItemActions.php
+#: oc-includes/osclass/classes/listing/ListingService.php
 msgid "Anonymous"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "Anonymous reads"
 msgstr ""
 
 #: oc-includes/osclass/classes/upgrade/Osclass.php
@@ -1528,6 +1618,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/categories/iframe.php
 msgid "Apply the expiration and price changes to all subcategories"
+msgstr ""
+
+#: oc-admin/themes/modern/tools/system-info/security.php
+msgid "Apps signing in through the API"
 msgstr ""
 
 #: oc-includes/osclass/helpers/hUtils.php
@@ -1633,6 +1727,14 @@ msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
 msgid "Arts - Entertainment - Publishing"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid "Asked again before a key is made."
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid "Asked again before an endpoint is added."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/keywordBlock_frm.php
@@ -2119,6 +2221,10 @@ msgid ""
 "numbers in them. "
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "By default the API shows the phone wherever your theme does."
+msgstr ""
+
 #: oc-includes/osclass/installer/basic_data.php
 msgid "CDs - Records"
 msgstr ""
@@ -2485,7 +2591,7 @@ msgstr ""
 msgid "Choose the country your visitors are mostly in. You can change this later."
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "Choose what to back up and where to put it."
 msgstr ""
 
@@ -2657,6 +2763,7 @@ msgstr ""
 msgid "Code"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/tools/backup.php
 msgid "Code from your app, or a backup code"
 msgstr ""
@@ -2731,11 +2838,8 @@ msgstr ""
 #: oc-admin/themes/modern/comments/index.php
 #: oc-admin/themes/modern/stats/comments.php
 #: oc-includes/osclass/classes/AdminMenu.php
-msgid "Comments"
-msgstr ""
-
 #: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
-msgid "Comments from guests"
+msgid "Comments"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/CommentSettingsForm.php
@@ -2940,16 +3044,18 @@ msgid "Coordinates"
 msgstr ""
 
 #: oc-admin/themes/modern/admins/two_factor.php
+#: oc-admin/themes/modern/settings/api.php
 #: oc-includes/osclass/installer/gui/install.php
 msgid "Copied"
 msgstr ""
 
 #: oc-admin/themes/modern/admins/two_factor.php
+#: oc-admin/themes/modern/settings/api.php
 #: oc-includes/osclass/installer/gui/install-finish.php
 msgid "Copy"
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "Copying files: %1$s of %2$s (%3$s)"
 msgstr ""
 
@@ -3025,7 +3131,7 @@ msgstr ""
 msgid "Count listing views"
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "Counting files"
 msgstr ""
 
@@ -3096,6 +3202,10 @@ msgstr ""
 msgid "Create a new account"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
+msgid "Create key"
+msgstr ""
+
 #: oc-admin/themes/modern/pages/index.php
 msgid "Create page"
 msgstr ""
@@ -3105,6 +3215,7 @@ msgid "Create the database"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
+#: oc-admin/themes/modern/settings/api.php
 msgid "Created"
 msgstr ""
 
@@ -3193,6 +3304,7 @@ msgstr ""
 msgid "Current avatar"
 msgstr ""
 
+#: oc-admin/themes/modern/admins/sign_out_all.php
 #: oc-admin/themes/modern/admins/two_factor.php
 msgid "Current code"
 msgstr ""
@@ -3448,6 +3560,7 @@ msgstr ""
 #: oc-admin/themes/modern/pages/index.php
 #: oc-admin/themes/modern/parts/ui.php
 #: oc-admin/themes/modern/plugins/index.php
+#: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/settings/currencies.php
 #: oc-admin/themes/modern/settings/keywordBlock.php
 #: oc-admin/themes/modern/settings/locations/list.php
@@ -3646,6 +3759,10 @@ msgstr ""
 msgid "Delete this region…"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
+msgid "Delete this webhook endpoint?"
+msgstr ""
+
 #: oc-admin/themes/modern/pages/frm.php
 msgid "Delete this widget?"
 msgstr ""
@@ -3682,9 +3799,21 @@ msgid ""
 "the form and its category assignment. Continue?"
 msgstr ""
 
+#: oc-includes/osclass/classes/webhook/Delivery.php
+msgid ""
+"Deliveries to %1$s failed %2$d times in a row, so the site stopped sending "
+"to it. The last answer was: %3$s. Fix the receiver, then switch the "
+"endpoint on again in Settings, then API."
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid "Deliveries waiting or given up"
+msgstr ""
+
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/languages/frm.php
 #: oc-admin/themes/modern/languages/index.php
+#: oc-admin/themes/modern/settings/api.php
 #: oc-includes/osclass/classes/form/CategoryForm.php
 #: oc-includes/osclass/classes/form/ItemForm.php
 #: oc-includes/osclass/classes/form/PageForm.php
@@ -3770,6 +3899,7 @@ msgstr ""
 #: oc-admin/themes/modern/billing/packages.php
 #: oc-admin/themes/modern/categories/index.php
 #: oc-admin/themes/modern/parts/package-ui.php
+#: oc-admin/themes/modern/settings/api.php
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 #: oc-includes/osclass/classes/utility/SystemInfo.php
 msgid "Disabled"
@@ -3829,11 +3959,11 @@ msgstr ""
 msgid "Download to this computer"
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "Downloading it from the bucket"
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "Downloading it from the bucket: %1$s of %2$s"
 msgstr ""
 
@@ -3964,6 +4094,7 @@ msgstr ""
 #: oc-admin/themes/modern/billing/packages.php
 #: oc-admin/themes/modern/categories/index.php
 #: oc-admin/themes/modern/pages/frm.php
+#: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/settings/currencies.php
 #: oc-admin/themes/modern/settings/locations.php
 #: oc-admin/themes/modern/settings/locations/list.php
@@ -3981,6 +4112,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/package.php
 #: oc-admin/themes/modern/categories/index.php
+#: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/settings/locations.php
 #: oc-admin/themes/modern/settings/locations/list.php
 msgid "Edit %s"
@@ -4220,6 +4352,12 @@ msgstr ""
 msgid "Endpoint"
 msgstr ""
 
+#: oc-admin/themes/modern/admins/sign_out_all.php
+msgid ""
+"Ends every admin sign-in of this account: other browsers, remembered "
+"sign-ins, and this browser too."
+msgstr ""
+
 #: oc-includes/osclass/installer/basic_data.php
 msgid "Engineering - Architecture"
 msgstr ""
@@ -4296,12 +4434,21 @@ msgstr ""
 msgid "Error occurred while upgrading osclass Database."
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
+msgid "Event"
+msgstr ""
+
 #: oc-includes/osclass/installer/basic_data.php
 msgid "Event Services"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
 #: oc-includes/osclass/installer/basic_data.php
 msgid "Events"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid "Every app or script using it stops working at once. This cannot be undone."
 msgstr ""
 
 #: oc-admin/themes/modern/billing/wallet.php
@@ -4404,6 +4551,7 @@ msgstr ""
 msgid "Expiration date"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/stats/reports.php
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
@@ -4415,6 +4563,7 @@ msgid "Expired listings"
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
+#: oc-admin/themes/modern/settings/api.php
 msgid "Expires"
 msgstr ""
 
@@ -4603,7 +4752,7 @@ msgstr ""
 msgid "Find one in Browse, or upload its zip file."
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "Finishing"
 msgstr ""
 
@@ -4621,6 +4770,12 @@ msgstr ""
 
 #: oc-includes/osclass/install-functions.php
 msgid "Folder <code>oc-content/uploads</code> exists"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid ""
+"For 24 hours each delivery carries two signatures, one with each secret, so "
+"the receiver can switch over."
 msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
@@ -4761,6 +4916,7 @@ msgstr ""
 msgid "Garage Sale"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/tools/system-info/jobs.php
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "Gave up"
@@ -4971,6 +5127,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
 msgid "How long a signed URL stays valid (60-604800)."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "How long browsers and CDNs may keep an anonymous answer."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/LatestSearchSettingsForm.php
@@ -5351,7 +5511,6 @@ msgid "Invalid Zip package, it's not in valid format."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/index.php
-#: oc-includes/osclass/classes/actions/ItemActions.php
 #: oc-includes/osclass/classes/form/AdminForm.php
 #: oc-includes/osclass/classes/form/CommentForm.php
 #: oc-includes/osclass/classes/form/ContactForm.php
@@ -5457,11 +5616,11 @@ msgstr ""
 msgid "It searched tables added by a plugin or theme."
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "It stopped and did not finish."
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "It stopped and did not finish. Nothing was saved."
 msgstr ""
 
@@ -5595,6 +5754,14 @@ msgid ""
 "%1$s and %2$s."
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
+msgid "Keys"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "Keys a user makes for their own scripts. Each one must expire within a year."
+msgstr ""
+
 #: oc-admin/themes/modern/tools/system-info/cache.php
 msgid ""
 "Keys are kept apart per site, so several sites can share one memcached "
@@ -5694,6 +5861,14 @@ msgstr ""
 msgid "Last checked on "
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
+msgid "Last delivery"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid "Last error"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/sitemap.php
 msgid "Last modified"
 msgstr ""
@@ -5704,6 +5879,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/pages/frm.php
 msgid "Last saved"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid "Last used"
 msgstr ""
 
 #: oc-admin/themes/modern/stats/comments.php
@@ -5762,6 +5941,10 @@ msgid ""
 "filled in "
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "Leave the seller phone number out of listings"
+msgstr ""
+
 #: oc-includes/osclass/helpers/hForms.php
 msgid "Leave this field empty"
 msgstr ""
@@ -5780,6 +5963,20 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/server.php
 msgid "Let long jobs finish"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "Let new listings name photos by web address"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "Let users make personal API keys"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid ""
+"Lets your own mobile apps send a username and password to the token "
+"endpoint. Turn it off if no app needs it. Refresh tokens keep working."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/preview.php
@@ -6209,6 +6406,14 @@ msgstr ""
 msgid "Make a backup before changing your robots.txt file."
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
+msgid "Make a new key in place of this one?"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid "Make a new signing secret for this endpoint?"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/backup.php
 msgid "Make backup"
 msgstr ""
@@ -6225,7 +6430,7 @@ msgstr ""
 msgid "Make {file} the cover photo"
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "Making a backup: %1$s, %2$s."
 msgstr ""
 
@@ -6463,6 +6668,7 @@ msgid "Menu"
 msgstr ""
 
 #: oc-admin/themes/modern/emails/frm.php
+#: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/tools/maintenance.php
 msgid "Message"
 msgstr ""
@@ -6475,7 +6681,6 @@ msgstr ""
 msgid "Message: %s"
 msgstr ""
 
-#: oc-includes/osclass/classes/actions/ItemActions.php
 #: oc-includes/osclass/classes/form/ContactForm.php
 #: oc-includes/osclass/classes/form/SendFriendForm.php
 msgid "Message: this field is required"
@@ -6694,6 +6899,7 @@ msgstr ""
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/languages/frm.php
 #: oc-admin/themes/modern/languages/index.php
+#: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/settings/currencies.php
 #: oc-admin/themes/modern/settings/currency_form.php
 #: oc-admin/themes/modern/settings/locations/form.php
@@ -6810,6 +7016,7 @@ msgid ""
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
+#: oc-admin/themes/modern/settings/api.php
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 msgid "Never"
 msgstr ""
@@ -6827,6 +7034,10 @@ msgstr ""
 msgid ""
 "New Shopclass files are in place, but the database has not caught up yet. "
 "Run these updates to finish."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "New accounts get the same activation e-mail as the sign-up form sends."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/preview.php
@@ -6865,8 +7076,16 @@ msgstr ""
 msgid "New form"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
+msgid "New key"
+msgstr ""
+
 #: oc-admin/themes/modern/stats/items.php
 msgid "New listing"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "New listings, per user"
 msgstr ""
 
 #: oc-admin/themes/modern/main/index.php
@@ -6899,6 +7118,10 @@ msgstr ""
 msgid "New users"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
+msgid "New webhook endpoint"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/backup.php
 msgid ""
 "Newest first. Kept: the last %1$d on the server and the last %1$d in the "
@@ -6927,6 +7150,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
 msgid "Next screenshot"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid "Next try"
 msgstr ""
 
 #: oc-admin/themes/modern/fields/submissions.php
@@ -7067,6 +7294,10 @@ msgid ""
 "the admin panel."
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
+msgid "No keys yet."
+msgstr ""
+
 #: oc-admin/themes/modern/languages/index.php
 msgid "No languages yet"
 msgstr ""
@@ -7204,6 +7435,10 @@ msgstr ""
 msgid "No version was specified."
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
+msgid "No webhook endpoints yet."
+msgstr ""
+
 #: oc-admin/themes/modern/appearance/page-block-form.php
 msgid ""
 "No widget types are available to you. Ask an administrator, or install a "
@@ -7242,6 +7477,10 @@ msgstr ""
 msgid "None yet"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
+msgid "None. Deliveries that got an answer leave the queue."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
 msgid "Normal size"
 msgstr ""
@@ -7267,7 +7506,7 @@ msgstr ""
 msgid "Not compatible"
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "Not enough space on the server to download it: needs about %1$s, %2$s free."
 msgstr ""
 
@@ -7332,6 +7571,12 @@ msgstr ""
 msgid "Nothing is waiting."
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
+msgid ""
+"Nothing more is sent to it, and deliveries still waiting are dropped. This "
+"cannot be undone."
+msgstr ""
+
 #: oc-admin/themes/modern/settings/locations/list.php
 msgid "Nothing named “%1$s” in %2$s"
 msgstr ""
@@ -7353,7 +7598,7 @@ msgstr ""
 msgid "Nothing to browse yet"
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "Nothing was changed."
 msgstr ""
 
@@ -7364,7 +7609,7 @@ msgid ""
 "of the files."
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "Nothing was saved."
 msgstr ""
 
@@ -7454,11 +7699,29 @@ msgid "October"
 msgstr ""
 
 #: oc-admin/themes/modern/admins/two_factor.php
+#: oc-admin/themes/modern/settings/api.php
 msgid "Off"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/cleanup.php
 msgid "Off by default. Search-engine and AI crawlers are usually most of a busy "
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid ""
+"Off by default. Turn on only to send webhooks to a server on your own "
+"network, such as http://192.168.1.20. The port is still 80 for http and 443 "
+"for https."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "Off by default. When off, every call to /api/v1 is refused."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid ""
+"Off by default. When on, anyone can read listings, categories and locations "
+"without a key, which makes copying your site easy."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/KeywordBlockSettingsForm.php
@@ -7500,7 +7763,7 @@ msgstr ""
 msgid "One backup at a time."
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "One backup at a time. Wait for the one running to finish."
 msgstr ""
 
@@ -7620,8 +7883,16 @@ msgstr ""
 msgid "Optional fields"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
+msgid "Optional, such as \"Stock sync\"."
+msgstr ""
+
 #: oc-admin/themes/modern/settings/sitemap.php
 msgid "Optional. Leave blank to use today's date."
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid "Optional. Leave empty for a key that works until you revoke it."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
@@ -7695,6 +7966,14 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "Overview"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid "Owner"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid "Owner gone"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
@@ -7852,6 +8131,10 @@ msgstr ""
 msgid "Password check before a restore"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "Password sign-in"
+msgstr ""
+
 #: oc-includes/osclass/classes/form/AdminForm.php
 #: oc-includes/osclass/classes/form/UserForm.php
 msgid "Password: enter at least 5 characters"
@@ -7889,6 +8172,14 @@ msgstr ""
 msgid "Pattern (regex)"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
+msgid "Paused"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid "Paused: %s. Switch it on again once the receiver works."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/BillingSettingsForm.php
 msgid "Payment instructions"
 msgstr ""
@@ -7923,6 +8214,18 @@ msgstr ""
 msgid "Pending jobs: %d &middot; Failed jobs: %d"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "Per address, without a key"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "Per key or signed-in user"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
+msgid "Per signed-in user, or per address for guests, per hour. 0 means no limit."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
 msgid "Per visitor address, per hour. 0 means no limit."
 msgstr ""
@@ -7933,6 +8236,10 @@ msgstr ""
 msgid "Permalinks"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "Personal keys"
+msgstr ""
+
 #: oc-includes/osclass/installer/basic_data.php
 msgid "Personals"
 msgstr ""
@@ -7940,6 +8247,10 @@ msgstr ""
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/users/frm.php
 msgid "Phone"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "Phone numbers"
 msgstr ""
 
 #: oc-includes/osclass/classes/storage/StorageJobs.php
@@ -7988,6 +8299,10 @@ msgid ""
 "Photos are only made smaller, never filled out to the sizes above. Your "
 "theme decides how to frame them. When off, the empty space is filled with "
 "white in JPEG and left see-through in PNG and WebP."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "Photos by address"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsForm.php
@@ -8174,6 +8489,10 @@ msgstr ""
 msgid "Print / Save as PDF"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "Private addresses"
+msgstr ""
+
 #: oc-admin/themes/modern/plugins/index.php
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 msgid "Problems with this plugin? Ask for support."
@@ -8198,12 +8517,24 @@ msgstr ""
 msgid "Provider"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
+msgid "Public"
+msgstr ""
+
 #: oc-includes/osclass/helpers/hUtils.php
 msgid "Public Profile"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
 msgid "Public URL"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "Public cache time"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid "Public key: reads public data only"
 msgstr ""
 
 #: oc-includes/osclass/classes/datatables/UsersDataTable.php
@@ -8298,6 +8629,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/server.php
 msgid "Raise memory without touching php.ini"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "Rate limits"
 msgstr ""
 
 #: oc-includes/osclass/classes/datatables/UsersDataTable.php
@@ -8545,6 +8880,10 @@ msgstr ""
 msgid "Registered users will appear here once they sign up or you add them."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "Registration"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/KeywordBlockSettingsForm.php
 msgid "Reject the listing outright instead of quarantining it for review"
 msgstr ""
@@ -8761,6 +9100,10 @@ msgstr ""
 msgid "Reset filters"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "Responses"
+msgstr ""
+
 #: oc-includes/osclass/installer/gui/install.php
 msgid "Restart the installer"
 msgstr ""
@@ -8819,11 +9162,11 @@ msgid ""
 "copy of today's database is saved first."
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "Restoring the backup from %s."
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "Restoring the backup."
 msgstr ""
 
@@ -8837,6 +9180,18 @@ msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
 msgid "Retail"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid "Revoke"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid "Revoke this key?"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid "Revoked"
 msgstr ""
 
 #: oc-admin/themes/modern/items/settings.php
@@ -8857,6 +9212,14 @@ msgstr ""
 
 #: oc-includes/osclass/install-functions.php
 msgid "Root folder has to be writable, i.e.: <code>chmod 0755 %s</code>"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid "Rotate"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid "Rotate secret"
 msgstr ""
 
 #: oc-admin/themes/modern/fields/iframe.php
@@ -8988,6 +9351,10 @@ msgstr ""
 msgid "Save changes"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
+msgid "Save endpoint"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/BillingSettingsForm.php
 msgid "Save limits"
 msgstr ""
@@ -9060,15 +9427,15 @@ msgstr ""
 msgid "Saved backups"
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "Saving the database"
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "Saving the database (table %1$d of %2$d)"
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "Saving to a bucket needs S3 storage turned on in Settings > Storage."
 msgstr ""
 
@@ -9079,6 +9446,10 @@ msgstr ""
 #: oc-admin/themes/modern/appearance/widgets.php
 #: oc-admin/themes/modern/fields/index.php
 msgid "Saving…"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid "Scopes"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
@@ -9426,12 +9797,24 @@ msgstr ""
 msgid "Send a test email"
 msgstr ""
 
+#: oc-includes/osclass/classes/webhook/Delivery.php
+msgid "Send a webhook"
+msgstr ""
+
 #: oc-admin/themes/modern/items/settings.php
 msgid "Send admin a copy of the \"contact publisher\" email"
 msgstr ""
 
 #: oc-admin/themes/modern/items/settings.php
 msgid "Send admin a copy to \"share listing\" email"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid "Send events to it from now on"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid "Send test"
 msgstr ""
 
 #: oc-admin/themes/modern/emails/frm.php
@@ -9446,6 +9829,10 @@ msgstr ""
 #: oc-includes/osclass/classes/admin/form/SpamSettingsForm.php
 #: oc-includes/osclass/functions.php
 msgid "Send to a friend"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid "Sending"
 msgstr ""
 
 #: oc-admin/themes/modern/emails/frm.php
@@ -9568,6 +9955,7 @@ msgstr ""
 #: oc-admin/themes/modern/parts/header.php
 #: oc-admin/themes/modern/plugins/index.php
 #: oc-admin/themes/modern/settings/advanced.php
+#: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/settings/billing.php
 #: oc-admin/themes/modern/settings/comments.php
 #: oc-admin/themes/modern/settings/currency_form.php
@@ -9836,6 +10224,15 @@ msgstr ""
 msgid "Sign out"
 msgstr ""
 
+#: oc-admin/themes/modern/admins/sign_out_all.php
+msgid "Sign out everywhere"
+msgstr ""
+
+#: oc-admin/themes/modern/admins/sign_out_all.php
+#: oc-includes/osclass/classes/datatables/UsersDataTable.php
+msgid "Sign out of all devices"
+msgstr ""
+
 #: oc-includes/osclass/functions.php
 msgid "Sign-in details"
 msgstr ""
@@ -10016,7 +10413,7 @@ msgstr ""
 msgid "Stable, release candidates and betas"
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "Starting"
 msgstr ""
 
@@ -10043,6 +10440,7 @@ msgstr ""
 #: oc-admin/themes/modern/billing/packages.php
 #: oc-admin/themes/modern/comments/frm.php
 #: oc-admin/themes/modern/fields/submissions.php
+#: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/settings/billing.php
 #: oc-admin/themes/modern/settings/locations/data.php
 #: oc-admin/themes/modern/settings/locations/form.php
@@ -10069,19 +10467,19 @@ msgstr ""
 msgid "Step"
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "Step 1 of 4: Saving a safety copy"
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "Step 2 of 4: Loading the database (%s statements)"
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "Step 3 of 4: Putting back files (%1$s of %2$s)"
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "Step 4 of 4: Updates and cache"
 msgstr ""
 
@@ -10187,6 +10585,14 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/server.php
 msgid "Switch debugging on"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid "Switch off"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid "Switch on"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/billing.php
@@ -10302,7 +10708,7 @@ msgid "Thank you for your payment. This is a receipt, not a tax invoice."
 msgstr ""
 
 #: oc-includes/osclass/classes/backup/BackupJobs.php
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "That backup is not in the list any more."
 msgstr ""
 
@@ -10362,6 +10768,12 @@ msgstr ""
 msgid "The %s payment plugin is not set up."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/SystemChecks.php
+msgid ""
+"The .htaccess file does not pass the Authorization header to PHP, so the "
+"API cannot see keys sent in it. Add this line after \"RewriteEngine On\": %s"
+msgstr ""
+
 #: oc-includes/osclass/install-functions.php
 msgid "The <a href=\"https://github.com/mindstellar/shopclass\">Shopclass</a> team"
 msgstr ""
@@ -10372,10 +10784,20 @@ msgid ""
 "before turning on "
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
+msgid "The API is served at %s."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/MailServerSettingsForm.php
 msgid ""
 "The PHP <b>openssl</b> extension is not loaded, so SSL and TLS will not "
 "work."
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid ""
+"The REST API lets apps, scripts and other sites read and change your site's "
+"data. Keys say who is calling and what they may do."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/upgrade.php
@@ -10405,31 +10827,31 @@ msgid ""
 "try again."
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "The backup could not be started. Try again."
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "The backup failed while checking the space."
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "The backup failed while copying files."
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "The backup failed while finishing."
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "The backup failed while saving the database."
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "The backup failed while uploading to the bucket."
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "The backup failed."
 msgstr ""
 
@@ -10463,7 +10885,7 @@ msgid "The backup is restored."
 msgstr ""
 
 #: oc-includes/osclass/classes/backup/BackupJobs.php
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "The backup was kept on the server instead."
 msgstr ""
 
@@ -10516,7 +10938,9 @@ msgid "The category as well as its subcategories have been enabled"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
-msgid "The category is too large to delete at once. It has been hidden"
+msgid ""
+"The category is too large to delete at once. It has been hidden and is "
+"being emptied in the background."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/server.php
@@ -10573,7 +10997,7 @@ msgstr ""
 msgid "The database update failed."
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "The database was restored. Visitors still see the maintenance page."
 msgstr ""
 
@@ -10659,6 +11083,12 @@ msgstr ""
 msgid "The new files did not arrive."
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
+msgid ""
+"The new key gets the same type, scopes and expiry. The old key keeps "
+"working until you revoke it, so you can switch over first."
+msgstr ""
+
 #: oc-admin/themes/modern/settings/locations/data.php
 msgid ""
 "The number of listings shown for each location can drift after an import or "
@@ -10718,7 +11148,7 @@ msgstr ""
 msgid "The refund could not be started. Try again."
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "The restore could not be started. Try again."
 msgstr ""
 
@@ -10726,31 +11156,31 @@ msgstr ""
 msgid "The restore could not carry on in the background."
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "The restore did not start."
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "The restore stopped while finishing."
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "The restore stopped while loading the database."
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "The restore stopped while putting back files."
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "The restore stopped while running the database updates."
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "The restore stopped."
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid ""
 "The safety copy could not be put back. The site stays closed. Restore it "
 "from the list below."
@@ -10760,7 +11190,7 @@ msgstr ""
 msgid "The safety copy could not be saved: %s"
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid ""
 "The safety copy was put back, so the site is as it was before. Visitors "
 "still see the maintenance page."
@@ -10800,8 +11230,18 @@ msgid ""
 "happening, ask your host to allow requests of up to five minutes."
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
+msgid ""
+"The signing secret of %s. Copy it now and keep it somewhere safe: it is not "
+"shown again."
+msgstr ""
+
 #: oc-includes/osclass/classes/backup/Restorer.php
 msgid "The site could not be put in maintenance mode."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "The site downloads each photo itself. Only public addresses are fetched."
 msgstr ""
 
 #: oc-admin/themes/modern/languages/index.php
@@ -11026,6 +11466,12 @@ msgstr ""
 #: oc-admin/themes/modern/admins/two_factor.php
 msgid "This admin signs in with a code from an authenticator app."
 msgstr ""
+
+#: oc-admin/themes/modern/admins/sign_out_all.php
+msgid "This also revokes your %d API key."
+msgid_plural "This also revokes your %d API keys."
+msgstr[0] ""
+msgstr[1] ""
 
 #: oc-admin/themes/modern/tools/system-info.php
 msgid ""
@@ -11355,7 +11801,7 @@ msgid ""
 "good."
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "Tick what to put back."
 msgstr ""
 
@@ -11508,6 +11954,7 @@ msgstr ""
 msgid "Toys - Games - Hobbies"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/tools/system-info/jobs.php
 msgid "Tries"
 msgstr ""
@@ -11563,6 +12010,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/server.php
 msgid "Turn on a persistent object cache"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "Turn on the REST API"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
@@ -11627,6 +12078,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/fields/iframe.php
 #: oc-admin/themes/modern/media/index.php
+#: oc-admin/themes/modern/settings/api.php
 msgid "Type"
 msgstr ""
 
@@ -11931,11 +12383,11 @@ msgstr ""
 msgid "Uploaded"
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "Uploading to the bucket"
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "Uploading to the bucket: %1$s of %2$s"
 msgstr ""
 
@@ -12013,6 +12465,7 @@ msgstr ""
 #: oc-admin/themes/modern/billing/index.php
 #: oc-admin/themes/modern/billing/order.php
 #: oc-admin/themes/modern/media/index.php
+#: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/users/index.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 #: oc-includes/osclass/classes/form/UserForm.php
@@ -12177,6 +12630,7 @@ msgstr ""
 #: oc-admin/themes/modern/users/index.php
 #: oc-admin/themes/modern/users/settings.php
 #: oc-includes/osclass/classes/AdminMenu.php
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
 #: oc-includes/osclass/classes/controller/admin/CAdminMedia.php
 msgid "Users"
 msgstr ""
@@ -12341,6 +12795,7 @@ msgstr ""
 msgid "Volunteers"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/tools/system-info/jobs.php
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "Waiting"
@@ -12350,7 +12805,7 @@ msgstr ""
 msgid "Waiting and running"
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "Waiting to start"
 msgstr ""
 
@@ -12416,6 +12871,11 @@ msgstr ""
 msgid "Web title"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "Webhooks"
+msgstr ""
+
 #: oc-admin/themes/modern/plugins/index.php
 #: oc-admin/themes/modern/tools/system-info/security.php
 #: oc-admin/themes/modern/users/frm.php
@@ -12429,6 +12889,13 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/security.php
 msgid "Website password reset"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid ""
+"Websites whose pages may call the API from a browser, one per line, such as "
+"https://app.example.com. Use * for any site; keyed calls still need an "
+"exact origin."
 msgstr ""
 
 #: oc-includes/osclass/helpers/hUtils.php
@@ -12493,6 +12960,10 @@ msgstr ""
 msgid "What updating %s would change"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/api.php
+msgid "What uses the key, such as \"Mobile app\" or \"Stock sync\"."
+msgstr ""
+
 #: oc-includes/osclass/gui/billing/receipt.php
 msgid "What was bought"
 msgstr ""
@@ -12530,6 +13001,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
 msgid "Where"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid "Where the site sends each event, as an https address."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/keywordBlock.php
@@ -12611,6 +13086,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "Writes strict SQL mode refused"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "Writes, per key or user"
 msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
@@ -12702,7 +13181,7 @@ msgid ""
 "https."
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid ""
 "Your S3 endpoint uses plain http, so a backup and its download link would "
 "travel unencrypted. Use an https endpoint."
@@ -12768,18 +13247,6 @@ msgstr ""
 msgid "Your database is up to date and healthy."
 msgstr ""
 
-#: oc-includes/osclass/classes/actions/ItemActions.php
-msgid "Your email: invalid email address"
-msgstr ""
-
-#: oc-includes/osclass/classes/actions/ItemActions.php
-msgid "Your friend's email: invalid email address"
-msgstr ""
-
-#: oc-includes/osclass/classes/actions/ItemActions.php
-msgid "Your friend's name: this field is required"
-msgstr ""
-
 #: oc-includes/osclass/classes/admin/form/AdvancedSettingsForm.php
 msgid "Your host is required to know the subdomain."
 msgstr ""
@@ -12795,15 +13262,22 @@ msgstr ""
 msgid "Your listing could not be posted. Please review its content and try again."
 msgstr ""
 
-#: oc-includes/osclass/classes/actions/ItemActions.php
 #: oc-includes/osclass/classes/form/SendFriendForm.php
 msgid "Your name: this field is required"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid ""
+"Your new key \"%s\". Copy it now and keep it somewhere safe: it is not "
+"shown again."
 msgstr ""
 
 #: oc-includes/osclass/functions.php
 msgid "Your orders"
 msgstr ""
 
+#: oc-admin/themes/modern/admins/sign_out_all.php
+#: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/tools/backup.php
 msgid "Your password"
 msgstr ""
@@ -12902,6 +13376,10 @@ msgstr ""
 msgid "[%1$s] Security update %2$s installed"
 msgstr ""
 
+#: oc-includes/osclass/classes/webhook/Delivery.php
+msgid "[%s] A webhook endpoint was paused"
+msgstr ""
+
 #: oc-includes/osclass/classes/security/AdminTwoFactor.php
 msgid "[%s] Your admin password is known to someone else"
 msgstr ""
@@ -12924,6 +13402,10 @@ msgstr ""
 
 #: oc-includes/osclass/helpers/hUtils.php
 msgid "am"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "an hour"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
@@ -13318,6 +13800,10 @@ msgstr ""
 msgid "reporters"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
+msgid "requests a minute"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/sitemap.php
 #: oc-includes/osclass/classes/admin/form/SitemapSettingsForm.php
 msgid "robots.txt"
@@ -13337,14 +13823,15 @@ msgstr ""
 msgid "s_source_file is not a valid url"
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "saved in your S3 bucket"
 msgstr ""
 
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "saved on the server"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/ApiSettingsForm.php
 #: oc-includes/osclass/classes/admin/form/StorageSettingsForm.php
 msgid "seconds"
 msgstr ""
@@ -13388,7 +13875,7 @@ msgid "to"
 msgstr ""
 
 #: oc-includes/osclass/classes/backup/BackupJobs.php
-#: oc-includes/osclass/classes/backup/BackupManager.php
+#: oc-includes/osclass/classes/backup/BackupService.php
 msgid "to download"
 msgstr ""
 
