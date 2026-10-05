@@ -1,0 +1,370 @@
+<?php
+/*
+ * This file is part of Shopclass (Mindstellar).
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
+ *
+ * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+/**
+ * Signed-in user tokens: access tokens (signed, stored nowhere, ended by a password change,
+ * a suspension or their expiry), refresh tokens (hashed, rotated on every use within their
+ * family, a reused one revoking the family), the authenticator taking `sca_` tokens, and the
+ * kernel acting for the token's user while a cookie user stays anonymous.
+ *
+ * DB-free: users and credentials live in arrays.  Usage: php tests/api-tokens.php
+ */
+
+define('OSC_CSRF_SECRET', 'api-tokens-test-secret');
+define('WEB_PATH', 'http://example.test/');
+
+require_once __DIR__ . '/lib/api-boot.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hUsers.php';
+
+use mindstellar\api\ApiSettings;
+use mindstellar\api\auth\AccessTokens;
+use mindstellar\api\auth\ApiKeys;
+use mindstellar\api\auth\Authenticator;
+use mindstellar\api\auth\Credential;
+use mindstellar\api\auth\CredentialKind;
+use mindstellar\api\auth\FailureCounter;
+use mindstellar\api\auth\KeyOwner;
+use mindstellar\api\auth\RefreshTokens;
+use mindstellar\api\auth\Scopes;
+use mindstellar\api\auth\SignInStore;
+use mindstellar\api\auth\StoredKey;
+use mindstellar\api\auth\UserRows;
+use mindstellar\api\Kernel;
+use mindstellar\api\ProblemException;
+use mindstellar\api\Request;
+use mindstellar\api\Response;
+use mindstellar\api\routing\Router;
+use mindstellar\api\schema\Validator;
+use mindstellar\utility\SystemClock;
+
+/** t_api_credential as an array, with a user table beside it. */
+final class ArraySessions implements SignInStore
+{
+    /** @var array<int,array<string,mixed>> */
+    public array $rows = [];
+
+    /** @var array<int,array<string,mixed>> user id => t_user row */
+    public array $users = [];
+
+    /** @var string[] store calls, in order, while $trace is on */
+    public array $calls = [];
+
+    public bool $trace = false;
+
+    public function atomically(callable $fn): mixed
+    {
+        $this->note('begin');
+        $result = $fn();
+        $this->note('commit');
+
+        return $result;
+    }
+
+    public function lockFamily(string $family): void
+    {
+        $this->note('lock');
+    }
+
+    private function note(string $call): void
+    {
+        if ($this->trace) {
+            $this->calls[] = $call;
+        }
+    }
+
+    public function findByTokenId(string $tokenId): ?StoredKey
+    {
+        foreach ($this->rows as $id => $row) {
+            if ($row['tokenId'] === $tokenId) {
+                return $this->key($id);
+            }
+        }
+
+        return null;
+    }
+
+    public function find(int $id): ?StoredKey
+    {
+        $this->note('find');
+
+        return isset($this->rows[$id]) ? $this->key($id) : null;
+    }
+
+    public function insert(StoredKey $key): int
+    {
+        $this->note('insert');
+        $id              = count($this->rows) + 1;
+        $this->rows[$id] = [
+            'kind' => $key->kind(), 'tokenId' => $key->tokenId(), 'hash' => $key->secretHash(), 'name' => $key->name(),
+            'scopes' => $key->scopes(), 'userId' => $key->owner()->userId(), 'family' => $key->family(),
+            'expires' => $key->expiresAt(), 'revoked' => null, 'created' => $key->createdAt(),
+            'lastUsed' => null, 'ip' => '',
+        ];
+
+        return $id;
+    }
+
+    public function touch(int $id, string $ip, int $time): void
+    {
+        $this->rows[$id]['lastUsed'] = $time;
+        $this->rows[$id]['ip']       = $ip;
+    }
+
+    public function revoke(int $id): bool
+    {
+        $this->note('revoke');
+        if (!isset($this->rows[$id]) || $this->rows[$id]['revoked'] !== null) {
+            return false;
+        }
+        $this->rows[$id]['revoked'] = 1;
+
+        return true;
+    }
+
+    public function revokeFamily(string $family): int
+    {
+        $n = 0;
+        foreach ($this->rows as $id => $row) {
+            if ($row['family'] === $family && $row['revoked'] === null) {
+                $this->rows[$id]['revoked'] = 1;
+                $n++;
+            }
+        }
+
+        return $n;
+    }
+
+    public function revokeRefreshFor(int $userId, ?string $keepFamily = null): int
+    {
+        $n = 0;
+        foreach ($this->rows as $id => $row) {
+            if ($row['kind'] === CredentialKind::REFRESH && $row['userId'] === $userId && $row['revoked'] === null && $row['family'] !== $keepFamily) {
+                $this->rows[$id]['revoked'] = 1;
+                $n++;
+            }
+        }
+
+        return $n;
+    }
+
+    public function listBy(?string $kind = null, ?int $userId = null, ?int $adminId = null, bool $liveOnly = false): array
+    {
+        $out = [];
+        foreach (array_reverse(array_keys($this->rows)) as $id) {
+            $row = $this->rows[$id];
+            if (($kind === null || $row['kind'] === $kind) && ($userId === null || $row['userId'] === $userId) && (!$liveOnly || $row['revoked'] === null)) {
+                $out[] = $this->key($id);
+            }
+        }
+
+        return $out;
+    }
+
+    public function hasLiveFor(int $userId): bool
+    {
+        foreach ($this->rows as $row) {
+            if ($row['userId'] === $userId && $row['revoked'] === null && in_array($row['kind'], [CredentialKind::REFRESH, CredentialKind::KEY], true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** Live rows of a family. */
+    public function live(string $family): int
+    {
+        return count(array_filter($this->rows, static fn (array $r): bool => $r['family'] === $family && $r['revoked'] === null));
+    }
+
+    private function key(int $id): StoredKey
+    {
+        $r     = $this->rows[$id];
+        $user  = $this->users[$r['userId']] ?? null;
+        $owner = $user !== null && UserRows::canSignIn($user) ? KeyOwner::user($r['userId']) : null;
+
+        return new StoredKey($id, $r['kind'], $r['tokenId'], $r['hash'], $r['name'], $r['scopes'], $owner, null, true, $r['expires'], $r['revoked'], $r['lastUsed'], $r['family'], $r['created'], $r['ip']);
+    }
+}
+
+$store        = new ArraySessions();
+$store->users = [
+    10 => ['pk_i_id' => '10', 's_name' => 'Uma', 's_email' => 'uma@x.test', 's_phone_mobile' => '', 's_phone_land' => '', 's_password' => '$2y$12$first', 'b_enabled' => '1', 'b_active' => '1'],
+    11 => ['pk_i_id' => '11', 's_name' => 'Cookie', 's_email' => 'c@x.test', 's_phone_mobile' => '', 's_phone_land' => '', 's_password' => '$2y$12$other', 'b_enabled' => '1', 'b_active' => '1'],
+];
+$loads    = 0;
+$accounts = static function () use ($store, &$loads): UserRows {
+    return new UserRows(static function (int $id) use ($store, &$loads): ?array {
+        $loads++;
+
+        return $store->users[$id] ?? null;
+    });
+};
+$scopes = new Scopes();
+$now    = 1_800_000_000;
+$clock  = new TestClock(static function () use (&$now): int {
+    return $now;
+});
+$problem = static function (callable $fn): ?string {
+    try {
+        $result = $fn();
+    } catch (ProblemException $e) {
+        $result = $e;
+    }
+
+    return $result instanceof ProblemException ? (string) $result->response()->body()['code'] : null;
+};
+
+harness_section('access tokens');
+$access = new AccessTokens($scopes, $accounts(), 900);
+$token  = $access->issue($store->users[10], ['listings:read', 'account:write', 'admin:users'], 'FAMILY0000000001');
+check('an access token is sca_<signed payload>', preg_match('/^sca_[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/D', $token) === 1);
+$c = $access->verify($token);
+pin('it stands for its user, from its sign-in', [CredentialKind::USER, 10, 'FAMILY0000000001', true, false], [$c->kind(), $c->userId(), $c->family(), $c->isUser(), $c->isAdmin()]);
+pin('scopes a user may not hold are cut on every use', ['listings:read', 'account:write'], $c->scopes());
+check('the payload holds no password hash, only the sign-out stamp\'s fingerprint', !str_contains(base64_decode(strtr(explode('.', substr($token, 4))[0], '-_', '+/')), '$2y$'));
+pin('an expired token is refused', null, $access->verify($access->issue($store->users[10], ['listings:read'], 'F', -1)));
+pin('a changed signature is refused', null, $access->verify($token . 'x'));
+pin('a token signed for another purpose is refused', null, $access->verify('sca_' . \mindstellar\security\SignedPayload::pack('report-sender', ['sub' => 10, 'kind' => 'user', 'scopes' => '', 'pw' => '', 'fam' => 'F'], 60)));
+pin('a key-looking token is not an access token', null, $access->verify('sck_AAAAAAAAAAAAAAAA.' . str_repeat('a', 64)));
+
+$store->users[10]['s_password'] = '$2y$12$rehashed';
+pin('a rehash alone leaves the token working', 10, (new AccessTokens($scopes, $accounts(), 900))->verify($token)?->userId());
+$store->users[10]['s_password']   = '$2y$12$first';
+$store->users[10]['i_auth_stamp'] = '1';
+pin('a raised sign-out stamp (a password change, or signing out everywhere) ends the token at once', null, (new AccessTokens($scopes, $accounts(), 900))->verify($token));
+unset($store->users[10]['i_auth_stamp']);
+pin('the token names its user: another account\'s stamp never matches', false, \mindstellar\auth\AuthStamp::fingerprint($store->users[10]) === \mindstellar\auth\AuthStamp::fingerprint($store->users[11]));
+$store->users[10]['b_enabled']  = '0';
+pin('a suspended user\'s token is refused on the next call', null, (new AccessTokens($scopes, $accounts(), 900))->verify($token));
+$store->users[10]['b_enabled'] = '1';
+$store->users[10]['b_active']  = '0';
+pin('so is an unconfirmed user\'s', null, (new AccessTokens($scopes, $accounts(), 900))->verify($token));
+$store->users[10]['b_active'] = '1';
+pin('a deleted user\'s too', null, (new AccessTokens($scopes, $accounts(), 900))->verify($access->issue(['pk_i_id' => 99, 's_password' => 'x'], [], 'F')));
+$memo  = $accounts();
+$loads = 0;
+$memo->find(10);
+$memo->find(10);
+pin('a user row is read once per request', 1, $loads);
+
+harness_section('refresh tokens');
+$refresh = new RefreshTokens($store, $scopes, $accounts(), 30, $clock);
+$first   = $refresh->start($store->users[10], ['listings:read', 'account:read'], '  Phone  ', '192.0.2.1');
+check('a refresh token is scr_<16>.<64 hex>', preg_match('/^scr_[0-9A-Za-z]{16}\.[0-9a-f]{64}$/D', $first->token()) === 1);
+$row = $store->rows[1];
+pin('stored as a hash with its family, label, address and a 30-day expiry', [
+    CredentialKind::REFRESH, hash('sha256', explode('.', $first->token())[1]), $first->family(), 'Phone', '192.0.2.1', $now + 30 * 86400,
+], [$row['kind'], $row['hash'], $row['family'], $row['name'], $row['ip'], $row['expires']]);
+check('the token itself is stored nowhere', !str_contains((string) json_encode($store->rows), explode('.', $first->token())[1]));
+
+$now          += 3600;
+$store->trace  = true;
+$second        = $refresh->rotate($first->token(), '192.0.2.2');
+$store->trace  = false;
+pin('a swap runs in one transaction, the family locked before the row is read again, claimed and replaced', ['begin', 'lock', 'find', 'revoke', 'insert', 'commit'], $store->calls);
+pin('a use swaps it for a new token in the same family, with the same scopes', [$first->family(), ['listings:read', 'account:read']], [$second->family(), $second->scopes()]);
+check('the new token differs', $second->token() !== $first->token());
+pin('the expiry slides from this use', $now + 30 * 86400, $second->expiresAt());
+pin('the old one is revoked, the new one live', [1, 1], [(int) $store->rows[1]['revoked'], $store->live($first->family())]);
+
+try {
+    $refresh->rotate($first->token(), '203.0.113.9');
+    $reused = null;
+} catch (ProblemException $e) {
+    $reused = $e->response()->body();
+}
+pin('the old token coming back is thrown as an OAuth invalid_grant that says so', ['invalid_grant', 'invalid_grant', true], [$reused['code'] ?? null, $reused['error'] ?? null, str_contains((string) ($reused['detail'] ?? ''), 'already used')]);
+pin('and the whole family is revoked', 0, $store->live($first->family()));
+pin('so the newest token is refused too', 'invalid_grant', $problem(static fn () => $refresh->rotate($second->token(), '192.0.2.2')));
+
+$other = $refresh->start($store->users[10], ['listings:read'], 'Laptop', '192.0.2.3');
+pin('a wrong secret is refused and revokes nothing', ['invalid_grant', 1], [$problem(static fn () => $refresh->rotate(substr($other->token(), 0, -1) . (str_ends_with($other->token(), 'f') ? 'e' : 'f'), '1.1.1.1')), $store->live($other->family())]);
+pin('garbage is refused', 'invalid_grant', $problem(static fn () => $refresh->rotate('scr_nope', '1.1.1.1')));
+$now += 31 * 86400;
+pin('a token unused past its life is refused', 'invalid_grant', $problem(static fn () => $refresh->rotate($other->token(), '1.1.1.1')));
+
+$third = $refresh->start($store->users[10], ['listings:read'], 'Tablet', '192.0.2.4');
+$store->users[10]['s_password'] = '$2y$12$rehashed';
+$fresh = new RefreshTokens($store, $scopes, $accounts(), 30, $clock);
+check('a new hash alone (a rehash) does not end the family', $fresh->rotate($third->token(), '1.1.1.1')->family() === $third->family());
+$store->users[10]['s_password'] = '$2y$12$first';
+
+$fifth = $fresh->start($store->users[10], ['listings:read'], 'Five', '');
+$store->users[10]['b_enabled'] = '0';
+pin('a suspended user cannot refresh', 'invalid_grant', $problem(static fn () => (new RefreshTokens($store, $scopes, $accounts(), 30, $clock))->rotate($fifth->token(), '')));
+$store->users[10]['b_enabled'] = '1';
+
+$a = $fresh->start($store->users[10], ['listings:read'], 'A', '');
+$b = $fresh->start($store->users[10], ['listings:read'], 'B', '');
+pin('revoking all but one sign-in', [0, 1], [$fresh->end(10, null, $b->family()) >= 1 ? $store->live($a->family()) : -1, $store->live($b->family())]);
+pin('another user\'s sign-in is not ended', [0, 1], [$fresh->end(11, $b->family()), $store->live($b->family())]);
+pin('the user\'s own is', [1, 0], [$fresh->end(10, $b->family()), $store->live($b->family())]);
+
+harness_section('the authenticator takes access tokens');
+$authenticator = new Authenticator(new ApiKeys($store, $scopes, new SystemClock()), new FailureCounter(static fn () => [], static function () use (&$failures): int {
+    return ++$failures;
+}), new AccessTokens($scopes, $accounts(), 900));
+$failures = 0;
+$good     = (new AccessTokens($scopes, $accounts(), 900))->issue($store->users[10], ['listings:read'], 'FAM');
+$c        = $authenticator->authenticate(new Request('GET', 'v1/x', [], ['Authorization' => 'Bearer ' . $good], '192.0.2.10'));
+pin('a Bearer access token authenticates', [CredentialKind::USER, 10], [$c->kind(), $c->userId()]);
+pin('a bad one is 401 and counted', ['unauthorized', 1], [$problem(static fn () => $authenticator->authenticate(new Request('GET', 'v1/x', [], ['Authorization' => 'Bearer sca_x.y'], '192.0.2.10'))), $failures]);
+pin('a refresh token never authenticates a call', 'unauthorized', $problem(static fn () => $authenticator->authenticate(new Request('GET', 'v1/x', [], ['Authorization' => 'Bearer ' . $b->token()], '192.0.2.10'))));
+$failures = 0;
+pin('an expired but genuine token is 401 token_expired, and not counted', ['token_expired', 0], [$problem(static fn () => $authenticator->authenticate(new Request('GET', 'v1/x', [], ['Authorization' => 'Bearer ' . (new AccessTokens($scopes, $accounts(), 900))->issue($store->users[10], ['listings:read'], 'FAM', -1)], '192.0.2.10'))), $failures]);
+$staleToken = (new AccessTokens($scopes, $accounts(), 900))->issue(['pk_i_id' => 10, 'i_auth_stamp' => 7], ['listings:read'], 'FAM');
+pin('a genuine token whose user changed since is 401 unauthorized, and not counted', ['unauthorized', 0], [$problem(static fn () => $authenticator->authenticate(new Request('GET', 'v1/x', [], ['Authorization' => 'Bearer ' . $staleToken], '192.0.2.10'))), $failures]);
+pin('a forged one is counted', 1, ($problem(static fn () => $authenticator->authenticate(new Request('GET', 'v1/x', [], ['Authorization' => 'Bearer ' . substr($good, 0, -2) . 'xx'], '192.0.2.10'))) !== null) ? $failures : -1);
+$noTokens = api_test_authenticator(new ApiKeys($store, $scopes, new SystemClock()));
+pin('an access token for a user the checker does not know is refused', 'unauthorized', $problem(static fn () => $noTokens->authenticate(new Request('GET', 'v1/x', [], ['Authorization' => 'Bearer ' . $good], '192.0.2.10'))));
+
+harness_section('a user\'s key does not hang on the password hash');
+$userKeys = new ApiKeys($store, $scopes, new SystemClock());
+$made     = $userKeys->create(CredentialKind::KEY, 'Script', ['listings:read'], KeyOwner::user(10));
+pin('the key works', 10, $userKeys->verify($made->token())?->userId());
+$keptHash                       = $store->users[10]['s_password'];
+$store->users[10]['s_password'] = '$2y$12$anotherone';
+pin('a rehash leaves it working; a password change revokes it through SignOut', 10, $userKeys->verify($made->token())?->userId());
+$store->users[10]['s_password'] = $keptHash;
+
+harness_section('limits and settings');
+pin('the API is off by default', false, (new ApiSettings())->enabled());
+$strict = api_test_limiter(static fn () => null);
+pin('a limit fails open by default when the counter is unreachable', true, $strict->hit(new \mindstellar\api\ratelimit\RateBucket('x', 'k', 5))->allowed());
+pin('and closed when asked to', false, $strict->hit(new \mindstellar\api\ratelimit\RateBucket('x', 'k', 5), false)->allowed());
+pin('an access token lives 15 minutes, a refresh token 30 days unused', [900, 900, 30], [\mindstellar\api\auth\AccessTokens::TTL, (new AccessTokens($scopes, $accounts()))->ttl(), \mindstellar\api\auth\RefreshTokens::TTL_DAYS]);
+
+harness_section('the identity core code sees');
+final class WhoAmI
+{
+    public function show(Request $request, Credential $credential, array $args): Response
+    {
+        return Response::ok(['user' => osc_logged_user_id(), 'email' => osc_logged_user_email()]);
+    }
+}
+$kernel = api_test_kernel(
+    new Router(new Validator(), ['GET me' => ['handler' => [WhoAmI::class, 'show'], 'auth' => 'public', 'scope' => 'listings:read']]),
+    api_test_authenticator(new ApiKeys($store, $scopes, new SystemClock()), tokens: new AccessTokens($scopes, $accounts(), 900)),
+    new ApiSettings(true, true),
+    users: $accounts()
+);
+// The bootstrap resolved user 11 from a signed cookie; index.php forgets it for page=api.
+$_COOKIE = ['oc_userId' => '11', 'oc_userSecret' => 'signed'];
+osc_web_user_apply_identity($store->users[11]);
+\mindstellar\api\identity\WebIdentity::forget();
+$r = $kernel->handle(new Request('GET', 'v1/me', [], [], '192.0.2.20'));
+pin('a valid oc_userId cookie and no header is anonymous', [200, 0, ''], [$r->status(), $r->body()['data']['user'], $r->body()['data']['email']]);
+$r = $kernel->handle(new Request('GET', 'v1/me', [], ['Authorization' => 'Bearer ' . $good], '192.0.2.20'));
+pin('with a token, core sees the token\'s user', [10, 'uma@x.test'], [$r->body()['data']['user'], $r->body()['data']['email']]);
+pin('and the cookie user never', false, $r->body()['data']['user'] === 11);
+check('nothing started a session', session_status() !== PHP_SESSION_ACTIVE);
+
+exit(harness_result());

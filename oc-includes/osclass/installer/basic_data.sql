@@ -183,7 +183,21 @@ INSERT INTO /*TABLE_PREFIX*/t_preference VALUES
     ,('osclass', 'billing_free_live_listings', '0', 'INTEGER')
     ,('osclass', 'billing_slot_enabled', '0', 'BOOLEAN')
     ,('osclass', 'billing_slot_credits', '0', 'INTEGER')
-    ,('osclass', 'billing_slot_quantity', '1', 'INTEGER');
+    ,('osclass', 'billing_slot_quantity', '1', 'INTEGER')
+    ,('api', 'api_enabled', '0', 'BOOLEAN')
+    ,('api', 'api_public_reads', '0', 'BOOLEAN')
+    ,('api', 'api_rate_limit_default', '120', 'INTEGER')
+    ,('api', 'api_rate_limit_anon', '60', 'INTEGER')
+    ,('api', 'api_rate_limit_write', '30', 'INTEGER')
+    ,('api', 'api_cors_origins', '', 'STRING')
+    ,('api', 'api_cache_max_age', '60', 'INTEGER')
+    ,('api', 'api_hide_phone', '0', 'BOOLEAN')
+    ,('api', 'api_user_keys', '0', 'BOOLEAN')
+    ,('api', 'api_registration', '0', 'BOOLEAN')
+    ,('api', 'api_photo_urls', '0', 'BOOLEAN')
+    ,('api', 'api_listing_rate', '0', 'INTEGER')
+    ,('api', 'api_webhooks_allow_private', '0', 'BOOLEAN')
+    ,('api', 'api_password_grant', '1', 'BOOLEAN');
 
 INSERT INTO /*TABLE_PREFIX*/t_cron (e_type, d_last_exec, d_next_exec) VALUES
     ('HOURLY', '1000-01-01 00:00:00', '1000-01-01 00:00:00'),
