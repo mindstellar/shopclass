@@ -358,6 +358,14 @@ class CWebItem extends BaseModel
 
                     if ($success) {
                         osc_add_flash_ok_message(_m('The listing has been validated'));
+                        // The item page hides a listing from a guest, so send them home with
+                        // the reason. The owner's item page already explains it.
+                        if (!ItemAccess::canView(array('b_active' => 1) + $item[0], $this->userId, false)) {
+                            osc_add_flash_warning_message(
+                                _m('The listing will be public once the admin has approved it')
+                            );
+                            $this->redirectTo(osc_base_url());
+                        }
                     } else {
                         osc_add_flash_error_message(_m("The listing can't be validated"));
                     }
