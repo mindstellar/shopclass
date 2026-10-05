@@ -280,17 +280,23 @@ class CAdminPlugins extends AdminSecBaseModel
                 break;
             case 'error_plugin':
                 // force php errors and simulate plugin installation to show the errors in the iframe
-                $plugin = Params::getParam('plugin');
-                if (strpos($plugin, '../') !== false || strpos($plugin, '..\\') !== false) {
+                osc_csrf_check();
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=plugins')) {
+                    break;
+                }
+                $plugin   = Params::getParamString('plugin');
+                $resolved = PluginAjaxFile::resolve($plugin, osc_plugins_path());
+                if ($resolved === null) {
                     osc_add_flash_error_message(_m('Invalid plugin file'), 'admin');
                     $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
+                    break;
                 }
                 if (!OSC_DEBUG) {
                     error_reporting(E_ALL | E_STRICT);
                 }
                 @ini_set('display_errors', 1);
 
-                include(osc_plugins_path() . $plugin);
+                include $resolved;
                 Plugins::install($plugin);
                 exit;
                 break;

@@ -23,6 +23,9 @@ write_real_ip_conf() {
         : > "$conf"
         return 0
     fi
+    if [ -z "${OSC_REAL_IP_TRUSTED:-}" ]; then
+        echo "entrypoint: warning: OSC_REAL_IP_HEADER is set without OSC_REAL_IP_TRUSTED, so any client can fake its address. Set it to your proxy's address range, e.g. 172.16.0.0/12." >&2
+    fi
     {
         printf '%s\n' "${OSC_REAL_IP_TRUSTED:-0.0.0.0/0,::/0}" | tr ',' '\n' | while IFS= read -r cidr; do
             cidr=$(printf '%s' "$cidr" | tr -d ' ')

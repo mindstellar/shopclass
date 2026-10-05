@@ -299,6 +299,7 @@ class CAdminUsers extends AdminSecBaseModel
                 }
                 break;
             case ('status_alerts'):
+                osc_csrf_check();
                 $status   = Params::getParam('status');
                 $alertId  = Params::getParam('alert_id');
 

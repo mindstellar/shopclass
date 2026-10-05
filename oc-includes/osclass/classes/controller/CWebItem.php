@@ -230,17 +230,10 @@ class CWebItem extends BaseModel
                 }
                 break;
             case 'item_edit':   // edit item
-                $secret = Params::getParam('secret');
-                $id     = Params::getParam('id');
-                $item   =
-                    $this->itemManager->listWhere(
-                        'i.pk_i_id = %d AND ((i.s_secret = %s AND i.fk_i_user_id IS NULL) OR (i.fk_i_user_id = %d))',
-                        (int)$id,
-                        $secret,
-                        (int)$this->userId
-                    );
-                if (count($item) == 1) {
-                    $item = Item::newInstance()->findByPrimaryKey($id);
+                $secret = Params::getParamString('secret');
+                $id     = Params::getParamInt('id');
+                $item   = ItemAccess::manageable($id, $this->userId, false, $secret);
+                if ($item !== array()) {
 
                     $form     = count(Session::newInstance()->_getForm());
                     $keepForm = count(Session::newInstance()->_getKeepForm());
@@ -294,18 +287,12 @@ class CWebItem extends BaseModel
 
                 osc_csrf_check();
 
-                $secret = Params::getParam('secret');
-                $id     = Params::getParam('id');
-                $item   =
-                    $this->itemManager->listWhere(
-                        'i.pk_i_id = %d AND ((i.s_secret = %s AND i.fk_i_user_id IS NULL) OR (i.fk_i_user_id = %d))',
-                        (int)$id,
-                        $secret,
-                        (int)$this->userId
-                    );
+                $secret = Params::getParamString('secret');
+                $id     = Params::getParamInt('id');
+                $item   = ItemAccess::manageable($id, $this->userId, false, $secret);
 
-                if (count($item) == 1) {
-                    $this->_exportVariableToView('item', $item[0]);
+                if ($item !== array()) {
+                    $this->_exportVariableToView('item', $item);
 
                     if (osc_recaptcha_items_enabled() && osc_captcha_enabled()
                         && !osc_check_captcha()
@@ -345,15 +332,16 @@ class CWebItem extends BaseModel
                 }
                 break;
             case 'activate':
-                $secret = Params::getParam('secret');
-                $id     = Params::getParam('id');
-                $item   =
-                    $this->itemManager->listWhere(
-                        'i.pk_i_id = %d AND ((i.s_secret = %s) OR (i.fk_i_user_id = %d))',
-                        (int)$id,
-                        $secret,
-                        (int)$this->userId
-                    );
+                $secret = Params::getParamString('secret');
+                $id     = Params::getParamInt('id');
+                $row    = $id > 0 ? Item::newInstance()->findByPrimaryKey($id) : array();
+                $item   = array();
+                if (is_array($row) && $row !== array()
+                    && (ItemAccess::isOwner($row, $this->userId)
+                        || ($secret !== '' && hash_equals((string)$row['s_secret'], $secret)))
+                ) {
+                    $item = array($row);
+                }
 
                 // item doesn't exist
                 if (count($item) == 0) {
@@ -370,6 +358,14 @@ class CWebItem extends BaseModel
 
                     if ($success) {
                         osc_add_flash_ok_message(_m('The listing has been validated'));
+                        // The item page hides a listing from a guest, so send them home with
+                        // the reason. The owner's item page already explains it.
+                        if (!ItemAccess::canView(array('b_active' => 1) + $item[0], $this->userId, false)) {
+                            osc_add_flash_warning_message(
+                                _m('The listing will be public once the admin has approved it')
+                            );
+                            $this->redirectTo(osc_base_url());
+                        }
                     } else {
                         osc_add_flash_error_message(_m("The listing can't be validated"));
                     }
@@ -565,7 +561,7 @@ class CWebItem extends BaseModel
 
                 // Bound how many listings one source may share per window — the form
                 // relays site-branded mail, so it needs a ceiling regardless of the login.
-                if (\mindstellar\security\ActionThrottle::exceededFor('send_friend', 5)) {
+                if (\mindstellar\security\ActionThrottle::exceededFor('send_friend')) {
                     osc_add_flash_error_message(
                         _m("You've shared too many listings recently. Please try again later.")
                     );
@@ -669,7 +665,7 @@ class CWebItem extends BaseModel
                 // Bound how many enquiries one source may send per window (defence in
                 // depth: contact only reaches a listing's own seller, not an arbitrary
                 // address, so the default ceiling is looser than share-a-listing).
-                if (\mindstellar\security\ActionThrottle::exceededFor('item_contact', 15)) {
+                if (\mindstellar\security\ActionThrottle::exceededFor('item_contact')) {
                     $fail(_m("You've sent too many messages recently. Please try again later."));
 
                     return false;
@@ -708,8 +704,9 @@ class CWebItem extends BaseModel
             case 'add_comment':
                 osc_csrf_check();
 
-                $itemId = Params::getParam('id');
+                $itemId = Params::getParamInt('id');
                 $item   = Item::newInstance()->findByPrimaryKey($itemId);
+                $this->notFoundIfHidden($item);
                 $this->_exportVariableToView('item', $item);
 
                 if (osc_recaptcha_comments_enabled() && osc_captcha_enabled()
@@ -758,6 +755,9 @@ class CWebItem extends BaseModel
                     case 7:
                         $msg = _m('Sorry, comments are disabled');
                         osc_add_flash_error_message($msg);
+                        break;
+                    case 8:
+                        osc_add_flash_error_message(_m('Too many comments in an hour. Try again later.'));
                         break;
                 }
 

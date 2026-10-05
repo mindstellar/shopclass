@@ -67,7 +67,7 @@ Everything is set from environment variables:
 |---|---|
 | `DB_HOST` / `DB_NAME` / `DB_USER` / `DB_PASSWORD` | Database connection |
 | `WEB_PATH` | The site's public base URL |
-| `OSC_CLI_URL` | The site's address for `oc-cli.php` only, when `WEB_PATH` is left unset so web pages keep the address they were opened on. Use the exact address visitors use |
+| `OSC_CLI_URL` | The site's address for `oc-cli.php`, when `WEB_PATH` is left unset so web pages keep the address they were opened on. Also the address e-mail links use in that case. Use the exact address visitors use |
 | `OSC_ADMIN_USER` / `OSC_ADMIN_EMAIL` / `OSC_ADMIN_PASSWORD` | The first admin account. Leave the password unset and a strong one is generated and printed to the logs |
 | `OSC_SITE_TITLE` | Site title at provisioning time |
 | `OSC_IGNORE_CONFIG_FILE` | Set to `1` so the image configures itself from the environment rather than a `config.php` |
@@ -76,9 +76,11 @@ Everything is set from environment variables:
 | `OSC_REAL_IP_HEADER` / `OSC_REAL_IP_TRUSTED` | The header carrying the real client IP behind a proxy, e.g. `X-Real-IP` or `CF-Connecting-IP`, and the address ranges to trust it from (in CIDR notation, e.g. `172.16.0.0/12`): see [putting it behind TLS](#putting-it-behind-tls) |
 | `OSC_CACHE` / `OSC_CACHE_HOST` / `OSC_CACHE_PORT` | [Object cache](/docs/configure/cache/) |
 | `OSC_MICROCACHE` | Set to `1` to cache public pages in nginx: see [page caching](/docs/configure/page-cache/). The image already carries the purge module (lets a cached page be removed early), so the nginx Cache plugin works with nothing further to configure |
-| `OSC_PAGE_CACHE_PURGE_URL` | Set by the entrypoint when `OSC_MICROCACHE` is on (`http://127.0.0.1:8089/`, a server that listens only inside the container). Core sends one `PURGE` there to clear the whole cache after a theme, settings or plugin change. Do not set it yourself |
+| `OSC_PAGE_CACHE_PURGE_URL` | Where core sends one `PURGE` to clear the whole cache after a theme, settings or plugin change. When `OSC_MICROCACHE` is on it defaults to `http://127.0.0.1:8089/` (a server that listens only inside the container), also for `docker exec`, cron and the job worker. Set it only to override that |
 | `OSC_RATE_LIMIT` / `OSC_RATE_LIMIT_BURST` | Requests per second per client IP, e.g. `10r/s`. Unset is off |
 | `OSC_TLS_DOMAIN` / `OSC_TLS_REDIRECT_FROM` / `OSC_TLS_EMAIL` | [Built-in HTTPS](#built-in-https): the domain, other names to send to it (comma-separated), and the e-mail for expiry notices (default `OSC_ADMIN_EMAIL`) |
+
+With no `WEB_PATH`, the address is taken from the request's `Host` header, which a visitor can fake. E-mail links then use `OSC_CLI_URL`. With neither set, mails with a secret link (password reset, e-mail change, account and listing activation) are not sent and a warning is logged; other mails still go out.
 
 For a real deployment: point `DB_HOST` at a managed database, set `WEB_PATH` to
 the public URL, set a strong admin password, and

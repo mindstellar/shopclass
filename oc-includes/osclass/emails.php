@@ -91,6 +91,7 @@ function fn_email_alert_validation($alert, $email, $secret)
         'to_name'  => $user['s_name'],
         'subject'  => $title,
         'body'     => $body,
+        'secret_link' => true,
     );
 
     osc_sendMail($emailParams);
@@ -545,6 +546,7 @@ function fn_email_new_item_non_register_user($item)
         'to_name'  => $item['s_contact_name'],
         'subject'  => $title,
         'body'     => $body,
+        'secret_link' => true,
     );
 
     osc_sendMail($emailParams);
@@ -624,6 +626,7 @@ function fn_email_user_forgot_password($user, $password_url)
             'to_name'  => $user['s_name'],
             'subject'  => $title,
             'body'     => $body,
+            'secret_link' => true,
         );
 
         osc_sendMail($emailParams);
@@ -758,6 +761,7 @@ function fn_email_new_email($new_email, $validation_url)
             'to_name'  => Session::newInstance()->_get('userName'),
             'subject'  => $title,
             'body'     => $body,
+            'secret_link' => true,
         );
         osc_sendMail($emailParams);
         osc_add_flash_ok_message(_m("We've sent you an e-mail. Follow its instructions to validate the changes"));
@@ -834,6 +838,7 @@ function fn_email_user_validation($user, $input)
             'to_name'  => $user['s_name'],
             'subject'  => $title,
             'body'     => $body,
+            'secret_link' => true,
         );
         osc_sendMail($emailParams);
     }
@@ -1235,6 +1240,7 @@ function fn_email_item_validation($item)
         'to_name'  => $contactName,
         'subject'  => $title,
         'body'     => $body,
+        'secret_link' => true,
     );
     osc_sendMail($emailParams);
 }
@@ -1354,6 +1360,7 @@ function fn_email_admin_new_item($item)
                 'to_name'  => __('Admin'),
                 'subject'  => $title,
                 'body'     => $body,
+                'secret_link' => true,
             );
             osc_sendMail($emailParams);
         }
@@ -1482,6 +1489,7 @@ function fn_email_item_validation_non_register_user($item)
         'to_name'  => $item['s_contact_name'],
         'subject'  => $title,
         'body'     => $body,
+        'secret_link' => true,
     );
 
     osc_sendMail($emailParams);

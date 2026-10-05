@@ -500,70 +500,57 @@ class FieldForm extends Form
                     break;
                 case 'DATE':
                     if ($search) {
-                        echo '<h6>' . $label . '</h6>';
+                        echo '<h6 id="' . $id . '-label">' . $label . '</h6>';
+                        $attributes['aria-labelledby'] = $id . '-label';
                     } else {
                         $options['label'] = $label;
                     }
-                    // add cf_date class to the input field; the visible control is a
-                    // native date input, the hidden field carries the unix timestamp.
+                    // The hidden input posts the unix timestamp; the visible one is a native date input.
                     $attributes['class'] = trim($fieldInputClass . ' cf_date ' . $id);
-                    $attributes['type']  = 'date';
                     echo self::getInstance()->hidden($name, $value, ['id' => $id]);
-                    unset($attributes['id']);
-                    echo self::getInstance()->text('datepicker-placeholder', '', $attributes, $options);
-                    // timestamp/1000 (javascript timestamp)
-                    self::initDatePicker(
-                        'meta_' . $field['s_slug'],
-                        osc_date_format(),
-                        $field['s_value']
+                    echo self::getInstance()->text(
+                        'datepicker-placeholder',
+                        self::isoDate($value),
+                        self::dateAttributes($attributes, $id),
+                        $options
                     );
+                    self::dateFieldScript();
                     break;
                 case 'DATEINTERVAL':
+                    $groupLabelId = $id . '-label';
                     if ($search) {
-                        echo '<h6>' . $label . '</h6>';
+                        echo '<h6 id="' . $groupLabelId . '">' . $label . '</h6>';
                     } else {
-                        // print label tag
-                        echo '<label for="meta_' . $field['s_slug'] . '_from">' . $label . '</label>';
+                        echo '<label id="' . $groupLabelId . '">' . $label . '</label>';
                     }
-                    // add cf_date_interval class to the input field; native date
-                    // inputs, hidden fields carry the unix timestamps.
-                    $attributes['type']  = 'date';
-                    $attributes['class'] = trim($fieldInputClass . ' cf_date_interval ' . $id . '_from');
+                    unset($attributes['id']);
                     echo self::getInstance()->hidden($name . '[from]', $value['from'], ['id' => $id . '_from']);
-                    echo '<div class="input-group input-group-sm">';
-                    echo '<span class="input-group-text">' . ucfirst(__('from')) . ' </span>';
-                    unset($attributes['id']);
-                    echo self::getInstance()->text('datepicker-placeholder-from', '', $attributes);
-
-                    echo '<span class="input-group-text">' . ucfirst(__('to')) . ' </span>';
-                    $attributes['class'] = trim($fieldInputClass . ' cf_date_interval ' . $id . '_to');
                     echo self::getInstance()->hidden($name . '[to]', $value['to'], ['id' => $id . '_to']);
-                    unset($attributes['id']);
-                    echo self::getInstance()->text('datepicker-placeholder-to', '', $attributes);
+                    echo '<div class="input-group input-group-sm" role="group" aria-labelledby="' . $groupLabelId . '">';
+                    foreach (self::rangeEnds() as $end => [$endText, $endLabel]) {
+                        $attributes['class']      = trim($fieldInputClass . ' cf_date_interval ' . $id . '_' . $end);
+                        $attributes['aria-label'] = osc_esc_html($endLabel);
+                        echo '<span class="input-group-text">' . $endText . ' </span>';
+                        echo self::getInstance()->text(
+                            'datepicker-placeholder-' . $end,
+                            self::isoDate($value[$end]),
+                            self::dateAttributes($attributes, $id . '_' . $end, $end === 'to')
+                        );
+                    }
                     echo '</div>';
-
-                    self::initDatePicker(
-                        'meta_' . $field['s_slug'] . '_from',
-                        osc_date_format(),
-                        $field['s_value']['from'],
-                        'from'
-                    );
-                    self::initDatePicker(
-                        'meta_' . $field['s_slug'] . '_to',
-                        osc_date_format(),
-                        $field['s_value']['to'],
-                        'to'
-                    );
+                    self::dateFieldScript();
                     break;
                 case 'NUMBER':
                     if ($search) {
-                        echo '<h6>' . $label . '</h6>';
+                        echo '<h6 id="' . $id . '-label">' . $label . '</h6>';
 
-                        echo '<div class="input-group input-group-sm">';
-                        echo '<span class="input-group-text">' . ucfirst(__('from')) . ' </span>';
-                        echo self::getInstance()->text($name . '[from]', $value['from'], $attributes);
-                        echo '<span class="input-group-text">' . ucfirst(__('to')) . ' </span>';
-                        echo self::getInstance()->text($name . '[to]', $value['to'], $attributes);
+                        echo '<div class="input-group input-group-sm" role="group" aria-labelledby="' . $id . '-label">';
+                        unset($attributes['id']);
+                        foreach (self::rangeEnds() as $end => [$endText, $endLabel]) {
+                            $attributes['aria-label'] = osc_esc_html($endLabel);
+                            echo '<span class="input-group-text">' . $endText . ' </span>';
+                            echo self::getInstance()->text($name . '[' . $end . ']', $value[$end], $attributes);
+                        }
                         echo '</div>';
                     } else {
                         $options['label'] = $label;
@@ -595,6 +582,128 @@ class FieldForm extends Form
     }
 
     /**
+     * The two ends of a range field: the visible prefix text and the control's accessible name.
+     *
+     * @return array<string,array{0:string,1:string}>
+     */
+    private static function rangeEnds(): array
+    {
+        return array(
+            'from' => array(ucfirst(__('from')), __('From')),
+            'to'   => array(ucfirst(__('to')), __('To')),
+        );
+    }
+
+    /**
+     * A stored unix timestamp as the yyyy-mm-dd a native date input shows.
+     *
+     * @param mixed $value
+     *
+     * @return string '' when there is no usable timestamp
+     */
+    private static function isoDate($value): string
+    {
+        if (!is_numeric($value) || (int) $value <= 0) {
+            return '';
+        }
+
+        return date('Y-m-d', (int) $value);
+    }
+
+    /**
+     * Attributes for the visible date input that writes into the hidden timestamp input.
+     *
+     * @param array<string,mixed> $attributes
+     * @param string              $hiddenId   Id of the hidden input the server reads
+     * @param bool                $endOfDay   Store 23:59:59 of the day, for the end of a range
+     *
+     * @return array<string,mixed>
+     */
+    private static function dateAttributes(array $attributes, string $hiddenId, bool $endOfDay = false): array
+    {
+        $attributes['type']          = 'date';
+        $attributes['id']            = $hiddenId . '_date';
+        $attributes['data-osc-date'] = $hiddenId;
+        if ($endOfDay) {
+            $attributes['data-osc-date-end'] = 'day';
+        }
+
+        return $attributes;
+    }
+
+    /**
+     * Echo, once per request, the script that keeps each date input and its hidden timestamp in step.
+     * The date is read and written in the browser's time zone; it is safe to run again after new fields load.
+     *
+     * @return void
+     */
+    public static function dateFieldScript()
+    {
+        static $printed = false;
+        if ($printed) {
+            return;
+        }
+        $printed = true;
+        ?>
+        <script>
+            (() => {
+                if (window.oscDateFields) {
+                    window.oscDateFields.init(document);
+                    return;
+                }
+                const pad = (n) => String(n).padStart(2, '0');
+                const hiddenFor = (input) => document.getElementById(input.dataset.oscDate);
+
+                const init = (root) => {
+                    root.querySelectorAll('input[data-osc-date]').forEach((input) => {
+                        const hidden = hiddenFor(input);
+                        if (!hidden) {
+                            return;
+                        }
+                        const ts = parseInt(hidden.value, 10);
+                        if (ts > 0) {
+                            const d = new Date(ts * 1000);
+                            input.value = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+                        } else {
+                            input.value = '';
+                        }
+                    });
+                };
+
+                document.addEventListener('change', (e) => {
+                    const input = e.target;
+                    if (!(input instanceof HTMLInputElement) || !input.dataset.oscDate) {
+                        return;
+                    }
+                    const hidden = hiddenFor(input);
+                    if (!hidden) {
+                        return;
+                    }
+                    const p = input.value.split('-').map(Number);
+                    if (p.length !== 3 || p.some(Number.isNaN)) {
+                        hidden.value = '';
+                    } else {
+                        const d = new Date(p[0], p[1] - 1, p[2]);
+                        if (input.dataset.oscDateEnd === 'day') {
+                            d.setHours(23, 59, 59, 0);
+                        }
+                        hidden.value = String(Math.floor(d.getTime() / 1000));
+                    }
+                    hidden.dispatchEvent(new Event('change', {bubbles: true}));
+                });
+                document.addEventListener('osc:item-fields-loaded', (e) => init(e.target));
+
+                window.oscDateFields = {init};
+                init(document);
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', () => init(document));
+                }
+            })();
+        </script>
+        <?php
+    }
+
+    /**
      * Wire a custom-field date input. The visible control is a native
      * <input type="date"> (ISO yyyy-mm-dd); the hidden field submitted to the
      * backend carries a unix timestamp (seconds) — the stored contract is
@@ -607,6 +716,7 @@ class FieldForm extends Form
      * @param string          $type       'from' | 'to' | 'none'
      *
      * @return void
+     * @deprecated since 6.4.3 meta() renders data-osc-date inputs handled by dateFieldScript()
      */
     public static function initDatePicker($id_field, $dateFormat, $value, $type = 'none')
     {

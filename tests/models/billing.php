@@ -1829,6 +1829,13 @@ $seen = Params::withRequest(array(), static function () use ($modUser, $chokeCat
     return array($in->data['title'], (int)$in->data['userId'], $in->data['photos']['tmp_name'], $in->data['meta'], Params::getParam('title'));
 });
 pin('prepareDataFrom reads the plain values', array('en_US' => 'From data'), $seen[0]);
+$halfId = Params::withRequest(array(), static function () {
+    $in = new ItemActions(false);
+    $in->prepareDataFrom(array('id' => '12.9', 'title' => array('en_US' => 'x')), false);
+
+    return $in->data['idItem'];
+});
+pin('an edit id like "12.9" is read as 12, as the owner check reads it, not rounded to 13 by MySQL', 12, $halfId);
 pin('ownerId names the account, whatever the contact e-mail', $modUser, $seen[1]);
 pin('photos are local paths, and nothing else', array('/tmp/a.jpg'), $seen[2]);
 pin('meta comes with the data', array(7 => 'Red'), $seen[3]);

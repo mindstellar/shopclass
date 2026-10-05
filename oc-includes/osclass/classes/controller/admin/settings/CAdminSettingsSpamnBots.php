@@ -118,6 +118,18 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
                 osc_add_flash_ok_message(_m('Message settings have been updated'), 'admin');
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
                 break;
+            case ('limits_post'):
+                osc_csrf_check();
+
+                $result = CoreSettings::attempt(SpamSettingsForm::registerLimits());
+                if ($result['errors'] !== array()) {
+                    $this->drawForms(SpamSettingsForm::PAGE_LIMITS, $result['values']);
+                    break;
+                }
+
+                osc_add_flash_ok_message(_m('Limits have been updated'), 'admin');
+                $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=spamNbots');
+                break;
             case ('login_throttle_unblock'):
                 if ($this->refuseOnDemo(self::securityUrl())) {
                     break;

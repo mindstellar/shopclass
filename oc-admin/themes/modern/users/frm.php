@@ -367,12 +367,12 @@ $aux = customFrmText();
                                             <a href="javascript:delete_alert('<?php echo $aux['alerts'][$k]['pk_i_id']; ?>');"><?php _e('Delete'); ?></a>
                                             &nbsp;|&nbsp;
                                             <?php if ($aux['alerts'][$k]['b_active'] == 1) { ?>
-                                                <a href="<?php echo osc_admin_base_url(true) . '?page=users&action=status_alerts&id[]='
-                                                                    . $aux['alerts'][$k]['pk_i_id'] . '&status=0&user_id='
+                                                <a href="<?php echo osc_admin_base_url(true) . '?page=users&action=status_alerts&alert_id[]='
+                                                                    . $aux['alerts'][$k]['pk_i_id'] . '&' . osc_csrf_token_url() . '&status=0&user_id='
                                                                     . $user['pk_i_id']; ?>"><?php _e('Disable'); ?></a>
                                             <?php } else { ?>
-                                                <a href="<?php echo osc_admin_base_url(true) . '?page=users&action=status_alerts&id[]='
-                                                                    . $aux['alerts'][$k]['pk_i_id'] . '&status=1&user_id='
+                                                <a href="<?php echo osc_admin_base_url(true) . '?page=users&action=status_alerts&alert_id[]='
+                                                                    . $aux['alerts'][$k]['pk_i_id'] . '&' . osc_csrf_token_url() . '&status=1&user_id='
                                                                     . $user['pk_i_id']; ?>"><?php _e('Enable'); ?></a>
                                             <?php } ?>
                                         <?php

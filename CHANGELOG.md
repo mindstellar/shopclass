@@ -2,6 +2,50 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 6.4.3
+
+This release fixes security issues in the admin plugins screen, listing editing, password reset
+e-mails on some Docker setups, redirects and sign-in forms. New hourly spam limits can be set in
+Settings → Spam and bots. Sites updating from 6.3 now finish the update when PHP's cache does not
+re-check files.
+
+### New
+
+- Settings → Spam and bots has hourly limits for comments, uploads, forms, contact and alerts.
+- The item form fires `osc:item-fields-loaded` on `#plugin-hook` when custom fields load or clear.
+
+### Security
+
+- A signed-in user could overwrite the title, description, custom fields and photos of the next listing by id when editing their own.
+- The edit form no longer shows saved custom-field values of a hidden listing to people who cannot edit it.
+- A banned e-mail address could sign up, post or comment by adding a space or stray symbol to it.
+- A crafted link to the admin plugins screen could run script in the admin's browser.
+- Installing a plugin from the plugins screen error frame needs a security token.
+- The admin listings and users screens escape the sort values from the address bar.
+- Turning user alerts on or off in the admin needs a security token.
+- The theme preview and `?page=custom` pages only load PHP files inside the themes or plugins folders.
+- Redirects after a failed security check, and after sign-in, stay on the site.
+- Forms sent from another site are refused for visitors who are not signed in.
+- Listing field groups no longer take submissions as public forms; forms take 10 an hour per address.
+- Guests may post 20 comments an hour per address; comments on hidden listings are refused.
+- City autocomplete returns at most 10 results and nothing for an empty term.
+- A new account takes over guest listings with its e-mail only after the address is confirmed.
+- Photo uploads on the listing form follow the registered-users-only setting; guests may upload 100 an hour per address.
+- With no `WEB_PATH`, e-mail links use `OSC_CLI_URL`; without it, mails with a secret link are not sent.
+- The Docker image no longer ships the `tests` and `scripts` folders, and nginx denies them and log files under `oc-content`.
+- The Docker image warns at start when `OSC_REAL_IP_HEADER` is set without `OSC_REAL_IP_TRUSTED`, since any client can then fake its address.
+- File downloads follow redirects over HTTP and HTTPS only.
+- Plugin and theme update backups are protected from download.
+
+### Fixed
+
+- Sites updating from 6.3 no longer keep running 6.3 after the update when PHP's OPcache does not re-check files (#550).
+- The listing activation link validates a listing that waits for admin approval and says so, instead of three conflicting messages (#549).
+- Cron, the job worker and CLI commands in the Docker image also clear the whole page cache; the purge address is derived from `OSC_MICROCACHE` when not set.
+- Custom-field labels name their control; date ranges and radio lists are labelled groups.
+- Changing or clearing the category no longer leaves the previous category's custom fields.
+- A failed custom-field request no longer puts an error page into the item form.
+
 ## Shopclass 6.4.2
 
 This release fixes several security issues on listing pages: photo deletion, spam listings shown to

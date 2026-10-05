@@ -11,6 +11,8 @@
 
 namespace mindstellar\admin\form;
 
+use mindstellar\security\ActionThrottle;
+
 /**
  * The spam-and-bots screen, which is four independent forms rather than one: the Akismet
  * key, the captcha provider and its keys, the search-alert rule, and the sign-in rate
@@ -34,6 +36,9 @@ final class SpamSettingsForm
 
     /** Links allowed in a message, and the report link in mail to members. */
     public const PAGE_MESSAGES = 'core.settings_messages';
+
+    /** Hourly limits on the public forms and uploads. */
+    public const PAGE_LIMITS = 'core.settings_limits';
 
     /** The sign-in limiter is a security setting and is stored with the others. */
     public const SECURITY_SECTION = 'security';
@@ -283,7 +288,42 @@ final class SpamSettingsForm
     }
 
     /**
-     * What the view needs to draw all five forms, keyed by the div each one sits in.
+     * Hourly limits per visitor address for the public forms. The defaults come from
+     * ActionThrottle, so the numbers live in one place.
+     *
+     * @return string the page id
+     */
+    public static function registerLimits(): string
+    {
+        if (osc_settings_page(self::PAGE_LIMITS) !== null) {
+            return self::PAGE_LIMITS;
+        }
+
+        // In the same order as ActionThrottle::DEFAULT_LIMITS.
+        $labels = array_combine(array_keys(ActionThrottle::DEFAULT_LIMITS), array(
+            __('Comments from guests'),
+            __('Photo uploads from guests'),
+            __('Form submissions'),
+            __('Contact the site'),
+            __('Contact a seller'),
+            __('Contact a user'),
+            __('Send to a friend'),
+            __('Search alert sign-ups'),
+        ));
+
+        $page = CoreSettings::page(self::PAGE_LIMITS, __('Limits'));
+        foreach ($labels as $context => $label) {
+            $page->number('throttle_' . $context, $label, __('Per visitor address, per hour. 0 means no limit.'))
+                ->clampMin(0)
+                ->default(ActionThrottle::DEFAULT_LIMITS[$context]);
+        }
+        $page->register();
+
+        return self::PAGE_LIMITS;
+    }
+
+    /**
+     * What the view needs to draw all six forms, keyed by the div each one sits in.
      *
      * @param int|null                 $akismetStatus what Akismet said about the stored key:
      *                                                1 valid, 2 invalid, 3 no key at all
@@ -292,7 +332,7 @@ final class SpamSettingsForm
      * @param array<string,mixed>|null $values        that page's submitted values
      *
      * @return array<string,array<string,mixed>> view variables per div: 'akismet', 'captcha',
-     *         'alerts', 'login_throttle', 'messages'
+     *         'alerts', 'login_throttle', 'messages', 'limits'
      */
     public static function formVars($akismetStatus = null, string $rejected = '', ?array $values = null): array
     {
@@ -302,6 +342,7 @@ final class SpamSettingsForm
             'alerts'          => array(self::registerAlerts(), 'alerts_post', 'submit_alerts'),
             'login_throttle'  => array(self::registerLoginThrottle(), 'login_throttle_post', 'submit_login_throttle'),
             'messages'        => array(self::registerMessages(), 'messages_post', 'submit_messages'),
+            'limits'          => array(self::registerLimits(), 'limits_post', 'submit_limits'),
         );
 
         $vars = array();

@@ -183,6 +183,7 @@ $seed('ended@example.test', 'messages', $past);
 $seed('endedall@example.test', 'all', $past);
 
 pin('a full ban still bans', 1, osc_is_banned('all@example.test', '10.0.0.1'));
+pin('a ban matches the address as it is stored, spaces and symbols removed', 1, osc_is_banned(' all@example .test<>', '10.0.0.1'));
 pin('a message ban does not block sign-in or posting', 0, osc_is_banned('msg@example.test', '10.0.0.1'));
 pin('a message ban blocks the message forms', 1, osc_is_banned('msg@example.test', '10.0.0.1', 'messages'));
 pin('a full ban also blocks the message forms', 1, osc_is_banned('all@example.test', '10.0.0.1', 'messages'));

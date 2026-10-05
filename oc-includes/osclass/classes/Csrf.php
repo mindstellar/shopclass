@@ -270,6 +270,12 @@ class Csrf
             $status = $this->verify($csrfTokenName, $csrfToken);
         }
 
+        // Every logged-out visitor shares one token, so a form posted from another site must
+        // not pass on the token alone.
+        if ($status === 'ok' && $this->bind() === '' && self::isCrossSite()) {
+            $status = 'invalid';
+        }
+
         if ($status === 'ok') {
             return;
         }
@@ -295,6 +301,42 @@ class Csrf
 
         $this->setMessage($str_error);
         $this->errorRedirect();
+    }
+
+    /**
+     * Whether the browser says this request came from another site: Sec-Fetch-Site is
+     * 'cross-site', or, when that header is absent, Origin names a host that is neither the
+     * site's nor the requested one. A request with neither header passes (older browsers).
+     *
+     * @return bool
+     */
+    public static function isCrossSite(): bool
+    {
+        $fetchSite = strtolower(trim((string) Params::getServerParam('HTTP_SEC_FETCH_SITE')));
+        if ($fetchSite !== '') {
+            return $fetchSite === 'cross-site';
+        }
+
+        $origin = trim((string) Params::getServerParam('HTTP_ORIGIN', false, false));
+        // 'null' is also what a same-site form sends under a no-referrer policy.
+        if ($origin === '' || $origin === 'null') {
+            return false;
+        }
+        $originHost = parse_url($origin, PHP_URL_HOST);
+        if (!is_string($originHost) || $originHost === '') {
+            return true;
+        }
+        $hosts = array(
+            parse_url(osc_base_url(), PHP_URL_HOST),
+            parse_url('//' . Params::getServerParam('HTTP_HOST', false, false), PHP_URL_HOST),
+        );
+        foreach ($hosts as $host) {
+            if (is_string($host) && $host !== '' && strcasecmp($host, $originHost) === 0) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

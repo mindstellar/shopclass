@@ -7,6 +7,9 @@ node_modules
 release
 # Dev-only formatting toolchain — never needed at runtime
 tools
+# Test and build scripts never run in the image; nginx would run any .php under them.
+tests
+scripts
 .editorconfig
 .php-cs-fixer.dist.php
 .php-cs-fixer.cache

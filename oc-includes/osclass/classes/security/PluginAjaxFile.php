@@ -26,10 +26,10 @@ namespace mindstellar\security;
  *
  *   extension   the target must end in .php. Every file reachable this way is
  *               one a plugin meant to execute; nothing else in the tree is.
- *   containment realpath() the candidate and require the plugins directory to be
- *               its prefix. String matching on '../' misses symlinks and the
- *               encodings a filesystem accepts, whereas resolving the path first
- *               answers the only question that matters: where did it land.
+ *   containment no '..' segment, and the file's realpath() must sit inside the
+ *               realpath() of the plugin folder it names (the first path segment).
+ *               A plugin or theme folder may itself be a symlink, which is common
+ *               in development; a link inside it that points out is still refused.
  *
  * osc_ajax_plugin_url() -- the public builder plugins use to reach here -- always
  * names a .php file inside the plugins directory, so callers that were working
@@ -50,13 +50,9 @@ class PluginAjaxFile
         $file = (string) $file;
         $root = (string) $root;
 
-        if ($file === '' || $root === '') {
-            return null;
-        }
-
         // A NUL byte truncates the path for the filesystem call but not for the
         // checks above it, so it is never part of a legitimate request.
-        if (strpos($file, "\0") !== false) {
+        if ($root === '' || strpos($file, "\0") !== false) {
             return null;
         }
 
@@ -65,21 +61,85 @@ class PluginAjaxFile
             return null;
         }
 
+        $parts    = self::segments($file);
         $realRoot = realpath($root);
-        $realFile = realpath(rtrim($root, '/\\') . DIRECTORY_SEPARATOR . ltrim($file, '/\\'));
-
-        if ($realRoot === false || $realFile === false || !is_file($realFile)) {
+        if ($parts === null || $realRoot === false) {
             return null;
         }
 
-        // Compare with the separator appended so a sibling directory whose name
-        // merely starts with the plugins path ("plugins-backup") is not a prefix
-        // match for it.
-        $realRoot .= DIRECTORY_SEPARATOR;
-        if (strncmp($realFile, $realRoot, strlen($realRoot)) !== 0) {
+        $folder   = count($parts) > 1 ? realpath($realRoot . DIRECTORY_SEPARATOR . $parts[0]) : $realRoot;
+        $realFile = realpath($realRoot . DIRECTORY_SEPARATOR . implode(DIRECTORY_SEPARATOR, $parts));
+        if ($folder === false || $realFile === false || !is_dir($folder) || !is_file($realFile)) {
+            return null;
+        }
+
+        // The separator stops a sibling such as "plugins-backup" matching "plugins".
+        $folder .= DIRECTORY_SEPARATOR;
+        if (strncmp($realFile, $folder, strlen($folder)) !== 0) {
             return null;
         }
 
         return $realFile;
+    }
+
+    /**
+     * Resolve a file given relative to $base, accepting it only when it is a .php file
+     * inside one of $roots.
+     *
+     * @param string   $file  path relative to $base
+     * @param string   $base  absolute base directory
+     * @param string[] $roots absolute directories the file may live in
+     *
+     * @return string|null the absolute path, or null when it is not safe to include
+     */
+    public static function resolveWithin($file, $base, array $roots)
+    {
+        $parts = strpos((string) $file, "\0") === false ? self::segments((string) $file) : null;
+        if ($parts === null) {
+            return null;
+        }
+        $relative = implode(DIRECTORY_SEPARATOR, $parts);
+        // The path as written first, then with symlinks resolved, in case base and root are spelt differently.
+        $pairs = array(array((string) $base, null), array(realpath((string) $base), true));
+        foreach ($pairs as list($dir, $real)) {
+            if ($dir === false || $dir === '') {
+                continue;
+            }
+            $full = rtrim($dir, '/\\') . DIRECTORY_SEPARATOR . $relative;
+            foreach ($roots as $root) {
+                $root = $real ? realpath((string) $root) : (string) $root;
+                if ($root === false || $root === '') {
+                    continue;
+                }
+                $prefix = rtrim($root, '/\\') . DIRECTORY_SEPARATOR;
+                if (strncmp($full, $prefix, strlen($prefix)) === 0) {
+                    return self::resolve(substr($full, strlen($prefix)), $root);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * A relative path split into its segments, or null when it is empty or has a '..'.
+     *
+     * @param string $file
+     *
+     * @return string[]|null
+     */
+    private static function segments(string $file): ?array
+    {
+        $parts = array();
+        foreach (explode('/', str_replace('\\', '/', $file)) as $part) {
+            if ($part === '..') {
+                return null;
+            }
+            if ($part !== '' && $part !== '.') {
+                $parts[] = $part;
+            }
+        }
+
+        return $parts === array() ? null : $parts;
     }
 }

@@ -1533,8 +1533,8 @@ class ItemActions
     }
 
     /**
-     * Activates an item.
-     * Set s_enabled value to 1, for a given item id
+     * Activates (validates) an item: the owner confirmed it. A listing the admin has not
+     * enabled yet is still marked validated, and stays hidden until the admin enables it.
      *
      * @param int           $id
      *
@@ -1552,10 +1552,7 @@ class ItemActions
             $aWhere = array('s_secret' => $secret, 'pk_i_id' => $id);
         }
 
-        if (
-            isset($item[0]['b_enabled'], $item[0]['b_active']) && $item[0]['b_enabled'] == 1
-            && $item[0]['b_active'] == 0
-        ) {
+        if (isset($item[0]['b_active']) && $item[0]['b_active'] == 0) {
             $result = $this->manager->update(
                 array('b_active' => 1),
                 $aWhere
@@ -2004,7 +2001,8 @@ class ItemActions
     /**
      * Validate and store a comment on a listing.
      *
-     * @return int a status code; 7 when comments are disabled
+     * @return int a status code; -1 for a listing the visitor cannot see, 7 when comments are
+     *             disabled, 8 past 20 an hour per guest address (comment_post, see action_throttle_limit)
      */
     public function add_comment()
     {
@@ -2013,6 +2011,12 @@ class ItemActions
         }
 
         $aItem = $this->prepareDataForFunction('add_comment');
+        // A listing that is not live takes comments only from its owner (or an admin).
+        if (empty($aItem['item'])
+            || !\mindstellar\security\ItemAccess::canView($aItem['item'], $aItem['userId'], osc_is_admin_user_logged_in())
+        ) {
+            return -1;
+        }
 
         $authorName  = trim(strip_tags($aItem['authorName']));
         $authorEmail = trim(strip_tags($aItem['authorEmail']));
@@ -2066,6 +2070,11 @@ class ItemActions
             return 4;
         }
 
+        // Counted by address, so only guests: signed-in users behind one proxy would share it.
+        if ($userId == null && \mindstellar\security\ActionThrottle::exceededFor('comment_post')) {
+            return 8;
+        }
+
         $num_moderate_comments = osc_moderate_comments();
         if ($userId == null) {
             $num_comments = 0;
@@ -2116,6 +2125,9 @@ class ItemActions
 
         $commentID = $mComments->insertGetId($aComment);
         if ($commentID) {
+            if ($userId == null) {
+                \mindstellar\security\ActionThrottle::record('comment_post');
+            }
             if ($status_num == 2 && $userId != null) { // COMMENT IS ACTIVE
                 $user = User::newInstance()->findByPrimaryKey($userId);
                 if ($user) {
@@ -2251,7 +2263,7 @@ class ItemActions
             $aItem['active'] = $active;
         } else {          // EDIT
             $aItem['secret'] = Params::getParam('secret');
-            $aItem['idItem'] = Params::getParam('id');
+            $aItem['idItem'] = Params::getParamInt('id');
         }
 
         // get params

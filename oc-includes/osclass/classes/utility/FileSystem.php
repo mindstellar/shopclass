@@ -948,6 +948,9 @@ class FileSystem
                 @curl_setopt($ch, CURLOPT_ENCODING, '');
                 curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
                 curl_setopt($ch, CURLOPT_MAXREDIRS, 5);
+                // A redirect must stay on HTTP(S), as in getContents().
+                curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+                curl_setopt($ch, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
                 curl_setopt($ch, CURLOPT_REFERER, osc_base_url());
 
                 if (stripos($sourceURL, 'https') !== false) {

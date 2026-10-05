@@ -137,6 +137,30 @@ if (defined('OSC_CACHE')
     );
 }
 
+// OSC_CLI_URL as a validated [WEB_PATH, REL_WEB_URL] pair, or null when unset or malformed.
+$oscCliAddress = static function () use ($oscEnv) {
+    if ($oscEnv('OSC_CLI_URL') === null) {
+        return null;
+    }
+    $url = parse_url((string)$oscEnv('OSC_CLI_URL'));
+    if (is_array($url) && isset($url['scheme'], $url['host'])
+        && in_array(strtolower($url['scheme']), array('http', 'https'), true)
+        && preg_match('/^[A-Za-z0-9.\-]+$/', $url['host'])
+        && preg_match('#^[A-Za-z0-9._~/\-]*$#', $url['path'] ?? '')
+        && strpos($url['path'] ?? '', '..') === false
+    ) {
+        $path = '/' . trim((string)($url['path'] ?? ''), '/') . '/';
+        $path = $path === '//' ? '/' : $path;
+
+        return array(
+            strtolower($url['scheme']) . '://' . $url['host'] . (isset($url['port']) ? ':' . $url['port'] : '') . $path,
+            $path,
+        );
+    }
+
+    return null;
+};
+
 // Last-resort fallback for env-only deploys (no config.php): when the site URLs
 // were supplied by neither config.php nor the environment, derive them from the
 // current HTTP request so the app can still boot instead of fataling on an
@@ -186,6 +210,11 @@ if (!$oscHasConfigFile && defined('DB_NAME')
             define('WEB_PATH', $oscScheme . '://' . $oscHost . $oscBasePath);
             // Code that must not trust the Host header, such as backups in a bucket, checks this.
             define('OSC_WEB_PATH_FROM_REQUEST', true);
+            // E-mail links use this address instead, since the Host header is the visitor's.
+            if (($oscTrusted = $oscCliAddress()) !== null) {
+                define('OSC_TRUSTED_WEB_PATH', $oscTrusted[0]);
+            }
+            unset($oscTrusted);
         }
 
         unset($oscScheme, $oscBasePath, $oscScriptName, $oscScriptFile, $oscAppRoot);
@@ -195,26 +224,11 @@ if (!$oscHasConfigFile && defined('DB_NAME')
 
 // A command line has no request to take the address from. OSC_CLI_URL gives it
 // one without fixing the address for web requests, which WEB_PATH would do.
-if (PHP_SAPI === 'cli' && !defined('WEB_PATH') && $oscEnv('OSC_CLI_URL') !== null) {
-    $oscCliUrl = parse_url((string)$oscEnv('OSC_CLI_URL'));
-    if (is_array($oscCliUrl) && isset($oscCliUrl['scheme'], $oscCliUrl['host'])
-        && in_array(strtolower($oscCliUrl['scheme']), array('http', 'https'), true)
-        && preg_match('/^[A-Za-z0-9.\-]+$/', $oscCliUrl['host'])
-        && preg_match('#^[A-Za-z0-9._~/\-]*$#', $oscCliUrl['path'] ?? '')
-        && strpos($oscCliUrl['path'] ?? '', '..') === false
-    ) {
-        $oscCliPath = '/' . trim((string)($oscCliUrl['path'] ?? ''), '/') . '/';
-        $oscCliPath = $oscCliPath === '//' ? '/' : $oscCliPath;
-        defined('REL_WEB_URL') or define('REL_WEB_URL', $oscCliPath);
-        defined('WEB_PATH') or define(
-            'WEB_PATH',
-            strtolower($oscCliUrl['scheme']) . '://' . $oscCliUrl['host']
-            . (isset($oscCliUrl['port']) ? ':' . $oscCliUrl['port'] : '') . $oscCliPath
-        );
-        defined('OSC_WEB_PATH_FROM_CLI_URL') or define('OSC_WEB_PATH_FROM_CLI_URL', true);
-        unset($oscCliPath);
-    }
-    unset($oscCliUrl);
+if (PHP_SAPI === 'cli' && !defined('WEB_PATH') && ($oscCli = $oscCliAddress()) !== null) {
+    defined('REL_WEB_URL') or define('REL_WEB_URL', $oscCli[1]);
+    defined('WEB_PATH') or define('WEB_PATH', $oscCli[0]);
+    defined('OSC_WEB_PATH_FROM_CLI_URL') or define('OSC_WEB_PATH_FROM_CLI_URL', true);
+    unset($oscCli);
 }
 
 // WEB_PATH alone is enough: its path is the site's base path.

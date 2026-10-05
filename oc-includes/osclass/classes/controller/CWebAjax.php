@@ -212,7 +212,16 @@ class CWebAjax extends BaseModel
                         break;
                     case 'item_edit':
                         $catId  = Params::getParam('catId');
-                        $itemId = Params::getParam('itemId');
+                        $itemId = Params::getParamInt('itemId');
+                        // Stored values go only to someone who may edit the listing.
+                        if ($itemId > 0 && ItemAccess::manageable(
+                            $itemId,
+                            osc_is_web_user_logged_in() ? osc_logged_user_id() : null,
+                            osc_is_admin_user_logged_in(),
+                            Params::getParamString('secret')
+                        ) === array()) {
+                            $itemId = 0;
+                        }
                         osc_run_hook('item_edit', $catId, $itemId);
                         break;
                     default:
@@ -277,7 +286,11 @@ class CWebAjax extends BaseModel
                 }
                 break;
             case 'ajax_upload':
-                // Include the uploader class
+                $refused = $this->uploadRefusal();
+                if ($refused !== '') {
+                    AjaxResponse::json(array('success' => false, 'error' => $refused));
+                    break;
+                }
                 $uploader = new AjaxUploader();
                 $original = pathinfo($uploader->getOriginalName());
                 $original['extension'] = $original['extension'] ?? '';
@@ -325,12 +338,35 @@ class CWebAjax extends BaseModel
                     Params::getParam('qquuid'),
                     $result['uploadName']
                 );
+                if (!osc_is_web_user_logged_in() && !osc_is_admin_user_logged_in()) {
+                    \mindstellar\security\ActionThrottle::record('ajax_upload');
+                }
                 echo htmlspecialchars(json_encode($result), ENT_NOQUOTES);
                 break;
             default:
                 AjaxResponse::json(array('error' => __('no action defined')));
                 break;
         }
+    }
+
+    /**
+     * Why this visitor may not stage another photo, or '' when they may. Only guests have an hourly limit.
+     *
+     * @return string
+     */
+    private function uploadRefusal(): string
+    {
+        if (osc_is_admin_user_logged_in() || osc_is_web_user_logged_in()) {
+            return '';
+        }
+        if (osc_reg_user_post()) {
+            return _m('Only registered users are allowed to post listings');
+        }
+        if (\mindstellar\security\ActionThrottle::exceededFor('ajax_upload')) {
+            return _m('Too many tries from your connection. Please try again later.');
+        }
+
+        return '';
     }
 
     //hopefully generic...

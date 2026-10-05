@@ -40,18 +40,38 @@ use Params;
  */
 class ActionThrottle
 {
+    /** Hourly limit per address for each public action; the admin can change them under Spam and bots. */
+    public const DEFAULT_LIMITS = array(
+        'comment_post'    => 20,
+        'ajax_upload'     => 100,
+        'form_submit'     => 10,
+        'site_contact'    => 5,
+        'item_contact'    => 15,
+        'user_contact'    => 15,
+        'send_friend'     => 5,
+        'alert_subscribe' => 10,
+    );
+
     /**
-     * exceeded() with default limits that the action_throttle_limit filter may change per
-     * $context, e.g. array('max' => 5, 'window' => 3600).
+     * The limit for $context: the stored preference `throttle_<context>`, else $max, else
+     * the built-in default. The action_throttle_limit filter may still change it, e.g.
+     * array('max' => 5, 'window' => 3600). 0 means no limit.
      *
-     * @param string $context
-     * @param int    $max
-     * @param int    $window seconds
+     * @param string   $context
+     * @param int|null $max     fallback when no preference is stored
+     * @param int      $window  seconds
      *
      * @return bool true when the action should be refused
      */
-    public static function exceededFor(string $context, int $max, int $window = 3600): bool
+    public static function exceededFor(string $context, ?int $max = null, int $window = 3600): bool
     {
+        $stored = osc_get_preference('throttle_' . $context);
+        if (is_numeric($stored)) {
+            $max = max(0, (int) $stored);
+        } elseif ($max === null) {
+            $max = self::DEFAULT_LIMITS[$context] ?? 0;
+        }
+
         $limit = (array) osc_apply_filter('action_throttle_limit', array('max' => $max, 'window' => $window), $context);
 
         return self::exceeded($context, (int) ($limit['max'] ?? $max), max(1, (int) ($limit['window'] ?? $window)));

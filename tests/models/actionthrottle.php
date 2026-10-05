@@ -143,14 +143,42 @@ $seed('send_friend', '198.51.100.1', $at(60)); // fifth
 check('the fifth send reaches the limit and the next is refused', ActionThrottle::exceeded('send_friend', 5, 3600) === true);
 check('a higher limit still lets it through', ActionThrottle::exceeded('send_friend', 10, 3600) === false);
 check('exceededFor uses the default limit', ActionThrottle::exceededFor('send_friend', 5) === true);
-osc_add_filter('action_throttle_limit', static function ($limit, $context) {
-    return $context === 'send_friend' ? array('max' => 10) + $limit : $limit;
+$filterMax = 10;
+osc_add_filter('action_throttle_limit', static function ($limit, $context) use (&$filterMax) {
+    return $context === 'send_friend' && $filterMax !== null ? array('max' => $filterMax) + $limit : $limit;
 });
 check('the filter raises it for that form', ActionThrottle::exceededFor('send_friend', 5) === false);
 for ($i = 0; $i < 5; $i++) {
     $seed('item_contact', '198.51.100.1', $at(60));
 }
 check('and leaves other forms at their default', ActionThrottle::exceededFor('item_contact', 5) === true);
+
+harness_section('ActionThrottle::exceededFor — stored limit, default and filter');
+
+$filterMax = null;
+$truncate();
+$setIp('198.51.100.7');
+$fill = static function ($context, $n) use ($seed, $at): void {
+    for ($i = 0; $i < $n; $i++) {
+        $seed($context, '198.51.100.7', $at(60));
+    }
+};
+$fill('send_friend', 4);
+check('no preference: the built-in default of 5 allows four', ActionThrottle::exceededFor('send_friend') === false);
+$fill('send_friend', 1);
+check('and refuses at five', ActionThrottle::exceededFor('send_friend') === true);
+osc_set_preference('throttle_send_friend', '8');
+check('a stored limit replaces the default', ActionThrottle::exceededFor('send_friend') === false);
+osc_set_preference('throttle_send_friend', '5');
+check('a stored limit can be lower too', ActionThrottle::exceededFor('send_friend') === true);
+osc_set_preference('throttle_send_friend', '0');
+check('0 means no limit', ActionThrottle::exceededFor('send_friend') === false);
+osc_set_preference('throttle_send_friend', '2');
+check('the stored limit wins over a caller default', ActionThrottle::exceededFor('send_friend', 50) === true);
+$filterMax = 10;
+check('the filter still has the last word', ActionThrottle::exceededFor('send_friend') === false);
+$filterMax = null;
+osc_delete_preference('throttle_send_friend');
 
 harness_section('ActionThrottle::exceeded — a max of zero disables the limit');
 

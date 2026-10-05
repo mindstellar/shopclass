@@ -117,6 +117,9 @@ class CWebRegister extends BaseModel
                 );
 
                 if ($success) {
+                    // The address is confirmed now, so its guest listings and alerts move over.
+                    UserActions::claimGuestListings($id);
+
                     // Auto-login via the signed, session-free identity cookie.
                     osc_web_user_login($user);
 

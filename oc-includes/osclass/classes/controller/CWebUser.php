@@ -271,23 +271,6 @@ class CWebUser extends WebSecBaseModel
 
                 $this->doView(osc_locate_template(array('user-items.php'), 'user-items'));
                 break;
-            case 'activate_alert':
-                $email  = Params::getParam('email');
-                $secret = Params::getParam('secret');
-
-                $result = 0;
-                if ($email != '' && $secret != '') {
-                    $result = Alerts::newInstance()->activate($email);
-                }
-
-                if ($result == 1) {
-                    osc_add_flash_ok_message(_m('Alert activated'));
-                } else {
-                    osc_add_flash_error_message(_m('Oops! There was a problem trying to activate your alert. Please contact an administrator'));
-                }
-
-                $this->redirectTo(osc_base_url());
-                break;
             case 'unsub_alert':
                 $email  = Params::getParam('email');
                 $secret = Params::getParam('secret');
@@ -295,8 +278,8 @@ class CWebUser extends WebSecBaseModel
 
                 $alert  = Alerts::newInstance()->findByPrimaryKey($id);
                 $result = 0;
-                if (!empty($alert) && $email == $alert['s_email']
-                    && $secret == $alert['s_secret']
+                if (!empty($alert) && hash_equals((string)$alert['s_email'], (string)$email)
+                    && hash_equals((string)$alert['s_secret'], (string)$secret)
                 ) {
                     $result = Alerts::newInstance()->unsub($id);
                 }
