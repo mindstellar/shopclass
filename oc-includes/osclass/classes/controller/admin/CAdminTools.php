@@ -1043,6 +1043,16 @@ class CAdminTools extends AdminSecBaseModel
             'opcache'          => function_exists('opcache_get_status') && ini_get('opcache.enable'),
             'allow_url_fopen'  => (bool) ini_get('allow_url_fopen'),
             'uploads_writable' => @is_writable($uploads),
+            'php_user'         => self::userName(function_exists('posix_geteuid') ? posix_geteuid() : null),
+            'file_owner'       => self::userName(@fileowner(ABS_PATH . 'index.php') ?: null),
+            'self_update_off'  => osc_self_update_disabled(),
+            'read_only'        => array_keys(array_filter(array(
+                'core'      => ABS_PATH . 'oc-includes',
+                'downloads' => osc_content_path() . 'downloads',
+                'plugins'   => osc_plugins_path(),
+                'themes'    => osc_themes_path(),
+                'languages' => osc_translations_path(),
+            ), static fn($dir) => is_dir($dir) && !@is_writable($dir))),
             'free_disk'        => is_numeric($free) ? (int) $free : null,
             'config_writable'  => @is_writable(ABS_PATH . 'config.php'),
             'debug'            => defined('OSC_DEBUG') && OSC_DEBUG,
@@ -1107,6 +1117,16 @@ class CAdminTools extends AdminSecBaseModel
      *
      * @return bool
      */
+    private static function userName(?int $uid): string
+    {
+        if ($uid === null) {
+            return '';
+        }
+        $info = function_exists('posix_getpwuid') ? @posix_getpwuid($uid) : false;
+
+        return is_array($info) ? (string) $info['name'] : '#' . $uid;
+    }
+
     private static function cacheSupported(string $driver): bool
     {
         $class = 'Object_Cache_' . $driver;

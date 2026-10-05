@@ -355,6 +355,22 @@ final class SystemChecks
         if (array_key_exists('uploads_writable', $env) && !$env['uploads_writable']) {
             $issues[] = self::issue('uploads_read_only', 'danger', __('The uploads folder cannot be written to. Photos cannot be saved.'), $here ? array() : $details);
         }
+        $readOnly = (array) ($env['read_only'] ?? array());
+        if (empty($env['self_update_off']) && array_intersect(array('core', 'downloads'), $readOnly) !== array()) {
+            $owner    = (string) ($env['file_owner'] ?? '') ?: __('the file owner');
+            $issues[] = self::issue('core_read_only', 'warning', sprintf(
+                __('PHP runs as %1$s and cannot write the Shopclass files, so updates from the admin fail. Run "php oc-cli.php core:update" as %2$s, or ask your host to run PHP as %2$s.'),
+                (string) ($env['php_user'] ?? '') ?: __('unknown'),
+                $owner
+            ), $here ? array() : $details);
+        }
+        $packages = array_values(array_intersect(array('plugins', 'themes', 'languages'), $readOnly));
+        if ($packages !== array()) {
+            $issues[] = self::issue('packages_read_only', 'warning', sprintf(
+                __('PHP cannot write to these folders, so installing or updating them from the admin fails: %s.'),
+                implode(', ', array_map(array(self::class, 'folderName'), $packages))
+            ), $here ? array() : $details);
+        }
 
         $memory = (int) ($env['memory'] ?? -1);
         if ($memory !== -1 && $memory > 0 && $memory < self::MEMORY_FLOOR) {
@@ -865,6 +881,15 @@ final class SystemChecks
                 'label' => __('Uploads folder'),
                 'value' => (!empty($env['uploads_writable']) ? __('writable') : __('read-only')) . ' · ' . (string) ($env['uploads_path'] ?? ''),
             ),
+            array(
+                'label' => __('PHP runs as'),
+                'value' => (string) ($env['php_user'] ?? '') ?: __('unknown'),
+                'note'  => ($env['file_owner'] ?? '') !== '' && ($env['file_owner'] ?? '') !== ($env['php_user'] ?? '')
+                    ? sprintf(__('The files belong to %s.'), (string) $env['file_owner']) : '',
+            ),
+            array('label' => __('Read-only folders'), 'value' => ($env['read_only'] ?? array()) === array()
+                ? __('none')
+                : implode(', ', array_map(array(self::class, 'folderName'), (array) $env['read_only']))),
             array('label' => __('Free space'), 'value' => self::size(is_numeric($env['free_disk'] ?? null) ? (int) $env['free_disk'] : 0)),
             array('label' => __('Photo storage'), 'value' => self::storageWords($env)),
         );
@@ -1205,6 +1230,19 @@ final class SystemChecks
      *
      * @return array<string,mixed>
      */
+    private static function folderName(string $key): string
+    {
+        $names = array(
+            'core'      => __('Shopclass files'),
+            'downloads' => __('downloads'),
+            'plugins'   => __('plugins'),
+            'themes'    => __('themes'),
+            'languages' => __('languages'),
+        );
+
+        return $names[$key] ?? $key;
+    }
+
     private static function issue(string $id, string $tone, string $text, array $action = array()): array
     {
         return array('id' => $id, 'tone' => $tone, 'text' => $text, 'action' => $action === array() ? null : $action);
