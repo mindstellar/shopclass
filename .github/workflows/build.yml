@@ -4,6 +4,7 @@ on:
     branches:
       - develop
       - master
+      - 'release/**'
     # A change to prose cannot alter what gets built or whether it releases:
     # the version this workflow keys off lives in default-constants.php.
     paths-ignore:
@@ -29,6 +30,8 @@ jobs:
       should_release: ${{ steps.decide.outputs.should_release }}
       version: ${{ steps.decide.outputs.version }}
       suffix: ${{ steps.decide.outputs.suffix }}
+      latest: ${{ steps.decide.outputs.latest }}
+      moving_alias: ${{ steps.decide.outputs.moving_alias }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7
@@ -48,6 +51,7 @@ jobs:
 
           # Branch decides the release type; a mismatch publishes nothing.
           # develop -> beta/rc only; master -> stable only (no suffix).
+          # release/X.Y -> beta/rc or stable of the X.Y line only (fixes for an older line).
           #
           # .dev is the open-development marker: valid, but it publishes nothing.
           # It is what the version sits at between releases, so every ordinary
@@ -56,6 +60,8 @@ jobs:
           if [[ "${GITHUB_REF_NAME}" == "develop" && -n "${SUFFIX}" && "${SUFFIX}" != .dev* ]]; then
             SHOULD_RELEASE=true
           elif [[ "${GITHUB_REF_NAME}" == "master" && -z "${SUFFIX}" ]]; then
+            SHOULD_RELEASE=true
+          elif [[ "${GITHUB_REF_NAME}" =~ ^release/([0-9]+\.[0-9]+)$ && "${RAW_VERSION}" == "${BASH_REMATCH[1]}."* && "${SUFFIX}" != .dev* ]]; then
             SHOULD_RELEASE=true
           fi
 
@@ -69,8 +75,23 @@ jobs:
             fi
           else
             echo "No release for ${RAW_VERSION} on ${GITHUB_REF_NAME}."
-            echo "develop publishes beta/rc; master publishes stable (no suffix); .dev publishes nothing."
+            echo "develop publishes beta/rc; master publishes stable (no suffix); release/X.Y publishes X.Y only; .dev publishes nothing."
           fi
+
+          # Only the newest stable becomes GitHub's latest release and the :latest image, so a
+          # fix for an older line never takes them over. Prereleases from release/X.Y move no alias.
+          git fetch --tags --quiet
+          NEWEST=$(git tag --list | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+          LATEST=false
+          if [[ -z "${SUFFIX}" && "$(printf '%s\n%s\n' "${NEWEST}" "${RAW_VERSION}" | sort -V | tail -1)" == "${RAW_VERSION}" ]]; then
+            LATEST=true
+          fi
+          MOVING_ALIAS=true
+          if [[ "${GITHUB_REF_NAME}" == release/* && ( -n "${SUFFIX}" || "${LATEST}" == "false" ) ]]; then
+            MOVING_ALIAS=false
+          fi
+          echo "latest=${LATEST}" >> "$GITHUB_OUTPUT"
+          echo "moving_alias=${MOVING_ALIAS}" >> "$GITHUB_OUTPUT"
 
           echo "should_release=${SHOULD_RELEASE}" >> "$GITHUB_OUTPUT"
           echo "Version: ${RAW_VERSION}, Branch: ${GITHUB_REF_NAME}, Release: ${SHOULD_RELEASE}"
@@ -246,6 +267,7 @@ jobs:
           name: Release ${{ env.OSCLASS_VERSION }}
           body_path: release_notes.md
           prerelease: ${{ env.SUFFIX != '' }}
+          make_latest: ${{ needs.gate.outputs.latest }}
 
   # Publish the production container image for the same release. Runs only after
   # the release job (its install smoke test gates the app), so an image is only
@@ -261,6 +283,7 @@ jobs:
     env:
       OSCLASS_VERSION: ${{ needs.gate.outputs.version }}
       SUFFIX: ${{ needs.gate.outputs.suffix }}
+      MOVING_ALIAS: ${{ needs.gate.outputs.moving_alias }}
       # The same image also goes to Docker Hub when the DOCKERHUB_USERNAME and
       # DOCKERHUB_TOKEN secrets are set. The namespace is the DOCKERHUB_NAMESPACE
       # variable, or the username.
@@ -290,7 +313,10 @@ jobs:
           fi
           TAGS=""
           for IMAGE in ${IMAGES}; do
-            TAGS="${TAGS:+${TAGS},}${IMAGE}:${OSCLASS_VERSION},${IMAGE}:${ALIAS}"
+            TAGS="${TAGS:+${TAGS},}${IMAGE}:${OSCLASS_VERSION}"
+            if [ "${MOVING_ALIAS}" = "true" ]; then
+              TAGS="${TAGS},${IMAGE}:${ALIAS}"
+            fi
           done
           echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
           echo "Image tags: ${TAGS}"

@@ -12,6 +12,7 @@ on:
     branches-ignore:
       - develop
       - master
+      - 'release/**'
     paths-ignore:
       - '**.md'
       - 'docs/**'
