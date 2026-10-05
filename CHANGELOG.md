@@ -4,7 +4,10 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 ## Shopclass 6.4.3
 
-In development.
+This release fixes security issues in the admin plugins screen, listing editing, password reset
+e-mails on some Docker setups, redirects and sign-in forms. New hourly spam limits can be set in
+Settings → Spam and bots. Sites updating from 6.3 now finish the update when PHP's cache does not
+re-check files.
 
 ### New
 
