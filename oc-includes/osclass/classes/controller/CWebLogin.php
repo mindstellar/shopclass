@@ -70,67 +70,42 @@ class CWebLogin extends BaseModel
                     $this->redirectTo(osc_user_login_url());
                 }
 
-                // Before the account is looked up and before any password is
-                // hashed, so that a refused attempt costs neither.
-                $throttle = \mindstellar\security\LoginThrottle::evaluate('web', $email, osc_captcha_enabled());
-                if ($throttle['status'] === \mindstellar\security\LoginThrottle::BLOCKED) {
-                    osc_add_flash_error_message(osc_login_throttle_message($throttle['retry_after']));
-                    $this->redirectTo(osc_user_login_url());
+                $signIn = \mindstellar\auth\SignIn::attempt($email, $password, osc_captcha_enabled());
+                $user   = $signIn->user();
+                switch ($signIn->status()) {
+                    case \mindstellar\auth\SignIn::BLOCKED:
+                        osc_add_flash_error_message(osc_login_throttle_message($signIn->retryAfter()));
+                        $this->redirectTo(osc_user_login_url());
+                        break;
+                    case \mindstellar\auth\SignIn::WRONG:
+                        osc_add_flash_error_message(_m('Invalid email/username or password'));
+                        $this->redirectTo(osc_user_login_url());
+                        break;
+                    case \mindstellar\auth\SignIn::BANNED:
+                        if ($signIn->banned() & 1) {
+                            osc_add_flash_error_message(_m('Your current email is not allowed'));
+                        }
+                        if ($signIn->banned() & 2) {
+                            osc_add_flash_error_message(_m('Your current IP is not allowed'));
+                        }
+                        $this->redirectTo(osc_user_login_url());
+                        break;
+                    case \mindstellar\auth\SignIn::INACTIVE:
+                        if ((time() - strtotime($user['dt_access_date'])) > 1200) { // EACH 20 MINUTES
+                            osc_add_flash_error_message(sprintf(
+                                _m('The user has not been validated yet. Would you like to re-send your <a href="%s">activation?</a>'),
+                                osc_user_resend_activation_link($user['pk_i_id'], $user['s_email'])
+                            ));
+                        } else {
+                            osc_add_flash_error_message(_m('The user has not been validated yet'));
+                        }
+                        $this->redirectTo(osc_user_login_url());
+                        break;
+                    case \mindstellar\auth\SignIn::DISABLED:
+                        osc_add_flash_error_message(_m('The user has been suspended'));
+                        $this->redirectTo(osc_user_login_url());
+                        break;
                 }
-
-                if (osc_validate_email($email)) {
-                    $user = User::newInstance()->findByEmail($email);
-                }
-                if (empty($user)) {
-                    $user = User::newInstance()->findByUsername($email);
-                }
-
-                // An unknown account and a wrong password must answer the same way,
-                // and take about as long, or the form tells anyone who asks which
-                // addresses are registered.
-                $authenticated = empty($user)
-                    ? osc_dummy_password_verify($password)
-                    : osc_verify_password($password, (isset($user['s_password']) ? $user['s_password'] : ''));
-
-                if (!$authenticated) {
-                    // Counted against the name as submitted, so one nobody holds
-                    // accumulates exactly like a real one.
-                    \mindstellar\security\LoginThrottle::recordFailure('web', $email);
-                    osc_add_flash_error_message(_m('Invalid email/username or password'));
-                    $this->redirectTo(osc_user_login_url());
-                }
-
-                \mindstellar\security\LoginThrottle::clear('web', $email);
-
-                if (@$user['s_password'] != '') {
-                    $needs_rehash = true;
-                    if (preg_match('|\$2y\$([0-9]{2})\$|', $user['s_password'], $cost)) {
-                        $needs_rehash = ((int)$cost[1] !== BCRYPT_COST);
-                    }
-                    if ($needs_rehash) {
-                        // Mirror the rehash into the in-memory row so a remember-me token
-                        // issued below binds to the hash actually persisted.
-                        $user['s_password'] = osc_hash_password($password);
-                        User::newInstance()->update(
-                            array('s_password' => $user['s_password']),
-                            array('pk_i_id' => $user['pk_i_id'])
-                        );
-                    }
-                }
-                // e-mail or/and IP is/are banned
-                $banned =
-                    osc_is_banned($email); // int 0: not banned or unknown, 1: email is banned, 2: IP is banned, 3: both email & IP are banned
-                if ($banned & 1) {
-                    osc_add_flash_error_message(_m('Your current email is not allowed'));
-                }
-                if ($banned & 2) {
-                    osc_add_flash_error_message(_m('Your current IP is not allowed'));
-                }
-                if ($banned !== 0) {
-                    $this->redirectTo(osc_user_login_url());
-                }
-
-                osc_run_hook('before_login');
 
                 $url_redirect = osc_pop_login_redirect();
                 if (osc_rewrite_enabled() && $url_redirect != '') {
@@ -164,47 +139,26 @@ class CWebLogin extends BaseModel
                 }
 
                 $uActions = new UserActions(false);
-                $logged   = $uActions->bootstrap_login($user['pk_i_id']);
-
-                if ($logged == 0) {
+                if ($uActions->bootstrap_login($user['pk_i_id']) !== 3) {
                     osc_add_flash_error_message(_m("The user doesn't exist"));
-                } elseif ($logged == 1) {
-                    if ((time() - strtotime($user['dt_access_date'])) > 1200) { // EACH 20 MINUTES
-                        osc_add_flash_error_message(sprintf(
-                            _m('The user has not been validated yet. Would you like to re-send your <a href="%s">activation?</a>'),
-                            osc_user_resend_activation_link($user['pk_i_id'], $user['s_email'])
-                        ));
-                    } else {
-                        osc_add_flash_error_message(_m('The user has not been validated yet'));
-                    }
-                } elseif ($logged == 2) {
-                    osc_add_flash_error_message(_m('The user has been suspended'));
-                } elseif ($logged == 3) {
-                    // bootstrap_login() already issued a browser-session identity cookie;
-                    // upgrade it to a persistent one when "remember me" is ticked.
-                    if (Params::getParam('remember') == 1) {
-                        osc_web_user_login($user, true);
-                    }
-
-                    if ($url_redirect == '') {
-                        $url_redirect = osc_user_dashboard_url();
-                    }
-
-                    osc_run_hook('after_login', $user, $url_redirect);
-
-                    $this->redirectTo(osc_apply_filter(
-                        'correct_login_url_redirect',
-                        $url_redirect
-                    ));
-                } else {
-                    osc_add_flash_error_message(_m('This should never happen'));
-                }
-
-                if (!$user['b_enabled']) {
                     $this->redirectTo(osc_user_login_url());
                 }
+                // bootstrap_login() already issued a browser-session identity cookie;
+                // upgrade it to a persistent one when "remember me" is ticked.
+                if (Params::getParam('remember') == 1) {
+                    osc_web_user_login($user, true);
+                }
 
-                $this->redirectTo(osc_user_login_url());
+                if ($url_redirect == '') {
+                    $url_redirect = osc_user_dashboard_url();
+                }
+
+                osc_run_hook('after_login', $user, $url_redirect);
+
+                $this->redirectTo(osc_apply_filter(
+                    'correct_login_url_redirect',
+                    $url_redirect
+                ));
                 break;
             case ('resend'):
                 $id    = Params::getParam('id');
@@ -216,26 +170,12 @@ class CWebLogin extends BaseModel
                     osc_add_flash_error_message(_m('Incorrect link'));
                     $this->redirectTo(osc_user_login_url());
                 }
-                if ((time() - strtotime($user['dt_access_date'])) > 1200) { // EACH 20 MINUTES
-                    if (osc_notify_new_user()) {
-                        osc_run_hook('hook_email_admin_new_user', $user);
-                    }
-                    // Rotate the activation code: email a fresh plaintext, persist only its fingerprint.
-                    $activation_plain = osc_genRandomPassword();
-                    $user['s_secret'] = $activation_plain;
-                    if (osc_user_validation_enabled()) {
-                        osc_run_hook('hook_email_user_validation', $user, $user);
-                    }
-                    User::newInstance()->update(
-                        array(
-                            'dt_access_date' => date('Y-m-d H:i:s'),
-                            's_secret'       => \mindstellar\security\ActionToken::hash($activation_plain),
-                        ),
-                        array('pk_i_id' => $user['pk_i_id'])
-                    );
+                if ((new \mindstellar\user\AccountService())->resendActivation((int) $user['pk_i_id'], true)) {
                     osc_add_flash_ok_message(_m('Validation email re-sent'));
-                } else {
+                } elseif (\mindstellar\user\AccountService::resendWait($user) > 0) {
                     osc_add_flash_warning_message(_m('We have just sent you an email to validate your account, you will have to wait a few minutes to resend it again'));
+                } else {
+                    osc_add_flash_error_message(_m('Incorrect link'));
                 }
                 $this->redirectTo(osc_user_login_url());
                 break;
@@ -318,25 +258,12 @@ class CWebLogin extends BaseModel
                     if (Params::getParam('new_password', false, false)
                         == Params::getParam('new_password2', false, false)
                     ) {
-                        User::newInstance()->update(
-                            array(
-                                's_pass_code' => null
-                                ,
-                                's_pass_date' => null
-                                ,
-                                's_pass_ip'   => Params::getServerParam('REMOTE_ADDR')
-                                ,
-                                's_password'  => osc_hash_password(Params::getParam(
-                                    'new_password',
-                                    false,
-                                    false
-                                ))
-                            ),
-                            // Matching on the code too keeps the link single-use under two posts at once.
-                            array(
-                                'pk_i_id'     => $user['pk_i_id'],
-                                's_pass_code' => User::passCodeHash(User::PASS_CODE_RESET, (string)Params::getParam('code')),
-                            )
+                        // Matching on the code keeps the link single-use under two posts at once.
+                        \mindstellar\user\AccountService::setPassword(
+                            (int)$user['pk_i_id'],
+                            Params::getParamString('new_password', false, false),
+                            Params::getParamString('code'),
+                            (string) Params::getServerParam('REMOTE_ADDR')
                         );
                         osc_add_flash_ok_message(_m('The password has been changed'));
                         $this->redirectTo(osc_user_login_url());

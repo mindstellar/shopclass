@@ -65,6 +65,19 @@ class ActionThrottle
      */
     public static function exceededFor(string $context, ?int $max = null, int $window = 3600): bool
     {
+        [$max, $window] = self::limitFor($context, $max, $window);
+
+        return self::exceeded($context, $max, $window);
+    }
+
+    /**
+     * The limit for $context: the stored setting, else $max, else the default, then the
+     * action_throttle_limit filter. A max of 0 means no limit.
+     *
+     * @return array{0:int,1:int} max and window in seconds
+     */
+    public static function limitFor(string $context, ?int $max = null, int $window = 3600): array
+    {
         $stored = osc_get_preference('throttle_' . $context);
         if (is_numeric($stored)) {
             $max = max(0, (int) $stored);
@@ -74,7 +87,7 @@ class ActionThrottle
 
         $limit = (array) osc_apply_filter('action_throttle_limit', array('max' => $max, 'window' => $window), $context);
 
-        return self::exceeded($context, (int) ($limit['max'] ?? $max), max(1, (int) ($limit['window'] ?? $window)));
+        return array((int) ($limit['max'] ?? $max), max(1, (int) ($limit['window'] ?? $window)));
     }
 
     /**

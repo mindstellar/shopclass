@@ -74,7 +74,7 @@ class LoginThrottle
      * Call it after the form's own captcha check, and pass whether that check
      * actually cleared a captcha on this request.
      *
-     * @param string $context       'web' or 'admin'
+     * @param string $context       'web' or 'admin', or a recovery context
      * @param string $account       identifier as submitted
      * @param bool   $captchaSolved true only when this request presented a
      *                              captcha and it verified. Excuses the
@@ -126,11 +126,13 @@ class LoginThrottle
      * Record one rejected attempt.
      *
      * @param string $context
-     * @param string $account identifier as submitted
+     * @param string $account     identifier as submitted
+     * @param bool   $withAddress false records it for the account only, for a second name of
+     *                            an attempt the address was already counted for
      *
      * @return void
      */
-    public static function recordFailure($context, $account)
+    public static function recordFailure($context, $account, $withAddress = true)
     {
         if (!osc_login_throttle_enabled()) {
             return;
@@ -140,7 +142,7 @@ class LoginThrottle
             LoginAttempt::newInstance()->record(
                 $context,
                 self::normalise($account),
-                self::ip(),
+                $withAddress ? self::ip() : '',
                 date('Y-m-d H:i:s')
             );
         } catch (\Throwable $e) {
@@ -154,9 +156,9 @@ class LoginThrottle
      *
      * @param string $context
      * @param string $account     identifier as submitted
-     * @param bool   $withAddress false keeps the address's failures: an API client can
-     *                            hold one account's password and guess at others from the
-     *                            same address
+     * @param bool   $withAddress false keeps the address's failures: a user can hold their
+     *                            own password and guess at other accounts from the same
+     *                            address, so a user sign-in passes false
      *
      * @return void
      */

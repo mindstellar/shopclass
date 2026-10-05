@@ -38,12 +38,19 @@ final class AddressGuard
     /** @var callable(string): array<int,string> */
     private $resolve;
 
+    /** @var bool */
+    private $allowPrivate;
+
     /**
-     * @param callable|null $resolve host name => its IP addresses; DNS by default
+     * @param callable|null $resolve      host name => its IP addresses; DNS by default
+     * @param bool          $allowPrivate also pass private and reserved hosts, for an address the
+     *                                    admin chose to reach on their own network; still only on
+     *                                    the standard port
      */
-    public function __construct(?callable $resolve = null)
+    public function __construct(?callable $resolve = null, bool $allowPrivate = false)
     {
-        $this->resolve = $resolve ?? array(self::class, 'dns');
+        $this->resolve      = $resolve ?? array(self::class, 'dns');
+        $this->allowPrivate = $allowPrivate;
     }
 
     /**
@@ -84,7 +91,7 @@ final class AddressGuard
             return array('ok' => false, 'error' => 'The host name does not resolve.');
         }
         foreach ($ips as $ip) {
-            if (!self::isPublic($ip)) {
+            if (!$this->allowPrivate && !self::isPublic($ip)) {
                 return array('ok' => false, 'error' => 'The host is on a private or reserved network.');
             }
         }
@@ -94,6 +101,43 @@ final class AddressGuard
         $ips  = array_values(array_merge(array_filter($ips, $isV4), array_filter($ips, static fn ($ip) => !$isV4($ip))));
 
         return array('ok' => true, 'host' => $host, 'port' => $port, 'ip' => $ips[0], 'ips' => $ips);
+    }
+
+    /**
+     * The cURL options that keep a request to an address check() passed: connect only to the
+     * checked $ip, never through a proxy, http(s) only, no redirects. Every outgoing request
+     * to a user-given address (webhooks, photos by URL) starts from these.
+     *
+     * @return array<int,mixed>
+     */
+    public static function curlOptions(string $url, string $ip): array
+    {
+        return array(
+            CURLOPT_RESOLVE        => self::curlResolve($url, $ip),
+            // A proxy from the environment would connect for us and skip the pinned address.
+            CURLOPT_PROXY          => '',
+            CURLOPT_NOPROXY        => '*',
+            CURLOPT_PROTOCOLS      => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+            CURLOPT_FOLLOWLOCATION => false,
+        );
+    }
+
+    /**
+     * The CURLOPT_RESOLVE entry that pins $url's host to the checked $ip. A host that is an
+     * IP itself needs no pin, and its `host:port:addr` line would not parse for IPv6.
+     *
+     * @return array<int,string>
+     */
+    private static function curlResolve(string $url, string $ip): array
+    {
+        $parts = parse_url($url);
+        $host  = trim((string)($parts['host'] ?? ''), '[]');
+        if ($host === '' || filter_var($host, FILTER_VALIDATE_IP) !== false) {
+            return array();
+        }
+        $port = (int)($parts['port'] ?? (strtolower((string)($parts['scheme'] ?? '')) === 'https' ? 443 : 80));
+
+        return array($host . ':' . $port . ':' . (str_contains($ip, ':') ? '[' . $ip . ']' : $ip));
     }
 
     /**

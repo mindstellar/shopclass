@@ -11,7 +11,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-namespace mindstellar;
+namespace mindstellar\security;
 
 use mindstellar\utility\Utils;
 use Params;
@@ -94,15 +94,23 @@ class Csrf
     /**
      * The shared Csrf instance, created on first call.
      *
-     * @return \mindstellar\Csrf
+     * @return \mindstellar\security\Csrf
      */
-    public static function newInstance()
+    public static function instance()
     {
         if (!self::$instance instanceof self) {
             self::$instance = new self();
         }
 
         return self::$instance;
+    }
+
+    /**
+     * @deprecated 7.0.0 Use instance().
+     */
+    public static function newInstance()
+    {
+        return self::instance();
     }
 
     /**
@@ -114,7 +122,7 @@ class Csrf
     {
         ob_start();
         $injectCsrf = static function () {
-            $data = self::newInstance()->injectTokens(ob_get_clean(), headers_list());
+            $data = self::instance()->injectTokens(ob_get_clean(), headers_list());
             // The one moment the finished page exists as a string: after the tokens are
             // in, before anything reaches the client. Anything that needs the whole body
             // -- a validator to answer conditional requests with, a minifier, a late
@@ -428,7 +436,7 @@ class Csrf
      */
     private static function secret()
     {
-        return \mindstellar\security\SigningKey::get();
+        return SigningKey::get();
     }
 
     /**

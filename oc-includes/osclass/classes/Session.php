@@ -25,6 +25,8 @@ class Session
     private $form = array();
     private $keepForm = array();
     private $started = false;
+    /** @var array<string,true> keys forgotten for this request; never read back from $_SESSION */
+    private $forgotten = array();
 
     /**
      * Seed the in-memory default containers so reads are safe before (or without) a
@@ -120,7 +122,7 @@ class Session
                 $_SESSION[$key] = $value;
             }
         }
-        $this->session = $_SESSION;
+        $this->session = array_diff_key($_SESSION, $this->forgotten);
         $this->seedDefaults();
     }
 
@@ -263,6 +265,28 @@ class Session
     }
 
     /**
+     * Forget keys for the rest of this request only; the stored session keeps them. A running
+     * session is closed unwritten first, so nothing later in the request can save a change.
+     *
+     * @param string[] $keys
+     *
+     * @return void
+     */
+    public function _forgetForRequest(array $keys)
+    {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_abort();
+        }
+        foreach ($keys as $key) {
+            $this->forgotten[$key] = true;
+            unset($this->session[$key], $this->ephemeral[$key]);
+            if (isset($_SESSION)) {
+                unset($_SESSION[$key]);
+            }
+        }
+    }
+
+    /**
      * Destroy the physical session, if one is running, and mark this instance detached.
      *
      * @return void
@@ -276,6 +300,38 @@ class Session
             session_destroy();
         }
         $this->started = false;
+    }
+
+    /**
+     * Destroy the session and tell the browser to drop its session cookie, so a copy of the
+     * old id is worth nothing. Used on sign-out. A value set afterwards starts a new session.
+     *
+     * @return void
+     */
+    public function session_end()
+    {
+        // Resume a session the browser names, so its stored data is removed and not orphaned.
+        $this->maybeResume();
+        $this->session_destroy();
+        if (isset($_COOKIE['osclass'])) {
+            if (!headers_sent()) {
+                $this->configureCookieParams();
+                $params = session_get_cookie_params();
+                setcookie('osclass', '', array(
+                    'expires'  => time() - 3600,
+                    'path'     => $params['path'],
+                    'domain'   => $params['domain'],
+                    'secure'   => $params['secure'],
+                    'httponly' => true,
+                    'samesite' => 'Lax',
+                ));
+            }
+            unset($_COOKIE['osclass']);
+        }
+        // Unset, not emptied: a later write then starts a new session under a new id.
+        unset($_SESSION);
+        $this->session = array();
+        $this->seedDefaults();
     }
 
     /**
