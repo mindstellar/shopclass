@@ -27,7 +27,7 @@ require_once __DIR__ . '/lib/fake-s3.php';
 require_once ABS_PATH . 'oc-includes/vendor/autoload.php';
 
 use mindstellar\backup\BackupBucket;
-use mindstellar\backup\BackupManager;
+use mindstellar\backup\BackupService;
 use mindstellar\storage\S3Storage;
 use mindstellar\storage\StorageAdapter;
 use mindstellar\storage\StorageManager;
@@ -160,7 +160,7 @@ pin('an adapter without list() is not a bucket', false, BackupBucket::supports(n
 pin('...so there is no bucket to save to either', null, BackupBucket::adapter());
 pin('...and a backup to the bucket is refused in words, not with an error',
     'Saving to a bucket needs S3 storage turned on in Settings > Storage.',
-    BackupManager::startBackup('everything', 'bucket'));
+    BackupService::startBackup('everything', 'bucket'));
 $GLOBALS['prefs']['storage_active'] = 'local';
 pin('with offload off there is no bucket', null, BackupBucket::adapter());
 
@@ -221,7 +221,7 @@ $manager->register(new S3Storage(array('endpoint' => 'http://s3.example.com', 'b
 pin('a public plain http endpoint is flagged', true, BackupBucket::insecure());
 pin('...and a backup to the bucket is refused',
     'Your S3 endpoint uses plain http, so a backup and its download link would travel unencrypted. Use an https endpoint.',
-    BackupManager::startBackup('everything', 'bucket'));
+    BackupService::startBackup('everything', 'bucket'));
 $manager->register(new S3Storage(array('endpoint' => 'http://minio:9000', 'bucket' => 'photos', 'client' => $client)));
 pin('a plain http endpoint on the private network is not', false, BackupBucket::insecure());
 check('the page warns and hides the bucket choice', strpos($view, '$plain   = $bucket !== null && BackupBucket::insecure();') !== false

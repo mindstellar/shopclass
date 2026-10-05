@@ -11,7 +11,7 @@
 /**
  * How auto-cron dispatches its work.
  *
- * Three decisions live in one small block of index.php, and each is easy to undo by
+ * Three decisions live in one small function (osc_auto_cron_dispatch), and each is easy to undo by
  * accident while tidying:
  *
  *  - On FPM the work runs in-process after the response, not over an HTTP request the
@@ -35,14 +35,14 @@ $GLOBALS['okCount']    = 0;
 $GLOBALS['failCount']  = 0;
 $GLOBALS['failLabels'] = array();
 
-$src = (string) file_get_contents(__DIR__ . '/../index.php');
+$src = (string) file_get_contents(__DIR__ . '/../oc-includes/osclass/helpers/hJobs.php');
 
-// The auto-cron block: from its guard to the end of the file.
-$block = substr($src, (int) strpos($src, "osc_auto_cron()"));
+// The auto-cron function: from its declaration to the end of the file.
+$block = substr($src, (int) strpos($src, 'function osc_auto_cron_dispatch'));
 
 harness_section('auto-cron dispatch');
 
-check('the block was found to scan', strpos($block, 'autocron_fire') !== false);
+check('the block was found to scan', $block !== '');
 
 check(
     'FPM runs the work in-process',
@@ -53,13 +53,12 @@ check(
     preg_match('/function_exists\(\s*[\'"]fastcgi_finish_request[\'"]\s*\)/', $block) === 1
 );
 // The bare call, not the function_exists() guard that necessarily precedes it.
-preg_match('/(?<!function_exists\()\bfastcgi_finish_request\(\s*\)\s*;/', $block, $m, PREG_OFFSET_CAPTURE);
+preg_match('/\$finish\(\)\s*;/', $block, $m, PREG_OFFSET_CAPTURE);
 $callPos = $m[0][1] ?? false;
 check(
     '...after the response, via a shutdown function, not inline',
     $callPos !== false
-    && strpos($block, 'register_shutdown_function') !== false
-    && strpos($block, 'register_shutdown_function') < $callPos
+    && strpos($block, 'register_shutdown_function($run)') !== false
 );
 check(
     '...and it is cron.php that gets run',
@@ -71,9 +70,9 @@ $fpmPos      = strpos($block, 'fastcgi_finish_request');
 $requestPos  = strpos($block, 'doRequest');
 check('the self request is still there for SAPIs that cannot detach', $requestPos !== false);
 check(
-    '...reached only through the else arm, never alongside the FPM path',
+    '...reached only when nothing can detach, and returns before the FPM path',
     $fpmPos !== false && $requestPos !== false && $requestPos > $fpmPos
-    && preg_match('/\}\s*else\s*\{[^}]*doRequest/s', $block) === 1
+    && preg_match('/\$finish === null\)\s*\{[^}]*doRequest[^}]*return;/s', $block) === 1
 );
 
 /* Bounded, never unlimited. */

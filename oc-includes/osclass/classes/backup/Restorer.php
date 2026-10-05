@@ -189,7 +189,7 @@ final class Restorer
      * @param array<string,mixed> $p
      *
      * @return array<string,mixed>
-     * @throws BackupFailure
+     * @throws BackupException
      */
     public function step(array $p): array
     {
@@ -208,10 +208,10 @@ final class Restorer
                     return $this->finish($p);
             }
             throw new RuntimeException('Unknown restore stage');
-        } catch (BackupFailure $e) {
+        } catch (BackupException $e) {
             $failure = $e;
         } catch (Throwable $e) {
-            $failure = new BackupFailure(BackupFailure::clean($e->getMessage()), $stage);
+            $failure = new BackupException(BackupException::clean($e->getMessage()), $stage);
         }
         // Nothing was changed yet: open the site again as it was.
         if (self::untouched($failure)) {
@@ -223,11 +223,11 @@ final class Restorer
     /**
      * Whether a step changed nothing yet, so a failure there leaves the site as it was.
      *
-     * @param BackupFailure $e
+     * @param BackupException $e
      *
      * @return bool
      */
-    public static function untouched(BackupFailure $e): bool
+    public static function untouched(BackupException $e): bool
     {
         return $e->rolledBack === null && in_array($e->stage, array('fetch', 'start', 'safety', 'database'), true);
     }
@@ -243,16 +243,16 @@ final class Restorer
     {
         $path = $this->source($p);
         if ($path === null) {
-            throw new BackupFailure(__('The backup file is gone.'), 'start');
+            throw new BackupException(__('The backup file is gone.'), 'start');
         }
         $info = self::inspect($path, $p['parts']['files'] ? $this->content : null);
         if (!$info['ok']) {
-            throw new BackupFailure($info['reason'], 'start');
+            throw new BackupException($info['reason'], 'start');
         }
         $p['parts']['database'] = !empty($p['parts']['database']) && $info['database'];
         $p['parts']['files']    = !empty($p['parts']['files']) && $info['files'] > 0;
         if (!$p['parts']['database'] && !$p['parts']['files']) {
-            throw new BackupFailure(__('There is nothing to put back.'), 'start');
+            throw new BackupException(__('There is nothing to put back.'), 'start');
         }
         $p['migrate']          = $info['migrate'];
         $p['entries']['total'] = $p['parts']['files'] ? $info['files'] : 0;
@@ -261,7 +261,7 @@ final class Restorer
         $was  = is_file($file) ? @file_get_contents($file) : null;
         $p['maintenance_was'] = is_string($was) ? $was : null;
         if (@file_put_contents($file, OSC_MAINTENANCE_RESTORE_MARKER) === false) {
-            throw new BackupFailure(__('The site could not be put in maintenance mode.'), 'start');
+            throw new BackupException(__('The site could not be put in maintenance mode.'), 'start');
         }
 
         $filesBytes = $info['files_bytes'];
@@ -289,8 +289,8 @@ final class Restorer
     {
         try {
             $p['safety'] = $this->builder->step((array) $p['safety']);
-        } catch (BackupFailure $e) {
-            throw new BackupFailure(
+        } catch (BackupException $e) {
+            throw new BackupException(
                 sprintf(__('The safety copy could not be saved: %s'), $e->getMessage()),
                 'safety'
             );
@@ -319,14 +319,14 @@ final class Restorer
         @ignore_user_abort(true);
         $release = ($this->opts['lock'])();
         if ($release === null) {
-            throw new BackupFailure(__('A database update is running. Try again in a few minutes.'), 'database');
+            throw new BackupException(__('A database update is running. Try again in a few minutes.'), 'database');
         }
         try {
             try {
                 $this->load($this->source($p), $p);
             } catch (Throwable $e) {
-                $reason = BackupFailure::clean($e->getMessage());
-                throw new BackupFailure($reason, 'database', $this->rollback($p));
+                $reason = BackupException::clean($e->getMessage());
+                throw new BackupException($reason, 'database', $this->rollback($p));
             }
         } finally {
             $release();
@@ -336,13 +336,13 @@ final class Restorer
             try {
                 ($this->opts['migrate'])();
             } catch (Throwable $e) {
-                throw new BackupFailure(BackupFailure::clean($e->getMessage()), 'updates');
+                throw new BackupException(BackupException::clean($e->getMessage()), 'updates');
             }
         }
 
         $p['stage'] = $p['parts']['files'] ? 'files' : 'finish';
         if (!($this->opts['requeue'])()) {
-            throw new BackupFailure(__('The restore could not carry on in the background.'), 'updates');
+            throw new BackupException(__('The restore could not carry on in the background.'), 'updates');
         }
 
         return $p;
@@ -435,7 +435,7 @@ final class Restorer
     {
         $path = $this->source($p);
         if ($path === null) {
-            throw new BackupFailure(__('The backup file is gone.'), 'files');
+            throw new BackupException(__('The backup file is gone.'), 'files');
         }
         $archive = new BackupArchive($path);
         try {

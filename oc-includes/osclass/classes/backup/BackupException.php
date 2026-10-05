@@ -16,7 +16,7 @@ use RuntimeException;
  * A backup or restore that stopped: why, at which stage, and for a restore whether the
  * safety copy was put back. Its message is for the site owner, never a path or a query.
  */
-final class BackupFailure extends RuntimeException
+final class BackupException extends RuntimeException
 {
     /** @var string */
     public $stage;

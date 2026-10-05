@@ -117,14 +117,14 @@ final class Builder
      * @param array<string,mixed> $p
      *
      * @return array<string,mixed>
-     * @throws BackupFailure when it fails or was cancelled; the partial files are removed
+     * @throws BackupException when it fails or was cancelled; the partial files are removed
      */
     public function step(array $p): array
     {
         $stage = (string) $p['stage'];
         try {
             if ($this->store->cancelRequested((string) $p['run'])) {
-                throw BackupFailure::cancelled($stage);
+                throw BackupException::cancelled($stage);
             }
             switch ($stage) {
                 case 'start':
@@ -137,12 +137,12 @@ final class Builder
                     return $this->finish($p);
             }
             throw new RuntimeException('Unknown backup stage');
-        } catch (BackupFailure $e) {
+        } catch (BackupException $e) {
             $this->store->discard((string) $p['name']);
             throw $e;
         } catch (\Throwable $e) {
             $this->store->discard((string) $p['name']);
-            throw new BackupFailure(BackupFailure::clean($e->getMessage()), $stage);
+            throw new BackupException(BackupException::clean($e->getMessage()), $stage);
         }
     }
 
@@ -156,7 +156,7 @@ final class Builder
     private function start(array $p): array
     {
         if (!$this->store->protect()) {
-            throw new BackupFailure(__('The backup folder cannot be written.'), 'start');
+            throw new BackupException(__('The backup folder cannot be written.'), 'start');
         }
         list($db, $files) = self::parts($p);
         $bytes = $db ? max(0, (int) ($this->dbBytes)()) : 0;
@@ -172,7 +172,7 @@ final class Builder
         $need = (int) ($bytes * 1.1) + 200 * 1048576;
         $free = $this->store->freeSpace();
         if ($free !== null && $free < $need) {
-            throw new BackupFailure(sprintf(
+            throw new BackupException(sprintf(
                 __('Not enough space on the server: needs about %1$s, %2$s free. Nothing was saved.'),
                 DatabaseTools::bytes($need),
                 DatabaseTools::bytes($free)
@@ -205,7 +205,7 @@ final class Builder
         try {
             $info = ($this->dump)($sql, function (int $done, int $total) use (&$p): void {
                 if ($this->store->cancelRequested((string) $p['run'])) {
-                    throw BackupFailure::cancelled('database');
+                    throw BackupException::cancelled('database');
                 }
                 $p['db']['done']   = $done;
                 $p['db']['tables'] = $total;

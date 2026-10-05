@@ -629,12 +629,14 @@ final class JobQueue
     /**
      * Record a failed attempt: back off, or dead-letter past the ceiling.
      *
-     * @param int    $id
-     * @param string $error
+     * @param int      $id
+     * @param string   $error
+     * @param int|null $delay       seconds until the next try, in place of the standard backoff
+     * @param int|null $maxAttempts tries before giving up, in place of MAX_ATTEMPTS
      *
      * @return bool true when the job gave up for good
      */
-    public function fail(int $id, string $error): bool
+    public function fail(int $id, string $error, ?int $delay = null, ?int $maxAttempts = null): bool
     {
         try {
             $row = osc_db_table($this->table())->where('pk_i_id', $id)->first();
@@ -652,11 +654,12 @@ final class JobQueue
             's_last_error' => substr($error, 0, 250),
         ));
 
-        if ($attempts >= self::MAX_ATTEMPTS) {
+        if ($attempts >= ($maxAttempts ?? self::MAX_ATTEMPTS)) {
             $values['s_status'] = self::STATUS_ERROR;
         } else {
+            $wait                  = $delay !== null ? max(1, $delay) : (2 ** min($attempts - 1, 6)) * 60;
             $values['s_status']    = self::STATUS_PENDING;
-            $values['dt_next_run'] = date('Y-m-d H:i:s', time() + (2 ** min($attempts - 1, 6)) * 60);
+            $values['dt_next_run'] = date('Y-m-d H:i:s', time() + $wait);
         }
 
         try {

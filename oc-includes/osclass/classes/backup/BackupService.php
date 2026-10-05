@@ -21,7 +21,7 @@ use Throwable;
  * words, and whether the backup folder is open to the web. The words and the stale-run
  * rule are pure, so they can be tested without a site.
  */
-final class BackupManager
+final class BackupService
 {
     public const WHAT  = Manifest::WHAT;
     public const WHERE = array('download', 'server', 'bucket');

@@ -13,7 +13,7 @@
 use mindstellar\admin\DatabaseTools;
 use mindstellar\backup\BackupBucket;
 use mindstellar\backup\BackupJobs;
-use mindstellar\backup\BackupManager;
+use mindstellar\backup\BackupService;
 use mindstellar\backup\BackupStore;
 use mindstellar\backup\Restorer;
 
@@ -31,7 +31,7 @@ $plain   = $bucket !== null && BackupBucket::insecure();
 $open    = $bucket !== null && BackupBucket::flaggedPublic();
 $demo    = defined('DEMO');
 $status  = (string) ($state['status'] ?? '');
-$live    = BackupManager::isLive($state);
+$live    = BackupService::isLive($state);
 $locked  = $demo || $busy || $live;
 $offload = osc_get_preference('storage_active') === 's3';
 $keep    = BackupJobs::keepCount();
@@ -168,7 +168,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     ?>
 
     <?php if ($live) {
-        $words   = BackupManager::progress($state);
+        $words   = BackupService::progress($state);
         $restore = $state['kind'] === 'restore'; ?>
         <div class="callout-<?php echo $restore ? 'warning' : 'info'; ?> callout-block backup-callout" id="backup-run"
              data-status-url="<?php echo osc_esc_html($poll); ?>"
@@ -197,7 +197,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             osc_admin_form_close(null, array('horizontal' => false));
         } ?>
     <?php } elseif ($status === 'failed') {
-        $failure = BackupManager::failure($state); ?>
+        $failure = BackupService::failure($state); ?>
         <div class="callout-danger callout-block backup-callout" role="alert">
             <div class="backup-callout-body">
                 <div class="backup-callout-text">

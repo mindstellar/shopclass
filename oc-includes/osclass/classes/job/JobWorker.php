@@ -180,7 +180,9 @@ final class JobWorker
         try {
             $handler($job);
         } catch (Throwable $e) {
-            return self::failed($queue, $id, $type, $payload, $e->getMessage());
+            $retry = $e instanceof JobRetry ? $e : null;
+
+            return self::failed($queue, $id, $type, $payload, $e->getMessage(), $retry?->delay(), $retry?->maxAttempts());
         }
 
         $repeat = $job->repeatRequest();
@@ -204,12 +206,14 @@ final class JobWorker
      * @param string              $type
      * @param array<string,mixed> $payload
      * @param string              $error
+     * @param int|null            $delay       the handler's own wait before the next try
+     * @param int|null            $maxAttempts the handler's own try limit
      *
      * @return string retry|gave_up
      */
-    private static function failed(JobQueue $queue, int $id, string $type, array $payload, string $error): string
+    private static function failed(JobQueue $queue, int $id, string $type, array $payload, string $error, ?int $delay = null, ?int $maxAttempts = null): string
     {
-        if (!$queue->fail($id, $error)) {
+        if (!$queue->fail($id, $error, $delay, $maxAttempts)) {
             return 'retry';
         }
         $detail = JobRegistry::detail($type, $payload);
