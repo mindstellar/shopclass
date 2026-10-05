@@ -143,6 +143,10 @@ class Rewrite
         osc_run_hook('before_rewrite_rules', array(&$rewrite));
         $rewrite->clearRules();
 
+        // The REST API owns api/, ahead of every admin-editable route. The API reads its path
+        // from the raw URI, so nothing in the path can add a query parameter.
+        $rewrite->addRule('^api(?:/.*)?$', 'index.php?page=api');
+
         // Everything with a fixed, admin-editable path comes from one table that the
         // URL builders read too, so a route cannot be matched one way and linked another.
         foreach (CoreRoutes::rules('listing') as $pattern => $target) {

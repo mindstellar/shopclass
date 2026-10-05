@@ -97,7 +97,8 @@ pin('the core commands, in help order', array(
     'install', 'cron', 'db:upgrade', 'core:update', 'db:doctor', 'db:repair', 'package:reconcile', 'cache:flush',
     'jobs:work', 'jobs:status', 'storage:work', 'sitemap:warm',
     'backup:create', 'backup:list', 'backup:restore', 'backup:delete',
-    'user:create-admin', 'user:reset-password', 'user:2fa-off', 'plugin:list', 'plugin:activate',
+    'user:create-admin', 'user:reset-password', 'user:2fa-off', 'api:key:create', 'api:key:list', 'api:key:revoke',
+    'plugin:list', 'plugin:activate',
     'plugin:deactivate', 'theme:list', 'theme:activate', 'market:refresh', 'market:search', 'market:info',
     'market:install', 'market:update', 'location:status', 'location:update', 'doctor', 'version', 'help',
 ), array_keys($commands->getValue($cli)));

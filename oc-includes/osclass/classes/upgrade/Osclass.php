@@ -24,6 +24,7 @@ namespace mindstellar\upgrade;
 use mindstellar\admin\DatabaseTools;
 use mindstellar\database\Connection;
 use mindstellar\migration\MigrationRunner;
+use mindstellar\routing\ServerRules;
 use mindstellar\utility\FileSystem;
 use mindstellar\utility\Utils;
 use Plugins;
@@ -129,6 +130,16 @@ class Osclass extends UpgradePackage
                 Rewrite::newInstance()->rebuildAndPersistRules();
             } catch (Throwable $e) {
                 // A rules rebuild is a repair, not the upgrade; never fail the upgrade on it.
+            }
+
+            // An .htaccess an older release wrote gains the line that passes the
+            // Authorization header to PHP; a hand-edited one is left alone.
+            if (osc_rewrite_enabled() && !osc_server_is_nginx()) {
+                try {
+                    ServerRules::refresh(osc_base_path() . '.htaccess', REL_WEB_URL);
+                } catch (Throwable $e) {
+                    error_log('upgrade: .htaccess was not refreshed: ' . $e->getMessage());
+                }
             }
 
             Utils::changeOsclassVersionTo(self::newVersionOnDisk());

@@ -71,6 +71,8 @@ if (is_array($cron)) {
         // window as the temp files swept above.
         ItemTmpUpload::newInstance()->pruneBefore(date('Y-m-d H:i:s', time() - (2 * 3600)));
 
+        \mindstellar\security\RateLimit::prune();
+
         osc_run_hook('cron_hourly');
     }
 }
@@ -121,7 +123,14 @@ if (is_array($cron)) {
         // anything; what is left is history, and under a sustained guessing run
         // the table is the fastest-growing one in the schema.
         \mindstellar\security\LoginThrottle::prune();
-        \mindstellar\security\RateLimit::prune();
+
+        // Expired key-value rows (API Idempotency-Keys among them), and refresh tokens that can no longer be used.
+        try {
+            (new \mindstellar\model\KeyValue())->prune(time());
+            (new \mindstellar\model\ApiCredential())->pruneRefresh(time() - (7 * 24 * 3600));
+        } catch (\mindstellar\database\DbException $e) {
+            error_log('Key-value and API prune failed: ' . $e->getMessage());
+        }
 
         // Pending e-mail changes are dropped after 7 days; their confirmation link then stops working.
         try {

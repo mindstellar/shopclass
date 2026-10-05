@@ -148,6 +148,8 @@ $cases = array(
     'debug_on'             => array('server', array('debug' => true), 'warning', '#server-help'),
     'disk_low'             => array('server', array('free_disk' => 100 * 1024 * 1024), 'warning', null),
     'maintenance_on'       => array('server', array('maintenance' => 'locked'), 'warning', $base . '?page=tools&action=maintenance'),
+    'htaccess_no_authorization' => array('server', array('htaccess_auth' => false), 'warning', null),
+    'api_slug_taken'       => array('server', array('reserved_slugs' => array('pages' => array('api'), 'categories' => array())), 'warning', null),
     'backup_none'          => array('overview', array('backup_last' => null), 'warning', $base . '?page=tools&action=backup'),
     'cron_never'           => array('jobs', array('cron_last' => 0), 'warning', SystemChecks::DOCS_CRON),
     'cron_stale'           => array('jobs', array('cron_last' => $now - 3 * 86400), 'warning', SystemChecks::DOCS_CRON),

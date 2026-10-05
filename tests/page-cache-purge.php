@@ -330,13 +330,13 @@ check('...nor one that was refused', !osc_page_cache_purge_pending());
 $direct = array(
     'controller/admin/CAdminTools.php'                        => array('maintenance', 3),
     'controller/admin/CAdminLanguages.php'                    => array('language', 4),
-    'controller/admin/settings/CAdminSettingsCurrencies.php'  => array('currency', 3),
+    'currency/CurrencyService.php'                             => array('currency', 3),
     'controller/admin/CAdminAppearance.php'                   => array('widget', 5),
-    'controller/admin/ajax/CAdminAjax.php'                    => array('category', 2),
+    'category/CategoryService.php'                             => array('category', 1),
     'controller/admin/CAdminPages.php'                        => array('page', 1),
     'upgrade/Upgrade.php'                                     => array('upgrade', 1),
     'backup/BackupJobs.php'                                   => array('restore', 1),
-    'backup/BackupManager.php'                                => array('restore', 1),
+    'backup/BackupService.php'                                => array('restore', 1),
 );
 foreach ($direct as $file => [$reason, $count]) {
     $src = (string)file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/' . $file);

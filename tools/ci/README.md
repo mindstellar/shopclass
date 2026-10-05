@@ -106,7 +106,7 @@ drives the real thing over HTTP with `curl`, the same way a browser would:
 3. Copy the package into `oc-content/plugins/<slug>` or `themes/<slug>`
    (`docker cp`), plus `deprecation-collector/`.
 4. Log in to `/oc-admin/` and scrape the page's CSRF token pair. Every token
-   `mindstellar\Csrf` issues on one authenticated page load is valid for every
+   `mindstellar\security\Csrf` issues on one authenticated page load is valid for every
    other admin request in the same session (2h lifetime, no per-request
    nonce), so it is scraped once and reused for install/enable/configure/
    disable/uninstall — no re-scraping between steps.

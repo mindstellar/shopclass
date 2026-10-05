@@ -37,10 +37,9 @@ class WebSecBaseModel extends SecBaseModel
      */
     public function logout()
     {
-        //destroying session
         // The chosen locale lives in its own cookie now, so it survives logout without
         // restarting a session — a logged-out visitor is left session-free (cacheable).
-        Session::newInstance()->session_destroy();
+        Session::newInstance()->session_end();
         Session::newInstance()->_drop('userId');
         Session::newInstance()->_drop('userName');
         Session::newInstance()->_drop('userEmail');

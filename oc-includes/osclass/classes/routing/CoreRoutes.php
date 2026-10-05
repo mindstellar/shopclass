@@ -316,6 +316,10 @@ class CoreRoutes
                 'to'   => array('page' => 'user', 'action' => 'delete'),
                 'rule' => false,
             ),
+            'user_api_access' => array(
+                'to'   => array('page' => 'user', 'action' => 'api_access'),
+                'rule' => false,
+            ),
             // Billing's three navigable pages, specific first: the buy path nests
             // under the wallet's by default. Both patterns are end-anchored, which
             // already keeps them apart, but the order is what stays correct if an

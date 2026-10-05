@@ -22,6 +22,7 @@ use mindstellar\admin\ListPaging;
 /**
  * Class CAdminAdmins
  */
+use mindstellar\security\AdminReauth;
 use mindstellar\security\AdminTwoFactor;
 use mindstellar\security\Totp;
 
@@ -38,7 +39,7 @@ class CAdminAdmins extends AdminSecBaseModel
         parent::__construct();
 
         if ($this->isModerator()) {
-            if (!in_array($this->action, array('edit', 'edit_post', '2fa_setup', '2fa_enable', '2fa_codes', '2fa_off'), true)
+            if (!in_array($this->action, array('edit', 'edit_post', '2fa_setup', '2fa_enable', '2fa_codes', '2fa_off', 'sign_out_all'), true)
                 || (Params::getParam('id') != ''
                     && Params::getParam('id') != osc_logged_admin_id())
             ) {
@@ -102,6 +103,13 @@ class CAdminAdmins extends AdminSecBaseModel
                 }
                 osc_csrf_check();
                 $this->twoFactor($this->action);
+                break;
+            case ('sign_out_all'):
+                if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=admins&action=edit')) {
+                    break;
+                }
+                osc_csrf_check();
+                $this->signOutEverywhere();
                 break;
             case ('delete'):
                 if ($this->refuseOnDemo(osc_admin_base_url(true) . '?page=admins')) {
@@ -286,6 +294,9 @@ class CAdminAdmins extends AdminSecBaseModel
         // The row itself, for the admin_profile_form hook a plugin adds its own controls
         // through. Null while an account is being added, exactly as before.
         $this->_exportVariableToView('admin', $id === null ? null : AdminAccountForm::row($id));
+        if ($id !== null && $id === osc_logged_admin_id()) {
+            $this->_exportVariableToView('admin_api_key_count', count((new \mindstellar\model\ApiCredential())->listBy(null, null, $id, true)));
+        }
         $this->_exportVariableToView('admin_form', AdminAccountForm::formVars(
             $id,
             $values ?? osc_settings_values($pageId, $id),
@@ -329,6 +340,16 @@ class CAdminAdmins extends AdminSecBaseModel
             $this->redirectTo(osc_admin_base_url(true) . '?page=admins');
 
             return;
+        }
+
+        $password = (string)($result['values']['s_password'] ?? '');
+        if ($password !== '') {
+            \mindstellar\auth\AdminPassword::set((int)$id, $password);
+            // Changing your own password keeps you signed in here, and only here.
+            $stamp = (int)$id === (int)Session::newInstance()->_get('adminId') ? \mindstellar\auth\AdminPassword::stamp((int)$id) : null;
+            if ($stamp !== null) {
+                Session::newInstance()->_set('adminStamp', $stamp);
+            }
         }
 
         osc_run_hook('admin_edit_completed', $id, $result['updated']);
@@ -403,6 +424,30 @@ class CAdminAdmins extends AdminSecBaseModel
                 break;
         }
         $this->redirectTo($back);
+    }
+
+    /**
+     * Sign the current admin out of every device, this one too, and revoke their API keys,
+     * after their password (and a code when two-step sign-in is on).
+     *
+     * @return void
+     */
+    private function signOutEverywhere()
+    {
+        $admin  = Admin::newInstance()->findByPrimaryKey(osc_logged_admin_id());
+        $reason = is_array($admin) && isset($admin['pk_i_id'])
+            ? AdminReauth::verify($admin, Params::getParamString('password', false, false), Params::getParamString('code'))
+            : _m("You don't have enough permissions");
+        if ($reason !== '') {
+            osc_add_flash_error_message($reason, 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=admins&action=edit#sign-out-all');
+
+            return;
+        }
+        \mindstellar\auth\SignOut::everywhereAdmin((int)$admin['pk_i_id']);
+        $this->logout();
+        osc_add_flash_ok_message(_m('You are signed out on every device, this one too. Sign in again.'), 'admin');
+        $this->redirectTo(osc_admin_base_url(true));
     }
 
     /**

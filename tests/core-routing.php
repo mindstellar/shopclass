@@ -637,6 +637,12 @@ $PARSE = array(
     'buy credit'         => array('user/credits/buy', array('page' => 'billing', 'action' => 'buy')),
     'orders'             => array('user/orders', array('page' => 'billing', 'action' => 'orders')),
     'static page'        => array('about-us-p3', array('page' => 'page', 'id' => '3', 'slug' => 'about-us')),
+    'api root'           => array('api', array('page' => 'api')),
+    'api version root'   => array('api/v1', array('page' => 'api')),
+    'api endpoint, path read from the URI' => array('api/v1/listings/12', array('page' => 'api')),
+    'api, query cut off' => array('api/v1/nothing?x=1', array('page' => 'api')),
+    'an & in an api path adds no parameter' => array('api/v1/x&page=user&action=items', array('page' => 'api')),
+    'apiary is a category, not the api' => array('apiary', array('page' => 'search', 'sCategory' => 'apiary')),
     'static page in locale' => array(
         'es_ES/about-us-p3',
         array('page' => 'page', 'lang' => 'es_ES', 'id' => '3', 'slug' => 'about-us')

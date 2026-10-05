@@ -402,6 +402,13 @@ class AdminMenu
         }
         $this->add_submenu(
             'settings',
+            __('API'),
+            osc_admin_base_url(true) . '?page=settings&action=api',
+            'settings_api',
+            'administrator'
+        );
+        $this->add_submenu(
+            'settings',
             __('Advanced'),
             osc_admin_base_url(true) . '?page=settings&action=advanced',
             'settings_advanced',

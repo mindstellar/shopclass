@@ -256,7 +256,7 @@ class Cleanup extends DAO
         $deleted = 0;
         if (self::isResourceRule($rule)) {
             $ids     = array_map('intval', array_column($rows, 'pk_i_id'));
-            $deleted = (int)\mindstellar\model\Resource::newInstance()->deleteResourcesIds($ids);
+            $deleted = (int)(new \mindstellar\model\Resource())->deleteResourcesIds($ids);
             if ($deleted > 0) {
                 try {
                     (new \mindstellar\storage\ResourceUploader())->purgeDeleted($rows);

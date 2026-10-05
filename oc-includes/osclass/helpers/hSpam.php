@@ -62,7 +62,7 @@ function osc_report_threshold()
 
 /**
  * Run the keyword filter over a freshly posted or edited listing and, on a hit,
- * quarantine it: flag it spam and disable it (both through ItemActions so the
+ * quarantine it: flag it spam and disable it (both through ListingService so the
  * lifecycle hooks fire and the search index stays in step), then record why in
  * the moderation log. Reversible — an admin re-enables it from the usual screen.
  *
@@ -85,9 +85,9 @@ function osc_keyword_spam_enforce($item)
     }
 
     $itemId      = (int)$item['pk_i_id'];
-    $itemActions = new ItemActions(true);
-    $itemActions->spam($itemId, true);
-    $itemActions->disable($itemId);
+    $listings = new \mindstellar\listing\ListingService();
+    $listings->spam($itemId, true);
+    $listings->disable($itemId);
 
     ItemModerationLog::newInstance()->add($itemId, 'keyword', $hit['keyword'], $hit['field'], 'spam');
 }
@@ -175,8 +175,7 @@ function osc_item_report_record($id, $as)
 
     // disable(), not spam(): an automated, reversible hide pending review — not a
     // judgement that the listing IS spam.
-    $itemActions = new ItemActions(true);
-    $itemActions->disable($id);
+    (new \mindstellar\listing\ListingService())->disable($id);
 
     ItemModerationLog::newInstance()->add($id, 'report_threshold', 'reports:' . $reporters, '', 'disable');
 }

@@ -31,16 +31,7 @@ class AdminSecBaseModel extends SecBaseModel
 
         // check if is moderator and can enter to this page
         if ($this->isModerator()
-            && !in_array($this->page, osc_apply_filter('moderator_access', array(
-                'items',
-                'comments',
-                'media',
-                'login',
-                'admins',
-                'ajax',
-                'stats',
-                ''
-            )), false)
+            && !in_array($this->page, \mindstellar\admin\ModeratorAccess::pages(), false)
         ) {
             osc_add_flash_error_message(_m("You don't have enough permissions"), 'admin');
             $this->redirectTo(osc_admin_base_url());
@@ -157,22 +148,24 @@ class AdminSecBaseModel extends SecBaseModel
     }
 
     /**
-     * Destroys the admin session and its cookies, keeping only the chosen admin locale.
+     * Ends the admin session, expires its cookie and drops the remember-me cookies. A chosen
+     * admin locale is kept in a new session under a new id.
      *
      * @return void
      */
     public function logout()
     {
-        //destroying session
         $locale = Session::newInstance()->_get('oc_adminLocale');
-        Session::newInstance()->session_destroy();
         Session::newInstance()->_drop('adminId');
         Session::newInstance()->_drop('adminUserName');
         Session::newInstance()->_drop('adminName');
         Session::newInstance()->_drop('adminEmail');
+        Session::newInstance()->_drop('adminStamp');
         Session::newInstance()->_drop('adminLocale');
-        Session::newInstance()->session_start();
-        Session::newInstance()->_set('oc_adminLocale', $locale);
+        Session::newInstance()->session_end();
+        if ($locale !== '') {
+            Session::newInstance()->_set('oc_adminLocale', $locale);
+        }
 
         Cookie::newInstance()->pop('oc_adminId');
         Cookie::newInstance()->pop('oc_adminSecret');

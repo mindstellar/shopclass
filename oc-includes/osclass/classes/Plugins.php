@@ -592,6 +592,23 @@ class Plugins
     }
 
     /**
+     * The callbacks registered on a hook, in the order they run.
+     *
+     * @return array<int,callable|string>
+     */
+    public static function callbacks(string $hook): array
+    {
+        $callbacks = array();
+        foreach (self::$hooks[$hook] ?? array() as $bucket) {
+            foreach ((array)$bucket as $callback) {
+                $callbacks[] = $callback;
+            }
+        }
+
+        return $callbacks;
+    }
+
+    /**
      * Deactivate a plugin, run its uninstall hook and drop it from the installed list.
      *
      * @param string $path 'dir/index.php' path

@@ -403,13 +403,13 @@ fi
 
 # ---------------------------------------------------------------------------
 # Admin login. The stateless CSRF token issued for one authenticated page load
-# is valid (bound to this admin session, 2h lifetime — mindstellar\Csrf) for
+# is valid (bound to this admin session, 2h lifetime — mindstellar\security\Csrf) for
 # every subsequent admin request in this run, so it is scraped once and reused
 # rather than re-scraped before each action.
 # ---------------------------------------------------------------------------
 scrape_csrf() {
   # Reads $WORK/last.html, sets CSRF_NAME / CSRF_TOKEN. Empty on no match.
-  # mindstellar\Csrf::replaceForms() injects hidden `name='CSRFName'
+  # mindstellar\security\Csrf::replaceForms() injects hidden `name='CSRFName'
   # value='...'` fields into every <form> lacking class="nocsrf"; a page with
   # no such form (e.g. the admin dashboard) still carries the same token,
   # because osc_csrf_token_url() emits it inline as a `CSRFName=...&

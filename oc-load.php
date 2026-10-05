@@ -11,8 +11,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\Csrf;
 use mindstellar\logger\OsclassErrors;
+use mindstellar\security\Csrf;
 
 if (!defined('ABS_PATH')) {
     define('ABS_PATH', __DIR__ . '/');
@@ -60,7 +60,7 @@ require_once LIB_PATH . 'osclass/default-constants.php';
 //Load Autoloader
 require_once LIB_PATH . 'vendor/autoload.php';
 //Register error handler
-OsclassErrors::newInstance()->register();
+OsclassErrors::instance()->register();
 require_once LIB_PATH . 'osclass/helpers/hDatabaseInfo.php';
 require_once LIB_PATH . 'osclass/helpers/hDatabase.php';
 require_once LIB_PATH . 'osclass/helpers/hPreference.php';
@@ -105,6 +105,7 @@ require_once LIB_PATH . 'osclass/formatting.php';
 require_once LIB_PATH . 'osclass/locales.php';
 require_once LIB_PATH . 'osclass/helpers/hPlugins.php';
 require_once LIB_PATH . 'osclass/helpers/hJobs.php';
+require_once LIB_PATH . 'osclass/helpers/hKv.php';
 require_once LIB_PATH . 'osclass/helpers/hStorage.php';
 require_once LIB_PATH . 'osclass/helpers/hResources.php';
 require_once LIB_PATH . 'osclass/emails.php';
@@ -113,6 +114,7 @@ require_once LIB_PATH . 'osclass/functions.php';
 require_once LIB_PATH . 'osclass/helpers/hAdminMenu.php';
 require_once LIB_PATH . 'osclass/helpers/hCache.php';
 require_once LIB_PATH . 'osclass/helpers/hHttpCache.php';
+require_once LIB_PATH . 'osclass/helpers/hApi.php';
 require_once LIB_PATH . 'osclass/helpers/hViews.php';
 require_once LIB_PATH . 'osclass/helpers/hSitemap.php';
 require_once LIB_PATH . 'osclass/helpers/hSpam.php';

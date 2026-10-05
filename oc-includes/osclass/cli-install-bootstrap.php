@@ -33,7 +33,7 @@ define('TRANSLATIONS_PATH', CONTENT_PATH . 'languages/');
 define('OSC_INSTALLING', 1);
 
 require_once LIB_PATH . 'vendor/autoload.php';
-mindstellar\logger\OsclassErrors::newInstance()->register();
+mindstellar\logger\OsclassErrors::instance()->register();
 
 require_once LIB_PATH . 'osclass/helpers/hErrors.php';
 // Resolve DB_*, WEB_PATH and OSC_CONFIG_FROM_ENV from the environment (or an

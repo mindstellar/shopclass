@@ -20,7 +20,7 @@
  * @author     Shopclass
  */
 
-use mindstellar\Csrf;
+use mindstellar\security\Csrf;
 
 /**
  * bcrypt work factor used by osc_hash_password().
@@ -218,7 +218,8 @@ function osc_is_ip_banned($ip, $rules = null)
  */
 function osc_is_email_banned($email, $rules = null)
 {
-    if ($rules == null) {
+    // A site with no rules passes an empty list, which must not be read again.
+    if (!is_array($rules)) {
         $rules = osc_ban_rules();
     }
     // Match the address as it will be stored, so spaces or stray symbols cannot slip past a rule.
