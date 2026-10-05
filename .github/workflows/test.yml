@@ -581,6 +581,8 @@ jobs:
         run: php tests/upgrade-release-zip.php
       - name: Upgrade clears OPcache
         run: php tests/upgrade-opcache-reset.php
+      - name: Upgrade stops on unwritable files
+        run: php tests/upgrade-unwritable.php
       - name: Update channel and automatic security install
         run: php tests/update-channel.php
       - name: Edge builds

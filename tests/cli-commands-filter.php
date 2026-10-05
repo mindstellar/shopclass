@@ -94,7 +94,7 @@ $commands->setAccessible(true);
 $added    = new ReflectionProperty($cli, 'added');
 $added->setAccessible(true);
 pin('the core commands, in help order', array(
-    'install', 'cron', 'db:upgrade', 'db:doctor', 'db:repair', 'package:reconcile', 'cache:flush',
+    'install', 'cron', 'db:upgrade', 'core:update', 'db:doctor', 'db:repair', 'package:reconcile', 'cache:flush',
     'jobs:work', 'jobs:status', 'storage:work', 'sitemap:warm',
     'backup:create', 'backup:list', 'backup:restore', 'backup:delete',
     'user:create-admin', 'user:reset-password', 'user:2fa-off', 'plugin:list', 'plugin:activate',

@@ -7357,6 +7357,13 @@ msgstr ""
 msgid "Nothing was changed."
 msgstr ""
 
+#: oc-includes/osclass/classes/upgrade/Upgrade.php
+msgid ""
+"Nothing was changed. The web server user (%1$s) cannot write to: %2$s. Give "
+"that user write access, or run \"php oc-cli.php core:update\" as the owner "
+"of the files."
+msgstr ""
+
 #: oc-includes/osclass/classes/backup/BackupManager.php
 msgid "Nothing was saved."
 msgstr ""
@@ -13347,6 +13354,7 @@ msgid "two-step sign-in"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
+#: oc-includes/osclass/classes/upgrade/Upgrade.php
 msgid "unknown"
 msgstr ""
 
