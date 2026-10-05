@@ -22,7 +22,7 @@ use mindstellar\storage\StorageManager;
  */
 function osc_get_resources(string $ownerType, int $ownerId): array
 {
-    return Resource::newInstance()->findByOwner($ownerType, $ownerId);
+    return (new Resource())->findByOwner($ownerType, $ownerId);
 }
 
 /**
@@ -116,7 +116,7 @@ function osc_sweep_orphan_resources(): void
 
     // Each run continues where the last stopped, and wraps to the start at the end.
     $offset        = (int) osc_get_preference('resource_sweep_offset');
-    $resourceModel = Resource::newInstance();
+    $resourceModel = new Resource();
     $ids = $resourceModel->getResourceIdsBatch($offset, $sweepCap);
     osc_set_preference('resource_sweep_offset', count($ids) < $sweepCap ? 0 : $offset + $sweepCap, 'osclass', 'INTEGER');
     if (empty($ids)) {

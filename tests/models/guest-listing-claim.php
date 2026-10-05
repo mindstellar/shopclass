@@ -70,13 +70,28 @@ pin('the guest listing stays a guest listing', null, $ownerOf('t_item', $guestIt
 pin('the guest alert stays a guest alert', null, $ownerOf('t_alerts', $alertId));
 
 harness_section('once the address is confirmed');
-UserActions::claimGuestListings($newId);
+$code = 'confirm-code-1';
+$hash = $admin->real_escape_string(\mindstellar\security\ActionToken::hash($code));
+$admin->query("UPDATE {$prefix}t_user SET b_active = 0, s_secret = '$hash' WHERE pk_i_id = $newId");
+$accounts = new \mindstellar\user\AccountService();
+$refusal  = static function (callable $fn): string {
+    try {
+        $fn();
+    } catch (\mindstellar\validation\RefusedException $e) {
+        return get_class($e);
+    }
+
+    return '';
+};
+pin('a wrong code is refused', 'mindstellar\validation\NotFoundException', $refusal(fn () => $accounts->confirm($newId, 'wrong')));
+pin('a wrong code moves nothing', null, $ownerOf('t_item', $guestItem));
+pin('the right code confirms the account', '', $refusal(fn () => $accounts->confirm($newId, $code)));
 pin('the guest listing moves to the account', $newId, $ownerOf('t_item', $guestItem));
 pin('the guest alert moves to the account', $newId, $ownerOf('t_alerts', $alertId));
 pin('the account counts the listing', '1', $itemsOf($newId));
 pin('a listing another account owns is left alone', $other, $ownerOf('t_item', $otherItem));
-UserActions::claimGuestListings($newId);
-pin('claiming twice counts the listing once', '1', $itemsOf($newId));
+pin('the code works once', 'mindstellar\validation\NotFoundException', $refusal(fn () => $accounts->confirm($newId, $code)));
+pin('confirming twice counts the listing once', '1', $itemsOf($newId));
 
 harness_section('an account an admin makes');
 $adminGuest = seed_item($admin, $cat, null, 'Another guest listing');

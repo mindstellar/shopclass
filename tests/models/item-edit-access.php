@@ -24,6 +24,8 @@ $admin = scratchdb_session('osc_models_item_edit_access');
 require_once __DIR__ . '/../lib/action-standins.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/security/ItemAccess.php';
 
+use mindstellar\auth\Actor;
+use mindstellar\listing\ListingPolicy;
 use mindstellar\security\ItemAccess;
 
 seed_locale($admin);
@@ -67,7 +69,7 @@ $storedValue = static function (int $itemId) use ($cat): string {
     return (string)($fields[0]['s_value'] ?? '');
 };
 $ajaxItemId = static function (int $itemId, $userId, string $secret): int {
-    return ItemAccess::manageable($itemId, $userId, false, $secret) === array() ? 0 : $itemId;
+    return ListingPolicy::manageable($itemId, new Actor($userId, null, '', $secret)) === null ? 0 : $itemId;
 };
 
 harness_section('edit form values for a hidden guest listing');
@@ -89,7 +91,12 @@ pin('anonymous: no stored values', '', $storedValue($ajaxItemId($userItem, null,
 pin('another user: no stored values', '', $storedValue($ajaxItemId($userItem, $owner + 1, '')));
 pin('the secret does not open a registered listing', '', $storedValue($ajaxItemId($userItem, null, $secret)));
 pin('the owner gets the stored values', 'secret-value-' . $userItem, $storedValue($ajaxItemId($userItem, $owner, '')));
-pin('a missing listing yields nothing', array(), ItemAccess::manageable(999999, $owner, false, ''));
+pin('a missing listing yields nothing', null, ListingPolicy::manageable(999999, Actor::user($owner)));
+
+harness_section('the deprecated ItemAccess::manageable() forwards to the policy');
+pin('the secret holder gets the listing', $guestItem, (int)(ItemAccess::manageable($guestItem, null, false, $secret)['pk_i_id'] ?? 0));
+pin('a wrong-case secret gets nothing', array(), ItemAccess::manageable($guestItem, null, false, strtoupper($secret)));
+pin('a missing listing yields an empty array', array(), ItemAccess::manageable(999999, $owner, false, ''));
 
 harness_section('the public edit screen');
 

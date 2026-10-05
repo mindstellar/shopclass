@@ -12,8 +12,19 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\security\ItemAccess;
+use mindstellar\auth\Actor;
+use mindstellar\comment\CommentService;
+use mindstellar\comment\SavedComment;
+use mindstellar\listing\ListingInput;
+use mindstellar\listing\ListingMailService;
+use mindstellar\listing\ListingNotices;
+use mindstellar\listing\ListingPolicy;
+use mindstellar\listing\ListingService;
+use mindstellar\listing\PhotoService;
 use mindstellar\utility\Validate;
+use mindstellar\validation\ConflictException;
+use mindstellar\validation\InvalidException;
+use mindstellar\validation\RefusedException;
 
 /**
  * Class CWebItem
@@ -70,7 +81,7 @@ class CWebItem extends BaseModel
 
         switch ($this->action) {
             case 'item_add': // post
-                if (osc_reg_user_post() && $this->user == null) {
+                if (ListingPolicy::requiresSignIn($this->actor(false))) {
                     osc_add_flash_warning_message(_m('Only registered users are allowed to post listings'));
                     // Remember to bring them back to the post form after login — in a signed
                     // cookie, not the session, so this bounce never starts a session.
@@ -142,9 +153,8 @@ class CWebItem extends BaseModel
                 break;
             case 'item_add_post':
                 // SAVE form data before CSRF CHECK
-                $mItems = new ItemActions(false);
-                $mItems->prepareData(true);
-                foreach ($mItems->data as $key => $value) {
+                $formData = ListingInput::read(false, true);
+                foreach ($formData as $key => $value) {
                     Session::newInstance()->_setForm($key, $value);
                 }
 
@@ -158,7 +168,7 @@ class CWebItem extends BaseModel
 
                 osc_csrf_check();
 
-                if (osc_reg_user_post() && $this->user == null) {
+                if (ListingPolicy::requiresSignIn($this->actor(false))) {
                     osc_add_flash_warning_message(_m('Only registered users are allowed to post listings'));
                     $this->redirectTo(osc_base_url(true));
                 }
@@ -172,69 +182,58 @@ class CWebItem extends BaseModel
                     return false; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
                 }
 
-                if (!osc_is_web_user_logged_in()) {
-                    $user = User::newInstance()->findByEmail($mItems->data['contactEmail']);
-                    // The user exists but it's not logged
-                    if (isset($user['pk_i_id'])) {
-                        foreach ($mItems->data as $key => $value) {
-                            Session::newInstance()->_keepForm($key);
-                        }
-                        osc_add_flash_error_message(_m('A user with that email address already exists, if it is you, please log in'));
-                        $this->redirectTo(osc_user_login_url());
+                if (ListingPolicy::usesAccountEmail($this->actor(false), (string) $formData['contactEmail'])) {
+                    foreach ($formData as $key => $value) {
+                        Session::newInstance()->_keepForm($key);
+                    }
+                    osc_add_flash_error_message(ListingService::accountEmailMessage());
+                    $this->redirectTo(osc_user_login_url());
+                }
+
+                // Bans, the posting wait and the form's own checks are the service's.
+                $listings = new ListingService();
+                try {
+                    $saved = $listings->create($this->listingData($formData), $this->actor(false));
+                } catch (RefusedException $e) {
+                    ListingNotices::flash($e->notices(), false);
+                    osc_add_flash_error_message($e->getMessage());
+                    $this->redirectTo(osc_item_post_url());
+
+                    return false;
+                }
+                ListingNotices::flash($saved->notices(), false);
+
+                if (is_array($meta)) {
+                    foreach ($meta as $key => $value) {
+                        Session::newInstance()->_dropKeepForm('meta_' . $key);
                     }
                 }
-
-                $banned = osc_is_banned($mItems->data['contactEmail']);
-                if ($banned == 1) {
-                    osc_add_flash_error_message(_m('Your current email is not allowed'));
-                    $this->redirectTo(osc_item_post_url());
-                } elseif ($banned == 2) {
-                    osc_add_flash_error_message(_m('Your current IP is not allowed'));
-                    $this->redirectTo(osc_item_post_url());
-                }
-
-                // POST ITEM ( ADD ITEM )
-                $success = $mItems->add();
-
-                if ($success != 1 && $success != 2) {
-                    osc_add_flash_error_message($success);
-                    $this->redirectTo(osc_item_post_url());
+                Session::newInstance()->_clearVariables();
+                // Uploads were consumed by the successful post; drop the session
+                // mapping so it can't bleed into the next listing.
+                ItemTmpUpload::newInstance()->deleteByToken(osc_upload_token());
+                if ($saved->needsValidation()) {
+                    osc_add_flash_ok_message(_m('Check your inbox to validate your listing'));
+                } elseif (osc_moderate_admin_post()) {
+                    osc_add_flash_ok_message(_m('Your listing will be published after an admin approves it.'));
                 } else {
-                    if (is_array($meta)) {
-                        foreach ($meta as $key => $value) {
-                            Session::newInstance()->_dropKeepForm('meta_' . $key);
-                        }
-                    }
-                    Session::newInstance()->_clearVariables();
-                    // Uploads were consumed by the successful post; drop the session
-                    // mapping so it can't bleed into the next listing.
-                    ItemTmpUpload::newInstance()->deleteByToken(osc_upload_token());
-                    if ($success == 1) {
-                        osc_add_flash_ok_message(_m('Check your inbox to validate your listing'));
-                    } elseif (osc_moderate_admin_post()) {
-                        osc_add_flash_ok_message(_m('Your listing will be published after an admin approves it.'));
-                    } else {
-                        osc_add_flash_ok_message(_m('Your listing has been published'));
-                    }
-
-                    $itemId = Params::getParam('itemId');
-
-                    $category =
-                        Category::newInstance()->findByPrimaryKey(Params::getParam('catId'));
-                    View::newInstance()->_exportVariableToView('category', $category);
-                    // Let a theme or plugin send the seller somewhere other than the category
-                    // search page after publishing — e.g. straight to the new listing.
-                    $this->redirectTo(
-                        osc_apply_filter('item_post_redirect_url', osc_search_category_url(), $itemId, $category)
-                    );
+                    osc_add_flash_ok_message(_m('Your listing has been published'));
                 }
+
+                $category =
+                    Category::newInstance()->findByPrimaryKey(Params::getParam('catId'));
+                View::newInstance()->_exportVariableToView('category', $category);
+                // Let a theme or plugin send the seller somewhere other than the category
+                // search page after publishing — e.g. straight to the new listing.
+                $this->redirectTo(
+                    osc_apply_filter('item_post_redirect_url', osc_search_category_url(), $saved->id(), $category)
+                );
                 break;
             case 'item_edit':   // edit item
                 $secret = Params::getParamString('secret');
                 $id     = Params::getParamInt('id');
-                $item   = ItemAccess::manageable($id, $this->userId, false, $secret);
-                if ($item !== array()) {
-
+                $item   = $this->editable($id, $secret);
+                if ($item !== null) {
                     $form     = count(Session::newInstance()->_getForm());
                     $keepForm = count(Session::newInstance()->_getKeepForm());
                     if ($form == 0 || $form == $keepForm) {
@@ -269,11 +268,9 @@ class CWebItem extends BaseModel
                 break;
             case 'item_edit_post':
                 // SAVE form data before CSRF CHECK
-                $mItems = new ItemActions(false);
-                // prepare data for ADD ITEM
-                $mItems->prepareData(false);
+                $formData = ListingInput::read(false, false);
                 // set all parameters into session
-                foreach ($mItems->data as $key => $value) {
+                foreach ($formData as $key => $value) {
                     Session::newInstance()->_setForm($key, $value);
                 }
 
@@ -289,9 +286,9 @@ class CWebItem extends BaseModel
 
                 $secret = Params::getParamString('secret');
                 $id     = Params::getParamInt('id');
-                $item   = ItemAccess::manageable($id, $this->userId, false, $secret);
+                $item   = $this->editable($id, $secret);
 
-                if ($item !== array()) {
+                if ($item !== null) {
                     $this->_exportVariableToView('item', $item);
 
                     if (osc_recaptcha_items_enabled() && osc_captcha_enabled()
@@ -303,9 +300,20 @@ class CWebItem extends BaseModel
                         return false; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
                     }
 
-                    $success = $mItems->edit();
+                    $listings = new ListingService();
+                    $data     = $this->listingData($formData);
+                    // Save to the listing that passed the owner check, never a second reading of the id.
+                    $data['idItem'] = (int) $item['pk_i_id'];
+                    try {
+                        $saved   = $listings->update($data, $this->actor(false));
+                        $success = $saved->rows();
+                        ListingNotices::flash($saved->notices(), false);
+                    } catch (RefusedException $e) {
+                        $success = $e->getMessage();
+                        ListingNotices::flash($e->notices(), false);
+                    }
 
-                    if ($success == 1) {
+                    if ($success === 1) {
                         if (is_array($meta)) {
                             foreach ($meta as $key => $value) {
                                 Session::newInstance()->_dropKeepForm('meta_' . $key);
@@ -334,11 +342,11 @@ class CWebItem extends BaseModel
             case 'activate':
                 $secret = Params::getParamString('secret');
                 $id     = Params::getParamInt('id');
-                $row    = $id > 0 ? Item::newInstance()->findByPrimaryKey($id) : array();
+                $row    = $id > 0 ? $this->itemManager->findByPrimaryKey($id) : null;
+                $actor  = $this->actor(false, $secret);
                 $item   = array();
-                if (is_array($row) && $row !== array()
-                    && (ItemAccess::isOwner($row, $this->userId)
-                        || ($secret !== '' && hash_equals((string)$row['s_secret'], $secret)))
+                if (is_array($row) && isset($row['pk_i_id'])
+                    && (ListingPolicy::isOwner($row, $actor) || ListingPolicy::holdsSecret($row, $actor))
                 ) {
                     $item = array($row);
                 }
@@ -352,9 +360,7 @@ class CWebItem extends BaseModel
 
                 View::newInstance()->_exportVariableToView('item', $item[0]);
                 if ($item[0]['b_active'] == 0) {
-                    // ACTIVETE ITEM
-                    $mItems  = new ItemActions(false);
-                    $success = $mItems->activate($item[0]['pk_i_id'], $item[0]['s_secret']);
+                    $success = (new ListingService())->activate((int) $item[0]['pk_i_id'], (string) $item[0]['s_secret']);
 
                     if ($success) {
                         osc_add_flash_ok_message(_m('The listing has been validated'));
@@ -376,17 +382,17 @@ class CWebItem extends BaseModel
                 $this->redirectTo(osc_item_url());
                 break;
             case 'item_delete':
-                $secret = Params::getParamString('secret');
-                $item   = $this->itemManager->listWhere('i.pk_i_id = %d', Params::getParamInt('id'));
-                $bySecret = count($item) === 1 && $secret !== '' && hash_equals((string) $item[0]['s_secret'], $secret);
-                $byOwner  = count($item) === 1 && $this->userId && (int) $item[0]['fk_i_user_id'] === (int) $this->userId;
+                $actor    = $this->actor(false, Params::getParamString('secret'));
+                $item     = $this->itemManager->findByPrimaryKey(Params::getParamInt('id'));
+                $item     = is_array($item) && isset($item['pk_i_id']) ? $item : null;
+                $bySecret = $item !== null && ListingPolicy::holdsSecret($item, $actor);
+                $byOwner  = $item !== null && ListingPolicy::isOwner($item, $actor);
                 if (!$bySecret && $byOwner) {
                     // The owner's link carries no secret, so it must carry a CSRF token.
                     osc_csrf_check();
                 }
                 if ($bySecret || $byOwner) {
-                    $mItems  = new ItemActions(false);
-                    $success = $mItems->delete($item[0]['s_secret'], $item[0]['pk_i_id']);
+                    $success = (new ListingService())->delete((int) $item['pk_i_id'], (string) $item['s_secret'], $actor);
                     if ($success) {
                         osc_add_flash_ok_message(_m('Your listing has been deleted'));
                     } else {
@@ -421,7 +427,8 @@ class CWebItem extends BaseModel
                     $this->redirectTo(osc_item_edit_url($secret, $item));
                 }
 
-                if (!ItemAccess::canManage($aItem, $this->userId, osc_is_admin_user_logged_in(), $secret)) {
+                $actor = $this->actor(true, $secret);
+                if (!ListingPolicy::canManage($aItem, $actor)) {
                     osc_add_flash_error_message(_m("The listing doesn't belong to you"));
                     $this->redirectTo(osc_item_edit_url($secret, $item));
                 }
@@ -431,21 +438,9 @@ class CWebItem extends BaseModel
                 if ($result > 0) {
                     $resource = ItemResource::newInstance()->findByPrimaryKey($id);
 
-                    if (ItemAccess::isPhotoOf($resource, $aItem, $code)) {
-                        osc_deleteResource($id, false);
-                        Log::newInstance()->insertLog(
-                            'item',
-                            'deleteResource',
-                            $id,
-                            $id,
-                            'user',
-                            osc_logged_user_id()
-                        );
-                        ItemResource::newInstance()->delete(array(
-                            'pk_i_id'      => $id,
-                            'fk_i_item_id' => $item,
-                            's_name'       => $code
-                        ));
+                    if (ListingPolicy::isPhotoOf($resource, $aItem, $code)
+                        && (new PhotoService())->delete((int) $id, (int) $item, $actor, $code)
+                    ) {
                         osc_add_flash_ok_message(_m('The selected photo has been successfully deleted'));
                     } else {
                         osc_add_flash_error_message(_m('The selected photo does not belong to you'));
@@ -489,7 +484,7 @@ class CWebItem extends BaseModel
                 // the item_mark filter — mark() applies it. The old user-agent allowlist here was
                 // broken both ways: it silently dropped reports from browsers not on its stale
                 // list (e.g. Firefox) while letting bots that spoof a known UA straight through.
-                (new ItemActions(false))->mark($id, $as);
+                (new ListingService())->mark((int) $id, (string) $as);
 
                 osc_add_flash_ok_message(_m("Thanks! That's very helpful"));
                 $this->redirectTo(osc_item_url());
@@ -547,44 +542,32 @@ class CWebItem extends BaseModel
                     return false; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
                 }
 
-                $refused = \mindstellar\security\MessageGuard::refusal(
-                    Params::getParamString('yourEmail'),
-                    Params::getParamString('message'),
-                    array(Params::getParamString('yourName'), Params::getParamString('friendName'))
-                );
-                if ($refused !== null) {
-                    osc_add_flash_error_message($refused);
+                $item_url = osc_item_url();
+                Params::setParam('item_url', '<a href="' . $item_url . '" >' . $item_url . '</a>');
+                try {
+                    $sent = (new ListingMailService())->shareWithFriend($item, array(
+                        'yourName'    => Params::getParamString('yourName'),
+                        'yourEmail'   => Params::getParamString('yourEmail'),
+                        'friendName'  => Params::getParamString('friendName'),
+                        'friendEmail' => Params::getParamString('friendEmail'),
+                        'message'     => Params::getParamString('message'),
+                    ));
+                } catch (InvalidException $e) {
+                    osc_add_flash_error_message(trim(ListingMailService::messages($e)));
+                    $this->redirectTo(osc_item_send_friend_url());
+
+                    return false;
+                } catch (RefusedException $e) {
+                    osc_add_flash_error_message($e->getMessage());
                     $this->redirectTo(osc_item_send_friend_url());
 
                     return false;
                 }
-
-                // Bound how many listings one source may share per window — the form
-                // relays site-branded mail, so it needs a ceiling regardless of the login.
-                if (\mindstellar\security\ActionThrottle::exceededFor('send_friend')) {
-                    osc_add_flash_error_message(
-                        _m("You've shared too many listings recently. Please try again later.")
-                    );
-                    $this->redirectTo(osc_item_send_friend_url());
+                if ($sent) {
+                    osc_add_flash_ok_message(sprintf(_m('We just sent your message to %s'), Params::getParamString('friendName')));
                 }
-
-                osc_run_hook('pre_item_send_friend_post', $item);
-
-                $mItem  = new ItemActions(false);
-                $result = $mItem->send_friend();
-
-                osc_run_hook('post_item_send_friend_post', $item);
-
-                if (is_string($result)) {
-                    // Validation failed — keep the submitted values and show the error.
-                    osc_add_flash_error_message($result);
-                    $this->redirectTo(osc_item_send_friend_url());
-                } else {
-                    // Count the accepted send toward the window.
-                    \mindstellar\security\ActionThrottle::record('send_friend');
-                    Session::newInstance()->_clearVariables();
-                    $this->redirectTo(osc_item_url());
-                }
+                Session::newInstance()->_clearVariables();
+                $this->redirectTo(osc_item_url());
                 break;
             case 'contact':
                 $item = $this->itemManager->findByPrimaryKey(Params::getParam('id'));
@@ -643,60 +626,29 @@ class CWebItem extends BaseModel
                     return false;
                 }
 
-                $refused = \mindstellar\security\MessageGuard::refusal(
-                    $contactValues['yourEmail'],
-                    $contactValues['message_body'],
-                    array($contactValues['yourName']),
-                    $contactValues['phoneNumber']
-                );
-                if ($refused !== null) {
-                    $fail($refused);
-
-                    return false;
-                }
-
-                if (osc_isExpired($item['dt_expiration'])) {
-                    osc_add_flash_error_message(
-                        _m("We're sorry, but the listing has expired. You can't contact the seller")
-                    );
+                try {
+                    $sent = (new ListingMailService())->contactSeller($item, array(
+                        'yourName'    => $contactValues['yourName'],
+                        'yourEmail'   => $contactValues['yourEmail'],
+                        'phoneNumber' => $contactValues['phoneNumber'],
+                        'message'     => $contactValues['message_body'],
+                    ), osc_item_attachment() ? static fn () => osc_mail_upload_attachment('attachment') : null);
+                } catch (ConflictException $e) {
+                    osc_add_flash_error_message($e->getMessage());
                     $this->redirectTo(osc_item_url());
-                }
 
-                // Bound how many enquiries one source may send per window (defence in
-                // depth: contact only reaches a listing's own seller, not an arbitrary
-                // address, so the default ceiling is looser than share-a-listing).
-                if (\mindstellar\security\ActionThrottle::exceededFor('item_contact')) {
-                    $fail(_m("You've sent too many messages recently. Please try again later."));
+                    return false;
+                } catch (InvalidException $e) {
+                    $fail(trim(ListingMailService::messages($e)));
+
+                    return false;
+                } catch (RefusedException $e) {
+                    $fail($e->getMessage());
 
                     return false;
                 }
-
-                $refused = \mindstellar\security\MessageHold::attachmentError(
-                    $contactValues['yourEmail'],
-                    osc_item_attachment() ? osc_mail_upload_attachment('attachment') : null
-                );
-                if ($refused !== null) {
-                    $fail($refused);
-
-                    return false;
-                }
-
-                osc_run_hook('pre_item_contact_post', $item);
-
-                $mItem  = new ItemActions(false);
-                $result = $mItem->contact();
-
-                osc_run_hook('post_item_contact_post', $item);
-                if (is_string($result)) {
-                    $fail(trim($result));
-
-                    return false;
-                } else {
-                    // Count the accepted enquiry toward the window.
-                    \mindstellar\security\ActionThrottle::record('item_contact');
-                    if ($result === true) {
-                        osc_add_flash_ok_message(_m("We've just sent an e-mail to the seller"));
-                    }
+                if ($sent) {
+                    osc_add_flash_ok_message(_m("We've just sent an e-mail to the seller"));
                 }
 
                 $this->redirectTo(osc_item_url());
@@ -718,50 +670,29 @@ class CWebItem extends BaseModel
                     return false; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
                 }
 
-                osc_run_hook('pre_item_add_comment_post', $item);
-
-                $mItem  = new ItemActions(false);
-                $status = $mItem->add_comment();
-
-                switch ($status) {
-                    case -1:
-                        $msg = _m('Sorry, we could not save your comment. Try again later');
-                        osc_add_flash_error_message($msg);
-                        break;
-                    case 1:
-                        $msg = _m('Your comment is awaiting moderation');
-                        osc_add_flash_info_message($msg);
-                        break;
-                    case 2:
-                        $msg = _m('Your comment has been approved');
-                        osc_add_flash_ok_message($msg);
-                        break;
-                    case 3:
-                        $msg = _m('Please fill the required field (email)');
-                        osc_add_flash_warning_message($msg);
-                        break;
-                    case 4:
-                        $msg = _m('Please type a comment');
-                        osc_add_flash_warning_message($msg);
-                        break;
-                    case 5:
-                        $msg = _m('Your comment has been marked as spam');
-                        osc_add_flash_error_message($msg);
-                        break;
-                    case 6:
-                        $msg = _m('You need to be logged to comment');
-                        osc_add_flash_error_message($msg);
-                        break;
-                    case 7:
-                        $msg = _m('Sorry, comments are disabled');
-                        osc_add_flash_error_message($msg);
-                        break;
-                    case 8:
-                        osc_add_flash_error_message(_m('Too many comments in an hour. Try again later.'));
-                        break;
+                $input = array(
+                    'author_name'  => Params::getParamString('authorName'),
+                    'author_email' => Params::getParamString('authorEmail'),
+                    'title'        => Params::getParamString('title'),
+                    'body'         => Params::getParamString('body'),
+                );
+                try {
+                    $saved = (new CommentService())->post($itemId, $input, $this->actor(false));
+                    match ($saved->status()) {
+                        SavedComment::LIVE    => osc_add_flash_ok_message(_m('Your comment has been approved')),
+                        SavedComment::PENDING => osc_add_flash_info_message(_m('Your comment is awaiting moderation')),
+                        default               => osc_add_flash_error_message(_m('Your comment has been marked as spam')),
+                    };
+                } catch (InvalidException $e) {
+                    $this->keepCommentForm($input);
+                    osc_add_flash_warning_message($e->getMessage());
+                } catch (RefusedException $e) {
+                    $this->keepCommentForm($input);
+                    osc_add_flash_error_message($e->getMessage());
+                } catch (RuntimeException $e) {
+                    osc_add_flash_error_message(_m('Sorry, we could not save your comment. Try again later'));
                 }
 
-                // View::newInstance()->_exportVariableToView('item', Item::newInstance()->findByPrimaryKey(Params::getParam('id')));
                 $this->redirectTo(osc_item_url());
                 break;
             case 'delete_comment':
@@ -770,42 +701,18 @@ class CWebItem extends BaseModel
                 $commentId = Params::getParamInt('comment');
                 $itemId    = Params::getParamInt('id');
                 $item      = Item::newInstance()->findByPrimaryKey($itemId);
-
-                osc_run_hook('pre_item_delete_comment_post', $item, $commentId);
-
-                if (count($item) == 0) {
+                if (!is_array($item) || $item === array()) {
                     osc_add_flash_error_message(_m("This listing doesn't exist"));
                     $this->redirectTo(osc_base_url(true));
                 }
-
                 View::newInstance()->_exportVariableToView('item', $item);
 
-                if ($this->userId == null) {
-                    osc_add_flash_error_message(_m('You must be logged in to delete a comment'));
-                    $this->redirectTo(osc_item_url());
+                try {
+                    (new CommentService())->delete($commentId, $this->actor(false), $itemId);
+                    osc_add_flash_ok_message(_m('The comment has been deleted'));
+                } catch (RefusedException $e) {
+                    osc_add_flash_error_message($e->getMessage());
                 }
-
-                $commentManager = ItemComment::newInstance();
-                $aComment       = $commentManager->findByPrimaryKey($commentId);
-
-                if (count($aComment) == 0) {
-                    osc_add_flash_error_message(_m("The comment doesn't exist"));
-                    $this->redirectTo(osc_item_url());
-                }
-
-                if ($aComment['b_active'] != 1) {
-                    osc_add_flash_error_message(_m('The comment is not active, you cannot delete it'));
-                    $this->redirectTo(osc_item_url());
-                }
-
-                if ($aComment['fk_i_user_id'] != $this->userId) {
-                    osc_add_flash_error_message(_m('The comment was not added by you, you cannot delete it'));
-                    $this->redirectTo(osc_item_url());
-                }
-
-                $commentManager->deleteByPrimaryKey($commentId);
-                osc_run_hook('delete_comment', $commentId);
-                osc_add_flash_ok_message(_m('The comment has been deleted'));
                 $this->redirectTo(osc_item_url());
                 break;
             default:
@@ -834,7 +741,7 @@ class CWebItem extends BaseModel
 
                 // Not validated, disabled or spam: only the owner and admins see it. A 404, not
                 // 400 or 410, as the listing may still be published later.
-                if (!ItemAccess::canView($item, $this->userId, osc_is_admin_user_logged_in())) {
+                if (!ListingPolicy::canView($item, $this->actor(true))) {
                     $this->do404();
 
                     return;
@@ -1000,6 +907,59 @@ class CWebItem extends BaseModel
     }
 
     /**
+     * Keep what the comment form sent, so the form shows it again after a refusal.
+     *
+     * @param array<string,string> $input
+     */
+    private function keepCommentForm(array $input): void
+    {
+        Session::newInstance()->_setForm('commentAuthorName', trim(strip_tags($input['author_name'])));
+        Session::newInstance()->_setForm('commentAuthorEmail', trim(strip_tags($input['author_email'])));
+        Session::newInstance()->_setForm('commentTitle', trim(strip_tags($input['title'])));
+        Session::newInstance()->_setForm('commentBody', trim(strip_tags($input['body'])));
+    }
+
+    /**
+     * The visitor as core services take them: the signed-in user, from this address. With
+     * $withAdmin also a signed-in admin, who may see and manage any listing; the public
+     * forms post and edit as the user alone.
+     */
+    private function actor(bool $withAdmin, string $secret = ''): Actor
+    {
+        return new Actor(
+            (int) $this->userId,
+            $withAdmin && osc_is_admin_user_logged_in() ? (int) osc_logged_admin_id() : null,
+            (string) Params::getServerParam('REMOTE_ADDR'),
+            $secret
+        );
+    }
+
+    /**
+     * The listing this visitor may edit on the public form: their own, or a guest listing
+     * whose secret they sent.
+     *
+     * @return array<string,mixed>|null
+     */
+    private function editable(int $id, string $secret): ?array
+    {
+        return ListingPolicy::manageable($id, $this->actor(false, $secret));
+    }
+
+    /**
+     * The listing data the form posted, with its custom field values.
+     *
+     * @return array<string,mixed>
+     */
+    private function listingData(array $data): array
+    {
+        if (!isset($data['meta'])) {
+            $data['meta'] = Params::getParam('meta');
+        }
+
+        return $data;
+    }
+
+    /**
      * Ends the request with a 404 when the listing is one the public may not see (not
      * validated, disabled or spam), unless the visitor is its owner or an admin.
      *
@@ -1010,7 +970,7 @@ class CWebItem extends BaseModel
     private function notFoundIfHidden($item)
     {
         if (is_array($item) && $item !== array()
-            && !ItemAccess::canView($item, $this->userId, osc_is_admin_user_logged_in())
+            && !ListingPolicy::canView($item, $this->actor(true))
         ) {
             $this->do404();
         }

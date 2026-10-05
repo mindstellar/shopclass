@@ -21,10 +21,14 @@ if (!defined('ABS_PATH')) {
  */
 use mindstellar\admin\BulkAction;
 use mindstellar\admin\ListPaging;
+use mindstellar\moderation\CommentModeration;
+use mindstellar\validation\InvalidException;
 
 class CAdminItemComments extends AdminSecBaseModel
 {
     private ItemComment $itemCommentManager;
+
+    private CommentModeration $moderation;
 
     /**
      * Take the comment manager for this request.
@@ -35,6 +39,7 @@ class CAdminItemComments extends AdminSecBaseModel
 
         //specific things for this class
         $this->itemCommentManager = ItemComment::newInstance();
+        $this->moderation         = new CommentModeration($this->itemCommentManager);
         osc_run_hook('init_admin_comments');
     }
 
@@ -54,72 +59,39 @@ class CAdminItemComments extends AdminSecBaseModel
         switch ($this->action) {
             case ('bulk_actions'):
                 osc_csrf_check();
-                $manager = $this->itemCommentManager;
+                $moderation = $this->moderation;
                 switch (Params::getParam('bulk_actions')) {
                     case ('delete_all'):
                         BulkAction::apply(
-                            static function ($id) use ($manager) {
-                                $deleted = $manager->delete(array('pk_i_id' => $id));
-                                osc_run_hook('delete_comment', $id);
-
-                                return (bool)$deleted;
-                            },
+                            static fn ($id) => $moderation->delete((int) $id),
                             '%d comment has been deleted',
                             '%d comments have been deleted'
                         );
                         break;
                     case ('activate_all'):
-                        $self = $this;
                         BulkAction::apply(
-                            static function ($id) use ($manager, $self) {
-                                $updated = $manager->update(array('b_active' => 1), array('pk_i_id' => $id));
-                                if ($updated) {
-                                    $self->sendCommentActivated($id);
-                                }
-                                osc_run_hook('activate_comment', $id);
-
-                                return (bool)$updated;
-                            },
+                            static fn ($id) => $moderation->activate((int) $id),
                             '%d comment has been approved',
                             '%d comments have been approved'
                         );
                         break;
                     case ('deactivate_all'):
                         BulkAction::apply(
-                            static function ($id) use ($manager) {
-                                $updated = $manager->update(array('b_active' => 0), array('pk_i_id' => $id));
-                                osc_run_hook('deactivate_comment', $id);
-
-                                return (bool)$updated;
-                            },
+                            static fn ($id) => $moderation->deactivate((int) $id),
                             '%d comment has been disapproved',
                             '%d comments have been disapproved'
                         );
                         break;
                     case ('enable_all'):
-                        $self = $this;
                         BulkAction::apply(
-                            static function ($id) use ($manager, $self) {
-                                $updated = $manager->update(array('b_enabled' => 1), array('pk_i_id' => $id));
-                                if ($updated) {
-                                    $self->sendCommentActivated($id);
-                                }
-                                osc_run_hook('enable_comment', $id);
-
-                                return (bool)$updated;
-                            },
+                            static fn ($id) => $moderation->enable((int) $id),
                             '%d comment has been unblocked',
                             '%d comments have been unblocked'
                         );
                         break;
                     case ('disable_all'):
                         BulkAction::apply(
-                            static function ($id) use ($manager) {
-                                $updated = $manager->update(array('b_enabled' => 0), array('pk_i_id' => $id));
-                                osc_run_hook('disable_comment', $id);
-
-                                return (bool)$updated;
-                            },
+                            static fn ($id) => $moderation->disable((int) $id),
                             '%d comment has been blocked',
                             '%d comments have been blocked'
                         );
@@ -151,35 +123,16 @@ class CAdminItemComments extends AdminSecBaseModel
                 }
 
                 if ($value === 'ACTIVE') {
-                    $iUpdated = $this->itemCommentManager->update(
-                        array('b_active' => 1),
-                        array('pk_i_id' => $id)
-                    );
-                    if ($iUpdated) {
-                        $this->sendCommentActivated($id);
-                    }
-                    osc_run_hook('activate_comment', $id);
+                    $this->moderation->activate($id);
                     osc_add_flash_ok_message(_m('The comment has been approved'), 'admin');
                 } elseif ($value === 'INACTIVE') {
-                    $iUpdated = $this->itemCommentManager->update(
-                        array('b_active' => 0),
-                        array('pk_i_id' => $id)
-                    );
-                    osc_run_hook('deactivate_comment', $id);
+                    $this->moderation->deactivate($id);
                     osc_add_flash_ok_message(_m('The comment has been disapproved'), 'admin');
                 } elseif ($value === 'ENABLE') {
-                    $iUpdated = $this->itemCommentManager->update(
-                        array('b_enabled' => 1),
-                        array('pk_i_id' => $id)
-                    );
-                    osc_run_hook('enable_comment', $id);
+                    $this->moderation->enable($id);
                     osc_add_flash_ok_message(_m('The comment has been enabled'), 'admin');
                 } elseif ($value === 'DISABLE') {
-                    $iUpdated = $this->itemCommentManager->update(
-                        array('b_enabled' => 0),
-                        array('pk_i_id' => $id)
-                    );
-                    osc_run_hook('disable_comment', $id);
+                    $this->moderation->disable($id);
                     osc_add_flash_ok_message(_m('The comment has been disabled'), 'admin');
                 }
 
@@ -193,45 +146,26 @@ class CAdminItemComments extends AdminSecBaseModel
                 break;
             case ('comment_edit_post'):
                 osc_csrf_check();
-
-                $msg = '';
-                if (!osc_validate_email(Params::getParam('authorEmail'), true)) {
-                    $msg .= _m('Email is not correct') . '<br/>';
+                $id = Params::getParamInt('id');
+                try {
+                    $this->moderation->edit($id, array(
+                        'title'        => Params::getParamString('title'),
+                        'body'         => Params::getParamString('body'),
+                        'author_name'  => Params::getParamString('authorName'),
+                        'author_email' => Params::getParamString('authorEmail'),
+                    ));
+                } catch (InvalidException $e) {
+                    osc_add_flash_error_message(implode('<br/>', array_column($e->errors(), 'message')), 'admin');
+                    $this->redirectTo(osc_admin_base_url(true) . '?page=comments&action=comment_edit&id=' . $id);
                 }
-                if (!osc_validate_text(Params::getParam('body'), 1, true)) {
-                    $msg .= _m('Comment is required') . '<br/>';
-                }
-
-                if ($msg != '') {
-                    osc_add_flash_error_message($msg, 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=comments&action=comment_edit&id='
-                        . Params::getParam('id'));
-                }
-
-                // Strip markup on write, mirroring the public comment path
-                // (ItemActions::add_comment) so stored values stay plain text.
-                $this->itemCommentManager->update(
-                    array(
-                        's_title'        => trim(strip_tags(Params::getParam('title'))),
-                        's_body'         => trim(strip_tags(Params::getParam('body'))),
-                        's_author_name'  => trim(strip_tags(Params::getParam('authorName'))),
-                        's_author_email' => trim(strip_tags(Params::getParam('authorEmail')))
-                    ),
-                    array(
-                        'pk_i_id' => Params::getParam('id')
-                    )
-                );
-
-                osc_run_hook('edit_comment', Params::getParam('id'));
 
                 osc_add_flash_ok_message(_m('Great! We just updated your comment'), 'admin');
                 $this->redirectTo(osc_admin_base_url(true) . '?page=comments');
                 break;
             case ('delete'):
                 osc_csrf_check();
-                $this->itemCommentManager->deleteByPrimaryKey(Params::getParam('id'));
+                $this->moderation->delete(Params::getParamInt('id'));
                 osc_add_flash_ok_message(_m('The comment has been deleted'), 'admin');
-                osc_run_hook('delete_comment', Params::getParam('id'));
                 $this->redirectTo(osc_admin_base_url(true) . '?page=comments');
                 break;
             default:
@@ -339,11 +273,7 @@ class CAdminItemComments extends AdminSecBaseModel
      */
     public function sendCommentActivated($commentId)
     {
-        $aComment = $this->itemCommentManager->findByPrimaryKey($commentId);
-        $aItem    = Item::newInstance()->findByPrimaryKey($aComment['fk_i_item_id']);
-        View::newInstance()->_exportVariableToView('item', $aItem);
-
-        osc_run_hook('hook_email_comment_validated', $aComment);
+        $this->moderation->notifyAuthor((int) $commentId);
     }
 
 }

@@ -17,7 +17,9 @@ define('IS_AJAX', true);
 /**
  * Class CWebAjax
  */
-use mindstellar\security\ItemAccess;
+use mindstellar\auth\Actor;
+use mindstellar\listing\ListingPolicy;
+use mindstellar\listing\PhotoService;
 use mindstellar\utility\AjaxResponse;
 
 class CWebAjax extends BaseModel
@@ -135,7 +137,13 @@ class CWebAjax extends BaseModel
                     return false;
                 }
 
-                if (!ItemAccess::canManage($aItem, $userId, osc_is_admin_user_logged_in(), $secret)) {
+                $actor = new Actor(
+                    (int) $userId,
+                    osc_is_admin_user_logged_in() ? (int) osc_logged_admin_id() : null,
+                    (string) Params::getServerParam('REMOTE_ADDR'),
+                    $secret
+                );
+                if (!ListingPolicy::canManage($aItem, $actor)) {
                     $json['success'] = false;
                     $json['msg']     = _m("The listing doesn't belong to you");
                     AjaxResponse::json($json);
@@ -149,35 +157,9 @@ class CWebAjax extends BaseModel
                 if ($result > 0) {
                     $resource = ItemResource::newInstance()->findByPrimaryKey($id);
 
-                    if (ItemAccess::isPhotoOf($resource, $aItem, $code)) {
-                        // Delete: file, db table entry
-                        if (defined('OC_ADMIN') && OC_ADMIN) {
-                            osc_deleteResource($id, true);
-                            Log::newInstance()->insertLog(
-                                'ajax',
-                                'deleteimage',
-                                $id,
-                                $id,
-                                'admin',
-                                osc_logged_admin_id()
-                            );
-                        } else {
-                            osc_deleteResource($id, false);
-                            Log::newInstance()->insertLog(
-                                'ajax',
-                                'deleteimage',
-                                $id,
-                                $id,
-                                'user',
-                                osc_logged_user_id()
-                            );
-                        }
-                        ItemResource::newInstance()->delete(array(
-                            'pk_i_id'      => $id,
-                            'fk_i_item_id' => $item,
-                            's_name'       => $code
-                        ));
-
+                    if (ListingPolicy::isPhotoOf($resource, $aItem, $code)
+                        && (new PhotoService())->delete((int) $id, (int) $item, $actor, $code)
+                    ) {
                         $json['msg']     = _m('The selected photo has been successfully deleted');
                         $json['success'] = 'true';
                     } else {
@@ -214,12 +196,12 @@ class CWebAjax extends BaseModel
                         $catId  = Params::getParam('catId');
                         $itemId = Params::getParamInt('itemId');
                         // Stored values go only to someone who may edit the listing.
-                        if ($itemId > 0 && ItemAccess::manageable(
-                            $itemId,
-                            osc_is_web_user_logged_in() ? osc_logged_user_id() : null,
-                            osc_is_admin_user_logged_in(),
+                        if ($itemId > 0 && ListingPolicy::manageable($itemId, new Actor(
+                            osc_is_web_user_logged_in() ? (int) osc_logged_user_id() : null,
+                            osc_is_admin_user_logged_in() ? (int) osc_logged_admin_id() : null,
+                            (string) Params::getServerParam('REMOTE_ADDR'),
                             Params::getParamString('secret')
-                        ) === array()) {
+                        )) === null) {
                             $itemId = 0;
                         }
                         osc_run_hook('item_edit', $catId, $itemId);
@@ -359,7 +341,7 @@ class CWebAjax extends BaseModel
         if (osc_is_admin_user_logged_in() || osc_is_web_user_logged_in()) {
             return '';
         }
-        if (osc_reg_user_post()) {
+        if (ListingPolicy::requiresSignIn(Actor::guest((string) Params::getServerParam('REMOTE_ADDR')))) {
             return _m('Only registered users are allowed to post listings');
         }
         if (\mindstellar\security\ActionThrottle::exceededFor('ajax_upload')) {

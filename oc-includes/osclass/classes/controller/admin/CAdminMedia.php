@@ -16,6 +16,9 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\auth\Actor;
+use mindstellar\listing\PhotoService;
+
 /**
  * Class CAdminMedia
  */
@@ -24,17 +27,14 @@ class CAdminMedia extends AdminSecBaseModel
     /** Page sizes offered in the toolbar; anything else falls back to the default. */
     public const PER_PAGE_OPTIONS = array(10, 25, 50, 100, 250, 500);
 
-    private ItemResource $resourcesManager;
-
     /**
-     * Take the item-resource manager for this request.
+     * Fires `init_admin_media`.
      */
     public function __construct()
     {
         parent::__construct();
 
         //specific things for this class
-        $this->resourcesManager = ItemResource::newInstance();
         osc_run_hook('init_admin_media');
     }
 
@@ -161,11 +161,13 @@ class CAdminMedia extends AdminSecBaseModel
         }
 
         if ($src === 'item') {
-            osc_deleteResource($id, true);
-            $this->resourcesManager->deleteResourcesIds(array($id));
-            Log::newInstance()->insertLog('media', 'delete', (string) $id, (string) $id, 'admin', osc_logged_admin_id());
+            (new PhotoService())->delete(
+                $id,
+                null,
+                Actor::fromSession(true)
+            );
         } elseif ($src === 'resource') {
-            $row = \mindstellar\model\Resource::newInstance()->findByPrimaryKey($id);
+            $row = (new \mindstellar\model\Resource())->findByPrimaryKey($id);
             if ($row !== null) {
                 (new \mindstellar\storage\ResourceUploader())->delete($row);
                 Log::newInstance()

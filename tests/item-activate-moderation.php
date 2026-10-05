@@ -38,7 +38,7 @@ function osc_item_is_counted(array $item): bool
 }
 
 /** An Item stand-in that records what activate() writes. */
-class FakeItemModel
+class FakeItemModel extends \Item
 {
     public $row;
     public $updates = array();
@@ -48,7 +48,7 @@ class FakeItemModel
         $this->row = $row;
     }
 
-    public function listWhere()
+    public function listWhere(...$args)
     {
         return array($this->row);
     }
@@ -58,29 +58,29 @@ class FakeItemModel
         return $this->row;
     }
 
-    public function update($set, $where)
+    public function update($values, $where)
     {
-        $this->updates[] = $set;
+        $this->updates[] = $values;
 
         return 1;
     }
 }
 
-function run_activate(array $row)
+function run_activate(array $row, string $secret = 'secret')
 {
     $GLOBALS['hooks'] = array();
-    $fake   = new FakeItemModel($row + array('pk_i_id' => 7, 'b_spam' => 0, 'dt_expiration' => '', 'fk_i_category_id' => 1));
-    $ref    = new ReflectionClass('ItemActions');
-    $action = $ref->newInstanceWithoutConstructor();
-    $prop   = $ref->getProperty('manager');
+    $fake    = new FakeItemModel($row + array('pk_i_id' => 7, 's_secret' => 'secret', 'b_spam' => 0, 'dt_expiration' => '', 'fk_i_category_id' => 1));
+    $ref     = new ReflectionClass(\mindstellar\listing\ListingService::class);
+    $service = $ref->newInstanceWithoutConstructor();
+    $prop    = $ref->getProperty('items');
     $prop->setAccessible(true);
-    $prop->setValue($action, $fake);
-    $result = $action->activate(7, 'secret');
+    $prop->setValue($service, $fake);
+    $result = $service->activate(7, $secret);
 
     return array($result, $fake);
 }
 
-harness_section('activate()');
+harness_section('ListingService::activate()');
 
 list($result, $fake) = run_activate(array('b_active' => 0, 'b_enabled' => 1));
 check('an enabled, unvalidated listing is validated', $result === true && $fake->updates === array(array('b_active' => 1)));
@@ -90,7 +90,10 @@ list($result, $fake) = run_activate(array('b_active' => 0, 'b_enabled' => 0));
 check('a not-yet-enabled listing is validated too', $result === true && $fake->updates === array(array('b_active' => 1)));
 
 list($result, $fake) = run_activate(array('b_active' => 1, 'b_enabled' => 1));
-check('an already validated listing is left alone', $result === -1 && $fake->updates === array());
+check('an already validated listing is left alone', $result === null && $fake->updates === array());
+
+list($result, $fake) = run_activate(array('b_active' => 0, 'b_enabled' => 1), 'wrong');
+check('a wrong secret changes nothing', $result === null && $fake->updates === array());
 
 harness_section('CWebItem activate');
 $controller = file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebItem.php');

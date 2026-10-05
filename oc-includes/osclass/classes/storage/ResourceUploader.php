@@ -12,6 +12,7 @@
 namespace mindstellar\storage;
 
 use ImageProcessing;
+use mindstellar\database\Db;
 use mindstellar\model\Resource;
 use mindstellar\utility\FileSystem;
 use Throwable;
@@ -137,7 +138,7 @@ final class ResourceUploader
         $sName  = osc_genRandomPassword();
         $now    = date('Y-m-d H:i:s');
 
-        $id = Resource::newInstance()->insertResource($ownerType, $ownerId, array(
+        $id = (new Resource())->insertResource($ownerType, $ownerId, array(
             's_path'         => $sPath,
             's_name'         => $sName,
             's_extension'    => $extension,
@@ -153,7 +154,7 @@ final class ResourceUploader
         }
 
         if (!is_dir($folder) && !mkdir($folder, 0755, true) && !is_dir($folder)) {
-            Resource::newInstance()->deleteResourcesIds(array($id));
+            (new Resource())->deleteResourcesIds(array($id));
             $this->cleanupTemps($tmpFile, $normalTmp, $secondary);
 
             return false;
@@ -169,7 +170,7 @@ final class ResourceUploader
         }
         if (!$copied) {
             array_map(static fn ($to) => @unlink($to), $copies);
-            Resource::newInstance()->deleteResourcesIds(array($id));
+            (new Resource())->deleteResourcesIds(array($id));
             $this->cleanupTemps($tmpFile, $normalTmp, $secondary);
 
             return false;
@@ -216,8 +217,8 @@ final class ResourceUploader
 
         $this->purgeFiles($resourceRow);
 
-        Resource::newInstance()->deleteResourcesIds(array((int) $resourceRow['pk_i_id']));
-        Resource::newInstance()->invalidateOwnerCache(
+        (new Resource())->deleteResourcesIds(array((int) $resourceRow['pk_i_id']));
+        (new Resource())->invalidateOwnerCache(
             (string) ($resourceRow['s_owner_type'] ?? ''),
             (int) ($resourceRow['i_owner_id'] ?? 0)
         );
@@ -241,14 +242,14 @@ final class ResourceUploader
             return;
         }
 
-        $rows = Resource::newInstance()->findByOwner($ownerType, $ownerId);
+        $rows = (new Resource())->findByOwner($ownerType, $ownerId);
         foreach ($rows as $row) {
             $this->purgeFiles($row);
             osc_run_hook('delete_resource', $row);
         }
 
         // Single row+cache delete for the whole owner, after files are handled.
-        Resource::newInstance()->deleteByOwner($ownerType, $ownerId);
+        (new Resource())->deleteByOwner($ownerType, $ownerId);
     }
 
     /**
@@ -268,7 +269,7 @@ final class ResourceUploader
             $owners[($row['s_owner_type'] ?? '') . ':' . ($row['i_owner_id'] ?? 0)] = $row;
         }
         foreach ($owners as $row) {
-            Resource::newInstance()->invalidateOwnerCache(
+            (new Resource())->invalidateOwnerCache(
                 (string) ($row['s_owner_type'] ?? ''),
                 (int) ($row['i_owner_id'] ?? 0)
             );
@@ -289,20 +290,23 @@ final class ResourceUploader
             return;
         }
 
-        $storage = $row['s_storage'] ?? 'local';
+        // A file cannot come back, so it goes only once the delete has committed.
+        Db::afterCommit(static function () use ($row): void {
+            $storage = $row['s_storage'] ?? 'local';
 
-        if ($storage === 'local' && StorageManager::instance()->remote() === null) {
-            foreach (ResourceLocator::variants() as $variant) {
-                $path = ResourceLocator::localPath($row, $variant);
-                if (file_exists($path) && !is_dir($path)) {
-                    (new FileSystem())->remove($path);
+            if ($storage === 'local' && StorageManager::instance()->remote() === null) {
+                foreach (ResourceLocator::variants() as $variant) {
+                    $path = ResourceLocator::localPath($row, $variant);
+                    if (file_exists($path) && !is_dir($path)) {
+                        (new FileSystem())->remove($path);
+                    }
                 }
+
+                return;
             }
 
-            return;
-        }
-
-        StorageJobs::enqueue('delete', $storage, $row);
+            StorageJobs::enqueue('delete', $storage, $row);
+        });
     }
 
     /**
