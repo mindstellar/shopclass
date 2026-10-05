@@ -263,6 +263,10 @@ class OsclassErrors
     {
         error_log('Shopclass: database unavailable. ' . $detailMessage);
 
+        // On the command line the log line above is the whole message.
+        if (PHP_SAPI === 'cli') {
+            exit(1);
+        }
         if (headers_sent()) {
             return;
         }
