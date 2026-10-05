@@ -561,7 +561,9 @@ class Category extends DAO
             // update dt_expiration (table t_item) using category.i_expiration_days.
             // Both branches discarded their result before this conversion, so a
             // failure is swallowed rather than raised, keeping the rest running.
-            if ($fields['i_expiration_days'] > 0) {
+            // Without i_expiration_days the expiry is not being saved, and listings keep theirs.
+            $expiry = $fields['i_expiration_days'] ?? null;
+            if ($expiry !== null && $expiry > 0) {
                 try {
                     osc_db_execute(
                         'UPDATE ' . DB_TABLE_PREFIX . 't_item as a'
@@ -574,7 +576,7 @@ class Category extends DAO
                     // Discarded, as before.
                 }
                 // update dt_expiration (table t_item) using the max date value
-            } elseif ($fields['i_expiration_days'] == 0) {
+            } elseif ($expiry !== null && $expiry == 0) {
                 try {
                     osc_db_execute(
                         'UPDATE ' . DB_TABLE_PREFIX . 't_item as a'
@@ -605,7 +607,10 @@ class Category extends DAO
                 $slug_unique                           = 1;
                 while (true) {
                     $cat_slug = $this->findBySlug($slug);
-                    if (!isset($cat_slug['pk_i_id']) || $cat_slug['pk_i_id'] == $pk) {
+                    // A reserved slug counts as taken, so "api" is saved as "api_1".
+                    if ((!isset($cat_slug['pk_i_id']) || $cat_slug['pk_i_id'] == $pk)
+                        && !\mindstellar\routing\ReservedSlugs::taken($slug)
+                    ) {
                         break;
                     }
 
@@ -772,7 +777,7 @@ class Category extends DAO
             $slug_tmp                              = $slug;
             $slug_unique                           = 1;
             while (true) {
-                if (!$this->findBySlug($slug)) {
+                if (!$this->findBySlug($slug) && !\mindstellar\routing\ReservedSlugs::taken($slug)) {
                     break;
                 }
 

@@ -10,7 +10,7 @@
 
 namespace mindstellar\model;
 
-use mindstellar\database\QueryBuilder;
+use mindstellar\base\Model;
 use Throwable;
 
 /**
@@ -29,7 +29,7 @@ use Throwable;
  * @subpackage Model
  * @since      5.3.0
  */
-class Resource
+class Resource extends Model
 {
     /** Owner type: a classified listing (t_item). */
     public const OWNER_ITEM = 'item';
@@ -54,7 +54,7 @@ class Resource
     public const OWNER_SETTING = 'setting';
 
     /** Unprefixed table name. */
-    private const TABLE = 't_resource';
+    protected const TABLE = 't_resource';
 
     /** Every column on t_resource, in schema order. */
     private const COLUMNS = array(
@@ -70,27 +70,10 @@ class Resource
         'dt_updated',
     );
 
-    /**
-     * It references to self object: Resource.
-     * It is used as a singleton.
-     *
-     * @var Resource
-     */
-    private static $instance;
-
-    /**
-     * It creates a new Resource object class if it has not been created before,
-     * otherwise it returns the previous object.
-     *
-     * @return Resource
-     */
+    /** @deprecated 7.0.0 Use new Resource(). */
     public static function newInstance(): self
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return new self();
     }
 
     /**
@@ -415,16 +398,6 @@ class Resource
         }
 
         $this->flushOwnerCache($ownerType, $ownerId);
-    }
-
-    /**
-     * A fresh query builder bound to the (prefixed) t_resource table.
-     *
-     * @return QueryBuilder
-     */
-    private function table(): QueryBuilder
-    {
-        return osc_db_table(DB_TABLE_PREFIX . self::TABLE);
     }
 
     /**

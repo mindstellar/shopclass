@@ -20,6 +20,9 @@ class Search extends DAO
     /** Seconds the featured block keeps one random order. */
     private const PREMIUM_ROTATION = 300;
 
+    /** The t_item columns orderBy() accepts. */
+    private const ORDER_BY_COLUMNS = array('pk_i_id', 'dt_pub_date', 'dt_mod_date', 'dt_expiration', 'i_price', 'b_premium');
+
     private static $instance;
     private $conditions;
     private $itemConditions;
@@ -58,6 +61,7 @@ class Search extends DAO
     private $price_max;
     private $user_ids;
     private $itemId;
+    private $primeResources = true;
 
     /**
      * Accumulated clauses for the statement currently being assembled.
@@ -180,6 +184,41 @@ class Search extends DAO
             }
         }
         $this->order_direction = $o_d;
+    }
+
+    /**
+     * Order by several t_item columns, each with its own direction, most significant first:
+     * [['dt_pub_date', 'DESC'], ['pk_i_id', 'DESC']]. Replaces what order() set. To order by
+     * relevance, use order().
+     *
+     * @param array<int,array{0:string,1:string}> $columns column => direction pairs
+     *
+     * @return void
+     * @throws InvalidArgumentException for a column outside ORDER_BY_COLUMNS or a direction
+     *                                  other than ASC or DESC
+     */
+    public function orderBy(array $columns)
+    {
+        $terms = array();
+        foreach ($columns as $pair) {
+            [$column, $direction] = array_values((array)$pair) + array('', '');
+            $direction            = strtoupper((string)$direction);
+            if (!in_array($column, self::ORDER_BY_COLUMNS, true) || !in_array($direction, array('ASC', 'DESC'), true)) {
+                throw new InvalidArgumentException('Search::orderBy(): cannot order by ' . json_encode($pair) . '.');
+            }
+            $terms[] = array(DB_TABLE_PREFIX . 't_item.' . $column, $direction);
+        }
+        if ($terms === array()) {
+            throw new InvalidArgumentException('Search::orderBy(): no column given.');
+        }
+        // addOrderBy() appends the direction to the last term only, so the others carry their own.
+        $last = array_pop($terms);
+        $lead = '';
+        foreach ($terms as $term) {
+            $lead .= $term[0] . ' ' . $term[1] . ', ';
+        }
+        $this->order_column    = $lead . $last[0];
+        $this->order_direction = $last[1];
     }
 
     /**
@@ -380,6 +419,70 @@ class Search extends DAO
                 $this->conditions[] = $conditions;
             }
         }
+    }
+
+    /**
+     * Add one condition whose values come in $params, one per `?`.
+     *
+     * Search builds its SQL as text (see the clause notes above), so the values cannot be
+     * bound; each is type-checked and inlined instead: ints and finite floats as they are,
+     * booleans as 1/0, null as NULL, strings escaped by the connection and quoted. The
+     * fragment itself may hold no quotes, so every `?` in it is a placeholder.
+     *
+     * @param string                              $sql    e.g. 't_item.pk_i_id < ?'
+     * @param array<int,int|float|string|bool|null> $params
+     *
+     * @return void
+     * @throws InvalidArgumentException for a quote in $sql, a count that does not match, or a value of another type
+     */
+    public function addCondition(string $sql, array $params = array())
+    {
+        if (strpbrk($sql, "'\"\\`#") !== false || str_contains($sql, '--') || str_contains($sql, '/*')) {
+            throw new InvalidArgumentException('Search::addCondition(): pass values in $params, not quoted in the SQL.');
+        }
+        $parts  = explode('?', $sql);
+        $params = array_values($params);
+        if (count($parts) - 1 !== count($params)) {
+            throw new InvalidArgumentException('Search::addCondition(): ' . (count($parts) - 1) . ' placeholders, ' . count($params) . ' values.');
+        }
+        $out = $parts[0];
+        foreach ($params as $i => $value) {
+            $out .= $this->literal($value) . $parts[$i + 1];
+        }
+        $this->addConditions($out);
+    }
+
+    /**
+     * A value as SQL text, for addCondition().
+     *
+     * @param mixed $value
+     *
+     * @return string
+     * @throws InvalidArgumentException for a type SQL text cannot carry safely
+     */
+    private function literal($value)
+    {
+        return match (true) {
+            is_int($value)                         => (string)$value,
+            is_float($value) && is_finite($value)  => (string)$value,
+            is_bool($value)                        => $value ? '1' : '0',
+            $value === null                        => 'NULL',
+            is_string($value)                      => "'" . $this->escapeString($value) . "'",
+            default                                => throw new InvalidArgumentException('Search::addCondition(): a value must be an int, a finite float, a string, a bool or null.'),
+        };
+    }
+
+    /**
+     * Whether doSearch() primes the photo cache for the page, which the theme then reads per
+     * listing. On by default; a caller that loads photos itself turns it off.
+     *
+     * @param bool $prime
+     *
+     * @return void
+     */
+    public function primeResources($prime = true)
+    {
+        $this->primeResources = (bool)$prime;
     }
 
     /**
@@ -689,7 +792,7 @@ class Search extends DAO
         }
 
         if (($extended === true) && !empty($items)) {
-            return Item::newInstance()->extendData($items);
+            return $this->primeResources ? Item::newInstance()->extendData($items) : Item::newInstance()->extendRows($items);
         }
 
         return $items;
@@ -1965,6 +2068,13 @@ class Search extends DAO
 
         if ($this->onlyPremium) {
             $aData['onlyPremium'] = $this->onlyPremium;
+        }
+
+        // The result cache keys on this record, so an explicit locale filter must be in it.
+        if (!empty($this->locale_code)) {
+            $locales = array_values($this->locale_code);
+            sort($locales);
+            $aData['locale_code'] = $locales;
         }
 
         $aData['tables']      = $this->tables;

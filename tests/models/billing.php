@@ -103,7 +103,7 @@ if (!function_exists('__')) {
         return $key;
     }
 }
-// Entitlements::withinFreeQuota()/canPublish() read osc_billing_free_live_listings()
+// EntitlementStore::withinFreeQuota()/canPublish() read osc_billing_free_live_listings()
 // and friends, which live here rather than in the default bootstrap requires.
 require_once __DIR__ . '/../../oc-includes/osclass/helpers/hBilling.php';
 
@@ -111,13 +111,13 @@ use mindstellar\billing\Billing;
 use mindstellar\billing\CallbackResult;
 use mindstellar\billing\CheckoutIntent;
 use mindstellar\billing\DashboardLinkGateway;
-use mindstellar\billing\Entitlements;
+use mindstellar\billing\EntitlementStore;
 use mindstellar\billing\Feature;
 use mindstellar\billing\FeatureRegistry;
-use mindstellar\billing\ItemUpgrades;
+use mindstellar\billing\ItemUpgradeStore;
 use mindstellar\billing\Order;
-use mindstellar\billing\Orders;
-use mindstellar\billing\Packages;
+use mindstellar\billing\OrderStore;
+use mindstellar\billing\PackageStore;
 use mindstellar\billing\PaymentGateway;
 use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\billing\Premium;
@@ -339,25 +339,26 @@ Wallet::credit($userId, 30, Wallet::REASON_GRANT); // back to zero for later sec
  * ------------------------------------------------------------------------- */
 harness_section('Orders: lifecycle');
 
-$order = Orders::create($userId, 'fake', 9_990_000, 'USD', 100, array('sku' => 'credits-100'));
+$order = OrderStore::create($userId, 'fake', 9_990_000, 'USD', 100, array('sku' => 'credits-100'));
 pin('new orders start pending', Order::STATUS_PENDING, $order->getStatus());
 pin('amount is stored in micros', 9990000, $order->getAmount());
-pin('metadata round-trips', 'credits-100', Orders::find($order->getId())->meta('sku'));
+pin('metadata round-trips', 'credits-100', OrderStore::find($order->getId())->meta('sku'));
+pin('search filters by status and gateway', true, in_array($order->getId(), array_map(static fn ($o) => $o->getId(), OrderStore::search(array('status' => Order::STATUS_PENDING, 'gateway' => 'fake'), 50)), true));
 
-check('settling a pending order succeeds', Orders::settle($order->getId(), Order::STATUS_PAID, 'ext_1'));
-check('re-settling the same order is refused', Orders::settle($order->getId(), Order::STATUS_PAID, 'ext_1') === false);
-pin('settled order reads back as paid', Order::STATUS_PAID, Orders::find($order->getId())->getStatus());
-pin('external reference is stored', 'ext_1', Orders::find($order->getId())->getExternalRef());
-check('paid orders carry a paid date', Orders::find($order->getId())->getPaidDate() !== null);
+check('settling a pending order succeeds', OrderStore::settle($order->getId(), Order::STATUS_PAID, 'ext_1'));
+check('re-settling the same order is refused', OrderStore::settle($order->getId(), Order::STATUS_PAID, 'ext_1') === false);
+pin('settled order reads back as paid', Order::STATUS_PAID, OrderStore::find($order->getId())->getStatus());
+pin('external reference is stored', 'ext_1', OrderStore::find($order->getId())->getExternalRef());
+check('paid orders carry a paid date', OrderStore::find($order->getId())->getPaidDate() !== null);
 
 pin(
     'lookup by gateway reference finds the order',
     $order->getId(),
-    Orders::findByGatewayRef('fake', 'ext_1')->getId()
+    OrderStore::findByGatewayRef('fake', 'ext_1')->getId()
 );
 check(
     'lookup is scoped to the gateway',
-    Orders::findByGatewayRef('other', 'ext_1') === null
+    OrderStore::findByGatewayRef('other', 'ext_1') === null
 );
 
 /* ----------------------------------------------------------------------------
@@ -366,11 +367,11 @@ check(
 harness_section('Billing: markPaid');
 
 $balance = Wallet::balance($userId);
-$order   = Orders::create($userId, 'fake', 1_000_000, 'USD', 40);
+$order   = OrderStore::create($userId, 'fake', 1_000_000, 'USD', 40);
 
 check('markPaid settles the order', Billing::markPaid($order, 'ext_2') === true);
 pin('markPaid mints the credits', $balance + 40, Wallet::balance($userId));
-pin('order is paid', Order::STATUS_PAID, Orders::find($order->getId())->getStatus());
+pin('order is paid', Order::STATUS_PAID, OrderStore::find($order->getId())->getStatus());
 
 check('markPaid on an already-paid order reports no change', Billing::markPaid($order, 'ext_2') === false);
 pin('a repeated markPaid mints nothing further', $balance + 40, Wallet::balance($userId));
@@ -384,13 +385,13 @@ $gateway = new FakeGateway('fake');
 PaymentGatewayRegistry::instance()->register($gateway);
 
 $balance = Wallet::balance($userId);
-$order   = Orders::create($userId, 'fake', 5_000_000, 'USD', 200);
+$order   = OrderStore::create($userId, 'fake', 5_000_000, 'USD', 200);
 
 $gateway->verdict = CallbackResult::paid($order->getId(), 'ext_3', 1, 'USD');
 $result = Billing::handleCallback('fake', array());
 pin('a short-paid callback is ignored', CallbackResult::OUTCOME_IGNORED, $result->getOutcome());
 pin('a short-paid callback mints nothing', $balance, Wallet::balance($userId));
-pin('a short-paid order stays pending', Order::STATUS_PENDING, Orders::find($order->getId())->getStatus());
+pin('a short-paid order stays pending', Order::STATUS_PENDING, OrderStore::find($order->getId())->getStatus());
 
 $gateway->verdict = CallbackResult::paid($order->getId(), 'ext_3', 5_000_000, 'EUR');
 $result = Billing::handleCallback('fake', array());
@@ -411,7 +412,7 @@ $rival = new FakeGateway('rival');
 PaymentGatewayRegistry::instance()->register($rival);
 
 $balance     = Wallet::balance($otherId);
-$rivalTarget = Orders::create($otherId, 'fake', 2_000_000, 'USD', 500);
+$rivalTarget = OrderStore::create($otherId, 'fake', 2_000_000, 'USD', 500);
 $rival->verdict = CallbackResult::paid($rivalTarget->getId(), 'ext_4', 2_000_000, 'USD');
 
 $result = Billing::handleCallback('rival', array());
@@ -420,7 +421,7 @@ pin('the cross-gateway attempt mints nothing', $balance, Wallet::balance($otherI
 pin(
     'the targeted order stays pending',
     Order::STATUS_PENDING,
-    Orders::find($rivalTarget->getId())->getStatus()
+    OrderStore::find($rivalTarget->getId())->getStatus()
 );
 /* A mismatch core looked at and decided on is not the same as core never getting
  * to look at all -- only the latter should make a provider retry. */
@@ -456,16 +457,16 @@ check(
 harness_section('Billing: refund');
 
 $balance = Wallet::balance($userId);
-$order   = Orders::create($userId, 'fake', 1_000_000, 'USD', 60);
+$order   = OrderStore::create($userId, 'fake', 1_000_000, 'USD', 60);
 Billing::markPaid($order, 'ext_5');
 pin('paid order credits', $balance + 60, Wallet::balance($userId));
 
-check('refund reverses a paid order', Billing::refund(Orders::find($order->getId())) === true);
+check('refund reverses a paid order', Billing::refund(OrderStore::find($order->getId())) === true);
 pin('refund takes the credits back', $balance, Wallet::balance($userId));
-pin('refunded order reads back as refunded', Order::STATUS_REFUNDED, Orders::find($order->getId())->getStatus());
+pin('refunded order reads back as refunded', Order::STATUS_REFUNDED, OrderStore::find($order->getId())->getStatus());
 check(
     'refunding twice reports no change',
-    Billing::refund(Orders::find($order->getId())) === false
+    Billing::refund(OrderStore::find($order->getId())) === false
 );
 pin('a repeated refund takes nothing further', $balance, Wallet::balance($userId));
 
@@ -477,17 +478,17 @@ harness_section('Billing: refundThroughGateway');
 $refundy = new FakeRefundGateway('refundy');
 PaymentGatewayRegistry::instance()->register($refundy);
 
-$orderStatus = static fn (Order $o): string => Orders::find($o->getId())->getStatus();
+$orderStatus = static fn (Order $o): string => OrderStore::find($o->getId())->getStatus();
 
-$plainOrder = Orders::create($userId, 'fake', 1_000_000, 'USD', 5);
+$plainOrder = OrderStore::create($userId, 'fake', 1_000_000, 'USD', 5);
 Billing::markPaid($plainOrder, 'ext_plain');
-check('a paid order of a plain gateway offers no gateway refund', Billing::refundableGateway(Orders::find($plainOrder->getId())) === null);
+check('a paid order of a plain gateway offers no gateway refund', Billing::refundableGateway(OrderStore::find($plainOrder->getId())) === null);
 
 $balance = Wallet::balance($userId);
-$order   = Orders::create($userId, 'refundy', 1_000_000, 'USD', 70);
+$order   = OrderStore::create($userId, 'refundy', 1_000_000, 'USD', 70);
 check('a pending order offers none', Billing::refundableGateway($order) === null);
 Billing::markPaid($order, 'ext_r1');
-check('a paid order of a refundable gateway offers one', Billing::refundableGateway(Orders::find($order->getId())) === $refundy);
+check('a paid order of a refundable gateway offers one', Billing::refundableGateway(OrderStore::find($order->getId())) === $refundy);
 
 $result = Billing::refundThroughGateway($order);
 pin('a refunded answer is accepted', CallbackResult::OUTCOME_REFUNDED, $result->getOutcome());
@@ -502,10 +503,10 @@ pin('a second press does not ask the provider', $calls, $refundy->calls);
 pin('a second press takes nothing further', $balance, Wallet::balance($userId));
 
 $paidRefundy = static function (int $credits = 5) use ($userId): Order {
-    $o = Orders::create($userId, 'refundy', 1_000_000, 'USD', $credits);
+    $o = OrderStore::create($userId, 'refundy', 1_000_000, 'USD', $credits);
     Billing::markPaid($o, 'ext_' . bin2hex(random_bytes(4)));
 
-    return Orders::find($o->getId());
+    return OrderStore::find($o->getId());
 };
 
 $refused = $paidRefundy(30);
@@ -517,8 +518,8 @@ pin('an ignored answer is passed back', CallbackResult::OUTCOME_IGNORED, $result
 pin('with the provider\'s reason', 'card expired', $result->getMessage());
 pin('an ignored answer leaves the order paid', Order::STATUS_PAID, $orderStatus($refused));
 pin('an ignored answer takes no credits', $balance, Wallet::balance($userId));
-pin('an ignored answer leaves no sent mark', null, Orders::find($refused->getId())->meta(Orders::REFUND_REQUESTED));
-check('so the button stays', Billing::refundableGateway(Orders::find($refused->getId())) === $refundy);
+pin('an ignored answer leaves no sent mark', null, OrderStore::find($refused->getId())->meta(OrderStore::REFUND_REQUESTED));
+check('so the button stays', Billing::refundableGateway(OrderStore::find($refused->getId())) === $refundy);
 $calls = $refundy->calls;
 Billing::refundThroughGateway($refused);
 pin('and the admin can try again', $calls + 1, $refundy->calls);
@@ -536,13 +537,13 @@ $refundy->onRefund = static fn (Order $o): CallbackResult => CallbackResult::pai
 pin('an answer that is not a refund is refused', CallbackResult::OUTCOME_IGNORED, Billing::refundThroughGateway($wrongOutcome)->getOutcome());
 pin('the order stays paid after a wrong outcome', Order::STATUS_PAID, $orderStatus($wrongOutcome));
 
-$withMeta = Orders::create($userId, 'refundy', 1_000_000, 'USD', 1, array('session' => 'cs_keep'));
+$withMeta = OrderStore::create($userId, 'refundy', 1_000_000, 'USD', 1, array('session' => 'cs_keep'));
 Billing::markPaid($withMeta, 'ext_meta');
-check('the sent mark can be set', Orders::markRefundRequested($withMeta->getId()));
-pin('the plugin\'s own meta is kept', 'cs_keep', Orders::find($withMeta->getId())->meta('session'));
-check('and cleared', Orders::markRefundRequested($withMeta->getId(), false));
-pin('clearing keeps the plugin\'s meta', array('session' => 'cs_keep'), Orders::find($withMeta->getId())->getMeta());
-check('a pending order cannot be marked', !Orders::markRefundRequested(Orders::create($userId, 'refundy', 1, 'USD', 1)->getId()));
+check('the sent mark can be set', OrderStore::markRefundRequested($withMeta->getId()));
+pin('the plugin\'s own meta is kept', 'cs_keep', OrderStore::find($withMeta->getId())->meta('session'));
+check('and cleared', OrderStore::markRefundRequested($withMeta->getId(), false));
+pin('clearing keeps the plugin\'s meta', array('session' => 'cs_keep'), OrderStore::find($withMeta->getId())->getMeta());
+check('a pending order cannot be marked', !OrderStore::markRefundRequested(OrderStore::create($userId, 'refundy', 1, 'USD', 1)->getId()));
 
 $threw   = $paidRefundy();
 $balance = Wallet::balance($userId);
@@ -563,14 +564,14 @@ pin('a throwing gateway leaves the order paid', Order::STATUS_PAID, $orderStatus
 pin('a throwing gateway takes no credits', $balance, Wallet::balance($userId));
 
 /* The provider may have taken the refund before it threw: no second call. */
-check('after a throw the order is marked as sent', Orders::find($threw->getId())->meta(Orders::REFUND_REQUESTED) !== null);
-pin('the button is gone', null, Billing::refundableGateway(Orders::find($threw->getId())));
+check('after a throw the order is marked as sent', OrderStore::find($threw->getId())->meta(OrderStore::REFUND_REQUESTED) !== null);
+pin('the button is gone', null, Billing::refundableGateway(OrderStore::find($threw->getId())));
 $refundy->onRefund = null;
 $calls  = $refundy->calls;
 $result = Billing::refundThroughGateway($threw);
 pin('a second press after a throw is refused', CallbackResult::OUTCOME_IGNORED, $result->getOutcome());
 pin('a second press after a throw does not call the provider', $calls, $refundy->calls);
-check('Record a refund still works', Billing::refund(Orders::find($threw->getId())));
+check('Record a refund still works', Billing::refund(OrderStore::find($threw->getId())));
 pin('and takes the credits back', $balance - 5, Wallet::balance($userId));
 
 pin('a gateway that cannot refund is refused', CallbackResult::OUTCOME_IGNORED, Billing::refundThroughGateway($plainOrder)->getOutcome());
@@ -578,14 +579,14 @@ pin('that order stays paid', Order::STATUS_PAID, $orderStatus($plainOrder));
 
 $refundy->onRefund = null;
 $calls   = $refundy->calls;
-$pending = Orders::create($userId, 'refundy', 1_000_000, 'USD', 5);
+$pending = OrderStore::create($userId, 'refundy', 1_000_000, 'USD', 5);
 pin('a pending order is refused', CallbackResult::OUTCOME_IGNORED, Billing::refundThroughGateway($pending)->getOutcome());
 pin('the provider is not asked for a pending order', $calls, $refundy->calls);
 pin('the pending order is unchanged', Order::STATUS_PENDING, $orderStatus($pending));
 
 /* A second request holding the order's lock: refused without asking the provider. */
 $refundy->onRefund = null;
-$locked = Orders::create($userId, 'refundy', 1_000_000, 'USD', 5);
+$locked = OrderStore::create($userId, 'refundy', 1_000_000, 'USD', 5);
 Billing::markPaid($locked, 'ext_lock');
 $admin->query("SELECT GET_LOCK('" . Billing::refundLockName($locked->getId()) . "', 0)");
 $calls  = $refundy->calls;
@@ -598,17 +599,17 @@ pin('the locked order stays paid', Order::STATUS_PAID, $orderStatus($locked));
 pin('the lock is released afterwards', CallbackResult::OUTCOME_REFUNDED, Billing::refundThroughGateway($locked)->getOutcome());
 
 /* A deleted order is refused, not a fatal. */
-$gone = Orders::create($userId, 'refundy', 1_000_000, 'USD', 5);
+$gone = OrderStore::create($userId, 'refundy', 1_000_000, 'USD', 5);
 Billing::markPaid($gone, 'ext_gone');
 $admin->query('DELETE FROM ' . DB_TABLE_PREFIX . 't_billing_order WHERE pk_i_id = ' . $gone->getId());
 pin('an order that no longer exists is refused', CallbackResult::OUTCOME_IGNORED, Billing::refundThroughGateway($gone)->getOutcome());
 
 /* The provider accepts, but another request (a refund webhook) records it first. */
-$raced = Orders::create($userId, 'refundy', 1_000_000, 'USD', 20);
+$raced = OrderStore::create($userId, 'refundy', 1_000_000, 'USD', 20);
 Billing::markPaid($raced, 'ext_race');
 $balance = Wallet::balance($userId);
 $refundy->onRefund = static function (Order $o): CallbackResult {
-    Billing::refund(Orders::find($o->getId()));
+    Billing::refund(OrderStore::find($o->getId()));
 
     return CallbackResult::refunded($o->getId(), 're_race');
 };
@@ -620,7 +621,7 @@ pin('the order is refunded', Order::STATUS_REFUNDED, $orderStatus($raced));
 pin('the credits are reversed once', $balance - 20, Wallet::balance($userId));
 
 /* The provider accepts, but the write fails: nothing is recorded and the admin is told. */
-$unrecorded = Orders::create($userId, 'refundy', 1_000_000, 'USD', 20);
+$unrecorded = OrderStore::create($userId, 'refundy', 1_000_000, 'USD', 20);
 Billing::markPaid($unrecorded, 'ext_unrec');
 $balance = Wallet::balance($userId);
 $ledger  = DB_TABLE_PREFIX . 't_billing_ledger';
@@ -646,50 +647,50 @@ $refundy->onRefund = null;
 $calls = $refundy->calls;
 pin('a second press after a failed write is refused', CallbackResult::OUTCOME_IGNORED, Billing::refundThroughGateway($unrecorded)->getOutcome());
 pin('a second press after a failed write does not call the provider', $calls, $refundy->calls);
-pin('the button is gone after a failed write', null, Billing::refundableGateway(Orders::find($unrecorded->getId())));
+pin('the button is gone after a failed write', null, Billing::refundableGateway(OrderStore::find($unrecorded->getId())));
 
 /* A paid copy of an order that is in fact pending is still refused. */
-$stale = Orders::create($userId, 'refundy', 1_000_000, 'USD', 5);
+$stale = OrderStore::create($userId, 'refundy', 1_000_000, 'USD', 5);
 Billing::markPaid($stale, 'ext_r4');
-$stalePaid = Orders::find($stale->getId());
+$stalePaid = OrderStore::find($stale->getId());
 Billing::refund($stalePaid);
 $balance = Wallet::balance($userId);
 pin('a stale paid copy of a refunded order is refused', CallbackResult::OUTCOME_IGNORED, Billing::refundThroughGateway($stalePaid)->getOutcome());
 pin('and takes nothing', $balance, Wallet::balance($userId));
 
 /* ----------------------------------------------------------------------------
- * Orders::attachRef() and a checkout that throws.
+ * OrderStore::attachRef() and a checkout that throws.
  * ------------------------------------------------------------------------- */
 harness_section('Orders: attachRef');
 
-$attach = Orders::create($userId, 'refundy', 1_000_000, 'USD', 5);
-check('a pending order takes a ref', Orders::attachRef($attach->getId(), 'refundy', 'cs_test_123'));
-pin('the ref is stored', 'cs_test_123', Orders::find($attach->getId())->getExternalRef());
-pin('the order stays pending', Order::STATUS_PENDING, Orders::find($attach->getId())->getStatus());
-pin('a callback finds the order by it', $attach->getId(), Orders::findByGatewayRef('refundy', 'cs_test_123')->getId());
-check('another gateway cannot attach a ref', !Orders::attachRef($attach->getId(), 'fake', 'cs_other'));
-check('a re-checkout replaces the ref', Orders::attachRef($attach->getId(), 'refundy', 'cs_test_456') && Orders::attachRef($attach->getId(), 'refundy', 'cs_test_123'));
-check('a ref with a space is refused', !Orders::attachRef($attach->getId(), 'refundy', 'cs test'));
-check('an empty ref is refused', !Orders::attachRef($attach->getId(), 'refundy', ''));
-check('a ref over 191 characters is refused', !Orders::attachRef($attach->getId(), 'refundy', str_repeat('a', 192)));
+$attach = OrderStore::create($userId, 'refundy', 1_000_000, 'USD', 5);
+check('a pending order takes a ref', OrderStore::attachRef($attach->getId(), 'refundy', 'cs_test_123'));
+pin('the ref is stored', 'cs_test_123', OrderStore::find($attach->getId())->getExternalRef());
+pin('the order stays pending', Order::STATUS_PENDING, OrderStore::find($attach->getId())->getStatus());
+pin('a callback finds the order by it', $attach->getId(), OrderStore::findByGatewayRef('refundy', 'cs_test_123')->getId());
+check('another gateway cannot attach a ref', !OrderStore::attachRef($attach->getId(), 'fake', 'cs_other'));
+check('a re-checkout replaces the ref', OrderStore::attachRef($attach->getId(), 'refundy', 'cs_test_456') && OrderStore::attachRef($attach->getId(), 'refundy', 'cs_test_123'));
+check('a ref with a space is refused', !OrderStore::attachRef($attach->getId(), 'refundy', 'cs test'));
+check('an empty ref is refused', !OrderStore::attachRef($attach->getId(), 'refundy', ''));
+check('a ref over 191 characters is refused', !OrderStore::attachRef($attach->getId(), 'refundy', str_repeat('a', 192)));
 
-$twin = Orders::create($userId, 'refundy', 1_000_000, 'USD', 5);
-check('another order\'s ref is refused', !Orders::attachRef($twin->getId(), 'refundy', 'cs_test_123'));
+$twin = OrderStore::create($userId, 'refundy', 1_000_000, 'USD', 5);
+check('another order\'s ref is refused', !OrderStore::attachRef($twin->getId(), 'refundy', 'cs_test_123'));
 
-check('settle still stores the paid ref', Billing::markPaid(Orders::find($attach->getId()), 'pi_paid_123'));
-pin('the paid ref replaces the session ref', 'pi_paid_123', Orders::find($attach->getId())->getExternalRef());
-check('a paid order takes no ref', !Orders::attachRef($attach->getId(), 'refundy', 'cs_later'));
-pin('the paid ref is kept', 'pi_paid_123', Orders::find($attach->getId())->getExternalRef());
+check('settle still stores the paid ref', Billing::markPaid(OrderStore::find($attach->getId()), 'pi_paid_123'));
+pin('the paid ref replaces the session ref', 'pi_paid_123', OrderStore::find($attach->getId())->getExternalRef());
+check('a paid order takes no ref', !OrderStore::attachRef($attach->getId(), 'refundy', 'cs_later'));
+pin('the paid ref is kept', 'pi_paid_123', OrderStore::find($attach->getId())->getExternalRef());
 
-Orders::settle($twin->getId(), Order::STATUS_FAILED);
-check('a failed order takes no ref', !Orders::attachRef($twin->getId(), 'refundy', 'cs_failed'));
+OrderStore::settle($twin->getId(), Order::STATUS_FAILED);
+check('a failed order takes no ref', !OrderStore::attachRef($twin->getId(), 'refundy', 'cs_failed'));
 
 harness_section('Billing: checkout that throws');
 
 $thrower = new FakeRefundGateway('thrower');
 $thrower->throwOnCheckout = true;
 PaymentGatewayRegistry::instance()->register($thrower);
-$broken = Orders::create($userId, 'thrower', 1_000_000, 'USD', 5);
+$broken = OrderStore::create($userId, 'thrower', 1_000_000, 'USD', 5);
 $logged = ini_get('error_log');
 ini_set('error_log', tempnam(sys_get_temp_dir(), 'billing-checkout'));
 $intent   = Billing::checkout($broken);
@@ -699,40 +700,40 @@ ini_set('error_log', (string) $logged);
 pin('a throwing checkout reads as unavailable', null, $intent);
 check('the class and code are logged', strpos($errorLog, 'RuntimeException (code 42)') !== false);
 check('the message is not logged', strpos($errorLog, 'secret detail') === false);
-pin('the order stays pending', Order::STATUS_PENDING, Orders::find($broken->getId())->getStatus());
+pin('the order stays pending', Order::STATUS_PENDING, OrderStore::find($broken->getId())->getStatus());
 
 harness_section('Orders: setMeta');
 
-$metaOrder = Orders::create($userId, 'refundy', 1_000_000, 'USD', 1, array('session' => 'cs_1'));
-$metaOf    = static fn (): array => Orders::find($metaOrder->getId())->getMeta();
-check('a value is set', Orders::setMeta($metaOrder->getId(), 'stripe_livemode', false));
+$metaOrder = OrderStore::create($userId, 'refundy', 1_000_000, 'USD', 1, array('session' => 'cs_1'));
+$metaOf    = static fn (): array => OrderStore::find($metaOrder->getId())->getMeta();
+check('a value is set', OrderStore::setMeta($metaOrder->getId(), 'stripe_livemode', false));
 pin('it reads back typed, other keys kept', array('session' => 'cs_1', 'stripe_livemode' => false), $metaOf());
-check('a value is overwritten', Orders::setMeta($metaOrder->getId(), 'stripe_livemode', true));
-pin('the new value reads back', true, Orders::find($metaOrder->getId())->meta('stripe_livemode'));
-check('setting the same value again reports success', Orders::setMeta($metaOrder->getId(), 'stripe_livemode', true));
-check('null removes the key', Orders::setMeta($metaOrder->getId(), 'stripe_livemode', null));
+check('a value is overwritten', OrderStore::setMeta($metaOrder->getId(), 'stripe_livemode', true));
+pin('the new value reads back', true, OrderStore::find($metaOrder->getId())->meta('stripe_livemode'));
+check('setting the same value again reports success', OrderStore::setMeta($metaOrder->getId(), 'stripe_livemode', true));
+check('null removes the key', OrderStore::setMeta($metaOrder->getId(), 'stripe_livemode', null));
 pin('only the other key is left', array('session' => 'cs_1'), $metaOf());
-check('a reserved key is refused', !Orders::setMeta($metaOrder->getId(), Orders::REFUND_REQUESTED, 'x'));
-check('any key starting with _ is refused', !Orders::setMeta($metaOrder->getId(), '_mine', 1));
-check('an upper-case key is refused', !Orders::setMeta($metaOrder->getId(), 'Mode', 1));
-check('a key over 64 characters is refused', !Orders::setMeta($metaOrder->getId(), str_repeat('k', 65), 1));
-check('an array value is refused', !Orders::setMeta($metaOrder->getId(), 'list', array(1)));
-check('a string over 255 characters is refused', !Orders::setMeta($metaOrder->getId(), 'long', str_repeat('x', 256)));
-check('a missing order is refused', !Orders::setMeta(999999, 'k', 1));
+check('a reserved key is refused', !OrderStore::setMeta($metaOrder->getId(), OrderStore::REFUND_REQUESTED, 'x'));
+check('any key starting with _ is refused', !OrderStore::setMeta($metaOrder->getId(), '_mine', 1));
+check('an upper-case key is refused', !OrderStore::setMeta($metaOrder->getId(), 'Mode', 1));
+check('a key over 64 characters is refused', !OrderStore::setMeta($metaOrder->getId(), str_repeat('k', 65), 1));
+check('an array value is refused', !OrderStore::setMeta($metaOrder->getId(), 'list', array(1)));
+check('a string over 255 characters is refused', !OrderStore::setMeta($metaOrder->getId(), 'long', str_repeat('x', 256)));
+check('a missing order is refused', !OrderStore::setMeta(999999, 'k', 1));
 pin('nothing refused was written', array('session' => 'cs_1'), $metaOf());
 
-$markedOrder = Orders::create($userId, 'refundy', 1_000_000, 'USD', 1);
+$markedOrder = OrderStore::create($userId, 'refundy', 1_000_000, 'USD', 1);
 Billing::markPaid($markedOrder, 'ext_marked');
-Orders::markRefundRequested($markedOrder->getId());
-$mark = Orders::find($markedOrder->getId())->meta(Orders::REFUND_REQUESTED);
-check('a plugin key can sit beside the sent mark', Orders::setMeta($markedOrder->getId(), 'stripe_livemode', false));
-pin('the sent mark is untouched', $mark, Orders::find($markedOrder->getId())->meta(Orders::REFUND_REQUESTED));
-check('removing a plugin key keeps the sent mark', Orders::setMeta($markedOrder->getId(), 'stripe_livemode', null)
-    && Orders::find($markedOrder->getId())->meta(Orders::REFUND_REQUESTED) === $mark);
+OrderStore::markRefundRequested($markedOrder->getId());
+$mark = OrderStore::find($markedOrder->getId())->meta(OrderStore::REFUND_REQUESTED);
+check('a plugin key can sit beside the sent mark', OrderStore::setMeta($markedOrder->getId(), 'stripe_livemode', false));
+pin('the sent mark is untouched', $mark, OrderStore::find($markedOrder->getId())->meta(OrderStore::REFUND_REQUESTED));
+check('removing a plugin key keeps the sent mark', OrderStore::setMeta($markedOrder->getId(), 'stripe_livemode', null)
+    && OrderStore::find($markedOrder->getId())->meta(OrderStore::REFUND_REQUESTED) === $mark);
 
 harness_section('Billing: dashboardUrl');
 
-$linked = Orders::create($userId, 'refundy', 1_000_000, 'USD', 1);
+$linked = OrderStore::create($userId, 'refundy', 1_000_000, 'USD', 1);
 pin('no link when the gateway gives none', null, Billing::dashboardUrl($linked));
 $linkTo = static function (?string $url) use ($refundy, $linked): ?string {
     $refundy->onDashboard = static fn (Order $o): ?string => $url;
@@ -761,10 +762,10 @@ pin('a throwing gateway gives no link', null, $link);
 check('the class and code are logged', strpos($errorLog, 'RuntimeException (code 7)') !== false);
 check('the message is not logged', strpos($errorLog, 'secret detail') === false);
 $refundy->onDashboard = null;
-pin('a gateway without the interface gives no link', null, Billing::dashboardUrl(Orders::create($userId, 'fake', 1, 'USD', 1)));
+pin('a gateway without the interface gives no link', null, Billing::dashboardUrl(OrderStore::create($userId, 'fake', 1, 'USD', 1)));
 
 /* ----------------------------------------------------------------------------
- * Reopening a failed order. Orders::settle()/Billing::markPaid() are guarded on
+ * Reopening a failed order. OrderStore::settle()/Billing::markPaid() are guarded on
  * pending by default -- a gateway retrying its own callback must never revive a
  * failed order by itself. The admin "mark paid" escape hatch is the one caller
  * allowed to widen that guard, because a person is confirming a real retried
@@ -772,32 +773,32 @@ pin('a gateway without the interface gives no link', null, Billing::dashboardUrl
  * ------------------------------------------------------------------------- */
 harness_section('Orders/Billing: a failed order can be reopened, but only by the admin path');
 
-$failedOrder = Orders::create($userId, 'fake', 1_000_000, 'USD', 15);
-check('an order can be moved to failed', Orders::settle($failedOrder->getId(), Order::STATUS_FAILED, 'ext_6'));
-pin('the order reads back as failed', Order::STATUS_FAILED, Orders::find($failedOrder->getId())->getStatus());
+$failedOrder = OrderStore::create($userId, 'fake', 1_000_000, 'USD', 15);
+check('an order can be moved to failed', OrderStore::settle($failedOrder->getId(), Order::STATUS_FAILED, 'ext_6'));
+pin('the order reads back as failed', Order::STATUS_FAILED, OrderStore::find($failedOrder->getId())->getStatus());
 
 $balanceBeforeReopen = Wallet::balance($userId);
 check(
     'the default (gateway-callback) guard refuses to settle a failed order',
-    Billing::markPaid(Orders::find($failedOrder->getId()), 'ext_6') === false
+    Billing::markPaid(OrderStore::find($failedOrder->getId()), 'ext_6') === false
 );
 pin('a refused reopen mints nothing', $balanceBeforeReopen, Wallet::balance($userId));
 pin(
     'a refused reopen leaves the order failed',
     Order::STATUS_FAILED,
-    Orders::find($failedOrder->getId())->getStatus()
+    OrderStore::find($failedOrder->getId())->getStatus()
 );
 
 check(
     'the admin-only path (allowFailed) settles a failed order',
-    Billing::markPaid(Orders::find($failedOrder->getId()), 'ext_6', true) === true
+    Billing::markPaid(OrderStore::find($failedOrder->getId()), 'ext_6', true) === true
 );
 pin('reopening a failed order mints its credits', $balanceBeforeReopen + 15, Wallet::balance($userId));
-pin('the reopened order reads back as paid', Order::STATUS_PAID, Orders::find($failedOrder->getId())->getStatus());
+pin('the reopened order reads back as paid', Order::STATUS_PAID, OrderStore::find($failedOrder->getId())->getStatus());
 
 check(
     'reopening an order that is already paid reports no change even with allowFailed',
-    Billing::markPaid(Orders::find($failedOrder->getId()), 'ext_6', true) === false
+    Billing::markPaid(OrderStore::find($failedOrder->getId()), 'ext_6', true) === false
 );
 pin('a repeated reopen mints nothing further', $balanceBeforeReopen + 15, Wallet::balance($userId));
 
@@ -1003,11 +1004,11 @@ $expirationOf = static function (int $uid, string $feature) use ($admin): ?strin
 
 $entUserId = seed_user($admin, 'entitled', 'entitled@example.test');
 
-check('a fresh quantity grant creates a row', Entitlements::grant($entUserId, 'test.qty', 5, null));
-pin('the fresh grant reads back as its own quantity', 5, Entitlements::quantity($entUserId, 'test.qty'));
+check('a fresh quantity grant creates a row', EntitlementStore::grant($entUserId, 'test.qty', 5, null));
+pin('the fresh grant reads back as its own quantity', 5, EntitlementStore::quantity($entUserId, 'test.qty'));
 
-check('granting the same feature again succeeds', Entitlements::grant($entUserId, 'test.qty', 3, null));
-pin('a quantity grant merges into the existing row', 8, Entitlements::quantity($entUserId, 'test.qty'));
+check('granting the same feature again succeeds', EntitlementStore::grant($entUserId, 'test.qty', 3, null));
+pin('a quantity grant merges into the existing row', 8, EntitlementStore::quantity($entUserId, 'test.qty'));
 pin(
     'the merge writes exactly one row, not a second -- the unique key on (user, feature) enforces it',
     1,
@@ -1025,23 +1026,23 @@ $admin->query(
 );
 check(
     'a quantity grant onto an unlimited row still reports success',
-    Entitlements::grant($unlimitedGrantUserId, 'test.qty.unlimited', 5, null)
+    EntitlementStore::grant($unlimitedGrantUserId, 'test.qty.unlimited', 5, null)
 );
 pin(
     'a quantity grant onto an unlimited row leaves it unlimited',
     -1,
-    Entitlements::quantity($unlimitedGrantUserId, 'test.qty.unlimited')
+    EntitlementStore::quantity($unlimitedGrantUserId, 'test.qty.unlimited')
 );
 pin('the grant onto the unlimited row still writes exactly one row', 1, $entCount($unlimitedGrantUserId, 'test.qty.unlimited'));
 
 /* A duration grant while time remains has to compound onto that remaining time,
  * not discard it -- otherwise buying 30 more days while 10 remain would be a
  * downgrade to 30 instead of the 40 the buyer paid for. */
-check('a fresh duration grant creates a row', Entitlements::grant($entUserId, 'test.dur', null, 10));
+check('a fresh duration grant creates a row', EntitlementStore::grant($entUserId, 'test.dur', null, 10));
 $firstExpiration = $expirationOf($entUserId, 'test.dur');
 check('the fresh grant has an expiration', $firstExpiration !== null);
 
-check('extending the same feature again succeeds', Entitlements::grant($entUserId, 'test.dur', null, 5));
+check('extending the same feature again succeeds', EntitlementStore::grant($entUserId, 'test.dur', null, 5));
 pin(
     'a duration grant extends from the current expiry, not from now',
     date('Y-m-d H:i:s', strtotime($firstExpiration) + 5 * 86400),
@@ -1050,8 +1051,8 @@ pin(
 pin('the duration extension still writes exactly one row, not a second', 1, $entCount($entUserId, 'test.dur'));
 
 /* ----------------------------------------------------------------------------
- * Calendar-correct day arithmetic. Entitlements::addDays() and
- * ItemUpgrades::nextExpiration() must add calendar days, not days * 86400 raw
+ * Calendar-correct day arithmetic. EntitlementStore::addDays() and
+ * ItemUpgradeStore::nextExpiration() must add calendar days, not days * 86400 raw
  * seconds, or a purchase made near a DST boundary expires an hour early or
  * late. Set explicitly rather than trusting the host's zone, which may not
  * observe DST at all -- the property below only shows up in one that does.
@@ -1066,22 +1067,22 @@ date_default_timezone_set('America/New_York');
 // local 30 days later. days * 86400 instead lands on 11:00 -- the 30*86400
 // raw seconds span one hour less of wall-clock offset than 30 calendar days
 // actually cover once the clocks spring forward partway through.
-$addDays = new ReflectionMethod(Entitlements::class, 'addDays');
+$addDays = new ReflectionMethod(EntitlementStore::class, 'addDays');
 if (PHP_VERSION_ID < 80100) {
     $addDays->setAccessible(true);
 }
 pin(
-    'Entitlements::addDays() preserves wall-clock time across a DST boundary',
+    'EntitlementStore::addDays() preserves wall-clock time across a DST boundary',
     '2024-03-10 10:00:00',
     $addDays->invoke(null, '2024-02-09 10:00:00', 30)
 );
 
-$nextExpiration = new ReflectionMethod(ItemUpgrades::class, 'nextExpiration');
+$nextExpiration = new ReflectionMethod(ItemUpgradeStore::class, 'nextExpiration');
 if (PHP_VERSION_ID < 80100) {
     $nextExpiration->setAccessible(true);
 }
 pin(
-    'ItemUpgrades::nextExpiration() days offset preserves wall-clock time across the same boundary',
+    'ItemUpgradeStore::nextExpiration() days offset preserves wall-clock time across the same boundary',
     '2024-03-10 10:00:00',
     $nextExpiration->invoke(null, null, 30, null, '2024-02-09 10:00:00')
 );
@@ -1091,7 +1092,7 @@ pin(
 // across the same boundary -- 24 hours after 2024-03-09 10:00 is 11:00 local
 // the next day, once the clocks have sprung forward in between.
 pin(
-    'ItemUpgrades::nextExpiration() hours offset stays literal elapsed seconds across the same boundary',
+    'ItemUpgradeStore::nextExpiration() hours offset stays literal elapsed seconds across the same boundary',
     '2024-03-10 11:00:00',
     $nextExpiration->invoke(null, null, null, 24, '2024-03-09 10:00:00')
 );
@@ -1105,10 +1106,10 @@ date_default_timezone_set($previousTz);
  * ------------------------------------------------------------------------- */
 harness_section('Entitlements: consume');
 
-Entitlements::grant($entUserId, 'test.single', 1, null);
-check('consuming the only unit succeeds', Entitlements::consume($entUserId, 'test.single', 1) === true);
-check('consuming again with nothing left fails', Entitlements::consume($entUserId, 'test.single', 1) === false);
-pin('the exhausted entitlement reads back as zero', 0, Entitlements::quantity($entUserId, 'test.single'));
+EntitlementStore::grant($entUserId, 'test.single', 1, null);
+check('consuming the only unit succeeds', EntitlementStore::consume($entUserId, 'test.single', 1) === true);
+check('consuming again with nothing left fails', EntitlementStore::consume($entUserId, 'test.single', 1) === false);
+pin('the exhausted entitlement reads back as zero', 0, EntitlementStore::quantity($entUserId, 'test.single'));
 
 $admin->query(
     'INSERT INTO ' . DB_TABLE_PREFIX . 't_user_entitlement'
@@ -1118,7 +1119,7 @@ $admin->query(
 );
 check(
     'consuming an expired entitlement fails despite a positive quantity',
-    Entitlements::consume($entUserId, 'test.expired', 1) === false
+    EntitlementStore::consume($entUserId, 'test.expired', 1) === false
 );
 
 /* ----------------------------------------------------------------------------
@@ -1138,15 +1139,15 @@ $overrideUserId = seed_user($admin, 'canpublishoverride', 'canpublishoverride@ex
 seed_item($admin, $categoryId, $overrideUserId, 'Fills the one free slot');
 check(
     'over quota with nothing bought, publishing is refused with no override',
-    Entitlements::canPublish($overrideUserId) === false
+    EntitlementStore::canPublish($overrideUserId) === false
 );
 check(
     'the same user reads as allowed once withinFreeQuota is passed in as true',
-    Entitlements::canPublish($overrideUserId, array(), true) === true
+    EntitlementStore::canPublish($overrideUserId, array(), true) === true
 );
 check(
     'passing the computed false back in agrees with the no-override refusal',
-    Entitlements::canPublish($overrideUserId, array(), false) === false
+    EntitlementStore::canPublish($overrideUserId, array(), false) === false
 );
 
 osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
@@ -1168,7 +1169,7 @@ FeatureRegistry::instance()->register('test.spend.costly', array(
     'apply'    => static function (int $userId) {
         // Only reachable if the debit went through despite insufficient funds --
         // its own grant must never show up either.
-        Entitlements::grant($userId, 'test.spend.costly.granted', 1, null);
+        EntitlementStore::grant($userId, 'test.spend.costly.granted', 1, null);
 
         return true;
     },
@@ -1183,7 +1184,7 @@ pin('a failed spend leaves the balance untouched', $balanceBefore, Wallet::balan
 pin(
     'a failed spend never reaches the feature\'s effect',
     0,
-    Entitlements::quantity($spendUserId, 'test.spend.costly.granted')
+    EntitlementStore::quantity($spendUserId, 'test.spend.costly.granted')
 );
 
 Wallet::credit($spendUserId, 100, Wallet::REASON_GRANT);
@@ -1213,15 +1214,15 @@ pin('a rolled-back spend writes no ledger row', $ledgerBefore, $ledgerCount($spe
  * ------------------------------------------------------------------------- */
 harness_section('Packages: price reaches the order unchanged');
 
-$packageId = Packages::create(array(
+$packageId = PackageStore::create(array(
     's_name'     => 'Test bundle',
     'i_amount'   => 5_000_000,
     's_currency' => 'USD',
     'i_credits'  => 250,
 ));
-$package = Packages::find($packageId);
+$package = PackageStore::find($packageId);
 
-$packageOrder = Orders::create(
+$packageOrder = OrderStore::create(
     $spendUserId,
     'fake',
     (int) $package['i_amount'],
@@ -1260,12 +1261,12 @@ $upgradeExpiration = static function (int $itemId, string $upgrade) use ($admin)
 
 $grantItemId = seed_item($admin, $categoryId, $userId, 'Grant target');
 
-check('a fresh grant creates a row', ItemUpgrades::grant($grantItemId, 'test.upgrade', 10, null));
+check('a fresh grant creates a row', ItemUpgradeStore::grant($grantItemId, 'test.upgrade', 10, null));
 pin('the fresh grant writes exactly one row', 1, $upgradeItemCount($grantItemId, 'test.upgrade'));
 $firstUpgradeExpiration = $upgradeExpiration($grantItemId, 'test.upgrade');
 check('the fresh grant has an expiration', $firstUpgradeExpiration !== null);
 
-check('granting the same upgrade again succeeds', ItemUpgrades::grant($grantItemId, 'test.upgrade', 5, null));
+check('granting the same upgrade again succeeds', ItemUpgradeStore::grant($grantItemId, 'test.upgrade', 5, null));
 pin('a second grant still writes exactly one row, not a second', 1, $upgradeItemCount($grantItemId, 'test.upgrade'));
 pin(
     'the extension compounds onto the current expiry, not onto now',
@@ -1281,7 +1282,7 @@ harness_section('ItemUpgrades: has()/active() ignore a lapsed row');
 
 $readItemId = seed_item($admin, $categoryId, $userId, 'Read target');
 
-ItemUpgrades::grant($readItemId, 'test.live', 10, null);
+ItemUpgradeStore::grant($readItemId, 'test.live', 10, null);
 $admin->query(
     'INSERT INTO ' . DB_TABLE_PREFIX . 't_item_upgrade'
     . ' (fk_i_item_id, s_upgrade, dt_expiration, dt_date)'
@@ -1294,11 +1295,11 @@ $admin->query(
     . ' VALUES (' . $readItemId . ", 'test.permanent', NULL, NOW())"
 );
 
-check('a live row is held', ItemUpgrades::has($readItemId, 'test.live'));
-check('a permanent row is held', ItemUpgrades::has($readItemId, 'test.permanent'));
-check('a lapsed row is not held', ItemUpgrades::has($readItemId, 'test.lapsed') === false);
+check('a live row is held', ItemUpgradeStore::has($readItemId, 'test.live'));
+check('a permanent row is held', ItemUpgradeStore::has($readItemId, 'test.permanent'));
+check('a lapsed row is not held', ItemUpgradeStore::has($readItemId, 'test.lapsed') === false);
 
-$active = ItemUpgrades::active($readItemId);
+$active = ItemUpgradeStore::active($readItemId);
 check('active() includes the live upgrade', in_array('test.live', $active, true));
 check('active() includes the permanent upgrade', in_array('test.permanent', $active, true));
 check('active() excludes the lapsed upgrade', !in_array('test.lapsed', $active, true));
@@ -1306,9 +1307,9 @@ check('active() excludes the lapsed upgrade', !in_array('test.lapsed', $active, 
 pin(
     'expiresAt() returns the raw value even for a lapsed row',
     $upgradeExpiration($readItemId, 'test.lapsed'),
-    ItemUpgrades::expiresAt($readItemId, 'test.lapsed')
+    ItemUpgradeStore::expiresAt($readItemId, 'test.lapsed')
 );
-pin('expiresAt() reads null for an upgrade the item never had', null, ItemUpgrades::expiresAt($readItemId, 'test.never'));
+pin('expiresAt() reads null for an upgrade the item never had', null, ItemUpgradeStore::expiresAt($readItemId, 'test.never'));
 
 /* ----------------------------------------------------------------------------
  * ItemUpgrades: purge. Only a lapsed row is fair game -- a live one and a
@@ -1316,12 +1317,12 @@ pin('expiresAt() reads null for an upgrade the item never had', null, ItemUpgrad
  * ------------------------------------------------------------------------- */
 harness_section('ItemUpgrades: purge');
 
-$purged = ItemUpgrades::purge();
+$purged = ItemUpgradeStore::purge();
 check('purge removes at least the one lapsed row seeded above', $purged >= 1);
 pin('the lapsed row is gone', 0, $upgradeItemCount($readItemId, 'test.lapsed'));
 pin('the live row survives the sweep', 1, $upgradeItemCount($readItemId, 'test.live'));
 pin('the permanent row survives the sweep', 1, $upgradeItemCount($readItemId, 'test.permanent'));
-pin('a second purge finds nothing left to remove', 0, ItemUpgrades::purge());
+pin('a second purge finds nothing left to remove', 0, ItemUpgradeStore::purge());
 
 /* ----------------------------------------------------------------------------
  * ItemUpgrades: prime() and the memoized single-item fallback. The property
@@ -1337,14 +1338,14 @@ $primeItemA  = seed_item($admin, $categoryId, $primeUserId, 'Primed A');
 $primeItemB  = seed_item($admin, $categoryId, $primeUserId, 'Primed B');
 $primeItemC  = seed_item($admin, $categoryId, $primeUserId, 'Never primed');
 
-ItemUpgrades::grant($primeItemA, 'test.prime', 10, null);
-ItemUpgrades::grant($primeItemB, 'test.prime', 10, null);
-ItemUpgrades::grant($primeItemC, 'test.prime', 10, null);
+ItemUpgradeStore::grant($primeItemA, 'test.prime', 10, null);
+ItemUpgradeStore::grant($primeItemB, 'test.prime', 10, null);
+ItemUpgradeStore::grant($primeItemC, 'test.prime', 10, null);
 
-ItemUpgrades::prime(array($primeItemA, $primeItemB));
+ItemUpgradeStore::prime(array($primeItemA, $primeItemB));
 
-check('a primed item with a row reports it held', ItemUpgrades::has($primeItemA, 'test.prime'));
-check('a second primed item with a row reports it held', ItemUpgrades::has($primeItemB, 'test.prime'));
+check('a primed item with a row reports it held', ItemUpgradeStore::has($primeItemA, 'test.prime'));
+check('a second primed item with a row reports it held', ItemUpgradeStore::has($primeItemB, 'test.prime'));
 
 $admin->query(
     'DELETE FROM ' . DB_TABLE_PREFIX . "t_item_upgrade WHERE s_upgrade = 'test.prime'"
@@ -1353,21 +1354,21 @@ $admin->query(
 
 check(
     'a primed item still reads its upgrade after the row is deleted underneath it -- it read the cache, not a fresh query',
-    ItemUpgrades::has($primeItemA, 'test.prime') === true
+    ItemUpgradeStore::has($primeItemA, 'test.prime') === true
 );
-check('the second primed item is unaffected too', ItemUpgrades::has($primeItemB, 'test.prime') === true);
+check('the second primed item is unaffected too', ItemUpgradeStore::has($primeItemB, 'test.prime') === true);
 check(
     'an item never primed reflects the delete immediately -- its read was not cached',
-    ItemUpgrades::has($primeItemC, 'test.prime') === false
+    ItemUpgradeStore::has($primeItemC, 'test.prime') === false
 );
 
 /* The single-item fallback (an item nothing ever primed) has to memoize its own
  * first read too, so a second helper called on the same item right after the
  * first costs nothing further -- proved the same way. */
 $fallbackItemId = seed_item($admin, $categoryId, $primeUserId, 'Fallback memoized');
-ItemUpgrades::grant($fallbackItemId, 'test.fallback', 10, null);
+ItemUpgradeStore::grant($fallbackItemId, 'test.fallback', 10, null);
 
-check('a fresh (unprimed) read finds the row', ItemUpgrades::has($fallbackItemId, 'test.fallback'));
+check('a fresh (unprimed) read finds the row', ItemUpgradeStore::has($fallbackItemId, 'test.fallback'));
 
 $admin->query(
     'DELETE FROM ' . DB_TABLE_PREFIX . "t_item_upgrade WHERE s_upgrade = 'test.fallback' AND fk_i_item_id = "
@@ -1376,14 +1377,14 @@ $admin->query(
 
 check(
     'a second call for the same never-primed item is memoized -- it still reads held, not the row just deleted',
-    ItemUpgrades::has($fallbackItemId, 'test.fallback') === true
+    ItemUpgradeStore::has($fallbackItemId, 'test.fallback') === true
 );
 
 /* prime() has to populate the cache for every id given in one call, including
  * an id with no rows at all -- "primed, holds nothing" must not fall through
  * to a fresh query just because there was nothing to remember. */
 $emptyItemId = seed_item($admin, $categoryId, $primeUserId, 'No upgrades at all');
-ItemUpgrades::prime(array($emptyItemId));
+ItemUpgradeStore::prime(array($emptyItemId));
 $admin->query(
     'INSERT INTO ' . DB_TABLE_PREFIX . 't_item_upgrade'
     . ' (fk_i_item_id, s_upgrade, dt_expiration, dt_date)'
@@ -1391,19 +1392,19 @@ $admin->query(
 );
 check(
     'an item primed with no rows stays "no upgrades" even if a row appears afterward -- it read the cache, not the table',
-    ItemUpgrades::active($emptyItemId) === array()
+    ItemUpgradeStore::active($emptyItemId) === array()
 );
 
 /* A write has to invalidate the cache entry it affects, or a purchase made
  * right after a primed read would be invisible to the very next read in the
  * same request -- the cache must never paper over the seller's own purchase. */
 $writeInvalidatesId = seed_item($admin, $categoryId, $primeUserId, 'Write invalidates cache');
-ItemUpgrades::prime(array($writeInvalidatesId));
-check('primed with nothing before the grant', ItemUpgrades::has($writeInvalidatesId, 'test.invalidate') === false);
-ItemUpgrades::grant($writeInvalidatesId, 'test.invalidate', 10, null);
+ItemUpgradeStore::prime(array($writeInvalidatesId));
+check('primed with nothing before the grant', ItemUpgradeStore::has($writeInvalidatesId, 'test.invalidate') === false);
+ItemUpgradeStore::grant($writeInvalidatesId, 'test.invalidate', 10, null);
 check(
     'a grant right after a primed read is visible on the very next read, not stale',
-    ItemUpgrades::has($writeInvalidatesId, 'test.invalidate') === true
+    ItemUpgradeStore::has($writeInvalidatesId, 'test.invalidate') === true
 );
 
 /* ----------------------------------------------------------------------------
@@ -1415,8 +1416,8 @@ harness_section('osc_prime_item_upgrades(): rows or ids, billing on or off');
 
 $helperItemId  = seed_item($admin, $categoryId, $primeUserId, 'Helper primed by id');
 $helperItemId2 = seed_item($admin, $categoryId, $primeUserId, 'Helper primed by row');
-ItemUpgrades::grant($helperItemId, 'test.helper', 10, null);
-ItemUpgrades::grant($helperItemId2, 'test.helper', 10, null);
+ItemUpgradeStore::grant($helperItemId, 'test.helper', 10, null);
+ItemUpgradeStore::grant($helperItemId2, 'test.helper', 10, null);
 
 osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
 osc_reset_preferences();
@@ -1427,9 +1428,9 @@ $admin->query(
 );
 check(
     'osc_prime_item_upgrades() primes while billing is off too -- it read the cache, not the table',
-    ItemUpgrades::has($helperItemId, 'test.helper') === true
+    ItemUpgradeStore::has($helperItemId, 'test.helper') === true
 );
-ItemUpgrades::grant($helperItemId, 'test.helper', 10, null); // restore for the next check
+ItemUpgradeStore::grant($helperItemId, 'test.helper', 10, null); // restore for the next check
 
 osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');
 osc_reset_preferences();
@@ -1442,10 +1443,10 @@ $admin->query(
     'DELETE FROM ' . DB_TABLE_PREFIX . "t_item_upgrade WHERE s_upgrade = 'test.helper'"
     . ' AND fk_i_item_id IN (' . $helperItemId . ', ' . $helperItemId2 . ')'
 );
-check('a bare id in the array is primed', ItemUpgrades::has($helperItemId, 'test.helper') === true);
+check('a bare id in the array is primed', ItemUpgradeStore::has($helperItemId, 'test.helper') === true);
 check(
     'an item row (pk_i_id) in the same array is primed too',
-    ItemUpgrades::has($helperItemId2, 'test.helper') === true
+    ItemUpgradeStore::has($helperItemId2, 'test.helper') === true
 );
 
 osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
@@ -1524,7 +1525,7 @@ $captureWarnings = static function () use (&$chokeWarnings): void {
  * "count" yet, and flood the site the moment every one is approved at once.
  * Charging for the slot at creation, not at visibility, is what makes that
  * impossible. Expiry is the one thing that DOES free a slot for free, with no
- * delete and no sweep, because Entitlements::liveListings() simply stops
+ * delete and no sweep, because EntitlementStore::liveListings() simply stops
  * counting a row the instant its own expiry test says so.
  * ------------------------------------------------------------------------- */
 harness_section('Entitlements: slot quota -- occupancy, expiry, deletion');
@@ -1534,33 +1535,33 @@ osc_set_preference('billing_free_live_listings', '1', 'osclass', 'INTEGER');
 osc_reset_preferences();
 
 $slotUserId = seed_user($admin, 'slotuser', 'slotuser@example.test');
-pin('a fresh seller with no listings occupies zero slots', 0, Entitlements::liveListings($slotUserId));
-check('under the free slot, publishing is allowed', Entitlements::canPublish($slotUserId));
+pin('a fresh seller with no listings occupies zero slots', 0, EntitlementStore::liveListings($slotUserId));
+check('under the free slot, publishing is allowed', EntitlementStore::canPublish($slotUserId));
 
 $slotItemId = seed_item($admin, $categoryId, $slotUserId, 'Occupies the one free slot');
-pin('a published listing occupies one slot', 1, Entitlements::liveListings($slotUserId));
-check('the free slot is now taken, and nothing was bought', Entitlements::canPublish($slotUserId) === false);
+pin('a published listing occupies one slot', 1, EntitlementStore::liveListings($slotUserId));
+check('the free slot is now taken, and nothing was bought', EntitlementStore::canPublish($slotUserId) === false);
 
 Item::newInstance()->deleteByPrimaryKey($slotItemId);
-pin('deleting the listing frees its slot', 0, Entitlements::liveListings($slotUserId));
-check('the freed slot allows publishing again', Entitlements::canPublish($slotUserId));
+pin('deleting the listing frees its slot', 0, EntitlementStore::liveListings($slotUserId));
+check('the freed slot allows publishing again', EntitlementStore::canPublish($slotUserId));
 
 $expiringItemId = seed_item($admin, $categoryId, $slotUserId, 'Occupies the slot, then expires');
-pin('a second published listing occupies the slot again', 1, Entitlements::liveListings($slotUserId));
+pin('a second published listing occupies the slot again', 1, EntitlementStore::liveListings($slotUserId));
 
 $admin->query(
     'UPDATE ' . DB_TABLE_PREFIX . 't_item SET dt_expiration = DATE_SUB(NOW(), INTERVAL 1 DAY)'
     . ' WHERE pk_i_id = ' . $expiringItemId
 );
-pin('letting the listing expire frees its slot too, with no delete and no sweep', 0, Entitlements::liveListings($slotUserId));
-check('the expired listing\'s slot is available again', Entitlements::canPublish($slotUserId));
+pin('letting the listing expire frees its slot too, with no delete and no sweep', 0, EntitlementStore::liveListings($slotUserId));
+check('the expired listing\'s slot is available again', EntitlementStore::canPublish($slotUserId));
 
 $pendingItemId = seed_item($admin, $categoryId, $slotUserId, 'Pending moderation', 19.50, 0, 1);
-pin('a pending (not yet active) listing still occupies a slot', 1, Entitlements::liveListings($slotUserId));
+pin('a pending (not yet active) listing still occupies a slot', 1, EntitlementStore::liveListings($slotUserId));
 Item::newInstance()->deleteByPrimaryKey($pendingItemId);
 
 $disabledItemId = seed_item($admin, $categoryId, $slotUserId, 'Admin-disabled', 19.50, 1, 0);
-pin('an admin-disabled listing still occupies a slot', 1, Entitlements::liveListings($slotUserId));
+pin('an admin-disabled listing still occupies a slot', 1, EntitlementStore::liveListings($slotUserId));
 Item::newInstance()->deleteByPrimaryKey($disabledItemId);
 
 osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
@@ -1580,18 +1581,18 @@ osc_reset_preferences();
 
 $capacityUserId = seed_user($admin, 'slotcapacity', 'slotcapacity@example.test');
 seed_item($admin, $categoryId, $capacityUserId, 'Fills the one free slot');
-check('with the one free slot filled, publishing is refused', Entitlements::canPublish($capacityUserId) === false);
+check('with the one free slot filled, publishing is refused', EntitlementStore::canPublish($capacityUserId) === false);
 
-Entitlements::grant($capacityUserId, 'listing.slot', 2, null);
-pin('capacity() reads the bought entitlement back', 2, Entitlements::capacity($capacityUserId, 'listing.slot', 0));
+EntitlementStore::grant($capacityUserId, 'listing.slot', 2, null);
+pin('capacity() reads the bought entitlement back', 2, EntitlementStore::capacity($capacityUserId, 'listing.slot', 0));
 check(
     'a listing.slot entitlement (+2) raises the ceiling to 3, so publishing is allowed again',
-    Entitlements::canPublish($capacityUserId)
+    EntitlementStore::canPublish($capacityUserId)
 );
 
 seed_item($admin, $categoryId, $capacityUserId, 'Second, using the bought slot');
 seed_item($admin, $categoryId, $capacityUserId, 'Third, using the bought slot');
-check('three live listings exactly fill 1 free + 2 bought', Entitlements::canPublish($capacityUserId) === false);
+check('three live listings exactly fill 1 free + 2 bought', EntitlementStore::canPublish($capacityUserId) === false);
 
 // billing_free_live_listings is raised to 3 (rather than left at 1) specifically so
 // that naively folding capacity()'s -1 into the arithmetic sum (3 + -1 = 2, a real,
@@ -1600,15 +1601,15 @@ check('three live listings exactly fill 1 free + 2 bought', Entitlements::canPub
 // mask the bug by coincidence, proving nothing.
 $unlimitedSlotUserId = seed_user($admin, 'slotunlimited', 'slotunlimited@example.test');
 osc_set_preference('billing_free_live_listings', '3', 'osclass', 'INTEGER');
-Entitlements::grant($unlimitedSlotUserId, 'listing.slot', null, null);
-pin('capacity() reads an unlimited listing.slot entitlement as -1', -1, Entitlements::capacity($unlimitedSlotUserId, 'listing.slot', 0));
+EntitlementStore::grant($unlimitedSlotUserId, 'listing.slot', null, null);
+pin('capacity() reads an unlimited listing.slot entitlement as -1', -1, EntitlementStore::capacity($unlimitedSlotUserId, 'listing.slot', 0));
 seed_item($admin, $categoryId, $unlimitedSlotUserId, 'First of many, unlimited slots');
 seed_item($admin, $categoryId, $unlimitedSlotUserId, 'Second of many, unlimited slots');
 seed_item($admin, $categoryId, $unlimitedSlotUserId, 'Third of many, unlimited slots');
 check(
     'an unlimited (-1) listing.slot entitlement means unlimited, not "less than everything"'
     . ' (3 free + unlimited must allow a 4th, not stop at 3 + (-1) = 2)',
-    Entitlements::canPublish($unlimitedSlotUserId)
+    EntitlementStore::canPublish($unlimitedSlotUserId)
 );
 
 osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
@@ -1646,7 +1647,7 @@ check('still allowed to publish', osc_user_can_publish($quotaUserId));
 seed_item($admin, $categoryId, $quotaUserId, 'Quota reader, second');
 pin('at the ceiling -> 0 remaining', 0, osc_user_listings_remaining($quotaUserId));
 check('...and publishing is refused, the same answer the post route enforces', osc_user_can_publish($quotaUserId) === false);
-check('...which is exactly what the gate itself says', Entitlements::canPublish($quotaUserId) === false);
+check('...which is exactly what the gate itself says', EntitlementStore::canPublish($quotaUserId) === false);
 
 /* An unset cap is unlimited, not zero -- the reading an install that never touched
    billing must get. */
@@ -1691,7 +1692,7 @@ osc_set_preference('billing_free_live_listings', '5', 'osclass', 'INTEGER');
 osc_reset_preferences();
 
 $noConsumeUser = seed_user($admin, 'noconsume', 'noconsume@example.test');
-Entitlements::grant($noConsumeUser, 'listing.slot', 3, null);
+EntitlementStore::grant($noConsumeUser, 'listing.slot', 3, null);
 
 $captureWarnings();
 $noConsumeAction       = new ItemActions(false);
@@ -1701,7 +1702,7 @@ restore_error_handler();
 $noConsumeWarnings = $chokeWarnings;
 
 check('the post succeeds', $noConsumeResult === 2);
-pin('the listing.slot capacity entitlement is untouched by publishing', 3, Entitlements::capacity($noConsumeUser, 'listing.slot', 0));
+pin('the listing.slot capacity entitlement is untouched by publishing', 3, EntitlementStore::capacity($noConsumeUser, 'listing.slot', 0));
 pin('no warning fired -- there is no consume() call in the publish path to fail', array(), $noConsumeWarnings);
 
 osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
@@ -1894,7 +1895,7 @@ check(
 );
 check('bump moves dt_pub_date forward', $pubDateOf($bumpItemId) > $pubDateBeforeBump);
 pin('bump debits its price', $balanceBeforeBump - 5, Wallet::balance($bumpUserId));
-check('the bump leaves a live cooldown row', ItemUpgrades::has($bumpItemId, 'item.bump'));
+check('the bump leaves a live cooldown row', ItemUpgradeStore::has($bumpItemId, 'item.bump'));
 pin('a successful bump fires item_bumped exactly once', array($bumpItemId), $bumpHookFired);
 pin(
     'item_bumped fired with no transaction open -- after commit, not from inside apply()',
@@ -1906,7 +1907,7 @@ pin(
 // itself, which has no opinion on cooldowns. upgradePost() cannot be driven directly
 // (osc_csrf_check()/redirectTo() would end the test process), so this reaches its
 // pure, static decision logic through reflection, the same way the DST pins above
-// reach Entitlements::addDays() and ItemUpgrades::nextExpiration(). item.bump
+// reach EntitlementStore::addDays() and ItemUpgradeStore::nextExpiration(). item.bump
 // consumes a quantity, not a duration, so a live cooldown row must still refuse a
 // repurchase outright rather than extend it -- extending would let a seller re-bump
 // on demand and defeat the cooldown's entire point.
@@ -1939,7 +1940,7 @@ $admin->query(
     'UPDATE ' . DB_TABLE_PREFIX . 't_item_upgrade SET dt_expiration = \''
     . date('Y-m-d H:i:s', time() - 60) . "' WHERE fk_i_item_id = " . $lapsedBumpItemId . " AND s_upgrade = 'item.bump'"
 );
-check('the cooldown lifts once the row lapses', ItemUpgrades::has($lapsedBumpItemId, 'item.bump') === false);
+check('the cooldown lifts once the row lapses', ItemUpgradeStore::has($lapsedBumpItemId, 'item.bump') === false);
 check(
     'once the cooldown has lapsed, decideUpgrade() proceeds with a fresh bump rather than refusing',
     $decideUpgrade->invoke(null, 'item.bump', FeatureRegistry::instance()->get('item.bump'), array('pk_i_id' => $lapsedBumpItemId))
@@ -1989,7 +1990,7 @@ osc_set_preference('billing_bump_credits', '0', 'osclass', 'INTEGER');
 osc_set_preference('billing_free_live_listings', '3', 'osclass', 'INTEGER');
 osc_reset_preferences();
 osc_billing_bump_paused_reset();
-check('at the limit (3 of 3) a free bump is allowed', Entitlements::withinFreeCeiling($overUser) && !osc_billing_bump_paused($overUser));
+check('at the limit (3 of 3) a free bump is allowed', EntitlementStore::withinFreeCeiling($overUser) && !osc_billing_bump_paused($overUser));
 check('and offered', osc_item_can_bump($overItem(0)) && in_array('item.bump', $offerIds($overItem(0)), true));
 check('and the spend goes through', $freeBump($overUser, $overItems[0]));
 
@@ -2006,7 +2007,7 @@ pin('and the listing does not move', $pubBefore, $pubDateOf($overItems[1]));
 check('the seller is told why', strpos(osc_billing_bump_paused_message($overUser), '3') !== false
     && strpos(osc_billing_bump_paused_message($overUser), '2') !== false);
 
-Entitlements::grant($overUser, 'listing.slot', 1, null);
+EntitlementStore::grant($overUser, 'listing.slot', 1, null);
 osc_billing_bump_paused_reset();
 check('a bought listing slot raises the limit, so free bumps come back', !osc_billing_bump_paused($overUser)
     && osc_item_can_bump($overItem(1)));
@@ -2102,7 +2103,7 @@ $highlightFeature  = FeatureRegistry::instance()->get('item.highlight');
 $premiumFeature    = FeatureRegistry::instance()->get('listing.premium');
 
 $liveHighlightItem = seed_item($admin, $categoryId, $decideUser, 'Live highlight');
-ItemUpgrades::grant($liveHighlightItem, 'item.highlight', 10, null);
+ItemUpgradeStore::grant($liveHighlightItem, 'item.highlight', 10, null);
 check(
     'a live duration hold (item.highlight) is extended, not refused',
     $decideUpgrade->invoke(null, 'item.highlight', $highlightFeature, array('pk_i_id' => $liveHighlightItem))
@@ -2275,7 +2276,7 @@ $beforeFallback = time();
 FeatureRegistry::instance()->get('item.highlight')->apply($userId, array('itemId' => $fallbackItemId));
 $afterFallback = time();
 
-$highlightExpiresAt = ItemUpgrades::expiresAt($fallbackItemId, 'item.highlight');
+$highlightExpiresAt = ItemUpgradeStore::expiresAt($fallbackItemId, 'item.highlight');
 check('apply() called directly grants the highlight at all', $highlightExpiresAt !== null);
 $highlightExpiresTs = $highlightExpiresAt !== null ? strtotime($highlightExpiresAt) : 0;
 check(
@@ -2299,17 +2300,17 @@ harness_section('Entitlements: capacity()');
 
 $capUserId = seed_user($admin, 'capuser', 'capuser@example.test');
 
-pin('capacity with no entitlement reads the default', 7, Entitlements::capacity($capUserId, 'test.capacity', 7));
+pin('capacity with no entitlement reads the default', 7, EntitlementStore::capacity($capUserId, 'test.capacity', 7));
 
-Entitlements::grant($capUserId, 'test.capacity', 15, null);
-pin('capacity reads the granted quantity', 15, Entitlements::capacity($capUserId, 'test.capacity', 7));
+EntitlementStore::grant($capUserId, 'test.capacity', 15, null);
+pin('capacity reads the granted quantity', 15, EntitlementStore::capacity($capUserId, 'test.capacity', 7));
 
 $admin->query(
     'INSERT INTO ' . DB_TABLE_PREFIX . 't_user_entitlement'
     . ' (fk_i_user_id, s_feature, i_quantity, dt_expiration, s_source, dt_date)'
     . ' VALUES (' . $capUserId . ", 'test.capacity.unlimited', NULL, NULL, 'grant', NOW())"
 );
-pin('capacity reads -1 for an unlimited row', -1, Entitlements::capacity($capUserId, 'test.capacity.unlimited', 0));
+pin('capacity reads -1 for an unlimited row', -1, EntitlementStore::capacity($capUserId, 'test.capacity.unlimited', 0));
 
 $admin->query(
     'INSERT INTO ' . DB_TABLE_PREFIX . 't_user_entitlement'
@@ -2317,7 +2318,7 @@ $admin->query(
     . ' VALUES (' . $capUserId . ", 'test.capacity.lapsed', 99, '"
     . date('Y-m-d H:i:s', time() - 3600) . "', 'grant', NOW())"
 );
-pin('a lapsed row does not count toward capacity', 3, Entitlements::capacity($capUserId, 'test.capacity.lapsed', 3));
+pin('a lapsed row does not count toward capacity', 3, EntitlementStore::capacity($capUserId, 'test.capacity.lapsed', 3));
 
 FeatureRegistry::instance()->register('test.capacity.guarded', array(
     'label'    => 'Guarded capacity feature',
@@ -2326,26 +2327,26 @@ FeatureRegistry::instance()->register('test.capacity.guarded', array(
         return true;
     },
 ));
-Entitlements::grant($capUserId, 'test.capacity.guarded', 20, null);
+EntitlementStore::grant($capUserId, 'test.capacity.guarded', 20, null);
 check(
     'consume() refuses a feature the registry declares capacity',
-    Entitlements::consume($capUserId, 'test.capacity.guarded', 1) === false
+    EntitlementStore::consume($capUserId, 'test.capacity.guarded', 1) === false
 );
 pin(
     'the refused consume leaves the ceiling exactly as granted',
     20,
-    Entitlements::capacity($capUserId, 'test.capacity.guarded', 0)
+    EntitlementStore::capacity($capUserId, 'test.capacity.guarded', 0)
 );
 
 /* A capacity entitlement can only ever RAISE a limit, never lower one -- $default
  * is a floor, not merely what to return when there is no row at all. Without this,
  * a global cap of 20 plus a bought entitlement of 10 would leave the paying seller
  * with 10. */
-Entitlements::grant($capUserId, 'test.capacity.floor', 3, null);
+EntitlementStore::grant($capUserId, 'test.capacity.floor', 3, null);
 pin(
     'capacity() returns the global default when it is higher than the entitlement',
     10,
-    Entitlements::capacity($capUserId, 'test.capacity.floor', 10)
+    EntitlementStore::capacity($capUserId, 'test.capacity.floor', 10)
 );
 
 /* ----------------------------------------------------------------------------
@@ -2387,7 +2388,7 @@ check(
  * as 0 = unlimited) is the case that actually catches a regression: a capacity
  * entitlement must not turn an unlimited global cap into a finite one. */
 pin('the global photo cap in this fixture is unlimited', 0, osc_max_images_per_item());
-Entitlements::grant($limitUserId, 'listing.photos', 25, null);
+EntitlementStore::grant($limitUserId, 'listing.photos', 25, null);
 pin(
     'an unlimited global photo cap stays unlimited for a seller holding a photos entitlement',
     0,
@@ -2403,18 +2404,18 @@ pin(
     4,
     osc_max_images_for_user($raisedCapUserId)
 );
-Entitlements::grant($raisedCapUserId, 'listing.photos', 20, null);
+EntitlementStore::grant($raisedCapUserId, 'listing.photos', 20, null);
 pin('a listing.photos entitlement raises a finite global cap', 20, osc_max_images_for_user($raisedCapUserId));
 
 /* ...but a smaller entitlement must never lower it. */
 $belowCapUserId = seed_user($admin, 'belowcap', 'belowcap@example.test');
-Entitlements::grant($belowCapUserId, 'listing.photos', 2, null);
+EntitlementStore::grant($belowCapUserId, 'listing.photos', 2, null);
 pin('a capacity entitlement below the global cap never lowers it', 4, osc_max_images_for_user($belowCapUserId));
 
 osc_set_preference('numImages@items', '0', 'osclass', 'INTEGER');
 osc_reset_preferences();
 
-Entitlements::grant($limitUserId, 'listing.no_wait', null, 30);
+EntitlementStore::grant($limitUserId, 'listing.no_wait', null, 30);
 pin('a listing.no_wait entitlement waives the wait entirely', 0, osc_items_wait_time_for_user($limitUserId));
 
 /* ----------------------------------------------------------------------------
@@ -2436,7 +2437,7 @@ $menuClasses = static function (): array {
 osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');
 osc_reset_preferences();
 
-Packages::update($packageId, array(
+PackageStore::update($packageId, array(
     's_name'     => 'Test bundle',
     'i_amount'   => 5_000_000,
     's_currency' => 'USD',
@@ -2445,7 +2446,7 @@ Packages::update($packageId, array(
 ));
 pin('nothing on sale -> neither link is offered', array(), $menuClasses());
 
-Packages::update($packageId, array(
+PackageStore::update($packageId, array(
     's_name'     => 'Test bundle',
     'i_amount'   => 5_000_000,
     's_currency' => 'USD',
@@ -2577,7 +2578,7 @@ $receiptJobs = static function (int $orderId) use ($admin): int {
 
 osc_set_preference(Receipts::PREF_EMAIL, '0', Billing::PREF_GROUP, 'BOOLEAN');
 osc_reset_preferences();
-$quiet = Orders::create($userId, 'refundy', 2_500_000, 'USD', 30);
+$quiet = OrderStore::create($userId, 'refundy', 2_500_000, 'USD', 30);
 Billing::markPaid($quiet, 'ext_quiet');
 pin('with receipts off nothing is sent', 0, count($mails));
 pin('and nothing is queued', 0, $receiptJobs($quiet->getId()));
@@ -2586,7 +2587,7 @@ osc_set_preference(Receipts::PREF_EMAIL, '', Billing::PREF_GROUP);
 osc_reset_preferences();
 check('receipts are on until an admin switches them off', Receipts::emailEnabled());
 
-$bought = Orders::create($userId, 'refundy', 2_500_000, 'USD', 30);
+$bought = OrderStore::create($userId, 'refundy', 2_500_000, 'USD', 30);
 Billing::markPaid($bought, 'pi_receipt_1');
 pin('paying an order sends one receipt', 1, count($mails));
 pin('to the buyer', 'buyer@example.test', $mails[0]['to'] ?? null);
@@ -2594,20 +2595,20 @@ check('the subject names the order', strpos((string) ($mails[0]['subject'] ?? ''
 check('the body has the amount', strpos((string) ($mails[0]['body'] ?? ''), '2.50 USD') !== false);
 check('the body has the credits', strpos((string) ($mails[0]['body'] ?? ''), '30 credits') !== false);
 check('the body has the provider reference', strpos((string) ($mails[0]['body'] ?? ''), 'pi_receipt_1') !== false);
-check('the order records the receipt as sent', Orders::find($bought->getId())->meta(Orders::RECEIPT_SENT) !== null);
+check('the order records the receipt as sent', OrderStore::find($bought->getId())->meta(OrderStore::RECEIPT_SENT) !== null);
 
-Billing::markPaid(Orders::find($bought->getId()), 'pi_receipt_1');
-Billing::markPaid(Orders::find($bought->getId()), 'pi_receipt_1', true);
+Billing::markPaid(OrderStore::find($bought->getId()), 'pi_receipt_1');
+Billing::markPaid(OrderStore::find($bought->getId()), 'pi_receipt_1', true);
 pin('a replay and an admin mark-paid send nothing more', 1, count($mails));
 check('sending again by hand sends nothing more', Receipts::send($bought->getId()));
 pin('still one receipt', 1, count($mails));
 
 $mailWorks = false;
-$retried   = Orders::create($userId, 'refundy', 1_000_000, 'USD', 10);
+$retried   = OrderStore::create($userId, 'refundy', 1_000_000, 'USD', 10);
 Billing::markPaid($retried, 'pi_receipt_2');
-pin('a failed send settles the order anyway', Order::STATUS_PAID, Orders::find($retried->getId())->getStatus());
+pin('a failed send settles the order anyway', Order::STATUS_PAID, OrderStore::find($retried->getId())->getStatus());
 pin('and queues one retry job', 1, $receiptJobs($retried->getId()));
-pin('no receipt is marked sent', null, Orders::find($retried->getId())->meta(Orders::RECEIPT_SENT));
+pin('no receipt is marked sent', null, OrderStore::find($retried->getId())->meta(OrderStore::RECEIPT_SENT));
 
 Receipts::registerJobs();
 $handler = \mindstellar\job\JobRegistry::handler(Receipts::JOB);
@@ -2631,27 +2632,27 @@ $thrower = static function (array $params): bool {
     throw new RuntimeException('smtp down');
 };
 Receipts::$mailer = $thrower;
-$crashed = Orders::create($userId, 'refundy', 1_000_000, 'USD', 10);
+$crashed = OrderStore::create($userId, 'refundy', 1_000_000, 'USD', 10);
 check('a mailer that throws does not break settlement', Billing::markPaid($crashed, 'pi_receipt_3'));
 pin('and the receipt is queued', 1, $receiptJobs($crashed->getId()));
 Receipts::$mailer = $thrower;
-$noQueue = Orders::create($userId, 'refundy', 1_000_000, 'USD', 10);
-Orders::settle($noQueue->getId(), Order::STATUS_PAID, 'pi_receipt_4');
+$noQueue = OrderStore::create($userId, 'refundy', 1_000_000, 'USD', 10);
+OrderStore::settle($noQueue->getId(), Order::STATUS_PAID, 'pi_receipt_4');
 $GLOBALS['enqueueThrows'] = new RuntimeException('queue down');
 $escaped = null;
 try {
-    Receipts::afterPaid(Orders::find($noQueue->getId()));
+    Receipts::afterPaid(OrderStore::find($noQueue->getId()));
 } catch (Throwable $e) {
     $escaped = get_class($e);
 }
 unset($GLOBALS['enqueueThrows']);
 pin('a queue that throws as well does not escape afterPaid()', null, $escaped);
-pin('the order stays paid', Order::STATUS_PAID, Orders::find($noQueue->getId())->getStatus());
+pin('the order stays paid', Order::STATUS_PAID, OrderStore::find($noQueue->getId())->getStatus());
 
 $GLOBALS['enqueueThrows'] = new RuntimeException('queue down');
 $escaped = null;
 try {
-    $settledAnyway = Billing::markPaid(Orders::create($userId, 'refundy', 1_000_000, 'USD', 10), 'pi_receipt_5');
+    $settledAnyway = Billing::markPaid(OrderStore::create($userId, 'refundy', 1_000_000, 'USD', 10), 'pi_receipt_5');
 } catch (Throwable $e) {
     $escaped = get_class($e);
 }
@@ -2667,40 +2668,40 @@ Receipts::$mailer = static function (array $params) use (&$mails, &$sendCalls): 
     return true;
 };
 
-$stillPending = Orders::create($userId, 'refundy', 1_000_000, 'USD', 1);
+$stillPending = OrderStore::create($userId, 'refundy', 1_000_000, 'USD', 1);
 check('send() on a pending order reports nothing to do', Receipts::send($stillPending->getId()));
 pin('and calls no mailer', 0, $sendCalls);
-pin('and leaves no sent mark', null, Orders::find($stillPending->getId())->meta(Orders::RECEIPT_SENT));
+pin('and leaves no sent mark', null, OrderStore::find($stillPending->getId())->meta(OrderStore::RECEIPT_SENT));
 
-$refundedFirst = Orders::create($userId, 'refundy', 1_000_000, 'USD', 1);
-Orders::settle($refundedFirst->getId(), Order::STATUS_PAID, 'pi_receipt_6');
-Orders::refund($refundedFirst->getId());
+$refundedFirst = OrderStore::create($userId, 'refundy', 1_000_000, 'USD', 1);
+OrderStore::settle($refundedFirst->getId(), Order::STATUS_PAID, 'pi_receipt_6');
+OrderStore::refund($refundedFirst->getId());
 check('send() on a refunded order reports nothing to do', Receipts::send($refundedFirst->getId()));
 pin('and calls no mailer either', 0, $sendCalls);
-pin('and leaves no sent mark either', null, Orders::find($refundedFirst->getId())->meta(Orders::RECEIPT_SENT));
+pin('and leaves no sent mark either', null, OrderStore::find($refundedFirst->getId())->meta(OrderStore::RECEIPT_SENT));
 
 $other = seed_user($admin, 'stranger', 'stranger@example.test');
-$paidOrder = Orders::find($bought->getId());
+$paidOrder = OrderStore::find($bought->getId());
 check('the buyer can view the receipt', Receipts::canView($paidOrder, $userId, false));
 check('another user cannot', !Receipts::canView($paidOrder, $other, false));
 check('a guest cannot', !Receipts::canView($paidOrder, 0, false));
 check('an admin can', Receipts::canView($paidOrder, 0, true));
-$pendingOrder = Orders::create($userId, 'refundy', 1_000_000, 'USD', 1);
+$pendingOrder = OrderStore::create($userId, 'refundy', 1_000_000, 'USD', 1);
 check('a pending order has no receipt, even for its buyer', !Receipts::canView($pendingOrder, $userId, false));
 check('or an admin', !Receipts::canView($pendingOrder, 0, true));
 Billing::refund($paidOrder);
-check('a refunded order keeps its receipt', Receipts::canView(Orders::find($bought->getId()), $userId, false));
+check('a refunded order keeps its receipt', Receipts::canView(OrderStore::find($bought->getId()), $userId, false));
 
 osc_set_preference(Receipts::PREF_BUSINESS, "Acme <b>Ltd</b>\n1 High St & Co", Billing::PREF_GROUP);
 osc_reset_preferences();
 pin('business details are escaped, line breaks kept', 'Acme &lt;b&gt;Ltd&lt;/b&gt;<br>' . "\n" . '1 High St &amp; Co', Receipts::businessHtml());
 ob_start();
-Receipts::render(Orders::find($bought->getId()), 'https://example.test/back', 'Back');
+Receipts::render(OrderStore::find($bought->getId()), 'https://example.test/back', 'Back');
 $page = (string) ob_get_clean();
 check('the page escapes the business details', strpos($page, 'Acme &lt;b&gt;Ltd&lt;/b&gt;') !== false && strpos($page, '<b>Ltd') === false);
 check('a refunded order says so', strpos($page, 'rc-status') !== false && strpos($page, 'Refunded') !== false);
 check('the page has the print button', strpos($page, 'window.print()') !== false);
-check('the e-mail body escapes the business details', strpos(Receipts::emailBody(Receipts::vars(Orders::find($bought->getId()))), '<b>Ltd') === false);
+check('the e-mail body escapes the business details', strpos(Receipts::emailBody(Receipts::vars(OrderStore::find($bought->getId()))), '<b>Ltd') === false);
 $hostile = array(
     'site'     => 'Site <b>x</b>&',
     'number'   => 7,

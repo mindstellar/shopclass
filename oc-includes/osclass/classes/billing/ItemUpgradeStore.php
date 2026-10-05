@@ -11,8 +11,8 @@
 
 namespace mindstellar\billing;
 
+use mindstellar\base\Model;
 use mindstellar\database\DbException;
-use mindstellar\database\QueryBuilder;
 
 /**
  * Persistence and read path for t_item_upgrade -- one row per (item, upgrade), covering
@@ -34,10 +34,10 @@ use mindstellar\database\QueryBuilder;
  *
  * @package mindstellar\billing
  */
-final class ItemUpgrades
+final class ItemUpgradeStore extends Model
 {
     /** Unprefixed table name. */
-    private const TABLE = 't_item_upgrade';
+    protected const TABLE = 't_item_upgrade';
 
     /**
      * @var array<int,array<string,?string>> item id => (upgrade => dt_expiration),
@@ -53,7 +53,7 @@ final class ItemUpgrades
      * Extends from whichever is later, now or the row's current expiry -- buying 30
      * more days with 10 left gives 40, not 30. A row already permanent (dt_expiration
      * NULL) stays permanent regardless of $days/$hours, the same invariant
-     * Entitlements::grant() holds for a duration grant. $days and $hours are additive
+     * EntitlementStore::grant() holds for a duration grant. $days and $hours are additive
      * ways to say the same offset; both null means the row never lapses.
      *
      * The unique key on (fk_i_item_id, s_upgrade) can race two concurrent grants for
@@ -286,26 +286,4 @@ final class ItemUpgrades
 
         return date('Y-m-d H:i:s', $ts);
     }
-
-    /**
-     * Prefixed upgrade table name, for the queries written by hand.
-     *
-     * @return string
-     */
-    private static function tableName(): string
-    {
-        return DB_TABLE_PREFIX . self::TABLE;
-    }
-
-    /**
-     * Query builder bound to the upgrade table.
-     *
-     * @return QueryBuilder
-     */
-    private static function table(): QueryBuilder
-    {
-        return osc_db_table(self::tableName());
-    }
 }
-
-/* file end: ./oc-includes/osclass/classes/billing/ItemUpgrades.php */

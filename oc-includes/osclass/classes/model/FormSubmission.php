@@ -10,6 +10,7 @@
 
 namespace mindstellar\model;
 
+use mindstellar\base\Model;
 use mindstellar\database\QueryBuilder;
 use Throwable;
 
@@ -30,29 +31,18 @@ use Throwable;
  * @subpackage Model
  * @since      5.3.0
  */
-class FormSubmission
+class FormSubmission extends Model
 {
-    private const TABLE       = 't_form_submission';
+    protected const TABLE     = 't_form_submission';
     private const VALUE_TABLE = 't_form_submission_value';
 
     /** Triage statuses. */
     public const STATUSES = array('new', 'read', 'spam', 'archived');
 
-    /** @var FormSubmission */
-    private static $instance;
-
-    /**
-     * Return the shared FormSubmission model instance, creating it on first use.
-     *
-     * @return self
-     */
+    /** @deprecated 7.0.0 Use new FormSubmission(). */
     public static function newInstance(): self
     {
-        if (!self::$instance instanceof self) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
+        return new self();
     }
 
     /**
@@ -65,16 +55,6 @@ class FormSubmission
     public static function isValidStatus(string $status): bool
     {
         return in_array($status, self::STATUSES, true);
-    }
-
-    /**
-     * A fresh query builder over the submissions table.
-     *
-     * @return QueryBuilder
-     */
-    private function table(): QueryBuilder
-    {
-        return osc_db_table(DB_TABLE_PREFIX . self::TABLE);
     }
 
     /**

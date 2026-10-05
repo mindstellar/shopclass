@@ -138,7 +138,7 @@ final class Billing
             case CallbackResult::OUTCOME_FAILED:
                 $order = self::resolve($gatewayId, $result);
                 if ($order !== null) {
-                    Orders::settle($order->getId(), Order::STATUS_FAILED, $result->getExternalRef());
+                    OrderStore::settle($order->getId(), Order::STATUS_FAILED, $result->getExternalRef());
                 }
 
                 return $result;
@@ -183,7 +183,7 @@ final class Billing
             $from = $allowFailed
                 ? array(Order::STATUS_PENDING, Order::STATUS_FAILED)
                 : array(Order::STATUS_PENDING);
-            if (!Orders::settle($order->getId(), Order::STATUS_PAID, $externalRef, $from)) {
+            if (!OrderStore::settle($order->getId(), Order::STATUS_PAID, $externalRef, $from)) {
                 return false;
             }
 
@@ -228,7 +228,7 @@ final class Billing
     public static function refund(Order $order): bool
     {
         $reversed = osc_db_transaction(static function () use ($order): bool {
-            if (!Orders::refund($order->getId())) {
+            if (!OrderStore::refund($order->getId())) {
                 return false;
             }
 
@@ -265,7 +265,7 @@ final class Billing
      */
     public static function refundableGateway(Order $order): ?RefundableGateway
     {
-        if (!$order->isPaid() || $order->meta(Orders::REFUND_REQUESTED) !== null) {
+        if (!$order->isPaid() || $order->meta(OrderStore::REFUND_REQUESTED) !== null) {
             return null;
         }
 
@@ -380,7 +380,7 @@ final class Billing
      */
     private static function refundLocked(Order $order, bool &$providerAccepted): CallbackResult
     {
-        $fresh = Orders::find($order->getId());
+        $fresh = OrderStore::find($order->getId());
         if ($fresh === null) {
             return CallbackResult::ignored(__('That order no longer exists'));
         }
@@ -391,14 +391,14 @@ final class Billing
                 return CallbackResult::ignored(__('Only a paid order can be refunded'));
             }
 
-            return CallbackResult::ignored($fresh->meta(Orders::REFUND_REQUESTED) !== null
+            return CallbackResult::ignored($fresh->meta(OrderStore::REFUND_REQUESTED) !== null
                 ? __('A refund was already sent to the payment provider. Check its dashboard, then use Record a refund.')
                 : __('This payment method cannot refund from here'));
         }
 
         // Marked before the call: if the provider takes the refund and anything after
         // fails, even a crash mid-call, a later press cannot send a second one.
-        if (!Orders::markRefundRequested($fresh->getId())) {
+        if (!OrderStore::markRefundRequested($fresh->getId())) {
             return CallbackResult::ignored(__('The refund could not be started. Try again.'));
         }
 
@@ -419,7 +419,7 @@ final class Billing
 
         if ($result->getOutcome() === CallbackResult::OUTCOME_IGNORED) {
             // A clear no from the provider: nothing was sent, so the button comes back.
-            Orders::markRefundRequested($fresh->getId(), false);
+            OrderStore::markRefundRequested($fresh->getId(), false);
         }
 
         if ($result->getOutcome() !== CallbackResult::OUTCOME_REFUNDED) {
@@ -451,7 +451,7 @@ final class Billing
             ));
             // The write can commit and a hook after it throw; then the refund is recorded.
             try {
-                $now = Orders::find($fresh->getId());
+                $now = OrderStore::find($fresh->getId());
             } catch (Throwable $ignored) {
                 $now = null;
             }
@@ -618,9 +618,9 @@ final class Billing
         $order = null;
 
         if ($result->getOrderId() !== null) {
-            $order = Orders::find($result->getOrderId());
+            $order = OrderStore::find($result->getOrderId());
         } elseif ($result->getExternalRef() !== null) {
-            $order = Orders::findByGatewayRef($gatewayId, $result->getExternalRef());
+            $order = OrderStore::findByGatewayRef($gatewayId, $result->getExternalRef());
         }
 
         if ($order === null || $order->getGateway() !== $gatewayId) {

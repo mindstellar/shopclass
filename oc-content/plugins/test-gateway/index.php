@@ -23,7 +23,7 @@ Requires PHP: 8.0
 
 use mindstellar\billing\Billing;
 use mindstellar\billing\Order;
-use mindstellar\billing\Orders;
+use mindstellar\billing\OrderStore;
 use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\settings\SettingsPageRegistry;
 use mindstellar\testgateway\TestGateway;
@@ -94,7 +94,7 @@ function test_gateway_buyer_order(int $orderId): Order
         osc_redirect_to(osc_user_login_url());
     }
 
-    $order = Orders::find($orderId);
+    $order = OrderStore::find($orderId);
     if (!TestGateway::enabled()
         || $order === null
         || $order->getUserId() !== (int) osc_logged_user_id()

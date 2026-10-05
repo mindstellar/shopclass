@@ -88,7 +88,7 @@ use mindstellar\billing\Billing;
 use mindstellar\billing\CallbackResult;
 use mindstellar\billing\CheckoutIntent;
 use mindstellar\billing\Order;
-use mindstellar\billing\Orders;
+use mindstellar\billing\OrderStore;
 use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\billing\Wallet;
 use mindstellar\settings\SettingsPageRegistry;
@@ -99,7 +99,7 @@ $setting = static function (string $name, string $value, string $type = 'STRING'
     osc_reset_preferences();
 };
 $status = static function (Order $order): string {
-    return Orders::find($order->getId())->getStatus();
+    return OrderStore::find($order->getId())->getStatus();
 };
 $ledgerRows = static function (Order $order) use ($admin): int {
     return (int) $admin->query(
@@ -144,7 +144,7 @@ PaymentGatewayRegistry::instance()->register($gateway);
 
 $buyer = seed_user($admin, 'buyer', 'buyer@example.test');
 $newOrder = static function (int $credits = 100) use ($buyer): Order {
-    return Orders::create($buyer, TestGateway::ID, 9_990_000, 'USD', $credits);
+    return OrderStore::create($buyer, TestGateway::ID, 9_990_000, 'USD', $credits);
 };
 
 /* ----------------------------------------------------------------------------
@@ -231,7 +231,7 @@ $result = Billing::handleCallback(TestGateway::ID, $payload);
 pin('a valid paid callback settles', CallbackResult::OUTCOME_PAID, $result->getOutcome());
 pin('the credits land', 100, Wallet::balance($buyer));
 pin('the order is paid', Order::STATUS_PAID, $status($order));
-pin('the provider reference is stored', $payload['ref'], Orders::find($order->getId())->getExternalRef());
+pin('the provider reference is stored', $payload['ref'], OrderStore::find($order->getId())->getExternalRef());
 
 Billing::handleCallback(TestGateway::ID, $payload);
 Billing::handleCallback(TestGateway::ID, TestGateway::payload($order, 'paid'));
@@ -316,7 +316,7 @@ pin('a pending order is refused', CallbackResult::OUTCOME_IGNORED, $gateway->ref
 pin('no refund button for a pending order', null, Billing::refundableGateway($adminRefund));
 
 Billing::markPaid($adminRefund, 'test_paid');
-$paid    = Orders::find($adminRefund->getId());
+$paid    = OrderStore::find($adminRefund->getId());
 $balance = Wallet::balance($buyer);
 check('a paid order offers the refund button', Billing::refundableGateway($paid) === $gateway);
 
@@ -326,9 +326,9 @@ pin('refused while test mode is off', CallbackResult::OUTCOME_IGNORED, Billing::
 pin('the order stays paid', Order::STATUS_PAID, $status($paid));
 $setting('enabled', '1', 'BOOLEAN');
 
-$other = Orders::create($buyer, 'other', 1_000_000, 'USD', 5);
-Orders::settle($other->getId(), Order::STATUS_PAID, 'x');
-pin('another gateway\'s order is refused', CallbackResult::OUTCOME_IGNORED, $gateway->refund(Orders::find($other->getId()))->getOutcome());
+$other = OrderStore::create($buyer, 'other', 1_000_000, 'USD', 5);
+OrderStore::settle($other->getId(), Order::STATUS_PAID, 'x');
+pin('another gateway\'s order is refused', CallbackResult::OUTCOME_IGNORED, $gateway->refund(OrderStore::find($other->getId()))->getOutcome());
 
 $result = Billing::refundThroughGateway($paid);
 pin('a paid order is refunded', CallbackResult::OUTCOME_REFUNDED, $result->getOutcome());

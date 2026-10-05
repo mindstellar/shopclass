@@ -11,6 +11,8 @@
 
 namespace mindstellar\billing;
 
+use mindstellar\base\Model;
+
 /**
  * What a user is entitled to: a quantity, a duration, or both, per feature.
  *
@@ -21,7 +23,7 @@ namespace mindstellar\billing;
  *
  * @package mindstellar\billing
  */
-final class Entitlements
+final class EntitlementStore extends Model
 {
     public const SOURCE_PURCHASE = 'purchase';
     public const SOURCE_GRANT    = 'grant';
@@ -29,7 +31,7 @@ final class Entitlements
     public const SOURCE_DEFAULT  = 'default';
 
     /** Unprefixed table name. */
-    private const TABLE = 't_user_entitlement';
+    protected const TABLE = 't_user_entitlement';
 
     /**
      * Add to or extend a user's entitlement for $feature, creating the row if none
@@ -63,7 +65,7 @@ final class Entitlements
         string $source = self::SOURCE_PURCHASE
     ): bool {
         $now   = date('Y-m-d H:i:s');
-        $table = self::table();
+        $table = self::tableName();
 
         $params = array(
             $userId,
@@ -120,7 +122,7 @@ final class Entitlements
     {
         $now = date('Y-m-d H:i:s');
 
-        $row = osc_db_table(self::table())
+        $row = self::table()
             ->where('fk_i_user_id', $userId)
             ->where('s_feature', $feature)
             ->whereRaw('(dt_expiration IS NULL OR dt_expiration > ?)', array($now))
@@ -141,7 +143,7 @@ final class Entitlements
      */
     public static function quantity(int $userId, string $feature): int
     {
-        $row = osc_db_table(self::table())
+        $row = self::table()
             ->where('fk_i_user_id', $userId)
             ->where('s_feature', $feature)
             ->whereRaw('(dt_expiration IS NULL OR dt_expiration > ?)', array(date('Y-m-d H:i:s')))
@@ -185,7 +187,7 @@ final class Entitlements
         }
 
         $now   = date('Y-m-d H:i:s');
-        $table = self::table();
+        $table = self::tableName();
 
         // LIMIT 1 because a user may hold more than one row for the same feature -- grant()
         // merges, but a plugin granting directly need not. Without it a single spend would
@@ -239,7 +241,7 @@ final class Entitlements
      */
     public static function capacity(int $userId, string $feature, int $default = 0): int
     {
-        $rows = osc_db_table(self::table())
+        $rows = self::table()
             ->where('fk_i_user_id', $userId)
             ->where('s_feature', $feature)
             ->whereRaw('(dt_expiration IS NULL OR dt_expiration > ?)', array(date('Y-m-d H:i:s')))
@@ -270,7 +272,7 @@ final class Entitlements
      */
     public static function forUser(int $userId): array
     {
-        return osc_db_table(self::table())
+        return self::table()
             ->where('fk_i_user_id', $userId)
             ->orderBy('pk_i_id', 'DESC')
             ->get();
@@ -285,7 +287,7 @@ final class Entitlements
     public static function purge(): int
     {
         return osc_db_execute(
-            'DELETE FROM ' . self::table() . ' WHERE dt_expiration IS NOT NULL AND dt_expiration <= ?',
+            'DELETE FROM ' . self::tableName() . ' WHERE dt_expiration IS NOT NULL AND dt_expiration <= ?',
             array(date('Y-m-d H:i:s'))
         );
     }
@@ -436,16 +438,4 @@ final class Entitlements
         // hours, or the expiry lands an hour off the moment the clocks change.
         return date('Y-m-d H:i:s', strtotime('+' . $days . ' days', strtotime($datetime)));
     }
-
-    /**
-     * Prefixed entitlement table name.
-     *
-     * @return string
-     */
-    private static function table(): string
-    {
-        return DB_TABLE_PREFIX . self::TABLE;
-    }
 }
-
-/* file end: ./oc-includes/osclass/classes/billing/Entitlements.php */

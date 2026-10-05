@@ -12,22 +12,22 @@
 namespace mindstellar\billing;
 
 use InvalidArgumentException;
-use mindstellar\database\QueryBuilder;
+use mindstellar\base\Model;
 
 /**
  * Persistence for t_billing_package -- the price list an admin sells credits from.
  *
  * A package is a plain array, not a domain object: it is edited and removed by an
  * admin, not appended to like the ledger, so it carries no history requirement of its
- * own. Orders::create() takes its amount and credits straight from a row read here, so
+ * own. OrderStore::create() takes its amount and credits straight from a row read here, so
  * checkout never reads a price the request supplied.
  *
  * @package mindstellar\billing
  */
-final class Packages
+final class PackageStore extends Model
 {
     /** Unprefixed table name. */
-    private const TABLE = 't_billing_package';
+    protected const TABLE = 't_billing_package';
 
     /**
      * Packages offered at checkout.
@@ -112,7 +112,7 @@ final class Packages
     /**
      * A price list entry means nothing with an empty name, a negative amount, fewer
      * than one credit, or a currency that is not a real ISO 4217 code -- every one of
-     * those would otherwise reach Orders::create() unquestioned.
+     * those would otherwise reach OrderStore::create() unquestioned.
      *
      * @param array $data
      *
@@ -150,16 +150,6 @@ final class Packages
             'b_enabled'  => array_key_exists('b_enabled', $data) ? (empty($data['b_enabled']) ? 0 : 1) : 1,
         );
     }
-
-    /**
-     * Query builder bound to the package table.
-     *
-     * @return QueryBuilder
-     */
-    private static function table(): QueryBuilder
-    {
-        return osc_db_table(DB_TABLE_PREFIX . self::TABLE);
-    }
 }
 
-/* file end: ./oc-includes/osclass/classes/billing/Packages.php */
+/* file end: ./oc-includes/osclass/classes/billing/PackageStore.php */

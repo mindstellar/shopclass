@@ -16,7 +16,7 @@ use mindstellar\billing\CallbackResult;
 use mindstellar\billing\CheckoutIntent;
 use mindstellar\billing\DashboardLinkGateway;
 use mindstellar\billing\Order;
-use mindstellar\billing\Orders;
+use mindstellar\billing\OrderStore;
 use mindstellar\billing\RefundableGateway;
 use mindstellar\security\SigningKey;
 
@@ -136,7 +136,7 @@ final class TestGateway implements RefundableGateway, DashboardLinkGateway
         }
 
         // Core compares money on a paid callback only, so the other two are checked here.
-        $order = Orders::find($orderId);
+        $order = OrderStore::find($orderId);
         if ($order === null || $order->getAmount() !== $amount || $order->getCurrency() !== $currency) {
             return CallbackResult::ignored('order does not match');
         }
@@ -253,7 +253,7 @@ final class TestGateway implements RefundableGateway, DashboardLinkGateway
      */
     public static function flashOutcome(int $orderId, string $outcome, string $before): void
     {
-        $order   = Orders::find($orderId);
+        $order   = OrderStore::find($orderId);
         $status  = $order === null ? '' : $order->getStatus();
         $pending = $before === Order::STATUS_PENDING;
 

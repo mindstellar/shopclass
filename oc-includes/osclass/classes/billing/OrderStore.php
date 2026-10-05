@@ -12,6 +12,7 @@
 namespace mindstellar\billing;
 
 use InvalidArgumentException;
+use mindstellar\base\Model;
 use mindstellar\database\DbException;
 use mindstellar\database\QueryBuilder;
 
@@ -23,10 +24,10 @@ use mindstellar\database\QueryBuilder;
  *
  * @package mindstellar\billing
  */
-final class Orders
+final class OrderStore extends Model
 {
     /** Unprefixed table name. */
-    private const TABLE = 't_billing_order';
+    protected const TABLE = 't_billing_order';
 
     /** s_meta key core sets when a refund was sent to the provider. */
     public const REFUND_REQUESTED = '_refund_requested';
@@ -432,7 +433,7 @@ final class Orders
     public static function knownGateways(): array
     {
         $rows = osc_db_select(
-            'SELECT DISTINCT s_gateway FROM ' . DB_TABLE_PREFIX . self::TABLE . ' ORDER BY s_gateway ASC'
+            'SELECT DISTINCT s_gateway FROM ' . self::tableName() . ' ORDER BY s_gateway ASC'
         );
 
         return array_map(static fn (array $row): string => (string) $row['s_gateway'], $rows);
@@ -478,16 +479,6 @@ final class Orders
 
         return $q;
     }
-
-    /**
-     * Query builder bound to the order table.
-     *
-     * @return QueryBuilder
-     */
-    private static function table(): QueryBuilder
-    {
-        return osc_db_table(DB_TABLE_PREFIX . self::TABLE);
-    }
 }
 
-/* file end: ./oc-includes/osclass/classes/billing/Orders.php */
+/* file end: ./oc-includes/osclass/classes/billing/OrderStore.php */
