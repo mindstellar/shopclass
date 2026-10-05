@@ -93,43 +93,23 @@ class CWebRegister extends BaseModel
                 }
                 break;
             case ('validate'):       //validate account
-                $id          = Params::getParamInt('id');
-                $code        = Params::getParam('code');
-                $userManager = new User();
-                $user        = $userManager->findByIdSecret($id, \mindstellar\security\ActionToken::hash($code));
-
-                if (!$user) {
-                    osc_add_flash_error_message(_m('The link is not valid anymore. Sorry for the inconvenience!'));
+                try {
+                    $user = (new \mindstellar\user\AccountService())->confirm(
+                        Params::getParamInt('id'),
+                        Params::getParamString('code')
+                    );
+                } catch (\mindstellar\validation\RefusedException $e) {
+                    osc_add_flash_error_message($e->getMessage());
                     $this->redirectTo(osc_base_url());
                 }
 
-                if ($user['b_active'] == 1) {
-                    osc_add_flash_error_message(_m('Your account has already been validated'));
-                    $this->redirectTo(osc_base_url());
-                }
+                // Auto-login via the signed, session-free identity cookie.
+                osc_web_user_login($user);
 
-                $userManager = new User();
-                $success     = $userManager->update(
-                    // Consume the activation code (single-use) and leave a fresh plaintext secret
-                    // for the logged-in account-delete link, which renders s_secret directly.
-                    array('b_active' => '1', 's_secret' => osc_genRandomPassword()),
-                    array('pk_i_id' => $id, 's_secret' => \mindstellar\security\ActionToken::hash($code))
-                );
+                osc_run_hook('hook_email_user_registration', $user);
+                osc_run_hook('validate_user', $user);
 
-                if ($success) {
-                    // The address is confirmed now, so its guest listings and alerts move over.
-                    UserActions::claimGuestListings($id);
-
-                    // Auto-login via the signed, session-free identity cookie.
-                    osc_web_user_login($user);
-
-                    osc_run_hook('hook_email_user_registration', $user);
-                    osc_run_hook('validate_user', $user);
-
-                    osc_add_flash_ok_message(_m('Your account has been validated'));
-                } else {
-                    osc_add_flash_ok_message(_m('Account validation failed'));
-                }
+                osc_add_flash_ok_message(_m('Your account has been validated'));
                 $this->redirectTo(osc_base_url());
                 break;
         }

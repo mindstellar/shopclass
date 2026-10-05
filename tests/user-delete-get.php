@@ -57,12 +57,18 @@ check(
     isset($post[1]) && strpos($post[1], 'osc_csrf_check()') !== false
 );
 check(
-    'delete_post verifies the current password',
-    isset($post[1]) && strpos($post[1], 'osc_verify_password') !== false
+    'delete_post deletes through AccountService with the password',
+    isset($post[1]) && strpos($post[1], "(new AccountService())->delete(\$userId, \$this->actor(), Params::getParamString('password', false, false))") !== false
+);
+$service = (string) file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/user/AccountService.php');
+preg_match('/public function delete\(int \$userId.*?\n    }\n/s', $service, $delete);
+check(
+    'the service checks the current password for a user',
+    isset($delete[0]) && strpos($delete[0], 'Reauth::check($user, $password)') !== false
 );
 check(
-    'delete_post calls deleteUser',
-    isset($post[1]) && strpos($post[1], 'deleteUser') !== false
+    'and calls deleteUser',
+    isset($delete[0]) && strpos($delete[0], 'deleteUser') !== false
 );
 
 harness_section('osc_user_delete_url has no secret');

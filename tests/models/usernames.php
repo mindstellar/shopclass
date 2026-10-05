@@ -28,17 +28,15 @@ require_once __DIR__ . '/../lib/scratchdb.php';
 require_once __DIR__ . '/../lib/harness.php';
 
 $admin  = scratchdb_session('osc_models_usernames');
+// The model suite runs every file in one process, so set what registration depends on.
+osc_set_preference('enabled_user_validation', '0');
+osc_reset_preferences();
 $prefix = DB_TABLE_PREFIX;
 
 $usernameOf = static function (int $id) use ($admin, $prefix): string {
     return (string)$admin->query("SELECT s_username FROM {$prefix}t_user WHERE pk_i_id = $id")->fetch_assoc()['s_username'];
 };
-$assignDefault = static function (int $id): string {
-    $method = new ReflectionMethod('UserActions', 'assignDefaultUsername');
-    $method->setAccessible(true);
-
-    return $method->invoke(null, $id);
-};
+$assignDefault = static fn (int $id): string => \mindstellar\user\Usernames::assignDefault($id);
 
 harness_section('UserActions::numericUsernameError');
 

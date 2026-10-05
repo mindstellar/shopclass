@@ -12,11 +12,18 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\auth\Actor;
+use mindstellar\user\AccountInput;
+use mindstellar\user\AccountService;
+use mindstellar\user\Usernames;
+use mindstellar\utility\AjaxResponse;
+use mindstellar\validation\BlockedException;
+use mindstellar\validation\InvalidException;
+use mindstellar\validation\RefusedException;
+
 /**
  * Class CWebUser
  */
-use mindstellar\utility\AjaxResponse;
-
 class CWebUser extends WebSecBaseModel
 {
     /**
@@ -92,18 +99,21 @@ class CWebUser extends WebSecBaseModel
                 break;
             case ('profile_post'):   //profile post...
                 osc_csrf_check();
-                $userId = Session::newInstance()->_get('userId');
-
-                $userActions = new UserActions(false);
-                $success     = $userActions->edit($userId);
+                $userId = (int) osc_logged_user_id();
+                try {
+                    (new AccountService())->update($userId, AccountInput::read(false), $this->actor());
+                    AccountService::refreshIdentity($userId);
+                    $saved = true;
+                } catch (InvalidException $e) {
+                    $saved = false;
+                    osc_add_flash_error_message(implode(PHP_EOL, array_column($e->errors(), 'message')) . PHP_EOL);
+                }
 
                 // Avatar is the logged-in user's own; never trust a posted user id here.
-                $this->handleAvatarUpload((int)$userId);
+                $this->handleAvatarUpload($userId);
 
-                if ($success == 1 || $success == 2) {
+                if ($saved) {
                     osc_add_flash_ok_message(_m('Your profile has been updated successfully'));
-                } else {
-                    osc_add_flash_error_message($success);
                 }
                 $this->redirectTo(osc_user_profile_url());
                 break;
@@ -134,36 +144,13 @@ class CWebUser extends WebSecBaseModel
                 break;
             case ('change_email_post'):      //change email post
                 osc_csrf_check();
-                if (osc_validate_email(Params::getParam('new_email'))) {
-                    $user = User::newInstance()->findByEmail(Params::getParam('new_email'));
-                    if (isset($user['pk_i_id'])) {
-                        osc_add_flash_error_message(_m('The specified e-mail is already in use'));
-                        $this->redirectTo(osc_change_user_email_url());
-                    } else {
-                        $userEmailTmp                 = array();
-                        $userEmailTmp['fk_i_user_id'] = Session::newInstance()->_get('userId');
-                        $userEmailTmp['s_new_email']  = Params::getParam('new_email');
-
-                        UserEmailTmp::newInstance()->insertOrUpdate($userEmailTmp);
-
-                        $code = User::newInstance()->issuePassCode(
-                            (int)Session::newInstance()->_get('userId'),
-                            User::PASS_CODE_EMAIL
-                        );
-
-                        $validation_url = osc_change_user_email_confirm_url(Session::newInstance()
-                            ->_get('userId'), $code);
-                        osc_run_hook(
-                            'hook_email_new_email',
-                            Params::getParam('new_email'),
-                            $validation_url
-                        );
-                        $this->redirectTo(osc_user_profile_url());
-                    }
-                } else {
-                    osc_add_flash_error_message(_m('The specified e-mail is not valid'));
+                try {
+                    (new AccountService())->requestEmailChange((int) osc_logged_user_id(), Params::getParamString('new_email'), $this->actor());
+                } catch (RefusedException $e) {
+                    osc_add_flash_error_message($e->getMessage());
                     $this->redirectTo(osc_change_user_email_url());
                 }
+                $this->redirectTo(osc_user_profile_url());
                 break;
             case ('change_username'):        //change username
                 $this->doView(osc_locate_template(array('user-change_username.php'), 'user-change_username'));
@@ -178,7 +165,7 @@ class CWebUser extends WebSecBaseModel
                 );
                 if ($username != '') {
                     $user    = User::newInstance()->findByUsername($username);
-                    $numeric = UserActions::numericUsernameError($username);
+                    $numeric = Usernames::numericError($username);
                     $claim   = '';
                     if ($numeric !== '') {
                         osc_add_flash_error_message($numeric);
@@ -187,7 +174,7 @@ class CWebUser extends WebSecBaseModel
                     } elseif (osc_is_username_blacklisted($username)) {
                         osc_add_flash_error_message(_m('The specified username is not valid, it contains some invalid words'));
                     } else {
-                        $claim = UserActions::claimUsername((int) Session::newInstance()->_get('userId'), $username);
+                        $claim = Usernames::claim((int) Session::newInstance()->_get('userId'), $username);
                         if ($claim === 'taken') {
                             osc_add_flash_error_message(_m('The specified username is already in use'));
                         } elseif ($claim !== 'ok') {
@@ -224,26 +211,34 @@ class CWebUser extends WebSecBaseModel
                     $this->redirectTo(osc_change_user_password_url());
                 }
 
-                $refused = \mindstellar\security\UserReauth::verify((array)$user, $password);
-                if ($refused !== '') {
-                    osc_add_flash_error_message($refused);
+                try {
+                    (new AccountService())->changePassword((array)$user, $password, $newPassword, $newPassword2);
+                } catch (BlockedException $e) {
+                    osc_add_flash_error_message(osc_login_throttle_message($e->retryAfter()));
+                    $this->redirectTo(osc_change_user_password_url());
+                } catch (InvalidException $e) {
+                    osc_add_flash_error_message($e->pointer() === '/current_password' ? _m("Current password doesn't match") : $e->getMessage());
                     $this->redirectTo(osc_change_user_password_url());
                 }
-
-                if ($newPassword !== $newPassword2) {
-                    osc_add_flash_error_message(_m("Passwords don't match"));
-                    $this->redirectTo(osc_change_user_password_url());
-                }
-
-                User::newInstance()->update(
-                    array(
-                        's_password' => osc_hash_password($newPassword)
-                    ),
-                    array('pk_i_id' => Session::newInstance()->_get('userId'))
-                );
 
                 osc_add_flash_ok_message(_m('Password has been changed'));
                 $this->redirectTo(osc_user_profile_url());
+                break;
+            case 'sign_out_all_post':
+                osc_csrf_check();
+                $userId = (int) osc_logged_user_id();
+                $user   = User::newInstance()->findByPrimaryKey($userId);
+                $refused = empty($user) ? _m("Current password doesn't match")
+                    : \mindstellar\auth\Reauth::verify($user, Params::getParamString('password', false, false));
+                if ($refused !== '') {
+                    osc_add_flash_error_message($refused);
+                    $this->redirectTo(osc_change_user_password_url() . '#sign-out-all');
+                    break;
+                }
+                \mindstellar\auth\SignOut::everywhereUser($userId);
+                $this->logout();
+                osc_add_flash_ok_message(_m('You are signed out on every device, this one too. Sign in again.'));
+                $this->redirectTo(osc_user_login_url());
                 break;
             case 'items':                   // view items user
                 $itemsPerPage = Params::getParamInt('itemsPerPage') > 0 ? min(Params::getParamInt('itemsPerPage'), 100) : 10;
@@ -330,6 +325,13 @@ class CWebUser extends WebSecBaseModel
                 header('Cache-Control: private, no-store');
                 AjaxResponse::json($data, flags: JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
                 exit;
+            case 'api_access':
+                $this->apiAccessView(\mindstellar\api\ApiServices::site()->accountAccess());
+                break;
+            case 'api_access_post':
+                osc_csrf_check();
+                $this->apiAccessPost(\mindstellar\api\ApiServices::site()->accountAccess());
+                break;
             case 'delete':
                 // GET must not delete. Older themes still point here with id and
                 // secret in the query string; those land on the confirm form and
@@ -347,32 +349,26 @@ class CWebUser extends WebSecBaseModel
             case 'delete_post':
                 osc_csrf_check();
                 $userId = (int) osc_logged_user_id();
-                $user   = User::newInstance()->findByPrimaryKey($userId);
-                if (empty($user) || $userId < 1) {
-                    osc_add_flash_error_message(_m('Oops! you can not do that'));
-                    $this->redirectTo(osc_user_login_url());
-                    break;
-                }
-
-                $password = Params::getParam('password', false, false);
-                if ($password === '') {
-                    osc_add_flash_warning_message(_m('Password cannot be blank'));
-                    $this->redirectTo(osc_user_delete_url());
-                    break;
-                }
-                if (!osc_verify_password($password, $user['s_password'])) {
-                    osc_add_flash_error_message(_m("Current password doesn't match"));
-                    $this->redirectTo(osc_user_delete_url());
-                    break;
-                }
-
-                osc_run_hook('before_user_delete', $user);
                 try {
-                    User::newInstance()->deleteUser($userId);
-                } catch (Exception $e) {
-                    trigger_error($e->getMessage(), E_USER_WARNING);
-                    osc_add_flash_error_message(_m('Oops! you can not do that'));
+                    (new AccountService())->delete($userId, $this->actor(), Params::getParamString('password', false, false));
+                } catch (BlockedException $e) {
+                    osc_add_flash_error_message(osc_login_throttle_message($e->retryAfter()));
                     $this->redirectTo(osc_user_delete_url());
+                    break;
+                } catch (InvalidException $e) {
+                    if ($e->reason() === 'required') {
+                        osc_add_flash_warning_message(_m('Password cannot be blank'));
+                    } else {
+                        osc_add_flash_error_message(_m("Current password doesn't match"));
+                    }
+                    $this->redirectTo(osc_user_delete_url());
+                    break;
+                } catch (RefusedException | RuntimeException $e) {
+                    if ($e instanceof RuntimeException) {
+                        trigger_error($e->getMessage(), E_USER_WARNING);
+                    }
+                    osc_add_flash_error_message(_m('Oops! you can not do that'));
+                    $this->redirectTo($e instanceof \mindstellar\validation\NotFoundException ? osc_user_login_url() : osc_user_delete_url());
                     break;
                 }
 
@@ -397,6 +393,14 @@ class CWebUser extends WebSecBaseModel
     }
 
     /**
+     * The signed-in user as core services take them, from this address.
+     */
+    private function actor(): Actor
+    {
+        return Actor::fromSession(false);
+    }
+
+    /**
      * Handle an avatar file upload / removal for a user.
      *
      * @param int $userId
@@ -406,6 +410,73 @@ class CWebUser extends WebSecBaseModel
     private function handleAvatarUpload($userId)
     {
         \mindstellar\storage\AvatarUpload::handle((int)$userId, 'pubMessages');
+    }
+
+    /**
+     * The "API access" page: the sign-ins and personal keys that act for this user.
+     *
+     * @param \mindstellar\api\auth\AccountAccess $access
+     * @param string                         $newKey a key's token, shown once right after it is made
+     *
+     * @return void
+     */
+    private function apiAccessView(\mindstellar\api\auth\AccountAccess $access, string $newKey = '')
+    {
+        if (!osc_api_enabled()) {
+            $this->redirectTo(osc_user_dashboard_url());
+        }
+        $userId = (int) osc_logged_user_id();
+        $this->_exportVariableToView('api_sessions', $access->sessions($userId));
+        $this->_exportVariableToView('api_user_keys', $access->userKeys());
+        $this->_exportVariableToView('api_key_scopes', $access->userKeys() ? $access->keyScopes($userId) : array());
+        $this->_exportVariableToView('api_new_key', $newKey);
+        $this->doView(osc_locate_template(array('user-api_access.php'), 'user-api_access'));
+    }
+
+    /**
+     * End a sign-in, revoke a key, or make a key. A new key's token is shown on this answer
+     * and never again, so it is not put in a cookie or a redirect.
+     *
+     * @param \mindstellar\api\auth\AccountAccess $access
+     *
+     * @return void
+     */
+    private function apiAccessPost(\mindstellar\api\auth\AccountAccess $access)
+    {
+        if (!osc_api_enabled()) {
+            $this->redirectTo(osc_user_dashboard_url());
+
+            return;
+        }
+        $userId = (int) osc_logged_user_id();
+        if (Params::getParamString('do') === 'create') {
+            $user = User::newInstance()->findByPrimaryKey($userId);
+            try {
+                $token = $access->createKey(
+                    is_array($user) ? $user : array(),
+                    (string) Params::getParam('password', false, false),
+                    Params::getParamString('name'),
+                    array_map('strval', array_values(Params::getParamArray('scopes'))),
+                    Params::getParamString('expires')
+                );
+            } catch (InvalidArgumentException $e) {
+                osc_add_flash_error_message($e->getMessage());
+                $this->redirectTo(osc_user_api_access_url());
+
+                return;
+            }
+            osc_add_flash_ok_message(_m('The key is made. Copy it now: it is not shown again.'));
+            $this->apiAccessView($access, $token);
+
+            return;
+        }
+
+        if ($access->end($userId, Params::getParamString('session'))) {
+            osc_add_flash_ok_message(_m('Access ended.'));
+        } else {
+            osc_add_flash_error_message(_m('That sign-in or key is not in the list any more.'));
+        }
+        $this->redirectTo(osc_user_api_access_url());
     }
 
     //hopefully generic...

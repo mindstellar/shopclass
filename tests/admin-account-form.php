@@ -494,7 +494,7 @@ if ($res) {
 }
 pin(
     'the table is the shape the page declares',
-    array('pk_i_id', 's_name', 's_username', 's_password', 's_email', 's_secret', 's_2fa', 'b_moderator'),
+    array('pk_i_id', 's_name', 's_username', 's_password', 's_email', 's_secret', 's_2fa', 'b_moderator', 'i_auth_stamp'),
     $columns
 );
 foreach (SettingsPageRegistry::instance()->fields($editId) as $name => $field) {
@@ -1324,6 +1324,77 @@ $form = (string)file_get_contents(
 );
 check('scan: the declaration hashes through osc_hash_password()', strpos($form, 'osc_hash_password(') !== false);
 check('scan: and verifies through osc_verify_password()', strpos($form, 'osc_verify_password(') !== false);
+
+harness_section('sign out of all devices says how many API keys it revokes');
+
+if (!function_exists('_n')) {
+    function _n($single, $plural, $n, $domain = 'core')
+    {
+        return $n === 1 ? $single : $plural;
+    }
+}
+$signOutPanel = static function () use ($root): string {
+    drive('edit', array(), array('id' => (string)$root));
+    ob_start();
+    include ABS_PATH . 'oc-admin/themes/modern/admins/sign_out_all.php';
+
+    return (string)ob_get_clean();
+};
+check('with no key, no count is shown', !str_contains($signOutPanel(), 'API key'));
+$rootOwner = \mindstellar\api\auth\KeyOwner::admin($root, false);
+$rootKeys  = new \mindstellar\api\auth\ApiKeys(new \mindstellar\model\ApiCredential(), new \mindstellar\api\auth\Scopes(), new \mindstellar\utility\SystemClock());
+$rootKeys->create('key', 'script', array('admin:users'), $rootOwner);
+$rootKeys->create('public', 'app', array(\mindstellar\api\auth\Scopes::PUBLIC_READ), $rootOwner);
+check('with two keys, the panel says both are revoked', str_contains($signOutPanel(), 'This also revokes your 2 API keys.'));
+
+harness_section('a new password signs the admin out everywhere');
+
+$signedOut = array();
+osc_add_hook('admin_signout_all_after', static function ($id) use (&$signedOut) {
+    $signedOut[] = (int)$id;
+});
+$stampOf = static fn (int $id): int => (int)row($admin, $id)['i_auth_stamp'];
+$target  = seed_admin($admin, 'stamped', 'stamped@example.test', 'stamped-password');
+$was     = $stampOf($target);
+// Output has gone out, so no real session can start: a plain array stands in for it.
+$_SESSION = array();
+$session  = Session::newInstance();
+$session->_set('adminId', (string)$root);
+$session->_set('adminStamp', $stampOf($root));
+$rootStamp = $stampOf($root);
+drive('edit_post', submission(array(
+    's_name'      => 'Stamped',
+    's_username'  => 'stamped',
+    's_email'     => 'stamped@example.test',
+    's_password'  => 'stamped-new',
+    's_password2' => 'stamped-new',
+)), array('id' => (string)$target));
+pin('another admin\'s new password raises their stamp and runs the sign-out action', array(true, $was + 1, array($target)), array(
+    password_verify('stamped-new', (string)row($admin, $target)['s_password']), $stampOf($target), $signedOut,
+));
+pin('and leaves the acting admin\'s session as it was', $rootStamp, (int)$session->_get('adminStamp'));
+$signedOut = array();
+drive('edit_post', submission(array(
+    's_name'      => 'Stamped',
+    's_username'  => 'stamped',
+    's_email'     => 'stamped@example.test',
+    's_password'  => '',
+    's_password2' => '',
+)), array('id' => (string)$target));
+pin('an edit with a blank password signs no one out', array($was + 1, array()), array($stampOf($target), $signedOut));
+
+drive('edit_post', array(
+    's_name'       => 'Root',
+    's_username'   => 'root',
+    's_email'      => 'root@example.test',
+    's_password'   => 'topsecret2',
+    's_password2'  => 'topsecret2',
+    'old_password' => 'topsecret',
+), array('id' => (string)$root));
+pin('changing your own password signs you out everywhere', array($rootStamp + 1, array($root)), array($stampOf($root), $signedOut));
+pin('but this browser\'s session takes the new stamp, so it stays signed in', $rootStamp + 1, (int)$session->_get('adminStamp'));
+$session->_drop('adminId');
+$session->_drop('adminStamp');
 
 harness_section('a demo install saves none of it');
 

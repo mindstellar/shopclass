@@ -19,6 +19,11 @@ if (!defined('ABS_PATH')) {
 use mindstellar\admin\BulkAction;
 use mindstellar\admin\form\BanRuleForm;
 use mindstellar\admin\ListPaging;
+use mindstellar\auth\Actor;
+use mindstellar\user\AccountInput;
+use mindstellar\user\AccountService;
+use mindstellar\validation\InvalidException;
+use mindstellar\validation\RefusedException;
 
 /**
  * Class CAdminUsers
@@ -159,20 +164,23 @@ class CAdminUsers extends AdminSecBaseModel
                 break;
             case ('edit_post'):      // edit post
                 osc_csrf_check();
-                $userActions = new UserActions(true);
-                $success     = $userActions->edit(Params::getParam('id'));
+                $userId = Params::getParamInt('id');
+                try {
+                    $success = (new AccountService())->update($userId, AccountInput::read(true), $this->actor());
+                } catch (InvalidException $e) {
+                    $success = implode(PHP_EOL, array_column($e->errors(), 'message')) . PHP_EOL;
+                }
 
                 // Admin edits any user; the avatar owner is the edited user's id.
-                $this->handleAvatarUpload(Params::getParamInt('id'));
+                $this->handleAvatarUpload($userId);
 
-                if ($success == 1) {
+                if ($success === 1) {
                     osc_add_flash_ok_message(_m('The user has been updated'), 'admin');
-                } elseif ($success == 2) {
+                } elseif ($success === 2) {
                     osc_add_flash_ok_message(_m('The user has been updated and activated'), 'admin');
                 } else {
                     osc_add_flash_error_message($success);
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=users&action=edit&id='
-                        . Params::getParam('id'));
+                    $this->redirectTo(osc_admin_base_url(true) . '?page=users&action=edit&id=' . $userId);
                 }
                 $this->redirectTo(osc_admin_base_url(true) . '?page=users');
                 break;
@@ -185,9 +193,9 @@ class CAdminUsers extends AdminSecBaseModel
                     $this->redirectTo(osc_admin_base_url(true) . '?page=users');
                 }
 
-                $userActions = new UserActions(true);
-                $sent        = BulkAction::apply(
-                    static fn ($id) => (bool)$userActions->resend_activation($id),
+                $accounts = new AccountService();
+                $sent     = BulkAction::apply(
+                    static fn ($id) => $accounts->resendActivation((int) $id),
                     'Activation email sent to one user',
                     'Activation email sent to %s users',
                     ''
@@ -200,9 +208,10 @@ class CAdminUsers extends AdminSecBaseModel
                 break;
             case ('activate'):       //activate
                 osc_csrf_check();
-                $userActions = new UserActions(true);
+                $accounts = new AccountService();
+                $actor    = $this->actor();
                 BulkAction::apply(
-                    static fn ($id) => (bool)$userActions->activate($id),
+                    static fn ($id) => $accounts->activate((int) $id, $actor),
                     'One user has been activated',
                     '%s users have been activated',
                     _m('No users have been activated')
@@ -211,9 +220,10 @@ class CAdminUsers extends AdminSecBaseModel
                 break;
             case ('deactivate'):     //deactivate
                 osc_csrf_check();
-                $userActions = new UserActions(true);
+                $accounts = new AccountService();
+                $actor    = $this->actor();
                 BulkAction::apply(
-                    static fn ($id) => (bool)$userActions->deactivate($id),
+                    static fn ($id) => $accounts->deactivate((int) $id, $actor),
                     'One user has been deactivated',
                     '%s users have been deactivated',
                     _m('No users have been deactivated')
@@ -222,9 +232,10 @@ class CAdminUsers extends AdminSecBaseModel
                 break;
             case ('enable'):
                 osc_csrf_check();
-                $userActions = new UserActions(true);
+                $accounts = new AccountService();
+                $actor    = $this->actor();
                 BulkAction::apply(
-                    static fn ($id) => (bool)$userActions->enable($id),
+                    static fn ($id) => $accounts->enable((int) $id, $actor),
                     'One user has been unblocked',
                     '%s users have been unblocked',
                     _m('No users have been enabled')
@@ -233,31 +244,39 @@ class CAdminUsers extends AdminSecBaseModel
                 break;
             case ('disable'):
                 osc_csrf_check();
-                $userActions = new UserActions(true);
+                $accounts = new AccountService();
+                $actor    = $this->actor();
                 BulkAction::apply(
-                    static fn ($id) => (bool)$userActions->disable($id),
+                    static fn ($id) => $accounts->disable((int) $id, $actor),
                     'One user has been blocked',
                     '%s users have been blocked',
                     _m('No users have been disabled')
                 );
                 $this->redirectTo(Params::getServerParam('HTTP_REFERER', false, false));
                 break;
+            case ('sign_out_all'):
+                osc_csrf_check();
+                BulkAction::apply(
+                    static fn ($id) => \mindstellar\auth\SignOut::everywhereUser((int) $id),
+                    'One user has been signed out of all devices',
+                    '%s users have been signed out of all devices',
+                    _m('No users have been signed out')
+                );
+                $this->redirectTo(Params::getServerParam('HTTP_REFERER', false, false));
+                break;
             case ('delete'):         //delete
                 osc_csrf_check();
-                $manager = $this->userManager;
+                $accounts = new AccountService();
+                $actor    = $this->actor();
                 BulkAction::apply(
-                    static function ($id) use ($manager) {
-                        $user = $manager->findByPrimaryKey($id);
-                        Log::newInstance()->insertLog(
-                            'user',
-                            'delete',
-                            $id,
-                            $user['s_email'] ?? '',
-                            'admin',
-                            osc_logged_admin_id()
-                        );
+                    static function ($id) use ($accounts, $actor): bool {
+                        try {
+                            $accounts->delete((int) $id, $actor);
+                        } catch (RefusedException | RuntimeException $e) {
+                            return false;
+                        }
 
-                        return (bool)$manager->deleteUser($id);
+                        return true;
                     },
                     'One user has been deleted',
                     '%s users have been deleted',
@@ -711,6 +730,14 @@ class CAdminUsers extends AdminSecBaseModel
             'admin'
         );
         $this->redirectTo(osc_admin_base_url(true) . '?page=users&action=ban');
+    }
+
+    /**
+     * The signed-in admin as core services take them.
+     */
+    private function actor(): Actor
+    {
+        return Actor::admin((int) osc_logged_admin_id(), (string) Params::getServerParam('REMOTE_ADDR'));
     }
 
     /**
