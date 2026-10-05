@@ -16,6 +16,12 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\currency\CurrencyService;
+use mindstellar\validation\ConflictException;
+use mindstellar\validation\InvalidException;
+use mindstellar\validation\NotFoundException;
+use mindstellar\validation\RefusedException;
+
 /**
  * Class CAdminSettingsCurrencies
  */
@@ -52,34 +58,13 @@ class CAdminSettingsCurrencies extends AdminSecBaseModel
                 $this->doView('settings/currency_form.php');
                 break;
             case ('add_post'):
-                // adding a new currency
                 osc_csrf_check();
-                $currencyCode        = Params::getParam('pk_c_code');
-                $currencyName        = Params::getParam('s_name');
-                $currencyDescription = Params::getParam('s_description');
-
-                // cleaning parameters
-                $currencyName        = trim(strip_tags($currencyName));
-                $currencyDescription = trim(strip_tags($currencyDescription));
-                $currencyCode        = trim(strip_tags($currencyCode));
-
-                if (!preg_match('/^.{1,3}$/', $currencyCode)) {
-                    osc_add_flash_error_message(_m('The currency code is not in the correct format'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=currencies');
-                }
-
-                $fields = array(
-                    'pk_c_code'     => $currencyCode,
-                    's_name'        => $currencyName,
-                    's_description' => $currencyDescription,
-                );
-
-                $isInserted = Currency::newInstance()->insert($fields);
-
-                if ($isInserted) {
-                    osc_purge_page_cache('currency');
+                try {
+                    $this->service()->create(Params::getParamString('pk_c_code'), Params::getParamString('s_name'), Params::getParamString('s_description'));
                     osc_add_flash_ok_message(_m('Currency added'), 'admin');
-                } else {
+                } catch (InvalidException $e) {
+                    osc_add_flash_error_message($e->getMessage(), 'admin');
+                } catch (RefusedException | RuntimeException $e) {
                     osc_add_flash_error_message(_m("Currency couldn't be added"), 'admin');
                 }
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=currencies');
@@ -113,35 +98,16 @@ class CAdminSettingsCurrencies extends AdminSecBaseModel
                 $this->doView('settings/currency_form.php');
                 break;
             case ('edit_post'):
-                // updating currency
                 osc_csrf_check();
-                $currencyName        = Params::getParam('s_name');
-                $currencyDescription = Params::getParam('s_description');
-                $currencyCode        = Params::getParam('pk_c_code');
-
-                // cleaning parameters
-                $currencyName        = trim(strip_tags($currencyName));
-                $currencyDescription = trim(strip_tags($currencyDescription));
-                $currencyCode        = trim(strip_tags($currencyCode));
-
-                if (!preg_match('/.{1,3}/', $currencyCode)) {
-                    osc_add_flash_error_message(_m('Error: the currency code is not in the correct format'), 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=currencies');
-                }
-
-                $updated = Currency::newInstance()->update(
-                    array(
-                        's_name'        => $currencyName,
-                        's_description' => $currencyDescription
-                    ),
-                    array('pk_c_code' => $currencyCode)
-                );
-
-                if ($updated == 1) {
-                    osc_purge_page_cache('currency');
-                    osc_add_flash_ok_message(_m('Currency updated'), 'admin');
-                } else {
-                    osc_add_flash_info_message(_m('No changes were made'), 'admin');
+                $currencyCode = trim(Params::getParamString('pk_c_code'));
+                try {
+                    if ($this->service()->update($currencyCode, Params::getParamString('s_name'), Params::getParamString('s_description'))) {
+                        osc_add_flash_ok_message(_m('Currency updated'), 'admin');
+                    } else {
+                        osc_add_flash_info_message(_m('No changes were made'), 'admin');
+                    }
+                } catch (NotFoundException $e) {
+                    osc_add_flash_warning_message(sprintf(_m("The currency code '%s' doesn't exist"), $currencyCode), 'admin');
                 }
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=currencies');
                 break;
@@ -157,22 +123,15 @@ class CAdminSettingsCurrencies extends AdminSecBaseModel
 
                 $msg_current = '';
                 foreach ($aCurrencyCode as $currencyCode) {
-                    if (preg_match('/.{1,3}/', $currencyCode) && $currencyCode != osc_currency()) {
-                        $rowChanged += Currency::newInstance()->delete(array('pk_c_code' => $currencyCode));
+                    $currencyCode = is_string($currencyCode) ? trim($currencyCode) : '';
+                    try {
+                        $this->service()->delete($currencyCode);
+                        $rowChanged++;
+                    } catch (ConflictException $e) {
+                        $msg_current .= '</p><p>' . osc_esc_html($currencyCode . ': ' . $e->getMessage());
+                    } catch (RefusedException | RuntimeException $e) {
+                        continue;
                     }
-
-                    // foreign key error
-                    if (Currency::newInstance()->getErrorLevel() == '1451') {
-                        $msg_current .= sprintf('</p><p>'
-                            . _m("%s couldn't be deleted because it has listings associated to it"), $currencyCode);
-                    } elseif ($currencyCode == osc_currency()) {
-                        $msg_current .= sprintf('</p><p>'
-                            . _m("%s couldn't be deleted because it's the default currency"), $currencyCode);
-                    }
-                }
-
-                if ($rowChanged > 0) {
-                    osc_purge_page_cache('currency');
                 }
 
                 $msg    = '';
@@ -218,6 +177,11 @@ class CAdminSettingsCurrencies extends AdminSecBaseModel
                 $this->doView('settings/currencies.php');
                 break;
         }
+    }
+
+    private function service(): CurrencyService
+    {
+        return CurrencyService::make();
     }
 }
 

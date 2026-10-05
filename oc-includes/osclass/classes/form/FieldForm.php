@@ -453,7 +453,7 @@ class FieldForm extends Form
                     if ($search) {
                         $options['sanitize'] = 'html';
 
-                        echo '<h6>' . $label . '</h6>';
+                        echo '<h6>' . osc_esc_html((string) $label) . '</h6>';
                         echo self::getInstance()->text($name, $value, $attributes, $options);
                     } else {
                         $value              = osc_apply_filter(
@@ -468,7 +468,7 @@ class FieldForm extends Form
                     break;
                 case 'DROPDOWN':
                     if ($search) {
-                        echo '<h6>' . $label . '</h6>';
+                        echo '<h6>' . osc_esc_html((string) $label) . '</h6>';
                     } else {
                         $options['label'] = $label;
                     }
@@ -481,7 +481,7 @@ class FieldForm extends Form
                     break;
                 case 'RADIO':
                     if ($search) {
-                        echo '<h6>' . $label . '</h6>';
+                        echo '<h6>' . osc_esc_html((string) $label) . '</h6>';
                     } else {
                         $options['label'] = $label;
                     }
@@ -500,7 +500,7 @@ class FieldForm extends Form
                     break;
                 case 'DATE':
                     if ($search) {
-                        echo '<h6 id="' . $id . '-label">' . $label . '</h6>';
+                        echo '<h6 id="' . $id . '-label">' . osc_esc_html((string) $label) . '</h6>';
                         $attributes['aria-labelledby'] = $id . '-label';
                     } else {
                         $options['label'] = $label;
@@ -519,9 +519,9 @@ class FieldForm extends Form
                 case 'DATEINTERVAL':
                     $groupLabelId = $id . '-label';
                     if ($search) {
-                        echo '<h6 id="' . $groupLabelId . '">' . $label . '</h6>';
+                        echo '<h6 id="' . $groupLabelId . '">' . osc_esc_html((string) $label) . '</h6>';
                     } else {
-                        echo '<label id="' . $groupLabelId . '">' . $label . '</label>';
+                        echo '<label id="' . $groupLabelId . '">' . osc_esc_html((string) $label) . '</label>';
                     }
                     unset($attributes['id']);
                     echo self::getInstance()->hidden($name . '[from]', $value['from'], ['id' => $id . '_from']);
@@ -542,7 +542,7 @@ class FieldForm extends Form
                     break;
                 case 'NUMBER':
                     if ($search) {
-                        echo '<h6 id="' . $id . '-label">' . $label . '</h6>';
+                        echo '<h6 id="' . $id . '-label">' . osc_esc_html((string) $label) . '</h6>';
 
                         echo '<div class="input-group input-group-sm" role="group" aria-labelledby="' . $id . '-label">';
                         unset($attributes['id']);
@@ -565,7 +565,7 @@ class FieldForm extends Form
                     break;
                 default:
                     if ($search) {
-                        echo '<h6>' . $label . '</h6>';
+                        echo '<h6>' . osc_esc_html((string) $label) . '</h6>';
                     } else {
                         $options['label'] = $label;
                     }

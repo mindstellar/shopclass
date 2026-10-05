@@ -285,5 +285,5 @@ function osc_field_is_visible($field, $item = null)
         }
     }
 
-    return \mindstellar\forms\FieldValidator::evaluateCondition($rules['show_when'], $slugValues);
+    return \mindstellar\form\builder\FieldValidator::evaluateCondition($rules['show_when'], $slugValues);
 }

@@ -71,7 +71,7 @@ class CAdminCFields extends AdminSecBaseModel
                 // Field palette (all definitions) + forms with their ordered field ids,
                 // for the two-pane drag-and-drop builder.
                 $allFields = $this->fieldManager->listAll();
-                $service   = new \mindstellar\forms\FormService();
+                $service   = new \mindstellar\form\builder\FormService();
                 $groupModel = FieldGroup::newInstance();
                 $forms     = $groupModel->listAll();
                 foreach ($forms as &$form) {
@@ -141,7 +141,7 @@ class CAdminCFields extends AdminSecBaseModel
      */
     private function submissionsView()
     {
-        $submissionModel = \mindstellar\model\FormSubmission::newInstance();
+        $submissionModel = new \mindstellar\model\FormSubmission();
         $forms           = FieldGroup::newInstance()->listAll();
 
         // Which form to show — the requested one, else the first with entries, else
