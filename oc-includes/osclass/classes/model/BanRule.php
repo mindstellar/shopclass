@@ -17,6 +17,8 @@
  */
 class BanRule extends DAO
 {
+    protected $cacheGroup = 'ban_rule';
+
     /**
      *
      * @var \BanRule

@@ -258,9 +258,11 @@ pin('comments off: 7', [7, false], $legacy(['id' => (string) $sueCar, 'body' => 
 Preference::getInstance()->set('enabled_comments', '1');
 osc_reset_preferences();
 $admin->query("INSERT INTO {$p}t_ban_rule (s_name, s_ip) VALUES ('test', '192.0.2.70')");
+\mindstellar\security\BanRuleStore::forget();
 osc_reset_preferences();
 pin('a banned address: 5, on the web as in the API', [[5, false], '403 forbidden'], [$legacy(['id' => (string) $sueCar, 'body' => 'Banned']), api_admin_code($call('POST', 'listings/' . $sueCar . '/comments', ['body' => 'Banned'], $tomToken))]);
 $admin->query("DELETE FROM {$p}t_ban_rule");
+\mindstellar\security\BanRuleStore::forget();
 $guest = static fn (): string => (string) (static function () {
     try {
         (new \mindstellar\comment\CommentService())->post($GLOBALS['sueCar'], ['author_name' => 'Ann', 'author_email' => 'ann@example.test', 'body' => 'Guest'], \mindstellar\auth\Actor::guest('192.0.2.80'));

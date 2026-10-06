@@ -121,7 +121,7 @@ function osc_proxy_ip_mismatch()
 function osc_ban_rules(string $scope = 'all'): array
 {
     try {
-        $rows = \mindstellar\security\BanRuleStore::all();
+        $rows = \mindstellar\security\BanRuleStore::cached();
     } catch (\mindstellar\database\DbException $e) {
         return array();
     }

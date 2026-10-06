@@ -265,6 +265,17 @@ pin('a permanent ban blocks everything', 'all', $row['s_scope'] ?? null);
 pin('and never ends', true, is_array($row) && array_key_exists('dt_expires', $row) && $row['dt_expires'] === null);
 pin('so sign-in and posting are blocked too', 1, osc_is_banned('forever@example.test', '10.0.0.1'));
 
+harness_section('the ban list is cached, and every write clears it');
+$seed('cached@example.test', 'all', null);
+\mindstellar\security\BanRuleStore::forget();
+pin('a new rule is read', 1, osc_is_banned('cached@example.test', '10.0.0.1'));
+pin('a second check runs no query', 0, harness_query_count(static fn () => osc_is_banned('cached@example.test', '10.0.0.1')));
+$cachedId = (int) $admin->query("SELECT pk_i_id FROM $table WHERE s_email = 'cached@example.test'")->fetch_row()[0];
+BanRule::getInstance()->deleteByPrimaryKey($cachedId);
+pin('a delete through the BanRule model clears it', 0, osc_is_banned('cached@example.test', '10.0.0.1'));
+\mindstellar\security\BanRuleStore::add('t', '', 'added@example.test', 'all', null);
+pin('so does an add through the store', 1, osc_is_banned('added@example.test', '10.0.0.1'));
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }

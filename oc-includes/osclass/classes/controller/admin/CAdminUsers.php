@@ -711,6 +711,7 @@ class CAdminUsers extends AdminSecBaseModel
     private function saveBanRule($id)
     {
         $result = osc_settings_save(BanRuleForm::register(), $id);
+        \mindstellar\security\BanRuleStore::forget();
 
         if ($result['errors'] !== array()) {
             foreach ($result['errors'] as $error) {

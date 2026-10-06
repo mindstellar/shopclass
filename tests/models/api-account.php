@@ -368,8 +368,10 @@ pin('the old password no longer signs in', 400, $login('uma', 'correct horse')->
 harness_section('bans');
 $s = $login('uma', 'battery staple')->body();
 $admin->query("INSERT INTO {$p}t_ban_rule (s_name, s_email) VALUES ('test', 'uma.new@example.test')");
+\mindstellar\security\BanRuleStore::forget();
 pin('a ban stops a refresh', '400 invalid_grant', $code($call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $s['refresh_token']))));
 $admin->query("DELETE FROM {$p}t_ban_rule");
+\mindstellar\security\BanRuleStore::forget();
 pin('and ends that sign-in', 400, $call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $s['refresh_token']))->status());
 
 harness_section('suspension and sign-out');

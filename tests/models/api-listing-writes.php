@@ -531,11 +531,15 @@ pin('prepareDataFrom(): only the category\'s fields, purified as the form\'s', a
 
 harness_section('bans and hourly caps');
 $admin->query("INSERT INTO {$p}t_ban_rule (s_name, s_email) VALUES ('test', 'sue@example.test')");
+\mindstellar\security\BanRuleStore::forget();
 pin('a banned e-mail cannot post a listing', '403 forbidden', $code($call('POST', 'listings', $listing(array('title' => 'Banned car')), $sueToken)));
 $admin->query("DELETE FROM {$p}t_ban_rule");
+\mindstellar\security\BanRuleStore::forget();
 $admin->query("INSERT INTO {$p}t_ban_rule (s_name, s_ip) VALUES ('test', '192.0.2.60')");
+\mindstellar\security\BanRuleStore::forget();
 pin('nor a banned address', '403 forbidden', $code($call('POST', 'listings', $listing(array('title' => 'Banned car')), $sueToken)));
 $admin->query("DELETE FROM {$p}t_ban_rule");
+\mindstellar\security\BanRuleStore::forget();
 pin('none of it was saved', 0, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_description WHERE s_title = 'Banned car'")->fetch_row()[0]);
 
 $GLOBALS['lw_limiter'] = api_test_limiter(static fn (string $bucket) => $bucket === 'api_listing_post' ? 3 : 1);
@@ -661,8 +665,8 @@ $qPost = harness_query_count(static function () use ($call, $listing, $sueToken,
 });
 $qPatch = harness_query_count(static fn () => $call('PATCH', 'listings/' . $qMade, array('price' => '999'), $sueToken));
 echo "  POST /listings: $qPost queries, PATCH: $qPatch\n";
-pin('POST /listings, no photos: 35 queries (the sign-in is live, no ban rule matches)', 35, $qPost);
-pin('PATCH /listings/{id}, no photos: 33 queries', 33, $qPatch);
+pin('POST /listings, no photos: 33 queries (one checks the sign-in is live; ban rules come from the cache)', 33, $qPost);
+pin('PATCH /listings/{id}, no photos: 32 queries', 32, $qPatch);
 
 harness_section('deleting a listing');
 pin('another seller cannot delete it', '403 not_owner', $code($call('DELETE', 'listings/' . $made, null, $tomToken)));
