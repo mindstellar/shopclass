@@ -104,9 +104,9 @@ final class CommentService
         $body        = trim(strip_tags((string) ($input['body'] ?? '')));
 
         match (CommentPolicy::mayPost($actor, $authorEmail)) {
-            CommentPolicy::DISABLED        => throw new ForbiddenException(_m('Sorry, comments are disabled')),
-            CommentPolicy::BANNED          => throw new ForbiddenException(_m('Your comment has been marked as spam')),
-            CommentPolicy::REGISTERED_ONLY => throw new ForbiddenException(_m('You need to be logged to comment')),
+            CommentPolicy::DISABLED        => throw new ForbiddenException(_m('Sorry, comments are disabled'), ForbiddenException::DISABLED),
+            CommentPolicy::BANNED          => throw new ForbiddenException(_m('Your comment has been marked as spam'), ForbiddenException::BANNED),
+            CommentPolicy::REGISTERED_ONLY => throw new ForbiddenException(_m('You need to be logged to comment'), ForbiddenException::SIGN_IN),
             default                        => null,
         };
         if (!is_array($item) || $item === [] || !ListingPolicy::canView($item, $actor)) {
@@ -189,7 +189,7 @@ final class CommentService
         osc_run_hook('pre_item_delete_comment_post', $item, $commentId);
 
         if ($actor->userId() === null) {
-            throw new ForbiddenException(_m('You must be logged in to delete a comment'));
+            throw new ForbiddenException(_m('You must be logged in to delete a comment'), ForbiddenException::SIGN_IN);
         }
         if (!$found) {
             throw new NotFoundException(_m("The comment doesn't exist"));
@@ -198,7 +198,7 @@ final class CommentService
             throw new ConflictException(_m('The comment is not active, you cannot delete it'));
         }
         if (!CommentPolicy::isAuthor($comment, $actor)) {
-            throw new ForbiddenException(_m('The comment was not added by you, you cannot delete it'));
+            throw new ForbiddenException(_m('The comment was not added by you, you cannot delete it'), ForbiddenException::NOT_OWNER);
         }
 
         DeferredMail::transaction(function () use ($commentId): void {

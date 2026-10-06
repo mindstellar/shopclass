@@ -97,7 +97,7 @@ final class Authenticator
         }
         $userId = $credential->userId();
         if ($userId !== null && $this->banned !== null && ($this->banned)($userId, $request->ip())) {
-            throw ProblemException::of('forbidden', 'This account or address may not use the API.');
+            throw ProblemException::of('banned', 'This account or address may not use the API.');
         }
 
         return $credential;

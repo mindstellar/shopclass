@@ -95,7 +95,7 @@ final class PageTokenAuth
             throw ProblemException::from(self::refused('The page token does not belong to this sign-in. Reload the page.'));
         }
         if (($this->banned)($user, $request->ip())) {
-            throw ProblemException::of('forbidden', 'This account or address may not use the API.');
+            throw ProblemException::of('banned', 'This account or address may not use the API.');
         }
         $id = (int) $user['pk_i_id'];
 

@@ -231,7 +231,7 @@ pin('the web delete fires these, in order', ['pre_item_delete_comment_post', 'de
 pin('the API delete fires the same, in the same order', $webDelete, $apiDelete);
 pin('both rows are gone', [], $comments($sueCar));
 $other = seed_exec($admin, "INSERT INTO {$p}t_item_comment (fk_i_item_id, dt_pub_date, s_title, s_author_name, s_author_email, s_body, b_enabled, b_active, b_spam, fk_i_user_id) VALUES (?, NOW(), '', 'Tom', 'tom@example.test', 'Mine', 1, 1, 0, ?)", 'ii', [$sueCar, $tom]);
-pin('someone else\'s comment is not deleted on either side', [false, '403 forbidden', 1], [
+pin('someone else\'s comment is not deleted on either side', [false, '403 not_owner', 1], [
     $web['deleteComment']($sue, $sueCar, $other), api_admin_code($call('DELETE', 'comments/' . $other, null, $sueToken)), count($comments($sueCar)),
 ]);
 $pendingOwn = static fn (): int => seed_exec($admin, "INSERT INTO {$p}t_item_comment (fk_i_item_id, dt_pub_date, s_title, s_author_name, s_author_email, s_body, b_enabled, b_active, b_spam, fk_i_user_id) VALUES (?, NOW(), '', 'Tom', 'tom@example.test', 'Waiting', 1, 0, 0, ?)", 'ii', [$sueCar, $tom]);
@@ -260,7 +260,7 @@ osc_reset_preferences();
 $admin->query("INSERT INTO {$p}t_ban_rule (s_name, s_ip) VALUES ('test', '192.0.2.70')");
 \mindstellar\security\BanRuleStore::forget();
 osc_reset_preferences();
-pin('a banned address: 5, on the web as in the API', [[5, false], '403 forbidden'], [$legacy(['id' => (string) $sueCar, 'body' => 'Banned']), api_admin_code($call('POST', 'listings/' . $sueCar . '/comments', ['body' => 'Banned'], $tomToken))]);
+pin('a banned address: 5, on the web as in the API', [[5, false], '403 banned'], [$legacy(['id' => (string) $sueCar, 'body' => 'Banned']), api_admin_code($call('POST', 'listings/' . $sueCar . '/comments', ['body' => 'Banned'], $tomToken))]);
 $admin->query("DELETE FROM {$p}t_ban_rule");
 \mindstellar\security\BanRuleStore::forget();
 $guest = static fn (): string => (string) (static function () {

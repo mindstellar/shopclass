@@ -394,12 +394,12 @@ pin('the key made before the password change is dead', 401, $call('GET', 'accoun
 // A key made on the admin screen or the CLI works the same.
 $userKey = (new ApiKeys(new ApiCredential(), new Scopes(), new SystemClock()))->create('key', 'script', array('listings:read', 'account:read'), \mindstellar\apiaccess\KeyOwner::user($uma))->token();
 pin('a key made now works', 200, $call('GET', 'account', null, $userKey)->status());
-pin('a key cannot sign out', '403 forbidden', $code($call('POST', 'auth/sign-out', null, $userKey)));
+pin('a key cannot sign out', '403 wrong_credential', $code($call('POST', 'auth/sign-out', null, $userKey)));
 
 harness_section('personal keys');
 $s       = $login('uma', 'battery staple')->body();
 $keyBody = array('name' => 'Backup script', 'scopes' => array('listings:read', 'account:read'), 'expires_at' => date('Y-m-d', time() + 30 * 86400), 'current_password' => 'battery staple');
-pin('off by default: 403', '403 forbidden', $code($call('POST', 'account/keys', $keyBody, $s['access_token'])));
+pin('off by default: 403', '403 feature_disabled', $code($call('POST', 'account/keys', $keyBody, $s['access_token'])));
 $settings = new ApiSettings(true, userKeys: true);
 $r        = $call('POST', 'account/keys', $keyBody, $s['access_token']);
 pin('when on, a key is made and its token shown once', array(201, 'Backup script', array('listings:read', 'account:read'), true), array($r->status(), $r->body()['data']['name'] ?? null, $r->body()['data']['scopes'] ?? null, str_starts_with((string) ($r->body()['data']['token'] ?? ''), 'sck_')));
@@ -443,7 +443,7 @@ $settings = new ApiSettings(true);
 
 harness_section('sign-up');
 $signup = array('name' => 'Neo', 'email' => 'neo@example.test', 'password' => 'red pill', 'username' => 'neo');
-pin('off by default: 403', '403 forbidden', $code($call('POST', 'users', $signup)));
+pin('off by default: 403', '403 feature_disabled', $code($call('POST', 'users', $signup)));
 $settings = new ApiSettings(true, registration: true);
 $fired    = array();
 $r        = $call('POST', 'users', $signup, null, array(), '203.0.113.7');

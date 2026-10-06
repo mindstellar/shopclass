@@ -91,7 +91,7 @@ final class PersonalKeys
     public function create(array $user, string $password, string $name, array $scopes, string $expires): IssuedToken
     {
         if (!$this->allowed) {
-            throw new ForbiddenException(_m('This site does not let users make API keys.'));
+            throw new ForbiddenException(_m('This site does not let users make API keys.'), ForbiddenException::DISABLED);
         }
         Reauth::check($user, $password);
         try {

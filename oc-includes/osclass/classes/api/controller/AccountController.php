@@ -124,7 +124,7 @@ final class AccountController
         $userId = (int) $user['pk_i_id'];
         $family = $credential->family();
         if ($family === null) {
-            throw ProblemException::of('forbidden', 'Changing the password needs an access token.');
+            throw ProblemException::of('wrong_credential', 'Changing the password needs an access token.');
         }
         $label = '';
         foreach ($this->sessions->list($userId) as $session) {
@@ -151,7 +151,7 @@ final class AccountController
     public function signOutEverywhere(Request $request, Credential $credential, array $args): Response
     {
         if ($credential->family() === null) {
-            throw ProblemException::of('forbidden', 'Signing out of all devices needs an access token.');
+            throw ProblemException::of('wrong_credential', 'Signing out of all devices needs an access token.');
         }
         $userId = (int) $this->user($credential)['pk_i_id'];
         \mindstellar\auth\SignOut::everywhereUser($userId);

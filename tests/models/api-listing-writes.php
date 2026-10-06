@@ -532,12 +532,12 @@ pin('prepareDataFrom(): only the category\'s fields, purified as the form\'s', a
 harness_section('bans and hourly caps');
 $admin->query("INSERT INTO {$p}t_ban_rule (s_name, s_email) VALUES ('test', 'sue@example.test')");
 \mindstellar\security\BanRuleStore::forget();
-pin('a banned e-mail cannot post a listing', '403 forbidden', $code($call('POST', 'listings', $listing(array('title' => 'Banned car')), $sueToken)));
+pin('a banned e-mail cannot post a listing', '403 banned', $code($call('POST', 'listings', $listing(array('title' => 'Banned car')), $sueToken)));
 $admin->query("DELETE FROM {$p}t_ban_rule");
 \mindstellar\security\BanRuleStore::forget();
 $admin->query("INSERT INTO {$p}t_ban_rule (s_name, s_ip) VALUES ('test', '192.0.2.60')");
 \mindstellar\security\BanRuleStore::forget();
-pin('nor a banned address', '403 forbidden', $code($call('POST', 'listings', $listing(array('title' => 'Banned car')), $sueToken)));
+pin('nor a banned address', '403 banned', $code($call('POST', 'listings', $listing(array('title' => 'Banned car')), $sueToken)));
 $admin->query("DELETE FROM {$p}t_ban_rule");
 \mindstellar\security\BanRuleStore::forget();
 pin('none of it was saved', 0, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_description WHERE s_title = 'Banned car'")->fetch_row()[0]);
@@ -700,10 +700,10 @@ pin('an empty body is 422', 422, $call('POST', 'listings/' . $withPhoto . '/comm
 pin('a pending listing takes no comments from others', 404, $call('POST', 'listings/' . $pendingId . '/comments', array('body' => 'Hello'), $tomToken)->status());
 Preference::getInstance()->set('enabled_comments', '0');
 osc_reset_preferences();
-pin('with comments off it is 403', '403 forbidden', $code($call('POST', 'listings/' . $withPhoto . '/comments', array('body' => 'Hello'), $tomToken)));
+pin('with comments off it is 403', '403 feature_disabled', $code($call('POST', 'listings/' . $withPhoto . '/comments', array('body' => 'Hello'), $tomToken)));
 Preference::getInstance()->set('enabled_comments', '1');
 osc_reset_preferences();
-pin('only the author deletes a comment', '403 forbidden', $code($call('DELETE', 'comments/' . $commentId, null, $sueToken)));
+pin('only the author deletes a comment', '403 not_owner', $code($call('DELETE', 'comments/' . $commentId, null, $sueToken)));
 $fired = array();
 pin('the author does: 204', array(204, 1), array($call('DELETE', 'comments/' . $commentId, null, $tomToken)->status(), $fired['pre_item_delete_comment_post'] ?? 0));
 pin('it is gone', 0, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_comment WHERE pk_i_id = $commentId")->fetch_row()[0]);

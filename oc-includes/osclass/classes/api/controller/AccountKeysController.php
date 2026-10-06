@@ -121,7 +121,7 @@ final class AccountKeysController
     private function allowed(): void
     {
         if (!$this->keys->allowed()) {
-            throw ProblemException::of('forbidden', _m('This site does not let users make API keys.'));
+            throw ProblemException::of('feature_disabled', _m('This site does not let users make API keys.'));
         }
     }
 }

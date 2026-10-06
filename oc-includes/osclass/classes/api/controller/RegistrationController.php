@@ -49,7 +49,7 @@ final class RegistrationController
     public function register(Request $request, Credential $credential, array $args): Response
     {
         if (!$this->settings->registration() || !osc_users_enabled() || !osc_user_registration_enabled()) {
-            throw ProblemException::of('forbidden', 'This site does not take sign-ups through the API.');
+            throw ProblemException::of('feature_disabled', 'This site does not take sign-ups through the API.');
         }
         // Both limits stand in for a captcha, so they fail closed: no counter, no sign-up.
         $this->limiter->enforceAll($this->api->ratePolicy()->signUp($request->ip()), 'Too many sign-ups right now. Try again later.', false);
@@ -58,7 +58,7 @@ final class RegistrationController
         $email = trim((string) ($input['email'] ?? ''));
         osc_run_hook('before_user_register');
         if (osc_is_banned($email, $request->ip()) !== 0) {
-            throw ProblemException::of('forbidden', 'This e-mail address or your address may not sign up.');
+            throw ProblemException::of('banned', 'This e-mail address or your address may not sign up.');
         }
 
         $password = (string) ($input['password'] ?? '');

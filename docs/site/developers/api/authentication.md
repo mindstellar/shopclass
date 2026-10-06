@@ -104,7 +104,7 @@ curl -X POST $API/auth/token \
 | `refresh_token` | `refresh_token` | The `scr_…` token. |
 
 Who may sign in: active, enabled accounts of a site with user accounts on. Admins use keys.
-The site must have users on, or the answer is `403 forbidden`. A banned or suspended
+The site must have users on, or the answer is `403 feature_disabled`. A banned or suspended
 account, or one that is not activated yet, gets `400 invalid_grant`.
 
 ### Access tokens
@@ -114,7 +114,7 @@ account, or one that is not activated yet, gets `400 invalid_grant`.
 | Life | 15 minutes. `expires_in` says. |
 | Sent as | `Authorization: Bearer sca_…` |
 | Scopes | The ones granted at sign-in, cut down to what the user may hold today. |
-| Ends early | When the user signs out, changes their password, signs out of all devices, or the account is disabled. A ban rule that matches the user or the address refuses it with `403 forbidden`. |
+| Ends early | When the user signs out, changes their password, signs out of all devices, or the account is disabled. A ban rule that matches the user or the address refuses it with `403 banned`. |
 
 When it runs out, calls answer `401 token_expired`, not `unauthorized`:
 
@@ -219,7 +219,7 @@ token and a refresh token. Store both. Wrong passwords count toward the same lim
 
 A personal key is for a user's own script: a long-lived credential that needs no sign-in
 dance. The site owner must switch on **Let users make personal API keys**, or `/account/keys`
-answers `403 forbidden`.
+answers `403 feature_disabled`.
 
 ```bash
 curl -X POST $API/account/keys \
@@ -315,7 +315,7 @@ Every rule must pass, or the call is refused. A call with a page token is never 
 | Page token | Only in the `X-Shopclass-Token` header. Never read from the query string or the body. It names the user and their sign-out stamp, so another user's token, or one made before a password change or a sign-out of all devices, is refused: `401 session_required`. An expired one is `401 token_expired`. |
 | Sign-in cookie | The site's signed sign-in cookie for that same user. With no valid cookie: `401 session_required`. A cookie with no page token stays anonymous. |
 | Same origin | `Origin` must be the site's own scheme, host and port: `https://example.com` for a site at `https://example.com/shop/`. A GET with no `Origin` must show `Sec-Fetch-Site: same-origin`, or a `Referer` from the site. Anything else is `403 cross_origin`. `http` and `https`, other ports and subdomains are other origins. |
-| User only | An active, enabled user who is not banned. Suspended or unconfirmed: `401 session_required`. Banned: `403 forbidden`. An admin signed in to the admin panel gets nothing here. |
+| User only | An active, enabled user who is not banned. Suspended or unconfirmed: `401 session_required`. Banned: `403 banned`. An admin signed in to the admin panel gets nothing here. |
 | Scopes | Every user scope except `account:write`: no profile, password or e-mail change, no keys, no ending sign-ins. No admin scope. |
 | No CORS | An answer never carries `Access-Control-Allow-Origin`, even when the site allows `*`. `X-Shopclass-Token` is not an allowed CORS header, so a page on another site cannot send it. |
 | Never stored | Answers are `Cache-Control: private, no-store` and vary on `Cookie`. |
@@ -347,7 +347,7 @@ origin, so they can read each other's pages. Give each its own host.
 | `GET /auth/session` | no | no | no | no | yes |
 
 Writes to a user's own data need an access token or a personal key. An admin key is not a
-user, so it gets `403 forbidden` there.
+user, so it gets `403 wrong_credential` there.
 
 ## Scopes
 

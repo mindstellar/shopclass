@@ -88,7 +88,7 @@ final class ListingService
         }
         $refusal = ListingPolicy::mayPost($actor, $email);
         if ($refusal !== ListingPolicy::ALLOWED) {
-            throw new ForbiddenException(self::refusalMessage($refusal));
+            throw new ForbiddenException(self::refusalMessage($refusal), $refusal === ListingPolicy::REGISTERED_ONLY ? ForbiddenException::SIGN_IN : ForbiddenException::BANNED);
         }
         $this->allowed = $key;
     }

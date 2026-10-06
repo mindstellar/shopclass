@@ -387,11 +387,11 @@ pin('a write is never stored and varies on nothing', ['private, no-store', null]
     $call('POST', 'mine', $user->token(), [], '{"title":"x"}')->header('Cache-Control'), $call('POST', 'mine', $user->token(), [], '{"title":"x"}')->header('Vary'),
 ]);
 $r = $call('GET', 'users', $public->token());
-pin('a public key on an admin route is 403', [403, 'forbidden'], [$r->status(), $r->body()['code']]);
+pin('a public key on an admin route is 403', [403, 'wrong_credential'], [$r->status(), $r->body()['code']]);
 $r = $call('GET', 'users', $mod->token());
 pin('a key without the scope is 403 insufficient_scope', [403, 'insufficient_scope', 'Bearer error="insufficient_scope", scope="admin:users"'], [$r->status(), $r->body()['code'], $r->header('WWW-Authenticate')]);
 pin('an admin key with the scope passes', 200, $call('GET', 'users', $new->token())->status());
-pin('an admin route naming no scope turns a moderator away', [403, 'forbidden'], [$call('GET', 'staff', $mod->token())->status(), $call('GET', 'staff', $mod->token())->body()['code']]);
+pin('an admin route naming no scope turns a moderator away', [403, 'wrong_credential'], [$call('GET', 'staff', $mod->token())->status(), $call('GET', 'staff', $mod->token())->body()['code']]);
 pin('and admits a full admin', 200, $call('GET', 'staff', $new->token())->status());
 pin('an admin key on a user route is 403', 403, $call('POST', 'mine', $new->token(), [], '{"title":"x"}')->status());
 pin('a user key with the scope passes', 200, $call('POST', 'mine', $user->token(), [], '{"title":"x"}')->status());

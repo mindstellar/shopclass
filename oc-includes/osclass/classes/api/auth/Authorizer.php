@@ -31,15 +31,15 @@ final class Authorizer
             return;
         }
         if ($route->auth() === RouteSpec::AUTH_USER && !$credential->isUser()) {
-            throw ProblemException::of('forbidden', 'This endpoint needs a user\'s token or key.');
+            throw ProblemException::of('wrong_credential', 'This endpoint needs a user\'s token or key.');
         }
         $scope = $route->scope();
         if ($route->auth() === RouteSpec::AUTH_ADMIN && !$credential->isAdmin()) {
-            throw ProblemException::of('forbidden', 'This endpoint needs an admin key.');
+            throw ProblemException::of('wrong_credential', 'This endpoint needs an admin key.');
         }
         // A moderator holds only the moderator scopes, so an admin route naming no scope is full admins' only.
         if ($route->auth() === RouteSpec::AUTH_ADMIN && $scope === null && $credential->isModerator()) {
-            throw ProblemException::of('forbidden', 'This endpoint needs a full admin\'s key.');
+            throw ProblemException::of('wrong_credential', 'This endpoint needs a full admin\'s key.');
         }
         if ($scope !== null && !$credential->has($scope)) {
             throw ProblemException::from(Problem::insufficientScope($scope));

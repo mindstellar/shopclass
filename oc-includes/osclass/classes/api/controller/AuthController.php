@@ -58,7 +58,7 @@ final class AuthController
     {
         $input = $request->input();
         if (!osc_users_enabled()) {
-            throw ProblemException::of('forbidden', 'This site has no user accounts.');
+            throw ProblemException::of('feature_disabled', 'This site has no user accounts.');
         }
 
         $grant = $input['grant_type'] ?? null;
@@ -88,7 +88,7 @@ final class AuthController
     {
         $family = $credential->isAccessToken() ? $credential->family() : null;
         if ($family === null) {
-            throw ProblemException::of('forbidden', 'Signing out needs an access token. Revoke a key at /account/keys.');
+            throw ProblemException::of('wrong_credential', 'Signing out needs an access token. Revoke a key at /account/keys.');
         }
         $this->refresh->end((int) $credential->userId(), ($request->input()['all'] ?? false) === true ? null : $family);
 

@@ -132,7 +132,8 @@ Plugins can change the body before it is saved with the `api_listing_input` filt
 |---|---|
 | `422 validation_failed` | A bad member, or the web form's own refusal: a missing field, or the posting wait. `errors` points at the member. |
 | `422 listing_limit` | The user has reached the site's listing limit. `detail` says which. |
-| `403 forbidden` | The account or address is banned from posting. |
+| `403 banned` | The account or address is banned from posting. |
+| `403 wrong_credential` | The site lets only signed-in users post, and the caller is not one. |
 | `429 rate_limited` | Over the [hourly cap](#limits). |
 
 ## Edit a listing
@@ -321,7 +322,7 @@ curl -i -X POST $API/users -H "Content-Type: application/json" \
 
 `confirmed` is `false` until the link in the activation e-mail is opened. The user cannot sign in
 before that. Optional: `username`, `phone_land`, `phone_mobile`. A site that is off answers
-`403 forbidden`.
+`403 feature_disabled`. A banned e-mail or address answers `403 banned`.
 
 There is no captcha to show, so sign-up is limited: **5 per address and 100 for the whole
 site an hour**. If the site cannot count, it refuses.

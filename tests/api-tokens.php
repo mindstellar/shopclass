@@ -355,10 +355,10 @@ $asKey   = new Request('GET', 'v1/x', [], ['Authorization' => 'Bearer ' . $made-
 $asToken = new Request('GET', 'v1/x', [], ['Authorization' => 'Bearer ' . $good], '192.0.2.10');
 pin('not banned, both work', [10, 10], [$banning->authenticate($asKey)?->userId(), $banning->authenticate($asToken)?->userId()]);
 $bannedIds = [10];
-pin('a banned user\'s key is 403', 'forbidden', $problem(static fn () => $banning->authenticate($asKey)));
-pin('and so is their access token', 'forbidden', $problem(static fn () => $banning->authenticate($asToken)));
+pin('a banned user\'s key is 403', 'banned', $problem(static fn () => $banning->authenticate($asKey)));
+pin('and so is their access token', 'banned', $problem(static fn () => $banning->authenticate($asToken)));
 $bannedIds = [];
-pin('a banned address is 403 too', 'forbidden', $problem(static fn () => $banning->authenticate(new Request('GET', 'v1/x', [], ['Authorization' => 'Bearer ' . $good], '203.0.113.9'))));
+pin('a banned address is 403 too', 'banned', $problem(static fn () => $banning->authenticate(new Request('GET', 'v1/x', [], ['Authorization' => 'Bearer ' . $good], '203.0.113.9'))));
 
 harness_section('limits and settings');
 pin('the API is off by default', false, (new ApiSettings())->enabled());

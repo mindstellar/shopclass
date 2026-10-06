@@ -44,6 +44,9 @@ final class Problem
         'token_expired'          => [401, 'The access token has expired.'],
         'session_required'       => [401, 'A signed-in session and a valid page token are required.'],
         'forbidden'              => [403, 'This credential may not use this endpoint.'],
+        'wrong_credential'       => [403, 'This endpoint needs another kind of credential.'],
+        'banned'                 => [403, 'This account or address is banned.'],
+        'feature_disabled'       => [403, 'The site has this feature switched off.'],
         'insufficient_scope'     => [403, 'This credential lacks the scope this endpoint needs.'],
         'not_owner'              => [403, 'Only the owner may change this resource.'],
         'api_disabled'           => [403, 'The API is switched off on this site.'],
@@ -141,7 +144,7 @@ final class Problem
         return match (true) {
             $e instanceof NotFoundException  => self::make('not_found', $e->getMessage()),
             $e instanceof ConflictException  => self::make('conflict', $e->getMessage()),
-            $e instanceof ForbiddenException => self::make('forbidden', $e->getMessage()),
+            $e instanceof ForbiddenException => self::make($e->reason() !== '' ? $e->reason() : 'forbidden', $e->getMessage()),
             $e instanceof BlockedException   => self::make($e->isRateLimit() ? 'rate_limited' : 'login_blocked', $e->getMessage())->withHeader('Retry-After', (string) $e->retryAfter()),
             $e instanceof InvalidException   => self::validation($e->errors()),
             default                          => self::rejected($e->getMessage()),

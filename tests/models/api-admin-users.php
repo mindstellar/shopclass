@@ -97,7 +97,7 @@ harness_section('users: who may call');
 pin('an admin key: 200', 200, $call('GET', 'admin/users', null, $boss)->status());
 pin('a moderator: 403, the users screen is closed to moderators', '403 insufficient_scope', api_admin_code($call('GET', 'admin/users', null, $mod)));
 pin('a key without admin:users: 403', '403 insufficient_scope', api_admin_code($call('GET', 'admin/users/' . $sue, null, $lister)));
-pin('a user key: 403 forbidden', '403 forbidden', api_admin_code($call('GET', 'admin/users', null, $sueKey)));
+pin('a user key: 403 wrong_credential', '403 wrong_credential', api_admin_code($call('GET', 'admin/users', null, $sueKey)));
 
 harness_section('users: the list');
 $r = $call('GET', 'admin/users', null, $boss, [], ['count' => 'true']);
@@ -114,7 +114,7 @@ pin('an unknown user is 404', 404, $call('GET', 'admin/users/99999', null, $boss
 harness_section('comments: who may call');
 pin('a moderator, as the comments screen is open to moderators: 200', 200, $call('GET', 'admin/comments', null, $mod)->status());
 pin('a key without admin:comments: 403', '403 insufficient_scope', api_admin_code($call('GET', 'admin/comments', null, $lister)));
-pin('a user key: 403 forbidden', '403 forbidden', api_admin_code($call('GET', 'admin/comments', null, $sueKey)));
+pin('a user key: 403 wrong_credential', '403 wrong_credential', api_admin_code($call('GET', 'admin/comments', null, $sueKey)));
 
 harness_section('comments: the list');
 $r = $call('GET', 'admin/comments', null, $mod, [], ['count' => 'true']);

@@ -43,7 +43,7 @@ final class PageTokenController
     {
         $user = $credential->isSession() ? $this->users->find((int) $credential->userId()) : null;
         if ($user === null) {
-            throw ProblemException::of('forbidden', 'Only a same-site session call can renew its page token.');
+            throw ProblemException::of('wrong_credential', 'Only a same-site session call can renew its page token.');
         }
         $token = $this->tokens->issue($user);
 

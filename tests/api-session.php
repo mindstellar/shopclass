@@ -258,7 +258,7 @@ $r = $kernel->handle($session($ok(10) + ['Content-Type' => 'application/json'], 
 pin('an account:write route is refused', [403, 'insufficient_scope'], $code($r));
 $reset();
 $r = $kernel->handle($session($ok(10), $cookie(10), 'GET', 'v1/admin/x'));
-pin('an admin route is refused', [403, 'forbidden'], $code($r));
+pin('an admin route is refused', [403, 'wrong_credential'], $code($r));
 $reset();
 $r = $kernel->handle($session(['Origin' => $site, 'X-Shopclass-Token' => 'scs_x'], null, 'GET', 'v1/admin/x'));
 pin('an admin web cookie gives nothing: no user cookie, no session', [401, 'session_required'], $code($r));
@@ -272,7 +272,7 @@ $r = $kernelFor()->handle($session($ok(12), $cookie(12)));
 pin('an unconfirmed user is refused', [401, 'session_required'], $code($r));
 $reset();
 $r = $kernel->handle($session($ok(13), $cookie(13)));
-pin('a banned user is refused', [403, 'forbidden'], $code($r));
+pin('a banned user is refused', [403, 'banned'], $code($r));
 $reset();
 $r = $kernel->handle($session($ok(10) + ['Content-Type' => 'application/json'], $cookie(10), 'POST', 'v1/notes'));
 pin('core actions run as the session user', [201, 10, 10], [$r->status(), $r->body()['data']['user'], osc_logged_user_id()]);
@@ -333,6 +333,6 @@ pin('a session gets a fresh page token', [200, PageTokens::HEADER, true, 'privat
 pin('which works', PageTokens::VALID, $tokens->check($fresh, $rows[10]));
 $reset();
 $r = $kernel->handle($session(['Authorization' => 'Bearer ' . (api_test_access_tokens($scopes, $accounts()))->issue($rows[10], ['account:read'], 'fam')], null, 'GET', 'v1/auth/session'));
-pin('an access token cannot get one', [403, 'forbidden'], $code($r));
+pin('an access token cannot get one', [403, 'wrong_credential'], $code($r));
 
 exit(harness_result());

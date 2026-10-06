@@ -107,7 +107,7 @@ Also settled before the first release, so no released client saw the old behavio
 - A credential that cannot read the `GET` of the path gets `412` for `If-Match`, instead of the check being skipped.
 - A stale `If-Match` on a resource the credential cannot see answers as its `GET` does (`404`), not `412`.
 - `Idempotency-Key` keeps every `4xx` except `429`, including a `409` or `422` from a core refusal.
-- A banned user's access token or personal key answers `403 forbidden`, as a session call does.
+- A banned user's access token or personal key answers `403 banned`, as a session call does.
 - A key made through `POST /admin/keys` cannot outlive the key that makes it.
 - `POST /auth/revoke` is now `POST /auth/sign-out`.
 - A list that stops at the offset paging limit says so with `meta.truncated: true`.
@@ -115,6 +115,7 @@ Also settled before the first release, so no released client saw the old behavio
 - A listing's contact e-mail and phone are hidden as its page hides them.
 - Listing status changes go through `PATCH /admin/listings/{id}` (`approved`, `blocked`, `spam`, `premium`). Only `bump` stays an action.
 - Custom fields are `custom_fields` everywhere: the listing and category member, `include=custom_fields`, the write body, the `custom_field[<id>]` filter, and the `/custom-fields` and `/admin/custom-fields` paths. `fields` is only the sparse fieldset.
+- A `403` names its reason: `wrong_credential`, `banned` or `feature_disabled`. `forbidden` is left for the other refusals.
 - Admin comments read back `approved` and `blocked`. Users read and filter on `confirmed` and `blocked` instead of `active` and `enabled`. Sign-up answers `confirmed`.
 
 See [Admin endpoints](/docs/developers/api/admin/) and [Webhooks](/docs/developers/api/webhooks/).

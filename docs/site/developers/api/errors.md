@@ -113,14 +113,27 @@ confirmed. Reload the page. See
 
 ### 403 Forbidden
 
+#### `wrong_credential`
+
+The endpoint needs another kind of credential: an admin key, a full admin's key (not a
+moderator's), a user's token or key, an access token (to change the password or sign out), or
+a same-site session call. Posting or commenting where the site allows only signed-in users
+also answers this.
+
+#### `banned`
+
+A ban rule matches the account, its e-mail or the address. It covers every call made with a
+user's token, key or session, sign-up, and posting a listing or comment.
+
+#### `feature_disabled`
+
+The site has the feature switched off: user accounts, sign-up through the API, personal keys
+or comments.
+
 #### `forbidden`
 
-The credential is fine but may not do this, for example:
-
-- an endpoint that needs an admin key, or a user's token or key
-- a feature the site has off: comments, personal keys, sign-up through the API, accounts
-- posting or commenting from a banned account or address
-- an admin key making a key or rotating one with a scope it does not hold, or rotating another admin's key
+Any other refusal: an admin key making or rotating a key with a scope it does not hold,
+rotating another admin's key, or an account that cannot save alerts.
 
 #### `insufficient_scope`
 

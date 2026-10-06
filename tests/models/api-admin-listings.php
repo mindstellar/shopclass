@@ -81,7 +81,7 @@ harness_section('who may call it');
 pin('an admin key: 200', 200, $call('GET', 'admin/listings', null, $boss)->status());
 pin('a moderator key, as the listings screen is open to moderators: 200', 200, $call('GET', 'admin/listings', null, $mod)->status());
 pin('an admin key without admin:listings: 403 insufficient_scope', '403 insufficient_scope', api_admin_code($call('GET', 'admin/listings', null, $noScope)));
-pin('a user key: 403 forbidden', '403 forbidden', api_admin_code($call('GET', 'admin/listings', null, $userKey)));
+pin('a user key: 403 wrong_credential', '403 wrong_credential', api_admin_code($call('GET', 'admin/listings', null, $userKey)));
 pin('no key: 401', 401, $call('GET', 'admin/listings')->status());
 pin('a moderator cannot reach the users screen\'s endpoints', '403 insufficient_scope', api_admin_code($call('GET', 'admin/users', null, $mod)));
 
@@ -150,7 +150,7 @@ $call('PATCH', 'admin/listings/' . $blocked, ['blocked' => true, 'approved' => f
 $r = $call('PATCH', 'admin/listings/' . $blocked, ['blocked' => false, 'approved' => true], $boss);
 pin('unblocking and approving in one call works', [200, 'active', false, true], [$r->status(), $r->body()['data']['status'] ?? null, $r->body()['data']['blocked'] ?? null, $r->body()['data']['approved'] ?? null]);
 $call('PATCH', 'admin/listings/' . $blocked, ['blocked' => true], $boss);
-pin('a user key cannot change the status', '403 forbidden', api_admin_code($call('PATCH', 'admin/listings/' . $live, ['blocked' => true], $userKey)));
+pin('a user key cannot change the status', '403 wrong_credential', api_admin_code($call('PATCH', 'admin/listings/' . $live, ['blocked' => true], $userKey)));
 pin('an unknown listing is 404', 404, $call('PATCH', 'admin/listings/99999', ['spam' => true], $boss)->status());
 $first = $row($live)['dt_first_pub_date'];
 $r     = $call('POST', 'admin/listings/' . $live . '/bump', null, $boss, ['Idempotency-Key' => 'bump-1']);
