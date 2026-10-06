@@ -57,7 +57,7 @@ if (!function_exists('osc_plugins_path')) {
 }
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hPlugins.php';
 $table = DB_TABLE_PREFIX . 't_job_queue';
-$queue = JobQueue::instance();
+$queue = JobQueue::getInstance();
 
 /** Raw seed, never through the code under test, so any state a pin needs can be forced. */
 $seed = static function (

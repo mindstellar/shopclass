@@ -122,7 +122,7 @@ final class StorageJobs
     private static function delete(Job $job): void
     {
         $snapshot    = $job->payload();
-        $adapter     = StorageManager::instance()->adapter($job->storage());
+        $adapter     = StorageManager::getInstance()->adapter($job->storage());
         $removeLocal = ($snapshot['local'] ?? true) !== false;
 
         if ($adapter !== null && $adapter->isRemote()) {
@@ -170,7 +170,7 @@ final class StorageJobs
     {
         $snapshot = $job->payload();
         $storage  = (string) $job->storage();
-        $adapter  = StorageManager::instance()->adapter($storage);
+        $adapter  = StorageManager::getInstance()->adapter($storage);
         if ($adapter === null || !$adapter->isRemote()) {
             return;
         }
@@ -221,7 +221,7 @@ final class StorageJobs
     {
         $snapshot = $job->payload();
         $storage  = (string) $job->storage();
-        $adapter  = StorageManager::instance()->adapter($storage);
+        $adapter  = StorageManager::getInstance()->adapter($storage);
         if ($adapter === null) {
             throw new RuntimeException('Unknown storage adapter: ' . $storage);
         }
@@ -261,7 +261,7 @@ final class StorageJobs
     {
         $snapshot = $job->payload();
         $storage  = (string) $job->storage();
-        $adapter  = StorageManager::instance()->adapter($storage);
+        $adapter  = StorageManager::getInstance()->adapter($storage);
         if ($adapter === null || !$adapter->isRemote()) {
             return;
         }

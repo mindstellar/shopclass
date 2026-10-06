@@ -78,7 +78,7 @@ class CAdminSettingsMedia extends AdminSecBaseModel
                 }
                 osc_csrf_check();
 
-                if (\mindstellar\storage\StorageManager::instance()->remote() === null) {
+                if (\mindstellar\storage\StorageManager::getInstance()->remote() === null) {
                     // No remote storage configured: regenerate every resource inline, exactly as before.
                     // One photo that cannot be opened, such as one over the pixel limit, is skipped.
                     $skipped = 0;
@@ -99,7 +99,7 @@ class CAdminSettingsMedia extends AdminSecBaseModel
                     // A remote adapter is active: regenerating inline would mean one synchronous
                     // download per resource, so page through resource ids (never loading full rows)
                     // and queue a 'regenerate' job per resource for the storage worker to process.
-                    $remoteId = \mindstellar\storage\StorageManager::instance()->remote()->getId();
+                    $remoteId = \mindstellar\storage\StorageManager::getInstance()->remote()->getId();
                     $itemResourceManager = ItemResource::newInstance();
                     $batchSize = 500;
                     $offset    = 0;

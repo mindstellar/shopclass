@@ -76,7 +76,7 @@ function osc_get_resource_url(array $resource, string $variant = ''): string
 // this is the owner-agnostic equivalent for ResourceUploader uploads. The row
 // carries s_owner_type, so the worker routes it through the Resource model.
 osc_add_hook('uploaded_resource', static function ($resource) {
-    $remote = StorageManager::instance()->remote();
+    $remote = StorageManager::getInstance()->remote();
     if ($remote === null || !is_array($resource) || empty($resource['pk_i_id'])) {
         return;
     }

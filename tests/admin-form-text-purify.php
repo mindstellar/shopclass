@@ -214,7 +214,7 @@ foreach (array('<script>alert(1)</script>', '&lt;script&gt;', 'Tom & Jerry', '5 
 
 harness_section('what a declared text field stores');
 
-SettingsPageRegistry::instance()->register('purify.test', array(
+SettingsPageRegistry::getInstance()->register('purify.test', array(
     'title'  => 'Purify',
     'fields' => array(
         array('type' => 'text', 'name' => 'title', 'label' => 'Title'),
@@ -226,7 +226,7 @@ SettingsPageRegistry::instance()->register('purify.test', array(
         array('type' => 'secret', 'name' => 'api_key', 'label' => 'API key', 'write_only' => false),
     ),
 ));
-$fields = SettingsPageRegistry::instance()->fields('purify.test');
+$fields = SettingsPageRegistry::getInstance()->fields('purify.test');
 
 submit(array(
     'title'    => $dirty,
@@ -264,7 +264,7 @@ pin('a secret is still read raw, and untrimmed with it', $dirty, osc_settings_sa
 
 harness_section('a translated field, whose value is one per locale');
 
-SettingsPageRegistry::instance()->register('purify.trans', array(
+SettingsPageRegistry::getInstance()->register('purify.trans', array(
     'title'  => 'Translated',
     'fields' => array(
         array('type' => 'text', 'name' => 's_title', 'label' => 'Title', 'translate' => true),

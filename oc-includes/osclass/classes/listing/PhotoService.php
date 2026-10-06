@@ -375,7 +375,7 @@ final class PhotoService
         // A file cannot come back, so it goes only once the delete has committed.
         \mindstellar\database\Db::afterCommit(static function () use ($resource): void {
             if (($resource['s_storage'] ?? 'local') === 'local'
-                && \mindstellar\storage\StorageManager::instance()->remote() === null) {
+                && \mindstellar\storage\StorageManager::getInstance()->remote() === null) {
                 try {
                     foreach (\mindstellar\storage\ResourceLocator::VARIANTS as $variant) {
                         $file = $resource['s_path'] . $resource['pk_i_id'] . $variant . '.' . $resource['s_extension'];

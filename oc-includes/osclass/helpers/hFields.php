@@ -29,7 +29,7 @@ use mindstellar\fields\FieldTypeRegistry;
  */
 function osc_register_field_type($id, $spec)
 {
-    FieldTypeRegistry::instance()->register($id, $spec);
+    FieldTypeRegistry::getInstance()->register($id, $spec);
 }
 
 /**
@@ -39,7 +39,7 @@ function osc_register_field_type($id, $spec)
  */
 function osc_field_types()
 {
-    return FieldTypeRegistry::instance()->all();
+    return FieldTypeRegistry::getInstance()->all();
 }
 
 /**
@@ -51,7 +51,7 @@ function osc_field_types()
  */
 function osc_field_type($id)
 {
-    return FieldTypeRegistry::instance()->get($id);
+    return FieldTypeRegistry::getInstance()->get($id);
 }
 
 /**
@@ -63,7 +63,7 @@ function osc_field_type($id)
  */
 function osc_field_type_storage($id)
 {
-    return FieldTypeRegistry::instance()->storageOf($id);
+    return FieldTypeRegistry::getInstance()->storageOf($id);
 }
 
 /**

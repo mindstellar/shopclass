@@ -457,7 +457,7 @@ $legacyBase = array(
 $metaCondition = static function (string $type, int $fieldId, $aux) use ($prefix, $metaTable): ?string {
     switch ($type) {
         case 'TEXT':
-            $escaped = "'" . \mindstellar\database\Connection::instance()->escape('%' . $aux . '%') . "'";
+            $escaped = "'" . \mindstellar\database\Connection::getInstance()->escape('%' . $aux . '%') . "'";
             $sql     = "SELECT fk_i_item_id FROM $metaTable WHERE ";
             $sql     .= $metaTable . '.fk_i_field_id = ' . $fieldId . ' AND ';
             $sql     .= $metaTable . '.s_value LIKE ' . $escaped;
@@ -465,7 +465,7 @@ $metaCondition = static function (string $type, int $fieldId, $aux) use ($prefix
             return $prefix . 't_item.pk_i_id IN (' . $sql . ')';
         case 'DROPDOWN':
         case 'RADIO':
-            $escaped = "'" . \mindstellar\database\Connection::instance()->escape((string)$aux) . "'";
+            $escaped = "'" . \mindstellar\database\Connection::getInstance()->escape((string)$aux) . "'";
             $sql     = "SELECT fk_i_item_id FROM $metaTable WHERE ";
             $sql     .= $metaTable . '.fk_i_field_id = ' . $fieldId . ' AND ';
             $sql     .= $metaTable . '.s_value = ' . $escaped;
@@ -1297,10 +1297,10 @@ pin(
  * ------------------------------------------------------------------------- */
 harness_section('alert-replay: (e) migration — converts, holds, resumes');
 
-$conn        = \mindstellar\database\Connection::instance();
+$conn        = \mindstellar\database\Connection::getInstance();
 $alertsTable = $prefix . 't_alerts';
 $migration   = require ABS_PATH . 'oc-includes/osclass/installer/migrations/0044_alerts_search_values.php';
-$jobQueue    = \mindstellar\job\JobQueue::instance();
+$jobQueue    = \mindstellar\job\JobQueue::getInstance();
 $convertType = \mindstellar\search\AlertJobs::TYPE;
 
 $seedAlert = static function (?string $search, int $active = 1) use ($admin, $alertsTable): int {

@@ -67,7 +67,7 @@ final class MessageHold
             return self::send($kind, $args);
         }
 
-        $queue = JobQueue::instance();
+        $queue = JobQueue::getInstance();
         $key   = self::key($email);
         $id    = 0;
         if (!$queue->hasKey(self::JOB, $key)) {
@@ -129,7 +129,7 @@ final class MessageHold
     public static function preview(string $token): ?array
     {
         $link = self::readConfirm($token);
-        $held = $link === null ? null : JobQueue::instance()->peek($link['id'], self::JOB, $link['key']);
+        $held = $link === null ? null : JobQueue::getInstance()->peek($link['id'], self::JOB, $link['key']);
         if ($held === null) {
             return null;
         }
@@ -169,7 +169,7 @@ final class MessageHold
             return 'invalid';
         }
         // The job's key is the sender's address hash, so a link only takes its own message.
-        $held = JobQueue::instance()->take($link['id'], self::JOB, $link['key']);
+        $held = JobQueue::getInstance()->take($link['id'], self::JOB, $link['key']);
         if ($held === null) {
             return 'gone';
         }

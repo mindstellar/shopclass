@@ -23,7 +23,7 @@ use mindstellar\widgets\WidgetRegistry;
  */
 function osc_register_widget($id, $spec)
 {
-    WidgetRegistry::instance()->register($id, $spec);
+    WidgetRegistry::getInstance()->register($id, $spec);
 }
 
 /**
@@ -33,7 +33,7 @@ function osc_register_widget($id, $spec)
  */
 function osc_widget_types()
 {
-    return WidgetRegistry::instance()->all();
+    return WidgetRegistry::getInstance()->all();
 }
 
 /**
@@ -136,7 +136,7 @@ function _osc_widget_locations_normalize($raw)
 function osc_render_widget($widgetRow)
 {
     if (!empty($widgetRow['s_type'])) {
-        $type = WidgetRegistry::instance()->get($widgetRow['s_type']);
+        $type = WidgetRegistry::getInstance()->get($widgetRow['s_type']);
         if ($type === null) {
             // Registering plugin/theme is not active — render nothing.
             return;

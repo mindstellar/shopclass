@@ -48,7 +48,7 @@ osc_register_plugin(osc_plugin_path(__FILE__), 'test_gateway_install');
  */
 function test_gateway_uninstall()
 {
-    foreach (array_keys(SettingsPageRegistry::instance()->fields(TestGateway::PAGE)) as $name) {
+    foreach (array_keys(SettingsPageRegistry::getInstance()->fields(TestGateway::PAGE)) as $name) {
         osc_delete_preference($name, TestGateway::PAGE);
     }
 }
@@ -70,7 +70,7 @@ osc_add_hook(osc_plugin_path(__FILE__) . '_configure', static function () {
 function test_gateway_register()
 {
     if (osc_billing_enabled()) {
-        PaymentGatewayRegistry::instance()->register(new TestGateway());
+        PaymentGatewayRegistry::getInstance()->register(new TestGateway());
     }
 }
 

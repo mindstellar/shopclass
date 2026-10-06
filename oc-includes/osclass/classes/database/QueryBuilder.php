@@ -519,7 +519,7 @@ class QueryBuilder
     {
         [$sql, $bindings] = $this->compileSelect();
 
-        return Connection::instance()->select($sql, $bindings);
+        return Connection::getInstance()->select($sql, $bindings);
     }
 
     /**
@@ -532,7 +532,7 @@ class QueryBuilder
     {
         [$sql, $bindings] = $this->limit(1)->compileSelect();
 
-        return Connection::instance()->selectOne($sql, $bindings);
+        return Connection::getInstance()->selectOne($sql, $bindings);
     }
 
     /**
@@ -553,7 +553,7 @@ class QueryBuilder
             $sql .= $whereSql;
             $bindings = array_merge($bindings, $whereBindings);
 
-            return (int) Connection::instance()->scalar($sql, $bindings);
+            return (int) Connection::getInstance()->scalar($sql, $bindings);
         }
 
         // Grouped: count the number of groups by wrapping the grouped query in a
@@ -578,7 +578,7 @@ class QueryBuilder
         $bindings = array_merge($bindings, $havingBindings);
         $sql = 'SELECT COUNT(*) AS aggregate FROM (' . $inner . ') AS oscsub';
 
-        return (int) Connection::instance()->scalar($sql, $bindings);
+        return (int) Connection::getInstance()->scalar($sql, $bindings);
     }
 
     /**
@@ -607,7 +607,7 @@ class QueryBuilder
         [$whereSql, $bindings] = $this->compileWheres();
         $sql .= $whereSql;
 
-        return Connection::instance()->scalar($sql, $bindings);
+        return Connection::getInstance()->scalar($sql, $bindings);
     }
 
     /**
@@ -692,7 +692,7 @@ class QueryBuilder
         $sql     .= $whereSql;
         $bindings = array_merge($bindings, $whereBindings);
 
-        return Connection::instance()->execute($sql, $bindings);
+        return Connection::getInstance()->execute($sql, $bindings);
     }
 
     /**
@@ -755,7 +755,7 @@ class QueryBuilder
             . ' (' . implode(', ', $columns) . ') VALUES (' . implode(', ', $placeholders) . ')'
             . ' ON DUPLICATE KEY UPDATE ' . implode(', ', $sets);
 
-        return Connection::instance()->execute($sql, $bindings);
+        return Connection::getInstance()->execute($sql, $bindings);
     }
 
     /**
@@ -770,7 +770,7 @@ class QueryBuilder
     {
         [$sql, $bindings] = $this->select($column)->limit(1)->compileSelect();
 
-        return Connection::instance()->scalar($sql, $bindings);
+        return Connection::getInstance()->scalar($sql, $bindings);
     }
 
     /**
@@ -795,7 +795,7 @@ class QueryBuilder
         $sql = 'INSERT INTO ' . $this->writeTable()
             . ' (' . implode(', ', $columns) . ') VALUES (' . $placeholders . ')';
 
-        return Connection::instance()->insertGetId($sql, array_values($data));
+        return Connection::getInstance()->insertGetId($sql, array_values($data));
     }
 
     /**
@@ -827,7 +827,7 @@ class QueryBuilder
         $sql .= $whereSql;
         $bindings = array_merge($bindings, $whereBindings);
 
-        return Connection::instance()->execute($sql, $bindings);
+        return Connection::getInstance()->execute($sql, $bindings);
     }
 
     /**
@@ -846,7 +846,7 @@ class QueryBuilder
         [$whereSql, $whereBindings] = $this->compileWheres();
         $sql .= $whereSql;
 
-        return Connection::instance()->execute($sql, $whereBindings);
+        return Connection::getInstance()->execute($sql, $whereBindings);
     }
 
     /**

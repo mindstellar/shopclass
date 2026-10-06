@@ -59,7 +59,7 @@ class Connection
     public function __construct(?\mysqli $conn = null)
     {
         if ($conn === null) {
-            $conn = ConnectionManager::instance()->getHandle();
+            $conn = ConnectionManager::getInstance()->getHandle();
         }
         if (!$conn instanceof mysqli) {
             throw new DbException('No database connection available');
@@ -73,13 +73,21 @@ class Connection
      * @return Connection
      * @throws DbException when no mysqli connection is available
      */
-    public static function instance(): self
+    public static function getInstance(): self
     {
         if (!self::$shared instanceof self) {
             self::$shared = new self();
         }
 
         return self::$shared;
+    }
+
+    /**
+     * @deprecated 7.0.0 Use getInstance().
+     */
+    public static function instance(): self
+    {
+        return self::getInstance();
     }
 
     /**

@@ -434,7 +434,7 @@ pin('editing another account another', 'core.admin_account.edit', $editId);
 pin('and editing your own a third', 'core.admin_account.self', $selfId);
 
 foreach (array($addId, $editId, $selfId) as $pageId) {
-    $spec = SettingsPageRegistry::instance()->get($pageId);
+    $spec = SettingsPageRegistry::getInstance()->get($pageId);
     pin(
         $pageId . ' is bound to a row of t_admin',
         array('type' => 'table', 'table' => 't_admin', 'pk' => 'pk_i_id'),
@@ -448,13 +448,13 @@ pin(
     'the add form declares no confirmation box, and demands a password',
     array('form_js', 's_name', 's_username', 's_email', 'b_moderator', 's_password',
         'password_separator', 'old_password', 'profile_hook'),
-    array_keys(SettingsPageRegistry::instance()->fields($addId))
+    array_keys(SettingsPageRegistry::getInstance()->fields($addId))
 );
 pin(
     'the edit form adds one, and does not demand a password',
     array('form_js', 's_name', 's_username', 's_email', 'b_moderator', 's_password', 's_password2',
         'password_separator', 'old_password', 'profile_hook'),
-    array_keys(SettingsPageRegistry::instance()->fields($editId))
+    array_keys(SettingsPageRegistry::getInstance()->fields($editId))
 );
 // Not a layout decision: a field the page does not declare is a column the store cannot
 // write, so this is what stops an administrator changing their own account type.
@@ -462,15 +462,15 @@ pin(
     'and your own account has no account type on it at all',
     array('form_js', 's_name', 's_username', 's_email', 's_password', 's_password2',
         'password_separator', 'old_password', 'profile_hook'),
-    array_keys(SettingsPageRegistry::instance()->fields($selfId))
+    array_keys(SettingsPageRegistry::getInstance()->fields($selfId))
 );
 pin(
     'the password is required only where there is no password yet',
     array(true, null, null),
     array(
-        SettingsPageRegistry::instance()->fields($addId)['s_password']['required'] ?? null,
-        SettingsPageRegistry::instance()->fields($editId)['s_password']['required'] ?? null,
-        SettingsPageRegistry::instance()->fields($selfId)['s_password']['required'] ?? null,
+        SettingsPageRegistry::getInstance()->fields($addId)['s_password']['required'] ?? null,
+        SettingsPageRegistry::getInstance()->fields($editId)['s_password']['required'] ?? null,
+        SettingsPageRegistry::getInstance()->fields($selfId)['s_password']['required'] ?? null,
     )
 );
 // The two boxes that are not the account: one confirms the new password, the other proves
@@ -480,7 +480,7 @@ foreach (array('s_password2', 'old_password') as $name) {
     pin(
         $name . ' is declared as no column at all',
         false,
-        SettingsPageRegistry::instance()->fields($editId)[$name]['persist'] ?? null
+        SettingsPageRegistry::getInstance()->fields($editId)[$name]['persist'] ?? null
     );
 }
 
@@ -497,7 +497,7 @@ pin(
     array('pk_i_id', 's_name', 's_username', 's_password', 's_email', 's_secret', 's_2fa', 'b_moderator', 'i_auth_stamp'),
     $columns
 );
-foreach (SettingsPageRegistry::instance()->fields($editId) as $name => $field) {
+foreach (SettingsPageRegistry::getInstance()->fields($editId) as $name => $field) {
     if ($field['type'] === 'custom' || ($field['persist'] ?? null) === false) {
         continue;
     }
@@ -528,7 +528,7 @@ foreach (AdminAccountForm::WIDTHS as $name => $width) {
     pin(
         'and the ' . $name . ' field carries that number',
         $width,
-        SettingsPageRegistry::instance()->fields($addId)[$name]['maxlength'] ?? null
+        SettingsPageRegistry::getInstance()->fields($addId)[$name]['maxlength'] ?? null
     );
 }
 
@@ -778,8 +778,8 @@ check(
 // can be made. An unchanged edit, so the row this section borrows is left as it was.
 check(
     'the edit screen does declare the confirmation box',
-    array_key_exists('s_password2', SettingsPageRegistry::instance()->fields($editId)),
-    implode(', ', array_keys(SettingsPageRegistry::instance()->fields($editId)))
+    array_key_exists('s_password2', SettingsPageRegistry::getInstance()->fields($editId)),
+    implode(', ', array_keys(SettingsPageRegistry::getInstance()->fields($editId)))
 );
 $driven = drive('edit_post', submission(array(
     's_password'  => '',

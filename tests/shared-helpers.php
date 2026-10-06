@@ -98,9 +98,10 @@ $registries = [
 $seen = [];
 foreach ($registries as $class) {
     check($class . ' extends Registry', is_subclass_of($class, \mindstellar\base\Registry::class));
-    check($class . ' instance() is shared', $class::instance() === $class::instance());
-    check($class . ' instance() is its own class', get_class($class::instance()) === $class);
-    $seen[spl_object_id($class::instance())] = true;
+    check($class . ' getInstance() is shared', $class::getInstance() === $class::getInstance());
+    check($class . ' old instance() still answers the same object', $class::instance() === $class::getInstance());
+    check($class . ' getInstance() is its own class', get_class($class::getInstance()) === $class);
+    $seen[spl_object_id($class::getInstance())] = true;
 }
 check('each registry has its own instance', count($seen) === count($registries));
 

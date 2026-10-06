@@ -37,7 +37,7 @@ function osc_admin_render_theme_url($file = '')
  */
 function osc_add_theme_support(string $feature, $args = true): void
 {
-    \mindstellar\theme\ThemeSupports::instance()->add($feature, $args);
+    \mindstellar\theme\ThemeSupports::getInstance()->add($feature, $args);
 }
 
 /**
@@ -51,7 +51,7 @@ function osc_add_theme_support(string $feature, $args = true): void
  */
 function osc_theme_supports(string $feature)
 {
-    return \mindstellar\theme\ThemeSupports::instance()->get($feature);
+    return \mindstellar\theme\ThemeSupports::getInstance()->get($feature);
 }
 
 /**
@@ -63,7 +63,7 @@ function osc_theme_supports(string $feature)
  */
 function osc_remove_theme_support(string $feature): void
 {
-    \mindstellar\theme\ThemeSupports::instance()->remove($feature);
+    \mindstellar\theme\ThemeSupports::getInstance()->remove($feature);
 }
 
 /**
@@ -841,7 +841,7 @@ function osc_head_hook_guard(): void
  */
 function osc_register_render_target(string $id, string $path): void
 {
-    \mindstellar\theme\RenderTargetRegistry::instance()->register($id, $path);
+    \mindstellar\theme\RenderTargetRegistry::getInstance()->register($id, $path);
 }
 
 /**
@@ -853,7 +853,7 @@ function osc_register_render_target(string $id, string $path): void
  */
 function osc_render_target(string $id): ?string
 {
-    return \mindstellar\theme\RenderTargetRegistry::instance()->get($id);
+    return \mindstellar\theme\RenderTargetRegistry::getInstance()->get($id);
 }
 
 /**
@@ -876,7 +876,7 @@ function osc_render_file($file = '')
                             '../'
                         ), '', str_replace('://', '', preg_replace('|http([s]*)|', '', $file)));
 
-    $target = \mindstellar\theme\RenderTargetRegistry::instance()->get($file);
+    $target = \mindstellar\theme\RenderTargetRegistry::getInstance()->get($file);
     if ($target !== null) {
         include $target;
 

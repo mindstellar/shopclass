@@ -309,7 +309,7 @@ final class MessageGuard
         if ($report['permanent'] && !osc_is_admin_user_logged_in()) {
             return 'admin';
         }
-        $queue = JobQueue::instance();
+        $queue = JobQueue::getInstance();
         if ($queue->hasKey(self::USED_JOB, $report['nonce'])) {
             return 'used';
         }

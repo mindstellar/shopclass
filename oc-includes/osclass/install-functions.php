@@ -809,7 +809,7 @@ function oc_install()
     // Establish the shared singleton connection now. Every write below — the DAO
     // models, the migration ledger and the parameterized osc_db_* API — resolves
     // this same handle, so they all run over one connection to the new schema.
-    $conn = \mindstellar\database\ConnectionManager::instance(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
+    $conn = \mindstellar\database\ConnectionManager::getInstance(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
     $c_db = $conn->getHandle();
     $db   = new \mindstellar\database\Connection($c_db);
 

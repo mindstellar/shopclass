@@ -92,7 +92,7 @@ if (!is_dir($themeRoot)) {
     mkdir($themeRoot, 0777, true);
 }
 
-$supports = \mindstellar\theme\ThemeSupports::instance();
+$supports = \mindstellar\theme\ThemeSupports::getInstance();
 
 harness_section('core baseline, verbatim');
 

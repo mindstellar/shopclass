@@ -412,7 +412,7 @@ final class BackupJobs
 
         return new Builder($store, $content, $opts + array(
             'db_bytes' => static function (): int {
-                $size = DatabaseTools::size(Connection::instance(), DB_TABLE_PREFIX);
+                $size = DatabaseTools::size(Connection::getInstance(), DB_TABLE_PREFIX);
 
                 return $size === null ? 0 : $size['bytes'];
             },
@@ -434,7 +434,7 @@ final class BackupJobs
      */
     public static function restorer(BackupStore $store, int $jobId, array $opts = array()): Restorer
     {
-        $conn    = Connection::instance();
+        $conn    = Connection::getInstance();
         $content = (string) ($opts['content'] ?? ABS_PATH . 'oc-content');
         $site    = (string) ($opts['site'] ?? ABS_PATH);
         $builder = self::builder($store, array('content' => $content) + (array) ($opts['builder'] ?? array()));

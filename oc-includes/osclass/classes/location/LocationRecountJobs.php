@@ -71,7 +71,7 @@ final class LocationRecountJobs
     {
         $left = 0;
         foreach (array(JobQueue::STATUS_PENDING, JobQueue::STATUS_RUNNING) as $status) {
-            foreach (JobQueue::instance()->page($status, self::TYPE, 10) as $row) {
+            foreach (JobQueue::getInstance()->page($status, self::TYPE, 10) as $row) {
                 $payload = json_decode((string) ($row['s_payload'] ?? ''), true);
                 $level   = is_array($payload) ? (string) ($payload['level'] ?? '') : '';
                 if (isset(self::LEVELS[$level])) {

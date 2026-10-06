@@ -106,7 +106,7 @@ $rel = static function (?array $chrome) use ($themeRoot) {
 
 harness_section('no chrome at all');
 $makeTheme(array());
-\mindstellar\theme\ThemeSupports::instance()->reset();
+\mindstellar\theme\ThemeSupports::getInstance()->reset();
 check('a theme with neither pair has no chrome', osc_theme_chrome() === null);
 check('osc_theme_has_chrome() agrees', osc_theme_has_chrome() === false);
 
@@ -195,7 +195,7 @@ file_put_contents($parentRoot . 'common/header.php', '<?php /* parent */');
 file_put_contents($parentRoot . 'common/footer.php', '<?php /* parent */');
 
 $makeTheme(array());
-\mindstellar\theme\ThemeSupports::instance()->reset();
+\mindstellar\theme\ThemeSupports::getInstance()->reset();
 WebThemes::$parent = '';
 check('no parent declared: still no chrome', osc_theme_chrome() === null);
 

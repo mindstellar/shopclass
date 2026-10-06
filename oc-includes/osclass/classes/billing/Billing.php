@@ -84,7 +84,7 @@ final class Billing
      */
     public static function checkout(Order $order): ?CheckoutIntent
     {
-        $gateway = PaymentGatewayRegistry::instance()->get($order->getGateway());
+        $gateway = PaymentGatewayRegistry::getInstance()->get($order->getGateway());
         if ($gateway === null || !$gateway->isConfigured()) {
             return null;
         }
@@ -119,7 +119,7 @@ final class Billing
      */
     public static function handleCallback(string $gatewayId, array $request): CallbackResult
     {
-        $gateway = PaymentGatewayRegistry::instance()->get($gatewayId);
+        $gateway = PaymentGatewayRegistry::getInstance()->get($gatewayId);
         if ($gateway === null) {
             // Gateways register only while billing is enabled, so this is usually an
             // "off" window rather than a bogus request -- core never got to look at
@@ -269,7 +269,7 @@ final class Billing
             return null;
         }
 
-        $gateway = PaymentGatewayRegistry::instance()->get($order->getGateway());
+        $gateway = PaymentGatewayRegistry::getInstance()->get($order->getGateway());
 
         return $gateway instanceof RefundableGateway && $gateway->isConfigured() ? $gateway : null;
     }
@@ -285,7 +285,7 @@ final class Billing
      */
     public static function dashboardUrl(Order $order): ?string
     {
-        $gateway = PaymentGatewayRegistry::instance()->get($order->getGateway());
+        $gateway = PaymentGatewayRegistry::getInstance()->get($order->getGateway());
         if (!$gateway instanceof DashboardLinkGateway) {
             return null;
         }
@@ -511,7 +511,7 @@ final class Billing
             return false;
         }
 
-        $feature = FeatureRegistry::instance()->get($featureId);
+        $feature = FeatureRegistry::getInstance()->get($featureId);
         if ($feature === null) {
             return false;
         }

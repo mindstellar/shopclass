@@ -48,13 +48,21 @@ final class ThemeSupports
      *
      * @return self
      */
-    public static function instance(): self
+    public static function getInstance(): self
     {
         if (self::$instance === null) {
             self::$instance = new self();
         }
 
         return self::$instance;
+    }
+
+    /**
+     * @deprecated 7.0.0 Use getInstance().
+     */
+    public static function instance(): self
+    {
+        return self::getInstance();
     }
 
     /**

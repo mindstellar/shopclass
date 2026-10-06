@@ -70,9 +70,9 @@ pin('t_locations_tmp is gone', 0, $num("SELECT COUNT(*) FROM information_schema.
 harness_section('queue and count');
 pin('nothing is pending before a recount is queued', 0, LocationRecountJobs::pending());
 pin('a recount queues every location: 1 country, 1 region, 2 cities', 4, osc_update_location_stats(true));
-pin('one job per level', 3, JobQueue::instance()->stats(LocationRecountJobs::TYPE)['pending']);
+pin('one job per level', 3, JobQueue::getInstance()->stats(LocationRecountJobs::TYPE)['pending']);
 pin('asking again while it is queued adds nothing', 4, osc_update_location_stats(true));
-pin('still three jobs', 3, JobQueue::instance()->stats(LocationRecountJobs::TYPE)['pending']);
+pin('still three jobs', 3, JobQueue::getInstance()->stats(LocationRecountJobs::TYPE)['pending']);
 pin('the total is kept for the progress bar', '4', (string) osc_get_preference('location_todo'));
 
 JobWorker::run(30);

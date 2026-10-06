@@ -45,7 +45,7 @@ class OsclassErrors
      *
      * @return OsclassErrors
      */
-    public static function instance(): OsclassErrors
+    public static function getInstance(): OsclassErrors
     {
         return self::$instance ??= new self();
     }
@@ -53,7 +53,7 @@ class OsclassErrors
     /** @deprecated 7.0.0 Use instance(). */
     public static function newInstance(): OsclassErrors
     {
-        return self::instance();
+        return self::getInstance();
     }
 
     /**

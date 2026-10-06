@@ -155,7 +155,7 @@ class CAdminSettingsBilling extends AdminSecBaseModel
         // view reads it, and View::_get() answers '' for a key nobody exported -- so the
         // switch would draw unticked and the next save would turn billing off.
         $this->_exportVariableToView('billing_enabled', osc_billing_enabled());
-        $this->_exportVariableToView('gateways', PaymentGatewayRegistry::instance()->all());
+        $this->_exportVariableToView('gateways', PaymentGatewayRegistry::getInstance()->all());
         $this->_exportVariableToView('billing_forms', BillingSettingsScreen::formVars($rejected, $values));
         $this->doView('settings/billing.php');
     }

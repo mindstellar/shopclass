@@ -131,7 +131,7 @@ function osc_form_fields($formId, $contextType = 'widget', $contextId = 0)
  */
 function osc_register_form_context($type, $spec)
 {
-    \mindstellar\form\builder\FormContextRegistry::instance()->register($type, $spec);
+    \mindstellar\form\builder\FormContextRegistry::getInstance()->register($type, $spec);
 }
 
 /**
@@ -145,7 +145,7 @@ function osc_register_form_context($type, $spec)
  */
 function osc_form_context_display($type, $id)
 {
-    return \mindstellar\form\builder\FormContextRegistry::instance()->describe((string)$type, (int)$id);
+    return \mindstellar\form\builder\FormContextRegistry::getInstance()->describe((string)$type, (int)$id);
 }
 
 /**

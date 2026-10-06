@@ -341,9 +341,9 @@ class CAdminTools extends AdminSecBaseModel
                 osc_csrf_check();
                 $id = Params::getParamInt('id');
                 if ($id > 0) {
-                    $done = \mindstellar\job\JobQueue::instance()->retry($id);
+                    $done = \mindstellar\job\JobQueue::getInstance()->retry($id);
                 } else {
-                    $done = \mindstellar\job\JobQueue::instance()->retryAll() > 0;
+                    $done = \mindstellar\job\JobQueue::getInstance()->retryAll() > 0;
                 }
                 if ($done) {
                     osc_add_flash_ok_message(_m('Queued again. It runs on the next cron tick.'), 'admin');
@@ -359,9 +359,9 @@ class CAdminTools extends AdminSecBaseModel
                 osc_csrf_check();
                 $id = Params::getParamInt('id');
                 if ($id > 0) {
-                    $done = \mindstellar\job\JobQueue::instance()->forget($id);
+                    $done = \mindstellar\job\JobQueue::getInstance()->forget($id);
                 } else {
-                    $done = \mindstellar\job\JobQueue::instance()->forgetAll() > 0;
+                    $done = \mindstellar\job\JobQueue::getInstance()->forgetAll() > 0;
                 }
                 if ($done) {
                     osc_add_flash_ok_message(_m('Thrown away.'), 'admin');
@@ -886,7 +886,7 @@ class CAdminTools extends AdminSecBaseModel
         }
 
         if ($tab === 'jobs') {
-            $queue = \mindstellar\job\JobQueue::instance();
+            $queue = \mindstellar\job\JobQueue::getInstance();
             $this->_exportVariableToView('jobs_failed', $queue->page(\mindstellar\job\JobQueue::STATUS_ERROR, null, 50));
             $this->_exportVariableToView('jobs_active', array_merge(
                 $queue->page(\mindstellar\job\JobQueue::STATUS_RUNNING, null, 50),
@@ -912,7 +912,7 @@ class CAdminTools extends AdminSecBaseModel
     private function databasePost(array &$env): bool
     {
         $self = self::databaseUrl();
-        $conn = \mindstellar\database\Connection::instance();
+        $conn = \mindstellar\database\Connection::getInstance();
         $dir  = DatabaseTools::migrationsDir();
 
         if (Params::getParam('upgrade') !== '') {
@@ -985,7 +985,7 @@ class CAdminTools extends AdminSecBaseModel
      */
     private function systemEnvironment(bool $withDatabase): array
     {
-        $conn = \mindstellar\database\Connection::instance();
+        $conn = \mindstellar\database\Connection::getInstance();
         try {
             $server = $conn->serverInfo();
         } catch (Throwable $e) {
@@ -998,7 +998,7 @@ class CAdminTools extends AdminSecBaseModel
         }
         $uploads = osc_uploads_path();
         $free    = function_exists('disk_free_space') ? @disk_free_space($uploads) : false;
-        $queue   = \mindstellar\job\JobQueue::instance();
+        $queue   = \mindstellar\job\JobQueue::getInstance();
         \mindstellar\job\JobWorker::registerHandlers();
         $stats    = $queue->stats();
         $signins  = \mindstellar\security\LoginThrottle::activity();
@@ -1169,7 +1169,7 @@ class CAdminTools extends AdminSecBaseModel
     {
         try {
             return array(
-                (new \mindstellar\database\SchemaDoctor(\mindstellar\database\Connection::instance()))->diagnose(),
+                (new \mindstellar\database\SchemaDoctor(\mindstellar\database\Connection::getInstance()))->diagnose(),
                 '',
             );
         } catch (Throwable $e) {

@@ -157,7 +157,7 @@ class CAdminBilling extends AdminSecBaseModel
             $this->redirectTo(osc_admin_base_url(true) . '?page=billing');
         }
 
-        $gateway = PaymentGatewayRegistry::instance()->get($order->getGateway());
+        $gateway = PaymentGatewayRegistry::getInstance()->get($order->getGateway());
 
         $this->_exportVariableToView('order', $order);
         $this->_exportVariableToView('user', User::newInstance()->findByPrimaryKey($order->getUserId()));

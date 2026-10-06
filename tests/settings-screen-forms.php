@@ -463,7 +463,7 @@ function keymap(string $pageId): array
 {
     $page = osc_settings_page($pageId);
     $map  = array();
-    foreach (SettingsPageRegistry::instance()->fields($pageId) as $name => $field) {
+    foreach (SettingsPageRegistry::getInstance()->fields($pageId) as $name => $field) {
         if ($field['type'] === 'custom') {
             continue;
         }
@@ -2033,7 +2033,7 @@ $screens = array(
     // it lives in, never a key name: a key-name allowance would hide the same write anywhere.
     'settings/storage.php'      => array(
         'CAdminSettingsStorage.php',
-        array_keys(SettingsPageRegistry::instance()->fields(StorageSettingsScreen::register())),
+        array_keys(SettingsPageRegistry::getInstance()->fields(StorageSettingsScreen::register())),
         array(),
         array('adopt_better_s3'),
     ),

@@ -203,7 +203,7 @@ foreach (array(
 
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hTheme.php';
 
-$supports = \mindstellar\theme\ThemeSupports::instance();
+$supports = \mindstellar\theme\ThemeSupports::getInstance();
 
 /** Capture what osc_head() prints. */
 $head = static function (): string {

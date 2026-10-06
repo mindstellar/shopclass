@@ -19,7 +19,7 @@ define('CONTENT_PATH', ABS_PATH . 'oc-content/');
 define('TRANSLATIONS_PATH', CONTENT_PATH . 'languages/');
 define('OSC_INSTALLING', 1);
 require_once LIB_PATH . 'vendor/autoload.php';
-mindstellar\logger\OsclassErrors::instance()->register();
+mindstellar\logger\OsclassErrors::getInstance()->register();
 // Helper load order mirrors the main bootstrap (oc-load.php) and is
 // dependency-ordered: hDefines (osc_plugins_path et al.) before hPlugins, and
 // hPlugins (the hook API) before hCache, which registers item-cache

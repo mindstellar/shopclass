@@ -41,13 +41,21 @@ class StorageManager
      *
      * @return StorageManager
      */
-    public static function instance(): StorageManager
+    public static function getInstance(): StorageManager
     {
         if (self::$instance === null) {
             self::$instance = new self();
         }
 
         return self::$instance;
+    }
+
+    /**
+     * @deprecated 7.0.0 Use getInstance().
+     */
+    public static function instance(): StorageManager
+    {
+        return self::getInstance();
     }
 
     /**
@@ -144,7 +152,7 @@ class StorageManager
             return $path;
         }
 
-        $adapter = self::instance()->forResource($resource);
+        $adapter = self::getInstance()->forResource($resource);
         if (!$adapter->isRemote() || !$adapter->isPublic()) {
             return $path;
         }
@@ -224,7 +232,7 @@ class StorageManager
             return $fallbackUrl;
         }
 
-        $adapter = self::instance()->forResource($resource);
+        $adapter = self::getInstance()->forResource($resource);
         if (!$adapter->isRemote() || $adapter->isPublic()) {
             return $fallbackUrl;
         }

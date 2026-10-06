@@ -278,7 +278,7 @@ namespace {
     function image_register(string $id, array $spec): ?string
     {
         try {
-            SettingsPageRegistry::instance()->register($id, $spec);
+            SettingsPageRegistry::getInstance()->register($id, $spec);
         } catch (InvalidArgumentException $e) {
             return $e->getMessage();
         }

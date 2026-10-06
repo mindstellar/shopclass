@@ -59,7 +59,7 @@ if (!function_exists('osc_job_enqueue')) {
      */
     function osc_job_enqueue(string $type, array $payload = array(), array $options = array()): int
     {
-        return JobQueue::instance()->enqueue($type, $payload, $options);
+        return JobQueue::getInstance()->enqueue($type, $payload, $options);
     }
 }
 
@@ -77,7 +77,7 @@ if (!function_exists('osc_job_enqueue_many')) {
      */
     function osc_job_enqueue_many(string $type, array $payloads, array $options = array()): int
     {
-        return JobQueue::instance()->enqueueMany($type, $payloads, $options);
+        return JobQueue::getInstance()->enqueueMany($type, $payloads, $options);
     }
 }
 
@@ -93,7 +93,7 @@ if (!function_exists('osc_job_ensure')) {
      */
     function osc_job_ensure(string $type, array $payload = array(), array $options = array()): bool
     {
-        return JobQueue::instance()->ensure($type, $payload, $options);
+        return JobQueue::getInstance()->ensure($type, $payload, $options);
     }
 }
 
@@ -108,7 +108,7 @@ if (!function_exists('osc_job_stats')) {
      */
     function osc_job_stats(?string $type = null): array
     {
-        return JobQueue::instance()->stats($type);
+        return JobQueue::getInstance()->stats($type);
     }
 }
 
@@ -182,7 +182,7 @@ if (!function_exists('osc_job_count')) {
      */
     function osc_job_count(string $status = 'pending', ?string $type = null): int
     {
-        return JobQueue::instance()->count($status, $type);
+        return JobQueue::getInstance()->count($status, $type);
     }
 }
 
@@ -194,7 +194,7 @@ if (!function_exists('osc_job_summary')) {
      */
     function osc_job_summary(): array
     {
-        return JobQueue::instance()->summary();
+        return JobQueue::getInstance()->summary();
     }
 }
 
@@ -223,7 +223,7 @@ if (!function_exists('osc_job_retry')) {
      */
     function osc_job_retry(int $id): bool
     {
-        return JobQueue::instance()->retry($id);
+        return JobQueue::getInstance()->retry($id);
     }
 }
 
@@ -237,7 +237,7 @@ if (!function_exists('osc_job_forget')) {
      */
     function osc_job_forget(int $id): bool
     {
-        return JobQueue::instance()->forget($id);
+        return JobQueue::getInstance()->forget($id);
     }
 }
 
@@ -251,7 +251,7 @@ if (!function_exists('osc_job_dead_letters')) {
      */
     function osc_job_dead_letters(int $limit = 50): array
     {
-        return JobQueue::instance()->deadLetters($limit);
+        return JobQueue::getInstance()->deadLetters($limit);
     }
 }
 

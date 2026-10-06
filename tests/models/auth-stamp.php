@@ -122,8 +122,8 @@ $beforeUpgrade = new Admin();
 pin('before the upgrade adds it, an admin row still loads, without it', array(false, 'boss'), array(
     in_array('i_auth_stamp', $beforeUpgrade->getFields(), true), $beforeUpgrade->findByPrimaryKey(9)['s_username'] ?? null,
 ));
-$migration->up(\mindstellar\database\Connection::instance());
-$migration->up(\mindstellar\database\Connection::instance());
+$migration->up(\mindstellar\database\Connection::getInstance());
+$migration->up(\mindstellar\database\Connection::getInstance());
 pin('the migration adds it back and can run twice', '0', $adminRow()['i_auth_stamp'] ?? null);
 
 harness_section('a web sign-in cookie');

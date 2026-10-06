@@ -34,7 +34,7 @@ if (!function_exists('osc_db_select')) {
      */
     function osc_db_select(string $sql, array $params = []): array
     {
-        return \mindstellar\database\Connection::instance()->select($sql, $params);
+        return \mindstellar\database\Connection::getInstance()->select($sql, $params);
     }
 }
 
@@ -50,7 +50,7 @@ if (!function_exists('osc_db_select_one')) {
      */
     function osc_db_select_one(string $sql, array $params = []): ?array
     {
-        return \mindstellar\database\Connection::instance()->selectOne($sql, $params);
+        return \mindstellar\database\Connection::getInstance()->selectOne($sql, $params);
     }
 }
 
@@ -66,7 +66,7 @@ if (!function_exists('osc_db_scalar')) {
      */
     function osc_db_scalar(string $sql, array $params = [])
     {
-        return \mindstellar\database\Connection::instance()->scalar($sql, $params);
+        return \mindstellar\database\Connection::getInstance()->scalar($sql, $params);
     }
 }
 
@@ -88,7 +88,7 @@ if (!function_exists('osc_db_count')) {
     {
         $sql = 'SELECT COUNT(*) FROM ' . $table . ($where !== '' ? ' WHERE ' . $where : '');
 
-        return (int) \mindstellar\database\Connection::instance()->scalar($sql, $params);
+        return (int) \mindstellar\database\Connection::getInstance()->scalar($sql, $params);
     }
 }
 
@@ -104,7 +104,7 @@ if (!function_exists('osc_db_execute')) {
      */
     function osc_db_execute(string $sql, array $params = []): int
     {
-        return \mindstellar\database\Connection::instance()->execute($sql, $params);
+        return \mindstellar\database\Connection::getInstance()->execute($sql, $params);
     }
 }
 
@@ -120,7 +120,7 @@ if (!function_exists('osc_db_insert_id')) {
      */
     function osc_db_insert_id(string $sql, array $params = []): int
     {
-        return \mindstellar\database\Connection::instance()->insertGetId($sql, $params);
+        return \mindstellar\database\Connection::getInstance()->insertGetId($sql, $params);
     }
 }
 

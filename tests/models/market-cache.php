@@ -25,7 +25,7 @@ $admin = scratchdb_session('osc_models_market_cache');
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hKv.php';
 $prefs = DB_TABLE_PREFIX . 't_preference';
 $kv    = DB_TABLE_PREFIX . 't_key_value';
-$conn  = Connection::instance();
+$conn  = Connection::getInstance();
 $count = static fn (string $sql): int => (int) $admin->query($sql)->fetch_row()[0];
 $migrate = static function () use ($conn): void {
     (require ABS_PATH . 'oc-includes/osclass/installer/migrations/0065_market_cache_to_key_value.php')->up($conn);

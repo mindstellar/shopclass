@@ -405,7 +405,7 @@ class SystemInfo
      */
     public function setDbInfo(): self
     {
-        $this->db_serverinfo   = Connection::instance()->serverInfo();
+        $this->db_serverinfo   = Connection::getInstance()->serverInfo();
         $this->db_host         = DB_HOST;
         $this->db_name         = DB_NAME;
         $this->db_user         = DB_USER;

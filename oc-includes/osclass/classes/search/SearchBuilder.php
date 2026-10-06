@@ -229,6 +229,6 @@ class SearchBuilder
      */
     private static function metaLiteral($value): string
     {
-        return "'" . \mindstellar\database\Connection::instance()->escape((string) $value) . "'";
+        return "'" . \mindstellar\database\Connection::getInstance()->escape((string) $value) . "'";
     }
 }

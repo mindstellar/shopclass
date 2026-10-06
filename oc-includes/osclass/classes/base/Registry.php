@@ -33,9 +33,17 @@ abstract class Registry
     /**
      * Shared registry instance, created on first use.
      */
-    public static function instance(): static
+    public static function getInstance(): static
     {
         return self::$instances[static::class] ??= new static();
+    }
+
+    /**
+     * @deprecated 7.0.0 Use getInstance().
+     */
+    public static function instance(): static
+    {
+        return static::getInstance();
     }
 
     /**

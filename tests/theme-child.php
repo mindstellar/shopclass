@@ -232,7 +232,7 @@ harness_section('The child has the last word on theme support');
 // The child's functions.php is required first and the parent's second, so a registry
 // that simply takes the newest value hands every contested feature to the parent --
 // the opposite of what a child theme is for. Declaring nothing must still inherit.
-$supports = \mindstellar\theme\ThemeSupports::instance();
+$supports = \mindstellar\theme\ThemeSupports::getInstance();
 
 $supports->reset();
 $supports->add('views', array('from-child'));

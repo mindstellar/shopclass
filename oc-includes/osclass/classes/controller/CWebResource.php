@@ -91,7 +91,7 @@ class CWebResource extends BaseModel
 
         // 2) Otherwise the object lives on a remote adapter.
         osc_storage_register_remote();
-        $adapter = StorageManager::instance()->forResource($resource);
+        $adapter = StorageManager::getInstance()->forResource($resource);
         if (!$adapter->isRemote()) {
             $this->notFound();
 

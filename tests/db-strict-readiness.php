@@ -181,7 +181,7 @@ pin('exactly one strict row, however often it fails in a request', 1, count($row
 pin('...naming the kind and table.column', array('data_too_long', $prefix . 'zz_refuse.s'), array($rows[0]['s_action'] ?? '', $rows[0]['s_data'] ?? ''));
 check('...and no part of the value or the statement', strpos(json_encode($rows), 'secret-value') === false && strpos(json_encode($rows), 'INSERT') === false);
 
-$handle = \mindstellar\database\ConnectionManager::instance()->getHandle();
+$handle = \mindstellar\database\ConnectionManager::getInstance()->getHandle();
 $legacy = new DBCommandClass($handle);
 $legacyResult = $legacy->query("INSERT INTO {$prefix}zz_refuse (s, n) VALUES ('a', 900)");
 // Read the raw handle, not $legacy's cached copy, so a query the recorder ran itself

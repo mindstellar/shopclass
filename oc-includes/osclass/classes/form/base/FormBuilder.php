@@ -92,7 +92,7 @@ class FormBuilder
             $this->formInputs = $formInputs;
         }
         $this->formInputs = $formInputs;
-        $this->csrf       = Csrf::instance();
+        $this->csrf       = Csrf::getInstance();
 
         $defaultSchema    = [
             'attributes'            => [

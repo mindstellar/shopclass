@@ -605,7 +605,7 @@ final class BackupService
     public static function siteFacts(): array
     {
         try {
-            $server = DatabaseTools::server(Connection::instance()->serverInfo())['label'];
+            $server = DatabaseTools::server(Connection::getInstance()->serverInfo())['label'];
         } catch (Throwable $e) {
             $server = '';
         }
@@ -639,7 +639,7 @@ final class BackupService
     public static function lockFree(): bool
     {
         try {
-            $conn    = Connection::instance();
+            $conn    = Connection::getInstance();
             $release = DatabaseTools::upgradeLock($conn);
         } catch (DbException $e) {
             return false;

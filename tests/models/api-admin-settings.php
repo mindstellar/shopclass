@@ -77,7 +77,7 @@ pin('matches the schema', [], api_admin_schema_errors('SettingsDocument', $r));
 pin('no stored secret is in the answer', [], array_values(array_filter($secrets, static fn (string $secret): bool => str_contains($json, $secret))));
 $fields = [];
 foreach (ExposedSettings::FIELDS as $member => [$form, $field]) {
-    $fields[$member] = SettingsPageRegistry::instance()->fields($form::register())[$field] ?? null;
+    $fields[$member] = SettingsPageRegistry::getInstance()->fields($form::register())[$field] ?? null;
 }
 pin('every exposed setting is a declared field of its form', [], array_keys(array_filter($fields, static fn ($f): bool => $f === null)));
 pin('none is a secret or password field', [], array_keys(array_filter($fields, static fn ($f): bool => in_array($f['type'] ?? '', ['secret', 'password'], true))));

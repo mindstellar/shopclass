@@ -294,7 +294,7 @@ final class ResourceUploader
         Db::afterCommit(static function () use ($row): void {
             $storage = $row['s_storage'] ?? 'local';
 
-            if ($storage === 'local' && StorageManager::instance()->remote() === null) {
+            if ($storage === 'local' && StorageManager::getInstance()->remote() === null) {
                 foreach (ResourceLocator::variants() as $variant) {
                     $path = ResourceLocator::localPath($row, $variant);
                     if (file_exists($path) && !is_dir($path)) {

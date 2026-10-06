@@ -63,7 +63,7 @@ class Db
      */
     private static function conn(): mysqli
     {
-        return Connection::instance()->handle();
+        return Connection::getInstance()->handle();
     }
 
     /**

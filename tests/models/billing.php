@@ -382,7 +382,7 @@ pin('a repeated markPaid mints nothing further', $balance + 40, Wallet::balance(
 harness_section('Billing: callback verification');
 
 $gateway = new FakeGateway('fake');
-PaymentGatewayRegistry::instance()->register($gateway);
+PaymentGatewayRegistry::getInstance()->register($gateway);
 
 $balance = Wallet::balance($userId);
 $order   = OrderStore::create($userId, 'fake', 5_000_000, 'USD', 200);
@@ -409,7 +409,7 @@ pin('replaying the callback mints nothing further', $balance + 200, Wallet::bala
 
 /* A gateway must not be able to settle an order that belongs to another. */
 $rival = new FakeGateway('rival');
-PaymentGatewayRegistry::instance()->register($rival);
+PaymentGatewayRegistry::getInstance()->register($rival);
 
 $balance     = Wallet::balance($otherId);
 $rivalTarget = OrderStore::create($otherId, 'fake', 2_000_000, 'USD', 500);
@@ -476,7 +476,7 @@ pin('a repeated refund takes nothing further', $balance, Wallet::balance($userId
 harness_section('Billing: refundThroughGateway');
 
 $refundy = new FakeRefundGateway('refundy');
-PaymentGatewayRegistry::instance()->register($refundy);
+PaymentGatewayRegistry::getInstance()->register($refundy);
 
 $orderStatus = static fn (Order $o): string => OrderStore::find($o->getId())->getStatus();
 
@@ -689,7 +689,7 @@ harness_section('Billing: checkout that throws');
 
 $thrower = new FakeRefundGateway('thrower');
 $thrower->throwOnCheckout = true;
-PaymentGatewayRegistry::instance()->register($thrower);
+PaymentGatewayRegistry::getInstance()->register($thrower);
 $broken = OrderStore::create($userId, 'thrower', 1_000_000, 'USD', 5);
 $logged = ini_get('error_log');
 ini_set('error_log', tempnam(sys_get_temp_dir(), 'billing-checkout'));
@@ -807,20 +807,20 @@ pin('a repeated reopen mints nothing further', $balanceBeforeReopen + 15, Wallet
  * ------------------------------------------------------------------------- */
 harness_section('PaymentGatewayRegistry');
 
-pin('registered gateway is retrievable', 'fake', PaymentGatewayRegistry::instance()->get('fake')->getId());
-pin('unknown gateway reads as null', null, PaymentGatewayRegistry::instance()->get('missing'));
+pin('registered gateway is retrievable', 'fake', PaymentGatewayRegistry::getInstance()->get('fake')->getId());
+pin('unknown gateway reads as null', null, PaymentGatewayRegistry::getInstance()->get('missing'));
 
 $unconfigured = new FakeGateway('halfdone', false);
-PaymentGatewayRegistry::instance()->register($unconfigured);
+PaymentGatewayRegistry::getInstance()->register($unconfigured);
 check(
     'an unconfigured gateway is listed but not offered',
-    isset(PaymentGatewayRegistry::instance()->all()['halfdone'])
-    && !isset(PaymentGatewayRegistry::instance()->available()['halfdone'])
+    isset(PaymentGatewayRegistry::getInstance()->all()['halfdone'])
+    && !isset(PaymentGatewayRegistry::getInstance()->available()['halfdone'])
 );
 check(
     'available() filters by currency',
-    isset(PaymentGatewayRegistry::instance()->available('USD')['fake'])
-    && !isset(PaymentGatewayRegistry::instance()->available('GBP')['fake'])
+    isset(PaymentGatewayRegistry::getInstance()->available('USD')['fake'])
+    && !isset(PaymentGatewayRegistry::getInstance()->available('GBP')['fake'])
 );
 
 check('valid ids are lower-case slugs', PaymentGatewayRegistry::isValidId('stripe-eu.v2'));
@@ -829,7 +829,7 @@ check('ids reject spaces', !PaymentGatewayRegistry::isValidId('my gateway'));
 
 $threw = false;
 try {
-    PaymentGatewayRegistry::instance()->register(new FakeGateway('Bad Id'));
+    PaymentGatewayRegistry::getInstance()->register(new FakeGateway('Bad Id'));
 } catch (InvalidArgumentException $e) {
     $threw = true;
 }
@@ -910,7 +910,7 @@ osc_add_hook('item_premium_on', static function ($itemId) use (&$premiumHookFire
     $premiumHookInTxn[] = osc_db_in_transaction();
 });
 
-check('listing.premium is unregistered while disabled', FeatureRegistry::instance()->get('listing.premium') === null);
+check('listing.premium is unregistered while disabled', FeatureRegistry::getInstance()->get('listing.premium') === null);
 check(
     'spending on listing.premium while disabled fails',
     Billing::spend($premiumUserId, 'listing.premium', array('itemId' => $premiumItemId, 'ref_type' => 'item', 'ref_id' => $premiumItemId)) === false
@@ -933,7 +933,7 @@ osc_set_preference('billing_premium_days', '30', 'osclass', 'INTEGER');
 osc_reset_preferences();
 osc_register_billing_premium();
 
-check('listing.premium registers once its preference is on', FeatureRegistry::instance()->get('listing.premium') !== null);
+check('listing.premium registers once its preference is on', FeatureRegistry::getInstance()->get('listing.premium') !== null);
 check(
     'osc_item_can_be_featured() is true once enabled, even at 0 credits',
     osc_item_can_be_featured(array('pk_i_id' => $premiumItemId, 'b_premium' => 0)) === true
@@ -1162,7 +1162,7 @@ harness_section('Billing: spend');
 
 $spendUserId = seed_user($admin, 'spender', 'spender@example.test');
 
-FeatureRegistry::instance()->register('test.spend.costly', array(
+FeatureRegistry::getInstance()->register('test.spend.costly', array(
     'label'    => 'Too expensive to afford',
     'consumes' => Feature::CONSUMES_QUANTITY,
     'price'    => 999999,
@@ -1189,7 +1189,7 @@ pin(
 
 Wallet::credit($spendUserId, 100, Wallet::REASON_GRANT);
 
-FeatureRegistry::instance()->register('test.spend.rejected', array(
+FeatureRegistry::getInstance()->register('test.spend.rejected', array(
     'label'    => 'Always refuses to apply',
     'consumes' => Feature::CONSUMES_QUANTITY,
     'price'    => 10,
@@ -1888,7 +1888,7 @@ osc_add_hook('item_bumped', static function ($itemId) use (&$bumpHookFired, &$bu
     $bumpHookInTxn[] = osc_db_in_transaction();
 });
 
-check('bump.item registers once its preference is on', FeatureRegistry::instance()->get('item.bump') !== null);
+check('bump.item registers once its preference is on', FeatureRegistry::getInstance()->get('item.bump') !== null);
 check(
     'spending on item.bump succeeds',
     Billing::spend($bumpUserId, 'item.bump', array('itemId' => $bumpItemId, 'ref_type' => 'item', 'ref_id' => $bumpItemId))
@@ -1915,7 +1915,7 @@ $decideUpgrade   = new ReflectionMethod(CWebBilling::class, 'decideUpgrade');
 $cWebBillingRefl = new ReflectionClass(CWebBilling::class);
 check(
     'the cooldown blocks while the row is live -- decideUpgrade() refuses, it does not extend',
-    $decideUpgrade->invoke(null, 'item.bump', FeatureRegistry::instance()->get('item.bump'), array('pk_i_id' => $bumpItemId))
+    $decideUpgrade->invoke(null, 'item.bump', FeatureRegistry::getInstance()->get('item.bump'), array('pk_i_id' => $bumpItemId))
     === $cWebBillingRefl->getConstant('DECISION_REFUSE_HELD')
 );
 
@@ -1943,7 +1943,7 @@ $admin->query(
 check('the cooldown lifts once the row lapses', ItemUpgradeStore::has($lapsedBumpItemId, 'item.bump') === false);
 check(
     'once the cooldown has lapsed, decideUpgrade() proceeds with a fresh bump rather than refusing',
-    $decideUpgrade->invoke(null, 'item.bump', FeatureRegistry::instance()->get('item.bump'), array('pk_i_id' => $lapsedBumpItemId))
+    $decideUpgrade->invoke(null, 'item.bump', FeatureRegistry::getInstance()->get('item.bump'), array('pk_i_id' => $lapsedBumpItemId))
     === $cWebBillingRefl->getConstant('DECISION_PROCEED')
 );
 pin(
@@ -2099,8 +2099,8 @@ osc_register_billing_item_upgrades();
 osc_register_billing_premium();
 
 $decideUser        = seed_user($admin, 'decideuser', 'decideuser@example.test');
-$highlightFeature  = FeatureRegistry::instance()->get('item.highlight');
-$premiumFeature    = FeatureRegistry::instance()->get('listing.premium');
+$highlightFeature  = FeatureRegistry::getInstance()->get('item.highlight');
+$premiumFeature    = FeatureRegistry::getInstance()->get('listing.premium');
 
 $liveHighlightItem = seed_item($admin, $categoryId, $decideUser, 'Live highlight');
 ItemUpgradeStore::grant($liveHighlightItem, 'item.highlight', 10, null);
@@ -2195,7 +2195,7 @@ osc_add_hook('billing_feature_price', static function ($price, $featureId, $user
     return $price;
 });
 
-FeatureRegistry::instance()->register('test.price.witness', array(
+FeatureRegistry::getInstance()->register('test.price.witness', array(
     'label'    => 'Price filter witness',
     'consumes' => Feature::CONSUMES_QUANTITY,
     'price'    => 7,
@@ -2227,7 +2227,7 @@ osc_add_hook('billing_feature_duration', static function ($days, $featureId, $us
     return $days;
 });
 
-FeatureRegistry::instance()->register('test.duration.witness', array(
+FeatureRegistry::getInstance()->register('test.duration.witness', array(
     'label'    => 'Duration filter witness',
     'consumes' => Feature::CONSUMES_DURATION,
     'price'    => 0,
@@ -2250,14 +2250,14 @@ pin(
 pin(
     'Feature::duration() itself reflects the filter, matching what spend() threaded through',
     99,
-    FeatureRegistry::instance()->get('test.duration.witness')->duration($durationUserId)
+    FeatureRegistry::getInstance()->get('test.duration.witness')->duration($durationUserId)
 );
 
 /* A plugin calling apply() directly still has to work -- it never goes through
  * spend(), so $ctx carries no 'days' key at all, and the witness above simply
  * records whatever it was given. */
 $capturedDays = 'not called';
-FeatureRegistry::instance()->get('test.duration.witness')->apply($durationUserId, array());
+FeatureRegistry::getInstance()->get('test.duration.witness')->apply($durationUserId, array());
 pin('apply() called directly with no context sees no days key at all', null, $capturedDays);
 
 /* The same fallback has to hold for a real built-in, not only the witness:
@@ -2273,7 +2273,7 @@ osc_register_billing_item_upgrades();
 
 $fallbackItemId = seed_item($admin, $categoryId, $userId, 'Highlight fallback target');
 $beforeFallback = time();
-FeatureRegistry::instance()->get('item.highlight')->apply($userId, array('itemId' => $fallbackItemId));
+FeatureRegistry::getInstance()->get('item.highlight')->apply($userId, array('itemId' => $fallbackItemId));
 $afterFallback = time();
 
 $highlightExpiresAt = ItemUpgradeStore::expiresAt($fallbackItemId, 'item.highlight');
@@ -2320,7 +2320,7 @@ $admin->query(
 );
 pin('a lapsed row does not count toward capacity', 3, EntitlementStore::capacity($capUserId, 'test.capacity.lapsed', 3));
 
-FeatureRegistry::instance()->register('test.capacity.guarded', array(
+FeatureRegistry::getInstance()->register('test.capacity.guarded', array(
     'label'    => 'Guarded capacity feature',
     'consumes' => Feature::CONSUMES_CAPACITY,
     'apply'    => static function (int $userId) {
@@ -2537,7 +2537,7 @@ if (!function_exists('osc_job_enqueue')) {
             throw $GLOBALS['enqueueThrows'];
         }
 
-        return \mindstellar\job\JobQueue::instance()->enqueue($type, $payload, $options);
+        return \mindstellar\job\JobQueue::getInstance()->enqueue($type, $payload, $options);
     }
 }
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hJobs.php';

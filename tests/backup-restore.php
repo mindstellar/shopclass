@@ -85,7 +85,7 @@ $restore = static function (string $path) use ($admin, $table): array {
     if (function_exists('memory_reset_peak_usage')) {
         memory_reset_peak_usage();
     }
-    $ran  = DatabaseTools::restore(Connection::instance(), $handle);
+    $ran  = DatabaseTools::restore(Connection::getInstance(), $handle);
     $peak = function_exists('memory_reset_peak_usage') ? memory_get_peak_usage() - $base : -1;
     fclose($handle);
 
@@ -98,7 +98,7 @@ list($ran, $peak) = $restore($file);
 pin('one statement ran per INSERT', $inserts, $ran);
 pin('every row came back', $rows, (int) $admin->query("SELECT COUNT(*) FROM `$table`")->fetch_row()[0]);
 pin('...with the same contents', $before, $checksum());
-pin('foreign key checks are on again', '1', (string) Connection::instance()->scalar('SELECT @@FOREIGN_KEY_CHECKS'));
+pin('foreign key checks are on again', '1', (string) Connection::getInstance()->scalar('SELECT @@FOREIGN_KEY_CHECKS'));
 
 list($oldRan, $oldPeak) = $restore($old);
 pin('an old one-INSERT backup still restores', 1, $oldRan);
@@ -133,7 +133,7 @@ $admin->query("DROP TABLE `$parent`");
 
 $handle = fopen($fk, 'rb');
 try {
-    DatabaseTools::restore(Connection::instance(), $handle);
+    DatabaseTools::restore(Connection::getInstance(), $handle);
     $restored = true;
 } catch (\mindstellar\database\DbException $e) {
     $restored = false;
@@ -149,7 +149,7 @@ try {
 pin('...with its rows', 2, $count);
 pin('...and its foreign key', 1, (int) $admin->query("SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS"
     . " WHERE CONSTRAINT_SCHEMA = DATABASE() AND CONSTRAINT_NAME = 'fk_backup_child'")->fetch_row()[0]);
-pin('foreign key checks are on again', '1', (string) Connection::instance()->scalar('SELECT @@FOREIGN_KEY_CHECKS'));
+pin('foreign key checks are on again', '1', (string) Connection::getInstance()->scalar('SELECT @@FOREIGN_KEY_CHECKS'));
 
 harness_section('Prefix token');
 
@@ -168,7 +168,7 @@ define("DB_TABLE_PREFIX", "sc_");
 require ' . var_export(__DIR__ . '/lib/scratchdb.php', true) . ';
 scratchdb_bootstrap($argv[1]);
 $handle = fopen($argv[2], "rb");
-echo \mindstellar\admin\DatabaseTools::restore(\mindstellar\database\Connection::instance(), $handle, null, true);
+echo \mindstellar\admin\DatabaseTools::restore(\mindstellar\database\Connection::getInstance(), $handle, null, true);
 ');
 $ran = trim((string) shell_exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($child) . ' ' . escapeshellarg($scratch) . ' ' . escapeshellarg($tok) . ' 2>&1'));
 unlink($child);
@@ -185,7 +185,7 @@ pin('...and the same contents', true, $same);
 
 $handle = fopen($tok, 'rb');
 try {
-    DatabaseTools::restore(Connection::instance(), $handle, null, true);
+    DatabaseTools::restore(Connection::getInstance(), $handle, null, true);
     $replaced = true;
 } catch (\mindstellar\database\DbException $e) {
     $replaced = false;
@@ -204,13 +204,13 @@ $admin->query('INSERT INTO `oc_shop2_t_x` VALUES (1), (2), (3)');
 $ours = \mindstellar\backup\DatabaseDump::tables();
 check('fixture: this site\'s own table is backed up', in_array($table, $ours, true));
 check('a backup leaves the other install\'s table out', !in_array('oc_shop2_t_x', $ours, true), implode(', ', $ours));
-$sized = DatabaseTools::size(Connection::instance(), 'oc_');
+$sized = DatabaseTools::size(Connection::getInstance(), 'oc_');
 pin('...and does not count it in this site\'s size', count($ours), $sized['tables']);
 
 $foreign = tempnam(sys_get_temp_dir(), 'osc_backup_foreign_');
 file_put_contents($foreign, "CREATE TABLE IF NOT EXISTS `oc_shop2_t_x` (pk_i_id INT NOT NULL PRIMARY KEY) ENGINE=InnoDB;\n");
 $handle = fopen($foreign, 'rb');
-DatabaseTools::restore(Connection::instance(), $handle, null, true);
+DatabaseTools::restore(Connection::getInstance(), $handle, null, true);
 fclose($handle);
 unlink($foreign);
 pin('a restore or rollback never drops it', 3, (int) $admin->query('SELECT COUNT(*) FROM `oc_shop2_t_x`')->fetch_row()[0]);
@@ -223,7 +223,7 @@ unlink($other);
 
 harness_section('Upgrade lock');
 
-$conn = Connection::instance();
+$conn = Connection::getInstance();
 $lock = (new \mindstellar\migration\MigrationRunner($conn, ABS_PATH . 'oc-includes/osclass/installer/migrations'))->lockName();
 $admin->query("SELECT GET_LOCK('" . $admin->real_escape_string($lock) . "', 0)");
 pin('refused while an upgrade holds the lock', null, DatabaseTools::upgradeLock($conn));

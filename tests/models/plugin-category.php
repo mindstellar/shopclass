@@ -76,7 +76,7 @@ $fresh  = static function (): PluginCategory {
 harness_section('migration 0067');
 $admin->query("CREATE TABLE {$p}t_plugin_category (s_plugin_name VARCHAR(40) NOT NULL, fk_i_category_id INT UNSIGNED NOT NULL, PRIMARY KEY (s_plugin_name, fk_i_category_id))");
 $admin->query("INSERT INTO {$p}t_plugin_category VALUES ('digital-goods', $bikes), ('digital-goods', $cars), ('cars-attr', $cars)");
-$migrate = static fn () => (require ABS_PATH . 'oc-includes/osclass/installer/migrations/0067_plugin_categories_to_key_value.php')->up(Connection::instance());
+$migrate = static fn () => (require ABS_PATH . 'oc-includes/osclass/installer/migrations/0067_plugin_categories_to_key_value.php')->up(Connection::getInstance());
 $migrate();
 pin('the table is dropped', 0, $num("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = '{$p}t_plugin_category'"));
 pin('each plugin keeps its list, sorted', array((string) min($cars, $bikes), (string) max($cars, $bikes)), $fresh()->listSelected('digital-goods'));

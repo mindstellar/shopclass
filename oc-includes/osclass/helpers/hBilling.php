@@ -29,7 +29,7 @@ use mindstellar\listing\ListingService;
  */
 function osc_register_billing_feature(string $id, array $spec): void
 {
-    FeatureRegistry::instance()->register($id, $spec);
+    FeatureRegistry::getInstance()->register($id, $spec);
 }
 
 /**
@@ -41,7 +41,7 @@ function osc_register_billing_feature(string $id, array $spec): void
  */
 function osc_billing_feature(string $id): ?Feature
 {
-    return FeatureRegistry::instance()->get($id);
+    return FeatureRegistry::getInstance()->get($id);
 }
 
 /**
@@ -51,7 +51,7 @@ function osc_billing_feature(string $id): ?Feature
  */
 function osc_billing_features(): array
 {
-    return FeatureRegistry::instance()->all();
+    return FeatureRegistry::getInstance()->all();
 }
 
 /**
@@ -181,7 +181,7 @@ function osc_billing_offline_instructions(): string
  */
 function osc_billing_gateway_name(string $gatewayId): string
 {
-    $gateway = PaymentGatewayRegistry::instance()->get($gatewayId);
+    $gateway = PaymentGatewayRegistry::getInstance()->get($gatewayId);
 
     return $gateway !== null ? $gateway->getName() : $gatewayId;
 }
@@ -646,7 +646,7 @@ function osc_billing_packages(): array
  */
 function osc_billing_can_buy(): bool
 {
-    return PaymentGatewayRegistry::instance()->available() !== array()
+    return PaymentGatewayRegistry::getInstance()->available() !== array()
         && osc_billing_packages() !== array();
 }
 
@@ -929,7 +929,7 @@ function _osc_billing_bump_pause(int $userId, bool $fresh): array
         return $memo[$userId];
     }
 
-    $feature = FeatureRegistry::instance()->get('item.bump');
+    $feature = FeatureRegistry::getInstance()->get('item.bump');
     $price   = $feature !== null ? $feature->price($userId) : osc_billing_bump_credits();
     $state   = $none;
     if ($price <= 0) {
@@ -1268,7 +1268,7 @@ osc_register_billing_seller_limits();
  */
 osc_add_hook('init', static function () {
     if (osc_billing_enabled()) {
-        PaymentGatewayRegistry::instance()->register(new OfflineGateway());
+        PaymentGatewayRegistry::getInstance()->register(new OfflineGateway());
     }
 });
 

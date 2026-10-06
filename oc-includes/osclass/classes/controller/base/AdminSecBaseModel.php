@@ -79,7 +79,7 @@ class AdminSecBaseModel extends SecBaseModel
     {
         try {
             $runner = new MigrationRunner(
-                Connection::instance(),
+                Connection::getInstance(),
                 \mindstellar\admin\DatabaseTools::migrationsDir()
             );
             $runner->ensureLedger();

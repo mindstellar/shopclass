@@ -143,7 +143,7 @@ class CWebBilling extends WebSecBaseModel
     private function buyView()
     {
         $this->_exportVariableToView('packages', PackageStore::enabled());
-        $this->_exportVariableToView('gateways', PaymentGatewayRegistry::instance()->available());
+        $this->_exportVariableToView('gateways', PaymentGatewayRegistry::getInstance()->available());
         $this->doView('user-billing-buy.php');
     }
 
@@ -208,7 +208,7 @@ class CWebBilling extends WebSecBaseModel
             $this->redirectTo($this->url('buy'));
         }
 
-        $available = PaymentGatewayRegistry::instance()->available((string) $package['s_currency']);
+        $available = PaymentGatewayRegistry::getInstance()->available((string) $package['s_currency']);
         if (!isset($available[$gatewayId])) {
             osc_add_flash_error_message(_m('That payment method is not available'));
             $this->redirectTo($this->url('buy'));
@@ -237,7 +237,7 @@ class CWebBilling extends WebSecBaseModel
         $this->_exportVariableToView('checkoutHtml', $intent->getPayload());
         $this->_exportVariableToView('order', $order);
         $this->_exportVariableToView('packages', PackageStore::enabled());
-        $this->_exportVariableToView('gateways', PaymentGatewayRegistry::instance()->available());
+        $this->_exportVariableToView('gateways', PaymentGatewayRegistry::getInstance()->available());
         $this->doView('user-billing-buy.php');
     }
 
@@ -278,7 +278,7 @@ class CWebBilling extends WebSecBaseModel
         // A feature id in the allow-list is simply unregistered when its own
         // *_enabled preference is off -- listing.premium included, now that it
         // follows the same split as every other feature here.
-        $feature = FeatureRegistry::instance()->get($featureId);
+        $feature = FeatureRegistry::getInstance()->get($featureId);
         if ($feature === null) {
             osc_add_flash_error_message(_m('This upgrade is not available right now'));
             $this->redirectTo(osc_user_list_items_url());
@@ -337,7 +337,7 @@ class CWebBilling extends WebSecBaseModel
     private static function itemScopedFeatureIds(): array
     {
         $ids = array();
-        foreach (FeatureRegistry::instance()->all() as $id => $feature) {
+        foreach (FeatureRegistry::getInstance()->all() as $id => $feature) {
             if ($feature->getScope() === Feature::SCOPE_ITEM) {
                 $ids[] = $id;
             }

@@ -96,7 +96,7 @@ class Csrf
      *
      * @return \mindstellar\security\Csrf
      */
-    public static function instance()
+    public static function getInstance()
     {
         if (!self::$instance instanceof self) {
             self::$instance = new self();
@@ -110,7 +110,7 @@ class Csrf
      */
     public static function newInstance()
     {
-        return self::instance();
+        return self::getInstance();
     }
 
     /**
@@ -122,7 +122,7 @@ class Csrf
     {
         ob_start();
         $injectCsrf = static function () {
-            $data = self::instance()->injectTokens(ob_get_clean(), headers_list());
+            $data = self::getInstance()->injectTokens(ob_get_clean(), headers_list());
             // The one moment the finished page exists as a string: after the tokens are
             // in, before anything reaches the client. Anything that needs the whole body
             // -- a validator to answer conditional requests with, a minifier, a late

@@ -177,7 +177,7 @@ class Dump extends DAO
         // An unusable identifier or a failed query writes only the trailing newline.
         $res = false;
         if ($this->isValidTableName($table)) {
-            $conn = \mindstellar\database\ConnectionManager::instance()->getHandle();
+            $conn = \mindstellar\database\ConnectionManager::getInstance()->getHandle();
             if ($conn instanceof mysqli) {
                 try {
                     $res = $conn->query('SELECT * FROM `' . $table . '`', MYSQLI_USE_RESULT);
@@ -378,7 +378,7 @@ class Dump extends DAO
             return $value;
         }
 
-        $conn = \mindstellar\database\ConnectionManager::instance()->getHandle();
+        $conn = \mindstellar\database\ConnectionManager::getInstance()->getHandle();
         $escaped = $conn instanceof mysqli ? $conn->real_escape_string((string)$value) : addslashes((string)$value);
 
         return "'" . $escaped . "'";

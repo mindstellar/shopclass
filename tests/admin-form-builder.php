@@ -66,7 +66,7 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hSettings.php';
 function register_error(string $id, array $spec): ?string
 {
     try {
-        SettingsPageRegistry::instance()->register($id, $spec);
+        SettingsPageRegistry::getInstance()->register($id, $spec);
     } catch (InvalidArgumentException $e) {
         return $e->getMessage();
     }
@@ -707,11 +707,11 @@ pin('a whole page is the array a hand writes', $handSpec, $built->toArray());
 
 register_error('myplugin-hand', $handSpec);
 $built->register();
-$handFields  = SettingsPageRegistry::instance()->fields('myplugin-hand');
-$builtFields = SettingsPageRegistry::instance()->fields('myplugin-built');
+$handFields  = SettingsPageRegistry::getInstance()->fields('myplugin-hand');
+$builtFields = SettingsPageRegistry::getInstance()->fields('myplugin-built');
 
-check('the hand-written page registered', SettingsPageRegistry::instance()->get('myplugin-hand') !== null);
-check('the built page registered', SettingsPageRegistry::instance()->get('myplugin-built') !== null);
+check('the hand-written page registered', SettingsPageRegistry::getInstance()->get('myplugin-hand') !== null);
+check('the built page registered', SettingsPageRegistry::getInstance()->get('myplugin-built') !== null);
 pin('both declare the same field names', array_keys($handFields), array_keys($builtFields));
 pin('and the same normalised field specs', $handFields, $builtFields);
 pin('nothing is lost on the way through the groups', 15, count($builtFields));
@@ -721,8 +721,8 @@ $allTypes = SettingsPageRegistry::FIELD_TYPES;
 sort($allTypes);
 pin('and the page exercises every type the registry allows', $allTypes, $builtTypes);
 
-$handPage  = SettingsPageRegistry::instance()->get('myplugin-hand');
-$builtPage = SettingsPageRegistry::instance()->get('myplugin-built');
+$handPage  = SettingsPageRegistry::getInstance()->get('myplugin-hand');
+$builtPage = SettingsPageRegistry::getInstance()->get('myplugin-built');
 unset($handPage['id'], $builtPage['id']);
 pin('and the same normalised page, groups and all', $handPage, $builtPage);
 
@@ -807,9 +807,9 @@ pin(
 );
 check(
     'and none of the refused pages was registered',
-    SettingsPageRegistry::instance()->get('bad-select') === null
-    && SettingsPageRegistry::instance()->get('bad-dup') === null
-    && SettingsPageRegistry::instance()->get('bad-after') === null
+    SettingsPageRegistry::getInstance()->get('bad-select') === null
+    && SettingsPageRegistry::getInstance()->get('bad-dup') === null
+    && SettingsPageRegistry::getInstance()->get('bad-after') === null
 );
 
 harness_section('round trip');
@@ -836,11 +836,11 @@ check('and so does the built preference page', $builtError === null, (string)$bu
 
 pin(
     'the fields sugar and one untitled group normalise the same',
-    SettingsPageRegistry::instance()->fields('round-hand'),
-    SettingsPageRegistry::instance()->fields('round-built')
+    SettingsPageRegistry::getInstance()->fields('round-hand'),
+    SettingsPageRegistry::getInstance()->fields('round-built')
 );
-$hand  = SettingsPageRegistry::instance()->get('round-hand');
-$build = SettingsPageRegistry::instance()->get('round-built');
+$hand  = SettingsPageRegistry::getInstance()->get('round-hand');
+$build = SettingsPageRegistry::getInstance()->get('round-built');
 // The id and the section derived from it are the only two keys these can differ on:
 // neither page declared a section, so each falls back to its own id.
 pin('the section defaults to the page id, not the builder', 'round-built', $build['section']);
@@ -874,24 +874,24 @@ check('and so does the built table page', $tableBuiltError === null, (string)$ta
 pin(
     'the store normalises to a table and its key',
     array('type' => 'table', 'table' => 't_ban_rule', 'pk' => 'pk_i_id'),
-    SettingsPageRegistry::instance()->get('table-built')['store']
+    SettingsPageRegistry::getInstance()->get('table-built')['store']
 );
 pin(
     'the column a field maps to survives the trip through the registry',
     's_email',
-    SettingsPageRegistry::instance()->fields('table-built')['email']['column'] ?? null
+    SettingsPageRegistry::getInstance()->fields('table-built')['email']['column'] ?? null
 );
 pin(
     'and both doors normalise to the same fields',
-    SettingsPageRegistry::instance()->fields('table-hand'),
-    SettingsPageRegistry::instance()->fields('table-built')
+    SettingsPageRegistry::getInstance()->fields('table-hand'),
+    SettingsPageRegistry::getInstance()->fields('table-built')
 );
 // The default is the whole compatibility claim: every page declared before the store
 // existed has to keep writing preferences without being edited.
 pin(
     'a page that declared no store is still a preference page',
     array('type' => 'preference'),
-    SettingsPageRegistry::instance()->get('round-built')['store']
+    SettingsPageRegistry::getInstance()->get('round-built')['store']
 );
 
 exit(harness_result());

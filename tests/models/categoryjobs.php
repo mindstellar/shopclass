@@ -77,7 +77,7 @@ require_once ABS_PATH . 'oc-includes/osclass/formatting.php';
 
 Preference::newInstance();
 
-$queue = JobQueue::instance();
+$queue = JobQueue::getInstance();
 
 $locale = 'en_US';
 seed_locale($admin, $locale, 'English');

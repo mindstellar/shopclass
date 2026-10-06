@@ -513,7 +513,7 @@ class Search extends DAO
         $parts = array();
         foreach ($this->locale_code as $locale) {
             $parts[] = "d.fk_c_locale_code LIKE '"
-                . \mindstellar\database\Connection::instance()->escape((string)$locale) . "'";
+                . \mindstellar\database\Connection::getInstance()->escape((string)$locale) . "'";
         }
 
         return '( ' . implode(' OR ', $parts) . ' )';
@@ -1137,7 +1137,7 @@ class Search extends DAO
      */
     private function escapeString($value)
     {
-        return \mindstellar\database\Connection::instance()->escape((string)$value);
+        return \mindstellar\database\Connection::getInstance()->escape((string)$value);
     }
 
     /**

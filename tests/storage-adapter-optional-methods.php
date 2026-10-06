@@ -148,7 +148,7 @@ check('an adapter written against the interface alone still loads', new PluginAd
 
 harness_section('Without the bucket methods, no bucket option');
 
-$manager = StorageManager::instance();
+$manager = StorageManager::getInstance();
 foreach (array(new PluginAdapter(), new AlmostAdapter(), new FullAdapter()) as $adapter) {
     $manager->register($adapter);
 }

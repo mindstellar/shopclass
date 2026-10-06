@@ -51,13 +51,21 @@ final class JobQueue
     /**
      * @return JobQueue
      */
-    public static function instance(): self
+    public static function getInstance(): self
     {
         if (!self::$instance instanceof self) {
             self::$instance = new self();
         }
 
         return self::$instance;
+    }
+
+    /**
+     * @deprecated 7.0.0 Use getInstance().
+     */
+    public static function instance(): self
+    {
+        return self::getInstance();
     }
 
     /**

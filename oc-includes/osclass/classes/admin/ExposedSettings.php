@@ -111,7 +111,7 @@ final class ExposedSettings
         osc_db_transaction(static function () use ($byPage): void {
             $errors = [];
             foreach ($byPage as $page => $changes) {
-                $post   = self::post(osc_settings_values($page), $changes, SettingsPageRegistry::instance()->fields($page));
+                $post   = self::post(osc_settings_values($page), $changes, SettingsPageRegistry::getInstance()->fields($page));
                 $result = \Params::withRequest($post, static fn () => osc_settings_save($page));
                 foreach ((array) ($result['errors'] ?? []) as $error) {
                     $errors[] = ['pointer' => '', 'code' => 'rejected', 'message' => trim(strip_tags((string) $error))];

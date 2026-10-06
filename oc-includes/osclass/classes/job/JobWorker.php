@@ -46,7 +46,7 @@ final class JobWorker
     {
         self::registerHandlers();
 
-        $queue = JobQueue::instance();
+        $queue = JobQueue::getInstance();
         if ($queue->count(JobQueue::STATUS_PENDING) === 0) {
             return 0;
         }

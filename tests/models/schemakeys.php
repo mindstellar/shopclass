@@ -20,7 +20,7 @@ require_once __DIR__ . '/../lib/harness.php';
 use mindstellar\database\Connection;
 
 $admin = scratchdb_session('osc_models_schemakeys');
-$conn  = Connection::instance();
+$conn  = Connection::getInstance();
 $p     = DB_TABLE_PREFIX;
 
 $migrate = static function (string $file) use ($conn) {

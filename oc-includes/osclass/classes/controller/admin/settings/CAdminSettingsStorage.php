@@ -103,7 +103,7 @@ class CAdminSettingsStorage extends AdminSecBaseModel
 
                 switch ($op) {
                     case 'offload_all':
-                        $remote = StorageManager::instance()->remote();
+                        $remote = StorageManager::getInstance()->remote();
                         if ($remote === null) {
                             osc_add_flash_error_message(_m('Configure and activate a remote backend first.'), 'admin');
                             break;
@@ -116,7 +116,7 @@ class CAdminSettingsStorage extends AdminSecBaseModel
                         );
                         break;
                     case 'restore_all':
-                        $remote = StorageManager::instance()->remote();
+                        $remote = StorageManager::getInstance()->remote();
                         if ($remote === null) {
                             osc_add_flash_error_message(_m('Configure and activate a remote backend first.'), 'admin');
                             break;
@@ -198,7 +198,7 @@ class CAdminSettingsStorage extends AdminSecBaseModel
         );
 
         try {
-            $queue = JobQueue::instance();
+            $queue = JobQueue::getInstance();
             $queueStats = array(
                 'pending' => $queue->count(JobQueue::STATUS_PENDING),
                 'error' => $queue->count(JobQueue::STATUS_ERROR),

@@ -110,7 +110,7 @@ class DAO
      */
     public function __construct()
     {
-        $conn              = \mindstellar\database\ConnectionManager::instance();
+        $conn              = \mindstellar\database\ConnectionManager::getInstance();
         $data              = $conn->getHandle();
         $this->dao         = new DBCommandClass($data);
         $this->tablePrefix = DB_TABLE_PREFIX;
@@ -123,7 +123,7 @@ class DAO
      */
     public function __wakeup()
     {
-        $conn      = \mindstellar\database\ConnectionManager::instance();
+        $conn      = \mindstellar\database\ConnectionManager::getInstance();
         $data      = $conn->getHandle();
         $this->dao = new DBCommandClass($data);
     }
@@ -686,7 +686,7 @@ class DAO
     {
         $this->errorLevel = (int)$e->getCode();
 
-        $conn            = \mindstellar\database\ConnectionManager::instance()->getHandle();
+        $conn            = \mindstellar\database\ConnectionManager::getInstance()->getHandle();
         $this->errorDesc = ($conn instanceof mysqli && $conn->error !== '')
             ? $conn->error
             : $e->getMessage();

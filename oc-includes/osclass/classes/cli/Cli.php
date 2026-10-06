@@ -503,7 +503,7 @@ class Cli
 
         try {
             $runner = new \mindstellar\migration\MigrationRunner(
-                Connection::instance(),
+                Connection::getInstance(),
                 DatabaseTools::migrationsDir()
             );
             $runner->ensureLedger();
@@ -520,7 +520,7 @@ class Cli
         }
 
         try {
-            $release = DatabaseTools::upgradeLock(Connection::instance());
+            $release = DatabaseTools::upgradeLock(Connection::getInstance());
         } catch (\Throwable $e) {
             $release = null;
         }
@@ -530,7 +530,7 @@ class Cli
             return 1;
         }
         try {
-            $result = (new \mindstellar\database\SchemaReconciler(Connection::instance()))->repair();
+            $result = (new \mindstellar\database\SchemaReconciler(Connection::getInstance()))->repair();
         } catch (\Throwable $e) {
             $this->err('Could not read the schema: ' . $e->getMessage() . "\n");
 
@@ -674,7 +674,7 @@ class Cli
     private function schemaReport(): int
     {
         try {
-            $findings = (new \mindstellar\database\SchemaDoctor(Connection::instance()))->diagnose();
+            $findings = (new \mindstellar\database\SchemaDoctor(Connection::getInstance()))->diagnose();
         } catch (\Throwable $e) {
             $this->err('Could not read the schema: ' . $e->getMessage() . "\n");
 
@@ -819,7 +819,7 @@ class Cli
             return 2;
         }
 
-        $queue   = \mindstellar\job\JobQueue::instance();
+        $queue   = \mindstellar\job\JobQueue::getInstance();
         $started = time();
 
         $ran = \mindstellar\job\JobWorker::run($maxSeconds);
@@ -851,7 +851,7 @@ class Cli
      */
     private function cmdJobsStatus(array $args): int
     {
-        $queue = \mindstellar\job\JobQueue::instance();
+        $queue = \mindstellar\job\JobQueue::getInstance();
         $only  = trim((string) ($args['type'] ?? ''));
         $all   = $queue->stats($only === '' ? null : $only);
 
@@ -1726,7 +1726,7 @@ class Cli
 
         // Database connectivity.
         try {
-            $check('ok', 'Database', 'connected, server ' . Connection::instance()->serverInfo());
+            $check('ok', 'Database', 'connected, server ' . Connection::getInstance()->serverInfo());
         } catch (\Throwable $e) {
             $check('fail', 'Database', $e->getMessage());
         }
@@ -1765,7 +1765,7 @@ class Cli
         }
 
         // Job queue: jobs that stopped retrying, and work left waiting.
-        $jobs     = \mindstellar\job\JobQueue::instance()->stats();
+        $jobs     = \mindstellar\job\JobQueue::getInstance()->stats();
         $dueSince = $jobs['due_since'] !== null ? strtotime((string) $jobs['due_since']) : false;
         if ($jobs['error'] > 0) {
             $check('warn', 'Job queue', $jobs['error'] . ' job(s) stopped retrying; run jobs:status');

@@ -70,7 +70,7 @@ class StorageQueue
      */
     public function claim(int $batch = 20): array
     {
-        return JobQueue::instance()->claim($batch);
+        return JobQueue::getInstance()->claim($batch);
     }
 
     /**
@@ -80,7 +80,7 @@ class StorageQueue
      */
     public function complete(int $id): void
     {
-        JobQueue::instance()->complete($id);
+        JobQueue::getInstance()->complete($id);
     }
 
     /**
@@ -91,7 +91,7 @@ class StorageQueue
      */
     public function fail(int $id, string $error): void
     {
-        JobQueue::instance()->fail($id, $error);
+        JobQueue::getInstance()->fail($id, $error);
     }
 
     /**
@@ -101,7 +101,7 @@ class StorageQueue
      */
     public function countByStatus(string $status): int
     {
-        return JobQueue::instance()->count($status);
+        return JobQueue::getInstance()->count($status);
     }
 
     /**
@@ -111,6 +111,6 @@ class StorageQueue
      */
     public function deadLetters(int $limit = 50): array
     {
-        return JobQueue::instance()->deadLetters($limit);
+        return JobQueue::getInstance()->deadLetters($limit);
     }
 }

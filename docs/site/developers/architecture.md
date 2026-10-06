@@ -80,8 +80,9 @@ Use one of these before making up a new ending.
   (`mindstellar\model\`). A table one module owns has its class in that module, ending in
   `Store` (`billing\OrderStore`, `search\AlertStore`).
 - **Making objects.** Use `new`. A class that must be shared, such as a registry or the
-  database connection, offers `instance()`. Do not add `newInstance()`: it returns a shared
-  object, not a new one. Released classes keep it only as a deprecated wrapper for plugins.
+  database connection, offers `getInstance()`. Do not add `newInstance()`: it returns a shared
+  object, not a new one. Released classes keep it, and `instance()`, only as deprecated
+  wrappers for plugins.
 - **Strict types.** Every file in a `mindstellar\` namespace starts with
   `declare(strict_types=1);`. `tests/strict-types.php` fails on a new file without it.
 - **Renames keep the old name.** A released class that moves or is renamed is added to

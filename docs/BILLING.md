@@ -275,7 +275,7 @@ replaces one of core's by registering the same id again — that is how a site o
 built-in feature's price or effect.
 
 ```php
-FeatureRegistry::instance()->register('listing.premium', array(
+FeatureRegistry::getInstance()->register('listing.premium', array(
     'label'       => 'Featured listing',
     'description' => '',                             // optional
     'consumes'    => Feature::CONSUMES_DURATION,      // ::CONSUMES_QUANTITY | ::CONSUMES_DURATION | ::CONSUMES_CAPACITY

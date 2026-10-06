@@ -580,7 +580,7 @@ class CAdminAppearance extends AdminSecBaseModel
             return null;
         }
 
-        $type = \mindstellar\widgets\WidgetRegistry::instance()->get($sType);
+        $type = \mindstellar\widgets\WidgetRegistry::getInstance()->get($sType);
         if ($type === null) {
             osc_add_flash_error_message(_m('Unknown widget type'), 'admin');
             $this->redirectTo(osc_admin_base_url(true) . '?page=appearance&action=widgets');

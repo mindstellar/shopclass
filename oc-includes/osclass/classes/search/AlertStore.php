@@ -125,7 +125,7 @@ final class AlertStore extends Model
             return array();
         }
         try {
-            $rows = Connection::instance()->select(
+            $rows = Connection::getInstance()->select(
                 'SELECT pk_i_id FROM ' . self::tableName() . ' WHERE pk_i_id IN ('
                 . implode(', ', array_fill(0, count($ids), '?')) . ') AND s_search LIKE ?',
                 array_merge($ids, array(self::HELD_LIKE))
@@ -171,7 +171,7 @@ final class AlertStore extends Model
     public static function countHeld(): int
     {
         try {
-            return (int)Connection::instance()->scalar(
+            return (int)Connection::getInstance()->scalar(
                 'SELECT COUNT(*) FROM ' . self::tableName() . ' WHERE s_search LIKE ?',
                 array(self::HELD_LIKE)
             );
@@ -213,7 +213,7 @@ final class AlertStore extends Model
         }
 
         try {
-            $conn                 = Connection::instance();
+            $conn                 = Connection::getInstance();
             $out['rows']          = (int)$conn->scalar('SELECT COUNT(*) FROM ' . self::tableName());
             $out['total_results'] = (int)$conn->scalar('SELECT COUNT(*) FROM ' . self::tableName() . $where, $params);
             $out['alerts']        = osc_db_stringify_rows($conn->select(

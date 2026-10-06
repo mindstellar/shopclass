@@ -181,7 +181,7 @@ final class EntitlementStore extends Model
         // touching a row at all, so a mistaken call (ours or a plugin's) cannot drain
         // one. A feature id with no registry entry cannot be checked this way and falls
         // through to the ordinary spend below.
-        $registered = FeatureRegistry::instance()->get($feature);
+        $registered = FeatureRegistry::getInstance()->get($feature);
         if ($registered !== null && $registered->getConsumes() === Feature::CONSUMES_CAPACITY) {
             return false;
         }

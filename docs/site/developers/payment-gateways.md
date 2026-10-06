@@ -29,7 +29,7 @@ use mindstellar\billing\PaymentGatewayRegistry;
 
 osc_add_hook('init', static function () {
     if (osc_billing_enabled()) {
-        PaymentGatewayRegistry::instance()->register(new AcmePayGateway());
+        PaymentGatewayRegistry::getInstance()->register(new AcmePayGateway());
     }
 });
 ```
@@ -246,7 +246,7 @@ osc_add_hook(osc_plugin_path(__FILE__) . '_configure', static function () {
 });
 
 osc_add_hook(osc_plugin_path(__FILE__) . '_uninstall', static function () {
-    foreach (array_keys(SettingsPageRegistry::instance()->fields('test-gateway')) as $name) {
+    foreach (array_keys(SettingsPageRegistry::getInstance()->fields('test-gateway')) as $name) {
         osc_delete_preference($name, 'test-gateway');
     }
 });

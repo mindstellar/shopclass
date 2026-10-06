@@ -121,7 +121,7 @@ try {
 }
 pin('the declaration registers', null, $threw);
 
-$fields = SettingsPageRegistry::instance()->fields(TestGateway::PAGE);
+$fields = SettingsPageRegistry::getInstance()->fields(TestGateway::PAGE);
 pin('test mode is off until an admin turns it on', false, TestGateway::setting('enabled'));
 pin('the callback window defaults to 30 minutes', 30, TestGateway::setting('window'));
 check(
@@ -140,7 +140,7 @@ osc_set_preference(\mindstellar\billing\Receipts::PREF_EMAIL, '0', Billing::PREF
 osc_reset_preferences();
 
 $gateway = new TestGateway();
-PaymentGatewayRegistry::instance()->register($gateway);
+PaymentGatewayRegistry::getInstance()->register($gateway);
 
 $buyer = seed_user($admin, 'buyer', 'buyer@example.test');
 $newOrder = static function (int $credits = 100) use ($buyer): Order {
@@ -154,13 +154,13 @@ harness_section('Refused while test mode is off');
 
 $order  = $newOrder();
 $result = Billing::handleCallback(TestGateway::ID, TestGateway::payload($order, 'paid'));
-check('the gateway is not offered', !$gateway->isConfigured() && !isset(PaymentGatewayRegistry::instance()->available()[TestGateway::ID]));
+check('the gateway is not offered', !$gateway->isConfigured() && !isset(PaymentGatewayRegistry::getInstance()->available()[TestGateway::ID]));
 pin('a valid callback is ignored', CallbackResult::OUTCOME_IGNORED, $result->getOutcome());
 pin('nothing is credited', 0, Wallet::balance($buyer));
 pin('the order stays pending', Order::STATUS_PENDING, $status($order));
 
 $setting('enabled', '1', 'BOOLEAN');
-check('switching test mode on offers the gateway', isset(PaymentGatewayRegistry::instance()->available('USD')[TestGateway::ID]));
+check('switching test mode on offers the gateway', isset(PaymentGatewayRegistry::getInstance()->available('USD')[TestGateway::ID]));
 check('billing off takes it away again', (static function () {
     osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
     osc_reset_preferences();

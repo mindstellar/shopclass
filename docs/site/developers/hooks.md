@@ -616,7 +616,7 @@ Core fires 551 names. Generated from the source; do not edit by hand.
 | `regenerated_image` | action | `\ItemResource::newInstance()->findByPrimaryKey($resource['pk_i_id'])` | `oc-includes/osclass/classes/listing/PhotoService.php` |
 | `register_email_taken` | action | `$input['s_email']` | `oc-includes/osclass/classes/user/AccountService.php` |
 | `register_jobs` | action | none | `oc-includes/osclass/classes/job/JobWorker.php` |
-| `register_storage_adapters` | action | `StorageManager::instance()` | `oc-includes/osclass/helpers/hStorage.php` |
+| `register_storage_adapters` | action | `StorageManager::getInstance()` | `oc-includes/osclass/helpers/hStorage.php` |
 | `render_admintoolbar` | action | none | `oc-includes/osclass/classes/AdminToolbar.php` |
 | `resource_alt` | filter | `$title, osc_resource()` | `oc-includes/osclass/helpers/hItems.php` |
 | `resource_download_filename` | filter | `$name, $resource, $variant` | `oc-includes/osclass/helpers/hItems.php` |

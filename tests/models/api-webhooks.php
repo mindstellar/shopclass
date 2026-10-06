@@ -407,7 +407,7 @@ harness_section('delivery: retries, dead letter, pause and one e-mail');
 osc_job_register_handler(Delivery::TYPE, static function ($job) use ($delivery): void {
     $delivery->run($job->payload(), $job->attempts() + 1);
 });
-$queue = JobQueue::instance();
+$queue = JobQueue::getInstance();
 $run   = static function () use ($queue): array {
     $outcomes = [];
     foreach ($queue->claim(20, Delivery::TYPE) as $row) {

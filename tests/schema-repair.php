@@ -38,7 +38,7 @@ if (!function_exists('osc_lib_path')) {
     }
 }
 
-$conn = Connection::instance();
+$conn = Connection::getInstance();
 
 /** Whether $table has an index named $name. */
 $hasIndex = static function (string $table, string $name) use ($admin): bool {

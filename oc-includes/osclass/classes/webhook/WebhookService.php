@@ -228,7 +228,7 @@ final class WebhookService
 
     private function deliveryRows(string $id): \mindstellar\database\QueryBuilder
     {
-        return osc_db_table(JobQueue::instance()->table())
+        return osc_db_table(JobQueue::getInstance()->table())
             ->where('s_type', Delivery::TYPE)
             ->like('s_payload', '"endpoint_id":"' . $id . '"');
     }

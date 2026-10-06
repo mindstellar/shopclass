@@ -39,7 +39,7 @@ if (!osc_is_web_user_logged_in()) {
     $emptyMessage = null;
 
     $packages = osc_billing_packages();
-    $gateways = PaymentGatewayRegistry::instance()->available();
+    $gateways = PaymentGatewayRegistry::getInstance()->available();
 }
 
 $order        = __get('order');

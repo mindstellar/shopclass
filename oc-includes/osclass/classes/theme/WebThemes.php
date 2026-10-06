@@ -85,7 +85,7 @@ class WebThemes extends Themes
                 // The parent fills in what the child left unsaid. Its declarations run
                 // second, so without this marker the newest value wins and the parent
                 // overrules the child on everything they both declare.
-                $supports = \mindstellar\theme\ThemeSupports::instance();
+                $supports = \mindstellar\theme\ThemeSupports::getInstance();
                 $supports->beginInherited();
                 try {
                     require_once $parent_functions_path;

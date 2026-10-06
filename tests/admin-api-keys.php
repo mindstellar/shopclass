@@ -371,7 +371,7 @@ $names    = array_keys($seeded);
 sort($defaults);
 sort($names);
 pin('the migration seeds every ApiSettings default', $defaults, $names);
-foreach (mindstellar\settings\SettingsPageRegistry::instance()->fields(mindstellar\admin\form\ApiSettingsScreen::register()) as $name => $field) {
+foreach (mindstellar\settings\SettingsPageRegistry::getInstance()->fields(mindstellar\admin\form\ApiSettingsScreen::register()) as $name => $field) {
     $default = is_bool($field['default']) ? (string) (int) $field['default'] : (string) $field['default'];
     pin($name . ' is seeded with the form default', $default, $seeded[$name][0] ?? null);
     if (array_key_exists($name, mindstellar\api\ApiSettings::DEFAULTS)) {

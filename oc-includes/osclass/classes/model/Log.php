@@ -249,7 +249,7 @@ class Log extends DAO
     public function clearAll()
     {
         try {
-            $conn = \mindstellar\database\Connection::instance();
+            $conn = \mindstellar\database\Connection::getInstance();
             $n    = (int) $conn->scalar('SELECT COUNT(*) FROM ' . $this->getTableName());
             $conn->execute('DELETE FROM ' . $this->getTableName());
 
