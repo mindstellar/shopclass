@@ -223,9 +223,9 @@ if (!function_exists('osc_base_url')) {
         return 'http://localhost/';
     }
 }
-foreach (['OSC_CACHE_TTL' => 60, 'OC_ADMIN' => false] as $name => $value) {
-    if (!defined($name)) {
-        define($name, $value);
+foreach (['OSC_CACHE_TTL' => 60, 'OC_ADMIN' => false] as $constName => $constValue) {
+    if (!defined($constName)) {
+        define($constName, $constValue);
     }
 }
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSanitize.php';
