@@ -50,10 +50,7 @@ final class AdminRows
      */
     private static function fromTable(int $id): ?array
     {
-        $row = osc_db_table(DB_TABLE_PREFIX . 't_admin')
-            ->select('pk_i_id', 's_name', 's_username', 's_email', 'b_moderator')
-            ->where('pk_i_id', $id)
-            ->first();
+        $row = \mindstellar\auth\AdminStore::find($id, ['pk_i_id', 's_name', 's_username', 's_email', 'b_moderator']);
 
         return $row === null ? null : osc_db_stringify_row($row);
     }

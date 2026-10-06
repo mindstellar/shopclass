@@ -603,13 +603,17 @@ check('fromPrimaryKeys returns $this (chainable)', $s->fromPrimaryKeys($hydIds) 
 
 harness_section('Search: setJsonAlert applies only the plain-value fields of an old-format blob');
 
+// Read the search's state through its toJson() record.
 $prop = static function (Search $search, string $name) {
-    $p = new ReflectionProperty('Search', $name);
-    if (PHP_VERSION_ID < 80100) {
-        $p->setAccessible(true);
-    }
+    $record = json_decode($search->toJson(), true);
 
-    return $p->getValue($search);
+    return match ($name) {
+        'categories'             => $record['aCategories'],
+        'conditions'             => $record['no_catched_conditions'],
+        'price_min', 'price_max' => $record[$name] * 1000000,
+        'locale_code'            => $record['locale_code'] ?? array(),
+        default                  => $record[$name],
+    };
 };
 $hostile                          = $decoded;
 $hostile['aCategories']           = array($catCars, '1) OR SLEEP(1) -- ', 'x');
@@ -665,7 +669,7 @@ harness_section('Search: locale codes never reach SQL unchecked');
 
 $loc = new Search();
 $loc->addLocale(array("zz_ZZ' OR 'a'='a", 'en_US', array('x')));
-pin('only a locale-code shape is kept', array('en_US' => 'en_US'), $prop($loc, 'locale_code'));
+pin('only a locale-code shape is kept', array('en_US'), $prop($loc, 'locale_code'));
 $twoLocales = new Search();
 $twoLocales->addPattern('se');
 $twoLocales->addLocale(array('en_US', 'es_ES'));

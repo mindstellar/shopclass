@@ -1188,14 +1188,7 @@ class CAdminTools extends AdminSecBaseModel
     private function jobLog(array $actions, int $limit): array
     {
         try {
-            $query = osc_db_table(DB_TABLE_PREFIX . 't_log')
-                ->select('dt_date', 's_action', 'fk_i_id', 's_data')
-                ->where('s_section', 'jobs');
-            if ($actions !== array()) {
-                $query = $query->whereIn('s_action', $actions);
-            }
-
-            return $query->orderBy('dt_date', 'DESC')->limit($limit)->get();
+            return \mindstellar\logger\LogQuery::jobs($actions, $limit);
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }

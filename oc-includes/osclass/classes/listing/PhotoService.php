@@ -120,7 +120,7 @@ final class PhotoService
             // session -- an admin may be uploading on a seller's behalf) holds a
             // listing.photos entitlement. -1 (from the entitlement) and 0 (the
             // preference's own convention) both mean unlimited here.
-            $itemOwner        = (int) osc_db_scalar('SELECT fk_i_user_id FROM ' . DB_TABLE_PREFIX . 't_item WHERE pk_i_id = ?', array((int) $itemId));
+            $itemOwner        = ListingStore::ownerId((int) $itemId);
             $maxImagesPerItem = osc_max_images_for_user($itemOwner > 0 ? $itemOwner : null);
             $totalItemImages  = $itemResourceManager->countResources($itemId);
             foreach ($aResources['error'] as $key => $error) {
@@ -346,10 +346,7 @@ final class PhotoService
         // One transaction, so the files go only when the row is gone too.
         try {
             return DeferredMail::transaction(function () use ($resource, $photoId, $actor): bool {
-                $deleted = osc_db_table(DB_TABLE_PREFIX . 't_item_resource')
-                    ->where('pk_i_id', $photoId)
-                    ->where('fk_i_item_id', (int) $resource['fk_i_item_id'])
-                    ->delete();
+                $deleted = PhotoStore::delete($photoId, (int) $resource['fk_i_item_id']);
                 if ($deleted === 0) {
                     throw new \RuntimeException('The photo row was not deleted.');
                 }

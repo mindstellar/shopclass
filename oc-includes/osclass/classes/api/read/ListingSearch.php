@@ -90,7 +90,7 @@ final class ListingSearch
         }
         $after = $pager->after();
         if ($after !== null) {
-            $search->addCondition(...$sort->after(DB_TABLE_PREFIX . 't_item', $after));
+            $search->addCondition(...$sort->after(\Item::getInstance()->getTableName(), $after));
         }
         $search->limit($pager->offset(), $pager->limit() + 1);
     }

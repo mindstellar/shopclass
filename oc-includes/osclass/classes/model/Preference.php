@@ -226,6 +226,28 @@ class Preference extends DAO
 
         return true;
     }
-}
 
-/* file end: ./oc-includes/osclass/model/Preference.php */
+    /**
+     * Write $value unless the preference already holds it, so that of two runs at once only
+     * one sees its write land. The row is created first when missing.
+     *
+     * @param string $key
+     * @param string $value
+     * @param string $section
+     *
+     * @return bool whether this call changed the value
+     * @throws \mindstellar\database\DbException
+     */
+    public function claim($key, $value, $section = 'osclass')
+    {
+        osc_db_execute(
+            'INSERT IGNORE INTO ' . $this->getTableName() . " (s_section, s_name, s_value, e_type) VALUES (?, ?, '', 'STRING')",
+            array($section, $key)
+        );
+
+        return osc_db_execute(
+            'UPDATE ' . $this->getTableName() . ' SET s_value = ? WHERE s_section = ? AND s_name = ? AND s_value <> ?',
+            array($value, $section, $key, $value)
+        ) === 1;
+    }
+}

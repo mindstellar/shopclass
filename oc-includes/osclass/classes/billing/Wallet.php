@@ -12,6 +12,7 @@
 namespace mindstellar\billing;
 
 use InvalidArgumentException;
+use mindstellar\base\Model;
 use mindstellar\database\DbException;
 
 /**
@@ -36,8 +37,10 @@ use mindstellar\database\DbException;
  *
  * @package mindstellar\billing
  */
-final class Wallet
+final class Wallet extends Model
 {
+    protected const TABLE = 't_billing_wallet';
+
     /** MySQL's duplicate-entry error number. */
     private const ERR_DUPLICATE = 1062;
 
@@ -444,7 +447,7 @@ final class Wallet
      */
     private static function wallet(): string
     {
-        return DB_TABLE_PREFIX . 't_billing_wallet';
+        return self::tableName();
     }
 
     /**

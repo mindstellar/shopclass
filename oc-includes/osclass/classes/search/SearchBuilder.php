@@ -220,8 +220,9 @@ class SearchBuilder
 
     /**
      * A custom-field search value as a quoted SQL string. Search conditions are kept as
-     * SQL text (saved alerts store them), so they cannot be bound; the value is always
-     * quoted, so a number is compared as the text it is stored as.
+     * SQL text (the sql_search_conditions filter and the result cache key read them), so
+     * they cannot be bound; the value is always quoted, so a number is compared as the
+     * text it is stored as.
      *
      * @param string|int|float $value
      *

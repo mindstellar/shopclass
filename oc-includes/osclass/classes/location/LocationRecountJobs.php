@@ -30,11 +30,11 @@ final class LocationRecountJobs
     /** Locations recounted per job run. */
     public const BATCH = 5000;
 
-    /** level => [table, key column] */
+    /** The levels recounted, as LocationQuery names them. */
     private const LEVELS = array(
-        'country' => array('t_country', 'pk_c_code'),
-        'region'  => array('t_region', 'pk_i_id'),
-        'city'    => array('t_city', 'pk_i_id'),
+        'country' => LocationQuery::COUNTRY,
+        'region'  => LocationQuery::REGION,
+        'city'    => LocationQuery::CITY,
     );
 
     public static function register(): void
@@ -125,23 +125,11 @@ final class LocationRecountJobs
      */
     private static function nextIds(string $level, string $after): array
     {
-        [$table, $key] = self::LEVELS[$level];
-        $q = osc_db_table(DB_TABLE_PREFIX . $table)->select($key)->orderBy($key)->limit(self::BATCH);
-        if ($after !== '') {
-            $q = $q->where($key, '>', $level === 'country' ? $after : (int) $after);
-        }
-
-        return array_map(static fn (array $row): string => (string) $row[$key], $q->get());
+        return (new LocationQuery())->keysAfter(self::LEVELS[$level], $after, self::BATCH);
     }
 
     private static function remaining(string $level, string $after): int
     {
-        [$table, $key] = self::LEVELS[$level];
-        $q = osc_db_table(DB_TABLE_PREFIX . $table);
-        if ($after !== '') {
-            $q = $q->where($key, '>', $level === 'country' ? $after : (int) $after);
-        }
-
-        return $q->count();
+        return (new LocationQuery())->countAfter(self::LEVELS[$level], $after);
     }
 }

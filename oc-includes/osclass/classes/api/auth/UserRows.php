@@ -68,7 +68,7 @@ final class UserRows
      */
     private static function fromTable(int $id): ?array
     {
-        $row = osc_db_table(DB_TABLE_PREFIX . 't_user')->where('pk_i_id', $id)->first();
+        $row = \mindstellar\user\UserStore::find($id);
 
         return $row === null ? null : osc_db_stringify_row($row);
     }

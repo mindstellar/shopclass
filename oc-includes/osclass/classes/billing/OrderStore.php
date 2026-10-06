@@ -479,6 +479,18 @@ final class OrderStore extends Model
 
         return $q;
     }
-}
 
-/* file end: ./oc-includes/osclass/classes/billing/OrderStore.php */
+    /**
+     * Ledger rows attached to one order: the credit it minted, and the reversal if it was refunded.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public static function ledgerRows(int $orderId): array
+    {
+        return osc_db_table(DB_TABLE_PREFIX . 't_billing_ledger')
+            ->where('s_ref_type', 'order')
+            ->where('i_ref_id', $orderId)
+            ->orderBy('pk_i_id', 'ASC')
+            ->get();
+    }
+}

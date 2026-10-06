@@ -137,7 +137,7 @@ final class ListingReader
     private function photoRows(array $ids): array
     {
         try {
-            $rows = osc_db_stringify_rows(osc_db_table(DB_TABLE_PREFIX . 't_item_resource')->whereIn('fk_i_item_id', $ids)->orderBy('pk_i_id')->get());
+            $rows = osc_db_stringify_rows(\mindstellar\listing\PhotoStore::ofItems($ids));
         } catch (\mindstellar\database\DbException $e) {
             return [];
         }
@@ -162,12 +162,7 @@ final class ListingReader
             return [];
         }
         try {
-            $rows = osc_db_table(DB_TABLE_PREFIX . 't_user')
-                ->select('pk_i_id', 's_name', 's_username')
-                ->whereIn('pk_i_id', $ids)
-                ->where('b_enabled', 1)
-                ->where('b_active', 1)
-                ->get();
+            $rows = \mindstellar\user\UserStore::byIds($ids, ['pk_i_id', 's_name', 's_username'], true);
         } catch (\mindstellar\database\DbException $e) {
             return [];
         }
@@ -184,15 +179,8 @@ final class ListingReader
      */
     private function fieldValues(array $ids): array
     {
-        // Aliased join with column aliases the builder cannot express; the ids are bound.
-        $p   = DB_TABLE_PREFIX;
-        $sql = 'SELECT im.fk_i_item_id, mf.pk_i_id, im.s_value, im.s_multi, mf.s_name, mf.s_slug, mf.e_type, mf.s_meta'
-            . ' FROM ' . $p . 't_item_meta im'
-            . ' INNER JOIN ' . $p . 't_meta_fields mf ON mf.pk_i_id = im.fk_i_field_id'
-            . ' WHERE im.fk_i_item_id IN (' . implode(', ', array_fill(0, count($ids), '?')) . ')'
-            . ' ORDER BY mf.i_position ASC, mf.pk_i_id ASC';
         try {
-            $rows = osc_db_stringify_rows(osc_db_select($sql, $ids));
+            $rows = osc_db_stringify_rows(\mindstellar\fields\FieldQuery::valuesOf($ids));
         } catch (\mindstellar\database\DbException $e) {
             return [];
         }

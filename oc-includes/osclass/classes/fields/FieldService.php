@@ -44,7 +44,7 @@ final class FieldService
      */
     public function find(int $id): array
     {
-        $row = osc_db_table(DB_TABLE_PREFIX . 't_meta_fields')->where('pk_i_id', $id)->first();
+        $row = FieldQuery::find($id);
         if ($row === null) {
             throw new NotFoundException(_m('No such custom field.'));
         }
@@ -204,7 +204,7 @@ final class FieldService
     private function checkCategories(array $ids): array
     {
         $ids = array_values(array_unique(array_map('intval', $ids)));
-        if ($ids !== [] && osc_db_table(DB_TABLE_PREFIX . 't_category')->whereIn('pk_i_id', $ids)->count() !== count($ids)) {
+        if ($ids !== [] && \mindstellar\category\CategoryStore::countIds($ids) !== count($ids)) {
             throw new InvalidException('/categories', 'unknown', _m('names a category that does not exist'));
         }
 

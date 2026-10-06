@@ -11,6 +11,8 @@
 
 namespace mindstellar\admin\form;
 
+use mindstellar\auth\AdminStore;
+
 /**
  * The administrator account screen, declared once: its fields, the row of t_admin they
  * are, the rules that span more than one of them, and the route the form posts back to.
@@ -229,11 +231,7 @@ final class AdminAccountForm
             return array();
         }
 
-        // The builder is immutable: a clause that is not reassigned is dropped, and a
-        // dropped WHERE here would hand back the first administrator in the table.
-        $query = osc_db_table(DB_TABLE_PREFIX . self::TABLE);
-        $query = $query->where(self::PK, $id);
-        $row   = $query->first();
+        $row = AdminStore::find($id);
 
         return $row === null ? array() : osc_db_stringify_row($row);
     }
@@ -279,9 +277,7 @@ final class AdminAccountForm
             if ($value === '') {
                 continue;
             }
-            $query = osc_db_table(DB_TABLE_PREFIX . self::TABLE);
-            $query = $query->where($column, $value);
-            $row   = $query->first();
+            $row = AdminStore::findBy($column, $value);
             if ($row !== null && (int)$row[self::PK] !== (int)$rowId) {
                 $errors[] = $message;
             }

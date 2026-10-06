@@ -45,7 +45,7 @@ final class CurrencyService
      */
     public function find(string $code): ?array
     {
-        $row = osc_db_table(DB_TABLE_PREFIX . 't_currency')->where('pk_c_code', $code)->first();
+        $row = CurrencyStore::find($code);
 
         return $row === null ? null : osc_db_stringify_row($row);
     }
@@ -58,7 +58,7 @@ final class CurrencyService
     public function enabled(): array
     {
         return CacheGroup::remember('currency', 'enabled', static function (): ?array {
-            return osc_db_stringify_rows(osc_db_table(DB_TABLE_PREFIX . 't_currency')->where('b_enabled', 1)->orderBy('pk_c_code')->get());
+            return osc_db_stringify_rows(CurrencyStore::enabled());
         }) ?? [];
     }
 
@@ -127,7 +127,7 @@ final class CurrencyService
         if (strcasecmp($code, (string) osc_currency()) === 0) {
             throw new ConflictException(_m('This is the site\'s default currency.'));
         }
-        if (osc_db_table(DB_TABLE_PREFIX . 't_item')->where('fk_c_currency_code', $code)->count() > 0) {
+        if (\mindstellar\listing\ListingStore::usesCurrency($code)) {
             throw new ConflictException(_m('Listings are priced in this currency.'));
         }
         if ((int) $this->currencies->delete(['pk_c_code' => $code]) <= 0) {

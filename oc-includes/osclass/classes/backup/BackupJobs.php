@@ -601,25 +601,8 @@ final class BackupJobs
      */
     private static function requeue(int $id): bool
     {
-        $table = DB_TABLE_PREFIX . 't_job_queue';
         try {
-            osc_db_execute('DELETE FROM ' . $table . ' WHERE s_type LIKE ?', array('backup.%'));
-            $other = osc_db_table($table)->where('pk_i_id', $id)->first();
-            if ($other !== null) {
-                unset($other['pk_i_id']);
-                osc_db_table($table)->insert($other);
-                osc_db_table($table)->where('pk_i_id', $id)->delete();
-            }
-            $now = date('Y-m-d H:i:s');
-            osc_db_table($table)->insert(array(
-                'pk_i_id'     => $id,
-                's_type'      => self::RESTORE,
-                's_payload'   => '{}',
-                's_status'    => 'running',
-                'dt_next_run' => $now,
-                'dt_created'  => $now,
-                'dt_locked'   => $now,
-            ));
+            \mindstellar\job\JobQueue::getInstance()->reinstate($id, self::RESTORE, 'backup.%');
         } catch (DbException $e) {
             return false;
         }

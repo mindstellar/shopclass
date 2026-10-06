@@ -133,9 +133,7 @@ if (is_array($cron)) {
 
         // Pending e-mail changes are dropped after 7 days; their confirmation link then stops working.
         try {
-            osc_db_table(DB_TABLE_PREFIX . 't_user_email_tmp')
-                ->where('dt_date', '<', date('Y-m-d H:i:s', time() - (7 * 24 * 3600)))
-                ->delete();
+            \mindstellar\user\UserStore::prunePendingEmails(date('Y-m-d H:i:s', time() - (7 * 24 * 3600)));
         } catch (\mindstellar\database\DbException $e) {
             error_log('Pending e-mail change prune failed: ' . $e->getMessage());
         }

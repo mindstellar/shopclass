@@ -21,24 +21,13 @@ use Throwable;
  * a t_meta_fields row; this service owns the join between them and the per-form
  * ordering.
  *
- * New code, so it uses the QueryBuilder facade (osc_db_table / osc_db_transaction)
- * rather than the legacy DAO. The legacy Field / FieldGroup models keep their own
- * resolution/CRUD; this class is the write path the drag-and-drop builder calls.
+ * The SQL lives in FormFieldLinkStore. The legacy Field / FieldGroup models keep their
+ * own resolution/CRUD; this class is the write path the drag-and-drop builder calls.
  *
  * @package mindstellar\form\builder
  */
 final class FormService
 {
-    private string $linkTable;
-
-    /**
-     * FormService constructor.
-     */
-    public function __construct()
-    {
-        $this->linkTable = DB_TABLE_PREFIX . 't_meta_group_fields';
-    }
-
     /**
      * The ordered field ids belonging to a form.
      *
@@ -48,13 +37,7 @@ final class FormService
      */
     public function formFieldIds(int $formId): array
     {
-        $rows = osc_db_table($this->linkTable)
-            ->select('fk_i_field_id')
-            ->where('fk_i_group_id', $formId)
-            ->orderBy('i_position', 'ASC')
-            ->get();
-
-        return array_map(static fn ($r) => (int) $r['fk_i_field_id'], $rows);
+        return FormFieldLinkStore::fieldIds($formId);
     }
 
     /**
@@ -79,19 +62,9 @@ final class FormService
             }
         }
 
-        $link = $this->linkTable;
         try {
-            osc_db_transaction(static function () use ($formId, $ordered, $link) {
-                osc_db_table($link)->where('fk_i_group_id', $formId)->delete();
-                $position = 0;
-                foreach ($ordered as $fieldId) {
-                    osc_db_table($link)->insert(array(
-                        'fk_i_group_id' => $formId,
-                        'fk_i_field_id' => $fieldId,
-                        'i_position'    => $position,
-                    ));
-                    $position++;
-                }
+            osc_db_transaction(static function () use ($formId, $ordered) {
+                FormFieldLinkStore::replace($formId, $ordered);
             });
         } catch (Throwable $e) {
             return false;
@@ -109,12 +82,7 @@ final class FormService
      */
     public function placedFieldIds(): array
     {
-        $rows = osc_db_table($this->linkTable)
-            ->select('fk_i_field_id')
-            ->groupBy('fk_i_field_id')
-            ->get();
-
-        return array_map(static fn ($r) => (int) $r['fk_i_field_id'], $rows);
+        return FormFieldLinkStore::placedFieldIds();
     }
 
     /**
@@ -196,11 +164,6 @@ final class FormService
      */
     public function formCountForField(int $fieldId): int
     {
-        $rows = osc_db_table($this->linkTable)
-            ->select('fk_i_group_id')
-            ->where('fk_i_field_id', $fieldId)
-            ->get();
-
-        return is_array($rows) ? count($rows) : 0;
+        return FormFieldLinkStore::formCount($fieldId);
     }
 }

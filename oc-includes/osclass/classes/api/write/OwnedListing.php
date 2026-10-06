@@ -24,12 +24,6 @@ use mindstellar\listing\ListingPolicy;
  */
 final class OwnedListing
 {
-    private const COLUMNS = 'i.pk_i_id, i.fk_i_user_id, i.fk_i_category_id, i.i_price, i.fk_c_currency_code, i.s_contact_phone,'
-        . ' i.b_show_email, i.s_secret, i.b_enabled, i.b_active, i.b_spam, i.b_premium, i.dt_expiration,'
-        . ' i.s_contact_name, i.s_contact_email,'
-        . ' l.fk_c_country_code, l.s_country, l.fk_i_region_id, l.s_region, l.fk_i_city_id, l.s_city, l.s_city_area,'
-        . ' l.s_address, l.s_zip, l.d_coord_lat, l.d_coord_long';
-
     /**
      * @param array<string,mixed>                   $row
      * @param array<string,array{0:string,1:string}> $texts locale => [title, description]
@@ -66,13 +60,8 @@ final class OwnedListing
      */
     public static function load(int $id, bool $withTexts = false): self
     {
-        $p   = DB_TABLE_PREFIX;
-        $sql = 'SELECT ' . self::COLUMNS . ($withTexts ? ', d.fk_c_locale_code, d.s_title, d.s_description' : '')
-            . ' FROM ' . $p . 't_item i LEFT JOIN ' . $p . 't_item_location l ON l.fk_i_item_id = i.pk_i_id'
-            . ($withTexts ? ' LEFT JOIN ' . $p . 't_item_description d ON d.fk_i_item_id = i.pk_i_id' : '')
-            . ' WHERE i.pk_i_id = ?';
         try {
-            $rows = osc_db_stringify_rows(osc_db_select($sql, [$id]));
+            $rows = osc_db_stringify_rows((new \mindstellar\listing\ListingQuery())->editRows($id, $withTexts));
         } catch (\mindstellar\database\DbException $e) {
             throw ProblemException::of('server_error', 'The listing could not be read.');
         }

@@ -269,7 +269,7 @@ class CAdminAppearance extends AdminSecBaseModel
                 // success, and returning that handed the builder id "1" — a dragged-in
                 // widget then adopted widget 1's row and could overwrite it.)
                 try {
-                    $newId = osc_db_table(DB_TABLE_PREFIX . 't_widget')->insert($row);
+                    $newId = \mindstellar\widgets\WidgetStore::add($row);
                 } catch (Throwable $e) {
                     $newId = 0;
                 }
@@ -310,9 +310,7 @@ class CAdminAppearance extends AdminSecBaseModel
                 $ok        = false;
 
                 if ($widgetRow !== null && is_string($location) && isset($locations[$location])) {
-                    osc_db_table(DB_TABLE_PREFIX . 't_widget')
-                        ->where('pk_i_id', $moved)
-                        ->update(array('s_location' => $location));
+                    \mindstellar\widgets\WidgetStore::moveTo($moved, $location);
                     \mindstellar\cache\CacheGroup::invalidate('widget');
                     // Only ids that live in the target section after the move.
                     $validIds = array();

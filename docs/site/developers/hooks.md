@@ -142,9 +142,9 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 551 names. Generated from the source; do not edit by hand.
+Core fires 553 names. Generated from the source; do not edit by hand.
 
-### Admin (78)
+### Admin (79)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -181,6 +181,7 @@ Core fires 551 names. Generated from the source; do not edit by hand.
 | `admin_menu_init` | action | none | `oc-includes/osclass/classes/AdminMenu.php` |
 | `admin_page_description` | filter | `$description, $page, $pageLocale` | `oc-admin/themes/modern/pages/frm.php` |
 | `admin_page_header` | action | none | `oc-admin/themes/modern/parts/header.php` |
+| `admin_page_routes` | filter | `$core` | `oc-includes/osclass/classes/routing/PageDispatcher.php` |
 | `admin_page_title` | filter | `$title, $page, $pageLocale` | `oc-admin/themes/modern/pages/frm.php` |
 | `admin_pages_table` | action | `$dummy` | `oc-includes/osclass/classes/datatables/PagesDataTable.php` |
 | `admin_post` | action | none | `oc-includes/osclass/classes/controller/admin/CAdminPlugins.php` |
@@ -431,9 +432,9 @@ Core fires 551 names. Generated from the source; do not edit by hand.
 | `sitemap_items_source` | filter | `$default, array('page' => $page, 'per_page' => $perPage)` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sitemap_items_total` | filter | `$this->countLiveItems()` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
-| `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/osclass/classes/model/Search.php` |
+| `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/osclass/classes/search/query/PluginClauses.php` |
 
-### Other (212)
+### Other (213)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -606,6 +607,7 @@ Core fires 551 names. Generated from the source; do not edit by hand.
 | `page_cache_purge` | action | `$reasons` | `oc-includes/osclass/helpers/hHttpCache.php` |
 | `page_cache_purge_enabled` | filter | `true` | `oc-includes/osclass/helpers/hHttpCache.php` |
 | `page_meta` | action | none | `oc-admin/themes/modern/pages/frm.php` |
+| `page_routes` | filter | `$core` | `oc-includes/osclass/classes/routing/PageDispatcher.php` |
 | `page_templates` | filter | `WebThemes::getInstance()->getAvailableTemplates()` | `oc-includes/osclass/classes/controller/admin/CAdminPages.php` |
 | `pages_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/PagesDataTable.php` |
 | `phpmailer_smtp_timeout` | filter | `15` | `oc-includes/osclass/utils.php` |
@@ -679,8 +681,8 @@ Core fires 551 names. Generated from the source; do not edit by hand.
 | `search_conditions` | action | `\Params::getParamsAsArray(), $search, $context` | `oc-includes/osclass/classes/search/SearchBuilder.php` |
 | `search_pattern` | filter | `trim(strip_tags($params['sPattern'] ?? ''))` | `oc-includes/osclass/classes/search/SearchCriteria.php` |
 | `search_results` | filter | `null, $search, \Params::getParamsAsArray()` | `oc-includes/osclass/classes/search/SearchRunner.php` |
-| `sql_search_conditions` | filter | `$this->conditions` | `oc-includes/osclass/classes/model/Search.php` |
-| `sql_search_fields` | filter | `$this->search_fields` | `oc-includes/osclass/classes/model/Search.php` |
+| `sql_search_conditions` | filter | `$this->conditions` | `oc-includes/osclass/classes/search/query/PluginClauses.php` |
+| `sql_search_fields` | filter | `$this->fields` | `oc-includes/osclass/classes/search/query/PluginClauses.php` |
 
 ### Theme (9)
 

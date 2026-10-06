@@ -11,6 +11,8 @@
 
 namespace mindstellar\billing;
 
+use mindstellar\listing\ListingStore;
+
 /**
  * Time-limited premium listings.
  *
@@ -34,13 +36,7 @@ final class Premium
      */
     public static function expire(): int
     {
-        $table = DB_TABLE_PREFIX . 't_item';
-
-        $rows = osc_db_select(
-            'SELECT pk_i_id, b_enabled, b_active, b_spam, b_premium, dt_expiration FROM ' . $table
-            . ' WHERE b_premium = 1 AND dt_premium_expiration IS NOT NULL AND dt_premium_expiration <= ?',
-            array(date('Y-m-d H:i:s'))
-        );
+        $rows = ListingStore::endedPremium(date('Y-m-d H:i:s'));
         if ($rows === array()) {
             return 0;
         }
@@ -49,9 +45,7 @@ final class Premium
             return (int) $row['pk_i_id'];
         }, $rows);
 
-        osc_db_table($table)
-            ->whereIn('pk_i_id', $ids)
-            ->update(array('b_premium' => 0, 'dt_premium_expiration' => null));
+        ListingStore::clearPremium($ids);
 
         // The same notification an admin unmarking a listing sends, so a plugin
         // reacting to premium ending need not know whether a person or the clock

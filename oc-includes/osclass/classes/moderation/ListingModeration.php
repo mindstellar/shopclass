@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\moderation;
 
 use mindstellar\listing\ListingService;
+use mindstellar\listing\ListingStore;
 use mindstellar\utility\Clock;
 use mindstellar\utility\DeferredMail;
 use mindstellar\utility\SystemClock;
@@ -65,10 +66,7 @@ final class ListingModeration
         if (!isset(self::ACTIONS[$action])) {
             throw new \LogicException('Unknown listing action ' . $action . '.');
         }
-        $row = osc_db_table(DB_TABLE_PREFIX . 't_item')
-            ->select('pk_i_id', 'b_active', 'b_enabled', 'b_spam', 'b_premium')
-            ->where('pk_i_id', $id)
-            ->first();
+        $row = ListingStore::find($id, ['pk_i_id', 'b_active', 'b_enabled', 'b_spam', 'b_premium']);
         if ($row === null) {
             throw new NotFoundException(_m('No such listing.'));
         }

@@ -185,7 +185,7 @@ final class LocationService
             throw new InvalidException('/name', 'invalid', sprintf(_m('%s already was in the database'), $name));
         }
 
-        return (int) osc_db_table(DB_TABLE_PREFIX . 't_city_area')->insert(['fk_i_city_id' => $cityId, 's_name' => $name]);
+        return LocationStore::addArea($cityId, $name);
     }
 
     /**
@@ -218,12 +218,12 @@ final class LocationService
      */
     public function delete(string $level, int $id): void
     {
-        [$table, $model] = match ($level) {
-            'region' => ['t_region', Region::getInstance()],
-            'city'   => ['t_city', City::getInstance()],
-            'area'   => ['t_city_area', CityArea::getInstance()],
+        $model = match ($level) {
+            'region' => Region::getInstance(),
+            'city'   => City::getInstance(),
+            'area'   => CityArea::getInstance(),
         };
-        if ($id <= 0 || osc_db_table(DB_TABLE_PREFIX . $table)->where('pk_i_id', $id)->first() === null) {
+        if ($id <= 0 || !(new LocationQuery())->exists($level, $id)) {
             throw new NotFoundException(_m('This location no longer exists.'));
         }
         DeferredMail::transaction(static function () use ($model, $id): void {

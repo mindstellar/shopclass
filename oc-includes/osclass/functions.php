@@ -468,44 +468,10 @@ function osc_search_footer_links()
         $ids[] = (int)$c;
     }
 
-    $where  = array();
-    $params = array();
-
-    if ($ids !== array()) {
-        $where[]  = 'i.fk_i_category_id IN (' . implode(', ', array_fill(0, count($ids), '?')) . ')';
-        $params   = array_merge($params, $ids);
-    }
-
-    $where[]  = 'i.pk_i_id = l.fk_i_item_id';
-    $where[]  = 'i.b_enabled = 1';
-    $where[]  = 'i.b_active = 1';
-    $where[]  = 'dt_expiration >= ?';
-    $params[] = date('Y-m-d H:i:s');
-    $where[]  = 'l.fk_i_region_id IS NOT NULL';
-    $where[]  = 'l.fk_i_city_id IS NOT NULL';
-
-    if ($regionID != '') {
-        $where[]  = 'l.fk_i_region_id = ?';
-        $params[] = (int)$regionID;
-        $groupBy  = 'l.fk_i_city_id';
-    } else {
-        $groupBy = 'l.fk_i_region_id';
-    }
-
-    // The count is grouped in a subquery that also names one representative listing
-    // per group, and the displayed columns are read back from that listing. Selecting
-    // l.* beside GROUP BY on a single location column is rejected under
-    // ONLY_FULL_GROUP_BY, which emptied the footer links entirely.
-    $sql = 'SELECT i.fk_i_category_id, l.*, g.total'
-        . ' FROM (SELECT MIN(l.fk_i_item_id) AS rep_id, COUNT(*) AS total'
-        . ' FROM ' . DB_TABLE_PREFIX . 't_item as i, ' . DB_TABLE_PREFIX . 't_item_location as l'
-        . ' WHERE ' . implode(' AND ', $where)
-        . ' GROUP BY ' . $groupBy . ') AS g'
-        . ' JOIN ' . DB_TABLE_PREFIX . 't_item_location as l ON l.fk_i_item_id = g.rep_id'
-        . ' JOIN ' . DB_TABLE_PREFIX . 't_item as i ON i.pk_i_id = g.rep_id';
-
     try {
-        return osc_db_stringify_rows(osc_db_select($sql, $params));
+        return osc_db_stringify_rows(
+            (new \mindstellar\listing\ListingQuery())->footerLocations($ids, $regionID != '' ? (int)$regionID : null)
+        );
     } catch (\mindstellar\database\DbException $e) {
         return array();
     }
@@ -1225,7 +1191,8 @@ if (osc_force_jpeg()) {
 
     osc_add_filter('upload_image_extension', 'osc_force_jpeg_extension');
     osc_add_filter('upload_image_mime', 'osc_force_jpeg_mime');
-} elseif (osc_save_webp()) {
-    osc_add_filter('upload_image_extension', static fn ($content) => 'webp');
-    osc_add_filter('upload_image_mime', static fn ($content) => 'image/webp');
+} elseif (osc_image_format() === 'webp') {
+    // Whether the server can write WebP is asked at upload time, not on every request.
+    osc_add_filter('upload_image_extension', static fn ($content) => osc_save_webp() ? 'webp' : $content);
+    osc_add_filter('upload_image_mime', static fn ($content) => osc_save_webp() ? 'image/webp' : $content);
 }

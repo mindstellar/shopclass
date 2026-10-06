@@ -209,13 +209,10 @@ function osc_resource_owner_exists(string $ownerType, int $ownerId): bool
  */
 function osc_media_owner_types(): array
 {
-    $rows = osc_db_select(
-        'SELECT DISTINCT s_owner_type FROM ' . DB_TABLE_PREFIX . 't_resource ORDER BY s_owner_type'
-    );
     $out = array();
-    foreach ($rows as $row) {
-        if (Resource::isValidOwnerType((string) $row['s_owner_type'])) {
-            $out[] = (string) $row['s_owner_type'];
+    foreach (\mindstellar\media\MediaQuery::ownerTypes() as $type) {
+        if (Resource::isValidOwnerType($type)) {
+            $out[] = $type;
         }
     }
 
@@ -236,33 +233,7 @@ function osc_media_owner_types(): array
  */
 function osc_media_library_query(string $type, int $iPage, int $perPage): array
 {
-    $itemT  = DB_TABLE_PREFIX . 't_item_resource';
-    $resT   = DB_TABLE_PREFIX . 't_resource';
-    $offset = max(0, ($iPage - 1) * $perPage);
-
-    $itemSel = "SELECT 'item' AS src, pk_i_id AS id, fk_i_item_id AS owner_id, 'item' AS owner_type,"
-        . " s_name, s_extension, s_content_type, s_path, s_storage, NULL AS dt FROM $itemT";
-    $resSel  = "SELECT 'resource' AS src, pk_i_id AS id, i_owner_id AS owner_id, s_owner_type AS owner_type,"
-        . " s_name, s_extension, s_content_type, s_path, s_storage, dt_created AS dt FROM $resT";
-
-    $params = array();
-    if ($type === 'item') {
-        $base = $itemSel;
-    } elseif ($type === 'all') {
-        $base = "($itemSel) UNION ALL ($resSel)";
-    } else {
-        $base     = $resSel . ' WHERE s_owner_type = ?';
-        $params[] = $type;
-    }
-
-    $total = (int) osc_db_scalar("SELECT COUNT(*) FROM ($base) AS m", $params);
-    $rows  = osc_db_select(
-        "SELECT * FROM ($base) AS m ORDER BY (dt IS NULL), dt DESC, id DESC"
-        . ' LIMIT ' . (int) $perPage . ' OFFSET ' . (int) $offset,
-        $params
-    );
-
-    return array('rows' => $rows, 'total' => $total);
+    return \mindstellar\media\MediaQuery::page($type, $iPage, $perPage);
 }
 
 /**

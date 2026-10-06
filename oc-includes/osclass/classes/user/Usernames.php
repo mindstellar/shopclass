@@ -45,8 +45,7 @@ final class Usernames
      */
     public static function claim(int $userId, string $username): string
     {
-        $table  = DB_TABLE_PREFIX . 't_user';
-        $lock   = 'osc_username_' . md5((defined('DB_NAME') ? DB_NAME : '') . $table);
+        $lock = UserStore::usernameLock();
         try {
             $locked = (int) osc_db_scalar('SELECT GET_LOCK(?, 5)', [$lock]) === 1;
         } catch (\mindstellar\database\DbException $e) {
@@ -57,14 +56,10 @@ final class Usernames
         }
 
         try {
-            $taken = osc_db_table($table)
-                ->where('s_username', $username)
-                ->where('pk_i_id', '!=', $userId)
-                ->count() > 0;
-            if ($taken) {
+            if (UserStore::usernameTaken($username, $userId)) {
                 return 'taken';
             }
-            osc_db_table($table)->where('pk_i_id', $userId)->update(['s_username' => $username]);
+            UserStore::setUsername($userId, $username);
         } catch (\mindstellar\database\DbException $e) {
             return (int) $e->getCode() === 1062 ? 'taken' : 'failed';
         } finally {

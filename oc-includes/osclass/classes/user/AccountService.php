@@ -284,13 +284,10 @@ final class AccountService
             }
 
             if ($admin) {
-                self::byUser('t_item', $userId)->update(['s_contact_name' => $input['s_name'], 's_contact_email' => $input['s_email']]);
-                self::byUser('t_item_comment', $userId)->update(['s_author_name' => $input['s_name'], 's_author_email' => $input['s_email']]);
-                self::byUser('t_alerts', $userId)->update(['s_email' => $input['s_email']]);
+                UserStore::carryContact($userId, $input['s_name'], $input['s_email']);
                 $email = $input['s_email'];
             } else {
-                self::byUser('t_item', $userId)->update(['s_contact_name' => $input['s_name']]);
-                self::byUser('t_item_comment', $userId)->update(['s_author_name' => $input['s_name']]);
+                UserStore::carryName($userId, $input['s_name']);
                 $email = (string) ($this->users->findByPrimaryKey($userId)['s_email'] ?? '');
             }
             \Log::getInstance()->insertLog('user', 'edit', $userId, $email, $actor->logRole(), $actor->logId());
@@ -396,10 +393,7 @@ final class AccountService
             osc_db_transaction(static function () use ($userId, $stored, $new, &$status) {
                 // Matching on the code as well makes the link single-use under a double click.
                 try {
-                    $switched = osc_db_table(DB_TABLE_PREFIX . 't_user')
-                        ->where('pk_i_id', $userId)
-                        ->where('s_pass_code', $stored)
-                        ->update(['s_email' => $new, 's_pass_code' => null, 's_pass_date' => null]);
+                    $switched = UserStore::switchEmail($userId, $stored, $new);
                 } catch (\mindstellar\database\DbException $e) {
                     $status = (int) $e->getCode() === 1062 ? 'taken' : 'failed';
                     throw $e;
@@ -408,10 +402,7 @@ final class AccountService
                     $status = 'invalid';
                     throw new \RuntimeException('E-mail change not applied.');
                 }
-                self::byUser('t_item', $userId)->update(['s_contact_email' => $new]);
-                self::byUser('t_item_comment', $userId)->update(['s_author_email' => $new]);
-                self::byUser('t_alerts', $userId)->update(['s_email' => $new]);
-                osc_db_table(DB_TABLE_PREFIX . 't_user_email_tmp')->where('s_new_email', $new)->delete();
+                UserStore::carryEmail($userId, $new);
             });
         } catch (\Throwable $e) {
             $result['status'] = $status;
@@ -586,17 +577,11 @@ final class AccountService
         }
 
         try {
-            $claimed = osc_db_table(\Item::getInstance()->getTableName())
-                ->where('s_contact_email', $user['s_email'])
-                ->whereNull('fk_i_user_id')
-                ->update(['fk_i_user_id' => $userId, 's_contact_name' => $user['s_name']]);
+            $claimed = UserStore::claimGuestListings($userId, (string) $user['s_email'], $user['s_name']);
             if ($claimed > 0) {
                 $this->users->increaseNumItems($userId, $claimed);
             }
-            osc_db_table(\Alerts::getInstance()->getTableName())
-                ->where('s_email', $user['s_email'])
-                ->whereRaw('(fk_i_user_id IS NULL OR fk_i_user_id = 0)')
-                ->update(['fk_i_user_id' => $userId]);
+            UserStore::claimGuestAlerts($userId, (string) $user['s_email']);
         } catch (\mindstellar\database\DbException $e) {
             trigger_error('Claiming guest listings failed: ' . $e->getMessage(), E_USER_WARNING);
         }
@@ -818,14 +803,5 @@ final class AccountService
         }
 
         return InvalidException::all($errors);
-    }
-
-    /**
-     * A query on one of the user's rows in a core table; it throws on failure, so a
-     * transaction rolls back.
-     */
-    private static function byUser(string $table, int $userId): \mindstellar\database\QueryBuilder
-    {
-        return osc_db_table(DB_TABLE_PREFIX . $table)->where('fk_i_user_id', $userId);
     }
 }

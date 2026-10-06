@@ -535,11 +535,7 @@ class CAdminBilling extends AdminSecBaseModel
      */
     private function ledgerForOrder($orderId)
     {
-        return osc_db_table(DB_TABLE_PREFIX . 't_billing_ledger')
-            ->where('s_ref_type', 'order')
-            ->where('i_ref_id', (int) $orderId)
-            ->orderBy('pk_i_id', 'ASC')
-            ->get();
+        return \mindstellar\billing\OrderStore::ledgerRows((int) $orderId);
     }
 
     /**
@@ -559,10 +555,7 @@ class CAdminBilling extends AdminSecBaseModel
             return array();
         }
 
-        $rows = osc_db_table(DB_TABLE_PREFIX . 't_user')
-            ->select('pk_i_id', 's_username', 's_name', 's_email')
-            ->whereIn('pk_i_id', array_keys($ids))
-            ->get();
+        $rows = \mindstellar\user\UserStore::byIds(array_keys($ids), array('pk_i_id', 's_username', 's_name', 's_email'));
 
         $byId = array();
         foreach ($rows as $row) {

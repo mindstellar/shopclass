@@ -66,7 +66,7 @@ function osc_runAlert($type = null, $last_exec = null)
                 continue;
             }
 
-            $new_search->addConditions(sprintf(" %st_item.dt_pub_date > '%s' ", DB_TABLE_PREFIX, $last_exec));
+            $new_search->addConditions(sprintf(" %s.dt_pub_date > '%s' ", Item::getInstance()->getTableName(), $last_exec));
 
             $items      = $new_search->doSearch();
             $totalItems = $new_search->count();

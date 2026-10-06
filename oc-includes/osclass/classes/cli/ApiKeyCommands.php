@@ -160,9 +160,6 @@ final class ApiKeyCommands
     {
         $byId = preg_match('/^id:(\d+)$/D', $who, $m) === 1;
 
-        return osc_db_select_one(
-            'SELECT pk_i_id, s_username, b_moderator FROM ' . DB_TABLE_PREFIX . 't_admin WHERE ' . ($byId ? 'pk_i_id' : 's_username') . ' = ?',
-            [$byId ? (int) $m[1] : $who]
-        );
+        return \mindstellar\auth\AdminStore::keyOwner($byId ? (int) $m[1] : $who, $byId);
     }
 }

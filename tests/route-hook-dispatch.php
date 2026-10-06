@@ -13,7 +13,7 @@
  * route registered with osc_add_route_hook() may run its hook; any other name, cron_hourly
  * included, is a 404. The hook runs after `init`, so init-registered gateways exist.
  *
- * DB-free: runs index.php's page=route case with the real Plugins, Params, Rewrite and
+ * DB-free: dispatches page=route through the real page table, Plugins, Params, Rewrite and
  * CWebRoute; BaseModel is stood in by a class that fires `init` as the real constructor
  * does.  Usage: php tests/route-hook-dispatch.php
  */
@@ -67,11 +67,9 @@ abstract class BaseModel
     abstract protected function doView($file);
 }
 
-// The page=route case body, lifted from index.php so the test runs what ships.
-$index = (string) file_get_contents(ABS_PATH . 'index.php');
-preg_match("/case \\('route'\\):(.*?)\\bbreak;/s", $index, $case);
-check('index.php has a page=route case', isset($case[1]));
-$routeCase = $case[1] ?? '';
+// The page=route dispatch, through the same table index.php uses.
+$dispatcher = new \mindstellar\routing\PageDispatcher(\mindstellar\routing\PageRoutes::web(), \mindstellar\routing\PageRoutes::WEB_FALLBACK);
+pin('page=route runs CWebRoute', 'CWebRoute', $dispatcher->resolve('route', '', static fn (): bool => true));
 
 // Routes as a plugin registers them: one hook route, one file route.
 $rw = (new ReflectionClass('Rewrite'))->newInstanceWithoutConstructor();
@@ -106,13 +104,13 @@ foreach (array('cron_hourly', 'demo-pay', 'demo-page') as $hook) {
  */
 function dispatch_route($name): string
 {
-    global $fired, $gatewayReady, $routeCase;
+    global $fired, $gatewayReady, $dispatcher;
     $fired        = array();
     $gatewayReady = false;
     Params::setParam('page', 'route');
     Params::setParam('route', $name);
     try {
-        eval($routeCase);
+        $dispatcher->dispatch('route', '');
     } catch (RouteTestNotFound $e) {
         return '404';
     } catch (Throwable $e) {

@@ -36,7 +36,7 @@ final class SignOut
     public static function everywhereUser(int $userId): bool
     {
         return (bool) osc_db_transaction(static function () use ($userId): bool {
-            if (!self::bump(DB_TABLE_PREFIX . 't_user', $userId)) {
+            if (!self::bump(\User::getInstance()->getTableName(), $userId)) {
                 return false;
             }
             if (function_exists('osc_invalidate_user_cache')) {
@@ -55,7 +55,7 @@ final class SignOut
     public static function everywhereAdmin(int $adminId): bool
     {
         return (bool) osc_db_transaction(static function () use ($adminId): bool {
-            if (!self::bump(DB_TABLE_PREFIX . 't_admin', $adminId)) {
+            if (!self::bump(\Admin::getInstance()->getTableName(), $adminId)) {
                 return false;
             }
             osc_run_hook('admin_signout_all_after', $adminId);

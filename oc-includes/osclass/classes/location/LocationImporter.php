@@ -457,7 +457,6 @@ final class LocationImporter
      */
     private function importCountryRow(array $data): void
     {
-        $table = DB_TABLE_PREFIX . 't_country';
         // Stored with the casing the catalog publishes (upper), which is what every
         // pre-existing row uses. The region/city foreign keys are lowercased, as they
         // always have been; the column collation is case-insensitive, so they still join.
@@ -466,17 +465,11 @@ final class LocationImporter
         $code    = (string) ($data['code'] ?? $data['s_country_code'] ?? '');
         $name    = (string) ($data['name'] ?? $data['s_country_name'] ?? '');
         $slug    = (string) ($data['slug'] ?? $data['s_country_slug'] ?? '');
-        $current = osc_db_select_one(
-            'SELECT pk_c_code, s_name, s_slug FROM ' . $table . ' WHERE pk_c_code = ?',
-            array($code)
-        );
+        $current = LocationStore::country($code);
 
         if ($current === null) {
             $this->report['country_inserted'] = true;
-            osc_db_execute(
-                'INSERT INTO ' . $table . ' (pk_c_code, s_name, s_slug) VALUES (?, ?, ?)',
-                array($code, $name, $slug)
-            );
+            LocationStore::addCountry($code, $name, $slug);
 
             return;
         }
@@ -485,10 +478,7 @@ final class LocationImporter
         // pk_c_code is the ISO code, so the rename is safe to apply.
         if ($current['s_name'] !== $name || $current['s_slug'] !== $slug) {
             $this->report['country_renamed'] = true;
-            osc_db_execute(
-                'UPDATE ' . $table . ' SET s_name = ?, s_slug = ? WHERE pk_c_code = ?',
-                array($name, $slug, $code)
-            );
+            LocationStore::renameCountry($code, $name, $slug);
         }
     }
 
@@ -551,8 +541,6 @@ final class LocationImporter
         $this->countMatch('regions', $how);
         $this->updateRow(
             'REGION',
-            DB_TABLE_PREFIX . 't_region',
-            'pk_i_id',
             $row,
             $sourceId,
             $name,
@@ -578,11 +566,7 @@ final class LocationImporter
             return;
         }
 
-        $rows = osc_db_select(
-            'SELECT pk_i_id, i_source_id, s_name, s_slug, d_coord_lat, d_coord_long, b_active'
-            . ' FROM ' . DB_TABLE_PREFIX . 't_region WHERE fk_c_country_code = ?',
-            array(strtolower($countryCode))
-        );
+        $rows = LocationStore::regionsOf(strtolower($countryCode));
 
         $this->regionRows     = array();
         $this->regionBySource = array();
@@ -608,18 +592,13 @@ final class LocationImporter
     {
         $this->report['regions']['inserted']++;
 
-        return osc_db_insert_id(
-            'INSERT INTO ' . DB_TABLE_PREFIX . 't_region'
-            . ' (fk_c_country_code, i_source_id, s_name, s_slug, d_coord_lat, d_coord_long, b_active)'
-            . ' VALUES (?, ?, ?, ?, ?, ?, 1)',
-            array(
-                strtolower($countryCode),
-                $sourceId,
-                $name,
-                $slug,
-                $incoming['d_coord_lat'] ?? null,
-                $incoming['d_coord_long'] ?? null,
-            )
+        return LocationStore::addRegion(
+            strtolower($countryCode),
+            $sourceId,
+            $name,
+            $slug,
+            $incoming['d_coord_lat'] ?? null,
+            $incoming['d_coord_long'] ?? null
         );
     }
 
@@ -650,10 +629,7 @@ final class LocationImporter
                 continue;
             }
             $this->report['regions']['deactivated']++;
-            osc_db_execute(
-                'UPDATE ' . DB_TABLE_PREFIX . 't_region SET b_active = 0 WHERE pk_i_id = ?',
-                array($id)
-            );
+            LocationStore::deactivate('REGION', (int) $id);
         }
     }
 
@@ -682,11 +658,7 @@ final class LocationImporter
         // duplicate. Country-wide and not table-wide — see citiesBySourceId().
         $bySource = $this->citiesBySourceId($incomingCities, $countryCode);
 
-        $rows    = osc_db_select(
-            'SELECT pk_i_id, i_source_id, s_name, s_slug, d_coord_lat, d_coord_long, b_active'
-            . ' FROM ' . DB_TABLE_PREFIX . 't_city WHERE fk_i_region_id = ?',
-            array($regionId)
-        );
+        $rows     = LocationStore::citiesOf($regionId);
         $inRegion = $bySlug = $byName = $indexed = array();
         foreach ($rows as $row) {
             $this->indexRow($row, $indexed, $inRegion, $bySlug, $byName);
@@ -768,8 +740,6 @@ final class LocationImporter
             $this->countMatch('cities', $how);
             $this->updateRow(
                 'CITY',
-                DB_TABLE_PREFIX . 't_city',
-                'pk_i_id',
                 $row,
                 $sourceId,
                 $name,
@@ -824,15 +794,7 @@ final class LocationImporter
 
         $found = array();
         foreach (array_chunk(array_unique($ids), self::SELECT_CHUNK) as $chunk) {
-            $rows = osc_db_select(
-                'SELECT c.pk_i_id, c.fk_i_region_id, c.i_source_id, c.s_name, c.s_slug,'
-                . ' c.d_coord_lat, c.d_coord_long, c.b_active'
-                . ' FROM ' . DB_TABLE_PREFIX . 't_city c'
-                . ' JOIN ' . DB_TABLE_PREFIX . 't_region r ON r.pk_i_id = c.fk_i_region_id'
-                . ' WHERE c.i_source_id IN (' . implode(',', array_fill(0, count($chunk), '?')) . ')'
-                . ' AND r.fk_c_country_code = ?',
-                array_merge($chunk, array($countryCode))
-            );
+            $rows = LocationStore::citiesBySource($chunk, $countryCode);
             foreach ($rows as $row) {
                 $found[(int) $row['i_source_id']] = $row;
             }
@@ -854,23 +816,10 @@ final class LocationImporter
             return;
         }
 
+        // fk_c_country_code is written rather than left to default: rows inserted without
+        // it arrived NULL, a city belonging to no country.
         foreach (array_chunk($pending, self::INSERT_CHUNK) as $chunk) {
-            $params = array();
-            foreach ($chunk as $row) {
-                foreach ($row as $value) {
-                    $params[] = $value;
-                }
-            }
-            // fk_c_country_code is written rather than left to default: the column exists
-            // on t_city, themes and search read it, and rows inserted without it were
-            // arriving NULL — a city belonging to no country.
-            osc_db_execute(
-                'INSERT INTO ' . DB_TABLE_PREFIX . 't_city'
-                . ' (fk_i_region_id, fk_c_country_code, i_source_id, s_name, s_slug,'
-                . ' d_coord_lat, d_coord_long, b_active)'
-                . ' VALUES ' . implode(',', array_fill(0, count($chunk), '(?, ?, ?, ?, ?, ?, ?, 1)')),
-                $params
-            );
+            LocationStore::addCities($chunk);
         }
     }
 
@@ -899,10 +848,7 @@ final class LocationImporter
                 continue;
             }
             $this->report['cities']['deactivated']++;
-            osc_db_execute(
-                'UPDATE ' . DB_TABLE_PREFIX . 't_city SET b_active = 0 WHERE pk_i_id = ?',
-                array($id)
-            );
+            LocationStore::deactivate('CITY', (int) $id);
         }
     }
 
@@ -986,8 +932,6 @@ final class LocationImporter
      * Update one row in place, recording a slug change so old URLs keep resolving.
      *
      * @param string              $type        'REGION' or 'CITY'
-     * @param string              $table
-     * @param string              $pk          primary key column name
      * @param array<string,mixed> $row         the stored row
      * @param int|null            $sourceId
      * @param string              $name
@@ -1000,8 +944,6 @@ final class LocationImporter
      */
     private function updateRow(
         string $type,
-        string $table,
-        string $pk,
         array $row,
         ?int $sourceId,
         string $name,
@@ -1010,7 +952,7 @@ final class LocationImporter
         ?int $newParentId = null,
         string $how = self::MATCH_SOURCE
     ): void {
-        $id  = (int) $row[$pk];
+        $id  = (int) $row['pk_i_id'];
         $lat = $incoming['d_coord_lat'] ?? null;
         $lng = $incoming['d_coord_long'] ?? null;
 
@@ -1065,8 +1007,7 @@ final class LocationImporter
         }
 
         $this->report[$type === 'REGION' ? 'regions' : 'cities']['updated']++;
-        $params[] = $id;
-        osc_db_execute('UPDATE ' . $table . ' SET ' . implode(', ', $set) . ' WHERE ' . $pk . ' = ?', $params);
+        LocationStore::updatePlace($type, $id, $set, $params);
     }
 
     /**
@@ -1103,14 +1044,7 @@ final class LocationImporter
             return;
         }
 
-        $table = DB_TABLE_PREFIX . 't_location_slug_history';
-        // A slug that is now live must never redirect, so drop any history row claiming it.
-        osc_db_execute('DELETE FROM ' . $table . ' WHERE e_type = ? AND s_slug = ?', array($type, $newSlug));
-        osc_db_execute(
-            'INSERT INTO ' . $table . ' (e_type, s_slug, fk_i_id, dt_date) VALUES (?, ?, ?, ?)'
-            . ' ON DUPLICATE KEY UPDATE fk_i_id = VALUES(fk_i_id), dt_date = VALUES(dt_date)',
-            array($type, $oldSlug, $id, date('Y-m-d H:i:s'))
-        );
+        LocationStore::recordSlugChange($type, $id, $oldSlug, $newSlug, date('Y-m-d H:i:s'));
     }
 
     /**
@@ -1125,14 +1059,7 @@ final class LocationImporter
     {
         $held = array();
         foreach (array_chunk($ids, self::SELECT_CHUNK) as $chunk) {
-            $rows = osc_db_select(
-                'SELECT DISTINCT ' . $column . ' AS id FROM ' . DB_TABLE_PREFIX . 't_item_location'
-                . ' WHERE ' . $column . ' IN (' . implode(',', array_fill(0, count($chunk), '?')) . ')',
-                $chunk
-            );
-            foreach ($rows as $row) {
-                $held[(int) $row['id']] = true;
-            }
+            $held += LocationStore::usedByListings($column, $chunk);
         }
 
         return $held;

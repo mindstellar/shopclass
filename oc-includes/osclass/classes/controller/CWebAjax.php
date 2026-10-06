@@ -393,14 +393,7 @@ class CWebAjax extends BaseModel
 
         // Escape LIKE wildcards in the user term so they match literally.
         $like = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), $term) . '%';
-        $rows = osc_db_select(
-            'SELECT DISTINCT m.s_value AS value FROM ' . DB_TABLE_PREFIX . 't_item_meta m'
-            . ' JOIN ' . DB_TABLE_PREFIX . 't_item i ON i.pk_i_id = m.fk_i_item_id'
-            . ' WHERE m.fk_i_field_id = ? AND m.s_value LIKE ?'
-            . ' AND i.b_active = 1 AND i.b_enabled = 1 AND i.b_spam = 0'
-            . ' ORDER BY m.s_value LIMIT 10',
-            array($fieldId, $like)
-        );
+        $rows = \mindstellar\fields\FieldQuery::suggest((int) $fieldId, $like);
 
         $results = array();
         foreach ($rows as $r) {

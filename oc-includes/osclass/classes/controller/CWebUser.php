@@ -13,6 +13,7 @@
  */
 
 use mindstellar\auth\Actor;
+use mindstellar\search\UserAlerts;
 use mindstellar\user\AccountInput;
 use mindstellar\user\AccountService;
 use mindstellar\user\Usernames;
@@ -118,8 +119,7 @@ class CWebUser extends WebSecBaseModel
                 $this->redirectTo(osc_user_profile_url());
                 break;
             case ('alerts'):         //alerts
-                $aAlerts =
-                    Alerts::getInstance()->findByUser(Session::getInstance()->_get('userId'));
+                $aAlerts = (new UserAlerts())->live((int) Session::getInstance()->_get('userId'));
                 $user    =
                     User::getInstance()->findByPrimaryKey(Session::getInstance()->_get('userId'));
                 foreach ($aAlerts as $k => $a) {
@@ -276,7 +276,7 @@ class CWebUser extends WebSecBaseModel
                 if (!empty($alert) && hash_equals((string)$alert['s_email'], (string)$email)
                     && hash_equals((string)$alert['s_secret'], (string)$secret)
                 ) {
-                    $result = Alerts::getInstance()->unsub($id);
+                    $result = (new UserAlerts())->unsubscribe((int) $id);
                 }
 
                 if ($result == 1) {

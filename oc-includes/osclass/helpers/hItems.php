@@ -971,13 +971,13 @@ function osc_resource_owner_title($resource)
     $prefLocale = (defined('OC_ADMIN') && OC_ADMIN) ? osc_current_admin_locale() : osc_current_user_locale();
 
     // Pick a non-empty s_title from a *_description table, preferring the current locale.
-    $localizedTitle = static function ($table, $fkColumn, $id) use ($prefLocale) {
+    $localizedTitle = static function ($type, $id) use ($prefLocale) {
         $id = (int)$id;
         if ($id <= 0) {
             return '';
         }
         try {
-            $rows = osc_db_table(DB_TABLE_PREFIX . $table)->where($fkColumn, $id)->get();
+            $rows = \mindstellar\media\MediaQuery::descriptions($type, $id);
         } catch (\Throwable $e) {
             return '';
         }
@@ -999,7 +999,7 @@ function osc_resource_owner_title($resource)
     };
 
     if ($ownerType === '' && !empty($resource['fk_i_item_id'])) {
-        return $localizedTitle('t_item_description', 'fk_i_item_id', $resource['fk_i_item_id']);
+        return $localizedTitle('item', $resource['fk_i_item_id']);
     }
     if ($ownerType === 'user') {
         $user = User::getInstance()->findByPrimaryKey((int)($resource['i_owner_id'] ?? 0));
@@ -1012,7 +1012,7 @@ function osc_resource_owner_title($resource)
         return '';
     }
     if ($ownerType === 'page') {
-        return $localizedTitle('t_pages_description', 'fk_i_pages_id', $resource['i_owner_id'] ?? 0);
+        return $localizedTitle('page', $resource['i_owner_id'] ?? 0);
     }
 
     return '';

@@ -266,8 +266,8 @@ final class StaticPageForm
      */
     private static function nextOrder(): int
     {
-        $order = osc_db_scalar('SELECT MAX(i_order) AS o FROM ' . DB_TABLE_PREFIX . self::TABLE);
+        $order = \mindstellar\pages\PageQuery::maxOrder();
 
-        return $order === null ? 0 : (int)$order + 1;
+        return $order === null ? 0 : $order + 1;
     }
 }

@@ -546,14 +546,6 @@ final class LocationCatalog
      */
     private function countriesInDatabase(): array
     {
-        $rows = osc_db_select(
-            'SELECT DISTINCT fk_c_country_code AS code FROM ' . DB_TABLE_PREFIX . 't_region'
-        );
-        $out = array();
-        foreach ($rows as $row) {
-            $out[strtolower((string) $row['code'])] = true;
-        }
-
-        return $out;
+        return (new LocationQuery())->countriesWithRegions();
     }
 }

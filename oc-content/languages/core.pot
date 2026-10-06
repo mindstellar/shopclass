@@ -6381,6 +6381,10 @@ msgstr ""
 msgid "Maintenance"
 msgstr ""
 
+#: oc-includes/osclass/classes/routing/FrontController.php
+msgid "Maintenance &raquo; %s"
+msgstr ""
+
 #: oc-includes/osclass/classes/AdminMenu.php
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "Maintenance mode"
@@ -12870,6 +12874,10 @@ msgstr ""
 msgid ""
 "We highly recommend you have the 'Keep original image' option active when "
 "you use watermarks."
+msgstr ""
+
+#: oc-includes/osclass/classes/routing/FrontController.php
+msgid "We'll be right back"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php

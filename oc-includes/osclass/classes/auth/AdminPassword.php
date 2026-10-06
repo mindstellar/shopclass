@@ -33,7 +33,7 @@ final class AdminPassword
         $values = ['s_password' => osc_hash_password($new)] + $also;
 
         return (bool) osc_db_transaction(static function () use ($adminId, $values): bool {
-            if (osc_db_table(DB_TABLE_PREFIX . 't_admin')->where('pk_i_id', $adminId)->update($values) === 0) {
+            if (AdminStore::update($adminId, $values) === 0) {
                 return false;
             }
 
@@ -51,7 +51,7 @@ final class AdminPassword
     public static function stamp(int $adminId): ?int
     {
         $row = $adminId > 0
-            ? osc_db_select_one('SELECT ' . AuthStamp::COLUMN . ' FROM ' . DB_TABLE_PREFIX . 't_admin WHERE pk_i_id = ?', [$adminId])
+            ? AdminStore::stampRow($adminId)
             : null;
 
         return $row === null ? null : AuthStamp::of($row);

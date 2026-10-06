@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\apiaccess;
 
+use mindstellar\auth\AdminStore;
+use mindstellar\user\UserStore;
 use mindstellar\utility\Clock;
 use mindstellar\validation\ConflictException;
 use mindstellar\validation\NotFoundException;
@@ -152,8 +154,8 @@ final class ApiKeyService
             $this->store->listBy(),
             static fn (StoredKey $k): bool => in_array($k->kind(), [CredentialKind::KEY, CredentialKind::PUBLIC], true)
         ));
-        $admins = $this->names('t_admin', $keys, static fn (StoredKey $k): ?int => $k->owner()?->adminId());
-        $users  = $this->names('t_user', $keys, static fn (StoredKey $k): ?int => $k->owner()?->userId());
+        $admins = AdminStore::usernames(self::ownerIds($keys, static fn (StoredKey $k): ?int => $k->owner()?->adminId()));
+        $users  = UserStore::usernames(self::ownerIds($keys, static fn (StoredKey $k): ?int => $k->owner()?->userId()));
         $now    = $this->clock->now();
 
         return array_map(static function (StoredKey $k) use ($admins, $users, $now): array {
@@ -263,29 +265,15 @@ final class ApiKeyService
     }
 
     /**
-     * Usernames of the owners of these keys, by id, in one query per table.
+     * The distinct owner ids of these keys.
      *
-     * @param StoredKey[]                  $keys
-     * @param callable(StoredKey): ?int    $ownerId
+     * @param StoredKey[]               $keys
+     * @param callable(StoredKey): ?int $ownerId
      *
-     * @return array<int,string>
+     * @return int[]
      */
-    private function names(string $table, array $keys, callable $ownerId): array
+    private static function ownerIds(array $keys, callable $ownerId): array
     {
-        $ids = array_values(array_unique(array_filter(array_map($ownerId, $keys))));
-        if ($ids === []) {
-            return [];
-        }
-        $rows = osc_db_select(
-            'SELECT pk_i_id, s_username FROM ' . DB_TABLE_PREFIX . $table
-            . ' WHERE pk_i_id IN (' . implode(',', array_fill(0, count($ids), '?')) . ')',
-            $ids
-        );
-        $out = [];
-        foreach ($rows as $row) {
-            $out[(int) $row['pk_i_id']] = (string) $row['s_username'];
-        }
-
-        return $out;
+        return array_values(array_unique(array_filter(array_map($ownerId, $keys))));
     }
 }

@@ -107,7 +107,6 @@ function mediaFileNeedles(array $row)
  */
 function mediaResolveUsageBatch(array $rows)
 {
-    $p       = DB_TABLE_PREFIX;
     $labels  = array('item' => __('Listing'), 'user' => __('User'), 'page' => __('Page'));
     $itemIds = $userIds = $pageIds = array();
     $scan    = array();
@@ -131,9 +130,7 @@ function mediaResolveUsageBatch(array $rows)
 
     // Library uploads: load every page once and match in PHP.
     if (!empty($scan)) {
-        $pages = osc_db_select(
-            "SELECT fk_i_pages_id AS id, s_title AS title, s_text AS text FROM {$p}t_pages_description"
-        );
+        $pages = \mindstellar\media\MediaQuery::pageTexts();
         foreach ($scan as $rid => $needles) {
             foreach ($pages as $pg) {
                 $text = (string) $pg['text'];
@@ -148,9 +145,9 @@ function mediaResolveUsageBatch(array $rows)
     }
 
     // One title lookup per owner type for the explicit owners.
-    $itemTitles = mediaBatchTitles("{$p}t_item_description", 'fk_i_item_id', 's_title', array_keys($itemIds));
-    $userTitles = mediaBatchTitles("{$p}t_user", 'pk_i_id', "COALESCE(NULLIF(s_name, ''), s_email)", array_keys($userIds));
-    $pageTitles = mediaBatchTitles("{$p}t_pages_description", 'fk_i_pages_id', 's_title', array_keys($pageIds));
+    $itemTitles = \mindstellar\media\MediaQuery::ownerTitles('item', array_keys($itemIds));
+    $userTitles = \mindstellar\media\MediaQuery::ownerTitles('user', array_keys($userIds));
+    $pageTitles = \mindstellar\media\MediaQuery::ownerTitles('page', array_keys($pageIds));
 
     foreach ($result as $rid => $u) {
         if ($u === null) {
@@ -173,37 +170,6 @@ function mediaResolveUsageBatch(array $rows)
     }
 
     return $result;
-}
-
-/**
- * id => display value for a set of ids, in one query. Description tables carry a row
- * per locale, so the first non-empty value per id wins.
- *
- * @param string $table
- * @param string $keyCol
- * @param string $valExpr
- * @param int[]  $ids
- *
- * @return array<int,string>
- */
-function mediaBatchTitles($table, $keyCol, $valExpr, array $ids)
-{
-    $ids = array_values(array_unique(array_map('intval', $ids)));
-    if (empty($ids)) {
-        return array();
-    }
-    $rows = osc_db_select(
-        "SELECT {$keyCol} AS k, {$valExpr} AS v FROM {$table} WHERE {$keyCol} IN (" . implode(',', $ids) . ')'
-    );
-    $out = array();
-    foreach ($rows as $r) {
-        $k = (int) $r['k'];
-        if (!isset($out[$k]) && (string) $r['v'] !== '') {
-            $out[$k] = (string) $r['v'];
-        }
-    }
-
-    return $out;
 }
 
 /**

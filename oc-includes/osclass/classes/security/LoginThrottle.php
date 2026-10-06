@@ -196,20 +196,10 @@ class LoginThrottle
     {
         $window = self::windowSeconds();
         $since  = self::since($window);
-        $table  = DB_TABLE_PREFIX . 't_login_attempt';
         $out    = array();
 
         try {
-            $rows = osc_db_table($table)
-                ->select('s_ip')
-                ->selectRaw('COUNT(*) AS n, MIN(dt_date) AS oldest')
-                ->where('dt_date', '>', $since)
-                ->whereIn('s_context', self::CONTEXTS)
-                ->where('s_ip', '!=', '')
-                ->groupBy('s_ip')
-                ->orderBy('n', 'DESC')
-                ->limit((int)$limit)
-                ->get();
+            $rows = LoginAttemptStore::byIp(self::CONTEXTS, $since, (int)$limit);
             foreach ($rows as $row) {
                 $out[] = self::activityRow($row, osc_login_throttle_max_ip(), $window) + array(
                     'kind' => 'ip',
@@ -217,16 +207,7 @@ class LoginThrottle
                 );
             }
 
-            $rows = osc_db_table($table)
-                ->select('s_context', 's_account')
-                ->selectRaw('COUNT(*) AS n, MIN(dt_date) AS oldest')
-                ->where('dt_date', '>', $since)
-                ->whereIn('s_context', self::CONTEXTS)
-                ->where('s_account', '!=', '')
-                ->groupBy('s_context', 's_account')
-                ->orderBy('n', 'DESC')
-                ->limit((int)$limit)
-                ->get();
+            $rows = LoginAttemptStore::byAccount(self::CONTEXTS, $since, (int)$limit);
             foreach ($rows as $row) {
                 // With a captcha, the account limit is off, so no account is blocked.
                 $max   = osc_captcha_enabled() ? PHP_INT_MAX : osc_login_throttle_max_account();
@@ -272,12 +253,7 @@ class LoginThrottle
      */
     private static function ipWindow($ip, $since)
     {
-        $row = osc_db_table(DB_TABLE_PREFIX . 't_login_attempt')
-            ->selectRaw('COUNT(*) AS n, MIN(dt_date) AS oldest')
-            ->where('s_ip', (string)$ip)
-            ->whereIn('s_context', self::CONTEXTS)
-            ->where('dt_date', '>', $since)
-            ->first();
+        $row = LoginAttemptStore::ipWindow((string)$ip, self::CONTEXTS, (string)$since);
 
         return array(
             'n'      => (int)($row['n'] ?? 0),
@@ -295,10 +271,7 @@ class LoginThrottle
      */
     private static function clearSignInIp($ip)
     {
-        osc_db_table(DB_TABLE_PREFIX . 't_login_attempt')
-            ->where('s_ip', (string)$ip)
-            ->whereIn('s_context', self::CONTEXTS)
-            ->delete();
+        LoginAttemptStore::clearIp((string)$ip, self::CONTEXTS);
     }
 
     /**

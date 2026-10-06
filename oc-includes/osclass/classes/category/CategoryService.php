@@ -52,7 +52,7 @@ final class CategoryService
     {
         $on = $enabled ?? true;
         if ($parentId !== null) {
-            if (osc_db_table(DB_TABLE_PREFIX . 't_category')->where('pk_i_id', $parentId)->first() === null) {
+            if (!CategoryStore::exists($parentId)) {
                 throw new InvalidException('/parent_id', 'unknown', _m('is not a category'));
             }
             if (!$this->canEnableUnder($parentId)) {
@@ -62,12 +62,10 @@ final class CategoryService
                 $on = false;
             }
         }
-        $siblings = osc_db_table(DB_TABLE_PREFIX . 't_category');
-        $siblings = $parentId === null ? $siblings->whereNull('fk_i_parent_id') : $siblings->where('fk_i_parent_id', $parentId);
         $fields   = [
             'fk_i_parent_id'    => $parentId,
             'i_expiration_days' => (int) $settings['i_expiration_days'],
-            'i_position'        => $first ? 0 : $siblings->count(),
+            'i_position'        => $first ? 0 : CategoryStore::childCount($parentId),
             'b_enabled'         => $on ? 1 : 0,
             'b_price_enabled'   => (int) $settings['b_price_enabled'],
         ];
@@ -170,7 +168,7 @@ final class CategoryService
      */
     public function delete(int $id): string
     {
-        if (osc_db_table(DB_TABLE_PREFIX . 't_category')->where('pk_i_id', $id)->first() === null) {
+        if (!CategoryStore::exists($id)) {
             throw new NotFoundException(_m('No such category.'));
         }
         $result = CategoryJobs::requestDelete($id);
@@ -186,8 +184,6 @@ final class CategoryService
      */
     public function canEnableUnder(int $parentId): bool
     {
-        $parent = osc_db_table(DB_TABLE_PREFIX . 't_category')->select('b_enabled')->where('pk_i_id', $parentId)->first();
-
-        return !empty($parent['b_enabled']);
+        return CategoryStore::isEnabled($parentId);
     }
 }

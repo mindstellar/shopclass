@@ -195,6 +195,9 @@ jobs:
       # ends: a link changed on its own is a broken link in an email already sent.
       - name: Core routing
         run: php tests/core-routing.php
+      # Which controller answers each ?page= value, on the site and in the admin.
+      - name: Page dispatch
+        run: php tests/page-dispatch.php
       # Every filter link, facet and canonical tag on the public site comes out of
       # osc_search_url(). Pins its output, quirks included.
       - name: Search URLs
@@ -242,6 +245,9 @@ jobs:
       # The REST API builds on core; core reaches it only through ApiAccess.
       - name: Core does not import the API
         run: php tests/core-no-api-import.php
+      # Table SQL lives in the table's model or store, not in services and controllers.
+      - name: No raw table access
+        run: php tests/no-raw-table-access.php
       # Paging params come straight from a URL; a bad one used to 500 the screen.
       - name: Admin list paging
         run: php tests/admin-list-paging.php

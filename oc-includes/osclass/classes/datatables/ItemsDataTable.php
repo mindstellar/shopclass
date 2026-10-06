@@ -183,19 +183,19 @@ class ItemsDataTable extends DataTable
                 $this->withFilters = true;
             }
             if ($k === 'b_premium' && $v != '') {
-                $this->mSearch->addItemConditions(DB_TABLE_PREFIX . 't_item.b_premium = ' . $sanitizer->int($v));
+                $this->mSearch->addItemConditions(\Item::getInstance()->getTableName() . '.b_premium = ' . $sanitizer->int($v));
                 $this->withFilters = true;
             }
             if ($k === 'b_active' && $v != '') {
-                $this->mSearch->addItemConditions(DB_TABLE_PREFIX . 't_item.b_active = ' . $sanitizer->int($v));
+                $this->mSearch->addItemConditions(\Item::getInstance()->getTableName() . '.b_active = ' . $sanitizer->int($v));
                 $this->withFilters = true;
             }
             if ($k === 'b_enabled' && $v != '') {
-                $this->mSearch->addItemConditions(DB_TABLE_PREFIX . 't_item.b_enabled = ' . $sanitizer->int($v));
+                $this->mSearch->addItemConditions(\Item::getInstance()->getTableName() . '.b_enabled = ' . $sanitizer->int($v));
                 $this->withFilters = true;
             }
             if ($k === 'b_spam' && $v != '') {
-                $this->mSearch->addItemConditions(DB_TABLE_PREFIX . 't_item.b_spam = ' . $sanitizer->int($v));
+                $this->mSearch->addItemConditions(\Item::getInstance()->getTableName() . '.b_spam = ' . $sanitizer->int($v));
                 $this->withFilters = true;
             }
             if ($k === 'user' && $v != '') {
@@ -414,16 +414,10 @@ class ItemsDataTable extends DataTable
      */
     private function listingThumb($itemId)
     {
-        $rows = osc_db_select(
-            'SELECT pk_i_id, s_path, s_extension, s_content_type, s_storage FROM '
-            . DB_TABLE_PREFIX . "t_item_resource WHERE fk_i_item_id = ? AND s_content_type LIKE 'image/%' "
-            . 'ORDER BY pk_i_id ASC LIMIT 1',
-            array((int) $itemId)
-        );
-        if (empty($rows)) {
+        $r = \mindstellar\listing\PhotoStore::firstImage((int) $itemId);
+        if ($r === null) {
             return '';
         }
-        $r = (array) $rows[0];
 
         return (string) osc_get_resource_url(array(
             'pk_i_id'        => $r['pk_i_id'],
@@ -570,14 +564,14 @@ class ItemsDataTable extends DataTable
         // One stats row per listing, so the counters are plain columns: no aggregate to
         // build them, no GROUP BY, and therefore no HAVING -- the filter is an ordinary
         // WHERE over indexed columns.
-        $this->mSearch->addTable(sprintf('%st_item_stats s', DB_TABLE_PREFIX));
+        $this->mSearch->addTable(\ItemStats::getInstance()->getTableName() . ' s');
         $this->mSearch->addField('s.`i_num_spam` as i_num_spam');
         $this->mSearch->addField('s.`i_num_bad_classified` as i_num_bad_classified');
         $this->mSearch->addField('s.`i_num_repeated` as i_num_repeated');
         $this->mSearch->addField('s.`i_num_offensive` as i_num_offensive');
         $this->mSearch->addField('s.`i_num_expired` as i_num_expired');
 
-        $this->mSearch->addConditions(sprintf('%st_item.pk_i_id = s.fk_i_item_id', DB_TABLE_PREFIX));
+        $this->mSearch->addConditions(\Item::getInstance()->getTableName() . '.pk_i_id = s.fk_i_item_id');
         $this->mSearch->addConditions('(' . $filter . ')');
         // do Search
         $this->processDataReported(Item::getInstance()->extendCategoryName($this->mSearch->doSearch()));

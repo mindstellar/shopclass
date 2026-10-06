@@ -578,18 +578,14 @@ class CWebSearch extends BaseModel
             return null;
         }
         try {
-            $rows = osc_db_select(
-                'SELECT fk_i_category_id FROM ' . DB_TABLE_PREFIX . 't_category_slug_history'
-                . ' WHERE s_slug = ? ORDER BY dt_date DESC LIMIT 1',
-                array($slug)
-            );
+            $oldId = \mindstellar\category\CategoryStore::idForOldSlug($slug);
         } catch (\mindstellar\database\DbException $e) {
             return null;
         }
-        if (count($rows) === 0) {
+        if ($oldId === null) {
             return null;
         }
-        $category = Category::getInstance()->findByPrimaryKey((int)$rows[0]['fk_i_category_id']);
+        $category = Category::getInstance()->findByPrimaryKey($oldId);
         if (!$category || (int)$category['b_enabled'] === 0) {
             return null; // deleted/disabled -> let the caller 404
         }

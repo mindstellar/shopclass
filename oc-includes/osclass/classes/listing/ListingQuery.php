@@ -26,6 +26,13 @@ final class ListingQuery
     /** The columns ListingStatus and ListingPolicy read. */
     private const STATUS_COLUMNS = ['pk_i_id', 'fk_i_user_id', 'b_enabled', 'b_active', 'b_spam', 'b_premium', 'dt_expiration'];
 
+    /** What a listing write reads: the t_item columns with the location's. */
+    private const EDIT_COLUMNS = 'i.pk_i_id, i.fk_i_user_id, i.fk_i_category_id, i.i_price, i.fk_c_currency_code, i.s_contact_phone,'
+        . ' i.b_show_email, i.s_secret, i.b_enabled, i.b_active, i.b_spam, i.b_premium, i.dt_expiration,'
+        . ' i.s_contact_name, i.s_contact_email,'
+        . ' l.fk_c_country_code, l.s_country, l.fk_i_region_id, l.s_region, l.fk_i_city_id, l.s_city, l.s_city_area,'
+        . ' l.s_address, l.s_zip, l.d_coord_lat, l.d_coord_long';
+
     private Clock $clock;
 
     public function __construct(?Clock $clock = null)
@@ -89,6 +96,73 @@ final class ListingQuery
         }
 
         return $query;
+    }
+
+    /**
+     * The listing as a write needs it, one row per language when $withTexts.
+     *
+     * @return array<int,array<string,mixed>> empty for no such listing
+     * @throws \mindstellar\database\DbException
+     */
+    public function editRows(int $id, bool $withTexts): array
+    {
+        $p   = DB_TABLE_PREFIX;
+        $sql = 'SELECT ' . self::EDIT_COLUMNS . ($withTexts ? ', d.fk_c_locale_code, d.s_title, d.s_description' : '')
+            . ' FROM ' . $p . 't_item i LEFT JOIN ' . $p . 't_item_location l ON l.fk_i_item_id = i.pk_i_id'
+            . ($withTexts ? ' LEFT JOIN ' . $p . 't_item_description d ON d.fk_i_item_id = i.pk_i_id' : '')
+            . ' WHERE i.pk_i_id = ?';
+
+        return osc_db_select($sql, [$id]);
+    }
+
+    /**
+     * Region or city links for the search footer: one representative listing per location
+     * group with the group's live listing count.
+     *
+     * @param int[]    $categoryIds only these categories; any when empty
+     * @param int|null $regionId    group a region's cities; regions when null
+     *
+     * @return array<int,array<string,mixed>>
+     * @throws \mindstellar\database\DbException
+     */
+    public function footerLocations(array $categoryIds, ?int $regionId): array
+    {
+        $where  = array();
+        $params = array();
+
+        if ($categoryIds !== array()) {
+            $where[] = 'i.fk_i_category_id IN (' . implode(', ', array_fill(0, count($categoryIds), '?')) . ')';
+            $params  = array_merge($params, $categoryIds);
+        }
+
+        $where[]  = 'i.pk_i_id = l.fk_i_item_id';
+        $where[]  = 'i.b_enabled = 1';
+        $where[]  = 'i.b_active = 1';
+        $where[]  = 'dt_expiration >= ?';
+        $params[] = date('Y-m-d H:i:s', $this->clock->now());
+        $where[]  = 'l.fk_i_region_id IS NOT NULL';
+        $where[]  = 'l.fk_i_city_id IS NOT NULL';
+
+        if ($regionId !== null) {
+            $where[]  = 'l.fk_i_region_id = ?';
+            $params[] = $regionId;
+            $groupBy  = 'l.fk_i_city_id';
+        } else {
+            $groupBy = 'l.fk_i_region_id';
+        }
+
+        // The count is grouped in a subquery that also names one representative listing
+        // per group; l.* beside GROUP BY on one column is rejected under ONLY_FULL_GROUP_BY.
+        $p   = DB_TABLE_PREFIX;
+        $sql = 'SELECT i.fk_i_category_id, l.*, g.total'
+            . ' FROM (SELECT MIN(l.fk_i_item_id) AS rep_id, COUNT(*) AS total'
+            . ' FROM ' . $p . 't_item as i, ' . $p . 't_item_location as l'
+            . ' WHERE ' . implode(' AND ', $where)
+            . ' GROUP BY ' . $groupBy . ') AS g'
+            . ' JOIN ' . $p . 't_item_location as l ON l.fk_i_item_id = g.rep_id'
+            . ' JOIN ' . $p . 't_item as i ON i.pk_i_id = g.rep_id';
+
+        return osc_db_select($sql, $params);
     }
 
     private function table(): QueryBuilder

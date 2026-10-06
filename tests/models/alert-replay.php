@@ -1272,12 +1272,9 @@ pin(
 
 harness_section('alert-replay: (d) v2 — page size');
 
-$rpp = new ReflectionProperty('Search', 'results_per_page');
-if (PHP_VERSION_ID < 80100) {
-    $rpp->setAccessible(true);
-}
-pin('the limit option sets the page size', 7, $rpp->getValue(AlertReplay::search(array('s_search' => $v2Row), array('limit' => 7))));
-pin('without it the page size is 10', 10, $rpp->getValue(AlertReplay::search(array('s_search' => $v2Row))));
+$rpp = static fn (Search $search) => json_decode($search->toJson(), true)['results_per_page'];
+pin('the limit option sets the page size', 7, $rpp(AlertReplay::search(array('s_search' => $v2Row), array('limit' => 7))));
+pin('without it the page size is 10', 10, $rpp(AlertReplay::search(array('s_search' => $v2Row))));
 check(
     'the alert cron replays with the search page size',
     strpos(

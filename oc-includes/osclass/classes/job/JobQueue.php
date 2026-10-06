@@ -78,6 +78,42 @@ final class JobQueue
         return DB_TABLE_PREFIX . 't_job_queue';
     }
 
+    /**
+     * Waiting and finished jobs of one type whose payload contains $needle.
+     */
+    public function ofTypeContaining(string $type, string $needle): QueryBuilder
+    {
+        return osc_db_table($this->table())->where('s_type', $type)->like('s_payload', $needle);
+    }
+
+    /**
+     * Put a running job's row back under its own id after a restore replaced the table.
+     * Rows of types matching $dropLike go; another row restored under the id is moved aside.
+     *
+     * @throws DbException
+     */
+    public function reinstate(int $id, string $type, string $dropLike): void
+    {
+        $table = $this->table();
+        osc_db_execute('DELETE FROM ' . $table . ' WHERE s_type LIKE ?', array($dropLike));
+        $other = osc_db_table($table)->where('pk_i_id', $id)->first();
+        if ($other !== null) {
+            unset($other['pk_i_id']);
+            osc_db_table($table)->insert($other);
+            osc_db_table($table)->where('pk_i_id', $id)->delete();
+        }
+        $now = date('Y-m-d H:i:s');
+        osc_db_table($table)->insert(array(
+            'pk_i_id'     => $id,
+            's_type'      => $type,
+            's_payload'   => '{}',
+            's_status'    => 'running',
+            'dt_next_run' => $now,
+            'dt_created'  => $now,
+            'dt_locked'   => $now,
+        ));
+    }
+
     /** Rows per INSERT in enqueueMany(). */
     private const BULK_CHUNK = 200;
 

@@ -296,6 +296,7 @@ filter admin_item_description
 filter admin_item_title
 filter admin_locations_row_actions
 filter admin_page_description
+filter admin_page_routes
 filter admin_page_title
 filter admin_title
 filter admin_user_profile_info
@@ -493,6 +494,7 @@ filter osc_item_meta_value_pre_filter
 filter osclass_upgrade_package
 filter page_bulk_filter
 filter page_cache_purge_enabled
+filter page_routes
 filter page_templates
 filter pages_processing_row
 filter phpmailer_smtp_timeout

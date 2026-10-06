@@ -617,7 +617,7 @@ final class BackupService
         );
         if (osc_get_preference('storage_active') === 's3') {
             try {
-                $count = osc_db_table(DB_TABLE_PREFIX . 't_item_resource')->where('s_storage', 's3')->count();
+                $count = \mindstellar\listing\PhotoStore::countIn('s3');
             } catch (DbException $e) {
                 $count = 0;
             }

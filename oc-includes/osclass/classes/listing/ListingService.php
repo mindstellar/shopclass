@@ -294,9 +294,7 @@ final class ListingService
      */
     public function bump(int $id, ?string $at = null, ?callable $announce = null): bool
     {
-        $moved = osc_db_table(DB_TABLE_PREFIX . 't_item')
-            ->where('pk_i_id', $id)
-            ->update(['dt_pub_date' => $at ?? date('Y-m-d H:i:s')]);
+        $moved = ListingStore::setPubDate($id, $at ?? date('Y-m-d H:i:s'));
         if ($moved < 1) {
             return false;
         }
@@ -343,11 +341,7 @@ final class ListingService
 
         // Just the columns needed here, not findByPrimaryKey(): that hydrates locales and
         // resources this decision has no use for.
-        $current = osc_db_select_one(
-            'SELECT b_premium, dt_premium_expiration, b_enabled, b_active, b_spam, dt_expiration FROM '
-            . DB_TABLE_PREFIX . 't_item WHERE pk_i_id = ?',
-            array((int) $id)
-        );
+        $current = ListingStore::premiumState((int) $id);
 
         if ($on && $days !== null) {
             if (!empty($current['b_premium']) && empty($current['dt_premium_expiration'])) {

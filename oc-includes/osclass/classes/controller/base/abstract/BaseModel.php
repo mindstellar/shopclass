@@ -178,21 +178,17 @@ abstract class BaseModel
         }
 
         try {
-            $history = osc_db_select_one(
-                'SELECT fk_i_id FROM ' . DB_TABLE_PREFIX . 't_location_slug_history'
-                . ' WHERE e_type = ? AND s_slug = ?',
-                array($type, $slug)
-            );
+            $historyId = \mindstellar\location\LocationStore::idForOldSlug((string)$type, $slug);
         } catch (\mindstellar\database\DbException $e) {
             return;
         }
 
-        if ($history === null) {
+        if ($historyId === null) {
             return;
         }
 
         $model   = $type === 'REGION' ? Region::getInstance() : City::getInstance();
-        $current = $model->findByPrimaryKey((int)$history['fk_i_id']);
+        $current = $model->findByPrimaryKey($historyId);
         if (!$current || !isset($current['pk_i_id'])) {
             return; // target row is gone -> let the caller do404()
         }

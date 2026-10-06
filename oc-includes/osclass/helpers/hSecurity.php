@@ -120,9 +120,8 @@ function osc_proxy_ip_mismatch()
  */
 function osc_ban_rules(string $scope = 'all'): array
 {
-    // SELECT * so the list still loads before the upgrade has added s_scope and dt_expires.
     try {
-        $rows = osc_db_select('SELECT * FROM ' . DB_TABLE_PREFIX . 't_ban_rule');
+        $rows = \mindstellar\security\BanRuleStore::all();
     } catch (\mindstellar\database\DbException $e) {
         return array();
     }

@@ -91,6 +91,82 @@ final class LocationQuery
     }
 
     /**
+     * Names by id.
+     *
+     * @param string $level one of the level constants
+     * @param int[]  $ids
+     *
+     * @return array<int,string>
+     */
+    public function names(string $level, array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+        $rows = osc_db_select(
+            'SELECT pk_i_id, s_name FROM ' . self::tableName($level)
+            . ' WHERE pk_i_id IN (' . implode(',', array_fill(0, count($ids), '?')) . ')',
+            $ids
+        );
+        $names = [];
+        foreach ($rows as $row) {
+            $names[(int) $row['pk_i_id']] = (string) $row['s_name'];
+        }
+
+        return $names;
+    }
+
+    /**
+     * The next keys of a level after $after, in key order.
+     *
+     * @param string $level one of the level constants
+     * @param string $after '' to start at the first key
+     *
+     * @return string[]
+     */
+    public function keysAfter(string $level, string $after, int $limit): array
+    {
+        $key = self::LEVELS[$level][1];
+        $q   = $this->after($level, $after)->select($key)->orderBy($key)->limit($limit);
+
+        return array_map(static fn (array $row): string => (string) $row[$key], $q->get());
+    }
+
+    /**
+     * How many keys of a level come after $after.
+     */
+    public function countAfter(string $level, string $after): int
+    {
+        return $this->after($level, $after)->count();
+    }
+
+    /**
+     * Lowercase codes of the countries that have region rows.
+     *
+     * @return array<string,bool>
+     */
+    public function countriesWithRegions(): array
+    {
+        $rows = osc_db_select('SELECT DISTINCT fk_c_country_code AS code FROM ' . self::tableName(self::REGION));
+        $out  = [];
+        foreach ($rows as $row) {
+            $out[strtolower((string) $row['code'])] = true;
+        }
+
+        return $out;
+    }
+
+    private function after(string $level, string $after): QueryBuilder
+    {
+        $q = $this->table($level);
+        if ($after !== '') {
+            $q = $q->where(self::LEVELS[$level][1], '>', $level === self::COUNTRY ? $after : (int) $after);
+        }
+
+        return $q;
+    }
+
+    /**
      * @return array<int,array<string,mixed>>
      */
     private function list(string $level, QueryBuilder $query, string $prefix, int $limit, int $offset): array
@@ -105,10 +181,15 @@ final class LocationQuery
 
     private function table(string $level): QueryBuilder
     {
+        return osc_db_table(self::tableName($level));
+    }
+
+    private static function tableName(string $level): string
+    {
         if (!isset(self::LEVELS[$level])) {
             throw new \InvalidArgumentException('Unknown location level ' . $level . '.');
         }
 
-        return osc_db_table(DB_TABLE_PREFIX . self::LEVELS[$level][0]);
+        return DB_TABLE_PREFIX . self::LEVELS[$level][0];
     }
 }

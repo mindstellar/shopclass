@@ -11,7 +11,7 @@
 /**
  * A cookie never authenticates an API call: WebIdentity::forget() drops the user and admin
  * identity the bootstrap resolved from cookies or the session, for this request only, and
- * index.php runs it for page=api before maintenance, the user switch and lastAccess.
+ * the front controller runs it for page=api before maintenance, the user switch and lastAccess.
  *
  * DB-free.  Usage: php tests/api-web-identity.php
  */
@@ -74,17 +74,19 @@ pin('the logged user reads as nobody, so it is not looked up again', [], View::g
 check('nobody is not a logged-in user', !isset(View::getInstance()->_get('_loggedUser')['b_enabled']));
 check('no session was started', session_status() !== PHP_SESSION_ACTIVE);
 
-harness_section('index.php');
-$index = (string) file_get_contents(ABS_PATH . 'index.php');
-$at    = static fn (string $needle): int => (int) strpos($index, $needle);
+harness_section('front controller');
+$index = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/routing/FrontController.php');
+$run   = substr($index, (int) strpos($index, 'public static function run('));
+$run   = substr($run, 0, (int) strpos($run, 'public static function cron('));
+$at    = static fn (string $needle): int => (int) strpos($run, $needle);
 $boot  = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/api/boot.php');
-check('page=api forgets the web identity', str_contains($index, "if (\$osc_api_request) {\n    \\mindstellar\\apiaccess\\ApiAccess::begin();"));
+check('page=api forgets the web identity', str_contains($run, "if (\$api) {\n            \\mindstellar\\apiaccess\\ApiAccess::begin();"));
 check('which is WebIdentity::forget()', str_contains($boot, 'static fn () => \\mindstellar\\api\\identity\\WebIdentity::forget(),'));
-check('before the maintenance check', $at('ApiAccess::begin()') > 0 && $at('ApiAccess::begin()') < $at("file_exists(ABS_PATH . '.maintenance')"));
-check('an admin cookie does not lift maintenance for the API', str_contains($index, '!$osc_api_request && osc_is_admin_user_logged_in(),'));
-check('an API call under maintenance gets problem+json', str_contains($index, "if (\$osc_api_request) {\n            \\mindstellar\\apiaccess\\ApiAccess::maintenance();")
+check('before the maintenance check', $at('ApiAccess::begin()') > 0 && $at('ApiAccess::begin()') < $at('self::maintenanceGate($api, $cli);'));
+check('an admin cookie does not lift maintenance for the API', str_contains($index, '!$api && osc_is_admin_user_logged_in(),'));
+check('an API call under maintenance gets problem+json', str_contains($index, "if (\$api) {\n            \\mindstellar\\apiaccess\\ApiAccess::maintenance();")
     && str_contains($boot, 'static fn () => \\mindstellar\\api\\Problem::maintenance()->send()'));
-check('an API call never records last access', str_contains($index, 'if (!$osc_api_request && osc_is_web_user_logged_in()) {'));
-check('nor touches the user cookies when users are off', str_contains($index, 'if (!$osc_api_request && !osc_users_enabled() && osc_is_web_user_logged_in()) {'));
+check('an API call never records last access nor touches the user cookies', str_contains($run, "if (!\$api) {\n            self::userUpkeep();"));
+check('user upkeep runs before the page', $at('self::userUpkeep();') < $at('PageDispatcher::web()->dispatch('));
 
 exit(harness_result());

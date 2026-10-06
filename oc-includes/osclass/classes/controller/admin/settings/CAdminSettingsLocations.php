@@ -20,6 +20,7 @@ use mindstellar\location\LocationAdminQuery;
 use mindstellar\location\LocationAdminView;
 use mindstellar\location\LocationCatalog;
 use mindstellar\location\LocationImporter;
+use mindstellar\location\LocationQuery;
 use mindstellar\location\LocationService;
 use mindstellar\utility\AjaxResponse;
 use mindstellar\validation\RefusedException;
@@ -785,17 +786,10 @@ class CAdminSettingsLocations extends AdminSecBaseModel
         }
 
         $names = array();
-        foreach (array('REGION' => 't_region', 'CITY' => 't_city') as $type => $table) {
-            if ($ids[$type] === array()) {
-                continue;
-            }
-            $rows = osc_db_select(
-                'SELECT pk_i_id, s_name FROM ' . DB_TABLE_PREFIX . $table
-                . ' WHERE pk_i_id IN (' . implode(',', array_fill(0, count($ids[$type]), '?')) . ')',
-                $ids[$type]
-            );
-            foreach ($rows as $row) {
-                $names[$type][(int) $row['pk_i_id']] = (string) $row['s_name'];
+        foreach (array('REGION' => LocationQuery::REGION, 'CITY' => LocationQuery::CITY) as $type => $level) {
+            $found = (new LocationQuery())->names($level, $ids[$type]);
+            if ($found !== array()) {
+                $names[$type] = $found;
             }
         }
 

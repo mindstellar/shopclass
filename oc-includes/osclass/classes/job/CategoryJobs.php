@@ -14,6 +14,7 @@ namespace mindstellar\job;
 use Category;
 use Item;
 use mindstellar\database\DbException;
+use mindstellar\listing\ListingStore;
 use Throwable;
 
 /**
@@ -178,9 +179,7 @@ final class CategoryJobs
         }
 
         try {
-            return osc_db_table(DB_TABLE_PREFIX . 't_item')
-                ->whereIn('fk_i_category_id', $ids)
-                ->count();
+            return ListingStore::countInCategories($ids);
         } catch (DbException $e) {
             // Unknown size. Treat it as big: queuing a small category costs one cron
             // tick, while running a huge one inline is the failure this exists to stop.
@@ -200,12 +199,7 @@ final class CategoryJobs
     private static function deleteItemBatch(array $ids, int $limit): int
     {
         try {
-            $rows = osc_db_table(DB_TABLE_PREFIX . 't_item')
-                ->select('pk_i_id')
-                ->whereIn('fk_i_category_id', $ids)
-                ->orderBy('pk_i_id', 'ASC')
-                ->limit(max(1, $limit))
-                ->get();
+            $rows = ListingStore::idsInCategories($ids, max(1, $limit));
         } catch (DbException $e) {
             return 0;
         }
@@ -240,9 +234,7 @@ final class CategoryJobs
     private static function disable(array $ids): void
     {
         try {
-            osc_db_table(DB_TABLE_PREFIX . 't_category')
-                ->whereIn('pk_i_id', $ids)
-                ->update(array('b_enabled' => 0));
+            \mindstellar\category\CategoryStore::disable($ids);
         } catch (DbException $e) {
             // Not fatal: the delete still runs, the tree is just visible until it does.
         }

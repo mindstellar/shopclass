@@ -22,7 +22,7 @@ $GLOBALS['failLabels'] = array();
 
 $response = (string) file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/api/Response.php');
 $jobs     = (string) file_get_contents(__DIR__ . '/../oc-includes/osclass/helpers/hJobs.php');
-$index    = (string) file_get_contents(__DIR__ . '/../index.php');
+$index    = (string) file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/routing/FrontController.php');
 
 harness_section('API path ticks auto-cron after sending');
 
@@ -48,7 +48,7 @@ check(
     'the tick runs as nobody, not as the caller',
     preg_match('/WebIdentity::forget\(\);\s*osc_auto_cron_dispatch\(true\)/', $response) === 1
 );
-check('index.php uses the same entry', strpos($index, 'osc_auto_cron_dispatch();') !== false);
+check('the front controller uses the same entry', strpos($index, 'osc_auto_cron_dispatch();') !== false);
 check('the throttle lives only in the shared function', strpos($index, 'autocron_tick') === false);
 
 harness_section('shared entry does nothing when auto-cron is off');

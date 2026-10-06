@@ -10,6 +10,8 @@
 
 namespace mindstellar\security;
 
+use mindstellar\base\Model;
+
 /**
  * A rate limit on any key: an API key, an account, a token. ActionThrottle limits by
  * address; this limits by what the caller names.
@@ -18,8 +20,10 @@ namespace mindstellar\security;
  * request. The key is stored hashed, so a secret passed as the key is never written.
  * Like ActionThrottle it fails open: a counter that cannot be reached allows the request.
  */
-final class RateLimit
+final class RateLimit extends Model
 {
+    protected const TABLE = 't_rate_counter';
+
     /**
      * Count one request for $key and say whether it is within the limit.
      *
@@ -60,7 +64,7 @@ final class RateLimit
         $bucket        = self::bucket($context, $key, $windowSeconds);
 
         // LAST_INSERT_ID(expr) hands the new count back with the insert; a fresh row reports 0.
-        $sql = 'INSERT INTO ' . DB_TABLE_PREFIX . 't_rate_counter (s_bucket, i_window, i_expires, i_count) VALUES (?, ?, ?, 1)'
+        $sql = 'INSERT INTO ' . self::tableName() . ' (s_bucket, i_window, i_expires, i_count) VALUES (?, ?, ?, 1)'
             . ' ON DUPLICATE KEY UPDATE i_count = LAST_INSERT_ID(i_count + 1)';
         $params = array($bucket, $window, $window + $windowSeconds);
 
@@ -95,7 +99,7 @@ final class RateLimit
         $now           = time();
         try {
             return (int) osc_db_scalar(
-                'SELECT i_count FROM ' . DB_TABLE_PREFIX . 't_rate_counter WHERE s_bucket = ? AND i_window = ?',
+                'SELECT i_count FROM ' . self::tableName() . ' WHERE s_bucket = ? AND i_window = ?',
                 array(self::bucket($context, $key, $windowSeconds), $now - ($now % $windowSeconds))
             );
         } catch (\Throwable $e) {
@@ -128,7 +132,7 @@ final class RateLimit
         }
         try {
             $rows = osc_db_select(
-                'SELECT s_bucket, i_count FROM ' . DB_TABLE_PREFIX . 't_rate_counter WHERE i_window = ? AND s_bucket IN ('
+                'SELECT s_bucket, i_count FROM ' . self::tableName() . ' WHERE i_window = ? AND s_bucket IN ('
                 . implode(', ', array_fill(0, count($buckets), '?')) . ')',
                 array_merge(array($now - ($now % $windowSeconds)), array_keys($buckets))
             );
@@ -168,7 +172,7 @@ final class RateLimit
     public static function prune(int $batch = 5000, int $maxRounds = 100): int
     {
         $batch   = max(1, $batch);
-        $sql     = 'DELETE FROM ' . DB_TABLE_PREFIX . 't_rate_counter WHERE i_expires < ? LIMIT ' . $batch;
+        $sql     = 'DELETE FROM ' . self::tableName() . ' WHERE i_expires < ? LIMIT ' . $batch;
         $removed = 0;
         try {
             for ($round = 0; $round < $maxRounds; $round++) {

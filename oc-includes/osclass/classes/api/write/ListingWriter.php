@@ -242,10 +242,6 @@ final class ListingWriter
      */
     private static function metaRows(int $id): array
     {
-        return osc_db_stringify_rows(osc_db_select(
-            'SELECT m.fk_i_field_id, m.s_multi, m.s_value, f.e_type FROM ' . DB_TABLE_PREFIX . 't_item_meta m'
-            . ' LEFT JOIN ' . DB_TABLE_PREFIX . 't_meta_fields f ON f.pk_i_id = m.fk_i_field_id WHERE m.fk_i_item_id = ?',
-            [$id]
-        ));
+        return osc_db_stringify_rows(\mindstellar\fields\FieldQuery::listingValues($id));
     }
 }

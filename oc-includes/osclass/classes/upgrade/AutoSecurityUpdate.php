@@ -110,15 +110,7 @@ final class AutoSecurityUpdate
      */
     private static function claim(string $version): bool
     {
-        $table = DB_TABLE_PREFIX . 't_preference';
-        osc_db_execute(
-            'INSERT IGNORE INTO ' . $table . " (s_section, s_name, s_value, e_type) VALUES ('osclass', 'auto_update_tried', '', 'STRING')"
-        );
-
-        return osc_db_execute(
-            'UPDATE ' . $table . " SET s_value = ? WHERE s_section = 'osclass' AND s_name = 'auto_update_tried' AND s_value <> ?",
-            array($version, $version)
-        ) === 1;
+        return \Preference::getInstance()->claim('auto_update_tried', $version);
     }
 
     /**

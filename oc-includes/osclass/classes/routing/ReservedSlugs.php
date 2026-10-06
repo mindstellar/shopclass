@@ -55,21 +55,9 @@ final class ReservedSlugs
      */
     public static function conflicts(): array
     {
-        $pages = [];
-        // LIKE narrows to rows starting with a prefix; taken() decides.
-        foreach (osc_db_table(DB_TABLE_PREFIX . 't_pages')->select('s_internal_name')->like('s_internal_name', 'api', 'after')->get() as $row) {
-            $name = (string) $row['s_internal_name'];
-            if (self::taken($name)) {
-                $pages[] = $name;
-            }
-        }
-        $categories = [];
-        foreach (osc_db_table(DB_TABLE_PREFIX . 't_category_description')->select('s_slug')->like('s_slug', 'api', 'after')->get() as $row) {
-            $slug = (string) $row['s_slug'];
-            if (self::taken($slug)) {
-                $categories[] = $slug;
-            }
-        }
+        // The query narrows to names starting with the prefix; taken() decides.
+        $pages      = array_filter(\mindstellar\pages\PageQuery::internalNamesStartingWith('api'), [self::class, 'taken']);
+        $categories = array_filter(\mindstellar\category\CategoryStore::slugsStartingWith('api'), [self::class, 'taken']);
 
         return ['pages' => array_values(array_unique($pages)), 'categories' => array_values(array_unique($categories))];
     }
