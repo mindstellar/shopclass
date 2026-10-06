@@ -53,14 +53,16 @@ final class ListingQuery
     /**
      * Bare t_item rows, newest first, below $beforeId when given.
      *
-     * @param string[] $statuses names from ListingStatus::ALL; all when empty
-     * @param string   $title    keep titles containing this; '' for any
+     * @param string[] $statuses    names from ListingStatus::ALL; all when empty
+     * @param int[]    $userIds     only these sellers; any when empty
+     * @param int[]    $categoryIds only these categories; any when empty
+     * @param string   $title       keep titles containing this; '' for any
      *
      * @return array<int,array<string,mixed>>
      */
-    public function newest(array $statuses, ?int $userId, ?int $categoryId, string $title, ?int $beforeId, int $limit): array
+    public function newest(array $statuses, array $userIds, array $categoryIds, string $title, ?int $beforeId, int $limit): array
     {
-        $query = $this->filtered($statuses, $userId, $categoryId, $title);
+        $query = $this->filtered($statuses, $userIds, $categoryIds, $title);
         if ($beforeId !== null) {
             $query = $query->where('pk_i_id', '<', $beforeId);
         }
@@ -69,24 +71,28 @@ final class ListingQuery
     }
 
     /**
-     * @param string[] $statuses names from ListingStatus::ALL; all when empty
+     * @param string[] $statuses    names from ListingStatus::ALL; all when empty
+     * @param int[]    $userIds     only these sellers; any when empty
+     * @param int[]    $categoryIds only these categories; any when empty
      */
-    public function count(array $statuses, ?int $userId, ?int $categoryId, string $title): int
+    public function count(array $statuses, array $userIds, array $categoryIds, string $title): int
     {
-        return $this->filtered($statuses, $userId, $categoryId, $title)->count();
+        return $this->filtered($statuses, $userIds, $categoryIds, $title)->count();
     }
 
     /**
      * @param string[] $statuses
+     * @param int[]    $userIds
+     * @param int[]    $categoryIds
      */
-    private function filtered(array $statuses, ?int $userId, ?int $categoryId, string $title): QueryBuilder
+    private function filtered(array $statuses, array $userIds, array $categoryIds, string $title): QueryBuilder
     {
         $query = ListingStatus::condition($this->table(), $statuses, $this->clock->now());
-        if ($userId !== null) {
-            $query = $query->where('fk_i_user_id', $userId);
+        if ($userIds !== []) {
+            $query = $query->whereIn('fk_i_user_id', $userIds);
         }
-        if ($categoryId !== null) {
-            $query = $query->where('fk_i_category_id', $categoryId);
+        if ($categoryIds !== []) {
+            $query = $query->whereIn('fk_i_category_id', $categoryIds);
         }
         if ($title !== '') {
             $query = $query->whereRaw(

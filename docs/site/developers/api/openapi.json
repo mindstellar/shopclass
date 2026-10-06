@@ -12782,18 +12782,34 @@
                         "name": "user",
                         "in": "query",
                         "required": false,
+                        "description": "User ids: one, a comma list, or repeated.",
+                        "style": "form",
+                        "explode": true,
                         "schema": {
-                            "type": "integer",
-                            "minimum": 1
+                            "type": [
+                                "string",
+                                "array"
+                            ],
+                            "items": {
+                                "type": "string"
+                            }
                         }
                     },
                     {
                         "name": "category",
                         "in": "query",
                         "required": false,
+                        "description": "Category ids or slugs: one, a comma list, or repeated. Subcategories are included.",
+                        "style": "form",
+                        "explode": true,
                         "schema": {
-                            "type": "integer",
-                            "minimum": 1
+                            "type": [
+                                "string",
+                                "array"
+                            ],
+                            "items": {
+                                "type": "string"
+                            }
                         }
                     },
                     {

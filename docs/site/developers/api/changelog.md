@@ -117,6 +117,7 @@ Also settled before the first release, so no released client saw the old behavio
 - Custom fields are `custom_fields` everywhere: the listing and category member, `include=custom_fields`, the write body, the `custom_field[<id>]` filter, and the `/custom-fields` and `/admin/custom-fields` paths. `fields` is only the sparse fieldset.
 - A `403` names its reason: `wrong_credential`, `banned` or `feature_disabled`. `forbidden` is left for the other refusals.
 - Every list has `links.next`, `null` on a list answered whole, so a list can be paged later without breaking clients.
+- `GET /admin/listings` takes `user` and `category` as lists, as search does. `category` takes slugs and includes subcategories.
 - Admin comments read back `approved` and `blocked`. Users read and filter on `confirmed` and `blocked` instead of `active` and `enabled`. Sign-up answers `confirmed`.
 
 See [Admin endpoints](/docs/developers/api/admin/) and [Webhooks](/docs/developers/api/webhooks/).

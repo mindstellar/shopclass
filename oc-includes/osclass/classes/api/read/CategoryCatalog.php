@@ -119,6 +119,23 @@ final class CategoryCatalog
     }
 
     /**
+     * A category's id and the ids of every category below it.
+     *
+     * @return int[]
+     */
+    public function withDescendants(int $id): array
+    {
+        $ids = [$id];
+        foreach ($this->childIds($id) as $child) {
+            if ($child !== $id) {
+                array_push($ids, ...$this->withDescendants($child));
+            }
+        }
+
+        return $ids;
+    }
+
+    /**
      * @return int[] child ids in display order; 0 for the roots
      */
     public function childIds(int $id): array

@@ -68,7 +68,7 @@ admin's rights.
 
 | Endpoint | Does |
 |---|---|
-| `GET /admin/listings` | Search. Filters: `status` (`active`, `pending`, `disabled`, `expired`, `spam`; a comma list or repeated), `user`, `category`, `q` (title contains), `include`, `locale`, `fields`, `limit`, `cursor`, `count`. |
+| `GET /admin/listings` | Search. Filters: `status` (`active`, `pending`, `disabled`, `expired`, `spam`; a comma list or repeated), `user` (ids) and `category` (ids or slugs, subcategories included), each a comma list or repeated as in search, `q` (title contains), `include`, `locale`, `fields`, `limit`, `cursor`, `count`. |
 | `GET /admin/listings/{id}` | One listing. |
 | `PATCH /admin/listings/{id}` | Edit any member of a listing, plus `owner_id` (`null` for none), `contact_name`, `contact_email` and `expires_at` (`YYYY-MM-DD`, `null` for never). `approved` approves a listing that waits for moderation, or sends it back. `blocked`, `spam` and `premium` (no end date) set or clear each one. |
 | `DELETE /admin/listings/{id}` | Delete. |

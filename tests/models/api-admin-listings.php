@@ -99,6 +99,13 @@ pin('status=active', [$live], $ids($call('GET', 'admin/listings', null, $boss, [
 pin('status=disabled', [$blocked], $ids($call('GET', 'admin/listings', null, $boss, [], ['status' => 'disabled'])));
 pin('an unknown status is 422', '422 validation_failed', api_admin_code($call('GET', 'admin/listings', null, $boss, [], ['status' => 'gone'])));
 pin('user=', [$spam, $blocked], $ids($call('GET', 'admin/listings', null, $boss, [], ['user' => (string) $tom])));
+pin('user= takes a list, as search does', 5, count($ids($call('GET', 'admin/listings', null, $boss, [], ['user' => $sue . ',' . $tom]))));
+pin('category= by the parent\'s id or slug takes its subcategories', [5, 5, 0], [
+    count($ids($call('GET', 'admin/listings', null, $boss, [], ['category' => (string) $vehicles]))),
+    count($ids($call('GET', 'admin/listings', null, $boss, [], ['category' => 'vehicles']))),
+    count($ids($call('GET', 'admin/listings', null, $boss, [], ['category' => '99999']))),
+]);
+pin('an unknown category slug is 422', '422 validation_failed', api_admin_code($call('GET', 'admin/listings', null, $boss, [], ['category' => 'nosuch'])));
 pin('q= matches titles, with % taken literally', [[$pending], []], [
     $ids($call('GET', 'admin/listings', null, $boss, [], ['q' => 'wagon'])), $ids($call('GET', 'admin/listings', null, $boss, [], ['q' => '%'])),
 ]);

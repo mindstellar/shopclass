@@ -64,7 +64,7 @@ final class AccountController
     public function listings(Request $request, Credential $credential, array $args): Response
     {
         return (new ListingList($this->api, $this->api->listingReader()))
-            ->run($request, $credential, 'account/listings', $request->queryList('status'), (int) $credential->userId());
+            ->run($request, $credential, 'account/listings', $request->queryList('status'), [(int) $credential->userId()]);
     }
 
     /**

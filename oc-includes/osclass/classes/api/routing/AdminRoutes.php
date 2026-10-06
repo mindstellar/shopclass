@@ -40,6 +40,9 @@ final class AdminRoutes
         'cursor' => ['type' => 'string', 'maxLength' => 1024],
     ];
 
+    /** A list filter, as public search takes them. */
+    private const IDS = ['type' => ['string', 'array'], 'items' => ['type' => 'string']];
+
     private const COUNT = ['count' => ['type' => 'boolean', 'description' => 'true: also count every match for meta.total; skipped otherwise, as it costs a query.']];
 
     private const VIEW = [
@@ -70,8 +73,8 @@ final class AdminRoutes
         return [
             'GET admin/listings' => self::read(AdminListingsController::class, 'index', $tag, $scope, 'Every listing, whatever its status, newest first', 'ListingPage', [
                 'status'   => $status,
-                'user'     => ['type' => 'integer', 'minimum' => 1],
-                'category' => ['type' => 'integer', 'minimum' => 1],
+                'user'     => self::IDS + ['description' => 'User ids: one, a comma list, or repeated.'],
+                'category' => self::IDS + ['description' => 'Category ids or slugs: one, a comma list, or repeated. Subcategories are included.'],
                 'q'        => ['type' => 'string', 'maxLength' => 100, 'description' => 'Titles containing this.'],
                 'include'  => ['type' => 'string', 'maxLength' => 100],
             ] + self::PAGING + self::COUNT + self::VIEW, [400, 422]),

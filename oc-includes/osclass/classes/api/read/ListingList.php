@@ -37,15 +37,17 @@ final class ListingList
 
     /**
      * @param string   $path     the endpoint, below /api/v1/, for the page links and the cursor
-     * @param string[] $statuses names from ListingStatus::ALL; all when empty
+     * @param string[] $statuses    names from ListingStatus::ALL; all when empty
+     * @param int[]    $userIds     only these sellers; any when empty
+     * @param int[]    $categoryIds only these categories; any when empty
      */
-    public function run(Request $request, Credential $credential, string $path, array $statuses, ?int $userId, ?int $categoryId = null, string $title = ''): Response
+    public function run(Request $request, Credential $credential, string $path, array $statuses, array $userIds, array $categoryIds = [], string $title = ''): Response
     {
         $context = $this->api->context($request, $credential, 'listing', ListingSerializer::MEMBERS, ListingSerializer::INCLUDES);
         $pager   = Pager::fromRequest($request, $this->api->cursor(), ListSpec::byId('desc', self::DEFAULT_LIMIT, self::MAX_LIMIT), ['list' => $path] + $request->query());
-        $total   = $pager->counts() ? $this->listings->count($statuses, $userId, $categoryId, $title) : null;
+        $total   = $pager->counts() ? $this->listings->count($statuses, $userIds, $categoryIds, $title) : null;
         $after   = $pager->after();
-        $rows    = $this->listings->newest($statuses, $userId, $categoryId, $title, $after === null ? null : (int) $after[0], $pager->limit() + 1);
+        $rows    = $this->listings->newest($statuses, $userIds, $categoryIds, $title, $after === null ? null : (int) $after[0], $pager->limit() + 1);
         $items   = $pager->page($rows);
         $items   = $items === [] ? [] : \Item::getInstance()->extendRows($items, $context->locale());
 

@@ -278,8 +278,8 @@ Every listing, whatever its status, newest first
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `status` | query | string or array | no | One value, a comma list, or repeated. |
-| `user` | query | integer | no |  |
-| `category` | query | integer | no |  |
+| `user` | query | string or array | no | User ids: one, a comma list, or repeated. |
+| `category` | query | string or array | no | Category ids or slugs: one, a comma list, or repeated. Subcategories are included. |
 | `q` | query | string | no | Titles containing this. |
 | `include` | query | string | no |  |
 | `limit` | query | integer | no |  |

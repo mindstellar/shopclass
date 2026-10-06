@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\api\controller\admin;
 
 use mindstellar\api\ApiServices;
+use mindstellar\api\Problem;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\ListingList;
 use mindstellar\api\read\ListingReader;
@@ -54,9 +55,33 @@ final class AdminListingsController
      */
     public function index(Request $request, Credential $credential, array $args): Response
     {
-        $filter = static fn (string $name): ?int => $request->queryString($name) === '' ? null : $request->queryInt($name);
+        $users = array_map('intval', array_values(array_filter($request->queryList('user'), 'ctype_digit')));
 
-        return $this->list->run($request, $credential, 'admin/listings', $request->queryList('status'), $filter('user'), $filter('category'), trim($request->queryString('q')));
+        return $this->list->run($request, $credential, 'admin/listings', $request->queryList('status'), $users, $this->categories($request), trim($request->queryString('q')));
+    }
+
+    /**
+     * The `category` filter as ids, subcategories included. An id may name a category that
+     * is switched off; a slug must name one that is on.
+     *
+     * @return int[]
+     * @throws ProblemException 422 for an unknown slug
+     */
+    private function categories(Request $request): array
+    {
+        $catalog = $this->reader->categories();
+        $ids     = [];
+        foreach ($request->queryList('category') as $value) {
+            $row = ctype_digit($value) ? null : $catalog->lookup($value, $this->api->locale($request));
+            if (!ctype_digit($value) && $row === null) {
+                throw ProblemException::from(Problem::validation([
+                    ['pointer' => '/category', 'code' => 'enum', 'message' => 'is not a known category: ' . $value, 'in' => 'query'],
+                ]));
+            }
+            array_push($ids, ...$catalog->withDescendants($row === null ? (int) $value : (int) $row['pk_i_id']));
+        }
+
+        return array_values(array_unique($ids));
     }
 
     /**
