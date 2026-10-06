@@ -123,7 +123,7 @@ abstract class UpgradePackage
     private function setVariable(array $package_info)
     {
 
-        if (isset($package_info) && !empty($package_info)) {
+        if (!empty($package_info)) {
             $this->s_title = $package_info['s_title'];
 
             if (isset($package_info['s_source_url'])

@@ -33,7 +33,7 @@ class Object_Cache_memcache implements iObject_Cache
     /**
      * The blog prefix to prepend to keys in non-global groups.
      *
-     * @var int
+     * @var string
      * @since  3.4
      */
     public $site_prefix;
@@ -48,7 +48,7 @@ class Object_Cache_memcache implements iObject_Cache
     /**
      * Holds the memcached object
      *
-     * @var array
+     * @var Memcache
      * @since  3.4
      */
     private $memcached;
@@ -70,7 +70,7 @@ class Object_Cache_memcache implements iObject_Cache
         $this->site_prefix = 'osc_' . substr(md5(defined('WEB_PATH') ? WEB_PATH : __DIR__), 0, 12) . '_';
         $cache_server      = array();
         global $_cache_config;
-        if (!isset($_cache_config) && !is_array($_cache_config)) {
+        if (!isset($_cache_config) || !is_array($_cache_config)) {
             $_t['hostname'] = $this->_memcache_conf['default']['default_host'];
             $_t['port']     = $this->_memcache_conf['default']['default_port'];
             $_t['weight']   = $this->_memcache_conf['default']['default_weight'];

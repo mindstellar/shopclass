@@ -100,6 +100,6 @@ $controller = file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controll
 preg_match("/case 'activate':(.*?)\n            case 'item_delete':/s", $controller, $m);
 $body = $m[1] ?? '';
 check('the case was parsed', $body !== '');
-check('a guest is sent home when the page would be hidden', strpos($body, 'ItemAccess::canView(array(\'b_active\' => 1)') !== false);
+check('a guest is sent home when the page would be hidden', strpos($body, 'ListingPolicy::canView(array(\'b_active\' => 1)') !== false);
 
 exit(harness_result());

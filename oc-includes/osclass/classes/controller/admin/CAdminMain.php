@@ -63,10 +63,10 @@ class CAdminMain extends AdminSecBaseModel
                 $items       = array();
                 $stats_items = Stats::getInstance()->new_items_count(date(
                     'Y-m-d H:i:s',
-                    mktime(0, 0, 0, date('m'), date('d') - 10, date('Y'))
+                    mktime(0, 0, 0, (int) date('m'), (int) date('d') - 10, (int) date('Y'))
                 ), 'day');
                 for ($k = 10; $k >= 0; $k--) {
-                    $items[date('Y-m-d', mktime(0, 0, 0, date('m'), date('d') - $k, date('Y')))] = 0;
+                    $items[date('Y-m-d', mktime(0, 0, 0, (int) date('m'), (int) date('d') - $k, (int) date('Y')))] = 0;
                 }
                 foreach ($stats_items as $item) {
                     $items[$item['d_date']] = $item['num'];
@@ -74,10 +74,10 @@ class CAdminMain extends AdminSecBaseModel
                 $users       = array();
                 $stats_users = Stats::getInstance()->new_users_count(date(
                     'Y-m-d H:i:s',
-                    mktime(0, 0, 0, date('m'), date('d') - 10, date('Y'))
+                    mktime(0, 0, 0, (int) date('m'), (int) date('d') - 10, (int) date('Y'))
                 ), 'day');
                 for ($k = 10; $k >= 0; $k--) {
-                    $users[date('Y-m-d', mktime(0, 0, 0, date('m'), date('d') - $k, date('Y')))] = 0;
+                    $users[date('Y-m-d', mktime(0, 0, 0, (int) date('m'), (int) date('d') - $k, (int) date('Y')))] = 0;
                 }
                 foreach ($stats_users as $user) {
                     $users[$user['d_date']] = $user['num'];

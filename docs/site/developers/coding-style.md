@@ -45,9 +45,8 @@ PHPStan (level 5) checks `oc-includes/osclass` and `oc-admin`. It comes with the
 composer analyse
 ```
 
-Old findings are listed in `phpstan-baseline.neon`, so only new code has to be clean.
-When you fix an old finding, run `composer analyse -- --generate-baseline=phpstan-baseline.neon`
-to drop it from the list.
+There is no baseline: the whole tree is clean, and CI keeps it so. When PHPStan is wrong about a
+line, put `// @phpstan-ignore <identifier> (reason)` above it.
 
 ## Editor setup
 

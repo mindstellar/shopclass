@@ -560,7 +560,7 @@ class AdminMenu
                                                        osc_admin_base_url()
                                                    ), '', $url_submenu);
 
-                        if ($priority <= 2 && $url_submenu && strpos($actual_url, $url_submenu) === 0) {
+                        if ($url_submenu && strpos($actual_url, $url_submenu) === 0) {
                             if ($urlLength < strlen($url_submenu)) {
                                 $urlLength       = strlen($url_submenu);
                                 $current_submenu = $aSub['2'];
@@ -583,7 +583,7 @@ class AdminMenu
                                         osc_admin_base_url()
                                     ), '', $url_menu);
 
-            if ($priority <= 2 && $url_menu && @strpos($actual_url, $url_menu) === 0) {
+            if ($url_menu && @strpos($actual_url, $url_menu) === 0) {
                 if ($urlLength < strlen($url_menu)) {
                     $urlLength    = strlen($url_menu);
                     $current_menu = $value[2];

@@ -50,7 +50,7 @@ $pb_location       = $pb_is_builder ? ('page.' . $pb_page_id) : '';
  *
  * @return bool|string 'edit' is a bool, the rest are strings
  */
-function customFrmText($return = 'title')
+function pageFrmText($return = 'title')
 {
     $page = __get('page');
     $text = array();
@@ -82,7 +82,7 @@ osc_admin_page(array(
  */
 function customPageTitle($string)
 {
-    return sprintf('%s &raquo; %s', customFrmText('title'), $string);
+    return sprintf('%s &raquo; %s', pageFrmText('title'), $string);
 }
 
 osc_add_filter('admin_title', 'customPageTitle');
@@ -129,7 +129,7 @@ $pageUploadUrl = osc_admin_base_url(true)
     . '?page=ajax&action=resource_upload&owner_type=library&owner_id=0&' . osc_csrf_token_url();
 
 $pageBackUrl = osc_admin_base_url(true) . '?page=pages';
-$pageViewUrl = customFrmText('edit')
+$pageViewUrl = pageFrmText('edit')
     ? osc_base_url(true) . '?page=page&id=' . $page['pk_i_id']
     : '';
 
@@ -146,7 +146,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         );
     }
     $headActions[] = array('label' => __('Back to pages'), 'url' => $pageBackUrl, 'variant' => 'dim');
-    osc_admin_page_head(customFrmText('title'), $headActions);
+    osc_admin_page_head((string) pageFrmText('title'), $headActions);
 
     // The mode class sets the initial view; the template select toggles it live (see the
     // mode script + .page-mode-* CSS). The title always shows; the text editor and the
@@ -155,7 +155,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         'id'           => 'item-form',
         'class'        => 'page-editor',
         'page'         => 'pages',
-        'action'       => customFrmText('action_frm'),
+        'action'       => pageFrmText('action_frm'),
         'main_id'      => 'left-side',
         'main_class'   => 'page-mode-' . ($pb_is_builder ? 'builder' : 'classic'),
         'errors'       => $pageErrors,
@@ -330,7 +330,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         $publishRows[] = array('label' => __('Last saved'), 'value' => osc_format_date($page['dt_mod_date']));
     }
     osc_admin_publish_panel(array(
-        'status' => customFrmText('edit')
+        'status' => pageFrmText('edit')
             ? array(array('active', __('Published')))
             : array(array('inactive', __('Not saved yet'))),
         'rows'   => $publishRows,
@@ -395,7 +395,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     osc_admin_panel_close();
 
     osc_admin_editor_close(array(
-        array('label' => customFrmText('btn_text'), 'type' => 'submit', 'variant' => 'primary'),
+        array('label' => pageFrmText('btn_text'), 'type' => 'submit', 'variant' => 'primary'),
         array('label' => __('Back to pages'), 'url' => $pageBackUrl, 'variant' => 'dim'),
     )); ?>
 </div>

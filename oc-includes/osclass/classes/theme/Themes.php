@@ -17,7 +17,6 @@
  */
 abstract class Themes
 {
-    private static $instance;
     protected $theme;
     protected $theme_url;
     protected $theme_path;

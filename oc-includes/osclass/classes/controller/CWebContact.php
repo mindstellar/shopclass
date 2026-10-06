@@ -174,6 +174,8 @@ MESSAGE;
             default:                //contact
                 $this->doView(osc_locate_template(array('contact.php'), 'contact'));
         }
+
+        return null;
     }
 
     /**

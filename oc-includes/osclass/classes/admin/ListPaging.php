@@ -107,7 +107,7 @@ final class ListPaging
 
         if (is_numeric($raw) && (int) $raw >= 1) {
             $length = min((int) $raw, self::MAX_LENGTH);
-            \Cookie::getInstance()->push($cookie, $length);
+            \Cookie::getInstance()->push($cookie, (string) $length);
             \Cookie::getInstance()->set();
         } else {
             $stored = \Cookie::getInstance()->get_value($cookie);

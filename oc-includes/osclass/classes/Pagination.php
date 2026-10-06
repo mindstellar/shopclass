@@ -137,7 +137,7 @@ class Pagination
                 $class .= ' list-last';
             }
             if (!empty($it['current'])) {
-                $links[] = $this->createSpanTag($it['text'], array('class' => $class, 'aria-current' => 'page'));
+                $links[] = $this->createSpanTag((string) $it['text'], array('class' => $class, 'aria-current' => 'page'));
                 continue;
             }
             $attrs = array('class' => $class, 'href' => $it['href']);

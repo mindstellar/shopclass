@@ -15,6 +15,15 @@ if (!defined('ABS_PATH')) {
     exit('ABS_PATH is not loaded. Direct access is not allowed.');
 }
 
+/**
+ * @var int                  $step
+ * @var mixed                $error
+ * @var array                $requirements
+ * @var array<string,string> $jsonLocales
+ * @var bool                 $already_installed
+ * @var string               $password
+ */
+
 // Which rail stop to render as current. $step tracks the backend's own state
 // machine, which folds two different screens into step 3 (the target form on
 // success, the database form again on error) — the rail needs to show the

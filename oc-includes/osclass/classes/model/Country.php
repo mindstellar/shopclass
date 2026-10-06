@@ -133,7 +133,7 @@ class Country extends DAO
         $aRegions = $mRegions->findByCountry($pk);
         $result   = 0;
         foreach ($aRegions as $region) {
-            $result += $mRegions->deleteByPrimaryKey($region['pk_i_id']);
+            $result += $mRegions->deleteByPrimaryKey((int) $region['pk_i_id']);
         }
         Item::getInstance()->deleteByCountry($pk);
         CountryStats::getInstance()->delete(array('fk_c_country_code' => $pk));

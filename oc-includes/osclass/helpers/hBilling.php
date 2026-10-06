@@ -1097,7 +1097,7 @@ function osc_register_billing_premium(): void
             // The write stays here, inside spend()'s transaction; item_premium_on is
             // deferred (see Billing::deferHook()) so it fires once that transaction
             // has committed, not while it still holds the wallet row's lock.
-            if (!(new \mindstellar\listing\ListingService())->premium((int) $itemId, true, $days === null ? null : (int) $days, false)) {
+            if (!(new \mindstellar\listing\ListingService())->premium((int) $itemId, true, (int) $days, false)) {
                 return false;
             }
             Billing::deferHook('item_premium_on', array((int) $itemId));

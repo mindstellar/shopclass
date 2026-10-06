@@ -90,7 +90,7 @@ foreach ($classes as $class) {
     }
 }
 // These need a theme, a locale or a live connection set up by the request.
-pin('only the known classes cannot start here', array('AdminThemes', 'DBCommandClass', 'Translation', 'WebThemes'), $skipped);
+pin('only the known classes cannot start here', array('AdminThemes', 'Translation', 'WebThemes'), $skipped);
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

@@ -43,6 +43,11 @@ if (!defined('ABS_PATH')) {
  *
  * $accent and $band are set by the caller (page.php) from the page's tone.
  */
+
+/**
+ * @var string $accent
+ * @var string $band
+ */
 ?>
 <style>
 @layer shopclass {

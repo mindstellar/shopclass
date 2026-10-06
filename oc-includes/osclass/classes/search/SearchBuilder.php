@@ -162,8 +162,8 @@ class SearchBuilder
                                 $y     = (int)date('Y', (int)$aux);
                                 $m     = (int)date('n', (int)$aux);
                                 $d     = (int)date('j', (int)$aux);
-                                $start = mktime('0', '0', '0', $m, $d, $y);
-                                $end   = mktime('23', '59', '59', $m, $d, $y);
+                                $start = mktime(0, 0, 0, $m, $d, $y);
+                                $end   = mktime(23, 59, 59, $m, $d, $y);
                                 $sql   = "SELECT fk_i_item_id FROM $table WHERE ";
                                 $sql   .= $table . '.fk_i_field_id = ' . (int)$key . ' AND ';
                                 $sql   .= $table . '.s_value >= ' . $start . ' AND ';

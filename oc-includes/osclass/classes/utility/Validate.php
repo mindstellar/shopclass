@@ -221,7 +221,7 @@ class Validate
     /**
      * Validate one or more numbers (no periods), must be more than 0.
      *
-     * @param string $value
+     * @param string|int $value
      *
      * @return boolean
      */

@@ -45,7 +45,7 @@ class Object_Cache_apcu implements iObject_Cache
     /**
      * The blog prefix to prepend to keys in non-global groups.
      *
-     * @var int
+     * @var string
      * @since  3.7
      */
     public $site_prefix;

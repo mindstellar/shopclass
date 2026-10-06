@@ -30,7 +30,7 @@ use Session;
 class Item extends FormInputs
 {
     /**
-     * @var \mindstellar\form\admin\Item
+     * @var \mindstellar\form\admin\Item|null
      */
     private static $instance;
     protected $textClass = 'form-control form-control-sm';
@@ -40,10 +40,6 @@ class Item extends FormInputs
      * @var \Session
      */
     private $Session;
-    /**
-     * @var array
-     */
-    private $adminLocales;
     /**
      * @var string
      */
@@ -61,7 +57,6 @@ class Item extends FormInputs
     {
         parent::__construct($escape, $sanitize);
         $this->Session           = Session::getInstance();
-        $this->adminLocales      = osc_get_admin_locales();
         $this->adminLocaleCode   = osc_current_admin_locale();
         $this->userLocales       = osc_get_locales();
     }

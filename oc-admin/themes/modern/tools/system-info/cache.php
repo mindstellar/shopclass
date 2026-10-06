@@ -11,6 +11,7 @@
  */
 
 // System info > Cache, below the verdict and the facts: clearing it, and how to turn it on.
+/** @var array<string, mixed> $env */
 $driver     = (string) ($env['cache_driver'] ?? 'default');
 $persistent = $driver !== 'default' && !empty($env['cache_supported']);
 $shared     = in_array($driver, array('memcached', 'memcache'), true);

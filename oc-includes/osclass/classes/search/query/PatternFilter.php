@@ -128,6 +128,7 @@ final class PatternFilter
         if ($this->raw === null || $this->raw === '') {
             return true;
         }
+        $phrases = array();
         $words = $this->terms($phrases);
         if ($phrases !== array()) {
             return true;
@@ -149,6 +150,7 @@ final class PatternFilter
      */
     public function booleanQuery()
     {
+        $phrases = array();
         $words  = $this->terms($phrases);
         $tokens = array();
         foreach ($phrases as $phrase) {
@@ -196,6 +198,7 @@ final class PatternFilter
      */
     public function likeCondition(): array
     {
+        $phrases = array();
         $words = $this->terms($phrases);
         $terms = $phrases;
         foreach ($words as $w) {
@@ -227,7 +230,7 @@ final class PatternFilter
      *
      * @return array<int,array{neg:bool,text:string}>
      */
-    private function terms(?array &$phrases): array
+    private function terms(array &$phrases): array
     {
         $phrases = array();
         $raw     = (string)$this->raw;

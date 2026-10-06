@@ -74,7 +74,7 @@ final class SqlValue
             return $value;
         }
 
-        return is_scalar($value) ? (string)$value : 'Array';
+        return 'Array';
     }
 
     /**

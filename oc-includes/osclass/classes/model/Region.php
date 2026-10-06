@@ -187,7 +187,7 @@ class Region extends DAO
         $aCities = $mCities->findByRegion($pk);
         $result  = 0;
         foreach ($aCities as $city) {
-            $result += $mCities->deleteByPrimaryKey($city['pk_i_id']);
+            $result += $mCities->deleteByPrimaryKey((int) $city['pk_i_id']);
         }
         Item::getInstance()->deleteByRegion($pk);
         RegionStats::getInstance()->delete(array('fk_i_region_id' => $pk));

@@ -107,7 +107,7 @@ class ItemResource extends DAO
     public function getAllResourcesFromItem($itemId)
     {
         $key   = md5(osc_base_url() . 'ItemResource:getAllResourcesFromItem:' . $itemId);
-        $found = null;
+        $found = false;
         $cache = osc_cache_get($key, $found);
         if ($cache === false) {
             try {

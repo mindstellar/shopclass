@@ -43,7 +43,7 @@ if (!osc_is_web_user_logged_in()) {
     $pageNum = max(1, Params::getParamInt('pageNum'));
     $offset  = ($pageNum - 1) * $perPage;
 
-    /** @var Order[] $orders */
+    /** @var \mindstellar\billing\Order[] $orders */
     $orders = OrderStore::forUser($userId, $perPage, $offset);
     $orders = is_array($orders) ? $orders : array();
     $total  = OrderStore::searchCount(array('user_id' => $userId));

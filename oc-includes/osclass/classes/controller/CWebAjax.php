@@ -53,7 +53,7 @@ class CWebAjax extends BaseModel
                 AjaxResponse::json($regions);
                 break;
             case 'cities': //Returns cities given a regionId
-                $cities = City::getInstance()->findByRegion(Params::getParam('regionId'));
+                $cities = City::getInstance()->findByRegion(Params::getParamInt('regionId'));
                 AjaxResponse::json($cities);
                 break;
             case 'location': // This is the autocomplete AJAX
@@ -80,6 +80,7 @@ class CWebAjax extends BaseModel
                 break;
             case 'location_cities': // This is the autocomplete AJAX
                 $cities =
+                // @phpstan-ignore argument.type (region may be an id or a name)
                     City::getInstance()->ajax(Params::getParam('term'), Params::getParam('region'));
                 AjaxResponse::json($cities);
                 break;
@@ -109,7 +110,7 @@ class CWebAjax extends BaseModel
                             : "The selected photo couldn't be deleted")
                     ));
 
-                    return false;
+                    return;
                 }
 
                 $userId = osc_is_web_user_logged_in() ? osc_logged_user_id() : null;
@@ -123,10 +124,10 @@ class CWebAjax extends BaseModel
                         _m("The selected photo couldn't be deleted, the url doesn't exist");
                     AjaxResponse::json($json);
 
-                    return false;
+                    return;
                 }
 
-                $aItem = Item::getInstance()->findByPrimaryKey($item);
+                $aItem = Item::getInstance()->findByPrimaryKey((int) $item);
 
                 // Check if the item exists
                 if (count($aItem) == 0) {
@@ -134,7 +135,7 @@ class CWebAjax extends BaseModel
                     $json['msg']     = _m("The listing doesn't exist");
                     AjaxResponse::json($json);
 
-                    return false;
+                    return;
                 }
 
                 $actor = new Actor(
@@ -148,11 +149,11 @@ class CWebAjax extends BaseModel
                     $json['msg']     = _m("The listing doesn't belong to you");
                     AjaxResponse::json($json);
 
-                    return false;
+                    return;
                 }
 
                 // Does id & code combination exist?
-                $result = ItemResource::getInstance()->existResource($id, $code);
+                $result = ItemResource::getInstance()->existResource((int) $id, $code);
 
                 if ($result > 0) {
                     $resource = ItemResource::getInstance()->findByPrimaryKey($id);
@@ -173,13 +174,11 @@ class CWebAjax extends BaseModel
 
                 AjaxResponse::json($json);
 
-                return true;
-                break;
+                return;
             case 'alerts': // Allow to register to an alert given (not sure it's used on admin)
                 echo (string)osc_subscribe_alert(Params::getParamString('alert'), Params::getParamString('email'));
 
-                return true;
-                break;
+                return;
             case 'runhook': // run hooks
                 $hook = Params::getParam('hook');
 

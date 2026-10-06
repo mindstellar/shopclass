@@ -62,12 +62,12 @@ class CAdminEmails extends AdminSecBaseModel
                     Session::getInstance()->_dropKeepForm();
                 }
 
-                $this->_exportVariableToView('email', $this->emailManager->findByPrimaryKey(Params::getParam('id')));
+                $this->_exportVariableToView('email', $this->emailManager->findByPrimaryKey(Params::getParamInt('id')));
                 $this->doView('emails/frm.php');
                 break;
             case 'edit_post':
                 osc_csrf_check();
-                $id = Params::getParam('id');
+                $id = Params::getParamInt('id');
 
                 $aFieldsDescription = self::descriptions(Params::getParamsAsArray('', false));
                 Session::getInstance()->_setForm('aFieldsDescription', $aFieldsDescription);

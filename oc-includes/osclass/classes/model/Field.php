@@ -191,7 +191,7 @@ class Field extends DAO
 
         $extendedFields = array();
         foreach (osc_db_stringify_rows($fields) as $field) {
-            $extendedFields[] = $this->extendField($field, $this->currentLocaleCode);
+            $extendedFields[] = $this->extendField($field);
         }
 
         return $extendedFields;
@@ -335,7 +335,7 @@ class Field extends DAO
 
         $extendedFields = [];
         foreach (osc_db_stringify_rows($fields) as $field) {
-            $extendedFields[] = $this->extendField($field, $this->currentLocaleCode);
+            $extendedFields[] = $this->extendField($field);
         }
 
         return $extendedFields;
@@ -793,6 +793,8 @@ class Field extends DAO
                 return false;
             }
         }
+
+        return null;
     }
 
     /**

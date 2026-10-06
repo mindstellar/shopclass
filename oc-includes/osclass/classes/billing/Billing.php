@@ -324,6 +324,7 @@ final class Billing
      * changes nothing.
      *
      * @param Order     $order
+     * @param-out bool  $providerAccepted
      * @param bool|null $providerAccepted Set to true when the provider accepted the refund,
      *                                    including when it could not be recorded here
      *

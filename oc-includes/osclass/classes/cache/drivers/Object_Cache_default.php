@@ -43,7 +43,7 @@ class Object_Cache_default implements iObject_Cache
     /**
      * The site prefix to prepend to keys.
      *
-     * @var int
+     * @var string
      * @since  3.4
      */
     public $site_prefix;

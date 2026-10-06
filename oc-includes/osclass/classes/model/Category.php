@@ -29,10 +29,6 @@ class Category extends DAO
     private $relation;
     private $emptyTree;
     private $slugs;
-    /**
-     * @var bool
-     */
-    private $empty_tree;
 
     /**
      * Set data related to t_category table
@@ -77,13 +73,12 @@ class Category extends DAO
     public function toTree(bool $empty = true)
     {
         $key   = md5(osc_cache_category_generation() . osc_base_url() . (string)$this->language . (string)$empty);
-        $found = null;
+        $found = false;
         $cache = osc_cache_get($key, $found);
         if ($cache === false) {
             if ($empty == $this->emptyTree && $this->tree != null) {
                 return $this->tree;
             }
-            $this->empty_tree = $empty;
             // if listEnabled has been called before, don't redo the query
             if ($this->categoriesEnabled) {
                 $categories = $this->categoriesEnabled;
@@ -122,7 +117,6 @@ class Category extends DAO
         }
 
         $this->tree              = $cache['tree'];
-        $this->empty_tree        = $cache['empty_tree'];
         $this->relation          = $cache['relation'];
         $this->categories        = $cache['categories'];
         $this->categoriesEnabled = $cache['categoriesEnabled'];
@@ -145,8 +139,8 @@ class Category extends DAO
      *
      * *Note: param needs to be escaped, inside function will not be escaped
      *
-     * @param string $where   A raw WHERE fragment the caller owns, or a printf-style format
-     * @param mixed  ...$args  Values bound to the format's %d/%s conversions
+     * Takes a raw WHERE fragment the caller owns, or a printf-style format followed by the
+     * values bound to its %d/%s conversions.
      *
      * @return array<int,array<string,mixed>> Empty when there is no argument, no match or a query failure
      */
@@ -182,7 +176,7 @@ class Category extends DAO
 
                     return '?';
                 }, $format);
-                $params = array_values($args);
+                $params = $args;
                 break;
         }
 
@@ -412,7 +406,7 @@ class Category extends DAO
             return false;
         }
         $key   = md5(osc_cache_category_generation() . osc_base_url() . 'Category:findByPrimaryKey:' . $categoryID . $locale);
-        $found = null;
+        $found = false;
         $cache = osc_cache_get($key, $found);
         if ($cache === false) {
             $category = array();
@@ -559,7 +553,6 @@ class Category extends DAO
         $fields = $data['fields'];
 
         $aFieldsDescription = $data['aFieldsDescription'];
-        $return             = true;
         $affectedRows       = 0;
         //UPDATE for category
         try {
@@ -700,21 +693,11 @@ class Category extends DAO
                     }
                 } elseif ($rs > 0) {
                     $affectedRows += $rs;
-                } elseif (is_bool($rs)) { // catch error
-                    if ($return) {
-                        $return = $rs;
-                    }
                 }
             }
-        } else {
-            $return = $res;
         }
 
-        if ($return) {
-            return $affectedRows;
-        }
-
-        return $return;
+        return $affectedRows;
     }
 
     /**
@@ -761,6 +744,8 @@ class Category extends DAO
 
             return true;
         }
+
+        return null;
     }
 
     /**
@@ -772,6 +757,7 @@ class Category extends DAO
      * @return int The new category id
      * @throws \mindstellar\database\DbException when the category row cannot be written
      */
+    // @phpstan-ignore method.childReturnType (the id is returned, as plugins expect)
     public function insert($fields, $aFieldsDescription = null)
     {
         // Assumed to succeed, as the legacy body did (it read insertedId()

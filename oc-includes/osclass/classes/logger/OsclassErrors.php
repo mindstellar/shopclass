@@ -63,11 +63,11 @@ class OsclassErrors
     {
         if (defined('OSC_DEBUG') && OSC_DEBUG || defined('OSC_INSTALLING')) {
             $this->debugEnabled = true;
-            ini_set('display_errors', 1);
+            ini_set('display_errors', '1');
             error_reporting(E_ALL);
 
             if (defined('OSC_DEBUG_LOG') && OSC_DEBUG_LOG) {
-                ini_set('display_errors', 0);
+                ini_set('display_errors', '0');
                 $this->logEnabled = true;
                 $this->logFile = CONTENT_PATH . 'debug.log';
             }

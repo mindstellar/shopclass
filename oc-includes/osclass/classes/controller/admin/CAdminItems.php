@@ -246,10 +246,6 @@ class CAdminItems extends AdminSecBaseModel
 
                 $id = (int)$id;
 
-                if (!is_numeric($id)) {
-                    return false;
-                }
-
                 $success = $this->itemManager->clearStat($id, $stat);
 
                 if ($success) {
@@ -263,7 +259,7 @@ class CAdminItems extends AdminSecBaseModel
             case 'item_edit':       // edit item
                 $id = Params::getParam('id');
 
-                $item = Item::getInstance()->findByPrimaryKey($id);
+                $item = Item::getInstance()->findByPrimaryKey((int) $id);
                 if (count($item) <= 0) {
                     $this->redirectTo(osc_admin_base_url(true) . '?page=items');
                 }
@@ -342,7 +338,7 @@ class CAdminItems extends AdminSecBaseModel
                     osc_add_flash_error_message($success, 'admin');
                     $this->drawItemForm(false, $this->itemErrors($success, $formData));
 
-                    return;
+                    return null;
                 }
                 break;
             case 'deleteResource':  //delete resource
@@ -410,7 +406,7 @@ class CAdminItems extends AdminSecBaseModel
                     osc_add_flash_error_message($success, 'admin');
                     $this->drawItemForm(true, $this->itemErrors($success, $formData));
 
-                    return;
+                    return null;
                 }
                 break;
             case ('settings'):          // calling the items settings view
@@ -472,7 +468,7 @@ class CAdminItems extends AdminSecBaseModel
                 if (!osc_validate_int($numImagesItems)) {
                     $msg .= _m('Images per listing must only contain numeric characters') . '<br/>';
                 }
-                if (!osc_validate_int($warnExpiration)) {
+                if (!osc_validate_int((string) $warnExpiration)) {
                     $msg .= _m('Number of expiration days has to be a numeric value') . '<br/>';
                 }
                 $msg .= str_replace(PHP_EOL, '<br/>', ItemActions::lengthSettingErrors($titleLength, $descriptionLength));
@@ -682,6 +678,8 @@ class CAdminItems extends AdminSecBaseModel
                 //calling the view...
                 $this->doView('items/index.php');
         }
+
+        return null;
     }
 
     /**
@@ -890,7 +888,7 @@ class CAdminItems extends AdminSecBaseModel
             return;
         }
 
-        $item = Item::getInstance()->findByPrimaryKey(Params::getParam('id'));
+        $item = Item::getInstance()->findByPrimaryKey(Params::getParamInt('id'));
         $this->exportItemState($item);
         $this->_exportVariableToView('item', $item);
         $this->_exportVariableToView('new_item', false);

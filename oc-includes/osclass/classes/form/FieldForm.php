@@ -21,26 +21,6 @@ use mindstellar\utility\Sanitize;
 class FieldForm extends Form
 {
     private static $instance;
-    /**
-     * Enabled admin locale
-     * @var array
-     */
-    private $adminLocales;
-    /**
-     * Current admin locale
-     * @var string
-     */
-    private $activeAdminLocale;
-    /**
-     * Enabled user locales
-     * @var array
-     */
-    private $userLocales;
-    /**
-     * Current User Locale
-     * @var string
-     */
-    private $activeUserLocale;
 
     /**
      * @param \mindstellar\utility\Escape|null   $escape   Defaults to a new Escape instance
@@ -48,11 +28,6 @@ class FieldForm extends Form
      */
     public function __construct(?Escape $escape = null, ?Sanitize $sanitize = null)
     {
-        $this->adminLocales = osc_get_admin_locales();
-        $this->activeAdminLocale = osc_current_admin_locale();
-
-        $this->userLocales = osc_get_locales();
-        $this->activeUserLocale = osc_current_user_locale();
         parent::__construct($escape, $sanitize);
     }
 
@@ -802,8 +777,7 @@ class FieldForm extends Form
         // section heading, loose fields under the default (no header) section.
         $sections = array();
         foreach ($fields as $field) {
-            $gname = (isset($field['cf_group_name']) && $field['cf_group_name'] !== null
-                      && $field['cf_group_name'] !== '') ? $field['cf_group_name'] : '';
+            $gname = (isset($field['cf_group_name']) && $field['cf_group_name'] !== '') ? $field['cf_group_name'] : '';
             if (!isset($sections[$gname])) {
                 $sections[$gname] = array();
             }

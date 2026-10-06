@@ -42,6 +42,7 @@ $nouns = array(
 );
 $addLabels = array('country' => __('Add country'), 'region' => __('Add region'), 'city' => __('Add city'));
 
+$hitCount = 0;
 if (!$loc['found']) {
     $summary = __('Location not found');
 } elseif ($scope === 'all') {

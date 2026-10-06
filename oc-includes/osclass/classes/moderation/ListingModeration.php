@@ -112,6 +112,7 @@ final class ListingModeration
             'premium'    => ($is('b_premium', 1) ? null : $listings->premium($id, true)),
             'unpremium'  => ($is('b_premium', 0) ? null : $listings->premium($id, false)),
             'bump'       => self::bump($id, $at, $listings),
+            default      => throw new \InvalidArgumentException('Unknown listing action'),
         };
     }
 

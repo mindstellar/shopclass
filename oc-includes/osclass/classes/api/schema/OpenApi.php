@@ -372,7 +372,7 @@ final class OpenApi
     /**
      * The route's own responses, plus the problems every route of its kind can answer.
      *
-     * @return array<string,array<string,mixed>>
+     * @return array<int|string,array<string,mixed>>
      */
     private function responses(RouteSpec $route): array
     {
@@ -416,7 +416,7 @@ final class OpenApi
             }
             if ($status >= 400) {
                 $response['content'] = ['application/problem+json' => ['schema' => $problem]];
-            } elseif ($status !== 204 && ($status < 300 || $status >= 400) && $schema !== ['type' => 'null']) {
+            } elseif ($status !== 204 && $status < 300 && $schema !== ['type' => 'null']) {
                 $response['content'] = ['application/json' => ['schema' => $schema]];
             }
             $out[(string) $status] = $response;
@@ -507,7 +507,7 @@ final class OpenApi
     }
 
     /**
-     * @return array<int,array<string,string[]>>
+     * @return array<int,array<string,string[]>|object>
      */
     private function security(RouteSpec $route): array
     {

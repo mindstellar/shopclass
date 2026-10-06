@@ -157,7 +157,7 @@ final class CommentModeration
         if (!is_array($comment) || $comment === []) {
             return;
         }
-        $item = Item::getInstance()->findByPrimaryKey($comment['fk_i_item_id']);
+        $item = Item::getInstance()->findByPrimaryKey((int) $comment['fk_i_item_id']);
         ViewScope::withItem(is_array($item) ? $item : [], static fn () => osc_run_hook('hook_email_comment_validated', $comment));
     }
 }

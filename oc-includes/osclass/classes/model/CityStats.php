@@ -221,7 +221,7 @@ class CityStats extends DAO
      * and ordered by city_name or items counter
      * $order = 'city_name ASC' OR $oder = 'items DESC'
      *
-     * @param int|null $region
+     * @param int|string|null $region a region id, or %%%% for any
      * @param string   $zero  Comparison operator applied to i_num_items
      * @param string   $order '<column> ASC|DESC'
      *
@@ -230,7 +230,7 @@ class CityStats extends DAO
     public function listCities($region = null, $zero = '>', $order = 'city_name ASC')
     {
         $key   = md5(osc_base_url() . (string)$region . (string)$zero . (string)$order);
-        $found = null;
+        $found = false;
         $cache = osc_cache_get($key, $found);
         if ($cache === false) {
             if (!in_array($zero, array('>', '>=', '<', '<=', '=', '<>', '!='), true)) {

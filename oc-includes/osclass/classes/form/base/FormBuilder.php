@@ -30,7 +30,7 @@ use mindstellar\security\Csrf;
 class FormBuilder
 {
     /**
-     * @var \mindstellar\form\base\formInputs
+     * @var \mindstellar\form\base\FormInputs
      */
     private $formInputs;
 

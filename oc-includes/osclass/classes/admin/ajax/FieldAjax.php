@@ -32,12 +32,12 @@ final class FieldAjax extends AjaxHandler
 {
     public function editIframe(): void
     {
-        $selected = Field::getInstance()->categories(Params::getParam('id'));
+        $selected = Field::getInstance()->categories(Params::getParamInt('id'));
         if ($selected == null) {
             $selected = array();
         }
         $this->controller->_exportVariableToView('selected', $selected);
-        $this->controller->_exportVariableToView('field', Field::getInstance()->findByPrimaryKey(Params::getParam('id')));
+        $this->controller->_exportVariableToView('field', Field::getInstance()->findByPrimaryKey(Params::getParamInt('id')));
         $this->controller->_exportVariableToView('categories', Category::getInstance()->toTreeAll());
         // Sibling fields feed the conditional-visibility "controlling field" picker.
         $this->controller->_exportVariableToView('allFields', Field::getInstance()->listAll());
@@ -62,8 +62,9 @@ final class FieldAjax extends AjaxHandler
         if (!$fieldService->nameTaken(Params::getParamString('s_name'), Params::getParamInt('id'))) {
             // remove categories from a field (definition-only saves keep them)
             if (!$builderMode) {
-                Field::getInstance()->cleanCategoriesFromField(Params::getParam('id'));
+                Field::getInstance()->cleanCategoriesFromField(Params::getParamInt('id'));
             }
+            // @phpstan-ignore equal.alwaysTrue (kept as a guard for the steps below)
             if ($error == 0) {
                 $slug = FieldSlug::unique(
                     Params::getParam('field_slug') != '' ? Params::getParam('field_slug') : Params::getParam('s_name'),
@@ -119,9 +120,9 @@ final class FieldAjax extends AjaxHandler
                 if (!$builderMode) {
                     FieldGroup::getInstance()->setFieldSingleGroup(Params::getParamInt('id'), $groupId);
                 }
-                Field::getInstance()->updateJsonMeta(Params::getParam('id'), 'type', $realTypeMeta);
-                Field::getInstance()->updateJsonMeta(Params::getParam('id'), 'b_new_tab', Params::getParam('b_new_tab'));
-                Field::getInstance()->updateJsonMeta(Params::getParam('id'), 'locale', $metaLocale);
+                Field::getInstance()->updateJsonMeta(Params::getParamInt('id'), 'type', $realTypeMeta);
+                Field::getInstance()->updateJsonMeta(Params::getParamInt('id'), 'b_new_tab', Params::getParam('b_new_tab'));
+                Field::getInstance()->updateJsonMeta(Params::getParamInt('id'), 'locale', $metaLocale);
                 self::persistConfig(Params::getParamInt('id'), $chosenType);
                 if (is_bool($res) && !$res) {
                     $error = 1;
@@ -131,7 +132,7 @@ final class FieldAjax extends AjaxHandler
             if ($error == 0 && !$builderMode) {
                 $aCategories = Params::getParam('categories');
                 if (is_array($aCategories) && count($aCategories) > 0) {
-                    $res = Field::getInstance()->insertCategories(Params::getParam('id'), $aCategories);
+                    $res = Field::getInstance()->insertCategories(Params::getParamInt('id'), $aCategories);
                     if (!$res) {
                         $error = 1;
                     }
@@ -230,6 +231,7 @@ final class FieldAjax extends AjaxHandler
             $value = Params::getParam('cfg_' . $key);
             // numeric config keys stay numeric; everything else is a trimmed string.
             if (in_array($key, array('min', 'max', 'step', 'rows', 'maxlength'), true)) {
+                // @phpstan-ignore binaryOp.invalid (a numeric string is expected here)
                 $value = ($value === '' || $value === null) ? '' : $value + 0;
             } elseif (is_string($value)) {
                 $value = trim($value);

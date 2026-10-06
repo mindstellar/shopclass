@@ -220,7 +220,7 @@ final class ListingValidator
                     if ($akismet->isCommentSpam()) {
                         $status = 'SPAM';
                     }
-                } catch (exception $e) {
+                } catch (\Exception $e) {
                     trigger_error($e->getMessage(), E_USER_NOTICE);
                 }
                 if ($status === 'SPAM') {

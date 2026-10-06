@@ -16,12 +16,11 @@
  */
 class ImageProcessing
 {
-    /** @var \Imagick */
+    /** @var mixed an Imagick object, or a GdImage when ImageMagick is not used */
     private $im;
     private $image_info;
     private $ext;
     private $mime;
-    private $font;
     private $width;
     private $height;
     private $exif;
@@ -82,7 +81,10 @@ class ImageProcessing
             $this->height = $geometry['height'];
         } else {
             $content      = file_get_contents($imagePath);
-            $this->im     = imagecreatefromstring($content);
+            $this->im     = $content === false ? false : imagecreatefromstring($content);
+            if ($this->im === false) {
+                throw new RuntimeException(sprintf(__('%s is corrupt or broken!'), $imagePath));
+            }
             $this->width  = imagesx($this->im);
             $this->height = imagesy($this->im);
 
@@ -339,8 +341,8 @@ class ImageProcessing
             $bg->compositeImage(
                 $this->im,
                 imagick::COMPOSITE_OVER,
-                floor(($width - $newW) / 2),
-                floor(($height - $newH) / 2)
+                (int) floor(($width - $newW) / 2),
+                (int) floor(($height - $newH) / 2)
             );
             $this->im = $bg;
         } else {
@@ -352,8 +354,8 @@ class ImageProcessing
             imagecopyresampled(
                 $newIm,
                 $this->im,
-                floor(($width - $newW) / 2),
-                floor(($height - $newH) / 2),
+                (int) floor(($width - $newW) / 2),
+                (int) floor(($height - $newH) / 2),
                 0,
                 0,
                 $newW,
@@ -439,7 +441,7 @@ class ImageProcessing
                     imagewebp($this->im, $imagePath, $jpeg_quality);
                     break;
                 default:
-                    if (($ext === 'jpeg' && ($this->ext !== 'jpeg' && $this->ext !== 'jpg')) || $this->watermarked) {
+                    if (($this->ext !== 'jpeg' && $this->ext !== 'jpg') || $this->watermarked) {
                         $this->ext = 'jpeg';
                     }
                     imagejpeg($this->im, $imagePath, $jpeg_quality);
@@ -761,7 +763,7 @@ class ImageProcessing
                 $text_offset_y,
                 $text_color_index,
                 $font_path,
-                html_entity_decode($watermark_text, null, 'UTF-8')
+                html_entity_decode($watermark_text, 0, 'UTF-8')
             );
 
             //Write Image

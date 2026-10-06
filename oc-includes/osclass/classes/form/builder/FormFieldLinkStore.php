@@ -79,6 +79,6 @@ final class FormFieldLinkStore extends Model
             ->where('fk_i_field_id', $fieldId)
             ->get();
 
-        return is_array($rows) ? count($rows) : 0;
+        return count($rows);
     }
 }

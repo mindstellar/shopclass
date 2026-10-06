@@ -33,7 +33,7 @@ class CommentsDataTable extends DataTable
     /** True once a search or the hidden-only view narrows the list. */
     public $withFilters = false;
     /**
-     * @var bool|int
+     * @var array<mixed>|int|string|null
      */
     private $total_filtered;
 

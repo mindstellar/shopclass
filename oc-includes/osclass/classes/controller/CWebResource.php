@@ -66,8 +66,6 @@ class CWebResource extends BaseModel
         $resource = $this->resolveResource($id, $type);
         if ($resource === null) {
             $this->notFound();
-
-            return;
         }
 
         $filename = osc_resource_download_filename($resource, $variant);
@@ -94,8 +92,6 @@ class CWebResource extends BaseModel
         $adapter = StorageManager::getInstance()->forResource($resource);
         if (!$adapter->isRemote()) {
             $this->notFound();
-
-            return;
         }
 
         // A private (signed-URL) bucket must never be proxied with the server's
@@ -108,8 +104,6 @@ class CWebResource extends BaseModel
                 : '';
             if ($signed === '') {
                 $this->notFound();
-
-                return;
             }
             header('Location: ' . $signed, true, 302);
             exit;
@@ -120,8 +114,6 @@ class CWebResource extends BaseModel
         $bytes = $adapter->get(ResourceLocator::storageKey($resource, $variant));
         if ($bytes === false) {
             $this->notFound();
-
-            return;
         }
         $this->sendHeaders($contentType, strlen($bytes), $filename);
         echo $bytes;

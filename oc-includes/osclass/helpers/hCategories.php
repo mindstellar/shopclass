@@ -299,7 +299,7 @@ function osc_get_non_empty_categories()
  * Prints category select
  *
  * @param string          $name
- * @param int|string|null $category    Pre-selected category id
+ * @param array<string,mixed>|int|string|null $category Pre-selected category, or its id
  * @param string|null     $default_str
  *
  * @return void
@@ -308,6 +308,9 @@ function osc_categories_select($name = 'sCategory', $category = null, $default_s
 {
     if ($default_str == null) {
         $default_str = __('Select a category');
+    }
+    if ($category !== null && !is_array($category)) {
+        $category = array('pk_i_id' => $category);
     }
     CategoryForm::category_select(Category::getInstance()->toTree(), $category, $default_str, $name);
 }
@@ -330,10 +333,8 @@ function osc_get_category($by, $what)
     switch ($by) {
         case 'slug':
             return Category::getInstance()->findBySlug($what);
-            break;
         case 'id':
             return Category::getInstance()->findByPrimaryKey($what);
-            break;
     }
 }
 
@@ -361,6 +362,8 @@ function osc_category_move_to_children()
     View::getInstance()->_exportVariableToView('categoryTrail', $catTrail);
     View::getInstance()->_exportVariableToView('categories', $category['categories']);
     View::getInstance()->_reset('categories');
+
+    return null;
 }
 
 /**
@@ -399,6 +402,8 @@ function osc_category_move_to_parent()
     View::getInstance()->_erase('subcategories');
     View::getInstance()->_exportVariableToView('categories', $scats);
     View::getInstance()->_seek('categories', $position);
+
+    return null;
 }
 
 /**

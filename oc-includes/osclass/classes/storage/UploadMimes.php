@@ -31,8 +31,12 @@ final class UploadMimes
             return $cached;
         }
 
-        $mimes = array();
-        require LIB_PATH . 'osclass/mimes.php';
+        // mimes.php sets $mimes; reading it back this way lets static analysis see it.
+        $mimes = (static function (): array {
+            require LIB_PATH . 'osclass/mimes.php';
+
+            return get_defined_vars()['mimes'] ?? array();
+        })();
 
         $out = array();
         foreach (explode(',', (string)osc_allowed_extension()) as $ext) {

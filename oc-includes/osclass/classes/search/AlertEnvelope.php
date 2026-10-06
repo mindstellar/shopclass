@@ -316,7 +316,7 @@ class AlertEnvelope
         if (!$roots) {
             sort($ids);
 
-            return array_values($ids);
+            return $ids;
         }
 
         $kept = array();
@@ -400,7 +400,7 @@ class AlertEnvelope
         }
         sort($ids);
 
-        return array_values($ids);
+        return $ids;
     }
 
     /**
@@ -491,7 +491,7 @@ class AlertEnvelope
             return $out;
         }
         foreach ($meta as $key => $value) {
-            if (!is_int($key) && !(is_string($key) && ctype_digit($key))) {
+            if (!is_int($key) && !ctype_digit((string) $key)) {
                 continue;
             }
             $key = (int)$key;

@@ -101,6 +101,8 @@ class CWebRegister extends BaseModel
                 } catch (\mindstellar\validation\RefusedException $e) {
                     osc_add_flash_error_message($e->getMessage());
                     $this->redirectTo(osc_base_url());
+
+                    return;
                 }
 
                 // Auto-login via the signed, session-free identity cookie.

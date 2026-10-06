@@ -24,8 +24,6 @@ use mindstellar\admin\ListPaging;
 
 class UsersDataTable extends DataTable
 {
-    private $withUserId;
-    private $search;
     /**
      * Header column id => the t_user column it sorts by.
      *
@@ -63,8 +61,6 @@ class UsersDataTable extends DataTable
     public function table($params)
     {
 
-        $this->withUserId = false;
-        $this->search     = '';
         $this->addTableHeader();
         $this->getDBParams($params);
 

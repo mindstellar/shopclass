@@ -152,7 +152,7 @@ class Session
             'lifetime' => $params['lifetime'],
             'path'     => $params['path'],
             'domain'   => $params['domain'],
-            'secure'   => $params['secure'] ?? false,
+            'secure'   => $params['secure'],
             'httponly' => true,
             'samesite' => 'Lax',
         ));

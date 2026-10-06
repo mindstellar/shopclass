@@ -31,6 +31,7 @@ if (!defined('ABS_PATH')) {
  * CSRF is injected on shutdown into any form not marked nocsrf.
  */
 
+/** @var array<string, mixed> $contactForm */
 $cf       = $contactForm;
 $cfPrefix = osc_esc_html((string) $cf['prefix']);
 $cfMax    = \mindstellar\security\MessageGuard::maxLength();

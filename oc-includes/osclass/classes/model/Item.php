@@ -194,7 +194,7 @@ class Item extends DAO
 
             foreach ($items as $k => $aItem) {
                 // Add stats and locations data
-                if (isset($itemStatsLocations)) {
+                if ($itemStatsLocations !== array()) {
                     foreach ($itemStatsLocations as $key => $isl) {
                         if ($aItem['pk_i_id'] === $isl['fk_i_item_id']) {
                             $aItem += $isl;
@@ -396,10 +396,10 @@ class Item extends DAO
      * $sql is a compile-time SQL fragment whose only values are '?' placeholders.
      *
      * @param string[] $conditions
-     * @param array    $params
+     * @param array<int,mixed> $params
      * @param string   $sql
      * @param string   $bool 'AND' or 'OR'
-     * @param array    $vals values for the placeholders in $sql, in order
+     * @param array<int,mixed> $vals values for the placeholders in $sql, in order
      */
     private function pushWhere(array &$conditions, array &$params, string $sql, string $bool = 'AND', array $vals = array()): void
     {
@@ -906,7 +906,7 @@ class Item extends DAO
      * @param int    $id
      * @param string $stat
      *
-     * @return int|false int if updated correctly or false when error occurs
+     * @return int|false|null int if updated correctly, false when error occurs, null for an unknown stat
      */
     public function clearStat($id, $stat)
     {
@@ -947,6 +947,8 @@ class Item extends DAO
                 return false;
             }
         }
+
+        return null;
     }
 
     /**
@@ -1374,7 +1376,7 @@ class Item extends DAO
      */
     public function findByPrimaryKey($id)
     {
-        if (!is_numeric($id) || $id === null) {
+        if (!is_numeric($id)) {
             return array();
         }
         // Aliased i.* projection; hand-written with the id bound.

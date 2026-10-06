@@ -132,7 +132,7 @@ function osc_cache_init()
  * Read the value stored under $key.
  *
  * @param string $key
- * @param bool   $found Set by reference to whether the key was a hit
+ * @param bool|null $found Set by reference to whether the key was a hit
  *
  * @return mixed False on a miss
  */

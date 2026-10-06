@@ -129,7 +129,8 @@ function osc_show_widgets_by_description($description)
 function osc_show_recaptcha($section = '')
 {
     if (osc_recaptcha_public_key()) {
-        echo _osc_recaptcha_get_html(osc_recaptcha_public_key(), substr(osc_language(), 0, 2)) . '<br />';
+        _osc_recaptcha_get_html(osc_recaptcha_public_key(), substr(osc_language(), 0, 2));
+        echo '<br />';
     }
 }
 
@@ -397,7 +398,7 @@ function osc_admin_date_format($dateOnly = false)
  */
 function osc_admin_date($date, $dateOnly = false)
 {
-    if ($date == null || $date === '') {
+    if ($date == null) {
         return '';
     }
 

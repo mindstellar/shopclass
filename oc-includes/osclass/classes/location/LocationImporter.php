@@ -418,9 +418,7 @@ final class LocationImporter
                     continue;
                 }
                 $regionId = $this->importRegion($countryCode, $region);
-                if ($regionId !== null) {
-                    $this->importCities($regionId, $cities, $countryCode);
-                }
+                $this->importCities($regionId, $cities, $countryCode);
             }
             $this->deactivateVanishedRegions($countryCode);
         };
@@ -492,7 +490,7 @@ final class LocationImporter
     /** @var array<int, bool> pk_i_id of regions an incoming row has already claimed */
     private $regionClaimed = array();
 
-    /** @var array<string, int>|null lazily built lookups over $regionRows */
+    /** @var array<int, array<string, mixed>>|null lazily built lookups over $regionRows */
     private $regionBySource;
     private $regionBySlug;
     private $regionByName;
@@ -509,9 +507,9 @@ final class LocationImporter
      * @param string              $countryCode
      * @param array<string,mixed> $incoming normalised region row
      *
-     * @return int|null the region's pk_i_id, or null when the insert produced no id
+     * @return int the region's pk_i_id
      */
-    private function importRegion(string $countryCode, array $incoming): ?int
+    private function importRegion(string $countryCode, array $incoming): int
     {
         $this->loadRegions($countryCode);
 
@@ -586,9 +584,9 @@ final class LocationImporter
      * @param string              $slug
      * @param array<string,mixed> $incoming carries the coordinates
      *
-     * @return int|null
+     * @return int
      */
-    private function insertRegion(string $countryCode, ?int $sourceId, string $name, string $slug, array $incoming): ?int
+    private function insertRegion(string $countryCode, ?int $sourceId, string $name, string $slug, array $incoming): int
     {
         $this->report['regions']['inserted']++;
 

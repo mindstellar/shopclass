@@ -142,7 +142,7 @@ final class BillingSettingsScreen
             ->text('billing_currency', __('Currency'), __('A 3-letter ISO 4217 code, e.g. USD, EUR.'))
                 ->default('USD')
                 ->width('num')
-                ->attrs(array('maxlength' => 3))
+                ->attrs(array('maxlength' => '3'))
                 ->required()
                 ->sanitize(static fn ($value) => strtoupper((string)$value))
                 ->validate(static function ($value) {

@@ -21,6 +21,8 @@ if (!defined('ABS_PATH')) {
 // than inheriting the caller's scope.
 global $error;
 
+/** @var string $password */
+
 $data = finish_installation($password);
 $ins_email_failed = !empty($error) || empty($data['s_email']);
 ?>

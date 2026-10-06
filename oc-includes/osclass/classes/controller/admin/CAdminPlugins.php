@@ -100,7 +100,7 @@ class CAdminPlugins extends AdminSecBaseModel
                 $pn = Params::getParam('plugin');
 
                 // set header just in case it's triggered some fatal error
-                header('Location: ' . osc_admin_base_url(true) . '?page=plugins&error=' . $pn, true, '302');
+                header('Location: ' . osc_admin_base_url(true) . '?page=plugins&error=' . $pn, true, 302);
 
                 $installed = Plugins::install($pn);
                 if (is_array($installed)) {
@@ -247,9 +247,7 @@ class CAdminPlugins extends AdminSecBaseModel
                 if ($plugin_short_name != '') {
                     try {
                         Plugins::cleanCategoryFromPlugin($plugin_short_name);
-                        if (isset($categories)) {
-                            Plugins::addToCategoryPlugin($categories, $plugin_short_name);
-                        }
+                        Plugins::addToCategoryPlugin($categories, $plugin_short_name);
                     } catch (\InvalidArgumentException $e) {
                         osc_add_flash_error_message(_m('No plugin selected'), 'admin');
                         $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
@@ -299,12 +297,11 @@ class CAdminPlugins extends AdminSecBaseModel
                 if (!OSC_DEBUG) {
                     error_reporting(E_ALL);
                 }
-                @ini_set('display_errors', 1);
+                @ini_set('display_errors', '1');
 
                 include $resolved;
                 Plugins::install($plugin);
                 exit;
-                break;
             default:
                 if (Params::getParam('checkUpdated') != '') {
                     osc_admin_toolbar_update_plugins(true);
@@ -469,7 +466,7 @@ class CAdminPlugins extends AdminSecBaseModel
                     $row[]   = ($sUpdate != '') ? $sUpdate : '';
                     $row[]   = ($sConfigure != '') ? $sConfigure : '';
                     $row[]   = ($sEnable != '') ? $sEnable : '';
-                    $row[]   = ($sInstall != '') ? $sInstall : '';
+                    $row[]   = $sInstall;
                     $row[]   = ($sDelete != '') ? $sDelete : '';
                     $aData[] = $row;
                     if (@$pInfo['plugin_update_uri'] != '') {

@@ -234,7 +234,7 @@ class Upgrade
                 $this->FileSystem->sync(
                     $originDir . '/',
                     $this->objPackage->getTargetDirectory(),
-                    null,
+                    array(),
                     $this->objPackage->getFilteredFiles() //Don't overwrite these files or directory while upgrading
                 );
                 // A server that caches compiled PHP would otherwise keep running the old files.

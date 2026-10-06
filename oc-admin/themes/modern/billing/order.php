@@ -19,7 +19,7 @@ osc_admin_page(array(
     'title'   => __('Billing'),
 ));
 
-/** @var Order $order */
+/** @var \mindstellar\billing\Order $order */
 $order   = __get('order');
 $entries = __get('entries');
 $balance = (int)__get('balance');

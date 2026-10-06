@@ -101,7 +101,7 @@ class CWebUserNonSecure extends BaseModel
                             array('pk_i_id' => $id)
                         );
                     }
-                    $result = Alerts::getInstance()->activate($id);
+                    $result = Alerts::getInstance()->activate((int) $id);
                 }
 
                 if ($result == 1) {
@@ -122,7 +122,7 @@ class CWebUserNonSecure extends BaseModel
                 if (!empty($alert) && hash_equals((string)$alert['s_email'], (string)$email)
                     && hash_equals((string)$alert['s_secret'], (string)$secret)
                 ) {
-                    $result = Alerts::getInstance()->unsub($id);
+                    $result = Alerts::getInstance()->unsub((int) $id);
                 }
 
                 if ($result == 1) {
@@ -137,13 +137,13 @@ class CWebUserNonSecure extends BaseModel
                 if (Params::getParam('username') != '') {
                     $user = User::getInstance()->findByUsername(Params::getParam('username'));
                 } else {
-                    $user = User::getInstance()->findByPrimaryKey(Params::getParam('id'));
+                    $user = User::getInstance()->findByPrimaryKey(Params::getParamInt('id'));
                 }
                 // user doesn't exist, show 404 error
                 if (!$user) {
                     $this->do404();
 
-                    return;
+                    return null;
                 }
 
                 if ($user['b_active'] == 0) {
@@ -209,7 +209,7 @@ class CWebUserNonSecure extends BaseModel
                 if (!$user || !$user['b_active'] || !$user['b_enabled']) {
                     $this->do404();
 
-                    return;
+                    return null;
                 }
                 View::getInstance()->_exportVariableToView('user', $user);
                 $back = osc_user_public_profile_url((int) $user['pk_i_id']);
@@ -235,25 +235,25 @@ class CWebUserNonSecure extends BaseModel
                 if (osc_captcha_enabled() && !osc_check_captcha()) {
                     $fail(_m('Please complete the security check.'));
 
-                    return;
+                    return null;
                 }
                 if ($yourName === '' || trim($message) === '' || !osc_validate_email($yourEmail)) {
                     $fail(_m('Please enter your name, a valid email address and a message.'));
 
-                    return;
+                    return null;
                 }
 
                 $refused = \mindstellar\security\MessageGuard::refusal($yourEmail, $message, array($yourName), $phone);
                 if ($refused !== null) {
                     $fail($refused);
 
-                    return;
+                    return null;
                 }
 
                 if (\mindstellar\security\ActionThrottle::exceededFor('user_contact')) {
                     $fail(_m("You've sent too many messages recently. Please try again later."));
 
-                    return;
+                    return null;
                 }
 
                 $sent = \mindstellar\security\MessageHold::deliver('user_contact', $yourEmail, array(
@@ -273,6 +273,8 @@ class CWebUserNonSecure extends BaseModel
                 $this->redirectTo(osc_user_login_url());
                 break;
         }
+
+        return null;
     }
 
     //hopefully generic...

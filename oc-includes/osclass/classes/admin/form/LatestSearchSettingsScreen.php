@@ -47,6 +47,7 @@ final class LatestSearchSettingsScreen extends SettingsScreen
             ->radio(
                 'purge_searches',
                 __('How long queries are stored'),
+                // @phpstan-ignore argument.type (options may carry a label and id per choice)
                 array(
                     'hour'    => __('One hour'),
                     'day'     => __('One day'),

@@ -784,7 +784,7 @@ class ItemForm extends Form
         parent::generic_input_text(
             'region',
             isset($item['s_region']) ? $item['s_region'] : null,
-            false
+            null
         );
         parent::generic_input_hidden(
             'regionId',
@@ -810,7 +810,7 @@ class ItemForm extends Form
         if (Session::getInstance()->_getForm('city') != '') {
             $item['s_city'] = Session::getInstance()->_getForm('city');
         }
-        parent::generic_input_text('city', isset($item['s_city']) ? $item['s_city'] : null, false);
+        parent::generic_input_text('city', isset($item['s_city']) ? $item['s_city'] : null, null);
         parent::generic_input_hidden(
             'cityId',
             (isset($item['fk_i_city_id']) && $item['fk_i_city_id'] != null) ? $item['fk_i_city_id']
@@ -1634,7 +1634,8 @@ class ItemForm extends Form
         }
         ?>
             (function () {
-                var url = '<?php echo (defined('OC_ADMIN') && OC_ADMIN) ? osc_admin_base_url(true) : osc_base_url(true); ?>';
+                var url = '<?php
+            echo (defined('OC_ADMIN') && OC_ADMIN) ? osc_admin_base_url(true) : osc_base_url(true); ?>';
 
                 function updatePrice(catId, fireEvents) {
                     var price = document.getElementById('price');

@@ -75,9 +75,9 @@ final class CategoryAjax extends AjaxHandler
     {
         $this->controller->_exportVariableToView(
             'category',
-            Category::getInstance()->findByPrimaryKey(Params::getParam('id'), 'all')
+            Category::getInstance()->findByPrimaryKey(Params::getParamInt('id'), 'all')
         );
-        if (count(Category::getInstance()->findSubcategories(Params::getParam('id'))) > 0) {
+        if (count(Category::getInstance()->findSubcategories(Params::getParamInt('id'))) > 0) {
             $this->controller->_exportVariableToView('has_subcategories', true);
         } else {
             $this->controller->_exportVariableToView('has_subcategories', false);
@@ -88,7 +88,7 @@ final class CategoryAjax extends AjaxHandler
 
     public function enable(): void
     {
-        $id       = strip_tags(Params::getParam('id'));
+        $id       = (int) strip_tags(Params::getParamString('id'));
         $enabled  = (Params::getParam('enabled') != '') ? Params::getParam('enabled') : 0;
 
         $aCategory = Category::getInstance()->findByPrimaryKey($id);
@@ -142,6 +142,7 @@ final class CategoryAjax extends AjaxHandler
 
         $error         = 0;
         $has_one_title = 0;
+        $aFieldsDescription = array();
         foreach (Params::getParamsAsArray() as $k => $v) {
             if (preg_match('|(.+?)#(.+)|', (string) $k, $m)) {
                 if ($m[2] === 's_name') {
@@ -161,6 +162,7 @@ final class CategoryAjax extends AjaxHandler
         $l = osc_language();
         // The service fires edited_category with the outcome, saved or not.
         $editor = CategoryService::make();
+        // @phpstan-ignore equal.alwaysTrue (error is changed by the loop above)
         if ($error == 0 || ($error == 1 && $has_one_title == 1)) {
             try {
                 if (!$editor->update((int) $id, $fields, $aFieldsDescription, $apply_changes_to_subcategories, (int) $error)) {

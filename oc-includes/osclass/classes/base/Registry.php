@@ -35,6 +35,7 @@ abstract class Registry
      */
     public static function getInstance(): static
     {
+        // @phpstan-ignore new.static (the constructor is protected and subclasses keep it)
         return self::$instances[static::class] ??= new static();
     }
 

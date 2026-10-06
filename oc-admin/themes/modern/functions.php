@@ -352,7 +352,7 @@ function osc_widget_config_field($typeId, $field, $value, $disabled)
                 osc_admin_checkbox(array_merge($spec, array(
                     'label'   => $label,
                     'value'   => '1',
-                    'checked' => !empty($val) && $val !== '0',
+                    'checked' => !empty($val),
                     'attrs'   => $disabled ? array('disabled' => true) : array(),
                 )));
                 break;

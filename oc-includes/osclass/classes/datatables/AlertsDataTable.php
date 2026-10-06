@@ -37,7 +37,6 @@ class AlertsDataTable extends DataTable
         'email' => 's_email',
         'date'  => 'dt_date',
     );
-    private $total_filtered;
 
     /**
      * Builds the saved-searches (alerts) listing for the admin datatable.
@@ -72,7 +71,6 @@ class AlertsDataTable extends DataTable
         }
         $this->processData($alerts);
         $this->total          = $alerts['rows'];
-        $this->total_filtered = $alerts['total_results'];
         $this->totalFiltered  = $alerts['total_results'];
 
         return $this->getData();

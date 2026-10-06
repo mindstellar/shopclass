@@ -141,7 +141,7 @@ final class PhotoService
                         $size        = explode('x', osc_normal_dimensions());
                         $img         = $imgres->autoRotate();
 
-                        $img = $img->resizeTo($size[0], $size[1]);
+                        $img = $img->resizeTo((int) $size[0], (int) $size[1]);
                         if (osc_is_watermark_text()) {
                             $img->doWatermarkText(osc_watermark_text(), osc_watermark_text_color());
                         } elseif (osc_is_watermark_image()) {
@@ -151,13 +151,13 @@ final class PhotoService
                         // Create preview
                         $path = $tmpName . '_preview';
                         $size = explode('x', osc_preview_dimensions());
-                        \ImageProcessing::fromFile($normal_path)->resizeTo($size[0], $size[1])
+                        \ImageProcessing::fromFile($normal_path)->resizeTo((int) $size[0], (int) $size[1])
                             ->saveToFile($path, $extension);
 
                         // Create thumbnail
                         $path = $tmpName . '_thumbnail';
                         $size = explode('x', osc_thumbnail_dimensions());
-                        \ImageProcessing::fromFile($normal_path)->resizeTo($size[0], $size[1])
+                        \ImageProcessing::fromFile($normal_path)->resizeTo((int) $size[0], (int) $size[1])
                             ->saveToFile($path, $extension);
 
                         $totalItemImages++;
@@ -351,7 +351,7 @@ final class PhotoService
                     throw new \RuntimeException('The photo row was not deleted.');
                 }
                 $this->removeFiles($resource, $actor);
-                \Log::getInstance()->insertLog('item', 'deleteResource', $photoId, $photoId, $actor->logRole(), $actor->logId());
+                \Log::getInstance()->insertLog('item', 'deleteResource', $photoId, (string) $photoId, $actor->logRole(), $actor->logId());
 
                 return true;
             });
@@ -467,7 +467,7 @@ final class PhotoService
                 'itemActions',
                 'deleteResourcesFromHD',
                 $itemId,
-                $itemId,
+                (string) $itemId,
                 $is_admin ? 'admin' : 'user',
                 $is_admin ? osc_logged_admin_id() : osc_logged_user_id()
             );
@@ -534,7 +534,7 @@ final class PhotoService
             . $resource['s_extension'];
         $path_normal = $path;
         $size        = explode('x', osc_normal_dimensions());
-        $img         = \ImageProcessing::fromFile($image_tmp)->resizeTo($size[0], $size[1]);
+        $img         = \ImageProcessing::fromFile($image_tmp)->resizeTo((int) $size[0], (int) $size[1]);
         if ($use_original) {
             if (osc_is_watermark_text()) {
                 $img->doWatermarkText(osc_watermark_text(), osc_watermark_text_color());
@@ -548,13 +548,13 @@ final class PhotoService
         $path = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '_preview.'
             . $resource['s_extension'];
         $size = explode('x', osc_preview_dimensions());
-        \ImageProcessing::fromFile($path_normal)->resizeTo($size[0], $size[1])->saveToFile($path);
+        \ImageProcessing::fromFile($path_normal)->resizeTo((int) $size[0], (int) $size[1])->saveToFile($path);
 
         // Create thumbnail
         $path = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '_thumbnail.'
             . $resource['s_extension'];
         $size = explode('x', osc_thumbnail_dimensions());
-        \ImageProcessing::fromFile($path_normal)->resizeTo($size[0], $size[1])->saveToFile($path);
+        \ImageProcessing::fromFile($path_normal)->resizeTo((int) $size[0], (int) $size[1])->saveToFile($path);
 
         osc_run_hook(
             'regenerated_image',

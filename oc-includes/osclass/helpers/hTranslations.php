@@ -124,6 +124,7 @@ function _mx($key, $context)
 function _n($single_key, $plural_key, $count, $domain = 'core')
 {
     $gt     = Translation::getInstance()->_get();
+    // @phpstan-ignore argument.type (the library types the count as string but uses it as a number)
     $string = $gt->dngettext($domain, $single_key, $plural_key, $count);
 
     return osc_apply_filter('ngettext', $string);

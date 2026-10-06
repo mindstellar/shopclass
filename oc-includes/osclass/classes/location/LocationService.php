@@ -162,7 +162,7 @@ final class LocationService
             throw new NotFoundException(_m('This location no longer exists.'));
         }
         $this->checkName($name, _m('City name cannot be blank'));
-        $exists = $cities->findByName($name, $city['fk_i_region_id']);
+        $exists = $cities->findByName($name, isset($city['fk_i_region_id']) ? (int) $city['fk_i_region_id'] : null);
         if (isset($exists['pk_i_id']) && (int) $exists['pk_i_id'] !== $id) {
             throw new InvalidException('/name', 'invalid', sprintf(_m('%s already was in the database'), $name));
         }
@@ -200,7 +200,7 @@ final class LocationService
             throw new NotFoundException(_m('This location no longer exists.'));
         }
         $this->checkName($name, _m('City area name cannot be blank'));
-        $exists = CityArea::getInstance()->findByName($name, $area['fk_i_city_id']);
+        $exists = CityArea::getInstance()->findByName($name, isset($area['fk_i_city_id']) ? (int) $area['fk_i_city_id'] : null);
         if (isset($exists['pk_i_id']) && (int) $exists['pk_i_id'] !== $id) {
             throw new InvalidException('/name', 'invalid', sprintf(_m('%s already was in the database'), $name));
         }
@@ -222,6 +222,7 @@ final class LocationService
             'region' => Region::getInstance(),
             'city'   => City::getInstance(),
             'area'   => CityArea::getInstance(),
+            default  => throw new \InvalidArgumentException('Unknown location level'),
         };
         if ($id <= 0 || !(new LocationQuery())->exists($level, $id)) {
             throw new NotFoundException(_m('This location no longer exists.'));

@@ -25,7 +25,7 @@ $betterS3Active = __get('better_s3_active');
 $betterS3Configured = __get('better_s3_configured');
 
 //customize Head
-$storage_js = static function () use ($providers) {
+$storage_js = static function () {
     ?>
     <script type="text/javascript">
         document.addEventListener('DOMContentLoaded', function () {

@@ -517,7 +517,7 @@ class CWebSearch extends BaseModel
     {
         $category = Category::getInstance()->findBySlug($value);
         if (empty($category) && is_numeric($value)) {
-            $byId = Category::getInstance()->findByPrimaryKey($value);
+            $byId = Category::getInstance()->findByPrimaryKey((int) $value);
             if (!empty($byId)) {
                 return $byId;
             }

@@ -81,6 +81,7 @@ final class MessageHold
             } catch (\InvalidArgumentException $e) {
                 $id = 0;
             }
+            // @phpstan-ignore booleanNot.alwaysTrue (a concurrent request may have queued it meanwhile)
             if ($id <= 0 && !$queue->hasKey(self::JOB, $key)) {
                 osc_add_flash_error_message(_m('Your message could not be sent. Please try again later.'));
 

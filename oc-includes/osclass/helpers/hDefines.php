@@ -1100,7 +1100,7 @@ function osc_get_cities($region = '')
         return City::getInstance()->listAll();
     }
 
-    return City::getInstance()->findByRegion($region);
+    return City::getInstance()->findByRegion((int) $region);
 }
 
 /**

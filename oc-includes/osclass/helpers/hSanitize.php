@@ -128,6 +128,7 @@ function osc_sanitize_phone($value)
     }
 
     // Check for phone ext.
+    $ext = '';
     if (!preg_match('/^[0-9]$/', $value)) {
         $value =
             preg_replace('/^([0-9]{10})([a-z]+)([0-9]+)/', '$1ext$3', $value); // Replace 'x|ext|extension' with 'ext'.

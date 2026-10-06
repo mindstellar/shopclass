@@ -27,10 +27,6 @@ class MediaDataTable extends DataTable
     private $order_by;
     private $resourceID;
     private $total_filtered;
-    /**
-     * @var int
-     */
-    private $sEcho;
 
     /**
      * Builds the media (item resources) listing for the admin datatable.
@@ -127,9 +123,6 @@ class MediaDataTable extends DataTable
             }
             if ($k === 'iDisplayLength') {
                 $this->limit = (int)$v;
-            }
-            if ($k === 'sEcho') {
-                $this->sEcho = (int)$v;
             }
         }
 

@@ -38,7 +38,7 @@ final class LocationAjax extends AjaxHandler
     /** Cities of a region. */
     public function cities(): void
     {
-        AjaxResponse::json(City::getInstance()->findByRegion(Params::getParam('regionId')));
+        AjaxResponse::json(City::getInstance()->findByRegion(Params::getParamInt('regionId')));
     }
 
     /** The city autocomplete. */

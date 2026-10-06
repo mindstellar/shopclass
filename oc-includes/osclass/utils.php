@@ -796,9 +796,6 @@ function osc_dbdump($path, $file)
     if (!is_writable($path)) {
         return -4;
     }
-    if ($path == '') {
-        return -1;
-    }
 
     //checking connection
     $dump = Dump::getInstance();
@@ -951,10 +948,6 @@ function processResponse($content)
     $headers = $res[0];
     $body    = isset($res[1]) ? $res[1] : '';
 
-    if (!is_string($headers)) {
-        return array();
-    }
-
     return array('headers' => $headers, 'body' => $body);
 }
 
@@ -1052,7 +1045,7 @@ function download_fsockopen($sourceFile, $fileout = null, $post_data = null)
             $requestPath .= '/';
         }
 
-        download_fsockopen($host, $requestPath, $fileout);
+        return download_fsockopen('http://' . $host . $requestPath, $fileout, $post_data);
     } else {
         $body             = $aResult['body'];
         $transferEncoding = @$headers['transfer-encoding'];
@@ -1073,8 +1066,6 @@ function download_fsockopen($sourceFile, $fileout = null, $post_data = null)
 
         return $body;
     }
-
-    return false;
 }
 
 /**
@@ -1110,7 +1101,7 @@ function osc_downloadFile($sourceFile, $downloadedFile, $post_data = null)
  * @param int  $timeout    total transfer timeout in seconds; 0 leaves no overall
  *                         limit, but getContents() still aborts a stalled transfer.
  *
- * @return bool|string|null
+ * @return bool|string
  */
 function osc_file_get_contents($url, $post_data = null, $verify_ssl = true, $timeout = 0)
 {
@@ -1256,7 +1247,7 @@ function osc_unzip_file($file, $to)
  * @param string $archive_folder full path of the folder
  * @param string $archive_name   full path of the destination zip file
  *
- * @return int
+ * @return bool
  */
 function osc_zip_folder($archive_folder, $archive_name)
 {
@@ -1668,7 +1659,6 @@ function _get_market_url($type, $update_uri, $disable = true)
             return false;
         }
 
-        /** @var string $uri */
         $uri = $update_uri;
 
         return $uri;
@@ -1852,20 +1842,7 @@ function osc_is_update_compatible($section, $element, $osclass_version = OSCLASS
 {
     if ($element != '') {
         $data = array();
-        if (stripos($element, 'http://') === true && stripos($element, 'https://') === false) {
-            // OSCLASS OFFICIAL REPOSITORY
-            // $url  = osc_market_url( $section , $element );
-            // $data = json_decode(
-            //             osc_file_get_contents(
-            //                 $url ,
-            //                 array ( 'api_key' => osc_market_api_connect() )
-            //             ) ,
-            //             true
-            //          );
-        } else {
-            // THIRD PARTY REPOSITORY
-            $data = json_decode(osc_file_get_contents($element), true);
-        }
+        $data = json_decode(osc_file_get_contents($element), true);
         if (isset($data['s_compatible'])) {
             $versions = explode(',', $data['s_compatible']);
 

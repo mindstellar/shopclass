@@ -529,22 +529,18 @@ class Zip
     private function zipFolderPclZip($archive_folder, $archive_name)
     {
         $zip = new PclZip($archive_name);
-        if ($zip) {
-            $dir = preg_replace('/[\/]{2,}/', '/', $archive_folder . '/');
+        $dir = preg_replace('/[\/]{2,}/', '/', $archive_folder . '/');
 
-            $v_dir    = osc_base_path();
-            $v_remove = $v_dir;
+        $v_dir    = osc_base_path();
+        $v_remove = $v_dir;
 
-            // To support windows and the C: root you need to add the
-            // following 3 lines, should be ignored on linux
-            if ($v_dir[1] === ':') {
-                $v_remove = substr($v_dir, 2);
-            }
-            $v_list = $zip->create($dir, PCLZIP_OPT_REMOVE_PATH, $v_remove);
-
-            return !($v_list === 0);
+        // To support windows and the C: root you need to add the
+        // following 3 lines, should be ignored on linux
+        if ($v_dir[1] === ':') {
+            $v_remove = substr($v_dir, 2);
         }
+        $v_list = $zip->create($dir, PCLZIP_OPT_REMOVE_PATH, $v_remove);
 
-        return false;
+        return !($v_list === 0);
     }
 }

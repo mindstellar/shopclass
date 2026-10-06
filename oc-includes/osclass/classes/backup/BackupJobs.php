@@ -174,6 +174,7 @@ final class BackupJobs
             $manifest = (array) $store->manifest($name);
             $manifest['kind'] = 'backup';
             $store->saveManifest($name, $manifest);
+            /** @var array<string, mixed> $side */
             $side = array();
             if (!$bucket->putLarge($store->sidecarPath($name), BackupBucket::sidecarKey($name), static function (): bool {
                 return true;

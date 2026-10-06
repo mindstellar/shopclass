@@ -56,7 +56,7 @@ osc_add_hook('item_edit', 'osc_meta_edit');
  */
 function osc_meta_search($catId = null)
 {
-    FieldForm::meta_fields_search($catId);
+    FieldForm::meta_fields_search($catId === null ? null : (array) $catId);
 }
 
 osc_add_hook('search_form', 'osc_meta_search');

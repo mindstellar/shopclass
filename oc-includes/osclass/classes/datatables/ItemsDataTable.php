@@ -150,7 +150,7 @@ class ItemsDataTable extends DataTable
                 $withUserId        = true;
             }
             if ($k === 'itemId' && $v != '') {
-                $this->mSearch->addItemId($sanitizer->int($v));
+                $this->mSearch->addItemId((int) $sanitizer->int($v));
                 $this->withFilters = true;
             }
             if ($k === 'countryId' && $v != '') {

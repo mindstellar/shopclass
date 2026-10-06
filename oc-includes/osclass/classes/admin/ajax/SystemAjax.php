@@ -91,7 +91,7 @@ final class SystemAjax extends AjaxHandler
         $id    = Params::getParam('id');
         if ($order != '' && $id != '') {
             $mPages       = Page::getInstance();
-            $actual_page  = $mPages->findByPrimaryKey($id);
+            $actual_page  = $mPages->findByPrimaryKey((int) $id);
             $actual_order = $actual_page['i_order'];
 
             if ($order === 'up') {

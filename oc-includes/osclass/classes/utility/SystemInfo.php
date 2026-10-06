@@ -137,23 +137,23 @@ class SystemInfo
      */
     private $php_max_upload_size;
     /**
-     * @var false|string
+     * @var string
      */
     private $php_max_execution_time;
     /**
-     * @var float
+     * @var string
      */
     private $php_memory_usage_percent;
     /**
-     * @var float
+     * @var string
      */
     private $php_memory_usage;
     /**
-     * @var false|string
+     * @var string
      */
     private $php_memory_limit;
     /**
-     * @var false|string
+     * @var string
      */
     private $php_version;
     /**
@@ -183,7 +183,7 @@ class SystemInfo
     private $php_os;
 
     /**
-     * @var false|string
+     * @var string
      */
     private $allow_url_fopen;
     /**
@@ -324,7 +324,7 @@ class SystemInfo
     /**
      * Return Important PHP info in an array
      *
-     * @return array<string,bool|string>
+     * @return array<string,mixed>
      */
     private function getPhpInfoArr(): array
     {

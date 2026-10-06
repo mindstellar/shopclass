@@ -52,7 +52,7 @@ class Utils
         // parse the given URL
         $parsed_url = parse_url($target_url);
 
-        if (!isset($parsed_url['host'], $parsed_url['path']) || $parsed_url === false) {
+        if ($parsed_url === false || !isset($parsed_url['host'], $parsed_url['path'])) {
             return false;
         }
         // extract host, path, port:
@@ -117,7 +117,7 @@ class Utils
      *
      * @param string|null $version
      *
-     * @return array<string,mixed>|false the refreshed preferences, or false when no version was given
+     * @return array<string,mixed>|bool the refreshed preferences, or false when no version was given
      */
     public static function changeOsclassVersionTo($version = null)
     {
@@ -233,7 +233,7 @@ class Utils
      * Return Category Stats in array
      *
      * @param array<string,mixed> $aux           category row, with a nested 'categories' list
-     * @param array<int,int>      $categoryTotal accumulator, filled in place
+     * @param array<mixed>        $categoryTotal accumulator, filled in place
      *
      * @return int
      */
@@ -463,7 +463,6 @@ class Utils
                 break;
             default:
                 return false;
-                break;
         }
         $locations         = $manager->listByEmptySlug();
         $locations_changed = 0;

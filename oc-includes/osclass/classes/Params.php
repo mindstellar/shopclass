@@ -475,13 +475,10 @@ class Params
                 break;
             case ('cookie'):
                 return $_COOKIE;
-                break;
             case ('files'):
                 return $_FILES;
-                break;
             case ('request'): // This should not be called, as it depends on server's configuration
                 return $_REQUEST;
-                break;
             default:
                 $value = self::$request;
                 break;

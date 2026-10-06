@@ -120,7 +120,7 @@ function osc_premium_description($locale = '')
         if ($desc == '') {
             $aLocales = osc_get_locales();
             foreach ($aLocales as $locale) {
-                $desc = osc_premium_field('s_description', $locale);
+                $desc = osc_premium_field('s_description', (string) @$locale['pk_c_code']);
                 if ($desc != '') {
                     break;
                 }
@@ -149,7 +149,7 @@ function osc_premium_title($locale = '')
         if ($title == '') {
             $aLocales = osc_get_locales();
             foreach ($aLocales as $locale) {
-                $title = osc_premium_field('s_title', $locale);
+                $title = osc_premium_field('s_title', (string) @$locale['pk_c_code']);
                 if ($title != '') {
                     break;
                 }
@@ -621,6 +621,7 @@ function osc_count_premium_comments()
 {
     if (!View::getInstance()->_exists('comments')) {
         View::getInstance()->_exportVariableToView('comments', ItemComment::getInstance()
+            // @phpstan-ignore method.notFound (legacy premium comments; method is missing in core)
             ->findBypremiumID(
                 osc_premium_id(),
                 osc_premium_comments_page(),
@@ -640,6 +641,7 @@ function osc_has_premium_comments()
 {
     if (!View::getInstance()->_exists('comments')) {
         View::getInstance()->_exportVariableToView('comments', ItemComment::getInstance()
+            // @phpstan-ignore method.notFound (legacy premium comments; method is missing in core)
             ->findBypremiumID(
                 osc_premium_id(),
                 osc_premium_comments_page(),

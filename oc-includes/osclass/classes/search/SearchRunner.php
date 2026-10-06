@@ -59,7 +59,7 @@ class SearchRunner
             // deleted or disabled listing is never served from a stored result.
             // An uncounted result is cached apart, so a counting search never reads its null total.
             $key   = md5(osc_cache_search_generation() . osc_base_url() . $search->toJson() . ($count ? '' : '|uncounted'));
-            $found = null;
+            $found = false;
             $cache = osc_cache_get($key, $found);
             if ($cache) {
                 $aItems = $cache['aItems'];

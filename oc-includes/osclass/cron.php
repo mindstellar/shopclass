@@ -43,7 +43,7 @@ if (is_array($cron)) {
         if ($purge === 'hour') {
             LatestSearches::getInstance()->purgeDate(date('Y-m-d H:i:s', time() - 3600));
         } elseif (!in_array($purge, array('forever', 'day', 'week'))) {
-            LatestSearches::getInstance()->purgeNumber($purge);
+            LatestSearches::getInstance()->purgeNumber((int) $purge);
         }
 
         // WARN EXPIRATION EACH HOUR (COMMENT TO DISABLE)

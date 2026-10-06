@@ -108,7 +108,7 @@ class Resource extends Model
         }
 
         $key   = $this->ownerCacheKey($ownerType, $ownerId);
-        $found = null;
+        $found = false;
         $cache = osc_cache_get($key, $found);
         if (is_array($cache)) {
             return $cache;

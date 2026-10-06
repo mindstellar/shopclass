@@ -270,7 +270,7 @@ final class ItemUpgradeStore extends Model
             return null;
         }
 
-        $base = ($row !== null && $row['dt_expiration'] !== null && $row['dt_expiration'] > $now)
+        $base = ($row !== null && $row['dt_expiration'] > $now)
             ? $row['dt_expiration']
             : $now;
 

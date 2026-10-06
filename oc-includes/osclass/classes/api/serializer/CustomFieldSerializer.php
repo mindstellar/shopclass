@@ -38,7 +38,7 @@ final class CustomFieldSerializer
             'type'       => strtolower((string) ($field['e_type'] ?? 'TEXT')),
             'required'   => Format::bool($field['b_required'] ?? 0),
             'searchable' => Format::bool($field['b_searchable'] ?? 0),
-            'options'    => $options === null ? null : array_values(array_filter(array_map('trim', explode(',', $options)), 'strlen')),
+            'options'    => $options === null ? null : array_values(array_filter(array_map('trim', explode(',', $options)), static fn (string $o): bool => $o !== '')),
         ];
     }
 

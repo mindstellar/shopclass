@@ -275,14 +275,14 @@ class Cleanup extends DAO
         } elseif (self::isUserRule($rule)) {
             $users = User::getInstance();
             foreach ($rows as $row) {
-                if ($users->deleteUser($row['pk_i_id'])) {
+                if ($users->deleteUser((int) $row['pk_i_id'])) {
                     $deleted++;
                 }
             }
         } else {
             $items = new ItemActions(true);
             foreach ($rows as $row) {
-                if ($items->delete($row['s_secret'], $row['pk_i_id'])) {
+                if ($items->delete($row['s_secret'], (int) $row['pk_i_id'])) {
                     $deleted++;
                 }
             }

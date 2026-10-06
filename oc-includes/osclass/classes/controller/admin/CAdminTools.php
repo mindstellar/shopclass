@@ -1132,7 +1132,7 @@ class CAdminTools extends AdminSecBaseModel
     {
         $class = 'Object_Cache_' . $driver;
 
-        return class_exists($class) && method_exists($class, 'is_supported') && call_user_func(array($class, 'is_supported'));
+        return class_exists($class) && method_exists($class, 'is_supported') && $class::is_supported();
     }
 
     /**

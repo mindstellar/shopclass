@@ -176,7 +176,7 @@ class User extends DAO
     public function findByPrimaryKey($id, $locale = null)
     {
         $key   = md5(osc_base_url() . 'User:findByPrimaryKey:' . $id . $locale);
-        $found = null;
+        $found = false;
         $cache = osc_cache_get($key, $found);
         if ($cache !== false) {
             return $cache;

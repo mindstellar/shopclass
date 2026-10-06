@@ -86,7 +86,7 @@ final class BuildInfo
         if ($info === null) {
             return $version;
         }
-        $parts = array_filter(array($info['channel'], substr($info['revision'], 0, 7)), 'strlen');
+        $parts = array_filter(array($info['channel'], substr($info['revision'], 0, 7)), static fn ($part): bool => (string) $part !== '');
 
         return $version . ' (' . implode(', ', $parts) . ')';
     }

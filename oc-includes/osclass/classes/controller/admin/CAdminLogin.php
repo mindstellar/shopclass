@@ -207,7 +207,7 @@ class CAdminLogin extends AdminBaseModel
                         array('s_secret' => \mindstellar\security\ActionToken::hash($newPassword)),
                         array('pk_i_id' => $admin['pk_i_id'])
                     );
-                    $password_url = osc_forgot_admin_password_confirm_url($admin['pk_i_id'], $newPassword);
+                    $password_url = osc_forgot_admin_password_confirm_url((int) $admin['pk_i_id'], $newPassword);
 
                     osc_run_hook('hook_email_user_forgot_password', $admin, $password_url);
                 }
@@ -217,7 +217,7 @@ class CAdminLogin extends AdminBaseModel
                 break;
             case ('forgot'):         // form to recover the password (in this case we have the form in /gui/)
                 $admin = Admin::getInstance()->findByIdSecret(
-                    Params::getParam('adminId'),
+                    Params::getParamInt('adminId'),
                     \mindstellar\security\ActionToken::hash(Params::getParam('code'))
                 );
                 if (!$admin) {
@@ -231,7 +231,7 @@ class CAdminLogin extends AdminBaseModel
             case ('forgot_post'):
                 osc_csrf_check();
                 $admin = Admin::getInstance()->findByIdSecret(
-                    Params::getParam('adminId'),
+                    Params::getParamInt('adminId'),
                     \mindstellar\security\ActionToken::hash(Params::getParam('code'))
                 );
                 if (!$admin) {
@@ -256,7 +256,7 @@ class CAdminLogin extends AdminBaseModel
                 } else {
                     osc_add_flash_error_message(_m("Error, the passwords don't match"), 'admin');
                     $this->redirectTo(osc_forgot_admin_password_confirm_url(
-                        Params::getParam('adminId'),
+                        Params::getParamInt('adminId'),
                         Params::getParam('code')
                     ));
                 }
@@ -271,6 +271,8 @@ class CAdminLogin extends AdminBaseModel
                 $this->doView();
                 break;
         }
+
+        return null;
     }
 
     //in this case, this function is prepared for the "recover your password" form

@@ -568,8 +568,6 @@ class Cli
      * Report where this database differs from struct.sql, then whether the site is ready for
      * strict SQL mode. --strict prints only the second part. Reads only; changes nothing.
      *
-     * @param array<string, mixed> $args
-     *
      * @return int 0 when the schema matches and the site is ready, 1 otherwise
      */
     private function cmdDbDoctor(array $args): int
@@ -666,8 +664,6 @@ class Cli
      * db:repair fixes a missing table, column or index, and a column with the wrong type.
      * It cannot fix a nullability difference or an index with the wrong columns, and it
      * leaves an extra column or index alone on purpose. Those need a person to look at them.
-     *
-     * @param array<string, mixed> $args
      *
      * @return int 0 when the schema matches, 1 when it does not
      */

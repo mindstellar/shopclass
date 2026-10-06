@@ -142,9 +142,6 @@ class FormInputs implements InputInterface
      */
     private function generateInput(string $name, $values = null, array $attributes = [], array $options = []): string
     {
-        if (!isset($name)) {
-            throw new Exception('Input Name is not set');
-        }
         $this->handleOptions($options);
         // A label points at the control's id, which is not always its name. Custom
         // fields post as meta[12] while the input carries id meta_colour, so for="meta[12]"
@@ -259,7 +256,7 @@ class FormInputs implements InputInterface
                 // Add selectPlaceholder option or create a new placeholder if not set
                 $selectPlaceholder = $options['selectPlaceholder'] ?? '';
 
-                if (isset($options['selectPlaceholder']) && $options['selectPlaceholder'] !== null) {
+                if (isset($options['selectPlaceholder'])) {
                     if ($selectPlaceholder) {
                         $input .= sprintf('<option value="">%s</option>', $options['selectPlaceholder']);
                     } else {
@@ -348,7 +345,7 @@ class FormInputs implements InputInterface
         }
         $input .= $divEnd;
 
-        unset($attributesString, $defaultInputValue, $label, $selectPlaceholder);
+        unset($attributesString, $selectPlaceholder);
 
         return $input . PHP_EOL;
     }
@@ -356,7 +353,7 @@ class FormInputs implements InputInterface
     /**
      * Merge the given input options over the class defaults, in place.
      *
-     * @param array<string,mixed> $options
+     * @param array<mixed> $options
      *
      * @return void
      */
@@ -475,7 +472,7 @@ class FormInputs implements InputInterface
         foreach ($attributes as $key => $value) {
             // escape html special chars if escapeHtml is true
             if ($value === true) {
-                $value = $this->escape::html($value);
+                $value = $this->escape::html((string) $value);
             }
             $attributesString .= sprintf(' %s="%s"', $key, $value);
         }
@@ -521,7 +518,7 @@ class FormInputs implements InputInterface
                     if ($optGroupLevel === 0) {
                         $selectOptionsString .= sprintf('<optgroup label="%s">', $optionLabel);
                     } else {
-                        $selected            = isset($defaultValue) && $defaultValue == $optionValue ? ' selected' : '';
+                        $selected            = $defaultValue == $optionValue ? ' selected' : '';
                         $selectOptionsString .= sprintf('<option value="%s"%s>%s</option>', $optionValue, $selected, $optionLabel)
                                                 . PHP_EOL;
                         unset($selected);
@@ -542,7 +539,7 @@ class FormInputs implements InputInterface
                     $optionValue = $k;
                     $optionLabel = $v;
                     // check if default value is set and if it matches the current value
-                    $selected            = isset($defaultValue) && $defaultValue == $optionValue ? ' selected' : '';
+                    $selected            = $defaultValue == $optionValue ? ' selected' : '';
                     $selectOptionsString .= sprintf('<option value="%s"%s>%s</option>', $optionValue, $selected, $optionLabel) . PHP_EOL;
                     unset($selected);
                 }

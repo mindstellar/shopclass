@@ -115,9 +115,6 @@ class CAdminItemComments extends AdminSecBaseModel
                     return false;
                 }
                 $id = (int)$id;
-                if (!is_numeric($id)) {
-                    return false;
-                }
                 if (!in_array($value, array('ACTIVE', 'INACTIVE', 'ENABLE', 'DISABLE'))) {
                     return false;
                 }
@@ -260,6 +257,8 @@ class CAdminItemComments extends AdminSecBaseModel
                 $this->doView('comments/index.php');
                 break;
         }
+
+        return null;
     }
 
     //hopefully generic...

@@ -220,7 +220,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
             : $fetch('', 1, 1)['total'];
 
         if ($model['level'] !== 'country') {
-            $parent = $result['parent'];
+            $parent = $result['parent'] ?? null;
             if ($parent === null) {
                 $model['found']   = false;
                 $model['missing'] = $model['level'] === 'city'
@@ -350,14 +350,14 @@ class CAdminSettingsLocations extends AdminSecBaseModel
             switch (LocationAdminView::importInsteadRefusal($countryCode, $status)) {
                 case 'malformed':
                     $this->respond('error', _m('The country code must be two letters, like IN or DE'), $this->listUrl());
-                    break;
+                    // no break
                 case 'unknown':
                     $this->respond(
                         'error',
                         sprintf(_m('The catalog has no country with the code %s. Add it by hand instead.'), $countryCode),
                         $this->listUrl()
                     );
-                    break;
+                    // no break
                 case 'installed':
                     $this->respond(
                         'error',
@@ -367,7 +367,6 @@ class CAdminSettingsLocations extends AdminSecBaseModel
                         ),
                         $this->dataUrl()
                     );
-                    break;
             }
             $this->runImport($countryCode, $this->listUrl());
         }
@@ -410,6 +409,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
             $this->respond('error', _m('There were some problems editing the country'), $back);
         }
 
+        // @phpstan-ignore argument.type (the slug rule also serves countries, keyed by code)
         $slug = LocationService::uniqueSlug($mCountries, $code, $name, Params::getParamString('e_country_slug'), 'pk_c_code');
         $ok   = $mCountries->update(array('s_name' => $name, 's_slug' => $slug), array('pk_c_code' => $code));
 

@@ -226,7 +226,8 @@ class DBCommandClass
     public static function getInstance()
     {
         if (!self::$instance instanceof self) {
-            self::$instance = new self();
+            $handle         = \mindstellar\database\ConnectionManager::getInstance()->getHandle();
+            self::$instance = new self($handle);
         }
 
         return self::$instance;
@@ -683,7 +684,7 @@ class DBCommandClass
      */
     public function having($key, $value = '')
     {
-        return $this->_having($key, $value);
+        $this->_having($key, $value);
     }
 
     /**
@@ -728,7 +729,7 @@ class DBCommandClass
      */
     public function orHaving($key, $value = '')
     {
-        return $this->_having($key, $value, 'OR ');
+        $this->_having($key, $value, 'OR ');
     }
 
     /**
@@ -1175,6 +1176,7 @@ class DBCommandClass
      */
     private function _update($table, $values, $where)
     {
+        $valstr = array();
         foreach ($values as $k => $v) {
             $valstr[] = $k . ' = ' . $v;
         }

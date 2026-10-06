@@ -93,7 +93,7 @@ function osc_resolve_web_user()
     $cookieId     = Cookie::getInstance()->get_value('oc_userId');
     $cookieSecret = Cookie::getInstance()->get_value('oc_userSecret');
     if ($cookieId != '' && $cookieSecret != '') {
-        $candidate = User::getInstance()->findByPrimaryKey($cookieId);
+        $candidate = User::getInstance()->findByPrimaryKey((int) $cookieId);
         if (isset($candidate['pk_i_id'])
             && \mindstellar\security\RememberMe::verify(
                 'web',
@@ -282,7 +282,7 @@ function osc_user_public_profile_url($id = null)
  * Gets current items page from public profile
  *
  * @param int|string $page
- * @param int|false  $itemsPerPage
+ * @param int|string|bool $itemsPerPage
  *
  * @return string
  */
@@ -709,13 +709,10 @@ function osc_total_users($condition = '')
     switch ($condition) {
         case 'active':
             return User::getInstance()->countUsers('b_active = 1');
-            break;
         case 'enabled':
             return User::getInstance()->countUsers('b_enabled = 1');
-            break;
         default:
             return User::getInstance()->countUsers();
-            break;
     }
 }
 

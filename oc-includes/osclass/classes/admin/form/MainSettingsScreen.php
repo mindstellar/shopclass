@@ -80,6 +80,7 @@ final class MainSettingsScreen extends SettingsScreen
                 // The one id on this screen that is not the control's own name, so it is
                 // the one worth keeping.
                 ->set('id', 'currency_admin')
+            // @phpstan-ignore argument.type (int-like keys are cast to strings by PHP)
             ->select('weekStart', __('Week starts on'), array(
                 '0' => __('Sunday'),
                 '1' => __('Monday'),

@@ -163,7 +163,7 @@ class CWebLogin extends BaseModel
             case ('resend'):
                 $id    = Params::getParam('id');
                 $email = Params::getParam('email');
-                $user  = User::getInstance()->findByPrimaryKey($id);
+                $user  = User::getInstance()->findByPrimaryKey((int) $id);
                 if ($id == '' || $email == '' || !isset($user) || $user['b_active'] == 1
                     || $email != $user['s_email']
                 ) {
@@ -232,7 +232,7 @@ class CWebLogin extends BaseModel
                 break;
             case ('forgot'):         //form to recover the password (in this case we have the form in /gui/)
                 $user = User::getInstance()
-                    ->findByIdPasswordSecret(Params::getParam('userId'), Params::getParam('code'));
+                    ->findByIdPasswordSecret(Params::getParamInt('userId'), Params::getParam('code'));
                 if ($user) {
                     $this->doView(osc_locate_template(array('user-forgot_password.php'), 'user-forgot_password'));
                 } else {
@@ -247,13 +247,13 @@ class CWebLogin extends BaseModel
                 ) {
                     osc_add_flash_warning_message(_m('Password cannot be blank'));
                     $this->redirectTo(osc_forgot_user_password_confirm_url(
-                        Params::getParam('userId'),
+                        Params::getParamInt('userId'),
                         Params::getParam('code')
                     ));
                 }
 
                 $user = User::getInstance()
-                    ->findByIdPasswordSecret(Params::getParam('userId'), Params::getParam('code'));
+                    ->findByIdPasswordSecret(Params::getParamInt('userId'), Params::getParam('code'));
                 if (!empty($user) && $user['b_enabled'] == 1) {
                     if (Params::getParam('new_password', false, false)
                         == Params::getParam('new_password2', false, false)
@@ -270,7 +270,7 @@ class CWebLogin extends BaseModel
                     } else {
                         osc_add_flash_error_message(_m("Error, the password don't match"));
                         $this->redirectTo(osc_forgot_user_password_confirm_url(
-                            Params::getParam('userId'),
+                            Params::getParamInt('userId'),
                             Params::getParam('code')
                         ));
                     }

@@ -659,6 +659,8 @@ class CAdminLanguages extends AdminSecBaseModel
                 $this->doView('languages/index.php');
                 break;
         }
+
+        return null;
     }
 
     /**

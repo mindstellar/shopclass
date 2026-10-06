@@ -360,7 +360,7 @@ class CAdminBilling extends AdminSecBaseModel
      * edits a balance without leaving a record.
      *
      * @return void
-     * @throws DbException when the ledger write fails
+     * @throws \mindstellar\database\DbException when the ledger write fails
      */
     private function walletAdjustPost()
     {

@@ -82,7 +82,7 @@ function osc_runAlert($type = null, $last_exec = null)
                     foreach ($alerts as $alert) {
                         $user = array();
                         if ((int)$alert['fk_i_user_id'] > 0) {
-                            $user = $mUser->findByPrimaryKey($alert['fk_i_user_id']);
+                            $user = $mUser->findByPrimaryKey((int) $alert['fk_i_user_id']);
                         }
                         if (!isset($user['s_name'])) {
                             $user = array(

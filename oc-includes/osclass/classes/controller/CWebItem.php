@@ -73,7 +73,7 @@ class CWebItem extends BaseModel
         if ($this->action === 'view_beacon') {
             $this->countItemViewBeacon();
 
-            return;
+            return null;
         }
 
         $locales = OSCLocale::getInstance()->listAllEnabled();
@@ -221,7 +221,7 @@ class CWebItem extends BaseModel
                 }
 
                 $category =
-                    Category::getInstance()->findByPrimaryKey(Params::getParam('catId'));
+                    Category::getInstance()->findByPrimaryKey(Params::getParamInt('catId'));
                 View::getInstance()->_exportVariableToView('category', $category);
                 // Let a theme or plugin send the seller somewhere other than the category
                 // search page after publishing — e.g. straight to the new listing.
@@ -355,7 +355,7 @@ class CWebItem extends BaseModel
                 if (count($item) == 0) {
                     $this->do404();
 
-                    return;
+                    return null;
                 }
 
                 View::getInstance()->_exportVariableToView('item', $item[0]);
@@ -366,7 +366,7 @@ class CWebItem extends BaseModel
                         osc_add_flash_ok_message(_m('The listing has been validated'));
                         // The item page hides a listing from a guest, so send them home with
                         // the reason. The owner's item page already explains it.
-                        if (!ItemAccess::canView(array('b_active' => 1) + $item[0], $this->userId, false)) {
+                        if (!ListingPolicy::canView(array('b_active' => 1) + $item[0], $this->actor(false))) {
                             osc_add_flash_warning_message(
                                 _m('The listing will be public once the admin has approved it')
                             );
@@ -421,7 +421,7 @@ class CWebItem extends BaseModel
                     $this->redirectTo(osc_item_edit_url($secret, $item));
                 }
 
-                $aItem = Item::getInstance()->findByPrimaryKey($item);
+                $aItem = Item::getInstance()->findByPrimaryKey((int) $item);
                 if (count($aItem) == 0) {
                     osc_add_flash_error_message(_m("The listing doesn't exist"));
                     $this->redirectTo(osc_item_edit_url($secret, $item));
@@ -433,7 +433,7 @@ class CWebItem extends BaseModel
                     $this->redirectTo(osc_item_edit_url($secret, $item));
                 }
 
-                $result = ItemResource::getInstance()->existResource($id, $code);
+                $result = ItemResource::getInstance()->existResource((int) $id, $code);
 
                 if ($result > 0) {
                     $resource = ItemResource::getInstance()->findByPrimaryKey($id);
@@ -462,7 +462,7 @@ class CWebItem extends BaseModel
                 $id = Params::getParam('id');
                 $as = Params::getParam('as');
 
-                $item = Item::getInstance()->findByPrimaryKey($id);
+                $item = Item::getInstance()->findByPrimaryKey((int) $id);
                 if (count($item) == 0) {
                     osc_add_flash_error_message(_m("This listing doesn't exist"));
                     $this->redirectTo(osc_base_url(true));
@@ -722,7 +722,7 @@ class CWebItem extends BaseModel
                 if ($id === '' || !ctype_digit($id)) {
                     $this->do404();
 
-                    return;
+                    return null;
                 }
 
                 if (Params::getParam('lang') && (new Validate())->localeCode(Params::getParam('lang'))) {
@@ -736,7 +736,7 @@ class CWebItem extends BaseModel
                 if (count($item) == 0) {
                     $this->do404();
 
-                    return;
+                    return null;
                 }
 
                 // Not validated, disabled or spam: only the owner and admins see it. A 404, not
@@ -744,7 +744,7 @@ class CWebItem extends BaseModel
                 if (!ListingPolicy::canView($item, $this->actor(true))) {
                     $this->do404();
 
-                    return;
+                    return null;
                 }
 
                 if ($item['b_active'] != 1) {
@@ -854,6 +854,8 @@ class CWebItem extends BaseModel
                 $this->doView(osc_locate_template($viewCandidates, 'item'));
                 break;
         }
+
+        return null;
     }
 
     /**

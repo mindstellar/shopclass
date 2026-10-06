@@ -50,10 +50,6 @@ final class ThemeFunctions
         }
 
         $tokens = @token_get_all($source);
-        if (!is_array($tokens)) {
-            return array();
-        }
-
         $found = array();
         $depth = 0;
         // Brace depth at which a class/interface/trait/enum body started; a function
@@ -160,6 +156,7 @@ final class ThemeFunctions
             }
             // A name declared twice in one file is already that file's own problem; the
             // guarded reading is the one that matters here.
+            // @phpstan-ignore booleanOr.leftAlwaysFalse (a name may be declared twice)
             $found[$name] = isset($found[$name]) ? ($found[$name] || $guarded) : $guarded;
         }
 

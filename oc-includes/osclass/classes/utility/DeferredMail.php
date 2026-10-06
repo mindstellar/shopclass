@@ -51,6 +51,7 @@ final class DeferredMail
         $mails      = self::$held;
         self::$held = null;
         $send ??= 'osc_sendMail';
+        // @phpstan-ignore foreach.emptyArray (the callback queues e-mails while it runs)
         foreach ($mails as $params) {
             try {
                 $send($params);

@@ -90,10 +90,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                 echo 'data-col-name="'. osc_esc_html(__('Code')) .'"';
                             } elseif ($key === 2) {
                                 echo 'data-col-name="'. osc_esc_html(__('Name')) .'"';
-                            } elseif ($key === 3) {
-                                echo 'data-col-name="'. osc_esc_html(__('Currency symbol')) .'"';
                             } else {
-                                echo 'data-col-name="'.ucfirst($key).'"';
+                                echo 'data-col-name="'. osc_esc_html(__('Currency symbol')) .'"';
                             } ?>>
                             <?php echo $value; ?>
                             </td>

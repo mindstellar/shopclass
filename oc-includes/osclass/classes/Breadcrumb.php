@@ -85,6 +85,7 @@ class Breadcrumb
      */
     public function init()
     {
+        $l = array();
         if (in_array(
             $this->getLocation(),
             array('item', 'page', 'search', 'login', 'register', 'user', 'contact', 'custom')
@@ -105,6 +106,7 @@ class Breadcrumb
                     break;
                 }
 
+                $aCategory = null;
                 try {
                     $aCategory = osc_get_category('id', osc_item_category_id());
                 } catch (Exception $e) {
@@ -170,6 +172,7 @@ class Breadcrumb
                 $region  = osc_search_region();
                 $city    = osc_search_city();
                 $pattern = osc_search_pattern();
+                $category = array();
                 try {
                     $category = osc_search_category_id();
                 } catch (Exception $e) {
@@ -193,6 +196,7 @@ class Breadcrumb
 
                 // category
                 if ($b_category) {
+                    $aCategories = array();
                     try {
                         $aCategories = Category::getInstance()->toRootTree($category);
                     } catch (Exception $e) {
@@ -226,7 +230,7 @@ class Breadcrumb
                         if ($b_region) {
                             $_region = Region::getInstance()->findByName($region);
                             if (isset($_region['pk_i_id'])) {
-                                $aCity = City::getInstance()->findByName($city, $_region['pk_i_id']);
+                                $aCity = City::getInstance()->findByName($city, (int) $_region['pk_i_id']);
                             }
                         } else {
                             $aCity = City::getInstance()->findByName($city);
@@ -290,7 +294,7 @@ class Breadcrumb
 
                 // remove url from the last node
                 $nodes = $this->getaLevel();
-                if (($nodes > 0) && array_key_exists('url', $nodes[count($nodes) - 1])) {
+                if ($nodes !== array() && array_key_exists('url', $nodes[count($nodes) - 1])) {
                     unset($nodes[count($nodes) - 1]['url']);
                 }
                 $this->setaLevel($nodes);

@@ -181,13 +181,13 @@ switch ($step) {
         break;
     case 2:
         if (Params::getParam('save_stats') == '1' || isset($_COOKIE['osclass_save_stats'])) {
-            setcookie('osclass_save_stats', 1, time() + (24 * 60 * 60));
+            setcookie('osclass_save_stats', '1', time() + (24 * 60 * 60));
         } else {
-            setcookie('osclass_save_stats', 0, time() + (24 * 60 * 60));
+            setcookie('osclass_save_stats', '0', time() + (24 * 60 * 60));
         }
 
         if (isset($_COOKIE['osclass_ping_engines'])) {
-            setcookie('osclass_ping_engines', 1, time() + (24 * 60 * 60));
+            setcookie('osclass_ping_engines', '1', time() + (24 * 60 * 60));
         }
 
         break;

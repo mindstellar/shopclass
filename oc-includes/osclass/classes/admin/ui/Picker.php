@@ -246,7 +246,7 @@ class Picker
      *
      * @param array<int,array<string,mixed>> $rows Category rows carrying pk_i_id, fk_i_parent_id, s_name
      *
-     * @return array<string,array{name:string,parent:string,path:string,depth:int}>
+     * @return array<string,array{name:string,parent:string,path:string,depth:int,trail:array<int,string>}>
      */
     public static function categoryOptions(array $rows)
     {

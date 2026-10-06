@@ -16,9 +16,13 @@
  * Description of BaseModel
  *
  * @author danielo
+ *
+ * @method bool isLogged() supplied by the front or admin subclass
+ * @method void showAuthFailPage() supplied by the front or admin subclass
  */
 class SecBaseModel extends BaseModel
 {
+    // @phpstan-ignore property.onlyWritten (kept for the public setGranting() API)
     private $grant;
 
     /**

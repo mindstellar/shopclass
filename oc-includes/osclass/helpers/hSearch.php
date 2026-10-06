@@ -560,7 +560,7 @@ function osc_search_url($params = null)
                 $category['pk_i_id'] = osc_category_id();
                 $category['s_slug']  = osc_category_slug();
             } elseif (is_numeric($params['sCategory'])) {
-                $category = Category::getInstance()->findByPrimaryKey($params['sCategory']);
+                $category = Category::getInstance()->findByPrimaryKey((int) $params['sCategory']);
             } else {
                 $category = Category::getInstance()->findBySlug($params['sCategory']);
             }
@@ -597,7 +597,7 @@ function osc_search_url($params = null)
                 return $place['url'];
             }
             $url = $place['url'];
-        } elseif ($params != null && is_array($params)) {
+        } elseif ($params != null) {
             $names = _aux_search_param_names();
             foreach ($params as $k => $v) {
                 if ($k === 'meta') {
@@ -1139,7 +1139,7 @@ function osc_get_raw_search($conditions)
                 }
                 if (preg_match('|([0-9]+)|', (string)$v, $match)) {
                     if ($key === 'aCategories') {
-                        $conditions[$key][$k] = $mCategory->findNameByPrimaryKey($match[1]);
+                        $conditions[$key][$k] = $mCategory->findNameByPrimaryKey((int) $match[1]);
                     } else {
                         $conditions[$key][$k] = $match[1];
                     }

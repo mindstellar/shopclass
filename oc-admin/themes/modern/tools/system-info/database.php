@@ -15,6 +15,7 @@ use mindstellar\admin\SystemChecks;
 use mindstellar\database\SchemaDoctor;
 
 // System info > Database, below the verdict and the facts: waiting updates and check and repair.
+/** @var array<string, mixed> $env */
 $findings   = (array) ($env['findings'] ?? array());
 $error      = (string) ($env['findings_error'] ?? '');
 $pending    = (array) ($env['pending'] ?? array());

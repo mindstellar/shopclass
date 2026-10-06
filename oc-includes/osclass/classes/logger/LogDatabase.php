@@ -19,17 +19,17 @@ class LogDatabase
 {
     /**
      *
-     * @var
+     * @var LogDatabase|null
      */
     private static $instance;
     /**
      *
-     * @var
+     * @var array<int, array<string, mixed>>
      */
     public $messages;
     /**
      *
-     * @var
+     * @var array<int, array<string, mixed>>
      */
     public $explain_messages;
 
@@ -253,7 +253,7 @@ class LogDatabase
         $re = "/('(?:[^'\\\\]|\\\\.)*'|\"(?:[^\"\\\\]|\\\\.)*\")|(\\b\\d+\\b)|([A-Za-z_][A-Za-z0-9_]*)|([^'\"A-Za-z0-9_]+)/s";
 
         return preg_replace_callback($re, static function ($m) use ($kw) {
-            if (($m[1] ?? '') !== '') {
+            if ($m[1] !== '') {
                 return '<span class="osc-qdbg__str">' . htmlspecialchars($m[1], ENT_QUOTES) . '</span>';
             }
             if (($m[2] ?? '') !== '') {

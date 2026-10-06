@@ -40,6 +40,7 @@ class FileSystem
      * @return void
      * @internal
      */
+    // @phpstan-ignore method.unused (installed as an error handler by name)
     private static function handleError($type, $msg)
     {
         self::$lastError = $msg;
@@ -214,7 +215,7 @@ class FileSystem
      * The entries under $originDir that sync() would copy: everything but the names in $filter.
      *
      * @param array<int,string> $filter
-     * @param int               $mode   a RecursiveIteratorIterator mode
+     * @param int<0,2>          $mode   a RecursiveIteratorIterator mode
      */
     public function filteredIterator(string $originDir, array $filter = [], int $mode = RecursiveIteratorIterator::SELF_FIRST, bool $followLinks = false): RecursiveIteratorIterator
     {
@@ -257,7 +258,6 @@ class FileSystem
      */
     public function sync($originDir, $targetDir, $options = [], $filter = [])
     {
-        $iterator     = null;
         $targetDir    = rtrim($targetDir, '/\\');
         $originDir    = rtrim($originDir, '/\\');
         $originDirLen = strlen($originDir);
@@ -268,14 +268,10 @@ class FileSystem
 
         // Iterate in destination folder to remove obsolete entries
         if (isset($options['delete']) && $options['delete'] && $this->exists($targetDir)) {
-            $deleteIterator = $iterator;
-            if (null === $deleteIterator) {
-                $flags          = FilesystemIterator::SKIP_DOTS;
-                $deleteIterator = new RecursiveIteratorIterator(
-                    new RecursiveDirectoryIterator($targetDir, $flags),
-                    RecursiveIteratorIterator::CHILD_FIRST
-                );
-            }
+            $deleteIterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($targetDir, FilesystemIterator::SKIP_DOTS),
+                RecursiveIteratorIterator::CHILD_FIRST
+            );
             $targetDirLen = strlen($targetDir);
             foreach ($deleteIterator as $file) {
                 $origin = $originDir . substr($file->getPathname(), $targetDirLen);
@@ -287,9 +283,7 @@ class FileSystem
 
         $copyOnWindows = $options['copy_on_windows'] ?? false;
 
-        if (null === $iterator) {
-            $iterator = $this->filteredIterator($originDir, $filter, RecursiveIteratorIterator::SELF_FIRST, $copyOnWindows);
-        }
+        $iterator = $this->filteredIterator($originDir, $filter, RecursiveIteratorIterator::SELF_FIRST, $copyOnWindows);
 
         $this->mkdir($targetDir);
         $filesCreatedWhileMirroring = [];
@@ -484,7 +478,7 @@ class FileSystem
 
             // Stream context created to allow files overwrite when using FTP stream wrapper - disabled by default
             if (false ===
-                $target = @fopen($targetFile, 'wb', null, stream_context_create(['ftp' => ['overwrite' => true]]))
+                $target = @fopen($targetFile, 'wb', false, stream_context_create(['ftp' => ['overwrite' => true]]))
             ) {
                 throw new RuntimeException(sprintf(
                     'Unable to copy "%s" to "%s" because target file could not be opened for writing.',
@@ -610,7 +604,7 @@ class FileSystem
         if (true !== @rename($origin, $target)) {
             if (is_dir($origin)) {
                 // See https://bugs.php.net/54097 & https://php.net/rename#113943
-                $this->sync($origin, $target, null, ['override' => $overwrite, 'delete' => $overwrite]);
+                $this->sync($origin, $target, ['override' => $overwrite, 'delete' => $overwrite]);
                 $this->remove($origin);
 
                 return;
@@ -728,7 +722,7 @@ class FileSystem
             if (!defined('CURLOPT_RETURNTRANSFER')) {
                 define('CURLOPT_RETURNTRANSFER', 1);
             }
-            @curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+            @curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
             // Bound the redirect chain and keep it on HTTP(S): a redirect must not be
             // able to pivot to file://, gopher:// and friends (the classic SSRF jump).
             @curl_setopt($ch, CURLOPT_MAXREDIRS, 5);
@@ -750,7 +744,7 @@ class FileSystem
             }
 
             if ($post_data !== null) {
-                curl_setopt($ch, CURLOPT_POST, 1);
+                curl_setopt($ch, CURLOPT_POST, true);
                 curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post_data));
             }
 
@@ -830,7 +824,6 @@ class FileSystem
         }
 
         $fileList = array();
-        /** @var RecursiveDirectoryIterator $iterator */
         foreach ($iterator as $file) {
             $pathname   = $file->getPathname();
             $fileList[] = $file->isDir() ? $pathname . '/' : $pathname;
@@ -957,10 +950,10 @@ class FileSystem
 
                 if (stripos($sourceURL, 'https') !== false) {
                     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $verify_ssl);
-                    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
                 }
                 if ($post_data !== null) {
-                    curl_setopt($ch, CURLOPT_POST, 1);
+                    curl_setopt($ch, CURLOPT_POST, true);
                     curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post_data));
                 }
 

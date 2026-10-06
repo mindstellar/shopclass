@@ -747,6 +747,7 @@ class QueryBuilder
             $quoted = $this->quoteIdent((string) $column);
             $sets[] = $quoted . ' = VALUES(' . $quoted . ')';
         }
+        // @phpstan-ignore identical.alwaysFalse (empty data and update lists are possible)
         if ($sets === []) {
             throw new DbException('Upsert needs at least one column to update');
         }

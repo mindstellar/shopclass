@@ -1833,7 +1833,7 @@ function osc_query_item($params = null)
     foreach ($params as $key => $value) {
         switch ($key) {
             case 'id':
-                $mSearch->addItemId($value);
+                $mSearch->addItemId((int) $value);
                 break;
             case 'pattern':
                 $mSearch->addPattern($value);
@@ -1886,7 +1886,7 @@ function osc_query_item($params = null)
                 break;
 
             case 'results_per_page':
-                $mSearch->set_rpp($value);
+                $mSearch->set_rpp((int) $value);
                 break;
 
             case 'premium':
@@ -1894,11 +1894,11 @@ function osc_query_item($params = null)
                 break;
 
             case 'page':
-                $mSearch->page($value);
+                $mSearch->page((int) $value);
                 break;
 
             case 'offset':
-                $mSearch->limit($value);
+                $mSearch->limit((int) $value);
                 break;
 
             default:

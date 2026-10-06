@@ -132,7 +132,9 @@ final class SearchCompiler
     {
         $p = DB_TABLE_PREFIX;
         // The filters fire here too, as they always have, though the block uses neither.
+        // @phpstan-ignore method.resultUnused (run for the filters it fires)
         $parts->plugin->conditionsSql();
+        // @phpstan-ignore method.resultUnused (run for the filters it fires)
         $parts->plugin->fieldList();
         $withLocations = $parts->locations->used();
         $sub           = null;

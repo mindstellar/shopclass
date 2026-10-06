@@ -528,6 +528,7 @@ class Search extends DAO
      *
      * @return string
      */
+    // @phpstan-ignore method.unused (called through reflection by the tests)
     private function makeSQLPremium($num = 2)
     {
         return SearchCompiler::premiums($this->parts, $num)[0];
@@ -599,7 +600,7 @@ class Search extends DAO
     {
         $key         =
             md5(osc_cache_search_generation() . osc_base_url() . (string)$numItems . json_encode($options) . (string)$withPicture);
-        $found       = null;
+        $found       = false;
         $latestItems = osc_cache_get($key, $found);
         if ($latestItems === false) {
             $this->set_rpp($numItems);
@@ -757,7 +758,7 @@ class Search extends DAO
      *  Search::getInstance()->listCities($region, ">=", "city_name ASC" )
      * </code>
      *
-     * @param string $region
+     * @param int|string|null $region a region id, or %%%% for any
      * @param string $zero if you want to include locations with zero results
      * @param string $order
      *
@@ -774,7 +775,7 @@ class Search extends DAO
     /**
      * Returns number of ads from each city area
      *
-     * @param int|null $city
+     * @param int|string|null $city a city id, or %%%% for any
      * @param string   $zero if you want to include locations with zero results
      * @param string   $order
      *

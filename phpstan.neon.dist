@@ -11,8 +11,26 @@ parameters:
         - oc-includes/vendor
     bootstrapFiles:
         - tools/lint/phpstan-bootstrap.php
-    tmpDir: .phpstan-cache
-    reportUnmatchedIgnoredErrors: false
-
-includes:
-    - phpstan-baseline.neon
+    treatPhpDocTypesAsCertain: false
+    # Set per install in config.php or by the request, so never fixed values.
+    dynamicConstantNames:
+        - OC_ADMIN
+        - OSC_DEBUG
+        - OSC_DEBUG_LOG
+        - OSC_DEBUG_DB
+        - OSC_DEBUG_DB_LOG
+        - OSC_DEBUG_DB_EXPLAIN
+        - OSC_DB_STRICT_MODE
+        - OSC_WEB_PATH_FROM_REQUEST
+        - OSC_WEB_PATH_FROM_CLI_URL
+        - WEB_PATH
+        - REL_WEB_URL
+        - DB_HOST
+        - DB_USER
+        - DB_PASSWORD
+        - DB_NAME
+        - DB_TABLE_PREFIX
+        - MULTISITE
+        - CLI
+        - OSC_CACHE_TTL
+        - OSC_MEMORY_LIMIT

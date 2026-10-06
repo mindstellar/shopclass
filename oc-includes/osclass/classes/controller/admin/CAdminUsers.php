@@ -70,7 +70,7 @@ class CAdminUsers extends AdminSecBaseModel
                 }
 
                 if (isset($aRegions[0]['pk_i_id'])) {
-                    $aCities = City::getInstance()->findByRegion($aRegions[0]['pk_i_id']);
+                    $aCities = City::getInstance()->findByRegion((int) $aRegions[0]['pk_i_id']);
                 }
 
                 $this->_exportVariableToView('user', null);
@@ -114,9 +114,9 @@ class CAdminUsers extends AdminSecBaseModel
                 }
                 $aCities = array();
                 if ($aUser['fk_i_region_id'] != '') {
-                    $aCities = City::getInstance()->findByRegion($aUser['fk_i_region_id']);
+                    $aCities = City::getInstance()->findByRegion((int) $aUser['fk_i_region_id']);
                 } elseif (count($aRegions) > 0) {
-                    $aCities = City::getInstance()->findByRegion($aRegions[0]['pk_i_id']);
+                    $aCities = City::getInstance()->findByRegion((int) $aRegions[0]['pk_i_id']);
                 }
 
                 $csrf_token = osc_csrf_token_url();

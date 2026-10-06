@@ -51,56 +51,56 @@ class CAdminStats extends AdminSecBaseModel
                 if (Params::getParam('type_stat') === 'week') {
                     $stats_reports = Stats::getInstance()->new_reports_count(date(
                         'Y-m-d',
-                        mktime(0, 0, 0, date('m'), date('d') - 70, date('Y'))
+                        mktime(0, 0, 0, (int) date('m'), (int) date('d') - 70, (int) date('Y'))
                     ), 'week');
                     for ($k = 10; $k >= 0; $k--) {
-                        $reports[date('W', mktime(0, 0, 0, date('m'), date('d'), date('Y'))) - $k]['views']          =
+                        $reports[date('W', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('Y'))) - $k]['views']          =
                             0;
-                        $reports[date('W', mktime(0, 0, 0, date('m'), date('d'), date('Y'))) - $k]['spam']           =
+                        $reports[date('W', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('Y'))) - $k]['spam']           =
                             0;
-                        $reports[date('W', mktime(0, 0, 0, date('m'), date('d'), date('Y'))) - $k]['repeated']       =
+                        $reports[date('W', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('Y'))) - $k]['repeated']       =
                             0;
-                        $reports[date('W', mktime(0, 0, 0, date('m'), date('d'), date('Y'))) - $k]['bad_classified'] =
+                        $reports[date('W', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('Y'))) - $k]['bad_classified'] =
                             0;
-                        $reports[date('W', mktime(0, 0, 0, date('m'), date('d'), date('Y'))) - $k]['offensive']      =
+                        $reports[date('W', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('Y'))) - $k]['offensive']      =
                             0;
-                        $reports[date('W', mktime(0, 0, 0, date('m'), date('d'), date('Y'))) - $k]['expired']        =
+                        $reports[date('W', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('Y'))) - $k]['expired']        =
                             0;
                     }
                 } elseif (Params::getParam('type_stat') === 'month') {
                     $stats_reports = Stats::getInstance()->new_reports_count(date(
                         'Y-m-d',
-                        mktime(0, 0, 0, date('m') - 10, date('d'), date('Y'))
+                        mktime(0, 0, 0, (int) date('m') - 10, (int) date('d'), (int) date('Y'))
                     ), 'month');
                     for ($k = 10; $k >= 0; $k--) {
-                        $reports[date('F', mktime(0, 0, 0, date('m') - $k, date('d'), date('Y')))]['views']          =
+                        $reports[date('F', mktime(0, 0, 0, (int) date('m') - $k, (int) date('d'), (int) date('Y')))]['views']          =
                             0;
-                        $reports[date('F', mktime(0, 0, 0, date('m') - $k, date('d'), date('Y')))]['spam']           =
+                        $reports[date('F', mktime(0, 0, 0, (int) date('m') - $k, (int) date('d'), (int) date('Y')))]['spam']           =
                             0;
-                        $reports[date('F', mktime(0, 0, 0, date('m') - $k, date('d'), date('Y')))]['repeated']       =
+                        $reports[date('F', mktime(0, 0, 0, (int) date('m') - $k, (int) date('d'), (int) date('Y')))]['repeated']       =
                             0;
-                        $reports[date('F', mktime(0, 0, 0, date('m') - $k, date('d'), date('Y')))]['bad_classified'] =
+                        $reports[date('F', mktime(0, 0, 0, (int) date('m') - $k, (int) date('d'), (int) date('Y')))]['bad_classified'] =
                             0;
-                        $reports[date('F', mktime(0, 0, 0, date('m') - $k, date('d'), date('Y')))]['offensive']      =
+                        $reports[date('F', mktime(0, 0, 0, (int) date('m') - $k, (int) date('d'), (int) date('Y')))]['offensive']      =
                             0;
-                        $reports[date('F', mktime(0, 0, 0, date('m') - $k, date('d'), date('Y')))]['expired']        =
+                        $reports[date('F', mktime(0, 0, 0, (int) date('m') - $k, (int) date('d'), (int) date('Y')))]['expired']        =
                             0;
                     }
                 } else {
                     $stats_reports = Stats::getInstance()->new_reports_count(date(
                         'Y-m-d',
-                        mktime(0, 0, 0, date('m'), date('d') - 10, date('Y'))
+                        mktime(0, 0, 0, (int) date('m'), (int) date('d') - 10, (int) date('Y'))
                     ), 'day');
                     for ($k = 10; $k >= 0; $k--) {
-                        $reports[date('Y-m-d', mktime(0, 0, 0, date('m'), date('d') - $k, date('Y')))]['views']     = 0;
-                        $reports[date('Y-m-d', mktime(0, 0, 0, date('m'), date('d') - $k, date('Y')))]['spam']      = 0;
-                        $reports[date('Y-m-d', mktime(0, 0, 0, date('m'), date('d') - $k, date('Y')))]['repeated']  = 0;
+                        $reports[date('Y-m-d', mktime(0, 0, 0, (int) date('m'), (int) date('d') - $k, (int) date('Y')))]['views']     = 0;
+                        $reports[date('Y-m-d', mktime(0, 0, 0, (int) date('m'), (int) date('d') - $k, (int) date('Y')))]['spam']      = 0;
+                        $reports[date('Y-m-d', mktime(0, 0, 0, (int) date('m'), (int) date('d') - $k, (int) date('Y')))]['repeated']  = 0;
                         $reports[date(
                             'Y-m-d',
-                            mktime(0, 0, 0, date('m'), date('d') - $k, date('Y'))
+                            mktime(0, 0, 0, (int) date('m'), (int) date('d') - $k, (int) date('Y'))
                         )]['bad_classified']                                                                        = 0;
-                        $reports[date('Y-m-d', mktime(0, 0, 0, date('m'), date('d') - $k, date('Y')))]['offensive'] = 0;
-                        $reports[date('Y-m-d', mktime(0, 0, 0, date('m'), date('d') - $k, date('Y')))]['expired']   = 0;
+                        $reports[date('Y-m-d', mktime(0, 0, 0, (int) date('m'), (int) date('d') - $k, (int) date('Y')))]['offensive'] = 0;
+                        $reports[date('Y-m-d', mktime(0, 0, 0, (int) date('m'), (int) date('d') - $k, (int) date('Y')))]['expired']   = 0;
                     }
                 }
                 $max          = array();
@@ -141,26 +141,26 @@ class CAdminStats extends AdminSecBaseModel
                 if (Params::getParam('type_stat') === 'week') {
                     $stats_comments = Stats::getInstance()->new_comments_count(date(
                         'Y-m-d H:i:s',
-                        mktime(0, 0, 0, date('m'), date('d') - 70, date('Y'))
+                        mktime(0, 0, 0, (int) date('m'), (int) date('d') - 70, (int) date('Y'))
                     ), 'week');
                     for ($k = 10; $k >= 0; $k--) {
-                        $comments[date('W', mktime(0, 0, 0, date('m'), date('d'), date('Y'))) - $k] = 0;
+                        $comments[date('W', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('Y'))) - $k] = 0;
                     }
                 } elseif (Params::getParam('type_stat') === 'month') {
                     $stats_comments = Stats::getInstance()->new_comments_count(date(
                         'Y-m-d H:i:s',
-                        mktime(0, 0, 0, date('m') - 10, date('d'), date('Y'))
+                        mktime(0, 0, 0, (int) date('m') - 10, (int) date('d'), (int) date('Y'))
                     ), 'month');
                     for ($k = 10; $k >= 0; $k--) {
-                        $comments[date('F', mktime(0, 0, 0, date('m') - $k, date('d'), date('Y')))] = 0;
+                        $comments[date('F', mktime(0, 0, 0, (int) date('m') - $k, (int) date('d'), (int) date('Y')))] = 0;
                     }
                 } else {
                     $stats_comments = Stats::getInstance()->new_comments_count(date(
                         'Y-m-d H:i:s',
-                        mktime(0, 0, 0, date('m'), date('d') - 10, date('Y'))
+                        mktime(0, 0, 0, (int) date('m'), (int) date('d') - 10, (int) date('Y'))
                     ), 'day');
                     for ($k = 10; $k >= 0; $k--) {
-                        $comments[date('Y-m-d', mktime(0, 0, 0, date('m'), date('d') - $k, date('Y')))] = 0;
+                        $comments[date('Y-m-d', mktime(0, 0, 0, (int) date('m'), (int) date('d') - $k, (int) date('Y')))] = 0;
                     }
                 }
                 $max = 0;
@@ -182,41 +182,41 @@ class CAdminStats extends AdminSecBaseModel
                 if (Params::getParam('type_stat') === 'week') {
                     $stats_items   = Stats::getInstance()->new_items_count(date(
                         'Y-m-d H:i:s',
-                        mktime(0, 0, 0, date('m'), date('d') - 70, date('Y'))
+                        mktime(0, 0, 0, (int) date('m'), (int) date('d') - 70, (int) date('Y'))
                     ), 'week');
                     $stats_reports = Stats::getInstance()->new_reports_count(date(
                         'Y-m-d',
-                        mktime(0, 0, 0, date('m'), date('d') - 70, date('Y'))
+                        mktime(0, 0, 0, (int) date('m'), (int) date('d') - 70, (int) date('Y'))
                     ), 'week');
                     for ($k = 10; $k >= 0; $k--) {
-                        $reports[date('W', mktime(0, 0, 0, date('m'), date('d'), date('Y'))) - $k]['views'] = 0;
-                        $items[date('W', mktime(0, 0, 0, date('m'), date('d'), date('Y'))) - $k]            = 0;
+                        $reports[date('W', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('Y'))) - $k]['views'] = 0;
+                        $items[date('W', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('Y'))) - $k]            = 0;
                     }
                 } elseif (Params::getParam('type_stat') === 'month') {
                     $stats_items   = Stats::getInstance()->new_items_count(date(
                         'Y-m-d H:i:s',
-                        mktime(0, 0, 0, date('m') - 10, date('d'), date('Y'))
+                        mktime(0, 0, 0, (int) date('m') - 10, (int) date('d'), (int) date('Y'))
                     ), 'month');
                     $stats_reports = Stats::getInstance()->new_reports_count(date(
                         'Y-m-d',
-                        mktime(0, 0, 0, date('m') - 10, date('d'), date('Y'))
+                        mktime(0, 0, 0, (int) date('m') - 10, (int) date('d'), (int) date('Y'))
                     ), 'month');
                     for ($k = 10; $k >= 0; $k--) {
-                        $reports[date('F', mktime(0, 0, 0, date('m') - $k, date('d'), date('Y')))]['views'] = 0;
-                        $items[date('F', mktime(0, 0, 0, date('m') - $k, date('d'), date('Y')))]            = 0;
+                        $reports[date('F', mktime(0, 0, 0, (int) date('m') - $k, (int) date('d'), (int) date('Y')))]['views'] = 0;
+                        $items[date('F', mktime(0, 0, 0, (int) date('m') - $k, (int) date('d'), (int) date('Y')))]            = 0;
                     }
                 } else {
                     $stats_items   = Stats::getInstance()->new_items_count(date(
                         'Y-m-d H:i:s',
-                        mktime(0, 0, 0, date('m'), date('d') - 10, date('Y'))
+                        mktime(0, 0, 0, (int) date('m'), (int) date('d') - 10, (int) date('Y'))
                     ), 'day');
                     $stats_reports = Stats::getInstance()->new_reports_count(date(
                         'Y-m-d',
-                        mktime(0, 0, 0, date('m'), date('d') - 10, date('Y'))
+                        mktime(0, 0, 0, (int) date('m'), (int) date('d') - 10, (int) date('Y'))
                     ), 'day');
                     for ($k = 10; $k >= 0; $k--) {
-                        $reports[date('Y-m-d', mktime(0, 0, 0, date('m'), date('d') - $k, date('Y')))]['views'] = 0;
-                        $items[date('Y-m-d', mktime(0, 0, 0, date('m'), date('d') - $k, date('Y')))]            = 0;
+                        $reports[date('Y-m-d', mktime(0, 0, 0, (int) date('m'), (int) date('d') - $k, (int) date('Y')))]['views'] = 0;
+                        $items[date('Y-m-d', mktime(0, 0, 0, (int) date('m'), (int) date('d') - $k, (int) date('Y')))]            = 0;
                     }
                 }
                 $max = 0;
@@ -239,41 +239,41 @@ class CAdminStats extends AdminSecBaseModel
                 if (Params::getParam('type_stat') === 'week') {
                     $stats_alerts      = Stats::getInstance()->new_alerts_count(date(
                         'Y-m-d H:i:s',
-                        mktime(0, 0, 0, date('m'), date('d') - 70, date('Y'))
+                        mktime(0, 0, 0, (int) date('m'), (int) date('d') - 70, (int) date('Y'))
                     ), 'week');
                     $stats_subscribers = Stats::getInstance()->new_subscribers_count(date(
                         'Y-m-d',
-                        mktime(0, 0, 0, date('m'), date('d') - 70, date('Y'))
+                        mktime(0, 0, 0, (int) date('m'), (int) date('d') - 70, (int) date('Y'))
                     ), 'week');
                     for ($k = 10; $k >= 0; $k--) {
-                        $subscribers[date('W', mktime(0, 0, 0, date('m'), date('d'), date('Y'))) - $k] = 0;
-                        $alerts[date('W', mktime(0, 0, 0, date('m'), date('d'), date('Y'))) - $k]      = 0;
+                        $subscribers[date('W', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('Y'))) - $k] = 0;
+                        $alerts[date('W', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('Y'))) - $k]      = 0;
                     }
                 } elseif (Params::getParam('type_stat') === 'month') {
                     $stats_alerts      = Stats::getInstance()->new_alerts_count(date(
                         'Y-m-d H:i:s',
-                        mktime(0, 0, 0, date('m') - 10, date('d'), date('Y'))
+                        mktime(0, 0, 0, (int) date('m') - 10, (int) date('d'), (int) date('Y'))
                     ), 'month');
                     $stats_subscribers = Stats::getInstance()->new_subscribers_count(date(
                         'Y-m-d',
-                        mktime(0, 0, 0, date('m') - 10, date('d'), date('Y'))
+                        mktime(0, 0, 0, (int) date('m') - 10, (int) date('d'), (int) date('Y'))
                     ), 'month');
                     for ($k = 10; $k >= 0; $k--) {
-                        $subscribers[date('F', mktime(0, 0, 0, date('m') - $k, date('d'), date('Y')))] = 0;
-                        $alerts[date('F', mktime(0, 0, 0, date('m') - $k, date('d'), date('Y')))]      = 0;
+                        $subscribers[date('F', mktime(0, 0, 0, (int) date('m') - $k, (int) date('d'), (int) date('Y')))] = 0;
+                        $alerts[date('F', mktime(0, 0, 0, (int) date('m') - $k, (int) date('d'), (int) date('Y')))]      = 0;
                     }
                 } else {
                     $stats_alerts      = Stats::getInstance()->new_alerts_count(date(
                         'Y-m-d H:i:s',
-                        mktime(0, 0, 0, date('m'), date('d') - 10, date('Y'))
+                        mktime(0, 0, 0, (int) date('m'), (int) date('d') - 10, (int) date('Y'))
                     ), 'day');
                     $stats_subscribers = Stats::getInstance()->new_subscribers_count(date(
                         'Y-m-d',
-                        mktime(0, 0, 0, date('m'), date('d') - 10, date('Y'))
+                        mktime(0, 0, 0, (int) date('m'), (int) date('d') - 10, (int) date('Y'))
                     ), 'day');
                     for ($k = 10; $k >= 0; $k--) {
-                        $subscribers[date('Y-m-d', mktime(0, 0, 0, date('m'), date('d') - $k, date('Y')))] = 0;
-                        $alerts[date('Y-m-d', mktime(0, 0, 0, date('m'), date('d') - $k, date('Y')))]      = 0;
+                        $subscribers[date('Y-m-d', mktime(0, 0, 0, (int) date('m'), (int) date('d') - $k, (int) date('Y')))] = 0;
+                        $alerts[date('Y-m-d', mktime(0, 0, 0, (int) date('m'), (int) date('d') - $k, (int) date('Y')))]      = 0;
                     }
                 }
                 $max        = 0;
@@ -310,26 +310,26 @@ class CAdminStats extends AdminSecBaseModel
                 if (Params::getParam('type_stat') === 'week') {
                     $stats_users = Stats::getInstance()->new_users_count(date(
                         'Y-m-d H:i:s',
-                        mktime(0, 0, 0, date('m'), date('d') - 70, date('Y'))
+                        mktime(0, 0, 0, (int) date('m'), (int) date('d') - 70, (int) date('Y'))
                     ), 'week');
                     for ($k = 10; $k >= 0; $k--) {
-                        $users[date('W', mktime(0, 0, 0, date('m'), date('d'), date('Y'))) - $k] = 0;
+                        $users[date('W', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('Y'))) - $k] = 0;
                     }
                 } elseif (Params::getParam('type_stat') === 'month') {
                     $stats_users = Stats::getInstance()->new_users_count(date(
                         'Y-m-d H:i:s',
-                        mktime(0, 0, 0, date('m') - 10, date('d'), date('Y'))
+                        mktime(0, 0, 0, (int) date('m') - 10, (int) date('d'), (int) date('Y'))
                     ), 'month');
                     for ($k = 10; $k >= 0; $k--) {
-                        $users[date('F', mktime(0, 0, 0, date('m') - $k, date('d'), date('Y')))] = 0;
+                        $users[date('F', mktime(0, 0, 0, (int) date('m') - $k, (int) date('d'), (int) date('Y')))] = 0;
                     }
                 } else {
                     $stats_users = Stats::getInstance()->new_users_count(date(
                         'Y-m-d H:i:s',
-                        mktime(0, 0, 0, date('m'), date('d') - 10, date('Y'))
+                        mktime(0, 0, 0, (int) date('m'), (int) date('d') - 10, (int) date('Y'))
                     ), 'day');
                     for ($k = 10; $k >= 0; $k--) {
-                        $users[date('Y-m-d', mktime(0, 0, 0, date('m'), date('d') - $k, date('Y')))] = 0;
+                        $users[date('Y-m-d', mktime(0, 0, 0, (int) date('m'), (int) date('d') - $k, (int) date('Y')))] = 0;
                     }
                 }
                 $max = 0;

@@ -57,7 +57,7 @@ final class CurrencyService
      */
     public function enabled(): array
     {
-        return CacheGroup::remember('currency', 'enabled', static function (): ?array {
+        return CacheGroup::remember('currency', 'enabled', static function (): array {
             return osc_db_stringify_rows(CurrencyStore::enabled());
         }) ?? [];
     }

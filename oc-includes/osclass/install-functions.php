@@ -961,6 +961,11 @@ function oc_install_example_data()
 {
     require_once LIB_PATH . 'osclass/formatting.php';
     require LIB_PATH . 'osclass/installer/basic_data.php';
+    /**
+     * @var array<int, array<string, mixed>> $categories
+     * @var array<string, mixed>             $item
+     * @var array<string, mixed>             $page
+     */
     require_once LIB_PATH . 'osclass/helpers/hSecurity.php';
     require_once LIB_PATH . 'osclass/helpers/hValidate.php';
     require_once LIB_PATH . 'osclass/helpers/hUsers.php';
@@ -975,6 +980,7 @@ function oc_install_example_data()
          *
          * @return mixed The value it was given
          */
+        // @phpstan-ignore function.inner (installer-only stand-in, declared once)
         function osc_apply_filter($dummyfilter, $str)
         {
             return $str;

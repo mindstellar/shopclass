@@ -76,7 +76,7 @@ function mediaFileNeedles(array $row)
     $needles = array();
 
     $key = trim((string) ($row['s_path'] ?? '')) . (int) $row['id'];
-    if ($key !== '' && $key !== (string) (int) $row['id']) {
+    if ($key !== (string) (int) $row['id']) {
         $needles[] = $key;
     }
 

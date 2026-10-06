@@ -777,6 +777,7 @@ class S3Storage implements StorageAdapter
             $http = $this->timeout > 0
                 ? HttpClient::create(['timeout' => $this->timeout, 'max_duration' => $this->timeout])
                 : null;
+            // @phpstan-ignore argument.type (the client takes a bool for pathStyleEndpoint)
             $this->client = new S3Client([
                 'endpoint' => $this->endpointScheme() . '://' . $this->endpointHost(),
                 'region' => $this->region,

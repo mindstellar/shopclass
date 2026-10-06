@@ -74,7 +74,7 @@ final class JobWorker
                 // A single job can outlast the budget -- a category batch, a large
                 // upload. Stop there, and hand back the claimed jobs not yet run.
                 if ((time() - $start) >= $maxSeconds) {
-                    $queue->release(array_column(array_slice($rows, $i + 1), 'pk_i_id'));
+                    $queue->release(array_map('intval', array_column(array_slice($rows, $i + 1), 'pk_i_id')));
                     break;
                 }
             }

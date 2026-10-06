@@ -1249,14 +1249,6 @@ final class SystemChecks
         return (int) ($env['now'] ?? time());
     }
 
-    /**
-     * @param string              $id
-     * @param string              $tone
-     * @param string              $text
-     * @param array<string,mixed> $action
-     *
-     * @return array<string,mixed>
-     */
     private static function folderName(string $key): string
     {
         $names = array(
@@ -1270,6 +1262,14 @@ final class SystemChecks
         return $names[$key] ?? $key;
     }
 
+    /**
+     * @param string              $id
+     * @param string              $tone
+     * @param string              $text
+     * @param array<string,mixed> $action
+     *
+     * @return array<string,mixed>
+     */
     private static function issue(string $id, string $tone, string $text, array $action = array()): array
     {
         return array('id' => $id, 'tone' => $tone, 'text' => $text, 'action' => $action === array() ? null : $action);

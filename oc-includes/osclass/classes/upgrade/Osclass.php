@@ -214,10 +214,11 @@ class Osclass extends UpgradePackage
         // because the fetch produced nothing (rate limit, outage). Only a fresh result
         // should be allowed to reset the once-a-day check clock or claim "checked now".
         $isFresh    = false;
+        $package_info = array();
         $preference = Preference::getInstance();
         if ($force === true
             || (
-                !$preference->get('update_core_json') && (time() - $preference->get('last_version_check')) > (24 * 3600)
+                !$preference->get('update_core_json') && (time() - (int) $preference->get('last_version_check')) > (24 * 3600)
             )
         ) {
             // The whole list, not /releases/latest: that is the newest stable release only, and
@@ -255,7 +256,7 @@ class Osclass extends UpgradePackage
                 $isFresh                             = true;
             }
         }
-        if (!isset($package_info) || empty($package_info)) {
+        if (empty($package_info)) {
             $package_info = json_decode($preference->get('update_core_json'), true);
         }
 

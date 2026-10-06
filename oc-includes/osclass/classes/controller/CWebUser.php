@@ -72,9 +72,9 @@ class CWebUser extends WebSecBaseModel
                 }
                 $aCities = array();
                 if ($aUser['fk_i_region_id'] != '') {
-                    $aCities = City::getInstance()->findByRegion($aUser['fk_i_region_id']);
+                    $aCities = City::getInstance()->findByRegion((int) $aUser['fk_i_region_id']);
                 } elseif (count($aRegions) > 0) {
-                    $aCities = City::getInstance()->findByRegion($aRegions[0]['pk_i_id']);
+                    $aCities = City::getInstance()->findByRegion((int) $aRegions[0]['pk_i_id']);
                 }
 
                 // user profile info description | user-profile.php @ frontend

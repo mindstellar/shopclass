@@ -466,7 +466,7 @@ final class BackupCommands
         BackupJobs::effects($effects + $this->opts['effects']);
         try {
             while (true) {
-                $job = new Job(array('pk_i_id' => 0, 's_type' => $type), $p);
+                $job = new Job(array('pk_i_id' => '0', 's_type' => $type), $p);
                 $step($job);
                 $repeat = $job->repeatRequest();
                 if ($repeat === null) {

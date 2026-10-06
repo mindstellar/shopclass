@@ -156,6 +156,7 @@ final class MediaSettingsScreen extends SettingsScreen
                     return $value && extension_loaded('imagick') ? '1' : '0';
                 })
             ->group(__('Watermark'))
+            // @phpstan-ignore argument.type (options may carry a label and id per choice)
             ->radio(self::TYPE, __('Watermark type'), array(
                 'none'  => array('label' => __('None'), 'id' => 'watermark_none'),
                 'text'  => array(

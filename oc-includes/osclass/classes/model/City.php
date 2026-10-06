@@ -212,7 +212,7 @@ class City extends DAO
         $aCityAreas = $mCityAreas->findByCity($pk);
         $result     = 0;
         foreach ($aCityAreas as $cityarea) {
-            $result += $mCityAreas->deleteByPrimaryKey($cityarea['pk_i_id']);
+            $result += $mCityAreas->deleteByPrimaryKey((int) $cityarea['pk_i_id']);
         }
         Item::getInstance()->deleteByCity($pk);
         CityStats::getInstance()->delete(array('fk_i_city_id' => $pk));
