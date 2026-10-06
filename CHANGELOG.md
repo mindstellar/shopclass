@@ -87,9 +87,9 @@ Plugin authors should read the Breaking section before upgrading.
 - The ban rules are read once per request, not once per address checked.
 - The search result cache key includes the locale, so a language filter no longer shows another language's cached results.
 
-## Shopclass 6.4.4.beta1
+## Shopclass 6.4.4
 
-This beta helps sites where PHP cannot write the site's files: the updater now stops before it
+This release helps sites where PHP cannot write the site's files: the updater now stops before it
 changes anything and says which folders are blocked, and `php oc-cli.php core:update` updates from
 the shell as the file owner. It also runs on PHP 8.5 without deprecation notices.
 
