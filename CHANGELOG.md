@@ -2,6 +2,12 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 6.4.5
+
+### Fixed
+
+- Setting a new admin password from the reset link no longer ends in an error page.
+
 ## Shopclass 6.4.4
 
 This release helps sites where PHP cannot write the site's files: the updater now stops before it
