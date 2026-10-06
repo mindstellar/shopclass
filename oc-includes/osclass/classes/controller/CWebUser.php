@@ -326,11 +326,11 @@ class CWebUser extends WebSecBaseModel
                 AjaxResponse::json($data, flags: JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
                 exit;
             case 'api_access':
-                $this->apiAccessView(\mindstellar\api\ApiServices::site()->accountAccess());
+                $this->apiAccessView(\mindstellar\apiaccess\ApiAccess::site()->accountAccess());
                 break;
             case 'api_access_post':
                 osc_csrf_check();
-                $this->apiAccessPost(\mindstellar\api\ApiServices::site()->accountAccess());
+                $this->apiAccessPost(\mindstellar\apiaccess\ApiAccess::site()->accountAccess());
                 break;
             case 'delete':
                 // GET must not delete. Older themes still point here with id and
@@ -415,12 +415,12 @@ class CWebUser extends WebSecBaseModel
     /**
      * The "API access" page: the sign-ins and personal keys that act for this user.
      *
-     * @param \mindstellar\api\auth\AccountAccess $access
+     * @param \mindstellar\apiaccess\AccountAccess $access
      * @param string                         $newKey a key's token, shown once right after it is made
      *
      * @return void
      */
-    private function apiAccessView(\mindstellar\api\auth\AccountAccess $access, string $newKey = '')
+    private function apiAccessView(\mindstellar\apiaccess\AccountAccess $access, string $newKey = '')
     {
         if (!osc_api_enabled()) {
             $this->redirectTo(osc_user_dashboard_url());
@@ -437,11 +437,11 @@ class CWebUser extends WebSecBaseModel
      * End a sign-in, revoke a key, or make a key. A new key's token is shown on this answer
      * and never again, so it is not put in a cookie or a redirect.
      *
-     * @param \mindstellar\api\auth\AccountAccess $access
+     * @param \mindstellar\apiaccess\AccountAccess $access
      *
      * @return void
      */
-    private function apiAccessPost(\mindstellar\api\auth\AccountAccess $access)
+    private function apiAccessPost(\mindstellar\apiaccess\AccountAccess $access)
     {
         if (!osc_api_enabled()) {
             $this->redirectTo(osc_user_dashboard_url());

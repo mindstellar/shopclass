@@ -22,18 +22,18 @@ require_once __DIR__ . '/../lib/scratchdb.php';
 require_once __DIR__ . '/../lib/harness.php';
 require_once __DIR__ . '/../lib/api-doubles.php';
 
-use mindstellar\api\auth\ApiKeys;
-use mindstellar\api\auth\CredentialKind;
 use mindstellar\api\auth\FailureCounter;
-use mindstellar\api\auth\KeyOwner;
 use mindstellar\api\auth\RefreshTokens;
-use mindstellar\api\auth\Scopes;
-use mindstellar\api\auth\StoredKey;
 use mindstellar\api\auth\UserRows;
 use mindstellar\api\ProblemException;
 use mindstellar\api\ratelimit\RateBucket;
 use mindstellar\api\ratelimit\RateLimiter;
 use mindstellar\api\Request;
+use mindstellar\apiaccess\ApiKeys;
+use mindstellar\apiaccess\CredentialKind;
+use mindstellar\apiaccess\KeyOwner;
+use mindstellar\apiaccess\Scopes;
+use mindstellar\apiaccess\StoredKey;
 use mindstellar\model\ApiCredential;
 use mindstellar\utility\SystemClock;
 

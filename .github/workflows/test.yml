@@ -239,6 +239,9 @@ jobs:
       # be a deliberate edit of the fixture rather than a silent break.
       - name: Hook name pin
         run: php tests/hook-contract.php
+      # The REST API builds on core; core reaches it only through ApiAccess.
+      - name: Core does not import the API
+        run: php tests/core-no-api-import.php
       # Paging params come straight from a URL; a bad one used to 500 the screen.
       - name: Admin list paging
         run: php tests/admin-list-paging.php

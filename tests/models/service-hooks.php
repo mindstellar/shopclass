@@ -411,7 +411,7 @@ foreach (['enabled_user_registration' => '1', 'enabled_user_validation' => '0', 
     Preference::getInstance()->set($k, $v);
 }
 osc_reset_preferences();
-$signUp = api_admin_caller(static fn (): \mindstellar\api\ApiSettings => new \mindstellar\api\ApiSettings(enabled: true, registration: true));
+$signUp = api_admin_caller(static fn (): \mindstellar\apiaccess\ApiSettings => new \mindstellar\apiaccess\ApiSettings(enabled: true, registration: true));
 // CWebRegister 'register_post'
 $webRegister = static function (array $form) use ($asUser) {
     $asUser(null);

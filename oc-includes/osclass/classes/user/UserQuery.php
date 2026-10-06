@@ -26,6 +26,18 @@ final class UserQuery
     }
 
     /**
+     * The user's row with its descriptions under `locale`, as the User model reads it.
+     *
+     * @return array<string,mixed>|null
+     */
+    public function find(int $id): ?array
+    {
+        $user = \User::getInstance()->findByPrimaryKey($id);
+
+        return is_array($user) && $user !== [] ? $user : null;
+    }
+
+    /**
      * @return array{pk_i_id:string,b_enabled:string,b_active:string}|null
      */
     public function statusRow(int $id): ?array

@@ -13,13 +13,13 @@ declare(strict_types=1);
 namespace mindstellar\api\controller;
 
 use mindstellar\api\ApiServices;
-use mindstellar\api\ApiSettings;
-use mindstellar\api\auth\Credential;
 use mindstellar\api\Kernel;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\Format;
 use mindstellar\api\serializer\LocationSerializer;
+use mindstellar\apiaccess\ApiSettings;
+use mindstellar\apiaccess\Credential;
 
 /**
  * `GET /`: what the site is, what the API allows on it and where its collections are.

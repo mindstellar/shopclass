@@ -124,11 +124,6 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hSearch.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hApi.php';
 
 use mindstellar\api\ApiServices;
-use mindstellar\api\ApiSettings;
-use mindstellar\api\auth\AccountAccess;
-use mindstellar\api\auth\ApiKeys;
-use mindstellar\api\auth\KeyOwner;
-use mindstellar\api\auth\Scopes;
 use mindstellar\api\auth\UserRows;
 use mindstellar\api\idempotency\Idempotency;
 use mindstellar\api\idempotency\KvIdempotencyStore;
@@ -144,9 +139,14 @@ use mindstellar\api\routing\RouteTable;
 use mindstellar\api\schema\Schema;
 use mindstellar\api\schema\Validator;
 use mindstellar\api\serializer\Links;
-use mindstellar\api\write\CheckedPhoto;
 use mindstellar\api\write\ImageFetcher;
+use mindstellar\api\write\PhotoFile;
 use mindstellar\api\write\PhotoStage;
+use mindstellar\apiaccess\AccountAccess;
+use mindstellar\apiaccess\ApiKeys;
+use mindstellar\apiaccess\ApiSettings;
+use mindstellar\apiaccess\KeyOwner;
+use mindstellar\apiaccess\Scopes;
 use mindstellar\billing\Billing;
 use mindstellar\model\ApiCredential;
 use mindstellar\security\AddressGuard;
@@ -643,7 +643,7 @@ for ($i = 0; $i < PhotoStage::MAX_PENDING; $i++) {
 $extra = $lwRoot . 'extra.jpg';
 copy($jpeg, $extra);
 try {
-    (new PhotoStage($lwRoot . 'stage/', new SystemClock()))->stage($tom, new CheckedPhoto($extra, 'jpg'));
+    (new PhotoStage($lwRoot . 'stage/', new SystemClock()))->stage($tom, new PhotoFile($extra, 'jpg'));
     $overflow = false;
 } catch (OverflowException $e) {
     $overflow = true;

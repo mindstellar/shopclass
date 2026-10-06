@@ -15,14 +15,11 @@
 
 require_once dirname(__DIR__, 2) . '/oc-includes/vendor/autoload.php';
 
-use mindstellar\api\ApiSettings;
 use mindstellar\api\auth\AccessTokens;
 use mindstellar\api\auth\AdminRows;
-use mindstellar\api\auth\ApiKeys;
 use mindstellar\api\auth\Authenticator;
 use mindstellar\api\auth\FailureCounter;
 use mindstellar\api\auth\PageTokenAuth;
-use mindstellar\api\auth\Scopes;
 use mindstellar\api\auth\UserRows;
 use mindstellar\api\idempotency\Idempotency;
 use mindstellar\api\idempotency\IdempotencyRecord;
@@ -31,6 +28,9 @@ use mindstellar\api\Kernel;
 use mindstellar\api\ratelimit\RateLimiter;
 use mindstellar\api\routing\Router;
 use mindstellar\api\schema\Validator;
+use mindstellar\apiaccess\ApiKeys;
+use mindstellar\apiaccess\ApiSettings;
+use mindstellar\apiaccess\Scopes;
 use mindstellar\utility\SystemClock;
 
 /** The Idempotency-Key store as an array. */

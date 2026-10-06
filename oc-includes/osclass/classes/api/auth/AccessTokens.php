@@ -12,6 +12,11 @@ declare(strict_types=1);
 
 namespace mindstellar\api\auth;
 
+use mindstellar\apiaccess\Credential;
+use mindstellar\apiaccess\CredentialKind;
+use mindstellar\apiaccess\KeyCheck;
+use mindstellar\apiaccess\KeyOwner;
+use mindstellar\apiaccess\Scopes;
 use mindstellar\auth\AuthStamp;
 use mindstellar\model\ApiCredential;
 use mindstellar\security\SignedPayload;

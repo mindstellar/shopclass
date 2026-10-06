@@ -13,7 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\api\read;
 
 /**
- * What a page of listings refers to, loaded in one batch (ListingLoader): photos, sellers,
+ * What a page of listings refers to, loaded in one batch (ListingReader): photos, sellers,
  * custom field values, categories and currencies. Serializers only look things up here.
  */
 final class ListingRelations

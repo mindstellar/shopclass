@@ -12,11 +12,11 @@ declare(strict_types=1);
 
 namespace mindstellar\api\write;
 
-use mindstellar\api\auth\Credential;
 use mindstellar\api\Problem;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\SiteFacts;
 use mindstellar\api\Request;
+use mindstellar\apiaccess\Credential;
 use mindstellar\auth\Actor;
 use mindstellar\listing\ListingInput;
 use mindstellar\listing\ListingService;

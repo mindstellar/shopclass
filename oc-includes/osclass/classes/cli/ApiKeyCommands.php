@@ -13,10 +13,10 @@ declare(strict_types=1);
 namespace mindstellar\cli;
 
 use InvalidArgumentException;
-use mindstellar\api\ApiServices;
-use mindstellar\api\auth\ApiKeyService;
-use mindstellar\api\auth\CredentialKind;
-use mindstellar\api\auth\KeyOwner;
+use mindstellar\apiaccess\ApiAccess;
+use mindstellar\apiaccess\ApiKeyService;
+use mindstellar\apiaccess\CredentialKind;
+use mindstellar\apiaccess\KeyOwner;
 
 /**
  * The api:key:* commands. Shell access is the authority here, so no password is asked; the
@@ -147,7 +147,7 @@ final class ApiKeyCommands
 
     private function keys(): ApiKeyService
     {
-        return $this->keys ??= ApiServices::site()->keyService();
+        return $this->keys ??= ApiAccess::site()->keyService();
     }
 
     /**

@@ -15,6 +15,9 @@ namespace mindstellar\api\auth;
 use mindstellar\api\Problem;
 use mindstellar\api\ProblemException;
 use mindstellar\api\Request;
+use mindstellar\apiaccess\ApiKeys;
+use mindstellar\apiaccess\Credential;
+use mindstellar\apiaccess\KeyCheck;
 
 /**
  * Turns a request's token into a Credential: an API key (`sck_`, `scp_`) or a signed-in

@@ -504,11 +504,11 @@ msgstr ""
 msgid "Choose a package"
 msgstr ""
 
-#: oc-includes/osclass/classes/api/auth/ApiKeyService.php
+#: oc-includes/osclass/classes/apiaccess/ApiKeyService.php
 msgid "Choose an admin key or a public key."
 msgstr ""
 
-#: oc-includes/osclass/classes/api/auth/PersonalKeys.php
+#: oc-includes/osclass/classes/apiaccess/PersonalKeys.php
 msgid "Choose an expiry date within a year."
 msgstr ""
 
@@ -516,7 +516,7 @@ msgstr ""
 msgid "Choose at least one event."
 msgstr ""
 
-#: oc-includes/osclass/classes/api/auth/ApiKeyService.php
+#: oc-includes/osclass/classes/apiaccess/ApiKeyService.php
 msgid "Choose at least one scope."
 msgstr ""
 
@@ -974,7 +974,7 @@ msgstr ""
 msgid "General settings have been updated"
 msgstr ""
 
-#: oc-includes/osclass/classes/api/auth/ApiKeyService.php
+#: oc-includes/osclass/classes/apiaccess/ApiKeyService.php
 msgid "Give the key a name, so you know later what uses it."
 msgstr ""
 
@@ -2267,15 +2267,15 @@ msgid ""
 "balance."
 msgstr ""
 
-#: oc-includes/osclass/classes/api/auth/ApiKeyService.php
+#: oc-includes/osclass/classes/apiaccess/ApiKeyService.php
 msgid "That key is already revoked."
 msgstr ""
 
-#: oc-includes/osclass/classes/api/auth/ApiKeyService.php
+#: oc-includes/osclass/classes/apiaccess/ApiKeyService.php
 msgid "That key is not in the list any more."
 msgstr ""
 
-#: oc-includes/osclass/classes/api/auth/ApiKeyService.php
+#: oc-includes/osclass/classes/apiaccess/ApiKeyService.php
 msgid "That key is revoked, expired or its owner is gone, so it cannot be rotated."
 msgstr ""
 
@@ -2482,7 +2482,7 @@ msgstr ""
 msgid "The email/alert has been updated"
 msgstr ""
 
-#: oc-includes/osclass/classes/api/auth/ApiKeyService.php
+#: oc-includes/osclass/classes/apiaccess/ApiKeyService.php
 msgid "The expiry date has to be in the future."
 msgstr ""
 
@@ -2507,7 +2507,7 @@ msgstr ""
 msgid "The key is revoked. Calls made with it are refused from now on."
 msgstr ""
 
-#: oc-includes/osclass/classes/api/auth/ApiKeyService.php
+#: oc-includes/osclass/classes/apiaccess/ApiKeyService.php
 msgid "The key name is too long. Use 100 characters or fewer."
 msgstr ""
 
@@ -2678,7 +2678,7 @@ msgstr ""
 msgid "The password has been changed"
 msgstr ""
 
-#: oc-includes/osclass/classes/api/auth/AccountAccess.php
+#: oc-includes/osclass/classes/apiaccess/AccountAccess.php
 msgid "The password is not right."
 msgstr ""
 
@@ -2969,7 +2969,7 @@ msgstr ""
 msgid "This is the site's default currency."
 msgstr ""
 
-#: oc-includes/osclass/classes/api/auth/ApiKeyService.php
+#: oc-includes/osclass/classes/apiaccess/ApiKeyService.php
 msgid "This key cannot hold: %s"
 msgstr ""
 
@@ -3029,8 +3029,8 @@ msgstr ""
 msgid "This search could not be saved. Search again and try once more."
 msgstr ""
 
-#: oc-includes/osclass/classes/api/auth/PersonalKeys.php
 #: oc-includes/osclass/classes/api/controller/AccountKeysController.php
+#: oc-includes/osclass/classes/apiaccess/PersonalKeys.php
 msgid "This site does not let users make API keys."
 msgstr ""
 
@@ -3273,7 +3273,7 @@ msgstr ""
 msgid "With photos only"
 msgstr ""
 
-#: oc-includes/osclass/classes/api/auth/ApiKeyService.php
+#: oc-includes/osclass/classes/apiaccess/ApiKeyService.php
 msgid "Write the expiry date as YYYY-MM-DD."
 msgstr ""
 
@@ -3305,7 +3305,7 @@ msgstr ""
 msgid "You are using %1$d of your %2$d listings."
 msgstr ""
 
-#: oc-includes/osclass/classes/api/auth/ApiKeyService.php
+#: oc-includes/osclass/classes/apiaccess/ApiKeyService.php
 msgid ""
 "You can only rotate your own keys and public keys. Revoke this one and make "
 "a new key instead."

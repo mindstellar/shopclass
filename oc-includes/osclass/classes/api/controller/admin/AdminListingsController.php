@@ -13,7 +13,6 @@ declare(strict_types=1);
 namespace mindstellar\api\controller\admin;
 
 use mindstellar\api\ApiServices;
-use mindstellar\api\auth\Credential;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\ListingList;
 use mindstellar\api\read\ListingReader;
@@ -22,6 +21,7 @@ use mindstellar\api\Response;
 use mindstellar\api\serializer\ListingSerializer;
 use mindstellar\api\write\ListingWriter;
 use mindstellar\api\write\OwnedListing;
+use mindstellar\apiaccess\Credential;
 use mindstellar\moderation\ListingModeration;
 use mindstellar\user\UserQuery;
 

@@ -13,10 +13,10 @@ declare(strict_types=1);
 namespace mindstellar\api\controller\admin;
 
 use mindstellar\api\ApiServices;
-use mindstellar\api\auth\Credential;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\CustomFieldSerializer;
+use mindstellar\apiaccess\Credential;
 use mindstellar\fields\FieldService;
 
 /**
@@ -85,9 +85,7 @@ final class AdminFieldsController
      */
     private function field(int $id): array
     {
-        $fields = \Field::getInstance();
-
-        return (new CustomFieldSerializer())->definition($fields->findByPrimaryKey($id), $this->api->facts()->defaultLocale())
-            + ['categories' => array_map('intval', $fields->categories($id))];
+        return (new CustomFieldSerializer())->definition($this->fields->extended($id), $this->api->facts()->defaultLocale())
+            + ['categories' => array_map('intval', $this->fields->categoryIds($id))];
     }
 }

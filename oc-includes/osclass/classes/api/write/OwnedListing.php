@@ -12,8 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\api\write;
 
-use mindstellar\api\auth\Credential;
 use mindstellar\api\ProblemException;
+use mindstellar\apiaccess\Credential;
 use mindstellar\listing\ListingPolicy;
 
 /**

@@ -25,10 +25,10 @@ if (api_admin_isolated(__FILE__)) {
     return;
 }
 
-use mindstellar\api\auth\ApiKeys;
-use mindstellar\api\auth\KeyOwner;
-use mindstellar\api\auth\Scopes;
 use mindstellar\api\Response;
+use mindstellar\apiaccess\ApiKeys;
+use mindstellar\apiaccess\KeyOwner;
+use mindstellar\apiaccess\Scopes;
 use mindstellar\model\ApiCredential;
 use mindstellar\utility\SystemClock;
 

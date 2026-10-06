@@ -23,17 +23,9 @@ define('WEB_PATH', 'http://example.test/');
 require_once __DIR__ . '/lib/api-boot.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hUsers.php';
 
-use mindstellar\api\ApiSettings;
-use mindstellar\api\auth\ApiKeys;
 use mindstellar\api\auth\Authenticator;
-use mindstellar\api\auth\Credential;
-use mindstellar\api\auth\CredentialKind;
 use mindstellar\api\auth\FailureCounter;
-use mindstellar\api\auth\KeyOwner;
 use mindstellar\api\auth\RefreshTokens;
-use mindstellar\api\auth\Scopes;
-use mindstellar\api\auth\SignInStore;
-use mindstellar\api\auth\StoredKey;
 use mindstellar\api\auth\UserRows;
 use mindstellar\api\Kernel;
 use mindstellar\api\ProblemException;
@@ -41,6 +33,14 @@ use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\routing\Router;
 use mindstellar\api\schema\Validator;
+use mindstellar\apiaccess\ApiKeys;
+use mindstellar\apiaccess\ApiSettings;
+use mindstellar\apiaccess\Credential;
+use mindstellar\apiaccess\CredentialKind;
+use mindstellar\apiaccess\KeyOwner;
+use mindstellar\apiaccess\Scopes;
+use mindstellar\apiaccess\SignInStore;
+use mindstellar\apiaccess\StoredKey;
 use mindstellar\utility\SystemClock;
 
 /** t_api_credential as an array, with a user table beside it. */

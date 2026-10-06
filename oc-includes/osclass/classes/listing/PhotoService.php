@@ -252,7 +252,23 @@ final class PhotoService
     {
         $cap = self::cap($ownerId);
 
-        return $cap === null ? null : max(0, $cap - (int) \ItemResource::getInstance()->countResources($itemId));
+        return $cap === null ? null : max(0, $cap - self::count($itemId));
+    }
+
+    /**
+     * How many photos a listing holds.
+     */
+    public static function count(int $itemId): int
+    {
+        return (int) \ItemResource::getInstance()->countResources($itemId);
+    }
+
+    /**
+     * @return array<string,mixed>|false the photo's t_item_resource row
+     */
+    public static function find(int $photoId): array|false
+    {
+        return \ItemResource::getInstance()->findByPrimaryKey($photoId);
     }
 
     /**

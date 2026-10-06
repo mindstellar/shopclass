@@ -114,11 +114,6 @@ if (!function_exists('osc_is_ssl')) {
 }
 
 use mindstellar\api\ApiServices;
-use mindstellar\api\ApiSettings;
-use mindstellar\api\auth\ApiKeys;
-use mindstellar\api\auth\CredentialKind;
-use mindstellar\api\auth\KeyOwner;
-use mindstellar\api\auth\Scopes;
 use mindstellar\api\auth\UserRows;
 use mindstellar\api\Kernel;
 use mindstellar\api\read\SiteFacts;
@@ -129,6 +124,11 @@ use mindstellar\api\routing\RouteTable;
 use mindstellar\api\schema\Schema;
 use mindstellar\api\schema\Validator;
 use mindstellar\api\serializer\Links;
+use mindstellar\apiaccess\ApiKeys;
+use mindstellar\apiaccess\ApiSettings;
+use mindstellar\apiaccess\CredentialKind;
+use mindstellar\apiaccess\KeyOwner;
+use mindstellar\apiaccess\Scopes;
 use mindstellar\model\ApiCredential;
 use mindstellar\utility\SystemClock;
 

@@ -17,6 +17,11 @@ use mindstellar\api\Problem;
 use mindstellar\api\ProblemException;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
+use mindstellar\apiaccess\Credential;
+use mindstellar\apiaccess\CredentialKind;
+use mindstellar\apiaccess\KeyOwner;
+use mindstellar\apiaccess\PageTokens;
+use mindstellar\apiaccess\Scopes;
 use mindstellar\auth\AuthStamp;
 use mindstellar\security\RememberMe;
 

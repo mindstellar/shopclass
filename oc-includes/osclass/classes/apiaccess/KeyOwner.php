@@ -10,7 +10,7 @@
 
 declare(strict_types=1);
 
-namespace mindstellar\api\auth;
+namespace mindstellar\apiaccess;
 
 /**
  * Who a stored credential acts for: an admin (maybe a moderator) or a user, with their

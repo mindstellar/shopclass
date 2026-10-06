@@ -12,9 +12,9 @@ declare(strict_types=1);
 
 namespace mindstellar\api\serializer;
 
-use mindstellar\api\auth\ApiKeys;
-use mindstellar\api\auth\ApiKeyService;
-use mindstellar\api\auth\StoredKey;
+use mindstellar\apiaccess\ApiKeys;
+use mindstellar\apiaccess\ApiKeyService;
+use mindstellar\apiaccess\StoredKey;
 
 /**
  * An API key as the admin's and the user's key lists show it. Never the secret or its hash;

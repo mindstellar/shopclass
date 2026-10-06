@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\api\http;
 
-use mindstellar\api\auth\Credential;
+use mindstellar\apiaccess\Credential;
 use mindstellar\database\Connection;
 use mindstellar\database\Db;
 use mindstellar\security\SigningKey;

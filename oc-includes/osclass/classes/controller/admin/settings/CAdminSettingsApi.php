@@ -15,11 +15,11 @@ if (!defined('ABS_PATH')) {
 
 use mindstellar\admin\form\ApiSettingsScreen;
 use mindstellar\admin\form\CoreSettings;
-use mindstellar\api\ApiServices;
-use mindstellar\api\auth\ApiKeyService;
-use mindstellar\api\auth\CredentialKind;
-use mindstellar\api\auth\IssuedKey;
-use mindstellar\api\auth\KeyOwner;
+use mindstellar\apiaccess\ApiAccess;
+use mindstellar\apiaccess\ApiKeyService;
+use mindstellar\apiaccess\CredentialKind;
+use mindstellar\apiaccess\IssuedToken;
+use mindstellar\apiaccess\KeyOwner;
 use mindstellar\security\AdminReauth;
 use mindstellar\security\AdminTwoFactor;
 use mindstellar\webhook\WebhookService;
@@ -331,7 +331,7 @@ class CAdminSettingsApi extends AdminSecBaseModel
     /**
      * The new key, kept for the next page only.
      */
-    private function handOff(IssuedKey $issued, string $name): void
+    private function handOff(IssuedToken $issued, string $name): void
     {
         Session::getInstance()->_set(self::ISSUED, array('token' => $issued->token(), 'name' => $name, 'at' => time()));
     }
@@ -373,7 +373,7 @@ class CAdminSettingsApi extends AdminSecBaseModel
 
     private function keys(): ApiKeyService
     {
-        return ApiServices::site()->keyService();
+        return ApiAccess::site()->keyService();
     }
 
     private function webhooks(): WebhookService

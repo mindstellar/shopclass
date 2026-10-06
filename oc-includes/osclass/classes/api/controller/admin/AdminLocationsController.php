@@ -14,11 +14,11 @@ namespace mindstellar\api\controller\admin;
 
 use mindstellar\admin\AdminText;
 use mindstellar\api\ApiServices;
-use mindstellar\api\auth\Credential;
 use mindstellar\api\ProblemException;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\LocationSerializer;
+use mindstellar\apiaccess\Credential;
 use mindstellar\location\LocationQuery;
 use mindstellar\location\LocationService;
 use mindstellar\utility\DeferredMail;

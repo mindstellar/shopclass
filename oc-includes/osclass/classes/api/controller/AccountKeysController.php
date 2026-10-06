@@ -13,15 +13,15 @@ declare(strict_types=1);
 namespace mindstellar\api\controller;
 
 use mindstellar\api\ApiServices;
-use mindstellar\api\auth\Credential;
-use mindstellar\api\auth\PersonalKeys;
-use mindstellar\api\auth\StoredKey;
 use mindstellar\api\auth\UserRows;
 use mindstellar\api\ProblemException;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\KeySerializer;
 use mindstellar\api\serializer\Links;
+use mindstellar\apiaccess\Credential;
+use mindstellar\apiaccess\PersonalKeys;
+use mindstellar\apiaccess\StoredKey;
 use mindstellar\utility\Clock;
 
 /**

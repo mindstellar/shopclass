@@ -10,7 +10,7 @@
 
 declare(strict_types=1);
 
-namespace mindstellar\api\auth;
+namespace mindstellar\apiaccess;
 
 use mindstellar\auth\Reauth;
 use mindstellar\utility\Clock;
@@ -88,7 +88,7 @@ final class PersonalKeys
      * @throws BlockedException   while too many wrong passwords came in a row
      * @throws RefusedException   for a wrong password, or for what was asked
      */
-    public function create(array $user, string $password, string $name, array $scopes, string $expires): IssuedKey
+    public function create(array $user, string $password, string $name, array $scopes, string $expires): IssuedToken
     {
         if (!$this->allowed) {
             throw new ForbiddenException(_m('This site does not let users make API keys.'));

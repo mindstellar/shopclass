@@ -19,10 +19,10 @@ namespace mindstellar\api\write;
 final class PhotoBatch
 {
     /**
-     * @param StagedPhoto[]  $staged
-     * @param CheckedPhoto[] $fetched
+     * @param PhotoFile[]  $staged
+     * @param PhotoFile[] $fetched
      * @param int            $skipped URLs not fetched because the listing had no room left
-     * @param CheckedPhoto[] $copies  a copy of each staged photo, in the same order
+     * @param PhotoFile[] $copies  a copy of each staged photo, in the same order
      */
     public function __construct(private array $staged = [], private array $fetched = [], private int $skipped = 0, private array $copies = [])
     {
@@ -35,7 +35,7 @@ final class PhotoBatch
      */
     public function paths(): array
     {
-        return array_map(static fn (CheckedPhoto $p): string => $p->path(), array_merge($this->copies, $this->fetched));
+        return array_map(static fn (PhotoFile $p): string => $p->path(), array_merge($this->copies, $this->fetched));
     }
 
     /**
@@ -43,7 +43,7 @@ final class PhotoBatch
      */
     public function tokens(): array
     {
-        return array_map(static fn (StagedPhoto $p): string => $p->token(), $this->staged);
+        return array_map(static fn (PhotoFile $p): string => $p->token(), $this->staged);
     }
 
     /**

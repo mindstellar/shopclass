@@ -89,8 +89,6 @@ class Object_Cache_probe implements iObject_Cache
     }
 }
 
-use mindstellar\api\auth\Credential;
-use mindstellar\api\auth\Scopes;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\routing\Router;
@@ -98,6 +96,8 @@ use mindstellar\api\routing\RouteTable;
 use mindstellar\api\schema\OpenApi;
 use mindstellar\api\schema\Schema;
 use mindstellar\api\schema\Validator;
+use mindstellar\apiaccess\Credential;
+use mindstellar\apiaccess\Scopes;
 
 $definitions = Schema::definitions();
 $validator   = new Validator($definitions);

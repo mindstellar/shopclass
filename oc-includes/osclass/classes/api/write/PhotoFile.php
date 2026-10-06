@@ -17,17 +17,50 @@ use mindstellar\api\Request;
 use mindstellar\storage\UploadMimes;
 
 /**
- * One uploaded photo, copied into the temp folder and checked as the listing form checks
- * its photos: a type the site accepts, an image that decodes, within the pixel limit and
- * within the site's file size.
+ * A photo file in the temp folder. fromRequest() and checked() make one that passed the
+ * listing form's checks: a type the site accepts, an image that decodes, within the pixel
+ * limit and within the site's file size. A staged photo also has a token and an expiry.
  */
 final class PhotoFile
 {
     /** Image type => the extension the temp file gets. */
     private const EXTENSIONS = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/gif' => 'gif', 'image/webp' => 'webp'];
 
-    private function __construct()
+    /**
+     * @param string $extension of its real type: jpg, png, gif or webp
+     * @param string $token     a staged photo's token; '' for one not staged
+     * @param int    $expiresAt Unix time a staged photo's token stops working; 0 for one not staged
+     */
+    public function __construct(private string $path, private string $extension, private string $token = '', private int $expiresAt = 0)
     {
+    }
+
+    public function path(): string
+    {
+        return $this->path;
+    }
+
+    public function extension(): string
+    {
+        return $this->extension;
+    }
+
+    public function token(): string
+    {
+        return $this->token;
+    }
+
+    public function expiresAt(): int
+    {
+        return $this->expiresAt;
+    }
+
+    /**
+     * Delete the file.
+     */
+    public function discard(): void
+    {
+        @unlink($this->path);
     }
 
     /**
@@ -37,7 +70,7 @@ final class PhotoFile
      *
      * @throws ProblemException 413, 415 or 422 when there is no usable photo
      */
-    public static function fromRequest(Request $request, PhotoStage $stage, int $maxBytes): CheckedPhoto
+    public static function fromRequest(Request $request, PhotoStage $stage, int $maxBytes): self
     {
         $upload = $request->file('photo');
         if ($upload !== null) {
@@ -81,7 +114,7 @@ final class PhotoFile
      *
      * @throws ProblemException 413 or 422
      */
-    public static function checked(string $path, int $maxBytes, string $pointer = '/photo'): CheckedPhoto
+    public static function checked(string $path, int $maxBytes, string $pointer = '/photo'): self
     {
         if ($maxBytes > 0 && (int) @filesize($path) > $maxBytes) {
             throw self::tooLarge($maxBytes);
@@ -98,7 +131,7 @@ final class PhotoFile
             throw ProblemException::of('server_error', 'The photo could not be stored.');
         }
 
-        return new CheckedPhoto($final, $extension);
+        return new self($final, $extension);
     }
 
     private static function tooLarge(int $maxBytes): ProblemException

@@ -12,9 +12,9 @@ declare(strict_types=1);
 
 namespace mindstellar\api\read;
 
-use mindstellar\api\ApiSettings;
 use mindstellar\api\Problem;
 use mindstellar\api\ProblemException;
+use mindstellar\apiaccess\ApiSettings;
 
 /**
  * The site preferences the read endpoints follow, read once per request.

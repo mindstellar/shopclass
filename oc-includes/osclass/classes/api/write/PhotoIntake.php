@@ -42,7 +42,7 @@ final class PhotoIntake
      *
      * @throws ProblemException 413, 415 or 422
      */
-    public function upload(Request $request): CheckedPhoto
+    public function upload(Request $request): PhotoFile
     {
         return PhotoFile::fromRequest($request, $this->stage, $this->maxBytes);
     }
@@ -52,7 +52,7 @@ final class PhotoIntake
      *
      * @throws ProblemException 422 when the user holds as many as they may, 500 when it cannot be stored
      */
-    public function stage(int $userId, CheckedPhoto $photo): StagedPhoto
+    public function stage(int $userId, PhotoFile $photo): PhotoFile
     {
         try {
             return $this->stage->stage($userId, $photo);
@@ -128,7 +128,7 @@ final class PhotoIntake
      *
      * @throws ProblemException 500 when it cannot be copied
      */
-    private function copy(StagedPhoto $photo): CheckedPhoto
+    private function copy(PhotoFile $photo): PhotoFile
     {
         $extension = strtolower(pathinfo($photo->path(), PATHINFO_EXTENSION));
         $file      = $this->stage->tempPath($extension !== '' ? $extension : 'jpg');
@@ -138,13 +138,13 @@ final class PhotoIntake
             throw ProblemException::of('server_error', 'A staged photo could not be read.');
         }
 
-        return new CheckedPhoto($file, $extension);
+        return new PhotoFile($file, $extension);
     }
 
     /**
      * @throws ProblemException 422 when the address is refused or the file is not a usable photo
      */
-    private function fetch(string $url, string $pointer): CheckedPhoto
+    private function fetch(string $url, string $pointer): PhotoFile
     {
         $file  = $this->stage->tempPath('fetch');
         $error = $this->fetcher->fetch($url, $file, $this->maxBytes);

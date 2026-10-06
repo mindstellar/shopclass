@@ -10,7 +10,7 @@
 
 declare(strict_types=1);
 
-namespace mindstellar\api\auth;
+namespace mindstellar\apiaccess;
 
 use mindstellar\auth\AuthStamp;
 use mindstellar\security\SignedPayload;
@@ -52,7 +52,7 @@ final class PageTokens
      *
      * @param array<string,mixed> $user the t_user row
      */
-    public function issue(array $user): PageToken
+    public function issue(array $user): IssuedToken
     {
         // SignedPayload stamps the expiry from time(), so the answer counts from it too.
         $expiresAt = time() + $this->ttl;
@@ -61,14 +61,14 @@ final class PageTokens
             'st'  => AuthStamp::fingerprint($user),
         ], $this->ttl);
 
-        return new PageToken($token, $expiresAt);
+        return new IssuedToken($token, $expiresAt);
     }
 
     /**
      * A page token for the user signed in on this web request, or null when nobody is signed in
      * with the sign-in cookie (an older session-only sign-in cannot make session calls).
      */
-    public function forWebUser(): ?PageToken
+    public function forWebUser(): ?IssuedToken
     {
         if ((string) \Cookie::getInstance()->get_value('oc_userId') === '' || !osc_is_web_user_logged_in()) {
             return null;

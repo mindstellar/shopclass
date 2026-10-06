@@ -29,8 +29,8 @@ if (!function_exists('_m')) {
     }
 }
 
-use mindstellar\api\auth\ApiKeys;
-use mindstellar\api\auth\Scopes;
+use mindstellar\apiaccess\ApiKeys;
+use mindstellar\apiaccess\Scopes;
 use mindstellar\cli\ApiKeyCommands;
 use mindstellar\model\ApiCredential;
 use mindstellar\utility\SystemClock;

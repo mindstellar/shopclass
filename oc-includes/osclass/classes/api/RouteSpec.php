@@ -12,10 +12,10 @@ declare(strict_types=1);
 
 namespace mindstellar\api;
 
-use mindstellar\api\auth\Credential;
-use mindstellar\api\auth\Scopes;
 use mindstellar\api\schema\Schema;
 use mindstellar\api\schema\Validator;
+use mindstellar\apiaccess\Credential;
+use mindstellar\apiaccess\Scopes;
 
 /**
  * One endpoint: method, path, handler, who may call it and what it accepts. The kernel

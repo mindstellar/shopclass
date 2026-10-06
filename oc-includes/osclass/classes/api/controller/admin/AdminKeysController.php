@@ -13,16 +13,16 @@ declare(strict_types=1);
 namespace mindstellar\api\controller\admin;
 
 use mindstellar\api\ApiServices;
-use mindstellar\api\auth\ApiKeyService;
-use mindstellar\api\auth\Credential;
-use mindstellar\api\auth\CredentialKind;
-use mindstellar\api\auth\KeyOwner;
-use mindstellar\api\auth\Scopes;
 use mindstellar\api\ProblemException;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\KeySerializer;
 use mindstellar\api\serializer\Links;
+use mindstellar\apiaccess\ApiKeyService;
+use mindstellar\apiaccess\Credential;
+use mindstellar\apiaccess\CredentialKind;
+use mindstellar\apiaccess\KeyOwner;
+use mindstellar\apiaccess\Scopes;
 
 /**
  * `/admin/keys`: the keys of Settings -> API, through the same ApiKeyService. A key made

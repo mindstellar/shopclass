@@ -12,11 +12,11 @@ declare(strict_types=1);
 
 namespace mindstellar\api\http;
 
-use mindstellar\api\ApiSettings;
-use mindstellar\api\auth\ApiKeys;
 use mindstellar\api\auth\Authenticator;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
+use mindstellar\apiaccess\ApiKeys;
+use mindstellar\apiaccess\ApiSettings;
 
 /**
  * Cross-origin access for browser apps.

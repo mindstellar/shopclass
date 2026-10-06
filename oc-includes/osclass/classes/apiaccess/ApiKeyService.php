@@ -10,7 +10,7 @@
 
 declare(strict_types=1);
 
-namespace mindstellar\api\auth;
+namespace mindstellar\apiaccess;
 
 use mindstellar\utility\Clock;
 use mindstellar\validation\ConflictException;
@@ -59,7 +59,7 @@ final class ApiKeyService
      *
      * @throws RefusedException with the reason to show
      */
-    public function create(KeyOwner $owner, string $name, string $kind, array $scopes, string $expires = ''): IssuedKey
+    public function create(KeyOwner $owner, string $name, string $kind, array $scopes, string $expires = ''): IssuedToken
     {
         $name = trim($name);
         if ($name === '') {
@@ -93,7 +93,7 @@ final class ApiKeyService
      *
      * @throws RefusedException with the reason to show
      */
-    public function rotate(int $id, int $actorAdminId): IssuedKey
+    public function rotate(int $id, int $actorAdminId): IssuedToken
     {
         $key = $this->manageable($id);
         if ($key->kind() !== CredentialKind::PUBLIC && $key->owner()?->adminId() !== $actorAdminId) {

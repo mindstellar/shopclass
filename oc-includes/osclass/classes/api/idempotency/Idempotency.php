@@ -12,11 +12,11 @@ declare(strict_types=1);
 
 namespace mindstellar\api\idempotency;
 
-use mindstellar\api\auth\Credential;
 use mindstellar\api\Problem;
 use mindstellar\api\ProblemException;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
+use mindstellar\apiaccess\Credential;
 use mindstellar\utility\Clock;
 use mindstellar\validation\RefusedException;
 

@@ -12,10 +12,10 @@ declare(strict_types=1);
 
 namespace mindstellar\model;
 
-use mindstellar\api\auth\CredentialKind;
-use mindstellar\api\auth\KeyOwner;
-use mindstellar\api\auth\SignInStore;
-use mindstellar\api\auth\StoredKey;
+use mindstellar\apiaccess\CredentialKind;
+use mindstellar\apiaccess\KeyOwner;
+use mindstellar\apiaccess\SignInStore;
+use mindstellar\apiaccess\StoredKey;
 use mindstellar\base\Model;
 use mindstellar\database\UtcDatetime;
 

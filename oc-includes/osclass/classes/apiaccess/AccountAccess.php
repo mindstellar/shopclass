@@ -10,10 +10,8 @@
 
 declare(strict_types=1);
 
-namespace mindstellar\api\auth;
+namespace mindstellar\apiaccess;
 
-use mindstellar\api\ApiSettings;
-use mindstellar\api\serializer\AccessEntrySerializer;
 use mindstellar\validation\InvalidException;
 use mindstellar\validation\RefusedException;
 
@@ -49,9 +47,7 @@ final class AccountAccess
      */
     public function sessions(int $userId): array
     {
-        $serializer = new AccessEntrySerializer();
-
-        return array_map(static fn (AccessEntry $session): array => $serializer->one($session, Credential::anonymous()), $this->sessions->list($userId));
+        return array_map(static fn (AccessEntry $session): array => $session->toArray(Credential::anonymous()), $this->sessions->list($userId));
     }
 
     /**

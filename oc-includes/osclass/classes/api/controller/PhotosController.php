@@ -13,13 +13,13 @@ declare(strict_types=1);
 namespace mindstellar\api\controller;
 
 use mindstellar\api\ApiServices;
-use mindstellar\api\auth\Credential;
 use mindstellar\api\ProblemException;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\Format;
 use mindstellar\api\write\OwnedListing;
 use mindstellar\api\write\PhotoIntake;
+use mindstellar\apiaccess\Credential;
 use mindstellar\listing\PhotoService;
 
 /**
@@ -77,7 +77,7 @@ final class PhotosController
 
             throw ProblemException::of('server_error', 'The photo could not be saved.');
         }
-        $data = $this->api->listingSerializer()->photos([\ItemResource::getInstance()->findByPrimaryKey($new[0])])[0];
+        $data = $this->api->listingSerializer()->photos([PhotoService::find($new[0])])[0];
 
         return Response::created($data, $this->api->links()->api('listings/' . $id . '/photos/' . $new[0]));
     }

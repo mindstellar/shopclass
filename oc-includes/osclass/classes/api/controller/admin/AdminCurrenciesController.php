@@ -13,10 +13,10 @@ declare(strict_types=1);
 namespace mindstellar\api\controller\admin;
 
 use mindstellar\api\ApiServices;
-use mindstellar\api\auth\Credential;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\LocationSerializer;
+use mindstellar\apiaccess\Credential;
 use mindstellar\currency\CurrencyService;
 use mindstellar\validation\NotFoundException;
 

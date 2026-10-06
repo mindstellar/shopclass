@@ -12,10 +12,10 @@ declare(strict_types=1);
 
 namespace mindstellar\api\http;
 
-use mindstellar\api\auth\Credential;
-use mindstellar\api\auth\CredentialKind;
-use mindstellar\api\auth\PageTokens;
 use mindstellar\api\Request;
+use mindstellar\apiaccess\Credential;
+use mindstellar\apiaccess\CredentialKind;
+use mindstellar\apiaccess\PageTokens;
 
 /**
  * Caching headers for a successful answer.

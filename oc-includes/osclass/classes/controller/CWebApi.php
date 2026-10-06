@@ -36,7 +36,7 @@ class CWebApi extends BaseModel
      */
     public function doModel()
     {
-        \mindstellar\api\Kernel::serve();
+        \mindstellar\apiaccess\ApiAccess::serve();
     }
 
     /**

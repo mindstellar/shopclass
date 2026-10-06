@@ -17,27 +17,27 @@
 
 require_once __DIR__ . '/lib/api-boot.php';
 
-use mindstellar\api\auth\ApiKeys;
-use mindstellar\api\auth\Credential;
-use mindstellar\api\auth\Scopes;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\RouteSpec;
 use mindstellar\api\routing\Router;
 use mindstellar\api\routing\RouteTable;
 use mindstellar\api\schema\Validator;
+use mindstellar\apiaccess\ApiKeys;
+use mindstellar\apiaccess\Credential;
+use mindstellar\apiaccess\Scopes;
 use mindstellar\utility\SystemClock;
 
-$store = new class () implements \mindstellar\api\auth\CredentialStore {
-    public function findByTokenId(string $tokenId): ?\mindstellar\api\auth\StoredKey
+$store = new class () implements \mindstellar\apiaccess\CredentialStore {
+    public function findByTokenId(string $tokenId): ?\mindstellar\apiaccess\StoredKey
     {
         return null;
     }
-    public function find(int $id): ?\mindstellar\api\auth\StoredKey
+    public function find(int $id): ?\mindstellar\apiaccess\StoredKey
     {
         return null;
     }
-    public function insert(\mindstellar\api\auth\StoredKey $key): int
+    public function insert(\mindstellar\apiaccess\StoredKey $key): int
     {
         return 1;
     }

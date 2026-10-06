@@ -95,10 +95,6 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hHttpCache.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hApi.php';
 
 use mindstellar\api\ApiServices;
-use mindstellar\api\ApiSettings;
-use mindstellar\api\auth\ApiKeys;
-use mindstellar\api\auth\PageTokens;
-use mindstellar\api\auth\Scopes;
 use mindstellar\api\auth\UserRows;
 use mindstellar\api\idempotency\Idempotency;
 use mindstellar\api\idempotency\KvIdempotencyStore;
@@ -113,6 +109,10 @@ use mindstellar\api\routing\RouteTable;
 use mindstellar\api\schema\Schema;
 use mindstellar\api\schema\Validator;
 use mindstellar\api\serializer\Links;
+use mindstellar\apiaccess\ApiKeys;
+use mindstellar\apiaccess\ApiSettings;
+use mindstellar\apiaccess\PageTokens;
+use mindstellar\apiaccess\Scopes;
 use mindstellar\auth\AuthStamp;
 use mindstellar\model\ApiCredential;
 use mindstellar\security\RememberMe;
@@ -345,7 +345,7 @@ for ($i = 0; $i < \mindstellar\user\AccountService::EMAIL_CHANGES - 2; $i++) {
     $call('PATCH', 'account', array('email' => 'try' . $i . '@example.test'), $phone['access_token']);
 }
 pin('a user gets a few e-mail changes an hour, then 429', '429 rate_limited', $code($call('PATCH', 'account', array('email' => 'one-more@example.test'), $phone['access_token'])));
-$userKey = (new ApiKeys(new ApiCredential(), new Scopes(), new SystemClock()))->create('key', 'script', array('listings:read', 'account:read'), \mindstellar\api\auth\KeyOwner::user($uma))->token();
+$userKey = (new ApiKeys(new ApiCredential(), new Scopes(), new SystemClock()))->create('key', 'script', array('listings:read', 'account:read'), \mindstellar\apiaccess\KeyOwner::user($uma))->token();
 pin('a key can read the account', 200, $call('GET', 'account', null, $userKey)->status());
 pin('but never edit it: account:write is access-token only', '403 insufficient_scope', $code($call('PATCH', 'account', array('name' => 'X'), $userKey)));
 
@@ -390,7 +390,7 @@ pin('all=true ends every sign-in', array(400, 400), array(
 ));
 pin('the key made before the password change is dead', 401, $call('GET', 'account', null, $userKey)->status());
 // A key made on the admin screen or the CLI works the same.
-$userKey = (new ApiKeys(new ApiCredential(), new Scopes(), new SystemClock()))->create('key', 'script', array('listings:read', 'account:read'), \mindstellar\api\auth\KeyOwner::user($uma))->token();
+$userKey = (new ApiKeys(new ApiCredential(), new Scopes(), new SystemClock()))->create('key', 'script', array('listings:read', 'account:read'), \mindstellar\apiaccess\KeyOwner::user($uma))->token();
 pin('a key made now works', 200, $call('GET', 'account', null, $userKey)->status());
 pin('a key cannot sign out', '403 forbidden', $code($call('POST', 'auth/revoke', null, $userKey)));
 
@@ -499,7 +499,7 @@ pin('a new sign-in works', 200, $call('GET', 'account', null, $login('uma', 'bat
 $admin->query("UPDATE {$p}t_user SET s_password = '" . $admin->real_escape_string(password_hash('battery staple', PASSWORD_BCRYPT, array('cost' => BCRYPT_COST + 1))) . "' WHERE pk_i_id = $uma");
 scratchdb_forget_cache();
 // Made while the hash is at the old cost, before any sign-in stores it again.
-$bound = (new ApiKeys(new ApiCredential(), new Scopes(), new SystemClock()))->create('key', 'rehash', array('listings:read', 'account:read'), \mindstellar\api\auth\KeyOwner::user($uma))->token();
+$bound = (new ApiKeys(new ApiCredential(), new Scopes(), new SystemClock()))->create('key', 'rehash', array('listings:read', 'account:read'), \mindstellar\apiaccess\KeyOwner::user($uma))->token();
 $grant = (new \mindstellar\api\auth\RefreshTokens(new ApiCredential(), new Scopes(), new UserRows(), 30, new SystemClock()))->start($userRow($uma), array('listings:read'), 'Rehash', '192.0.2.1');
 pin('fixture: the key works on the old hash', 200, $call('GET', 'account', null, $bound)->status());
 $login('uma', 'battery staple');

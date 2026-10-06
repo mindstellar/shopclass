@@ -19,12 +19,6 @@
 require_once __DIR__ . '/lib/api-boot.php';
 
 use mindstellar\api\ApiServices;
-use mindstellar\api\ApiSettings;
-use mindstellar\api\auth\ApiKeys;
-use mindstellar\api\auth\Credential;
-use mindstellar\api\auth\CredentialStore;
-use mindstellar\api\auth\Scopes;
-use mindstellar\api\auth\StoredKey;
 use mindstellar\api\controller\AuthController;
 use mindstellar\api\ProblemException;
 use mindstellar\api\Request;
@@ -32,6 +26,12 @@ use mindstellar\api\RequestId;
 use mindstellar\api\Response;
 use mindstellar\api\routing\Router;
 use mindstellar\api\schema\Validator;
+use mindstellar\apiaccess\ApiKeys;
+use mindstellar\apiaccess\ApiSettings;
+use mindstellar\apiaccess\Credential;
+use mindstellar\apiaccess\CredentialStore;
+use mindstellar\apiaccess\Scopes;
+use mindstellar\apiaccess\StoredKey;
 use mindstellar\utility\SystemClock;
 
 if (!function_exists('osc_users_enabled')) {

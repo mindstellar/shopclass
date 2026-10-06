@@ -10,7 +10,7 @@
 
 declare(strict_types=1);
 
-namespace mindstellar\api\auth;
+namespace mindstellar\apiaccess;
 
 /**
  * The outcome of checking a token: the credential, or a refusal that says whether the token

@@ -77,10 +77,13 @@ check('no session was started', session_status() !== PHP_SESSION_ACTIVE);
 harness_section('index.php');
 $index = (string) file_get_contents(ABS_PATH . 'index.php');
 $at    = static fn (string $needle): int => (int) strpos($index, $needle);
-check('page=api forgets the web identity', str_contains($index, "if (\$osc_api_request) {\n    \\mindstellar\\api\\identity\\WebIdentity::forget();"));
-check('before the maintenance check', $at('WebIdentity::forget()') < $at("file_exists(ABS_PATH . '.maintenance')"));
+$boot  = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/api/boot.php');
+check('page=api forgets the web identity', str_contains($index, "if (\$osc_api_request) {\n    \\mindstellar\\apiaccess\\ApiAccess::begin();"));
+check('which is WebIdentity::forget()', str_contains($boot, 'static fn () => \\mindstellar\\api\\identity\\WebIdentity::forget(),'));
+check('before the maintenance check', $at('ApiAccess::begin()') > 0 && $at('ApiAccess::begin()') < $at("file_exists(ABS_PATH . '.maintenance')"));
 check('an admin cookie does not lift maintenance for the API', str_contains($index, '!$osc_api_request && osc_is_admin_user_logged_in(),'));
-check('an API call under maintenance gets problem+json', str_contains($index, "if (\$osc_api_request) {\n            \\mindstellar\\api\\Problem::maintenance()->send();"));
+check('an API call under maintenance gets problem+json', str_contains($index, "if (\$osc_api_request) {\n            \\mindstellar\\apiaccess\\ApiAccess::maintenance();")
+    && str_contains($boot, 'static fn () => \\mindstellar\\api\\Problem::maintenance()->send()'));
 check('an API call never records last access', str_contains($index, 'if (!$osc_api_request && osc_is_web_user_logged_in()) {'));
 check('nor touches the user cookies when users are off', str_contains($index, 'if (!$osc_api_request && !osc_users_enabled() && osc_is_web_user_logged_in()) {'));
 

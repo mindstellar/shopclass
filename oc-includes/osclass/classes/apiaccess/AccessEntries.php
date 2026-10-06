@@ -10,7 +10,7 @@
 
 declare(strict_types=1);
 
-namespace mindstellar\api\auth;
+namespace mindstellar\apiaccess;
 
 /**
  * A user's live sign-ins and personal keys, as the API and the account page list and end
@@ -18,7 +18,7 @@ namespace mindstellar\api\auth;
  */
 final class AccessEntries
 {
-    public function __construct(private SignInStore $store, private RefreshTokens $refresh)
+    public function __construct(private SignInStore $store)
     {
     }
 
@@ -68,7 +68,7 @@ final class AccessEntries
             if ($session->isKey()) {
                 $this->store->revoke($session->row()->id());
             } else {
-                $this->refresh->end($userId, $id);
+                $this->store->revokeFamily($id);
             }
 
             return true;
@@ -85,7 +85,7 @@ final class AccessEntries
      */
     public function endAll(int $userId): void
     {
-        $this->refresh->end($userId);
+        $this->store->revokeRefreshFor($userId);
         foreach ($this->store->listBy(CredentialKind::KEY, $userId, null, true) as $key) {
             $this->store->revoke($key->id());
         }

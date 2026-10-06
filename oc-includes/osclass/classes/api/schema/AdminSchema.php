@@ -14,8 +14,8 @@ namespace mindstellar\api\schema;
 
 use mindstellar\admin\ExposedSettings;
 
-use mindstellar\api\auth\ApiKeyService;
 use mindstellar\api\serializer\CustomFieldSerializer;
+use mindstellar\apiaccess\ApiKeyService;
 use mindstellar\comment\CommentStatus;
 use mindstellar\webhook\Endpoint;
 use mindstellar\webhook\Events;

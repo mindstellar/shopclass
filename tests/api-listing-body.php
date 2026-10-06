@@ -19,14 +19,14 @@
 
 require_once __DIR__ . '/lib/api-boot.php';
 
-use mindstellar\api\auth\Credential;
-use mindstellar\api\auth\CredentialKind;
 use mindstellar\api\Request;
 use mindstellar\api\schema\OpenApi;
 use mindstellar\api\serializer\ViewContext;
 use mindstellar\api\write\CustomFieldValues;
 use mindstellar\api\write\ListingBody;
 use mindstellar\api\write\OwnedListing;
+use mindstellar\apiaccess\Credential;
+use mindstellar\apiaccess\CredentialKind;
 use mindstellar\listing\ListingPolicy;
 
 $form = new ListingBody(',', 'en_US');

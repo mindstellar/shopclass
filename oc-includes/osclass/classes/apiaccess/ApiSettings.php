@@ -10,7 +10,7 @@
 
 declare(strict_types=1);
 
-namespace mindstellar\api;
+namespace mindstellar\apiaccess;
 
 /**
  * The site's API settings (preference section `api`). The defaults here are the only ones:
@@ -20,6 +20,9 @@ namespace mindstellar\api;
 final class ApiSettings
 {
     public const SECTION = 'api';
+
+    /** The API's version, the first part of every path. */
+    public const VERSION = 'v1';
 
     /** New listings one user may post through the API in an hour, when the setting is 0. */
     public const LISTINGS_PER_HOUR = 30;

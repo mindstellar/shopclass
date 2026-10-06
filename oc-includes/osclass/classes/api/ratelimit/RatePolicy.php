@@ -12,11 +12,11 @@ declare(strict_types=1);
 
 namespace mindstellar\api\ratelimit;
 
-use mindstellar\api\ApiSettings;
-use mindstellar\api\auth\Credential;
-use mindstellar\api\auth\CredentialKind;
 use mindstellar\api\Request;
 use mindstellar\api\RouteSpec;
+use mindstellar\apiaccess\ApiSettings;
+use mindstellar\apiaccess\Credential;
+use mindstellar\apiaccess\CredentialKind;
 use mindstellar\security\AddressBucket;
 
 /**

@@ -109,6 +109,7 @@ Also settled before the first release, so no released client saw the old behavio
 - `Problem.code` is an open string in the OpenAPI document, and `info.version` is `1`.
 - `If-Match` checks the stored version, so a tag from a `GET` with `fields`, `include` or `locale` works. The check and the write run as one. A `PATCH` sent with `If-Match` answers with the new `ETag`.
 - A credential that cannot read the `GET` of the path gets `412` for `If-Match`, instead of the check being skipped.
+- A stale `If-Match` on a resource the credential cannot see answers as its `GET` does (`404`), not `412`.
 - `Idempotency-Key` keeps every `4xx` except `429`, including a `409` or `422` from a core refusal.
 
 See [Admin endpoints](/docs/developers/api/admin/) and [Webhooks](/docs/developers/api/webhooks/).

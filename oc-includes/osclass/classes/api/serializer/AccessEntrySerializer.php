@@ -12,8 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\api\serializer;
 
-use mindstellar\api\auth\AccessEntry;
-use mindstellar\api\auth\Credential;
+use mindstellar\apiaccess\AccessEntry;
+use mindstellar\apiaccess\Credential;
 
 /**
  * A sign-in or key as `GET /account/sessions` lists it.
@@ -27,18 +27,6 @@ final class AccessEntrySerializer
      */
     public function one(AccessEntry $session, Credential $credential): array
     {
-        $row = $session->row();
-
-        return [
-            'id'           => $session->id(),
-            'type'         => $session->type(),
-            'label'        => $row->name(),
-            'prefix'       => $session->prefix(),
-            'scopes'       => $row->scopes(),
-            'last_used_at' => Format::timestamp($row->lastUsedAt() ?? $row->createdAt()),
-            'last_ip'      => $row->lastIp() === '' ? null : $row->lastIp(),
-            'expires_at'   => Format::timestamp($row->expiresAt()),
-            'current'      => $session->isCurrent($credential),
-        ];
+        return $session->toArray($credential);
     }
 }

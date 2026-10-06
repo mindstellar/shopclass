@@ -13,12 +13,12 @@ declare(strict_types=1);
 namespace mindstellar\api\controller\admin;
 
 use mindstellar\api\ApiServices;
-use mindstellar\api\auth\Credential;
 use mindstellar\api\ProblemException;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\Format;
 use mindstellar\api\serializer\Links;
+use mindstellar\apiaccess\Credential;
 use mindstellar\utility\Clock;
 use mindstellar\webhook\Endpoint;
 use mindstellar\webhook\WebhookService;

@@ -47,6 +47,32 @@ final class CommentService
     }
 
     /**
+     * @return array<string,mixed>|null the comment's row
+     */
+    public function find(int $id): ?array
+    {
+        $comment = $this->comments->findByPrimaryKey($id);
+
+        return is_array($comment) && $comment !== [] ? $comment : null;
+    }
+
+    /**
+     * A comment the actor may see, as CommentPolicy::canView() decides; null otherwise.
+     *
+     * @return array<string,mixed>|null
+     */
+    public function visible(int $id, Actor $actor): ?array
+    {
+        $comment = $this->find($id);
+        if ($comment === null) {
+            return null;
+        }
+        $item = CommentPolicy::isLive($comment) ? $this->items->findByPrimaryKey((int) $comment['fk_i_item_id']) : false;
+
+        return CommentPolicy::canView($comment, $item, $actor) ? $comment : null;
+    }
+
+    /**
      * Post a comment. Fires `pre_item_add_comment_post`, then on success `before_add_comment`,
      * the new-comment e-mail hooks and `add_comment`. A signed-in author comments under their
      * account's name and e-mail; a guest under the ones sent.

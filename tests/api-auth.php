@@ -20,15 +20,7 @@
 
 require_once __DIR__ . '/lib/api-boot.php';
 
-use mindstellar\api\ApiSettings;
-use mindstellar\api\auth\ApiKeys;
-use mindstellar\api\auth\Credential;
-use mindstellar\api\auth\CredentialKind;
-use mindstellar\api\auth\CredentialStore;
 use mindstellar\api\auth\FailureCounter;
-use mindstellar\api\auth\KeyOwner;
-use mindstellar\api\auth\Scopes;
-use mindstellar\api\auth\StoredKey;
 use mindstellar\api\Kernel;
 use mindstellar\api\ProblemException;
 use mindstellar\api\ratelimit\RateLimiter;
@@ -37,6 +29,14 @@ use mindstellar\api\Response;
 use mindstellar\api\RouteSpec;
 use mindstellar\api\routing\Router;
 use mindstellar\api\schema\Validator;
+use mindstellar\apiaccess\ApiKeys;
+use mindstellar\apiaccess\ApiSettings;
+use mindstellar\apiaccess\Credential;
+use mindstellar\apiaccess\CredentialKind;
+use mindstellar\apiaccess\CredentialStore;
+use mindstellar\apiaccess\KeyOwner;
+use mindstellar\apiaccess\Scopes;
+use mindstellar\apiaccess\StoredKey;
 use mindstellar\security\AddressBucket;
 
 /** t_api_credential as an array; owners as admin id => moderator flag and enabled user ids. */

@@ -13,8 +13,8 @@ declare(strict_types=1);
 namespace mindstellar\api\serializer;
 
 use mindstellar\api\ApiServices;
-use mindstellar\api\auth\Credential;
 use mindstellar\api\read\ListingReader;
+use mindstellar\apiaccess\Credential;
 use mindstellar\comment\CommentStatus;
 use mindstellar\database\Db;
 use mindstellar\listing\ListingStatus;

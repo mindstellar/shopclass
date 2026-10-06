@@ -55,7 +55,7 @@ if (CLI) {
 // A cookie never authenticates an API call: forget the browser's identity before anything reads it.
 $osc_api_request = Params::getParamString('page') === 'api';
 if ($osc_api_request) {
-    \mindstellar\api\identity\WebIdentity::forget();
+    \mindstellar\apiaccess\ApiAccess::begin();
 }
 
 if (file_exists(ABS_PATH . '.maintenance')) {
@@ -71,7 +71,7 @@ if (file_exists(ABS_PATH . '.maintenance')) {
         osc_maintenance_locks_everyone(ABS_PATH . '.maintenance')
     )) {
         if ($osc_api_request) {
-            \mindstellar\api\Problem::maintenance()->send();
+            \mindstellar\apiaccess\ApiAccess::maintenance();
         }
 
         header('HTTP/1.1 503 Service Temporarily Unavailable');

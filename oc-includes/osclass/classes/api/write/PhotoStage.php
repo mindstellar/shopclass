@@ -55,7 +55,7 @@ final class PhotoStage extends Model
      * @throws \OverflowException when the user already holds MAX_PENDING photos
      * @throws \RuntimeException  when the file cannot be moved
      */
-    public function stage(int $userId, CheckedPhoto $photo): StagedPhoto
+    public function stage(int $userId, PhotoFile $photo): PhotoFile
     {
         $token = bin2hex(random_bytes(16));
         $file  = self::PREFIX . $token . '.' . $photo->extension();
@@ -76,7 +76,7 @@ final class PhotoStage extends Model
             throw new \OverflowException('Too many photos are waiting for a listing.');
         }
 
-        return new StagedPhoto($token, $this->dir . $file, $now + self::TTL);
+        return new PhotoFile($this->dir . $file, $photo->extension(), $token, $now + self::TTL);
     }
 
     /**
@@ -85,7 +85,7 @@ final class PhotoStage extends Model
      *
      * @param string[] $tokens
      *
-     * @return array<string,StagedPhoto> token => photo
+     * @return array<string,PhotoFile> token => photo
      */
     public function staged(int $userId, array $tokens): array
     {
@@ -102,7 +102,7 @@ final class PhotoStage extends Model
         foreach ($rows as $row) {
             $file = (string) $row['s_file'];
             if (basename($file) === $file && is_file($this->dir . $file)) {
-                $out[(string) $row['s_uuid']] = new StagedPhoto((string) $row['s_uuid'], $this->dir . $file, (int) strtotime((string) $row['dt_date']) + self::TTL);
+                $out[(string) $row['s_uuid']] = new PhotoFile($this->dir . $file, strtolower(pathinfo($file, PATHINFO_EXTENSION)), (string) $row['s_uuid'], (int) strtotime((string) $row['dt_date']) + self::TTL);
             }
         }
 

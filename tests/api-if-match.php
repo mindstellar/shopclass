@@ -13,29 +13,31 @@
  * whatever `fields` asked for; a stale one is 412 and runs nothing; the check and the write
  * run in one transaction with the rows locked; the write's answer carries the new ETag.
  * Other paths compare the GET's ETag, and a credential that cannot read the GET is refused,
- * not let through. No header, and a path with no GET, are never checked.
+ * not let through. A stale tag on a resource the caller cannot see gets the GET's 404, so a
+ * 412 never reveals that it exists. No header, and a path with no GET, are never checked.
  *
  * DB-free.  Usage: php tests/api-if-match.php
  */
 
 require_once __DIR__ . '/lib/api-boot.php';
 
-use mindstellar\api\ApiSettings;
 use mindstellar\api\auth\AdminRows;
-use mindstellar\api\auth\ApiKeys;
-use mindstellar\api\auth\Credential;
-use mindstellar\api\auth\CredentialKind;
-use mindstellar\api\auth\CredentialStore;
-use mindstellar\api\auth\KeyOwner;
-use mindstellar\api\auth\Scopes;
-use mindstellar\api\auth\StoredKey;
 use mindstellar\api\http\ResourceVersions;
 use mindstellar\api\idempotency\Idempotency;
 use mindstellar\api\Kernel;
+use mindstellar\api\ProblemException;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\routing\Router;
 use mindstellar\api\schema\Validator;
+use mindstellar\apiaccess\ApiKeys;
+use mindstellar\apiaccess\ApiSettings;
+use mindstellar\apiaccess\Credential;
+use mindstellar\apiaccess\CredentialKind;
+use mindstellar\apiaccess\CredentialStore;
+use mindstellar\apiaccess\KeyOwner;
+use mindstellar\apiaccess\Scopes;
+use mindstellar\apiaccess\StoredKey;
 use mindstellar\utility\SystemClock;
 
 final class Things
@@ -49,6 +51,16 @@ final class Things
         $doc = ['id' => (int) $args['id'], 'title' => self::$title];
 
         return Response::ok(isset($request->query()['fields']) ? ['id' => $doc['id']] : $doc);
+    }
+
+    /** Only id 5 is the caller's; any other is 404, as if it did not exist. */
+    public function own(Request $request, Credential $credential, array $args): Response
+    {
+        if ($args['id'] !== '5') {
+            throw ProblemException::of('not_found', 'No such thing.');
+        }
+
+        return $request->method() === 'GET' ? $this->show($request, $credential, $args) : $this->update($request, $credential, $args);
     }
 
     public function fail(Request $request, Credential $credential, array $args): Response
@@ -124,7 +136,7 @@ final class Versions implements ResourceVersions
 
     public function supports(string $path): bool
     {
-        return str_starts_with($path, 'versioned/');
+        return str_starts_with($path, 'versioned/') || str_starts_with($path, 'owned/') || str_starts_with($path, 'secret/');
     }
 
     public function version(string $path, array $args, Credential $credential, bool $lock = false): ?string
@@ -210,6 +222,10 @@ $vkernel  = new Kernel(
         'DELETE versioned/{id}' => ['handler' => [Things::class, 'fail']] + $write,
         'GET hidden/{id}'       => ['handler' => [Things::class, 'show'], 'auth' => 'user', 'scope' => 'listings:moderate'],
         'DELETE hidden/{id}'    => ['handler' => [Things::class, 'delete']] + $write,
+        'GET owned/{id}'        => ['handler' => [Things::class, 'own'], 'auth' => 'user', 'scope' => 'listings:read'],
+        'PATCH owned/{id}'      => ['handler' => [Things::class, 'own'], 'body' => ['type' => 'object']] + $write,
+        'GET secret/{id}'       => ['handler' => [Things::class, 'show'], 'auth' => 'user', 'scope' => 'listings:moderate'],
+        'DELETE secret/{id}'    => ['handler' => [Things::class, 'delete']] + $write,
     ]),
     api_test_authenticator($keys),
     api_test_limiter(),
@@ -277,5 +293,21 @@ $r      = $vcall('DELETE', 'hidden/5', '"anything"');
 pin('a credential that cannot read the GET is 412, not let through', [412, $writes], [$r->status(), Things::$writes]);
 $r = $vcall('DELETE', 'hidden/5');
 pin('without If-Match it is not checked', [204, $writes + 1], [$r->status(), Things::$writes]);
+
+harness_section('no existence leak');
+Things::$title = 'one';
+$writes        = Things::$writes;
+$versions->log = [];
+$r             = $vcall('PATCH', 'owned/7', '"stale"', ['title' => 'two']);
+pin('a stale tag on a resource the caller cannot see answers as the GET does, not 412', [404, 'not_found', $writes, 'one'], [$r->status(), $r->body()['code'], Things::$writes, Things::$title]);
+pin('and its transaction is rolled back', ['begin', 'lock@1', 'rollback'], $versions->log);
+$r = $vcall('PATCH', 'owned/7', '', ['title' => 'two']);
+pin('which is what the write answers without If-Match', [404, $writes], [$r->status(), Things::$writes]);
+$r = $vcall('PATCH', 'owned/5', '"stale"', ['title' => 'two']);
+pin('a stale tag on the caller\'s own resource is still 412', [412, 'one'], [$r->status(), Things::$title]);
+$versions->log = [];
+$r             = $vcall('DELETE', 'secret/5', '"stale"');
+$star          = $vcall('DELETE', 'secret/5', '*');
+pin('a credential that cannot read the GET is 412 before any version is read', [412, 412, $writes, []], [$r->status(), $star->status(), Things::$writes, $versions->log]);
 
 exit(harness_result());

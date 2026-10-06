@@ -10,7 +10,7 @@
 
 declare(strict_types=1);
 
-namespace mindstellar\api\auth;
+namespace mindstellar\apiaccess;
 
 /**
  * Where API credentials are kept: t_api_credential in production, an array in tests.

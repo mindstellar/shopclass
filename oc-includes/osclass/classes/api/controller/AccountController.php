@@ -13,11 +13,8 @@ declare(strict_types=1);
 namespace mindstellar\api\controller;
 
 use mindstellar\api\ApiServices;
-use mindstellar\api\auth\AccessEntries;
-
-use mindstellar\api\auth\AccessEntry;
-use mindstellar\api\auth\Credential;
 use mindstellar\api\auth\RefreshTokens;
+
 use mindstellar\api\auth\TokenIssuer;
 use mindstellar\api\auth\UserRows;
 use mindstellar\api\ProblemException;
@@ -27,6 +24,9 @@ use mindstellar\api\Response;
 use mindstellar\api\serializer\AccessEntrySerializer;
 use mindstellar\api\serializer\UserSerializer;
 use mindstellar\api\write\AccountBody;
+use mindstellar\apiaccess\AccessEntries;
+use mindstellar\apiaccess\AccessEntry;
+use mindstellar\apiaccess\Credential;
 use mindstellar\user\AccountService;
 use mindstellar\utility\DeferredMail;
 

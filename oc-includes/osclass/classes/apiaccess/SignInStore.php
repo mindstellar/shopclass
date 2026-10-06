@@ -10,7 +10,7 @@
 
 declare(strict_types=1);
 
-namespace mindstellar\api\auth;
+namespace mindstellar\apiaccess;
 
 /**
  * A credential store that also keeps sign-ins: refresh families, and the lists the account

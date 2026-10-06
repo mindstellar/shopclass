@@ -15,10 +15,8 @@ namespace mindstellar\api;
 use mindstellar\api\auth\AdminRows;
 use mindstellar\api\auth\Authenticator;
 use mindstellar\api\auth\Authorizer;
-use mindstellar\api\auth\Credential;
 use mindstellar\api\auth\OAuthError;
 use mindstellar\api\auth\PageTokenAuth;
-use mindstellar\api\auth\Scopes;
 use mindstellar\api\auth\UserRows;
 use mindstellar\api\http\CachePolicy;
 use mindstellar\api\http\Cors;
@@ -33,6 +31,9 @@ use mindstellar\api\ratelimit\RatePolicy;
 use mindstellar\api\routing\RouteMatch;
 use mindstellar\api\routing\Router;
 use mindstellar\api\schema\Validator;
+use mindstellar\apiaccess\ApiSettings;
+use mindstellar\apiaccess\Credential;
+use mindstellar\apiaccess\Scopes;
 use mindstellar\validation\RefusedException;
 
 /**
@@ -43,7 +44,7 @@ use mindstellar\validation\RefusedException;
  */
 final class Kernel
 {
-    public const VERSION = 'v1';
+    public const VERSION = ApiSettings::VERSION;
 
     /** Where deprecations are announced. */
     public const CHANGELOG = 'https://mindstellar.com/docs/developers/api/changelog/';
@@ -198,6 +199,9 @@ final class Kernel
      * Where the same path's GET keeps a stored version, the version is read with its rows
      * locked and the write runs in that transaction, so no other write lands in between.
      * Otherwise the GET is run and its ETag compared. A path with no GET is not checked.
+     * A 412 never tells a caller more than the GET would: a credential that cannot read the
+     * path is refused before anything is looked up, and a stale version is answered with the
+     * GET's refusal (404, say) when this credential cannot see the resource.
      *
      * @param array<string,string> $args
      * @throws ProblemException 412 when the resource has changed, or cannot be checked
@@ -211,6 +215,11 @@ final class Kernel
         if ($read === null) {
             return $route->call($request, $credential, $args);
         }
+        try {
+            $this->authorizer->check($read->route(), $credential);
+        } catch (ProblemException $e) {
+            throw ProblemException::of('precondition_failed', 'This credential cannot read the resource, so If-Match cannot be checked. Send the write without it.');
+        }
         $path = $read->route()->path();
         if (!$this->versions->supports($path)) {
             $this->checkRepresentation($header, $request, $read, $credential);
@@ -221,7 +230,8 @@ final class Kernel
         return $this->versions->atomically(function () use ($header, $request, $route, $credential, $args, $read, $path): Response {
             $version = $this->versions->version($path, $read->args(), $credential, true);
             if ($version !== null && !Response::versionMatches($header, $version)) {
-                throw self::preconditionFailed();
+                $current = $read->route()->call($request->asRead(), $credential, $read->args());
+                throw $current->status() < 300 ? self::preconditionFailed() : ProblemException::from($current);
             }
             $response = $route->call($request, $credential, $args);
             $version  = $response->status() === 200 ? $this->versions->version($path, $read->args(), $credential) : null;
@@ -233,15 +243,10 @@ final class Kernel
     /**
      * If-Match against the ETag of the GET's answer, for a path that keeps no stored version.
      *
-     * @throws ProblemException 412 when it differs, or when this credential cannot read the path
+     * @throws ProblemException 412 when it differs
      */
     private function checkRepresentation(string $header, Request $request, RouteMatch $read, Credential $credential): void
     {
-        try {
-            $this->authorizer->check($read->route(), $credential);
-        } catch (ProblemException $e) {
-            throw ProblemException::of('precondition_failed', 'This credential cannot read the resource, so If-Match cannot be checked. Send the write without it.');
-        }
         $current  = $read->route()->call($request->asRead(), $credential, $read->args());
         $filtered = osc_apply_filter('api_response', $current, $request->asRead(), $read->route());
         $current  = $filtered instanceof Response ? $filtered : $current;

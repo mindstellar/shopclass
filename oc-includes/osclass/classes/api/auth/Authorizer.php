@@ -15,6 +15,7 @@ namespace mindstellar\api\auth;
 use mindstellar\api\Problem;
 use mindstellar\api\ProblemException;
 use mindstellar\api\RouteSpec;
+use mindstellar\apiaccess\Credential;
 
 /**
  * Whether a credential may call a route: its auth level, then its scope.

@@ -53,6 +53,44 @@ final class FieldService
     }
 
     /**
+     * The field with its stored settings merged in, as forms and the API read it.
+     *
+     * @return array<string,mixed> empty when there is no such field
+     */
+    public function extended(int $id): array
+    {
+        return $this->fields->findByPrimaryKey($id);
+    }
+
+    /**
+     * @return string[] the ids of the categories the field is assigned to
+     */
+    public function categoryIds(int $id): array
+    {
+        return $this->fields->categories($id);
+    }
+
+    /**
+     * Every field, by position.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function all(): array
+    {
+        return $this->fields->listAll();
+    }
+
+    /**
+     * The fields a category's listings carry, its parents' included.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function forCategory(int $categoryId): array
+    {
+        return $this->fields->findByCategory($categoryId);
+    }
+
+    /**
      * @param array{name:mixed,type:string,slug?:string,required?:bool,searchable?:bool,options?:array<int,mixed>,categories?:array<int,mixed>} $field
      *
      * @return int the new id

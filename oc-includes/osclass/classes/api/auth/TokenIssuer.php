@@ -14,6 +14,10 @@ namespace mindstellar\api\auth;
 
 use mindstellar\api\ProblemException;
 use mindstellar\api\Response;
+use mindstellar\apiaccess\CredentialKind;
+use mindstellar\apiaccess\IssuedToken;
+use mindstellar\apiaccess\KeyOwner;
+use mindstellar\apiaccess\Scopes;
 use mindstellar\utility\Clock;
 
 /**
@@ -56,7 +60,7 @@ final class TokenIssuer
      *
      * @return Response
      */
-    public function answer(array $user, array $scopes, string $family, ?RefreshGrant $grant = null): Response
+    public function answer(array $user, array $scopes, string $family, ?IssuedToken $grant = null): Response
     {
         $body = [
             'access_token' => $this->access->issue($user, $scopes, $family),
@@ -66,7 +70,7 @@ final class TokenIssuer
         ];
         if ($grant !== null) {
             $body['refresh_token']      = $grant->token();
-            $body['refresh_expires_in'] = max(0, $grant->expiresAt() - $this->clock->now());
+            $body['refresh_expires_in'] = max(0, (int) $grant->expiresAt() - $this->clock->now());
         }
 
         // The members at the top level and never cached, as RFC 6749 §5.1 has it.

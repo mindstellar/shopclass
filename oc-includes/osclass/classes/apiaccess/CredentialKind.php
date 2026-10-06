@@ -10,7 +10,7 @@
 
 declare(strict_types=1);
 
-namespace mindstellar\api\auth;
+namespace mindstellar\apiaccess;
 
 /**
  * The kinds of credential. KEY, PUBLIC and REFRESH are also the stored kinds in

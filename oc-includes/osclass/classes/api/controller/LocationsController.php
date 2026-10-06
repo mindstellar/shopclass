@@ -13,7 +13,6 @@ declare(strict_types=1);
 namespace mindstellar\api\controller;
 
 use mindstellar\api\ApiServices;
-use mindstellar\api\auth\Credential;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\ListSpec;
 use mindstellar\api\read\Page;
@@ -21,6 +20,7 @@ use mindstellar\api\read\Pager;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\LocationSerializer;
+use mindstellar\apiaccess\Credential;
 use mindstellar\location\LocationQuery;
 
 /**

@@ -13,13 +13,13 @@ declare(strict_types=1);
 namespace mindstellar\api\controller;
 
 use mindstellar\api\ApiServices;
-use mindstellar\api\auth\Credential;
-use mindstellar\api\auth\PageTokens;
 use mindstellar\api\auth\UserRows;
 use mindstellar\api\ProblemException;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\Format;
+use mindstellar\apiaccess\Credential;
+use mindstellar\apiaccess\PageTokens;
 
 /**
  * `GET /auth/session`: a fresh page token for a page open longer than its token lives. Only a

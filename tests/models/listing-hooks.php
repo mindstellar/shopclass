@@ -121,8 +121,6 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hSearch.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hApi.php';
 
 use mindstellar\api\ApiServices;
-use mindstellar\api\ApiSettings;
-use mindstellar\api\auth\Scopes;
 use mindstellar\api\auth\UserRows;
 use mindstellar\api\idempotency\Idempotency;
 use mindstellar\api\idempotency\KvIdempotencyStore;
@@ -138,6 +136,8 @@ use mindstellar\api\schema\Validator;
 use mindstellar\api\serializer\Links;
 use mindstellar\api\write\ImageFetcher;
 use mindstellar\api\write\PhotoStage;
+use mindstellar\apiaccess\ApiSettings;
+use mindstellar\apiaccess\Scopes;
 use mindstellar\auth\Actor;
 use mindstellar\listing\PhotoService;
 use mindstellar\model\ApiCredential;

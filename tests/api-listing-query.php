@@ -23,7 +23,7 @@ use mindstellar\api\ProblemException;
 use mindstellar\api\read\CategoryCatalog;
 use mindstellar\api\read\Cursor;
 use mindstellar\api\read\CursorState;
-use mindstellar\api\read\ListingFilters;
+use mindstellar\api\read\ListingSearch;
 use mindstellar\api\read\ListingSort;
 use mindstellar\api\read\Page;
 use mindstellar\api\read\Pager;
@@ -39,7 +39,7 @@ $catalog = new CategoryCatalog([
     ['pk_i_id' => '2', 'fk_i_parent_id' => '1', 's_slug' => 'cars', 'locale' => ['en_US' => ['s_slug' => 'cars', 's_name' => 'Cars']]],
 ]);
 $request = static fn (array $q): Request => new Request('GET', 'v1/listings', $q);
-$params  = static fn (array $q, ?int $user = null): array => ListingFilters::params($request($q), $catalog, 'de_DE', $user);
+$params  = static fn (array $q, ?int $user = null): array => ListingSearch::params($request($q), $catalog, 'de_DE', $user);
 $pager   = static fn (array $q, string $sort = 'created', string $order = 'desc'): Pager => Pager::fromRequest(
     $request($q),
     $cursor,

@@ -13,7 +13,6 @@ declare(strict_types=1);
 namespace mindstellar\api\controller;
 
 use mindstellar\api\ApiServices;
-use mindstellar\api\auth\Credential;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\ListingSearch;
 use mindstellar\api\Request;
@@ -21,6 +20,7 @@ use mindstellar\api\Response;
 use mindstellar\api\serializer\Format;
 use mindstellar\api\serializer\UserSerializer;
 use mindstellar\api\serializer\ViewContext;
+use mindstellar\apiaccess\Credential;
 use mindstellar\user\UserQuery;
 
 /**
@@ -44,8 +44,8 @@ final class UsersController
     {
         $context = $this->api->context($request, $credential, 'user', UserSerializer::MEMBERS);
         $id      = (int) $args['id'];
-        $user    = $this->api->facts()->usersEnabled() ? \User::getInstance()->findByPrimaryKey($id) : null;
-        if (!is_array($user) || $user === [] || !self::visible($user, $credential)) {
+        $user    = $this->api->facts()->usersEnabled() ? (new UserQuery())->find($id) : null;
+        if ($user === null || !self::visible($user, $credential)) {
             throw ProblemException::of('not_found', 'No such user.');
         }
 

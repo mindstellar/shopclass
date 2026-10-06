@@ -29,14 +29,14 @@ if (api_admin_isolated(__FILE__)) {
 }
 
 use mindstellar\api\ApiServices;
-use mindstellar\api\ApiSettings;
-use mindstellar\api\auth\Scopes;
 use mindstellar\api\auth\UserRows;
 use mindstellar\api\ratelimit\RateLimiter;
-use mindstellar\api\read\ListingLoader;
+use mindstellar\api\read\CategoryCatalog;
 use mindstellar\api\read\ListingReader;
 use mindstellar\api\read\SiteFacts;
 use mindstellar\api\serializer\EventData;
+use mindstellar\apiaccess\ApiSettings;
+use mindstellar\apiaccess\Scopes;
 use mindstellar\job\JobQueue;
 use mindstellar\model\ApiCredential;
 use mindstellar\security\AddressGuard;
@@ -347,7 +347,7 @@ $kit    = new ApiServices(
         }
     }
 );
-$eventData = static fn (ApiServices $kit): EventData => new EventData(new ListingReader(ListingLoader::fromSite(), $kit->listingSerializer()), $kit, new SystemClock());
+$eventData = static fn (ApiServices $kit): EventData => new EventData(new ListingReader(CategoryCatalog::fromSite(), $kit->listingSerializer()), $kit, new SystemClock());
 $data = $eventData($kit)->listing($item);
 pin('a listing event carries the public listing', [$item, 'Red bike', 'http://localhost/item/' . $item], [$data['id'] ?? null, $data['title'] ?? null, $data['url'] ?? null]);
 check('...never its IP or the seller e-mail', !array_key_exists('ip', (array) $data) && !str_contains((string) json_encode($data), '@'));

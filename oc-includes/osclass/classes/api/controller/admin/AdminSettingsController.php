@@ -14,10 +14,10 @@ namespace mindstellar\api\controller\admin;
 
 use mindstellar\admin\ExposedSettings;
 use mindstellar\api\ApiServices;
-use mindstellar\api\auth\Credential;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\JobSerializer;
+use mindstellar\apiaccess\Credential;
 
 /**
  * `/admin/settings`, the settings ExposedSettings lets the API read and change, and

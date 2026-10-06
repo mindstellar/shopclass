@@ -12,11 +12,6 @@ declare(strict_types=1);
 
 namespace mindstellar\api\schema;
 
-use mindstellar\api\auth\Credential;
-use mindstellar\api\auth\CredentialKind;
-use mindstellar\api\auth\KeyOwner;
-use mindstellar\api\auth\PageTokens;
-use mindstellar\api\auth\Scopes;
 use mindstellar\api\idempotency\Idempotency;
 use mindstellar\api\Kernel;
 use mindstellar\api\Request;
@@ -24,6 +19,11 @@ use mindstellar\api\Response;
 use mindstellar\api\RouteSpec;
 use mindstellar\api\routing\Router;
 use mindstellar\api\routing\RouteTable;
+use mindstellar\apiaccess\Credential;
+use mindstellar\apiaccess\CredentialKind;
+use mindstellar\apiaccess\KeyOwner;
+use mindstellar\apiaccess\PageTokens;
+use mindstellar\apiaccess\Scopes;
 use mindstellar\webhook\Events;
 
 /**

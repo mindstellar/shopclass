@@ -13,7 +13,6 @@ declare(strict_types=1);
 namespace mindstellar\api\controller;
 
 use mindstellar\api\ApiServices;
-use mindstellar\api\auth\Credential;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\ListingReader;
 use mindstellar\api\read\ListingSearch;
@@ -25,6 +24,7 @@ use mindstellar\api\Response;
 use mindstellar\api\serializer\CommentSerializer;
 use mindstellar\api\serializer\ListingSerializer;
 use mindstellar\api\serializer\ViewContext;
+use mindstellar\apiaccess\Credential;
 use mindstellar\comment\CommentQuery;
 use mindstellar\listing\ListingPolicy;
 use mindstellar\listing\ListingQuery;

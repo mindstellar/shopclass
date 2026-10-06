@@ -13,21 +13,12 @@ declare(strict_types=1);
 namespace mindstellar\api;
 
 use mindstellar\admin\ExposedSettings;
-use mindstellar\api\auth\AccessEntries;
 use mindstellar\api\auth\AccessTokens;
-use mindstellar\api\auth\AccountAccess;
 use mindstellar\api\auth\AdminRows;
-use mindstellar\api\auth\ApiKeys;
-use mindstellar\api\auth\ApiKeyService;
 use mindstellar\api\auth\Authenticator;
-use mindstellar\api\auth\Credential;
 use mindstellar\api\auth\FailureCounter;
 use mindstellar\api\auth\PageTokenAuth;
-use mindstellar\api\auth\PageTokens;
-use mindstellar\api\auth\PersonalKeys;
 use mindstellar\api\auth\RefreshTokens;
-use mindstellar\api\auth\Scopes;
-use mindstellar\api\auth\SignInStore;
 use mindstellar\api\auth\TokenIssuer;
 use mindstellar\api\auth\UserRows;
 use mindstellar\api\http\SiteOrigin;
@@ -35,8 +26,8 @@ use mindstellar\api\idempotency\Idempotency;
 use mindstellar\api\idempotency\KvIdempotencyStore;
 use mindstellar\api\ratelimit\RateLimiter;
 use mindstellar\api\ratelimit\RatePolicy;
+use mindstellar\api\read\CategoryCatalog;
 use mindstellar\api\read\Cursor;
-use mindstellar\api\read\ListingLoader;
 use mindstellar\api\read\ListingReader;
 use mindstellar\api\read\ListingSearch;
 use mindstellar\api\read\SiteFacts;
@@ -60,16 +51,25 @@ use mindstellar\api\write\ImageFetcher;
 use mindstellar\api\write\ListingWriter;
 use mindstellar\api\write\PhotoIntake;
 use mindstellar\api\write\PhotoStage;
+use mindstellar\apiaccess\AccessEntries;
+use mindstellar\apiaccess\AccountAccess;
+use mindstellar\apiaccess\ApiAccess;
+use mindstellar\apiaccess\ApiKeys;
+use mindstellar\apiaccess\ApiKeyService;
+use mindstellar\apiaccess\ApiSettings;
+use mindstellar\apiaccess\Credential;
+use mindstellar\apiaccess\PageTokens;
+use mindstellar\apiaccess\PersonalKeys;
+use mindstellar\apiaccess\Scopes;
+use mindstellar\apiaccess\SignInStore;
 use mindstellar\category\CategoryService;
 use mindstellar\currency\CurrencyService;
 use mindstellar\fields\FieldService;
 use mindstellar\listing\ListingService;
 use mindstellar\location\LocationService;
-use mindstellar\model\ApiCredential;
 use mindstellar\moderation\CommentModeration;
 use mindstellar\moderation\ListingModeration;
 use mindstellar\utility\Clock;
-use mindstellar\utility\SystemClock;
 use mindstellar\webhook\WebhookServices;
 
 /**
@@ -82,6 +82,8 @@ final class ApiServices
 
     /** @var array<string,object> service name => instance */
     private array $built = [];
+
+    private ?ApiAccess $access = null;
 
     /**
      * @param SiteFacts|null    $facts         the site's preferences when null
@@ -111,15 +113,16 @@ final class ApiServices
     public static function site(): self
     {
         if (self::$site === null) {
-            $clock      = new SystemClock();
-            self::$site = new self(
-                ApiSettings::fromPreferences(),
-                Scopes::fromHooks(),
-                new ApiCredential(),
+            $access             = ApiAccess::site();
+            self::$site         = new self(
+                $access->settings(),
+                $access->scopes(),
+                $access->store(),
                 new UserRows(),
-                $clock,
-                RateLimiter::fromSite($clock)
+                $access->clock(),
+                RateLimiter::fromSite($access->clock())
             );
+            self::$site->access = $access;
         }
 
         return self::$site;
@@ -131,6 +134,15 @@ final class ApiServices
     public static function reset(): void
     {
         self::$site = null;
+        ApiAccess::reset();
+    }
+
+    /**
+     * Keys, sign-ins and page tokens, on this kit's store, scopes and clock.
+     */
+    public function access(): ApiAccess
+    {
+        return $this->access ??= new ApiAccess($this->settings, $this->scopes, $this->store, $this->clock);
     }
 
     public function settings(): ApiSettings
@@ -245,7 +257,7 @@ final class ApiServices
      */
     public function pageTokens(): PageTokens
     {
-        return $this->once(__FUNCTION__, static fn (): PageTokens => new PageTokens());
+        return $this->access()->pageTokens();
     }
 
     /**
@@ -328,7 +340,7 @@ final class ApiServices
 
     public function keys(): ApiKeys
     {
-        return $this->once(__FUNCTION__, fn (): ApiKeys => new ApiKeys($this->store, $this->scopes, $this->clock));
+        return $this->access()->keys();
     }
 
     public function accessTokens(): AccessTokens
@@ -355,17 +367,12 @@ final class ApiServices
 
     public function accessEntries(): AccessEntries
     {
-        return $this->once(__FUNCTION__, fn (): AccessEntries => new AccessEntries($this->store, $this->refreshTokens()));
+        return $this->access()->accessEntries();
     }
 
     public function personalKeys(): PersonalKeys
     {
-        return $this->once(__FUNCTION__, fn (): PersonalKeys => new PersonalKeys(
-            $this->keyService(),
-            $this->store,
-            $this->settings->userKeys(),
-            $this->clock
-        ));
+        return $this->access()->personalKeys();
     }
 
     /**
@@ -373,7 +380,7 @@ final class ApiServices
      */
     public function accountAccess(): AccountAccess
     {
-        return $this->once(__FUNCTION__, fn (): AccountAccess => new AccountAccess($this->settings, $this->accessEntries(), $this->personalKeys()));
+        return $this->access()->accountAccess();
     }
 
     public function admins(): AdminRows
@@ -386,12 +393,7 @@ final class ApiServices
      */
     public function keyService(): ApiKeyService
     {
-        return $this->once(__FUNCTION__, fn (): ApiKeyService => new ApiKeyService($this->keys(), $this->store, $this->scopes, $this->clock));
-    }
-
-    public function listingLoader(): ListingLoader
-    {
-        return $this->once(__FUNCTION__, static fn (): ListingLoader => ListingLoader::fromSite());
+        return $this->access()->keyService();
     }
 
     public function listingSearch(): ListingSearch
@@ -401,7 +403,7 @@ final class ApiServices
 
     public function listingReader(): ListingReader
     {
-        return $this->once(__FUNCTION__, fn (): ListingReader => new ListingReader($this->listingLoader(), $this->listingSerializer()));
+        return $this->once(__FUNCTION__, fn (): ListingReader => new ListingReader(CategoryCatalog::fromSite(), $this->listingSerializer()));
     }
 
     /**

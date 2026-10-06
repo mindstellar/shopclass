@@ -481,7 +481,7 @@ Core fires 551 names. Generated from the source; do not edit by hand.
 | `api_request_before` | action | `$request, $route, $credential` | `oc-includes/osclass/classes/api/Kernel.php` |
 | `api_response` | filter | `$response, $request, $route` | `oc-includes/osclass/classes/api/Kernel.php` |
 | `api_routes` | filter | `$routes` | `oc-includes/osclass/classes/api/routing/Router.php` |
-| `api_scopes` | filter | `$scopes` | `oc-includes/osclass/classes/api/auth/Scopes.php` |
+| `api_scopes` | filter | `$scopes` | `oc-includes/osclass/classes/apiaccess/Scopes.php` |
 | `api_webhook_delivered` | action | `$endpointData, $event, $httpStatus, $attempt` | `oc-includes/osclass/classes/webhook/Delivery.php` |
 | `api_webhook_events` | filter | `$events` | `oc-includes/osclass/classes/webhook/Events.php` |
 | `api_webhook_payload` | filter | `$payload, $type, $endpointData` | `oc-includes/osclass/classes/webhook/Dispatcher.php` |

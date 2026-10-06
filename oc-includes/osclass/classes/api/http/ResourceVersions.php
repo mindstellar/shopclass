@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\api\http;
 
-use mindstellar\api\auth\Credential;
+use mindstellar\apiaccess\Credential;
 
 /**
  * The stored version of the resource a GET path names, for ETags and If-Match. A version

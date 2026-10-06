@@ -10,7 +10,7 @@
 
 declare(strict_types=1);
 
-namespace mindstellar\api\auth;
+namespace mindstellar\apiaccess;
 
 use mindstellar\utility\Clock;
 
@@ -61,7 +61,7 @@ final class ApiKeys
      *
      * @throws \InvalidArgumentException on a bad kind or owner, or no scope it may hold
      */
-    public function create(string $kind, string $name, array $scopes, KeyOwner $owner, ?int $expiresAt = null, ?int $rateLimit = null): IssuedKey
+    public function create(string $kind, string $name, array $scopes, KeyOwner $owner, ?int $expiresAt = null, ?int $rateLimit = null): IssuedToken
     {
         if ($kind !== CredentialKind::KEY && $kind !== CredentialKind::PUBLIC) {
             throw new \InvalidArgumentException('A key is of kind key or public.');
@@ -90,17 +90,17 @@ final class ApiKeys
         ));
         $prefix = $kind === CredentialKind::PUBLIC ? self::PUBLIC_PREFIX : self::KEY_PREFIX;
 
-        return new IssuedKey($id, $tokenId, $prefix . $tokenId . '.' . $secret, $scopes);
+        return new IssuedToken($prefix . $tokenId . '.' . $secret, $expiresAt, $scopes, id: $id, tokenId: $tokenId);
     }
 
     /**
      * A new key with the same kind, name, owner, scopes, limit and expiry. The old one keeps
      * working until it is revoked, so a client can switch over without a gap.
      *
-     * @return IssuedKey|null null when there is no such key, or it is revoked, disabled,
+     * @return IssuedToken|null null when there is no such key, or it is revoked, disabled,
      *                        expired or its owner is gone
      */
-    public function rotate(int $id): ?IssuedKey
+    public function rotate(int $id): ?IssuedToken
     {
         $old = $this->store->find($id);
         if ($old === null || !in_array($old->kind(), [CredentialKind::KEY, CredentialKind::PUBLIC], true)

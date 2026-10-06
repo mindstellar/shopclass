@@ -13,7 +13,6 @@ declare(strict_types=1);
 namespace mindstellar\api\controller;
 
 use mindstellar\api\ApiServices;
-use mindstellar\api\auth\Credential;
 use mindstellar\api\Problem;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\CategoryCatalog;
@@ -21,6 +20,7 @@ use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\CategorySerializer;
 use mindstellar\api\serializer\CustomFieldSerializer;
+use mindstellar\apiaccess\Credential;
 
 /**
  * `GET /categories`, `GET /categories/{category}` (id or slug) and `GET /fields`.
@@ -58,7 +58,7 @@ final class CategoriesController
         if ($category === null) {
             throw ProblemException::of('not_found', 'No such category.');
         }
-        $fields = \Field::getInstance()->findByCategory((int) $category['pk_i_id']);
+        $fields = $this->api->fieldService()->forCategory((int) $category['pk_i_id']);
 
         return Response::ok($this->serializer->one($category, $context, $fields));
     }
@@ -71,7 +71,7 @@ final class CategoriesController
         $locale = $this->api->locale($request);
         $asked  = $request->queryString('category');
         if ($asked === '') {
-            $fields = \Field::getInstance()->listAll();
+            $fields = $this->api->fieldService()->all();
         } else {
             $category = CategoryCatalog::fromSite()->lookup($asked, $locale);
             if ($category === null) {
@@ -79,7 +79,7 @@ final class CategoriesController
                     ['pointer' => '/category', 'code' => 'enum', 'message' => 'is not a known category', 'in' => 'query'],
                 ]));
             }
-            $fields = \Field::getInstance()->findByCategory((int) $category['pk_i_id']);
+            $fields = $this->api->fieldService()->forCategory((int) $category['pk_i_id']);
         }
         $serializer = new CustomFieldSerializer();
 

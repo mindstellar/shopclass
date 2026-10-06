@@ -13,13 +13,12 @@ declare(strict_types=1);
 namespace mindstellar\api\controller;
 
 use mindstellar\api\ApiServices;
-use mindstellar\api\auth\Credential;
 use mindstellar\api\ProblemException;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\CommentSerializer;
 use mindstellar\api\serializer\ViewContext;
-use mindstellar\comment\CommentPolicy;
+use mindstellar\apiaccess\Credential;
 use mindstellar\comment\CommentService;
 
 /**
@@ -41,15 +40,16 @@ final class CommentsController
     public function create(Request $request, Credential $credential, array $args): Response
     {
         $input = $request->input();
-        $saved = (new CommentService())->post((int) $args['id'], [
+        $comments = new CommentService();
+        $saved    = $comments->post((int) $args['id'], [
             'title' => (string) ($input['title'] ?? ''),
             'body'  => (string) ($input['body'] ?? ''),
         ], $credential->actor($request->ip(), ViewContext::LISTINGS_SCOPE));
 
-        $row      = \ItemComment::getInstance()->findByPrimaryKey($saved->id());
+        $row      = $comments->find($saved->id());
         $warnings = $saved->isLive() ? [] : ['warnings' => [['code' => 'comment_pending', 'message' => 'The comment shows once it is approved.']]];
 
-        return Response::created((new CommentSerializer())->one(is_array($row) ? $row : []), $this->api->links()->api('comments/' . $saved->id()), $warnings);
+        return Response::created((new CommentSerializer())->one($row ?? []), $this->api->links()->api('comments/' . $saved->id()), $warnings);
     }
 
     /**
@@ -60,13 +60,8 @@ final class CommentsController
      */
     public function show(Request $request, Credential $credential, array $args): Response
     {
-        $comment = \ItemComment::getInstance()->findByPrimaryKey((int) $args['id']);
-        if (!is_array($comment) || $comment === []) {
-            throw ProblemException::of('not_found', 'No such comment.');
-        }
-        $actor = $credential->actor($request->ip(), ViewContext::LISTINGS_SCOPE);
-        $item  = CommentPolicy::isLive($comment) ? \Item::getInstance()->findByPrimaryKey((int) $comment['fk_i_item_id']) : false;
-        if (!CommentPolicy::canView($comment, $item, $actor)) {
+        $comment = (new CommentService())->visible((int) $args['id'], $credential->actor($request->ip(), ViewContext::LISTINGS_SCOPE));
+        if ($comment === null) {
             throw ProblemException::of('not_found', 'No such comment.');
         }
 

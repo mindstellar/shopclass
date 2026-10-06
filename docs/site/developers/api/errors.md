@@ -178,6 +178,7 @@ The resource changed since the `If-Match` value you sent. `PATCH` and `DELETE` o
 has a `GET` check it: send the `ETag` of your last `GET` of that resource, or `*` for any
 existing one. `GET` it again and retry. Without `If-Match` the write is never refused. It is
 also refused when your credential cannot read the path's `GET`, as the check cannot be made.
+A resource your credential cannot see answers `404`, never `412`.
 
 ### 413 Payload too large
 

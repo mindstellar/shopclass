@@ -14,6 +14,13 @@ namespace mindstellar\api\auth;
 
 use mindstellar\api\Problem;
 use mindstellar\api\ProblemException;
+use mindstellar\apiaccess\ApiKeys;
+use mindstellar\apiaccess\CredentialKind;
+use mindstellar\apiaccess\IssuedToken;
+use mindstellar\apiaccess\KeyOwner;
+use mindstellar\apiaccess\Scopes;
+use mindstellar\apiaccess\SignInStore;
+use mindstellar\apiaccess\StoredKey;
 use mindstellar\auth\AuthStamp;
 use mindstellar\utility\Clock;
 
@@ -61,7 +68,7 @@ final class RefreshTokens
      * @param array<string,mixed> $user   the t_user row
      * @param string[]            $scopes already cut to what the user may hold
      */
-    public function start(array $user, array $scopes, string $label, string $ip): RefreshGrant
+    public function start(array $user, array $scopes, string $label, string $ip): IssuedToken
     {
         return $this->issue((int) $user['pk_i_id'], AuthStamp::of($user), ApiKeys::newId(), $scopes, mb_substr(trim($label), 0, 100), $ip);
     }
@@ -69,12 +76,12 @@ final class RefreshTokens
     /**
      * Swap a refresh token for the next one in its family.
      *
-     * @return RefreshGrant the new token
+     * @return IssuedToken the new token
      * @throws ProblemException 400 `invalid_grant`, for a token already swapped (its family is then
      *                    revoked) or any other refusal; thrown after the commit, so the
      *                    revokes a refusal made are kept
      */
-    public function rotate(string $token, string $ip): RefreshGrant
+    public function rotate(string $token, string $ip): IssuedToken
     {
         $found = preg_match(self::TOKEN, $token, $m) === 1 ? $this->store->findByTokenId($m[1]) : null;
         if ($found === null || $found->kind() !== CredentialKind::REFRESH || $found->family() === null
@@ -114,7 +121,7 @@ final class RefreshTokens
 
             return $this->issue((int) $userId, AuthStamp::of($user), $family, $scopes, $row->name(), $ip);
         });
-        if ($outcome instanceof RefreshGrant) {
+        if ($outcome instanceof IssuedToken) {
             return $outcome;
         }
 
@@ -147,7 +154,7 @@ final class RefreshTokens
     /**
      * @param string[] $scopes
      */
-    private function issue(int $userId, int $stamp, string $family, array $scopes, string $label, string $ip): RefreshGrant
+    private function issue(int $userId, int $stamp, string $family, array $scopes, string $label, string $ip): IssuedToken
     {
         $now     = $this->clock->now();
         $expires = $now + $this->ttlDays * 86400;
@@ -168,7 +175,7 @@ final class RefreshTokens
         ));
         $this->store->touch($id, substr($ip, 0, 45), $now);
 
-        return new RefreshGrant($userId, $family, $scopes, self::PREFIX . $tokenId . '.' . $secret, $expires);
+        return new IssuedToken(self::PREFIX . $tokenId . '.' . $secret, $expires, $scopes, userId: $userId, family: $family);
     }
 
     private static function refused(): ProblemException

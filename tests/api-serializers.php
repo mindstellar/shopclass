@@ -19,8 +19,6 @@
 
 require_once __DIR__ . '/lib/api-boot.php';
 
-use mindstellar\api\auth\Credential;
-use mindstellar\api\auth\CredentialKind;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\CategoryCatalog;
 use mindstellar\api\read\ListingRelations;
@@ -38,6 +36,8 @@ use mindstellar\api\serializer\LocationSerializer;
 use mindstellar\api\serializer\SparseFieldset;
 use mindstellar\api\serializer\UserSerializer;
 use mindstellar\api\serializer\ViewContext;
+use mindstellar\apiaccess\Credential;
+use mindstellar\apiaccess\CredentialKind;
 use mindstellar\comment\CommentStatus;
 use mindstellar\listing\ListingStatus;
 

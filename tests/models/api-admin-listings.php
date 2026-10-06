@@ -62,8 +62,8 @@ $modId    = api_admin_seed_admin($admin, 'mod', true);
 $boss     = api_admin_key($bossId);
 $mod      = api_admin_key($modId, true);
 $noScope  = api_admin_key($bossId, false, ['admin:users']);
-$userKey  = (new \mindstellar\api\auth\ApiKeys(new \mindstellar\model\ApiCredential(), new \mindstellar\api\auth\Scopes(), new \mindstellar\utility\SystemClock()))
-    ->create('key', 'sue', ['listings:read', 'listings:write'], \mindstellar\api\auth\KeyOwner::user($sue))->token();
+$userKey  = (new \mindstellar\apiaccess\ApiKeys(new \mindstellar\model\ApiCredential(), new \mindstellar\apiaccess\Scopes(), new \mindstellar\utility\SystemClock()))
+    ->create('key', 'sue', ['listings:read', 'listings:write'], \mindstellar\apiaccess\KeyOwner::user($sue))->token();
 
 $call  = api_admin_caller();
 $fired = [];

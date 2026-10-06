@@ -21,9 +21,9 @@
 require_once __DIR__ . '/../lib/scratchdb.php';
 require_once __DIR__ . '/../lib/harness.php';
 
-use mindstellar\api\auth\Credential;
-use mindstellar\api\auth\CredentialKind;
 use mindstellar\api\http\RowVersions;
+use mindstellar\apiaccess\Credential;
+use mindstellar\apiaccess\CredentialKind;
 use mindstellar\database\Connection;
 
 if (!defined('OSC_CSRF_SECRET')) {

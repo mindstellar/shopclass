@@ -35,12 +35,6 @@ function osc_active_plugins()
     return serialize([]);
 }
 
-use mindstellar\api\ApiSettings;
-use mindstellar\api\auth\ApiKeys;
-use mindstellar\api\auth\Credential;
-use mindstellar\api\auth\CredentialStore;
-use mindstellar\api\auth\Scopes;
-use mindstellar\api\auth\StoredKey;
 use mindstellar\api\Kernel;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
@@ -52,6 +46,12 @@ use mindstellar\api\schema\OpenApi;
 use mindstellar\api\schema\Schema;
 use mindstellar\api\schema\Validator;
 use mindstellar\api\serializer\ExtensionMembers;
+use mindstellar\apiaccess\ApiKeys;
+use mindstellar\apiaccess\ApiSettings;
+use mindstellar\apiaccess\Credential;
+use mindstellar\apiaccess\CredentialStore;
+use mindstellar\apiaccess\Scopes;
+use mindstellar\apiaccess\StoredKey;
 use mindstellar\utility\SystemClock;
 
 /**

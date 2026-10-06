@@ -17,7 +17,7 @@ whichever theme is active, and a theme change would change the API.
 
 ```php
 use mindstellar\api\ProblemException;
-use mindstellar\api\auth\Credential;
+use mindstellar\apiaccess\Credential;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 

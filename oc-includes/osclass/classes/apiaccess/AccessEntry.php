@@ -10,7 +10,7 @@
 
 declare(strict_types=1);
 
-namespace mindstellar\api\auth;
+namespace mindstellar\apiaccess;
 
 /**
  * One thing that acts for a user: a sign-in (a refresh family) or a personal key.
@@ -74,5 +74,32 @@ final class AccessEntry
     public function isCurrent(Credential $credential): bool
     {
         return $this->isKey() ? $credential->id() === $this->row->id() : $credential->family() === $this->row->family();
+    }
+
+    /**
+     * The entry as `GET /account/sessions` lists it.
+     *
+     * @param Credential $credential the caller, to mark the session making the request
+     *
+     * @return array<string,mixed>
+     */
+    public function toArray(Credential $credential): array
+    {
+        return [
+            'id'           => $this->id,
+            'type'         => $this->type,
+            'label'        => $this->row->name(),
+            'prefix'       => $this->prefix(),
+            'scopes'       => $this->row->scopes(),
+            'last_used_at' => self::timestamp($this->row->lastUsedAt() ?? $this->row->createdAt()),
+            'last_ip'      => $this->row->lastIp() === '' ? null : $this->row->lastIp(),
+            'expires_at'   => self::timestamp($this->row->expiresAt()),
+            'current'      => $this->isCurrent($credential),
+        ];
+    }
+
+    private static function timestamp(?int $time): ?string
+    {
+        return $time === null ? null : gmdate('Y-m-d\TH:i:s\Z', $time);
     }
 }
