@@ -21,6 +21,8 @@ use mindstellar\market\Installer;
 use mindstellar\market\PackageIndex;
 use mindstellar\market\PackageReconciler;
 use mindstellar\upgrade\BuildInfo;
+use mindstellar\upgrade\Osclass;
+use mindstellar\upgrade\Upgrade;
 use Params;
 use Plugins;
 use Sitemap;
@@ -44,6 +46,7 @@ class Cli
         'install'             => ['cmdInstall', 'Headless install from env/flags (--unattended)'],
         'cron'                => ['cmdCron', 'Run due scheduled tasks (--type=hourly|daily|weekly|all)'],
         'db:upgrade'          => ['cmdDbUpgrade', 'Run pending migrations'],
+        'core:update'         => ['cmdCoreUpdate', 'Update Shopclass to the newest release on this channel, then migrate the database (--reinstall)'],
         'db:doctor'           => ['cmdDbDoctor', 'Report schema differences and strict SQL mode readiness (--strict: readiness only); changes nothing'],
         'db:repair'           => ['cmdDbRepair', 'Bring the schema back in line with struct.sql; never drops anything (--dry-run)'],
         'package:reconcile'   => ['cmdPackageReconcile', 'Install/refresh bundled plugins & themes onto a persistent oc-content (no-op outside a container image)'],
@@ -427,6 +430,55 @@ class Cli
         $this->err($result['message'] . "\n");
 
         return 1;
+    }
+
+    /**
+     * Update the core files from the newest release, then run the migrations. Runs as the
+     * shell user, so it works where the web server user cannot write the files.
+     *
+     * @param array<string, mixed> $args
+     *
+     * @return int Exit code; 0 on success or when already current
+     */
+    private function cmdCoreUpdate(array $args): int
+    {
+        if (defined('DEMO')) {
+            $this->err("Disabled in demo mode.\n");
+
+            return 1;
+        }
+        if (osc_self_update_disabled()) {
+            $this->err("Self-update is disabled on this install. Deploy a newer image instead.\n");
+
+            return 1;
+        }
+
+        $info = Osclass::getPackageInfo(true);
+        if (!is_array($info) || empty($info['s_new_version'])) {
+            $this->err("Could not read the latest release from GitHub. Try again later.\n");
+
+            return 1;
+        }
+
+        $reinstall = array_key_exists('reinstall', $args);
+        $package   = new Osclass($info, $reinstall);
+        if (!$reinstall && !$package->isUpgradable()) {
+            $this->out(sprintf("Shopclass %s is already the newest release.\n", OSCLASS_VERSION));
+
+            return 0;
+        }
+
+        $this->out(sprintf("Updating Shopclass %s to %s...\n", OSCLASS_VERSION, $package->getNewVersion()));
+        (new Upgrade($package))->doUpgrade();
+        if (Osclass::newVersionOnDisk() !== $package->getNewVersion()) {
+            $this->err("The new files did not arrive. Nothing else was changed.\n");
+
+            return 1;
+        }
+
+        $this->out("Files updated. Updating the database...\n");
+
+        return $this->cmdDbUpgrade([]);
     }
 
     /**

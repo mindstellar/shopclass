@@ -139,6 +139,8 @@ $cases = array(
     'ext_missing'          => array('server', array('extensions' => array('curl')), 'danger', '#server-help'),
     'no_image_library'     => array('server', array('imagick' => false, 'gd' => false), 'danger', '#server-help'),
     'uploads_read_only'    => array('server', array('uploads_writable' => false), 'danger', null),
+    'core_read_only'       => array('server', array('read_only' => array('core'), 'php_user' => 'nobody', 'file_owner' => 'tony'), 'warning', null),
+    'packages_read_only'   => array('server', array('read_only' => array('plugins')), 'warning', null),
     'memory_low'           => array('server', array('memory' => 64 * 1024 * 1024), 'warning', '#server-help'),
     'post_below_upload'    => array('server', array('post' => 8 * 1024 * 1024), 'warning', '#server-help'),
     'uploads_below_photos' => array('server', array('max_files' => 5), 'warning', $base . '?page=items&action=settings'),
@@ -377,6 +379,13 @@ pin('tab URLs', array(
     $base . '?page=tools&action=system-info',
     $base . '?page=tools&action=system-info&tab=server#server-help',
 ), array(SystemChecks::url($env(), 'overview'), SystemChecks::url($env(), 'server', 'server-help')));
+
+harness_section('File ownership');
+
+$owned = $issue('server', $env(array('read_only' => array('downloads'), 'php_user' => 'nobody', 'file_owner' => 'tony')), 'core_read_only');
+check('a read-only downloads folder blocks updates too', $owned !== null);
+check('...and names both users', $owned !== null && strpos($owned['text'], 'nobody') !== false && strpos($owned['text'], 'tony') !== false);
+pin('an image-managed install is not told to update in place', null, $issue('server', $env(array('read_only' => array('core'), 'self_update_off' => true)), 'core_read_only'));
 
 exit(harness_result());
 

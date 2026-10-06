@@ -58,7 +58,7 @@ class OsclassErrors
         if (defined('OSC_DEBUG') && OSC_DEBUG || defined('OSC_INSTALLING')) {
             $this->debugEnabled = true;
             ini_set('display_errors', 1);
-            error_reporting(E_ALL | E_STRICT);
+            error_reporting(E_ALL);
 
             if (defined('OSC_DEBUG_LOG') && OSC_DEBUG_LOG) {
                 ini_set('display_errors', 0);
@@ -263,6 +263,10 @@ class OsclassErrors
     {
         error_log('Shopclass: database unavailable. ' . $detailMessage);
 
+        // On the command line the log line above is the whole message.
+        if (PHP_SAPI === 'cli') {
+            exit(1);
+        }
         if (headers_sent()) {
             return;
         }
@@ -352,7 +356,6 @@ class OsclassErrors
             E_USER_ERROR => 'USER_ERROR',
             E_USER_WARNING => 'USER_WARNING',
             E_USER_NOTICE => 'USER_NOTICE',
-            E_STRICT => 'STRICT',
             E_RECOVERABLE_ERROR => 'RECOVERABLE_ERROR',
             E_DEPRECATED => 'DEPRECATED',
             E_USER_DEPRECATED => 'USER_DEPRECATED',
@@ -541,7 +544,6 @@ class OsclassErrors
             case E_WARNING:
                 return 'warning';
             case E_USER_NOTICE:
-            case E_STRICT:
             case E_NOTICE:
                 return 'info';
             default:

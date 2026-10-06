@@ -138,6 +138,70 @@ class Upgrade
     }
 
     /**
+     * Target paths the package would write but this PHP user cannot. A new file counts as
+     * writable when its nearest existing parent folder is.
+     *
+     * @param string        $originDir
+     * @param string        $targetDir
+     * @param array<string> $filter    names sync() skips
+     * @param int           $limit     stop after this many
+     *
+     * @return array<string>
+     */
+    public static function unwritable(string $originDir, string $targetDir, array $filter = [], int $limit = 6): array
+    {
+        $originDir = rtrim($originDir, '/\\');
+        $targetDir = rtrim($targetDir, '/\\');
+        $iterator  = new \RecursiveIteratorIterator(
+            new \RecursiveCallbackFilterIterator(
+                new \RecursiveDirectoryIterator($originDir, \FilesystemIterator::SKIP_DOTS),
+                static fn ($file) => !in_array($file->getBasename(), $filter, false)
+            )
+        );
+
+        $blocked = [];
+        $checked = [];
+        foreach ($iterator as $file) {
+            $target = $targetDir . substr($file->getPathname(), strlen($originDir));
+            $path   = $target;
+            while (!file_exists($path) && dirname($path) !== $path) {
+                $path = dirname($path);
+            }
+            if (isset($checked[$path])) {
+                continue;
+            }
+            $checked[$path] = true;
+            if (!is_writable($path)) {
+                $blocked[] = $path;
+                if (count($blocked) >= $limit) {
+                    break;
+                }
+            }
+        }
+
+        return $blocked;
+    }
+
+    /**
+     * Explain which files block the upgrade and how to get past it.
+     *
+     * @param array<string> $paths
+     *
+     * @return string
+     */
+    private static function unwritableMessage(array $paths): string
+    {
+        $user = function_exists('posix_geteuid') && function_exists('posix_getpwuid')
+            ? (posix_getpwuid(posix_geteuid())['name'] ?? '') : '';
+
+        return sprintf(
+            __('Nothing was changed. The web server user (%1$s) cannot write to: %2$s. Give that user write access, or run "php oc-cli.php core:update" as the owner of the files.'),
+            $user !== '' ? $user : __('unknown'),
+            implode(', ', array_map(static fn ($p) => str_replace(ABS_PATH, '', $p), $paths))
+        );
+    }
+
+    /**
      * process package upgrade
      *
      * @return void
@@ -152,16 +216,25 @@ class Upgrade
         }
 
         try {
-            // Enable maintenance mode. The marker locks visitors out even when the admin
-            // has chosen banner-only maintenance, since files are being replaced.
-            $this->FileSystem->writeToFile(ABS_PATH . '.maintenance', OSC_MAINTENANCE_UPGRADE_MARKER);
-
             $originDir = self::packageRoot($extracted_package_path, $this->objPackage->getFolderNames());
             if ($originDir === null) {
                 throw new RuntimeException(
                     __("Invalid Zip package, it's not in valid format.")
                 );
             }
+
+            $blocked = self::unwritable(
+                $originDir,
+                $this->objPackage->getTargetDirectory(),
+                $this->objPackage->getFilteredFiles()
+            );
+            if ($blocked !== []) {
+                throw new RuntimeException(self::unwritableMessage($blocked));
+            }
+
+            // Enable maintenance mode. The marker locks visitors out even when the admin
+            // has chosen banner-only maintenance, since files are being replaced.
+            $this->FileSystem->writeToFile(ABS_PATH . '.maintenance', OSC_MAINTENANCE_UPGRADE_MARKER);
 
             if ($this->FileSystem->exists($originDir)) {
                 $this->FileSystem->sync(
@@ -204,6 +277,13 @@ class Upgrade
         $download_path   = CONTENT_PATH . 'downloads/';
         $zip_file        = $download_path . $unique_filename;
         $extract_path    = $download_path . $unique_id;
+
+        if (!is_dir($download_path)) {
+            @mkdir($download_path, 0755, true);
+        }
+        if (!is_dir($download_path) || !is_writable($download_path)) {
+            throw new RuntimeException(self::unwritableMessage([$download_path]));
+        }
 
         try {
             $downloaded = $this->FileSystem->downloadFile(
