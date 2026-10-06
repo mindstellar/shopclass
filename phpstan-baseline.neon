@@ -1,0 +1,4063 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Call to function osc_base_url\(\) on a separate line has no effect\.$#'
+			identifier: function.resultUnused
+			count: 2
+			path: oc-admin/gui/error.php
+
+		-
+			message: '#^Variable \$file might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: oc-admin/gui/error.php
+
+		-
+			message: '#^Variable \$line might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: oc-admin/gui/error.php
+
+		-
+			message: '#^Variable \$message might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: oc-admin/gui/error.php
+
+		-
+			message: '#^Variable \$trace might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: oc-admin/gui/error.php
+
+		-
+			message: '#^Variable \$type might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: oc-admin/gui/error.php
+
+		-
+			message: '#^Parameter \#1 \$array \(array\{0\: array\{type\: ''select'', name\: ''status'', id\: ''fStatus'', label\: string, placeholder\: string, options\: array\{pending\: string, paid\: string, failed\: string, refunded\: string, cancelled\: string\}, value\: string\}, 1\?\: array\{type\: ''select'', name\: ''gateway'', id\: ''fGateway'', label\: string, placeholder\: string, options\: array, value\: string\}\}\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: oc-admin/themes/modern/billing/index.php
+
+		-
+			message: '#^Call to method getAmount\(\) on an unknown class Order\.$#'
+			identifier: class.notFound
+			count: 2
+			path: oc-admin/themes/modern/billing/order.php
+
+		-
+			message: '#^Call to method getCredits\(\) on an unknown class Order\.$#'
+			identifier: class.notFound
+			count: 4
+			path: oc-admin/themes/modern/billing/order.php
+
+		-
+			message: '#^Call to method getCurrency\(\) on an unknown class Order\.$#'
+			identifier: class.notFound
+			count: 2
+			path: oc-admin/themes/modern/billing/order.php
+
+		-
+			message: '#^Call to method getDate\(\) on an unknown class Order\.$#'
+			identifier: class.notFound
+			count: 1
+			path: oc-admin/themes/modern/billing/order.php
+
+		-
+			message: '#^Call to method getExternalRef\(\) on an unknown class Order\.$#'
+			identifier: class.notFound
+			count: 2
+			path: oc-admin/themes/modern/billing/order.php
+
+		-
+			message: '#^Call to method getGateway\(\) on an unknown class Order\.$#'
+			identifier: class.notFound
+			count: 3
+			path: oc-admin/themes/modern/billing/order.php
+
+		-
+			message: '#^Call to method getId\(\) on an unknown class Order\.$#'
+			identifier: class.notFound
+			count: 7
+			path: oc-admin/themes/modern/billing/order.php
+
+		-
+			message: '#^Call to method getMeta\(\) on an unknown class Order\.$#'
+			identifier: class.notFound
+			count: 1
+			path: oc-admin/themes/modern/billing/order.php
+
+		-
+			message: '#^Call to method getPaidDate\(\) on an unknown class Order\.$#'
+			identifier: class.notFound
+			count: 2
+			path: oc-admin/themes/modern/billing/order.php
+
+		-
+			message: '#^Call to method getStatus\(\) on an unknown class Order\.$#'
+			identifier: class.notFound
+			count: 3
+			path: oc-admin/themes/modern/billing/order.php
+
+		-
+			message: '#^Call to method getUserId\(\) on an unknown class Order\.$#'
+			identifier: class.notFound
+			count: 1
+			path: oc-admin/themes/modern/billing/order.php
+
+		-
+			message: '#^Call to method isPaid\(\) on an unknown class Order\.$#'
+			identifier: class.notFound
+			count: 3
+			path: oc-admin/themes/modern/billing/order.php
+
+		-
+			message: '#^Call to method isPending\(\) on an unknown class Order\.$#'
+			identifier: class.notFound
+			count: 1
+			path: oc-admin/themes/modern/billing/order.php
+
+		-
+			message: '#^Call to method meta\(\) on an unknown class Order\.$#'
+			identifier: class.notFound
+			count: 3
+			path: oc-admin/themes/modern/billing/order.php
+
+		-
+			message: '#^PHPDoc tag @var for variable \$order contains unknown class Order\.$#'
+			identifier: class.notFound
+			count: 1
+			path: oc-admin/themes/modern/billing/order.php
+
+		-
+			message: '#^Parameter \#1 \$order of static method mindstellar\\billing\\Receipts\:\:available\(\) expects mindstellar\\billing\\Order, Order given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-admin/themes/modern/billing/order.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between non\-falsy\-string and ''0'' will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: oc-admin/themes/modern/functions.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between non\-empty\-string and '''' will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: oc-admin/themes/modern/media/index.php
+
+		-
+			message: '#^Function customFrmText invoked with 1 parameter, 0 required\.$#'
+			identifier: arguments.count
+			count: 6
+			path: oc-admin/themes/modern/pages/frm.php
+
+		-
+			message: '#^Parameter \#1 \$title of function osc_admin_page_head expects string, array\<string, array\<int, array\<string, string\>\>\|bool\|string\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-admin/themes/modern/pages/frm.php
+
+		-
+			message: '#^Parameter \#2 \.\.\.\$values of function sprintf expects bool\|float\|int\|string\|null, array\<string, array\<int, array\<string, string\>\>\|bool\|string\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-admin/themes/modern/pages/frm.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between non\-falsy\-string and '''' will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: oc-admin/themes/modern/pages/frm.php
+
+		-
+			message: '#^Ternary operator condition is always true\.$#'
+			identifier: ternary.alwaysTrue
+			count: 2
+			path: oc-admin/themes/modern/pages/frm.php
+
+		-
+			message: '#^Call to function is_callable\(\) with callable\(\)\: mixed will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-admin/themes/modern/parts/ui.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between 3 and 3 will always evaluate to true\.$#'
+			identifier: identical.alwaysTrue
+			count: 1
+			path: oc-admin/themes/modern/settings/currencies.php
+
+		-
+			message: '#^Variable \$hitCount might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: oc-admin/themes/modern/settings/locations/list.php
+
+		-
+			message: '#^Anonymous function has an unused use \$providers\.$#'
+			identifier: closure.unusedUse
+			count: 1
+			path: oc-admin/themes/modern/settings/storage.php
+
+		-
+			message: '#^Call to function is_numeric\(\) with int\<min, \-2\>\|int\<0, max\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-admin/themes/modern/tools/system-info.php
+
+		-
+			message: '#^Variable \$env might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: oc-admin/themes/modern/tools/system-info/cache.php
+
+		-
+			message: '#^Variable \$env might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: oc-admin/themes/modern/tools/system-info/database.php
+
+		-
+			message: '#^Parameter \#1 \$id of method User\:\:findByPrimaryKey\(\) expects int, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/alerts.php
+
+		-
+			message: '#^Comparison operation "\<\=" between 0\|1\|2 and 2 is always true\.$#'
+			identifier: smallerOrEqual.alwaysTrue
+			count: 2
+			path: oc-includes/osclass/classes/AdminMenu.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, string\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/Breadcrumb.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\{url\?\: string, title\: string\} will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/Breadcrumb.php
+
+		-
+			message: '#^Comparison operation "\>" between array\<int, array\{url\?\: string, title\: string\}\> and 0 results in an error\.$#'
+			identifier: greater.invalid
+			count: 1
+			path: oc-includes/osclass/classes/Breadcrumb.php
+
+		-
+			message: '#^Parameter \#2 \$regionId of method City\:\:findByName\(\) expects int\|null, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/Breadcrumb.php
+
+		-
+			message: '#^Variable \$aCategories might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: oc-includes/osclass/classes/Breadcrumb.php
+
+		-
+			message: '#^Variable \$aCategory might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: oc-includes/osclass/classes/Breadcrumb.php
+
+		-
+			message: '#^Variable \$category might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: oc-includes/osclass/classes/Breadcrumb.php
+
+		-
+			message: '#^Variable \$l might not be defined\.$#'
+			identifier: variable.undefined
+			count: 9
+			path: oc-includes/osclass/classes/Breadcrumb.php
+
+		-
+			message: '#^Parameter \#1 \$id of method User\:\:deleteUser\(\) expects int\|null, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/Cleanup.php
+
+		-
+			message: '#^Parameter \#2 \$itemId of method ItemActions\:\:delete\(\) expects int, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/Cleanup.php
+
+		-
+			message: '#^Parameter \#1 \$dst_im of method ImageProcessing\:\:imageCopyMergeAlpha\(\) expects GdImage\|resource, Imagick given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/ImageProcessing.php
+
+		-
+			message: '#^Parameter \#1 \$image of function imageflip expects GdImage, Imagick given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/ImageProcessing.php
+
+		-
+			message: '#^Parameter \#1 \$image of function imagejpeg expects GdImage, Imagick given\.$#'
+			identifier: argument.type
+			count: 2
+			path: oc-includes/osclass/classes/ImageProcessing.php
+
+		-
+			message: '#^Parameter \#1 \$image of function imagepng expects GdImage, Imagick given\.$#'
+			identifier: argument.type
+			count: 2
+			path: oc-includes/osclass/classes/ImageProcessing.php
+
+		-
+			message: '#^Parameter \#1 \$image of function imagerotate expects GdImage, Imagick given\.$#'
+			identifier: argument.type
+			count: 6
+			path: oc-includes/osclass/classes/ImageProcessing.php
+
+		-
+			message: '#^Parameter \#1 \$image of function imagesavealpha expects GdImage, Imagick given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/ImageProcessing.php
+
+		-
+			message: '#^Parameter \#1 \$image of function imagewebp expects GdImage, Imagick given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/ImageProcessing.php
+
+		-
+			message: '#^Parameter \#2 \$flags of function html_entity_decode expects int, null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/ImageProcessing.php
+
+		-
+			message: '#^Parameter \#2 \$src_image of function imagecopy expects GdImage, Imagick given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/ImageProcessing.php
+
+		-
+			message: '#^Parameter \#2 \$src_image of function imagecopyresampled expects GdImage, Imagick given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/ImageProcessing.php
+
+		-
+			message: '#^Parameter \#3 \$dst_x of function imagecopyresampled expects int, float given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/ImageProcessing.php
+
+		-
+			message: '#^Parameter \#3 \$x of method Imagick\:\:compositeImage\(\) expects int, float given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/ImageProcessing.php
+
+		-
+			message: '#^Parameter \#4 \$dst_y of function imagecopyresampled expects int, float given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/ImageProcessing.php
+
+		-
+			message: '#^Parameter \#4 \$y of method Imagick\:\:compositeImage\(\) expects int, float given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/ImageProcessing.php
+
+		-
+			message: '#^Property ImageProcessing\:\:\$font is unused\.$#'
+			identifier: property.unused
+			count: 1
+			path: oc-includes/osclass/classes/ImageProcessing.php
+
+		-
+			message: '#^Property ImageProcessing\:\:\$im \(Imagick\) does not accept \(GdImage\|false\)\.$#'
+			identifier: assign.propertyType
+			count: 2
+			path: oc-includes/osclass/classes/ImageProcessing.php
+
+		-
+			message: '#^Property ImageProcessing\:\:\$im \(Imagick\) does not accept GdImage\|false\.$#'
+			identifier: assign.propertyType
+			count: 7
+			path: oc-includes/osclass/classes/ImageProcessing.php
+
+		-
+			message: '#^Property ImageProcessing\:\:\$im \(Imagick\) does not accept GdImage\|resource\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: oc-includes/osclass/classes/ImageProcessing.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between ''jpeg'' and ''jpeg'' will always evaluate to true\.$#'
+			identifier: identical.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/ImageProcessing.php
+
+		-
+			message: '#^Instanceof between ItemSpamFilter and ItemSpamFilter will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/ItemSpamFilter.php
+
+		-
+			message: '#^Offset ''label'' on array\{text\: mixed, href\: string, class\: mixed, label\: string\} in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.offset
+			count: 1
+			path: oc-includes/osclass/classes/Pagination.php
+
+		-
+			message: '#^Parameter \#1 \$text of method Pagination\:\:createSpanTag\(\) expects string, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/Pagination.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 3
+			path: oc-includes/osclass/classes/Params.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<int, array\<string, mixed\>\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/Plugins.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/Plugins.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<int, array\{string, string\}\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/Rewrite.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\{string, string\} will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/Rewrite.php
+
+		-
+			message: '#^Comparison operation "\>" between 2 and 1 is always true\.$#'
+			identifier: greater.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/Rewrite.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/Rewrite.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-string and false will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/Rewrite.php
+
+		-
+			message: '#^Right side of && is always false\.$#'
+			identifier: booleanAnd.rightAlwaysFalse
+			count: 2
+			path: oc-includes/osclass/classes/Scripts.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/Session.php
+
+		-
+			message: '#^Offset ''secure'' on array\{lifetime\: int\<0, max\>, path\: non\-falsy\-string, domain\: mixed, secure\: bool, httponly\: bool, samesite\: ''Lax''\|''lax''\|''None''\|''none''\|''Strict''\|''strict''\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: oc-includes/osclass/classes/Session.php
+
+		-
+			message: '#^Instanceof between Sitemap and Sitemap will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/Sitemap.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-string and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/Sitemap.php
+
+		-
+			message: '#^Instanceof between Stats and Stats will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/Stats.php
+
+		-
+			message: '#^Right side of && is always false\.$#'
+			identifier: booleanAnd.rightAlwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/Styles.php
+
+		-
+			message: '#^Right side of && is always false\.$#'
+			identifier: booleanAnd.rightAlwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/Translation.php
+
+		-
+			message: '#^Variable \$context on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: oc-includes/osclass/classes/Translation.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/actions/UserActions.php
+
+		-
+			message: '#^Right side of && is always false\.$#'
+			identifier: booleanAnd.rightAlwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/admin/BulkAction.php
+
+		-
+			message: '#^Parameter \#2 \$value of method Cookie\:\:push\(\) expects string, int\<1, 1000\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/admin/ListPaging.php
+
+		-
+			message: '#^PHPDoc tag @param references unknown parameter\: \$action$#'
+			identifier: parameter.notFound
+			count: 1
+			path: oc-includes/osclass/classes/admin/SystemChecks.php
+
+		-
+			message: '#^PHPDoc tag @param references unknown parameter\: \$id$#'
+			identifier: parameter.notFound
+			count: 1
+			path: oc-includes/osclass/classes/admin/SystemChecks.php
+
+		-
+			message: '#^PHPDoc tag @param references unknown parameter\: \$text$#'
+			identifier: parameter.notFound
+			count: 1
+			path: oc-includes/osclass/classes/admin/SystemChecks.php
+
+		-
+			message: '#^PHPDoc tag @param references unknown parameter\: \$tone$#'
+			identifier: parameter.notFound
+			count: 1
+			path: oc-includes/osclass/classes/admin/SystemChecks.php
+
+		-
+			message: '#^PHPDoc tag @return with type array\<string, mixed\> is incompatible with native type string\.$#'
+			identifier: return.phpDocType
+			count: 1
+			path: oc-includes/osclass/classes/admin/SystemChecks.php
+
+		-
+			message: '#^Loose comparison using \=\= between 1 and 1 will always evaluate to true\.$#'
+			identifier: equal.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/admin/ajax/CategoryAjax.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/admin/ajax/CategoryAjax.php
+
+		-
+			message: '#^Parameter \#1 \$categoryID of method Category\:\:findByPrimaryKey\(\) expects int, array\|string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/admin/ajax/CategoryAjax.php
+
+		-
+			message: '#^Parameter \#1 \$categoryID of method Category\:\:findByPrimaryKey\(\) expects int, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/admin/ajax/CategoryAjax.php
+
+		-
+			message: '#^Parameter \#1 \$categoryID of method Category\:\:findSubcategories\(\) expects int, array\|string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/admin/ajax/CategoryAjax.php
+
+		-
+			message: '#^Variable \$aFieldsDescription might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: oc-includes/osclass/classes/admin/ajax/CategoryAjax.php
+
+		-
+			message: '#^Binary operation "\+" between array\|non\-empty\-string and 0 results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: oc-includes/osclass/classes/admin/ajax/FieldAjax.php
+
+		-
+			message: '#^Loose comparison using \=\= between 0 and 0 will always evaluate to true\.$#'
+			identifier: equal.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/admin/ajax/FieldAjax.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 2
+			path: oc-includes/osclass/classes/admin/ajax/FieldAjax.php
+
+		-
+			message: '#^Parameter \#1 \$id of method Field\:\:categories\(\) expects int, array\|string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/admin/ajax/FieldAjax.php
+
+		-
+			message: '#^Parameter \#1 \$id of method Field\:\:cleanCategoriesFromField\(\) expects int, array\|string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/admin/ajax/FieldAjax.php
+
+		-
+			message: '#^Parameter \#1 \$id of method Field\:\:findByPrimaryKey\(\) expects int, array\|string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/admin/ajax/FieldAjax.php
+
+		-
+			message: '#^Parameter \#1 \$id of method Field\:\:insertCategories\(\) expects int, array\|string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/admin/ajax/FieldAjax.php
+
+		-
+			message: '#^Parameter \#1 \$metaId of method Field\:\:updateJsonMeta\(\) expects int, array\|string given\.$#'
+			identifier: argument.type
+			count: 3
+			path: oc-includes/osclass/classes/admin/ajax/FieldAjax.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between array\|non\-empty\-string and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/admin/ajax/FieldAjax.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/admin/ajax/FormBuilderAjax.php
+
+		-
+			message: '#^Offset ''regions'' on array\{code\: string, name\: string, file\: string, sha\: string, ndjson\: string, ndjson_sha\: string, installed\: bool, current\: bool, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: oc-includes/osclass/classes/admin/ajax/LocationAjax.php
+
+		-
+			message: '#^Parameter \#1 \$regionId of method City\:\:findByRegion\(\) expects int, array\|string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/admin/ajax/LocationAjax.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between array\|non\-empty\-string and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/admin/ajax/MediaAjax.php
+
+		-
+			message: '#^Parameter \#1 \$id of method Page\:\:findByPrimaryKey\(\) expects int, array\|string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/admin/ajax/SystemAjax.php
+
+		-
+			message: '#^Parameter \#3 \$options of method mindstellar\\admin\\ui\\FormSpec\:\:select\(\) expects array\<string, string\>, array\<int, string\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/admin/form/AdminAccountForm.php
+
+		-
+			message: '#^Parameter \#1 \$attrs of method mindstellar\\admin\\ui\\FormSpec\:\:attrs\(\) expects array\<string, string\>, array\<string, int\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+
+		-
+			message: '#^Parameter \#3 \$options of method mindstellar\\admin\\ui\\FormSpec\:\:radio\(\) expects array\<string, string\>, array\<int\|string, array\<string, string\>\|string\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/admin/form/LatestSearchSettingsScreen.php
+
+		-
+			message: '#^Parameter \#3 \$options of method mindstellar\\admin\\ui\\FormSpec\:\:select\(\) expects array\<string, string\>, array\<int, string\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
+
+		-
+			message: '#^Parameter \#3 \$options of method mindstellar\\admin\\ui\\FormSpec\:\:radio\(\) expects array\<string, string\>, array\<string, array\<string, bool\|string\>\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 2
+			path: oc-includes/osclass/classes/admin/form/store/PreferenceStore.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/admin/form/store/TableStore.php
+
+		-
+			message: '#^Call to function is_array\(\) with string will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 2
+			path: oc-includes/osclass/classes/admin/ui/Editor.php
+
+		-
+			message: '#^Offset ''summary'' on \*NEVER\* in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.offset
+			count: 1
+			path: oc-includes/osclass/classes/admin/ui/Editor.php
+
+		-
+			message: '#^Result of && is always false\.$#'
+			identifier: booleanAnd.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/admin/ui/Editor.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/admin/ui/Field.php
+
+		-
+			message: '#^Right side of && is always false\.$#'
+			identifier: booleanAnd.rightAlwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/admin/ui/Field.php
+
+		-
+			message: '#^Parameter \#2 \$callback of function array_filter expects \(callable\(lowercase\-string\)\: bool\)\|null, ''strlen'' given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/admin/ui/PhotoGrid.php
+
+		-
+			message: '#^Parameter \#2 \$replace of function str_replace expects array\<string\>\|string, array\<int, int\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/admin/ui/PhotoGrid.php
+
+		-
+			message: '#^Offset ''trail'' does not exist on array\{name\: string, parent\: string, path\: string, depth\: int\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: oc-includes/osclass/classes/admin/ui/Picker.php
+
+		-
+			message: '#^Comparison operation "\>\=" between int\<300, 399\> and 400 is always false\.$#'
+			identifier: greaterOrEqual.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/api/schema/OpenApi.php
+
+		-
+			message: '#^Method mindstellar\\api\\schema\\OpenApi\:\:responses\(\) should return array\<string, array\<string, mixed\>\> but returns array\<int, array\<string, array\<string, array\<string, mixed\>\>\|string\>\>\.$#'
+			identifier: return.type
+			count: 1
+			path: oc-includes/osclass/classes/api/schema/OpenApi.php
+
+		-
+			message: '#^Method mindstellar\\api\\schema\\OpenApi\:\:security\(\) should return array\<int, array\<string, array\<string\>\>\> but returns list\<int, array\<string, list\<string\>\>\|\(object\{\}&stdClass\)\>\.$#'
+			identifier: return.type
+			count: 1
+			path: oc-includes/osclass/classes/api/schema/OpenApi.php
+
+		-
+			message: '#^Parameter \#2 \$callback of function array_filter expects \(callable\(string\)\: bool\)\|null, ''strlen'' given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/api/serializer/CustomFieldSerializer.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/api/serializer/EventData.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/apiaccess/Scopes.php
+
+		-
+			message: '#^Right side of && is always true\.$#'
+			identifier: booleanAnd.rightAlwaysTrue
+			count: 2
+			path: oc-includes/osclass/classes/backup/BackupBucket.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between ''http\://localhost/'' and '''' will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/backup/BackupBucket.php
+
+		-
+			message: '#^Offset ''done'' on array\{\} in empty\(\) does not exist\.$#'
+			identifier: empty.offset
+			count: 1
+			path: oc-includes/osclass/classes/backup/BackupJobs.php
+
+		-
+			message: '#^Offset ''error'' on array\{\} on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: oc-includes/osclass/classes/backup/BackupJobs.php
+
+		-
+			message: '#^Result of \|\| is always true\.$#'
+			identifier: booleanOr.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/backup/BackupJobs.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: oc-includes/osclass/classes/backup/BackupJobs.php
+
+		-
+			message: '#^Unsafe usage of new static\(\)\.$#'
+			identifier: new.static
+			count: 1
+			path: oc-includes/osclass/classes/base/Registry.php
+
+		-
+			message: '#^Method mindstellar\\billing\\Billing\:\:refundThroughGateway\(\) never assigns null to &\$providerAccepted so it can be removed from the by\-ref type\.$#'
+			identifier: parameterByRef.unusedType
+			count: 1
+			path: oc-includes/osclass/classes/billing/Billing.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/billing/ItemUpgradeStore.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/billing/OrderStore.php
+
+		-
+			message: '#^Result of && is always false\.$#'
+			identifier: booleanAnd.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/billing/OrderStore.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/billing/PaymentGatewayRegistry.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/billing/Receipts.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/billing/Receipts.php
+
+		-
+			message: '#^Parameter \#1 \$str of function preg_quote expects string, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/cache/drivers/Object_Cache_apcu.php
+
+		-
+			message: '#^Property Object_Cache_apcu\:\:\$site_prefix \(int\) does not accept string\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: oc-includes/osclass/classes/cache/drivers/Object_Cache_apcu.php
+
+		-
+			message: '#^Property Object_Cache_default\:\:\$site_prefix \(int\) does not accept string\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: oc-includes/osclass/classes/cache/drivers/Object_Cache_default.php
+
+		-
+			message: '#^Call to function is_array\(\) with null will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: oc-includes/osclass/classes/cache/drivers/Object_Cache_memcache.php
+
+		-
+			message: '#^Call to function is_object\(\) with array will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: oc-includes/osclass/classes/cache/drivers/Object_Cache_memcache.php
+
+		-
+			message: '#^Cannot call method add\(\) on array\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: oc-includes/osclass/classes/cache/drivers/Object_Cache_memcache.php
+
+		-
+			message: '#^Cannot call method delete\(\) on array\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: oc-includes/osclass/classes/cache/drivers/Object_Cache_memcache.php
+
+		-
+			message: '#^Cannot call method flush\(\) on array\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: oc-includes/osclass/classes/cache/drivers/Object_Cache_memcache.php
+
+		-
+			message: '#^Cannot call method get\(\) on array\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: oc-includes/osclass/classes/cache/drivers/Object_Cache_memcache.php
+
+		-
+			message: '#^Cannot call method set\(\) on array\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: oc-includes/osclass/classes/cache/drivers/Object_Cache_memcache.php
+
+		-
+			message: '#^Property Object_Cache_memcache\:\:\$memcached \(array\) does not accept Memcache\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: oc-includes/osclass/classes/cache/drivers/Object_Cache_memcache.php
+
+		-
+			message: '#^Property Object_Cache_memcache\:\:\$site_prefix \(int\) does not accept string\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: oc-includes/osclass/classes/cache/drivers/Object_Cache_memcache.php
+
+		-
+			message: '#^Result of \|\| is always true\.$#'
+			identifier: booleanOr.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/cache/drivers/Object_Cache_memcache.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: oc-includes/osclass/classes/cache/drivers/Object_Cache_memcache.php
+
+		-
+			message: '#^Call to function is_array\(\) with array will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/cache/drivers/Object_Cache_memcached.php
+
+		-
+			message: '#^Call to function is_object\(\) with Memcached will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/cache/drivers/Object_Cache_memcached.php
+
+		-
+			message: '#^Call to function method_exists\(\) with Memcached and ''getStats'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/cache/drivers/Object_Cache_memcached.php
+
+		-
+			message: '#^Offset ''uptime'' on non\-empty\-array\<mixed\> in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.offset
+			count: 1
+			path: oc-includes/osclass/classes/cache/drivers/Object_Cache_memcached.php
+
+		-
+			message: '#^Parameter \#1 \$row of class mindstellar\\job\\Job constructor expects array\<string, string\|null\>, array\<string, int\|string\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/cli/BackupCommands.php
+
+		-
+			message: '#^Offset ''error'' on array\{error\: string, field\?\: string\} in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.offset
+			count: 1
+			path: oc-includes/osclass/classes/cli/Cli.php
+
+		-
+			message: '#^Offset ''latest_version'' on \*NEVER\* on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: oc-includes/osclass/classes/cli/Cli.php
+
+		-
+			message: '#^Offset ''name'' on array\{slug\: string, name\: string, short_description\: string, author\: string, version\: string, icon\: string\|null, categories\: array\<int, string\>, tags\: array\<int, string\>, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: oc-includes/osclass/classes/cli/Cli.php
+
+		-
+			message: '#^Offset ''short_description'' on array\{slug\: string, name\: string, short_description\: string, author\: string, version\: string, icon\: string\|null, categories\: array\<int, string\>, tags\: array\<int, string\>, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 2
+			path: oc-includes/osclass/classes/cli/Cli.php
+
+		-
+			message: '#^Offset ''slug'' on array\{slug\: string, name\: string, short_description\: string, author\: string, version\: string, icon\: string\|null, categories\: array\<int, string\>, tags\: array\<int, string\>, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 2
+			path: oc-includes/osclass/classes/cli/Cli.php
+
+		-
+			message: '#^Offset ''tags'' on array\{slug\: string, name\: string, short_description\: string, author\: string, version\: string, icon\: string\|null, categories\: array\<int, string\>, tags\: array\<int, string\>, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: oc-includes/osclass/classes/cli/Cli.php
+
+		-
+			message: '#^Offset ''version'' on array\{slug\: string, name\: string, short_description\: string, author\: string, version\: string, icon\: string\|null, categories\: array\<int, string\>, tags\: array\<int, string\>, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: oc-includes/osclass/classes/cli/Cli.php
+
+		-
+			message: '#^PHPDoc tag @param references unknown parameter\: \$args$#'
+			identifier: parameter.notFound
+			count: 1
+			path: oc-includes/osclass/classes/cli/Cli.php
+
+		-
+			message: '#^Right side of && is always true\.$#'
+			identifier: booleanAnd.rightAlwaysTrue
+			count: 2
+			path: oc-includes/osclass/classes/cli/Cli.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/comment/CommentService.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/controller/CWebAjax.php
+
+		-
+			message: '#^Method CWebAjax\:\:doModel\(\) with return type void returns false but should not return anything\.$#'
+			identifier: return.void
+			count: 4
+			path: oc-includes/osclass/classes/controller/CWebAjax.php
+
+		-
+			message: '#^Method CWebAjax\:\:doModel\(\) with return type void returns true but should not return anything\.$#'
+			identifier: return.void
+			count: 2
+			path: oc-includes/osclass/classes/controller/CWebAjax.php
+
+		-
+			message: '#^Parameter \#1 \$id of method Item\:\:findByPrimaryKey\(\) expects int, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/controller/CWebAjax.php
+
+		-
+			message: '#^Parameter \#1 \$regionId of method City\:\:findByRegion\(\) expects int, array\|string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/controller/CWebAjax.php
+
+		-
+			message: '#^Parameter \#1 \$resourceId of method ItemResource\:\:existResource\(\) expects int, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/controller/CWebAjax.php
+
+		-
+			message: '#^Parameter \#2 \$regionId of method City\:\:ajax\(\) expects int\|null, array\|string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/controller/CWebAjax.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 2
+			path: oc-includes/osclass/classes/controller/CWebAjax.php
+
+		-
+			message: '#^Method CWebContact\:\:doModel\(\) should return false\|null but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: oc-includes/osclass/classes/controller/CWebContact.php
+
+		-
+			message: '#^Call to static method canView\(\) on an unknown class ItemAccess\.$#'
+			identifier: class.notFound
+			count: 1
+			path: oc-includes/osclass/classes/controller/CWebItem.php
+
+		-
+			message: '#^Method CWebItem\:\:doModel\(\) should return false\|null but empty return statement found\.$#'
+			identifier: return.empty
+			count: 5
+			path: oc-includes/osclass/classes/controller/CWebItem.php
+
+		-
+			message: '#^Method CWebItem\:\:doModel\(\) should return false\|null but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: oc-includes/osclass/classes/controller/CWebItem.php
+
+		-
+			message: '#^Parameter \#1 \$categoryID of method Category\:\:findByPrimaryKey\(\) expects int, array\|string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/controller/CWebItem.php
+
+		-
+			message: '#^Parameter \#1 \$id of method Item\:\:findByPrimaryKey\(\) expects int, array\|string given\.$#'
+			identifier: argument.type
+			count: 2
+			path: oc-includes/osclass/classes/controller/CWebItem.php
+
+		-
+			message: '#^Parameter \#1 \$resourceId of method ItemResource\:\:existResource\(\) expects int, array\|string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/controller/CWebItem.php
+
+		-
+			message: '#^Parameter \#1 \$id of method User\:\:findByIdPasswordSecret\(\) expects int, array\|string given\.$#'
+			identifier: argument.type
+			count: 2
+			path: oc-includes/osclass/classes/controller/CWebLogin.php
+
+		-
+			message: '#^Parameter \#1 \$id of method User\:\:findByPrimaryKey\(\) expects int, array\|string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/controller/CWebLogin.php
+
+		-
+			message: '#^Parameter \#1 \$userId of function osc_forgot_user_password_confirm_url expects int, array\|string given\.$#'
+			identifier: argument.type
+			count: 2
+			path: oc-includes/osclass/classes/controller/CWebLogin.php
+
+		-
+			message: '#^Variable \$user in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.variable
+			count: 1
+			path: oc-includes/osclass/classes/controller/CWebLogin.php
+
+		-
+			message: '#^Variable \$user might not be defined\.$#'
+			identifier: variable.undefined
+			count: 3
+			path: oc-includes/osclass/classes/controller/CWebRegister.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 4
+			path: oc-includes/osclass/classes/controller/CWebResource.php
+
+		-
+			message: '#^Parameter \#1 \$categoryID of method Category\:\:findByPrimaryKey\(\) expects int, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/controller/CWebSearch.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/controller/CWebUser.php
+
+		-
+			message: '#^Parameter \#1 \$regionId of method City\:\:findByRegion\(\) expects int, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/controller/CWebUser.php
+
+		-
+			message: '#^Method CWebUserNonSecure\:\:doModel\(\) should return false\|null but empty return statement found\.$#'
+			identifier: return.empty
+			count: 6
+			path: oc-includes/osclass/classes/controller/CWebUserNonSecure.php
+
+		-
+			message: '#^Method CWebUserNonSecure\:\:doModel\(\) should return false\|null but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: oc-includes/osclass/classes/controller/CWebUserNonSecure.php
+
+		-
+			message: '#^Parameter \#1 \$id of method Alerts\:\:activate\(\) expects int, array\|string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/controller/CWebUserNonSecure.php
+
+		-
+			message: '#^Parameter \#1 \$id of method Alerts\:\:unsub\(\) expects int, array\|string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/controller/CWebUserNonSecure.php
+
+		-
+			message: '#^Parameter \#1 \$id of method User\:\:findByPrimaryKey\(\) expects int, array\|string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/controller/CWebUserNonSecure.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between int\<1, 100\> and ''all'' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/controller/CWebUserNonSecure.php
+
+		-
+			message: '#^Call to function is_int\(\) with null will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
+
+		-
+			message: '#^Offset ''categories'' on array\{slug\: string, name\: string, short_description\: string, author\: string, version\: string, icon\: string\|null, categories\: array\<int, string\>, tags\: array\<int, string\>, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
+
+		-
+			message: '#^Offset ''downloads'' on array\{slug\: string, name\: string, short_description\: string, author\: string, version\: string, icon\: string\|null, categories\: array\<int, string\>, tags\: array\<int, string\>, \.\.\.\} on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
+
+		-
+			message: '#^Offset ''updated_at'' on array\{slug\: string, name\: string, short_description\: string, author\: string, version\: string, icon\: string\|null, categories\: array\<int, string\>, tags\: array\<int, string\>, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
+
+		-
+			message: '#^PHPDoc tag @throws with type DbException is not subtype of Throwable$#'
+			identifier: throws.notThrowable
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between array\<string, mixed\> and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 2
+			path: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+
+		-
+			message: '#^Parameter \#1 \$id of method Page\:\:findByPrimaryKey\(\) expects int, array\|string given\.$#'
+			identifier: argument.type
+			count: 2
+			path: oc-includes/osclass/classes/controller/admin/CAdminEmails.php
+
+		-
+			message: '#^Call to function is_numeric\(\) with int will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/CAdminItemComments.php
+
+		-
+			message: '#^Method CAdminItemComments\:\:doModel\(\) should return false\|null but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/CAdminItemComments.php
+
+		-
+			message: '#^Call to function is_numeric\(\) with int will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+
+		-
+			message: '#^Method CAdminItems\:\:doModel\(\) should return false\|null but empty return statement found\.$#'
+			identifier: return.empty
+			count: 2
+			path: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+
+		-
+			message: '#^Method CAdminItems\:\:doModel\(\) should return false\|null but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+
+		-
+			message: '#^Parameter \#1 \$id of method Item\:\:findByPrimaryKey\(\) expects int, array\|string given\.$#'
+			identifier: argument.type
+			count: 2
+			path: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+
+		-
+			message: '#^Parameter \#1 \$value of function osc_validate_int expects string, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between int and false will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+
+		-
+			message: '#^Method CAdminLanguages\:\:doModel\(\) should return true\|null but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
+
+		-
+			message: '#^Call to an undefined method CAdminLogin\:\:refuseOnDemo\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/CAdminLogin.php
+
+		-
+			message: '#^Method CAdminLogin\:\:doModel\(\) should return false\|null but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/CAdminLogin.php
+
+		-
+			message: '#^Parameter \#1 \$adminId of function osc_forgot_admin_password_confirm_url expects int, array\|string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/CAdminLogin.php
+
+		-
+			message: '#^Parameter \#1 \$adminId of function osc_forgot_admin_password_confirm_url expects int, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/CAdminLogin.php
+
+		-
+			message: '#^Parameter \#1 \$id of method Admin\:\:findByIdSecret\(\) expects int, array\|string given\.$#'
+			identifier: argument.type
+			count: 2
+			path: oc-includes/osclass/classes/controller/admin/CAdminLogin.php
+
+		-
+			message: '#^Parameter \#4 \$month of function mktime expects int\|null, string given\.$#'
+			identifier: argument.type
+			count: 4
+			path: oc-includes/osclass/classes/controller/admin/CAdminMain.php
+
+		-
+			message: '#^Parameter \#6 \$year of function mktime expects int\|null, string given\.$#'
+			identifier: argument.type
+			count: 4
+			path: oc-includes/osclass/classes/controller/admin/CAdminMain.php
+
+		-
+			message: '#^Call to function is_int\(\) with null will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
+
+		-
+			message: '#^Loose comparison using \!\= between non\-falsy\-string and '''' will always evaluate to true\.$#'
+			identifier: notEqual.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
+
+		-
+			message: '#^Offset ''categories'' on array\{slug\: string, name\: string, short_description\: string, author\: string, version\: string, icon\: string\|null, categories\: array\<int, string\>, tags\: array\<int, string\>, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
+
+		-
+			message: '#^Offset ''downloads'' on array\{slug\: string, name\: string, short_description\: string, author\: string, version\: string, icon\: string\|null, categories\: array\<int, string\>, tags\: array\<int, string\>, \.\.\.\} on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
+
+		-
+			message: '#^Offset ''updated_at'' on array\{slug\: string, name\: string, short_description\: string, author\: string, version\: string, icon\: string\|null, categories\: array\<int, string\>, tags\: array\<int, string\>, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
+
+		-
+			message: '#^Parameter \#2 \$value of function ini_set expects string, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
+
+		-
+			message: '#^Parameter \#3 \$response_code of function header expects int, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
+
+		-
+			message: '#^Variable \$categories in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.variable
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
+
+		-
+			message: '#^Parameter \#4 \$month of function mktime expects int\|null, string given\.$#'
+			identifier: argument.type
+			count: 38
+			path: oc-includes/osclass/classes/controller/admin/CAdminStats.php
+
+		-
+			message: '#^Parameter \#5 \$day of function mktime expects int\|null, string given\.$#'
+			identifier: argument.type
+			count: 31
+			path: oc-includes/osclass/classes/controller/admin/CAdminStats.php
+
+		-
+			message: '#^Parameter \#6 \$year of function mktime expects int\|null, string given\.$#'
+			identifier: argument.type
+			count: 57
+			path: oc-includes/osclass/classes/controller/admin/CAdminStats.php
+
+		-
+			message: '#^Parameter \#1 \$callback of function call_user_func expects callable\(\)\: mixed, array\{class\-string, ''is_supported''\} given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+
+		-
+			message: '#^Right side of && is always false\.$#'
+			identifier: booleanAnd.rightAlwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+
+		-
+			message: '#^Parameter \#1 \$regionId of method City\:\:findByRegion\(\) expects int, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
+
+		-
+			message: '#^Parameter \#1 \$regionId of method City\:\:findByRegion\(\) expects int, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
+
+		-
+			message: '#^Call to an undefined method mindstellar\\validation\\RefusedException\:\:isMissing\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
+
+		-
+			message: '#^Offset ''parent'' does not exist on array\{rows\: array\<int, array\<string, mixed\>\>, total\: int, page\: int, per\: int\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
+
+		-
+			message: '#^Parameter \#1 \$model of static method mindstellar\\location\\LocationService\:\:uniqueSlug\(\) expects City\|Region, Country given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between int\<min, \-1\>\|int\<1, max\>\|non\-empty\-string and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 3
+			path: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-string and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSitemap.php
+
+		-
+			message: '#^Call to an undefined method SecBaseModel\:\:isLogged\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: oc-includes/osclass/classes/controller/base/SecBaseModel.php
+
+		-
+			message: '#^Call to an undefined method SecBaseModel\:\:showAuthFailPage\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: oc-includes/osclass/classes/controller/base/SecBaseModel.php
+
+		-
+			message: '#^Property SecBaseModel\:\:\$grant is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: oc-includes/osclass/classes/controller/base/SecBaseModel.php
+
+		-
+			message: '#^Right side of && is always false\.$#'
+			identifier: booleanAnd.rightAlwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/controller/base/abstract/BaseModel.php
+
+		-
+			message: '#^Anonymous function never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: oc-includes/osclass/classes/currency/CurrencyService.php
+
+		-
+			message: '#^Method mindstellar\\database\\Connection\:\:explainQuery\(\) is unused\.$#'
+			identifier: method.unused
+			count: 1
+			path: oc-includes/osclass/classes/database/Connection.php
+
+		-
+			message: '#^Method mindstellar\\database\\Connection\:\:interpolate\(\) is unused\.$#'
+			identifier: method.unused
+			count: 1
+			path: oc-includes/osclass/classes/database/Connection.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/database/Connection.php
+
+		-
+			message: '#^Result of \|\| is always true\.$#'
+			identifier: booleanOr.alwaysTrue
+			count: 2
+			path: oc-includes/osclass/classes/database/Connection.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: oc-includes/osclass/classes/database/Connection.php
+
+		-
+			message: '#^If condition is always false\.$#'
+			identifier: if.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/database/ConnectionManager.php
+
+		-
+			message: '#^Instanceof between mindstellar\\database\\ConnectionManager and mindstellar\\database\\ConnectionManager will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/database/ConnectionManager.php
+
+		-
+			message: '#^Left side of && is always false\.$#'
+			identifier: booleanAnd.leftAlwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/database/ConnectionManager.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/database/ConnectionManager.php
+
+		-
+			message: '#^Result of && is always false\.$#'
+			identifier: booleanAnd.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/database/ConnectionManager.php
+
+		-
+			message: '#^Right side of && is always true\.$#'
+			identifier: booleanAnd.rightAlwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/database/ConnectionManager.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between int and '''' will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/database/ConnectionManager.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: oc-includes/osclass/classes/database/ConnectionManager.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: oc-includes/osclass/classes/database/DAO.php
+
+		-
+			message: '#^Result of \|\| is always false\.$#'
+			identifier: booleanOr.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/database/DAO.php
+
+		-
+			message: '#^Class DBCommandClass constructor invoked with 0 parameters, 1 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: oc-includes/osclass/classes/database/DBCommandClass.php
+
+		-
+			message: '#^If condition is always false\.$#'
+			identifier: if.alwaysFalse
+			count: 4
+			path: oc-includes/osclass/classes/database/DBCommandClass.php
+
+		-
+			message: '#^Left side of && is always false\.$#'
+			identifier: booleanAnd.leftAlwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/database/DBCommandClass.php
+
+		-
+			message: '#^Left side of \|\| is always false\.$#'
+			identifier: booleanOr.leftAlwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/database/DBCommandClass.php
+
+		-
+			message: '#^Method DBCommandClass\:\:having\(\) with return type void returns null but should not return anything\.$#'
+			identifier: return.void
+			count: 1
+			path: oc-includes/osclass/classes/database/DBCommandClass.php
+
+		-
+			message: '#^Method DBCommandClass\:\:orHaving\(\) with return type void returns null but should not return anything\.$#'
+			identifier: return.void
+			count: 1
+			path: oc-includes/osclass/classes/database/DBCommandClass.php
+
+		-
+			message: '#^Negated boolean expression is always false\.$#'
+			identifier: booleanNot.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/database/DBCommandClass.php
+
+		-
+			message: '#^Result of method DBCommandClass\:\:_having\(\) \(void\) is used\.$#'
+			identifier: method.void
+			count: 2
+			path: oc-includes/osclass/classes/database/DBCommandClass.php
+
+		-
+			message: '#^Right side of \|\| is always false\.$#'
+			identifier: booleanOr.rightAlwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/database/DBCommandClass.php
+
+		-
+			message: '#^Variable \$valstr might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: oc-includes/osclass/classes/database/DBCommandClass.php
+
+		-
+			message: '#^Call to function is_numeric\(\) with int will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/database/DBRecordsetClass.php
+
+		-
+			message: '#^Comparison operation "\>" between int\<1, max\> and 0 is always true\.$#'
+			identifier: greater.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/database/Db.php
+
+		-
+			message: '#^Call to function is_float\(\) with float will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: oc-includes/osclass/classes/database/QueryBuilder.php
+
+		-
+			message: '#^Result of && is always false\.$#'
+			identifier: booleanAnd.alwaysFalse
+			count: 2
+			path: oc-includes/osclass/classes/database/QueryBuilder.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-list\<non\-falsy\-string\> and array\{\} will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/database/QueryBuilder.php
+
+		-
+			message: '#^Offset 2 on array\{non\-falsy\-string, non\-falsy\-string, string, non\-empty\-string\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: oc-includes/osclass/classes/database/SchemaDoctor.php
+
+		-
+			message: '#^Call to function unset\(\) contains undefined variable \$indexes_array\.$#'
+			identifier: unset.variable
+			count: 1
+			path: oc-includes/osclass/classes/database/SchemaReconciler.php
+
+		-
+			message: '#^Right side of && is always true\.$#'
+			identifier: booleanAnd.rightAlwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/database/StrictModeReadiness.php
+
+		-
+			message: '#^Property AlertsDataTable\:\:\$total_filtered is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: oc-includes/osclass/classes/datatables/AlertsDataTable.php
+
+		-
+			message: '#^Property BanRulesDataTable\:\:\$search is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: oc-includes/osclass/classes/datatables/BanRulesDataTable.php
+
+		-
+			message: '#^Property BanRulesDataTable\:\:\$userId is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: oc-includes/osclass/classes/datatables/BanRulesDataTable.php
+
+		-
+			message: '#^Property BanRulesDataTable\:\:\$withUserId is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: oc-includes/osclass/classes/datatables/BanRulesDataTable.php
+
+		-
+			message: '#^Property CommentsDataTable\:\:\$total_filtered \(bool\|int\) does not accept array\|string\|null\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: oc-includes/osclass/classes/datatables/CommentsDataTable.php
+
+		-
+			message: '#^Property CommentsDataTable\:\:\$total_filtered \(bool\|int\) is never assigned bool so it can be removed from the property type\.$#'
+			identifier: property.unusedType
+			count: 1
+			path: oc-includes/osclass/classes/datatables/CommentsDataTable.php
+
+		-
+			message: '#^Comparison operation "\>" between int\<2, 7\> and 0 is always true\.$#'
+			identifier: greater.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/datatables/ItemsDataTable.php
+
+		-
+			message: '#^Offset ''iDisplayLength'' on non\-empty\-array\<string, mixed\> on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: oc-includes/osclass/classes/datatables/ItemsDataTable.php
+
+		-
+			message: '#^Parameter \#1 \$id of method Search\:\:addItemId\(\) expects int, string\|false given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/datatables/ItemsDataTable.php
+
+		-
+			message: '#^Property MediaDataTable\:\:\$sEcho is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: oc-includes/osclass/classes/datatables/MediaDataTable.php
+
+		-
+			message: '#^Property PagesDataTable\:\:\$pages is unused\.$#'
+			identifier: property.unused
+			count: 1
+			path: oc-includes/osclass/classes/datatables/PagesDataTable.php
+
+		-
+			message: '#^Property UsersDataTable\:\:\$search is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: oc-includes/osclass/classes/datatables/UsersDataTable.php
+
+		-
+			message: '#^Property UsersDataTable\:\:\$withUserId is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: oc-includes/osclass/classes/datatables/UsersDataTable.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: oc-includes/osclass/classes/datatables/abstract/DataTable.php
+
+		-
+			message: '#^Call to function is_array\(\) with non\-empty\-array\<int, array\<string, mixed\>\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/form/CategoryForm.php
+
+		-
+			message: '#^Ternary operator condition is always false\.$#'
+			identifier: ternary.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/form/CategoryForm.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, string\|null\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/form/FieldForm.php
+
+		-
+			message: '#^Property FieldForm\:\:\$activeAdminLocale is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: oc-includes/osclass/classes/form/FieldForm.php
+
+		-
+			message: '#^Property FieldForm\:\:\$activeUserLocale is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: oc-includes/osclass/classes/form/FieldForm.php
+
+		-
+			message: '#^Property FieldForm\:\:\$adminLocales is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: oc-includes/osclass/classes/form/FieldForm.php
+
+		-
+			message: '#^Property FieldForm\:\:\$userLocales is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: oc-includes/osclass/classes/form/FieldForm.php
+
+		-
+			message: '#^Right side of && is always false\.$#'
+			identifier: booleanAnd.rightAlwaysFalse
+			count: 2
+			path: oc-includes/osclass/classes/form/FieldForm.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between mixed and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/form/FieldForm.php
+
+		-
+			message: '#^Variable \$fld_key in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.variable
+			count: 1
+			path: oc-includes/osclass/classes/form/Form.php
+
+		-
+			message: '#^Variable \$fld_name in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.variable
+			count: 1
+			path: oc-includes/osclass/classes/form/Form.php
+
+		-
+			message: '#^Call to function is_array\(\) with non\-empty\-array\<int, array\<string, mixed\>\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/form/ItemForm.php
+
+		-
+			message: '#^Comparison operation "\>" between int\<1, max\> and 0 is always true\.$#'
+			identifier: greater.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/form/ItemForm.php
+
+		-
+			message: '#^Comparison operation "\>\=" between int\<1, max\> and 1 is always true\.$#'
+			identifier: greaterOrEqual.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/form/ItemForm.php
+
+		-
+			message: '#^Parameter \#3 \$maxLength of static method Form\:\:generic_input_text\(\) expects int\|null, false given\.$#'
+			identifier: argument.type
+			count: 2
+			path: oc-includes/osclass/classes/form/ItemForm.php
+
+		-
+			message: '#^Right side of && is always false\.$#'
+			identifier: booleanAnd.rightAlwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/form/ItemForm.php
+
+		-
+			message: '#^Variable \$catId in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.variable
+			count: 2
+			path: oc-includes/osclass/classes/form/ItemForm.php
+
+		-
+			message: '#^Variable \$currency in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.variable
+			count: 1
+			path: oc-includes/osclass/classes/form/ItemForm.php
+
+		-
+			message: '#^Parameter \#3 \$maxLength of static method Form\:\:generic_input_text\(\) expects int\|null, false given\.$#'
+			identifier: argument.type
+			count: 3
+			path: oc-includes/osclass/classes/form/ManageItemsForm.php
+
+		-
+			message: '#^Variable \$catId in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.variable
+			count: 2
+			path: oc-includes/osclass/classes/form/ManageItemsForm.php
+
+		-
+			message: '#^If condition is always false\.$#'
+			identifier: if.alwaysFalse
+			count: 2
+			path: oc-includes/osclass/classes/form/PageForm.php
+
+		-
+			message: '#^Call to function is_array\(\) with non\-empty\-array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/form/UserForm.php
+
+		-
+			message: '#^If condition is always false\.$#'
+			identifier: if.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/form/UserForm.php
+
+		-
+			message: '#^If condition is always false\.$#'
+			identifier: if.alwaysFalse
+			count: 3
+			path: oc-includes/osclass/classes/form/admin/Item.php
+
+		-
+			message: '#^Property mindstellar\\form\\admin\\Item\:\:\$adminLocales is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: oc-includes/osclass/classes/form/admin/Item.php
+
+		-
+			message: '#^Static property mindstellar\\form\\admin\\Item\:\:\$instance \(mindstellar\\form\\admin\\Item\) in isset\(\) is not nullable\.$#'
+			identifier: isset.property
+			count: 1
+			path: oc-includes/osclass/classes/form/admin/Item.php
+
+		-
+			message: '#^Variable \$currency in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.variable
+			count: 1
+			path: oc-includes/osclass/classes/form/admin/Item.php
+
+		-
+			message: '#^Class mindstellar\\form\\base\\FormInputs referenced with incorrect case\: mindstellar\\form\\base\\formInputs\.$#'
+			identifier: class.nameCase
+			count: 1
+			path: oc-includes/osclass/classes/form/base/FormBuilder.php
+
+		-
+			message: '#^Call to function unset\(\) contains undefined variable \$defaultInputValue\.$#'
+			identifier: unset.variable
+			count: 1
+			path: oc-includes/osclass/classes/form/base/FormInputs.php
+
+		-
+			message: '#^Call to function unset\(\) contains undefined variable \$label\.$#'
+			identifier: unset.variable
+			count: 1
+			path: oc-includes/osclass/classes/form/base/FormInputs.php
+
+		-
+			message: '#^Parameter \#1 \$str of static method mindstellar\\utility\\Escape\:\:html\(\) expects string, true given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/form/base/FormInputs.php
+
+		-
+			message: '#^Parameter &\$options by\-ref type of method mindstellar\\form\\base\\FormInputs\:\:handleOptions\(\) expects array\<string, mixed\>, array given\.$#'
+			identifier: parameterByRef.type
+			count: 1
+			path: oc-includes/osclass/classes/form/base/FormInputs.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between mixed and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/form/base/FormInputs.php
+
+		-
+			message: '#^Variable \$defaultValue in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.variable
+			count: 2
+			path: oc-includes/osclass/classes/form/base/FormInputs.php
+
+		-
+			message: '#^Variable \$name in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.variable
+			count: 1
+			path: oc-includes/osclass/classes/form/base/FormInputs.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<int, array\<string, mixed\>\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/form/builder/FormFieldLinkStore.php
+
+		-
+			message: '#^Right side of && is always false\.$#'
+			identifier: booleanAnd.rightAlwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/job/CategoryJobs.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between array\<string, mixed\> and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/job/CategoryJobs.php
+
+		-
+			message: '#^Parameter \#1 \$ids of method mindstellar\\job\\JobQueue\:\:release\(\) expects array\<int\>, list\<string\|null\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/job/JobWorker.php
+
+		-
+			message: '#^Right side of && is always false\.$#'
+			identifier: booleanAnd.rightAlwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/listing/ListingInput.php
+
+		-
+			message: '#^Call to function is_array\(\) with array will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/listing/ListingValidator.php
+
+		-
+			message: '#^Call to method getMessage\(\) on an unknown class mindstellar\\listing\\exception\.$#'
+			identifier: class.notFound
+			count: 1
+			path: oc-includes/osclass/classes/listing/ListingValidator.php
+
+		-
+			message: '#^Caught class mindstellar\\listing\\exception not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: oc-includes/osclass/classes/listing/ListingValidator.php
+
+		-
+			message: '#^Parameter \#1 \$width of method ImageProcessing\:\:resizeTo\(\) expects int, string given\.$#'
+			identifier: argument.type
+			count: 6
+			path: oc-includes/osclass/classes/listing/PhotoService.php
+
+		-
+			message: '#^Parameter \#2 \$height of method ImageProcessing\:\:resizeTo\(\) expects int, string given\.$#'
+			identifier: argument.type
+			count: 6
+			path: oc-includes/osclass/classes/listing/PhotoService.php
+
+		-
+			message: '#^Parameter \#4 \$data of method Log\:\:insertLog\(\) expects string, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/listing/PhotoService.php
+
+		-
+			message: '#^Parameter \#4 \$data of method Log\:\:insertLog\(\) expects string, int\<1, max\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/listing/PhotoService.php
+
+		-
+			message: '#^Method mindstellar\\location\\LocationImporter\:\:insertRegion\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: oc-includes/osclass/classes/location/LocationImporter.php
+
+		-
+			message: '#^Parameter \#3 \$bySource of method mindstellar\\location\\LocationImporter\:\:indexRow\(\) expects array\<int, array\<string, mixed\>\>, array\<string, int\>\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/location/LocationImporter.php
+
+		-
+			message: '#^Parameter \#4 \$bySource of method mindstellar\\location\\LocationImporter\:\:matchRow\(\) expects array\<int, array\<string, mixed\>\>, array\<string, int\>\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/location/LocationImporter.php
+
+		-
+			message: '#^Property mindstellar\\location\\LocationImporter\:\:\$regionBySource \(array\<string, int\>\|null\) does not accept array\<int, array\<string, mixed\>\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: oc-includes/osclass/classes/location/LocationImporter.php
+
+		-
+			message: '#^Property mindstellar\\location\\LocationImporter\:\:\$regionBySource \(array\<string, int\>\|null\) is never assigned array\<string, int\> so it can be removed from the property type\.$#'
+			identifier: property.unusedType
+			count: 1
+			path: oc-includes/osclass/classes/location/LocationImporter.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, string\|null\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/location/LocationService.php
+
+		-
+			message: '#^Match expression does not handle remaining value\: string$#'
+			identifier: match.unhandled
+			count: 1
+			path: oc-includes/osclass/classes/location/LocationService.php
+
+		-
+			message: '#^Parameter \#2 \$cityId of method CityArea\:\:findByName\(\) expects int\|null, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/location/LocationService.php
+
+		-
+			message: '#^Parameter \#2 \$regionId of method City\:\:findByName\(\) expects int\|null, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/location/LocationService.php
+
+		-
+			message: '#^Offset 1 on array\{non\-empty\-string, '''', '''', '''', non\-empty\-string\}\|array\{non\-empty\-string, '''', '''', non\-falsy\-string\}\|array\{non\-empty\-string, '''', non\-empty\-string\}\|array\{non\-empty\-string, non\-falsy\-string\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: oc-includes/osclass/classes/logger/LogDatabase.php
+
+		-
+			message: '#^PHPDoc tag @var has invalid value \(\)\: Unexpected token "\\n     ", expected type at offset 22 on line 3$#'
+			identifier: phpDoc.parseError
+			count: 3
+			path: oc-includes/osclass/classes/logger/LogDatabase.php
+
+		-
+			message: '#^Parameter \#2 \$value of function ini_set expects string, int given\.$#'
+			identifier: argument.type
+			count: 2
+			path: oc-includes/osclass/classes/logger/OsclassErrors.php
+
+		-
+			message: '#^Right side of && is always false\.$#'
+			identifier: booleanAnd.rightAlwaysFalse
+			count: 2
+			path: oc-includes/osclass/classes/logger/OsclassErrors.php
+
+		-
+			message: '#^Instanceof between Admin and Admin will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/Admin.php
+
+		-
+			message: '#^Call to function is_numeric\(\) with int will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: oc-includes/osclass/classes/model/Alerts.php
+
+		-
+			message: '#^Instanceof between Alerts and Alerts will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/Alerts.php
+
+		-
+			message: '#^Loose comparison using \!\= between int and '''' will always evaluate to true\.$#'
+			identifier: notEqual.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/Alerts.php
+
+		-
+			message: '#^Instanceof between AlertsStats and AlertsStats will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/AlertsStats.php
+
+		-
+			message: '#^Call to function is_numeric\(\) with int will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: oc-includes/osclass/classes/model/BanRule.php
+
+		-
+			message: '#^Instanceof between BanRule and BanRule will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/BanRule.php
+
+		-
+			message: '#^Loose comparison using \!\= between int and '''' will always evaluate to true\.$#'
+			identifier: notEqual.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/BanRule.php
+
+		-
+			message: '#^Call to function is_bool\(\) with int\<min, \-1\> will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: oc-includes/osclass/classes/model/Category.php
+
+		-
+			message: '#^Call to function is_numeric\(\) with int\<min, \-1\>\|int\<1, max\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/model/Category.php
+
+		-
+			message: '#^If condition is always false\.$#'
+			identifier: if.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/model/Category.php
+
+		-
+			message: '#^If condition is always true\.$#'
+			identifier: if.alwaysTrue
+			count: 2
+			path: oc-includes/osclass/classes/model/Category.php
+
+		-
+			message: '#^Instanceof between Category and Category will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/Category.php
+
+		-
+			message: '#^Loose comparison using \!\= between non\-empty\-string and '''' will always evaluate to true\.$#'
+			identifier: notEqual.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/Category.php
+
+		-
+			message: '#^Method Category\:\:insertDescription\(\) should return bool\|null but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: oc-includes/osclass/classes/model/Category.php
+
+		-
+			message: '#^PHPDoc tag @param references unknown parameter\: \$args$#'
+			identifier: parameter.notFound
+			count: 1
+			path: oc-includes/osclass/classes/model/Category.php
+
+		-
+			message: '#^PHPDoc tag @param references unknown parameter\: \$where$#'
+			identifier: parameter.notFound
+			count: 1
+			path: oc-includes/osclass/classes/model/Category.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<mixed\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: oc-includes/osclass/classes/model/Category.php
+
+		-
+			message: '#^Parameter \#2 \$found of function osc_cache_get expects bool, null given\.$#'
+			identifier: argument.type
+			count: 2
+			path: oc-includes/osclass/classes/model/Category.php
+
+		-
+			message: '#^Property Category\:\:\$empty_tree is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: oc-includes/osclass/classes/model/Category.php
+
+		-
+			message: '#^Return type \(int\) of method Category\:\:insert\(\) should be compatible with return type \(bool\) of method DAO\:\:insert\(\)$#'
+			identifier: method.childReturnType
+			count: 1
+			path: oc-includes/osclass/classes/model/Category.php
+
+		-
+			message: '#^Right side of && is always true\.$#'
+			identifier: booleanAnd.rightAlwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/Category.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: oc-includes/osclass/classes/model/Category.php
+
+		-
+			message: '#^Call to function is_numeric\(\) with int will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/model/CategoryStats.php
+
+		-
+			message: '#^Instanceof between CategoryStats and CategoryStats will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/CategoryStats.php
+
+		-
+			message: '#^Call to function is_numeric\(\) with int\<min, \-1\>\|int\<1, max\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/model/City.php
+
+		-
+			message: '#^Instanceof between City and City will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/City.php
+
+		-
+			message: '#^Parameter \#1 \$pk of method CityArea\:\:deleteByPrimaryKey\(\) expects int, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/model/City.php
+
+		-
+			message: '#^Instanceof between CityArea and CityArea will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/CityArea.php
+
+		-
+			message: '#^Call to function is_numeric\(\) with int will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: oc-includes/osclass/classes/model/CityStats.php
+
+		-
+			message: '#^Instanceof between CityStats and CityStats will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/CityStats.php
+
+		-
+			message: '#^Parameter \#2 \$found of function osc_cache_get expects bool, null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/model/CityStats.php
+
+		-
+			message: '#^Instanceof between Country and Country will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/Country.php
+
+		-
+			message: '#^Parameter \#1 \$pk of method Region\:\:deleteByPrimaryKey\(\) expects int, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/model/Country.php
+
+		-
+			message: '#^Instanceof between CountryStats and CountryStats will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/CountryStats.php
+
+		-
+			message: '#^Instanceof between Cron and Cron will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/Cron.php
+
+		-
+			message: '#^Instanceof between Currency and Currency will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/Currency.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/model/Dump.php
+
+		-
+			message: '#^Instanceof between Dump and Dump will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/Dump.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between ''oc_'' and '''' will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/Dump.php
+
+		-
+			message: '#^Call to function is_numeric\(\) with int will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 5
+			path: oc-includes/osclass/classes/model/Field.php
+
+		-
+			message: '#^Instanceof between Field and Field will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/Field.php
+
+		-
+			message: '#^Loose comparison using \!\= between \*NEVER\* and null will always evaluate to true\.$#'
+			identifier: notEqual.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/Field.php
+
+		-
+			message: '#^Method Field\:\:extendField\(\) invoked with 2 parameters, 1 required\.$#'
+			identifier: arguments.count
+			count: 2
+			path: oc-includes/osclass/classes/model/Field.php
+
+		-
+			message: '#^Method Field\:\:replace\(\) should return bool\|null but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: oc-includes/osclass/classes/model/Field.php
+
+		-
+			message: '#^Result of && is always false\.$#'
+			identifier: booleanAnd.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/model/Field.php
+
+		-
+			message: '#^Result of \|\| is always false\.$#'
+			identifier: booleanOr.alwaysFalse
+			count: 2
+			path: oc-includes/osclass/classes/model/Field.php
+
+		-
+			message: '#^Right side of && is always false\.$#'
+			identifier: booleanAnd.rightAlwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/model/Field.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between int and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 3
+			path: oc-includes/osclass/classes/model/Field.php
+
+		-
+			message: '#^Instanceof between FieldGroup and FieldGroup will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/FieldGroup.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between int and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 2
+			path: oc-includes/osclass/classes/model/FieldGroup.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<int, array\<string, mixed\>\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/model/Item.php
+
+		-
+			message: '#^Call to function is_numeric\(\) with int will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 3
+			path: oc-includes/osclass/classes/model/Item.php
+
+		-
+			message: '#^Instanceof between Item and Item will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/Item.php
+
+		-
+			message: '#^Method Item\:\:clearStat\(\) should return int\|false but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: oc-includes/osclass/classes/model/Item.php
+
+		-
+			message: '#^Offset 1 on array\{string, array\<int, mixed\>\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: oc-includes/osclass/classes/model/Item.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<mixed\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: oc-includes/osclass/classes/model/Item.php
+
+		-
+			message: '#^Parameter \#1 \$array \(non\-empty\-list\<mixed\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: oc-includes/osclass/classes/model/Item.php
+
+		-
+			message: '#^Parameter &\$params by\-ref type of method Item\:\:addWhereByOptions\(\) expects array\<int, mixed\>, array given\.$#'
+			identifier: parameterByRef.type
+			count: 11
+			path: oc-includes/osclass/classes/model/Item.php
+
+		-
+			message: '#^Result of \|\| is always false\.$#'
+			identifier: booleanOr.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/model/Item.php
+
+		-
+			message: '#^Right side of && is always false\.$#'
+			identifier: booleanAnd.rightAlwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/model/Item.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between int and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/model/Item.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between null and array\<string, mixed\>\|false will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/model/Item.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between null and string will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/model/Item.php
+
+		-
+			message: '#^Ternary operator condition is always false\.$#'
+			identifier: ternary.alwaysFalse
+			count: 3
+			path: oc-includes/osclass/classes/model/Item.php
+
+		-
+			message: '#^Variable \$itemStatsLocations in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.variable
+			count: 1
+			path: oc-includes/osclass/classes/model/Item.php
+
+		-
+			message: '#^Call to function is_numeric\(\) with int will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: oc-includes/osclass/classes/model/ItemComment.php
+
+		-
+			message: '#^Instanceof between ItemComment and ItemComment will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/ItemComment.php
+
+		-
+			message: '#^Loose comparison using \=\= between int\|non\-empty\-string and '''' will always evaluate to false\.$#'
+			identifier: equal.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/model/ItemComment.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between int and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/model/ItemComment.php
+
+		-
+			message: '#^Instanceof between ItemLocation and ItemLocation will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/ItemLocation.php
+
+		-
+			message: '#^Instanceof between ItemModerationLog and ItemModerationLog will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/ItemModerationLog.php
+
+		-
+			message: '#^Instanceof between ItemReport and ItemReport will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/ItemReport.php
+
+		-
+			message: '#^Call to function is_numeric\(\) with int will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 4
+			path: oc-includes/osclass/classes/model/ItemResource.php
+
+		-
+			message: '#^Instanceof between ItemResource and ItemResource will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/ItemResource.php
+
+		-
+			message: '#^Parameter \#2 \$found of function osc_cache_get expects bool, null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/model/ItemResource.php
+
+		-
+			message: '#^Result of \|\| is always false\.$#'
+			identifier: booleanOr.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/model/ItemResource.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between int and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/model/ItemResource.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/model/ItemResource.php
+
+		-
+			message: '#^Call to function is_numeric\(\) with int will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/model/ItemStats.php
+
+		-
+			message: '#^Instanceof between ItemStats and ItemStats will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/ItemStats.php
+
+		-
+			message: '#^Instanceof between ItemTmpUpload and ItemTmpUpload will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/ItemTmpUpload.php
+
+		-
+			message: '#^Call to function is_numeric\(\) with int will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: oc-includes/osclass/classes/model/KeywordBlock.php
+
+		-
+			message: '#^Instanceof between KeywordBlock and KeywordBlock will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/KeywordBlock.php
+
+		-
+			message: '#^Loose comparison using \!\= between int and '''' will always evaluate to true\.$#'
+			identifier: notEqual.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/KeywordBlock.php
+
+		-
+			message: '#^Call to function is_numeric\(\) with int will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: oc-includes/osclass/classes/model/LatestSearches.php
+
+		-
+			message: '#^Call to function is_numeric\(\) with int\<min, \-1\>\|int\<1, max\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/model/LatestSearches.php
+
+		-
+			message: '#^Instanceof between LatestSearches and LatestSearches will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/LatestSearches.php
+
+		-
+			message: '#^Call to function is_numeric\(\) with int will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: oc-includes/osclass/classes/model/Log.php
+
+		-
+			message: '#^Instanceof between Log and Log will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/Log.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between int and '''' will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/Log.php
+
+		-
+			message: '#^Instanceof between LoginAttempt and LoginAttempt will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/LoginAttempt.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/model/OSCLocale.php
+
+		-
+			message: '#^Instanceof between OSCLocale and OSCLocale will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/OSCLocale.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/model/OSCLocale.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: oc-includes/osclass/classes/model/OSCLocale.php
+
+		-
+			message: '#^Instanceof between Page and Page will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/Page.php
+
+		-
+			message: '#^Instanceof between Preference and Preference will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/Preference.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/model/Preference.php
+
+		-
+			message: '#^Instanceof between Region and Region will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/Region.php
+
+		-
+			message: '#^Parameter \#1 \$pk of method City\:\:deleteByPrimaryKey\(\) expects int, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/model/Region.php
+
+		-
+			message: '#^Call to function is_numeric\(\) with int will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: oc-includes/osclass/classes/model/RegionStats.php
+
+		-
+			message: '#^Instanceof between RegionStats and RegionStats will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/RegionStats.php
+
+		-
+			message: '#^Parameter \#2 \$found of function osc_cache_get expects bool, null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/model/RegionStats.php
+
+		-
+			message: '#^Parameter \#2 \$found of function osc_cache_get expects bool, null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/model/Resource.php
+
+		-
+			message: '#^If condition is always false\.$#'
+			identifier: if.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/model/Search.php
+
+		-
+			message: '#^Method Search\:\:makeSQLPremium\(\) is unused\.$#'
+			identifier: method.unused
+			count: 1
+			path: oc-includes/osclass/classes/model/Search.php
+
+		-
+			message: '#^Offset 0 on non\-empty\-list\<string\> on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: oc-includes/osclass/classes/model/Search.php
+
+		-
+			message: '#^Parameter \#1 \$region of method CityStats\:\:listCities\(\) expects int\|null, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/model/Search.php
+
+		-
+			message: '#^Parameter \#2 \$found of function osc_cache_get expects bool, null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/model/Search.php
+
+		-
+			message: '#^Right side of && is always false\.$#'
+			identifier: booleanAnd.rightAlwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/model/Search.php
+
+		-
+			message: '#^Ternary operator condition is always false\.$#'
+			identifier: ternary.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/model/Search.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/model/User.php
+
+		-
+			message: '#^Call to function is_numeric\(\) with int will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: oc-includes/osclass/classes/model/User.php
+
+		-
+			message: '#^Instanceof between User and User will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/User.php
+
+		-
+			message: '#^Parameter \#2 \$found of function osc_cache_get expects bool, null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/model/User.php
+
+		-
+			message: '#^Instanceof between UserEmailTmp and UserEmailTmp will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/UserEmailTmp.php
+
+		-
+			message: '#^Instanceof between Widget and Widget will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/model/Widget.php
+
+		-
+			message: '#^Parameter \#1 \$id of method Item\:\:findByPrimaryKey\(\) expects int, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/moderation/CommentModeration.php
+
+		-
+			message: '#^Match expression does not handle remaining value\: string$#'
+			identifier: match.unhandled
+			count: 1
+			path: oc-includes/osclass/classes/moderation/ListingModeration.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: oc-includes/osclass/classes/privacy/PersonalData.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, string\|null\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/search/AlertEnvelope.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/search/AlertEnvelope.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<int\<1, max\>\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 2
+			path: oc-includes/osclass/classes/search/AlertEnvelope.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/search/LegacyAlertParser.php
+
+		-
+			message: '#^Parameter \#1 \$hour of function mktime expects int, string given\.$#'
+			identifier: argument.type
+			count: 2
+			path: oc-includes/osclass/classes/search/SearchBuilder.php
+
+		-
+			message: '#^Parameter \#2 \$minute of function mktime expects int\|null, string given\.$#'
+			identifier: argument.type
+			count: 2
+			path: oc-includes/osclass/classes/search/SearchBuilder.php
+
+		-
+			message: '#^Parameter \#3 \$second of function mktime expects int\|null, string given\.$#'
+			identifier: argument.type
+			count: 2
+			path: oc-includes/osclass/classes/search/SearchBuilder.php
+
+		-
+			message: '#^Parameter \#2 \$found of function osc_cache_get expects bool, null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/search/SearchRunner.php
+
+		-
+			message: '#^Parameter \#1 \$array \(array\{string, string\}\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: oc-includes/osclass/classes/search/query/Ordering.php
+
+		-
+			message: '#^Method mindstellar\\search\\query\\PatternFilter\:\:terms\(\) never assigns null to &\$phrases so it can be removed from the by\-ref type\.$#'
+			identifier: parameterByRef.unusedType
+			count: 1
+			path: oc-includes/osclass/classes/search/query/PatternFilter.php
+
+		-
+			message: '#^Call to method mindstellar\\search\\query\\PluginClauses\:\:conditionsSql\(\) on a separate line has no effect\.$#'
+			identifier: method.resultUnused
+			count: 1
+			path: oc-includes/osclass/classes/search/query/SearchCompiler.php
+
+		-
+			message: '#^Call to method mindstellar\\search\\query\\PluginClauses\:\:fieldList\(\) on a separate line has no effect\.$#'
+			identifier: method.resultUnused
+			count: 1
+			path: oc-includes/osclass/classes/search/query/SearchCompiler.php
+
+		-
+			message: '#^Right side of && is always false\.$#'
+			identifier: booleanAnd.rightAlwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/search/query/SearchCompiler.php
+
+		-
+			message: '#^Call to function is_scalar\(\) with mixed will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: oc-includes/osclass/classes/search/query/SqlValue.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<string\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: oc-includes/osclass/classes/security/AddressGuard.php
+
+		-
+			message: '#^Right side of && is always false\.$#'
+			identifier: booleanAnd.rightAlwaysFalse
+			count: 2
+			path: oc-includes/osclass/classes/security/Csrf.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-string and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 2
+			path: oc-includes/osclass/classes/security/MessageGuard.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/security/MessageHold.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/security/PurifierCache.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-string and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/security/SigningKey.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/settings/SettingsImage.php
+
+		-
+			message: '#^Result of \|\| is always true\.$#'
+			identifier: booleanOr.alwaysTrue
+			count: 2
+			path: oc-includes/osclass/classes/settings/SettingsImage.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between false and true will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/settings/SettingsImage.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: oc-includes/osclass/classes/settings/SettingsImage.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/settings/SettingsPageRegistry.php
+
+		-
+			message: '#^Right side of && is always true\.$#'
+			identifier: booleanAnd.rightAlwaysTrue
+			count: 2
+			path: oc-includes/osclass/classes/settings/SettingsPageRegistry.php
+
+		-
+			message: '#^Offset 0 on non\-empty\-list\<string\> on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 2
+			path: oc-includes/osclass/classes/storage/ResourceUploader.php
+
+		-
+			message: '#^Parameter \#1 \$configuration of class AsyncAws\\S3\\S3Client constructor expects array\<''accessKeyId''\|''accessKeySecret''\|''containerCredential…''\|''debug''\|''endpoint''\|''endpointDiscoveryEn…''\|''pathStyleEndpoint''\|''podIdentityAuthoriz…''\|''podIdentityCredenti…''\|''profile''\|''region''\|''roleArn''\|''roleSessionName''\|''sendChunkedBody''\|''sessionToken''\|''sharedConfigFile''\|''sharedCredentialsFi…''\|''webIdentityTokenFile'', string\|null\>\|AsyncAws\\Core\\Configuration, array\{endpoint\: non\-falsy\-string, region\: string, accessKeyId\: string, accessKeySecret\: string, pathStyleEndpoint\: bool\} given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/storage/S3Storage.php
+
+		-
+			message: '#^Offset non\-empty\-string on array\{\} in isset\(\) does not exist\.$#'
+			identifier: isset.offset
+			count: 1
+			path: oc-includes/osclass/classes/storage/UploadMimes.php
+
+		-
+			message: '#^Result of \|\| is always true\.$#'
+			identifier: booleanOr.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/storage/UploadMimes.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: oc-includes/osclass/classes/storage/UploadMimes.php
+
+		-
+			message: '#^Call to function is_array\(\) with list\<array\{int, string, int\}\|string\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/theme/ThemeFunctions.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/theme/ThemeFunctions.php
+
+		-
+			message: '#^Left side of \|\| is always false\.$#'
+			identifier: booleanOr.leftAlwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/theme/ThemeFunctions.php
+
+		-
+			message: '#^Static property Themes\:\:\$instance is unused\.$#'
+			identifier: property.unused
+			count: 1
+			path: oc-includes/osclass/classes/theme/Themes.php
+
+		-
+			message: '#^Parameter \#2 \$callback of function array_filter expects \(callable\(string\)\: bool\)\|null, ''strlen'' given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/upgrade/BuildInfo.php
+
+		-
+			message: '#^Binary operation "\-" between int\<1, max\> and string results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: oc-includes/osclass/classes/upgrade/Osclass.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<int, array\<string, mixed\>\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/upgrade/Osclass.php
+
+		-
+			message: '#^Offset ''tag_name'' on non\-empty\-array\<string, mixed\> in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.offset
+			count: 1
+			path: oc-includes/osclass/classes/upgrade/Osclass.php
+
+		-
+			message: '#^Variable \$package_info in empty\(\) always exists and is not falsy\.$#'
+			identifier: empty.variable
+			count: 1
+			path: oc-includes/osclass/classes/upgrade/Osclass.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/upgrade/Plugin.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<int, string\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/upgrade/Upgrade.php
+
+		-
+			message: '#^Parameter \#3 \$options of method mindstellar\\utility\\FileSystem\:\:sync\(\) expects array\<string, bool\>, null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/upgrade/Upgrade.php
+
+		-
+			message: '#^Variable \$package_info in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.variable
+			count: 1
+			path: oc-includes/osclass/classes/upgrade/UpgradePackage.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/user/AccountService.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/user/UserQuery.php
+
+		-
+			message: '#^Empty array passed to foreach\.$#'
+			identifier: foreach.emptyArray
+			count: 1
+			path: oc-includes/osclass/classes/utility/DeferredMail.php
+
+		-
+			message: '#^If condition is always false\.$#'
+			identifier: if.alwaysFalse
+			count: 3
+			path: oc-includes/osclass/classes/utility/Deprecate.php
+
+		-
+			message: '#^PHPDoc tag @var with type RecursiveDirectoryIterator is not subtype of native type RecursiveIteratorIterator\<IteratorAggregate\|RecursiveIterator\>\|RegexIterator\<mixed, mixed, Traversable\<mixed, mixed\>\>\.$#'
+			identifier: varTag.nativeType
+			count: 1
+			path: oc-includes/osclass/classes/utility/FileSystem.php
+
+		-
+			message: '#^Parameter \#2 \$mode of class RecursiveIteratorIterator constructor expects 0\|1\|2, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/utility/FileSystem.php
+
+		-
+			message: '#^Parameter \#3 \$options of method mindstellar\\utility\\FileSystem\:\:sync\(\) expects array\<string, bool\>, null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/utility/FileSystem.php
+
+		-
+			message: '#^Parameter \#3 \$use_include_path of function fopen expects bool, null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/utility/FileSystem.php
+
+		-
+			message: '#^Parameter \#3 \$value of function curl_setopt expects bool, int given\.$#'
+			identifier: argument.type
+			count: 3
+			path: oc-includes/osclass/classes/utility/FileSystem.php
+
+		-
+			message: '#^Parameter \#4 \$filter of method mindstellar\\utility\\FileSystem\:\:sync\(\) expects array\<int, string\>, array\<string, bool\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/utility/FileSystem.php
+
+		-
+			message: '#^Static method mindstellar\\utility\\FileSystem\:\:handleError\(\) is unused\.$#'
+			identifier: method.unused
+			count: 1
+			path: oc-includes/osclass/classes/utility/FileSystem.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between null and null will always evaluate to true\.$#'
+			identifier: identical.alwaysTrue
+			count: 2
+			path: oc-includes/osclass/classes/utility/FileSystem.php
+
+		-
+			message: '#^If condition is always false\.$#'
+			identifier: if.alwaysFalse
+			count: 5
+			path: oc-includes/osclass/classes/utility/SystemInfo.php
+
+		-
+			message: '#^Method mindstellar\\utility\\SystemInfo\:\:getPhpInfoArr\(\) should return array\<string, bool\|string\> but returns array\<string, mixed\>\.$#'
+			identifier: return.type
+			count: 1
+			path: oc-includes/osclass/classes/utility/SystemInfo.php
+
+		-
+			message: '#^Property mindstellar\\utility\\SystemInfo\:\:\$allow_url_fopen \(string\|false\) is never assigned false so it can be removed from the property type\.$#'
+			identifier: property.unusedType
+			count: 1
+			path: oc-includes/osclass/classes/utility/SystemInfo.php
+
+		-
+			message: '#^Property mindstellar\\utility\\SystemInfo\:\:\$php_max_execution_time \(string\|false\) is never assigned false so it can be removed from the property type\.$#'
+			identifier: property.unusedType
+			count: 1
+			path: oc-includes/osclass/classes/utility/SystemInfo.php
+
+		-
+			message: '#^Property mindstellar\\utility\\SystemInfo\:\:\$php_memory_limit \(string\|false\) is never assigned false so it can be removed from the property type\.$#'
+			identifier: property.unusedType
+			count: 1
+			path: oc-includes/osclass/classes/utility/SystemInfo.php
+
+		-
+			message: '#^Property mindstellar\\utility\\SystemInfo\:\:\$php_memory_usage \(float\) does not accept string\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: oc-includes/osclass/classes/utility/SystemInfo.php
+
+		-
+			message: '#^Property mindstellar\\utility\\SystemInfo\:\:\$php_memory_usage_percent \(float\) does not accept string\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: oc-includes/osclass/classes/utility/SystemInfo.php
+
+		-
+			message: '#^Property mindstellar\\utility\\SystemInfo\:\:\$php_version \(string\|false\) is never assigned false so it can be removed from the property type\.$#'
+			identifier: property.unusedType
+			count: 1
+			path: oc-includes/osclass/classes/utility/SystemInfo.php
+
+		-
+			message: '#^Call to function is_numeric\(\) with int will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/classes/utility/Utils.php
+
+		-
+			message: '#^Method mindstellar\\utility\\Utils\:\:changeOsclassVersionTo\(\) should return array\<string, mixed\>\|false but returns bool\.$#'
+			identifier: return.type
+			count: 1
+			path: oc-includes/osclass/classes/utility/Utils.php
+
+		-
+			message: '#^Parameter &\$categoryTotal by\-ref type of method mindstellar\\utility\\Utils\:\:recursiveCategoryStats\(\) expects array\<int, int\>, array\<float\|int\|string\> given\.$#'
+			identifier: parameterByRef.type
+			count: 1
+			path: oc-includes/osclass/classes/utility/Utils.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between array\{scheme\?\: string, host\: string, port\?\: int\<0, 65535\>, user\?\: string, pass\?\: string, path\: string, query\?\: string, fragment\?\: string\} and false will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/classes/utility/Utils.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: oc-includes/osclass/classes/utility/Utils.php
+
+		-
+			message: '#^Parameter \#1 \$value of method mindstellar\\utility\\Validate\:\:nozero\(\) expects string, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/classes/utility/Validate.php
+
+		-
+			message: '#^Result of && is always false\.$#'
+			identifier: booleanAnd.alwaysFalse
+			count: 2
+			path: oc-includes/osclass/classes/utility/Validate.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string\|null and 1 will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 2
+			path: oc-includes/osclass/classes/utility/Validate.php
+
+		-
+			message: '#^If condition is always true\.$#'
+			identifier: if.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/classes/utility/Zip.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: oc-includes/osclass/classes/utility/Zip.php
+
+		-
+			message: '#^Result of && is always false\.$#'
+			identifier: booleanAnd.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/config-loader.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between '''' and '''' will always evaluate to false\.$#'
+			identifier: notIdentical.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/config-loader.php
+
+		-
+			message: '#^Call to function is_numeric\(\) with int will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/cron.php
+
+		-
+			message: '#^Parameter \#1 \$number of method LatestSearches\:\:purgeNumber\(\) expects int\|null, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/cron.php
+
+		-
+			message: '#^Call to function is_array\(\) with non\-empty\-array\<int\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/functions.php
+
+		-
+			message: '#^Comparison operation "\>" between int\<1, max\> and 0 is always true\.$#'
+			identifier: greater.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/functions.php
+
+		-
+			message: '#^Parameter \#1 \$catId of static method FieldForm\:\:meta_fields_search\(\) expects array\<int\>\|null, int\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/functions.php
+
+		-
+			message: '#^Variable \$tmp in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.variable
+			count: 1
+			path: oc-includes/osclass/functions.php
+
+		-
+			message: '#^Variable \$rowActions might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: oc-includes/osclass/gui/account/parts/row-actions.php
+
+		-
+			message: '#^Parameter \#2 \$callback of function array_filter expects \(callable\(string\)\: bool\)\|null, ''strlen'' given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/gui/account/user-public-profile-content.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<Order\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/gui/billing/orders-content.php
+
+		-
+			message: '#^Call to method getAmount\(\) on an unknown class Order\.$#'
+			identifier: class.notFound
+			count: 1
+			path: oc-includes/osclass/gui/billing/orders-content.php
+
+		-
+			message: '#^Call to method getCredits\(\) on an unknown class Order\.$#'
+			identifier: class.notFound
+			count: 1
+			path: oc-includes/osclass/gui/billing/orders-content.php
+
+		-
+			message: '#^Call to method getCurrency\(\) on an unknown class Order\.$#'
+			identifier: class.notFound
+			count: 1
+			path: oc-includes/osclass/gui/billing/orders-content.php
+
+		-
+			message: '#^Call to method getDate\(\) on an unknown class Order\.$#'
+			identifier: class.notFound
+			count: 1
+			path: oc-includes/osclass/gui/billing/orders-content.php
+
+		-
+			message: '#^Call to method getGateway\(\) on an unknown class Order\.$#'
+			identifier: class.notFound
+			count: 1
+			path: oc-includes/osclass/gui/billing/orders-content.php
+
+		-
+			message: '#^Call to method getId\(\) on an unknown class Order\.$#'
+			identifier: class.notFound
+			count: 1
+			path: oc-includes/osclass/gui/billing/orders-content.php
+
+		-
+			message: '#^Call to method getStatus\(\) on an unknown class Order\.$#'
+			identifier: class.notFound
+			count: 3
+			path: oc-includes/osclass/gui/billing/orders-content.php
+
+		-
+			message: '#^PHPDoc tag @var for variable \$orders contains unknown class Order\.$#'
+			identifier: class.notFound
+			count: 1
+			path: oc-includes/osclass/gui/billing/orders-content.php
+
+		-
+			message: '#^Parameter \#1 \$order of static method mindstellar\\billing\\Receipts\:\:available\(\) expects mindstellar\\billing\\Order, Order given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/gui/billing/orders-content.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<int, array\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/gui/billing/wallet-content.php
+
+		-
+			message: '#^Variable \$accent might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: oc-includes/osclass/gui/page-style.php
+
+		-
+			message: '#^Variable \$band might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: oc-includes/osclass/gui/page-style.php
+
+		-
+			message: '#^Variable \$contactForm might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: oc-includes/osclass/gui/parts/contact-form.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between mixed and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/helpers/hBilling.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-string and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 18
+			path: oc-includes/osclass/helpers/hBilling.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/helpers/hBilling.php
+
+		-
+			message: '#^Parameter &\$found by\-ref type of function osc_cache_get\(\) expects bool, bool\|null given\.$#'
+			identifier: parameterByRef.type
+			count: 1
+			path: oc-includes/osclass/helpers/hCache.php
+
+		-
+			message: '#^Function osc_category_move_to_children\(\) should return int\|false\|null but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: oc-includes/osclass/helpers/hCategories.php
+
+		-
+			message: '#^Function osc_category_move_to_parent\(\) should return int\|false\|null but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: oc-includes/osclass/helpers/hCategories.php
+
+		-
+			message: '#^Parameter \#2 \$category of static method CategoryForm\:\:category_select\(\) expects array\<string, mixed\>\|null, int\|string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/helpers/hCategories.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 2
+			path: oc-includes/osclass/helpers/hCategories.php
+
+		-
+			message: '#^Call to function is_array\(\) with array will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/helpers/hDefines.php
+
+		-
+			message: '#^If condition is always false\.$#'
+			identifier: if.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/helpers/hDefines.php
+
+		-
+			message: '#^Parameter \#1 \$regionId of method City\:\:findByRegion\(\) expects int, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/helpers/hDefines.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-string and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/helpers/hDefines.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/helpers/hHttpCache.php
+
+		-
+			message: '#^Call to function is_array\(\) with array will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/helpers/hItems.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/helpers/hItems.php
+
+		-
+			message: '#^Parameter \#1 \$id of method Search\:\:addItemId\(\) expects int, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/helpers/hItems.php
+
+		-
+			message: '#^Parameter \#1 \$l_i of method Search\:\:limit\(\) expects int, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/helpers/hItems.php
+
+		-
+			message: '#^Parameter \#1 \$p of method Search\:\:page\(\) expects int, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/helpers/hItems.php
+
+		-
+			message: '#^Parameter \#1 \$r_p_p of method Search\:\:set_rpp\(\) expects int, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/helpers/hItems.php
+
+		-
+			message: '#^Right side of && is always false\.$#'
+			identifier: booleanAnd.rightAlwaysFalse
+			count: 1
+			path: oc-includes/osclass/helpers/hItems.php
+
+		-
+			message: '#^Ternary operator condition is always false\.$#'
+			identifier: ternary.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/helpers/hItems.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: oc-includes/osclass/helpers/hItems.php
+
+		-
+			message: '#^Parameter \#1 \$city of method Search\:\:listCityAreas\(\) expects int\|null, string given\.$#'
+			identifier: argument.type
+			count: 2
+			path: oc-includes/osclass/helpers/hLocation.php
+
+		-
+			message: '#^Parameter \#1 \$region of method CityStats\:\:listCities\(\) expects int\|null, string given\.$#'
+			identifier: argument.type
+			count: 2
+			path: oc-includes/osclass/helpers/hLocation.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\{msg\: string, type\: string\} will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/helpers/hMessages.php
+
+		-
+			message: '#^Offset ''msg'' on array\{msg\: string, type\: string\} in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.offset
+			count: 1
+			path: oc-includes/osclass/helpers/hMessages.php
+
+		-
+			message: '#^Offset ''type'' on array\{msg\: string, type\: string\} in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.offset
+			count: 1
+			path: oc-includes/osclass/helpers/hMessages.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/helpers/hPagination.php
+
+		-
+			message: '#^Parameter \#2 \$itemsPerPage of function osc_user_list_items_pub_profile_url expects int\|false, bool\|string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/helpers/hPagination.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between int and ''all'' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/helpers/hPagination.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, string\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/helpers/hPlugins.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-string and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 4
+			path: oc-includes/osclass/helpers/hPreference.php
+
+		-
+			message: '#^Call to an undefined method ItemComment\:\:findBypremiumID\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: oc-includes/osclass/helpers/hPremium.php
+
+		-
+			message: '#^Parameter \#2 \$locale of function osc_premium_field expects string, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 2
+			path: oc-includes/osclass/helpers/hPremium.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: oc-includes/osclass/helpers/hSanitize.php
+
+		-
+			message: '#^Variable \$ext might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: oc-includes/osclass/helpers/hSanitize.php
+
+		-
+			message: '#^Call to function is_array\(\) with non\-empty\-array\<array\|string\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/helpers/hSearch.php
+
+		-
+			message: '#^Call to function is_array\(\) with non\-empty\-array\<mixed, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/helpers/hSearch.php
+
+		-
+			message: '#^Call to function is_numeric\(\) with int will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: oc-includes/osclass/helpers/hSearch.php
+
+		-
+			message: '#^Parameter \#1 \$categoryID of method Category\:\:findByPrimaryKey\(\) expects int, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/helpers/hSearch.php
+
+		-
+			message: '#^Parameter \#1 \$categoryID of method Category\:\:findNameByPrimaryKey\(\) expects int, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/helpers/hSearch.php
+
+		-
+			message: '#^Parameter \#1 \$region of method CityStats\:\:listCities\(\) expects int\|null, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/helpers/hSearch.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/helpers/hSpam.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/helpers/hTheme.php
+
+		-
+			message: '#^Offset ''msg'' on array\<int, array\{msg\: string, type\: string\}\>\|string in isset\(\) does not exist\.$#'
+			identifier: isset.offset
+			count: 1
+			path: oc-includes/osclass/helpers/hTheme.php
+
+		-
+			message: '#^Offset ''type'' on \*NEVER\* in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.offset
+			count: 2
+			path: oc-includes/osclass/helpers/hTheme.php
+
+		-
+			message: '#^Right side of && is always false\.$#'
+			identifier: booleanAnd.rightAlwaysFalse
+			count: 3
+			path: oc-includes/osclass/helpers/hTheme.php
+
+		-
+			message: '#^Parameter \#4 \$value of method Gettext\\Translator\:\:dngettext\(\) expects string, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/helpers/hTranslations.php
+
+		-
+			message: '#^Loose comparison using \!\= between int and '''' will always evaluate to true\.$#'
+			identifier: notEqual.alwaysTrue
+			count: 1
+			path: oc-includes/osclass/helpers/hUsers.php
+
+		-
+			message: '#^Parameter \#1 \$id of method User\:\:findByPrimaryKey\(\) expects int, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/helpers/hUsers.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 3
+			path: oc-includes/osclass/helpers/hUsers.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: oc-includes/osclass/helpers/hUtils.php
+
+		-
+			message: '#^Result of function _osc_recaptcha_get_html \(void\) is used\.$#'
+			identifier: function.void
+			count: 1
+			path: oc-includes/osclass/helpers/hUtils.php
+
+		-
+			message: '#^Right side of && is always false\.$#'
+			identifier: booleanAnd.rightAlwaysFalse
+			count: 1
+			path: oc-includes/osclass/helpers/hUtils.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-string and '''' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/helpers/hUtils.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/helpers/hUtils.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-string and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/helpers/hViews.php
+
+		-
+			message: '#^Inner named functions are not supported by PHPStan\. Consider refactoring to an anonymous function, class method, or a top\-level\-defined function\. See issue \#165 \(https\://github\.com/phpstan/phpstan/issues/165\) for more details\.$#'
+			identifier: function.inner
+			count: 1
+			path: oc-includes/osclass/install-functions.php
+
+		-
+			message: '#^Variable \$categories might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: oc-includes/osclass/install-functions.php
+
+		-
+			message: '#^Variable \$item might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: oc-includes/osclass/install-functions.php
+
+		-
+			message: '#^Variable \$page might not be defined\.$#'
+			identifier: variable.undefined
+			count: 3
+			path: oc-includes/osclass/install-functions.php
+
+		-
+			message: '#^Parameter \#2 \$value of function setcookie expects string, int given\.$#'
+			identifier: argument.type
+			count: 3
+			path: oc-includes/osclass/install.php
+
+		-
+			message: '#^Result of && is always false\.$#'
+			identifier: booleanAnd.alwaysFalse
+			count: 2
+			path: oc-includes/osclass/installer/gui/install-database.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between '''' and '''' will always evaluate to false\.$#'
+			identifier: notIdentical.alwaysFalse
+			count: 2
+			path: oc-includes/osclass/installer/gui/install-database.php
+
+		-
+			message: '#^Variable \$error might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: oc-includes/osclass/installer/gui/install-database.php
+
+		-
+			message: '#^Variable \$password might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: oc-includes/osclass/installer/gui/install-finish.php
+
+		-
+			message: '#^Variable \$already_installed might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: oc-includes/osclass/installer/gui/install.php
+
+		-
+			message: '#^Variable \$error might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: oc-includes/osclass/installer/gui/install.php
+
+		-
+			message: '#^Variable \$jsonLocales might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: oc-includes/osclass/installer/gui/install.php
+
+		-
+			message: '#^Variable \$password might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: oc-includes/osclass/installer/gui/install.php
+
+		-
+			message: '#^Variable \$requirements might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: oc-includes/osclass/installer/gui/install.php
+
+		-
+			message: '#^Variable \$step might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: oc-includes/osclass/installer/gui/install.php
+
+		-
+			message: '#^Call to function is_array\(\) with non\-empty\-array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: oc-includes/osclass/utils.php
+
+		-
+			message: '#^Call to function is_object\(\) with PHPMailer\\PHPMailer\\PHPMailer will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/utils.php
+
+		-
+			message: '#^Call to function is_object\(\) with PHPMailer\\PHPMailer\\SMTP will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/utils.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/utils.php
+
+		-
+			message: '#^Call to function method_exists\(\) with PHPMailer\\PHPMailer\\PHPMailer and ''getSMTPInstance'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/utils.php
+
+		-
+			message: '#^Call to function property_exists\(\) with PHPMailer\\PHPMailer\\SMTP and ''Timelimit'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: oc-includes/osclass/utils.php
+
+		-
+			message: '#^Function osc_file_get_contents\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: oc-includes/osclass/utils.php
+
+		-
+			message: '#^Function osc_zip_folder\(\) should return int but returns bool\.$#'
+			identifier: return.type
+			count: 1
+			path: oc-includes/osclass/utils.php
+
+		-
+			message: '#^Loose comparison using \=\= between non\-empty\-string and '''' will always evaluate to false\.$#'
+			identifier: equal.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/utils.php
+
+		-
+			message: '#^Negated boolean expression is always false\.$#'
+			identifier: booleanNot.alwaysFalse
+			count: 2
+			path: oc-includes/osclass/utils.php
+
+		-
+			message: '#^PHPDoc tag @var with type string is not subtype of native type non\-empty\-string&non\-falsy\-string\.$#'
+			identifier: varTag.nativeType
+			count: 1
+			path: oc-includes/osclass/utils.php
+
+		-
+			message: '#^Parameter \#3 \$post_data of function download_fsockopen expects array\<string, mixed\>\|null, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: oc-includes/osclass/utils.php
+
+		-
+			message: '#^Result of && is always false\.$#'
+			identifier: booleanAnd.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/utils.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between int\<0, max\>\|false and true will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: oc-includes/osclass/utils.php
+
+		-
+			message: '#^Variable \$location in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.variable
+			count: 1
+			path: oc-includes/osclass/utils.php

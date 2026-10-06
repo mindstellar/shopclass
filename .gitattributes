@@ -21,6 +21,8 @@
 /.editorconfig export-ignore
 /.php-cs-fixer.dist.php export-ignore
 /.phpcompat.xml.dist export-ignore
+/phpstan.neon.dist export-ignore
+/phpstan-baseline.neon export-ignore
 /.git-blame-ignore-revs export-ignore
 /tools export-ignore
 /Dockerfile export-ignore

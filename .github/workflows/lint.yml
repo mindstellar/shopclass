@@ -79,6 +79,10 @@ jobs:
       - name: Check PHP 8.0 floor
         run: composer compat
 
+      # Old findings sit in phpstan-baseline.neon; new code must be clean.
+      - name: Static analysis (PHPStan)
+        run: composer analyse
+
       # A write that resolves to the inherited DAO reports failure by returning false,
       # which reads as success inside a transaction and commits everything before it.
       # Grepping for the query helpers cannot find these — the call that shipped this

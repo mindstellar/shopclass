@@ -1,0 +1,18 @@
+parameters:
+    level: 5
+    phpVersion: 80000
+    paths:
+        - oc-includes/osclass
+        - oc-admin
+    excludePaths:
+        analyse:
+            - oc-admin/themes/modern/scss
+    scanDirectories:
+        - oc-includes/vendor
+    bootstrapFiles:
+        - tools/lint/phpstan-bootstrap.php
+    tmpDir: .phpstan-cache
+    reportUnmatchedIgnoredErrors: false
+
+includes:
+    - phpstan-baseline.neon

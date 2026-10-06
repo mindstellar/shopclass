@@ -61,9 +61,11 @@
         "cs:fix": "php tools/php-cs-fixer.phar fix",
         "lint:install": "composer install --working-dir=tools/lint --no-interaction",
         "compat": "php tools/lint/vendor/bin/phpcs --standard=.phpcompat.xml.dist",
+        "analyse": "php -d memory_limit=4G tools/lint/vendor/bin/phpstan analyse --no-progress",
         "lint": [
             "@cs:check",
-            "@compat"
+            "@compat",
+            "@analyse"
         ]
     },
     "suggest": {
