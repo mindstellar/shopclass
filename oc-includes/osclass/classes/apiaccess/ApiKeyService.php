@@ -166,10 +166,10 @@ final class ApiKeyService
      */
     public function rows(): array
     {
-        return $this->describe(array_values(array_filter(
-            $this->store->listBy(),
-            static fn (StoredKey $k): bool => in_array($k->kind(), [CredentialKind::KEY, CredentialKind::PUBLIC], true)
-        )));
+        $keys = [...$this->store->listBy(CredentialKind::KEY), ...$this->store->listBy(CredentialKind::PUBLIC)];
+        usort($keys, static fn (StoredKey $a, StoredKey $b): int => $b->id() <=> $a->id());
+
+        return $this->describe($keys);
     }
 
     /**

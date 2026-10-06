@@ -27,7 +27,7 @@ final class Schema
 {
     /** The object schemas, each written out below. */
     private const OBJECTS = [
-        'Problem', 'PageMeta', 'PageLinks', 'Photo', 'CategoryRef', 'CustomFieldValue', 'Listing', 'User', 'Category', 'CustomField',
+        'Problem', 'PageMeta', 'PageLinks', 'ListLinks', 'Photo', 'CategoryRef', 'CustomFieldValue', 'Listing', 'User', 'Category', 'CustomField',
         'Country', 'Region', 'City', 'CityArea', 'Currency', 'Comment', 'Site', 'OpenApiDocument',
         'Warning', 'TokenDocument', 'TokenRequest', 'SignOutRequest', 'SessionToken', 'AccountInput', 'AccountDocument', 'PasswordChange', 'Session',
         'PersonalKey', 'PersonalKeyInput', 'Registration', 'NewAccount',
@@ -49,6 +49,16 @@ final class Schema
 
     private function __construct()
     {
+    }
+
+    /**
+     * A list answered whole: its items and `links.next`, null until the list is paged.
+     *
+     * @return array<string,mixed>
+     */
+    public static function wholeList(string $item): array
+    {
+        return self::object(['data' => ['type' => 'array', 'items' => self::ref($item)], 'links' => self::ref('ListLinks')], ['data', 'links']);
     }
 
     /**
@@ -96,6 +106,9 @@ final class Schema
                 'self' => ['type' => 'string', 'format' => 'uri'],
                 'next' => self::nullable('string', 'The next page; null on the last one.'),
             ], ['self', 'next']),
+            'ListLinks'    => self::object([
+                'next' => ['type' => ['string', 'null'], 'description' => 'Null: the list is whole. A later version may page it, so follow next when it is set.'],
+            ], ['next']),
             'Photo'        => self::object([
                 'id'        => ['type' => 'integer'],
                 'thumbnail' => ['type' => 'string'],
@@ -180,7 +193,7 @@ final class Schema
             'links' => self::ref('PageLinks'),
         ], ['data', 'meta', 'links']);
         foreach (self::LISTS as $name) {
-            $schemas[$name . 'List'] = self::object(['data' => ['type' => 'array', 'items' => self::ref($name)]], ['data']);
+            $schemas[$name . 'List'] = self::wholeList($name);
         }
         foreach (self::PAGED_LISTS as $name) {
             $schemas[$name . 'List'] = $page($name);

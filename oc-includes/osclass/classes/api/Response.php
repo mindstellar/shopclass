@@ -74,15 +74,13 @@ final class Response
      * @param array<string,mixed>   $meta
      * @param array<string,?string> $links
      */
-    public static function collection(array $items, array $meta = [], array $links = []): self
+    public static function collection(array $items, array $meta = [], array $links = ['next' => null]): self
     {
         $body = ['data' => array_values($items)];
         if ($meta !== []) {
             $body['meta'] = $meta;
         }
-        if ($links !== []) {
-            $body['links'] = $links;
-        }
+        $body['links'] = $links;
 
         return new self(200, $body);
     }

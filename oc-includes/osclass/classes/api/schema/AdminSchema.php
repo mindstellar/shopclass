@@ -56,7 +56,7 @@ final class AdminSchema
         $text   = static fn (int $max, int $min = 0): array => ['type' => 'string', 'minLength' => $min, 'maxLength' => $max];
         $input  = static fn (array $properties, array $required = []): array => Schema::object($properties, $required) + ['additionalProperties' => false];
         $doc    = static fn (string $name): array => Schema::object(['data' => Schema::ref($name)], ['data']);
-        $list   = static fn (string $name): array => Schema::object(['data' => ['type' => 'array', 'items' => Schema::ref($name)]], ['data']);
+        $list   = static fn (string $name): array => Schema::wholeList($name);
         $page   = static fn (string $name): array => Schema::object([
             'data'  => ['type' => 'array', 'items' => Schema::ref($name)],
             'meta'  => Schema::ref('PageMeta'),

@@ -155,6 +155,8 @@ An expired listing answers with `status: "expired"`, as its page shows it; searc
 ### Paging
 
 Follow `links.next` until it is `null`. Do not build cursors yourself; each one works for a day.
+Every list has `links.next`, including short ones answered whole, such as categories or your
+keys: there it is `null` today, and a later version may page them.
 
 ```bash
 URL="$API/listings?limit=50"

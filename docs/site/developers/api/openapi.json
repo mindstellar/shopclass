@@ -28899,6 +28899,21 @@
                     "next"
                 ]
             },
+            "ListLinks": {
+                "type": "object",
+                "properties": {
+                    "next": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Null: the list is whole. A later version may page it, so follow next when it is set."
+                    }
+                },
+                "required": [
+                    "next"
+                ]
+            },
             "Photo": {
                 "type": "object",
                 "properties": {
@@ -31069,10 +31084,14 @@
                         "items": {
                             "$ref": "#/components/schemas/Category"
                         }
+                    },
+                    "links": {
+                        "$ref": "#/components/schemas/ListLinks"
                     }
                 },
                 "required": [
-                    "data"
+                    "data",
+                    "links"
                 ]
             },
             "CustomFieldList": {
@@ -31083,10 +31102,14 @@
                         "items": {
                             "$ref": "#/components/schemas/CustomField"
                         }
+                    },
+                    "links": {
+                        "$ref": "#/components/schemas/ListLinks"
                     }
                 },
                 "required": [
-                    "data"
+                    "data",
+                    "links"
                 ]
             },
             "CurrencyList": {
@@ -31097,10 +31120,14 @@
                         "items": {
                             "$ref": "#/components/schemas/Currency"
                         }
+                    },
+                    "links": {
+                        "$ref": "#/components/schemas/ListLinks"
                     }
                 },
                 "required": [
-                    "data"
+                    "data",
+                    "links"
                 ]
             },
             "PhotoList": {
@@ -31111,10 +31138,14 @@
                         "items": {
                             "$ref": "#/components/schemas/Photo"
                         }
+                    },
+                    "links": {
+                        "$ref": "#/components/schemas/ListLinks"
                     }
                 },
                 "required": [
-                    "data"
+                    "data",
+                    "links"
                 ]
             },
             "SessionList": {
@@ -31125,10 +31156,14 @@
                         "items": {
                             "$ref": "#/components/schemas/Session"
                         }
+                    },
+                    "links": {
+                        "$ref": "#/components/schemas/ListLinks"
                     }
                 },
                 "required": [
-                    "data"
+                    "data",
+                    "links"
                 ]
             },
             "PersonalKeyList": {
@@ -31139,10 +31174,14 @@
                         "items": {
                             "$ref": "#/components/schemas/PersonalKey"
                         }
+                    },
+                    "links": {
+                        "$ref": "#/components/schemas/ListLinks"
                     }
                 },
                 "required": [
-                    "data"
+                    "data",
+                    "links"
                 ]
             },
             "AlertList": {
@@ -31153,10 +31192,14 @@
                         "items": {
                             "$ref": "#/components/schemas/Alert"
                         }
+                    },
+                    "links": {
+                        "$ref": "#/components/schemas/ListLinks"
                     }
                 },
                 "required": [
-                    "data"
+                    "data",
+                    "links"
                 ]
             },
             "CountryList": {
@@ -32051,10 +32094,14 @@
                         "items": {
                             "$ref": "#/components/schemas/AdminCategory"
                         }
+                    },
+                    "links": {
+                        "$ref": "#/components/schemas/ListLinks"
                     }
                 },
                 "required": [
-                    "data"
+                    "data",
+                    "links"
                 ]
             },
             "AdminCategoryDocument": {
@@ -32866,10 +32913,14 @@
                         "items": {
                             "$ref": "#/components/schemas/ApiKey"
                         }
+                    },
+                    "links": {
+                        "$ref": "#/components/schemas/ListLinks"
                     }
                 },
                 "required": [
-                    "data"
+                    "data",
+                    "links"
                 ]
             },
             "ApiKeyDocument": {
@@ -33160,10 +33211,14 @@
                         "items": {
                             "$ref": "#/components/schemas/Webhook"
                         }
+                    },
+                    "links": {
+                        "$ref": "#/components/schemas/ListLinks"
                     }
                 },
                 "required": [
-                    "data"
+                    "data",
+                    "links"
                 ]
             },
             "WebhookDocument": {
@@ -33329,10 +33384,14 @@
                         "items": {
                             "$ref": "#/components/schemas/WebhookEvent"
                         }
+                    },
+                    "links": {
+                        "$ref": "#/components/schemas/ListLinks"
                     }
                 },
                 "required": [
-                    "data"
+                    "data",
+                    "links"
                 ]
             },
             "WebhookMessage": {

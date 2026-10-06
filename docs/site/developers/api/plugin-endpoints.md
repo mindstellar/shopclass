@@ -101,7 +101,7 @@ function handler(Request $request, Credential $credential, array $args): Respons
 | `ProblemException` | `throw ProblemException::of($code, $detail)` |
 
 `Response::ok()` wraps the data as `{"data": …}`. `Response::collection()` gives
-`{"data": […], "meta": …, "links": …}`. Follow the [response rules](/docs/developers/api/#response-shape):
+`{"data": […], "meta": …, "links": …}`; `links` is `{"next": null}` unless you pass your own. Follow the [response rules](/docs/developers/api/#response-shape):
 `snake_case`, RFC 3339 UTC times, absolute URLs, `null` for missing values.
 
 The API adds `ETag`, `Cache-Control`, CORS and rate limit headers itself. Do not send them.
