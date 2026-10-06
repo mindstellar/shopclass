@@ -300,7 +300,8 @@ final class ApiServices
             $this->extensions(),
             new CustomFieldSerializer(),
             $this->facts()->hidePhone(),
-            $this->facts()->keepOriginal()
+            $this->facts()->keepOriginal(),
+            $this->facts()->contactNeedsSignIn()
         ));
     }
 

@@ -43,7 +43,8 @@ final class ListingSerializer
         private Extensions $extensions,
         private CustomFieldSerializer $fields,
         private bool $hidePhone = false,
-        private bool $originals = false
+        private bool $originals = false,
+        private bool $contactNeedsSignIn = false
     ) {
     }
 
@@ -91,7 +92,7 @@ final class ListingSerializer
             'category'     => fn () => $this->category($item, $relations, $locale),
             'price'        => fn () => $this->price($item, $relations),
             'location'     => static fn () => self::location($item),
-            'contact'      => fn () => $this->contact($item, $view),
+            'contact'      => fn () => $this->contact($item, $context, $now ?? time()),
             'seller'       => fn () => $this->seller($item, $relations),
             'photos'       => fn () => $this->photos($relations->photos($id)),
             'fields'       => $context->includes('fields') ? fn () => $this->fields->values($relations->fields($id), $locale) : null,
@@ -216,16 +217,20 @@ final class ListingSerializer
     /**
      * @param array<string,mixed> $item
      *
+     * The public view hides the e-mail and phone as the listing page does: on an expired
+     * listing, and from guests when only signed-in users may contact sellers.
+     *
      * @return array{name:?string,email:?string,phone:?string}
      */
-    private function contact(array $item, string $view): array
+    private function contact(array $item, ViewContext $context, int $now): array
     {
-        $public = $view === ViewContext::PUBLIC;
+        $public = $context->view() === ViewContext::PUBLIC;
+        $closed = $public && (($this->contactNeedsSignIn && !$context->viewerIsUser()) || ListingStatus::of($item, $now) === ListingStatus::EXPIRED);
 
         return [
             'name'  => Format::text($item['s_contact_name'] ?? null),
-            'email' => $public && !Format::bool($item['b_show_email'] ?? 0) ? null : Format::text($item['s_contact_email'] ?? null),
-            'phone' => $public && $this->hidePhone ? null : Format::text($item['s_contact_phone'] ?? null),
+            'email' => $closed || ($public && !Format::bool($item['b_show_email'] ?? 0)) ? null : Format::text($item['s_contact_email'] ?? null),
+            'phone' => $closed || ($public && $this->hidePhone) ? null : Format::text($item['s_contact_phone'] ?? null),
         ];
     }
 

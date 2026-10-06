@@ -129,6 +129,9 @@ $shortEnd = $call('GET', 'admin/keys', null, $boss)->body()['data'][0]['expires_
 $child    = $call('POST', 'admin/keys', ['name' => 'Child', 'scopes' => ['admin:listings']], $short);
 pin('a key made by a short-lived key gets its expiry', [201, true], [$child->status(), $shortEnd !== null && ($child->body()['data']['expires_at'] ?? null) === $shortEnd]);
 pin('and cannot outlive it', 422, $call('POST', 'admin/keys', ['name' => 'Longer', 'scopes' => ['admin:listings'], 'expires_at' => '30d'], $short)->status());
+$long = (int) ($call('POST', 'admin/keys', ['name' => 'Long', 'scopes' => ['admin:listings'], 'expires_at' => '90d'], $boss)->body()['data']['id'] ?? 0);
+$r    = $call('POST', 'admin/keys/' . $long . '/rotate', null, $short);
+pin('nor rotate a longer key into one that outlives it', [201, true], [$r->status(), $shortEnd !== null && ($r->body()['data']['expires_at'] ?? null) === $shortEnd]);
 $r     = $call('POST', 'admin/keys/' . $made . '/rotate', null, $boss);
 $fresh = (string) ($r->body()['data']['token'] ?? '');
 pin('rotate: 201, a new token with the same scopes', [201, true, ['admin:listings', 'admin:comments']], [$r->status(), $fresh !== '' && $fresh !== $token, $r->body()['data']['scopes'] ?? null]);

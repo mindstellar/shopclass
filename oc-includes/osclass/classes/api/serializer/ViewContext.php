@@ -80,6 +80,14 @@ final class ViewContext
         return $copy;
     }
 
+    /**
+     * Whether the caller is a signed-in user: an access token, a user key or a session.
+     */
+    public function viewerIsUser(): bool
+    {
+        return $this->viewer->isUser();
+    }
+
     public function view(): string
     {
         return $this->view;

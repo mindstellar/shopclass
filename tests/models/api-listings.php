@@ -255,8 +255,9 @@ $narrowKey = $keys->create(CredentialKind::KEY, 'reader', array('listings:read')
 $facts = new SiteFacts('en_US', array('en_US' => array('name' => 'English', 'direction' => 'ltr')), true, true, 10, 12, 50, false, false);
 $validator = new Validator(Schema::components());
 // Core handlers are built over test services, as the site's are.
-$makeKernel = static function (ApiSettings $settings, ?Validator $with = null) use ($keys, $validator, $facts): Kernel {
+$makeKernel = static function (ApiSettings $settings, ?Validator $with = null, ?SiteFacts $siteFacts = null) use ($keys, $validator, $facts): Kernel {
     $with ??= $validator;
+    $facts = $siteFacts ?? $facts;
 
     return api_test_kernel(
         new Router($with, RouteTable::core(), handlers: static function (string $class) use ($facts, $settings): object {
@@ -450,6 +451,14 @@ foreach (array('pending' => $pending, 'disabled' => $disabled, 'spam' => $spam) 
     pin("an admin sees it", 200, $get('listings/' . $id, array(), $adminKey)->status());
 }
 pin('the owner sees the contact e-mail', 'contact@example.test', $get('listings/' . $live[0], array(), $sellerKey)->body()['data']['contact']['email']);
+$admin->query("UPDATE {$p}t_item SET s_contact_phone = '555-0100', b_show_email = 1 WHERE pk_i_id = $expired");
+pin('an expired listing shows no contact e-mail or phone', array(null, null), array_values(array_intersect_key(
+    $get('listings/' . $expired, array(), $publicKey)->body()['data']['contact'],
+    array('email' => 0, 'phone' => 0)
+)));
+$gated = $makeKernel(new ApiSettings(true), null, new SiteFacts('en_US', array('en_US' => array('name' => 'English', 'direction' => 'ltr')), true, true, 10, 12, 50, false, false, false, true));
+pin('when only signed-in users may contact, a public key sees no phone', null, $get('listings/' . $live[0], array(), $publicKey, $gated)->body()['data']['contact']['phone']);
+pin('but a signed-in user does', '555-0100', $get('listings/' . $live[0], array(), $otherKey, $gated)->body()['data']['contact']['phone']);
 check('only admins see the IP', !isset($get('listings/' . $live[0], array(), $sellerKey)->body()['data']['ip']) && $get('listings/' . $live[0], array(), $adminKey)->body()['data']['ip'] === '127.0.0.1');
 pin('an admin key without admin:listings sees no hidden listing', 404, $get('listings/' . $pending, array(), $narrowKey)->status());
 check('nor the IP of a live one', !isset($get('listings/' . $live[0], array(), $narrowKey)->body()['data']['ip']));

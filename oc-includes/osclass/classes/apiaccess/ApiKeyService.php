@@ -107,15 +107,17 @@ final class ApiKeyService
      * A new key in place of an old one. The old key keeps working until it is revoked.
      * An admin rotates its own keys and any public key, never another admin's key.
      *
+     * @param int|null $notAfter the latest expiry the new key may have
+     *
      * @throws RefusedException with the reason to show
      */
-    public function rotate(int $id, int $actorAdminId): IssuedToken
+    public function rotate(int $id, int $actorAdminId, ?int $notAfter = null): IssuedToken
     {
         $key = $this->manageable($id);
         if ($key->kind() !== CredentialKind::PUBLIC && $key->owner()?->adminId() !== $actorAdminId) {
             throw new RefusedException(_m('You can only rotate your own keys and public keys. Revoke this one and make a new key instead.'));
         }
-        $issued = $this->keys->rotate($id);
+        $issued = $this->keys->rotate($id, $notAfter);
         if ($issued === null) {
             throw new ConflictException(_m('That key is revoked, expired or its owner is gone, so it cannot be rotated.'));
         }

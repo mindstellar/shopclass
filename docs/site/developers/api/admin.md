@@ -99,7 +99,6 @@ curl "$API/admin/listings?status=pending&limit=50" -H "Authorization: Bearer $KE
 | `GET /admin/comments/{id}` | One comment, with the author's e-mail. |
 | `PATCH /admin/comments/{id}` | Edit `title`, `body`, `author_name`, `author_email`. `approved: true` approves it and tells the author; `false` holds it back. `blocked: true` blocks it; `false` unblocks it. |
 | `DELETE /admin/comments/{id}` | Delete. |
-| `POST /admin/comments/{id}/activate`, `/deactivate`, `/enable`, `/disable` | Deprecated. Use `PATCH` with `approved` or `blocked`. |
 
 ## Users
 
@@ -111,7 +110,6 @@ curl "$API/admin/listings?status=pending&limit=50" -H "Authorization: Bearer $KE
 | `GET /admin/users/{id}` | One user, every member. |
 | `PATCH /admin/users/{id}` | Edit the profile, `email`, `username` or `password`. A new password ends every sign-in and key of that user. `confirmed` marks the account confirmed, or not (`active` in the answer). `blocked: true` blocks the user, and their sign-ins and keys stop working (`enabled` in the answer). |
 | `DELETE /admin/users/{id}` | Delete the user with their listings, comments and saved searches. |
-| `POST /admin/users/{id}/activate`, `/deactivate`, `/enable`, `/disable` | Deprecated. Use `PATCH` with `confirmed` or `blocked`. |
 | `GET /admin/users/{id}/sessions` | The user's sign-ins and API keys. |
 | `DELETE /admin/users/{id}/sessions/{session}` | End one sign-in, or revoke one key. |
 
@@ -185,7 +183,7 @@ curl -X PATCH $API/admin/settings -H "Authorization: Bearer $KEY" \
 |---|---|
 | `GET /admin/keys`, `GET /admin/keys/{id}` | Keys, newest first. Never the secret. `kind` is `admin`, `public` or `user`. |
 | `POST /admin/keys` | Make a key. Body: `name`, optional `kind` (`admin` by default, or `public`), `scopes`, `expires_at` (`2027-03-01`, or `90d`). A key that expires cannot make a key that outlives it: with no `expires_at`, the new key gets the same expiry. The answer has the `token`, once. |
-| `POST /admin/keys/{id}/rotate` | Make a new key with the same kind, scopes and expiry. The old one keeps working until you revoke it. Only for your own keys and public keys. |
+| `POST /admin/keys/{id}/rotate` | Make a new key with the same kind, scopes and expiry, but never past the calling key's expiry. The old one keeps working until you revoke it. Only for your own keys and public keys. |
 | `DELETE /admin/keys/{id}` | Revoke. |
 
 A key made here belongs to the admin who owns the calling key. It cannot hold a scope the

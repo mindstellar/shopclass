@@ -99,8 +99,8 @@ final class AdminKeysController
     }
 
     /**
-     * POST /admin/keys/{id}/rotate: a new key with the old one's name, scopes and expiry.
-     * The old key works until it is revoked.
+     * POST /admin/keys/{id}/rotate: a new key with the old one's name, scopes and expiry, but
+     * never outliving the calling key. The old key works until it is revoked.
      *
      * @param array<string,string> $args
      */
@@ -111,7 +111,7 @@ final class AdminKeysController
             throw ProblemException::of('forbidden', 'Only your own keys and public keys can be rotated. Revoke this one and make a new key instead.');
         }
         self::checkGrant($credential, $old['scopes']);
-        $issued = $this->keys->rotate((int) $old['id'], (int) $credential->adminId());
+        $issued = $this->keys->rotate((int) $old['id'], (int) $credential->adminId(), $this->keys->expiresAt((int) $credential->id()));
 
         return Response::created($this->serializer->admin($this->key($issued->id()), $issued->token()), $this->links->api('admin/keys/' . $issued->id()));
     }
