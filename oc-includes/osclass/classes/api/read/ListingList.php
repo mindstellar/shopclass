@@ -49,7 +49,7 @@ final class ListingList
         $items   = $pager->page($rows);
         $items   = $items === [] ? [] : \Item::getInstance()->extendRows($items, $context->locale());
 
-        return (new Page($this->reader->many($items, $context), $total, $pager->limit(), $pager->next($rows)))
+        return (new Page($this->reader->many($items, $context), $total, $pager->limit(), $pager->next($rows), $pager->truncated($rows)))
             ->response($this->api->links(), $path, $request->query());
     }
 }

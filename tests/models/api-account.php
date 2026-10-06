@@ -379,11 +379,11 @@ pin('a suspended user\'s token is 401 on the next call', 401, $call('GET', 'acco
 pin('and cannot refresh', 400, $call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $s['refresh_token']))->status());
 $admin->query("UPDATE {$p}t_user SET b_enabled = 1 WHERE pk_i_id = $uma");
 $s = $login('uma', 'battery staple')->body();
-pin('sign-out answers 204', 204, $call('POST', 'auth/revoke', null, $s['access_token'])->status());
+pin('sign-out answers 204', 204, $call('POST', 'auth/sign-out', null, $s['access_token'])->status());
 pin('and ends the refresh token', 400, $call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $s['refresh_token']))->status());
 $a = $login('uma', 'battery staple')->body();
 $b = $login('uma', 'battery staple')->body();
-$call('POST', 'auth/revoke', array('all' => true), $a['access_token']);
+$call('POST', 'auth/sign-out', array('all' => true), $a['access_token']);
 pin('all=true ends every sign-in', array(400, 400), array(
     $call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $a['refresh_token']))->status(),
     $call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $b['refresh_token']))->status(),
@@ -392,7 +392,7 @@ pin('the key made before the password change is dead', 401, $call('GET', 'accoun
 // A key made on the admin screen or the CLI works the same.
 $userKey = (new ApiKeys(new ApiCredential(), new Scopes(), new SystemClock()))->create('key', 'script', array('listings:read', 'account:read'), \mindstellar\apiaccess\KeyOwner::user($uma))->token();
 pin('a key made now works', 200, $call('GET', 'account', null, $userKey)->status());
-pin('a key cannot sign out', '403 forbidden', $code($call('POST', 'auth/revoke', null, $userKey)));
+pin('a key cannot sign out', '403 forbidden', $code($call('POST', 'auth/sign-out', null, $userKey)));
 
 harness_section('personal keys');
 $s       = $login('uma', 'battery staple')->body();

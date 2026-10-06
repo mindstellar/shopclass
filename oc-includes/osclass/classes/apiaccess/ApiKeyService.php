@@ -58,10 +58,11 @@ final class ApiKeyService
      * @param string[] $scopes
      * @param string   $expires '' for never, a date (Y-m-d, valid to the end of that day) or a
      *                          number of days such as "90d"
+     * @param int|null $notAfter the latest expiry allowed; a key with no expiry gets this one
      *
      * @throws RefusedException with the reason to show
      */
-    public function create(KeyOwner $owner, string $name, string $kind, array $scopes, string $expires = ''): IssuedToken
+    public function create(KeyOwner $owner, string $name, string $kind, array $scopes, string $expires = '', ?int $notAfter = null): IssuedToken
     {
         $name = trim($name);
         if ($name === '') {
@@ -86,7 +87,20 @@ final class ApiKeyService
             throw new RefusedException(sprintf(_m('This key cannot hold: %s'), implode(', ', $refused)));
         }
 
-        return $this->keys->create($kind, $name, $scopes, $owner, $this->expiry($expires));
+        $expiresAt = $this->expiry($expires);
+        if ($notAfter !== null && $expiresAt !== null && $expiresAt > $notAfter) {
+            throw new RefusedException(_m('The new key cannot outlive the key that makes it. Choose an earlier expiry date.'));
+        }
+
+        return $this->keys->create($kind, $name, $scopes, $owner, $expiresAt ?? $notAfter);
+    }
+
+    /**
+     * When a key expires; null when it never does or does not exist.
+     */
+    public function expiresAt(int $id): ?int
+    {
+        return $id > 0 ? $this->store->find($id)?->expiresAt() : null;
     }
 
     /**
@@ -150,10 +164,34 @@ final class ApiKeyService
      */
     public function rows(): array
     {
-        $keys = array_values(array_filter(
+        return $this->describe(array_values(array_filter(
             $this->store->listBy(),
             static fn (StoredKey $k): bool => in_array($k->kind(), [CredentialKind::KEY, CredentialKind::PUBLIC], true)
-        ));
+        )));
+    }
+
+    /**
+     * One key as rows() lists it, or null when there is no such key.
+     *
+     * @return array<string,mixed>|null
+     */
+    public function row(int $id): ?array
+    {
+        $key = $id > 0 ? $this->store->find($id) : null;
+        if ($key === null || !in_array($key->kind(), [CredentialKind::KEY, CredentialKind::PUBLIC], true)) {
+            return null;
+        }
+
+        return $this->describe([$key])[0];
+    }
+
+    /**
+     * @param StoredKey[] $keys
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private function describe(array $keys): array
+    {
         $admins = AdminStore::usernames(self::ownerIds($keys, static fn (StoredKey $k): ?int => $k->owner()?->adminId()));
         $users  = UserStore::usernames(self::ownerIds($keys, static fn (StoredKey $k): ?int => $k->owner()?->userId()));
         $now    = $this->clock->now();
@@ -179,22 +217,6 @@ final class ApiKeyService
                 'status'      => self::status($k, $now),
             ];
         }, $keys);
-    }
-
-    /**
-     * One key as rows() lists it, or null when there is no such key.
-     *
-     * @return array<string,mixed>|null
-     */
-    public function row(int $id): ?array
-    {
-        foreach ($this->rows() as $row) {
-            if ($row['id'] === $id) {
-                return $row;
-            }
-        }
-
-        return null;
     }
 
     public static function status(StoredKey $key, int $now): string

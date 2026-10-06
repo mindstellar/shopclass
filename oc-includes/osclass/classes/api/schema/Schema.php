@@ -29,7 +29,7 @@ final class Schema
     private const OBJECTS = [
         'Problem', 'PageMeta', 'PageLinks', 'Photo', 'CategoryRef', 'FieldValue', 'Listing', 'User', 'Category', 'Field',
         'Country', 'Region', 'City', 'CityArea', 'Currency', 'Comment', 'Site', 'OpenApiDocument',
-        'Warning', 'TokenDocument', 'TokenRequest', 'RevokeRequest', 'SessionToken', 'AccountInput', 'AccountDocument', 'PasswordChange', 'Session',
+        'Warning', 'TokenDocument', 'TokenRequest', 'SignOutRequest', 'SessionToken', 'AccountInput', 'AccountDocument', 'PasswordChange', 'Session',
         'PersonalKey', 'PersonalKeyInput', 'Registration', 'NewAccount',
         'ListingInput', 'ListingPatch', 'SavedListing', 'PhotoToken', 'CommentInput', 'SavedComment',
         'AlertFilters', 'Alert', 'AlertInput',
@@ -90,6 +90,7 @@ final class Schema
             'PageMeta'     => self::object([
                 'total' => self::nullable('integer', 'Matches across every page; null unless the request sent count=true, and on a page reached by a keyset cursor or a location list.'),
                 'limit' => ['type' => 'integer'],
+                'truncated' => ['type' => 'boolean', 'description' => 'Present and true when more matches exist but paging stops here: links.next is null. Narrow the filters, or sort by created or id.'],
             ], ['limit']),
             'PageLinks'    => self::object([
                 'self' => ['type' => 'string', 'format' => 'uri'],
@@ -429,7 +430,7 @@ final class Schema
                 'label'         => $text(100) + ['description' => 'A name for this sign-in, such as the device, shown in the session list.'],
                 'refresh_token' => $text(200) + ['description' => 'For the refresh_token grant.'],
             ], ['grant_type']),
-            'RevokeRequest'      => $input(['all' => ['type' => 'boolean', 'description' => 'End every sign-in of this user, not only this one.']]),
+            'SignOutRequest'      => $input(['all' => ['type' => 'boolean', 'description' => 'End every sign-in of this user, not only this one.']]),
             'SessionToken'       => self::object([
                 'token'      => ['type' => 'string', 'description' => '`scs_...`, sent as the X-Shopclass-Token header with the sign-in cookie.'],
                 'header'     => ['type' => 'string', 'enum' => ['X-Shopclass-Token']],

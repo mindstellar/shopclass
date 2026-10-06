@@ -661,8 +661,8 @@ $qPost = harness_query_count(static function () use ($call, $listing, $sueToken,
 });
 $qPatch = harness_query_count(static fn () => $call('PATCH', 'listings/' . $qMade, array('price' => '999'), $sueToken));
 echo "  POST /listings: $qPost queries, PATCH: $qPatch\n";
-pin('POST /listings, no photos: 34 queries (one checks the sign-in is live)', 34, $qPost);
-pin('PATCH /listings/{id}, no photos: 32 queries', 32, $qPatch);
+pin('POST /listings, no photos: 35 queries (the sign-in is live, no ban rule matches)', 35, $qPost);
+pin('PATCH /listings/{id}, no photos: 33 queries', 33, $qPatch);
 
 harness_section('deleting a listing');
 pin('another seller cannot delete it', '403 not_owner', $code($call('DELETE', 'listings/' . $made, null, $tomToken)));

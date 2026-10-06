@@ -124,6 +124,11 @@ pin('but can make a public key', [201, 'public', ['listings:read']], (static fn 
 ));
 pin('an unknown scope is refused', 403, $call('POST', 'admin/keys', ['name' => 'Typo', 'scopes' => ['admin:everything']], $boss)->status());
 pin('a past expiry is 422', 422, $call('POST', 'admin/keys', ['name' => 'Old', 'scopes' => ['admin:listings'], 'expires_at' => '2020-01-01'], $boss)->status());
+$short    = (string) ($call('POST', 'admin/keys', ['name' => 'Short', 'scopes' => ['admin:keys', 'admin:listings'], 'expires_at' => '10d'], $boss)->body()['data']['token'] ?? '');
+$shortEnd = $call('GET', 'admin/keys', null, $boss)->body()['data'][0]['expires_at'] ?? null;
+$child    = $call('POST', 'admin/keys', ['name' => 'Child', 'scopes' => ['admin:listings']], $short);
+pin('a key made by a short-lived key gets its expiry', [201, true], [$child->status(), $shortEnd !== null && ($child->body()['data']['expires_at'] ?? null) === $shortEnd]);
+pin('and cannot outlive it', 422, $call('POST', 'admin/keys', ['name' => 'Longer', 'scopes' => ['admin:listings'], 'expires_at' => '30d'], $short)->status());
 $r     = $call('POST', 'admin/keys/' . $made . '/rotate', null, $boss);
 $fresh = (string) ($r->body()['data']['token'] ?? '');
 pin('rotate: 201, a new token with the same scopes', [201, true, ['admin:listings', 'admin:comments']], [$r->status(), $fresh !== '' && $fresh !== $token, $r->body()['data']['scopes'] ?? null]);

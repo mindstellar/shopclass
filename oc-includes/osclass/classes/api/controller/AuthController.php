@@ -25,7 +25,7 @@ use mindstellar\apiaccess\Credential;
 use mindstellar\auth\SignIn;
 
 /**
- * `POST /auth/token` and `POST /auth/revoke`: a user signs in with their password and gets an
+ * `POST /auth/token` and `POST /auth/sign-out`: a user signs in with their password and gets an
  * access token and a refresh token, swaps the refresh token for new ones, or signs out.
  *
  * Sign-in is the web login's decision (SignIn): the same limit and counter, the same
@@ -84,7 +84,7 @@ final class AuthController
     /**
      * @param array<string,string> $args
      */
-    public function revoke(Request $request, Credential $credential, array $args): Response
+    public function signOut(Request $request, Credential $credential, array $args): Response
     {
         $family = $credential->isAccessToken() ? $credential->family() : null;
         if ($family === null) {

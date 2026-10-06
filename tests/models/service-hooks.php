@@ -331,11 +331,11 @@ $apiAdminEdit = $record(static fn () => $call('PATCH', 'admin/users/' . $tom, ['
 pin('the users screen fires these, in order', ['pre_user_post', 'user_edit_flash_error', 'user_edit_completed'], $webAdminEdit);
 pin('the API fires the same, in the same order', $webAdminEdit, $apiAdminEdit);
 $webBlock = $record(static fn () => $web['adminAct']($bossId, 'disable', $sue));
-$apiBlock = $record(static fn () => $call('POST', 'admin/users/' . $tom . '/disable', null, $boss));
+$apiBlock = $record(static fn () => $call('PATCH', 'admin/users/' . $tom, ['blocked' => true], $boss));
 pin('blocking a user fires these, in order', ['disable_item', 'item_decrease_stat', 'disable_user'], $webBlock);
 pin('the API fires the same, in the same order', $webBlock, $apiBlock);
 $web['adminAct']($bossId, 'enable', $sue);
-$call('POST', 'admin/users/' . $tom . '/enable', null, $boss);
+$call('PATCH', 'admin/users/' . $tom, ['blocked' => false], $boss);
 
 $web['adminEdit']($bossId, $sue, ['name' => 'Sue']);
 pin('both log the admin edit under the admin', [(string) $bossId, (string) $bossId], [
@@ -369,7 +369,7 @@ $a = $seedComment();
 $b = $seedComment();
 foreach (['activate', 'deactivate', 'disable', 'enable'] as $action) {
     $webAct = $record(static fn () => $web['moderate']($action, $a));
-    $apiAct = $record(static fn () => $call('POST', 'admin/comments/' . $b . '/' . $action, null, $boss));
+    $apiAct = $record(static fn () => $call('PATCH', 'admin/comments/' . $b, ['activate' => ['approved' => true], 'deactivate' => ['approved' => false], 'enable' => ['blocked' => false], 'disable' => ['blocked' => true]][$action], $boss));
     pin("$action: the screen and the API fire the same", $webAct, $apiAct);
 }
 pin('an approval tells the author', ['hook_email_comment_validated', 'activate_comment'], $record(static fn () => $web['moderate']('activate', $a)));

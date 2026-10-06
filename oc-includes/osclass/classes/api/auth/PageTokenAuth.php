@@ -129,9 +129,11 @@ final class PageTokenAuth
     }
 
     /**
+     * Whether a ban rule matches the user's e-mail or the address.
+     *
      * @param array<string,mixed> $user
      */
-    private static function bannedOnSite(array $user, string $ip): bool
+    public static function bannedOnSite(array $user, string $ip): bool
     {
         return function_exists('osc_is_banned') && osc_is_banned((string) ($user['s_email'] ?? ''), $ip) !== 0;
     }

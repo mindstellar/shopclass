@@ -116,4 +116,15 @@ final class Pager
 
         return $offset > $this->spec->maxOffset() ? null : $this->cursor->encode(CursorState::offset($sort, $direction, $this->hash, $offset));
     }
+
+    /**
+     * Whether more rows exist but offset paging stops here, so there is no next page.
+     *
+     * @param array<int,array<string,mixed>> $rows what the query returned, up to limit + 1
+     */
+    public function truncated(array $rows): bool
+    {
+        return count($rows) > $this->limit && Cursor::modeFor($this->spec->sort()) !== CursorState::KEYSET
+            && $this->offset() + $this->limit > $this->spec->maxOffset();
+    }
 }

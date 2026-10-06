@@ -66,7 +66,7 @@ final class AdminCommentsController
         $next = $pager->next($rows);
         $data = array_map([$this->serializer, 'admin'], $pager->page($rows));
 
-        return (new Page($data, $total, $pager->limit(), $next))->response($this->api->links(), 'admin/comments', $request->query());
+        return (new Page($data, $total, $pager->limit(), $next, $pager->truncated($rows)))->response($this->api->links(), 'admin/comments', $request->query());
     }
 
     /**
@@ -118,26 +118,6 @@ final class AdminCommentsController
         }
 
         return Response::noContent();
-    }
-
-    /**
-     * POST /admin/comments/{id}/<action>: activate (its author is told), deactivate, enable
-     * or disable, read from the path's last segment. Deprecated for PATCH's `approved` and `blocked`.
-     *
-     * @param array<string,string> $args
-     */
-    public function act(Request $request, Credential $credential, array $args): Response
-    {
-        $id         = (int) $this->comment((int) $args['id'])['pk_i_id'];
-        $moderation = $this->moderation;
-        match (basename((string) $request->path())) {
-            'activate'   => $moderation->activate($id),
-            'deactivate' => $moderation->deactivate($id),
-            'enable'     => $moderation->enable($id),
-            'disable'    => $moderation->disable($id),
-        };
-
-        return $this->show($request, $credential, $args);
     }
 
     /**

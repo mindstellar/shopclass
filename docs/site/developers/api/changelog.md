@@ -58,13 +58,9 @@ To catch a deprecation early, log any answer that has a `Deprecation` header.
 | What | Since | Use instead |
 |---|---|---|
 | Listing Import's old paths: `POST /listings`, `POST /listings:batch`, `PUT /listings/{external_id}`, `DELETE /listings/{external_id}`, `GET /runs/{id}` | 2026-10-04 | The same paths under `/api/v1/ext/listing-import/` |
-| `POST /admin/users/{id}/activate`, `/deactivate`, `/enable`, `/disable` | 2026-10-06 | `PATCH /admin/users/{id}` with `confirmed` or `blocked` |
-| `POST /admin/comments/{id}/activate`, `/deactivate`, `/enable`, `/disable` | 2026-10-06 | `PATCH /admin/comments/{id}` with `approved` or `blocked` |
 
 These answer only while the Listing Import plugin is active. They redirect (`301` for `GET`,
 `308` for the rest, so the method and body are kept) to the new path. They are removed in 7.1.
-
-The old user and comment actions still work and have no removal date yet.
 
 ## Changes
 
@@ -111,6 +107,10 @@ Also settled before the first release, so no released client saw the old behavio
 - A credential that cannot read the `GET` of the path gets `412` for `If-Match`, instead of the check being skipped.
 - A stale `If-Match` on a resource the credential cannot see answers as its `GET` does (`404`), not `412`.
 - `Idempotency-Key` keeps every `4xx` except `429`, including a `409` or `422` from a core refusal.
+- A banned user's access token or personal key answers `403 forbidden`, as a session call does.
+- A key made through `POST /admin/keys` cannot outlive the key that makes it.
+- `POST /auth/revoke` is now `POST /auth/sign-out`.
+- A list that stops at the offset paging limit says so with `meta.truncated: true`.
 
 See [Admin endpoints](/docs/developers/api/admin/) and [Webhooks](/docs/developers/api/webhooks/).
 
@@ -121,7 +121,7 @@ Added to v1. Nothing that was there changed.
 | Endpoint | Does |
 |---|---|
 | `POST /auth/token` | Sign in with a password, or swap a refresh token for new tokens |
-| `POST /auth/revoke` | Sign out one sign-in, or all with `all: true` |
+| `POST /auth/sign-out` | Sign out one sign-in, or all with `all: true` |
 | `GET`, `PATCH /account`, `POST /account/password` | The user's own profile and password |
 | `GET /account/sessions`, `DELETE /account/sessions/{id}` | Sign-ins and keys that act for the user |
 | `GET`, `POST /account/keys`, `DELETE /account/keys/{id}` | Personal API keys, when the site allows them |
@@ -133,7 +133,7 @@ Added to v1. Nothing that was there changed.
 
 Also added:
 
-- Credentials: access tokens (`sca_`, 15 minutes by default), single-use refresh tokens
+- Credentials: access tokens (`sca_`, 15 minutes), single-use refresh tokens
   (`scr_`) with reuse detection, and personal keys (`sck_`) that expire within a year and stop
   when the password changes.
 - Scopes now held by users: `listings:write`, `listings:delete`, `comments:write`,

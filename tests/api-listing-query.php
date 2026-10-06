@@ -122,6 +122,11 @@ $byPrice = $pager(['sort' => 'price', 'limit' => 3], 'price');
 $offset  = $byPrice->next($rows);
 $later   = $pager(['sort' => 'price', 'limit' => 3, 'count' => '1', 'cursor' => $offset], 'price');
 pin('price pages by offset, and offset pages keep their total when asked', [3, null, true], [$later->offset(), $later->after(), $later->counts()]);
+pin('a page with a next one is not truncated', false, $byPrice->truncated($rows));
+$deep     = $cursor->encode(CursorState::offset('price', 'desc', Cursor::filterHash(['sort' => 'price', 'order' => 'desc']), 9998));
+$deepPage = $pager(['sort' => 'price', 'limit' => 3, 'cursor' => $deep], 'price');
+pin('past the deepest offset: no next cursor, and truncated', [null, true], [$deepPage->next($rows), $deepPage->truncated($rows)]);
+pin('the real end of the list is not truncated', false, $deepPage->truncated(array_slice($rows, 0, 3)));
 
 harness_section('page links');
 $links = new class () implements Links {
@@ -161,5 +166,6 @@ pin('self keeps the query, next swaps the cursor, neither carries the api_key', 
     'next' => 'https://site.test/api/v1/listings?category=cars&cursor=NEXT',
 ], $body['links']);
 pin('meta carries the total and limit', ['total' => null, 'limit' => 3], $body['meta']);
+pin('a truncated page says so in meta', ['total' => null, 'limit' => 3, 'truncated' => true], (new Page([['id' => 1]], null, 3, null, true))->response($links, 'listings', [])->body()['meta']);
 
 exit(harness_result());

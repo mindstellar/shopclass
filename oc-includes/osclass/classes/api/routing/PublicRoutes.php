@@ -286,13 +286,13 @@ final class PublicRoutes
                 replayable: false,
                 oauth: true
             ),
-            'POST auth/revoke' => RouteSpec::write(
-                handler: [AuthController::class, 'revoke'],
+            'POST auth/sign-out' => RouteSpec::write(
+                handler: [AuthController::class, 'signOut'],
                 tag: 'Auth',
                 summary: 'Sign out this sign-in, or every sign-in with all=true',
                 auth: RouteSpec::AUTH_USER,
                 scope: null,
-                body: 'RevokeRequest',
+                body: 'SignOutRequest',
                 status: 204
             ),
             'GET auth/session' => RouteSpec::read(

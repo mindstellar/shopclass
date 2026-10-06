@@ -24,15 +24,21 @@ use mindstellar\apiaccess\KeyCheck;
  * user's access token (`sca_`). Only an `Authorization: Bearer` header is a token (or, for a
  * public key on a GET, `?api_key=`). With no token, a page token in X-Shopclass-Token asks
  * for the same-site session mode (PageTokenAuth); a cookie alone never authenticates a call.
+ * A user's key or access token is refused while a ban rule matches the user or the address.
  */
 final class Authenticator
 {
+    /** @var (\Closure(int, string): bool)|null */
+    private ?\Closure $banned;
+
     public function __construct(
         private ApiKeys $keys,
         private FailureCounter $failures,
         private AccessTokens $tokens,
-        private ?PageTokenAuth $session = null
+        private ?PageTokenAuth $session = null,
+        ?callable $banned = null
     ) {
+        $this->banned = $banned === null ? null : \Closure::fromCallable($banned);
     }
 
     /**
@@ -55,7 +61,7 @@ final class Authenticator
     /**
      * @return Credential|null null when the request carries no token and no page token
      * @throws ProblemException 429 when this address is shut out for this token, 401 for a refused
-     *                    token, 401 or 403 for a refused session call
+     *                    token, 403 for a banned user, 401 or 403 for a refused session call
      */
     public function authenticate(Request $request): ?Credential
     {
@@ -88,6 +94,10 @@ final class Authenticator
             $this->failures->record($request->ip(), $tokenId, $check->known());
 
             throw ProblemException::from(Problem::unauthorized(true));
+        }
+        $userId = $credential->userId();
+        if ($userId !== null && $this->banned !== null && ($this->banned)($userId, $request->ip())) {
+            throw ProblemException::of('forbidden', 'This account or address may not use the API.');
         }
 
         return $credential;

@@ -26,8 +26,8 @@ use mindstellar\apiaccess\Scopes;
 
 /**
  * `/admin/keys`: the keys of Settings -> API, through the same ApiKeyService. A key made
- * here belongs to the calling key's admin and cannot hold a scope the calling key lacks;
- * its token is shown once.
+ * here belongs to the calling key's admin, cannot hold a scope the calling key lacks and
+ * cannot outlive it; its token is shown once.
  */
 final class AdminKeysController
 {
@@ -78,7 +78,8 @@ final class AdminKeysController
             (string) $input['name'],
             $kind,
             $scopes,
-            (string) ($input['expires_at'] ?? '')
+            (string) ($input['expires_at'] ?? ''),
+            $this->keys->expiresAt((int) $credential->id())
         );
 
         return Response::created($this->serializer->admin($this->key($issued->id()), $issued->token()), $this->links->api('admin/keys/' . $issued->id()));

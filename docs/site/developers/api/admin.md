@@ -184,7 +184,7 @@ curl -X PATCH $API/admin/settings -H "Authorization: Bearer $KEY" \
 | Endpoint | Does |
 |---|---|
 | `GET /admin/keys`, `GET /admin/keys/{id}` | Keys, newest first. Never the secret. `kind` is `admin`, `public` or `user`. |
-| `POST /admin/keys` | Make a key. Body: `name`, optional `kind` (`admin` by default, or `public`), `scopes`, `expires_at` (`2027-03-01`, or `90d`). The answer has the `token`, once. |
+| `POST /admin/keys` | Make a key. Body: `name`, optional `kind` (`admin` by default, or `public`), `scopes`, `expires_at` (`2027-03-01`, or `90d`). A key that expires cannot make a key that outlives it: with no `expires_at`, the new key gets the same expiry. The answer has the `token`, once. |
 | `POST /admin/keys/{id}/rotate` | Make a new key with the same kind, scopes and expiry. The old one keeps working until you revoke it. Only for your own keys and public keys. |
 | `DELETE /admin/keys/{id}` | Revoke. |
 

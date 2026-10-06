@@ -116,7 +116,7 @@ final class ListingsController
         $next     = $pager->next($rows);
         $data = array_map([new CommentSerializer(), 'one'], $pager->page($rows));
 
-        return (new Page($data, $total, $pager->limit(), $next))->response($this->api->links(), 'listings/' . $id . '/comments', $request->query());
+        return (new Page($data, $total, $pager->limit(), $next, $pager->truncated($rows)))->response($this->api->links(), 'listings/' . $id . '/comments', $request->query());
     }
 
     /**

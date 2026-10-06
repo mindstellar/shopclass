@@ -47,9 +47,6 @@ final class AdminRoutes
         'fields' => ['type' => 'string', 'maxLength' => 500],
     ];
 
-    /** When POST .../activate, deactivate, enable and disable on users and comments gave way to PATCH. */
-    private const STATUS_VERBS_DEPRECATED = '2026-10-06';
-
     private function __construct()
     {
     }
@@ -107,12 +104,7 @@ final class AdminRoutes
             'GET admin/comments/{id}'             => self::read($c, 'show', $tag, $scope, 'One comment', 'AdminCommentDocument', [], [404]),
             'PATCH admin/comments/{id}'           => self::write($c, 'update', $tag, $scope, 'Edit a comment\'s text or author, or approve or block it', 'AdminCommentPatch', 'AdminCommentDocument', 200, [404]),
             'DELETE admin/comments/{id}'          => self::write($c, 'delete', $tag, $scope, 'Delete a comment', null, null, 204, [404]),
-        ] + self::statusVerbs($c, $tag, $scope, 'admin/comments', 'AdminCommentDocument', 'approved', [
-            'activate'   => 'Approve a comment; its author is told',
-            'deactivate' => 'Hold a comment back for approval',
-            'enable'     => 'Unblock a comment',
-            'disable'    => 'Block a comment',
-        ]);
+        ];
     }
 
     /**
@@ -136,12 +128,7 @@ final class AdminRoutes
             'POST admin/users/{id}/sign-out-everywhere'   => self::write($c, 'signOutEverywhere', $tag, $scope, 'Sign a user out of every device: web sign-ins, API tokens and personal keys', null, null, 204, [404]),
             'GET admin/users/{id}/sessions'               => self::read($c, 'sessions', $tag, $scope, 'A user\'s sign-ins and API keys', 'SessionList', [], [404]),
             'DELETE admin/users/{id}/sessions/{session}'  => self::write($c, 'endSession', $tag, $scope, 'End one of a user\'s sign-ins, or revoke one of their keys', null, null, 204, [404]),
-        ] + self::statusVerbs($c, $tag, $scope, 'admin/users', 'UserDocument', 'confirmed', [
-            'activate'   => 'Confirm a user\'s account',
-            'deactivate' => 'Mark a user\'s account as not confirmed',
-            'enable'     => 'Unblock a user',
-            'disable'    => 'Block a user; their sign-ins and keys stop working',
-        ]);
+        ];
     }
 
     /**
@@ -246,36 +233,6 @@ final class AdminRoutes
             ], [404]),
             'GET admin/webhook-events'                      => self::read($c, 'events', $tag, $scope, 'The events an endpoint can subscribe to, plugin events included', 'WebhookEventList'),
         ];
-    }
-
-    /**
-     * The old status actions, kept as deprecated aliases of PATCH: activate and deactivate
-     * set $confirm, enable and disable set `blocked`.
-     *
-     * @param class-string          $class
-     * @param array<string,string> $summaries action => summary
-     *
-     * @return array<string,array<string,mixed>>
-     */
-    private static function statusVerbs(string $class, string $tag, string $scope, string $path, string $response, string $confirm, array $summaries): array
-    {
-        $members = ['activate' => $confirm . ': true', 'deactivate' => $confirm . ': false', 'enable' => 'blocked: false', 'disable' => 'blocked: true'];
-        $routes  = [];
-        foreach ($summaries as $action => $summary) {
-            $routes['POST ' . $path . '/{id}/' . $action] = ['deprecated' => self::STATUS_VERBS_DEPRECATED] + self::write(
-                $class,
-                'act',
-                $tag,
-                $scope,
-                $summary . '. Deprecated: send `' . $members[$action] . '` to PATCH ' . $path . '/{id}',
-                null,
-                $response,
-                200,
-                [404]
-            );
-        }
-
-        return $routes;
     }
 
     /**

@@ -207,10 +207,6 @@ Answers: 204 No content; 401 No valid credential; 403 Not allowed for this crede
 | GET | `/admin/comments/{id}` | admin | `admin:comments` | One comment |
 | PATCH | `/admin/comments/{id}` | admin | `admin:comments` | Edit a comment's text or author, or approve or block it |
 | DELETE | `/admin/comments/{id}` | admin | `admin:comments` | Delete a comment |
-| POST | `/admin/comments/{id}/activate` | admin | `admin:comments` | Approve a comment; its author is told. Deprecated: send `approved: true` to PATCH admin/comments/{id} |
-| POST | `/admin/comments/{id}/deactivate` | admin | `admin:comments` | Hold a comment back for approval. Deprecated: send `approved: false` to PATCH admin/comments/{id} |
-| POST | `/admin/comments/{id}/disable` | admin | `admin:comments` | Block a comment. Deprecated: send `blocked: true` to PATCH admin/comments/{id} |
-| POST | `/admin/comments/{id}/enable` | admin | `admin:comments` | Unblock a comment. Deprecated: send `blocked: false` to PATCH admin/comments/{id} |
 
 ### GET `/admin/comments`
 
@@ -264,50 +260,6 @@ Delete a comment
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 412 Precondition failed; 429 Too many requests; 500 Server error; 503 Maintenance.
-
-### POST `/admin/comments/{id}/activate`
-
-Approve a comment; its author is told. Deprecated: send `approved: true` to PATCH admin/comments/{id} **Deprecated.**
-
-| Parameter | In | Type | Required | Notes |
-|---|---|---|---|---|
-| `id` | path | integer | yes |  |
-| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
-
-Answers: 200 OK (`AdminCommentDocument`); 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
-
-### POST `/admin/comments/{id}/deactivate`
-
-Hold a comment back for approval. Deprecated: send `approved: false` to PATCH admin/comments/{id} **Deprecated.**
-
-| Parameter | In | Type | Required | Notes |
-|---|---|---|---|---|
-| `id` | path | integer | yes |  |
-| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
-
-Answers: 200 OK (`AdminCommentDocument`); 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
-
-### POST `/admin/comments/{id}/disable`
-
-Block a comment. Deprecated: send `blocked: true` to PATCH admin/comments/{id} **Deprecated.**
-
-| Parameter | In | Type | Required | Notes |
-|---|---|---|---|---|
-| `id` | path | integer | yes |  |
-| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
-
-Answers: 200 OK (`AdminCommentDocument`); 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
-
-### POST `/admin/comments/{id}/enable`
-
-Unblock a comment. Deprecated: send `blocked: false` to PATCH admin/comments/{id} **Deprecated.**
-
-| Parameter | In | Type | Required | Notes |
-|---|---|---|---|---|
-| `id` | path | integer | yes |  |
-| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
-
-Answers: 200 OK (`AdminCommentDocument`); 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
 
 ## Admin listings
 
@@ -926,10 +878,6 @@ Answers: 204 No content; 401 No valid credential; 403 Not allowed for this crede
 | GET | `/admin/users/{id}` | admin | `admin:users` | One user, every member |
 | PATCH | `/admin/users/{id}` | admin | `admin:users` | Edit a user's profile, e-mail, username or password, or confirm or block them |
 | DELETE | `/admin/users/{id}` | admin | `admin:users` | Delete a user with their listings, comments and saved searches |
-| POST | `/admin/users/{id}/activate` | admin | `admin:users` | Confirm a user's account. Deprecated: send `confirmed: true` to PATCH admin/users/{id} |
-| POST | `/admin/users/{id}/deactivate` | admin | `admin:users` | Mark a user's account as not confirmed. Deprecated: send `confirmed: false` to PATCH admin/users/{id} |
-| POST | `/admin/users/{id}/disable` | admin | `admin:users` | Block a user; their sign-ins and keys stop working. Deprecated: send `blocked: true` to PATCH admin/users/{id} |
-| POST | `/admin/users/{id}/enable` | admin | `admin:users` | Unblock a user. Deprecated: send `blocked: false` to PATCH admin/users/{id} |
 | GET | `/admin/users/{id}/sessions` | admin | `admin:users` | A user's sign-ins and API keys |
 | DELETE | `/admin/users/{id}/sessions/{session}` | admin | `admin:users` | End one of a user's sign-ins, or revoke one of their keys |
 | POST | `/admin/users/{id}/sign-out-everywhere` | admin | `admin:users` | Sign a user out of every device: web sign-ins, API tokens and personal keys |
@@ -990,50 +938,6 @@ Delete a user with their listings, comments and saved searches
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 412 Precondition failed; 429 Too many requests; 500 Server error; 503 Maintenance.
-
-### POST `/admin/users/{id}/activate`
-
-Confirm a user's account. Deprecated: send `confirmed: true` to PATCH admin/users/{id} **Deprecated.**
-
-| Parameter | In | Type | Required | Notes |
-|---|---|---|---|---|
-| `id` | path | integer | yes |  |
-| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
-
-Answers: 200 OK (`UserDocument`); 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
-
-### POST `/admin/users/{id}/deactivate`
-
-Mark a user's account as not confirmed. Deprecated: send `confirmed: false` to PATCH admin/users/{id} **Deprecated.**
-
-| Parameter | In | Type | Required | Notes |
-|---|---|---|---|---|
-| `id` | path | integer | yes |  |
-| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
-
-Answers: 200 OK (`UserDocument`); 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
-
-### POST `/admin/users/{id}/disable`
-
-Block a user; their sign-ins and keys stop working. Deprecated: send `blocked: true` to PATCH admin/users/{id} **Deprecated.**
-
-| Parameter | In | Type | Required | Notes |
-|---|---|---|---|---|
-| `id` | path | integer | yes |  |
-| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
-
-Answers: 200 OK (`UserDocument`); 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
-
-### POST `/admin/users/{id}/enable`
-
-Unblock a user. Deprecated: send `blocked: false` to PATCH admin/users/{id} **Deprecated.**
-
-| Parameter | In | Type | Required | Notes |
-|---|---|---|---|---|
-| `id` | path | integer | yes |  |
-| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
-
-Answers: 200 OK (`UserDocument`); 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
 
 ### GET `/admin/users/{id}/sessions`
 
@@ -1185,21 +1089,9 @@ Answers: 202 Accepted (`WebhookTestDocument`); 401 No valid credential; 403 Not 
 
 | Method | Path | Auth | Scope | Summary |
 |---|---|---|---|---|
-| POST | `/auth/revoke` | user | - | Sign out this sign-in, or every sign-in with all=true |
 | GET | `/auth/session` | user | `account:read` | A fresh page token, for theme JavaScript on a page open longer than its token lives |
+| POST | `/auth/sign-out` | user | - | Sign out this sign-in, or every sign-in with all=true |
 | POST | `/auth/token` | none | - | Sign in with a password, or swap a refresh token for new tokens |
-
-### POST `/auth/revoke`
-
-Sign out this sign-in, or every sign-in with all=true
-
-| Parameter | In | Type | Required | Notes |
-|---|---|---|---|---|
-| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
-
-Body: `RevokeRequest` as JSON, optional.
-
-Answers: 204 No content; 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 409 Conflict; 413 Body too large; 415 Unsupported content type; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
 
 ### GET `/auth/session`
 
@@ -1210,6 +1102,18 @@ A fresh page token, for theme JavaScript on a page open longer than its token li
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
 Answers: 200 OK (`SessionTokenDocument`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### POST `/auth/sign-out`
+
+Sign out this sign-in, or every sign-in with all=true
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
+
+Body: `SignOutRequest` as JSON, optional.
+
+Answers: 204 No content; 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 409 Conflict; 413 Body too large; 415 Unsupported content type; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
 
 ### POST `/auth/token`
 

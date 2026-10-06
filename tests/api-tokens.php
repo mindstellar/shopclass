@@ -340,6 +340,26 @@ $store->users[10]['s_password'] = '$2y$12$anotherone';
 pin('a rehash leaves it working; a password change revokes it through SignOut', 10, $userKeys->verify($made->token())?->userId());
 $store->users[10]['s_password'] = $keptHash;
 
+harness_section('a banned user\'s key and access token are refused');
+$bannedIds = [];
+$banning   = new Authenticator(
+    $userKeys,
+    new FailureCounter(static fn () => [], static fn (): int => 1),
+    api_test_access_tokens($scopes, $accounts(), 900),
+    null,
+    static function (int $id, string $ip) use (&$bannedIds): bool {
+        return in_array($id, $bannedIds, true) || $ip === '203.0.113.9';
+    }
+);
+$asKey   = new Request('GET', 'v1/x', [], ['Authorization' => 'Bearer ' . $made->token()], '192.0.2.10');
+$asToken = new Request('GET', 'v1/x', [], ['Authorization' => 'Bearer ' . $good], '192.0.2.10');
+pin('not banned, both work', [10, 10], [$banning->authenticate($asKey)?->userId(), $banning->authenticate($asToken)?->userId()]);
+$bannedIds = [10];
+pin('a banned user\'s key is 403', 'forbidden', $problem(static fn () => $banning->authenticate($asKey)));
+pin('and so is their access token', 'forbidden', $problem(static fn () => $banning->authenticate($asToken)));
+$bannedIds = [];
+pin('a banned address is 403 too', 'forbidden', $problem(static fn () => $banning->authenticate(new Request('GET', 'v1/x', [], ['Authorization' => 'Bearer ' . $good], '203.0.113.9'))));
+
 harness_section('limits and settings');
 pin('the API is off by default', false, (new ApiSettings())->enabled());
 $strict = api_test_limiter(static fn () => null);

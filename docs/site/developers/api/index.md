@@ -174,7 +174,7 @@ done
 - `limit` defaults to the site's results per page. Locations default to 500, max 1000,
   and send `total: null`.
 - Only `created` and `id` page by position. `price` and `relevance` page by offset and stop
-  after 10,000 results.
+  after 10,000 results. The last page then has `meta.truncated: true` and no `links.next`.
 
 ### Saving bandwidth with ETags
 

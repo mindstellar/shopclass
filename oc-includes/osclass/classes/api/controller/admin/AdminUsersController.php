@@ -76,7 +76,7 @@ final class AdminUsersController
         $serializer = $this->serializer();
         $data       = array_map(static fn (array $user): array => $serializer->one($user, $context), $page);
 
-        return (new Page($data, $total, $pager->limit(), $next))->response($this->api->links(), 'admin/users', $request->query());
+        return (new Page($data, $total, $pager->limit(), $next, $pager->truncated($rows)))->response($this->api->links(), 'admin/users', $request->query());
     }
 
     /**
@@ -136,30 +136,6 @@ final class AdminUsersController
         $this->users->forget($id);
 
         return Response::noContent();
-    }
-
-    /**
-     * POST /admin/users/{id}/<action>: activate, deactivate, enable or disable, as the users
-     * screen does; read from the path's last segment. Deprecated for PATCH's `confirmed` and `blocked`.
-     *
-     * @param array<string,string> $args
-     */
-    public function act(Request $request, Credential $credential, array $args): Response
-    {
-        $id       = (int) $this->user((int) $args['id'])['pk_i_id'];
-        $accounts = new AccountService();
-        $actor    = $credential->actor($request->ip(), 'admin:users');
-        $changed  = match (basename((string) $request->path())) {
-            'activate'   => $accounts->activate($id, $actor),
-            'deactivate' => $accounts->deactivate($id, $actor),
-            'enable'     => $accounts->enable($id, $actor),
-            'disable'    => $accounts->disable($id, $actor),
-        };
-        if (!$changed) {
-            throw ProblemException::of('server_error', 'The user could not be changed.');
-        }
-
-        return $this->fresh($request, $credential, $id);
     }
 
     /**

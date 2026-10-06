@@ -128,28 +128,28 @@ pin('an unknown status is 422', 422, $call('GET', 'admin/comments', null, $mod, 
 
 harness_section('comments: moderation');
 $fired = [];
-$r     = $call('POST', 'admin/comments/' . $pendingComment . '/activate', null, $mod);
+$r     = $call('PATCH', 'admin/comments/' . $pendingComment, ['approved' => true], $mod);
 pin('activate: approved, the author is told, activate_comment once', [200, 'active', 1, 1], [$r->status(), $r->body()['data']['status'] ?? null, $fired['hook_email_comment_validated'] ?? 0, $fired['activate_comment'] ?? 0]);
 pin('matches the schema', [], api_admin_schema_errors('AdminCommentDocument', $r));
-pin('deactivate', ['pending', 1], [$call('POST', 'admin/comments/' . $pendingComment . '/deactivate', null, $mod)->body()['data']['status'] ?? null, $fired['deactivate_comment'] ?? 0]);
-pin('disable', ['disabled', 1], [$call('POST', 'admin/comments/' . $liveComment . '/disable', null, $mod)->body()['data']['status'] ?? null, $fired['disable_comment'] ?? 0]);
+pin('deactivate', ['pending', 1], [$call('PATCH', 'admin/comments/' . $pendingComment, ['approved' => false], $mod)->body()['data']['status'] ?? null, $fired['deactivate_comment'] ?? 0]);
+pin('disable', ['disabled', 1], [$call('PATCH', 'admin/comments/' . $liveComment, ['blocked' => true], $mod)->body()['data']['status'] ?? null, $fired['disable_comment'] ?? 0]);
 $fired = [];
 pin('enable: live again, so the author is told', ['active', 1, 1], [
-    $call('POST', 'admin/comments/' . $liveComment . '/enable', null, $mod)->body()['data']['status'] ?? null, $fired['enable_comment'] ?? 0, $fired['hook_email_comment_validated'] ?? 0,
+    $call('PATCH', 'admin/comments/' . $liveComment, ['blocked' => false], $mod)->body()['data']['status'] ?? null, $fired['enable_comment'] ?? 0, $fired['hook_email_comment_validated'] ?? 0,
 ]);
-$call('POST', 'admin/comments/' . $pendingComment . '/disable', null, $mod);
-$call('POST', 'admin/comments/' . $spamComment . '/disable', null, $mod);
+$call('PATCH', 'admin/comments/' . $pendingComment, ['blocked' => true], $mod);
+$call('PATCH', 'admin/comments/' . $spamComment, ['blocked' => true], $mod);
 $fired = [];
 pin('unblocking a comment still waiting for approval tells no one', ['pending', 1, 0], [
-    $call('POST', 'admin/comments/' . $pendingComment . '/enable', null, $mod)->body()['data']['status'] ?? null, $fired['enable_comment'] ?? 0, $fired['hook_email_comment_validated'] ?? 0,
+    $call('PATCH', 'admin/comments/' . $pendingComment, ['blocked' => false], $mod)->body()['data']['status'] ?? null, $fired['enable_comment'] ?? 0, $fired['hook_email_comment_validated'] ?? 0,
 ]);
-pin('nor one held as spam', ['spam', 0], [$call('POST', 'admin/comments/' . $spamComment . '/enable', null, $mod)->body()['data']['status'] ?? null, $fired['hook_email_comment_validated'] ?? 0]);
+pin('nor one held as spam', ['spam', 0], [$call('PATCH', 'admin/comments/' . $spamComment, ['blocked' => false], $mod)->body()['data']['status'] ?? null, $fired['hook_email_comment_validated'] ?? 0]);
 $r = $call('PATCH', 'admin/comments/' . $liveComment, ['body' => '<b>Is it</b> still for sale?'], $mod);
 pin('PATCH stores plain text and keeps the rest', [200, 'Is it still for sale?', 'Hi', 1], [$r->status(), $r->body()['data']['body'] ?? null, $r->body()['data']['title'] ?? null, $fired['edit_comment'] ?? 0]);
 pin('an empty body is 422', 422, $call('PATCH', 'admin/comments/' . $liveComment, ['body' => '<i></i>'], $mod)->status());
 pin('DELETE: 204, delete_comment once', [204, 1], [$call('DELETE', 'admin/comments/' . $liveComment, null, $mod)->status(), $fired['delete_comment'] ?? 0]);
 pin('again it is 404', 404, $call('DELETE', 'admin/comments/' . $liveComment, null, $mod)->status());
-pin('an unknown comment is 404', 404, $call('POST', 'admin/comments/99999/activate', null, $mod)->status());
+pin('an unknown comment is 404', 404, $call('PATCH', 'admin/comments/99999', ['approved' => true], $mod)->status());
 
 harness_section('comments: status through PATCH');
 $fired = [];
@@ -171,9 +171,6 @@ pin('unblocked and approved at once: active, the author told once', ['active', 1
     $r->body()['data']['status'] ?? null, $fired['enable_comment'] ?? 0, $fired['activate_comment'] ?? 0, $fired['hook_email_comment_validated'] ?? 0,
 ]);
 pin('a member that is not a boolean is 422', 422, $call('PATCH', 'admin/comments/' . $held, ['approved' => 'yes'], $mod)->status());
-$r = $call('POST', 'admin/comments/' . $held . '/deactivate', null, $mod);
-pin('the old action still works, marked deprecated', [200, 'pending', true], [$r->status(), $r->body()['data']['status'] ?? null, str_starts_with((string) $r->header('Deprecation'), '@')]);
-pin('PATCH answers no Deprecation header', null, $call('PATCH', 'admin/comments/' . $held, ['approved' => true], $mod)->header('Deprecation'));
 
 harness_section('comments: queries');
 for ($i = 0; $i < 6; $i++) {
@@ -200,14 +197,14 @@ pin('and ends the user\'s keys', 401, $call('GET', 'account', null, $sueKey)->st
 harness_section('users: the actions');
 pin('the key works while the user is enabled', 200, $call('GET', 'account', null, $tomKey)->status());
 $fired = [];
-$r     = $call('POST', 'admin/users/' . $tom . '/disable', null, $boss);
+$r     = $call('PATCH', 'admin/users/' . $tom, ['blocked' => true], $boss);
 pin('disable: 200, blocked, disable_user once, logged', [200, false, 1, (string) $bossId], [$r->status(), $r->body()['data']['enabled'] ?? null, $fired['disable_user'] ?? 0, $log('disable', $tom)]);
 pin('and the user\'s listings are blocked with it', [1, '0'], [$fired['disable_item'] ?? 0, $admin->query("SELECT b_enabled FROM {$p}t_item WHERE pk_i_id = $tomCar")->fetch_row()[0]]);
 pin('a blocked user\'s key stops working', 401, $call('GET', 'account', null, $tomKey)->status());
-pin('enable: enable_user once', [200, 1], [$call('POST', 'admin/users/' . $tom . '/enable', null, $boss)->status(), $fired['enable_user'] ?? 0]);
-pin('activate: activate_user once, active', [1, '1'], [($call('POST', 'admin/users/' . $ann . '/activate', null, $boss) && true) ? ($fired['activate_user'] ?? 0) : 0, $user($ann)['b_active']]);
-pin('deactivate: deactivate_user once', [1, '0'], [($call('POST', 'admin/users/' . $ann . '/deactivate', null, $boss) && true) ? ($fired['deactivate_user'] ?? 0) : 0, $user($ann)['b_active']]);
-pin('an unknown user is 404', 404, $call('POST', 'admin/users/99999/enable', null, $boss)->status());
+pin('enable: enable_user once', [200, 1], [$call('PATCH', 'admin/users/' . $tom, ['blocked' => false], $boss)->status(), $fired['enable_user'] ?? 0]);
+pin('activate: activate_user once, active', [1, '1'], [($call('PATCH', 'admin/users/' . $ann, ['confirmed' => true], $boss) && true) ? ($fired['activate_user'] ?? 0) : 0, $user($ann)['b_active']]);
+pin('deactivate: deactivate_user once', [1, '0'], [($call('PATCH', 'admin/users/' . $ann, ['confirmed' => false], $boss) && true) ? ($fired['deactivate_user'] ?? 0) : 0, $user($ann)['b_active']]);
+pin('an unknown user is 404', 404, $call('PATCH', 'admin/users/99999', ['blocked' => false], $boss)->status());
 
 harness_section('users: status through PATCH');
 $fired = [];
@@ -226,8 +223,6 @@ pin('with a profile member: both applied', [200, 'Ann B', true, false, 1, 1, 1],
     $fired['enable_user'] ?? 0, $fired['deactivate_user'] ?? 0, $fired['user_edit_completed'] ?? 0,
 ]);
 pin('a member that is not a boolean is 422', 422, $call('PATCH', 'admin/users/' . $ann, ['blocked' => 1], $boss)->status());
-$r = $call('POST', 'admin/users/' . $ann . '/activate', null, $boss);
-pin('the old action still works, marked deprecated', [200, true, true], [$r->status(), $r->body()['data']['active'] ?? null, str_starts_with((string) $r->header('Deprecation'), '@')]);
 
 harness_section('users: sign-ins');
 $signIn = $call('POST', 'auth/token', ['grant_type' => 'password', 'username' => 'tom@example.test', 'password' => 'open sesame', 'label' => 'Phone']);

@@ -101,6 +101,6 @@ final class LocationsController
         $next = $pager->next($rows);
         $data = array_map([$this->serializer, $shape], $pager->page($rows));
 
-        return (new Page($data, null, $pager->limit(), $next))->response($this->api->links(), $path, $request->query());
+        return (new Page($data, null, $pager->limit(), $next, $pager->truncated($rows)))->response($this->api->links(), $path, $request->query());
     }
 }

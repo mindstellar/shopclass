@@ -2637,6 +2637,12 @@ msgstr ""
 msgid "The name cannot be empty"
 msgstr ""
 
+#: oc-includes/osclass/classes/apiaccess/ApiKeyService.php
+msgid ""
+"The new key cannot outlive the key that makes it. Choose an earlier expiry "
+"date."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
 msgid "The operation hasn't been completed. You're trying to remove yourself!"
 msgstr ""

@@ -16,8 +16,8 @@ use mindstellar\api\Response;
 use mindstellar\api\serializer\Links;
 
 /**
- * One page of a list as the API sends it: the rows, `meta` (total, limit) and `links`
- * (self, next). The links never carry an `api_key`.
+ * One page of a list as the API sends it: the rows, `meta` (total, limit, and truncated when
+ * offset paging stops before the end) and `links` (self, next). The links never carry an `api_key`.
  */
 final class Page
 {
@@ -25,8 +25,9 @@ final class Page
      * @param array<int,mixed> $items the shaped rows
      * @param int|null         $total null when it was not counted
      * @param string|null      $next  the next page's cursor
+     * @param bool             $truncated more rows exist past the deepest page offset paging reaches
      */
-    public function __construct(private array $items, private ?int $total, private int $limit, private ?string $next)
+    public function __construct(private array $items, private ?int $total, private int $limit, private ?string $next, private bool $truncated = false)
     {
     }
 
@@ -41,7 +42,7 @@ final class Page
 
         return Response::collection(
             $this->items,
-            ['total' => $this->total, 'limit' => $this->limit],
+            ['total' => $this->total, 'limit' => $this->limit] + ($this->truncated ? ['truncated' => true] : []),
             [
                 'self' => $links->api(self::url($path, $query)),
                 'next' => $this->next === null ? null : $links->api(self::url($path, $rest + ['cursor' => $this->next])),

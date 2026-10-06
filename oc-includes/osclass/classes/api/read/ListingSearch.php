@@ -75,7 +75,7 @@ final class ListingSearch
         $data = $this->reader->many($page, $context);
         $next = $pager->next($rows);
 
-        return (new Page($data, $result->total(), $pager->limit(), $next))->response($this->api->links(), $path, $request->query());
+        return (new Page($data, $result->total(), $pager->limit(), $next, $pager->truncated($rows)))->response($this->api->links(), $path, $request->query());
     }
 
     /**

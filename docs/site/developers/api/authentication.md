@@ -111,10 +111,10 @@ account, or one that is not activated yet, gets `400 invalid_grant`.
 
 | | |
 |---|---|
-| Life | 15 minutes by default. The site's setting is kept between 1 and 60 minutes. `expires_in` says. |
+| Life | 15 minutes. `expires_in` says. |
 | Sent as | `Authorization: Bearer sca_…` |
 | Scopes | The ones granted at sign-in, cut down to what the user may hold today. |
-| Ends early | When the user changes their password, signs out of all devices, or the account is disabled. Signing out does **not** end an access token: it stops working when it expires. |
+| Ends early | When the user signs out, changes their password, signs out of all devices, or the account is disabled. A ban rule that matches the user or the address refuses it with `403 forbidden`. |
 
 When it runs out, calls answer `401 token_expired`, not `unauthorized`:
 
@@ -182,8 +182,8 @@ answer the same, and take as long.
 ### Signing out
 
 ```bash
-curl -X POST $API/auth/revoke -H "Authorization: Bearer $TOKEN"                       # this sign-in
-curl -X POST $API/auth/revoke -H "Authorization: Bearer $TOKEN" \
+curl -X POST $API/auth/sign-out -H "Authorization: Bearer $TOKEN"                       # this sign-in
+curl -X POST $API/auth/sign-out -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" -d '{"all":true}'                                  # every sign-in
 ```
 
@@ -342,7 +342,7 @@ origin, so they can read each other's pages. Give each its own host.
 | Read the account, own listings in any status, and sessions | no | no | yes | with `account:read` | yes |
 | Edit the account, change password, manage keys | no | no | yes | no | no |
 | `POST /auth/token`, `POST /users` | no credential needed | | | | |
-| `POST /auth/revoke` | no | no | yes | no | no |
+| `POST /auth/sign-out` | no | no | yes | no | no |
 | `POST /account/sign-out-everywhere` | no | no | yes | no | no |
 | `GET /auth/session` | no | no | no | no | yes |
 

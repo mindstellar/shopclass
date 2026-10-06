@@ -248,7 +248,8 @@ final class ApiServices
             $this->keys(),
             new FailureCounter(),
             $this->accessTokens(),
-            new PageTokenAuth($this->pageTokens(), $this->users, $this->scopes, SiteOrigin::fromSite())
+            new PageTokenAuth($this->pageTokens(), $this->users, $this->scopes, SiteOrigin::fromSite()),
+            fn (int $id, string $ip): bool => ($user = $this->users->find($id)) !== null && PageTokenAuth::bannedOnSite($user, $ip)
         ));
     }
 
