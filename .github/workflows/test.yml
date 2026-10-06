@@ -589,6 +589,8 @@ jobs:
         run: php tests/plugin-ajax-file.php
       - name: Admin request guards
         run: php tests/admin-request-guards.php
+      - name: Every caller of refuseOnDemo() has it
+        run: php tests/demo-guard-reachable.php
       # A GET form carries no CSRF token, so a dialog sending one to a checked action fails every time.
       - name: Plugin install repair and admin GET forms
         run: php tests/plugin-install-repair.php

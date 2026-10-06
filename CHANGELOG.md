@@ -87,6 +87,12 @@ Plugin authors should read the Breaking section before upgrading.
 - The ban rules are read once per request, not once per address checked.
 - The search result cache key includes the locale, so a language filter no longer shows another language's cached results.
 
+## Shopclass 6.4.5
+
+### Fixed
+
+- Setting a new admin password from the reset link no longer ends in an error page.
+
 ## Shopclass 6.4.4
 
 This release helps sites where PHP cannot write the site's files: the updater now stops before it
