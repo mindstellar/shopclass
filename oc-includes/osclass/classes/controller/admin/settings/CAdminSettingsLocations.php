@@ -23,6 +23,7 @@ use mindstellar\location\LocationImporter;
 use mindstellar\location\LocationQuery;
 use mindstellar\location\LocationService;
 use mindstellar\utility\AjaxResponse;
+use mindstellar\validation\NotFoundException;
 use mindstellar\validation\RefusedException;
 
 /**
@@ -500,7 +501,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
         try {
             $write(new LocationService());
         } catch (RefusedException $e) {
-            $this->respond('error', $e->getMessage(), $e->isMissing() ? $this->listUrl() : $back);
+            $this->respond('error', $e->getMessage(), $e instanceof NotFoundException ? $this->listUrl() : $back);
         }
     }
 

@@ -65,6 +65,25 @@ abstract class BaseModel
     }
 
     /**
+     * On a demo install, refuse the action and redirect before it changes anything.
+     *
+     * @param string $redirectUrl where to send them; the admin home by default
+     *
+     * @return bool true when this is a demo install and the action was refused
+     */
+    protected function refuseOnDemo($redirectUrl = null)
+    {
+        if (!defined('DEMO')) {
+            return false;
+        }
+
+        osc_add_flash_warning_message(_m('This action cannot be done because it is a demo site'), 'admin');
+        $this->redirectTo($redirectUrl ?? osc_admin_base_url(true));
+
+        return true;
+    }
+
+    /**
      * Sends a Location header to $url and terminates the request.
      *
      * @param string   $url
