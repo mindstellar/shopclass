@@ -21,7 +21,7 @@ use mindstellar\api\read\CategoryCatalog;
 final class CategorySerializer
 {
     public const MEMBERS = [
-        'id', 'parent_id', 'slug', 'name', 'description', 'position', 'listings_count', 'price_enabled', 'children', 'fields',
+        'id', 'parent_id', 'slug', 'name', 'description', 'position', 'listings_count', 'price_enabled', 'children', 'custom_fields',
         'ext',
     ];
 
@@ -40,7 +40,7 @@ final class CategorySerializer
         $context = self::viewed($context);
         $data = $this->shape($category, $context);
         if ($fields !== null) {
-            $data['fields'] = array_map(fn (array $f): array => $this->fields->definition($f, $context->locale()), $fields);
+            $data['custom_fields'] = array_map(fn (array $f): array => $this->fields->definition($f, $context->locale()), $fields);
         }
 
         return $this->finish($data, $category, $context);

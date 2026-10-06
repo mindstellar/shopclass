@@ -20,7 +20,7 @@ use mindstellar\apiaccess\Credential;
 use mindstellar\fields\FieldService;
 
 /**
- * `/admin/fields`: the custom field screen's writes, through FieldService.
+ * `/admin/custom-fields`: the custom field screen's writes, through FieldService.
  */
 final class AdminFieldsController
 {
@@ -32,7 +32,7 @@ final class AdminFieldsController
     }
 
     /**
-     * POST /admin/fields
+     * POST /admin/custom-fields
      *
      * @param array<string,string> $args
      */
@@ -40,11 +40,11 @@ final class AdminFieldsController
     {
         $id = $this->fields->create($request->input());
 
-        return Response::created($this->field($id), $this->api->links()->api('admin/fields/' . $id));
+        return Response::created($this->field($id), $this->api->links()->api('admin/custom-fields/' . $id));
     }
 
     /**
-     * GET /admin/fields/{id}
+     * GET /admin/custom-fields/{id}
      *
      * @param array<string,string> $args
      */
@@ -56,7 +56,7 @@ final class AdminFieldsController
     }
 
     /**
-     * PATCH /admin/fields/{id}. Members not sent keep their values; `categories` replaces
+     * PATCH /admin/custom-fields/{id}. Members not sent keep their values; `categories` replaces
      * the list.
      *
      * @param array<string,string> $args
@@ -69,7 +69,7 @@ final class AdminFieldsController
     }
 
     /**
-     * DELETE /admin/fields/{id}
+     * DELETE /admin/custom-fields/{id}
      *
      * @param array<string,string> $args
      */

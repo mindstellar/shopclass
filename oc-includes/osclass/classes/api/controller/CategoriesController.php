@@ -23,7 +23,7 @@ use mindstellar\api\serializer\CustomFieldSerializer;
 use mindstellar\apiaccess\Credential;
 
 /**
- * `GET /categories`, `GET /categories/{category}` (id or slug) and `GET /fields`.
+ * `GET /categories`, `GET /categories/{category}` (id or slug) and `GET /custom-fields`.
  * Categories come from core's cached tree; only a category's custom fields cost a query.
  */
 final class CategoriesController

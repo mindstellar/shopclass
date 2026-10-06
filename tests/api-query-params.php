@@ -70,11 +70,11 @@ pin('every core read refuses unknown parameters', [], array_keys(array_filter($r
 $declared = static fn (string $key): array => array_keys($reads[$key]['query']['properties']);
 $paging   = ['limit', 'cursor'];
 pin('listing search declares its filters, sort, paging, count, view and include', [], array_diff(
-    ['q', 'category', 'country', 'region', 'city', 'city_area', 'user', 'locale', 'price_min', 'price_max', 'with_photos', 'premium', 'field', 'sort', 'order', 'limit', 'cursor', 'count', 'fields', 'include'],
+    ['q', 'category', 'country', 'region', 'city', 'city_area', 'user', 'locale', 'price_min', 'price_max', 'with_photos', 'premium', 'custom_field', 'sort', 'order', 'limit', 'cursor', 'count', 'fields', 'include'],
     $declared('GET listings')
 ));
 pin('a seller\'s listings declare the same, bar user', [], array_diff(
-    ['q', 'category', 'country', 'region', 'city', 'city_area', 'locale', 'price_min', 'price_max', 'with_photos', 'premium', 'field', 'sort', 'order', 'limit', 'cursor', 'count', 'fields', 'include'],
+    ['q', 'category', 'country', 'region', 'city', 'city_area', 'locale', 'price_min', 'price_max', 'with_photos', 'premium', 'custom_field', 'sort', 'order', 'limit', 'cursor', 'count', 'fields', 'include'],
     $declared('GET users/{id}/listings')
 ));
 pin('every paged list declares limit and cursor', [], array_filter(
@@ -94,7 +94,7 @@ pin('reads that take include declare it', [], array_filter(
     static fn (string $k): bool => !in_array('include', $declared($k), true)
 ));
 pin('the category tree and field list declare their own', [[true], [true]], [
-    [in_array('tree', $declared('GET categories'), true)], [in_array('category', $declared('GET fields'), true)],
+    [in_array('tree', $declared('GET categories'), true)], [in_array('category', $declared('GET custom-fields'), true)],
 ]);
 
 exit(harness_result());

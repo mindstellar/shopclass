@@ -213,11 +213,11 @@ final class PublicRoutes
                 query: $view,
                 errors: [404]
             ),
-            'GET fields' => RouteSpec::read(
+            'GET custom-fields' => RouteSpec::read(
                 handler: [CategoriesController::class, 'fields'],
                 tag: 'Categories',
                 summary: 'Custom fields, all or a category\'s',
-                response: 'FieldList',
+                response: 'CustomFieldList',
                 query: ['locale' => self::LOCALE, 'category' => ['type' => 'string', 'maxLength' => 200]],
                 errors: [422]
             ),
@@ -487,7 +487,7 @@ final class PublicRoutes
             'price_max'   => ['type' => 'integer', 'minimum' => 0],
             'with_photos' => ['type' => 'boolean'],
             'premium'     => ['type' => 'boolean'],
-            'field'       => ['type' => 'object', 'description' => 'field[<id>]=<value>', 'additionalProperties' => ['type' => ['string', 'array'], 'items' => ['type' => 'string']]],
+            'custom_field' => ['type' => 'object', 'description' => 'custom_field[<id>]=<value>', 'additionalProperties' => ['type' => ['string', 'array'], 'items' => ['type' => 'string']]],
             'sort'        => ['type' => 'string', 'enum' => ListingSort::SORTS],
             'order'       => ['type' => 'string', 'enum' => ['asc', 'desc']],
             'limit'       => ['type' => 'integer', 'minimum' => 1, 'maximum' => 100],

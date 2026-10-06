@@ -150,10 +150,10 @@ final class AdminRoutes
             'POST admin/currencies'          => self::write($m, 'create', $tag, $scope, 'Add a currency', 'CurrencyInput', 'CurrencyDocument', 201, [409]),
             'PATCH admin/currencies/{code}'  => self::write($m, 'update', $tag, $scope, 'Rename a currency or change its symbol', 'CurrencyPatch', 'CurrencyDocument', 200, [404]),
             'DELETE admin/currencies/{code}' => self::write($m, 'delete', $tag, $scope, 'Delete a currency no listing uses and the site does not default to', null, null, 204, [404, 409]),
-            'GET admin/fields/{id}'          => self::read($f, 'show', $tag, $scope, 'One custom field', 'AdminFieldDocument', [], [404]),
-            'POST admin/fields'              => self::write($f, 'create', $tag, $scope, 'Add a custom field', 'AdminFieldInput', 'AdminFieldDocument', 201),
-            'PATCH admin/fields/{id}'        => self::write($f, 'update', $tag, $scope, 'Edit a custom field', 'AdminFieldPatch', 'AdminFieldDocument', 200, [404]),
-            'DELETE admin/fields/{id}'       => self::write($f, 'delete', $tag, $scope, 'Delete a custom field and its values', null, null, 204, [404]),
+            'GET admin/custom-fields/{id}'          => self::read($f, 'show', $tag, $scope, 'One custom field', 'AdminCustomFieldDocument', [], [404]),
+            'POST admin/custom-fields'              => self::write($f, 'create', $tag, $scope, 'Add a custom field', 'AdminCustomFieldInput', 'AdminCustomFieldDocument', 201),
+            'PATCH admin/custom-fields/{id}'        => self::write($f, 'update', $tag, $scope, 'Edit a custom field', 'AdminCustomFieldPatch', 'AdminCustomFieldDocument', 200, [404]),
+            'DELETE admin/custom-fields/{id}'       => self::write($f, 'delete', $tag, $scope, 'Delete a custom field and its values', null, null, 204, [404]),
         ];
     }
 

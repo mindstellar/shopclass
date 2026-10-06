@@ -461,10 +461,10 @@ Answers: 200 OK (`SettingsDocument`); 400 Bad request; 401 No valid credential; 
 | GET | `/admin/currencies/{code}` | admin | `admin:taxonomy` | One currency |
 | PATCH | `/admin/currencies/{code}` | admin | `admin:taxonomy` | Rename a currency or change its symbol |
 | DELETE | `/admin/currencies/{code}` | admin | `admin:taxonomy` | Delete a currency no listing uses and the site does not default to |
-| POST | `/admin/fields` | admin | `admin:taxonomy` | Add a custom field |
-| GET | `/admin/fields/{id}` | admin | `admin:taxonomy` | One custom field |
-| PATCH | `/admin/fields/{id}` | admin | `admin:taxonomy` | Edit a custom field |
-| DELETE | `/admin/fields/{id}` | admin | `admin:taxonomy` | Delete a custom field and its values |
+| POST | `/admin/custom-fields` | admin | `admin:taxonomy` | Add a custom field |
+| GET | `/admin/custom-fields/{id}` | admin | `admin:taxonomy` | One custom field |
+| PATCH | `/admin/custom-fields/{id}` | admin | `admin:taxonomy` | Edit a custom field |
+| DELETE | `/admin/custom-fields/{id}` | admin | `admin:taxonomy` | Delete a custom field and its values |
 | POST | `/admin/regions` | admin | `admin:taxonomy` | Add a region to a country |
 | GET | `/admin/regions/{id}` | admin | `admin:taxonomy` | One region |
 | PATCH | `/admin/regions/{id}` | admin | `admin:taxonomy` | Rename a region |
@@ -676,7 +676,7 @@ Delete a currency no listing uses and the site does not default to
 
 Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 412 Precondition failed; 429 Too many requests; 500 Server error; 503 Maintenance.
 
-### POST `/admin/fields`
+### POST `/admin/custom-fields`
 
 Add a custom field
 
@@ -684,11 +684,11 @@ Add a custom field
 |---|---|---|---|---|
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
-Body: `AdminFieldInput` as JSON.
+Body: `AdminCustomFieldInput` as JSON.
 
-Answers: 201 Created (`AdminFieldDocument`); 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 409 Conflict; 413 Body too large; 415 Unsupported content type; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+Answers: 201 Created (`AdminCustomFieldDocument`); 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 409 Conflict; 413 Body too large; 415 Unsupported content type; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
 
-### GET `/admin/fields/{id}`
+### GET `/admin/custom-fields/{id}`
 
 One custom field
 
@@ -697,9 +697,9 @@ One custom field
 | `id` | path | integer | yes |  |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
-Answers: 200 OK (`AdminFieldDocument`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+Answers: 200 OK (`AdminCustomFieldDocument`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
 
-### PATCH `/admin/fields/{id}`
+### PATCH `/admin/custom-fields/{id}`
 
 Edit a custom field
 
@@ -709,11 +709,11 @@ Edit a custom field
 | `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
-Body: `AdminFieldPatch` as JSON, optional.
+Body: `AdminCustomFieldPatch` as JSON, optional.
 
-Answers: 200 OK (`AdminFieldDocument`); 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 412 Precondition failed; 413 Body too large; 415 Unsupported content type; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+Answers: 200 OK (`AdminCustomFieldDocument`); 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 412 Precondition failed; 413 Body too large; 415 Unsupported content type; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
 
-### DELETE `/admin/fields/{id}`
+### DELETE `/admin/custom-fields/{id}`
 
 Delete a custom field and its values
 
@@ -1033,7 +1033,7 @@ Answers: 200 OK (`TokenDocument`); 400 Bad request; 403 Not allowed for this cre
 |---|---|---|---|---|
 | GET | `/categories` | public | `listings:read` | Every category, flat or as a tree |
 | GET | `/categories/{category}` | public | `listings:read` | One category by id or slug, with its custom fields |
-| GET | `/fields` | public | `listings:read` | Custom fields, all or a category's |
+| GET | `/custom-fields` | public | `listings:read` | Custom fields, all or a category's |
 
 ### GET `/categories`
 
@@ -1061,7 +1061,7 @@ One category by id or slug, with its custom fields
 
 Answers: 200 OK (`CategoryDocument`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
 
-### GET `/fields`
+### GET `/custom-fields`
 
 Custom fields, all or a category's
 
@@ -1071,7 +1071,7 @@ Custom fields, all or a category's
 | `category` | query | string | no |  |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
-Answers: 200 OK (`FieldList`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+Answers: 200 OK (`CustomFieldList`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
 
 ## Listings
 
@@ -1133,7 +1133,7 @@ Search listings
 | `price_max` | query | integer | no |  |
 | `with_photos` | query | boolean | no |  |
 | `premium` | query | boolean | no |  |
-| `field` | query | object | no | field[<id>]=<value> |
+| `custom_field` | query | object | no | custom_field[<id>]=<value> |
 | `sort` | query | string: `created`, `id`, `price`, `relevance` | no |  |
 | `order` | query | string: `asc`, `desc` | no |  |
 | `limit` | query | integer | no |  |
@@ -1439,7 +1439,7 @@ A user's live listings
 | `price_max` | query | integer | no |  |
 | `with_photos` | query | boolean | no |  |
 | `premium` | query | boolean | no |  |
-| `field` | query | object | no | field[<id>]=<value> |
+| `custom_field` | query | object | no | custom_field[<id>]=<value> |
 | `sort` | query | string: `created`, `id`, `price`, `relevance` | no |  |
 | `order` | query | string: `asc`, `desc` | no |  |
 | `limit` | query | integer | no |  |

@@ -27,7 +27,7 @@ Each endpoint needs one scope. A key holds only the scopes it was made with.
 | `admin:listings` | `/admin/listings` |
 | `admin:comments` | `/admin/comments` |
 | `admin:users` | `/admin/users` |
-| `admin:taxonomy` | `/admin/categories`, `/admin/currencies`, `/admin/fields`, `/admin/regions`, `/admin/cities`, `/admin/areas` |
+| `admin:taxonomy` | `/admin/categories`, `/admin/currencies`, `/admin/custom-fields`, `/admin/regions`, `/admin/cities`, `/admin/areas` |
 | `admin:settings` | `/admin/settings`, `/admin/jobs` |
 | `admin:keys` | `/admin/keys` |
 | `admin:webhooks` | `/admin/webhooks`, `/admin/webhook-events` |
@@ -127,7 +127,7 @@ curl -X DELETE $API/admin/users/23/sessions/9 -H "Authorization: Bearer $KEY"
 | `PATCH /admin/categories/{id}` | Edit. A new slug keeps the old one redirecting. `apply_to_subcategories` copies the expiry and price setting down. `enabled: false` on a top category takes its subcategories and their listings with it. |
 | `DELETE /admin/categories/{id}` | Delete with its subcategories and their listings. A large one answers `202`: it is hidden now and emptied in the background. |
 | `GET`, `PATCH`, `DELETE /admin/currencies/{code}`, `POST /admin/currencies` | Add, rename or change the symbol of, or delete a currency. A currency a listing uses, or the site default, cannot be deleted (`409`). |
-| `GET`, `PATCH`, `DELETE /admin/fields/{id}`, `POST /admin/fields` | Custom fields: `name`, `type`, `slug`, `required`, `searchable`, `options`, `categories`. Deleting a field deletes its values. |
+| `GET`, `PATCH`, `DELETE /admin/custom-fields/{id}`, `POST /admin/custom-fields` | Custom fields: `name`, `type`, `slug`, `required`, `searchable`, `options`, `categories`. Deleting a field deletes its values. |
 | `GET`, `PATCH`, `DELETE /admin/regions/{id}`, `POST /admin/regions` | Regions. `POST` takes `country` and `name`. |
 | `GET`, `PATCH`, `DELETE /admin/cities/{id}`, `POST /admin/cities` | Cities. `POST` takes `region_id` and `name`. |
 | `GET`, `PATCH`, `DELETE /admin/areas/{id}`, `POST /admin/areas` | City areas. `POST` takes `city_id` and `name`. |

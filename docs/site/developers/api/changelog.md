@@ -74,7 +74,7 @@ Added to v1.
 | `/admin/comments`, with `approved` and `blocked` on `PATCH` | Moderate comments |
 | `/admin/users`, with `confirmed` and `blocked` on `PATCH`, and `/admin/users/{id}/sessions` | Manage users and end their sign-ins |
 | `GET /account/listings` | The user's own listings in any status |
-| `/admin/categories`, `/admin/currencies`, `/admin/fields` | Manage categories, currencies and custom fields |
+| `/admin/categories`, `/admin/currencies`, `/admin/custom-fields` | Manage categories, currencies and custom fields |
 | `/admin/regions`, `/admin/cities`, `/admin/areas` | Manage locations |
 | `GET`, `PATCH /admin/settings`, `GET /admin/jobs` | Settings from a fixed list, and the job queue |
 | `/admin/keys`, with `rotate` | Manage API keys |
@@ -101,7 +101,7 @@ Also settled before the first release, so no released client saw the old behavio
 - `POST /photos` answers `200` with no `Location`, because a token is not a resource to read.
 - On public routes an admin key runs as nobody. Admin rights apply on `/admin/` routes only.
 - A `GET` route refuses a query parameter it does not take with `422`. `api_key` is always allowed.
-- Each `POST` under `/admin/regions`, `/admin/cities`, `/admin/areas`, `/admin/currencies` and `/admin/fields` has a `GET` for the new item, and `Location` points at it.
+- Each `POST` under `/admin/regions`, `/admin/cities`, `/admin/areas`, `/admin/currencies` and `/admin/custom-fields` has a `GET` for the new item, and `Location` points at it.
 - `Problem.code` is an open string in the OpenAPI document, and `info.version` is `1`.
 - `If-Match` checks the stored version, so a tag from a `GET` with `fields`, `include` or `locale` works. The check and the write run as one. A `PATCH` sent with `If-Match` answers with the new `ETag`.
 - A credential that cannot read the `GET` of the path gets `412` for `If-Match`, instead of the check being skipped.
@@ -114,6 +114,7 @@ Also settled before the first release, so no released client saw the old behavio
 - A rotated key cannot outlive the key that rotates it.
 - A listing's contact e-mail and phone are hidden as its page hides them.
 - Listing status changes go through `PATCH /admin/listings/{id}` (`approved`, `blocked`, `spam`, `premium`). Only `bump` stays an action.
+- Custom fields are `custom_fields` everywhere: the listing and category member, `include=custom_fields`, the write body, the `custom_field[<id>]` filter, and the `/custom-fields` and `/admin/custom-fields` paths. `fields` is only the sparse fieldset.
 - Admin comments read back `approved` and `blocked`. Users read and filter on `confirmed` and `blocked` instead of `active` and `enabled`. Sign-up answers `confirmed`.
 
 See [Admin endpoints](/docs/developers/api/admin/) and [Webhooks](/docs/developers/api/webhooks/).
@@ -166,7 +167,7 @@ Read-only endpoints, authenticated with keys.
 | `GET /openapi.json` | The OpenAPI 3.1 document, with the site's plugin endpoints. No key needed. |
 | `GET /listings`, `GET /listings/{id}` | Search, and one listing |
 | `GET /listings/{id}/photos`, `GET /listings/{id}/comments` | A listing's photos and approved comments |
-| `GET /categories`, `GET /categories/{category}`, `GET /fields` | Categories (flat or tree) and custom fields |
+| `GET /categories`, `GET /categories/{category}`, `GET /custom-fields` | Categories (flat or tree) and custom fields |
 | `GET /countries`, `/countries/{code}/regions`, `/regions/{id}/cities`, `/cities/{id}/areas` | Locations |
 | `GET /currencies` | Currencies |
 | `GET /users/{id}`, `GET /users/{id}/listings` | A public profile and the user's live listings |

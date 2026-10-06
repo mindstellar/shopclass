@@ -10197,9 +10197,9 @@
                 "x-scope": "admin:taxonomy"
             }
         },
-        "/admin/fields": {
+        "/admin/custom-fields": {
             "post": {
-                "operationId": "postAdminFields",
+                "operationId": "postAdminCustomFields",
                 "summary": "Add a custom field",
                 "tags": [
                     "Admin taxonomy"
@@ -10221,7 +10221,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/AdminFieldInput"
+                                "$ref": "#/components/schemas/AdminCustomFieldInput"
                             }
                         }
                     }
@@ -10249,7 +10249,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/AdminFieldDocument"
+                                    "$ref": "#/components/schemas/AdminCustomFieldDocument"
                                 }
                             }
                         }
@@ -10509,9 +10509,9 @@
                 "x-scope": "admin:taxonomy"
             }
         },
-        "/admin/fields/{id}": {
+        "/admin/custom-fields/{id}": {
             "get": {
-                "operationId": "getAdminFieldsById",
+                "operationId": "getAdminCustomFieldsById",
                 "summary": "One custom field",
                 "tags": [
                     "Admin taxonomy"
@@ -10555,7 +10555,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/AdminFieldDocument"
+                                    "$ref": "#/components/schemas/AdminCustomFieldDocument"
                                 }
                             }
                         }
@@ -10742,7 +10742,7 @@
                 "x-scope": "admin:taxonomy"
             },
             "patch": {
-                "operationId": "patchAdminFieldsById",
+                "operationId": "patchAdminCustomFieldsById",
                 "summary": "Edit a custom field",
                 "tags": [
                     "Admin taxonomy"
@@ -10781,12 +10781,12 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/AdminFieldPatch"
+                                "$ref": "#/components/schemas/AdminCustomFieldPatch"
                             }
                         },
                         "application/merge-patch+json": {
                             "schema": {
-                                "$ref": "#/components/schemas/AdminFieldPatch"
+                                "$ref": "#/components/schemas/AdminCustomFieldPatch"
                             }
                         }
                     }
@@ -10814,7 +10814,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/AdminFieldDocument"
+                                    "$ref": "#/components/schemas/AdminCustomFieldDocument"
                                 }
                             }
                         }
@@ -11122,7 +11122,7 @@
                 "x-scope": "admin:taxonomy"
             },
             "delete": {
-                "operationId": "deleteAdminFieldsById",
+                "operationId": "deleteAdminCustomFieldsById",
                 "summary": "Delete a custom field and its values",
                 "tags": [
                     "Admin taxonomy"
@@ -22739,9 +22739,9 @@
                 "x-scope": "listings:read"
             }
         },
-        "/fields": {
+        "/custom-fields": {
             "get": {
-                "operationId": "getFields",
+                "operationId": "getCustomFields",
                 "summary": "Custom fields, all or a category's",
                 "tags": [
                     "Categories"
@@ -22795,7 +22795,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/FieldList"
+                                    "$ref": "#/components/schemas/CustomFieldList"
                                 }
                             }
                         }
@@ -23135,10 +23135,10 @@
                         }
                     },
                     {
-                        "name": "field",
+                        "name": "custom_field",
                         "in": "query",
                         "required": false,
-                        "description": "field[<id>]=<value>",
+                        "description": "custom_field[<id>]=<value>",
                         "style": "deepObject",
                         "explode": true,
                         "schema": {
@@ -27732,10 +27732,10 @@
                         }
                     },
                     {
-                        "name": "field",
+                        "name": "custom_field",
                         "in": "query",
                         "required": false,
-                        "description": "field[<id>]=<value>",
+                        "description": "custom_field[<id>]=<value>",
                         "style": "deepObject",
                         "explode": true,
                         "schema": {
@@ -28952,7 +28952,7 @@
                     "name"
                 ]
             },
-            "FieldValue": {
+            "CustomFieldValue": {
                 "type": "object",
                 "properties": {
                     "id": {
@@ -29255,12 +29255,12 @@
                             "$ref": "#/components/schemas/Photo"
                         }
                     },
-                    "fields": {
+                    "custom_fields": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/FieldValue"
+                            "$ref": "#/components/schemas/CustomFieldValue"
                         },
-                        "description": "With `include=fields`."
+                        "description": "With `include=custom_fields`."
                     },
                     "translations": {
                         "type": [
@@ -29604,10 +29604,10 @@
                         },
                         "description": "With `tree=1`."
                     },
-                    "fields": {
+                    "custom_fields": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/Field"
+                            "$ref": "#/components/schemas/CustomField"
                         },
                         "description": "On a single category."
                     },
@@ -29626,7 +29626,7 @@
                     "name"
                 ]
             },
-            "Field": {
+            "CustomField": {
                 "type": "object",
                 "properties": {
                     "id": {
@@ -30607,7 +30607,7 @@
                     "show_email": {
                         "type": "boolean"
                     },
-                    "fields": {
+                    "custom_fields": {
                         "type": "object",
                         "description": "Custom field id => value; {from, to} for a date range; null removes it.",
                         "additionalProperties": {
@@ -30778,7 +30778,7 @@
                     "show_email": {
                         "type": "boolean"
                     },
-                    "fields": {
+                    "custom_fields": {
                         "type": "object",
                         "description": "Custom field id => value; {from, to} for a date range; null removes it.",
                         "additionalProperties": {
@@ -31001,7 +31001,7 @@
                     "premium": {
                         "type": "boolean"
                     },
-                    "field": {
+                    "custom_field": {
                         "type": "object",
                         "additionalProperties": {
                             "type": [
@@ -31072,13 +31072,13 @@
                     "data"
                 ]
             },
-            "FieldList": {
+            "CustomFieldList": {
                 "type": "object",
                 "properties": {
                     "data": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/Field"
+                            "$ref": "#/components/schemas/CustomField"
                         }
                     }
                 },
@@ -31536,7 +31536,7 @@
                     "show_email": {
                         "type": "boolean"
                     },
-                    "fields": {
+                    "custom_fields": {
                         "type": "object",
                         "description": "Custom field id => value; {from, to} for a date range; null removes it.",
                         "additionalProperties": {
@@ -32254,7 +32254,7 @@
                     "data"
                 ]
             },
-            "AdminField": {
+            "AdminCustomField": {
                 "type": "object",
                 "properties": {
                     "id": {
@@ -32313,7 +32313,7 @@
                     "categories"
                 ]
             },
-            "AdminFieldInput": {
+            "AdminCustomFieldInput": {
                 "type": "object",
                 "properties": {
                     "name": {
@@ -32373,7 +32373,7 @@
                 ],
                 "additionalProperties": false
             },
-            "AdminFieldPatch": {
+            "AdminCustomFieldPatch": {
                 "type": "object",
                 "properties": {
                     "name": {
@@ -32429,11 +32429,11 @@
                 },
                 "additionalProperties": false
             },
-            "AdminFieldDocument": {
+            "AdminCustomFieldDocument": {
                 "type": "object",
                 "properties": {
                     "data": {
-                        "$ref": "#/components/schemas/AdminField"
+                        "$ref": "#/components/schemas/AdminCustomField"
                     }
                 },
                 "required": [

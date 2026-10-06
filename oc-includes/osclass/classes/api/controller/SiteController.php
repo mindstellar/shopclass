@@ -47,8 +47,8 @@ final class SiteController
             $locales[] = ['code' => $code, 'name' => $locale['name'], 'direction' => $locale['direction']];
         }
         $links = [];
-        foreach (['listings', 'categories', 'countries', 'currencies', 'fields', 'openapi.json'] as $path) {
-            $links[basename($path, '.json')] = $this->api->links()->api($path);
+        foreach (['listings' => 'listings', 'categories' => 'categories', 'countries' => 'countries', 'currencies' => 'currencies', 'custom_fields' => 'custom-fields', 'openapi' => 'openapi.json'] as $name => $path) {
+            $links[$name] = $this->api->links()->api($path);
         }
         $settings = $this->settings;
         $site     = [

@@ -336,7 +336,7 @@ final class ListingValidator
         }
 
         foreach ($_meta as $_m) {
-            $pointer = '/fields/' . ($_m['s_slug'] ?? $_m['pk_i_id']);
+            $pointer = '/custom_fields/' . $_m['pk_i_id'];
             // Conditional logic: a field hidden by its show_when rule is not part of
             // this submission — drop any value and never require it. A required_when
             // rule overrides the field's static required flag.

@@ -367,7 +367,7 @@ also grants `listings:read`, and `account:write` also grants `account:read`.
 | `admin:listings` | Admin keys, moderators' keys | The admin view of listings, reading listings that are not live, and `/admin/listings`. |
 | `admin:comments` | Admin keys, moderators' keys | Moderate comments: `/admin/comments`. |
 | `admin:users` | Admin keys | The admin view of users, reading disabled users, and `/admin/users`. |
-| `admin:taxonomy` | Admin keys | The admin view of categories, and `/admin/categories`, `/admin/currencies`, `/admin/fields` and the location endpoints. |
+| `admin:taxonomy` | Admin keys | The admin view of categories, and `/admin/categories`, `/admin/currencies`, `/admin/custom-fields` and the location endpoints. |
 | `admin:settings` | Admin keys | `/admin/settings` and `/admin/jobs`. |
 | `admin:keys` | Admin keys | `/admin/keys`. |
 | `admin:webhooks` | Admin keys | `/admin/webhooks` and `/admin/webhook-events`. |

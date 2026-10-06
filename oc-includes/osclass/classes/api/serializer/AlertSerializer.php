@@ -33,7 +33,7 @@ final class AlertSerializer
         'sPriceMax' => 'price_max',
         'bPic'      => 'with_photos',
         'bPremium'  => 'premium',
-        'meta'      => 'field',
+        'meta'      => 'custom_field',
     ];
 
     /**

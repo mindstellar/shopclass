@@ -59,7 +59,7 @@ curl -H "Authorization: Bearer $KEY" $API/
       "categories": "https://example.com/api/v1/categories",
       "countries": "https://example.com/api/v1/countries",
       "currencies": "https://example.com/api/v1/currencies",
-      "fields": "https://example.com/api/v1/fields",
+      "custom_fields": "https://example.com/api/v1/custom-fields",
       "openapi": "https://example.com/api/v1/openapi.json"
     }
   }
@@ -83,7 +83,7 @@ curl -H "Authorization: Bearer $KEY" "$API/categories?tree=1&fields=id,slug,name
 ```
 
 Flat by default, in display order, each with `parent_id`. `tree=1` nests them under `children`.
-`GET /categories/{id-or-slug}` returns one category with its custom fields.
+`GET /categories/{id-or-slug}` returns one category with its custom fields, under `custom_fields`.
 
 ### Search listings
 
@@ -126,7 +126,7 @@ Filters for `GET /listings`:
 | `locale` | Search and return text in this locale, such as `en_US`. |
 | `price_min`, `price_max` | Whole units of the site's currency. |
 | `with_photos`, `premium` | `1` or `true` to keep only those. |
-| `field[<id>]` | A custom field value, such as `field[4]=Blue`. Ids come from `GET /fields`. |
+| `custom_field[<id>]` | A custom field value, such as `custom_field[4]=Blue`. Ids come from `GET /custom-fields`. |
 | `sort` | `created` (default), `id`, `price` or `relevance`. |
 | `order` | `desc` (default) or `asc`. |
 | `limit` | Page size, 1 up to the site's maximum results per page. Above that is a `422`. |
@@ -135,7 +135,7 @@ Filters for `GET /listings`:
 
 A parameter the endpoint does not know is a `422`, so a typo does not silently return everything.
 | `fields` | Keep only these members: `fields=id,title,price`. `id` is always kept. |
-| `include` | Switch on costly members: `fields` (custom field values) and `translations`. |
+| `include` | Switch on costly members: `custom_fields` (custom field values) and `translations`. |
 
 Category, place and user filters take one value, a comma list (`city=1187,3218`) or the
 parameter repeated.
@@ -143,7 +143,7 @@ parameter repeated.
 ### One listing
 
 ```bash
-curl -H "Authorization: Bearer $KEY" "$API/listings/159?include=fields,translations"
+curl -H "Authorization: Bearer $KEY" "$API/listings/159?include=custom_fields,translations"
 ```
 
 Related: `GET /listings/{id}/photos`, `GET /listings/{id}/photos/{photo}`,
@@ -313,7 +313,7 @@ A listing has: `id`, `url`, `status`, `title`, `description`, `locale`, `categor
 `city_area`, `address`, `zip`, `lat`, `lng`), `contact` (`name`, `email`, `phone`), `seller`
 (`id`, `name`, `username`, `url`) or `null`, `photos` (`id`, `thumbnail`, `preview`,
 `normal`, `original`), `premium`, `views`, `published_at`, `updated_at`, `expires_at`.
-`fields` and `translations` appear with `include=`. `original` is `null` unless the site keeps
+`custom_fields` and `translations` appear with `include=`. `original` is `null` unless the site keeps
 original photos.
 
 Who sees which members is in [Authentication](/docs/developers/api/authentication/#views).

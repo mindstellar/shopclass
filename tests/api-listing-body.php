@@ -54,7 +54,7 @@ $new = $form->create([
     'city'         => 'Smallville',
     'lat'          => 40.5,
     'show_email'   => true,
-    'fields'       => ['4' => 'red', '5' => true, 'x' => 'dropped'],
+    'custom_fields' => ['4' => 'red', '5' => true, 'x' => 'dropped'],
 ]);
 pin('members map to the form\'s fields', $sorted([
     'catId' => '7', 'countryId' => 'US', 'regionId' => '3', 'city' => 'Smallville', 'd_coord_lat' => '40.5', 'showEmail' => '1',
@@ -80,7 +80,7 @@ pin('the stored listing reads back as its form', $sorted([
     'catId' => '7', 'price' => '1500,00', 'currency' => 'USD', 'cityId' => '9', 'address' => 'Main St 1', 'contactPhone' => '555', 'showEmail' => '0',
 ]), $pick($stored, ['catId', 'price', 'currency', 'cityId', 'address', 'contactPhone', 'showEmail']));
 pin('with every language and a date range field', [['en_US' => 'Car', 'de_DE' => 'Auto'], [4 => 'blue', 6 => ['from' => '100', 'to' => '200']]], [$stored['title'], $stored['meta']]);
-$patched = $form->patch($stored, ['price' => '99', 'fields' => ['4' => null, '7' => 'new'], 'city_id' => null, 'city' => 'Bville']);
+$patched = $form->patch($stored, ['price' => '99', 'custom_fields' => ['4' => null, '7' => 'new'], 'city_id' => null, 'city' => 'Bville']);
 pin('a patch changes only what it names', $sorted([
     'price' => '99', 'cityId' => '', 'city' => 'Bville', 'address' => 'Main St 1', 'title' => ['en_US' => 'Car', 'de_DE' => 'Auto'],
 ]), $pick($patched, ['price', 'cityId', 'city', 'address', 'title']));

@@ -160,7 +160,7 @@ pin('no update yet is null', null, $public['updated_at']);
 check('the IP is never in the public view', !str_contains($json, '203.0.113.9') && !array_key_exists('ip', $public));
 check('the edit secret is never in the public view', !str_contains($json, 'SECRET123'));
 check('report counters stay out', !array_key_exists('stats', $public) && !array_key_exists('show_email', $public));
-check('custom fields and translations need include=', !array_key_exists('fields', $public) && !array_key_exists('translations', $public));
+check('custom fields and translations need include=', !array_key_exists('custom_fields', $public) && !array_key_exists('translations', $public));
 pin('a public key gets the public view too', $public, $listings->one($item, $relations, $ctx($publicKey)));
 pin('another user gets the public view', $public, $listings->one($item, $relations, $ctx($stranger)));
 pin('the public view matches the Listing schema', [], $validator->check(Schema::ref('Listing'), $public));
@@ -225,12 +225,12 @@ pin('a missing seller is null', null, $listings->one(['fk_i_user_id' => '99'] + 
 pin('an unknown category still names its id', ['id' => 77, 'slug' => null, 'name' => null, 'path' => []], $listings->one(['fk_i_category_id' => '77'] + $item, $relations, $ctx($anonymous))['category']);
 
 harness_section('listing: includes and sparse fieldsets');
-$full = $listings->one($item, $relations, $ctx($anonymous, 'de_DE', null, ['fields', 'translations']));
-pin('include=fields types each value', [
+$full = $listings->one($item, $relations, $ctx($anonymous, 'de_DE', null, ['custom_fields', 'translations']));
+pin('include=custom_fields types each value', [
     ['id' => 3, 'slug' => 'garage', 'name' => 'Garage kept', 'type' => 'checkbox', 'value' => true],
     ['id' => 4, 'slug' => 'year', 'name' => 'Baujahr', 'type' => 'number', 'value' => 2010],
     ['id' => 5, 'slug' => 'available', 'name' => 'Available', 'type' => 'dateinterval', 'value' => ['from' => '2026-01-01T00:00:00Z', 'to' => '2026-02-01T00:00:00Z']],
-], $full['fields']);
+], $full['custom_fields']);
 pin('include=translations lists every locale', ['en_US' => ['title' => 'Red car', 'description' => 'Runs well.'], 'de_DE' => ['title' => 'Rotes Auto', 'description' => 'Fährt gut.']], $full['translations']);
 pin('with includes it still matches the schema', [], $validator->check(Schema::ref('Listing'), $full));
 $sparse = SparseFieldset::parse('title, price', ListingSerializer::MEMBERS, new ExtensionMembers(), 'listing');
@@ -308,7 +308,7 @@ pin('an unknown slug is null', null, $catalog->lookup('boats', 'en_US'));
 $withFields = $categories->one((array) $catalog->find(2), $ctx($anonymous), [
     ['pk_i_id' => '4', 's_slug' => 'year', 's_name' => 'Year', 'e_type' => 'DROPDOWN', 'b_required' => '1', 'b_searchable' => '0', 's_options' => 'a, b,,c'],
 ]);
-pin('a single category lists its fields', [['id' => 4, 'slug' => 'year', 'name' => 'Year', 'type' => 'dropdown', 'required' => true, 'searchable' => false, 'options' => ['a', 'b', 'c']]], $withFields['fields']);
+pin('a single category lists its fields', [['id' => 4, 'slug' => 'year', 'name' => 'Year', 'type' => 'dropdown', 'required' => true, 'searchable' => false, 'options' => ['a', 'b', 'c']]], $withFields['custom_fields']);
 
 harness_section('comments and locations');
 $comment = (new CommentSerializer())->one([

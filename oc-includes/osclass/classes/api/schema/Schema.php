@@ -27,7 +27,7 @@ final class Schema
 {
     /** The object schemas, each written out below. */
     private const OBJECTS = [
-        'Problem', 'PageMeta', 'PageLinks', 'Photo', 'CategoryRef', 'FieldValue', 'Listing', 'User', 'Category', 'Field',
+        'Problem', 'PageMeta', 'PageLinks', 'Photo', 'CategoryRef', 'CustomFieldValue', 'Listing', 'User', 'Category', 'CustomField',
         'Country', 'Region', 'City', 'CityArea', 'Currency', 'Comment', 'Site', 'OpenApiDocument',
         'Warning', 'TokenDocument', 'TokenRequest', 'SignOutRequest', 'SessionToken', 'AccountInput', 'AccountDocument', 'PasswordChange', 'Session',
         'PersonalKey', 'PersonalKeyInput', 'Registration', 'NewAccount',
@@ -36,7 +36,7 @@ final class Schema
     ];
 
     /** `<name>List`: every item at once. */
-    private const LISTS = ['Category', 'Field', 'Currency', 'Photo', 'Session', 'PersonalKey', 'Alert'];
+    private const LISTS = ['Category', 'CustomField', 'Currency', 'Photo', 'Session', 'PersonalKey', 'Alert'];
 
     /** `<name>List` that is paged: the location lists keep their List names. */
     private const PAGED_LISTS = ['Country', 'Region', 'City', 'CityArea'];
@@ -108,7 +108,7 @@ final class Schema
                 'slug' => self::nullable('string'),
                 'name' => self::nullable('string'),
             ], ['id', 'slug', 'name']),
-            'FieldValue'   => self::object([
+            'CustomFieldValue'   => self::object([
                 'id'    => ['type' => 'integer'],
                 'slug'  => ['type' => 'string'],
                 'name'  => ['type' => 'string'],
@@ -121,7 +121,7 @@ final class Schema
             'Listing'      => self::listing($ext),
             'User'         => self::user($ext),
             'Category'     => self::category($ext),
-            'Field'        => self::object([
+            'CustomField'        => self::object([
                 'id'         => ['type' => 'integer'],
                 'slug'       => ['type' => 'string'],
                 'name'       => ['type' => 'string'],
@@ -290,7 +290,7 @@ final class Schema
                 ],
             ],
             'photos'       => ['type' => 'array', 'items' => self::ref('Photo')],
-            'fields'       => ['type' => 'array', 'items' => self::ref('FieldValue'), 'description' => 'With `include=fields`.'],
+            'custom_fields' => ['type' => 'array', 'items' => self::ref('CustomFieldValue'), 'description' => 'With `include=custom_fields`.'],
             'translations' => [
                 'type'                 => ['object', 'null'],
                 'description'          => 'With `include=translations`: locale => {title, description}.',
@@ -367,7 +367,7 @@ final class Schema
             'listings_count' => ['type' => 'integer'],
             'price_enabled'  => ['type' => 'boolean'],
             'children'       => ['type' => 'array', 'items' => self::ref('Category'), 'description' => 'With `tree=1`.'],
-            'fields'         => ['type' => 'array', 'items' => self::ref('Field'), 'description' => 'On a single category.'],
+            'custom_fields'  => ['type' => 'array', 'items' => self::ref('CustomField'), 'description' => 'On a single category.'],
             'ext'            => $ext->schemaFor('category'),
         ], ['id', 'parent_id', 'slug', 'name']);
     }
@@ -531,7 +531,7 @@ final class Schema
                 'price_max'   => ['type' => 'integer', 'minimum' => 0],
                 'with_photos' => ['type' => 'boolean'],
                 'premium'     => ['type' => 'boolean'],
-                'field'       => ['type' => 'object', 'additionalProperties' => ['type' => ['string', 'integer', 'object']]],
+                'custom_field' => ['type' => 'object', 'additionalProperties' => ['type' => ['string', 'integer', 'object']]],
             ]),
             'Alert'        => self::object([
                 'id'         => ['type' => 'integer'],
@@ -610,7 +610,7 @@ final class Schema
             'lng'           => ['type' => ['number', 'null'], 'minimum' => -180, 'maximum' => 180],
             'contact_phone' => $text(45),
             'show_email'    => ['type' => 'boolean'],
-            'fields'        => [
+            'custom_fields' => [
                 'type'                 => 'object',
                 'description'          => 'Custom field id => value; {from, to} for a date range; null removes it.',
                 'additionalProperties' => ['type' => ['string', 'number', 'boolean', 'object', 'null']],

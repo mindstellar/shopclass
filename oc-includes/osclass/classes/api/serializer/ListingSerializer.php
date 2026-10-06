@@ -24,7 +24,7 @@ final class ListingSerializer
 {
     public const PUBLIC_MEMBERS = [
         'id', 'url', 'status', 'title', 'description', 'locale', 'category', 'price', 'location', 'contact', 'seller',
-        'photos', 'fields', 'translations', 'premium', 'views', 'published_at', 'updated_at', 'expires_at',
+        'photos', 'custom_fields', 'translations', 'premium', 'views', 'published_at', 'updated_at', 'expires_at',
     ];
 
     /** Sent to the owner and admins. */
@@ -36,7 +36,7 @@ final class ListingSerializer
     public const MEMBERS = [...self::PUBLIC_MEMBERS, ...self::OWNER_MEMBERS, ...self::ADMIN_MEMBERS, 'ext'];
 
     /** The members `?include=` switches on. */
-    public const INCLUDES = ['fields', 'translations'];
+    public const INCLUDES = ['custom_fields', 'translations'];
 
     public function __construct(
         private Links $links,
@@ -95,7 +95,7 @@ final class ListingSerializer
             'contact'      => fn () => $this->contact($item, $context, $now ?? time()),
             'seller'       => fn () => $this->seller($item, $relations),
             'photos'       => fn () => $this->photos($relations->photos($id)),
-            'fields'       => $context->includes('fields') ? fn () => $this->fields->values($relations->fields($id), $locale) : null,
+            'custom_fields' => $context->includes('custom_fields') ? fn () => $this->fields->values($relations->fields($id), $locale) : null,
             'translations' => $context->includes('translations') ? static fn () => self::translations($item) : null,
             'premium'      => static fn () => Format::bool($item['b_premium'] ?? 0),
             'views'        => static fn () => Format::int($item['i_num_views'] ?? 0),
@@ -130,7 +130,7 @@ final class ListingSerializer
         return [
             'seller' => $context->wants('seller'),
             'photos' => $context->wants('photos'),
-            'fields' => $context->includes('fields') && $context->wants('fields'),
+            'fields' => $context->includes('custom_fields') && $context->wants('custom_fields'),
         ];
     }
 

@@ -324,11 +324,11 @@ pin('matches the schema', array(), $schemaErrors('CategoryList', $r));
 $r = $get('categories', array('tree' => '1'), $publicKey);
 pin('as a tree', array('cars', 'bikes'), array_column($r->body()['data'][0]['children'], 'slug'));
 $r = $get('categories/cars', array(), $publicKey);
-pin('one category by slug, with its custom fields', array($cars, $vehicles, array('colour')), array($r->body()['data']['id'], $r->body()['data']['parent_id'], array_column($r->body()['data']['fields'], 'slug')));
+pin('one category by slug, with its custom fields', array($cars, $vehicles, array('colour')), array($r->body()['data']['id'], $r->body()['data']['parent_id'], array_column($r->body()['data']['custom_fields'], 'slug')));
 pin('by id', 'cars', $get('categories/' . $cars, array(), $publicKey)->body()['data']['slug']);
 pin('an unknown category is 404', 404, $get('categories/nosuch', array(), $publicKey)->status());
-pin('fields of a category', array('colour'), array_column($get('fields', array('category' => 'cars'), $publicKey)->body()['data'], 'slug'));
-pin('fields of an unknown category is 422', 422, $get('fields', array('category' => 'nosuch'), $publicKey)->status());
+pin('fields of a category', array('colour'), array_column($get('custom-fields', array('category' => 'cars'), $publicKey)->body()['data'], 'slug'));
+pin('fields of an unknown category is 422', 422, $get('custom-fields', array('category' => 'nosuch'), $publicKey)->status());
 pin('fields= trims a category', array('id', 'slug'), array_keys($get('categories/cars', array('fields' => 'slug'), $publicKey)->body()['data']));
 
 harness_section('locations');
@@ -366,7 +366,7 @@ pin('a limit past the site cap is refused', 422, $get('listings', array('limit' 
 pin('a schema-invalid sort is refused', 422, $get('listings', array('sort' => 'secret'), $publicKey)->status());
 pin('a pattern search', array($bike), $ids($get('listings', array('q' => 'racing'), $publicKey)));
 pin('by seller', 1, $get('listings', array('user' => (string) $other, 'count' => 'true'), $publicKey)->body()['meta']['total']);
-pin('a custom field filter', 12, $get('listings', array('category' => 'cars', 'field' => array((string) $fieldId => 'red'), 'count' => 'true'), $publicKey)->body()['meta']['total']);
+pin('a custom field filter', 12, $get('listings', array('category' => 'cars', 'custom_field' => array((string) $fieldId => 'red'), 'count' => 'true'), $publicKey)->body()['meta']['total']);
 
 $walk = static function (array $query) use ($get, $publicKey, $ids): array {
     $seen  = array();
@@ -419,13 +419,13 @@ pin('and its condition applies', array(24, false), array($r->body()['meta']['tot
 
 harness_section('one listing');
 $views = static fn (int $id): int => (int) $admin->query("SELECT i_num_views FROM {$p}t_item_stats WHERE fk_i_item_id = $id")->fetch_row()[0];
-$r     = $get('listings/' . $live[0], array('include' => 'fields'), $publicKey);
+$r     = $get('listings/' . $live[0], array('include' => 'custom_fields'), $publicKey);
 $data  = $r->body()['data'];
 pin('a live listing', array(200, $live[0], 'active', 'Car 0', 'cars', 'vehicles'), array($r->status(), $data['id'], $data['status'], $data['title'], $data['category']['slug'], $data['category']['path'][0]['slug']));
 pin('its price as a decimal string', array('amount' => '1000.00', 'currency' => 'USD', 'formatted' => '1,000.00 US Dollar'), $data['price']);
 pin('the contact e-mail stays hidden, the phone shows', array(null, '555-0100'), array($data['contact']['email'], $data['contact']['phone']));
 pin('the seller', array('id' => $seller, 'name' => 'seller', 'username' => 'seller', 'url' => 'http://localhost/user/' . $seller), $data['seller']);
-pin('custom fields with include=fields', array(array('id' => $fieldId, 'slug' => 'colour', 'name' => 'Colour', 'type' => 'text', 'value' => 'blue')), $data['fields']);
+pin('custom fields with include=custom_fields', array(array('id' => $fieldId, 'slug' => 'colour', 'name' => 'Colour', 'type' => 'text', 'value' => 'blue')), $data['custom_fields']);
 pin('the location', array('Alpha', 'Aville'), array($data['location']['region']['name'], $data['location']['city']['name']));
 pin('matches the schema', array(), $schemaErrors('ListingDocument', $r));
 pin('reading it through the API counts no view', 0, $views($live[0]));
@@ -523,8 +523,8 @@ echo "  a 20-listing page, warm: $twenty queries\n";
 pin('a 20-listing page costs the same queries as a 5-listing page', $five, $twenty);
 pin('a warm 20-listing page costs 8 queries: key, searchable fields, search, three in extendData, photos, sellers', 8, $twenty);
 pin('count=true adds the count query', $twenty + 1, $count(array('category' => 'cars', 'limit' => 20, 'count' => 'true')));
-pin('include=fields adds one query, whatever the page size', array($twenty + 1, $twenty + 1), array(
-    $count(array('category' => 'cars', 'limit' => 5, 'include' => 'fields')), $count(array('category' => 'cars', 'limit' => 20, 'include' => 'fields')),
+pin('include=custom_fields adds one query, whatever the page size', array($twenty + 1, $twenty + 1), array(
+    $count(array('category' => 'cars', 'limit' => 5, 'include' => 'custom_fields')), $count(array('category' => 'cars', 'limit' => 20, 'include' => 'custom_fields')),
 ));
 pin('fields=id,title skips photos and sellers', $twenty - 2, $count(array('category' => 'cars', 'limit' => 20, 'fields' => 'id,title')));
 $r = $get('listings', array('category' => 'cars', 'limit' => 20), $publicKey);

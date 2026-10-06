@@ -342,7 +342,7 @@ $listing = static fn (array $extra = array()): array => $extra + array(
     'region_id'     => $region,
     'city_id'       => $city,
     'contact_phone' => '5550199',
-    'fields'        => array((string) $colour => 'red'),
+    'custom_fields'        => array((string) $colour => 'red'),
 );
 
 $sueToken = $login('sue');
@@ -374,7 +374,7 @@ pin('an unknown city is 422', array(422, '/city_id'), (static fn (Response $r): 
 pin('ItemActions\' own refusal is 422 with its message', array(422, 'Description too short (en_US).'), (static fn (Response $r): array => array($r->status(), $r->body()['errors'][0]['message'] ?? null))($call('POST', 'listings', $listing(array('description' => 'ab')), $sueToken)));
 pin('a refusal carries the member and code of each error', array('validation_failed', '/description', 'too_short'), (static fn (Response $r): array => array($r->body()['code'] ?? null, $r->body()['errors'][0]['pointer'] ?? null, $r->body()['errors'][0]['code'] ?? null))($call('POST', 'listings', $listing(array('description' => 'ab')), $sueToken)));
 pin('a language the site does not have is 422', array(422, '/translations/fr_FR'), (static fn (Response $r): array => array($r->status(), $r->body()['errors'][0]['pointer'] ?? null))($call('POST', 'listings', $listing(array('translations' => array('fr_FR' => array('title' => 'Voiture')))), $sueToken)));
-pin('a required custom field left out is refused as on the form', 422, $call('POST', 'listings', $listing(array('fields' => array())), $sueToken)->status());
+pin('a required custom field left out is refused as on the form', 422, $call('POST', 'listings', $listing(array('custom_fields' => array())), $sueToken)->status());
 pin('without a credential it is 401', 401, $call('POST', 'listings', $listing())->status());
 $readOnly = (new ApiKeys(new ApiCredential(), new Scopes(), new SystemClock()))->create('key', 'reader', array('listings:read'), KeyOwner::user($sue))->token();
 pin('without listings:write it is 403', '403 insufficient_scope', $code($call('POST', 'listings', $listing(), $readOnly)));
@@ -432,7 +432,7 @@ pin('members not sent keep their values', array('Red hatchback', 'A small red ca
 ));
 pin('edited_item fires once', 1, $fired['edited_item'] ?? 0);
 pin('matches the schema', array(), $schemaErrors('SavedListing', $r));
-$r = $call('PATCH', 'listings/' . $made, array('title' => 'Red hatchback with new tyres', 'fields' => array((string) $colour => 'crimson'), 'price' => null), $sueToken);
+$r = $call('PATCH', 'listings/' . $made, array('title' => 'Red hatchback with new tyres', 'custom_fields' => array((string) $colour => 'crimson'), 'price' => null), $sueToken);
 pin('what is sent changes; a null price removes it', array('Red hatchback with new tyres', 'crimson', null, null), array(
     $r->body()['data']['title'] ?? null, $admin->query("SELECT s_value FROM {$p}t_item_meta WHERE fk_i_item_id = $made")->fetch_row()[0],
     array_key_exists('price', $r->body()['data'] ?? array()) ? $r->body()['data']['price'] : 'x', $itemRow($made)['i_price'],
@@ -442,13 +442,13 @@ pin('another seller\'s pending listing is 404', 404, $call('PATCH', 'listings/' 
 pin('an unknown listing is 404', 404, $call('PATCH', 'listings/999999', array('price' => '1'), $sueToken)->status());
 pin('an edit is refused as the form refuses it', 422, $call('PATCH', 'listings/' . $made, array('title' => ''), $sueToken)->status());
 $colourOf = static fn (): ?string => $admin->query("SELECT s_value FROM {$p}t_item_meta WHERE fk_i_item_id = $made AND fk_i_field_id = $colour")->fetch_row()[0] ?? null;
-$call('PATCH', 'listings/' . $made, array('fields' => array((string) $colour => 'Black & white < "grey"')), $sueToken);
+$call('PATCH', 'listings/' . $made, array('custom_fields' => array((string) $colour => 'Black & white < "grey"')), $sueToken);
 $once = $colourOf();
 $call('PATCH', 'listings/' . $made, array('price' => '1250'), $sueToken);
 $call('PATCH', 'listings/' . $made, array('price' => '1200'), $sueToken);
 check('the value was stored', (string) $once !== '');
 pin('a text field not sent is stored again as it was, not encoded once more', $once, $colourOf());
-$call('PATCH', 'listings/' . $made, array('fields' => array((string) $colour => 'crimson')), $sueToken);
+$call('PATCH', 'listings/' . $made, array('custom_fields' => array((string) $colour => 'crimson')), $sueToken);
 
 harness_section('photos');
 $stage = $call('POST', 'photos', null, $sueToken, array(), $photoFile($jpeg));
@@ -502,10 +502,10 @@ pin('a public one is downloaded and attached', array(201, 1), array($r->status()
 $settings = new ApiSettings(true);
 
 harness_section('custom fields are the category\'s own, cleaned as the form cleans them');
-$r = $call('POST', 'listings', $listing(array('category_id' => $misc, 'title' => 'No fields here', 'fields' => array((string) $colour => '<script>alert(1)</script>'))), $sueToken);
+$r = $call('POST', 'listings', $listing(array('category_id' => $misc, 'title' => 'No fields here', 'custom_fields' => array((string) $colour => '<script>alert(1)</script>'))), $sueToken);
 $noFields = (int) ($r->body()['data']['id'] ?? 0);
 pin('a category with no fields takes none: nothing is stored', array(201, 0), array($r->status(), (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_meta WHERE fk_i_item_id = $noFields")->fetch_row()[0]));
-$r = $call('POST', 'listings', $listing(array('title' => 'Foreign field', 'fields' => array((string) $colour => '<b onmouseover="x()">red</b>', (string) $hull => '<script>alert(1)</script>'))), $sueToken);
+$r = $call('POST', 'listings', $listing(array('title' => 'Foreign field', 'custom_fields' => array((string) $colour => '<b onmouseover="x()">red</b>', (string) $hull => '<script>alert(1)</script>'))), $sueToken);
 $foreign = (int) ($r->body()['data']['id'] ?? 0);
 pin('another category\'s field is dropped; a value is purified as the form\'s', array(201, array((string) $colour => 'red')), array(
     $r->status(), array_column($admin->query("SELECT fk_i_field_id, s_value FROM {$p}t_item_meta WHERE fk_i_item_id = $foreign")->fetch_all(MYSQLI_ASSOC), 's_value', 'fk_i_field_id'),

@@ -134,7 +134,7 @@ final class ListingSearch
         if ($request->queryBool('premium')) {
             $params['bPremium'] = 1;
         }
-        $meta = $request->query()['field'] ?? null;
+        $meta = $request->query()['custom_field'] ?? null;
         if (is_array($meta) && $meta !== []) {
             $params['meta'] = $meta;
         }

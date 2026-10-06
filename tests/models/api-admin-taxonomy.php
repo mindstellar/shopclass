@@ -145,25 +145,25 @@ pin('nor one a listing is priced in', '409 conflict', api_admin_code($call('DELE
 pin('DELETE: 204, then 404', [204, 404], [$call('DELETE', 'admin/currencies/GBP', null, $boss)->status(), $call('DELETE', 'admin/currencies/GBP', null, $boss)->status()]);
 
 harness_section('custom fields');
-$r     = $call('POST', 'admin/fields', ['name' => 'Body style', 'type' => 'dropdown', 'options' => ['Saloon', 'Estate'], 'categories' => [$cars], 'searchable' => true], $boss);
+$r     = $call('POST', 'admin/custom-fields', ['name' => 'Body style', 'type' => 'dropdown', 'options' => ['Saloon', 'Estate'], 'categories' => [$cars], 'searchable' => true], $boss);
 $field = (int) ($r->body()['data']['id'] ?? 0);
 pin('POST: 201 with a slug, options and categories', [201, 'body-style', 'dropdown', ['Saloon', 'Estate'], [$cars], true], [
     $r->status(), $r->body()['data']['slug'] ?? null, $r->body()['data']['type'] ?? null, $r->body()['data']['options'] ?? null, $r->body()['data']['categories'] ?? null, $r->body()['data']['searchable'] ?? null,
 ]);
-pin('matches the schema', [], api_admin_schema_errors('AdminFieldDocument', $r));
-pin('Location names it, and a GET there reads it', ['http://localhost/api/v1/admin/fields/' . $field, 200, $field, 404], [
-    $r->header('Location'), $call('GET', 'admin/fields/' . $field, null, $boss)->status(), $call('GET', 'admin/fields/' . $field, null, $boss)->body()['data']['id'] ?? null, $call('GET', 'admin/fields/99999', null, $boss)->status(),
+pin('matches the schema', [], api_admin_schema_errors('AdminCustomFieldDocument', $r));
+pin('Location names it, and a GET there reads it', ['http://localhost/api/v1/admin/custom-fields/' . $field, 200, $field, 404], [
+    $r->header('Location'), $call('GET', 'admin/custom-fields/' . $field, null, $boss)->status(), $call('GET', 'admin/custom-fields/' . $field, null, $boss)->body()['data']['id'] ?? null, $call('GET', 'admin/custom-fields/99999', null, $boss)->status(),
 ]);
-$r = $call('POST', 'admin/fields', ['name' => 'Body', 'slug' => 'body-style', 'type' => 'text'], $boss);
+$r = $call('POST', 'admin/custom-fields', ['name' => 'Body', 'slug' => 'body-style', 'type' => 'text'], $boss);
 pin('a taken slug gets a number', 'body-style_1', $r->body()['data']['slug'] ?? null);
-pin('a taken name is 422', [422, '/name'], $pointer($call('POST', 'admin/fields', ['name' => 'Body style', 'type' => 'text'], $boss)));
-pin('an unknown category is 422', [422, '/categories'], $pointer($call('POST', 'admin/fields', ['name' => 'Doors', 'type' => 'number', 'categories' => [99999]], $boss)));
-$r = $call('PATCH', 'admin/fields/' . $field, ['required' => true, 'categories' => []], $boss);
+pin('a taken name is 422', [422, '/name'], $pointer($call('POST', 'admin/custom-fields', ['name' => 'Body style', 'type' => 'text'], $boss)));
+pin('an unknown category is 422', [422, '/categories'], $pointer($call('POST', 'admin/custom-fields', ['name' => 'Doors', 'type' => 'number', 'categories' => [99999]], $boss)));
+$r = $call('PATCH', 'admin/custom-fields/' . $field, ['required' => true, 'categories' => []], $boss);
 pin('PATCH: members not sent keep their values; categories are replaced', [200, true, 'body-style', [], 'Body style'], [
     $r->status(), $r->body()['data']['required'] ?? null, $r->body()['data']['slug'] ?? null, $r->body()['data']['categories'] ?? null, $r->body()['data']['name'] ?? null,
 ]);
-pin('the public field list shows it', true, in_array($field, array_column($call('GET', 'fields', null, $boss)->body()['data'] ?? [], 'id'), true));
-pin('DELETE: 204, then 404', [204, 404], [$call('DELETE', 'admin/fields/' . $field, null, $boss)->status(), $call('DELETE', 'admin/fields/' . $field, null, $boss)->status()]);
+pin('the public field list shows it', true, in_array($field, array_column($call('GET', 'custom-fields', null, $boss)->body()['data'] ?? [], 'id'), true));
+pin('DELETE: 204, then 404', [204, 404], [$call('DELETE', 'admin/custom-fields/' . $field, null, $boss)->status(), $call('DELETE', 'admin/custom-fields/' . $field, null, $boss)->status()]);
 
 harness_section('locations');
 $r    = $call('POST', 'admin/regions', ['country' => 'us', 'name' => 'Beta'], $boss);
@@ -220,15 +220,15 @@ pin('PATCH a category\'s texts: tags out', ['Lorries', ''], [
     $text("SELECT s_name FROM {$p}t_category_description WHERE fk_i_category_id = $trucks"), $text("SELECT s_description FROM {$p}t_category_description WHERE fk_i_category_id = $trucks"),
 ]);
 pin('PATCH a blank name is 422', [422, '/translations/en_US/name'], $pointer($call('PATCH', 'admin/categories/' . $trucks, ['translations' => ['en_US' => ['name' => ' ']]], $boss)));
-$r     = $call('POST', 'admin/fields', ['name' => '<i>Size</i>', 'type' => 'dropdown', 'options' => ['<b>Small</b>', ' Large ']], $boss);
+$r     = $call('POST', 'admin/custom-fields', ['name' => '<i>Size</i>', 'type' => 'dropdown', 'options' => ['<b>Small</b>', ' Large ']], $boss);
 $size  = (int) ($r->body()['data']['id'] ?? 0);
 pin('POST a field: its name and options cleaned', [201, 'Size', 'Small,Large'], [
     $r->status(), $text("SELECT s_name FROM {$p}t_meta_fields WHERE pk_i_id = $size"), $text("SELECT s_options FROM {$p}t_meta_fields WHERE pk_i_id = $size"),
 ]);
-pin('an option with a comma is 422, as the field screen would split it', [422, '/options/1'], $pointer($call('POST', 'admin/fields', ['name' => 'Fit', 'type' => 'dropdown', 'options' => ['Slim', 'Loose, relaxed']], $boss)));
-pin('a blank option is 422', [422, '/options/0'], $pointer($call('PATCH', 'admin/fields/' . $size, ['options' => ['<b></b>']], $boss)));
-pin('a blank field name is 422', [422, '/name'], $pointer($call('POST', 'admin/fields', ['name' => '  ', 'type' => 'text'], $boss)));
-$call('PATCH', 'admin/fields/' . $size, ['name' => '<script>x</script>Fit', 'options' => ['<u>S</u>', 'M']], $boss);
+pin('an option with a comma is 422, as the field screen would split it', [422, '/options/1'], $pointer($call('POST', 'admin/custom-fields', ['name' => 'Fit', 'type' => 'dropdown', 'options' => ['Slim', 'Loose, relaxed']], $boss)));
+pin('a blank option is 422', [422, '/options/0'], $pointer($call('PATCH', 'admin/custom-fields/' . $size, ['options' => ['<b></b>']], $boss)));
+pin('a blank field name is 422', [422, '/name'], $pointer($call('POST', 'admin/custom-fields', ['name' => '  ', 'type' => 'text'], $boss)));
+$call('PATCH', 'admin/custom-fields/' . $size, ['name' => '<script>x</script>Fit', 'options' => ['<u>S</u>', 'M']], $boss);
 pin('PATCH a field: cleaned too', ['Fit', 'S,M'], [$text("SELECT s_name FROM {$p}t_meta_fields WHERE pk_i_id = $size"), $text("SELECT s_options FROM {$p}t_meta_fields WHERE pk_i_id = $size")]);
 $r     = $call('POST', 'admin/regions', ['country' => 'US', 'name' => '<script>alert(1)</script>Gamma'], $boss);
 $gamma = (int) ($r->body()['data']['id'] ?? 0);

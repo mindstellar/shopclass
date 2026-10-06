@@ -78,7 +78,7 @@ curl -i -X POST $API/listings \
     "city": "Austin",
     "contact_phone": "+1 555 0100",
     "show_email": false,
-    "fields": { "4": "Blue" },
+    "custom_fields": { "4": "Blue" },
     "photo_tokens": ["9f2b6c1e0a7d4e3b8c5a1d2e3f405162"]
   }'
 ```
@@ -115,12 +115,12 @@ Required: `category_id`, `title`, `description`.
 | `lat`, `lng` | number or `null` | |
 | `contact_phone` | string, up to 45 | |
 | `show_email` | boolean | Show the seller's e-mail on the listing. |
-| `fields` | object | Custom field id to value. See below. |
+| `custom_fields` | object | Custom field id to value. See below. |
 | `photo_tokens` | array, up to 50 | Tokens from `POST /photos`, added in this order. |
 | `photo_urls` | array, up to 20 | Web addresses the site downloads, when the site allows it. |
 | `ext` | object | Plugin members, under the plugin's slug. |
 
-Custom `fields` are limited to the listing's category and cleaned as the web form cleans them.
+`custom_fields` are limited to the listing's category and cleaned as the web form cleans them.
 A field that is not in the category is dropped without an error. A date range is
 `{"from": "2026-01-01", "to": "2026-01-31"}`. `null` removes a value.
 
@@ -143,7 +143,7 @@ Plugins can change the body before it is saved with the `api_listing_input` filt
 curl -X PATCH $API/listings/412 \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/merge-patch+json" \
-  -d '{ "price": "75.00", "fields": { "4": null } }'
+  -d '{ "price": "75.00", "custom_fields": { "4": null } }'
 ```
 
 Send `application/merge-patch+json` or `application/json`. The answer repeats `Accept-Patch`.

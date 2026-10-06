@@ -47,7 +47,7 @@ final class RowVersions implements ResourceVersions
         'account/keys/{id}'             => self::KEY,
         'admin/keys/{id}'               => self::KEY,
         'admin/categories/{id}'         => ['arg' => 'id', 'tables' => [['t_category', 'pk_i_id'], ['t_category_description', 'fk_i_category_id']]],
-        'admin/fields/{id}'             => ['arg' => 'id', 'tables' => [['t_meta_fields', 'pk_i_id'], ['t_meta_categories', 'fk_i_field_id']]],
+        'admin/custom-fields/{id}'             => ['arg' => 'id', 'tables' => [['t_meta_fields', 'pk_i_id'], ['t_meta_categories', 'fk_i_field_id']]],
         'admin/currencies/{code}'       => ['arg' => 'code', 'tables' => [['t_currency', 'pk_c_code']]],
         'admin/regions/{id}'            => ['arg' => 'id', 'tables' => [['t_region', 'pk_i_id']]],
         'admin/cities/{id}'             => ['arg' => 'id', 'tables' => [['t_city', 'pk_i_id']]],

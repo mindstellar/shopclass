@@ -179,7 +179,7 @@ final class ListingBody
         if (array_key_exists('show_email', $body)) {
             $form['showEmail'] = $body['show_email'] === true ? '1' : '0';
         }
-        foreach ((array) ($body['fields'] ?? []) as $field => $value) {
+        foreach ((array) ($body['custom_fields'] ?? []) as $field => $value) {
             if (!ctype_digit((string) $field)) {
                 continue;
             }

@@ -316,7 +316,7 @@ $listing = static fn (array $extra = array()): array => $extra + array(
     'region_id'     => $region,
     'city_id'       => $city,
     'contact_phone' => '5550199',
-    'fields'        => array((string) $colour => 'red'),
+    'custom_fields'        => array((string) $colour => 'red'),
 );
 
 /** Every core hook and filter, recorded in the order it runs. */
