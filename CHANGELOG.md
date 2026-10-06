@@ -2,9 +2,9 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
-## Shopclass 6.4.4.beta1
+## Shopclass 6.4.4
 
-This beta helps sites where PHP cannot write the site's files: the updater now stops before it
+This release helps sites where PHP cannot write the site's files: the updater now stops before it
 changes anything and says which folders are blocked, and `php oc-cli.php core:update` updates from
 the shell as the file owner. It also runs on PHP 8.5 without deprecation notices.
 
