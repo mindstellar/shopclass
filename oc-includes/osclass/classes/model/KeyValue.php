@@ -131,17 +131,28 @@ final class KeyValue extends Model
      * Replace the value and state of an existing key, keeping its expiry.
      *
      * @param string|null $onlyState change it only while its state is this
+     * @param string|null $onlyValue change it only while its value is this
      *
-     * @return int rows changed: 0 when there is no such key, or it is in another state
+     * @return int rows changed: 0 when there is no such key, or it is in another state or value
      * @throws \InvalidArgumentException on a malformed group, key, state or value
      * @throws \mindstellar\database\DbException
      */
-    public function update(string $group, string $key, ?string $value, ?string $state, ?string $onlyState = null, ?int $now = null): int
-    {
+    public function update(
+        string $group,
+        string $key,
+        ?string $value,
+        ?string $state,
+        ?string $onlyState = null,
+        ?int $now = null,
+        ?string $onlyValue = null
+    ): int {
         self::check($group, $key, $state, $value);
         $query = $this->table()->where('s_group', $group)->where('s_key', $key);
         if ($onlyState !== null) {
             $query = $query->where('s_state', $onlyState);
+        }
+        if ($onlyValue !== null) {
+            $query = $query->where('s_value', $onlyValue);
         }
 
         return $query->update(['s_value' => $value, 's_state' => $state, 'dt_updated' => self::datetime($now ?? time())]);
@@ -168,17 +179,21 @@ final class KeyValue extends Model
 
     /**
      * @param string|null $onlyState delete it only while its state is this
+     * @param string|null $onlyValue delete it only while its value is this
      *
      * @return int rows removed
      * @throws \InvalidArgumentException on a malformed group or key
      * @throws \mindstellar\database\DbException
      */
-    public function delete(string $group, string $key, ?string $onlyState = null): int
+    public function delete(string $group, string $key, ?string $onlyState = null, ?string $onlyValue = null): int
     {
         self::check($group, $key);
         $query = $this->table()->where('s_group', $group)->where('s_key', $key);
         if ($onlyState !== null) {
             $query = $query->where('s_state', $onlyState);
+        }
+        if ($onlyValue !== null) {
+            $query = $query->where('s_value', $onlyValue);
         }
 
         return $query->delete();

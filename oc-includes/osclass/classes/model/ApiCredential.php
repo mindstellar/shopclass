@@ -175,6 +175,14 @@ final class ApiCredential extends Model implements SignInStore
         ) !== null;
     }
 
+    public function familyIsLive(string $family): bool
+    {
+        return osc_db_select_one(
+            'SELECT 1 FROM ' . DB_TABLE_PREFIX . self::TABLE . ' WHERE s_family = ? AND dt_revoked IS NULL LIMIT 1',
+            [$family]
+        ) !== null;
+    }
+
     /**
      * The owner's sign-out stamp now, for a credential issued without one.
      */

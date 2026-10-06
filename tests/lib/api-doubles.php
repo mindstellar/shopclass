@@ -36,14 +36,15 @@ use mindstellar\utility\SystemClock;
 /** The Idempotency-Key store as an array. */
 final class MemoryIdempotencyStore implements IdempotencyStore
 {
-    /** @var array<string,array{fp:string,status:string,response:?string,created:int,expires:int}> */
+    /** @var array<string,array{fp:string,lock:string,status:string,response:?string,created:int,expires:int}> */
     public array $rows = [];
 
-    public function claim(string $hash, string $fingerprint, int $now, int $expiresAt, int $lockTtl): ?IdempotencyRecord
+    public function claim(string $hash, string $fingerprint, int $now, int $expiresAt, int $lockTtl, string $lock): ?IdempotencyRecord
     {
-        $row = $this->rows[$hash] ?? null;
-        if ($row === null || $row['expires'] <= $now || ($row['status'] === IdempotencyRecord::LOCKED && $row['created'] < $now - $lockTtl)) {
-            $this->rows[$hash] = ['fp' => $fingerprint, 'status' => IdempotencyRecord::LOCKED, 'response' => null, 'created' => $now, 'expires' => $expiresAt];
+        $row   = $this->rows[$hash] ?? null;
+        $stale = $row !== null && $row['status'] === IdempotencyRecord::LOCKED && $row['created'] < $now - $lockTtl && $row['fp'] === $fingerprint;
+        if ($row === null || $row['expires'] <= $now || $stale) {
+            $this->rows[$hash] = ['fp' => $fingerprint, 'lock' => $lock, 'status' => IdempotencyRecord::LOCKED, 'response' => null, 'created' => $now, 'expires' => $expiresAt];
 
             return null;
         }
@@ -51,15 +52,24 @@ final class MemoryIdempotencyStore implements IdempotencyStore
         return new IdempotencyRecord($row['fp'], $row['status'], $row['response']);
     }
 
-    public function complete(string $hash, int $status, string $response): void
+    public function complete(string $hash, string $lock, int $status, string $response): void
     {
-        $this->rows[$hash]['status']   = IdempotencyRecord::DONE;
-        $this->rows[$hash]['response'] = $response;
+        if ($this->holds($hash, $lock)) {
+            $this->rows[$hash]['status']   = IdempotencyRecord::DONE;
+            $this->rows[$hash]['response'] = $response;
+        }
     }
 
-    public function release(string $hash): void
+    public function release(string $hash, string $lock): void
     {
-        unset($this->rows[$hash]);
+        if ($this->holds($hash, $lock)) {
+            unset($this->rows[$hash]);
+        }
+    }
+
+    private function holds(string $hash, string $lock): bool
+    {
+        return ($this->rows[$hash]['status'] ?? null) === IdempotencyRecord::LOCKED && $this->rows[$hash]['lock'] === $lock;
     }
 }
 
@@ -71,6 +81,16 @@ final class MemoryIdempotencyStore implements IdempotencyStore
 function api_test_limiter(?callable $count = null): RateLimiter
 {
     return new RateLimiter($count ?? static fn (): int => 1, new SystemClock());
+}
+
+/**
+ * Access tokens whose sign-in is live, unless $familyLive says otherwise.
+ *
+ * @param callable|null $familyLive (family) => whether the sign-in is live
+ */
+function api_test_access_tokens(Scopes $scopes, UserRows $users, int $ttl = AccessTokens::TTL, ?callable $familyLive = null): AccessTokens
+{
+    return new AccessTokens($scopes, $users, $ttl, $familyLive ?? static fn (): bool => true);
 }
 
 /**
@@ -91,7 +111,7 @@ function api_test_authenticator(ApiKeys $keys, ?FailureCounter $failures = null,
     return new Authenticator(
         $keys,
         $failures ?? new FailureCounter(static fn (): array => [], static fn (): int => 1),
-        $tokens ?? new AccessTokens(new Scopes(), api_test_users()),
+        $tokens ?? api_test_access_tokens(new Scopes(), api_test_users()),
         $session
     );
 }

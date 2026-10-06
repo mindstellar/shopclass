@@ -25,8 +25,8 @@ use mindstellar\utility\Clock;
  *
  * Keys belong to the credential that sent them (one sign-in, one key, or one user's same-site
  * session), and are kept for a day. The first request locks the key while it runs; the same
- * key meanwhile answers 409. The same key with
- * a different method, path, query or body answers 422. A 5xx answer is not kept, so the
+ * key meanwhile answers 409. A lock left for LOCK_TTL seconds is taken over only by the same
+ * request. The same key with a different method, path, query or body answers 422. A 5xx answer is not kept, so the
  * request can be retried.
  */
 final class Idempotency
@@ -64,7 +64,8 @@ final class Idempotency
         $hash        = hash('sha256', self::owner($credential) . "\n" . $key);
         $fingerprint = self::fingerprint($request);
         $now         = $this->clock->now();
-        $stored      = $this->store->claim($hash, $fingerprint, $now, $now + self::TTL, self::LOCK_TTL);
+        $lock        = bin2hex(random_bytes(16));
+        $stored      = $this->store->claim($hash, $fingerprint, $now, $now + self::TTL, self::LOCK_TTL, $lock);
         if ($stored !== null) {
             return self::replay($stored, $fingerprint);
         }
@@ -74,14 +75,14 @@ final class Idempotency
         } catch (ProblemException $e) {
             $response = $e->response();
         } catch (\Throwable $e) {
-            $this->store->release($hash);
+            $this->store->release($hash, $lock);
 
             throw $e;
         }
         if ($response->status() >= 500) {
-            $this->store->release($hash);
+            $this->store->release($hash, $lock);
         } else {
-            $this->store->complete($hash, $response->status(), (string) json_encode(
+            $this->store->complete($hash, $lock, $response->status(), (string) json_encode(
                 ['status' => $response->status(), 'headers' => $response->headers(), 'body' => $response->body()],
                 JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE
             ));

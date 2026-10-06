@@ -180,8 +180,8 @@ curl -X POST $API/auth/revoke -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" -d '{"all":true}'                                  # every sign-in
 ```
 
-Both answer `204`. This needs an access token, not a key. It ends the refresh tokens, so
-the access token dies when it expires, at most 15 minutes on.
+Both answer `204`. This needs an access token, not a key. It ends the refresh tokens and
+the sign-in's access tokens at once.
 
 Users see their sign-ins and keys at `GET /account/sessions` and on the
 **API access** page of their account. `DELETE /account/sessions/{id}` ends one.

@@ -333,7 +333,11 @@ final class ApiServices
 
     public function accessTokens(): AccessTokens
     {
-        return $this->once(__FUNCTION__, fn (): AccessTokens => new AccessTokens($this->scopes, $this->users));
+        return $this->once(__FUNCTION__, fn (): AccessTokens => new AccessTokens(
+            $this->scopes,
+            $this->users,
+            familyLive: fn (string $family): bool => $this->store->familyIsLive($family)
+        ));
     }
 
     public function refreshTokens(): RefreshTokens

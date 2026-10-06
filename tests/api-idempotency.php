@@ -147,12 +147,14 @@ pin('so is another credential of the same user', [201, null], [$r->status(), $r-
 
 harness_section('in flight and expiry');
 $hash               = hash('sha256', 'key:1' . "\n" . 'key-2');
-$kept->rows[$hash]  = ['fp' => Idempotency::fingerprint(new Request('POST', 'v1/things', [], [], '', (string) json_encode(['a' => 1]))), 'status' => IdempotencyRecord::LOCKED, 'response' => null, 'created' => $now, 'expires' => $now + 86400];
+$kept->rows[$hash]  = ['fp' => Idempotency::fingerprint(new Request('POST', 'v1/things', [], [], '', (string) json_encode(['a' => 1]))), 'lock' => 'first', 'status' => IdempotencyRecord::LOCKED, 'response' => null, 'created' => $now, 'expires' => $now + 86400];
 $runs               = Writes::$runs;
 $r                  = $post('things', ['a' => 1], 'key-2');
 pin('a key whose first request still runs is 409 idempotency_in_flight', [409, 'idempotency_in_flight', '1', $runs], [$r->status(), $r->body()['code'], $r->header('Retry-After'), Writes::$runs]);
 $now += Idempotency::LOCK_TTL + 1;
-pin('a lock whose request died is taken over', 201, $post('things', ['a' => 1], 'key-2')->status());
+$r    = $post('things', ['a' => 2], 'key-2');
+pin('a lock whose request died is not taken over by another request', [422, 'idempotency_key_reused', $runs], [$r->status(), $r->body()['code'], Writes::$runs]);
+pin('a lock whose request died is taken over by the same request', 201, $post('things', ['a' => 1], 'key-2')->status());
 $now += Idempotency::TTL + 1;
 $runs = Writes::$runs;
 pin('a key past its day runs again', [201, $runs + 1], [$post('things', ['a' => 1], 'key-1')->status(), Writes::$runs]);

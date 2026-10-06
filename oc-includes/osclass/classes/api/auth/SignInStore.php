@@ -45,6 +45,11 @@ interface SignInStore extends CredentialStore
     public function hasLiveFor(int $userId): bool;
 
     /**
+     * Whether a refresh family has a token that is not revoked.
+     */
+    public function familyIsLive(string $family): bool;
+
+    /**
      * Run $fn in one transaction: it commits when $fn returns and rolls back when it throws.
      *
      * @param callable(): mixed $fn

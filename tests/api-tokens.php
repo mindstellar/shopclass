@@ -24,7 +24,6 @@ require_once __DIR__ . '/lib/api-boot.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hUsers.php';
 
 use mindstellar\api\ApiSettings;
-use mindstellar\api\auth\AccessTokens;
 use mindstellar\api\auth\ApiKeys;
 use mindstellar\api\auth\Authenticator;
 use mindstellar\api\auth\Credential;
@@ -178,6 +177,11 @@ final class ArraySessions implements SignInStore
         return false;
     }
 
+    public function familyIsLive(string $family): bool
+    {
+        return $this->live($family) > 0;
+    }
+
     /** Live rows of a family. */
     public function live(string $family): int
     {
@@ -223,7 +227,7 @@ $problem = static function (callable $fn): ?string {
 };
 
 harness_section('access tokens');
-$access = new AccessTokens($scopes, $accounts(), 900);
+$access = api_test_access_tokens($scopes, $accounts(), 900);
 $token  = $access->issue($store->users[10], ['listings:read', 'account:write', 'admin:users'], 'FAMILY0000000001');
 check('an access token is sca_<signed payload>', preg_match('/^sca_[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/D', $token) === 1);
 $c = $access->verify($token);
@@ -236,19 +240,20 @@ pin('a token signed for another purpose is refused', null, $access->verify('sca_
 pin('a key-looking token is not an access token', null, $access->verify('sck_AAAAAAAAAAAAAAAA.' . str_repeat('a', 64)));
 
 $store->users[10]['s_password'] = '$2y$12$rehashed';
-pin('a rehash alone leaves the token working', 10, (new AccessTokens($scopes, $accounts(), 900))->verify($token)?->userId());
+pin('a rehash alone leaves the token working', 10, (api_test_access_tokens($scopes, $accounts(), 900))->verify($token)?->userId());
 $store->users[10]['s_password']   = '$2y$12$first';
 $store->users[10]['i_auth_stamp'] = '1';
-pin('a raised sign-out stamp (a password change, or signing out everywhere) ends the token at once', null, (new AccessTokens($scopes, $accounts(), 900))->verify($token));
+pin('a raised sign-out stamp (a password change, or signing out everywhere) ends the token at once', null, (api_test_access_tokens($scopes, $accounts(), 900))->verify($token));
 unset($store->users[10]['i_auth_stamp']);
 pin('the token names its user: another account\'s stamp never matches', false, \mindstellar\auth\AuthStamp::fingerprint($store->users[10]) === \mindstellar\auth\AuthStamp::fingerprint($store->users[11]));
 $store->users[10]['b_enabled']  = '0';
-pin('a suspended user\'s token is refused on the next call', null, (new AccessTokens($scopes, $accounts(), 900))->verify($token));
+pin('a suspended user\'s token is refused on the next call', null, (api_test_access_tokens($scopes, $accounts(), 900))->verify($token));
 $store->users[10]['b_enabled'] = '1';
 $store->users[10]['b_active']  = '0';
-pin('so is an unconfirmed user\'s', null, (new AccessTokens($scopes, $accounts(), 900))->verify($token));
+pin('so is an unconfirmed user\'s', null, (api_test_access_tokens($scopes, $accounts(), 900))->verify($token));
 $store->users[10]['b_active'] = '1';
-pin('a deleted user\'s too', null, (new AccessTokens($scopes, $accounts(), 900))->verify($access->issue(['pk_i_id' => 99, 's_password' => 'x'], [], 'F')));
+pin('a revoked sign-in\'s token is refused on the next call', null, api_test_access_tokens($scopes, $accounts(), 900, static fn (string $f): bool => $f !== 'FAMILY0000000001')->verify($token));
+pin('a deleted user\'s too', null, (api_test_access_tokens($scopes, $accounts(), 900))->verify($access->issue(['pk_i_id' => 99, 's_password' => 'x'], [], 'F')));
 $memo  = $accounts();
 $loads = 0;
 $memo->find(10);
@@ -311,16 +316,16 @@ pin('the user\'s own is', [1, 0], [$fresh->end(10, $b->family()), $store->live($
 harness_section('the authenticator takes access tokens');
 $authenticator = new Authenticator(new ApiKeys($store, $scopes, new SystemClock()), new FailureCounter(static fn () => [], static function () use (&$failures): int {
     return ++$failures;
-}), new AccessTokens($scopes, $accounts(), 900));
+}), api_test_access_tokens($scopes, $accounts(), 900));
 $failures = 0;
-$good     = (new AccessTokens($scopes, $accounts(), 900))->issue($store->users[10], ['listings:read'], 'FAM');
+$good     = (api_test_access_tokens($scopes, $accounts(), 900))->issue($store->users[10], ['listings:read'], 'FAM');
 $c        = $authenticator->authenticate(new Request('GET', 'v1/x', [], ['Authorization' => 'Bearer ' . $good], '192.0.2.10'));
 pin('a Bearer access token authenticates', [CredentialKind::USER, 10], [$c->kind(), $c->userId()]);
 pin('a bad one is 401 and counted', ['unauthorized', 1], [$problem(static fn () => $authenticator->authenticate(new Request('GET', 'v1/x', [], ['Authorization' => 'Bearer sca_x.y'], '192.0.2.10'))), $failures]);
 pin('a refresh token never authenticates a call', 'unauthorized', $problem(static fn () => $authenticator->authenticate(new Request('GET', 'v1/x', [], ['Authorization' => 'Bearer ' . $b->token()], '192.0.2.10'))));
 $failures = 0;
-pin('an expired but genuine token is 401 token_expired, and not counted', ['token_expired', 0], [$problem(static fn () => $authenticator->authenticate(new Request('GET', 'v1/x', [], ['Authorization' => 'Bearer ' . (new AccessTokens($scopes, $accounts(), 900))->issue($store->users[10], ['listings:read'], 'FAM', -1)], '192.0.2.10'))), $failures]);
-$staleToken = (new AccessTokens($scopes, $accounts(), 900))->issue(['pk_i_id' => 10, 'i_auth_stamp' => 7], ['listings:read'], 'FAM');
+pin('an expired but genuine token is 401 token_expired, and not counted', ['token_expired', 0], [$problem(static fn () => $authenticator->authenticate(new Request('GET', 'v1/x', [], ['Authorization' => 'Bearer ' . (api_test_access_tokens($scopes, $accounts(), 900))->issue($store->users[10], ['listings:read'], 'FAM', -1)], '192.0.2.10'))), $failures]);
+$staleToken = (api_test_access_tokens($scopes, $accounts(), 900))->issue(['pk_i_id' => 10, 'i_auth_stamp' => 7], ['listings:read'], 'FAM');
 pin('a genuine token whose user changed since is 401 unauthorized, and not counted', ['unauthorized', 0], [$problem(static fn () => $authenticator->authenticate(new Request('GET', 'v1/x', [], ['Authorization' => 'Bearer ' . $staleToken], '192.0.2.10'))), $failures]);
 pin('a forged one is counted', 1, ($problem(static fn () => $authenticator->authenticate(new Request('GET', 'v1/x', [], ['Authorization' => 'Bearer ' . substr($good, 0, -2) . 'xx'], '192.0.2.10'))) !== null) ? $failures : -1);
 $noTokens = api_test_authenticator(new ApiKeys($store, $scopes, new SystemClock()));
@@ -340,7 +345,7 @@ pin('the API is off by default', false, (new ApiSettings())->enabled());
 $strict = api_test_limiter(static fn () => null);
 pin('a limit fails open by default when the counter is unreachable', true, $strict->hit(new \mindstellar\api\ratelimit\RateBucket('x', 'k', 5))->allowed());
 pin('and closed when asked to', false, $strict->hit(new \mindstellar\api\ratelimit\RateBucket('x', 'k', 5), false)->allowed());
-pin('an access token lives 15 minutes, a refresh token 30 days unused', [900, 900, 30], [\mindstellar\api\auth\AccessTokens::TTL, (new AccessTokens($scopes, $accounts()))->ttl(), \mindstellar\api\auth\RefreshTokens::TTL_DAYS]);
+pin('an access token lives 15 minutes, a refresh token 30 days unused', [900, 900, 30], [\mindstellar\api\auth\AccessTokens::TTL, (api_test_access_tokens($scopes, $accounts()))->ttl(), \mindstellar\api\auth\RefreshTokens::TTL_DAYS]);
 
 harness_section('the identity core code sees');
 final class WhoAmI
@@ -352,7 +357,7 @@ final class WhoAmI
 }
 $kernel = api_test_kernel(
     new Router(new Validator(), ['GET me' => ['handler' => [WhoAmI::class, 'show'], 'auth' => 'public', 'scope' => 'listings:read']]),
-    api_test_authenticator(new ApiKeys($store, $scopes, new SystemClock()), tokens: new AccessTokens($scopes, $accounts(), 900)),
+    api_test_authenticator(new ApiKeys($store, $scopes, new SystemClock()), tokens: api_test_access_tokens($scopes, $accounts(), 900)),
     new ApiSettings(true, true),
     users: $accounts()
 );

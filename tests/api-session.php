@@ -24,7 +24,6 @@ require_once __DIR__ . '/lib/api-boot.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hUsers.php';
 
 use mindstellar\api\ApiSettings;
-use mindstellar\api\auth\AccessTokens;
 use mindstellar\api\auth\ApiKeys;
 use mindstellar\api\auth\Credential;
 use mindstellar\api\auth\CredentialKind;
@@ -129,7 +128,7 @@ $kernelFor = static function (array $settings = [], ?PageTokens $with = null, ?c
 
     return api_test_kernel(
         new Router(new Validator(), $routes),
-        api_test_authenticator(new ApiKeys(new NoKeys(), $scopes, new SystemClock()), tokens: new AccessTokens($scopes, $users), session: $auth),
+        api_test_authenticator(new ApiKeys(new NoKeys(), $scopes, new SystemClock()), tokens: api_test_access_tokens($scopes, $users), session: $auth),
         new ApiSettings(...($settings + ['enabled' => true, 'publicReads' => true])),
         users: $users
     );
@@ -164,7 +163,7 @@ pin('a forged page token is refused', [401, 'session_required'], $code($r));
 $reset();
 $r = $kernel->handle($session(['Origin' => $site, 'X-Shopclass-Token' => (new PageTokens(-10))->issue($rows[10])->token()], $cookie(10)));
 pin('an expired page token answers token_expired', [401, 'token_expired'], $code($r));
-$accessToken = (new AccessTokens($scopes, $accounts()))->issue($rows[10], ['listings:read'], 'fam');
+$accessToken = (api_test_access_tokens($scopes, $accounts()))->issue($rows[10], ['listings:read'], 'fam');
 $reset();
 $r = $kernel->handle($session(['Origin' => $site, 'X-Shopclass-Token' => substr_replace($accessToken, 'scs_', 0, 4)], $cookie(10)));
 pin('an access token\'s payload is not a page token', [401, 'session_required'], $code($r));
@@ -318,7 +317,7 @@ $reset();
 $again = $kernel->handle($write($ok(10)));
 pin('the same key from the same session replays', [1, 1, 'true'], [$first->body()['data']['calls'], $again->body()['data']['calls'], $again->header('Idempotency-Replayed')]);
 $reset();
-$token = $kernel->handle($write(['Authorization' => 'Bearer ' . (new AccessTokens($scopes, $accounts()))->issue($rows[10], ['listings:write'], 'fam')]));
+$token = $kernel->handle($write(['Authorization' => 'Bearer ' . (api_test_access_tokens($scopes, $accounts()))->issue($rows[10], ['listings:write'], 'fam')]));
 $reset();
 $other = $kernel->handle($session($ok(11) + ['Content-Type' => 'application/json', 'Idempotency-Key' => 'k-1'], $cookie(11), 'POST', 'v1/notes'));
 pin('the same key from another user\'s session is its own', [11, null], [$other->body()['data']['user'], $other->header('Idempotency-Replayed')]);
@@ -333,7 +332,7 @@ pin('a session gets a fresh page token', [200, PageTokens::HEADER, true, 'privat
 ]);
 pin('which works', PageTokens::VALID, $tokens->check($fresh, $rows[10]));
 $reset();
-$r = $kernel->handle($session(['Authorization' => 'Bearer ' . (new AccessTokens($scopes, $accounts()))->issue($rows[10], ['account:read'], 'fam')], null, 'GET', 'v1/auth/session'));
+$r = $kernel->handle($session(['Authorization' => 'Bearer ' . (api_test_access_tokens($scopes, $accounts()))->issue($rows[10], ['account:read'], 'fam')], null, 'GET', 'v1/auth/session'));
 pin('an access token cannot get one', [403, 'forbidden'], $code($r));
 
 exit(harness_result());
