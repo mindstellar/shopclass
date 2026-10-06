@@ -14,12 +14,12 @@ namespace mindstellar\api\controller\admin;
 
 use mindstellar\admin\AdminText;
 use mindstellar\api\ApiServices;
-
 use mindstellar\api\auth\Credential;
 use mindstellar\api\ProblemException;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\CategorySerializer;
+use mindstellar\category\CategoryQuery;
 use mindstellar\category\CategoryService;
 use mindstellar\utility\DeferredMail;
 
@@ -31,9 +31,12 @@ final class AdminCategoriesController
 {
     private CategoryService $categories;
 
+    private CategoryQuery $query;
+
     public function __construct(private ApiServices $api)
     {
         $this->categories = $api->categoryService();
+        $this->query      = new CategoryQuery();
     }
 
     /**
@@ -43,8 +46,8 @@ final class AdminCategoriesController
      */
     public function index(Request $request, Credential $credential, array $args): Response
     {
-        $rows  = $this->categoryRows(null);
-        $texts = $this->texts(array_column($rows, 'pk_i_id'));
+        $rows  = $this->query->rows(null);
+        $texts = $this->query->texts(array_column($rows, 'pk_i_id'));
 
         return Response::collection(array_map(static fn (array $row): array => CategorySerializer::admin($row, $texts[(int) $row['pk_i_id']] ?? []), $rows));
     }
@@ -96,7 +99,7 @@ final class AdminCategoriesController
     public function update(Request $request, Credential $credential, array $args): Response
     {
         $id    = (int) $args['id'];
-        $row   = $this->categoryRows($id)[0] ?? null;
+        $row   = $this->query->rows($id)[0] ?? null;
         $input = $request->input();
         if ($row === null) {
             throw ProblemException::of('not_found', 'No such category.');
@@ -135,56 +138,17 @@ final class AdminCategoriesController
     }
 
     /**
-     * Category rows with their listing counts: one, or all in display order.
-     *
-     * @return array<int,array<string,mixed>>
-     */
-    private function categoryRows(?int $id): array
-    {
-        $p   = DB_TABLE_PREFIX;
-        $sql = 'SELECT c.*, s.i_num_items FROM ' . $p . 't_category c LEFT JOIN ' . $p . 't_category_stats s ON s.fk_i_category_id = c.pk_i_id';
-
-        return osc_db_stringify_rows($id === null
-            ? osc_db_select($sql . ' ORDER BY c.i_position ASC, c.pk_i_id ASC')
-            : osc_db_select($sql . ' WHERE c.pk_i_id = ?', [$id]));
-    }
-
-    /**
-     * Every language's texts of some categories, in one query.
-     *
-     * @param array<int,int|string> $ids
-     *
-     * @return array<int,array<int,array<string,mixed>>> category id => rows
-     */
-    private function texts(array $ids): array
-    {
-        if ($ids === []) {
-            return [];
-        }
-        $rows = osc_db_stringify_rows(osc_db_table(DB_TABLE_PREFIX . 't_category_description')
-            ->whereIn('fk_i_category_id', array_map('intval', $ids))
-            ->orderBy('fk_c_locale_code')
-            ->get());
-        $out = [];
-        foreach ($rows as $row) {
-            $out[(int) $row['fk_i_category_id']][] = $row;
-        }
-
-        return $out;
-    }
-
-    /**
      * @return array<string,mixed>
      * @throws ProblemException 404
      */
     private function categoryData(int $id): array
     {
-        $row = $this->categoryRows($id)[0] ?? null;
+        $row = $this->query->rows($id)[0] ?? null;
         if ($row === null) {
             throw ProblemException::of('not_found', 'No such category.');
         }
 
-        return CategorySerializer::admin($row, $this->texts([$id])[$id] ?? []);
+        return CategorySerializer::admin($row, $this->query->texts([$id])[$id] ?? []);
     }
 
     /**
@@ -199,7 +163,7 @@ final class AdminCategoriesController
     private function descriptions(int $id, array $sent): array
     {
         $stored = [];
-        foreach ($this->texts([$id])[$id] ?? [] as $row) {
+        foreach ($this->query->texts([$id])[$id] ?? [] as $row) {
             $stored[(string) $row['fk_c_locale_code']] = ['s_name' => $row['s_name'], 's_description' => $row['s_description'], 's_slug' => $row['s_slug']];
         }
         $out = [];

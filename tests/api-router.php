@@ -194,6 +194,7 @@ pin('the core table needs no database; every route names its auth and scope', [
     'GET account/alerts/{id}'           => 'user alerts:write',
     'GET account/keys'                  => 'user account:write',
     'GET account/keys/{id}'             => 'user account:write',
+    'GET account/listings'              => 'user account:read',
     'GET account/sessions'              => 'user account:read',
     'GET auth/session'                  => 'user account:read',
     'GET categories'                    => 'public listings:read',

@@ -22,6 +22,7 @@ use mindstellar\listing\ListingService;
 use mindstellar\listing\ListingStats;
 use mindstellar\listing\ListingValidator;
 use mindstellar\listing\PhotoService;
+use mindstellar\listing\SavedListing;
 use mindstellar\validation\BlockedException;
 use mindstellar\validation\ForbiddenException;
 use mindstellar\validation\InvalidException;
@@ -150,12 +151,14 @@ class ItemActions
     public function add()
     {
         $this->lastItemId = 0;
-        $result           = (new ListingService())->saveForm((array) $this->data, $this->actor(), true, $this->import);
-        if (is_int($result)) {
-            $this->lastItemId = Params::getParamInt('itemId');
+        $result           = (new ListingService())->saveForm(ListingInput::withMeta((array) $this->data), $this->actor(), true, $this->import);
+        if ($result instanceof SavedListing) {
+            $this->lastItemId = $result->id();
+            // Older plugins read the new id back from the request.
+            Params::setParam('itemId', $this->lastItemId);
         }
 
-        return $result;
+        return ListingService::legacyResult($result, true);
     }
 
     /**
@@ -274,7 +277,9 @@ class ItemActions
      */
     public function edit()
     {
-        return (new ListingService())->saveForm((array) $this->data, $this->actor(), false, $this->import, !($this->is_admin && $this->fromData));
+        $result = (new ListingService())->saveForm(ListingInput::withMeta((array) $this->data), $this->actor(), false, $this->import, !($this->is_admin && $this->fromData));
+
+        return ListingService::legacyResult($result, false);
     }
 
     /**

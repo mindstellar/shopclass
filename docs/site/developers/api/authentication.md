@@ -42,10 +42,17 @@ How a call is accepted:
 | Rule | Detail |
 |---|---|
 | Header | `Authorization: Bearer <credential>`. Any other scheme, such as Basic auth, is ignored. |
-| Query string | `?api_key=scp_…` works for **public keys on `GET` and `HEAD` only**. Other keys and tokens are never accepted there. It ends up in server logs, so use the header when you can. |
+| Query string | `?api_key=scp_…` works for **public keys on `GET` and `HEAD` only**. Other keys and tokens are never accepted there. See the warning below. |
 | Cookies | Never used alone. Only a [same-site session](#same-site-session-theme-javascript) reads the sign-in cookie, and only with a page token in its header. The API sets no cookie. |
 | No credential | `401`, unless the site owner allowed anonymous reads. Then reads work with the public scope and a lower per-address limit. |
 | `GET /openapi.json` | Needs no credential. |
+
+:::caution[`?api_key=` is written to logs]
+A key in the address lands in web server and CDN access logs, browser history and `Referer`
+headers. Anyone who can read those has it. A public key only reads what anonymous visitors
+can, so the risk is someone using your rate limit. Send `Authorization: Bearer scp_…` when you
+can, and rotate a key that leaked this way.
+:::
 
 Every refusal of a key answers the same `401 unauthorized`, whether the key is unknown,
 has the wrong secret, is revoked, expired, or its owner is gone. A caller cannot tell them apart.
@@ -332,7 +339,7 @@ origin, so they can read each other's pages. Give each its own host.
 | Post, edit, delete own listings and photos | no | no | yes | with `listings:write` / `listings:delete` | yes |
 | Comment, delete own comment | no | no | yes | with `comments:write` | yes |
 | Saved searches (`/account/alerts`) | no | no | yes | with `alerts:write` | yes |
-| Read the account and sessions | no | no | yes | with `account:read` | yes |
+| Read the account, own listings in any status, and sessions | no | no | yes | with `account:read` | yes |
 | Edit the account, change password, manage keys | no | no | yes | no | no |
 | `POST /auth/token`, `POST /users` | no credential needed | | | | |
 | `POST /auth/revoke` | no | no | yes | no | no |
@@ -355,7 +362,7 @@ also grants `listings:read`, and `account:write` also grants `account:read`.
 | `listings:delete` | Users | Delete own listings. |
 | `comments:write` | Users | Post comments, delete own comments. |
 | `alerts:write` | Users | List, make and stop own saved searches. |
-| `account:read` | Users | Read the own account, and the list of sign-ins and keys. |
+| `account:read` | Users | Read the own account, the own listings in any status, and the list of sign-ins and keys. |
 | `account:write` | Access tokens only | Edit the account, change the password, manage personal keys, end sessions. |
 | `admin:listings` | Admin keys, moderators' keys | The admin view of listings, reading listings that are not live, and `/admin/listings`. |
 | `admin:comments` | Admin keys, moderators' keys | Moderate comments: `/admin/comments`. |

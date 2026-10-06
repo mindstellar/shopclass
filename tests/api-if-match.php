@@ -9,15 +9,19 @@
  */
 
 /**
- * If-Match through the kernel: a PATCH or DELETE whose ETag no longer matches the path's GET
- * is 412 precondition_failed and runs nothing; a matching tag and `*` go through; no header,
- * and a path with no GET, are never checked.
+ * If-Match through the kernel. A path whose GET keeps a stored version: the ETag carries it,
+ * whatever `fields` asked for; a stale one is 412 and runs nothing; the check and the write
+ * run in one transaction with the rows locked; the write's answer carries the new ETag.
+ * Other paths compare the GET's ETag, and a credential that cannot read the GET is refused,
+ * not let through. No header, and a path with no GET, are never checked.
  *
  * DB-free.  Usage: php tests/api-if-match.php
  */
 
 require_once __DIR__ . '/lib/api-boot.php';
 
+use mindstellar\api\ApiSettings;
+use mindstellar\api\auth\AdminRows;
 use mindstellar\api\auth\ApiKeys;
 use mindstellar\api\auth\Credential;
 use mindstellar\api\auth\CredentialKind;
@@ -25,6 +29,9 @@ use mindstellar\api\auth\CredentialStore;
 use mindstellar\api\auth\KeyOwner;
 use mindstellar\api\auth\Scopes;
 use mindstellar\api\auth\StoredKey;
+use mindstellar\api\http\ResourceVersions;
+use mindstellar\api\idempotency\Idempotency;
+use mindstellar\api\Kernel;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\routing\Router;
@@ -39,7 +46,17 @@ final class Things
 
     public function show(Request $request, Credential $credential, array $args): Response
     {
-        return Response::ok(['id' => (int) $args['id'], 'title' => self::$title]);
+        $doc = ['id' => (int) $args['id'], 'title' => self::$title];
+
+        return Response::ok(isset($request->query()['fields']) ? ['id' => $doc['id']] : $doc);
+    }
+
+    public function fail(Request $request, Credential $credential, array $args): Response
+    {
+        self::$writes++;
+        Versions::$stored = 'v-broken';
+
+        throw new RuntimeException('handler failed');
     }
 
     public function update(Request $request, Credential $credential, array $args): Response
@@ -96,6 +113,48 @@ final class Keys implements CredentialStore
     }
 }
 
+/** The stored version is the title, read under a lock inside a transaction it records. */
+final class Versions implements ResourceVersions
+{
+    public static ?string $stored = null;
+
+    public array $log = [];
+
+    private int $depth = 0;
+
+    public function supports(string $path): bool
+    {
+        return str_starts_with($path, 'versioned/');
+    }
+
+    public function version(string $path, array $args, Credential $credential, bool $lock = false): ?string
+    {
+        $this->log[] = ($lock ? 'lock' : 'read') . '@' . $this->depth;
+
+        return $args['id'] === '404' ? null : (self::$stored ?? 'v-' . md5(Things::$title));
+    }
+
+    public function atomically(callable $fn): mixed
+    {
+        $this->depth++;
+        $this->log[] = 'begin';
+        $before      = [Things::$title, self::$stored];
+        try {
+            $result      = $fn();
+            $this->log[] = 'commit';
+
+            return $result;
+        } catch (Throwable $e) {
+            [Things::$title, self::$stored] = $before;
+            $this->log[]                    = 'rollback';
+
+            throw $e;
+        } finally {
+            $this->depth--;
+        }
+    }
+}
+
 $keys  = new ApiKeys(new Keys(), new Scopes(), new SystemClock());
 $token = $keys->create(CredentialKind::KEY, 'a', ['listings:read', 'listings:write'], KeyOwner::user(10))->token();
 $write = ['auth' => 'user', 'scope' => 'listings:write'];
@@ -142,5 +201,81 @@ $r = $call('DELETE', 'things/5', $call('GET', 'things/5')->prepare('GET')['heade
 pin('the current ETag deletes', [204, $writes + 1], [$r->status(), Things::$writes]);
 $r = $call('DELETE', 'lonely/5', '"anything"');
 pin('a path with no GET ignores If-Match', [204, $writes + 2], [$r->status(), Things::$writes]);
+
+$versions = new Versions();
+$vkernel  = new Kernel(
+    new Router(new Validator(), [
+        'GET versioned/{id}'    => ['handler' => [Things::class, 'show'], 'auth' => 'user', 'scope' => 'listings:read', 'query' => ['type' => 'object', 'properties' => ['fields' => ['type' => 'string']]]],
+        'PATCH versioned/{id}'  => ['handler' => [Things::class, 'update'], 'body' => ['type' => 'object']] + $write,
+        'DELETE versioned/{id}' => ['handler' => [Things::class, 'fail']] + $write,
+        'GET hidden/{id}'       => ['handler' => [Things::class, 'show'], 'auth' => 'user', 'scope' => 'listings:moderate'],
+        'DELETE hidden/{id}'    => ['handler' => [Things::class, 'delete']] + $write,
+    ]),
+    api_test_authenticator($keys),
+    api_test_limiter(),
+    new Validator(),
+    new ApiSettings(true),
+    api_test_users(),
+    new AdminRows(static fn (): ?array => null),
+    new Idempotency(new MemoryIdempotencyStore(), new SystemClock()),
+    $versions
+);
+$vcall = static function (string $method, string $path, string $ifMatch = '', array $body = []) use ($vkernel, $token): Response {
+    $headers = ['Authorization' => 'Bearer ' . $token, 'Content-Type' => 'application/json'];
+    if ($ifMatch !== '') {
+        $headers['If-Match'] = $ifMatch;
+    }
+    [$path, $query] = array_pad(explode('?', $path, 2), 2, '');
+    parse_str($query, $q);
+
+    return $vkernel->handle(new Request($method, 'v1/' . $path, $q, $headers, '192.0.2.1', $body === [] ? '' : (string) json_encode($body)));
+};
+$tag = static fn (Response $r): string => (string) $r->prepare('GET')['headers']['ETag'];
+
+harness_section('stored version');
+Things::$title = 'one';
+$writes        = Things::$writes;
+$full          = $tag($vcall('GET', 'versioned/5'));
+$slim          = $tag($vcall('GET', 'versioned/5?fields=id'));
+$version       = 'v-' . md5('one');
+pin('a GET\'s ETag starts with the stored version', true, str_starts_with($full, '"' . $version . '.'));
+pin('fields changes the ETag but not its version', [true, true], [$full !== $slim, str_starts_with($slim, '"' . $version . '.')]);
+$r = $vkernel->handle(new Request('GET', 'v1/versioned/5', [], ['Authorization' => 'Bearer ' . $token, 'If-None-Match' => $full], '192.0.2.1', ''));
+pin('If-None-Match with that ETag is 304', 304, $r->prepare('GET', $full)['status']);
+
+$versions->log = [];
+$r             = $vcall('PATCH', 'versioned/5', $slim, ['title' => 'two']);
+pin('a PATCH with the ETag of a fields= GET goes through', [200, 'two', $writes + 1], [$r->status(), Things::$title, Things::$writes]);
+pin('the version is read locked inside the transaction, then again after the write', ['begin', 'lock@1', 'read@1', 'commit'], $versions->log);
+pin('the answer carries the new version', true, str_starts_with((string) $r->header('ETag'), '"v-' . md5('two') . '.'));
+$r = $vcall('PATCH', 'versioned/5', (string) $r->header('ETag'), ['title' => 'three']);
+pin('which the next PATCH can send', [200, 'three'], [$r->status(), Things::$title]);
+
+$versions->log = [];
+$r             = $vcall('PATCH', 'versioned/5', $full, ['title' => 'four']);
+pin('a stale version is 412 and runs nothing', [412, 'precondition_failed', 'three', $writes + 2], [$r->status(), $r->body()['code'], Things::$title, Things::$writes]);
+pin('and its transaction is rolled back', ['begin', 'lock@1', 'rollback'], $versions->log);
+$r = $vcall('PATCH', 'versioned/5', 'W/"v-' . md5('three') . '"', ['title' => 'five']);
+pin('a bare or weak tag of the current version matches', [200, 'five'], [$r->status(), Things::$title]);
+$r = $vcall('PATCH', 'versioned/5', '*', ['title' => 'six']);
+pin('* goes through', [200, 'six'], [$r->status(), Things::$title]);
+$r = $vcall('PATCH', 'versioned/404', '"v-gone"', ['title' => 'seven']);
+pin('a missing resource is left to the handler', [200, 'seven'], [$r->status(), Things::$title]);
+
+$versions->log = [];
+$logged        = ini_set('error_log', '/dev/null');
+$r             = $vcall('DELETE', 'versioned/5', '*');
+ini_set('error_log', (string) $logged);
+pin('a write that throws is rolled back with its transaction', [500, null, ['begin', 'lock@1', 'rollback']], [$r->status(), Versions::$stored, $versions->log]);
+$versions->log = [];
+$vcall('PATCH', 'versioned/5', '', ['title' => 'eight']);
+pin('no If-Match opens no transaction', [], $versions->log);
+
+harness_section('no stored version');
+$writes = Things::$writes;
+$r      = $vcall('DELETE', 'hidden/5', '"anything"');
+pin('a credential that cannot read the GET is 412, not let through', [412, $writes], [$r->status(), Things::$writes]);
+$r = $vcall('DELETE', 'hidden/5');
+pin('without If-Match it is not checked', [204, $writes + 1], [$r->status(), Things::$writes]);
 
 exit(harness_result());

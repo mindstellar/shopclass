@@ -15,18 +15,15 @@ namespace mindstellar\api\controller\admin;
 use mindstellar\api\ApiServices;
 use mindstellar\api\auth\Credential;
 use mindstellar\api\ProblemException;
+use mindstellar\api\read\ListingList;
 use mindstellar\api\read\ListingReader;
-use mindstellar\api\read\ListSpec;
-use mindstellar\api\read\Page;
-use mindstellar\api\read\Pager;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\ListingSerializer;
 use mindstellar\api\write\ListingWriter;
 use mindstellar\api\write\OwnedListing;
-use mindstellar\listing\ListingStatus;
 use mindstellar\moderation\ListingModeration;
-use mindstellar\utility\Clock;
+use mindstellar\user\UserQuery;
 
 /**
  * `/admin/listings`: every listing whatever its status, the admin's edit, the screen's
@@ -34,20 +31,17 @@ use mindstellar\utility\Clock;
  */
 final class AdminListingsController
 {
-    public const DEFAULT_LIMIT = 20;
-    public const MAX_LIMIT     = 100;
-
     private ListingReader $reader;
     private ListingWriter $writer;
     private ListingModeration $moderation;
-    private Clock $clock;
+    private ListingList $list;
 
     public function __construct(private ApiServices $api)
     {
         $this->reader = $api->listingReader();
         $this->writer = $api->listingWriter();
         $this->moderation = $api->listingModeration();
-        $this->clock = $api->clock();
+        $this->list = new ListingList($api, $this->reader);
     }
 
     /**
@@ -57,32 +51,9 @@ final class AdminListingsController
      */
     public function index(Request $request, Credential $credential, array $args): Response
     {
-        $context = $this->api->context($request, $credential, 'listing', ListingSerializer::MEMBERS, ListingSerializer::INCLUDES);
-        $pager   = Pager::fromRequest($request, $this->api->cursor(), ListSpec::byId('desc', self::DEFAULT_LIMIT, self::MAX_LIMIT), ['list' => 'admin/listings'] + $request->query());
-        $query   = ListingStatus::condition(osc_db_table(DB_TABLE_PREFIX . 't_item'), $request->queryList('status'), $this->clock->now());
-        foreach (['user' => 'fk_i_user_id', 'category' => 'fk_i_category_id'] as $filter => $column) {
-            if ($request->queryString($filter) !== '') {
-                $query = $query->where($column, $request->queryInt($filter));
-            }
-        }
-        $q = trim($request->queryString('q'));
-        if ($q !== '') {
-            $query = $query->whereRaw(
-                'pk_i_id IN (SELECT fk_i_item_id FROM ' . DB_TABLE_PREFIX . 't_item_description WHERE s_title LIKE ?)',
-                ['%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $q) . '%']
-            );
-        }
-        $total = $pager->counts() ? $query->count() : null;
-        $after = $pager->after();
-        if ($after !== null) {
-            $query = $query->where('pk_i_id', '<', (int) $after[0]);
-        }
-        $rows  = osc_db_stringify_rows($query->orderBy('pk_i_id', 'DESC')->limit($pager->limit() + 1)->get());
-        $items = $pager->page($rows);
-        $items = $items === [] ? [] : \Item::getInstance()->extendRows($items, $context->locale());
+        $filter = static fn (string $name): ?int => $request->queryString($name) === '' ? null : $request->queryInt($name);
 
-        return (new Page($this->reader->many($items, $context), $total, $pager->limit(), $pager->next($rows)))
-            ->response($this->api->links(), 'admin/listings', $request->query());
+        return $this->list->run($request, $credential, 'admin/listings', $request->queryList('status'), $filter('user'), $filter('category'), trim($request->queryString('q')));
     }
 
     /**
@@ -104,7 +75,7 @@ final class AdminListingsController
         $listing = OwnedListing::load((int) $args['id'], true);
         $input   = $request->input();
         $owner   = (int) ($input['owner_id'] ?? 0);
-        if ($owner > 0 && empty(\User::getInstance()->findByPrimaryKey($owner)['pk_i_id'])) {
+        if ($owner > 0 && !(new UserQuery())->exists($owner)) {
             throw ProblemException::field('/owner_id', 'unknown', 'is not a user');
         }
         $this->writer->adminUpdate($listing, $this->writer->editForm($listing, $input, $request, $credential) + self::adminMembers($listing, $input), $credential->actor($request->ip(), 'admin:listings'));

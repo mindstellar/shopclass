@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\api\serializer;
 
-use mindstellar\api\read\CommentStatus;
+use mindstellar\comment\CommentStatus;
 
 /**
  * A listing comment. The author's e-mail is never sent, except to moderators (admin()).

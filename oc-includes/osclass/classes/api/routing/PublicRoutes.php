@@ -29,6 +29,8 @@ use mindstellar\api\controller\UsersController;
 use mindstellar\api\read\ListingSort;
 use mindstellar\api\RouteSpec;
 use mindstellar\api\schema\OpenApi;
+use mindstellar\api\schema\Schema;
+use mindstellar\listing\ListingStatus;
 
 /**
  * The v1 routes anyone, a user or a user's app calls: reads, sign-in, the account and
@@ -319,6 +321,16 @@ final class PublicRoutes
                 scope: 'account:write',
                 body: 'AccountInput',
                 response: 'AccountDocument'
+            ),
+            'GET account/listings' => RouteSpec::read(
+                handler: [AccountController::class, 'listings'],
+                tag: 'Account',
+                summary: 'Your own listings in any status, newest first',
+                response: 'ListingPage',
+                query: ['status' => Schema::listOf(ListingStatus::ALL)] + $paging + ['count' => self::COUNT, 'include' => self::INCLUDE] + $view,
+                auth: RouteSpec::AUTH_USER,
+                scope: 'account:read',
+                errors: [400, 422]
             ),
             'POST account/password' => RouteSpec::write(
                 handler: [AccountController::class, 'password'],

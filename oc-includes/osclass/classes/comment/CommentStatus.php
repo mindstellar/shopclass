@@ -10,9 +10,8 @@
 
 declare(strict_types=1);
 
-namespace mindstellar\api\read;
+namespace mindstellar\comment;
 
-use mindstellar\api\serializer\Format;
 use mindstellar\database\QueryBuilder;
 
 /**
@@ -38,9 +37,9 @@ final class CommentStatus
     public static function of(array $row): string
     {
         return match (true) {
-            Format::bool($row['b_spam'] ?? 0)     => self::SPAM,
-            !Format::bool($row['b_enabled'] ?? 1) => self::DISABLED,
-            !Format::bool($row['b_active'] ?? 0)  => self::PENDING,
+            self::flag($row['b_spam'] ?? 0)     => self::SPAM,
+            !self::flag($row['b_enabled'] ?? 1) => self::DISABLED,
+            !self::flag($row['b_active'] ?? 0)  => self::PENDING,
             default                               => self::ACTIVE,
         };
     }
@@ -68,5 +67,10 @@ final class CommentStatus
 
             return $group;
         });
+    }
+
+    private static function flag(mixed $value): bool
+    {
+        return $value === true || (string) $value === '1';
     }
 }

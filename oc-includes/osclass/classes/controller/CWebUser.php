@@ -102,7 +102,7 @@ class CWebUser extends WebSecBaseModel
                 $userId = (int) osc_logged_user_id();
                 try {
                     (new AccountService())->update($userId, AccountInput::read(false), $this->actor());
-                    AccountService::refreshIdentity($userId);
+                    UserActions::refreshIdentity($userId);
                     $saved = true;
                 } catch (InvalidException $e) {
                     $saved = false;

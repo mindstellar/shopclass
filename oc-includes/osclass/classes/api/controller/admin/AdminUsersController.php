@@ -28,6 +28,7 @@ use mindstellar\api\serializer\UserSerializer;
 use mindstellar\api\write\AccountBody;
 use mindstellar\model\Resource;
 use mindstellar\user\AccountService;
+use mindstellar\user\UserQuery;
 
 /**
  * `/admin/users`: every user in full, the users screen's edit, actions and delete through
@@ -39,13 +40,18 @@ final class AdminUsersController
     public const DEFAULT_LIMIT = 20;
     public const MAX_LIMIT     = 100;
 
+    /** The PATCH members that change the account's status rather than its profile. */
+    private const STATUS_MEMBERS = ['confirmed' => true, 'blocked' => true];
+
     private UserRows $users;
     private AccessEntries $sessions;
+    private UserQuery $query;
 
     public function __construct(private ApiServices $api)
     {
         $this->users = $api->users();
         $this->sessions = $api->accessEntries();
+        $this->query = new UserQuery();
     }
 
     /**
@@ -57,23 +63,11 @@ final class AdminUsersController
     {
         $context = $this->api->context($request, $credential, 'user', UserSerializer::MEMBERS);
         $pager   = Pager::fromRequest($request, $this->api->cursor(), ListSpec::byId('desc', self::DEFAULT_LIMIT, self::MAX_LIMIT), ['list' => 'admin/users'] + $request->query());
-        $query = osc_db_table(DB_TABLE_PREFIX . 't_user');
-        foreach (['active' => 'b_active', 'enabled' => 'b_enabled'] as $filter => $column) {
-            if (array_key_exists($filter, $request->query())) {
-                $query = $query->where($column, $request->queryBool($filter) ? 1 : 0);
-            }
-        }
-        $q = trim($request->queryString('q'));
-        if ($q !== '') {
-            $like  = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $q) . '%';
-            $query = $query->whereRaw('(s_email LIKE ? OR s_username LIKE ? OR s_name LIKE ?)', [$like, $like, $like]);
-        }
-        $total = $pager->counts() ? $query->count() : null;
-        $after = $pager->after();
-        if ($after !== null) {
-            $query = $query->where('pk_i_id', '<', (int) $after[0]);
-        }
-        $rows = osc_db_stringify_rows($query->orderBy('pk_i_id', 'DESC')->limit($pager->limit() + 1)->get());
+        $flag    = static fn (string $name): ?bool => array_key_exists($name, $request->query()) ? $request->queryBool($name) : null;
+        [$active, $enabled, $q] = [$flag('active'), $flag('enabled'), trim($request->queryString('q'))];
+        $total   = $pager->counts() ? $this->query->count($active, $enabled, $q) : null;
+        $after   = $pager->after();
+        $rows    = $this->query->newest($active, $enabled, $q, $after === null ? null : (int) $after[0], $pager->limit() + 1);
         $next = $pager->next($rows);
         $page = $pager->page($rows);
         if ($page !== [] && $context->wants('avatar')) {
@@ -96,16 +90,35 @@ final class AdminUsersController
     }
 
     /**
-     * PATCH /admin/users/{id}. Members not sent keep their values.
+     * PATCH /admin/users/{id}. Members not sent keep their values; `blocked` and `confirmed`
+     * change the account's status as the screen's actions do.
      *
      * @param array<string,string> $args
      */
     public function update(Request $request, Credential $credential, array $args): Response
     {
-        $user   = $this->user((int) $args['id']);
-        $userId = (int) $user['pk_i_id'];
-        $form   = AccountBody::admin($user, $request->input());
-        (new AccountService())->update($userId, $form, $credential->actor($request->ip(), 'admin:users'));
+        $user     = $this->user((int) $args['id']);
+        $userId   = (int) $user['pk_i_id'];
+        $input    = $request->input();
+        $status   = array_intersect_key($input, self::STATUS_MEMBERS);
+        $accounts = new AccountService();
+        $actor    = $credential->actor($request->ip(), 'admin:users');
+        if ($status === [] || array_diff_key($input, self::STATUS_MEMBERS) !== []) {
+            $accounts->update($userId, AccountBody::admin($user, array_diff_key($input, self::STATUS_MEMBERS)), $actor);
+        }
+        // Unblock before confirming, so the account's listings come back with it.
+        $changes = [];
+        if (isset($status['blocked']) && $status['blocked'] === ((string) $user['b_enabled'] === '1')) {
+            $changes[] = $status['blocked'] ? 'disable' : 'enable';
+        }
+        if (isset($status['confirmed']) && $status['confirmed'] !== ((string) $user['b_active'] === '1')) {
+            $changes[] = $status['confirmed'] ? 'activate' : 'deactivate';
+        }
+        foreach ($changes as $change) {
+            if (!$accounts->$change($userId, $actor)) {
+                throw ProblemException::of('server_error', 'The user could not be changed.');
+            }
+        }
 
         return $this->fresh($request, $credential, $userId);
     }
@@ -127,7 +140,7 @@ final class AdminUsersController
 
     /**
      * POST /admin/users/{id}/<action>: activate, deactivate, enable or disable, as the users
-     * screen does; read from the path's last segment.
+     * screen does; read from the path's last segment. Deprecated for PATCH's `confirmed` and `blocked`.
      *
      * @param array<string,string> $args
      */

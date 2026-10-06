@@ -172,7 +172,41 @@ final class Response
             return null;
         }
 
-        return osc_response_etag_value(json_encode($this->body, self::JSON_FLAGS | JSON_THROW_ON_ERROR));
+        return $this->header('ETag') ?? osc_response_etag_value(json_encode($this->body, self::JSON_FLAGS | JSON_THROW_ON_ERROR));
+    }
+
+    /**
+     * A copy whose ETag is `"<version>.<body hash>"`: If-Match compares the stored version,
+     * If-None-Match the whole tag. Unchanged unless it is a 200 with a body.
+     */
+    public function withVersion(string $version): self
+    {
+        if ($this->status !== 200 || $this->body === null) {
+            return $this;
+        }
+
+        return $this->withHeader('ETag', '"' . $version . '.' . trim((string) osc_response_etag_value(json_encode($this->body, self::JSON_FLAGS | JSON_THROW_ON_ERROR)), '"') . '"');
+    }
+
+    /**
+     * Whether an If-Match header names this stored version: `*`, or a tag from withVersion(),
+     * weak or strong.
+     */
+    public static function versionMatches(string $header, string $version): bool
+    {
+        $header = trim($header);
+        if ($header === '*') {
+            return true;
+        }
+        foreach (explode(',', $header) as $tag) {
+            $tag = trim($tag);
+            $tag = trim(str_starts_with($tag, 'W/') ? substr($tag, 2) : $tag, '"');
+            if (hash_equals($version, explode('.', $tag, 2)[0])) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

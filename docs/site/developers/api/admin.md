@@ -97,11 +97,9 @@ curl "$API/admin/listings?status=pending&limit=50" -H "Authorization: Bearer $KE
 |---|---|
 | `GET /admin/comments` | List. Filters: `status` (`active`, `pending`, `disabled`, `spam`), `listing`, `user`, `limit`, `cursor`, `count`. |
 | `GET /admin/comments/{id}` | One comment, with the author's e-mail. |
-| `PATCH /admin/comments/{id}` | Edit `title`, `body`, `author_name`, `author_email`. |
+| `PATCH /admin/comments/{id}` | Edit `title`, `body`, `author_name`, `author_email`. `approved: true` approves it and tells the author; `false` holds it back. `blocked: true` blocks it; `false` unblocks it. |
 | `DELETE /admin/comments/{id}` | Delete. |
-| `POST /admin/comments/{id}/activate` | Approve. The author is told. |
-| `POST /admin/comments/{id}/deactivate` | Hold back for approval. |
-| `POST /admin/comments/{id}/enable`, `/disable` | Unblock, or block. |
+| `POST /admin/comments/{id}/activate`, `/deactivate`, `/enable`, `/disable` | Deprecated. Use `PATCH` with `approved` or `blocked`. |
 
 ## Users
 
@@ -111,15 +109,15 @@ curl "$API/admin/listings?status=pending&limit=50" -H "Authorization: Bearer $KE
 |---|---|
 | `GET /admin/users` | List. Filters: `q` (e-mail, username or name starting with it), `active`, `enabled`, `locale`, `fields`, `limit`, `cursor`, `count`. |
 | `GET /admin/users/{id}` | One user, every member. |
-| `PATCH /admin/users/{id}` | Edit the profile, `email`, `username` or `password`. A new password ends every sign-in and key of that user. |
+| `PATCH /admin/users/{id}` | Edit the profile, `email`, `username` or `password`. A new password ends every sign-in and key of that user. `confirmed` marks the account confirmed, or not (`active` in the answer). `blocked: true` blocks the user, and their sign-ins and keys stop working (`enabled` in the answer). |
 | `DELETE /admin/users/{id}` | Delete the user with their listings, comments and saved searches. |
-| `POST /admin/users/{id}/activate`, `/deactivate` | Mark the account confirmed, or not. |
-| `POST /admin/users/{id}/enable`, `/disable` | Unblock, or block. A blocked user's sign-ins and keys stop working. |
+| `POST /admin/users/{id}/activate`, `/deactivate`, `/enable`, `/disable` | Deprecated. Use `PATCH` with `confirmed` or `blocked`. |
 | `GET /admin/users/{id}/sessions` | The user's sign-ins and API keys. |
 | `DELETE /admin/users/{id}/sessions/{session}` | End one sign-in, or revoke one key. |
 
 ```bash
-curl -X POST $API/admin/users/23/disable -H "Authorization: Bearer $KEY"
+curl -X PATCH $API/admin/users/23 -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" -d '{"blocked": true}'
 curl -X DELETE $API/admin/users/23/sessions/9 -H "Authorization: Bearer $KEY"
 ```
 

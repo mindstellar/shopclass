@@ -1370,7 +1370,7 @@ msgstr ""
 msgid "All sections"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/FormBuilderAjax.php
 msgid "All submissions for this form have been deleted"
 msgstr ""
 
@@ -1458,28 +1458,32 @@ msgstr ""
 msgid "An account appears here the first time credits are added to it, whether "
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/AjaxHandler.php
+#: oc-includes/osclass/classes/admin/ajax/FormBuilderAjax.php
 msgid "An error occurred"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/CategoryAjax.php
+#: oc-includes/osclass/classes/admin/ajax/FieldAjax.php
+#: oc-includes/osclass/classes/admin/ajax/FormBuilderAjax.php
 msgid "An error occurred while deleting"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/FormBuilderAjax.php
 msgid "An error occurred while saving the form"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/FormBuilderAjax.php
 msgid "An error occurred while saving the group"
 msgstr ""
 
 #: oc-admin/themes/modern/emails/frm.php
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/SystemAjax.php
 msgid "An error occurred while sending email"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/CategoryAjax.php
+#: oc-includes/osclass/classes/admin/ajax/FieldAjax.php
 msgid "An error occurred while updating"
 msgstr ""
 
@@ -2338,11 +2342,11 @@ msgstr ""
 msgid "Casting - Auditions"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/MarketAjax.php
 msgid "Catalog refresh is disabled on this deployment."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/MarketAjax.php
 msgid "Catalog refreshed."
 msgstr ""
 
@@ -2387,11 +2391,11 @@ msgstr ""
 msgid "Category settings"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/CategoryAjax.php
 msgid "Category updated correctly"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/CategoryAjax.php
 msgid "Category updated correctly, but some titles are empty"
 msgstr ""
 
@@ -2549,7 +2553,7 @@ msgstr ""
 msgid "Check with seller"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/UpdateAjax.php
 msgid "Checked updates"
 msgstr ""
 
@@ -3071,7 +3075,7 @@ msgstr ""
 msgid "Could not be counted"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/UpdateAjax.php
 msgid "Could not check for updates"
 msgstr ""
 
@@ -4227,7 +4231,7 @@ msgstr ""
 msgid "Email of the friend who wants send"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/SystemAjax.php
 msgid "Email sent successfully"
 msgstr ""
 
@@ -4430,7 +4434,7 @@ msgstr ""
 msgid "Error loading theme custom file"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/UpdateAjax.php
 msgid "Error occurred while upgrading osclass Database."
 msgstr ""
 
@@ -5370,7 +5374,7 @@ msgid ""
 "deploying a new image or file set; this screen is read-only."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/UpdateAjax.php
 msgid ""
 "In-app updates are disabled on this installation. Update by deploying a "
 "newer container image; the database is migrated automatically on start."
@@ -5524,17 +5528,17 @@ msgstr ""
 msgid "Invalid friend's email address"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/LocationAjax.php
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
 msgid "Invalid location id"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/MarketAjax.php
 #: oc-includes/osclass/classes/market/Installer.php
 msgid "Invalid package slug."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/MarketAjax.php
 msgid "Invalid package type."
 msgstr ""
 
@@ -5546,7 +5550,7 @@ msgstr ""
 msgid "Invalid plugin update uri"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/FormBuilderAjax.php
 msgid "Invalid request"
 msgstr ""
 
@@ -6277,7 +6281,7 @@ msgid "Location listing counts"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/list.php
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/LocationAjax.php
 msgid "Location not found"
 msgstr ""
 
@@ -6298,7 +6302,7 @@ msgstr ""
 msgid "Locations"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/LocationAjax.php
 msgid "Locations could not be read"
 msgstr ""
 
@@ -6834,7 +6838,7 @@ msgstr ""
 msgid "Move into forms"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/FormBuilderAjax.php
 msgid "Moved %1$d fields into %2$d forms."
 msgstr ""
 
@@ -6892,7 +6896,7 @@ msgstr ""
 msgid "MySQLi extension is required. How to "
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/FieldAjax.php
 msgid "NEW custom field"
 msgstr ""
 
@@ -7072,7 +7076,7 @@ msgstr ""
 msgid "New field"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/FormBuilderAjax.php
 msgid "New field group"
 msgstr ""
 
@@ -7210,7 +7214,7 @@ msgstr ""
 msgid "No category matches that."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/CategoryAjax.php
 msgid "No category with id %d exists"
 msgstr ""
 
@@ -7226,7 +7230,7 @@ msgstr ""
 msgid "No comments to moderate"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/MarketAjax.php
 msgid "No compatible version is available for this package."
 msgstr ""
 
@@ -7252,7 +7256,7 @@ msgstr ""
 msgid "No credits moved yet"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/MarketAjax.php
 msgid "No details are available for this package yet."
 msgstr ""
 
@@ -7272,7 +7276,7 @@ msgstr ""
 msgid "No fields yet. Create one to get started."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/MediaAjax.php
 msgid "No file was received"
 msgstr ""
 
@@ -7318,7 +7322,7 @@ msgstr ""
 msgid "No listings match these filters"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/LocationAjax.php
 msgid "No locations selected"
 msgstr ""
 
@@ -7390,7 +7394,7 @@ msgstr ""
 msgid "No reported listings"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/SystemAjax.php
 msgid "No results"
 msgstr ""
 
@@ -7423,7 +7427,7 @@ msgstr ""
 msgid "No themes match your search."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/UpdateAjax.php
 msgid "No update available"
 msgstr ""
 
@@ -7435,7 +7439,7 @@ msgstr ""
 msgid "No version declared"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/MarketAjax.php
 msgid "No version was specified."
 msgstr ""
 
@@ -7927,7 +7931,7 @@ msgstr ""
 msgid "Order #%d"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/AjaxHandler.php
 msgid "Order saved"
 msgstr ""
 
@@ -8030,7 +8034,7 @@ msgstr ""
 msgid "Package installs are disabled in demo mode."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/MarketAjax.php
 #: oc-includes/osclass/classes/market/Installer.php
 msgid "Package installs are disabled on this deployment."
 msgstr ""
@@ -8114,7 +8118,7 @@ msgstr ""
 msgid "Parent categories"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/CategoryAjax.php
 msgid "Parent category is disabled, you can not enable that category"
 msgstr ""
 
@@ -9423,7 +9427,8 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/widgets.php
 #: oc-admin/themes/modern/fields/index.php
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/FieldAjax.php
+#: oc-includes/osclass/classes/admin/ajax/FormBuilderAjax.php
 msgid "Saved"
 msgstr ""
 
@@ -10113,7 +10118,7 @@ msgid ""
 "without an error."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/UpdateAjax.php
 msgid "Shopclass upgraded successfully."
 msgstr ""
 
@@ -10329,7 +10334,7 @@ msgstr ""
 msgid "Software updates"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/LocationAjax.php
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
 msgid "Some of the selected locations no longer exist"
 msgstr ""
@@ -10354,11 +10359,11 @@ msgstr ""
 msgid "Something went wrong. Please try again."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/CategoryAjax.php
 msgid "Sorry, including at least a title is mandatory"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/FieldAjax.php
 msgid "Sorry, you already have a field with that name"
 msgstr ""
 
@@ -10658,11 +10663,11 @@ msgstr ""
 msgid "Test connection"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/SystemAjax.php
 msgid "Test email"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/SystemAjax.php
 msgid "Test email, %s"
 msgstr ""
 
@@ -10825,7 +10830,7 @@ msgstr ""
 msgid "The admin username may only contain letters and numbers."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/MarketAjax.php
 msgid ""
 "The available version has changed since you loaded this page; refresh and "
 "try again."
@@ -10929,19 +10934,19 @@ msgstr ""
 msgid "The catalog lists no countries right now"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/CategoryAjax.php
 msgid "The categories have been deleted"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/CategoryAjax.php
 msgid "The category as well as its subcategories have been disabled"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/CategoryAjax.php
 msgid "The category as well as its subcategories have been enabled"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/CategoryAjax.php
 msgid ""
 "The category is too large to delete at once. It has been hidden and is "
 "being emptied in the background."
@@ -10961,7 +10966,7 @@ msgstr ""
 msgid "The current theme does not declare any widget sections."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/FieldAjax.php
 msgid "The custom field has been deleted"
 msgstr ""
 
@@ -11021,7 +11026,7 @@ msgstr ""
 msgid "The existing package directory is not writable."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/FormBuilderAjax.php
 msgid "The field group has been deleted"
 msgstr ""
 
@@ -11039,7 +11044,7 @@ msgid ""
 "and post_max_size, or restore from the command line."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/MediaAjax.php
 msgid "The file is not a valid image"
 msgstr ""
 
@@ -11282,15 +11287,15 @@ msgid ""
 "was read instead."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/CategoryAjax.php
 msgid "The subcategory has been disabled"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/CategoryAjax.php
 msgid "The subcategory has been enabled"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/FormBuilderAjax.php
 msgid "The submission has been deleted"
 msgstr ""
 
@@ -11406,7 +11411,7 @@ msgstr ""
 msgid "There is nothing to put back."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/FormBuilderAjax.php
 msgid "There were no fields to move."
 msgstr ""
 
@@ -11447,7 +11452,7 @@ msgstr ""
 msgid "This action can not be undone."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/MarketAjax.php
 msgid "This action can't be done because it's a demo site"
 msgstr ""
 
@@ -11456,7 +11461,7 @@ msgstr ""
 msgid "This action can't be undone. Are you sure you want to continue?"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/UpdateAjax.php
 msgid "This action cannot be done because it is a demo site"
 msgstr ""
 
@@ -11649,11 +11654,11 @@ msgstr ""
 msgid "This order cannot be refunded "
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/MarketAjax.php
 msgid "This package is already installed; use Update instead."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/MarketAjax.php
 msgid "This package is not installed; use Install instead."
 msgstr ""
 
@@ -11910,7 +11915,7 @@ msgstr ""
 msgid "Too many images. The limit is {limit}."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/LocationAjax.php
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
 msgid "Too many locations selected"
 msgstr ""
@@ -12206,7 +12211,7 @@ msgstr ""
 msgid "Unknown"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/LocationAjax.php
 msgid "Unknown location level"
 msgstr ""
 
@@ -12253,7 +12258,7 @@ msgid "Update all (%d)"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/data.php
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/UpdateAjax.php
 msgid "Update available"
 msgstr ""
 
@@ -12379,7 +12384,7 @@ msgstr ""
 msgid "Upload limits"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/MediaAjax.php
 msgid "Upload target not allowed"
 msgstr ""
 
@@ -13124,7 +13129,7 @@ msgid ""
 "dimension of thumbnails, "
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php
+#: oc-includes/osclass/classes/admin/ajax/SystemAjax.php
 msgid "You don't have the necessary permissions"
 msgstr ""
 

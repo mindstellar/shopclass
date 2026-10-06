@@ -952,11 +952,7 @@ class CWebItem extends BaseModel
      */
     private function listingData(array $data): array
     {
-        if (!isset($data['meta'])) {
-            $data['meta'] = Params::getParam('meta');
-        }
-
-        return $data;
+        return ListingInput::withMeta($data);
     }
 
     /**

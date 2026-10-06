@@ -1,0 +1,100 @@
+<?php
+/*
+ * This file is part of Shopclass (Mindstellar).
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
+ *
+ * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+declare(strict_types=1);
+
+namespace mindstellar\api\http;
+
+use mindstellar\api\auth\Credential;
+use mindstellar\database\Connection;
+use mindstellar\database\Db;
+use mindstellar\security\SigningKey;
+
+/**
+ * Versions read from the stored rows: a keyed hash of the resource's row and its own child
+ * rows (a listing's descriptions, location and field values, say). Columns that change
+ * without anyone editing the resource, such as a user's last access, are left out.
+ */
+final class RowVersions implements ResourceVersions
+{
+    private const LISTING = ['arg' => 'id', 'tables' => [
+        ['t_item', 'pk_i_id'], ['t_item_description', 'fk_i_item_id'], ['t_item_location', 'fk_i_item_id'], ['t_item_meta', 'fk_i_item_id'],
+    ]];
+
+    private const COMMENT = ['arg' => 'id', 'tables' => [['t_item_comment', 'pk_i_id']]];
+
+    private const KEY = ['arg' => 'id', 'tables' => [['t_api_credential', 'pk_i_id']]];
+
+    private const USER_TABLES = [['t_user', 'pk_i_id'], ['t_user_description', 'fk_i_user_id']];
+
+    /** GET path => the argument holding the key (null: the credential's user) and the tables. */
+    private const RESOURCES = [
+        'listings/{id}'                 => self::LISTING,
+        'admin/listings/{id}'           => self::LISTING,
+        'listings/{id}/photos/{photo}'  => ['arg' => 'photo', 'tables' => [['t_item_resource', 'pk_i_id']]],
+        'comments/{id}'                 => self::COMMENT,
+        'admin/comments/{id}'           => self::COMMENT,
+        'account'                       => ['arg' => null, 'tables' => self::USER_TABLES],
+        'admin/users/{id}'              => ['arg' => 'id', 'tables' => self::USER_TABLES],
+        'account/alerts/{id}'           => ['arg' => 'id', 'tables' => [['t_alerts', 'pk_i_id']]],
+        'account/keys/{id}'             => self::KEY,
+        'admin/keys/{id}'               => self::KEY,
+        'admin/categories/{id}'         => ['arg' => 'id', 'tables' => [['t_category', 'pk_i_id'], ['t_category_description', 'fk_i_category_id']]],
+        'admin/fields/{id}'             => ['arg' => 'id', 'tables' => [['t_meta_fields', 'pk_i_id'], ['t_meta_categories', 'fk_i_field_id']]],
+        'admin/currencies/{code}'       => ['arg' => 'code', 'tables' => [['t_currency', 'pk_c_code']]],
+        'admin/regions/{id}'            => ['arg' => 'id', 'tables' => [['t_region', 'pk_i_id']]],
+        'admin/cities/{id}'             => ['arg' => 'id', 'tables' => [['t_city', 'pk_i_id']]],
+        'admin/areas/{id}'              => ['arg' => 'id', 'tables' => [['t_city_area', 'pk_i_id']]],
+    ];
+
+    /** Columns that are not part of the resource's version. */
+    private const IGNORED = [
+        't_user'           => ['dt_access_date', 's_access_ip', 'i_items', 'i_comments', 's_pass_code', 's_pass_date', 's_pass_ip', 'i_auth_stamp'],
+        't_api_credential' => ['dt_last_used', 's_last_ip'],
+    ];
+
+    public function supports(string $path): bool
+    {
+        return isset(self::RESOURCES[$path]);
+    }
+
+    public function version(string $path, array $args, Credential $credential, bool $lock = false): ?string
+    {
+        $resource = self::RESOURCES[$path] ?? null;
+        if ($resource === null) {
+            return null;
+        }
+        $key = $resource['arg'] === null ? $credential->userId() : ($args[$resource['arg']] ?? null);
+        if ($key === null || $key === '') {
+            return null;
+        }
+        $rows = [];
+        foreach ($resource['tables'] as $i => [$table, $column]) {
+            $found = Connection::getInstance()->select(
+                'SELECT * FROM ' . DB_TABLE_PREFIX . $table . ' WHERE ' . $column . ' = ?' . ($lock ? ' FOR UPDATE' : ''),
+                [$key]
+            );
+            if ($i === 0 && $found === []) {
+                return null;
+            }
+            $ignored = array_flip(self::IGNORED[$table] ?? []);
+            $found   = array_map(static fn (array $row): string => (string) json_encode(array_diff_key($row, $ignored)), $found);
+            sort($found);
+            $rows[$table] = $found;
+        }
+
+        return substr(hash_hmac('sha256', (string) json_encode($rows), 'resource-version|' . SigningKey::get()), 0, 24);
+    }
+
+    public function atomically(callable $fn): mixed
+    {
+        return Db::transaction($fn);
+    }
+}

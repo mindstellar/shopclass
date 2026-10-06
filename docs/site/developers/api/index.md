@@ -195,8 +195,14 @@ The site owner sets the number of seconds. Answers for admin keys are never shar
 
 To avoid overwriting a change made meanwhile, send the `ETag` of your last `GET` in
 `If-Match` on a `PATCH` or `DELETE`. If the resource changed you get `412 precondition_failed`.
-The tag is that of the plain `GET` (no `fields` or `include`). `If-Match: *` only checks that the
-resource exists.
+`If-Match: *` only checks that the resource exists.
+
+On listings, comments, photos, the account, users, keys, saved searches, categories, fields,
+currencies and locations, the `ETag` holds the stored version (`"<version>.<hash>"`). Any `GET`
+of the path works for `If-Match`, whatever its `fields`, `include` or `locale`. The check and
+the write run as one, so no other write can land between them. A `PATCH` sent with `If-Match`
+answers with the new `ETag`, ready for the next edit. On other paths, use the tag of the plain
+`GET` (no `fields` or `include`).
 
 ## Quick start: writing
 

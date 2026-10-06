@@ -85,9 +85,7 @@ final class SiteController
      */
     public function currencies(Request $request, Credential $credential, array $args): Response
     {
-        $rows = \mindstellar\cache\CacheGroup::remember('currency', 'enabled', static function (): ?array {
-            return osc_db_stringify_rows(osc_db_table(DB_TABLE_PREFIX . 't_currency')->where('b_enabled', 1)->orderBy('pk_c_code')->get());
-        }) ?? [];
+        $rows = $this->api->currencyService()->enabled();
         $serializer = new LocationSerializer();
 
         return Response::collection(array_map([$serializer, 'currency'], $rows));

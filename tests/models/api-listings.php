@@ -484,6 +484,21 @@ $r = $get('users/' . $other . '/listings', array(), $publicKey);
 pin('a user\'s live listings', array($bike), $ids($r));
 pin('the user filter is refused: it is the path, not a parameter', 422, $get('users/' . $other . '/listings', array('user' => (string) $seller), $publicKey)->status());
 
+harness_section('the seller\'s own listings');
+$sellerAccount = $keys->create(CredentialKind::KEY, 'seller account', array('account:read'), KeyOwner::user($seller))->token();
+$otherAccount  = $keys->create(CredentialKind::KEY, 'other account', array('account:read'), KeyOwner::user($other))->token();
+$r = $get('account/listings', array('status' => 'pending,disabled,spam,expired'), $sellerAccount);
+pin('every status the listings page shows, newest first', array(200, array($expired, $spam, $disabled, $pending)), array($r->status(), $ids($r)));
+pin('each with its status', array('expired', 'spam', 'disabled', 'pending'), array_column($r->body()['data'] ?? array(), 'status'));
+pin('matches the schema', array(), $schemaErrors('ListingPage', $r));
+$r = $get('account/listings', array('count' => 'true', 'limit' => '2'), $sellerAccount);
+pin('no status: all of them, counted, paged by id', array(array($expired, $spam), 29, true), array($ids($r), $r->body()['meta']['total'] ?? null, is_string($r->body()['links']['next'] ?? null)));
+pin('status=active: the live ones only', array(25, $live[24]), (static fn (array $ids): array => array(count($ids), $ids[0] ?? null))($ids($get('account/listings', array('status' => 'active', 'limit' => '50'), $sellerAccount))));
+pin('another user sees only their own', array($bike), $ids($get('account/listings', array(), $otherAccount)));
+pin('a key without account:read is refused', 403, $get('account/listings', array(), $sellerKey)->status());
+pin('a public key is refused', 403, $get('account/listings', array(), $publicKey)->status());
+pin('an unknown status is 422', 422, $get('account/listings', array('status' => 'sold'), $sellerAccount)->status());
+
 harness_section('queries');
 // Warm: what a request caches once (category tree, currencies) is settled; the search cache
 // is dropped so the measured call runs the search itself.

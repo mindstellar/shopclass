@@ -15,8 +15,8 @@ namespace mindstellar\api\schema;
 use mindstellar\admin\ExposedSettings;
 
 use mindstellar\api\auth\ApiKeyService;
-use mindstellar\api\read\CommentStatus;
 use mindstellar\api\serializer\CustomFieldSerializer;
+use mindstellar\comment\CommentStatus;
 use mindstellar\webhook\Endpoint;
 use mindstellar\webhook\Events;
 use mindstellar\webhook\WebhookService;
@@ -97,13 +97,17 @@ final class AdminSchema
                 'body'         => $text(5000, 1),
                 'author_name'  => $text(100),
                 'author_email' => ['type' => 'string', 'format' => 'email', 'maxLength' => 100],
+                'approved'     => ['type' => 'boolean', 'description' => 'true approves it, and its author is told; false holds it back.'],
+                'blocked'      => ['type' => 'boolean', 'description' => 'true blocks it; false unblocks it.'],
             ]),
             'AdminCommentPage'      => $page('AdminComment'),
             'AdminCommentDocument'  => $doc('AdminComment'),
             'AdminUserPatch'        => $input([
-                'email'    => ['type' => 'string', 'format' => 'email', 'maxLength' => 100],
-                'username' => $text(100, 1),
-                'password' => $text(4096, 1) + ['description' => 'A new password; every sign-in and key of the user ends.'],
+                'email'     => ['type' => 'string', 'format' => 'email', 'maxLength' => 100],
+                'username'  => $text(100, 1),
+                'password'  => $text(4096, 1) + ['description' => 'A new password; every sign-in and key of the user ends.'],
+                'confirmed' => ['type' => 'boolean', 'description' => 'Whether the account is confirmed; `active` in the answer.'],
+                'blocked'   => ['type' => 'boolean', 'description' => 'true blocks the user, and their sign-ins and keys stop working; `enabled` in the answer is its opposite.'],
             ] + array_diff_key(Schema::profileMembers(), ['email' => true])),
             'UserPage'              => $page('User'),
             'AdminCategory'         => Schema::object([

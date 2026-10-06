@@ -26,6 +26,7 @@ endpoints, at `/api/v1/openapi.json`.
 | POST | `/account/keys` | user | `account:write` | Make a personal API key; its token is shown once |
 | GET | `/account/keys/{id}` | user | `account:write` | One personal API key; never its secret |
 | DELETE | `/account/keys/{id}` | user | `account:write` | Revoke a personal API key |
+| GET | `/account/listings` | user | `account:read` | Your own listings in any status, newest first |
 | POST | `/account/password` | user | `account:write` | Change the password; every sign-in ends and this client gets a new one |
 | GET | `/account/sessions` | user | `account:read` | The sign-ins and keys that act for this user |
 | DELETE | `/account/sessions/{session}` | user | `account:write` | End one sign-in, or revoke one key |
@@ -49,7 +50,7 @@ Edit the profile; a new e-mail address is confirmed by a link first
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
-| `If-Match` | header | string | no | An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since. |
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Body: `AccountInput` as JSON, optional.
@@ -96,7 +97,7 @@ Stop a saved search
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
-| `If-Match` | header | string | no | An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since. |
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 412 Precondition failed; 429 Too many requests; 500 Server error; 503 Maintenance.
@@ -137,10 +138,27 @@ Revoke a personal API key
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
-| `If-Match` | header | string | no | An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since. |
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 412 Precondition failed; 429 Too many requests; 500 Server error; 503 Maintenance.
+
+### GET `/account/listings`
+
+Your own listings in any status, newest first
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `status` | query | string or array | no | One value, a comma list, or repeated. |
+| `limit` | query | integer | no |  |
+| `cursor` | query | string | no |  |
+| `count` | query | boolean | no | true: also count every match for meta.total; skipped otherwise, as it costs a query. |
+| `include` | query | string | no | Comma list: fields, translations. |
+| `locale` | query | string | no |  |
+| `fields` | query | string | no |  |
+| `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
+
+Answers: 200 OK (`ListingPage`); 304 Not modified; 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
 
 ### POST `/account/password`
 
@@ -187,12 +205,12 @@ Answers: 204 No content; 401 No valid credential; 403 Not allowed for this crede
 |---|---|---|---|---|
 | GET | `/admin/comments` | admin | `admin:comments` | Every comment, whatever its status, newest first |
 | GET | `/admin/comments/{id}` | admin | `admin:comments` | One comment |
-| PATCH | `/admin/comments/{id}` | admin | `admin:comments` | Edit a comment's text or author |
+| PATCH | `/admin/comments/{id}` | admin | `admin:comments` | Edit a comment's text or author, or approve or block it |
 | DELETE | `/admin/comments/{id}` | admin | `admin:comments` | Delete a comment |
-| POST | `/admin/comments/{id}/activate` | admin | `admin:comments` | Approve a comment; its author is told |
-| POST | `/admin/comments/{id}/deactivate` | admin | `admin:comments` | Hold a comment back for approval |
-| POST | `/admin/comments/{id}/disable` | admin | `admin:comments` | Block a comment |
-| POST | `/admin/comments/{id}/enable` | admin | `admin:comments` | Unblock a comment |
+| POST | `/admin/comments/{id}/activate` | admin | `admin:comments` | Approve a comment; its author is told. Deprecated: send `approved: true` to PATCH admin/comments/{id} |
+| POST | `/admin/comments/{id}/deactivate` | admin | `admin:comments` | Hold a comment back for approval. Deprecated: send `approved: false` to PATCH admin/comments/{id} |
+| POST | `/admin/comments/{id}/disable` | admin | `admin:comments` | Block a comment. Deprecated: send `blocked: true` to PATCH admin/comments/{id} |
+| POST | `/admin/comments/{id}/enable` | admin | `admin:comments` | Unblock a comment. Deprecated: send `blocked: false` to PATCH admin/comments/{id} |
 
 ### GET `/admin/comments`
 
@@ -223,12 +241,12 @@ Answers: 200 OK (`AdminCommentDocument`); 304 Not modified; 401 No valid credent
 
 ### PATCH `/admin/comments/{id}`
 
-Edit a comment's text or author
+Edit a comment's text or author, or approve or block it
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
-| `If-Match` | header | string | no | An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since. |
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Body: `AdminCommentPatch` as JSON, optional.
@@ -242,14 +260,14 @@ Delete a comment
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
-| `If-Match` | header | string | no | An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since. |
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 412 Precondition failed; 429 Too many requests; 500 Server error; 503 Maintenance.
 
 ### POST `/admin/comments/{id}/activate`
 
-Approve a comment; its author is told
+Approve a comment; its author is told. Deprecated: send `approved: true` to PATCH admin/comments/{id} **Deprecated.**
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
@@ -260,7 +278,7 @@ Answers: 200 OK (`AdminCommentDocument`); 401 No valid credential; 403 Not allow
 
 ### POST `/admin/comments/{id}/deactivate`
 
-Hold a comment back for approval
+Hold a comment back for approval. Deprecated: send `approved: false` to PATCH admin/comments/{id} **Deprecated.**
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
@@ -271,7 +289,7 @@ Answers: 200 OK (`AdminCommentDocument`); 401 No valid credential; 403 Not allow
 
 ### POST `/admin/comments/{id}/disable`
 
-Block a comment
+Block a comment. Deprecated: send `blocked: true` to PATCH admin/comments/{id} **Deprecated.**
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
@@ -282,7 +300,7 @@ Answers: 200 OK (`AdminCommentDocument`); 401 No valid credential; 403 Not allow
 
 ### POST `/admin/comments/{id}/enable`
 
-Unblock a comment
+Unblock a comment. Deprecated: send `blocked: false` to PATCH admin/comments/{id} **Deprecated.**
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
@@ -350,7 +368,7 @@ Edit any listing, its owner and expiry included; members not sent keep their val
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
-| `If-Match` | header | string | no | An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since. |
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Body: `AdminListingPatch` as JSON, optional.
@@ -364,7 +382,7 @@ Delete a listing
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
-| `If-Match` | header | string | no | An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since. |
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 412 Precondition failed; 429 Too many requests; 500 Server error; 503 Maintenance.
@@ -528,7 +546,7 @@ Revoke a key
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
-| `If-Match` | header | string | no | An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since. |
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 412 Precondition failed; 429 Too many requests; 500 Server error; 503 Maintenance.
@@ -559,7 +577,7 @@ Change some settings, all or none, checked as on the settings screens
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
-| `If-Match` | header | string | no | An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since. |
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Body: `SettingsPatch` as JSON, optional.
@@ -626,7 +644,7 @@ Rename a city area
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
-| `If-Match` | header | string | no | An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since. |
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Body: `CityAreaPatch` as JSON.
@@ -640,7 +658,7 @@ Delete a city area and the listings in it
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
-| `If-Match` | header | string | no | An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since. |
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 412 Precondition failed; 429 Too many requests; 500 Server error; 503 Maintenance.
@@ -685,7 +703,7 @@ Edit a category; a new slug keeps the old one redirecting
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
-| `If-Match` | header | string | no | An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since. |
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Body: `AdminCategoryPatch` as JSON, optional.
@@ -699,7 +717,7 @@ Delete a category, its subcategories and their listings; a large one is emptied 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
-| `If-Match` | header | string | no | An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since. |
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Answers: 202 Accepted; 204 No content; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 412 Precondition failed; 429 Too many requests; 500 Server error; 503 Maintenance.
@@ -734,7 +752,7 @@ Rename a city
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
-| `If-Match` | header | string | no | An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since. |
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Body: `CityPatch` as JSON, optional.
@@ -748,7 +766,7 @@ Delete a city, its areas and the listings in it
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
-| `If-Match` | header | string | no | An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since. |
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 412 Precondition failed; 429 Too many requests; 500 Server error; 503 Maintenance.
@@ -783,7 +801,7 @@ Rename a currency or change its symbol
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `code` | path | string | yes |  |
-| `If-Match` | header | string | no | An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since. |
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Body: `CurrencyPatch` as JSON, optional.
@@ -797,7 +815,7 @@ Delete a currency no listing uses and the site does not default to
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `code` | path | string | yes |  |
-| `If-Match` | header | string | no | An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since. |
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 412 Precondition failed; 429 Too many requests; 500 Server error; 503 Maintenance.
@@ -832,7 +850,7 @@ Edit a custom field
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
-| `If-Match` | header | string | no | An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since. |
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Body: `AdminFieldPatch` as JSON, optional.
@@ -846,7 +864,7 @@ Delete a custom field and its values
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
-| `If-Match` | header | string | no | An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since. |
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 412 Precondition failed; 429 Too many requests; 500 Server error; 503 Maintenance.
@@ -881,7 +899,7 @@ Rename a region
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
-| `If-Match` | header | string | no | An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since. |
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Body: `RegionPatch` as JSON, optional.
@@ -895,7 +913,7 @@ Delete a region, its cities and the listings in it
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
-| `If-Match` | header | string | no | An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since. |
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 412 Precondition failed; 429 Too many requests; 500 Server error; 503 Maintenance.
@@ -906,12 +924,12 @@ Answers: 204 No content; 401 No valid credential; 403 Not allowed for this crede
 |---|---|---|---|---|
 | GET | `/admin/users` | admin | `admin:users` | Every user, newest first |
 | GET | `/admin/users/{id}` | admin | `admin:users` | One user, every member |
-| PATCH | `/admin/users/{id}` | admin | `admin:users` | Edit a user's profile, e-mail, username or password |
+| PATCH | `/admin/users/{id}` | admin | `admin:users` | Edit a user's profile, e-mail, username or password, or confirm or block them |
 | DELETE | `/admin/users/{id}` | admin | `admin:users` | Delete a user with their listings, comments and saved searches |
-| POST | `/admin/users/{id}/activate` | admin | `admin:users` | Confirm a user's account |
-| POST | `/admin/users/{id}/deactivate` | admin | `admin:users` | Mark a user's account as not confirmed |
-| POST | `/admin/users/{id}/disable` | admin | `admin:users` | Block a user; their sign-ins and keys stop working |
-| POST | `/admin/users/{id}/enable` | admin | `admin:users` | Unblock a user |
+| POST | `/admin/users/{id}/activate` | admin | `admin:users` | Confirm a user's account. Deprecated: send `confirmed: true` to PATCH admin/users/{id} |
+| POST | `/admin/users/{id}/deactivate` | admin | `admin:users` | Mark a user's account as not confirmed. Deprecated: send `confirmed: false` to PATCH admin/users/{id} |
+| POST | `/admin/users/{id}/disable` | admin | `admin:users` | Block a user; their sign-ins and keys stop working. Deprecated: send `blocked: true` to PATCH admin/users/{id} |
+| POST | `/admin/users/{id}/enable` | admin | `admin:users` | Unblock a user. Deprecated: send `blocked: false` to PATCH admin/users/{id} |
 | GET | `/admin/users/{id}/sessions` | admin | `admin:users` | A user's sign-ins and API keys |
 | DELETE | `/admin/users/{id}/sessions/{session}` | admin | `admin:users` | End one of a user's sign-ins, or revoke one of their keys |
 | POST | `/admin/users/{id}/sign-out-everywhere` | admin | `admin:users` | Sign a user out of every device: web sign-ins, API tokens and personal keys |
@@ -949,12 +967,12 @@ Answers: 200 OK (`UserDocument`); 304 Not modified; 401 No valid credential; 403
 
 ### PATCH `/admin/users/{id}`
 
-Edit a user's profile, e-mail, username or password
+Edit a user's profile, e-mail, username or password, or confirm or block them
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
-| `If-Match` | header | string | no | An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since. |
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Body: `AdminUserPatch` as JSON, optional.
@@ -968,14 +986,14 @@ Delete a user with their listings, comments and saved searches
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
-| `If-Match` | header | string | no | An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since. |
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 412 Precondition failed; 429 Too many requests; 500 Server error; 503 Maintenance.
 
 ### POST `/admin/users/{id}/activate`
 
-Confirm a user's account
+Confirm a user's account. Deprecated: send `confirmed: true` to PATCH admin/users/{id} **Deprecated.**
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
@@ -986,7 +1004,7 @@ Answers: 200 OK (`UserDocument`); 401 No valid credential; 403 Not allowed for t
 
 ### POST `/admin/users/{id}/deactivate`
 
-Mark a user's account as not confirmed
+Mark a user's account as not confirmed. Deprecated: send `confirmed: false` to PATCH admin/users/{id} **Deprecated.**
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
@@ -997,7 +1015,7 @@ Answers: 200 OK (`UserDocument`); 401 No valid credential; 403 Not allowed for t
 
 ### POST `/admin/users/{id}/disable`
 
-Block a user; their sign-ins and keys stop working
+Block a user; their sign-ins and keys stop working. Deprecated: send `blocked: true` to PATCH admin/users/{id} **Deprecated.**
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
@@ -1008,7 +1026,7 @@ Answers: 200 OK (`UserDocument`); 401 No valid credential; 403 Not allowed for t
 
 ### POST `/admin/users/{id}/enable`
 
-Unblock a user
+Unblock a user. Deprecated: send `blocked: false` to PATCH admin/users/{id} **Deprecated.**
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
@@ -1111,7 +1129,7 @@ Change an endpoint; switching it on clears a pause
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `webhook` | path | string | yes |  |
-| `If-Match` | header | string | no | An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since. |
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Body: `WebhookPatch` as JSON, optional.
@@ -1125,7 +1143,7 @@ Delete an endpoint and its waiting deliveries
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `webhook` | path | string | yes |  |
-| `If-Match` | header | string | no | An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since. |
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 412 Precondition failed; 429 Too many requests; 500 Server error; 503 Maintenance.
@@ -1284,7 +1302,7 @@ Delete your own approved comment
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
-| `If-Match` | header | string | no | An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since. |
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 412 Precondition failed; 429 Too many requests; 500 Server error; 503 Maintenance.
@@ -1352,7 +1370,7 @@ Edit your listing; members not sent keep their values
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
-| `If-Match` | header | string | no | An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since. |
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Body: `ListingPatch` as JSON, optional.
@@ -1366,7 +1384,7 @@ Delete your listing
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
-| `If-Match` | header | string | no | An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since. |
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 412 Precondition failed; 429 Too many requests; 500 Server error; 503 Maintenance.
@@ -1442,7 +1460,7 @@ Remove a photo from your listing
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
 | `photo` | path | string | yes |  |
-| `If-Match` | header | string | no | An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since. |
+| `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
 Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 412 Precondition failed; 429 Too many requests; 500 Server error; 503 Maintenance.

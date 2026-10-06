@@ -81,10 +81,7 @@ check('a plain visit to the page forgets no finished run', $page !== '' && strpo
     && strpos($page, 'dismiss') === false && strpos($page, 'osc_add_flash_ok_message') === false);
 check('...it shows the run with a Dismiss button that posts', strpos($view, "\$postButton('backup_dismiss', __('Dismiss'))") !== false
     && substr_count($view, "\$postButton('backup_dismiss'") >= 2);
-check('the status poll checks the token', (bool) preg_match(
-    "/case 'backup_status':\\s*osc_csrf_check\\(\\);/",
-    (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php')
-));
+check('the status poll checks the token', (\mindstellar\admin\ajax\AjaxRegistry::route('backup_status')['csrf'] ?? false) === true);
 
 harness_section('Downloads take listed names only');
 

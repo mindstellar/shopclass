@@ -18,6 +18,7 @@ namespace mindstellar\comment;
 use mindstellar\auth\Actor;
 use mindstellar\listing\ListingPolicy;
 use mindstellar\utility\DeferredMail;
+use mindstellar\utility\ViewScope;
 use mindstellar\validation\BlockedException;
 use mindstellar\validation\ConflictException;
 use mindstellar\validation\ForbiddenException;
@@ -32,10 +33,17 @@ use mindstellar\validation\NotFoundException;
 final class CommentService
 {
     private \ItemComment $comments;
+    private \Item $items;
+    private \User $users;
 
-    public function __construct()
+    /**
+     * Each collaborator defaults to the one the site uses; tests pass their own.
+     */
+    public function __construct(?\ItemComment $comments = null, ?\Item $items = null, ?\User $users = null)
     {
-        $this->comments = \ItemComment::getInstance();
+        $this->comments = $comments ?? \ItemComment::getInstance();
+        $this->items    = $items ?? \Item::getInstance();
+        $this->users    = $users ?? \User::getInstance();
     }
 
     /**
@@ -53,13 +61,13 @@ final class CommentService
      */
     public function post(int $itemId, array $input, Actor $actor): SavedComment
     {
-        $item = \Item::getInstance()->findByPrimaryKey($itemId);
+        $item = $this->items->findByPrimaryKey($itemId);
         // Anti-spam plugins check the comment here.
         osc_run_hook('pre_item_add_comment_post', $item);
 
         $user = null;
         if ($actor->userId() !== null) {
-            $user = \User::getInstance()->findByPrimaryKey($actor->userId());
+            $user = $this->users->findByPrimaryKey($actor->userId());
             if (!is_array($user) || $user === []) {
                 throw new NotFoundException(_m('No such user.'));
             }
@@ -118,17 +126,19 @@ final class CommentService
                 throw new \RuntimeException('The comment could not be saved.');
             }
             if ($status === SavedComment::LIVE && $actor->userId() !== null) {
-                $user = \User::getInstance()->findByPrimaryKey($actor->userId());
+                $user = $this->users->findByPrimaryKey($actor->userId());
                 if ($user) {
-                    \User::getInstance()->update(['i_comments' => $user['i_comments'] + 1], ['pk_i_id' => $user['pk_i_id']]);
+                    $this->users->update(['i_comments' => $user['i_comments'] + 1], ['pk_i_id' => $user['pk_i_id']]);
                 }
-                if (osc_notify_new_comment_user()) {
+            }
+            ViewScope::withItem($mail['item'], static function () use ($mail, $status, $actor): void {
+                if ($status === SavedComment::LIVE && $actor->userId() !== null && osc_notify_new_comment_user()) {
                     osc_run_hook('hook_email_new_comment_user', $mail);
                 }
-            }
-            if (osc_notify_new_comment()) {
-                osc_run_hook('hook_email_new_comment_admin', $mail);
-            }
+                if (osc_notify_new_comment()) {
+                    osc_run_hook('hook_email_new_comment_admin', $mail);
+                }
+            });
             osc_run_hook('add_comment', $id);
 
             return new SavedComment($id, $status);
@@ -149,7 +159,7 @@ final class CommentService
     {
         $comment = $this->comments->findByPrimaryKey($commentId);
         $found   = is_array($comment) && $comment !== [];
-        $item    = \Item::getInstance()->findByPrimaryKey($found ? (int) $comment['fk_i_item_id'] : $itemId);
+        $item    = $this->items->findByPrimaryKey($found ? (int) $comment['fk_i_item_id'] : $itemId);
         osc_run_hook('pre_item_delete_comment_post', $item, $commentId);
 
         if ($actor->userId() === null) {
@@ -187,12 +197,11 @@ final class CommentService
         $status    = $threshold === -1 || ($threshold !== 0 && $approved >= $threshold) ? SavedComment::LIVE : SavedComment::PENDING;
 
         if (osc_akismet_key()) {
-            \View::getInstance()->_exportVariableToView('item', $item);
             $akismet = new \Akismet(osc_base_url(), osc_akismet_key());
             $akismet->setCommentAuthor($name);
             $akismet->setCommentAuthorEmail($email);
             $akismet->setCommentContent($body);
-            $akismet->setPermalink(osc_item_url());
+            $akismet->setPermalink(osc_item_url_from_item($item));
             if ($akismet->isCommentSpam()) {
                 $status = SavedComment::SPAM;
             }

@@ -65,7 +65,7 @@ outside the catalog entirely — a catalog package never touches it; `Installer`
 CSV.** `upgrade\Osclass::getPackageInfo()` polls the GitHub Releases API
 directly, scans all releases for the highest version, caches the payload in
 `update_core_json`, and honours a 24h clock with a 1h retry on failure
-(`CAdminAjax.php`). `Upgrade` + `UpgradePackage` then download, unzip, sync
+(`admin/ajax/UpdateAjax.php`). `Upgrade` + `UpgradePackage` then download, unzip, sync
 over the target directory behind a `.maintenance` flag, and run
 `afterProcessUpgrade()`. That machinery was sound and became the substrate
 `Installer` wraps — but its compatibility check was
@@ -351,7 +351,7 @@ Efficiency rules core follows:
   or the mirror) produced them last. A 304 costs ~200 bytes and short-circuits
   everything.
 - **Failure never resets the clock.** `Catalog::fail()` (`Catalog.php:255-262`)
-  follows the same pattern `CAdminAjax::scheduleUpdateCheckRetry()` proved for
+  follows the same pattern `UpdateAjax::scheduleRetry()` proved for
   the core self-updater — back-date `checked_at` by `DAY_SECONDS -
   RETRY_SECONDS` on a failed fetch, so the next check is due in ~1h and the
   cached payload and its badge are untouched, rather than marking the day
@@ -673,7 +673,7 @@ it. A detail dialog — a native `<dialog>`, consistent with the modernised admi
 to the repo and its issue tracker.
 
 Install, update, refresh, and detail fetch are POSTs/GETs through
-`CAdminAjax` (`market_install`, `market_update`, `market_refresh`,
+`MarketAjax` (`market_install`, `market_update`, `market_refresh`,
 `market_detail`) with `osc_csrf_check()`, the `DEMO` guard, and
 `osc_self_update_disabled()` all honoured — container deployments that update
 by image must not grow a second, divergent update path. Directory writability

@@ -21,6 +21,7 @@ use mindstellar\api\Response;
 use mindstellar\api\serializer\Format;
 use mindstellar\api\serializer\UserSerializer;
 use mindstellar\api\serializer\ViewContext;
+use mindstellar\user\UserQuery;
 
 /**
  * `GET /users/{id}` and `GET /users/{id}/listings`. A disabled or unconfirmed account is 404
@@ -59,9 +60,9 @@ final class UsersController
         $id   = (int) $args['id'];
         $user = null;
         if ($this->api->facts()->usersEnabled()) {
-            $user = osc_db_table(DB_TABLE_PREFIX . 't_user')->select('pk_i_id', 'b_enabled', 'b_active')->where('pk_i_id', $id)->first();
+            $user = (new UserQuery())->statusRow($id);
         }
-        if ($user === null || !self::visible(osc_db_stringify_row($user), $credential)) {
+        if ($user === null || !self::visible($user, $credential)) {
             throw ProblemException::of('not_found', 'No such user.');
         }
 

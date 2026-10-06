@@ -598,11 +598,10 @@ harness_section('CAdminAjax wiring (source scan)');
 
 $ajax = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php');
 check('CAdminAjax requires an admin session', preg_match('/class\s+CAdminAjax\s+extends\s+AdminSecBaseModel\b/', $ajax) === 1);
-preg_match('/isModerator\(\)\s*&&\s*!in_array\(\$this->action,\s*array\(([^)]*)\)/', $ajax, $m);
-check('moderator allow-list found', isset($m[1]));
 foreach (array('location_search', 'location_impact', 'location_record') as $action) {
-    check("$action is routed", strpos($ajax, "case '$action':") !== false);
-    check("$action is refused to moderators", isset($m[1]) && strpos($m[1], "'$action'") === false);
+    $route = \mindstellar\admin\ajax\AjaxRegistry::route($action);
+    check("$action is routed", $route !== null && $route['handler'] === \mindstellar\admin\ajax\LocationAjax::class);
+    check("$action is refused to moderators", !\mindstellar\admin\ajax\AjaxRegistry::moderatorMay($action));
 }
 
 if (!defined('MODELS_RUNNER')) {

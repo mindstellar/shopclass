@@ -18,6 +18,7 @@ use mindstellar\api\ProblemException;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\utility\Clock;
+use mindstellar\validation\RefusedException;
 
 /**
  * `Idempotency-Key` on POST, PUT, PATCH and DELETE: a write sent again with the same key gets
@@ -26,8 +27,8 @@ use mindstellar\utility\Clock;
  * Keys belong to the credential that sent them (one sign-in, one key, or one user's same-site
  * session), and are kept for a day. The first request locks the key while it runs; the same
  * key meanwhile answers 409. A lock left for LOCK_TTL seconds is taken over only by the same
- * request. The same key with a different method, path, query or body answers 422. A 5xx answer is not kept, so the
- * request can be retried.
+ * request. The same key with a different method, path, query or body answers 422. A 5xx or 429
+ * answer is not kept, so the request can be retried; any other answer is, a core refusal included.
  */
 final class Idempotency
 {
@@ -74,12 +75,14 @@ final class Idempotency
             $response = $handler();
         } catch (ProblemException $e) {
             $response = $e->response();
+        } catch (RefusedException $e) {
+            $response = Problem::fromRefusal($e);
         } catch (\Throwable $e) {
             $this->store->release($hash, $lock);
 
             throw $e;
         }
-        if ($response->status() >= 500) {
+        if ($response->status() >= 500 || $response->status() === 429) {
             $this->store->release($hash, $lock);
         } else {
             $this->store->complete($hash, $lock, $response->status(), (string) json_encode(

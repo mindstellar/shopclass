@@ -64,7 +64,7 @@ final class OpenApi
 
     /** The response headers, described once under components.headers. */
     private const HEADERS = [
-        'ETag'             => ['description' => 'The answer\'s version. Send it back in If-None-Match for a 304, or in If-Match on a PATCH or DELETE.', 'schema' => ['type' => 'string']],
+        'ETag'             => ['description' => 'The answer\'s version. Send it back in If-None-Match for a 304, or in If-Match on a PATCH or DELETE. A PATCH sent with If-Match answers with the new one.', 'schema' => ['type' => 'string']],
         'RateLimit'        => ['description' => 'The tightest limit this call counted against: its name, requests left (r) and seconds to reset (t).', 'schema' => ['type' => 'string']],
         'RateLimit-Policy' => ['description' => 'Every limit this call counted against.', 'schema' => ['type' => 'string']],
         'Retry-After'      => ['description' => 'Seconds to wait before trying again.', 'schema' => ['type' => 'integer']],
@@ -344,7 +344,7 @@ final class OpenApi
         if ($route->method() === 'GET') {
             $parameters[] = ['name' => 'If-None-Match', 'in' => 'header', 'required' => false, 'description' => 'An ETag from an earlier answer: 304 with no body while it still matches.', 'schema' => ['type' => 'string']];
         } elseif ($this->hasRead($route)) {
-            $parameters[] = ['name' => 'If-Match', 'in' => 'header', 'required' => false, 'description' => 'An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since.', 'schema' => ['type' => 'string']];
+            $parameters[] = ['name' => 'If-Match', 'in' => 'header', 'required' => false, 'description' => 'An ETag from a GET of the same path (any fields, include or locale) or from the last write\'s answer, or `*`: 412 precondition_failed when the resource has changed since.', 'schema' => ['type' => 'string']];
         }
         if ($this->idempotent($route)) {
             $parameters[] = ['name' => 'Idempotency-Key', 'in' => 'header', 'required' => false, 'description' => 'Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true.', 'schema' => ['type' => 'string', 'maxLength' => Idempotency::MAX_KEY]];
@@ -436,7 +436,7 @@ final class OpenApi
         if ($status === 201 || ($status >= 300 && $status < 400 && $status !== 304)) {
             $names[] = 'Location';
         }
-        if ($route->method() === 'GET' && ($status === 200 || $status === 304)) {
+        if (($route->method() === 'GET' && ($status === 200 || $status === 304)) || ($route->method() === 'PATCH' && $status === 200 && $this->hasRead($route))) {
             $names[] = 'ETag';
         }
         if ($route->auth() !== RouteSpec::AUTH_NONE) {

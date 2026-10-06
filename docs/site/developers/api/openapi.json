@@ -530,7 +530,7 @@
                         "name": "If-Match",
                         "in": "header",
                         "required": false,
-                        "description": "An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since.",
+                        "description": "An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since.",
                         "schema": {
                             "type": "string"
                         }
@@ -567,6 +567,9 @@
                         "headers": {
                             "Request-Id": {
                                 "$ref": "#/components/headers/Request-Id"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
                             },
                             "RateLimit": {
                                 "$ref": "#/components/headers/RateLimit"
@@ -1645,7 +1648,7 @@
                         "name": "If-Match",
                         "in": "header",
                         "required": false,
-                        "description": "An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since.",
+                        "description": "An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since.",
                         "schema": {
                             "type": "string"
                         }
@@ -2593,7 +2596,7 @@
                         "name": "If-Match",
                         "in": "header",
                         "required": false,
-                        "description": "An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since.",
+                        "description": "An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since.",
                         "schema": {
                             "type": "string"
                         }
@@ -2832,6 +2835,317 @@
                 ],
                 "x-auth": "user",
                 "x-scope": "account:write"
+            }
+        },
+        "/account/listings": {
+            "get": {
+                "operationId": "getAccountListings",
+                "summary": "Your own listings in any status, newest first",
+                "tags": [
+                    "Account"
+                ],
+                "parameters": [
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "required": false,
+                        "description": "One value, a comma list, or repeated.",
+                        "style": "form",
+                        "explode": true,
+                        "schema": {
+                            "type": [
+                                "string",
+                                "array"
+                            ],
+                            "items": {
+                                "type": "string",
+                                "enum": [
+                                    "active",
+                                    "pending",
+                                    "disabled",
+                                    "expired",
+                                    "spam"
+                                ]
+                            },
+                            "pattern": "^\\s*(?:active|pending|disabled|expired|spam)?\\s*(?:,\\s*(?:active|pending|disabled|expired|spam)?\\s*)*$"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100
+                        }
+                    },
+                    {
+                        "name": "cursor",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 1024
+                        }
+                    },
+                    {
+                        "name": "count",
+                        "in": "query",
+                        "required": false,
+                        "description": "true: also count every match for meta.total; skipped otherwise, as it costs a query.",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "include",
+                        "in": "query",
+                        "required": false,
+                        "description": "Comma list: fields, translations.",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 100
+                        }
+                    },
+                    {
+                        "name": "locale",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z]{2,3}_[A-Za-z]{2}$"
+                        }
+                    },
+                    {
+                        "name": "fields",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 500
+                        }
+                    },
+                    {
+                        "name": "If-None-Match",
+                        "in": "header",
+                        "required": false,
+                        "description": "An ETag from an earlier answer: 304 with no body while it still matches.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListingPage"
+                                }
+                            }
+                        }
+                    },
+                    "304": {
+                        "description": "Not modified",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            }
+                        },
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No valid credential",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            }
+                        },
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not allowed for this credential",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            }
+                        },
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Not valid",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            }
+                        },
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Too many requests",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "Retry-After": {
+                                "$ref": "#/components/headers/Retry-After"
+                            }
+                        },
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            }
+                        },
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Maintenance",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "Retry-After": {
+                                "$ref": "#/components/headers/Retry-After"
+                            }
+                        },
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": [
+                            "account:read"
+                        ]
+                    },
+                    {
+                        "pageSession": [
+                            "account:read"
+                        ]
+                    }
+                ],
+                "x-auth": "user",
+                "x-scope": "account:read"
             }
         },
         "/account/password": {
@@ -4300,7 +4614,7 @@
                         "name": "If-Match",
                         "in": "header",
                         "required": false,
-                        "description": "An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since.",
+                        "description": "An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since.",
                         "schema": {
                             "type": "string"
                         }
@@ -4337,6 +4651,9 @@
                         "headers": {
                             "Request-Id": {
                                 "$ref": "#/components/headers/Request-Id"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
                             },
                             "RateLimit": {
                                 "$ref": "#/components/headers/RateLimit"
@@ -4677,7 +4994,7 @@
                         "name": "If-Match",
                         "in": "header",
                         "required": false,
-                        "description": "An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since.",
+                        "description": "An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since.",
                         "schema": {
                             "type": "string"
                         }
@@ -5683,7 +6000,7 @@
                         "name": "If-Match",
                         "in": "header",
                         "required": false,
-                        "description": "An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since.",
+                        "description": "An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since.",
                         "schema": {
                             "type": "string"
                         }
@@ -5720,6 +6037,9 @@
                         "headers": {
                             "Request-Id": {
                                 "$ref": "#/components/headers/Request-Id"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
                             },
                             "RateLimit": {
                                 "$ref": "#/components/headers/RateLimit"
@@ -6060,7 +6380,7 @@
                         "name": "If-Match",
                         "in": "header",
                         "required": false,
-                        "description": "An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since.",
+                        "description": "An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since.",
                         "schema": {
                             "type": "string"
                         }
@@ -6905,7 +7225,7 @@
                         "name": "If-Match",
                         "in": "header",
                         "required": false,
-                        "description": "An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since.",
+                        "description": "An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since.",
                         "schema": {
                             "type": "string"
                         }
@@ -6942,6 +7262,9 @@
                         "headers": {
                             "Request-Id": {
                                 "$ref": "#/components/headers/Request-Id"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
                             },
                             "RateLimit": {
                                 "$ref": "#/components/headers/RateLimit"
@@ -7282,7 +7605,7 @@
                         "name": "If-Match",
                         "in": "header",
                         "required": false,
-                        "description": "An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since.",
+                        "description": "An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since.",
                         "schema": {
                             "type": "string"
                         }
@@ -8052,7 +8375,7 @@
             },
             "patch": {
                 "operationId": "patchAdminCommentsById",
-                "summary": "Edit a comment's text or author",
+                "summary": "Edit a comment's text or author, or approve or block it",
                 "tags": [
                     "Admin comments"
                 ],
@@ -8069,7 +8392,7 @@
                         "name": "If-Match",
                         "in": "header",
                         "required": false,
-                        "description": "An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since.",
+                        "description": "An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since.",
                         "schema": {
                             "type": "string"
                         }
@@ -8106,6 +8429,9 @@
                         "headers": {
                             "Request-Id": {
                                 "$ref": "#/components/headers/Request-Id"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
                             },
                             "RateLimit": {
                                 "$ref": "#/components/headers/RateLimit"
@@ -8446,7 +8772,7 @@
                         "name": "If-Match",
                         "in": "header",
                         "required": false,
-                        "description": "An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since.",
+                        "description": "An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since.",
                         "schema": {
                             "type": "string"
                         }
@@ -8690,7 +9016,7 @@
         "/admin/comments/{id}/activate": {
             "post": {
                 "operationId": "postAdminCommentsByIdActivate",
-                "summary": "Approve a comment; its author is told",
+                "summary": "Approve a comment; its author is told. Deprecated: send `approved: true` to PATCH admin/comments/{id}",
                 "tags": [
                     "Admin comments"
                 ],
@@ -8729,6 +9055,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -8753,6 +9082,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -8777,6 +9109,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -8801,6 +9136,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -8828,6 +9166,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -8855,6 +9196,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -8876,6 +9220,9 @@
                             },
                             "RateLimit-Policy": {
                                 "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -8900,6 +9247,9 @@
                             },
                             "Retry-After": {
                                 "$ref": "#/components/headers/Retry-After"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -8918,6 +9268,7 @@
                         ]
                     }
                 ],
+                "deprecated": true,
                 "x-auth": "admin",
                 "x-scope": "admin:comments"
             }
@@ -8925,7 +9276,7 @@
         "/admin/comments/{id}/deactivate": {
             "post": {
                 "operationId": "postAdminCommentsByIdDeactivate",
-                "summary": "Hold a comment back for approval",
+                "summary": "Hold a comment back for approval. Deprecated: send `approved: false` to PATCH admin/comments/{id}",
                 "tags": [
                     "Admin comments"
                 ],
@@ -8964,6 +9315,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -8988,6 +9342,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -9012,6 +9369,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -9036,6 +9396,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -9063,6 +9426,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -9090,6 +9456,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -9111,6 +9480,9 @@
                             },
                             "RateLimit-Policy": {
                                 "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -9135,6 +9507,9 @@
                             },
                             "Retry-After": {
                                 "$ref": "#/components/headers/Retry-After"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -9153,6 +9528,7 @@
                         ]
                     }
                 ],
+                "deprecated": true,
                 "x-auth": "admin",
                 "x-scope": "admin:comments"
             }
@@ -9160,7 +9536,7 @@
         "/admin/comments/{id}/disable": {
             "post": {
                 "operationId": "postAdminCommentsByIdDisable",
-                "summary": "Block a comment",
+                "summary": "Block a comment. Deprecated: send `blocked: true` to PATCH admin/comments/{id}",
                 "tags": [
                     "Admin comments"
                 ],
@@ -9199,6 +9575,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -9223,6 +9602,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -9247,6 +9629,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -9271,6 +9656,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -9298,6 +9686,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -9325,6 +9716,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -9346,6 +9740,9 @@
                             },
                             "RateLimit-Policy": {
                                 "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -9370,6 +9767,9 @@
                             },
                             "Retry-After": {
                                 "$ref": "#/components/headers/Retry-After"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -9388,6 +9788,7 @@
                         ]
                     }
                 ],
+                "deprecated": true,
                 "x-auth": "admin",
                 "x-scope": "admin:comments"
             }
@@ -9395,7 +9796,7 @@
         "/admin/comments/{id}/enable": {
             "post": {
                 "operationId": "postAdminCommentsByIdEnable",
-                "summary": "Unblock a comment",
+                "summary": "Unblock a comment. Deprecated: send `blocked: false` to PATCH admin/comments/{id}",
                 "tags": [
                     "Admin comments"
                 ],
@@ -9434,6 +9835,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -9458,6 +9862,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -9482,6 +9889,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -9506,6 +9916,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -9533,6 +9946,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -9560,6 +9976,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -9581,6 +10000,9 @@
                             },
                             "RateLimit-Policy": {
                                 "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -9605,6 +10027,9 @@
                             },
                             "Retry-After": {
                                 "$ref": "#/components/headers/Retry-After"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -9623,6 +10048,7 @@
                         ]
                     }
                 ],
+                "deprecated": true,
                 "x-auth": "admin",
                 "x-scope": "admin:comments"
             }
@@ -10190,7 +10616,7 @@
                         "name": "If-Match",
                         "in": "header",
                         "required": false,
-                        "description": "An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since.",
+                        "description": "An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since.",
                         "schema": {
                             "type": "string"
                         }
@@ -10227,6 +10653,9 @@
                         "headers": {
                             "Request-Id": {
                                 "$ref": "#/components/headers/Request-Id"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
                             },
                             "RateLimit": {
                                 "$ref": "#/components/headers/RateLimit"
@@ -10567,7 +10996,7 @@
                         "name": "If-Match",
                         "in": "header",
                         "required": false,
-                        "description": "An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since.",
+                        "description": "An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since.",
                         "schema": {
                             "type": "string"
                         }
@@ -11371,7 +11800,7 @@
                         "name": "If-Match",
                         "in": "header",
                         "required": false,
-                        "description": "An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since.",
+                        "description": "An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since.",
                         "schema": {
                             "type": "string"
                         }
@@ -11408,6 +11837,9 @@
                         "headers": {
                             "Request-Id": {
                                 "$ref": "#/components/headers/Request-Id"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
                             },
                             "RateLimit": {
                                 "$ref": "#/components/headers/RateLimit"
@@ -11748,7 +12180,7 @@
                         "name": "If-Match",
                         "in": "header",
                         "required": false,
-                        "description": "An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since.",
+                        "description": "An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since.",
                         "schema": {
                             "type": "string"
                         }
@@ -12905,7 +13337,7 @@
                         "name": "If-Match",
                         "in": "header",
                         "required": false,
-                        "description": "An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since.",
+                        "description": "An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since.",
                         "schema": {
                             "type": "string"
                         }
@@ -13964,7 +14396,7 @@
                         "name": "If-Match",
                         "in": "header",
                         "required": false,
-                        "description": "An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since.",
+                        "description": "An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since.",
                         "schema": {
                             "type": "string"
                         }
@@ -14001,6 +14433,9 @@
                         "headers": {
                             "Request-Id": {
                                 "$ref": "#/components/headers/Request-Id"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
                             },
                             "RateLimit": {
                                 "$ref": "#/components/headers/RateLimit"
@@ -14341,7 +14776,7 @@
                         "name": "If-Match",
                         "in": "header",
                         "required": false,
-                        "description": "An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since.",
+                        "description": "An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since.",
                         "schema": {
                             "type": "string"
                         }
@@ -17284,7 +17719,7 @@
                         "name": "If-Match",
                         "in": "header",
                         "required": false,
-                        "description": "An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since.",
+                        "description": "An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since.",
                         "schema": {
                             "type": "string"
                         }
@@ -17321,6 +17756,9 @@
                         "headers": {
                             "Request-Id": {
                                 "$ref": "#/components/headers/Request-Id"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
                             },
                             "RateLimit": {
                                 "$ref": "#/components/headers/RateLimit"
@@ -17661,7 +18099,7 @@
                         "name": "If-Match",
                         "in": "header",
                         "required": false,
-                        "description": "An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since.",
+                        "description": "An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since.",
                         "schema": {
                             "type": "string"
                         }
@@ -18116,7 +18554,7 @@
                         "name": "If-Match",
                         "in": "header",
                         "required": false,
-                        "description": "An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since.",
+                        "description": "An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since.",
                         "schema": {
                             "type": "string"
                         }
@@ -18153,6 +18591,9 @@
                         "headers": {
                             "Request-Id": {
                                 "$ref": "#/components/headers/Request-Id"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
                             },
                             "RateLimit": {
                                 "$ref": "#/components/headers/RateLimit"
@@ -19000,7 +19441,7 @@
             },
             "patch": {
                 "operationId": "patchAdminUsersById",
-                "summary": "Edit a user's profile, e-mail, username or password",
+                "summary": "Edit a user's profile, e-mail, username or password, or confirm or block them",
                 "tags": [
                     "Admin users"
                 ],
@@ -19017,7 +19458,7 @@
                         "name": "If-Match",
                         "in": "header",
                         "required": false,
-                        "description": "An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since.",
+                        "description": "An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since.",
                         "schema": {
                             "type": "string"
                         }
@@ -19054,6 +19495,9 @@
                         "headers": {
                             "Request-Id": {
                                 "$ref": "#/components/headers/Request-Id"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
                             },
                             "RateLimit": {
                                 "$ref": "#/components/headers/RateLimit"
@@ -19394,7 +19838,7 @@
                         "name": "If-Match",
                         "in": "header",
                         "required": false,
-                        "description": "An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since.",
+                        "description": "An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since.",
                         "schema": {
                             "type": "string"
                         }
@@ -19638,7 +20082,7 @@
         "/admin/users/{id}/activate": {
             "post": {
                 "operationId": "postAdminUsersByIdActivate",
-                "summary": "Confirm a user's account",
+                "summary": "Confirm a user's account. Deprecated: send `confirmed: true` to PATCH admin/users/{id}",
                 "tags": [
                     "Admin users"
                 ],
@@ -19677,6 +20121,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -19701,6 +20148,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -19725,6 +20175,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -19749,6 +20202,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -19776,6 +20232,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -19803,6 +20262,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -19824,6 +20286,9 @@
                             },
                             "RateLimit-Policy": {
                                 "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -19848,6 +20313,9 @@
                             },
                             "Retry-After": {
                                 "$ref": "#/components/headers/Retry-After"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -19866,6 +20334,7 @@
                         ]
                     }
                 ],
+                "deprecated": true,
                 "x-auth": "admin",
                 "x-scope": "admin:users"
             }
@@ -19873,7 +20342,7 @@
         "/admin/users/{id}/deactivate": {
             "post": {
                 "operationId": "postAdminUsersByIdDeactivate",
-                "summary": "Mark a user's account as not confirmed",
+                "summary": "Mark a user's account as not confirmed. Deprecated: send `confirmed: false` to PATCH admin/users/{id}",
                 "tags": [
                     "Admin users"
                 ],
@@ -19912,6 +20381,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -19936,6 +20408,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -19960,6 +20435,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -19984,6 +20462,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -20011,6 +20492,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -20038,6 +20522,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -20059,6 +20546,9 @@
                             },
                             "RateLimit-Policy": {
                                 "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -20083,6 +20573,9 @@
                             },
                             "Retry-After": {
                                 "$ref": "#/components/headers/Retry-After"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -20101,6 +20594,7 @@
                         ]
                     }
                 ],
+                "deprecated": true,
                 "x-auth": "admin",
                 "x-scope": "admin:users"
             }
@@ -20108,7 +20602,7 @@
         "/admin/users/{id}/disable": {
             "post": {
                 "operationId": "postAdminUsersByIdDisable",
-                "summary": "Block a user; their sign-ins and keys stop working",
+                "summary": "Block a user; their sign-ins and keys stop working. Deprecated: send `blocked: true` to PATCH admin/users/{id}",
                 "tags": [
                     "Admin users"
                 ],
@@ -20147,6 +20641,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -20171,6 +20668,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -20195,6 +20695,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -20219,6 +20722,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -20246,6 +20752,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -20273,6 +20782,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -20294,6 +20806,9 @@
                             },
                             "RateLimit-Policy": {
                                 "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -20318,6 +20833,9 @@
                             },
                             "Retry-After": {
                                 "$ref": "#/components/headers/Retry-After"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -20336,6 +20854,7 @@
                         ]
                     }
                 ],
+                "deprecated": true,
                 "x-auth": "admin",
                 "x-scope": "admin:users"
             }
@@ -20343,7 +20862,7 @@
         "/admin/users/{id}/enable": {
             "post": {
                 "operationId": "postAdminUsersByIdEnable",
-                "summary": "Unblock a user",
+                "summary": "Unblock a user. Deprecated: send `blocked: false` to PATCH admin/users/{id}",
                 "tags": [
                     "Admin users"
                 ],
@@ -20382,6 +20901,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -20406,6 +20928,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -20430,6 +20955,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -20454,6 +20982,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -20481,6 +21012,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -20508,6 +21042,9 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -20529,6 +21066,9 @@
                             },
                             "RateLimit-Policy": {
                                 "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -20553,6 +21093,9 @@
                             },
                             "Retry-After": {
                                 "$ref": "#/components/headers/Retry-After"
+                            },
+                            "Deprecation": {
+                                "$ref": "#/components/headers/Deprecation"
                             }
                         },
                         "content": {
@@ -20571,6 +21114,7 @@
                         ]
                     }
                 ],
+                "deprecated": true,
                 "x-auth": "admin",
                 "x-scope": "admin:users"
             }
@@ -22178,7 +22722,7 @@
                         "name": "If-Match",
                         "in": "header",
                         "required": false,
-                        "description": "An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since.",
+                        "description": "An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since.",
                         "schema": {
                             "type": "string"
                         }
@@ -22215,6 +22759,9 @@
                         "headers": {
                             "Request-Id": {
                                 "$ref": "#/components/headers/Request-Id"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
                             },
                             "RateLimit": {
                                 "$ref": "#/components/headers/RateLimit"
@@ -22555,7 +23102,7 @@
                         "name": "If-Match",
                         "in": "header",
                         "required": false,
-                        "description": "An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since.",
+                        "description": "An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since.",
                         "schema": {
                             "type": "string"
                         }
@@ -25174,7 +25721,7 @@
                         "name": "If-Match",
                         "in": "header",
                         "required": false,
-                        "description": "An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since.",
+                        "description": "An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since.",
                         "schema": {
                             "type": "string"
                         }
@@ -27473,7 +28020,7 @@
                         "name": "If-Match",
                         "in": "header",
                         "required": false,
-                        "description": "An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since.",
+                        "description": "An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since.",
                         "schema": {
                             "type": "string"
                         }
@@ -27510,6 +28057,9 @@
                         "headers": {
                             "Request-Id": {
                                 "$ref": "#/components/headers/Request-Id"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
                             },
                             "RateLimit": {
                                 "$ref": "#/components/headers/RateLimit"
@@ -27855,7 +28405,7 @@
                         "name": "If-Match",
                         "in": "header",
                         "required": false,
-                        "description": "An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since.",
+                        "description": "An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since.",
                         "schema": {
                             "type": "string"
                         }
@@ -29606,7 +30156,7 @@
                         "name": "If-Match",
                         "in": "header",
                         "required": false,
-                        "description": "An ETag from a GET of the same path, or `*`: 412 precondition_failed when the resource has changed since.",
+                        "description": "An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since.",
                         "schema": {
                             "type": "string"
                         }
@@ -35074,6 +35624,14 @@
                         "type": "string",
                         "format": "email",
                         "maxLength": 100
+                    },
+                    "approved": {
+                        "type": "boolean",
+                        "description": "true approves it, and its author is told; false holds it back."
+                    },
+                    "blocked": {
+                        "type": "boolean",
+                        "description": "true blocks it; false unblocks it."
                     }
                 },
                 "additionalProperties": false
@@ -35129,6 +35687,14 @@
                         "minLength": 1,
                         "maxLength": 4096,
                         "description": "A new password; every sign-in and key of the user ends."
+                    },
+                    "confirmed": {
+                        "type": "boolean",
+                        "description": "Whether the account is confirmed; `active` in the answer."
+                    },
+                    "blocked": {
+                        "type": "boolean",
+                        "description": "true blocks the user, and their sign-ins and keys stop working; `enabled` in the answer is its opposite."
                     },
                     "name": {
                         "type": "string",
@@ -36743,7 +37309,7 @@
         },
         "headers": {
             "ETag": {
-                "description": "The answer's version. Send it back in If-None-Match for a 304, or in If-Match on a PATCH or DELETE.",
+                "description": "The answer's version. Send it back in If-None-Match for a 304, or in If-Match on a PATCH or DELETE. A PATCH sent with If-Match answers with the new one.",
                 "schema": {
                     "type": "string"
                 }
@@ -36764,6 +37330,12 @@
                 "description": "Seconds to wait before trying again.",
                 "schema": {
                     "type": "integer"
+                }
+            },
+            "Deprecation": {
+                "description": "When the operation was deprecated, as @<unix time> (RFC 9745).",
+                "schema": {
+                    "type": "string"
                 }
             },
             "Location": {

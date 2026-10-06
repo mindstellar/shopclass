@@ -47,6 +47,22 @@ final class ListingInput
     }
 
     /**
+     * $data with the custom field values the request posted under 'meta', unless it has its own.
+     *
+     * @param array<string,mixed> $data
+     *
+     * @return array<string,mixed>
+     */
+    public static function withMeta(array $data): array
+    {
+        if (!isset($data['meta'])) {
+            $data['meta'] = Params::getParam('meta');
+        }
+
+        return $data;
+    }
+
+    /**
      * The listing data for a form given as plain values, for whoever $actor is. The names are
      * the ones the listing form posts, plus 'meta' (custom field values by id) and 'photos'
      * (local file paths, which are moved into the listing and deleted). For an edit, 'id'

@@ -344,7 +344,7 @@ curl -X POST $API/listings -H "Authorization: Bearer $TOKEN" \
 | Replay | The same status, headers and body come back, plus `Idempotency-Replayed: true`. |
 | Different request | The same key with another method, path, query or body is `422 idempotency_key_reused`. |
 | Still running | The same key while the first call runs is `409 idempotency_in_flight`, with `Retry-After: 1`. |
-| Errors | A `5xx` is not kept: retry runs again. A `4xx` is kept and replays. Fix the request and use a **new** key. |
+| Errors | A `5xx` or `429` is not kept: retry runs again. Any other `4xx` is kept and replays. Fix the request and use a **new** key. |
 | Not covered | `POST /auth/token`, `POST /account/password` and `POST /account/keys`. They carry secrets, so they never replay. |
 
 ## Limits
@@ -368,6 +368,7 @@ Each `429` has `Retry-After`. The site owner sets the listing number: [Set up th
 |---|---|---|
 | `GET /account` | `account:read` | Your profile, in the owner's view. |
 | `PATCH /account` | `account:write` | Edit the profile: `name`, `website`, `phone_land`, `phone_mobile`, `country`, `region_id`, `city_id`, `city_area`, `address`, `zip`, `lat`, `lng`, `is_company`, `email`. |
+| `GET /account/listings` | `account:read` | Your listings in any status, newest first, as your listings page shows them. Filters: `status` (`active`, `pending`, `disabled`, `expired`, `spam`), `limit`, `cursor`, `count`. |
 | `POST /account/password` | `account:write` | Change the password. |
 | `GET /account/sessions` | `account:read` | Sign-ins and keys that act for you. |
 | `DELETE /account/sessions/{id}` | `account:write` | End one sign-in, or revoke one key (`key-<id>`). `204`. |

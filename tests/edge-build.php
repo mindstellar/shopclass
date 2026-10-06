@@ -101,20 +101,21 @@ putenv('OSC_DISABLE_SELF_UPDATE=0');
 pin('even when the environment says otherwise', true, osc_self_update_disabled());
 putenv('OSC_DISABLE_SELF_UPDATE');
 
-$ajax      = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php');
+$ajax      = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/admin/ajax/UpdateAjax.php');
 $functions = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/functions.php');
 $footer    = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/functions.php');
 $upgrade   = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/tools/upgrade.php');
 $auto      = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/upgrade/AutoSecurityUpdate.php');
 
 check('the version check asks GitHub nothing on edge', (bool) preg_match(
-    "/case 'check_version':\\s*if \\(BuildInfo::isEdge\\(\\)\\) \\{\\s*AjaxResponse::json\\([^;]+;\\s*break;\\s*\\}/",
+    "/function checkVersion\\(\\): void\\s*\\{\\s*if \\(BuildInfo::isEdge\\(\\)\\) \\{\\s*AjaxResponse::json\\([^;]+;\\s*return;\\s*\\}/",
     $ajax
 ));
 check('the toolbar offers no new version on edge', strpos($functions, "getPreference('update_core_available') && !\\mindstellar\\upgrade\\BuildInfo::isEdge()") !== false);
 check('the admin footer does not poll on edge', strpos($footer, '> (24 * 3600) && !\\mindstellar\\upgrade\\BuildInfo::isEdge()') !== false);
 check('the automatic security install stops when updates are off', strpos($auto, '|| osc_self_update_disabled()) {') !== false);
-check('the in-app upgrade refuses when updates are off', substr_count($ajax, 'if (osc_self_update_disabled()) {') === 2);
+check('the in-app upgrade refuses when updates are off', strpos($ajax, 'if (osc_self_update_disabled()) {') !== false
+    && substr_count($ajax, '$result = self::refusal();') === 2);
 $edgeAt = strpos($upgrade, 'if (BuildInfo::isEdge()) {');
 check('the update screen says how an edge build updates, ahead of the container message', $edgeAt !== false
     && strpos($upgrade, "__('This is an edge build. Update it by pulling the :edge image.')", $edgeAt) !== false

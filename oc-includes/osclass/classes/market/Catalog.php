@@ -25,7 +25,7 @@ use mindstellar\utility\FileSystem;
  *
  * This follows the same caching discipline as
  * `mindstellar\upgrade\Osclass::getPackageInfo()` /
- * `CAdminAjax::scheduleUpdateCheckRetry()` on purpose — one clock, one retry
+ * `UpdateAjax::scheduleRetry()` on purpose — one clock, one retry
  * rule, applied to a second surface.
  *
  * @package mindstellar\market
@@ -283,7 +283,7 @@ final class Catalog
     /**
      * Records a failed check without touching the cached payload or its validators, and
      * schedules a retry about an hour out — the same back-dating trick
-     * `CAdminAjax::scheduleUpdateCheckRetry()` uses, so a full 24h clock never hides a
+     * `UpdateAjax::scheduleRetry()` uses, so a full 24h clock never hides a
      * release published during an outage.
      *
      * @param string $resource self::RESOURCE_UPDATES or self::RESOURCE_INDEX

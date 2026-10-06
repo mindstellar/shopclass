@@ -14,18 +14,18 @@ namespace mindstellar\api\controller\admin;
 
 use mindstellar\admin\AdminText;
 use mindstellar\api\ApiServices;
-
 use mindstellar\api\auth\Credential;
 use mindstellar\api\ProblemException;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\LocationSerializer;
+use mindstellar\location\LocationQuery;
 use mindstellar\location\LocationService;
 use mindstellar\utility\DeferredMail;
 
 /**
  * Regions, cities and city areas, written through the LocationService Settings -> Locations
- * uses. The API reads locations straight from their tables, so a change shows at once.
+ * uses. Reads go through LocationQuery, straight from the tables, so a change shows at once.
  */
 final class AdminLocationsController
 {
@@ -50,7 +50,7 @@ final class AdminLocationsController
         $code  = strtoupper((string) $input['country']);
         $id    = (int) $this->write(fn () => $this->locations->addRegion($code, AdminText::clean($input['name'])));
 
-        return Response::created($this->serializer->region($this->row('t_region', $id)), $this->api->links()->api('admin/regions/' . $id));
+        return Response::created($this->serializer->region($this->row(LocationQuery::REGION, $id)), $this->api->links()->api('admin/regions/' . $id));
     }
 
     /**
@@ -60,7 +60,7 @@ final class AdminLocationsController
      */
     public function showRegion(Request $request, Credential $credential, array $args): Response
     {
-        return Response::ok($this->serializer->region($this->row('t_region', (int) $args['id'])));
+        return Response::ok($this->serializer->region($this->row(LocationQuery::REGION, (int) $args['id'])));
     }
 
     /**
@@ -70,11 +70,11 @@ final class AdminLocationsController
      */
     public function updateRegion(Request $request, Credential $credential, array $args): Response
     {
-        $row   = $this->row('t_region', (int) $args['id']);
+        $row   = $this->row(LocationQuery::REGION, (int) $args['id']);
         $input = $request->input();
         $this->write(fn () => $this->locations->editRegion((int) $row['pk_i_id'], (array_key_exists('name', $input) ? AdminText::clean($input['name']) : (string) $row['s_name']), self::slug($input, $row)));
 
-        return Response::ok($this->serializer->region($this->row('t_region', (int) $row['pk_i_id'])));
+        return Response::ok($this->serializer->region($this->row(LocationQuery::REGION, (int) $row['pk_i_id'])));
     }
 
     /**
@@ -100,7 +100,7 @@ final class AdminLocationsController
         $region = (int) $input['region_id'];
         $id     = (int) $this->write(fn () => $this->locations->addCity($region, AdminText::clean($input['name'])));
 
-        return Response::created($this->serializer->city($this->row('t_city', $id)), $this->api->links()->api('admin/cities/' . $id));
+        return Response::created($this->serializer->city($this->row(LocationQuery::CITY, $id)), $this->api->links()->api('admin/cities/' . $id));
     }
 
     /**
@@ -110,7 +110,7 @@ final class AdminLocationsController
      */
     public function showCity(Request $request, Credential $credential, array $args): Response
     {
-        return Response::ok($this->serializer->city($this->row('t_city', (int) $args['id'])));
+        return Response::ok($this->serializer->city($this->row(LocationQuery::CITY, (int) $args['id'])));
     }
 
     /**
@@ -120,11 +120,11 @@ final class AdminLocationsController
      */
     public function updateCity(Request $request, Credential $credential, array $args): Response
     {
-        $row   = $this->row('t_city', (int) $args['id']);
+        $row   = $this->row(LocationQuery::CITY, (int) $args['id']);
         $input = $request->input();
         $this->write(fn () => $this->locations->editCity((int) $row['pk_i_id'], (array_key_exists('name', $input) ? AdminText::clean($input['name']) : (string) $row['s_name']), self::slug($input, $row)));
 
-        return Response::ok($this->serializer->city($this->row('t_city', (int) $row['pk_i_id'])));
+        return Response::ok($this->serializer->city($this->row(LocationQuery::CITY, (int) $row['pk_i_id'])));
     }
 
     /**
@@ -150,7 +150,7 @@ final class AdminLocationsController
         $city  = (int) $input['city_id'];
         $id    = (int) $this->write(fn () => $this->locations->addArea($city, AdminText::clean($input['name'])));
 
-        return Response::created($this->serializer->area($this->row('t_city_area', $id)), $this->api->links()->api('admin/areas/' . $id));
+        return Response::created($this->serializer->area($this->row(LocationQuery::AREA, $id)), $this->api->links()->api('admin/areas/' . $id));
     }
 
     /**
@@ -160,7 +160,7 @@ final class AdminLocationsController
      */
     public function showArea(Request $request, Credential $credential, array $args): Response
     {
-        return Response::ok($this->serializer->area($this->row('t_city_area', (int) $args['id'])));
+        return Response::ok($this->serializer->area($this->row(LocationQuery::AREA, (int) $args['id'])));
     }
 
     /**
@@ -170,11 +170,11 @@ final class AdminLocationsController
      */
     public function updateArea(Request $request, Credential $credential, array $args): Response
     {
-        $row   = $this->row('t_city_area', (int) $args['id']);
+        $row   = $this->row(LocationQuery::AREA, (int) $args['id']);
         $input = $request->input();
         $this->write(fn () => $this->locations->editArea((int) $row['pk_i_id'], AdminText::clean($input['name'])));
 
-        return Response::ok($this->serializer->area($this->row('t_city_area', (int) $row['pk_i_id'])));
+        return Response::ok($this->serializer->area($this->row(LocationQuery::AREA, (int) $row['pk_i_id'])));
     }
 
     /**
@@ -205,14 +205,9 @@ final class AdminLocationsController
      * @return array<string,mixed>
      * @throws ProblemException 404
      */
-    private function row(string $table, int $id): array
+    private function row(string $level, int $id): array
     {
-        $row = osc_db_table(DB_TABLE_PREFIX . $table)->where('pk_i_id', $id)->first();
-        if ($row === null) {
-            throw ProblemException::of('not_found', 'No such location.');
-        }
-
-        return osc_db_stringify_row($row);
+        return (new LocationQuery())->find($level, $id) ?? throw ProblemException::of('not_found', 'No such location.');
     }
 
     /**

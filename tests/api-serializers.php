@@ -23,7 +23,6 @@ use mindstellar\api\auth\Credential;
 use mindstellar\api\auth\CredentialKind;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\CategoryCatalog;
-use mindstellar\api\read\CommentStatus;
 use mindstellar\api\read\ListingRelations;
 use mindstellar\api\schema\Schema;
 use mindstellar\api\schema\Validator;
@@ -39,6 +38,7 @@ use mindstellar\api\serializer\LocationSerializer;
 use mindstellar\api\serializer\SparseFieldset;
 use mindstellar\api\serializer\UserSerializer;
 use mindstellar\api\serializer\ViewContext;
+use mindstellar\comment\CommentStatus;
 use mindstellar\listing\ListingStatus;
 
 date_default_timezone_set('Europe/Berlin');

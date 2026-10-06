@@ -11,7 +11,8 @@
 /**
  * Idempotency-Key through the kernel: the same key and request replays the first answer
  * with Idempotency-Replayed and runs nothing again; another request under the key is 422;
- * a key still running is 409; a key past its day runs again; a 5xx or a crash is not kept;
+ * a key still running is 409; a key past its day runs again; a refusal is kept whether it
+ * was thrown as a problem or as a core service's refusal; a 5xx, a 429 or a crash is not kept;
  * keys belong to their sender; a write whose answer holds a secret and an anonymous call
  * ignore the header; a malformed key is 422.
  *
@@ -37,6 +38,9 @@ use mindstellar\api\RouteSpec;
 use mindstellar\api\routing\Router;
 use mindstellar\api\schema\Validator;
 use mindstellar\utility\SystemClock;
+use mindstellar\validation\BlockedException;
+use mindstellar\validation\ConflictException;
+use mindstellar\validation\RefusedException;
 
 /** Two users' keys and an admin's. */
 final class KeyRows implements CredentialStore
@@ -90,6 +94,9 @@ final class Writes
         return match ($input['do'] ?? '') {
             'fail'  => throw ProblemException::of('validation_failed', 'No.'),
             'crash' => throw new \RuntimeException('boom'),
+            'refuse'   => throw new RefusedException('Not allowed.'),
+            'conflict' => throw new ConflictException('Taken.'),
+            'busy'     => throw BlockedException::rateLimit('Slow down.', 30),
             '500'   => new Response(500, ['code' => 'server_error']),
             default => Response::ok(['run' => self::$runs, 'by' => $credential->userId()], 201)->withHeader('Location', '/api/v1/things/' . self::$runs),
         };
@@ -163,6 +170,16 @@ harness_section('what is kept');
 $runs = Writes::$runs;
 $post('things', ['do' => 'fail'], 'key-3');
 pin('a refusal is kept and replayed', [422, $runs + 1], [$post('things', ['do' => 'fail'], 'key-3')->status(), Writes::$runs]);
+$runs = Writes::$runs;
+$post('things', ['do' => 'refuse'], 'key-8');
+$again = $post('things', ['do' => 'refuse'], 'key-8');
+pin('a core service\'s 422 refusal is kept and replayed like a thrown problem', [422, 'true', 'Not allowed.', $runs + 1], [$again->status(), $again->header('Idempotency-Replayed'), $again->body()['detail'], Writes::$runs]);
+$post('things', ['do' => 'conflict'], 'key-9');
+$r = $post('things', ['do' => 'conflict'], 'key-9');
+pin('so is its 409', [409, 'conflict', 'true', $runs + 2], [$r->status(), $r->body()['code'], $r->header('Idempotency-Replayed'), Writes::$runs]);
+$post('things', ['do' => 'busy'], 'key-10');
+$r = $post('things', ['do' => 'busy'], 'key-10');
+pin('a 429 is not kept, so a retry runs', [429, null, $runs + 4], [$r->status(), $r->header('Idempotency-Replayed'), Writes::$runs]);
 $runs = Writes::$runs;
 $post('things', ['do' => '500'], 'key-4');
 $post('things', ['do' => '500'], 'key-4');

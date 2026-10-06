@@ -236,7 +236,7 @@ Core fires 551 names. Generated from the source; do not edit by hand.
 | `api_category` | filter | `$data, $category, $context` | `oc-includes/osclass/classes/api/serializer/CategorySerializer.php` |
 | `delete_category` | action | `$pkInt` | `oc-includes/osclass/classes/model/Category.php` |
 | `edited_category` | action | `$id, $outcome` | `oc-includes/osclass/classes/category/CategoryService.php` |
-| `edited_category_order` | action | `$error` | `oc-includes/osclass/classes/controller/admin/ajax/CAdminAjax.php` |
+| `edited_category_order` | action | `$error` | `oc-includes/osclass/classes/admin/ajax/CategoryAjax.php` |
 
 ### Comment (12)
 
@@ -379,10 +379,10 @@ Core fires 551 names. Generated from the source; do not edit by hand.
 | `item_content_updated` | action | `(int)$id, $locale` | `oc-includes/osclass/classes/model/Item.php` |
 | `item_decrease_stat` | action | `$item` | `oc-includes/osclass/classes/listing/ListingStats.php` |
 | `item_description` | filter | `$v['s_description']` | `oc-includes/osclass/classes/controller/CWebItem.php` |
-| `item_edit` | action | `$catId, $itemId` | `oc-includes/osclass/classes/controller/CWebAjax.php` |
+| `item_edit` | action | `$catId, $itemId` | `oc-includes/osclass/classes/admin/ajax/PluginAjax.php` |
 | `item_edit_prepare_data` | filter | `$data` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `item_expiration_updated` | action | `(int)$id, $_item['dt_expiration']` | `oc-includes/osclass/classes/model/Item.php` |
-| `item_form` | action | `Params::getParam('catId')` | `oc-includes/osclass/classes/controller/CWebAjax.php` |
+| `item_form` | action | `Params::getParam('catId')` | `oc-includes/osclass/classes/admin/ajax/PluginAjax.php` |
 | `item_form_new_validation_messages` | action | none | `oc-includes/osclass/classes/form/ItemForm.php` |
 | `item_form_new_validation_rules` | action | none | `oc-includes/osclass/classes/form/ItemForm.php` |
 | `item_form_validation_messages` | action | none | `oc-includes/osclass/classes/form/ItemForm.php` |

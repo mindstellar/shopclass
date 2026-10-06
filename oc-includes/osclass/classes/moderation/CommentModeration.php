@@ -16,8 +16,8 @@ namespace mindstellar\moderation;
 use Item;
 use ItemComment;
 use mindstellar\utility\DeferredMail;
+use mindstellar\utility\ViewScope;
 use mindstellar\validation\InvalidException;
-use View;
 
 /**
  * What an admin does to a comment: approve, hold, block, unblock, edit, delete. Each fires
@@ -157,7 +157,7 @@ final class CommentModeration
         if (!is_array($comment) || $comment === []) {
             return;
         }
-        View::getInstance()->_exportVariableToView('item', Item::getInstance()->findByPrimaryKey($comment['fk_i_item_id']));
-        osc_run_hook('hook_email_comment_validated', $comment);
+        $item = Item::getInstance()->findByPrimaryKey($comment['fk_i_item_id']);
+        ViewScope::withItem(is_array($item) ? $item : [], static fn () => osc_run_hook('hook_email_comment_validated', $comment));
     }
 }

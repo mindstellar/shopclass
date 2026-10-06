@@ -11,6 +11,7 @@
 namespace mindstellar\security;
 
 use mindstellar\job\JobQueue;
+use mindstellar\utility\ViewScope;
 
 /**
  * Message mail leaves only from a confirmed sender address. A signed-in member's own
@@ -217,14 +218,15 @@ final class MessageHold
                 if (!$item) {
                     return false;
                 }
-                \View::getInstance()->_exportVariableToView('item', $item);
                 $args['item'] = $item;
-                if ($kind === 'send_friend') {
-                    $args['s_title'] = $item['s_title'];
-                    osc_run_hook('hook_email_send_friend', $args);
-                } else {
-                    osc_run_hook('hook_email_item_inquiry', $args);
-                }
+                ViewScope::withItem($item, static function () use ($kind, $item, $args): void {
+                    if ($kind === 'send_friend') {
+                        $args['s_title'] = $item['s_title'];
+                        osc_run_hook('hook_email_send_friend', $args);
+                    } else {
+                        osc_run_hook('hook_email_item_inquiry', $args);
+                    }
+                });
 
                 return true;
             case 'user_contact':
@@ -232,15 +234,14 @@ final class MessageHold
                 if (!$user || !$user['b_active'] || !$user['b_enabled']) {
                     return false;
                 }
-                \View::getInstance()->_exportVariableToView('user', $user);
-                osc_run_hook(
+                ViewScope::with('user', $user, static fn () => osc_run_hook(
                     'hook_email_contact_user',
                     (int) $user['pk_i_id'],
                     (string) $args['yourEmail'],
                     (string) $args['yourName'],
                     (string) $args['phoneNumber'],
                     (string) $args['message']
-                );
+                ));
 
                 return true;
         }

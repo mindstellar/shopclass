@@ -16,6 +16,7 @@ namespace mindstellar\listing;
 use mindstellar\auth\Actor;
 use mindstellar\utility\DeferredMail;
 use mindstellar\utility\Sanitize;
+use mindstellar\utility\ViewScope;
 use mindstellar\validation\ForbiddenException;
 use mindstellar\validation\InvalidException;
 use mindstellar\validation\RefusedException;
@@ -40,12 +41,19 @@ final class ListingService
     /** @var string|null the actor and e-mail mayPost() last allowed */
     private ?string $allowed = null;
 
-    public function __construct()
-    {
-        $this->items     = \Item::getInstance();
-        $this->sanitize  = new Sanitize();
-        $this->validator = new ListingValidator();
-        $this->photos    = new PhotoService();
+    /**
+     * Each collaborator defaults to the one the site uses; tests pass their own.
+     */
+    public function __construct(
+        ?\Item $items = null,
+        ?Sanitize $sanitize = null,
+        ?ListingValidator $validator = null,
+        ?PhotoService $photos = null
+    ) {
+        $this->items     = $items ?? \Item::getInstance();
+        $this->sanitize  = $sanitize ?? new Sanitize();
+        $this->validator = $validator ?? new ListingValidator();
+        $this->photos    = $photos ?? new PhotoService();
     }
 
     /**
@@ -102,18 +110,15 @@ final class ListingService
     }
 
     /**
-     * Save the listing form for a web, admin or plugin caller: fills in the posted custom fields,
-     * flashes the photo notices and answers as ItemActions always has.
+     * Save the listing form for a web, admin or plugin caller and flash the photo notices.
+     * The caller puts the posted custom field values under 'meta' (see ListingInput::withMeta()).
      *
      * @param array<string,mixed> $data
      *
-     * @return int|string 1 when a new listing waits for validation, 2 when not, else the rows an edit changed, or the refusal's message
+     * @return SavedListing|string what was saved, or the refusal's message
      */
-    public function saveForm(array $data, Actor $actor, bool $isAdd, bool $import = false, bool $matchSecret = true)
+    public function saveForm(array $data, Actor $actor, bool $isAdd, bool $import = false, bool $matchSecret = true): SavedListing|string
     {
-        if (!isset($data['meta'])) {
-            $data['meta'] = \Params::getParam('meta');
-        }
         try {
             $saved = $isAdd ? $this->create($data, $actor, $import) : $this->update($data, $actor, $import, $matchSecret);
         } catch (RefusedException $e) {
@@ -122,12 +127,24 @@ final class ListingService
             return $e->getMessage();
         }
         ListingNotices::flash($saved->notices(), $actor->isAdmin());
-        if (!$isAdd) {
-            return $saved->rows();
-        }
-        \Params::setParam('itemId', $saved->id());
 
-        return $saved->needsValidation() ? 1 : 2;
+        return $saved;
+    }
+
+    /**
+     * What ItemActions has always answered for a save: 1 when a new listing waits for
+     * validation, 2 when not, else the rows an edit changed, or the refusal's message.
+     */
+    public static function legacyResult(SavedListing|string $result, bool $isAdd): int|string|false|null
+    {
+        if (is_string($result)) {
+            return $result;
+        }
+        if (!$isAdd) {
+            return $result->rows();
+        }
+
+        return $result->needsValidation() ? 1 : 2;
     }
 
     /**
@@ -498,20 +515,20 @@ final class ListingService
      */
     public function notifyNew(array $item, string $active, Actor $actor): void
     {
-        \View::getInstance()->_exportVariableToView('item', $item);
+        ViewScope::withItem($item, static function () use ($item, $active, $actor): void {
+            $registered = $actor->userId() !== null;
+            if ($active === 'INACTIVE' && !$registered) {
+                osc_run_hook('hook_email_item_validation_non_register_user', $item);
+            } elseif ($active === 'INACTIVE') {
+                osc_run_hook('hook_email_item_validation', $item);
+            } elseif (!$registered) {
+                osc_run_hook('hook_email_new_item_non_register_user', $item);
+            }
 
-        $registered = $actor->userId() !== null;
-        if ($active === 'INACTIVE' && !$registered) {
-            osc_run_hook('hook_email_item_validation_non_register_user', $item);
-        } elseif ($active === 'INACTIVE') {
-            osc_run_hook('hook_email_item_validation', $item);
-        } elseif (!$registered) {
-            osc_run_hook('hook_email_new_item_non_register_user', $item);
-        }
-
-        if (osc_notify_new_item()) {
-            osc_run_hook('hook_email_admin_new_item', $item);
-        }
+            if (osc_notify_new_item()) {
+                osc_run_hook('hook_email_admin_new_item', $item);
+            }
+        });
     }
 
     /**
@@ -753,8 +770,8 @@ final class ListingService
             $this->disable($item['pk_i_id']);
         }
 
-        // THIS HOOK IS FINE, YAY!
-        osc_run_hook('posted_item', $item);
+        // Listeners may read the new listing through osc_item_*().
+        ViewScope::withItem($item, static fn () => osc_run_hook('posted_item', $item));
 
         return new SavedListing((int) $itemId, $active === 'INACTIVE');
     }

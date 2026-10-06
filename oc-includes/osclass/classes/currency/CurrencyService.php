@@ -14,14 +14,15 @@ namespace mindstellar\currency;
 
 use Currency;
 use mindstellar\admin\AdminText;
+use mindstellar\cache\CacheGroup;
 use mindstellar\validation\ConflictException;
 use mindstellar\validation\InvalidException;
 use mindstellar\validation\NotFoundException;
 
 /**
- * Currency writes for the currencies screen and the API: add one, rename it or change its
- * symbol, and delete one that neither the site nor a listing uses. Each change purges the
- * page cache.
+ * Currency reads and writes for the currencies screen and the API: the enabled list, add one,
+ * rename it or change its symbol, and delete one that neither the site nor a listing uses.
+ * Each change purges the page cache.
  */
 final class CurrencyService
 {
@@ -47,6 +48,18 @@ final class CurrencyService
         $row = osc_db_table(DB_TABLE_PREFIX . 't_currency')->where('pk_c_code', $code)->first();
 
         return $row === null ? null : osc_db_stringify_row($row);
+    }
+
+    /**
+     * The enabled currencies by code, cached in the `currency` group.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function enabled(): array
+    {
+        return CacheGroup::remember('currency', 'enabled', static function (): ?array {
+            return osc_db_stringify_rows(osc_db_table(DB_TABLE_PREFIX . 't_currency')->where('b_enabled', 1)->orderBy('pk_c_code')->get());
+        }) ?? [];
     }
 
     /**

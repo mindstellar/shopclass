@@ -749,6 +749,9 @@ jobs:
       # Old backup URLs route, the demo refuses first, and downloads take listed names only.
       - name: Admin backup page
         run: php tests/admin-backup-page.php
+      # Every admin ajax action reaches its handler, with the same token and moderator rules.
+      - name: Admin ajax dispatch
+        run: php tests/admin-ajax-dispatch.php
       # Bucket backup keys carry a random name and a manifest; the prune keeps N per kind there too.
       - name: Backup S3 keys
         run: php tests/backup-s3-keys.php

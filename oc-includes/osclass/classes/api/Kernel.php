@@ -22,6 +22,8 @@ use mindstellar\api\auth\Scopes;
 use mindstellar\api\auth\UserRows;
 use mindstellar\api\http\CachePolicy;
 use mindstellar\api\http\Cors;
+use mindstellar\api\http\ResourceVersions;
+use mindstellar\api\http\RowVersions;
 use mindstellar\api\idempotency\Idempotency;
 use mindstellar\api\identity\WebIdentity;
 use mindstellar\api\ratelimit\RateBucket;
@@ -31,11 +33,6 @@ use mindstellar\api\ratelimit\RatePolicy;
 use mindstellar\api\routing\RouteMatch;
 use mindstellar\api\routing\Router;
 use mindstellar\api\schema\Validator;
-use mindstellar\validation\BlockedException;
-use mindstellar\validation\ConflictException;
-use mindstellar\validation\ForbiddenException;
-use mindstellar\validation\InvalidException;
-use mindstellar\validation\NotFoundException;
 use mindstellar\validation\RefusedException;
 
 /**
@@ -57,6 +54,8 @@ final class Kernel
 
     private CachePolicy $cachePolicy;
 
+    private ResourceVersions $versions;
+
     public function __construct(
         private Router $router,
         private Authenticator $authenticator,
@@ -65,8 +64,10 @@ final class Kernel
         private ApiSettings $settings,
         private UserRows $users,
         private AdminRows $admins,
-        private Idempotency $idempotency
+        private Idempotency $idempotency,
+        ?ResourceVersions $versions = null
     ) {
+        $this->versions    = $versions ?? new RowVersions();
         $this->authorizer  = new Authorizer();
         $this->ratePolicy  = new RatePolicy($settings);
         $this->cachePolicy = new CachePolicy($settings->cacheMaxAge());
@@ -140,15 +141,22 @@ final class Kernel
             $rateHeaders = $this->countRequest($request, $route, $credential);
             $this->assumeIdentity($credential, $route);
             osc_run_hook('api_request_before', $request, $route, $credential);
-            $run = function () use (&$request, $route, $credential, $match): Response {
+            $version = null;
+            $run     = function () use (&$request, &$version, $route, $credential, $match): Response {
                 $request = $this->validate($request, $route);
-                $this->checkIfMatch($request, $route, $credential);
+                if ($request->isRead()) {
+                    // Read first: a write landing meanwhile then fails If-Match instead of slipping past it.
+                    $version = $this->storedVersion($route, $credential, $match->args());
+                }
 
-                return $route->call($request, $credential, $match->args());
+                return $this->callChecked($request, $route, $credential, $match->args());
             };
             $response = $route->replayable() ? $this->idempotency->run($request, $credential, $run) : $run();
             $filtered = osc_apply_filter('api_response', $response, $request, $route);
             $response = $filtered instanceof Response ? $filtered : $response;
+            if ($version !== null) {
+                $response = $response->withVersion($version);
+            }
             if ($credential->isSession()) {
                 // Never stored anywhere, whatever a handler or filter asked for.
                 $response = $response->withHeader('Cache-Control', $this->cachePolicy->header($request, $credential));
@@ -162,7 +170,7 @@ final class Kernel
         } catch (ProblemException $e) {
             $response = $route !== null && $route->oauth() ? OAuthError::from($e->response()) : $e->response();
         } catch (RefusedException $e) {
-            $response = self::refusal($e);
+            $response = Problem::fromRefusal($e);
         } catch (\Throwable $e) {
             // Still finished below, so a 500 carries the CORS, Vary and rate-limit headers.
             error_log('api: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine() . ' (request ' . $requestId . ')');
@@ -186,32 +194,85 @@ final class Kernel
     }
 
     /**
-     * A PATCH or DELETE that sent If-Match goes through only while the same path's GET still
-     * answers with that ETag (`*`: any existing resource). A path with no GET is not checked.
+     * Run the handler, honouring If-Match on a PATCH or DELETE (`*`: any existing resource).
+     * Where the same path's GET keeps a stored version, the version is read with its rows
+     * locked and the write runs in that transaction, so no other write lands in between.
+     * Otherwise the GET is run and its ETag compared. A path with no GET is not checked.
      *
-     * @throws ProblemException 412 when the resource has changed
+     * @param array<string,string> $args
+     * @throws ProblemException 412 when the resource has changed, or cannot be checked
      */
-    private function checkIfMatch(Request $request, RouteSpec $route, Credential $credential): void
+    private function callChecked(Request $request, RouteSpec $route, Credential $credential, array $args): Response
     {
         $header = trim($request->ifMatch());
-        if ($header === '' || !in_array($route->method(), ['PATCH', 'DELETE'], true)) {
-            return;
-        }
-        $read = $this->router->match('GET', $this->routePath($request));
+        $read   = $header !== '' && in_array($route->method(), ['PATCH', 'DELETE'], true)
+            ? $this->router->match('GET', $this->routePath($request))
+            : null;
         if ($read === null) {
-            return;
+            return $route->call($request, $credential, $args);
         }
+        $path = $read->route()->path();
+        if (!$this->versions->supports($path)) {
+            $this->checkRepresentation($header, $request, $read, $credential);
+
+            return $route->call($request, $credential, $args);
+        }
+
+        return $this->versions->atomically(function () use ($header, $request, $route, $credential, $args, $read, $path): Response {
+            $version = $this->versions->version($path, $read->args(), $credential, true);
+            if ($version !== null && !Response::versionMatches($header, $version)) {
+                throw self::preconditionFailed();
+            }
+            $response = $route->call($request, $credential, $args);
+            $version  = $response->status() === 200 ? $this->versions->version($path, $read->args(), $credential) : null;
+
+            return $version === null ? $response : $response->withVersion($version);
+        });
+    }
+
+    /**
+     * If-Match against the ETag of the GET's answer, for a path that keeps no stored version.
+     *
+     * @throws ProblemException 412 when it differs, or when this credential cannot read the path
+     */
+    private function checkRepresentation(string $header, Request $request, RouteMatch $read, Credential $credential): void
+    {
         try {
             $this->authorizer->check($read->route(), $credential);
         } catch (ProblemException $e) {
-            return;
+            throw ProblemException::of('precondition_failed', 'This credential cannot read the resource, so If-Match cannot be checked. Send the write without it.');
         }
-        $current = $read->route()->call($request->asRead(), $credential, $read->args());
+        $current  = $read->route()->call($request->asRead(), $credential, $read->args());
         $filtered = osc_apply_filter('api_response', $current, $request->asRead(), $read->route());
-        $current = $filtered instanceof Response ? $filtered : $current;
-        $etag    = $current->etag();
+        $current  = $filtered instanceof Response ? $filtered : $current;
+        $etag     = $current->etag();
         if ($etag !== null && !Response::etagMatches($header, $etag)) {
-            throw ProblemException::of('precondition_failed', 'Fetch the resource again and retry with its new ETag.');
+            throw self::preconditionFailed();
+        }
+    }
+
+    private static function preconditionFailed(): ProblemException
+    {
+        return ProblemException::of('precondition_failed', 'Fetch the resource again and retry with its new ETag.');
+    }
+
+    /**
+     * The stored version for a GET's ETag, where its path keeps one. One that cannot be read
+     * leaves the plain ETag.
+     *
+     * @param array<string,string> $args
+     */
+    private function storedVersion(RouteSpec $route, Credential $credential, array $args): ?string
+    {
+        if (!$this->versions->supports($route->path())) {
+            return null;
+        }
+        try {
+            return $this->versions->version($route->path(), $args, $credential);
+        } catch (\Throwable $e) {
+            error_log('api: resource version: ' . $e->getMessage());
+
+            return null;
         }
     }
 
@@ -404,21 +465,6 @@ final class Kernel
         }
 
         return $request->withQuery($query);
-    }
-
-    /**
-     * A core service's refusal as a problem: 403, 404, 409, 429, or 422 with its reason.
-     */
-    private static function refusal(RefusedException $e): Response
-    {
-        return match (true) {
-            $e instanceof NotFoundException  => Problem::make('not_found', $e->getMessage()),
-            $e instanceof ConflictException  => Problem::make('conflict', $e->getMessage()),
-            $e instanceof ForbiddenException => Problem::make('forbidden', $e->getMessage()),
-            $e instanceof BlockedException   => Problem::make($e->isRateLimit() ? 'rate_limited' : 'login_blocked', $e->getMessage())->withHeader('Retry-After', (string) $e->retryAfter()),
-            $e instanceof InvalidException   => Problem::validation($e->errors()),
-            default                 => Problem::rejected($e->getMessage()),
-        };
     }
 
     /**

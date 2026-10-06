@@ -176,7 +176,8 @@ in a moment.
 
 The resource changed since the `If-Match` value you sent. `PATCH` and `DELETE` on a path that
 has a `GET` check it: send the `ETag` of your last `GET` of that resource, or `*` for any
-existing one. `GET` it again and retry. Without `If-Match` the write is never refused.
+existing one. `GET` it again and retry. Without `If-Match` the write is never refused. It is
+also refused when your credential cannot read the path's `GET`, as the check cannot be made.
 
 ### 413 Payload too large
 

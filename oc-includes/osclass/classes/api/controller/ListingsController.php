@@ -15,7 +15,6 @@ namespace mindstellar\api\controller;
 use mindstellar\api\ApiServices;
 use mindstellar\api\auth\Credential;
 use mindstellar\api\ProblemException;
-use mindstellar\api\read\CommentStatus;
 use mindstellar\api\read\ListingReader;
 use mindstellar\api\read\ListingSearch;
 use mindstellar\api\read\ListSpec;
@@ -26,7 +25,9 @@ use mindstellar\api\Response;
 use mindstellar\api\serializer\CommentSerializer;
 use mindstellar\api\serializer\ListingSerializer;
 use mindstellar\api\serializer\ViewContext;
+use mindstellar\comment\CommentQuery;
 use mindstellar\listing\ListingPolicy;
+use mindstellar\listing\ListingQuery;
 
 /**
  * Listings: search, one listing, its photos and its comments. Search leaves out listings that
@@ -109,10 +110,10 @@ final class ListingsController
         $facts = $this->api->facts();
         $pager = Pager::fromRequest($request, $this->api->cursor(), ListSpec::byId('asc', $facts->commentsPerPage(), $facts->maxLimit()), ['listing' => $id] + $request->query());
 
-        $approved = CommentStatus::condition(osc_db_table(DB_TABLE_PREFIX . 't_item_comment')->where('fk_i_item_id', $id), [CommentStatus::ACTIVE]);
-        $total = $pager->counts() ? $approved->count() : null;
-        $rows  = osc_db_stringify_rows($approved->where('pk_i_id', '>', (int) ($pager->after()[0] ?? 0))->orderBy('pk_i_id')->limit($pager->limit() + 1)->get());
-        $next = $pager->next($rows);
+        $comments = new CommentQuery();
+        $total    = $pager->counts() ? $comments->countApproved($id) : null;
+        $rows     = $comments->approved($id, (int) ($pager->after()[0] ?? 0), $pager->limit() + 1);
+        $next     = $pager->next($rows);
         $data = array_map([new CommentSerializer(), 'one'], $pager->page($rows));
 
         return (new Page($data, $total, $pager->limit(), $next))->response($this->api->links(), 'listings/' . $id . '/comments', $request->query());
@@ -126,11 +127,7 @@ final class ListingsController
      */
     private function visibleRow(int $id, Request $request, Credential $credential): array
     {
-        $row = osc_db_table(DB_TABLE_PREFIX . 't_item')
-            ->select('pk_i_id', 'fk_i_user_id', 'b_enabled', 'b_active', 'b_spam', 'b_premium', 'dt_expiration')
-            ->where('pk_i_id', $id)
-            ->first();
-        $row = $row === null ? null : osc_db_stringify_row($row);
+        $row = (new ListingQuery($this->api->clock()))->statusRow($id);
         if ($row === null || !ListingPolicy::canView($row, $credential->actor($request->ip(), ViewContext::LISTINGS_SCOPE))) {
             throw ProblemException::of('not_found', 'No such listing.');
         }

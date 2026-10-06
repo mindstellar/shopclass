@@ -277,7 +277,7 @@ if ($fields !== null && !$fields->wants('ext')) {
 
 API requests do not load the active theme's `functions.php`, so hooks a theme adds there (validation, spam checks, routes) do not apply to the API. Put them in a plugin, or return `true` from the `api_theme_functions_enabled` filter.
 
-`api_response` does not run when an `ProblemException` was thrown. A PATCH or DELETE that sends `If-Match` also runs it once for the GET of the same path, to compare ETags; check `$request->method()` if that matters to you.
+`api_response` does not run when an `ProblemException` was thrown. A PATCH or DELETE that sends `If-Match`, on a path whose GET keeps no stored version, also runs it once for that GET, to compare ETags; check `$request->method()` if that matters to you. Plugin routes keep no stored version.
 
 ```php
 osc_add_hook('api_request_before', function ($request, $route, $credential) {

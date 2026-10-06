@@ -66,11 +66,16 @@ final class AccountService
 
     private \User $users;
     private Sanitize $sanitize;
+    private ?ListingService $listings;
 
-    public function __construct()
+    /**
+     * Each collaborator defaults to the one the site uses; tests pass their own.
+     */
+    public function __construct(?\User $users = null, ?Sanitize $sanitize = null, ?ListingService $listings = null)
     {
-        $this->users    = \User::getInstance();
-        $this->sanitize = new Sanitize();
+        $this->users    = $users ?? \User::getInstance();
+        $this->sanitize = $sanitize ?? new Sanitize();
+        $this->listings = $listings;
     }
 
     /**
@@ -570,20 +575,6 @@ final class AccountService
     }
 
     /**
-     * After a user edits their own profile, the name and phone this request shows. No session
-     * write, so a signed-in user stays session-free.
-     */
-    public static function refreshIdentity(int $userId): void
-    {
-        $user = \User::getInstance()->findByPrimaryKey($userId);
-        if (!is_array($user) || $user === []) {
-            return;
-        }
-        \Session::getInstance()->_setEphemeral('userName', $user['s_name']);
-        \Session::getInstance()->_setEphemeral('userPhone', $user['s_phone_mobile'] ?: $user['s_phone_land']);
-    }
-
-    /**
      * Move the guest listings and alerts posted with this account's e-mail to the account.
      * Only for a confirmed address, or an account an admin made or activated.
      */
@@ -711,7 +702,7 @@ final class AccountService
 
     private function eachListing(int $userId, string $action): void
     {
-        $listings = new ListingService();
+        $listings = $this->listings ??= new ListingService();
         foreach (\Item::getInstance()->findByUserID($userId) as $item) {
             $listings->$action((int) $item['pk_i_id']);
         }

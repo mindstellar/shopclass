@@ -12,6 +12,13 @@ declare(strict_types=1);
 
 namespace mindstellar\api;
 
+use mindstellar\validation\BlockedException;
+use mindstellar\validation\ConflictException;
+use mindstellar\validation\ForbiddenException;
+use mindstellar\validation\InvalidException;
+use mindstellar\validation\NotFoundException;
+use mindstellar\validation\RefusedException;
+
 /**
  * RFC 9457 problem answers and the error catalogue.
  *
@@ -124,6 +131,21 @@ final class Problem
         }
 
         return $clean === [] ? self::rejected('') : self::validation($clean);
+    }
+
+    /**
+     * A core service's refusal as a problem: 403, 404, 409, 429, or 422 with its reason.
+     */
+    public static function fromRefusal(RefusedException $e): Response
+    {
+        return match (true) {
+            $e instanceof NotFoundException  => self::make('not_found', $e->getMessage()),
+            $e instanceof ConflictException  => self::make('conflict', $e->getMessage()),
+            $e instanceof ForbiddenException => self::make('forbidden', $e->getMessage()),
+            $e instanceof BlockedException   => self::make($e->isRateLimit() ? 'rate_limited' : 'login_blocked', $e->getMessage())->withHeader('Retry-After', (string) $e->retryAfter()),
+            $e instanceof InvalidException   => self::validation($e->errors()),
+            default                          => self::rejected($e->getMessage()),
+        };
     }
 
     /**

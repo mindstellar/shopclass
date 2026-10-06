@@ -21,6 +21,7 @@ use mindstellar\api\auth\RefreshTokens;
 use mindstellar\api\auth\TokenIssuer;
 use mindstellar\api\auth\UserRows;
 use mindstellar\api\ProblemException;
+use mindstellar\api\read\ListingList;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\AccessEntrySerializer;
@@ -31,7 +32,8 @@ use mindstellar\utility\DeferredMail;
 
 /**
  * The signed-in user's own account: `GET` and `PATCH /account`, `POST /account/password`,
- * and the sign-ins and keys that act for them at `/account/sessions`.
+ * their listings at `/account/listings`, and the sign-ins and keys that act for them at
+ * `/account/sessions`.
  *
  * Edits go through AccountService as the profile form's do, so its checks and hooks run. A
  * new e-mail address is not applied here: it gets the same confirmation link the web sends.
@@ -51,6 +53,18 @@ final class AccountController
         $this->refresh = $api->refreshTokens();
         $this->sessions = $api->accessEntries();
         $this->accounts = new AccountService();
+    }
+
+    /**
+     * GET /account/listings: the user's own listings in any status, as their listings page
+     * lists them, newest first.
+     *
+     * @param array<string,string> $args
+     */
+    public function listings(Request $request, Credential $credential, array $args): Response
+    {
+        return (new ListingList($this->api, $this->api->listingReader()))
+            ->run($request, $credential, 'account/listings', $request->queryList('status'), (int) $credential->userId());
     }
 
     /**

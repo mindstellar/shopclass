@@ -58,9 +58,13 @@ To catch a deprecation early, log any answer that has a `Deprecation` header.
 | What | Since | Use instead |
 |---|---|---|
 | Listing Import's old paths: `POST /listings`, `POST /listings:batch`, `PUT /listings/{external_id}`, `DELETE /listings/{external_id}`, `GET /runs/{id}` | 2026-10-04 | The same paths under `/api/v1/ext/listing-import/` |
+| `POST /admin/users/{id}/activate`, `/deactivate`, `/enable`, `/disable` | 2026-10-06 | `PATCH /admin/users/{id}` with `confirmed` or `blocked` |
+| `POST /admin/comments/{id}/activate`, `/deactivate`, `/enable`, `/disable` | 2026-10-06 | `PATCH /admin/comments/{id}` with `approved` or `blocked` |
 
 These answer only while the Listing Import plugin is active. They redirect (`301` for `GET`,
 `308` for the rest, so the method and body are kept) to the new path. They are removed in 7.1.
+
+The old user and comment actions still work and have no removal date yet.
 
 ## Changes
 
@@ -71,8 +75,9 @@ Added to v1.
 | Endpoint | Does |
 |---|---|
 | `/admin/listings`, with `activate`, `deactivate`, `enable`, `disable`, `spam`, `unspam`, `premium`, `unpremium`, `bump` | Moderate and edit any listing |
-| `/admin/comments`, with `activate`, `deactivate`, `enable`, `disable` | Moderate comments |
-| `/admin/users`, with `activate`, `deactivate`, `enable`, `disable`, and `/admin/users/{id}/sessions` | Manage users and end their sign-ins |
+| `/admin/comments`, with `approved` and `blocked` on `PATCH` | Moderate comments |
+| `/admin/users`, with `confirmed` and `blocked` on `PATCH`, and `/admin/users/{id}/sessions` | Manage users and end their sign-ins |
+| `GET /account/listings` | The user's own listings in any status |
 | `/admin/categories`, `/admin/currencies`, `/admin/fields` | Manage categories, currencies and custom fields |
 | `/admin/regions`, `/admin/cities`, `/admin/areas` | Manage locations |
 | `GET`, `PATCH /admin/settings`, `GET /admin/jobs` | Settings from a fixed list, and the job queue |
@@ -102,6 +107,9 @@ Also settled before the first release, so no released client saw the old behavio
 - A `GET` route refuses a query parameter it does not take with `422`. `api_key` is always allowed.
 - Each `POST` under `/admin/regions`, `/admin/cities`, `/admin/areas`, `/admin/currencies` and `/admin/fields` has a `GET` for the new item, and `Location` points at it.
 - `Problem.code` is an open string in the OpenAPI document, and `info.version` is `1`.
+- `If-Match` checks the stored version, so a tag from a `GET` with `fields`, `include` or `locale` works. The check and the write run as one. A `PATCH` sent with `If-Match` answers with the new `ETag`.
+- A credential that cannot read the `GET` of the path gets `412` for `If-Match`, instead of the check being skipped.
+- `Idempotency-Key` keeps every `4xx` except `429`, including a `409` or `422` from a core refusal.
 
 See [Admin endpoints](/docs/developers/api/admin/) and [Webhooks](/docs/developers/api/webhooks/).
 

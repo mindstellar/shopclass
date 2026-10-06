@@ -908,7 +908,7 @@ class CAdminItems extends AdminSecBaseModel
      */
     private function saveListing(array $data, bool $isAdd)
     {
-        return (new ListingService())->saveForm($data, Actor::fromSession(true), $isAdd);
+        return ListingService::legacyResult((new ListingService())->saveForm(ListingInput::withMeta($data), Actor::fromSession(true), $isAdd), $isAdd);
     }
 
     /**

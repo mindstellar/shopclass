@@ -93,6 +93,19 @@ class UserActions
     }
 
     /**
+     * After a user edits their own profile, the name and phone this request shows. No session
+     * write, so a signed-in user stays session-free.
+     */
+    public static function refreshIdentity(int $userId): void
+    {
+        $user = User::getInstance()->findByPrimaryKey($userId);
+        if (is_array($user) && $user !== []) {
+            Session::getInstance()->_setEphemeral('userName', $user['s_name']);
+            Session::getInstance()->_setEphemeral('userPhone', $user['s_phone_mobile'] ?: $user['s_phone_land']);
+        }
+    }
+
+    /**
      * Save the profile form a request carries: the user's own, or any user's in admin mode.
      * Compatibility: use \mindstellar\user\AccountService::update().
      *
@@ -108,7 +121,7 @@ class UserActions
             return implode(PHP_EOL, array_column($e->errors(), 'message')) . PHP_EOL;
         }
         if (!$this->is_admin) {
-            AccountService::refreshIdentity((int) $userId);
+            self::refreshIdentity((int) $userId);
         }
 
         return $result;
