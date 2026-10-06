@@ -81,8 +81,8 @@ Use one of these before making up a new ending.
   `Store` (`billing\OrderStore`, `search\AlertStore`).
 - **Making objects.** Use `new`. A class that must be shared, such as a registry or the
   database connection, offers `getInstance()`. Do not add `newInstance()`: it returns a shared
-  object, not a new one. Released classes keep it, and `instance()`, only as deprecated
-  wrappers for plugins.
+  object, not a new one. Since 7.0, released classes keep it, and `instance()`, only as
+  deprecated wrappers: a plugin that also supports 6.x keeps calling `newInstance()`.
 - **Strict types.** Every file in a `mindstellar\` namespace starts with
   `declare(strict_types=1);`. `tests/strict-types.php` fails on a new file without it.
 - **Renames keep the old name.** A released class that moves or is renamed is added to

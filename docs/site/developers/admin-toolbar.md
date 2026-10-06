@@ -20,6 +20,8 @@ AdminToolbar::getInstance()->add_menu(array(
 ));
 ```
 
+`getInstance()` needs Shopclass 7.0. A plugin that also supports 6.x calls `newInstance()`, which still works on 7.0.
+
 | Key | Meaning |
 |---|---|
 | `id` | Unique identifier for the node. Prefix it with your plugin folder. |

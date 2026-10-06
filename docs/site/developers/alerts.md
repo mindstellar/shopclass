@@ -56,6 +56,8 @@ osc_add_hook('search_conditions', function ($params, $search = null, $context = 
 });
 ```
 
+`getInstance()` needs Shopclass 7.0. A plugin that also supports 6.x calls `newInstance()`, which still works on 7.0.
+
 `search_conditions` now also runs in the alert cron, on the user's alerts page and on the
 admin user screen. The third argument is `'request'` on the search page and `'alert'`
 otherwise. A callback that sends headers, reads the session or prints must return early

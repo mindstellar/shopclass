@@ -223,7 +223,7 @@ core's, because every plugin author forgets it.
 ### `PaymentGatewayRegistry`
 
 Singleton, matching the shape already used by `WidgetRegistry`, `FieldTypeRegistry` and
-`PageTemplateRegistry` — `instance()`, `register()`, `get()`, `all()`, `isValidId()`.
+`PageTemplateRegistry` — `getInstance()`, `register()`, `get()`, `all()`, `isValidId()`.
 Plugins register on `init`.
 
 ### Classes
@@ -233,7 +233,7 @@ All under `mindstellar\billing` (`oc-includes/osclass/classes/billing/`):
 | Class | Role |
 |---|---|
 | `PaymentGateway` | The interface plugins implement |
-| `PaymentGatewayRegistry` | `instance()` / `register()` / `get()` / `all()` / `available()` |
+| `PaymentGatewayRegistry` | `getInstance()` / `register()` / `get()` / `all()` / `available()` |
 | `CheckoutIntent` | `redirect(url)` or `html(markup)` |
 | `CallbackResult` | `paid()` / `failed()` / `refunded()` / `ignored()` |
 | `Order` | Immutable payment intent |
@@ -242,7 +242,7 @@ All under `mindstellar\billing` (`oc-includes/osclass/classes/billing/`):
 | `Billing` | `checkout()` / `handleCallback()` / `markPaid()` / `refund()` / `spend()` |
 | `Premium` | `expire()` — the sweep behind the hourly cron |
 | `Feature` | One registered feature spec — `price()` / `duration()` / `apply()` |
-| `FeatureRegistry` | `instance()` / `register()` / `get()` / `all()` / `isValidId()` — what credits can be spent on |
+| `FeatureRegistry` | `getInstance()` / `register()` / `get()` / `all()` / `isValidId()` — what credits can be spent on |
 | `EntitlementStore` | `grant()` / `has()` / `quantity()` / `capacity()` / `consume()` / `canPublish()` — what a user holds |
 | `ItemUpgradeStore` | `grant()` / `active()` / `has()` / `expiresAt()` / `prime()` / `purge()` — what an item holds |
 | `PackageStore` | Persistence for `t_billing_package` — the price list a buyer chooses from at checkout |

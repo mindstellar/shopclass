@@ -63,6 +63,8 @@ $items = Item::getInstance()->findByCategoryID($categoryId);
 $user  = User::getInstance()->findByPrimaryKey($userId);
 ```
 
+`getInstance()` needs Shopclass 7.0. A plugin that also supports 6.x calls `newInstance()`, which still works on 7.0.
+
 For your own queries, use the query builder. It binds every value and checks
 every table and column name:
 

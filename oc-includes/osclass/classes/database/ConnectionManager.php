@@ -497,7 +497,7 @@ class ConnectionManager
     }
 
     /**
-     * @deprecated 7.0.0 Use instance().
+     * @deprecated 7.0.0 Use getInstance().
      */
     public static function newInstance(
         $server = DB_HOST,
