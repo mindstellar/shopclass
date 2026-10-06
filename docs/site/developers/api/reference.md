@@ -267,17 +267,9 @@ Answers: 204 No content; 401 No valid credential; 403 Not allowed for this crede
 |---|---|---|---|---|
 | GET | `/admin/listings` | admin | `admin:listings` | Every listing, whatever its status, newest first |
 | GET | `/admin/listings/{id}` | admin | `admin:listings` | One listing in the admin view |
-| PATCH | `/admin/listings/{id}` | admin | `admin:listings` | Edit any listing, its owner and expiry included; members not sent keep their values |
+| PATCH | `/admin/listings/{id}` | admin | `admin:listings` | Edit any listing, its owner, expiry and status included; members not sent keep their values |
 | DELETE | `/admin/listings/{id}` | admin | `admin:listings` | Delete a listing |
-| POST | `/admin/listings/{id}/activate` | admin | `admin:listings` | Activate a listing that waits for moderation |
 | POST | `/admin/listings/{id}/bump` | admin | `admin:listings` | Move a listing to the top of "newest first" |
-| POST | `/admin/listings/{id}/deactivate` | admin | `admin:listings` | Send a listing back to moderation |
-| POST | `/admin/listings/{id}/disable` | admin | `admin:listings` | Block a listing |
-| POST | `/admin/listings/{id}/enable` | admin | `admin:listings` | Unblock a listing |
-| POST | `/admin/listings/{id}/premium` | admin | `admin:listings` | Make a listing premium, with no end date |
-| POST | `/admin/listings/{id}/spam` | admin | `admin:listings` | Mark a listing as spam |
-| POST | `/admin/listings/{id}/unpremium` | admin | `admin:listings` | End a listing's premium status |
-| POST | `/admin/listings/{id}/unspam` | admin | `admin:listings` | Clear a listing's spam mark |
 
 ### GET `/admin/listings`
 
@@ -315,7 +307,7 @@ Answers: 200 OK (`ListingDocument`); 304 Not modified; 401 No valid credential; 
 
 ### PATCH `/admin/listings/{id}`
 
-Edit any listing, its owner and expiry included; members not sent keep their values
+Edit any listing, its owner, expiry and status included; members not sent keep their values
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
@@ -339,97 +331,9 @@ Delete a listing
 
 Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 412 Precondition failed; 429 Too many requests; 500 Server error; 503 Maintenance.
 
-### POST `/admin/listings/{id}/activate`
-
-Activate a listing that waits for moderation
-
-| Parameter | In | Type | Required | Notes |
-|---|---|---|---|---|
-| `id` | path | integer | yes |  |
-| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
-
-Answers: 200 OK (`ListingDocument`); 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
-
 ### POST `/admin/listings/{id}/bump`
 
 Move a listing to the top of "newest first"
-
-| Parameter | In | Type | Required | Notes |
-|---|---|---|---|---|
-| `id` | path | integer | yes |  |
-| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
-
-Answers: 200 OK (`ListingDocument`); 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
-
-### POST `/admin/listings/{id}/deactivate`
-
-Send a listing back to moderation
-
-| Parameter | In | Type | Required | Notes |
-|---|---|---|---|---|
-| `id` | path | integer | yes |  |
-| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
-
-Answers: 200 OK (`ListingDocument`); 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
-
-### POST `/admin/listings/{id}/disable`
-
-Block a listing
-
-| Parameter | In | Type | Required | Notes |
-|---|---|---|---|---|
-| `id` | path | integer | yes |  |
-| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
-
-Answers: 200 OK (`ListingDocument`); 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
-
-### POST `/admin/listings/{id}/enable`
-
-Unblock a listing
-
-| Parameter | In | Type | Required | Notes |
-|---|---|---|---|---|
-| `id` | path | integer | yes |  |
-| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
-
-Answers: 200 OK (`ListingDocument`); 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
-
-### POST `/admin/listings/{id}/premium`
-
-Make a listing premium, with no end date
-
-| Parameter | In | Type | Required | Notes |
-|---|---|---|---|---|
-| `id` | path | integer | yes |  |
-| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
-
-Answers: 200 OK (`ListingDocument`); 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
-
-### POST `/admin/listings/{id}/spam`
-
-Mark a listing as spam
-
-| Parameter | In | Type | Required | Notes |
-|---|---|---|---|---|
-| `id` | path | integer | yes |  |
-| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
-
-Answers: 200 OK (`ListingDocument`); 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
-
-### POST `/admin/listings/{id}/unpremium`
-
-End a listing's premium status
-
-| Parameter | In | Type | Required | Notes |
-|---|---|---|---|---|
-| `id` | path | integer | yes |  |
-| `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
-
-Answers: 200 OK (`ListingDocument`); 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
-
-### POST `/admin/listings/{id}/unspam`
-
-Clear a listing's spam mark
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
@@ -889,8 +793,8 @@ Every user, newest first
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `q` | query | string | no | E-mail, username or name starting with this. |
-| `active` | query | boolean | no |  |
-| `enabled` | query | boolean | no |  |
+| `confirmed` | query | boolean | no |  |
+| `blocked` | query | boolean | no |  |
 | `limit` | query | integer | no |  |
 | `cursor` | query | string | no |  |
 | `count` | query | boolean | no | true: also count every match for meta.total; skipped otherwise, as it costs a query. |

@@ -70,21 +70,18 @@ admin's rights.
 |---|---|
 | `GET /admin/listings` | Search. Filters: `status` (`active`, `pending`, `disabled`, `expired`, `spam`; a comma list or repeated), `user`, `category`, `q` (title contains), `include`, `locale`, `fields`, `limit`, `cursor`, `count`. |
 | `GET /admin/listings/{id}` | One listing. |
-| `PATCH /admin/listings/{id}` | Edit any member of a listing, plus `owner_id` (`null` for none), `contact_name`, `contact_email` and `expires_at` (`YYYY-MM-DD`, `null` for never). |
+| `PATCH /admin/listings/{id}` | Edit any member of a listing, plus `owner_id` (`null` for none), `contact_name`, `contact_email` and `expires_at` (`YYYY-MM-DD`, `null` for never). `approved` approves a listing that waits for moderation, or sends it back. `blocked`, `spam` and `premium` (no end date) set or clear each one. |
 | `DELETE /admin/listings/{id}` | Delete. |
-| `POST /admin/listings/{id}/activate` | Approve a listing that waits for moderation. |
-| `POST /admin/listings/{id}/deactivate` | Send it back to moderation. |
-| `POST /admin/listings/{id}/enable`, `/disable` | Unblock, or block. |
-| `POST /admin/listings/{id}/spam`, `/unspam` | Mark or clear spam. |
-| `POST /admin/listings/{id}/premium`, `/unpremium` | Make premium with no end date, or end it. |
 | `POST /admin/listings/{id}/bump` | Move to the top of "newest first". |
 
-The actions answer `200` with the listing, and `409` when the listing is in a state that
-refuses the change, such as activating a blocked one. The e-mails the screens send go out
-after the change is saved.
+The admin view reads `approved`, `blocked`, `spam` and `premium` back under the same names;
+`status` sums them up. A status change answers `409` when the listing refuses it, such as
+approving a blocked one; send `blocked: false` in the same call. The e-mails the screens send
+go out after the change is saved.
 
 ```bash
-curl -X POST $API/admin/listings/412/activate -H "Authorization: Bearer $KEY"
+curl -X PATCH $API/admin/listings/412 -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" -d '{"approved": true}'
 
 curl "$API/admin/listings?status=pending&limit=50" -H "Authorization: Bearer $KEY"
 ```
@@ -96,7 +93,7 @@ curl "$API/admin/listings?status=pending&limit=50" -H "Authorization: Bearer $KE
 | Endpoint | Does |
 |---|---|
 | `GET /admin/comments` | List. Filters: `status` (`active`, `pending`, `disabled`, `spam`), `listing`, `user`, `limit`, `cursor`, `count`. |
-| `GET /admin/comments/{id}` | One comment, with the author's e-mail. |
+| `GET /admin/comments/{id}` | One comment, with the author's e-mail, `approved` and `blocked`. |
 | `PATCH /admin/comments/{id}` | Edit `title`, `body`, `author_name`, `author_email`. `approved: true` approves it and tells the author; `false` holds it back. `blocked: true` blocks it; `false` unblocks it. |
 | `DELETE /admin/comments/{id}` | Delete. |
 
@@ -106,9 +103,9 @@ curl "$API/admin/listings?status=pending&limit=50" -H "Authorization: Bearer $KE
 
 | Endpoint | Does |
 |---|---|
-| `GET /admin/users` | List. Filters: `q` (e-mail, username or name starting with it), `active`, `enabled`, `locale`, `fields`, `limit`, `cursor`, `count`. |
+| `GET /admin/users` | List. Filters: `q` (e-mail, username or name starting with it), `confirmed`, `blocked`, `locale`, `fields`, `limit`, `cursor`, `count`. |
 | `GET /admin/users/{id}` | One user, every member. |
-| `PATCH /admin/users/{id}` | Edit the profile, `email`, `username` or `password`. A new password ends every sign-in and key of that user. `confirmed` marks the account confirmed, or not (`active` in the answer). `blocked: true` blocks the user, and their sign-ins and keys stop working (`enabled` in the answer). |
+| `PATCH /admin/users/{id}` | Edit the profile, `email`, `username` or `password`. A new password ends every sign-in and key of that user. `confirmed` marks the account confirmed, or not. `blocked: true` blocks the user, and their sign-ins and keys stop working. Both read back under the same names. |
 | `DELETE /admin/users/{id}` | Delete the user with their listings, comments and saved searches. |
 | `GET /admin/users/{id}/sessions` | The user's sign-ins and API keys. |
 | `DELETE /admin/users/{id}/sessions/{session}` | End one sign-in, or revoke one key. |

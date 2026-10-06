@@ -447,7 +447,7 @@ pin('off by default: 403', '403 forbidden', $code($call('POST', 'users', $signup
 $settings = new ApiSettings(true, registration: true);
 $fired    = array();
 $r        = $call('POST', 'users', $signup, null, array(), '203.0.113.7');
-pin('when on, an account is made: 201, waiting for activation', array(201, false), array($r->status(), $r->body()['data']['active'] ?? null));
+pin('when on, an account is made: 201, waiting for activation', array(201, false), array($r->status(), $r->body()['data']['confirmed'] ?? null));
 pin('Location names the new user', 'http://localhost/api/v1/users/' . (int) ($r->body()['data']['id'] ?? 0), $r->header('Location'));
 pin('matches the schema', array(), $schemaErrors('NewAccountDocument', $r));
 check('the site asks for a captcha on its own form', osc_captcha_enabled());

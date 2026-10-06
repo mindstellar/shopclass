@@ -31,7 +31,7 @@ final class ListingSerializer
     public const OWNER_MEMBERS = ['show_email'];
 
     /** Sent to admins only. */
-    public const ADMIN_MEMBERS = ['ip', 'stats'];
+    public const ADMIN_MEMBERS = ['approved', 'blocked', 'spam', 'ip', 'stats'];
 
     public const MEMBERS = [...self::PUBLIC_MEMBERS, ...self::OWNER_MEMBERS, ...self::ADMIN_MEMBERS, 'ext'];
 
@@ -103,6 +103,9 @@ final class ListingSerializer
             'updated_at'   => static fn () => Format::time($item['dt_mod_date'] ?? null),
             'expires_at'   => static fn () => Format::time($item['dt_expiration'] ?? null),
             'show_email'   => $view !== ViewContext::PUBLIC ? static fn () => Format::bool($item['b_show_email'] ?? 0) : null,
+            'approved'     => $view === ViewContext::ADMIN ? static fn () => Format::bool($item['b_active'] ?? 0) : null,
+            'blocked'      => $view === ViewContext::ADMIN ? static fn () => !Format::bool($item['b_enabled'] ?? 0) : null,
+            'spam'         => $view === ViewContext::ADMIN ? static fn () => Format::bool($item['b_spam'] ?? 0) : null,
             'ip'           => $view === ViewContext::ADMIN ? static fn () => Format::text($item['s_ip'] ?? null) : null,
             'stats'        => $view === ViewContext::ADMIN ? static fn () => self::stats($item) : null,
         ];

@@ -316,10 +316,10 @@ curl -i -X POST $API/users -H "Content-Type: application/json" \
 ```
 
 ```json
-{ "data": { "id": 31, "active": false } }
+{ "data": { "id": 31, "confirmed": false } }
 ```
 
-`active` is `false` until the link in the activation e-mail is opened. The user cannot sign in
+`confirmed` is `false` until the link in the activation e-mail is opened. The user cannot sign in
 before that. Optional: `username`, `phone_land`, `phone_mobile`. A site that is off answers
 `403 forbidden`.
 

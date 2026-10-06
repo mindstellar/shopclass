@@ -117,40 +117,48 @@ pin('paging by id walks every listing once', [$expired, $spam, $blocked, $pendin
 pin('one listing whatever its status', [200, 'spam'], (static fn (Response $r): array => [$r->status(), $r->body()['data']['status'] ?? null])($call('GET', 'admin/listings/' . $spam, null, $mod)));
 pin('an unknown listing is 404', 404, $call('GET', 'admin/listings/99999', null, $boss)->status());
 
-harness_section('actions');
+harness_section('status through PATCH');
 $fired = [];
-$r     = $call('POST', 'admin/listings/' . $pending . '/activate', null, $boss);
-pin('activate: 200 with the listing now active', [200, 'active', '1'], [$r->status(), $r->body()['data']['status'] ?? null, $row($pending)['b_active']]);
-pin('activate_item fired once', 1, $fired['activate_item'] ?? 0);
+$r     = $call('PATCH', 'admin/listings/' . $pending, ['approved' => true], $boss);
+pin('approved: 200 with the listing now active, read back as approved', [200, 'active', true, '1'], [$r->status(), $r->body()['data']['status'] ?? null, $r->body()['data']['approved'] ?? null, $row($pending)['b_active']]);
+pin('activate_item fired once, and a status-only PATCH is no edit', [1, 0], [$fired['activate_item'] ?? 0, $fired['edited_item'] ?? 0]);
 pin('the activity log names the key\'s admin', [['s_who' => 'admin', 'fk_i_who_id' => (string) $bossId]], $logs('activate', $pending));
 $fired = [];
-$call('POST', 'admin/listings/' . $pending . '/activate', null, $boss);
+$call('PATCH', 'admin/listings/' . $pending, ['approved' => true], $boss);
 pin('asking again changes nothing: no hook, no log', [0, 1], [$fired['activate_item'] ?? 0, count($logs('activate', $pending))]);
-pin('activating a blocked listing is 409', '409 conflict', api_admin_code($call('POST', 'admin/listings/' . $blocked . '/activate', null, $boss)));
+pin('approving a blocked listing is 409', '409 conflict', api_admin_code($call('PATCH', 'admin/listings/' . $blocked, ['approved' => true], $boss)));
 $fired = [];
 foreach ([
-    ['deactivate', 'deactivate_item', 'b_active', '0'],
-    ['enable', 'enable_item', 'b_enabled', '1'],
-    ['disable', 'disable_item', 'b_enabled', '0'],
-    ['spam', 'item_spam_on', 'b_spam', '1'],
-    ['unspam', 'item_spam_off', 'b_spam', '0'],
-    ['premium', 'item_premium_on', 'b_premium', '1'],
-    ['unpremium', 'item_premium_off', 'b_premium', '0'],
-] as [$action, $hook, $column, $value]) {
+    ['deactivate', ['approved' => false], 'deactivate_item', 'b_active', '0'],
+    ['enable', ['blocked' => false], 'enable_item', 'b_enabled', '1'],
+    ['disable', ['blocked' => true], 'disable_item', 'b_enabled', '0'],
+    ['spam', ['spam' => true], 'item_spam_on', 'b_spam', '1'],
+    ['unspam', ['spam' => false], 'item_spam_off', 'b_spam', '0'],
+    ['premium', ['premium' => true], 'item_premium_on', 'b_premium', '1'],
+    ['unpremium', ['premium' => false], 'item_premium_off', 'b_premium', '0'],
+] as [$action, $body, $hook, $column, $value]) {
     $target = $action === 'enable' ? $blocked : $live;
     $before = $fired[$hook] ?? 0;
-    $r      = $call('POST', 'admin/listings/' . $target . '/' . $action, null, $mod);
-    pin($action . ': 200, ' . $hook . ' once, logged', [200, $value, 1, 1], [$r->status(), $row($target)[$column], ($fired[$hook] ?? 0) - $before, count($logs($action, $target))]);
+    $r      = $call('PATCH', 'admin/listings/' . $target, $body, $mod);
+    $member = (string) array_key_first($body);
+    pin($member . ': ' . json_encode($body[$member]) . ': 200, read back, ' . $hook . ' once, logged', [200, $body[$member], $value, 1, 1], [
+        $r->status(), $r->body()['data'][$member] ?? null, $row($target)[$column], ($fired[$hook] ?? 0) - $before, count($logs($action, $target)),
+    ]);
 }
 pin('a moderator\'s change is logged under the moderator', (string) $modId, $logs('spam', $live)[0]['fk_i_who_id'] ?? null);
+$call('PATCH', 'admin/listings/' . $blocked, ['blocked' => true, 'approved' => false], $boss);
+$r = $call('PATCH', 'admin/listings/' . $blocked, ['blocked' => false, 'approved' => true], $boss);
+pin('unblocking and approving in one call works', [200, 'active', false, true], [$r->status(), $r->body()['data']['status'] ?? null, $r->body()['data']['blocked'] ?? null, $r->body()['data']['approved'] ?? null]);
+$call('PATCH', 'admin/listings/' . $blocked, ['blocked' => true], $boss);
+pin('a user key cannot change the status', '403 forbidden', api_admin_code($call('PATCH', 'admin/listings/' . $live, ['blocked' => true], $userKey)));
+pin('an unknown listing is 404', 404, $call('PATCH', 'admin/listings/99999', ['spam' => true], $boss)->status());
 $first = $row($live)['dt_first_pub_date'];
 $r     = $call('POST', 'admin/listings/' . $live . '/bump', null, $boss, ['Idempotency-Key' => 'bump-1']);
 $again = $call('POST', 'admin/listings/' . $live . '/bump', null, $boss, ['Idempotency-Key' => 'bump-1']);
 check('bump moves the publish date to now', strtotime((string) $row($live)['dt_pub_date']) > time() - 60);
 pin('and keeps the first publish date', $first, $row($live)['dt_first_pub_date']);
 pin('item_bumped fired once; the same Idempotency-Key is replayed', [1, 'true', 1], [$fired['item_bumped'] ?? 0, $again->header('Idempotency-Replayed'), count($logs('bump', $live))]);
-pin('a user key cannot act', '403 forbidden', api_admin_code($call('POST', 'admin/listings/' . $live . '/disable', null, $userKey)));
-pin('an unknown listing is 404', 404, $call('POST', 'admin/listings/99999/spam', null, $boss)->status());
+pin('an unknown listing cannot be bumped', 404, $call('POST', 'admin/listings/99999/bump', null, $boss)->status());
 
 harness_section('the admin\'s edit');
 $fired = [];

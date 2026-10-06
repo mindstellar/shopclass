@@ -384,9 +384,12 @@ $apiDrop = $record(static fn () => $call('DELETE', 'admin/comments/' . $b, null,
 pin('a delete fires delete_comment on both sides', [['delete_comment'], ['delete_comment']], [$webDrop, $apiDrop]);
 
 harness_section('the admin moderates listings');
-foreach (['disable', 'enable', 'spam', 'unspam', 'premium', 'unpremium', 'deactivate', 'activate'] as $action) {
+foreach ([
+    'disable'    => ['blocked' => true], 'enable' => ['blocked' => false], 'spam' => ['spam' => true], 'unspam' => ['spam' => false],
+    'premium'    => ['premium' => true], 'unpremium' => ['premium' => false], 'deactivate' => ['approved' => false], 'activate' => ['approved' => true],
+] as $action => $patch) {
     $webAct = $record(static fn () => $web['listing']($bossId, $action, $sueCar));
-    $apiAct = $record(static fn () => $call('POST', 'admin/listings/' . $tomCar . '/' . $action, null, $boss));
+    $apiAct = $record(static fn () => $call('PATCH', 'admin/listings/' . $tomCar, $patch, $boss));
     pin("$action: the screen and the API fire the same", $webAct, $apiAct);
 }
 pin('both log each change under the admin', [8, 8], [
@@ -455,7 +458,7 @@ $apiPending = $record(static fn () => $apiRegister($body('Lee', 'lee@example.tes
 pin('with activation on, the sign-up form fires these, in order', ['before_user_register', 'user_add_flash_error', 'pre_user_post', 'hook_email_admin_new_user', 'hook_email_user_validation', 'user_register_completed'], $webPending);
 pin('the API fires the same, in the same order', $webPending, $apiPending);
 pin('both wait for the link', [['Kim', '0', '1'], ['Lee', '0', '1']], [array_values($joined('kim@example.test')), array_values($joined('lee@example.test'))]);
-pin('the old add() answers 1, the API says not active', [1, false], [$webRegister($form('Max', 'max@example.test')), $apiRegister($body('Ned', 'ned@example.test'))->body()['data']['active'] ?? null]);
+pin('the old add() answers 1, the API says not confirmed', [1, false], [$webRegister($form('Max', 'max@example.test')), $apiRegister($body('Ned', 'ned@example.test'))->body()['data']['confirmed'] ?? null]);
 Preference::getInstance()->set('enabled_user_validation', '0');
 osc_reset_preferences();
 

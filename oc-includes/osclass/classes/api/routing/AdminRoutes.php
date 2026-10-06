@@ -67,7 +67,7 @@ final class AdminRoutes
         $tag    = 'Admin listings';
         $scope  = 'admin:listings';
         $status = Schema::listOf(ListingStatus::ALL);
-        $routes = [
+        return [
             'GET admin/listings' => self::read(AdminListingsController::class, 'index', $tag, $scope, 'Every listing, whatever its status, newest first', 'ListingPage', [
                 'status'   => $status,
                 'user'     => ['type' => 'integer', 'minimum' => 1],
@@ -76,14 +76,10 @@ final class AdminRoutes
                 'include'  => ['type' => 'string', 'maxLength' => 100],
             ] + self::PAGING + self::COUNT + self::VIEW, [400, 422]),
             'GET admin/listings/{id}' => self::read(AdminListingsController::class, 'show', $tag, $scope, 'One listing in the admin view', 'ListingDocument', self::VIEW + ['include' => ['type' => 'string', 'maxLength' => 100]], [404]),
-            'PATCH admin/listings/{id}' => self::write(AdminListingsController::class, 'update', $tag, $scope, 'Edit any listing, its owner and expiry included; members not sent keep their values', 'AdminListingPatch', 'ListingDocument', 200, [404]),
+            'PATCH admin/listings/{id}' => self::write(AdminListingsController::class, 'update', $tag, $scope, 'Edit any listing, its owner, expiry and status included; members not sent keep their values', 'AdminListingPatch', 'ListingDocument', 200, [404, 409]),
             'DELETE admin/listings/{id}' => self::write(AdminListingsController::class, 'delete', $tag, $scope, 'Delete a listing', null, null, 204, [404]),
+            'POST admin/listings/{id}/bump' => self::write(AdminListingsController::class, 'bump', $tag, $scope, ListingModeration::ACTIONS['bump'], null, 'ListingDocument', 200, [404]),
         ];
-        foreach (ListingModeration::ACTIONS as $action => $summary) {
-            $routes['POST admin/listings/{id}/' . $action] = self::write(AdminListingsController::class, 'act', $tag, $scope, $summary, null, 'ListingDocument', 200, [404, 409]);
-        }
-
-        return $routes;
     }
 
     /**
@@ -119,8 +115,8 @@ final class AdminRoutes
         return [
             'GET admin/users' => self::read($c, 'index', $tag, $scope, 'Every user, newest first', 'UserPage', [
                 'q'       => ['type' => 'string', 'maxLength' => 100, 'description' => 'E-mail, username or name starting with this.'],
-                'active'  => ['type' => 'boolean'],
-                'enabled' => ['type' => 'boolean'],
+                'confirmed' => ['type' => 'boolean'],
+                'blocked'   => ['type' => 'boolean'],
             ] + self::PAGING + self::COUNT + self::VIEW, [400, 422]),
             'GET admin/users/{id}'                        => self::read($c, 'show', $tag, $scope, 'One user, every member', 'UserDocument', self::VIEW, [404]),
             'PATCH admin/users/{id}'                      => self::write($c, 'update', $tag, $scope, 'Edit a user\'s profile, e-mail, username or password, or confirm or block them', 'AdminUserPatch', 'UserDocument', 200, [404]),

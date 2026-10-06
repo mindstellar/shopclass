@@ -302,6 +302,9 @@ final class Schema
             'updated_at'   => self::time(),
             'expires_at'   => self::time('Null when the listing never expires.'),
             'show_email'   => ['type' => 'boolean', 'description' => 'Owner and admin view.'],
+            'approved'     => ['type' => 'boolean', 'description' => 'Admin view: false while it waits for moderation.'],
+            'blocked'      => ['type' => 'boolean', 'description' => 'Admin view.'],
+            'spam'         => ['type' => 'boolean', 'description' => 'Admin view.'],
             'ip'           => self::nullable('string', 'Admin view.'),
             'stats'        => [
                 'type'                 => 'object',
@@ -341,8 +344,8 @@ final class Schema
             'zip'            => $private('string'),
             'lat'            => $private('number'),
             'lng'            => $private('number'),
-            'active'         => $private('boolean'),
-            'enabled'        => $private('boolean'),
+            'confirmed'      => $private('boolean'),
+            'blocked'        => $private('boolean'),
             'last_access_at' => $private('string'),
             'last_access_ip' => $private('string'),
             'ext'            => $ext->schemaFor('user'),
@@ -483,8 +486,8 @@ final class Schema
             ], ['name', 'email', 'password']),
             'NewAccount' => self::object([
                 'id'     => ['type' => 'integer'],
-                'active' => ['type' => 'boolean', 'description' => 'False until the link in the activation e-mail is opened.'],
-            ], ['id', 'active']),
+                'confirmed' => ['type' => 'boolean', 'description' => 'False until the link in the activation e-mail is opened.'],
+            ], ['id', 'confirmed']),
         ];
     }
 

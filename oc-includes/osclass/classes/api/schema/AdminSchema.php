@@ -78,11 +78,17 @@ final class AdminSchema
                 'contact_name'  => $text(100) + ['description' => 'Used when the listing has no owner.'],
                 'contact_email' => ['type' => 'string', 'format' => 'email', 'maxLength' => 100, 'description' => 'Used when the listing has no owner.'],
                 'expires_at'    => ['type' => ['string', 'null'], 'pattern' => '^[0-9]{4}-[0-9]{2}-[0-9]{2}$', 'description' => 'The last day it shows; null for never.'],
+                'approved'      => ['type' => 'boolean', 'description' => 'true approves a listing that waits for moderation; false sends it back.'],
+                'blocked'       => ['type' => 'boolean', 'description' => 'true blocks it; false unblocks it.'],
+                'spam'          => ['type' => 'boolean', 'description' => 'true marks it as spam; false clears the mark.'],
+                'premium'       => ['type' => 'boolean', 'description' => 'true makes it premium, with no end date; false ends it.'],
             ]),
             'AdminComment'          => Schema::object([
                 'id'           => ['type' => 'integer'],
                 'listing_id'   => ['type' => 'integer'],
                 'status'       => ['type' => 'string', 'enum' => CommentStatus::ALL],
+                'approved'     => ['type' => 'boolean', 'description' => 'false while it waits for moderation.'],
+                'blocked'      => ['type' => 'boolean'],
                 'title'        => Schema::nullable('string'),
                 'body'         => ['type' => 'string'],
                 'author'       => Schema::object([
@@ -91,7 +97,7 @@ final class AdminSchema
                     'user_id' => Schema::nullable('integer'),
                 ], ['name', 'email', 'user_id']),
                 'published_at' => Schema::time(),
-            ], ['id', 'listing_id', 'status', 'title', 'body', 'author', 'published_at']),
+            ], ['id', 'listing_id', 'status', 'approved', 'blocked', 'title', 'body', 'author', 'published_at']),
             'AdminCommentPatch'     => $input([
                 'title'        => $text(200),
                 'body'         => $text(5000, 1),
@@ -106,8 +112,8 @@ final class AdminSchema
                 'email'     => ['type' => 'string', 'format' => 'email', 'maxLength' => 100],
                 'username'  => $text(100, 1),
                 'password'  => $text(4096, 1) + ['description' => 'A new password; every sign-in and key of the user ends.'],
-                'confirmed' => ['type' => 'boolean', 'description' => 'Whether the account is confirmed; `active` in the answer.'],
-                'blocked'   => ['type' => 'boolean', 'description' => 'true blocks the user, and their sign-ins and keys stop working; `enabled` in the answer is its opposite.'],
+                'confirmed' => ['type' => 'boolean', 'description' => 'Whether the account is confirmed.'],
+                'blocked'   => ['type' => 'boolean', 'description' => 'true blocks the user, and their sign-ins and keys stop working.'],
             ] + array_diff_key(Schema::profileMembers(), ['email' => true])),
             'UserPage'              => $page('User'),
             'AdminCategory'         => Schema::object([

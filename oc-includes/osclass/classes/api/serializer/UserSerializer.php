@@ -23,7 +23,7 @@ final class UserSerializer
     ];
 
     public const PRIVATE_MEMBERS = [
-        'email', 'phone_land', 'phone_mobile', 'address', 'zip', 'lat', 'lng', 'active', 'enabled', 'last_access_at',
+        'email', 'phone_land', 'phone_mobile', 'address', 'zip', 'lat', 'lng', 'confirmed', 'blocked', 'last_access_at',
         'last_access_ip',
     ];
 
@@ -67,8 +67,8 @@ final class UserSerializer
                 'zip'            => Format::text($user['s_zip'] ?? null),
                 'lat'            => Format::float($user['d_coord_lat'] ?? null),
                 'lng'            => Format::float($user['d_coord_long'] ?? null),
-                'active'         => Format::bool($user['b_active'] ?? 0),
-                'enabled'        => Format::bool($user['b_enabled'] ?? 0),
+                'confirmed'      => Format::bool($user['b_active'] ?? 0),
+                'blocked'        => !Format::bool($user['b_enabled'] ?? 0),
                 'last_access_at' => Format::time($user['dt_access_date'] ?? null),
                 'last_access_ip' => Format::text($user['s_access_ip'] ?? null),
             ];

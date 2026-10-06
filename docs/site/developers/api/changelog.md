@@ -70,7 +70,7 @@ Added to v1.
 
 | Endpoint | Does |
 |---|---|
-| `/admin/listings`, with `activate`, `deactivate`, `enable`, `disable`, `spam`, `unspam`, `premium`, `unpremium`, `bump` | Moderate and edit any listing |
+| `/admin/listings`, with `bump` | Moderate and edit any listing |
 | `/admin/comments`, with `approved` and `blocked` on `PATCH` | Moderate comments |
 | `/admin/users`, with `confirmed` and `blocked` on `PATCH`, and `/admin/users/{id}/sessions` | Manage users and end their sign-ins |
 | `GET /account/listings` | The user's own listings in any status |
@@ -111,6 +111,10 @@ Also settled before the first release, so no released client saw the old behavio
 - A key made through `POST /admin/keys` cannot outlive the key that makes it.
 - `POST /auth/revoke` is now `POST /auth/sign-out`.
 - A list that stops at the offset paging limit says so with `meta.truncated: true`.
+- A rotated key cannot outlive the key that rotates it.
+- A listing's contact e-mail and phone are hidden as its page hides them.
+- Listing status changes go through `PATCH /admin/listings/{id}` (`approved`, `blocked`, `spam`, `premium`). Only `bump` stays an action.
+- Admin comments read back `approved` and `blocked`. Users read and filter on `confirmed` and `blocked` instead of `active` and `enabled`. Sign-up answers `confirmed`.
 
 See [Admin endpoints](/docs/developers/api/admin/) and [Webhooks](/docs/developers/api/webhooks/).
 

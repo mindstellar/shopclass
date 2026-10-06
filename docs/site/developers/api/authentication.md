@@ -406,7 +406,7 @@ What each view adds:
 |---|---|---|
 | Listing | `contact.email` only when the seller chose to show it. `contact.phone` unless the site hides it. Neither on an expired listing, nor for a caller who is not a signed-in user when only users may contact sellers. | `contact.email` and `contact.phone` always, plus `show_email`. |
 | Listing, admin only | | `ip`, `stats` (report counters). Listings that are not live can be read. |
-| User | `id`, `name`, `username`, `url`, `avatar`, `is_company`, `website`, `location`, `listings_count`, `registered_at`. Only active users. | `email`, `phone_land`, `phone_mobile`, `address`, `zip`, `lat`, `lng`, `active`, `enabled`, `last_access_at`, `last_access_ip`. |
+| User | `id`, `name`, `username`, `url`, `avatar`, `is_company`, `website`, `location`, `listings_count`, `registered_at`. Only active users. | `email`, `phone_land`, `phone_mobile`, `address`, `zip`, `lat`, `lng`, `confirmed`, `blocked`, `last_access_at`, `last_access_ip`. |
 
 The listing's edit secret is never sent in any view. A user's access token or personal key
 gets the `owner` view of their own listings and their own account.

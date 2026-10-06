@@ -74,7 +74,7 @@ final class RegistrationController
         $form    = \Params::withRequest($params, static fn (): array => AccountInput::signUp());
         $account = (new AccountService())->register($form, Actor::guest($request->ip()));
 
-        // Until the activation link is opened the account is not active, and its profile is not shown.
-        return Response::created(['id' => $account['id'], 'active' => $account['active']], $this->links->api('users/' . $account['id']));
+        // Until the activation link is opened the account is not confirmed, and its profile is not shown.
+        return Response::created(['id' => $account['id'], 'confirmed' => $account['active']], $this->links->api('users/' . $account['id']));
     }
 }

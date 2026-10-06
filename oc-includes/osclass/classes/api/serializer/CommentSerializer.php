@@ -54,6 +54,8 @@ final class CommentSerializer
             'id'           => $out['id'],
             'listing_id'   => $out['listing_id'],
             'status'       => CommentStatus::of($row),
+            'approved'     => Format::bool($row['b_active'] ?? 0),
+            'blocked'      => !Format::bool($row['b_enabled'] ?? 0),
             'title'        => $out['title'],
             'body'         => $out['body'],
             'author'       => [

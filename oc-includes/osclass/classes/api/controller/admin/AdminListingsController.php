@@ -26,11 +26,14 @@ use mindstellar\moderation\ListingModeration;
 use mindstellar\user\UserQuery;
 
 /**
- * `/admin/listings`: every listing whatever its status, the admin's edit, the screen's
- * actions (one route each, all answered by act()) and delete.
+ * `/admin/listings`: every listing whatever its status, the admin's edit (status included),
+ * bump and delete.
  */
 final class AdminListingsController
 {
+    /** The PATCH members that change the status, as the screen's actions do. */
+    private const STATUS_MEMBERS = ['approved' => true, 'blocked' => true, 'spam' => true, 'premium' => true];
+
     private ListingReader $reader;
     private ListingWriter $writer;
     private ListingModeration $moderation;
@@ -66,7 +69,8 @@ final class AdminListingsController
 
     /**
      * PATCH /admin/listings/{id}. Members not sent keep their stored values, the owner and
-     * the expiry date included.
+     * the expiry date included. `approved`, `blocked`, `spam` and `premium` change the
+     * status as the screen's actions do.
      *
      * @param array<string,string> $args
      */
@@ -74,11 +78,18 @@ final class AdminListingsController
     {
         $listing = OwnedListing::load((int) $args['id'], true);
         $input   = $request->input();
-        $owner   = (int) ($input['owner_id'] ?? 0);
+        $status  = array_intersect_key($input, self::STATUS_MEMBERS);
+        $edit    = array_diff_key($input, self::STATUS_MEMBERS);
+        $owner   = (int) ($edit['owner_id'] ?? 0);
         if ($owner > 0 && !(new UserQuery())->exists($owner)) {
             throw ProblemException::field('/owner_id', 'unknown', 'is not a user');
         }
-        $this->writer->adminUpdate($listing, $this->writer->editForm($listing, $input, $request, $credential) + self::adminMembers($listing, $input), $credential->actor($request->ip(), 'admin:listings'));
+        if ($status === [] || $edit !== []) {
+            $this->writer->adminUpdate($listing, $this->writer->editForm($listing, $edit, $request, $credential) + self::adminMembers($listing, $edit), $credential->actor($request->ip(), 'admin:listings'));
+        }
+        foreach (self::actions($status) as $action) {
+            $this->moderate($action, $listing->id(), $credential);
+        }
 
         return Response::ok($this->view($request, $credential, $listing->id()));
     }
@@ -96,16 +107,44 @@ final class AdminListingsController
     }
 
     /**
-     * POST /admin/listings/{id}/<action>, one of ListingModeration::ACTIONS, read from the
-     * path's last segment.
+     * POST /admin/listings/{id}/bump
      *
      * @param array<string,string> $args
      */
-    public function act(Request $request, Credential $credential, array $args): Response
+    public function bump(Request $request, Credential $credential, array $args): Response
     {
-        $this->moderation->apply(basename((string) $request->path()), (int) $args['id'], (int) $credential->adminId(), 'API key #' . (int) $credential->id());
+        $this->moderate('bump', (int) $args['id'], $credential);
 
         return $this->show($request, $credential, $args);
+    }
+
+    /**
+     * The ListingModeration actions a PATCH's status members ask for. An unblock runs first and
+     * a block last, so approving a blocked listing in the same call works.
+     *
+     * @param array<string,bool> $status
+     *
+     * @return string[]
+     */
+    private static function actions(array $status): array
+    {
+        $pairs   = ['approved' => ['activate', 'deactivate'], 'spam' => ['spam', 'unspam'], 'premium' => ['premium', 'unpremium']];
+        $actions = ($status['blocked'] ?? null) === false ? ['enable'] : [];
+        foreach ($pairs as $member => [$on, $off]) {
+            if (isset($status[$member])) {
+                $actions[] = $status[$member] ? $on : $off;
+            }
+        }
+        if (($status['blocked'] ?? null) === true) {
+            $actions[] = 'disable';
+        }
+
+        return $actions;
+    }
+
+    private function moderate(string $action, int $id, Credential $credential): void
+    {
+        $this->moderation->apply($action, $id, (int) $credential->adminId(), 'API key #' . (int) $credential->id());
     }
 
     /**

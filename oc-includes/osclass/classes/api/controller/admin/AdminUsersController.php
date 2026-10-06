@@ -64,7 +64,8 @@ final class AdminUsersController
         $context = $this->api->context($request, $credential, 'user', UserSerializer::MEMBERS);
         $pager   = Pager::fromRequest($request, $this->api->cursor(), ListSpec::byId('desc', self::DEFAULT_LIMIT, self::MAX_LIMIT), ['list' => 'admin/users'] + $request->query());
         $flag    = static fn (string $name): ?bool => array_key_exists($name, $request->query()) ? $request->queryBool($name) : null;
-        [$active, $enabled, $q] = [$flag('active'), $flag('enabled'), trim($request->queryString('q'))];
+        $blocked = $flag('blocked');
+        [$active, $enabled, $q] = [$flag('confirmed'), $blocked === null ? null : !$blocked, trim($request->queryString('q'))];
         $total   = $pager->counts() ? $this->query->count($active, $enabled, $q) : null;
         $after   = $pager->after();
         $rows    = $this->query->newest($active, $enabled, $q, $after === null ? null : (int) $after[0], $pager->limit() + 1);

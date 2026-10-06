@@ -102,9 +102,9 @@ pin('a user key: 403 forbidden', '403 forbidden', api_admin_code($call('GET', 'a
 harness_section('users: the list');
 $r = $call('GET', 'admin/users', null, $boss, [], ['count' => 'true']);
 pin('newest first, with the total', [[$ann, $tom, $sue], 3], [$ids($r), $r->body()['meta']['total'] ?? null]);
-pin('the full shape: e-mail and account state', ['ann@example.test', false], [$r->body()['data'][0]['email'] ?? null, $r->body()['data'][0]['active'] ?? null]);
+pin('the full shape: e-mail and account state', ['ann@example.test', false], [$r->body()['data'][0]['email'] ?? null, $r->body()['data'][0]['confirmed'] ?? null]);
 pin('matches the schema', [], api_admin_schema_errors('UserPage', $r));
-pin('active=false', [$ann], $ids($call('GET', 'admin/users', null, $boss, [], ['active' => 'false'])));
+pin('confirmed=false', [$ann], $ids($call('GET', 'admin/users', null, $boss, [], ['confirmed' => 'false'])));
 pin('q= matches the start of an e-mail, username or name', [$tom], $ids($call('GET', 'admin/users', null, $boss, [], ['q' => 'tom@'])));
 pin('limit=1 pages by id', [[$ann], true], (static fn (Response $r): array => [$ids($r), is_string($r->body()['links']['next'] ?? null)])($call('GET', 'admin/users', null, $boss, [], ['limit' => '1'])));
 pin('one user', [200, 'tom@example.test'], (static fn (Response $r): array => [$r->status(), $r->body()['data']['email'] ?? null])($call('GET', 'admin/users/' . $tom, null, $boss)));
@@ -161,8 +161,8 @@ $call('PATCH', 'admin/comments/' . $pendingComment, ['approved' => true], $mod);
 pin('sending the state it has changes nothing', [1, 1], [$fired['activate_comment'] ?? 0, $fired['hook_email_comment_validated'] ?? 0]);
 $fired = [];
 $r     = $call('PATCH', 'admin/comments/' . $pendingComment, ['blocked' => true, 'body' => 'Price now?'], $mod);
-pin('blocked=true with a new body: disabled, and the text edited too', ['disabled', 'Price now?', 1, 1], [
-    $r->body()['data']['status'] ?? null, $r->body()['data']['body'] ?? null, $fired['disable_comment'] ?? 0, $fired['edit_comment'] ?? 0,
+pin('blocked=true with a new body: disabled, read back, and the text edited too', ['disabled', true, true, 'Price now?', 1, 1], [
+    $r->body()['data']['status'] ?? null, $r->body()['data']['blocked'] ?? null, $r->body()['data']['approved'] ?? null, $r->body()['data']['body'] ?? null, $fired['disable_comment'] ?? 0, $fired['edit_comment'] ?? 0,
 ]);
 $held  = $comment($sueCar, $tom, 'Swap?', 0, 0);
 $fired = [];
@@ -198,7 +198,7 @@ harness_section('users: the actions');
 pin('the key works while the user is enabled', 200, $call('GET', 'account', null, $tomKey)->status());
 $fired = [];
 $r     = $call('PATCH', 'admin/users/' . $tom, ['blocked' => true], $boss);
-pin('disable: 200, blocked, disable_user once, logged', [200, false, 1, (string) $bossId], [$r->status(), $r->body()['data']['enabled'] ?? null, $fired['disable_user'] ?? 0, $log('disable', $tom)]);
+pin('disable: 200, blocked, disable_user once, logged', [200, true, 1, (string) $bossId], [$r->status(), $r->body()['data']['blocked'] ?? null, $fired['disable_user'] ?? 0, $log('disable', $tom)]);
 pin('and the user\'s listings are blocked with it', [1, '0'], [$fired['disable_item'] ?? 0, $admin->query("SELECT b_enabled FROM {$p}t_item WHERE pk_i_id = $tomCar")->fetch_row()[0]]);
 pin('a blocked user\'s key stops working', 401, $call('GET', 'account', null, $tomKey)->status());
 pin('enable: enable_user once', [200, 1], [$call('PATCH', 'admin/users/' . $tom, ['blocked' => false], $boss)->status(), $fired['enable_user'] ?? 0]);
@@ -209,17 +209,17 @@ pin('an unknown user is 404', 404, $call('PATCH', 'admin/users/99999', ['blocked
 harness_section('users: status through PATCH');
 $fired = [];
 $r     = $call('PATCH', 'admin/users/' . $ann, ['confirmed' => true], $boss);
-pin('confirmed=true: active, activate_user once, logged, the profile not rewritten', [200, true, 1, (string) $bossId, 0], [
-    $r->status(), $r->body()['data']['active'] ?? null, $fired['activate_user'] ?? 0, $log('activate', $ann), $fired['user_edit_completed'] ?? 0,
+pin('confirmed=true: read back, activate_user once, logged, the profile not rewritten', [200, true, 1, (string) $bossId, 0], [
+    $r->status(), $r->body()['data']['confirmed'] ?? null, $fired['activate_user'] ?? 0, $log('activate', $ann), $fired['user_edit_completed'] ?? 0,
 ]);
 $call('PATCH', 'admin/users/' . $ann, ['confirmed' => true], $boss);
 pin('sending the state it has changes nothing', 1, $fired['activate_user'] ?? 0);
 $r = $call('PATCH', 'admin/users/' . $ann, ['blocked' => true], $boss);
-pin('blocked=true: disable_user once, enabled false', [false, 1], [$r->body()['data']['enabled'] ?? null, $fired['disable_user'] ?? 0]);
+pin('blocked=true: disable_user once, read back', [true, 1], [$r->body()['data']['blocked'] ?? null, $fired['disable_user'] ?? 0]);
 $fired = [];
 $r     = $call('PATCH', 'admin/users/' . $ann, ['blocked' => false, 'confirmed' => false, 'name' => 'Ann B'], $boss);
-pin('with a profile member: both applied', [200, 'Ann B', true, false, 1, 1, 1], [
-    $r->status(), $r->body()['data']['name'] ?? null, $r->body()['data']['enabled'] ?? null, $r->body()['data']['active'] ?? null,
+pin('with a profile member: both applied', [200, 'Ann B', false, false, 1, 1, 1], [
+    $r->status(), $r->body()['data']['name'] ?? null, $r->body()['data']['blocked'] ?? null, $r->body()['data']['confirmed'] ?? null,
     $fired['enable_user'] ?? 0, $fired['deactivate_user'] ?? 0, $fired['user_edit_completed'] ?? 0,
 ]);
 pin('a member that is not a boolean is 422', 422, $call('PATCH', 'admin/users/' . $ann, ['blocked' => 1], $boss)->status());
