@@ -609,6 +609,35 @@ jobs:
         run: php tests/cache-cookie-contract.php
       - name: DAO contract
         run: php tests/dao-contract.php
+      - name: API session
+        run: php tests/api-session.php
+      - name: CSRF cross-site
+        run: php tests/csrf-cross-site.php
+      - name: Delete does not follow symlinks
+        run: php tests/delete-follows-no-symlink.php
+      - name: Download redirect
+        run: php tests/filesystem-download-redirect.php
+      - name: Form name escaping
+        run: php tests/form-name-escape.php
+      - name: Item activation moderation
+        run: php tests/item-activate-moderation.php
+      - name: Item comment delete
+        run: php tests/item-comment-delete.php
+      - name: Item form photos XSS
+        run: php tests/item-form-photos-xss.php
+      - name: Mail host links
+        run: php tests/mail-host-links.php
+      - name: Market backup protection
+        run: php tests/market-backup-protect.php
+      - name: Referer same-site
+        run: php tests/referer-same-site.php
+      - name: Child themes
+        run: php tests/theme-child.php
+      - name: Theme collisions
+        run: php tests/theme-collisions.php
+      # Fails when a tests/*.php file is run by no workflow, so a new test cannot be skipped.
+      - name: Every test is wired into CI
+        run: php tests/run-unit.php --check
       - name: Model contracts
         run: php tests/run-models.php
       # The bundled test gateway hands out credits for nothing. A signature, age or
