@@ -41,7 +41,7 @@ require_once LIB_PATH . 'osclass/helpers/hSecurity.php';
 require_once LIB_PATH . 'osclass/helpers/hDatabase.php';
 
 Params::init();
-Session::newInstance()->session_start();
+Session::getInstance()->session_start();
 
 if (is_osclass_installed() || install_database_unreachable()) {
     die();
@@ -51,7 +51,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 // State-changing request: require the installer nonce (osc_csrf_check() cannot
 // work yet — no preferences exist).
-if (!install_nonce_check() || !Session::newInstance()->_get('install_db_done')) {
+if (!install_nonce_check() || !Session::getInstance()->_get('install_db_done')) {
     echo json_encode(array(
         'status' => false,
         'error'  => __('Your session expired. Reload the page and start again.'),

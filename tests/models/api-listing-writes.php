@@ -238,7 +238,7 @@ foreach (array(
     'dimPreview'        => '480x340',
     'dimThumbnail'      => '240x200',
 ) as $k => $v) {
-    Preference::newInstance()->set($k, $v);
+    Preference::getInstance()->set($k, $v);
 }
 scratchdb_forget_cache();
 osc_reset_preferences();
@@ -389,14 +389,14 @@ pin('only one listing was made, and posted_item fired once', array(1, 1), array(
 ));
 
 harness_section('moderation, the listing limit, the posting wait and the hourly cap');
-Preference::newInstance()->set('moderate_items', '0');
+Preference::getInstance()->set('moderate_items', '0');
 osc_reset_preferences();
 $fired = array();
 $r     = $call('POST', 'listings', $listing(array('title' => 'Moderated wagon')), $sueToken);
 pin('with moderation on the listing waits: pending, with a warning', array(201, 'pending', 'listing_pending'), array($r->status(), $r->body()['data']['status'] ?? null, $r->body()['warnings'][0]['code'] ?? null));
 pin('and the activation e-mail goes out as from the form', 1, $fired['hook_email_item_validation'] ?? 0);
 $pendingId = (int) $r->body()['data']['id'];
-Preference::newInstance()->set('moderate_items', '-1');
+Preference::getInstance()->set('moderate_items', '-1');
 
 osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');
 osc_set_preference('billing_free_live_listings', '1', 'osclass', 'INTEGER');
@@ -407,11 +407,11 @@ pin('past the listing limit it is 422 listing_limit', '422 listing_limit', $code
 osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
 osc_reset_preferences();
 
-Preference::newInstance()->set('items_wait_time', '600');
+Preference::getInstance()->set('items_wait_time', '600');
 osc_reset_preferences();
 $r = $call('POST', 'listings', $listing(array('title' => 'Too soon')), $sueToken);
 pin('the posting wait applies', array(422, 'Too fast. You should wait a little to publish your ad.'), array($r->status(), $first($r)));
-Preference::newInstance()->set('items_wait_time', '0');
+Preference::getInstance()->set('items_wait_time', '0');
 osc_reset_preferences();
 
 $GLOBALS['lw_limiter'] = api_test_limiter(static fn (string $bucket) => $bucket === 'api_listing_post' ? ApiSettings::LISTINGS_PER_HOUR + 1 : 1);
@@ -596,8 +596,8 @@ $uploads = static function () use ($lwRoot): int {
 
     return $n;
 };
-Preference::newInstance()->set('moderate_items', '0');
-Preference::newInstance()->set('mailserver_mail_from', 'site@example.test');
+Preference::getInstance()->set('moderate_items', '0');
+Preference::getInstance()->set('mailserver_mail_from', 'site@example.test');
 osc_reset_preferences();
 $token  = (string) $call('POST', 'photos', null, $sueToken, array(), $photoFile($jpeg))->body()['data']['token'];
 $before = $uploads();
@@ -613,7 +613,7 @@ pin('the photo\'s copies in the uploads folder are removed', $before, $uploads()
 $r = $call('POST', 'listings', $listing(array('title' => 'Saved with a photo', 'photo_tokens' => array($token))), $sueToken);
 pin('the staged photo is still there, so its token works again', array(201, 1), array($r->status(), count($r->body()['data']['photos'] ?? array())));
 pin('and the e-mail goes out once the save is committed', array('Activate your listing'), HeldMailer::$sent);
-Preference::newInstance()->set('moderate_items', '-1');
+Preference::getInstance()->set('moderate_items', '-1');
 osc_reset_preferences();
 
 harness_section('bodies');
@@ -683,7 +683,7 @@ pin('matches the schema', array(), $schemaErrors('SavedComment', $r));
 $one = $call('GET', 'comments/' . $commentId, null, $sueToken);
 pin('Location can be read', array(200, $commentId, 'Is it still for sale?'), array($one->status(), $one->body()['data']['id'] ?? null, $one->body()['data']['body'] ?? null));
 pin('matches the schema', array(), $schemaErrors('CommentDocument', $one));
-Preference::newInstance()->set('moderate_comments', '0');
+Preference::getInstance()->set('moderate_comments', '0');
 osc_reset_preferences();
 $r = $call('POST', 'listings/' . $withPhoto . '/comments', array('body' => 'Second question'), $tomToken);
 $waiting = (int) ($r->body()['data']['id'] ?? 0);
@@ -691,13 +691,13 @@ pin('a comment waiting for approval: its author reads it, others get 404', array
 pin('with moderation on it waits, and says so', array(201, 'comment_pending', '0'), array(
     $r->status(), $r->body()['warnings'][0]['code'] ?? null, $admin->query("SELECT b_active FROM {$p}t_item_comment WHERE pk_i_id = " . (int) $r->body()['data']['id'])->fetch_row()[0],
 ));
-Preference::newInstance()->set('moderate_comments', '-1');
+Preference::getInstance()->set('moderate_comments', '-1');
 pin('an empty body is 422', 422, $call('POST', 'listings/' . $withPhoto . '/comments', array('body' => '<b></b>'), $tomToken)->status());
 pin('a pending listing takes no comments from others', 404, $call('POST', 'listings/' . $pendingId . '/comments', array('body' => 'Hello'), $tomToken)->status());
-Preference::newInstance()->set('enabled_comments', '0');
+Preference::getInstance()->set('enabled_comments', '0');
 osc_reset_preferences();
 pin('with comments off it is 403', '403 forbidden', $code($call('POST', 'listings/' . $withPhoto . '/comments', array('body' => 'Hello'), $tomToken)));
-Preference::newInstance()->set('enabled_comments', '1');
+Preference::getInstance()->set('enabled_comments', '1');
 osc_reset_preferences();
 pin('only the author deletes a comment', '403 forbidden', $code($call('DELETE', 'comments/' . $commentId, null, $sueToken)));
 $fired = array();
@@ -714,7 +714,7 @@ pin('matches the schema', array(), $schemaErrors('AlertDocument', $r));
 pin('Location names it', 'http://localhost/api/v1/account/alerts/' . $alertId, $r->header('Location'));
 pin('and it can be read', array(200, $alertId), (static fn (Response $one): array => array($one->status(), $one->body()['data']['id'] ?? null))($call('GET', 'account/alerts/' . $alertId, null, $sueToken)));
 pin('by its owner only', 404, $call('GET', 'account/alerts/' . $alertId, null, $tomToken)->status());
-pin('it is the account page\'s alert too', array($alertId), array_map('intval', array_column(Alerts::newInstance()->findByUser($sue), 'pk_i_id')));
+pin('it is the account page\'s alert too', array($alertId), array_map('intval', array_column(Alerts::getInstance()->findByUser($sue), 'pk_i_id')));
 $again = $call('POST', 'account/alerts', array('filters' => array('q' => 'hatchback', 'category' => (string) $cars, 'with_photos' => true)), $sueToken);
 pin('the same search again answers the existing alert', array(200, $alertId), array($again->status(), $again->body()['data']['id'] ?? null));
 $list = $call('GET', 'account/alerts', null, $sueToken);

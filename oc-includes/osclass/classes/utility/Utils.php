@@ -122,8 +122,8 @@ class Utils
     public static function changeOsclassVersionTo($version = null)
     {
         if ($version) {
-            Preference::newInstance()->replace('version', $version);
-            return Preference::newInstance()->toArray();
+            Preference::getInstance()->replace('version', $version);
+            return Preference::getInstance()->toArray();
         }
 
         return false;
@@ -210,7 +210,7 @@ class Utils
     public static function updateAllCategoriesStats()
     {
         $categoryTotal = array();
-        $aCategories   = Category::newInstance()->toTreeAll();
+        $aCategories   = Category::getInstance()->toTreeAll();
 
         foreach ($aCategories as &$category) {
             if ($category['fk_i_parent_id'] === null) {
@@ -248,7 +248,7 @@ class Utils
      */
     public static function recursiveCategoryStats(&$aux, &$categoryTotal)
     {
-        $count_items = Item::newInstance()->numItems($aux);
+        $count_items = Item::getInstance()->numItems($aux);
         if (is_array($aux['categories'])) {
             foreach ($aux['categories'] as &$cat) {
                 $count_items += self::recursiveCategoryStats($cat, $categoryTotal);
@@ -273,7 +273,7 @@ class Utils
         if (!is_numeric($id)) {
             throw new \InvalidArgumentException(__('Category id is not a valid integer'));
         }
-        $category = Category::newInstance()->findByPrimaryKey($id);
+        $category = Category::getInstance()->findByPrimaryKey($id);
         if (!$category) {
             return;
         }
@@ -309,8 +309,8 @@ class Utils
         }
         $seen[$id] = true;
 
-        $total = (int)Item::newInstance()->numItems($category);
-        foreach (Category::newInstance()->findSubcategories($id) as $sub) {
+        $total = (int)Item::getInstance()->numItems($category);
+        foreach (Category::getInstance()->findSubcategories($id) as $sub) {
             $total += self::subtreeItemCount($sub, $seen);
         }
 
@@ -356,10 +356,10 @@ class Utils
      */
     public static function translateCategories($locale)
     {
-        $old_locale = Session::newInstance()->_get('adminLocale');
-        Session::newInstance()->_set('adminLocale', $locale);
-        Translation::newInstance()->_load(osc_translations_path() . $locale . '/core.mo', 'cat_' . $locale);
-        $catManager     = Category::newInstance();
+        $old_locale = Session::getInstance()->_get('adminLocale');
+        Session::getInstance()->_set('adminLocale', $locale);
+        Translation::getInstance()->_load(osc_translations_path() . $locale . '/core.mo', 'cat_' . $locale);
+        $catManager     = Category::getInstance();
         $old_categories = $catManager->_findNameIDByLocale($old_locale);
         $tmp_categories = $catManager->_findNameIDByLocale($locale);
         foreach ($tmp_categories as $category) {
@@ -389,7 +389,7 @@ class Utils
                 $catManager->insertDescription($fieldsDescription);
             }
         }
-        Session::newInstance()->_set('adminLocale', $old_locale);
+        Session::getInstance()->_set('adminLocale', $old_locale);
     }
 
     /**
@@ -436,8 +436,8 @@ class Utils
     {
         // Carry any pending flash messages across the redirect in their signed cookie,
         // while headers can still be sent (before the Location header below).
-        Session::newInstance()->_flushFlashMessages();
-        Session::newInstance()->_flushFormData();
+        Session::getInstance()->_flushFlashMessages();
+        Session::getInstance()->_flushFormData();
         if (ob_get_length() > 0) {
             ob_end_flush();
         }
@@ -464,14 +464,14 @@ class Utils
         $field = 'pk_i_id';
         switch ($type) {
             case 'country':
-                $manager = Country::newInstance();
+                $manager = Country::getInstance();
                 $field   = 'pk_c_code';
                 break;
             case 'region':
-                $manager = Region::newInstance();
+                $manager = Region::getInstance();
                 break;
             case 'city':
-                $manager = City::newInstance();
+                $manager = City::getInstance();
                 break;
             default:
                 return false;
@@ -558,8 +558,8 @@ class Utils
     public static function getHttpReferer()
     {
         $candidates = array(
-            (string) Rewrite::newInstance()->get_http_referer(),
-            (string) Session::newInstance()->_getReferer(),
+            (string) Rewrite::getInstance()->get_http_referer(),
+            (string) Session::getInstance()->_getReferer(),
             (string) Params::getServerParam('HTTP_REFERER', false, false),
         );
         foreach ($candidates as $url) {

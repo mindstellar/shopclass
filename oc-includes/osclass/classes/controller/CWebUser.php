@@ -54,26 +54,26 @@ class CWebUser extends WebSecBaseModel
                 $max_items =
                     (Params::getParam('max_items') != '') ? Params::getParam('max_items') : 5;
                 $aItems    =
-                    Item::newInstance()->findByUserIDEnabled(osc_logged_user_id(), 0, $max_items);
+                    Item::getInstance()->findByUserIDEnabled(osc_logged_user_id(), 0, $max_items);
                 //calling the view...
                 $this->_exportVariableToView('items', $aItems);
                 $this->_exportVariableToView('max_items', $max_items);
                 $this->doView(osc_locate_template(array('user-dashboard.php'), 'user-dashboard'));
                 break;
             case ('profile'):        //profile...
-                $aUser      = User::newInstance()->findByPrimaryKey(osc_logged_user_id());
-                $aCountries = Country::newInstance()->listAll();
+                $aUser      = User::getInstance()->findByPrimaryKey(osc_logged_user_id());
+                $aCountries = Country::getInstance()->listAll();
                 $aRegions   = array();
                 if ($aUser['fk_c_country_code'] != '') {
-                    $aRegions = Region::newInstance()->findByCountry($aUser['fk_c_country_code']);
+                    $aRegions = Region::getInstance()->findByCountry($aUser['fk_c_country_code']);
                 } elseif (count($aCountries) > 0) {
-                    $aRegions = Region::newInstance()->findByCountry($aCountries[0]['pk_c_code']);
+                    $aRegions = Region::getInstance()->findByCountry($aCountries[0]['pk_c_code']);
                 }
                 $aCities = array();
                 if ($aUser['fk_i_region_id'] != '') {
-                    $aCities = City::newInstance()->findByRegion($aUser['fk_i_region_id']);
+                    $aCities = City::getInstance()->findByRegion($aUser['fk_i_region_id']);
                 } elseif (count($aRegions) > 0) {
-                    $aCities = City::newInstance()->findByRegion($aRegions[0]['pk_i_id']);
+                    $aCities = City::getInstance()->findByRegion($aRegions[0]['pk_i_id']);
                 }
 
                 // user profile info description | user-profile.php @ frontend
@@ -93,7 +93,7 @@ class CWebUser extends WebSecBaseModel
                 $this->_exportVariableToView('countries', $aCountries);
                 $this->_exportVariableToView('regions', $aRegions);
                 $this->_exportVariableToView('cities', $aCities);
-                $this->_exportVariableToView('locales', OSCLocale::newInstance()->listAllEnabled());
+                $this->_exportVariableToView('locales', OSCLocale::getInstance()->listAllEnabled());
 
                 $this->doView(osc_locate_template(array('user-profile.php'), 'user-profile'));
                 break;
@@ -119,23 +119,23 @@ class CWebUser extends WebSecBaseModel
                 break;
             case ('alerts'):         //alerts
                 $aAlerts =
-                    Alerts::newInstance()->findByUser(Session::newInstance()->_get('userId'));
+                    Alerts::getInstance()->findByUser(Session::getInstance()->_get('userId'));
                 $user    =
-                    User::newInstance()->findByPrimaryKey(Session::newInstance()->_get('userId'));
+                    User::getInstance()->findByPrimaryKey(Session::getInstance()->_get('userId'));
                 foreach ($aAlerts as $k => $a) {
                     $search = \mindstellar\search\AlertReplay::search($a);
                     if ($search === null) {
                         $aAlerts[$k]['items'] = array();
                         continue;
                     }
-                    $search->notFromUser(Session::newInstance()->_get('userId'));
+                    $search->notFromUser(Session::getInstance()->_get('userId'));
                     $search->limit(0, 3);
 
                     $aAlerts[$k]['items'] = $search->doSearch();
                 }
 
                 $this->_exportVariableToView('alerts', $aAlerts);
-                View::newInstance()->_reset('alerts');
+                View::getInstance()->_reset('alerts');
                 $this->_exportVariableToView('user', $user);
                 $this->doView(osc_locate_template(array('user-alerts.php'), 'user-alerts'));
                 break;
@@ -160,11 +160,11 @@ class CWebUser extends WebSecBaseModel
                 $username = (new \mindstellar\utility\Sanitize())->username(Params::getParam('s_username'));
                 osc_run_hook(
                     'before_username_change',
-                    Session::newInstance()->_get('userId'),
+                    Session::getInstance()->_get('userId'),
                     $username
                 );
                 if ($username != '') {
-                    $user    = User::newInstance()->findByUsername($username);
+                    $user    = User::getInstance()->findByUsername($username);
                     $numeric = Usernames::numericError($username);
                     $claim   = '';
                     if ($numeric !== '') {
@@ -174,7 +174,7 @@ class CWebUser extends WebSecBaseModel
                     } elseif (osc_is_username_blacklisted($username)) {
                         osc_add_flash_error_message(_m('The specified username is not valid, it contains some invalid words'));
                     } else {
-                        $claim = Usernames::claim((int) Session::newInstance()->_get('userId'), $username);
+                        $claim = Usernames::claim((int) Session::getInstance()->_get('userId'), $username);
                         if ($claim === 'taken') {
                             osc_add_flash_error_message(_m('The specified username is already in use'));
                         } elseif ($claim !== 'ok') {
@@ -185,7 +185,7 @@ class CWebUser extends WebSecBaseModel
                         osc_add_flash_ok_message(_m('The username was updated'));
                         osc_run_hook(
                             'after_username_change',
-                            Session::newInstance()->_get('userId'),
+                            Session::getInstance()->_get('userId'),
                             Params::getParam('s_username')
                         );
                         $this->redirectTo(osc_user_profile_url());
@@ -201,7 +201,7 @@ class CWebUser extends WebSecBaseModel
             case 'change_password_post':    //change password post
                 osc_csrf_check();
                 $user =
-                    User::newInstance()->findByPrimaryKey(Session::newInstance()->_get('userId'));
+                    User::getInstance()->findByPrimaryKey(Session::getInstance()->_get('userId'));
 
                 $password     = Params::getParamString('password', false, false);
                 $newPassword  = Params::getParamString('new_password', false, false);
@@ -227,7 +227,7 @@ class CWebUser extends WebSecBaseModel
             case 'sign_out_all_post':
                 osc_csrf_check();
                 $userId = (int) osc_logged_user_id();
-                $user   = User::newInstance()->findByPrimaryKey($userId);
+                $user   = User::getInstance()->findByPrimaryKey($userId);
                 $refused = empty($user) ? _m("Current password doesn't match")
                     : \mindstellar\auth\Reauth::verify($user, Params::getParamString('password', false, false));
                 if ($refused !== '') {
@@ -246,9 +246,9 @@ class CWebUser extends WebSecBaseModel
                 // The owner sees every listing they hold unless a status tab narrows it.
                 $itemType     = Params::getParamString('itemType') ?: 'all';
                 $total_items  =
-                    Item::newInstance()->countItemTypesByUserID(osc_logged_user_id(), $itemType);
+                    Item::getInstance()->countItemTypesByUserID(osc_logged_user_id(), $itemType);
                 $total_pages  = ceil($total_items / $itemsPerPage);
-                $items        = Item::newInstance()
+                $items        = Item::getInstance()
                     ->findItemTypesByUserID(
                         osc_logged_user_id(),
                         $page * $itemsPerPage,
@@ -271,12 +271,12 @@ class CWebUser extends WebSecBaseModel
                 $secret = Params::getParam('secret');
                 $id     = Params::getParam('id');
 
-                $alert  = Alerts::newInstance()->findByPrimaryKey($id);
+                $alert  = Alerts::getInstance()->findByPrimaryKey($id);
                 $result = 0;
                 if (!empty($alert) && hash_equals((string)$alert['s_email'], (string)$email)
                     && hash_equals((string)$alert['s_secret'], (string)$secret)
                 ) {
-                    $result = Alerts::newInstance()->unsub($id);
+                    $result = Alerts::getInstance()->unsub($id);
                 }
 
                 if ($result == 1) {
@@ -299,7 +299,7 @@ class CWebUser extends WebSecBaseModel
                     break;
                 }
 
-                $user = User::newInstance()->findByPrimaryKey(osc_logged_user_id());
+                $user = User::getInstance()->findByPrimaryKey(osc_logged_user_id());
                 if (empty($user) || osc_logged_user_id() != $id || $secret !== $user['s_secret']) {
                     osc_add_flash_error_message(_m('That link is not valid'));
                     $this->redirectTo(osc_user_profile_url());
@@ -337,7 +337,7 @@ class CWebUser extends WebSecBaseModel
                 // secret in the query string; those land on the confirm form and
                 // the query values are ignored. Mail scanners and prefetchers
                 // that only GET therefore cannot remove the account.
-                $user = User::newInstance()->findByPrimaryKey(osc_logged_user_id());
+                $user = User::getInstance()->findByPrimaryKey(osc_logged_user_id());
                 if (empty($user)) {
                     osc_add_flash_error_message(_m('Oops! you can not do that'));
                     $this->redirectTo(osc_user_login_url());
@@ -372,19 +372,19 @@ class CWebUser extends WebSecBaseModel
                     break;
                 }
 
-                Session::newInstance()->_drop('userId');
-                Session::newInstance()->_drop('userName');
-                Session::newInstance()->_drop('userEmail');
-                Session::newInstance()->_drop('userPhone');
-                Session::newInstance()->_dropEphemeral('userId');
-                Session::newInstance()->_dropEphemeral('userName');
-                Session::newInstance()->_dropEphemeral('userEmail');
-                Session::newInstance()->_dropEphemeral('userPhone');
-                View::newInstance()->_erase('_loggedUser');
+                Session::getInstance()->_drop('userId');
+                Session::getInstance()->_drop('userName');
+                Session::getInstance()->_drop('userEmail');
+                Session::getInstance()->_drop('userPhone');
+                Session::getInstance()->_dropEphemeral('userId');
+                Session::getInstance()->_dropEphemeral('userName');
+                Session::getInstance()->_dropEphemeral('userEmail');
+                Session::getInstance()->_dropEphemeral('userPhone');
+                View::getInstance()->_erase('_loggedUser');
 
-                Cookie::newInstance()->pop('oc_userId');
-                Cookie::newInstance()->pop('oc_userSecret');
-                Cookie::newInstance()->set();
+                Cookie::getInstance()->pop('oc_userId');
+                Cookie::getInstance()->pop('oc_userSecret');
+                Cookie::getInstance()->set();
 
                 osc_add_flash_ok_message(_m('Your account have been deleted'));
                 $this->redirectTo(osc_base_url());
@@ -450,7 +450,7 @@ class CWebUser extends WebSecBaseModel
         }
         $userId = (int) osc_logged_user_id();
         if (Params::getParamString('do') === 'create') {
-            $user = User::newInstance()->findByPrimaryKey($userId);
+            $user = User::getInstance()->findByPrimaryKey($userId);
             try {
                 $token = $access->createKey(
                     is_array($user) ? $user : array(),
@@ -496,7 +496,7 @@ class CWebUser extends WebSecBaseModel
         if (!osc_gui_account_view($file)) {
             osc_current_web_theme_path($file);
         }
-        Session::newInstance()->_clearVariables();
+        Session::getInstance()->_clearVariables();
         osc_run_hook('after_html');
     }
 }

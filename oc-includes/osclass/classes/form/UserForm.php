@@ -38,8 +38,8 @@ class UserForm extends Form
      */
     public static function name_text($user = null)
     {
-        if (Session::newInstance()->_getForm('user_s_name') != '') {
-            $user['s_name'] = Session::newInstance()->_getForm('user_s_name');
+        if (Session::getInstance()->_getForm('user_s_name') != '') {
+            $user['s_name'] = Session::getInstance()->_getForm('user_s_name');
         }
         parent::generic_input_text(
             's_name',
@@ -58,8 +58,8 @@ class UserForm extends Form
      */
     public static function username_text($user = null)
     {
-        if (Session::newInstance()->_getForm('user_s_username') != '') {
-            $user['s_username'] = Session::newInstance()->_getForm('user_s_username');
+        if (Session::getInstance()->_getForm('user_s_username') != '') {
+            $user['s_username'] = Session::getInstance()->_getForm('user_s_username');
         }
         parent::generic_input_text(
             's_username',
@@ -155,8 +155,8 @@ class UserForm extends Form
      */
     public static function email_text($user = null)
     {
-        if (Session::newInstance()->_getForm('user_s_email') != '') {
-            $user['s_email'] = Session::newInstance()->_getForm('user_s_email');
+        if (Session::getInstance()->_getForm('user_s_email') != '') {
+            $user['s_email'] = Session::getInstance()->_getForm('user_s_email');
         }
         parent::generic_input_text(
             's_email',
@@ -192,8 +192,8 @@ class UserForm extends Form
      */
     public static function mobile_text($user = null)
     {
-        if (Session::newInstance()->_getForm('user_s_phone_mobile') != '') {
-            $user['s_phone_mobile'] = Session::newInstance()->_getForm('user_s_phone_mobile');
+        if (Session::getInstance()->_getForm('user_s_phone_mobile') != '') {
+            $user['s_phone_mobile'] = Session::getInstance()->_getForm('user_s_phone_mobile');
         }
         parent::generic_input_text(
             's_phone_mobile',
@@ -212,8 +212,8 @@ class UserForm extends Form
      */
     public static function phone_land_text($user = null)
     {
-        if (Session::newInstance()->_getForm('user_s_phone_land') != '') {
-            $user['s_phone_land'] = Session::newInstance()->_getForm('user_s_phone_land');
+        if (Session::getInstance()->_getForm('user_s_phone_land') != '') {
+            $user['s_phone_land'] = Session::getInstance()->_getForm('user_s_phone_land');
         }
         parent::generic_input_text(
             's_phone_land',

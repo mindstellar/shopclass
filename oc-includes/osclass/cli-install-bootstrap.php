@@ -64,4 +64,4 @@ require_once LIB_PATH . 'osclass/locales.php';
 Params::init();
 // A lazy session backs osc_current_admin_locale() and the installer's
 // sample-content warning flag; harmless under CLI with reporting limited above.
-Session::newInstance()->session_start();
+Session::getInstance()->session_start();

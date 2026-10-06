@@ -217,14 +217,14 @@ class CAdminTools extends AdminSecBaseModel
                 }
                 $name       = Params::getParamString('name', false, false);
                 $fromBucket = Params::getParamString('from') === 'bucket';
-                $admin  = Admin::newInstance()->findByPrimaryKey(osc_logged_admin_id());
+                $admin  = Admin::getInstance()->findByPrimaryKey(osc_logged_admin_id());
                 $reauth = is_array($admin) ? AdminReauth::verify(
                     $admin,
                     Params::getParamString('password', false, false),
                     Params::getParamString('code')
                 ) : _m("You don't have enough permissions");
                 if ($reauth !== '') {
-                    Session::newInstance()->_set('backupReauthError', $reauth);
+                    Session::getInstance()->_set('backupReauthError', $reauth);
                     $this->redirectTo(self::backupUrl() . '&confirm=' . rawurlencode($name) . ($fromBucket ? '&from=bucket' : ''));
                     break;
                 }
@@ -452,7 +452,7 @@ class CAdminTools extends AdminSecBaseModel
                 }
 
                 $this->_exportVariableToView('aData', $aData);
-                $this->_exportVariableToView('sections', Log::newInstance()->distinctSections());
+                $this->_exportVariableToView('sections', Log::getInstance()->distinctSections());
                 $this->_exportVariableToView('log_enabled', osc_is_admin_log_enabled());
                 $this->_exportVariableToView('log_retention_days', osc_admin_log_retention_days());
                 $this->doView('tools/logs.php');
@@ -481,7 +481,7 @@ class CAdminTools extends AdminSecBaseModel
                     break;
                 }
                 osc_csrf_check();
-                $removed = Log::newInstance()->clearAll();
+                $removed = Log::getInstance()->clearAll();
                 osc_add_flash_ok_message(
                     sprintf(_mn('%d log entry has been removed', '%d log entries have been removed', $removed), $removed),
                     'admin'
@@ -562,8 +562,8 @@ class CAdminTools extends AdminSecBaseModel
         $confirm    = null;
         $name       = Params::getParamString('confirm', false, false);
         $fromBucket = $bucket !== null && Params::getParamString('from') === 'bucket';
-        $reauth     = (string) Session::newInstance()->_get('backupReauthError');
-        Session::newInstance()->_drop('backupReauthError');
+        $reauth     = (string) Session::getInstance()->_get('backupReauthError');
+        Session::getInstance()->_drop('backupReauthError');
         if ($name !== '' && !$busy && !osc_web_restore_disabled()) {
             $check = $fromBucket ? BackupService::checkBucket($name) : BackupService::check($name);
             if ($check['reason'] !== '') {
@@ -586,7 +586,7 @@ class CAdminTools extends AdminSecBaseModel
         $this->_exportVariableToView('backup_bucket_address', BackupBucket::addressProblem());
         $this->_exportVariableToView('backup_confirm', $confirm);
         $this->_exportVariableToView('backup_reauth_error', $confirm !== null ? $reauth : '');
-        $me = $confirm !== null ? Admin::newInstance()->findByPrimaryKey(osc_logged_admin_id()) : null;
+        $me = $confirm !== null ? Admin::getInstance()->findByPrimaryKey(osc_logged_admin_id()) : null;
         $this->_exportVariableToView('backup_reauth_2fa', is_array($me) && \mindstellar\security\AdminTwoFactor::enabled($me));
         $this->_exportVariableToView('backup_probe', $list !== array() ? BackupService::probe() : null);
         $this->doView('tools/backup.php');
@@ -1007,7 +1007,7 @@ class CAdminTools extends AdminSecBaseModel
             $drivers[$name] = self::cacheSupported($name);
         }
         $cacheOn  = $cacheDriver === 'default' || self::cacheSupported($cacheDriver);
-        $prefs   = Preference::newInstance()->listAll();
+        $prefs   = Preference::getInstance()->listAll();
         $last    = json_decode((string) osc_get_preference('backup_last'), true);
         $htaccess     = osc_base_path() . '.htaccess';
         $htaccessAuth = osc_rewrite_enabled() && !osc_server_is_nginx() && is_file($htaccess)
@@ -1143,7 +1143,7 @@ class CAdminTools extends AdminSecBaseModel
      */
     private static function cacheAnswers(): bool
     {
-        $cache = \Object_Cache_Factory::newInstance();
+        $cache = \Object_Cache_Factory::getInstance();
         $key   = 'osc_sysinfo_probe';
         $value = bin2hex(random_bytes(8));
         try {

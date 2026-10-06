@@ -108,9 +108,9 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hCache.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hKv.php';
 require_once ABS_PATH . 'oc-includes/osclass/formatting.php';          // osc_sanitizeString (slug generation in insert/updateByPrimaryKey)
 
-Preference::newInstance(); // osc_current_user_locale() -> osc_language() reads a preference; warm it so it is never charged to a query-count pin
+Preference::getInstance(); // osc_current_user_locale() -> osc_language() reads a preference; warm it so it is never charged to a query-count pin
 
-$cache      = Object_Cache_Factory::newInstance();
+$cache      = Object_Cache_Factory::getInstance();
 $catTable   = DB_TABLE_PREFIX . 't_category';
 $descTable  = DB_TABLE_PREFIX . 't_category_description';
 $statsTable = DB_TABLE_PREFIX . 't_category_stats';
@@ -142,7 +142,7 @@ $rowsScalarStrings = static function (array $rows): bool {
 };
 
 /* ----------------------------------------------------------------------------
- * Reset helpers. Category::newInstance() is a process-lifetime singleton and its
+ * Reset helpers. Category::getInstance() is a process-lifetime singleton and its
  * tree lives ALSO in the object cache; the runner shares one process across every
  * model file. Both have to be forced cold to get a snapshot of the current
  * fixtures, and both are reset again at the end so the CategoryStats/CityStats
@@ -161,7 +161,7 @@ $resetCategory = static function () use ($instanceProp, $cache): void {
 $freshCategory = static function () use ($resetCategory, $locale): Category {
     $resetCategory();
 
-    return Category::newInstance($locale);
+    return Category::getInstance($locale);
 };
 
 /* ----------------------------------------------------------------------------
@@ -208,7 +208,7 @@ $catExists = static function (int $id) use ($countWhere, $catTable): bool {
 
 /* ----------------------------------------------------------------------------
  * The read fixture: a small enabled tree plus one disabled root, all seeded
- * BEFORE the first Category::newInstance() so the one-time snapshot captures
+ * BEFORE the first Category::getInstance() so the one-time snapshot captures
  * them. i_position is made distinct so the ORDER BY i_position ASC pins are
  * deterministic (seed_category defaults every row to 0).
  *
@@ -269,12 +269,36 @@ pin('_findNameIDByLocale signature is unchanged', 'public _findNameIDByLocale($l
 pin(
     'the model declares exactly these public methods of its own, nothing added or removed',
     array(
-        '__construct', '_findNameIDByLocale', 'deleteByPrimaryKey', 'findByPrimaryKey', 'findBySlug',
-        'findNameByPrimaryKey', 'findRootCategories', 'findRootCategoriesEnabled', 'findRootCategory',
-        'findSubcategories', 'findSubcategoriesEnabled', 'formatValue', 'hierarchy', 'insert',
-        'insertDescription', 'isRoot', 'listAll', 'listEnabled', 'listWhere', 'newInstance',
-        'toRootTree', 'toSubTree', 'toTree', 'toTreeAll', 'updateByPrimaryKey', 'updateExpiration',
-        'updateName', 'updateOrder', 'updatePriceEnabled',
+        '__construct',
+        '_findNameIDByLocale',
+        'deleteByPrimaryKey',
+        'findByPrimaryKey',
+        'findBySlug',
+        'findNameByPrimaryKey',
+        'findRootCategories',
+        'findRootCategoriesEnabled',
+        'findRootCategory',
+        'findSubcategories',
+        'findSubcategoriesEnabled',
+        'formatValue',
+        'getInstance',
+        'hierarchy',
+        'insert',
+        'insertDescription',
+        'isRoot',
+        'listAll',
+        'listEnabled',
+        'listWhere',
+        'newInstance',
+        'toRootTree',
+        'toSubTree',
+        'toTree',
+        'toTreeAll',
+        'updateByPrimaryKey',
+        'updateExpiration',
+        'updateName',
+        'updateOrder',
+        'updatePriceEnabled',
     ),
     (static function () {
         $own = array();
@@ -296,11 +320,11 @@ harness_section('Category: tree cache — construction cost and warm reads');
 
 $cold = harness_query_count(static function () use ($resetCategory, $locale) {
     $resetCategory();
-    Category::newInstance($locale);
+    Category::getInstance($locale);
 });
 pin('constructing the model cold costs exactly one query (listEnabled)', 1, $cold);
 
-$m = Category::newInstance($locale);
+$m = Category::getInstance($locale);
 pin('toTree() on the constructed model costs zero queries — it is served from the snapshot', 0, harness_query_count(static function () use ($m) {
     $m->toTree();
 }));

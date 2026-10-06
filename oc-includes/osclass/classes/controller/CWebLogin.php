@@ -117,7 +117,7 @@ class CWebLogin extends BaseModel
                             urldecode(preg_replace('@^' . osc_base_url() . '@', '', $url_redirect));
                         $tmp_ar      = explode('?', $request_uri);
                         $request_uri = $tmp_ar[0];
-                        $rules       = Rewrite::newInstance()->listRules();
+                        $rules       = Rewrite::getInstance()->listRules();
                         foreach ($rules as $match => $uri) {
                             if (preg_match('#' . $match . '#', $request_uri, $m)) {
                                 $request_uri = preg_replace('#' . $match . '#', $uri, $request_uri);
@@ -163,7 +163,7 @@ class CWebLogin extends BaseModel
             case ('resend'):
                 $id    = Params::getParam('id');
                 $email = Params::getParam('email');
-                $user  = User::newInstance()->findByPrimaryKey($id);
+                $user  = User::getInstance()->findByPrimaryKey($id);
                 if ($id == '' || $email == '' || !isset($user) || $user['b_active'] == 1
                     || $email != $user['s_email']
                 ) {
@@ -231,7 +231,7 @@ class CWebLogin extends BaseModel
                 }
                 break;
             case ('forgot'):         //form to recover the password (in this case we have the form in /gui/)
-                $user = User::newInstance()
+                $user = User::getInstance()
                     ->findByIdPasswordSecret(Params::getParam('userId'), Params::getParam('code'));
                 if ($user) {
                     $this->doView(osc_locate_template(array('user-forgot_password.php'), 'user-forgot_password'));
@@ -252,7 +252,7 @@ class CWebLogin extends BaseModel
                     ));
                 }
 
-                $user = User::newInstance()
+                $user = User::getInstance()
                     ->findByIdPasswordSecret(Params::getParam('userId'), Params::getParam('code'));
                 if (!empty($user) && $user['b_enabled'] == 1) {
                     if (Params::getParam('new_password', false, false)

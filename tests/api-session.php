@@ -230,7 +230,7 @@ $sessionSource = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/clas
 check('the sign-in cookie container is SameSite=Lax and HttpOnly', str_contains($cookieSource, "'samesite' => 'Lax'") && str_contains($cookieSource, "'httponly' => true"));
 check('the PHP session cookie is SameSite=Lax too', substr_count($sessionSource, "'samesite' => 'Lax'") >= 1);
 $_COOKIE = [];
-$jar     = Cookie::newInstance();
+$jar     = Cookie::getInstance();
 $jar->clear();
 $jar->push('oc_userId', '10');
 $jar->push('oc_userSecret', 'signed');

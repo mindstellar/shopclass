@@ -204,7 +204,7 @@ abstract class BaseModel
     public function _exportVariableToView($key, $value)
     {
         $GLOBALS['ws_events'][] = 'export ' . $key . ' = ' . ws_describe($key, $value);
-        View::newInstance()->_exportVariableToView($key, $value);
+        View::getInstance()->_exportVariableToView($key, $value);
     }
 
     public function do404()
@@ -342,7 +342,7 @@ $admin->query("INSERT INTO {$prefix}t_category_slug_history (fk_i_category_id, f
     . " VALUES ($catCars, '$locale', 'old-cars', NOW())");
 
 if (class_exists('Object_Cache_Factory')) {
-    Object_Cache_Factory::newInstance()->flush();
+    Object_Cache_Factory::getInstance()->flush();
 }
 foreach (array('Category', 'Search') as $singleton) {
     $reset = new ReflectionProperty($singleton, 'instance');
@@ -387,7 +387,7 @@ $basePrefs = array(
  */
 $run = static function (string $uri, array $get, array $prefs = array()) use ($basePrefs): array {
     foreach (array_merge($basePrefs, array('rewriteEnabled' => '0'), $prefs) as $k => $v) {
-        Preference::newInstance()->set($k, $v);
+        Preference::getInstance()->set($k, $v);
     }
     $reset = new ReflectionProperty('Search', 'instance');
     if (PHP_VERSION_ID < 80100) {

@@ -97,11 +97,11 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hCache.php';
  * preference; the Preference singleton loads the whole table on construction. Warm
  * it here so that one-off query is never attributed to a query-count measurement.
  */
-Preference::newInstance();
+Preference::getInstance();
 
-$model = ItemResource::newInstance();
+$model = ItemResource::getInstance();
 $table = DB_TABLE_PREFIX . 't_item_resource';
-$cache = Object_Cache_Factory::newInstance();
+$cache = Object_Cache_Factory::getInstance();
 
 /**
  * Empty the object cache.
@@ -252,10 +252,22 @@ pin(
 pin(
     'the model declares exactly these methods of its own, nothing added or removed',
     array(
-        '__construct', 'countResources', 'deleteResourcesIds', 'existResource', 'getAllResources',
-        'getAllResourcesFromItem', 'getResource', 'getResourceIdsBatch', 'getResourceSecure',
-        'getResources', 'getResourcesBatchByStorage', 'getTableItemDescription', 'getTableItemName',
-        'newInstance', 'primeResourcesCache',
+        '__construct',
+        'countResources',
+        'deleteResourcesIds',
+        'existResource',
+        'getAllResources',
+        'getAllResourcesFromItem',
+        'getInstance',
+        'getResource',
+        'getResourceIdsBatch',
+        'getResourceSecure',
+        'getResources',
+        'getResourcesBatchByStorage',
+        'getTableItemDescription',
+        'getTableItemName',
+        'newInstance',
+        'primeResourcesCache',
     ),
     (static function () {
         $own = array();

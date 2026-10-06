@@ -78,7 +78,7 @@ class CAdminLogin extends AdminBaseModel
                     $this->redirectTo(osc_admin_base_url(true) . '?page=login');
                 }
 
-                $admin = Admin::newInstance()->findByUsername(Params::getParam('user'));
+                $admin = Admin::getInstance()->findByUsername(Params::getParam('user'));
 
                 // An unknown account and a wrong password must answer the same way,
                 // and take about as long, or the form tells anyone who asks which
@@ -105,7 +105,7 @@ class CAdminLogin extends AdminBaseModel
                         // Mirror the rehash into the in-memory row so the remember-me token below
                         // binds to the hash actually persisted, not the stale one.
                         $admin['s_password'] = osc_hash_password($password);
-                        Admin::newInstance()->update(
+                        Admin::getInstance()->update(
                             array('s_password' => $admin['s_password']),
                             array('pk_i_id' => $admin['pk_i_id'])
                         );
@@ -118,7 +118,7 @@ class CAdminLogin extends AdminBaseModel
                 $locale   = (string)Params::getParam('locale');
                 if (\mindstellar\security\AdminTwoFactor::enabled($admin)) {
                     // The password is right, but nothing is signed in until the code passes.
-                    Session::newInstance()->_set('admin2fa', array(
+                    Session::getInstance()->_set('admin2fa', array(
                         'id'       => (int)$admin['pk_i_id'],
                         'remember' => $remember,
                         'locale'   => $locale,
@@ -135,16 +135,16 @@ class CAdminLogin extends AdminBaseModel
                 if ($this->pendingTwoFactor() === null) {
                     $this->redirectTo(osc_admin_base_url(true) . '?page=login');
                 }
-                View::newInstance()->_exportVariableToView('login_admin_page_title', osc_page_title() . ' &raquo; ' . __('Two-step sign-in'));
-                View::newInstance()->_exportVariableToView('login_admin_form', 'gui/two_factor.php');
+                View::getInstance()->_exportVariableToView('login_admin_page_title', osc_page_title() . ' &raquo; ' . __('Two-step sign-in'));
+                View::getInstance()->_exportVariableToView('login_admin_form', 'gui/two_factor.php');
                 $this->doView();
                 break;
             case ('2fa_post'):
                 osc_csrf_check();
                 $pending = $this->pendingTwoFactor();
-                $admin   = $pending === null ? false : Admin::newInstance()->findByPrimaryKey($pending['id']);
+                $admin   = $pending === null ? false : Admin::getInstance()->findByPrimaryKey($pending['id']);
                 if (!$admin) {
-                    Session::newInstance()->_drop('admin2fa');
+                    Session::getInstance()->_drop('admin2fa');
                     $this->redirectTo(osc_admin_base_url(true) . '?page=login');
                 }
                 if (!\mindstellar\security\AdminTwoFactor::check($admin, Params::getParamString('code'))) {
@@ -152,13 +152,13 @@ class CAdminLogin extends AdminBaseModel
                     osc_add_flash_error_message(\mindstellar\security\AdminTwoFactor::refusedMessage(), 'admin');
                     $this->redirectTo(osc_admin_base_url(true) . '?page=login&action=2fa');
                 }
-                Session::newInstance()->_drop('admin2fa');
+                Session::getInstance()->_drop('admin2fa');
                 $this->signIn($admin, $pending['remember'], $pending['locale']);
                 $this->redirectTo($pending['redirect']);
                 break;
             case ('recover'):        // form to recover the password (in this case we have the form in /gui/)
-                View::newInstance()->_exportVariableToView('login_admin_page_title', osc_page_title().' &raquo;'. __('Lost your password'));
-                View::newInstance()->_exportVariableToView('login_admin_form', 'gui/recover.php');
+                View::getInstance()->_exportVariableToView('login_admin_page_title', osc_page_title().' &raquo;'. __('Lost your password'));
+                View::getInstance()->_exportVariableToView('login_admin_form', 'gui/recover.php');
                 $this->doView();
                 break;
             case ('recover_post'):
@@ -194,16 +194,16 @@ class CAdminLogin extends AdminBaseModel
                 }
                 \mindstellar\security\LoginThrottle::recordFailure('admin-recover', $recoverAccount);
 
-                $admin = Admin::newInstance()->findByEmail(Params::getParam('email'));
+                $admin = Admin::getInstance()->findByEmail(Params::getParam('email'));
                 if (!isset($admin['pk_i_id'])) {
-                    $admin = Admin::newInstance()->findByUsername(Params::getParam('email'));
+                    $admin = Admin::getInstance()->findByUsername(Params::getParam('email'));
                 }
                 if (isset($admin['pk_i_id'])) {
                     require_once osc_lib_path() . 'osclass/helpers/hSecurity.php';
                     $newPassword = osc_genRandomPassword(40);
 
                     // Persist only a fingerprint; the plaintext code lives solely in the emailed link.
-                    Admin::newInstance()->update(
+                    Admin::getInstance()->update(
                         array('s_secret' => \mindstellar\security\ActionToken::hash($newPassword)),
                         array('pk_i_id' => $admin['pk_i_id'])
                     );
@@ -216,7 +216,7 @@ class CAdminLogin extends AdminBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=login');
                 break;
             case ('forgot'):         // form to recover the password (in this case we have the form in /gui/)
-                $admin = Admin::newInstance()->findByIdSecret(
+                $admin = Admin::getInstance()->findByIdSecret(
                     Params::getParam('adminId'),
                     \mindstellar\security\ActionToken::hash(Params::getParam('code'))
                 );
@@ -224,13 +224,13 @@ class CAdminLogin extends AdminBaseModel
                     osc_add_flash_error_message(_m('Sorry, the link is not valid'), 'admin');
                     $this->redirectTo(osc_admin_base_url());
                 }
-                View::newInstance()->_exportVariableToView('login_admin_page_title', osc_page_title().' &raquo;'. __('Change your password'));
-                View::newInstance()->_exportVariableToView('login_admin_form', 'gui/forgot_password.php');
+                View::getInstance()->_exportVariableToView('login_admin_page_title', osc_page_title().' &raquo;'. __('Change your password'));
+                View::getInstance()->_exportVariableToView('login_admin_form', 'gui/forgot_password.php');
                 $this->doView();
                 break;
             case ('forgot_post'):
                 osc_csrf_check();
-                $admin = Admin::newInstance()->findByIdSecret(
+                $admin = Admin::getInstance()->findByIdSecret(
                     Params::getParam('adminId'),
                     \mindstellar\security\ActionToken::hash(Params::getParam('code'))
                 );
@@ -263,8 +263,8 @@ class CAdminLogin extends AdminBaseModel
                 break;
             default:
                 //osc_run_hook( 'init_admin' );
-                View::newInstance()->_exportVariableToView('login_admin_page_title', osc_page_title().' &raquo;'. __('Log in'));
-                View::newInstance()->_exportVariableToView('login_admin_form', 'gui/login.php');
+                View::getInstance()->_exportVariableToView('login_admin_page_title', osc_page_title().' &raquo;'. __('Log in'));
+                View::getInstance()->_exportVariableToView('login_admin_form', 'gui/login.php');
                 // Signed cookie instead of the session, so opening the admin login page does
                 // not start a session; keep a destination the auth gate already recorded.
                 osc_set_admin_login_redirect(osc_get_http_referer(), true);
@@ -292,9 +292,9 @@ class CAdminLogin extends AdminBaseModel
         }
         $is_valid_locale = osc_validate_locale($locale, true);
         if ($remember) {
-            Cookie::newInstance()->set_expires(osc_time_cookie());
-            Cookie::newInstance()->push('oc_adminId', $admin['pk_i_id']);
-            Cookie::newInstance()->push(
+            Cookie::getInstance()->set_expires(osc_time_cookie());
+            Cookie::getInstance()->push('oc_adminId', $admin['pk_i_id']);
+            Cookie::getInstance()->push(
                 'oc_adminSecret',
                 \mindstellar\security\RememberMe::issue(
                     'admin',
@@ -305,23 +305,23 @@ class CAdminLogin extends AdminBaseModel
                 )
             );
             if ($is_valid_locale === true) {
-                Cookie::newInstance()->push('oc_adminLocale', $locale);
+                Cookie::getInstance()->push('oc_adminLocale', $locale);
             } else {
-                Cookie::newInstance()->push('oc_adminLocale', osc_admin_language());
+                Cookie::getInstance()->push('oc_adminLocale', osc_admin_language());
             }
-            Cookie::newInstance()->set();
+            Cookie::getInstance()->set();
         }
 
         // we are logged in... let's go!
-        Session::newInstance()->_set('adminId', $admin['pk_i_id']);
-        Session::newInstance()->_set('adminUserName', $admin['s_username']);
-        Session::newInstance()->_set('adminName', $admin['s_name']);
-        Session::newInstance()->_set('adminEmail', $admin['s_email']);
-        Session::newInstance()->_set('adminStamp', \mindstellar\auth\AuthStamp::of($admin));
+        Session::getInstance()->_set('adminId', $admin['pk_i_id']);
+        Session::getInstance()->_set('adminUserName', $admin['s_username']);
+        Session::getInstance()->_set('adminName', $admin['s_name']);
+        Session::getInstance()->_set('adminEmail', $admin['s_email']);
+        Session::getInstance()->_set('adminStamp', \mindstellar\auth\AuthStamp::of($admin));
         if ($is_valid_locale === true) {
-            Session::newInstance()->_set('adminLocale', $locale);
+            Session::getInstance()->_set('adminLocale', $locale);
         } else {
-            Session::newInstance()->_set('adminLocale', osc_admin_language());
+            Session::getInstance()->_set('adminLocale', osc_admin_language());
         }
         osc_run_hook('login_admin', $admin);
     }
@@ -333,7 +333,7 @@ class CAdminLogin extends AdminBaseModel
      */
     private function pendingTwoFactor(): ?array
     {
-        $pending = Session::newInstance()->_get('admin2fa');
+        $pending = Session::getInstance()->_get('admin2fa');
         if (!is_array($pending) || (int)($pending['until'] ?? 0) < time()) {
             return null;
         }
@@ -354,9 +354,9 @@ class CAdminLogin extends AdminBaseModel
         $login_admin_url   = osc_apply_filter('login_admin_url', 'https://github.com/mindstellar/shopclass/');
         $login_admin_image = osc_apply_filter('login_admin_image', osc_admin_base_url() . 'images/shopclass-logo.svg');
 
-        View::newInstance()->_exportVariableToView('login_admin_title', $login_admin_title);
-        View::newInstance()->_exportVariableToView('login_admin_url', $login_admin_url);
-        View::newInstance()->_exportVariableToView('login_admin_image', $login_admin_image);
+        View::getInstance()->_exportVariableToView('login_admin_title', $login_admin_title);
+        View::getInstance()->_exportVariableToView('login_admin_url', $login_admin_url);
+        View::getInstance()->_exportVariableToView('login_admin_image', $login_admin_image);
 
         osc_run_hook('before_admin_html');
         require osc_admin_base_path() . $file;

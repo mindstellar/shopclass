@@ -155,7 +155,7 @@ function osc_sweep_orphan_resources(): void
     }
 
     if ($removed > 0 && class_exists('Log')) {
-        Log::newInstance()->insertLog(
+        Log::getInstance()->insertLog(
             'resources',
             'orphan_sweep',
             0,
@@ -181,9 +181,9 @@ function osc_resource_owner_exists(string $ownerType, int $ownerId): bool
     }
 
     $owner = match ($ownerType) {
-        Resource::OWNER_ITEM => Item::newInstance()->findByPrimaryKey($ownerId),
-        Resource::OWNER_USER => User::newInstance()->findByPrimaryKey($ownerId),
-        Resource::OWNER_PAGE => Page::newInstance()->findByPrimaryKey($ownerId),
+        Resource::OWNER_ITEM => Item::getInstance()->findByPrimaryKey($ownerId),
+        Resource::OWNER_USER => User::getInstance()->findByPrimaryKey($ownerId),
+        Resource::OWNER_PAGE => Page::getInstance()->findByPrimaryKey($ownerId),
         default              => null,
     };
 

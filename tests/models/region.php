@@ -72,7 +72,7 @@ require_once __DIR__ . '/../lib/harness.php';
 $admin = scratchdb_session('osc_models_region');
 $table = DB_TABLE_PREFIX . 't_region';
 
-$model = Region::newInstance();
+$model = Region::getInstance();
 
 /**
  * t_region.s_slug is NOT NULL DEFAULT '', and seed_region() always derives a

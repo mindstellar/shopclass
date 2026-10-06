@@ -57,9 +57,14 @@ class ItemTmpUpload
 {
     public static array $staged = array();
 
-    public static function newInstance(): self
+    public static function getInstance(): self
     {
         return new self();
+    }
+
+    public static function newInstance(): self
+    {
+        return self::getInstance();
     }
 
     public function belongsToToken($token, $file)

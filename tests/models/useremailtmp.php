@@ -35,7 +35,7 @@ seed_region($admin);
 $userId      = seed_user($admin, 'u1', 'u1@example.test');
 $otherUserId = seed_user($admin, 'u2', 'u2@example.test');
 
-$model = UserEmailTmp::newInstance();
+$model = UserEmailTmp::getInstance();
 $table = DB_TABLE_PREFIX . 't_user_email_tmp';
 
 /**

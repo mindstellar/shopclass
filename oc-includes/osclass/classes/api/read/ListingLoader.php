@@ -56,7 +56,7 @@ final class ListingLoader
         }
         $currencies = [];
         foreach (array_keys($codes) as $code) {
-            $row = \Currency::newInstance()->findByPrimaryKey($code);
+            $row = \Currency::getInstance()->findByPrimaryKey($code);
             if (is_array($row)) {
                 $currencies[$code] = $row;
             }

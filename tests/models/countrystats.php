@@ -51,7 +51,7 @@ require_once __DIR__ . '/../lib/harness.php';
 $admin = scratchdb_session('osc_models_countrystats');
 $table = DB_TABLE_PREFIX . 't_country_stats';
 
-$model = CountryStats::newInstance();
+$model = CountryStats::getInstance();
 
 seed_country($admin, 'US', 'United States');
 seed_country($admin, 'ES', 'Spain');
@@ -136,7 +136,7 @@ pin(
     harness_method_signature('CountryStats', 'newInstance')
 );
 check('CountryStats still extends DAO', is_subclass_of('CountryStats', 'DAO'));
-check('newInstance() is a singleton', CountryStats::newInstance() === $model);
+check('newInstance() is a singleton', CountryStats::getInstance() === $model);
 check('$model->dao is a live DBCommandClass (C5)', $model->dao instanceof DBCommandClass);
 pin('table name is unchanged', $table, $model->getTableName());
 pin('primary key is unchanged', 'fk_c_country_code', $model->getPrimaryKey());

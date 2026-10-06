@@ -170,7 +170,7 @@ class AdminSecBaseModel
 
     public function _exportVariableToView($key, $value)
     {
-        View::newInstance()->_exportVariableToView($key, $value);
+        View::getInstance()->_exportVariableToView($key, $value);
     }
 
     /** The admin theme's view for this screen, drawn where the real one would draw it. */

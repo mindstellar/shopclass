@@ -29,7 +29,7 @@ class Styles extends Dependencies
     public static function init()
     {
         $print_styles = static function () {
-            self::newInstance()->printStyles();
+            self::getInstance()->printStyles();
         };
 
         if (defined('OC_ADMIN') && OC_ADMIN) {
@@ -89,13 +89,21 @@ class Styles extends Dependencies
      *
      * @return \Styles
      */
-    public static function newInstance(): Styles
+    public static function getInstance(): Styles
     {
         if (!self::$instance instanceof self) {
             self::$instance = new self();
         }
 
         return self::$instance;
+    }
+
+    /**
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
+     */
+    public static function newInstance(): Styles
+    {
+        return self::getInstance();
     }
 
     /**

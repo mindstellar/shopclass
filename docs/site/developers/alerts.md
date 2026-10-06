@@ -45,13 +45,13 @@ A value must be a whole number, a string of at most 255 bytes, or a flat list of
 Its name must not be one of core's keys. Anything else is dropped.
 
 **2. Read it back in `search_conditions`.** When an alert runs, `Params::getParam()`
-returns the alert's saved values, and `Search::newInstance()` is the alert's search:
+returns the alert's saved values, and `Search::getInstance()` is the alert's search:
 
 ```php
 osc_add_hook('search_conditions', function ($params, $search = null, $context = 'request') {
     $radius = Params::getParamInt('acmeRadius');
     if ($radius > 0) {
-        Search::newInstance()->addConditions(acme_radius_condition($radius));
+        Search::getInstance()->addConditions(acme_radius_condition($radius));
     }
 });
 ```

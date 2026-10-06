@@ -57,7 +57,7 @@ final class CategoryCatalog
                 $walk((array) ($category['categories'] ?? []));
             }
         };
-        $walk(\Category::newInstance()->toTree(true));
+        $walk(\Category::getInstance()->toTree(true));
 
         return new self($rows);
     }

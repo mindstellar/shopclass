@@ -59,8 +59,8 @@ Use the DAO layer rather than raw SQL where one exists, since it applies the pre
 escapes parameters and keeps working across schema migrations:
 
 ```php
-$items = Item::newInstance()->findByCategoryID($categoryId);
-$user  = User::newInstance()->findByPrimaryKey($userId);
+$items = Item::getInstance()->findByCategoryID($categoryId);
+$user  = User::getInstance()->findByPrimaryKey($userId);
 ```
 
 For your own queries, use the query builder. It binds every value and checks

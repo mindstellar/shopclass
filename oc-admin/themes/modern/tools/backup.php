@@ -17,7 +17,7 @@ use mindstellar\backup\BackupService;
 use mindstellar\backup\BackupStore;
 use mindstellar\backup\Restorer;
 
-$view    = View::newInstance();
+$view    = View::getInstance();
 $state   = $view->_get('backup_state') ?: array();
 $busy    = (bool) $view->_get('backup_busy');
 $list    = $view->_get('backup_list') ?: array();

@@ -49,7 +49,7 @@ class CAdminAdmins extends AdminSecBaseModel
         }
 
         //specific things for this class
-        $this->adminManager = Admin::newInstance();
+        $this->adminManager = Admin::getInstance();
         osc_run_hook('init_admin_admins');
     }
 
@@ -126,7 +126,7 @@ class CAdminAdmins extends AdminSecBaseModel
                 }
 
                 // Verification to avoid an administrator trying to remove to itself
-                if (in_array(Session::newInstance()->_get('adminId'), $adminId)) {
+                if (in_array(Session::getInstance()->_get('adminId'), $adminId)) {
                     osc_add_flash_error_message(
                         _m("The operation hasn't been completed. You're trying to remove yourself!"),
                         'admin'
@@ -346,9 +346,9 @@ class CAdminAdmins extends AdminSecBaseModel
         if ($password !== '') {
             \mindstellar\auth\AdminPassword::set((int)$id, $password);
             // Changing your own password keeps you signed in here, and only here.
-            $stamp = (int)$id === (int)Session::newInstance()->_get('adminId') ? \mindstellar\auth\AdminPassword::stamp((int)$id) : null;
+            $stamp = (int)$id === (int)Session::getInstance()->_get('adminId') ? \mindstellar\auth\AdminPassword::stamp((int)$id) : null;
             if ($stamp !== null) {
-                Session::newInstance()->_set('adminStamp', $stamp);
+                Session::getInstance()->_set('adminStamp', $stamp);
             }
         }
 
@@ -380,8 +380,8 @@ class CAdminAdmins extends AdminSecBaseModel
         $own     = osc_logged_admin_id();
         $target  = Params::getParamInt('id') ?: $own;
         $back    = osc_admin_base_url(true) . '?page=admins&action=edit' . ($target === $own ? '' : '&id=' . $target);
-        $admin   = Admin::newInstance()->findByPrimaryKey($target);
-        $session = Session::newInstance();
+        $admin   = Admin::getInstance()->findByPrimaryKey($target);
+        $session = Session::getInstance();
         $code    = Params::getParamString('code');
 
         if (!$admin || ($target !== $own && ($action !== '2fa_off' || $this->isModerator()))) {
@@ -434,7 +434,7 @@ class CAdminAdmins extends AdminSecBaseModel
      */
     private function signOutEverywhere()
     {
-        $admin  = Admin::newInstance()->findByPrimaryKey(osc_logged_admin_id());
+        $admin  = Admin::getInstance()->findByPrimaryKey(osc_logged_admin_id());
         $reason = is_array($admin) && isset($admin['pk_i_id'])
             ? AdminReauth::verify($admin, Params::getParamString('password', false, false), Params::getParamString('code'))
             : _m("You don't have enough permissions");

@@ -110,7 +110,7 @@ function test_gateway_buyer_order(int $orderId): Order
 osc_add_hook('test-gateway-checkout', static function () {
     $order = test_gateway_buyer_order(Params::getParamInt('order'));
 
-    View::newInstance()->_exportVariableToView('testGatewayOrder', $order);
+    View::getInstance()->_exportVariableToView('testGatewayOrder', $order);
     osc_gui_view('', __DIR__ . '/checkout.php', array(
         'heading' => __('Test checkout', 'test-gateway'),
         'title'   => __('Test checkout', 'test-gateway') . ' - ' . osc_page_title(),

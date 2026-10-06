@@ -29,10 +29,10 @@
  */
 function osc_user_field($field, $locale = '')
 {
-    if (View::newInstance()->_exists('users')) {
-        $user = View::newInstance()->_current('users');
+    if (View::getInstance()->_exists('users')) {
+        $user = View::getInstance()->_current('users');
     } else {
-        $user = View::newInstance()->_get('user');
+        $user = View::getInstance()->_get('user');
     }
 
     return osc_field($user, $field, $locale);
@@ -45,10 +45,10 @@ function osc_user_field($field, $locale = '')
  */
 function osc_user()
 {
-    if (View::newInstance()->_exists('users')) {
-        $user = View::newInstance()->_current('users');
+    if (View::getInstance()->_exists('users')) {
+        $user = View::getInstance()->_current('users');
     } else {
-        $user = View::newInstance()->_get('user');
+        $user = View::getInstance()->_get('user');
     }
 
     return $user;
@@ -86,14 +86,14 @@ function osc_is_web_user_logged_in()
  */
 function osc_resolve_web_user()
 {
-    if (View::newInstance()->_exists('_loggedUser')) {
-        return View::newInstance()->_get('_loggedUser');
+    if (View::getInstance()->_exists('_loggedUser')) {
+        return View::getInstance()->_get('_loggedUser');
     }
 
-    $cookieId     = Cookie::newInstance()->get_value('oc_userId');
-    $cookieSecret = Cookie::newInstance()->get_value('oc_userSecret');
+    $cookieId     = Cookie::getInstance()->get_value('oc_userId');
+    $cookieSecret = Cookie::getInstance()->get_value('oc_userSecret');
     if ($cookieId != '' && $cookieSecret != '') {
-        $candidate = User::newInstance()->findByPrimaryKey($cookieId);
+        $candidate = User::getInstance()->findByPrimaryKey($cookieId);
         if (isset($candidate['pk_i_id'])
             && \mindstellar\security\RememberMe::verify(
                 'web',
@@ -103,7 +103,7 @@ function osc_resolve_web_user()
                 \mindstellar\auth\AuthStamp::of($candidate)
             )
         ) {
-            View::newInstance()->_exportVariableToView('_loggedUser', $candidate);
+            View::getInstance()->_exportVariableToView('_loggedUser', $candidate);
 
             return $candidate;
         }
@@ -111,11 +111,11 @@ function osc_resolve_web_user()
 
     // Transitional: honour identity still held in a physical session from before the cookie
     // mechanism shipped, so upgrading does not log anyone out. Signing out of all devices ends it.
-    $sessionId = Session::newInstance()->_get('userId');
+    $sessionId = Session::getInstance()->_get('userId');
     if ($sessionId != '') {
-        $candidate = User::newInstance()->findByPrimaryKey($sessionId);
+        $candidate = User::getInstance()->findByPrimaryKey($sessionId);
         if (isset($candidate['pk_i_id']) && \mindstellar\auth\AuthStamp::of($candidate) === 0) {
-            View::newInstance()->_exportVariableToView('_loggedUser', $candidate);
+            View::getInstance()->_exportVariableToView('_loggedUser', $candidate);
 
             return $candidate;
         }
@@ -136,12 +136,12 @@ function osc_resolve_web_user()
  */
 function osc_web_user_apply_identity($user)
 {
-    $session = Session::newInstance();
+    $session = Session::getInstance();
     $session->_setEphemeral('userId', $user['pk_i_id']);
     $session->_setEphemeral('userName', $user['s_name']);
     $session->_setEphemeral('userEmail', $user['s_email']);
     $session->_setEphemeral('userPhone', $user['s_phone_mobile'] ?: $user['s_phone_land']);
-    View::newInstance()->_exportVariableToView('_loggedUser', $user);
+    View::getInstance()->_exportVariableToView('_loggedUser', $user);
 }
 
 /**
@@ -161,7 +161,7 @@ function osc_web_user_apply_identity($user)
  */
 function osc_web_user_login($user, $remember = false)
 {
-    $cookie = Cookie::newInstance();
+    $cookie = Cookie::getInstance();
     if ($remember) {
         // Persistent: the cookie and its signed token both last a year.
         $tokenTtl = osc_time_cookie();
@@ -198,15 +198,15 @@ function osc_web_user_login($user, $remember = false)
  */
 function osc_run_web_user_identity()
 {
-    if (View::newInstance()->_exists('_loggedUser')) {
+    if (View::getInstance()->_exists('_loggedUser')) {
         return;
     }
     // A physical session already carrying identity (transitional pre-upgrade login)
     // already satisfies the readers — leave it alone.
-    if (Session::newInstance()->_get('userId') != '') {
+    if (Session::getInstance()->_get('userId') != '') {
         return;
     }
-    if (Cookie::newInstance()->get_value('oc_userId') == '') {
+    if (Cookie::getInstance()->get_value('oc_userId') == '') {
         return;
     }
     osc_is_web_user_logged_in();
@@ -219,7 +219,7 @@ function osc_run_web_user_identity()
  */
 function osc_logged_user_id()
 {
-    return (int)Session::newInstance()->_get('userId');
+    return (int)Session::getInstance()->_get('userId');
 }
 
 /**
@@ -229,7 +229,7 @@ function osc_logged_user_id()
  */
 function osc_logged_user_email()
 {
-    return (string)Session::newInstance()->_get('userEmail');
+    return (string)Session::getInstance()->_get('userEmail');
 }
 
 /**
@@ -239,7 +239,7 @@ function osc_logged_user_email()
  */
 function osc_logged_user_name()
 {
-    return (string)Session::newInstance()->_get('userName');
+    return (string)Session::getInstance()->_get('userName');
 }
 
 /**
@@ -249,7 +249,7 @@ function osc_logged_user_name()
  */
 function osc_logged_user_phone()
 {
-    return (string)Session::newInstance()->_get('userPhone');
+    return (string)Session::getInstance()->_get('userPhone');
 }
 
 /**
@@ -266,7 +266,7 @@ function osc_user_public_profile_url($id = null)
     }
     if ($id != '') {
         if (osc_rewrite_enabled()) {
-            $user = User::newInstance()->findByPrimaryKey($id);
+            $user = User::getInstance()->findByPrimaryKey($id);
             $path = osc_core_url('user_pub_profile', array('username' => $user['s_username']));
         } else {
             $path = osc_core_url('user_pub_profile_id', array('id' => (int)$id));
@@ -319,11 +319,11 @@ function osc_user_list_items_pub_profile_url($page = '', $itemsPerPage = false)
  */
 function osc_is_admin_user_logged_in()
 {
-    if (Session::newInstance()->_get('adminId') != '') {
-        $admin = Admin::newInstance()->findByPrimaryKey(Session::newInstance()->_get('adminId'));
+    if (Session::getInstance()->_get('adminId') != '') {
+        $admin = Admin::getInstance()->findByPrimaryKey(Session::getInstance()->_get('adminId'));
         // A session from before the admin signed out of all devices no longer counts.
         if (isset($admin['pk_i_id'])
-            && (int) Session::newInstance()->_get('adminStamp') === \mindstellar\auth\AuthStamp::of($admin)
+            && (int) Session::getInstance()->_get('adminStamp') === \mindstellar\auth\AuthStamp::of($admin)
         ) {
             return true;
         }
@@ -332,16 +332,16 @@ function osc_is_admin_user_logged_in()
     }
 
     //can already be a logged user or not, we'll take a look into the cookie
-    if (Cookie::newInstance()->get_value('oc_adminId') != ''
-        && Cookie::newInstance()->get_value('oc_adminSecret') != ''
+    if (Cookie::getInstance()->get_value('oc_adminId') != ''
+        && Cookie::getInstance()->get_value('oc_adminSecret') != ''
     ) {
-        $adminId = Cookie::newInstance()->get_value('oc_adminId');
-        $admin   = Admin::newInstance()->findByPrimaryKey($adminId);
+        $adminId = Cookie::getInstance()->get_value('oc_adminId');
+        $admin   = Admin::getInstance()->findByPrimaryKey($adminId);
         if (isset($admin['pk_i_id'])
             && \mindstellar\security\RememberMe::verify(
                 'admin',
                 $adminId,
-                Cookie::newInstance()->get_value('oc_adminSecret'),
+                Cookie::getInstance()->get_value('oc_adminSecret'),
                 \mindstellar\security\AdminTwoFactor::rememberBinding($admin),
                 \mindstellar\auth\AuthStamp::of($admin)
             )
@@ -349,12 +349,12 @@ function osc_is_admin_user_logged_in()
             if (session_status() === PHP_SESSION_ACTIVE) {
                 session_regenerate_id(true);
             }
-            Session::newInstance()->_set('adminId', $admin['pk_i_id']);
-            Session::newInstance()->_set('adminUserName', $admin['s_username']);
-            Session::newInstance()->_set('adminName', $admin['s_name']);
-            Session::newInstance()->_set('adminEmail', $admin['s_email']);
-            Session::newInstance()->_set('adminStamp', \mindstellar\auth\AuthStamp::of($admin));
-            Session::newInstance()->_set('adminLocale', Cookie::newInstance()->get_value('oc_adminLocale'));
+            Session::getInstance()->_set('adminId', $admin['pk_i_id']);
+            Session::getInstance()->_set('adminUserName', $admin['s_username']);
+            Session::getInstance()->_set('adminName', $admin['s_name']);
+            Session::getInstance()->_set('adminEmail', $admin['s_email']);
+            Session::getInstance()->_set('adminStamp', \mindstellar\auth\AuthStamp::of($admin));
+            Session::getInstance()->_set('adminLocale', Cookie::getInstance()->get_value('oc_adminLocale'));
 
             return true;
         }
@@ -372,7 +372,7 @@ function osc_is_admin_user_logged_in()
  */
 function osc_logged_admin_id()
 {
-    return (int)Session::newInstance()->_get('adminId');
+    return (int)Session::getInstance()->_get('adminId');
 }
 
 /**
@@ -382,7 +382,7 @@ function osc_logged_admin_id()
  */
 function osc_logged_admin_username()
 {
-    return (string)Session::newInstance()->_get('adminUserName');
+    return (string)Session::getInstance()->_get('adminUserName');
 }
 
 /**
@@ -392,7 +392,7 @@ function osc_logged_admin_username()
  */
 function osc_logged_admin_name()
 {
-    return (string)Session::newInstance()->_get('adminName');
+    return (string)Session::getInstance()->_get('adminName');
 }
 
 /**
@@ -402,7 +402,7 @@ function osc_logged_admin_name()
  */
 function osc_logged_admin_email()
 {
-    return (string)Session::newInstance()->_get('adminEmail');
+    return (string)Session::getInstance()->_get('adminEmail');
 }
 
 /**
@@ -708,13 +708,13 @@ function osc_total_users($condition = '')
 {
     switch ($condition) {
         case 'active':
-            return User::newInstance()->countUsers('b_active = 1');
+            return User::getInstance()->countUsers('b_active = 1');
             break;
         case 'enabled':
-            return User::newInstance()->countUsers('b_enabled = 1');
+            return User::getInstance()->countUsers('b_enabled = 1');
             break;
         default:
-            return User::newInstance()->countUsers();
+            return User::getInstance()->countUsers();
             break;
     }
 }
@@ -732,7 +732,7 @@ function osc_total_users($condition = '')
  */
 function osc_alert_field($field)
 {
-    return osc_field(View::newInstance()->_current('alerts'), $field, '');
+    return osc_field(View::getInstance()->_current('alerts'), $field, '');
 }
 
 /**
@@ -742,9 +742,9 @@ function osc_alert_field($field)
  */
 function osc_has_alerts()
 {
-    $result = View::newInstance()->_next('alerts');
+    $result = View::getInstance()->_next('alerts');
     $alert  = osc_alert();
-    View::newInstance()->_exportVariableToView('items', isset($alert['items']) ? $alert['items'] : array());
+    View::getInstance()->_exportVariableToView('items', isset($alert['items']) ? $alert['items'] : array());
 
     return $result;
 }
@@ -756,7 +756,7 @@ function osc_has_alerts()
  */
 function osc_count_alerts()
 {
-    return (int)View::newInstance()->_count('alerts');
+    return (int)View::getInstance()->_count('alerts');
 }
 
 /**
@@ -766,7 +766,7 @@ function osc_count_alerts()
  */
 function osc_alert()
 {
-    return View::newInstance()->_current('alerts');
+    return View::getInstance()->_current('alerts');
 }
 
 /**
@@ -989,12 +989,12 @@ function osc_has_user_avatar(?int $userId = null): bool
  */
 function osc_prepare_user_info()
 {
-    if (!View::newInstance()->_exists('users')) {
-        View::newInstance()
-            ->_exportVariableToView('users', array(User::newInstance()->findByPrimaryKey(osc_item_user_id())));
+    if (!View::getInstance()->_exists('users')) {
+        View::getInstance()
+            ->_exportVariableToView('users', array(User::getInstance()->findByPrimaryKey(osc_item_user_id())));
     }
 
-    return View::newInstance()->_next('users');
+    return View::getInstance()->_next('users');
 }
 
 /**
@@ -1014,5 +1014,5 @@ function osc_prepare_user_info()
  */
 function osc_reset_users()
 {
-    return View::newInstance()->_reset('users');
+    return View::getInstance()->_reset('users');
 }

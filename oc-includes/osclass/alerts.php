@@ -22,13 +22,13 @@
  */
 function osc_runAlert($type = null, $last_exec = null)
 {
-    $mUser = User::newInstance();
+    $mUser = User::getInstance();
     if (!in_array($type, array('HOURLY', 'DAILY', 'WEEKLY'))) {
         return;
     }
 
     if ($last_exec == null) {
-        $cron      = Cron::newInstance()->getCronByType($type);
+        $cron      = Cron::getInstance()->getCronByType($type);
         $last_exec = '1000-01-01 00:00:00';
         if (is_array($cron)) {
             $last_exec = $cron['d_last_exec'];
@@ -49,7 +49,7 @@ function osc_runAlert($type = null, $last_exec = null)
     }
 
     $active   = true;
-    $searches = Alerts::newInstance()->findByTypeGroup($type, $active);
+    $searches = Alerts::getInstance()->findByTypeGroup($type, $active);
 
     foreach ($searches as $s_search) {
         // Isolate each saved search: the cron already moved d_last_exec forward before
@@ -74,7 +74,7 @@ function osc_runAlert($type = null, $last_exec = null)
             if (count($items) > 0) {
                 // If we have new items from last check
                 // Catch the user subscribed to this search
-                $alerts = Alerts::newInstance()->findUsersBySearchAndType($s_search['s_search'], $type, $active);
+                $alerts = Alerts::getInstance()->findUsersBySearchAndType($s_search['s_search'], $type, $active);
 
                 if (count($alerts) > 0) {
                     $ads = _alert_email_ads($items);
@@ -92,7 +92,7 @@ function osc_runAlert($type = null, $last_exec = null)
                         }
                         if (count($alert) > 0) {
                             osc_run_hook('hook_' . $internal_name, $user, $ads, $alert, $items, $totalItems);
-                            AlertsStats::newInstance()->increase(date('Y-m-d'));
+                            AlertsStats::getInstance()->increase(date('Y-m-d'));
                         }
                     }
                 }

@@ -33,7 +33,7 @@ final class FieldService
 
     public static function make(string $locale): self
     {
-        return new self(Field::newInstance(), $locale);
+        return new self(Field::getInstance(), $locale);
     }
 
     /**

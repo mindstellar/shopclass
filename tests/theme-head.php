@@ -46,9 +46,14 @@ $GLOBALS['bodyFilter'] = null;
 /** Stands in for the WebThemes singleton; nothing here reads a theme directory. */
 class WebThemes
 {
-    public static function newInstance(): self
+    public static function getInstance(): self
     {
         return new self();
+    }
+
+    public static function newInstance(): self
+    {
+        return self::getInstance();
     }
 
     public function getCurrentThemePath(): string

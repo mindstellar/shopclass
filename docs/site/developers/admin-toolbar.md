@@ -12,7 +12,7 @@ nodes to it.
 ## Adding a node
 
 ```php
-AdminToolbar::newInstance()->add_menu(array(
+AdminToolbar::getInstance()->add_menu(array(
     'id'    => 'my-node',
     'title' => 'My shortcut',
     'href'  => osc_admin_render_plugin_url('myplugin/admin/index.php'),
@@ -35,7 +35,7 @@ is being built:
 ```php
 function myplugin_toolbar()
 {
-    AdminToolbar::newInstance()->add_menu(array(
+    AdminToolbar::getInstance()->add_menu(array(
         'id'    => 'myplugin-home',
         'title' => osc_page_title(),
         'href'  => osc_base_url(),

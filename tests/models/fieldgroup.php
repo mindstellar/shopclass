@@ -52,7 +52,7 @@
 
 require_once __DIR__ . '/../lib/scratchdb.php';
 require_once __DIR__ . '/../lib/harness.php';
-// findByCategory() reaches Field::newInstance(), whose constructor resolves the
+// findByCategory() reaches Field::getInstance(), whose constructor resolves the
 // current locale through osc_current_user_locale() -> osc_language(). These are
 // the real helpers, not stand-ins: with no session and no preferences seeded
 // they resolve to the empty locale code, which is all this model needs.
@@ -66,7 +66,7 @@ $catLink   = DB_TABLE_PREFIX . 't_meta_group_categories';
 $fieldLink = DB_TABLE_PREFIX . 't_meta_group_fields';
 $fieldsTbl = DB_TABLE_PREFIX . 't_meta_fields';
 
-$model = FieldGroup::newInstance();
+$model = FieldGroup::getInstance();
 
 /**
  * Insert a form row directly, bypassing insertGroup()'s slug derivation, so a
@@ -179,7 +179,7 @@ check(
     is_array($model->dao->query('SELECT 1 AS one')->row()),
     'dao->query() did not return a usable recordset'
 );
-pin('newInstance is a singleton', true, FieldGroup::newInstance() === $model);
+pin('newInstance is a singleton', true, FieldGroup::getInstance() === $model);
 pin('table name is unchanged', $table, $model->getTableName());
 pin('primary key is unchanged', 'pk_i_id', $model->getPrimaryKey());
 pin(

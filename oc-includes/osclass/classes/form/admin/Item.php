@@ -60,7 +60,7 @@ class Item extends FormInputs
     public function __construct(?Escape $escape = null, ?Sanitize $sanitize = null)
     {
         parent::__construct($escape, $sanitize);
-        $this->Session           = Session::newInstance();
+        $this->Session           = Session::getInstance();
         $this->adminLocales      = osc_get_admin_locales();
         $this->adminLocaleCode   = osc_current_admin_locale();
         $this->userLocales       = osc_get_locales();
@@ -221,7 +221,7 @@ class Item extends FormInputs
             }
             if (count($currencies) > 1) {
                 $default_key = null;
-                $currency    = \Preference::newInstance()->get('currency');
+                $currency    = \Preference::getInstance()->get('currency');
                 if (isset($item['fk_c_currency_code'])) {
                     $default_key = $item['fk_c_currency_code'];
                 } elseif (isset($currency)) {

@@ -58,7 +58,7 @@ final class CategoriesController
         if ($category === null) {
             throw ProblemException::of('not_found', 'No such category.');
         }
-        $fields = \Field::newInstance()->findByCategory((int) $category['pk_i_id']);
+        $fields = \Field::getInstance()->findByCategory((int) $category['pk_i_id']);
 
         return Response::ok($this->serializer->one($category, $context, $fields));
     }
@@ -71,7 +71,7 @@ final class CategoriesController
         $locale = $this->api->locale($request);
         $asked  = $request->queryString('category');
         if ($asked === '') {
-            $fields = \Field::newInstance()->listAll();
+            $fields = \Field::getInstance()->listAll();
         } else {
             $category = CategoryCatalog::fromSite()->lookup($asked, $locale);
             if ($category === null) {
@@ -79,7 +79,7 @@ final class CategoriesController
                     ['pointer' => '/category', 'code' => 'enum', 'message' => 'is not a known category', 'in' => 'query'],
                 ]));
             }
-            $fields = \Field::newInstance()->findByCategory((int) $category['pk_i_id']);
+            $fields = \Field::getInstance()->findByCategory((int) $category['pk_i_id']);
         }
         $serializer = new CustomFieldSerializer();
 

@@ -152,7 +152,7 @@ $truncateStats = static function () use ($admin, $table): void {
 
 /* ----------------------------------------------------------------------------
  * Fixtures. Every category this file will ever touch is seeded UP FRONT and
- * BEFORE the first Category::newInstance(), so Category's one-time tree
+ * BEFORE the first Category::getInstance(), so Category's one-time tree
  * snapshot (built lazily in its constructor) captures all of them. That makes
  * every findByPrimaryKey() lookup below a tree hit costing zero extra
  * queries, which is what isolates the query-cost pins to CategoryStats' own
@@ -175,10 +175,10 @@ $mapSub  = seed_category($admin, 'MapSub', $mapRoot);
 $cacheRoot = seed_category($admin, 'CacheRoot');
 $cacheSub  = seed_category($admin, 'CacheSub', $cacheRoot);
 
-Preference::newInstance(); // osc_current_user_locale() reads a preference; warm it so it is never attributed to a query-count pin
-Category::newInstance();   // one-time tree snapshot over every category seeded above
+Preference::getInstance(); // osc_current_user_locale() reads a preference; warm it so it is never attributed to a query-count pin
+Category::getInstance();   // one-time tree snapshot over every category seeded above
 
-$model = CategoryStats::newInstance();
+$model = CategoryStats::getInstance();
 
 /* ----------------------------------------------------------------------------
  * Surface (C2).
@@ -600,8 +600,8 @@ harness_section('getNumItems — the C9 static cache (one-shot: cannot be reset 
 $admin->query("INSERT INTO $table (fk_i_category_id, i_num_items) VALUES ($cacheRoot, 7)");
 $admin->query("INSERT INTO $table (fk_i_category_id, i_num_items) VALUES ($cacheSub, 4)");
 
-$rootCat = Category::newInstance()->findByPrimaryKey($cacheRoot);
-$subCat  = Category::newInstance()->findByPrimaryKey($cacheSub);
+$rootCat = Category::getInstance()->findByPrimaryKey($cacheRoot);
+$subCat  = Category::getInstance()->findByPrimaryKey($cacheSub);
 
 /*
  * toNumItemsMap()'s cost is 1 (listAll) + 1 (findRootCategories) + one

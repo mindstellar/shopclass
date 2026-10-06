@@ -49,7 +49,7 @@ require_once LIB_PATH . 'osclass/utils.php';
 require_once LIB_PATH . 'osclass/locales.php';
 define('WEB_PATH', osc_get_absolute_url());
 Params::init();
-Session::newInstance()->session_start();
+Session::getInstance()->session_start();
 
 $step = Params::getParamInt('step');
 if ($step < 1) {
@@ -82,15 +82,15 @@ asort($jsonLocales);
 $install_locale = Params::getParam('install_locale');
 
 if (Params::getParam('install_locale') && !(strlen($install_locale) > 5)) {
-    Session::newInstance()->_set('userLocale', Params::getParam('install_locale'));
-    Session::newInstance()->_set('adminLocale', Params::getParam('install_locale'));
+    Session::getInstance()->_set('userLocale', Params::getParam('install_locale'));
+    Session::getInstance()->_set('adminLocale', Params::getParam('install_locale'));
 }
 
 if (
-    Session::newInstance()->_get('adminLocale')
-    && array_key_exists(Session::newInstance()->_get('adminLocale'), $locales)
+    Session::getInstance()->_get('adminLocale')
+    && array_key_exists(Session::getInstance()->_get('adminLocale'), $locales)
 ) {
-    $current_locale = Session::newInstance()->_get('adminLocale');
+    $current_locale = Session::getInstance()->_get('adminLocale');
 } elseif (isset($locales['en_US'])) {
     $current_locale = 'en_US';
 } elseif (key($locales)) {
@@ -98,10 +98,10 @@ if (
 } else {
     $current_locale = 'en_US';
 }
-Session::newInstance()->_set('userLocale', $current_locale);
-Session::newInstance()->_set('adminLocale', $current_locale);
+Session::getInstance()->_set('userLocale', $current_locale);
+Session::getInstance()->_set('adminLocale', $current_locale);
 
-Translation::newInstance(true);
+Translation::getInstance(true);
 
 // Installer nonce for this session, embedded into every form and the test-db
 // request. Created here so it exists for both the rendered pages and the guards.

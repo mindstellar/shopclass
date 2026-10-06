@@ -145,9 +145,14 @@ class WebThemes
 {
     public static $path = '';
 
-    public static function newInstance()
+    public static function getInstance()
     {
         return new self();
+    }
+
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     public function getCurrentThemePath()

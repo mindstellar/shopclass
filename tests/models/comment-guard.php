@@ -58,9 +58,9 @@ osc_reset_preferences();
 $_SERVER['REMOTE_ADDR'] = '203.0.113.7';
 $_GET = array();
 // Comment as a guest, whatever an earlier file in the suite left signed in.
-Session::newInstance()->_drop('userId');
-Session::newInstance()->_dropEphemeral('userId');
-View::newInstance()->_erase('_loggedUser');
+Session::getInstance()->_drop('userId');
+Session::getInstance()->_dropEphemeral('userId');
+View::getInstance()->_erase('_loggedUser');
 
 /** Post a comment on $itemId through ItemActions and return its status code. */
 $post = static function (int $itemId): int {
@@ -94,7 +94,7 @@ pin('...and not stored', 20, $stored($live));
 
 $admin->query('INSERT INTO ' . DB_TABLE_PREFIX . "t_user (dt_reg_date, s_name, s_username, s_password, s_secret, s_email, b_enabled, b_active) VALUES (NOW(), 'Sue', 'sue_cg', '', 'x', 'sue_cg@example.com', 1, 1)");
 $sue = (int) $admin->insert_id;
-Session::newInstance()->_setEphemeral('userId', (string) $sue);
+Session::getInstance()->_setEphemeral('userId', (string) $sue);
 $sueCodes = array();
 for ($i = 0; $i < 21; $i++) {
     $sueCodes[] = $post($live);
@@ -104,8 +104,8 @@ check('a signed-in user on the same full address has their own count of 20', cou
 })) === 20);
 pin('...and their 21st is refused with status 8', 8, $sueCodes[20]);
 pin('another user has their own count', false, CommentPolicy::tooMany(Actor::user($sue + 1)));
-Session::newInstance()->_dropEphemeral('userId');
-View::newInstance()->_erase('_loggedUser');
+Session::getInstance()->_dropEphemeral('userId');
+View::getInstance()->_erase('_loggedUser');
 $admin->query('DELETE FROM ' . DB_TABLE_PREFIX . "t_item_comment WHERE fk_i_user_id = $sue");
 $admin->query('DELETE FROM ' . DB_TABLE_PREFIX . "t_user WHERE pk_i_id = $sue");
 
@@ -118,7 +118,7 @@ osc_add_filter('action_throttle_limit', static function ($limit, $context) {
 });
 check('action_throttle_limit can raise it', in_array($post($live), array(1, 2), true));
 
-View::newInstance()->_erase('item');
+View::getInstance()->_erase('item');
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

@@ -533,7 +533,7 @@ class AdminMenu
             $actual_url = 'page=' . $actual_page;
         }
 
-        $adminMenu = self::newInstance();
+        $adminMenu = self::getInstance();
         $aMenu     = $adminMenu->get_array_menu();
 
         $is_moderator = osc_is_moderator();
@@ -685,13 +685,21 @@ class AdminMenu
      *
      * @return \AdminMenu
      */
-    public static function newInstance()
+    public static function getInstance()
     {
         if (!self::$instance instanceof self) {
             self::$instance = new self();
         }
 
         return self::$instance;
+    }
+
+    /**
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
+     */
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     /**

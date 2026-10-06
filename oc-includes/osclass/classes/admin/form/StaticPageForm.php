@@ -73,7 +73,7 @@ final class StaticPageForm
         self::$failure     = array();
 
         if ($id !== null) {
-            $row               = Page::newInstance()->findByPrimaryKey($id);
+            $row               = Page::getInstance()->findByPrimaryKey($id);
             self::$indelible   = isset($row['b_indelible']) && $row['b_indelible'] == 1;
             self::$currentName = (string)($row['s_internal_name'] ?? '');
         }
@@ -202,14 +202,14 @@ final class StaticPageForm
         // Core's view vocabulary grows between releases, so a page can hold a name that was
         // free when it was created and is reserved now. Only a rename has to clear the
         // reserved set; keeping the old name leaves the page editable.
-        if (($adding || $name !== self::$currentName) && !WebThemes::newInstance()->isValidPage($name)) {
+        if (($adding || $name !== self::$currentName) && !WebThemes::getInstance()->isValidPage($name)) {
             return self::fail('s_internal_name', 'reserved', _m('You have to set a different internal name'));
         }
         if (($adding || $name !== self::$currentName) && ReservedSlugs::taken($name)) {
             return self::fail('s_internal_name', 'reserved', ReservedSlugs::message());
         }
 
-        if ($adding && isset(Page::newInstance()->findByInternalName($name)['pk_i_id'])) {
+        if ($adding && isset(Page::getInstance()->findByInternalName($name)['pk_i_id'])) {
             return self::fail(
                 's_internal_name',
                 'taken',
@@ -223,7 +223,7 @@ final class StaticPageForm
                 : _m("The page couldn't be updated, at least one title should not be empty"));
         }
 
-        if (!$adding && Page::newInstance()->internalNameExists(self::$id, $name)) {
+        if (!$adding && Page::getInstance()->internalNameExists(self::$id, $name)) {
             return self::fail('s_internal_name', 'taken', _m("You can't repeat internal name"));
         }
 

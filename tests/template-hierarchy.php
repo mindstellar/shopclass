@@ -44,9 +44,14 @@ class WebThemes
     /** @var array<string,string> theme name => parent theme name */
     public static array $parents = array();
 
-    public static function newInstance(): self
+    public static function getInstance(): self
     {
         return new self();
+    }
+
+    public static function newInstance(): self
+    {
+        return self::getInstance();
     }
 
     public function getCurrentTheme(): string

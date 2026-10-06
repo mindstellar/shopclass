@@ -33,7 +33,7 @@ final class CommentModeration
 
     public static function make(): self
     {
-        return new self(ItemComment::newInstance());
+        return new self(ItemComment::getInstance());
     }
 
     /**
@@ -157,7 +157,7 @@ final class CommentModeration
         if (!is_array($comment) || $comment === []) {
             return;
         }
-        View::newInstance()->_exportVariableToView('item', Item::newInstance()->findByPrimaryKey($comment['fk_i_item_id']));
+        View::getInstance()->_exportVariableToView('item', Item::getInstance()->findByPrimaryKey($comment['fk_i_item_id']));
         osc_run_hook('hook_email_comment_validated', $comment);
     }
 }

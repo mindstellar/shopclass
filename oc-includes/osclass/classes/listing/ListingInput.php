@@ -102,7 +102,7 @@ final class ListingInput
 
         // Resolves a remember-me cookie into the session identity before it is read.
         osc_is_web_user_logged_in();
-        $userId = (int) Session::newInstance()->_get('userId');
+        $userId = (int) Session::getInstance()->_get('userId');
 
         return $userId > 0 ? Actor::user($userId, $ip) : Actor::guest($ip);
     }
@@ -181,7 +181,7 @@ final class ListingInput
         // be attached to a listing -- and would then be unlinked once the post finished.
         if (is_array($ajax_photos) && !empty($ajax_photos)) {
             $tmpDir = osc_content_path() . 'uploads/temp/';
-            $staged = ItemTmpUpload::newInstance();
+            $staged = ItemTmpUpload::getInstance();
             $token  = osc_upload_token();
             // This runs before the CSRF check, so an anonymous POST decides how many
             // lookups it costs. A zero cap means unlimited, which still needs a ceiling
@@ -229,7 +229,7 @@ final class ListingInput
                 )
             ) {
                 $aItem['dt_expiration'] = $dt_expiration;
-                $_category              = Category::newInstance()->findByPrimaryKey($aItem['catId']);
+                $_category              = Category::getInstance()->findByPrimaryKey($aItem['catId']);
                 $categoryDays           = (int) ($_category['i_expiration_days'] ?? 0);
                 // A category of 0 days never expires, so it is already the most generous
                 // ceiling there is -- raising it by an entitlement's days would start
@@ -257,7 +257,7 @@ final class ListingInput
             } else {
                 // No expiration asked for, which is every public posting form -- the
                 // runtime a seller paid for has to land here or it never applies at all.
-                $_category              = Category::newInstance()->findByPrimaryKey($aItem['catId']);
+                $_category              = Category::getInstance()->findByPrimaryKey($aItem['catId']);
                 $categoryDays           = (int) ($_category['i_expiration_days'] ?? 0);
                 $aItem['dt_expiration'] = $_category['i_expiration_days'] ?? null;
 

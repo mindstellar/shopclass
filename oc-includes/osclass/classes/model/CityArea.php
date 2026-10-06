@@ -45,13 +45,21 @@ class CityArea extends DAO
      *
      * @return CityArea
      */
-    public static function newInstance()
+    public static function getInstance()
     {
         if (!self::$instance instanceof self) {
             self::$instance = new self();
         }
 
         return self::$instance;
+    }
+
+    /**
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
+     */
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     /**
@@ -119,8 +127,8 @@ class CityArea extends DAO
     {
         osc_run_hook('before_delete_city_area', $pk);
 
-        Item::newInstance()->deleteByCityArea($pk);
-        User::newInstance()->update(
+        Item::getInstance()->deleteByCityArea($pk);
+        User::getInstance()->update(
             array('fk_i_city_area_id' => null, 's_city_area' => ''),
             array('fk_i_city_area_id' => $pk)
         );

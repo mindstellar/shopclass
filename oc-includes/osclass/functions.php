@@ -87,7 +87,7 @@ function search_title()
     }
 
     if ($b_category && !empty($category)) {
-        $cat = Category::newInstance()->findByPrimaryKey($category[0]);
+        $cat = Category::getInstance()->findByPrimaryKey($category[0]);
         if (isset($cat['s_name'])) {
             $result .= $cat['s_name'] . ' ';
         }
@@ -109,8 +109,8 @@ function search_title()
  */
 function meta_title()
 {
-    $location = Rewrite::newInstance()->get_location();
-    $section  = Rewrite::newInstance()->get_section();
+    $location = Rewrite::getInstance()->get_location();
+    $section  = Rewrite::getInstance()->get_section();
     $text     = '';
 
     switch ($location) {
@@ -167,7 +167,7 @@ function meta_title()
             }
 
             if ($b_category && is_array($category) && count($category) > 0) {
-                $cat = Category::newInstance()->findByPrimaryKey($category[0]);
+                $cat = Category::getInstance()->findByPrimaryKey($category[0]);
                 if ($cat) {
                     $result .= $cat['s_name'] . ' ';
                 }
@@ -252,7 +252,7 @@ function meta_title()
             $text = __('Contact');
             break;
         case ('custom'):
-            $text = Rewrite::newInstance()->get_title();
+            $text = Rewrite::getInstance()->get_title();
             break;
         default:
             // Empty, not the site name: the tail below adds that. Setting it here
@@ -439,8 +439,8 @@ function osc_search_footer_links()
     }
 
     $categoryID = osc_search_category_id();
-    if (!empty($categoryID) && Category::newInstance()->isRoot(current($categoryID))) {
-        $cat = Category::newInstance()->findSubcategories(current($categoryID));
+    if (!empty($categoryID) && Category::getInstance()->isRoot(current($categoryID))) {
+        $cat = Category::getInstance()->findSubcategories(current($categoryID));
         if (count($cat) > 0) {
             $categoryID = array();
             foreach ($cat as $c) {
@@ -455,7 +455,7 @@ function osc_search_footer_links()
 
     $regionID = '';
     if (osc_search_region() != '') {
-        $aRegion = Region::newInstance()->findByName(osc_search_region());
+        $aRegion = Region::getInstance()->findByName(osc_search_region());
         if (isset($aRegion['pk_i_id'])) {
             $regionID = $aRegion['pk_i_id'];
         }
@@ -521,13 +521,13 @@ function osc_search_footer_links()
 function osc_footer_link_url($f = null)
 {
     if ($f === null) {
-        if (View::newInstance()->_exists('footer_link')) {
-            $f = View::newInstance()->_get('footer_link');
+        if (View::getInstance()->_exists('footer_link')) {
+            $f = View::getInstance()->_get('footer_link');
         } else {
             return '';
         }
     } else {
-        View::newInstance()->_exportVariableToView('footer_link', $f);
+        View::getInstance()->_exportVariableToView('footer_link', $f);
     }
     $params = array();
     $tmp    = osc_search_category_id();
@@ -554,13 +554,13 @@ function osc_footer_link_url($f = null)
 function osc_footer_link_title($f = null)
 {
     if ($f == null) {
-        if (View::newInstance()->_exists('footer_link')) {
-            $f = View::newInstance()->_get('footer_link');
+        if (View::getInstance()->_exists('footer_link')) {
+            $f = View::getInstance()->_get('footer_link');
         } else {
             return '';
         }
     } else {
-        View::newInstance()->_exportVariableToView('footer_link', $f);
+        View::getInstance()->_exportVariableToView('footer_link', $f);
     }
     $text = '';
 
@@ -592,7 +592,7 @@ function osc_footer_link_title($f = null)
  */
 function _osc_admin_toolbar_init()
 {
-    $adminToolbar = AdminToolbar::newInstance();
+    $adminToolbar = AdminToolbar::getInstance();
 
     $adminToolbar->init();
     $adminToolbar->add_menus();
@@ -610,7 +610,7 @@ osc_add_hook('init_admin', '_osc_admin_toolbar_init');
  */
 function osc_draw_admin_toolbar()
 {
-    $adminToolbar = AdminToolbar::newInstance();
+    $adminToolbar = AdminToolbar::getInstance();
 
     // run hook for adding
     osc_run_hook('add_admin_toolbar_menus');
@@ -624,7 +624,7 @@ function osc_draw_admin_toolbar()
  */
 function osc_admin_toolbar_logout()
 {
-    AdminToolbar::newInstance()->add_menu(array(
+    AdminToolbar::getInstance()->add_menu(array(
                                               'id'    => 'logout',
                                               'title' => __('Logout'),
                                               'href'  => osc_admin_base_url(true) . '?action=logout',
@@ -639,14 +639,14 @@ function osc_admin_toolbar_logout()
  */
 function osc_admin_toolbar_comments()
 {
-    $total = ItemComment::newInstance()->countAll('( c.b_active = 0 OR c.b_enabled = 0 OR c.b_spam = 1 )');
+    $total = ItemComment::getInstance()->countAll('( c.b_active = 0 OR c.b_enabled = 0 OR c.b_spam = 1 )');
     if ($total > 0) {
         $label = __('New comments');
         $title = '<i class="bi bi-chat-left-text" aria-hidden="true"></i>'
             . '<span class="toolbar-label">' . $label . '</span>'
             . '<i class="circle circle-green">' . $total . '</i>';
 
-        AdminToolbar::newInstance()->add_menu(
+        AdminToolbar::getInstance()->add_menu(
             array(
                 'id'    => 'comments',
                 'title' => $title,
@@ -664,14 +664,14 @@ function osc_admin_toolbar_comments()
  */
 function osc_admin_toolbar_spam()
 {
-    $total = Item::newInstance()->countByMarkas('spam');
+    $total = Item::getInstance()->countByMarkas('spam');
     if ($total > 0) {
         $label = __('Spam');
         $title = '<i class="bi bi-shield-exclamation" aria-hidden="true"></i>'
             . '<span class="toolbar-label">' . $label . '</span>'
             . '<i class="circle circle-red">' . $total . '</i>';
 
-        AdminToolbar::newInstance()->add_menu(
+        AdminToolbar::getInstance()->add_menu(
             array(
                 'id'    => 'spam',
                 'title' => $title,
@@ -693,10 +693,10 @@ function osc_admin_toolbar_update_core($force = false)
 {
     if (!osc_is_moderator()) {
         if ($force) {
-            AdminToolbar::newInstance()->remove_menu('update_core');
+            AdminToolbar::getInstance()->remove_menu('update_core');
         }
         if (getPreference('update_core_available') && !\mindstellar\upgrade\BuildInfo::isEdge()) {
-            $update_json = json_decode(Preference::newInstance()->get('update_core_json'), false);
+            $update_json = json_decode(Preference::getInstance()->get('update_core_json'), false);
             // The core can also be replaced outside the admin (a new container image, a manual
             // deploy), which leaves this announcing a version already running.
             if (!isset($update_json->s_new_version)
@@ -711,7 +711,7 @@ function osc_admin_toolbar_update_core($force = false)
             $label       = __('Shopclass ') . $update_json->s_new_version . __(' is available');
             $title       = '<i class="bi bi-arrow-up-circle" aria-hidden="true"></i>'
                 . '<span class="toolbar-label">' . $label . '</span>';
-            AdminToolbar::newInstance()->add_menu(
+            AdminToolbar::getInstance()->add_menu(
                 array(
                     'id'    => 'update_core',
                     'title' => $title,
@@ -797,14 +797,14 @@ function osc_admin_toolbar_update_plugins($force = false)
         $total = osc_check_plugins_update($force);
 
         if ($force) {
-            AdminToolbar::newInstance()->remove_menu('update_plugin');
+            AdminToolbar::getInstance()->remove_menu('update_plugin');
         }
         if ($total > 0) {
             $label = __('Plugin updates');
             $title = '<i class="bi bi-plug" aria-hidden="true"></i>'
                 . '<span class="toolbar-label">' . $label . '</span>'
                 . '<i class="circle circle-gray">' . $total . '</i>';
-            AdminToolbar::newInstance()->add_menu(
+            AdminToolbar::getInstance()->add_menu(
                 array(
                     'id'    => 'update_plugin',
                     'title' => $title,
@@ -846,7 +846,7 @@ function _osc_check_themes_update()
     $total            = 0;
     $array            = array();
     $array_downloaded = array();
-    $themes           = WebThemes::newInstance()->getListThemes();
+    $themes           = WebThemes::getInstance()->getListThemes();
 
     try {
         $pending = \mindstellar\market\PackageIndex::forThemes()->pendingUpdates();
@@ -855,7 +855,7 @@ function _osc_check_themes_update()
     }
 
     foreach ($themes as $theme) {
-        $info = WebThemes::newInstance()->loadThemeInfo($theme);
+        $info = WebThemes::getInstance()->loadThemeInfo($theme);
         if (isset($pending[$theme])) {
             $array[] = $theme;
             $total++;
@@ -884,14 +884,14 @@ function osc_admin_toolbar_update_themes($force = false)
         $total = osc_check_themes_update($force);
 
         if ($force) {
-            AdminToolbar::newInstance()->remove_menu('update_theme');
+            AdminToolbar::getInstance()->remove_menu('update_theme');
         }
         if ($total > 0) {
             $label = __('Theme updates');
             $title = '<i class="bi bi-brush" aria-hidden="true"></i>'
                 . '<span class="toolbar-label">' . $label . '</span>'
                 . '<i class="circle circle-gray">' . $total . '</i>';
-            AdminToolbar::newInstance()->add_menu(
+            AdminToolbar::getInstance()->add_menu(
                 array(
                     'id'    => 'update_theme',
                     'title' => $title,
@@ -935,7 +935,7 @@ function _osc_check_languages_update()
     $total            = 0;
     $array            = array();
     $array_downloaded = array();
-    $languages        = OSCLocale::newInstance()->listAll();
+    $languages        = OSCLocale::getInstance()->listAll();
     foreach ($languages as $lang) {
         if (osc_check_language_update($lang['pk_c_code'], $lang['s_version'])) {
             $array[] = $lang['pk_c_code'];
@@ -965,14 +965,14 @@ function osc_admin_toolbar_update_languages($force = false)
         $total = osc_check_languages_update($force);
 
         if ($force) {
-            AdminToolbar::newInstance()->remove_menu('update_language');
+            AdminToolbar::getInstance()->remove_menu('update_language');
         }
         if ($total > 0) {
             $label = __('Language updates');
             $title = '<i class="bi bi-translate" aria-hidden="true"></i>'
                 . '<span class="toolbar-label">' . $label . '</span>'
                 . '<i class="circle circle-gray">' . $total . '</i>';
-            AdminToolbar::newInstance()->add_menu(
+            AdminToolbar::getInstance()->add_menu(
                 array(
                     'id'    => 'update_language',
                     'title' => $title,
@@ -1069,7 +1069,7 @@ if (osc_tinymce_frontend()) {
  */
 function osc_run_cleanup()
 {
-    $engine = Cleanup::newInstance();
+    $engine = Cleanup::getInstance();
     $total  = 0;
     foreach (Cleanup::RULES as $rule) {
         if (Cleanup::isEnabled($rule)) {
@@ -1191,7 +1191,7 @@ osc_add_hook('header', 'osc_meta_generator');
  */
 function osc_meta_noindex()
 {
-    if (View::newInstance()->_exists('meta_noindex') && View::newInstance()->_get('meta_noindex')) {
+    if (View::getInstance()->_exists('meta_noindex') && View::getInstance()->_get('meta_noindex')) {
         echo '<meta name="robots" content="noindex, follow" />';
     }
 }

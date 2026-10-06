@@ -292,7 +292,7 @@ final class StorageJobs
      */
     private static function regenerate(Job $job): void
     {
-        $resource = ItemResource::newInstance()->findByPrimaryKey($job->get('pk_i_id', 0));
+        $resource = ItemResource::getInstance()->findByPrimaryKey($job->get('pk_i_id', 0));
         if ($resource === false) {
             return; // resource deleted meanwhile; nothing to regenerate
         }
@@ -324,7 +324,7 @@ final class StorageJobs
             return;
         }
 
-        $rows = ItemResource::newInstance()->getResourcesBatchByStorage($source, $offset, self::SEED_BATCH);
+        $rows = ItemResource::getInstance()->getResourcesBatchByStorage($source, $offset, self::SEED_BATCH);
 
         foreach ($rows as $row) {
             self::enqueue($op, $target, $row);
@@ -358,7 +358,7 @@ final class StorageJobs
 
         $model = !empty($snapshot['s_owner_type'])
             ? (new Resource())
-            : ItemResource::newInstance();
+            : ItemResource::getInstance();
 
         $row = $model->findByPrimaryKey($pk);
 
@@ -389,7 +389,7 @@ final class StorageJobs
             return;
         }
 
-        ItemResource::newInstance()->updateByPrimaryKey(array('s_storage' => $storageId), $pk);
+        ItemResource::getInstance()->updateByPrimaryKey(array('s_storage' => $storageId), $pk);
     }
 
     /**

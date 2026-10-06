@@ -45,6 +45,7 @@ Plugin authors should read the Breaking section before upgrading.
 
 ### Changed
 
+- Shared core classes are reached with `getInstance()`. `newInstance()`, which never made a new instance, and `instance()` still work but are deprecated.
 - Listing counts per country, region and city are recounted once a week as background jobs, instead of a slow hourly pass; the `t_locations_tmp` table is removed.
 - The search page is split into a URI resolver and a search runner the API reuses. Its hooks and filters are unchanged.
 - Unblocking one comment e-mails its author when it goes live.

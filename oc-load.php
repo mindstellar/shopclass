@@ -60,13 +60,13 @@ require_once LIB_PATH . 'osclass/default-constants.php';
 //Load Autoloader
 require_once LIB_PATH . 'vendor/autoload.php';
 //Register error handler
-OsclassErrors::instance()->register();
+OsclassErrors::getInstance()->register();
 require_once LIB_PATH . 'osclass/helpers/hDatabaseInfo.php';
 require_once LIB_PATH . 'osclass/helpers/hDatabase.php';
 require_once LIB_PATH . 'osclass/helpers/hPreference.php';
 require_once LIB_PATH . 'osclass/helpers/hMaintenance.php';
 // check if Shopclass is installed
-if (!Preference::newInstance()->get('osclass_installed')) {
+if (!Preference::getInstance()->get('osclass_installed')) {
     osc_die(
         'Shopclass isn\'t installed yet',
         'Your settings are in place, but the database hasn\'t been set up yet. Run the installer to finish.',
@@ -141,13 +141,13 @@ Params::init();
 if (!defined('OC_ADMIN') || OC_ADMIN !== true) {
     session_cache_limiter('');
 }
-Session::newInstance()->session_resume();
+Session::getInstance()->session_resume();
 // Consume flash messages left by the previous request from their signed cookie (and clear
 // it) before any output — so a page that only shows a flash never starts a session.
-Session::newInstance()->_loadFlashMessages();
+Session::getInstance()->_loadFlashMessages();
 // Same for form-repopulation values, so a form that refills after a validation error does
 // not need a session either.
-Session::newInstance()->_loadFormData();
+Session::getInstance()->_loadFormData();
 // Resolve a cookie-authenticated front-end identity into the request scope so the
 // historical Session::_get('userId') readers work without a server session. No-op for
 // anonymous, cookieless visitors, so their requests stay session-free and cacheable.
@@ -178,8 +178,8 @@ osc_register_script('php-date', osc_assets_url('osclass-legacy/js/date.js'));
 Plugins::init();
 if (defined('OC_ADMIN') && OC_ADMIN) {
     // init admin menu
-    AdminMenu::newInstance()->init();
-    $functions_path = AdminThemes::newInstance()->getCurrentThemePath() . 'functions.php';
+    AdminMenu::getInstance()->init();
+    $functions_path = AdminThemes::getInstance()->getCurrentThemePath() . 'functions.php';
     if (file_exists($functions_path)) {
         require_once $functions_path;
     }
@@ -191,4 +191,4 @@ require_once LIB_PATH . 'osclass/helpers/hAdminUi.php';
 WebThemes::init();
 Translation::init();
 Csrf::init();
-Rewrite::newInstance()->init();
+Rewrite::getInstance()->init();

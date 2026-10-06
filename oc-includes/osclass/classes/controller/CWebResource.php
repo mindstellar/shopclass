@@ -174,7 +174,7 @@ class CWebResource extends BaseModel
 
         try {
             if ($type === '' || $type === 'item') {
-                $row = ItemResource::newInstance()->findByPrimaryKey($id);
+                $row = ItemResource::getInstance()->findByPrimaryKey($id);
 
                 return (is_array($row) && !empty($row['pk_i_id'])) ? $row : null;
             }

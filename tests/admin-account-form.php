@@ -220,7 +220,7 @@ class AdminSecBaseModel
 
     public function _exportVariableToView($key, $value)
     {
-        View::newInstance()->_exportVariableToView($key, $value);
+        View::getInstance()->_exportVariableToView($key, $value);
     }
 
     /** The admin theme's view for this screen, drawn where the real one would draw it. */
@@ -1358,7 +1358,7 @@ $target  = seed_admin($admin, 'stamped', 'stamped@example.test', 'stamped-passwo
 $was     = $stampOf($target);
 // Output has gone out, so no real session can start: a plain array stands in for it.
 $_SESSION = array();
-$session  = Session::newInstance();
+$session  = Session::getInstance();
 $session->_set('adminId', (string)$root);
 $session->_set('adminStamp', $stampOf($root));
 $rootStamp = $stampOf($root);

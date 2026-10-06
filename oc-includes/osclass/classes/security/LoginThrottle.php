@@ -96,7 +96,7 @@ class LoginThrottle
         $account = self::normalise($account);
 
         try {
-            $model = LoginAttempt::newInstance();
+            $model = LoginAttempt::getInstance();
 
             $byIp = $ip !== '' ? self::ipWindow($ip, $since) : array('n' => 0, 'oldest' => null);
             if ($byIp['n'] >= osc_login_throttle_max_ip()) {
@@ -139,7 +139,7 @@ class LoginThrottle
         }
 
         try {
-            LoginAttempt::newInstance()->record(
+            LoginAttempt::getInstance()->record(
                 $context,
                 self::normalise($account),
                 $withAddress ? self::ip() : '',
@@ -169,7 +169,7 @@ class LoginThrottle
         }
 
         try {
-            $model   = LoginAttempt::newInstance();
+            $model   = LoginAttempt::getInstance();
             $account = self::normalise($account);
             if ($account !== '') {
                 $model->clearAccount($context, $account);
@@ -312,7 +312,7 @@ class LoginThrottle
     public static function unblockAccount($context, $account)
     {
         try {
-            LoginAttempt::newInstance()->clearAccount((string)$context, (string)$account);
+            LoginAttempt::getInstance()->clearAccount((string)$context, (string)$account);
         } catch (\Throwable $e) {
             self::unavailable($e);
         }
@@ -349,7 +349,7 @@ class LoginThrottle
         }
 
         try {
-            return LoginAttempt::newInstance()->pruneBefore(
+            return LoginAttempt::getInstance()->pruneBefore(
                 date('Y-m-d H:i:s', time() - ($days * 86400))
             );
         } catch (\Throwable $e) {

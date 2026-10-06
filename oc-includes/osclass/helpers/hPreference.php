@@ -1229,7 +1229,7 @@ function osc_get_bool_preference($key, $section = 'osclass')
  */
 function osc_get_preference_section($section = 'osclass')
 {
-    $_P = Preference::newInstance();
+    $_P = Preference::getInstance();
 
     return $_P->getSection($section);
 }
@@ -1246,7 +1246,7 @@ function osc_get_preference_section($section = 'osclass')
  */
 function osc_set_preference($key, $value = '', $section = 'osclass', $type = 'STRING')
 {
-    return Preference::newInstance()->replace($key, $value, $section, $type);
+    return Preference::getInstance()->replace($key, $value, $section, $type);
 }
 
 /**
@@ -1259,7 +1259,7 @@ function osc_set_preference($key, $value = '', $section = 'osclass', $type = 'ST
  */
 function osc_delete_preference($key = '', $section = 'osclass')
 {
-    return Preference::newInstance()->delete(array('s_name' => $key, 's_section' => $section));
+    return Preference::getInstance()->delete(array('s_name' => $key, 's_section' => $section));
 }
 
 /**
@@ -1269,7 +1269,7 @@ function osc_delete_preference($key = '', $section = 'osclass')
  */
 function osc_reset_preferences()
 {
-    return Preference::newInstance()->toArray();
+    return Preference::getInstance()->toArray();
 }
 
 /**
@@ -1403,7 +1403,7 @@ function osc_turnstile_secret_key()
  */
 function getBoolPreference($key)
 {
-    $_P = Preference::newInstance();
+    $_P = Preference::getInstance();
 
     if ($_P->get($key)) {
         return true;
@@ -1440,7 +1440,7 @@ function osc_billing_enabled()
  */
 function getPreference($key, $section = 'osclass')
 {
-    $_P = Preference::newInstance();
+    $_P = Preference::getInstance();
 
     return $_P->get($key, $section);
 }

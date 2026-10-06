@@ -52,13 +52,13 @@ class ItemForm extends Form
     ) {
         // Did user select a specific category to post in?
         $catId = Params::getParam('catId');
-        if (Session::newInstance()->_getForm('catId') != '') {
-            $catId = Session::newInstance()->_getForm('catId');
+        if (Session::getInstance()->_getForm('catId') != '') {
+            $catId = Session::getInstance()->_getForm('catId');
         }
 
         if ($categories == null) {
-            if (View::newInstance()->_exists('categories')) {
-                $categories = View::newInstance()->_get('categories');
+            if (View::getInstance()->_exists('categories')) {
+                $categories = View::getInstance()->_get('categories');
             } else {
                 $categories = osc_get_categories();
             }
@@ -121,8 +121,8 @@ class ItemForm extends Form
     {
         // Did user select a specific category to post in?
         $catId = Params::getParam('catId');
-        if (Session::newInstance()->_getForm('catId') != '') {
-            $catId = Session::newInstance()->_getForm('catId');
+        if (Session::getInstance()->_getForm('catId') != '') {
+            $catId = Session::getInstance()->_getForm('catId');
         }
         // How many indents to add?
         $deep_string = str_repeat('&nbsp;&nbsp;', $deep);
@@ -164,8 +164,8 @@ class ItemForm extends Form
             $categoryID = osc_item_category_id();
         }
 
-        if (Session::newInstance()->_getForm('catId') != '') {
-            $categoryID = Session::newInstance()->_getForm('catId');
+        if (Session::getInstance()->_getForm('catId') != '') {
+            $categoryID = Session::getInstance()->_getForm('catId');
         }
 
         if ($item == null) {
@@ -176,7 +176,7 @@ class ItemForm extends Form
             $categoryID = $item['fk_i_category_id'];
         }
 
-        $tmp_categories_tree = Category::newInstance()->toRootTree($categoryID);
+        $tmp_categories_tree = Category::getInstance()->toRootTree($categoryID);
         $categories_tree     = array();
         foreach ($tmp_categories_tree as $t) {
             $categories_tree[] = $t['pk_i_id'];
@@ -184,7 +184,7 @@ class ItemForm extends Form
         unset($tmp_categories_tree);
 
         if ($categories == null) {
-            $categories = Category::newInstance()->listEnabled();
+            $categories = Category::getInstance()->listEnabled();
         }
 
         self::generic_input_hidden('catId', $categoryID);
@@ -308,14 +308,14 @@ class ItemForm extends Form
     public static function user_select($users = null, $item = null, $default_item = null)
     {
         if ($users == null) {
-            $users = User::newInstance()->listAll();
+            $users = User::getInstance()->listAll();
         }
         if ($item == null) {
             $item = osc_item();
         }
         $userId = '';
-        if (Session::newInstance()->_getForm('userId')) {
-            $userId = Session::newInstance()->_getForm('userId');
+        if (Session::getInstance()->_getForm('userId')) {
+            $userId = Session::getInstance()->_getForm('userId');
         }
         echo '<select name="userId" id="userId">';
         if (isset($default_item)) {
@@ -396,8 +396,8 @@ class ItemForm extends Form
             $title = (isset($item) && isset($item['locale'][$locale['pk_c_code']])
                 && isset($item['locale'][$locale['pk_c_code']]['s_title']))
                 ? $item['locale'][$locale['pk_c_code']]['s_title'] : '';
-            if (Session::newInstance()->_getForm('title') != '') {
-                $title_ = Session::newInstance()->_getForm('title');
+            if (Session::getInstance()->_getForm('title') != '') {
+                $title_ = Session::getInstance()->_getForm('title');
                 if ($title_[$locale['pk_c_code']] != '') {
                     $title = $title_[$locale['pk_c_code']];
                 }
@@ -409,8 +409,8 @@ class ItemForm extends Form
             $description = (isset($item) && isset($item['locale'][$locale['pk_c_code']])
                 && isset($item['locale'][$locale['pk_c_code']]['s_description']))
                 ? $item['locale'][$locale['pk_c_code']]['s_description'] : '';
-            if (Session::newInstance()->_getForm('description') != '') {
-                $description_ = Session::newInstance()->_getForm('description');
+            if (Session::getInstance()->_getForm('description') != '') {
+                $description_ = Session::getInstance()->_getForm('description');
                 if ($description_[$locale['pk_c_code']] != '') {
                     $description = $description_[$locale['pk_c_code']];
                 }
@@ -512,8 +512,8 @@ class ItemForm extends Form
         if ($item == null) {
             $item = osc_item();
         }
-        if (Session::newInstance()->_getForm('price') != '') {
-            $item['i_price'] = Session::newInstance()->_getForm('price');
+        if (Session::getInstance()->_getForm('price') != '') {
+            $item['i_price'] = Session::getInstance()->_getForm('price');
         }
         parent::generic_input_text(
             'price',
@@ -537,8 +537,8 @@ class ItemForm extends Form
         if ($item == null) {
             $item = osc_item();
         }
-        if (Session::newInstance()->_getForm('currency') != '') {
-            $item['fk_c_currency_code'] = Session::newInstance()->_getForm('currency');
+        if (Session::getInstance()->_getForm('currency') != '') {
+            $item['fk_c_currency_code'] = Session::getInstance()->_getForm('currency');
         }
         if (count($currencies) > 1) {
             $default_key = null;
@@ -580,8 +580,8 @@ class ItemForm extends Form
             $item = osc_item();
         }
         if (count($countries) >= 1) {
-            if (Session::newInstance()->_getForm('countryId') != '') {
-                $item['fk_c_country_code'] = Session::newInstance()->_getForm('countryId');
+            if (Session::getInstance()->_getForm('countryId') != '') {
+                $item['fk_c_country_code'] = Session::getInstance()->_getForm('countryId');
             }
             parent::generic_select(
                 'countryId',
@@ -595,8 +595,8 @@ class ItemForm extends Form
             return true;
         }
 
-        if (Session::newInstance()->_getForm('country') != '') {
-            $item['s_country'] = Session::newInstance()->_getForm('country');
+        if (Session::getInstance()->_getForm('country') != '') {
+            $item['s_country'] = Session::getInstance()->_getForm('country');
         }
         parent::generic_input_text(
             'country',
@@ -618,8 +618,8 @@ class ItemForm extends Form
         if ($item == null) {
             $item = osc_item();
         }
-        if (Session::newInstance()->_getForm('country') != '') {
-            $item['s_country'] = Session::newInstance()->_getForm('country');
+        if (Session::getInstance()->_getForm('country') != '') {
+            $item['s_country'] = Session::getInstance()->_getForm('country');
         }
         $only_one = false;
         if (!isset($item['s_country'])) {
@@ -660,16 +660,16 @@ class ItemForm extends Form
             $item = osc_item();
         }
 
-        if (Session::newInstance()->_getForm('countryId') != '') {
+        if (Session::getInstance()->_getForm('countryId') != '') {
             $regions =
-                Region::newInstance()->findByCountry(Session::newInstance()->_getForm('countryId'));
+                Region::getInstance()->findByCountry(Session::getInstance()->_getForm('countryId'));
         } elseif ($regions == null) {
-            $regions = Region::newInstance()->findByCountry($item['fk_c_country_code']);
+            $regions = Region::getInstance()->findByCountry($item['fk_c_country_code']);
         }
 
         if (count($regions) >= 1) {
-            if (Session::newInstance()->_getForm('regionId') != '') {
-                $item['fk_i_region_id'] = Session::newInstance()->_getForm('regionId');
+            if (Session::getInstance()->_getForm('regionId') != '') {
+                $item['fk_i_region_id'] = Session::getInstance()->_getForm('regionId');
             }
             parent::generic_select(
                 'regionId',
@@ -687,7 +687,7 @@ class ItemForm extends Form
         // select waiting on the cascade; a free-text box here would leave the script
         // no #regionId to fill, and the empty list means "not chosen", not "this
         // country has no regions".
-        $countryId = Session::newInstance()->_getForm('countryId');
+        $countryId = Session::getInstance()->_getForm('countryId');
         if ($countryId == '' && isset($item['fk_c_country_code'])) {
             $countryId = $item['fk_c_country_code'];
         }
@@ -697,8 +697,8 @@ class ItemForm extends Form
             return true;
         }
 
-        if (Session::newInstance()->_getForm('region') != '') {
-            $item['s_region'] = Session::newInstance()->_getForm('region');
+        if (Session::getInstance()->_getForm('region') != '') {
+            $item['s_region'] = Session::getInstance()->_getForm('region');
         }
         parent::generic_input_text(
             'region',
@@ -723,16 +723,16 @@ class ItemForm extends Form
             $item = osc_item();
         }
 
-        if (Session::newInstance()->_getForm('regionId') != '') {
+        if (Session::getInstance()->_getForm('regionId') != '') {
             $cities =
-                City::newInstance()->findByRegion(Session::newInstance()->_getForm('regionId'));
+                City::getInstance()->findByRegion(Session::getInstance()->_getForm('regionId'));
         } elseif ($cities == null && isset($item['fk_i_region_id'])) {
-            $cities = City::newInstance()->findByRegion($item['fk_i_region_id']);
+            $cities = City::getInstance()->findByRegion($item['fk_i_region_id']);
         }
 
         if (!empty($cities) && count($cities) >= 1) {
-            if (Session::newInstance()->_getForm('cityId') != '') {
-                $item['fk_i_city_id'] = Session::newInstance()->_getForm('cityId');
+            if (Session::getInstance()->_getForm('cityId') != '') {
+                $item['fk_i_city_id'] = Session::getInstance()->_getForm('cityId');
             }
             parent::generic_select(
                 'cityId',
@@ -748,7 +748,7 @@ class ItemForm extends Form
 
         // Same as the region above: no region picked yet is not the same as a region
         // with no cities.
-        $regionId = Session::newInstance()->_getForm('regionId');
+        $regionId = Session::getInstance()->_getForm('regionId');
         if ($regionId == '' && isset($item['fk_i_region_id'])) {
             $regionId = $item['fk_i_region_id'];
         }
@@ -758,8 +758,8 @@ class ItemForm extends Form
             return true;
         }
 
-        if (Session::newInstance()->_getForm('city') != '') {
-            $item['s_city'] = Session::newInstance()->_getForm('city');
+        if (Session::getInstance()->_getForm('city') != '') {
+            $item['s_city'] = Session::getInstance()->_getForm('city');
         }
         parent::generic_input_text('city', isset($item['s_city']) ? $item['s_city'] : null);
 
@@ -778,8 +778,8 @@ class ItemForm extends Form
         if ($item == null) {
             $item = osc_item();
         }
-        if (Session::newInstance()->_getForm('region') != '') {
-            $item['s_region'] = Session::newInstance()->_getForm('region');
+        if (Session::getInstance()->_getForm('region') != '') {
+            $item['s_region'] = Session::getInstance()->_getForm('region');
         }
         parent::generic_input_text(
             'region',
@@ -807,8 +807,8 @@ class ItemForm extends Form
         if ($item == null) {
             $item = osc_item();
         }
-        if (Session::newInstance()->_getForm('city') != '') {
-            $item['s_city'] = Session::newInstance()->_getForm('city');
+        if (Session::getInstance()->_getForm('city') != '') {
+            $item['s_city'] = Session::getInstance()->_getForm('city');
         }
         parent::generic_input_text('city', isset($item['s_city']) ? $item['s_city'] : null, false);
         parent::generic_input_hidden(
@@ -832,8 +832,8 @@ class ItemForm extends Form
         if ($item == null) {
             $item = osc_item();
         }
-        if (Session::newInstance()->_getForm('cityArea') != '') {
-            $item['s_city_area'] = Session::newInstance()->_getForm('cityArea');
+        if (Session::getInstance()->_getForm('cityArea') != '') {
+            $item['s_city_area'] = Session::getInstance()->_getForm('cityArea');
         }
         parent::generic_input_text(
             'cityArea',
@@ -860,8 +860,8 @@ class ItemForm extends Form
         if ($item == null) {
             $item = osc_item();
         }
-        if (Session::newInstance()->_getForm('address') != '') {
-            $item['s_address'] = Session::newInstance()->_getForm('address');
+        if (Session::getInstance()->_getForm('address') != '') {
+            $item['s_address'] = Session::getInstance()->_getForm('address');
         }
         parent::generic_input_text(
             'address',
@@ -883,8 +883,8 @@ class ItemForm extends Form
         if ($item == null) {
             $item = osc_item();
         }
-        if (Session::newInstance()->_getForm('zip') != '') {
-            $item['s_zip'] = Session::newInstance()->_getForm('zip');
+        if (Session::getInstance()->_getForm('zip') != '') {
+            $item['s_zip'] = Session::getInstance()->_getForm('zip');
         }
         parent::generic_input_text('zip', isset($item['s_zip']) ? $item['s_zip'] : null);
 
@@ -903,8 +903,8 @@ class ItemForm extends Form
         if ($item == null) {
             $item = osc_item();
         }
-        if (Session::newInstance()->_getForm('contactName') != '') {
-            $item['s_contact_name'] = Session::newInstance()->_getForm('contactName');
+        if (Session::getInstance()->_getForm('contactName') != '') {
+            $item['s_contact_name'] = Session::getInstance()->_getForm('contactName');
         }
         parent::generic_input_text(
             'contactName',
@@ -926,8 +926,8 @@ class ItemForm extends Form
         if ($item == null) {
             $item = osc_item();
         }
-        if (Session::newInstance()->_getForm('contactEmail') != '') {
-            $item['s_contact_email'] = Session::newInstance()->_getForm('contactEmail');
+        if (Session::getInstance()->_getForm('contactEmail') != '') {
+            $item['s_contact_email'] = Session::getInstance()->_getForm('contactEmail');
         }
         parent::generic_input_text(
             'contactEmail',
@@ -949,8 +949,8 @@ class ItemForm extends Form
         if ($item == null) {
             $item = osc_item();
         }
-        if (Session::newInstance()->_getForm('contactPhone') != '') {
-            $item['s_contact_phone'] = Session::newInstance()->_getForm('contactPhone');
+        if (Session::getInstance()->_getForm('contactPhone') != '') {
+            $item['s_contact_phone'] = Session::getInstance()->_getForm('contactPhone');
         }
         parent::generic_input_text(
             'contactPhone',
@@ -970,7 +970,7 @@ class ItemForm extends Form
     {
         $loggedUserId = osc_logged_user_id();
         if ($loggedUserId) {
-            $user = User::newInstance()->findByPrimaryKey($loggedUserId);
+            $user = User::getInstance()->findByPrimaryKey($loggedUserId);
             parent::generic_input_hidden('contactName', $user['s_name']);
             parent::generic_input_hidden('contactEmail', $user['s_email']);
 
@@ -994,7 +994,7 @@ class ItemForm extends Form
         }
         // A checkbox posts nothing when it is off, so the saved value may only be replaced
         // when a rejected submit actually put the key in the form session.
-        $form = Session::newInstance()->_getForm();
+        $form = Session::getInstance()->_getForm();
         if (is_array($form) && array_key_exists('showEmail', $form)) {
             $item['b_show_email'] = $form['showEmail'];
         }
@@ -1628,7 +1628,7 @@ class ItemForm extends Form
         <script>
             var catPriceEnabled = [];
             <?php
-            $categories = Category::newInstance()->listAll(false);
+            $categories = Category::getInstance()->listAll(false);
         foreach ($categories as $c) {
             echo 'catPriceEnabled[' . $c['pk_i_id'] . '] = ' . $c['b_price_enabled'] . ';';
         }
@@ -1829,15 +1829,15 @@ class ItemForm extends Form
             $resources = osc_get_item_resources();
         }
         $aImages = array();
-        if (Session::newInstance()->_getForm('photos') != '') {
-            $aImages = Session::newInstance()->_getForm('photos');
+        if (Session::getInstance()->_getForm('photos') != '') {
+            $aImages = Session::getInstance()->_getForm('photos');
             if (isset($aImages['name'])) {
                 $aImages = $aImages['name'];
             } else {
                 $aImages = array();
             }
-            Session::newInstance()->_drop('photos');
-            Session::newInstance()->_dropKeepForm('photos');
+            Session::getInstance()->_drop('photos');
+            Session::getInstance()->_dropKeepForm('photos');
         }
 
         $aExt              = explode(',', osc_allowed_extension());

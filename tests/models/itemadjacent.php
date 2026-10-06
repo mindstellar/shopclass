@@ -62,9 +62,9 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hLocale.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hCache.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hItems.php';
 
-Preference::newInstance(); // warm the preference map so no lookup is charged to a count pin
+Preference::getInstance(); // warm the preference map so no lookup is charged to a count pin
 
-$cache     = Object_Cache_Factory::newInstance();
+$cache     = Object_Cache_Factory::getInstance();
 $itemTable = DB_TABLE_PREFIX . 't_item';
 $descTable = DB_TABLE_PREFIX . 't_item_description';
 $locTable  = DB_TABLE_PREFIX . 't_item_location';
@@ -96,7 +96,7 @@ seed_exec(
 );
 
 $full = static function (int $id): string {
-    return osc_item_url_from_item(Item::newInstance()->findByPrimaryKey($id));
+    return osc_item_url_from_item(Item::getInstance()->findByPrimaryKey($id));
 };
 
 harness_section('Neighbours skip hidden listings');
@@ -122,10 +122,10 @@ pin('plain listing', $full($a), osc_item_adjacent_url('prev', $premium));
 pin('the stand-in carries the city', true, strpos(osc_item_adjacent_url('next', $premium), 'San José') !== false);
 
 harness_section('Model row');
-$row = Item::newInstance()->findAdjacentLive($premium, true, 'fr_FR');
+$row = Item::getInstance()->findAdjacentLive($premium, true, 'fr_FR');
 pin('title follows the asked locale', 'Deuxième', $row['s_title'] ?? null);
 pin('row carries only the URL fields', array('pk_i_id', 'fk_i_category_id', 's_city', 's_title'), array_keys($row));
-pin('nothing before the first listing', array(), Item::newInstance()->findAdjacentLive($a, false, 'en_US'));
+pin('nothing before the first listing', array(), Item::getInstance()->findAdjacentLive($a, false, 'en_US'));
 
 harness_section('Cost and cache');
 $cache->flush();

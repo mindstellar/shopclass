@@ -125,7 +125,7 @@ function render_offset()
 $itemErrors  = __get('editorErrors');
 $itemErrors  = is_array($itemErrors) ? $itemErrors : array();
 $itemRecord  = $new_item ? null : osc_item();
-$itemSession = Session::newInstance()->_getForm();
+$itemSession = Session::getInstance()->_getForm();
 $itemSession = is_array($itemSession) ? $itemSession : array();
 /**
  * One field's value: what was submitted if a rejected save put it there, else what is stored.
@@ -146,8 +146,8 @@ $itemTyped = static function ($name, $value) use ($itemSession) {
 $itemLocales = array();
 $itemTitles  = array();
 $itemBodies  = array();
-$sessionTitles = Session::newInstance()->_getForm('title');
-$sessionBodies = Session::newInstance()->_getForm('description');
+$sessionTitles = Session::getInstance()->_getForm('title');
+$sessionBodies = Session::getInstance()->_getForm('description');
 foreach (osc_get_locales() as $itemLocale) {
     $code               = $itemLocale['pk_c_code'];
     $itemLocales[$code] = $itemLocale['s_name'];
@@ -167,7 +167,7 @@ $itemStaged = array();
 $posted     = Params::getParam('ajax_photos');
 if (is_array($posted) && $posted !== array()) {
     $stagedDir   = osc_content_path() . 'uploads/temp/';
-    $stagedStore = ItemTmpUpload::newInstance();
+    $stagedStore = ItemTmpUpload::getInstance();
     $stagedToken = osc_upload_token();
     // The same ceiling the save stops at, so the screen shows what would be attached and
     // a long list costs no more lookups here than it does there.
@@ -278,7 +278,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         $itemPrice  = $itemPrice === '' ? '' : osc_prepare_price($itemPrice);
         $currency   = $itemTyped(
             'currency',
-            $itemRecord['fk_c_currency_code'] ?? Preference::newInstance()->get('currency')
+            $itemRecord['fk_c_currency_code'] ?? Preference::getInstance()->get('currency')
         );
         // The category script hides this whole block for a category that takes no price, by
         // the wrapper the price input sits in -- so the label belongs inside it.

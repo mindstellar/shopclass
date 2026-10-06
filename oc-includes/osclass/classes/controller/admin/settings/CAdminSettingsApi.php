@@ -284,7 +284,7 @@ class CAdminSettingsApi extends AdminSecBaseModel
      */
     private function handOffSecret(string $url, string $secret): void
     {
-        Session::newInstance()->_set(self::WEBHOOK_SECRET, array('secret' => $secret, 'url' => $url, 'at' => time()));
+        Session::getInstance()->_set(self::WEBHOOK_SECRET, array('secret' => $secret, 'url' => $url, 'at' => time()));
     }
 
     /**
@@ -297,7 +297,7 @@ class CAdminSettingsApi extends AdminSecBaseModel
         $admin   = $this->admin();
         $owner   = self::owner($admin);
         $keys    = $this->keys();
-        $session = Session::newInstance();
+        $session = Session::getInstance();
         $issued  = $session->_get(self::ISSUED);
         $session->_drop(self::ISSUED);
         if (!is_array($issued) || time() - (int) ($issued['at'] ?? 0) > self::ISSUED_TTL) {
@@ -333,7 +333,7 @@ class CAdminSettingsApi extends AdminSecBaseModel
      */
     private function handOff(IssuedKey $issued, string $name): void
     {
-        Session::newInstance()->_set(self::ISSUED, array('token' => $issued->token(), 'name' => $name, 'at' => time()));
+        Session::getInstance()->_set(self::ISSUED, array('token' => $issued->token(), 'name' => $name, 'at' => time()));
     }
 
     /**
@@ -358,7 +358,7 @@ class CAdminSettingsApi extends AdminSecBaseModel
      */
     private function admin(): array
     {
-        $row = Admin::newInstance()->findByPrimaryKey(osc_logged_admin_id());
+        $row = Admin::getInstance()->findByPrimaryKey(osc_logged_admin_id());
 
         return is_array($row) ? $row : array();
     }

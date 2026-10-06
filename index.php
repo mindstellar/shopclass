@@ -84,7 +84,7 @@ if (file_exists(ABS_PATH . '.maintenance')) {
             define('OSC_MAINTENANCE_MESSAGE', $maintenanceMessage);
         }
 
-        if (file_exists(WebThemes::newInstance()->getCurrentThemePath() . 'maintenance.php')) {
+        if (file_exists(WebThemes::getInstance()->getCurrentThemePath() . 'maintenance.php')) {
             osc_current_web_theme_path('maintenance.php');
             die();
         }
@@ -109,18 +109,18 @@ if (file_exists(ABS_PATH . '.maintenance')) {
 }
 
 if (!$osc_api_request && !osc_users_enabled() && osc_is_web_user_logged_in()) {
-    Session::newInstance()->_drop('userId');
-    Session::newInstance()->_drop('userName');
-    Session::newInstance()->_drop('userEmail');
-    Session::newInstance()->_drop('userPhone');
+    Session::getInstance()->_drop('userId');
+    Session::getInstance()->_drop('userName');
+    Session::getInstance()->_drop('userEmail');
+    Session::getInstance()->_drop('userPhone');
 
-    Cookie::newInstance()->pop('oc_userId');
-    Cookie::newInstance()->pop('oc_userSecret');
-    Cookie::newInstance()->set();
+    Cookie::getInstance()->pop('oc_userId');
+    Cookie::getInstance()->pop('oc_userSecret');
+    Cookie::getInstance()->set();
 }
 
 if (!$osc_api_request && osc_is_web_user_logged_in()) {
-    User::newInstance()->lastAccess(
+    User::getInstance()->lastAccess(
         osc_logged_user_id(),
         date('Y-m-d H:i:s'),
         Params::getServerParam('REMOTE_ADDR'),
@@ -212,7 +212,7 @@ switch (Params::getParam('page')) {
         $do->doModel();
         break;
     case ('sitemap'):   // core XML sitemap (index + child sitemaps)
-        Sitemap::newInstance()->serve();
+        Sitemap::getInstance()->serve();
         break;
     default:            // home and static pages that are mandatory...
         $do = new CWebMain();

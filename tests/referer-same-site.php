@@ -24,9 +24,14 @@ final class Rewrite
 {
     public static string $ref = '';
 
-    public static function newInstance(): self
+    public static function getInstance(): self
     {
         return new self();
+    }
+
+    public static function newInstance(): self
+    {
+        return self::getInstance();
     }
 
     public function get_http_referer(): string
@@ -39,9 +44,14 @@ final class Session
 {
     public static string $ref = '';
 
-    public static function newInstance(): self
+    public static function getInstance(): self
     {
         return new self();
+    }
+
+    public static function newInstance(): self
+    {
+        return self::getInstance();
     }
 
     public function _getReferer(): string

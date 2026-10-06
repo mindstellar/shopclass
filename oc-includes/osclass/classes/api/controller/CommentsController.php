@@ -46,7 +46,7 @@ final class CommentsController
             'body'  => (string) ($input['body'] ?? ''),
         ], $credential->actor($request->ip(), ViewContext::LISTINGS_SCOPE));
 
-        $row      = \ItemComment::newInstance()->findByPrimaryKey($saved->id());
+        $row      = \ItemComment::getInstance()->findByPrimaryKey($saved->id());
         $warnings = $saved->isLive() ? [] : ['warnings' => [['code' => 'comment_pending', 'message' => 'The comment shows once it is approved.']]];
 
         return Response::created((new CommentSerializer())->one(is_array($row) ? $row : []), $this->api->links()->api('comments/' . $saved->id()), $warnings);
@@ -60,12 +60,12 @@ final class CommentsController
      */
     public function show(Request $request, Credential $credential, array $args): Response
     {
-        $comment = \ItemComment::newInstance()->findByPrimaryKey((int) $args['id']);
+        $comment = \ItemComment::getInstance()->findByPrimaryKey((int) $args['id']);
         if (!is_array($comment) || $comment === []) {
             throw ProblemException::of('not_found', 'No such comment.');
         }
         $actor = $credential->actor($request->ip(), ViewContext::LISTINGS_SCOPE);
-        $item  = CommentPolicy::isLive($comment) ? \Item::newInstance()->findByPrimaryKey((int) $comment['fk_i_item_id']) : false;
+        $item  = CommentPolicy::isLive($comment) ? \Item::getInstance()->findByPrimaryKey((int) $comment['fk_i_item_id']) : false;
         if (!CommentPolicy::canView($comment, $item, $actor)) {
             throw ProblemException::of('not_found', 'No such comment.');
         }

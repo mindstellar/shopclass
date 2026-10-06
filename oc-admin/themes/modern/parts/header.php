@@ -60,7 +60,7 @@ if ($oscSidebar !== 'collapsed') {
                     <div class="toggle-icon"><span></span><span></span><span></span></div>
                 </button>
                 <ul class="navbar-nav admin-topbar-tools ms-auto">
-                    <?php AdminToolbar::newInstance()->render(); ?>
+                    <?php AdminToolbar::getInstance()->render(); ?>
                     <li class="nav-item admin-topbar-divider" aria-hidden="true"></li>
                     <li class="nav-item">
                         <button type="button" id="oscThemeToggle" class="admin-topbar-btn"

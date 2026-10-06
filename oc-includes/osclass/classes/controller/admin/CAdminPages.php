@@ -35,7 +35,7 @@ class CAdminPages extends AdminSecBaseModel
         parent::__construct();
 
         //specific things for this class
-        $this->pageManager = Page::newInstance();
+        $this->pageManager = Page::getInstance();
         osc_run_hook('init_admin_pages');
     }
 
@@ -58,13 +58,13 @@ class CAdminPages extends AdminSecBaseModel
                     $this->redirectTo(osc_admin_base_url(true) . '?page=pages');
                 }
 
-                $form     = count(Session::newInstance()->_getForm());
-                $keepForm = count(Session::newInstance()->_getKeepForm());
+                $form     = count(Session::getInstance()->_getForm());
+                $keepForm = count(Session::getInstance()->_getKeepForm());
                 if ($form == 0 || $form == $keepForm) {
-                    Session::newInstance()->_dropKeepForm();
+                    Session::getInstance()->_dropKeepForm();
                 }
 
-                $templates = osc_apply_filter('page_templates', WebThemes::newInstance()->getAvailableTemplates());
+                $templates = osc_apply_filter('page_templates', WebThemes::getInstance()->getAvailableTemplates());
                 $this->_exportVariableToView('templates', $templates);
                 $this->_exportVariableToView('registeredTemplates', osc_page_templates());
                 $this->_exportVariableToView('page', $this->pageManager->findByPrimaryKey(Params::getParam('id')));
@@ -76,13 +76,13 @@ class CAdminPages extends AdminSecBaseModel
 
                 return;
             case 'add':
-                $form     = count(Session::newInstance()->_getForm());
-                $keepForm = count(Session::newInstance()->_getKeepForm());
+                $form     = count(Session::getInstance()->_getForm());
+                $keepForm = count(Session::getInstance()->_getKeepForm());
                 if ($form == 0 || $form == $keepForm) {
-                    Session::newInstance()->_dropKeepForm();
+                    Session::getInstance()->_dropKeepForm();
                 }
 
-                $templates = osc_apply_filter('page_templates', WebThemes::newInstance()->getAvailableTemplates());
+                $templates = osc_apply_filter('page_templates', WebThemes::getInstance()->getAvailableTemplates());
                 $this->_exportVariableToView('templates', $templates);
                 $this->_exportVariableToView('registeredTemplates', osc_page_templates());
                 $this->_exportVariableToView('page', array());
@@ -116,7 +116,7 @@ class CAdminPages extends AdminSecBaseModel
                         case 1:
                             $page_deleted_correcty++;
                             // Remove any page-builder blocks placed on this page.
-                            Widget::newInstance()->delete(
+                            Widget::getInstance()->delete(
                                 array('s_location' => 'page.' . (int)$_id)
                             );
                             // Remove page-owned images (editor uploads) — files and
@@ -254,7 +254,7 @@ class CAdminPages extends AdminSecBaseModel
         foreach ($titles as $code => $title) {
             $submitted[$code] = array('s_title' => $title, 's_text' => $bodies[$code] ?? '');
         }
-        Session::newInstance()->_setForm('aFieldsDescription', $submitted);
+        Session::getInstance()->_setForm('aFieldsDescription', $submitted);
 
         $name    = (string)($values['s_internal_name'] ?? '');
         $link    = empty($values['b_link']) ? 0 : 1;
@@ -264,7 +264,7 @@ class CAdminPages extends AdminSecBaseModel
             // The name is remembered only once it has passed: a refused one must not come
             // back on the next form the administrator opens.
             if (!in_array($failure['rule'] ?? '', array('empty', 'reserved'), true)) {
-                Session::newInstance()->_setForm('s_internal_name', $name);
+                Session::getInstance()->_setForm('s_internal_name', $name);
             }
 
             foreach ($result['errors'] as $error) {
@@ -279,13 +279,13 @@ class CAdminPages extends AdminSecBaseModel
             return;
         }
 
-        Session::newInstance()->_setForm('s_internal_name', $name);
+        Session::getInstance()->_setForm('s_internal_name', $name);
         if ($id !== null) {
             osc_run_hook('edit_page', $id);
         } else {
             osc_purge_page_cache('page');
         }
-        Session::newInstance()->_clearVariables();
+        Session::getInstance()->_clearVariables();
         osc_add_flash_ok_message(
             $id === null ? _m('The page has been added') : _m('The page has been updated'),
             'admin'
@@ -314,7 +314,7 @@ class CAdminPages extends AdminSecBaseModel
         $page['b_link']          = $link;
         $page['s_meta']          = json_encode(Params::getParam('meta'));
 
-        $templates = osc_apply_filter('page_templates', WebThemes::newInstance()->getAvailableTemplates());
+        $templates = osc_apply_filter('page_templates', WebThemes::getInstance()->getAvailableTemplates());
         $this->_exportVariableToView('templates', $templates);
         $this->_exportVariableToView('registeredTemplates', osc_page_templates());
         $this->_exportVariableToView('page', $page);

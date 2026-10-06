@@ -59,7 +59,7 @@ class CommentsDataTable extends DataTable
         $this->addTableHeader();
         $this->getDBParams($params);
 
-        $comments = ItemComment::newInstance()->search(
+        $comments = ItemComment::getInstance()->search(
             $this->resourceID,
             $this->start,
             $this->limit,
@@ -71,14 +71,14 @@ class CommentsDataTable extends DataTable
         $this->processData($comments);
 
         // The unfiltered size of the list, so "x of y" still says what the whole set is.
-        $this->total = (int) ItemComment::newInstance()->countMatching(true, '');
+        $this->total = (int) ItemComment::getInstance()->countMatching(true, '');
 
         if ($this->resourceID === null) {
-            $matching             = ItemComment::newInstance()->countMatching($this->showAll, $this->term);
+            $matching             = ItemComment::getInstance()->countMatching($this->showAll, $this->term);
             $this->total_filtered = $matching;
             $this->totalFiltered  = $matching;
         } else {
-            $this->total_filtered = ItemComment::newInstance()->count($this->resourceID);
+            $this->total_filtered = ItemComment::getInstance()->count($this->resourceID);
             $this->totalFiltered  = $this->total_filtered;
         }
 
@@ -157,8 +157,8 @@ class CommentsDataTable extends DataTable
                 $options      = array();
                 $options_more = array();
 
-                View::newInstance()
-                    ->_exportVariableToView('item', Item::newInstance()->findByPrimaryKey($aRow['fk_i_item_id']));
+                View::getInstance()
+                    ->_exportVariableToView('item', Item::getInstance()->findByPrimaryKey($aRow['fk_i_item_id']));
 
                 if ($aRow['b_enabled']) {
                     $options_more[] =
@@ -212,7 +212,7 @@ class CommentsDataTable extends DataTable
                 $row['status']        = $status['text'];
                 $row['bulkactions']   = '<input type="checkbox" name="id[]" value="' . $aRow['pk_i_id'] . '" />';
                 if (empty($aRow['s_author_name'])) {
-                    $user                  = User::newInstance()->findByPrimaryKey($aRow['fk_i_user_id']);
+                    $user                  = User::getInstance()->findByPrimaryKey($aRow['fk_i_user_id']);
                     $aRow['s_author_name'] = $user['s_email'];
                 }
                 $row['author']  =

@@ -23,13 +23,21 @@ class Object_Cache_Factory
      *
      * @return \iObject_Cache
      */
-    public static function newInstance()
+    public static function getInstance()
     {
         if (self::$instance === null) {
             self::$instance = self::getCache();
         }
 
         return self::$instance;
+    }
+
+    /**
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
+     */
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     /**

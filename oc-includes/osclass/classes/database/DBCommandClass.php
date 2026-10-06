@@ -212,7 +212,7 @@ class DBCommandClass
         $this->aWherein = array();
 
         if (OSC_DEBUG_DB || OSC_DEBUG_DB_EXPLAIN) {
-            $this->log = LogDatabase::newInstance();
+            $this->log = LogDatabase::getInstance();
         }
     }
 
@@ -223,13 +223,21 @@ class DBCommandClass
      * @return DBCommandClass
      * @since  2.3
      */
-    public static function newInstance()
+    public static function getInstance()
     {
         if (!self::$instance instanceof self) {
             self::$instance = new self();
         }
 
         return self::$instance;
+    }
+
+    /**
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
+     */
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     /**

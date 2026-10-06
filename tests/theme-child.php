@@ -53,9 +53,14 @@ class WebThemes
     public static string $current = 'child';
     public static string $root    = '';
 
-    public static function newInstance(): self
+    public static function getInstance(): self
     {
         return new self();
+    }
+
+    public static function newInstance(): self
+    {
+        return self::getInstance();
     }
 
     public function getCurrentTheme(): string

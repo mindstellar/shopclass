@@ -35,7 +35,7 @@ class CWebRoute extends BaseModel
     public function doModel()
     {
         $id = Params::getParamString('route');
-        if (!self::isHookRoute(Rewrite::newInstance()->getRoutes(), $id)) {
+        if (!self::isHookRoute(Rewrite::getInstance()->getRoutes(), $id)) {
             $this->do404();
 
             return;

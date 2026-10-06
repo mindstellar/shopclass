@@ -41,7 +41,7 @@ class CAdminUsers extends AdminSecBaseModel
         parent::__construct();
 
         //specific things for this class
-        $this->userManager = User::newInstance();
+        $this->userManager = User::getInstance();
         osc_run_hook('init_admin_users');
     }
 
@@ -63,21 +63,21 @@ class CAdminUsers extends AdminSecBaseModel
                 $aRegions = array();
                 $aCities  = array();
 
-                $aCountries = Country::newInstance()->listAll();
+                $aCountries = Country::getInstance()->listAll();
 
                 if (isset($aCountries[0]['pk_c_code'])) {
-                    $aRegions = Region::newInstance()->findByCountry($aCountries[0]['pk_c_code']);
+                    $aRegions = Region::getInstance()->findByCountry($aCountries[0]['pk_c_code']);
                 }
 
                 if (isset($aRegions[0]['pk_i_id'])) {
-                    $aCities = City::newInstance()->findByRegion($aRegions[0]['pk_i_id']);
+                    $aCities = City::getInstance()->findByRegion($aRegions[0]['pk_i_id']);
                 }
 
                 $this->_exportVariableToView('user', null);
                 $this->_exportVariableToView('countries', $aCountries);
                 $this->_exportVariableToView('regions', $aRegions);
                 $this->_exportVariableToView('cities', $aCities);
-                $this->_exportVariableToView('locales', OSCLocale::newInstance()->listAllEnabled());
+                $this->_exportVariableToView('locales', OSCLocale::getInstance()->listAllEnabled());
 
                 $this->doView('users/frm.php');
                 break;
@@ -105,18 +105,18 @@ class CAdminUsers extends AdminSecBaseModel
                 break;
             case ('edit'):           // calling the edit view
                 $aUser      = $this->userManager->findByPrimaryKey(Params::getParam('id'));
-                $aCountries = Country::newInstance()->listAll();
+                $aCountries = Country::getInstance()->listAll();
                 $aRegions   = array();
                 if ($aUser['fk_c_country_code'] != '') {
-                    $aRegions = Region::newInstance()->findByCountry($aUser['fk_c_country_code']);
+                    $aRegions = Region::getInstance()->findByCountry($aUser['fk_c_country_code']);
                 } elseif (count($aCountries) > 0) {
-                    $aRegions = Region::newInstance()->findByCountry($aCountries[0]['pk_c_code']);
+                    $aRegions = Region::getInstance()->findByCountry($aCountries[0]['pk_c_code']);
                 }
                 $aCities = array();
                 if ($aUser['fk_i_region_id'] != '') {
-                    $aCities = City::newInstance()->findByRegion($aUser['fk_i_region_id']);
+                    $aCities = City::getInstance()->findByRegion($aUser['fk_i_region_id']);
                 } elseif (count($aRegions) > 0) {
-                    $aCities = City::newInstance()->findByRegion($aRegions[0]['pk_i_id']);
+                    $aCities = City::getInstance()->findByRegion($aRegions[0]['pk_i_id']);
                 }
 
                 $csrf_token = osc_csrf_token_url();
@@ -159,7 +159,7 @@ class CAdminUsers extends AdminSecBaseModel
                 $this->_exportVariableToView('countries', $aCountries);
                 $this->_exportVariableToView('regions', $aRegions);
                 $this->_exportVariableToView('cities', $aCities);
-                $this->_exportVariableToView('locales', OSCLocale::newInstance()->listAllEnabled());
+                $this->_exportVariableToView('locales', OSCLocale::getInstance()->listAllEnabled());
                 $this->doView('users/frm.php');
                 break;
             case ('edit_post'):      // edit post
@@ -300,7 +300,7 @@ class CAdminUsers extends AdminSecBaseModel
                 $mAlerts = new Alerts();
                 BulkAction::apply(
                     static function ($id) use ($mAlerts) {
-                        Log::newInstance()
+                        Log::getInstance()
                             ->insertLog('user', 'delete_alerts', $id, $id, 'admin', osc_logged_admin_id());
 
                         return (bool)$mAlerts->delete(array('pk_i_id' => $id));
@@ -536,7 +536,7 @@ class CAdminUsers extends AdminSecBaseModel
                     $this->redirectTo(osc_admin_base_url(true) . '?page=users&action=ban');
                 }
 
-                $ruleMgr = BanRule::newInstance();
+                $ruleMgr = BanRule::getInstance();
                 BulkAction::apply(
                     static fn ($id) => (bool)$ruleMgr->deleteByPrimaryKey($id),
                     'One ban rule has been deleted',
@@ -585,7 +585,7 @@ class CAdminUsers extends AdminSecBaseModel
                 $usersDataTable = new UsersDataTable();
                 $usersDataTable->table($params);
                 $aData = $usersDataTable->getData();
-                $this->_exportVariableToView('countries', Country::newInstance()->listAll());
+                $this->_exportVariableToView('countries', Country::getInstance()->listAll());
 
                 if (count($aData['aRows']) == 0 && $page != 1) {
                     $total   = (int)$aData['iTotalDisplayRecords'];
@@ -689,7 +689,7 @@ class CAdminUsers extends AdminSecBaseModel
         $requested = Params::getParam('id');
         $id        = is_string($requested) && preg_match('/^[1-9][0-9]*$/', $requested) ? (int)$requested : 0;
 
-        if ($id > 0 && BanRule::newInstance()->findByPrimaryKey($id)) {
+        if ($id > 0 && BanRule::getInstance()->findByPrimaryKey($id)) {
             return $id;
         }
 

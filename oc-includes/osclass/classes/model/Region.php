@@ -42,13 +42,21 @@ class Region extends DAO
      *
      * @return \Region
      */
-    public static function newInstance()
+    public static function getInstance()
     {
         if (!self::$instance instanceof self) {
             self::$instance = new self();
         }
 
         return self::$instance;
+    }
+
+    /**
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
+     */
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     /**
@@ -141,7 +149,7 @@ class Region extends DAO
             } else {
                 // Country::getTableName() is a fixed configuration value (the
                 // table prefix constant), never caller input.
-                $sql .= ' LEFT JOIN ' . Country::newInstance()->getTableName() . ' as aux'
+                $sql .= ' LEFT JOIN ' . Country::getInstance()->getTableName() . ' as aux'
                     . ' ON aux.pk_c_code = a.fk_c_country_code'
                     . ' WHERE aux.s_name = ? AND a.s_name LIKE ?';
                 $params[] = $country;
@@ -175,15 +183,15 @@ class Region extends DAO
     {
         osc_run_hook('before_delete_region', $pk);
 
-        $mCities = City::newInstance();
+        $mCities = City::getInstance();
         $aCities = $mCities->findByRegion($pk);
         $result  = 0;
         foreach ($aCities as $city) {
             $result += $mCities->deleteByPrimaryKey($city['pk_i_id']);
         }
-        Item::newInstance()->deleteByRegion($pk);
-        RegionStats::newInstance()->delete(array('fk_i_region_id' => $pk));
-        User::newInstance()->update(array('fk_i_region_id' => null, 's_region' => ''), array('fk_i_region_id' => $pk));
+        Item::getInstance()->deleteByRegion($pk);
+        RegionStats::getInstance()->delete(array('fk_i_region_id' => $pk));
+        User::getInstance()->update(array('fk_i_region_id' => null, 's_region' => ''), array('fk_i_region_id' => $pk));
 
         // Recorded renames for this region. The table has no foreign key -- fk_i_id
         // points into either t_region or t_city depending on e_type -- so nothing

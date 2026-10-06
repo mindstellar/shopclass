@@ -59,11 +59,11 @@ function osc_is_subdomain()
 }
 function osc_category_id()
 {
-    return View::newInstance()->_get('category_id') ?: 0;
+    return View::getInstance()->_get('category_id') ?: 0;
 }
 function osc_category_slug()
 {
-    return View::newInstance()->_get('category_slug');
+    return View::getInstance()->_get('category_slug');
 }
 function osc_field($item, $field, $locale)
 {
@@ -88,9 +88,14 @@ abstract class FakeModel
 {
     protected static $rows = array();
 
-    public static function newInstance()
+    public static function getInstance()
     {
         return new static();
+    }
+
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     public function findByPrimaryKey($id)
@@ -198,9 +203,14 @@ $GLOBALS['__loads'] = array();
 
 abstract class FakeStats
 {
-    public static function newInstance()
+    public static function getInstance()
     {
         return new static();
+    }
+
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 }
 
@@ -296,7 +306,7 @@ function searchUrl($params, array $state = array())
     $GLOBALS['__request'] = $state['request'] ?? array();
     viewReset();
     foreach (($state['view'] ?? array()) as $key => $value) {
-        View::newInstance()->_exportVariableToView($key, $value);
+        View::getInstance()->_exportVariableToView($key, $value);
     }
     if (isset($state['prefs'])) {
         foreach ($state['prefs'] as $k => $v) {

@@ -143,7 +143,7 @@ use mindstellar\auth\Actor;
 use mindstellar\listing\ListingPolicy;
 use mindstellar\listing\PhotoService;
 
-$item = Item::newInstance()->findByPrimaryKey($id);
+$item = Item::getInstance()->findByPrimaryKey($id);
 if (ListingPolicy::canManage($item, $actor)) {
     (new PhotoService())->delete($photoId, $id, $actor);
 }

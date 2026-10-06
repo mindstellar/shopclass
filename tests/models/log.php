@@ -43,7 +43,7 @@ require_once __DIR__ . '/../lib/harness.php';
 $admin = scratchdb_session('osc_models_log');
 $table = DB_TABLE_PREFIX . 't_log';
 
-$log = Log::newInstance();
+$log = Log::getInstance();
 
 // t_log declares no primary key, so a fixture reads back cleanly only when the
 // table holds exactly the row(s) the current scenario just wrote.

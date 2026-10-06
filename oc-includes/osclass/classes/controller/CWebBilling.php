@@ -269,7 +269,7 @@ class CWebBilling extends WebSecBaseModel
             $this->redirectTo(osc_user_list_items_url());
         }
 
-        $item = Item::newInstance()->findByPrimaryKey($itemId);
+        $item = Item::getInstance()->findByPrimaryKey($itemId);
         if (empty($item) || (int) $item['fk_i_user_id'] !== $userId) {
             osc_add_flash_error_message(_m('That listing does not belong to you'));
             $this->redirectTo(osc_user_list_items_url());
@@ -473,7 +473,7 @@ class CWebBilling extends WebSecBaseModel
             osc_current_web_theme_path($file);
         }
 
-        Session::newInstance()->_clearVariables();
+        Session::getInstance()->_clearVariables();
         osc_run_hook('after_html');
     }
 
@@ -490,7 +490,7 @@ class CWebBilling extends WebSecBaseModel
      */
     private function themeProvides(string $file): bool
     {
-        return file_exists(WebThemes::newInstance()->getCurrentThemePath() . $file);
+        return file_exists(WebThemes::getInstance()->getCurrentThemePath() . $file);
     }
 
     /**

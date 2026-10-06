@@ -60,11 +60,11 @@ class CAdminAjax extends AdminSecBaseModel
             case 'bulk_actions':
                 break;
             case 'regions': //Return regions given a countryId
-                $regions = Region::newInstance()->findByCountry(Params::getParam('countryId'));
+                $regions = Region::getInstance()->findByCountry(Params::getParam('countryId'));
                 AjaxResponse::json($regions);
                 break;
             case 'cities': //Returns cities given a regionId
-                $cities = City::newInstance()->findByRegion(Params::getParam('regionId'));
+                $cities = City::getInstance()->findByRegion(Params::getParam('regionId'));
                 AjaxResponse::json($cities);
                 break;
             case 'location_catalog': // Countries the published catalog offers for import
@@ -96,11 +96,11 @@ class CAdminAjax extends AdminSecBaseModel
                 ));
                 break;
             case 'location': // This is the autocomplete AJAX
-                $cities = City::newInstance()->ajax(Params::getParam('term'));
+                $cities = City::getInstance()->ajax(Params::getParam('term'));
                 AjaxResponse::json($cities);
                 break;
             case 'userajax': // This is the autocomplete AJAX
-                $users = User::newInstance()->ajax(Params::getParam('term'));
+                $users = User::getInstance()->ajax(Params::getParam('term'));
                 if (count($users) == 0) {
                     AjaxResponse::json(array(
                         0 => array(
@@ -248,7 +248,7 @@ class CAdminAjax extends AdminSecBaseModel
                 $order = array();
                 $error = 0;
 
-                $catManager  = Category::newInstance();
+                $catManager  = Category::getInstance();
                 $aRecountCat = array();
                 foreach ($aIds as $cat) {
                     if (isset($cat['c'])) {
@@ -290,29 +290,29 @@ class CAdminAjax extends AdminSecBaseModel
             case 'category_edit_iframe':
                 $this->_exportVariableToView(
                     'category',
-                    Category::newInstance()->findByPrimaryKey(Params::getParam('id'), 'all')
+                    Category::getInstance()->findByPrimaryKey(Params::getParam('id'), 'all')
                 );
-                if (count(Category::newInstance()->findSubcategories(Params::getParam('id'))) > 0) {
+                if (count(Category::getInstance()->findSubcategories(Params::getParam('id'))) > 0) {
                     $this->_exportVariableToView('has_subcategories', true);
                 } else {
                     $this->_exportVariableToView('has_subcategories', false);
                 }
-                $this->_exportVariableToView('languages', OSCLocale::newInstance()->listAllEnabled());
+                $this->_exportVariableToView('languages', OSCLocale::getInstance()->listAllEnabled());
                 $this->doView('categories/iframe.php');
                 break;
             case 'field_categories_iframe':
-                $selected = Field::newInstance()->categories(Params::getParam('id'));
+                $selected = Field::getInstance()->categories(Params::getParam('id'));
                 if ($selected == null) {
                     $selected = array();
                 }
                 $this->_exportVariableToView('selected', $selected);
-                $this->_exportVariableToView('field', Field::newInstance()->findByPrimaryKey(Params::getParam('id')));
-                $this->_exportVariableToView('categories', Category::newInstance()->toTreeAll());
+                $this->_exportVariableToView('field', Field::getInstance()->findByPrimaryKey(Params::getParam('id')));
+                $this->_exportVariableToView('categories', Category::getInstance()->toTreeAll());
                 // Sibling fields power the conditional-visibility "controlling field"
                 // picker (a field can be shown/required based on another's value).
-                $this->_exportVariableToView('allFields', Field::newInstance()->listAll());
+                $this->_exportVariableToView('allFields', Field::getInstance()->listAll());
                 // Groups populate the membership dropdown (Ungrouped + each group).
-                $this->_exportVariableToView('allGroups', FieldGroup::newInstance()->listAll());
+                $this->_exportVariableToView('allGroups', FieldGroup::getInstance()->listAll());
                 // How many forms this field is placed in — the editor warns when a save
                 // will change the field in more than one form.
                 $this->_exportVariableToView(
@@ -333,7 +333,7 @@ class CAdminAjax extends AdminSecBaseModel
                 if (!$fieldService->nameTaken(Params::getParamString('s_name'), Params::getParamInt('id'))) {
                     // remove categories from a field (definition-only saves keep them)
                     if (!$builderMode) {
-                        Field::newInstance()->cleanCategoriesFromField(Params::getParam('id'));
+                        Field::getInstance()->cleanCategoriesFromField(Params::getParam('id'));
                     }
                     // no error... continue updating fields
                     if ($error == 0) {
@@ -387,15 +387,15 @@ class CAdminAjax extends AdminSecBaseModel
                             $groupId = Params::getParamInt('field_group');
                             $updateData['fk_i_group_id'] = $groupId > 0 ? $groupId : null;
                         }
-                        $res = Field::newInstance()->update($updateData, array('pk_i_id' => Params::getParam('id')));
+                        $res = Field::getInstance()->update($updateData, array('pk_i_id' => Params::getParam('id')));
                         // Keep the link table (source of truth) in sync with the
                         // single-group editor; the builder manages links via drag-drop.
                         if (!$builderMode) {
-                            FieldGroup::newInstance()->setFieldSingleGroup(Params::getParamInt('id'), $groupId);
+                            FieldGroup::getInstance()->setFieldSingleGroup(Params::getParamInt('id'), $groupId);
                         }
-                        Field::newInstance()->updateJsonMeta(Params::getParam('id'), 'type', $realTypeMeta);
-                        Field::newInstance()->updateJsonMeta(Params::getParam('id'), 'b_new_tab', Params::getParam('b_new_tab'));
-                        Field::newInstance()->updateJsonMeta(Params::getParam('id'), 'locale', $metaLocale);
+                        Field::getInstance()->updateJsonMeta(Params::getParam('id'), 'type', $realTypeMeta);
+                        Field::getInstance()->updateJsonMeta(Params::getParam('id'), 'b_new_tab', Params::getParam('b_new_tab'));
+                        Field::getInstance()->updateJsonMeta(Params::getParam('id'), 'locale', $metaLocale);
                         // Per-type config (placeholder, help text, numeric bounds, …).
                         self::persistFieldConfig(Params::getParamInt('id'), $chosenType);
                         if (is_bool($res) && !$res) {
@@ -407,7 +407,7 @@ class CAdminAjax extends AdminSecBaseModel
                     if ($error == 0 && !$builderMode) {
                         $aCategories = Params::getParam('categories');
                         if (is_array($aCategories) && count($aCategories) > 0) {
-                            $res = Field::newInstance()->insertCategories(Params::getParam('id'), $aCategories);
+                            $res = Field::getInstance()->insertCategories(Params::getParam('id'), $aCategories);
                             if (!$res) {
                                 $error = 1;
                             }
@@ -452,7 +452,7 @@ class CAdminAjax extends AdminSecBaseModel
                 osc_csrf_check();
                 $s_name       = __('NEW custom field');
                 $slug         = \mindstellar\fields\FieldSlug::unique($s_name);
-                $fieldManager = Field::newInstance();
+                $fieldManager = Field::getInstance();
                 $fieldId      = $fieldManager->insertField($s_name, 'TEXT', $slug, 0, '', array());
                 if ($fieldId) {
                     AjaxResponse::json(array(
@@ -470,7 +470,7 @@ class CAdminAjax extends AdminSecBaseModel
                 $order = array();
                 $error = 0;
 
-                $fieldManager = Field::newInstance();
+                $fieldManager = Field::getInstance();
                 foreach ($aIds as $pos => $field) {
                     $res = $fieldManager->update(
                         array(
@@ -493,7 +493,7 @@ class CAdminAjax extends AdminSecBaseModel
                 break;
             case 'add_group':
                 osc_csrf_check();
-                $groupManager = FieldGroup::newInstance();
+                $groupManager = FieldGroup::getInstance();
                 $newId        = $groupManager->insertGroup(__('New field group'));
                 if ($newId) {
                     AjaxResponse::json(array('error' => 0, 'group_id' => $newId, 'group_name' => __('New field group')));
@@ -503,7 +503,7 @@ class CAdminAjax extends AdminSecBaseModel
                 break;
             case 'group_post':
                 osc_csrf_check();
-                $groupManager = FieldGroup::newInstance();
+                $groupManager = FieldGroup::getInstance();
                 $groupId      = Params::getParamInt('id');
                 $name         = trim((string)Params::getParam('group_name'));
                 $error        = 0;
@@ -544,7 +544,7 @@ class CAdminAjax extends AdminSecBaseModel
                 // Row count, not just "did not throw": deleteByPrimaryKey() reports 0
                 // for an id that matched nothing, and reporting that as a success left
                 // the deleted form sitting in the list until the page was reloaded.
-                $res = FieldGroup::newInstance()->deleteByPrimaryKey(Params::getParamInt('id'));
+                $res = FieldGroup::getInstance()->deleteByPrimaryKey(Params::getParamInt('id'));
                 if ($res > 0) {
                     AjaxResponse::json(array('ok' => __('The field group has been deleted')));
                 } else {
@@ -603,10 +603,10 @@ class CAdminAjax extends AdminSecBaseModel
                 break;
             case 'group_categories_iframe':
                 $groupId = Params::getParamInt('id');
-                $selected = FieldGroup::newInstance()->categories($groupId);
+                $selected = FieldGroup::getInstance()->categories($groupId);
                 $this->_exportVariableToView('selected', $selected);
-                $this->_exportVariableToView('group', FieldGroup::newInstance()->findByPrimaryKey($groupId));
-                $this->_exportVariableToView('categories', Category::newInstance()->toTreeAll());
+                $this->_exportVariableToView('group', FieldGroup::getInstance()->findByPrimaryKey($groupId));
+                $this->_exportVariableToView('categories', Category::getInstance()->toTreeAll());
                 $this->doView('fields/group_iframe.php');
                 break;
             case 'enable_category':
@@ -614,7 +614,7 @@ class CAdminAjax extends AdminSecBaseModel
                 $id       = strip_tags(Params::getParam('id'));
                 $enabled  = (Params::getParam('enabled') != '') ? Params::getParam('enabled') : 0;
 
-                $mCategory = Category::newInstance();
+                $mCategory = Category::getInstance();
                 $aCategory = $mCategory->findByPrimaryKey($id);
 
                 if ($aCategory == false) {
@@ -716,7 +716,7 @@ class CAdminAjax extends AdminSecBaseModel
                 break;
             case 'custom': // Execute via AJAX custom file
                 if (Params::existParam('route')) {
-                    $routes = Rewrite::newInstance()->getRoutes();
+                    $routes = Rewrite::getInstance()->getRoutes();
                     $rid    = Params::getParam('route');
                     $file   = $routes[$rid]['file'] ?? '../';
                 } else {
@@ -796,7 +796,7 @@ class CAdminAjax extends AdminSecBaseModel
                 $order = Params::getParam('order');
                 $id    = Params::getParam('id');
                 if ($order != '' && $id != '') {
-                    $mPages       = Page::newInstance();
+                    $mPages       = Page::getInstance();
                     $actual_page  = $mPages->findByPrimaryKey($id);
                     $actual_order = $actual_page['i_order'];
 
@@ -1003,7 +1003,7 @@ class CAdminAjax extends AdminSecBaseModel
                 AjaxResponse::json(\mindstellar\backup\BackupService::poll());
                 break;
             case 'country_slug':
-                $exists = Country::newInstance()->findBySlug(Params::getParam('slug'));
+                $exists = Country::getInstance()->findBySlug(Params::getParam('slug'));
                 if (isset($exists['s_slug'])) {
                     AjaxResponse::json(array('error' => 1, 'country' => $exists));
                 } else {
@@ -1011,7 +1011,7 @@ class CAdminAjax extends AdminSecBaseModel
                 }
                 break;
             case 'region_slug':
-                $exists = Region::newInstance()->findBySlug(Params::getParam('slug'));
+                $exists = Region::getInstance()->findBySlug(Params::getParam('slug'));
                 if (isset($exists['s_slug'])) {
                     AjaxResponse::json(array('error' => 1, 'region' => $exists));
                 } else {
@@ -1019,7 +1019,7 @@ class CAdminAjax extends AdminSecBaseModel
                 }
                 break;
             case 'city_slug':
-                $exists = City::newInstance()->findBySlug(Params::getParam('slug'));
+                $exists = City::getInstance()->findBySlug(Params::getParam('slug'));
                 if (isset($exists['s_slug'])) {
                     AjaxResponse::json(array('error' => 1, 'city' => $exists));
                 } else {
@@ -1039,8 +1039,8 @@ class CAdminAjax extends AdminSecBaseModel
                 break;
         }
         // clear all keep variables into session
-        Session::newInstance()->_dropKeepForm();
-        Session::newInstance()->_clearVariables();
+        Session::getInstance()->_dropKeepForm();
+        Session::getInstance()->_clearVariables();
     }
 
     /**
@@ -1117,7 +1117,7 @@ class CAdminAjax extends AdminSecBaseModel
         if ($spec === null || empty($spec['config'])) {
             return;
         }
-        $field = Field::newInstance();
+        $field = Field::getInstance();
         foreach ($spec['config'] as $key) {
             // b_new_tab has its own dedicated checkbox handled above; skip it here.
             if ($key === 'b_new_tab') {
@@ -1495,7 +1495,7 @@ class CAdminAjax extends AdminSecBaseModel
             return null;
         }
         if ($type === 'theme') {
-            $info   = (array) WebThemes::newInstance()->loadThemeInfo($slug);
+            $info   = (array) WebThemes::getInstance()->loadThemeInfo($slug);
             $name   = (string) ($info['name'] ?? $slug);
             $author = (string) ($info['author_name'] ?? '');
         } else {

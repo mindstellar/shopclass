@@ -34,7 +34,7 @@ function customFrmText()
         $return['title']      = __('Edit user');
         $return['action_frm'] = 'edit_post';
         $return['btn_text']   = __('Update user');
-        $return['alerts']     = Alerts::newInstance()->findByUser($user['pk_i_id'], true);
+        $return['alerts']     = Alerts::getInstance()->findByUser($user['pk_i_id'], true);
     } else {
         $return['edit']       = false;
         $return['title']      = __('Add new user');

@@ -25,7 +25,7 @@ $admin = scratchdb_session('osc_admin_api_keys');
 
 // The session lives in memory: started before anything is printed, never sent anywhere.
 $_SESSION = array();
-Session::newInstance()->_drop('apiKeyIssued');
+Session::getInstance()->_drop('apiKeyIssued');
 
 if (!defined('OC_ADMIN')) {
     define('OC_ADMIN', true);
@@ -139,7 +139,7 @@ class AdminSecBaseModel
 
     public function _exportVariableToView($key, $value)
     {
-        View::newInstance()->_exportVariableToView($key, $value);
+        View::getInstance()->_exportVariableToView($key, $value);
     }
 
     public function doView($view)
@@ -276,7 +276,7 @@ pin('a moderator key with the moderator scopes is made', array('admin:listings')
 
 harness_section('the key waits five minutes at most');
 
-$session = Session::newInstance();
+$session = Session::getInstance();
 $session->_set(CAdminSettingsApi::ISSUED, array('token' => 'sck_stale', 'name' => 'Old', 'at' => time() - CAdminSettingsApi::ISSUED_TTL - 1));
 pin('a key left unshown for over five minutes is not shown', '', $shown(drive('api')['drawn']));
 pin('...and is gone from the session', '', $session->_get(CAdminSettingsApi::ISSUED));

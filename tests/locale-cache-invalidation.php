@@ -75,9 +75,14 @@ function osc_get_locales()
 /** Counts reads, which is the point of the memo the helper drops. */
 class OSCLocale
 {
-    public static function newInstance()
+    public static function getInstance()
     {
         return new self();
+    }
+
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     public function listAllEnabled($isBo = false, $indexedByPk = false)

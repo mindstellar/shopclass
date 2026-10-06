@@ -60,7 +60,7 @@ abstract class BaseModel
         $this->setParams();
         $this->ajax = false;
         $this->time = microtime(true);
-        WebThemes::newInstance();
+        WebThemes::getInstance();
         osc_run_hook('init');
     }
 
@@ -95,7 +95,7 @@ abstract class BaseModel
             $subdomain = $match[2];
             if ($subdomain && $subdomain !== 'www') {
                 if ($subdomain_type === 'category') {
-                    $category = Category::newInstance()->findBySlug($subdomain);
+                    $category = Category::getInstance()->findBySlug($subdomain);
                     if (isset($category['pk_i_id'])) {
                         $this->_exportVariableToView('subdomain_name', $category['s_name']);
                         $this->_exportVariableToView('subdomain_slug', $category['s_slug']);
@@ -107,7 +107,7 @@ abstract class BaseModel
                         $this->do404();
                     }
                 } elseif ($subdomain_type === 'country') {
-                    $country = Country::newInstance()->findBySlug($subdomain);
+                    $country = Country::getInstance()->findBySlug($subdomain);
                     if (isset($country['pk_c_code'])) {
                         $this->_exportVariableToView('subdomain_name', $country['s_name']);
                         $this->_exportVariableToView('subdomain_slug', $country['s_slug']);
@@ -116,7 +116,7 @@ abstract class BaseModel
                         $this->do404();
                     }
                 } elseif ($subdomain_type === 'region') {
-                    $region = Region::newInstance()->findBySlug($subdomain);
+                    $region = Region::getInstance()->findBySlug($subdomain);
                     if (isset($region['pk_i_id'])) {
                         $this->_exportVariableToView('subdomain_name', $region['s_name']);
                         $this->_exportVariableToView('subdomain_slug', $region['s_slug']);
@@ -126,7 +126,7 @@ abstract class BaseModel
                         $this->do404();
                     }
                 } elseif ($subdomain_type === 'city') {
-                    $city = City::newInstance()->findBySlug($subdomain);
+                    $city = City::getInstance()->findBySlug($subdomain);
                     if (isset($city['pk_i_id'])) {
                         $this->_exportVariableToView('subdomain_name', $city['s_name']);
                         $this->_exportVariableToView('subdomain_slug', $city['s_slug']);
@@ -136,7 +136,7 @@ abstract class BaseModel
                         $this->do404();
                     }
                 } elseif ($subdomain_type === 'user') {
-                    $user = User::newInstance()->findByUsername($subdomain);
+                    $user = User::getInstance()->findByUsername($subdomain);
                     if (isset($user['pk_i_id'])) {
                         $this->_exportVariableToView('subdomain_name', $user['s_name']);
                         $this->_exportVariableToView('subdomain_slug', $user['s_username']);
@@ -191,7 +191,7 @@ abstract class BaseModel
             return;
         }
 
-        $model   = $type === 'REGION' ? Region::newInstance() : City::newInstance();
+        $model   = $type === 'REGION' ? Region::getInstance() : City::getInstance();
         $current = $model->findByPrimaryKey((int)$history['fk_i_id']);
         if (!$current || !isset($current['pk_i_id'])) {
             return; // target row is gone -> let the caller do404()
@@ -226,7 +226,7 @@ abstract class BaseModel
      */
     public function do400()
     {
-        Rewrite::newInstance()->set_location('error');
+        Rewrite::getInstance()->set_location('error');
         header('HTTP/1.1 400 Bad Request');
         $this->sendErrorCacheHeaders();
         osc_current_web_theme_path(osc_locate_template(array('404.php'), '404'));
@@ -277,7 +277,7 @@ abstract class BaseModel
      */
     public function _exportVariableToView($key, $value)
     {
-        View::newInstance()->_exportVariableToView($key, $value);
+        View::getInstance()->_exportVariableToView($key, $value);
     }
 
     /**
@@ -289,7 +289,7 @@ abstract class BaseModel
      */
     public function _view($key = null)
     {
-        View::newInstance()->_view($key);
+        View::getInstance()->_view($key);
     }
 
     /**
@@ -299,7 +299,7 @@ abstract class BaseModel
      */
     public function do404()
     {
-        Rewrite::newInstance()->set_location('error');
+        Rewrite::getInstance()->set_location('error');
         header('HTTP/1.1 404 Not Found');
         $this->sendErrorCacheHeaders();
         osc_current_web_theme_path(osc_locate_template(array('404.php'), '404'));
@@ -315,7 +315,7 @@ abstract class BaseModel
      */
     public function do410()
     {
-        Rewrite::newInstance()->set_location('error');
+        Rewrite::getInstance()->set_location('error');
         header('HTTP/1.1 410 Gone');
         $this->sendErrorCacheHeaders();
         osc_current_web_theme_path(osc_locate_template(array('404.php'), '404'));

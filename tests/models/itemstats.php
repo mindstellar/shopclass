@@ -54,7 +54,7 @@ $admin = scratchdb_session('osc_models_itemstats');
 $table = DB_TABLE_PREFIX . 't_item_stats';
 $daily = DB_TABLE_PREFIX . 't_item_stats_daily';
 
-$model = ItemStats::newInstance();
+$model = ItemStats::getInstance();
 
 $catId = seed_category($admin, 'Motors');
 $itemA = seed_item($admin, $catId, null, 'Item A');

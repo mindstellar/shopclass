@@ -42,7 +42,7 @@ class UserActions
     public function __construct($is_admin)
     {
         $this->is_admin = $is_admin;
-        $this->manager  = User::newInstance();
+        $this->manager  = User::getInstance();
         $this->Sanitize = new Sanitize();
     }
 
@@ -59,7 +59,7 @@ class UserActions
         try {
             $account = (new AccountService())->register($form, $this->actor(), $captcha);
         } catch (InvalidException $e) {
-            $session = Session::newInstance();
+            $session = Session::getInstance();
             $session->_setForm('user_s_name', $this->Sanitize->string((string) $form['s_name']));
             $session->_setForm('user_s_username', $this->Sanitize->username((string) $form['s_username']));
             $session->_setForm('user_s_email', $this->Sanitize->email((string) $form['s_email']));
@@ -134,13 +134,13 @@ class UserActions
      */
     public function recover_password()
     {
-        $user = User::newInstance()->findByEmail(Params::getParam('s_email'));
+        $user = User::getInstance()->findByEmail(Params::getParam('s_email'));
 
         if (!$user || ($user['b_enabled'] == 0)) {
             return 1;
         }
 
-        $code = User::newInstance()->issuePassCode((int)$user['pk_i_id'], User::PASS_CODE_RESET);
+        $code = User::getInstance()->issuePassCode((int)$user['pk_i_id'], User::PASS_CODE_RESET);
 
         $password_url = osc_forgot_user_password_confirm_url($user['pk_i_id'], $code);
         osc_run_hook('hook_email_user_forgot_password', $user, $password_url);
@@ -217,7 +217,7 @@ class UserActions
      */
     public function bootstrap_login($user_id)
     {
-        $user = User::newInstance()->findByPrimaryKey($user_id);
+        $user = User::getInstance()->findByPrimaryKey($user_id);
 
         if (!$user) {
             return 0;

@@ -61,7 +61,7 @@ $sections = array();
 foreach ($locations as $slug => $spec) {
     $sections[$slug] = $spec + array('orphan' => false);
 }
-foreach (Widget::newInstance()->distinctLocations() as $stored) {
+foreach (Widget::getInstance()->distinctLocations() as $stored) {
     if (isset($sections[$stored])) {
         continue;
     }
@@ -69,7 +69,7 @@ foreach (Widget::newInstance()->distinctLocations() as $stored) {
     // orphaned once the page itself is gone. Its widgets are edited on that page.
     if (strpos($stored, 'page.') === 0) {
         $pageId = (int)substr($stored, 5);
-        $page   = $pageId > 0 ? Page::newInstance()->findByPrimaryKey($pageId) : array();
+        $page   = $pageId > 0 ? Page::getInstance()->findByPrimaryKey($pageId) : array();
         if (!empty($page)) {
             $locales = isset($page['locale']) && is_array($page['locale']) ? $page['locale'] : array();
             $current = $locales[osc_current_admin_locale()] ?? reset($locales);
@@ -102,7 +102,7 @@ foreach (Widget::newInstance()->distinctLocations() as $stored) {
 
             <?php foreach ($sections as $location => $section) {
                 $isOrphan = $section['orphan'];
-                $widgets  = Widget::newInstance()->findByLocation($location); ?>
+                $widgets  = Widget::getInstance()->findByLocation($location); ?>
                 <div class="form-card widget-section<?php echo $isOrphan ? ' is-unavailable' : ''; ?>"
                      data-location="<?php echo osc_esc_html($location); ?>"<?php echo $isOrphan ? ' data-unavailable="1"' : ''; ?>>
                     <div class="form-card-head">

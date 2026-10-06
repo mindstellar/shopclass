@@ -31,8 +31,8 @@
  */
 function osc_item()
 {
-    if (View::newInstance()->_exists('item')) {
-        $item = View::newInstance()->_get('item');
+    if (View::getInstance()->_exists('item')) {
+        $item = View::getInstance()->_get('item');
     } else {
         $item = null;
     }
@@ -47,10 +47,10 @@ function osc_item()
  */
 function osc_comment()
 {
-    if (View::newInstance()->_exists('comments')) {
-        $comment = View::newInstance()->_current('comments');
+    if (View::getInstance()->_exists('comments')) {
+        $comment = View::getInstance()->_current('comments');
     } else {
-        $comment = View::newInstance()->_get('comment');
+        $comment = View::getInstance()->_get('comment');
     }
 
     return $comment;
@@ -63,10 +63,10 @@ function osc_comment()
  */
 function osc_resource()
 {
-    if (View::newInstance()->_exists('resources')) {
-        $resource = View::newInstance()->_current('resources');
+    if (View::getInstance()->_exists('resources')) {
+        $resource = View::getInstance()->_current('resources');
     } else {
-        $resource = View::newInstance()->_get('resource');
+        $resource = View::getInstance()->_get('resource');
     }
 
     return $resource;
@@ -250,13 +250,13 @@ function osc_item_category($locale = '')
     if (osc_item_field('s_category_name')) {
         return (string)osc_item_field('s_category_name');
     }
-    if (!View::newInstance()->_exists('item_category')) {
-        View::newInstance()->_exportVariableToView(
+    if (!View::getInstance()->_exists('item_category')) {
+        View::getInstance()->_exportVariableToView(
             'item_category',
-            Category::newInstance()->findByPrimaryKey(osc_item_category_id(), $locale)
+            Category::getInstance()->findByPrimaryKey(osc_item_category_id(), $locale)
         );
     }
-    $category = View::newInstance()->_get('item_category');
+    $category = View::getInstance()->_get('item_category');
 
     return (string)osc_field($category, 's_name', $locale);
 }
@@ -270,13 +270,13 @@ function osc_item_category($locale = '')
  */
 function osc_item_category_description($locale = '')
 {
-    if (!View::newInstance()->_exists('item_category')) {
-        View::newInstance()->_exportVariableToView(
+    if (!View::getInstance()->_exists('item_category')) {
+        View::getInstance()->_exportVariableToView(
             'item_category',
-            Category::newInstance()->findByPrimaryKey(osc_item_category_id(), $locale)
+            Category::getInstance()->findByPrimaryKey(osc_item_category_id(), $locale)
         );
     }
-    $category = View::newInstance()->_get('item_category');
+    $category = View::getInstance()->_get('item_category');
 
     return osc_field($category, 's_description', $locale);
 }
@@ -301,9 +301,9 @@ function osc_item_category_id()
 function osc_item_category_price_enabled($catId = null)
 {
     if ($catId == null) {
-        $category = Category::newInstance()->findByPrimaryKey(osc_item_category_id());
+        $category = Category::getInstance()->findByPrimaryKey(osc_item_category_id());
     } else {
-        $category = Category::newInstance()->findByPrimaryKey($catId);
+        $category = Category::getInstance()->findByPrimaryKey($catId);
     }
 
     return $category['b_price_enabled'] == 1;
@@ -393,7 +393,7 @@ function osc_item_currency()
  */
 function osc_item_currency_symbol()
 {
-    $aCurrency = Currency::newInstance()->findByPrimaryKey(osc_item_currency());
+    $aCurrency = Currency::getInstance()->findByPrimaryKey(osc_item_currency());
 
     // findByPrimaryKey() returns false for a listing with no currency (e.g. "Check
     // with seller"); indexing into that is a PHP 8 warning, so guard it.
@@ -596,14 +596,14 @@ function osc_item_views($viewAll = false)
 {
     $item = osc_item();
     if ($viewAll) {
-        return ItemStats::newInstance()->getViews(osc_item_id());
+        return ItemStats::getInstance()->getViews(osc_item_id());
     }
 
     if (isset($item['i_num_views'])) {
         return (int)osc_item_field('i_num_views');
     }
 
-    return ItemStats::newInstance()->getViews(osc_item_id());
+    return ItemStats::getInstance()->getViews(osc_item_id());
 }
 
 /**
@@ -761,7 +761,7 @@ function osc_list_total_pages()
  */
 function osc_list_items_per_page()
 {
-    return View::newInstance()->_get('items_per_page');
+    return View::getInstance()->_get('items_per_page');
 }
 
 /**
@@ -771,7 +771,7 @@ function osc_list_items_per_page()
  */
 function osc_item_total_comments()
 {
-    return ItemComment::newInstance()->totalComments(osc_item_id());
+    return ItemComment::getInstance()->totalComments(osc_item_id());
 }
 
 /**
@@ -1002,7 +1002,7 @@ function osc_resource_owner_title($resource)
         return $localizedTitle('t_item_description', 'fk_i_item_id', $resource['fk_i_item_id']);
     }
     if ($ownerType === 'user') {
-        $user = User::newInstance()->findByPrimaryKey((int)($resource['i_owner_id'] ?? 0));
+        $user = User::getInstance()->findByPrimaryKey((int)($resource['i_owner_id'] ?? 0));
         if (is_array($user)) {
             $name = trim((string)($user['s_name'] ?? ''));
 
@@ -1163,7 +1163,7 @@ function osc_resource_original_url()
  */
 function osc_reset_resources()
 {
-    return View::newInstance()->_reset('resources');
+    return View::getInstance()->_reset('resources');
 }
 
 ///////////////////////////////
@@ -1181,25 +1181,25 @@ function osc_reset_resources()
  */
 function osc_has_items()
 {
-    if (View::newInstance()->_exists('resources')) {
-        View::newInstance()->_erase('resources');
+    if (View::getInstance()->_exists('resources')) {
+        View::getInstance()->_erase('resources');
     }
-    if (View::newInstance()->_exists('item_category')) {
-        View::newInstance()->_erase('item_category');
+    if (View::getInstance()->_exists('item_category')) {
+        View::getInstance()->_erase('item_category');
     }
-    if (View::newInstance()->_exists('metafields')) {
-        View::newInstance()->_erase('metafields');
+    if (View::getInstance()->_exists('metafields')) {
+        View::getInstance()->_erase('metafields');
     }
-    if (View::newInstance()->_get('itemLoop') !== 'items') {
-        View::newInstance()->_exportVariableToView('oldItem', View::newInstance()->_get('item'));
-        View::newInstance()->_exportVariableToView('itemLoop', 'items');
+    if (View::getInstance()->_get('itemLoop') !== 'items') {
+        View::getInstance()->_exportVariableToView('oldItem', View::getInstance()->_get('item'));
+        View::getInstance()->_exportVariableToView('itemLoop', 'items');
     }
-    $item = View::newInstance()->_next('items');
+    $item = View::getInstance()->_next('items');
     if (!$item) {
-        View::newInstance()->_exportVariableToView('item', View::newInstance()->_get('oldItem'));
-        View::newInstance()->_exportVariableToView('itemLoop', '');
+        View::getInstance()->_exportVariableToView('item', View::getInstance()->_get('oldItem'));
+        View::getInstance()->_exportVariableToView('itemLoop', '');
     } else {
-        View::newInstance()->_exportVariableToView('item', View::newInstance()->_current('items'));
+        View::getInstance()->_exportVariableToView('item', View::getInstance()->_current('items'));
     }
 
     return $item;
@@ -1212,10 +1212,10 @@ function osc_has_items()
  */
 function osc_reset_items()
 {
-    View::newInstance()->_exportVariableToView('item', View::newInstance()->_get('oldItem'));
-    View::newInstance()->_exportVariableToView('itemLoop', '');
+    View::getInstance()->_exportVariableToView('item', View::getInstance()->_get('oldItem'));
+    View::getInstance()->_exportVariableToView('itemLoop', '');
 
-    return View::newInstance()->_reset('items');
+    return View::getInstance()->_reset('items');
 }
 
 /**
@@ -1226,10 +1226,10 @@ function osc_reset_items()
  */
 function osc_reset_latest_items()
 {
-    View::newInstance()->_exportVariableToView('item', View::newInstance()->_get('oldItem'));
-    View::newInstance()->_exportVariableToView('itemLoop', '');
+    View::getInstance()->_exportVariableToView('item', View::getInstance()->_get('oldItem'));
+    View::getInstance()->_exportVariableToView('itemLoop', '');
 
-    return View::newInstance()->_reset('latestItems');
+    return View::getInstance()->_reset('latestItems');
 }
 
 /**
@@ -1239,7 +1239,7 @@ function osc_reset_latest_items()
  */
 function osc_count_items()
 {
-    return (int)View::newInstance()->_count('items');
+    return (int)View::getInstance()->_count('items');
 }
 
 /**
@@ -1249,12 +1249,12 @@ function osc_count_items()
  */
 function osc_count_item_resources()
 {
-    if (!View::newInstance()->_exists('resources')) {
-        View::newInstance()
-            ->_exportVariableToView('resources', ItemResource::newInstance()->getAllResourcesFromItem(osc_item_id()));
+    if (!View::getInstance()->_exists('resources')) {
+        View::getInstance()
+            ->_exportVariableToView('resources', ItemResource::getInstance()->getAllResourcesFromItem(osc_item_id()));
     }
 
-    return (int)View::newInstance()->_count('resources');
+    return (int)View::getInstance()->_count('resources');
 }
 
 /**
@@ -1264,12 +1264,12 @@ function osc_count_item_resources()
  */
 function osc_has_item_resources()
 {
-    if (!View::newInstance()->_exists('resources')) {
-        View::newInstance()
-            ->_exportVariableToView('resources', ItemResource::newInstance()->getAllResourcesFromItem(osc_item_id()));
+    if (!View::getInstance()->_exists('resources')) {
+        View::getInstance()
+            ->_exportVariableToView('resources', ItemResource::getInstance()->getAllResourcesFromItem(osc_item_id()));
     }
 
-    return View::newInstance()->_next('resources');
+    return View::getInstance()->_next('resources');
 }
 
 /**
@@ -1279,12 +1279,12 @@ function osc_has_item_resources()
  */
 function osc_get_item_resources()
 {
-    if (!View::newInstance()->_exists('resources')) {
-        View::newInstance()
-            ->_exportVariableToView('resources', ItemResource::newInstance()->getAllResourcesFromItem(osc_item_id()));
+    if (!View::getInstance()->_exists('resources')) {
+        View::getInstance()
+            ->_exportVariableToView('resources', ItemResource::getInstance()->getAllResourcesFromItem(osc_item_id()));
     }
 
-    return View::newInstance()->_get('resources');
+    return View::getInstance()->_get('resources');
 }
 
 /**
@@ -1294,14 +1294,14 @@ function osc_get_item_resources()
  */
 function osc_count_item_comments()
 {
-    if (!View::newInstance()->_exists('comments')) {
-        View::newInstance()->_exportVariableToView(
+    if (!View::getInstance()->_exists('comments')) {
+        View::getInstance()->_exportVariableToView(
             'comments',
-            ItemComment::newInstance()->findByItemID(osc_item_id(), osc_item_comments_page(), osc_comments_per_page())
+            ItemComment::getInstance()->findByItemID(osc_item_id(), osc_item_comments_page(), osc_comments_per_page())
         );
     }
 
-    return View::newInstance()->_count('comments');
+    return View::getInstance()->_count('comments');
 }
 
 /**
@@ -1341,14 +1341,14 @@ function osc_show_item_comments()
  */
 function osc_has_item_comments()
 {
-    if (!View::newInstance()->_exists('comments')) {
-        View::newInstance()->_exportVariableToView(
+    if (!View::getInstance()->_exists('comments')) {
+        View::getInstance()->_exportVariableToView(
             'comments',
-            ItemComment::newInstance()->findByItemID(osc_item_id(), osc_item_comments_page(), osc_comments_per_page())
+            ItemComment::getInstance()->findByItemID(osc_item_id(), osc_item_comments_page(), osc_comments_per_page())
         );
     }
 
-    return View::newInstance()->_next('comments');
+    return View::getInstance()->_next('comments');
 }
 
 //////////
@@ -1367,8 +1367,8 @@ function osc_has_item_comments()
 function osc_has_latest_items($total_latest_items = null, $options = array(), $withPicture = false)
 {
     // if we don't have the latest items loaded, do the query
-    if (!View::newInstance()->_exists('latestItems')) {
-        $search = Search::newInstance();
+    if (!View::getInstance()->_exists('latestItems')) {
+        $search = Search::getInstance();
         if (!is_numeric($total_latest_items)) {
             $total_latest_items = osc_max_latest_items();
         }
@@ -1376,36 +1376,36 @@ function osc_has_latest_items($total_latest_items = null, $options = array(), $w
         $items = $search->getLatestItems($total_latest_items, $options, $withPicture);
         // Batch-load item-upgrade state for the home page's listing the same way the search/category path does.
         osc_prime_item_upgrades($items);
-        View::newInstance()->_exportVariableToView('latestItems', $items);
+        View::getInstance()->_exportVariableToView('latestItems', $items);
     }
 
     // keys we want to erase from View
     $to_erase = array('resources', 'item_category', 'metafields');
     foreach ($to_erase as $t) {
-        if (View::newInstance()->_exists($t)) {
-            View::newInstance()->_erase($t);
+        if (View::getInstance()->_exists($t)) {
+            View::getInstance()->_erase($t);
         }
     }
 
     // set itemLoop to latest if it's the first time we enter here
-    if (View::newInstance()->_get('itemLoop') !== 'latest') {
-        View::newInstance()->_exportVariableToView('oldItem', View::newInstance()->_get('item'));
-        View::newInstance()->_exportVariableToView('itemLoop', 'latest');
+    if (View::getInstance()->_get('itemLoop') !== 'latest') {
+        View::getInstance()->_exportVariableToView('oldItem', View::getInstance()->_get('item'));
+        View::getInstance()->_exportVariableToView('itemLoop', 'latest');
     }
 
     // get next item
-    $item = View::newInstance()->_next('latestItems');
+    $item = View::getInstance()->_next('latestItems');
 
     if (!$item) {
-        View::newInstance()->_exportVariableToView('item', View::newInstance()->_get('oldItem'));
-        View::newInstance()->_exportVariableToView('itemLoop', '');
+        View::getInstance()->_exportVariableToView('item', View::getInstance()->_get('oldItem'));
+        View::getInstance()->_exportVariableToView('itemLoop', '');
     } else {
-        View::newInstance()->_exportVariableToView('item', View::newInstance()->_current('latestItems'));
+        View::getInstance()->_exportVariableToView('item', View::getInstance()->_current('latestItems'));
     }
 
     // reset the loop once we finish just in case we want to use it again
-    if (!$item && View::newInstance()->_count('latestItems') > 0) {
-        View::newInstance()->_reset('latestItems');
+    if (!$item && View::getInstance()->_count('latestItems') > 0) {
+        View::getInstance()->_reset('latestItems');
     }
 
     return $item;
@@ -1421,8 +1421,8 @@ function osc_has_latest_items($total_latest_items = null, $options = array(), $w
  */
 function osc_count_latest_items($total_latest_items = null, $options = array())
 {
-    if (!View::newInstance()->_exists('latestItems')) {
-        $search = Search::newInstance();
+    if (!View::getInstance()->_exists('latestItems')) {
+        $search = Search::getInstance();
         if (!is_numeric($total_latest_items)) {
             $total_latest_items = osc_max_latest_items();
         }
@@ -1433,10 +1433,10 @@ function osc_count_latest_items($total_latest_items = null, $options = array())
         }
         $items = $search->getLatestItems($total_latest_items, $options);
         osc_prime_item_upgrades($items);
-        View::newInstance()->_exportVariableToView('latestItems', $items);
+        View::getInstance()->_exportVariableToView('latestItems', $items);
     }
 
-    return (int)View::newInstance()->_count('latestItems');
+    return (int)View::getInstance()->_count('latestItems');
 }
 
 //////////////
@@ -1450,25 +1450,25 @@ function osc_count_latest_items($total_latest_items = null, $options = array())
  */
 function osc_has_custom_items()
 {
-    if (View::newInstance()->_exists('resources')) {
-        View::newInstance()->_erase('resources');
+    if (View::getInstance()->_exists('resources')) {
+        View::getInstance()->_erase('resources');
     }
-    if (View::newInstance()->_exists('item_category')) {
-        View::newInstance()->_erase('item_category');
+    if (View::getInstance()->_exists('item_category')) {
+        View::getInstance()->_erase('item_category');
     }
-    if (View::newInstance()->_exists('metafields')) {
-        View::newInstance()->_erase('metafields');
+    if (View::getInstance()->_exists('metafields')) {
+        View::getInstance()->_erase('metafields');
     }
-    if (View::newInstance()->_get('itemLoop') != 'custom') {
-        View::newInstance()->_exportVariableToView('oldItem', View::newInstance()->_get('item'));
-        View::newInstance()->_exportVariableToView('itemLoop', 'custom');
+    if (View::getInstance()->_get('itemLoop') != 'custom') {
+        View::getInstance()->_exportVariableToView('oldItem', View::getInstance()->_get('item'));
+        View::getInstance()->_exportVariableToView('itemLoop', 'custom');
     }
-    $item = View::newInstance()->_next('customItems');
+    $item = View::getInstance()->_next('customItems');
     if (!$item) {
-        View::newInstance()->_exportVariableToView('item', View::newInstance()->_get('oldItem'));
-        View::newInstance()->_exportVariableToView('itemLoop', '');
+        View::getInstance()->_exportVariableToView('item', View::getInstance()->_get('oldItem'));
+        View::getInstance()->_exportVariableToView('itemLoop', '');
     } else {
-        View::newInstance()->_exportVariableToView('item', View::newInstance()->_current('customItems'));
+        View::getInstance()->_exportVariableToView('item', View::getInstance()->_current('customItems'));
     }
 
     return $item;
@@ -1481,7 +1481,7 @@ function osc_has_custom_items()
  */
 function osc_count_custom_items()
 {
-    return (int)View::newInstance()->_count('customItems');
+    return (int)View::getInstance()->_count('customItems');
 }
 
 /**
@@ -1492,10 +1492,10 @@ function osc_count_custom_items()
  */
 function osc_reset_custom_items()
 {
-    View::newInstance()->_exportVariableToView('item', View::newInstance()->_get('oldItem'));
-    View::newInstance()->_exportVariableToView('itemLoop', '');
+    View::getInstance()->_exportVariableToView('item', View::getInstance()->_get('oldItem'));
+    View::getInstance()->_exportVariableToView('itemLoop', '');
 
-    return View::newInstance()->_reset('customItems');
+    return View::getInstance()->_reset('customItems');
 }
 
 /**
@@ -1548,7 +1548,7 @@ function osc_format_price($price, $symbol = null)
  */
 function osc_priv_count_items()
 {
-    return (int)View::newInstance()->_count('items');
+    return (int)View::getInstance()->_count('items');
 }
 
 /**
@@ -1559,7 +1559,7 @@ function osc_priv_count_items()
  */
 function osc_priv_count_item_resources()
 {
-    return (int)View::newInstance()->_count('resources');
+    return (int)View::getInstance()->_count('resources');
 }
 
 /***************
@@ -1573,11 +1573,11 @@ function osc_priv_count_item_resources()
  */
 function osc_count_item_meta()
 {
-    if (!View::newInstance()->_exists('metafields')) {
-        View::newInstance()->_exportVariableToView('metafields', Item::newInstance()->metaFields(osc_item_id()));
+    if (!View::getInstance()->_exists('metafields')) {
+        View::getInstance()->_exportVariableToView('metafields', Item::getInstance()->metaFields(osc_item_id()));
     }
 
-    return View::newInstance()->_count('metafields');
+    return View::getInstance()->_count('metafields');
 }
 
 /**
@@ -1587,11 +1587,11 @@ function osc_count_item_meta()
  */
 function osc_has_item_meta()
 {
-    if (!View::newInstance()->_exists('metafields')) {
-        View::newInstance()->_exportVariableToView('metafields', Item::newInstance()->metaFields(osc_item_id()));
+    if (!View::getInstance()->_exists('metafields')) {
+        View::getInstance()->_exportVariableToView('metafields', Item::getInstance()->metaFields(osc_item_id()));
     }
 
-    return View::newInstance()->_next('metafields');
+    return View::getInstance()->_next('metafields');
 }
 
 /**
@@ -1601,11 +1601,11 @@ function osc_has_item_meta()
  */
 function osc_get_item_meta()
 {
-    if (!View::newInstance()->_exists('metafields')) {
-        View::newInstance()->_exportVariableToView('metafields', Item::newInstance()->metaFields(osc_item_id()));
+    if (!View::getInstance()->_exists('metafields')) {
+        View::getInstance()->_exportVariableToView('metafields', Item::getInstance()->metaFields(osc_item_id()));
     }
 
-    return View::newInstance()->_get('metafields');
+    return View::getInstance()->_get('metafields');
 }
 
 /**
@@ -1615,7 +1615,7 @@ function osc_get_item_meta()
  */
 function osc_item_meta()
 {
-    return View::newInstance()->_current('metafields');
+    return View::getInstance()->_current('metafields');
 }
 
 /**
@@ -1740,7 +1740,7 @@ function osc_item_meta_slug()
  */
 function osc_total_active_items()
 {
-    return Item::newInstance()->totalItems(null, 'ACTIVE|ENABLED|NOTEXPIRED');
+    return Item::getInstance()->totalItems(null, 'ACTIVE|ENABLED|NOTEXPIRED');
 }
 
 /**
@@ -1750,7 +1750,7 @@ function osc_total_active_items()
  */
 function osc_total_items()
 {
-    return Item::newInstance()->totalItems(null);
+    return Item::getInstance()->totalItems(null);
 }
 
 /**
@@ -1760,7 +1760,7 @@ function osc_total_items()
  */
 function osc_total_active_items_today()
 {
-    return Item::newInstance()->totalItems(null, 'ACTIVE|ENABLED|NOTEXPIRED|TODAY');
+    return Item::getInstance()->totalItems(null, 'ACTIVE|ENABLED|NOTEXPIRED|TODAY');
 }
 
 /**
@@ -1770,7 +1770,7 @@ function osc_total_active_items_today()
  */
 function osc_total_items_today()
 {
-    return Item::newInstance()->totalItems(null, 'TODAY');
+    return Item::getInstance()->totalItems(null, 'TODAY');
 }
 
 /**
@@ -1906,7 +1906,7 @@ function osc_query_item($params = null)
                 break;
         }
     }
-    View::newInstance()->_exportVariableToView('customItems', $mSearch->doSearch());
+    View::getInstance()->_exportVariableToView('customItems', $mSearch->doSearch());
 }
 
 /**
@@ -1975,7 +1975,7 @@ function _osc_item_adjacent(string $direction, ?int $itemId): array
         return $cached;
     }
 
-    $row    = Item::newInstance()->findAdjacentLive($itemId, $next, $locale);
+    $row    = Item::getInstance()->findAdjacentLive($itemId, $next, $locale);
     $result = $row === array()
         ? array('id' => 0, 'url' => '')
         : array('id' => (int)$row['pk_i_id'], 'url' => osc_item_url_from_item($row));

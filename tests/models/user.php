@@ -77,7 +77,7 @@ if (!function_exists('osc_test_cache_flush')) {
     {
         $GLOBALS['__user_test_cache'] = array();
         if (class_exists('Object_Cache_Factory')) {
-            Object_Cache_Factory::newInstance()->flush();
+            Object_Cache_Factory::getInstance()->flush();
         }
     }
 }
@@ -126,7 +126,7 @@ seed_locale($admin);
 seed_locale($admin, 'fr_FR', 'French');
 
 $prefix = DB_TABLE_PREFIX;
-$model  = User::newInstance();
+$model  = User::getInstance();
 
 /** Insert a user description row with raw mysqli. */
 $seedDescription = static function (int $uid, string $locale, string $info) use ($admin, $prefix) {

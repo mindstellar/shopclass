@@ -124,7 +124,7 @@ names do not follow the rules below.
 `search_conditions` fires on the search page and again whenever a saved alert runs: in the
 alert cron, on the user's alerts page and on the admin user screen. Its third argument says
 which: `'request'` or `'alert'`. During an alert, `Params::getParam()` returns the alert's saved
-values and `Search::newInstance()` is the alert's search. A callback that sends headers, reads
+values and `Search::getInstance()` is the alert's search. A callback that sends headers, reads
 the session or prints must return early when the context is `'alert'`.
 
 To store your own filter with an alert, add it with the `alert_search_params` filter, then read
@@ -336,7 +336,7 @@ Core fires 551 names. Generated from the source; do not edit by hand.
 | `email_warn_expiration_title_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_title', osc_apply_filter('email_warn_expiration_title', $content['s_title'], $aItem) ), $words ), $aItem` | `oc-includes/osclass/emails.php` |
 | `hook_email_admin_new_item` | action | `$item` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `hook_email_admin_new_user` | action | `$user` | `oc-includes/osclass/classes/user/AccountService.php` |
-| `hook_email_alert_validation` | action | `Alerts::newInstance()->findByPrimaryKey($alertID), $email, $secret` | `oc-includes/osclass/helpers/hSearch.php` |
+| `hook_email_alert_validation` | action | `Alerts::getInstance()->findByPrimaryKey($alertID), $email, $secret` | `oc-includes/osclass/helpers/hSearch.php` |
 | `hook_email_comment_validated` | action | `$comment` | `oc-includes/osclass/classes/moderation/CommentModeration.php` |
 | `hook_email_contact_user` | action | `(int) $user['pk_i_id'], (string) $args['yourEmail'], (string) $args['yourName'], (string) $args['phoneNumber'], (string) $args['message']` | `oc-includes/osclass/classes/security/MessageHold.php` |
 | `hook_email_item_inquiry` | action | `$args` | `oc-includes/osclass/classes/security/MessageHold.php` |
@@ -365,7 +365,7 @@ Core fires 551 names. Generated from the source; do not edit by hand.
 | `deactivate_item` | action | `$id` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `delete_item` | action | `$id` | `oc-includes/osclass/classes/model/Item.php` |
 | `disable_item` | action | `$id` | `oc-includes/osclass/classes/listing/ListingService.php` |
-| `edited_item` | action | `\Item::newInstance()->findByPrimaryKey($aItem['idItem'])` | `oc-includes/osclass/classes/listing/ListingService.php` |
+| `edited_item` | action | `\Item::getInstance()->findByPrimaryKey($aItem['idItem'])` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `enable_item` | action | `$id` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `filters_manage_item_search` | action | none | `oc-admin/themes/modern/items/index.php` |
 | `init_item` | action | none | `oc-includes/osclass/classes/controller/CWebItem.php` |
@@ -571,7 +571,7 @@ Core fires 551 names. Generated from the source; do not edit by hand.
 | `keyword_block_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/KeywordBlocksDataTable.php` |
 | `language_attributes` | filter | `$attrs` | `oc-includes/osclass/helpers/hTheme.php` |
 | `language_bulk_filter` | filter | `$bulk_options` | `oc-includes/osclass/classes/controller/admin/CAdminLanguages.php` |
-| `listing_list_html` | filter | `null, (array) View::newInstance()->_get('items'), $context` | `oc-includes/osclass/gui/page-fn.php` |
+| `listing_list_html` | filter | `null, (array) View::getInstance()->_get('items'), $context` | `oc-includes/osclass/gui/page-fn.php` |
 | `listing_row_actions` | filter | `$rowActions, $rowItem, $rowContext` | `oc-includes/osclass/gui/account/parts/item-row.php` |
 | `listing_row_badges` | filter | `$rowBadges, $rowItem, $rowContext` | `oc-includes/osclass/gui/account/parts/item-row.php` |
 | `listing_row_meta` | filter | `$rowMeta, $rowItem, $rowContext` | `oc-includes/osclass/gui/account/parts/item-row.php` |
@@ -606,14 +606,14 @@ Core fires 551 names. Generated from the source; do not edit by hand.
 | `page_cache_purge` | action | `$reasons` | `oc-includes/osclass/helpers/hHttpCache.php` |
 | `page_cache_purge_enabled` | filter | `true` | `oc-includes/osclass/helpers/hHttpCache.php` |
 | `page_meta` | action | none | `oc-admin/themes/modern/pages/frm.php` |
-| `page_templates` | filter | `WebThemes::newInstance()->getAvailableTemplates()` | `oc-includes/osclass/classes/controller/admin/CAdminPages.php` |
+| `page_templates` | filter | `WebThemes::getInstance()->getAvailableTemplates()` | `oc-includes/osclass/classes/controller/admin/CAdminPages.php` |
 | `pages_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/PagesDataTable.php` |
 | `phpmailer_smtp_timeout` | filter | `15` | `oc-includes/osclass/utils.php` |
 | `pre_contact_post` | action | `$params` | `oc-includes/osclass/classes/controller/CWebContact.php` |
 | `pre_send_mail` | filter | `$mail, $params` | `oc-includes/osclass/utils.php` |
 | `public_cache_max_age` | filter | `30` | `oc-includes/osclass/helpers/hHttpCache.php` |
 | `regenerate_image` | action | `$resource` | `oc-includes/osclass/classes/listing/PhotoService.php` |
-| `regenerated_image` | action | `\ItemResource::newInstance()->findByPrimaryKey($resource['pk_i_id'])` | `oc-includes/osclass/classes/listing/PhotoService.php` |
+| `regenerated_image` | action | `\ItemResource::getInstance()->findByPrimaryKey($resource['pk_i_id'])` | `oc-includes/osclass/classes/listing/PhotoService.php` |
 | `register_email_taken` | action | `$input['s_email']` | `oc-includes/osclass/classes/user/AccountService.php` |
 | `register_jobs` | action | none | `oc-includes/osclass/classes/job/JobWorker.php` |
 | `register_storage_adapters` | action | `StorageManager::getInstance()` | `oc-includes/osclass/helpers/hStorage.php` |
@@ -703,12 +703,12 @@ Core fires 551 names. Generated from the source; do not edit by hand.
 | `actions_manage_users` | filter | `$options, $aRow` | `oc-includes/osclass/classes/datatables/UsersDataTable.php` |
 | `activate_user` | action | `$user` | `oc-includes/osclass/classes/user/AccountService.php` |
 | `after_delete_user` | action | `$id` | `oc-includes/osclass/classes/model/User.php` |
-| `after_username_change` | action | `Session::newInstance()->_get('userId'), Params::getParam('s_username')` | `oc-includes/osclass/classes/controller/CWebUser.php` |
+| `after_username_change` | action | `Session::getInstance()->_get('userId'), Params::getParam('s_username')` | `oc-includes/osclass/classes/controller/CWebUser.php` |
 | `api_user` | filter | `$data, $user, $context` | `oc-includes/osclass/classes/api/serializer/UserSerializer.php` |
 | `before_user_delete` | action | `$user` | `oc-includes/osclass/classes/user/AccountService.php` |
 | `before_user_recover` | action | none | `oc-includes/osclass/classes/controller/CWebLogin.php` |
 | `before_user_register` | action | none | `oc-includes/osclass/classes/api/controller/RegistrationController.php` |
-| `before_username_change` | action | `Session::newInstance()->_get('userId'), $username` | `oc-includes/osclass/classes/controller/CWebUser.php` |
+| `before_username_change` | action | `Session::getInstance()->_get('userId'), $username` | `oc-includes/osclass/classes/controller/CWebUser.php` |
 | `bot_user_agents` | filter | `array( // Generic: catches the long tail, which is most of it. 'bot', 'crawler', 'crawling', 'spider', 'scraper', 'archiver', 'fetcher', // Search engines. 'googlebot', 'bingbot', 'slurp', 'duckduckbot', 'baiduspider', 'yandex', 'sogou', 'exabot', 'seznambot', 'petalbot', 'applebot', 'qwantify', // AI and dataset collectors. 'gptbot', 'oai-searchbot', 'chatgpt-user', 'ccbot', 'claudebot', 'claude-web', 'anthropic-ai', 'perplexitybot', 'google-extended', 'bytespider', 'amazonbot', 'meta-externalagent', 'diffbot', // SEO and marketing crawlers. 'ahrefs', 'semrush', 'mj12bot', 'dotbot', 'blexbot', 'dataforseo', 'screaming frog', 'serpstat', 'megaindex', // Monitoring, previews and libraries. 'uptimerobot', 'pingdom', 'statuscake', 'facebookexternalhit', 'telegrambot', 'whatsapp', 'slackbot', 'discordbot', 'embedly', 'curl/', 'wget', 'python-requests', 'python-urllib', 'go-http-client', 'java/', 'okhttp', 'libwww-perl', 'headlesschrome', 'phantomjs', )` | `oc-includes/osclass/helpers/hUtils.php` |
 | `datatable_user_class` | filter | `array(), $aRawRows[$key], $row` | `oc-admin/themes/modern/users/index.php` |
 | `deactivate_user` | action | `$user` | `oc-includes/osclass/classes/user/AccountService.php` |

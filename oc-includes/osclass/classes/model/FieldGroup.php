@@ -48,13 +48,21 @@ class FieldGroup extends DAO
      *
      * @return FieldGroup
      */
-    public static function newInstance()
+    public static function getInstance()
     {
         if (!self::$instance instanceof self) {
             self::$instance = new self();
         }
 
         return self::$instance;
+    }
+
+    /**
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
+     */
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     /**
@@ -407,7 +415,7 @@ class FieldGroup extends DAO
      */
     public function findByCategory($categoryId)
     {
-        $path = Field::newInstance()->categoryPath($categoryId);
+        $path = Field::getInstance()->categoryPath($categoryId);
         if (empty($path)) {
             return array();
         }
@@ -436,7 +444,7 @@ class FieldGroup extends DAO
 
         $groups = array();
         foreach (osc_db_stringify_rows($rows) as $group) {
-            $fields = Field::newInstance()->findByGroup($group['pk_i_id']);
+            $fields = Field::getInstance()->findByGroup($group['pk_i_id']);
             if (empty($fields)) {
                 continue;
             }

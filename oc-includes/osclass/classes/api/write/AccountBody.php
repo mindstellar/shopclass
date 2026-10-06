@@ -103,7 +103,7 @@ final class AccountBody
         }
         if (array_key_exists('country', $patch)) {
             $code = strtoupper((string) ($patch['country'] ?? ''));
-            if ($code !== '' && \Country::newInstance()->findByCode($code) == false) {
+            if ($code !== '' && \Country::getInstance()->findByCode($code) == false) {
                 throw ProblemException::field('/country', 'unknown', 'is not a country of this site');
             }
             $params['countryId'] = $code;

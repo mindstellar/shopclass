@@ -135,8 +135,8 @@ final class FormService
      */
     public function migrateLooseFields(): array
     {
-        $fieldManager = \Field::newInstance();
-        $groupManager = \FieldGroup::newInstance();
+        $fieldManager = \Field::getInstance();
+        $groupManager = \FieldGroup::getInstance();
 
         $placed = array_fill_keys(array_map('intval', $this->placedFieldIds()), true);
 

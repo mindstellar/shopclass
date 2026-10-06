@@ -42,10 +42,10 @@ class PagesDataTable extends DataTable
         $this->limit = ListPaging::length((int)($params['iDisplayLength'] ?? ListPaging::DEFAULT_LENGTH));
         $this->start = ListPaging::start(ListPaging::page(), $this->limit);
 
-        $pages = Page::newInstance()->listAll(0, null, null, $this->start, $this->limit);
+        $pages = Page::getInstance()->listAll(0, null, null, $this->start, $this->limit);
         $this->processData($pages);
 
-        $this->total          = Page::newInstance()->count(0);
+        $this->total          = Page::getInstance()->count(0);
         $this->total_filtered = $this->total;
         $this->totalFiltered  = $this->total_filtered;
 
@@ -92,7 +92,7 @@ class PagesDataTable extends DataTable
 
                 // -- options --
                 $options = array();
-                View::newInstance()->_exportVariableToView('page', $aRow);
+                View::getInstance()->_exportVariableToView('page', $aRow);
                 $options[] = '<a href="' . osc_static_page_url() . '" target="_blank">' . __('View page') . '</a>';
                 $options[] =
                     '<a href="' . osc_admin_base_url(true) . '?page=pages&amp;action=edit&amp;id=' . $aRow['pk_i_id']

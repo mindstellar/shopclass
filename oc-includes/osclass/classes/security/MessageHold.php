@@ -139,11 +139,11 @@ final class MessageHold
                 $to = _m('the site owner');
                 break;
             case 'item_contact':
-                $item = \Item::newInstance()->findByPrimaryKey((int) ($args['id'] ?? 0));
+                $item = \Item::getInstance()->findByPrimaryKey((int) ($args['id'] ?? 0));
                 $to   = sprintf(_m('the seller of "%s"'), $item ? (string) $item['s_title'] : '');
                 break;
             case 'user_contact':
-                $user = \User::newInstance()->findByPrimaryKey((int) ($args['id'] ?? 0));
+                $user = \User::getInstance()->findByPrimaryKey((int) ($args['id'] ?? 0));
                 $to   = $user ? (string) $user['s_name'] : '';
                 break;
             default:
@@ -213,11 +213,11 @@ final class MessageHold
                 return osc_sendMail((array) ($args['params'] ?? array())) !== false;
             case 'item_contact':
             case 'send_friend':
-                $item = \Item::newInstance()->findByPrimaryKey((int) ($args['id'] ?? 0));
+                $item = \Item::getInstance()->findByPrimaryKey((int) ($args['id'] ?? 0));
                 if (!$item) {
                     return false;
                 }
-                \View::newInstance()->_exportVariableToView('item', $item);
+                \View::getInstance()->_exportVariableToView('item', $item);
                 $args['item'] = $item;
                 if ($kind === 'send_friend') {
                     $args['s_title'] = $item['s_title'];
@@ -228,11 +228,11 @@ final class MessageHold
 
                 return true;
             case 'user_contact':
-                $user = \User::newInstance()->findByPrimaryKey((int) ($args['id'] ?? 0));
+                $user = \User::getInstance()->findByPrimaryKey((int) ($args['id'] ?? 0));
                 if (!$user || !$user['b_active'] || !$user['b_enabled']) {
                     return false;
                 }
-                \View::newInstance()->_exportVariableToView('user', $user);
+                \View::getInstance()->_exportVariableToView('user', $user);
                 osc_run_hook(
                     'hook_email_contact_user',
                     (int) $user['pk_i_id'],

@@ -537,7 +537,7 @@ class CoreRoutes
      */
     public static function categoryPath($categoryId): string
     {
-        $branch = \Category::newInstance()->hierarchy($categoryId);
+        $branch = \Category::getInstance()->hierarchy($categoryId);
         $slugs  = array();
         for ($i = count($branch); $i > 0; $i--) {
             if (isset($branch[$i - 1]['s_slug'])) {

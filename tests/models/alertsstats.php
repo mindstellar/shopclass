@@ -35,7 +35,7 @@ require_once __DIR__ . '/../lib/harness.php';
 
 $admin = scratchdb_session('osc_models_alertsstats');
 
-$model = AlertsStats::newInstance();
+$model = AlertsStats::getInstance();
 $table = DB_TABLE_PREFIX . 't_alerts_sent';
 
 /** Read a counter row back with raw mysqli, never through the code under test. */

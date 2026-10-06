@@ -155,22 +155,22 @@ class AdminSecBaseModel extends SecBaseModel
      */
     public function logout()
     {
-        $locale = Session::newInstance()->_get('oc_adminLocale');
-        Session::newInstance()->_drop('adminId');
-        Session::newInstance()->_drop('adminUserName');
-        Session::newInstance()->_drop('adminName');
-        Session::newInstance()->_drop('adminEmail');
-        Session::newInstance()->_drop('adminStamp');
-        Session::newInstance()->_drop('adminLocale');
-        Session::newInstance()->session_end();
+        $locale = Session::getInstance()->_get('oc_adminLocale');
+        Session::getInstance()->_drop('adminId');
+        Session::getInstance()->_drop('adminUserName');
+        Session::getInstance()->_drop('adminName');
+        Session::getInstance()->_drop('adminEmail');
+        Session::getInstance()->_drop('adminStamp');
+        Session::getInstance()->_drop('adminLocale');
+        Session::getInstance()->session_end();
         if ($locale !== '') {
-            Session::newInstance()->_set('oc_adminLocale', $locale);
+            Session::getInstance()->_set('oc_adminLocale', $locale);
         }
 
-        Cookie::newInstance()->pop('oc_adminId');
-        Cookie::newInstance()->pop('oc_adminSecret');
-        Cookie::newInstance()->pop('oc_adminLocale');
-        Cookie::newInstance()->set();
+        Cookie::getInstance()->pop('oc_adminId');
+        Cookie::getInstance()->pop('oc_adminSecret');
+        Cookie::getInstance()->pop('oc_adminLocale');
+        Cookie::getInstance()->set();
     }
 
     /**
@@ -184,7 +184,7 @@ class AdminSecBaseModel extends SecBaseModel
     {
         osc_run_hook('before_admin_html');
         osc_current_admin_theme_path($file);
-        Session::newInstance()->_clearVariables();
+        Session::getInstance()->_clearVariables();
         osc_run_hook('after_admin_html');
     }
 

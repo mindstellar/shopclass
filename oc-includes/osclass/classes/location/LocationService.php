@@ -43,16 +43,16 @@ final class LocationService
     public static function resolve(array $in, bool $matchByName = false): array
     {
         $text    = static fn (string $key): string => (string) ($in[$key] ?? '');
-        $country = \Country::newInstance()->findByCode($text('countryCode'));
+        $country = \Country::getInstance()->findByCode($text('countryCode'));
         $found   = is_array($country) && !empty($country);
         $out     = [
             'countryId'   => $found ? $country['pk_c_code'] : null,
             'countryName' => $found ? $country['s_name'] : $text('country'),
         ];
 
-        $regionId = self::place('region', $text('regionId'), $text('region'), \Region::newInstance(), null, $out['countryId'], $matchByName);
+        $regionId = self::place('region', $text('regionId'), $text('region'), \Region::getInstance(), null, $out['countryId'], $matchByName);
         $out      = $out + ['regionId' => $regionId[0], 'regionName' => $regionId[1]];
-        $city     = self::place('city', $text('cityId'), $text('city'), \City::newInstance(), $out['regionId'], $out['countryId'], $matchByName);
+        $city     = self::place('city', $text('cityId'), $text('city'), \City::getInstance(), $out['regionId'], $out['countryId'], $matchByName);
 
         return $out + ['cityId' => $city[0], 'cityName' => $city[1]];
     }
@@ -83,7 +83,7 @@ final class LocationService
      */
     public function addRegion(string $countryCode, string $name): int
     {
-        $country = \Country::newInstance()->findByCode($countryCode);
+        $country = \Country::getInstance()->findByCode($countryCode);
         if (!isset($country['pk_c_code'])) {
             throw new NotFoundException(_m('This location no longer exists.'));
         }
@@ -93,7 +93,7 @@ final class LocationService
             throw new InvalidException('/name', 'invalid', sprintf(_m('%s already was in the database'), $name));
         }
         $id = (int) $regions->insertGetId(['fk_c_country_code' => $country['pk_c_code'], 's_name' => $name]);
-        RegionStats::newInstance()->setNumItems($id, 0);
+        RegionStats::getInstance()->setNumItems($id, 0);
         osc_calculate_location_slug('region');
         osc_calculate_location_slug('city');
 
@@ -118,7 +118,7 @@ final class LocationService
             throw new InvalidException('/name', 'invalid', sprintf(_m('%s already was in the database'), $name));
         }
         $regions->update(['s_name' => $name, 's_slug' => self::uniqueSlug($regions, $id, $name, $slug)], ['pk_i_id' => $id]);
-        ItemLocation::newInstance()->update(['s_region' => $name], ['fk_i_region_id' => $id]);
+        ItemLocation::getInstance()->update(['s_region' => $name], ['fk_i_region_id' => $id]);
     }
 
     /**
@@ -127,7 +127,7 @@ final class LocationService
      */
     public function addCity(int $regionId, string $name): int
     {
-        $region = $regionId > 0 ? Region::newInstance()->findByPrimaryKey($regionId) : false;
+        $region = $regionId > 0 ? Region::getInstance()->findByPrimaryKey($regionId) : false;
         if (!is_array($region)) {
             throw new NotFoundException(_m('This location no longer exists.'));
         }
@@ -143,7 +143,7 @@ final class LocationService
             's_name'            => $name,
             'fk_c_country_code' => $region['fk_c_country_code'],
         ]);
-        CityStats::newInstance()->setNumItems($id, 0);
+        CityStats::getInstance()->setNumItems($id, 0);
         osc_calculate_location_slug('city');
 
         return $id;
@@ -167,7 +167,7 @@ final class LocationService
             throw new InvalidException('/name', 'invalid', sprintf(_m('%s already was in the database'), $name));
         }
         $cities->update(['s_name' => $name, 's_slug' => self::uniqueSlug($cities, $id, $name, $slug)], ['pk_i_id' => $id]);
-        ItemLocation::newInstance()->update(['s_city' => $name], ['fk_i_city_id' => $id]);
+        ItemLocation::getInstance()->update(['s_city' => $name], ['fk_i_city_id' => $id]);
     }
 
     /**
@@ -176,12 +176,12 @@ final class LocationService
      */
     public function addArea(int $cityId, string $name): int
     {
-        $city = $cityId > 0 ? City::newInstance()->findByPrimaryKey($cityId) : false;
+        $city = $cityId > 0 ? City::getInstance()->findByPrimaryKey($cityId) : false;
         if (!is_array($city)) {
             throw new NotFoundException(_m('This location no longer exists.'));
         }
         $this->checkName($name, _m('City area name cannot be blank'));
-        if (isset(CityArea::newInstance()->findByName($name, $cityId)['s_name'])) {
+        if (isset(CityArea::getInstance()->findByName($name, $cityId)['s_name'])) {
             throw new InvalidException('/name', 'invalid', sprintf(_m('%s already was in the database'), $name));
         }
 
@@ -195,17 +195,17 @@ final class LocationService
      */
     public function editArea(int $id, string $name): void
     {
-        $area = $id > 0 ? CityArea::newInstance()->findByPrimaryKey($id) : false;
+        $area = $id > 0 ? CityArea::getInstance()->findByPrimaryKey($id) : false;
         if (!is_array($area)) {
             throw new NotFoundException(_m('This location no longer exists.'));
         }
         $this->checkName($name, _m('City area name cannot be blank'));
-        $exists = CityArea::newInstance()->findByName($name, $area['fk_i_city_id']);
+        $exists = CityArea::getInstance()->findByName($name, $area['fk_i_city_id']);
         if (isset($exists['pk_i_id']) && (int) $exists['pk_i_id'] !== $id) {
             throw new InvalidException('/name', 'invalid', sprintf(_m('%s already was in the database'), $name));
         }
-        CityArea::newInstance()->update(['s_name' => $name], ['pk_i_id' => $id]);
-        ItemLocation::newInstance()->update(['s_city_area' => $name], ['fk_i_city_area_id' => $id]);
+        CityArea::getInstance()->update(['s_name' => $name], ['pk_i_id' => $id]);
+        ItemLocation::getInstance()->update(['s_city_area' => $name], ['fk_i_city_area_id' => $id]);
     }
 
     /**
@@ -219,9 +219,9 @@ final class LocationService
     public function delete(string $level, int $id): void
     {
         [$table, $model] = match ($level) {
-            'region' => ['t_region', Region::newInstance()],
-            'city'   => ['t_city', City::newInstance()],
-            'area'   => ['t_city_area', CityArea::newInstance()],
+            'region' => ['t_region', Region::getInstance()],
+            'city'   => ['t_city', City::getInstance()],
+            'area'   => ['t_city_area', CityArea::getInstance()],
         };
         if ($id <= 0 || osc_db_table(DB_TABLE_PREFIX . $table)->where('pk_i_id', $id)->first() === null) {
             throw new NotFoundException(_m('This location no longer exists.'));

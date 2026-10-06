@@ -77,7 +77,7 @@ final class PhotosController
 
             throw ProblemException::of('server_error', 'The photo could not be saved.');
         }
-        $data = $this->api->listingSerializer()->photos([\ItemResource::newInstance()->findByPrimaryKey($new[0])])[0];
+        $data = $this->api->listingSerializer()->photos([\ItemResource::getInstance()->findByPrimaryKey($new[0])])[0];
 
         return Response::created($data, $this->api->links()->api('listings/' . $id . '/photos/' . $new[0]));
     }

@@ -26,12 +26,12 @@
  */
 function osc_search()
 {
-    if (View::newInstance()->_exists('search')) {
-        return View::newInstance()->_get('search');
+    if (View::getInstance()->_exists('search')) {
+        return View::getInstance()->_get('search');
     }
 
     $search = new Search();
-    View::newInstance()->_exportVariableToView('search', $search);
+    View::getInstance()->_exportVariableToView('search', $search);
 
     return $search;
 }
@@ -65,7 +65,7 @@ function osc_list_orders()
  */
 function osc_search_alert_subscribed()
 {
-    return View::newInstance()->_get('search_alert_subscribed') == 1;
+    return View::getInstance()->_get('search_alert_subscribed') == 1;
 }
 
 /**
@@ -75,7 +75,7 @@ function osc_search_alert_subscribed()
  */
 function osc_search_page()
 {
-    return View::newInstance()->_get('search_page');
+    return View::getInstance()->_get('search_page');
 }
 
 /**
@@ -85,7 +85,7 @@ function osc_search_page()
  */
 function osc_search_total_pages()
 {
-    return View::newInstance()->_get('search_total_pages');
+    return View::getInstance()->_get('search_total_pages');
 }
 
 /**
@@ -95,7 +95,7 @@ function osc_search_total_pages()
  */
 function osc_search_has_pic()
 {
-    return View::newInstance()->_get('search_has_pic');
+    return View::getInstance()->_get('search_has_pic');
 }
 
 /**
@@ -105,7 +105,7 @@ function osc_search_has_pic()
  */
 function osc_search_only_premium()
 {
-    return View::newInstance()->_get('search_only_premium');
+    return View::getInstance()->_get('search_only_premium');
 }
 
 /**
@@ -115,7 +115,7 @@ function osc_search_only_premium()
  */
 function osc_search_order()
 {
-    return View::newInstance()->_get('search_order');
+    return View::getInstance()->_get('search_order');
 }
 
 /**
@@ -125,7 +125,7 @@ function osc_search_order()
  */
 function osc_search_order_type()
 {
-    return View::newInstance()->_get('search_order_type');
+    return View::getInstance()->_get('search_order_type');
 }
 
 /**
@@ -135,8 +135,8 @@ function osc_search_order_type()
  */
 function osc_search_pattern()
 {
-    if (View::newInstance()->_exists('search_pattern')) {
-        return View::newInstance()->_get('search_pattern');
+    if (View::getInstance()->_exists('search_pattern')) {
+        return View::getInstance()->_get('search_pattern');
     }
 
     return '';
@@ -149,7 +149,7 @@ function osc_search_pattern()
  */
 function osc_search_country()
 {
-    return View::newInstance()->_get('search_country');
+    return View::getInstance()->_get('search_country');
 }
 
 /**
@@ -159,7 +159,7 @@ function osc_search_country()
  */
 function osc_search_region()
 {
-    return View::newInstance()->_get('search_region');
+    return View::getInstance()->_get('search_region');
 }
 
 /**
@@ -169,7 +169,7 @@ function osc_search_region()
  */
 function osc_search_city()
 {
-    return View::newInstance()->_get('search_city');
+    return View::getInstance()->_get('search_city');
 }
 
 /**
@@ -179,8 +179,8 @@ function osc_search_city()
  */
 function osc_search_user()
 {
-    if (is_array(View::newInstance()->_get('search_from_user'))) {
-        return View::newInstance()->_get('search_from_user');
+    if (is_array(View::getInstance()->_get('search_from_user'))) {
+        return View::getInstance()->_get('search_from_user');
     }
 
     return array();
@@ -193,7 +193,7 @@ function osc_search_user()
  */
 function osc_search_price_max()
 {
-    return View::newInstance()->_get('search_price_max');
+    return View::getInstance()->_get('search_price_max');
 }
 
 /**
@@ -203,7 +203,7 @@ function osc_search_price_max()
  */
 function osc_search_price_min()
 {
-    return View::newInstance()->_get('search_price_min');
+    return View::getInstance()->_get('search_price_min');
 }
 
 /**
@@ -213,7 +213,7 @@ function osc_search_price_min()
  */
 function osc_search_total_items()
 {
-    return View::newInstance()->_get('search_total_items');
+    return View::getInstance()->_get('search_total_items');
 }
 
 /**
@@ -223,7 +223,7 @@ function osc_search_total_items()
  */
 function osc_search_show_as()
 {
-    return View::newInstance()->_get('search_show_as');
+    return View::getInstance()->_get('search_show_as');
 }
 
 /**
@@ -233,7 +233,7 @@ function osc_search_show_as()
  */
 function osc_search_start()
 {
-    return View::newInstance()->_get('search_start');
+    return View::getInstance()->_get('search_start');
 }
 
 /**
@@ -243,7 +243,7 @@ function osc_search_start()
  */
 function osc_search_end()
 {
-    return View::newInstance()->_get('search_end');
+    return View::getInstance()->_get('search_end');
 }
 
 /**
@@ -253,12 +253,12 @@ function osc_search_end()
  */
 function osc_search_category()
 {
-    if (View::newInstance()->_exists('search_subcategories')) {
-        $category = View::newInstance()->_current('search_subcategories');
-    } elseif (View::newInstance()->_exists('search_categories')) {
-        $category = View::newInstance()->_current('search_categories');
+    if (View::getInstance()->_exists('search_subcategories')) {
+        $category = View::getInstance()->_current('search_subcategories');
+    } elseif (View::getInstance()->_exists('search_categories')) {
+        $category = View::getInstance()->_current('search_categories');
     } else {
-        $category = View::newInstance()->_get('search_category');
+        $category = View::getInstance()->_get('search_category');
     }
     if (!is_array($category)) {
         $category = array();
@@ -276,7 +276,7 @@ function osc_search_category_id()
 {
     $categories = osc_search_category();
     $category   = array();
-    $mCat       = Category::newInstance();
+    $mCat       = Category::getInstance();
 
     foreach ($categories as $cat) {
         if (is_numeric($cat)) {
@@ -312,7 +312,7 @@ function osc_search_category_name($locale = '')
     if (!empty($a_search_category_id)) {
         list($search_category_id) = $a_search_category_id;
         if (is_numeric($search_category_id)) {
-            $tmp = Category::newInstance()->findByPrimaryKey($search_category_id, $locale);
+            $tmp = Category::getInstance()->findByPrimaryKey($search_category_id, $locale);
             if (isset($tmp['s_name'])) {
                 $text = $tmp['s_name'];
             }
@@ -337,7 +337,7 @@ function osc_search_category_description($locale = '')
     if (!empty($a_search_category_id)) {
         list($search_category_id) = $a_search_category_id;
         if (is_numeric($search_category_id)) {
-            $mCat = Category::newInstance();
+            $mCat = Category::getInstance();
             $tmp = $mCat->findByPrimaryKey($search_category_id, $locale);
             if (isset($tmp['s_description'])) {
                 $text = $tmp['s_description'];
@@ -368,7 +368,7 @@ function osc_update_search_url($params = array(), $forced = false)
         unset($request['sUser']);
     }
     unset($request['sUser[]']);
-    if (!$forced && View::newInstance()->_get('subdomain_slug') != '') {
+    if (!$forced && View::getInstance()->_get('subdomain_slug') != '') {
         $subdomain_type = osc_subdomain_type();
         if ($subdomain_type === 'category') {
             unset($request['sCategory']);
@@ -397,7 +397,7 @@ function osc_alert_form()
     // One field on a core-owned contract. A theme that ships the view still owns
     // it; one that does not gets core's rather than nothing, which is what the
     // walk used to leave behind.
-    if (file_exists(WebThemes::newInstance()->getCurrentThemePath() . 'alert-form.php')) {
+    if (file_exists(WebThemes::getInstance()->getCurrentThemePath() . 'alert-form.php')) {
         osc_current_web_theme_path('alert-form.php');
 
         return;
@@ -413,7 +413,7 @@ function osc_alert_form()
  */
 function osc_search_alert()
 {
-    return View::newInstance()->_get('search_alert');
+    return View::getInstance()->_get('search_alert');
 }
 
 /**
@@ -441,7 +441,7 @@ function osc_subscribe_alert(string $token, string $email): int
     $userid = 0;
     if (osc_is_web_user_logged_in()) {
         $userid = osc_logged_user_id();
-        $user   = User::newInstance()->findByPrimaryKey($userid);
+        $user   = User::getInstance()->findByPrimaryKey($userid);
         $email  = (string)$user['s_email'];
     }
     if ($alert == '' || $email === '') {
@@ -461,14 +461,14 @@ function osc_subscribe_alert(string $token, string $email): int
     }
 
     $secret  = osc_genRandomPassword();
-    $alertID = Alerts::newInstance()->createAlert($userid, $email, $alert, $secret);
+    $alertID = Alerts::getInstance()->createAlert($userid, $email, $alert, $secret);
     if (!$alertID) {
         return 0;
     }
     if ((int)$userid > 0) {
-        $user = User::newInstance()->findByPrimaryKey($userid);
+        $user = User::getInstance()->findByPrimaryKey($userid);
         if ($user['b_active'] == 1 && $user['b_enabled'] == 1) {
-            Alerts::newInstance()->activate($alertID);
+            Alerts::getInstance()->activate($alertID);
 
             return 1;
         }
@@ -477,7 +477,7 @@ function osc_subscribe_alert(string $token, string $email): int
     }
 
     \mindstellar\security\ActionThrottle::record('alert_subscribe');
-    osc_run_hook('hook_email_alert_validation', Alerts::newInstance()->findByPrimaryKey($alertID), $email, $secret);
+    osc_run_hook('hook_email_alert_validation', Alerts::getInstance()->findByPrimaryKey($alertID), $email, $secret);
 
     return 1;
 }
@@ -560,9 +560,9 @@ function osc_search_url($params = null)
                 $category['pk_i_id'] = osc_category_id();
                 $category['s_slug']  = osc_category_slug();
             } elseif (is_numeric($params['sCategory'])) {
-                $category = Category::newInstance()->findByPrimaryKey($params['sCategory']);
+                $category = Category::getInstance()->findByPrimaryKey($params['sCategory']);
             } else {
-                $category = Category::newInstance()->findBySlug($params['sCategory']);
+                $category = Category::getInstance()->findBySlug($params['sCategory']);
             }
             if (isset($category['pk_i_id'])) {
                 $values = array(
@@ -676,8 +676,8 @@ function osc_remove_slash($var)
  */
 function osc_list_country()
 {
-    if (View::newInstance()->_exists('list_countries')) {
-        return View::newInstance()->_current('list_countries');
+    if (View::getInstance()->_exists('list_countries')) {
+        return View::getInstance()->_current('list_countries');
     }
 
     return null;
@@ -690,8 +690,8 @@ function osc_list_country()
  */
 function osc_list_region()
 {
-    if (View::newInstance()->_exists('list_regions')) {
-        return View::newInstance()->_current('list_regions');
+    if (View::getInstance()->_exists('list_regions')) {
+        return View::getInstance()->_current('list_regions');
     }
 
     return null;
@@ -704,8 +704,8 @@ function osc_list_region()
  */
 function osc_list_city()
 {
-    if (View::newInstance()->_exists('list_cities')) {
-        return View::newInstance()->_current('list_cities');
+    if (View::getInstance()->_exists('list_cities')) {
+        return View::getInstance()->_current('list_cities');
     }
 
     return null;
@@ -721,21 +721,21 @@ function osc_list_city()
  */
 function _aux_search_load_list($key, $filter = '%%%%')
 {
-    if (View::newInstance()->_exists($key)) {
+    if (View::getInstance()->_exists($key)) {
         return;
     }
     $loaders = array(
         'list_countries' => static function () {
-            return CountryStats::newInstance()->listCountries();
+            return CountryStats::getInstance()->listCountries();
         },
         'list_regions'   => static function () use ($filter) {
-            return RegionStats::newInstance()->listRegions($filter);
+            return RegionStats::getInstance()->listRegions($filter);
         },
         'list_cities'    => static function () use ($filter) {
-            return CityStats::newInstance()->listCities($filter);
+            return CityStats::getInstance()->listCities($filter);
         },
     );
-    View::newInstance()->_exportVariableToView($key, $loaders[$key]());
+    View::getInstance()->_exportVariableToView($key, $loaders[$key]());
 }
 
 /**
@@ -748,9 +748,9 @@ function _aux_search_load_list($key, $filter = '%%%%')
  */
 function _aux_search_walk_list($key)
 {
-    $more = View::newInstance()->_next($key);
+    $more = View::getInstance()->_next($key);
     if (!$more) {
-        View::newInstance()->_reset($key);
+        View::getInstance()->_reset($key);
     }
 
     return $more;
@@ -805,7 +805,7 @@ function osc_count_list_countries()
 {
     _aux_search_load_list('list_countries');
 
-    return View::newInstance()->_count('list_countries');
+    return View::getInstance()->_count('list_countries');
 }
 
 /**
@@ -819,7 +819,7 @@ function osc_count_list_regions($country = '%%%%')
 {
     _aux_search_load_list('list_regions', $country);
 
-    return View::newInstance()->_count('list_regions');
+    return View::getInstance()->_count('list_regions');
 }
 
 /**
@@ -833,7 +833,7 @@ function osc_count_list_cities($region = '%%%%')
 {
     _aux_search_load_list('list_cities', $region);
 
-    return View::newInstance()->_count('list_cities');
+    return View::getInstance()->_count('list_cities');
 }
 
 /**
@@ -990,14 +990,14 @@ function osc_list_city_url()
  */
 function osc_get_latest_searches($limit = 20)
 {
-    if (!View::newInstance()->_exists('latest_searches')) {
-        View::newInstance()->_exportVariableToView(
+    if (!View::getInstance()->_exists('latest_searches')) {
+        View::getInstance()->_exportVariableToView(
             'latest_searches',
-            LatestSearches::newInstance()->getSearches($limit)
+            LatestSearches::getInstance()->getSearches($limit)
         );
     }
 
-    return View::newInstance()->_get('latest_searches');
+    return View::getInstance()->_get('latest_searches');
 }
 
 /**
@@ -1007,14 +1007,14 @@ function osc_get_latest_searches($limit = 20)
  */
 function osc_count_latest_searches()
 {
-    if (!View::newInstance()->_exists('latest_searches')) {
-        View::newInstance()->_exportVariableToView(
+    if (!View::getInstance()->_exists('latest_searches')) {
+        View::getInstance()->_exportVariableToView(
             'latest_searches',
-            LatestSearches::newInstance()->getSearches()
+            LatestSearches::getInstance()->getSearches()
         );
     }
 
-    return View::newInstance()->_count('latest_searches');
+    return View::getInstance()->_count('latest_searches');
 }
 
 /**
@@ -1024,14 +1024,14 @@ function osc_count_latest_searches()
  */
 function osc_has_latest_searches()
 {
-    if (!View::newInstance()->_exists('latest_searches')) {
-        View::newInstance()->_exportVariableToView(
+    if (!View::getInstance()->_exists('latest_searches')) {
+        View::getInstance()->_exportVariableToView(
             'latest_searches',
-            LatestSearches::newInstance()->getSearches()
+            LatestSearches::getInstance()->getSearches()
         );
     }
 
-    return View::newInstance()->_next('latest_searches');
+    return View::getInstance()->_next('latest_searches');
 }
 
 /**
@@ -1041,8 +1041,8 @@ function osc_has_latest_searches()
  */
 function osc_latest_search()
 {
-    if (View::newInstance()->_exists('latest_searches')) {
-        return View::newInstance()->_current('latest_searches');
+    if (View::getInstance()->_exists('latest_searches')) {
+        return View::getInstance()->_current('latest_searches');
     }
 
     return null;
@@ -1085,8 +1085,8 @@ function osc_latest_search_total()
  */
 function osc_get_canonical()
 {
-    if (View::newInstance()->_exists('canonical')) {
-        return View::newInstance()->_get('canonical');
+    if (View::getInstance()->_exists('canonical')) {
+        return View::getInstance()->_get('canonical');
     }
 
     return '';
@@ -1117,7 +1117,7 @@ function osc_get_raw_search($conditions)
             static fn ($v) => $v !== '' && $v !== array() && $v !== 0
         );
         if (isset($raw['aCategories'])) {
-            $mCategory = Category::newInstance();
+            $mCategory = Category::getInstance();
             foreach ($raw['aCategories'] as $k => $id) {
                 $raw['aCategories'][$k] = $mCategory->findNameByPrimaryKey($id);
             }
@@ -1128,7 +1128,7 @@ function osc_get_raw_search($conditions)
     }
 
     $keys      = array('aCategories', 'countries', 'regions', 'cities', 'city_areas');
-    $mCategory = Category::newInstance();
+    $mCategory = Category::getInstance();
     foreach ($keys as $key) {
         if (isset($conditions[$key]) && is_array($conditions[$key]) && !empty($conditions[$key])) {
             foreach ($conditions[$key] as $k => $v) {
@@ -1378,9 +1378,9 @@ function _aux_search_category_slug($paramCat)
     if (osc_category_id() == $paramCat) {
         $category['s_slug'] = osc_category_slug();
     } elseif (is_numeric($paramCat)) {
-        $category = Category::newInstance()->findByPrimaryKey($paramCat);
+        $category = Category::getInstance()->findByPrimaryKey($paramCat);
     } else {
-        $category = Category::newInstance()->findBySlug($paramCat);
+        $category = Category::getInstance()->findBySlug($paramCat);
     }
 
     return isset($category['s_slug']) ? $category['s_slug'] : '';

@@ -39,22 +39,22 @@ class WebSecBaseModel extends SecBaseModel
     {
         // The chosen locale lives in its own cookie now, so it survives logout without
         // restarting a session — a logged-out visitor is left session-free (cacheable).
-        Session::newInstance()->session_end();
-        Session::newInstance()->_drop('userId');
-        Session::newInstance()->_drop('userName');
-        Session::newInstance()->_drop('userEmail');
-        Session::newInstance()->_drop('userPhone');
+        Session::getInstance()->session_end();
+        Session::getInstance()->_drop('userId');
+        Session::getInstance()->_drop('userName');
+        Session::getInstance()->_drop('userEmail');
+        Session::getInstance()->_drop('userPhone');
         // Identity is now cookie-backed and mirrored into a request-scoped ephemeral store;
         // clear both so nothing this request still reads as logged in.
-        Session::newInstance()->_dropEphemeral('userId');
-        Session::newInstance()->_dropEphemeral('userName');
-        Session::newInstance()->_dropEphemeral('userEmail');
-        Session::newInstance()->_dropEphemeral('userPhone');
-        View::newInstance()->_erase('_loggedUser');
+        Session::getInstance()->_dropEphemeral('userId');
+        Session::getInstance()->_dropEphemeral('userName');
+        Session::getInstance()->_dropEphemeral('userEmail');
+        Session::getInstance()->_dropEphemeral('userPhone');
+        View::getInstance()->_erase('_loggedUser');
 
-        Cookie::newInstance()->pop('oc_userId');
-        Cookie::newInstance()->pop('oc_userSecret');
-        Cookie::newInstance()->set();
+        Cookie::getInstance()->pop('oc_userId');
+        Cookie::getInstance()->pop('oc_userSecret');
+        Cookie::getInstance()->set();
     }
 
     /**

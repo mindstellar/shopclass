@@ -79,7 +79,7 @@ function osc_keyword_spam_enforce($item)
         return;
     }
 
-    $hit = ItemSpamFilter::newInstance()->check($item);
+    $hit = ItemSpamFilter::getInstance()->check($item);
     if ($hit === null) {
         return;
     }
@@ -89,7 +89,7 @@ function osc_keyword_spam_enforce($item)
     $listings->spam($itemId, true);
     $listings->disable($itemId);
 
-    ItemModerationLog::newInstance()->add($itemId, 'keyword', $hit['keyword'], $hit['field'], 'spam');
+    ItemModerationLog::getInstance()->add($itemId, 'keyword', $hit['keyword'], $hit['field'], 'spam');
 }
 
 /**
@@ -116,7 +116,7 @@ function osc_keyword_spam_hard_block($flash_error, $aItem)
         ? implode(' ', $aItem['description'])
         : (string)($aItem['description'] ?? '');
 
-    $hit = ItemSpamFilter::newInstance()->check(array(
+    $hit = ItemSpamFilter::getInstance()->check(array(
         'pk_i_id'       => 0,
         's_title'       => $title,
         's_description' => $desc,
@@ -150,7 +150,7 @@ function osc_item_report_record($id, $as)
         return;
     }
 
-    ItemReport::newInstance()->log($id, $as);
+    ItemReport::getInstance()->log($id, $as);
 
     if (!osc_report_autoblock_enabled()) {
         return;
@@ -161,12 +161,12 @@ function osc_item_report_record($id, $as)
         return;
     }
 
-    $reporters = ItemReport::newInstance()->countReporters($id);
+    $reporters = ItemReport::getInstance()->countReporters($id);
     if ($reporters < $threshold) {
         return;
     }
 
-    $item = Item::newInstance()->findByPrimaryKey($id);
+    $item = Item::getInstance()->findByPrimaryKey($id);
     // Already blocked (or gone): without this every further report would call
     // disable() again and re-fire disable_item.
     if (empty($item) || (int)$item['b_enabled'] === 0) {
@@ -177,7 +177,7 @@ function osc_item_report_record($id, $as)
     // judgement that the listing IS spam.
     (new \mindstellar\listing\ListingService())->disable($id);
 
-    ItemModerationLog::newInstance()->add($id, 'report_threshold', 'reports:' . $reporters, '', 'disable');
+    ItemModerationLog::getInstance()->add($id, 'report_threshold', 'reports:' . $reporters, '', 'disable');
 }
 
 /**
@@ -190,7 +190,7 @@ function osc_item_report_record($id, $as)
  */
 function osc_item_report_clear($id)
 {
-    ItemReport::newInstance()->clear((int)$id);
+    ItemReport::getInstance()->clear((int)$id);
 }
 
 osc_add_hook('posted_item', 'osc_keyword_spam_enforce', 8);

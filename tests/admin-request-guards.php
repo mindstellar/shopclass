@@ -142,7 +142,7 @@ file_put_contents($GLOBALS['pluginsPath'] . 'demo/README.md', 'not code');
 harness_section('plugin install error frame');
 $_GET = $_REQUEST = array('page' => 'plugins', 'error' => 'demo/x.php" onload="alert(1)');
 Params::init();
-View::newInstance()->_exportVariableToView('aPlugins', array('aaData' => array()));
+View::getInstance()->_exportVariableToView('aPlugins', array('aaData' => array()));
 ob_start();
 include ABS_PATH . 'oc-admin/themes/modern/plugins/index.php';
 $page = (string) ob_get_clean();

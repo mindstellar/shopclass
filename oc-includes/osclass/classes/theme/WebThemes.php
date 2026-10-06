@@ -39,7 +39,7 @@ class WebThemes extends Themes
     public static function init()
     {
         Plugins::runHook('before_init_web_theme');
-        self::newInstance()->loadActive();
+        self::getInstance()->loadActive();
         Plugins::runHook('after_init_web_theme');
     }
 
@@ -57,7 +57,7 @@ class WebThemes extends Themes
         // trusted. An admin session was the only gate: "../../../tmp/evil" resolved
         // and its functions.php ran, which is arbitrary code from a query string.
         $preview = Params::getParamString('theme');
-        if ($preview !== '' && Session::newInstance()->_get('adminId') != ''
+        if ($preview !== '' && Session::getInstance()->_get('adminId') != ''
             && in_array($preview, $this->getListThemes(), true)
         ) {
             $this->setCurrentTheme($preview);
@@ -217,13 +217,21 @@ class WebThemes extends Themes
      *
      * @return \WebThemes
      */
-    public static function newInstance()
+    public static function getInstance()
     {
         if (!self::$instance instanceof self) {
             self::$instance = new self();
         }
 
         return self::$instance;
+    }
+
+    /**
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
+     */
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     /* PUBLIC */

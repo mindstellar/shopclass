@@ -230,7 +230,7 @@ foreach (array(
     'dimPreview'        => '480x340',
     'dimThumbnail'      => '240x200',
 ) as $k => $v) {
-    Preference::newInstance()->set($k, $v);
+    Preference::getInstance()->set($k, $v);
 }
 scratchdb_forget_cache();
 osc_reset_preferences();
@@ -349,7 +349,7 @@ $asUser = static function (?int $userId): void {
     WebIdentity::forget();
     Params::init();
     if ($userId !== null) {
-        Session::newInstance()->_setEphemeral('userId', (string) $userId);
+        Session::getInstance()->_setEphemeral('userId', (string) $userId);
     }
 };
 $webForm = static fn (array $extra = array()): array => $extra + array(
@@ -467,7 +467,7 @@ osc_add_hook('posted_item', static function ($item): void {
         throw new RuntimeException('A plugin failed.');
     }
 });
-Preference::newInstance()->set('mailserver_mail_from', 'site@example.test');
+Preference::getInstance()->set('mailserver_mail_from', 'site@example.test');
 osc_reset_preferences();
 $titled = static fn (string $title): int => (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_description WHERE s_title = '" . $admin->real_escape_string($title) . "'")->fetch_row()[0];
 $webPost = static function (string $title) use ($asUser, $sue, $webForm): void {

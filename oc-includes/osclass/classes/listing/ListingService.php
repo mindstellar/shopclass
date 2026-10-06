@@ -42,7 +42,7 @@ final class ListingService
 
     public function __construct()
     {
-        $this->items     = \Item::newInstance();
+        $this->items     = \Item::getInstance();
         $this->sanitize  = new Sanitize();
         $this->validator = new ListingValidator();
         $this->photos    = new PhotoService();
@@ -144,7 +144,7 @@ final class ListingService
             osc_run_hook('before_delete_item', $itemId);
 
             if (is_array($item) && hash_equals((string) ($item['s_secret'] ?? ''), $secret)) {
-                \Log::newInstance()
+                \Log::getInstance()
                     ->insertLog(
                         'item',
                         'delete',
@@ -452,7 +452,7 @@ final class ListingService
             if (osc_apply_filter('item_mark', true, $id, $as) === false) {
                 return;
             }
-            if (\ItemStats::newInstance()->increase($column, $id) !== false) {
+            if (\ItemStats::getInstance()->increase($column, $id) !== false) {
                 osc_run_hook('item_marked', $id, $as);
             }
         }
@@ -498,7 +498,7 @@ final class ListingService
      */
     public function notifyNew(array $item, string $active, Actor $actor): void
     {
-        \View::newInstance()->_exportVariableToView('item', $item);
+        \View::getInstance()->_exportVariableToView('item', $item);
 
         $registered = $actor->userId() !== null;
         if ($active === 'INACTIVE' && !$registered) {
@@ -688,7 +688,7 @@ final class ListingService
             // Record the publish so the flood wait is enforced server-side (see the
             // countByIpContext check above): durable, correct across app servers, and
             // not resettable by clearing cookies the way the old session/cookie was.
-            \LoginAttempt::newInstance()->record(
+            \LoginAttempt::getInstance()->record(
                 'item_post',
                 (string)$aItem['contactEmail'],
                 $actor->ip(),
@@ -696,7 +696,7 @@ final class ListingService
             );
         }
 
-        \Log::newInstance()->insertLog(
+        \Log::getInstance()->insertLog(
             'item',
             'add',
             $itemId,
@@ -707,7 +707,7 @@ final class ListingService
 
         $location = $this->locationRow($aItem, $itemId);
 
-        $locationManager = \ItemLocation::newInstance();
+        $locationManager = \ItemLocation::getInstance();
         // The listing row already exists, so there is nothing useful to tell the
         // poster here -- but a refused location write leaves a listing that no
         // location search will ever return, and DAO::insert() reports it only in
@@ -720,7 +720,7 @@ final class ListingService
         $this->photos->store($aItem['photos'], $itemId);
 
         // update dt_expiration at t_item
-        \Item::newInstance()->updateExpirationDate($itemId, $aItem['dt_expiration']);
+        \Item::getInstance()->updateExpirationDate($itemId, $aItem['dt_expiration']);
 
         $this->writeMeta($meta, $itemId);
 
@@ -797,7 +797,7 @@ final class ListingService
 
         $location = $this->locationRow($aItem);
 
-        $locationManager   = \ItemLocation::newInstance();
+        $locationManager   = \ItemLocation::getInstance();
         $old_item_location = $locationManager->findByPrimaryKey($aItem['idItem']);
 
         // A rejected update leaves the previous location in place and every hook
@@ -809,7 +809,7 @@ final class ListingService
         $old_item = $this->items->findByPrimaryKey($aItem['idItem']);
 
         if ($aItem['userId']) {
-            $user                  = \User::newInstance()->findByPrimaryKey($aItem['userId']);
+            $user                  = \User::getInstance()->findByPrimaryKey($aItem['userId']);
             $aItem['contactName']  = $user['s_name'];
             $aItem['contactEmail'] = $user['s_email'];
         } else {
@@ -848,7 +848,7 @@ final class ListingService
         // UPLOAD item resources
         $this->photos->store($aItem['photos'], $aItem['idItem']);
 
-        \Log::newInstance()->insertLog(
+        \Log::getInstance()->insertLog(
             'item',
             'edit',
             $aItem['idItem'],
@@ -861,7 +861,7 @@ final class ListingService
 
         // Premium keeps an expired listing counted, as the recount does.
         $oldIsExpired  = empty($old_item['b_premium']) && osc_isExpired($old_item['dt_expiration']);
-        $dt_expiration = \Item::newInstance()
+        $dt_expiration = \Item::getInstance()
             ->updateExpirationDate($aItem['idItem'], $aItem['dt_expiration'], false);
         if ($dt_expiration === false) {
             $dt_expiration          = $old_item['dt_expiration'];
@@ -887,7 +887,7 @@ final class ListingService
         }
 
         // THIS HOOK IS FINE, YAY!
-        osc_run_hook('edited_item', \Item::newInstance()->findByPrimaryKey($aItem['idItem']));
+        osc_run_hook('edited_item', \Item::getInstance()->findByPrimaryKey($aItem['idItem']));
 
         return new SavedListing((int) $aItem['idItem'], false, $result === false ? false : (int) $result);
     }
@@ -956,7 +956,7 @@ final class ListingService
      */
     private function customFields(array $aItem): array
     {
-        $_meta  = \Field::newInstance()->findByCategory($aItem['catId']);
+        $_meta  = \Field::getInstance()->findByCategory($aItem['catId']);
         $meta   = $aItem['meta'] ?? array();
         $errors = $this->validator->meta($_meta, $meta);
 
@@ -971,7 +971,7 @@ final class ListingService
         if (!$meta || count($meta) === 0) {
             return;
         }
-        $mField = \Field::newInstance();
+        $mField = \Field::getInstance();
         foreach ($meta as $k => $v) {
             // if dateinterval
             if (is_array($v) && !isset($v['from']) && !isset($v['to'])) {

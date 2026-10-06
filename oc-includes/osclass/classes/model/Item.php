@@ -71,13 +71,21 @@ class Item extends DAO
      *
      * @return Item
      */
-    public static function newInstance()
+    public static function getInstance()
     {
         if (!self::$instance instanceof self) {
             self::$instance = new self();
         }
 
         return self::$instance;
+    }
+
+    /**
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
+     */
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     /**
@@ -132,7 +140,7 @@ class Item extends DAO
         // Batch-prime the resource cache for the whole page so the theme's
         // per-item osc_get_item_resources() calls are cache hits, not an N+1.
         if (is_array($items) && count($items) > 1) {
-            ItemResource::newInstance()->primeResourcesCache(array_column($items, 'pk_i_id'));
+            ItemResource::getInstance()->primeResourcesCache(array_column($items, 'pk_i_id'));
         }
 
         return $items;
@@ -233,7 +241,7 @@ class Item extends DAO
      */
     public function findResourcesByID($id)
     {
-        return ItemResource::newInstance()->getResources($id);
+        return ItemResource::getInstance()->getResources($id);
     }
 
     /**
@@ -245,7 +253,7 @@ class Item extends DAO
      */
     public function findLocationByID($id)
     {
-        return ItemLocation::newInstance()->findByPrimaryKey($id);
+        return ItemLocation::getInstance()->findByPrimaryKey($id);
     }
 
     /**
@@ -1074,20 +1082,20 @@ class Item extends DAO
                 if ($counted !== $counted_old) {
                     if (!$counted) {
                         if ($_item['fk_i_user_id'] != null) {
-                            User::newInstance()->decreaseNumItems($_item['fk_i_user_id']);
+                            User::getInstance()->decreaseNumItems($_item['fk_i_user_id']);
                         }
-                        CategoryStats::newInstance()->decreaseNumItems($_item['fk_i_category_id']);
-                        CountryStats::newInstance()->decreaseNumItems($_item['fk_c_country_code']);
-                        RegionStats::newInstance()->decreaseNumItems($_item['fk_i_region_id']);
-                        CityStats::newInstance()->decreaseNumItems($_item['fk_i_city_id']);
+                        CategoryStats::getInstance()->decreaseNumItems($_item['fk_i_category_id']);
+                        CountryStats::getInstance()->decreaseNumItems($_item['fk_c_country_code']);
+                        RegionStats::getInstance()->decreaseNumItems($_item['fk_i_region_id']);
+                        CityStats::getInstance()->decreaseNumItems($_item['fk_i_city_id']);
                     } else {
                         if ($_item['fk_i_user_id'] != null) {
-                            User::newInstance()->increaseNumItems($_item['fk_i_user_id']);
+                            User::getInstance()->increaseNumItems($_item['fk_i_user_id']);
                         }
-                        CategoryStats::newInstance()->increaseNumItems($_item['fk_i_category_id']);
-                        CountryStats::newInstance()->increaseNumItems($_item['fk_c_country_code']);
-                        RegionStats::newInstance()->increaseNumItems($_item['fk_i_region_id']);
-                        CityStats::newInstance()->increaseNumItems($_item['fk_i_city_id']);
+                        CategoryStats::getInstance()->increaseNumItems($_item['fk_i_category_id']);
+                        CountryStats::getInstance()->increaseNumItems($_item['fk_c_country_code']);
+                        RegionStats::getInstance()->increaseNumItems($_item['fk_i_region_id']);
+                        CityStats::getInstance()->increaseNumItems($_item['fk_i_city_id']);
                     }
                 }
 
@@ -1199,7 +1207,7 @@ class Item extends DAO
      */
     public function metaFields($id)
     {
-        $metaFields = Field::newInstance()->findByItem($id);
+        $metaFields = Field::getInstance()->findByItem($id);
         if (empty($metaFields)) {
             return [];
         }
@@ -1271,7 +1279,7 @@ class Item extends DAO
         // is about to remove them, but deleting a file cannot be undone — so a delete
         // that rolls back has to leave the listing with its images intact rather than
         // stranding it with none.
-        $resources = ItemResource::newInstance()->getAllResourcesFromItem($id);
+        $resources = ItemResource::getInstance()->getAllResourcesFromItem($id);
 
         // t_item_moderation_log and t_item_report_log carry no foreign key to the
         // item, so only this removes them. t_item_comment and t_item_resource are
@@ -1315,12 +1323,12 @@ class Item extends DAO
         // the numbers stayed wrong until the next stats rebuild.
         if (osc_item_is_counted($item)) {
             if ($item['fk_i_user_id'] != null) {
-                User::newInstance()->decreaseNumItems($item['fk_i_user_id']);
+                User::getInstance()->decreaseNumItems($item['fk_i_user_id']);
             }
-            CategoryStats::newInstance()->decreaseNumItems($item['fk_i_category_id']);
-            CountryStats::newInstance()->decreaseNumItems($item['fk_c_country_code']);
-            RegionStats::newInstance()->decreaseNumItems($item['fk_i_region_id']);
-            CityStats::newInstance()->decreaseNumItems($item['fk_i_city_id']);
+            CategoryStats::getInstance()->decreaseNumItems($item['fk_i_category_id']);
+            CountryStats::getInstance()->decreaseNumItems($item['fk_c_country_code']);
+            RegionStats::getInstance()->decreaseNumItems($item['fk_i_region_id']);
+            CityStats::getInstance()->decreaseNumItems($item['fk_i_city_id']);
         }
 
         Plugins::runHook('delete_item', $id);

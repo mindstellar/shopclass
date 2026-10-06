@@ -38,7 +38,7 @@ class CAdminItemComments extends AdminSecBaseModel
         parent::__construct();
 
         //specific things for this class
-        $this->itemCommentManager = ItemComment::newInstance();
+        $this->itemCommentManager = ItemComment::getInstance();
         $this->moderation         = new CommentModeration($this->itemCommentManager);
         osc_run_hook('init_admin_comments');
     }
@@ -139,7 +139,7 @@ class CAdminItemComments extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=comments');
                 break;
             case ('comment_edit'):
-                $comment = ItemComment::newInstance()->findByPrimaryKey(Params::getParam('id'));
+                $comment = ItemComment::getInstance()->findByPrimaryKey(Params::getParam('id'));
 
                 $this->_exportVariableToView('comment', $comment);
                 $this->doView('comments/frm.php');

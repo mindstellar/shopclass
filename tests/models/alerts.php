@@ -114,7 +114,7 @@ $rowCount = static function () use ($admin, $table): int {
     return (int)$admin->query("SELECT COUNT(*) c FROM $table")->fetch_assoc()['c'];
 };
 
-$model = Alerts::newInstance();
+$model = Alerts::getInstance();
 
 /* An old, already-serialized Search blob with everything a byte-identity check
  * must survive: a single quote, a backslash, LIKE wildcards, and multibyte

@@ -30,7 +30,7 @@ require_once __DIR__ . '/../lib/harness.php';
 
 $admin = scratchdb_session('osc_models_cron');
 
-$cron = Cron::newInstance();
+$cron = Cron::getInstance();
 
 /* ----------------------------------------------------------------------------
  * Surface (C2): the public API must survive the conversion byte-identical.

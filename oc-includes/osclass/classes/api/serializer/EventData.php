@@ -55,7 +55,7 @@ final class EventData
      */
     public function user(int $id): ?array
     {
-        $user = \User::newInstance()->findByPrimaryKey($id);
+        $user = \User::getInstance()->findByPrimaryKey($id);
         if (!is_array($user) || $user === []) {
             return null;
         }
@@ -68,7 +68,7 @@ final class EventData
      */
     public function comment(int $id): ?array
     {
-        $row = \ItemComment::newInstance()->findByPrimaryKey($id);
+        $row = \ItemComment::getInstance()->findByPrimaryKey($id);
         if (!is_array($row) || $row === []) {
             return null;
         }

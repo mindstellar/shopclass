@@ -116,13 +116,13 @@ class SearchBuilder
         // CUSTOM FIELDS
         $custom_fields = $criteria->meta();
 
-        $fields = \Field::newInstance()->findIDSearchableByCategories($criteria->categories());
+        $fields = \Field::getInstance()->findIDSearchableByCategories($criteria->categories());
 
         $table = DB_TABLE_PREFIX . 't_item_meta';
         if (is_array($custom_fields)) {
             foreach ($custom_fields as $key => $aux) {
                 if (in_array($key, $fields)) {
-                    $field = \Field::newInstance()->findByPrimaryKey($key);
+                    $field = \Field::getInstance()->findByPrimaryKey($key);
                     switch ($field['e_type']) {
                         case 'TEXTAREA':
                         case 'TEXT':

@@ -54,7 +54,7 @@ class SecBaseModel extends BaseModel
     public function logout()
     {
         //destroying session
-        Session::newInstance()->session_destroy();
+        Session::getInstance()->session_destroy();
     }
 
     //destroying current session

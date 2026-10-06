@@ -173,7 +173,7 @@ foreach (array(
     'turnstileSiteKey'          => 'site',
     'turnstileSecretKey'        => 'secret',
 ) as $k => $v) {
-    Preference::newInstance()->set($k, $v);
+    Preference::getInstance()->set($k, $v);
 }
 scratchdb_forget_cache();
 $_SERVER['REMOTE_ADDR'] = '192.0.2.50';

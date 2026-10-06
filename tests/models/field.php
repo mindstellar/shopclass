@@ -66,7 +66,7 @@ require_once __DIR__ . '/../../oc-includes/osclass/helpers/hPreference.php';
 
 $admin = scratchdb_session('osc_models_field');
 
-// findIDSearchableByCategories() constructs Category::newInstance()
+// findIDSearchableByCategories() constructs Category::getInstance()
 // unconditionally (even for numeric ids), and Category's constructor builds its
 // tree cache through hDefines/hCache helpers the harness cannot load
 // (hDefines.php redeclares osc_uploads_path() unguarded, per amendment R). Guard
@@ -102,7 +102,7 @@ if (!function_exists('osc_cache_set')) {
 
 // Category::__construct() reads OC_ADMIN unguarded (Field's own constructor
 // guards it with defined()). findIDSearchableByCategories() resolves non-numeric
-// ids through Category::newInstance(), so the constant has to exist. false is the
+// ids through Category::getInstance(), so the constant has to exist. false is the
 // non-admin (public) context, matching this harness's locale resolution.
 if (!defined('OC_ADMIN')) {
     define('OC_ADMIN', false);
@@ -118,7 +118,7 @@ $groupFld  = DB_TABLE_PREFIX . 't_meta_group_fields';
 $groupCat  = DB_TABLE_PREFIX . 't_meta_group_categories';
 $itemMeta  = DB_TABLE_PREFIX . 't_item_meta';
 
-$model = Field::newInstance();
+$model = Field::getInstance();
 $locale = $model->currentLocaleCode; // '' in this harness
 
 /**
@@ -214,7 +214,7 @@ check(
     is_array($model->dao->query('SELECT 1 AS one')->row()),
     'dao->query() did not return a usable recordset'
 );
-pin('newInstance is a singleton', true, Field::newInstance() === $model);
+pin('newInstance is a singleton', true, Field::getInstance() === $model);
 pin('table name is unchanged', $fieldsTbl, $model->getTableName());
 pin('primary key is unchanged', 'pk_i_id', $model->getPrimaryKey());
 pin(

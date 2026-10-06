@@ -86,7 +86,7 @@ final class LegacyAlertParser
     {
         $prefix    = $prefix ?? DB_TABLE_PREFIX;
         $fieldType = $fieldType ?? static function (int $id): ?string {
-            $field = \Field::newInstance()->findByPrimaryKey($id);
+            $field = \Field::getInstance()->findByPrimaryKey($id);
 
             return is_array($field) && isset($field['e_type']) ? (string)$field['e_type'] : null;
         };
@@ -171,7 +171,7 @@ final class LegacyAlertParser
                 return self::heldRow(self::HELD_CONDITION);
             }
             $searchable = $searchable ?? static function (array $ids): array {
-                return (array)\Field::newInstance()->findIDSearchableByCategories($ids);
+                return (array)\Field::getInstance()->findIDSearchableByCategories($ids);
             };
             $keep           = array_flip(array_map('intval', $searchable($values['sCategory'])));
             $values['meta'] = array_intersect_key($values['meta'], $keep);

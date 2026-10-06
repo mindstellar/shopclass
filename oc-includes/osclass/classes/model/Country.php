@@ -42,13 +42,21 @@ class Country extends DAO
      *
      * @return \Country
      */
-    public static function newInstance()
+    public static function getInstance()
     {
         if (!self::$instance instanceof self) {
             self::$instance = new self();
         }
 
         return self::$instance;
+    }
+
+    /**
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
+     */
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     /**
@@ -121,15 +129,15 @@ class Country extends DAO
     {
         osc_run_hook('before_delete_country', $pk);
 
-        $mRegions = Region::newInstance();
+        $mRegions = Region::getInstance();
         $aRegions = $mRegions->findByCountry($pk);
         $result   = 0;
         foreach ($aRegions as $region) {
             $result += $mRegions->deleteByPrimaryKey($region['pk_i_id']);
         }
-        Item::newInstance()->deleteByCountry($pk);
-        CountryStats::newInstance()->delete(array('fk_c_country_code' => $pk));
-        User::newInstance()->update(
+        Item::getInstance()->deleteByCountry($pk);
+        CountryStats::getInstance()->delete(array('fk_c_country_code' => $pk));
+        User::getInstance()->update(
             array('fk_c_country_code' => null, 's_country' => ''),
             array('fk_c_country_code' => $pk)
         );

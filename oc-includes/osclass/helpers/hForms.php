@@ -40,7 +40,7 @@ function osc_render_form($formId, $contextType = 'widget', $contextId = 0, $enqu
     if ($formId <= 0) {
         return;
     }
-    $form = FieldGroup::newInstance()->findByPrimaryKey($formId);
+    $form = FieldGroup::getInstance()->findByPrimaryKey($formId);
     if (empty($form)) {
         return;
     }
@@ -85,7 +85,7 @@ function osc_render_form($formId, $contextType = 'widget', $contextId = 0, $enqu
 function osc_form_widget_options()
 {
     $out = array(array('value' => '', 'label' => __('— Select a form —')));
-    foreach (FieldGroup::newInstance()->listAll() as $form) {
+    foreach (FieldGroup::getInstance()->listAll() as $form) {
         $meta = (isset($form['s_meta']) && $form['s_meta'] !== '')
             ? json_decode($form['s_meta'], true) : array();
         if (is_array($meta) && !empty($meta['placeable'])) {
@@ -113,8 +113,8 @@ function osc_form_widget_options()
  */
 function osc_form_fields($formId, $contextType = 'widget', $contextId = 0)
 {
-    $fields = Field::newInstance()->findByGroup((int)$formId);
-    $form   = FieldGroup::newInstance()->findByPrimaryKey((int)$formId);
+    $fields = Field::getInstance()->findByGroup((int)$formId);
+    $form   = FieldGroup::getInstance()->findByPrimaryKey((int)$formId);
     $fields = osc_apply_filter('form_fields', $fields, $form, $contextType, $contextId);
 
     return is_array($fields) ? $fields : array();
@@ -208,7 +208,7 @@ osc_register_form_context('page', array(
     'resolve' => static function ($id) {
         $id     = (int)$id;
         $locale = osc_current_user_locale();
-        $page   = Page::newInstance()->findByPrimaryKey($id, $locale);
+        $page   = Page::getInstance()->findByPrimaryKey($id, $locale);
         $title  = '';
         if (!empty($page['locale'][$locale]['s_title'])) {
             $title = $page['locale'][$locale]['s_title'];

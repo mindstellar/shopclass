@@ -113,7 +113,7 @@ final class PhotoService
         $this->storedRows = array();
         // A form with no file sent still posts the empty photos[] lists.
         if (!empty($aResources) && !empty($aResources['error'])) {
-            $itemResourceManager = \ItemResource::newInstance();
+            $itemResourceManager = \ItemResource::getInstance();
             $folder              = osc_uploads_path() . floor($itemId / 100) . '/';
 
             // The cap is the global preference unless the item's own owner (not the
@@ -213,7 +213,7 @@ final class PhotoService
                             )
                         );
                         $this->storedIds[] = (int) $resourceId;
-                        $stored             = \ItemResource::newInstance()->findByPrimaryKey($resourceId);
+                        $stored             = \ItemResource::getInstance()->findByPrimaryKey($resourceId);
                         if (is_array($stored)) {
                             $this->storedRows[] = $stored;
                         }
@@ -252,7 +252,7 @@ final class PhotoService
     {
         $cap = self::cap($ownerId);
 
-        return $cap === null ? null : max(0, $cap - (int) \ItemResource::newInstance()->countResources($itemId));
+        return $cap === null ? null : max(0, $cap - (int) \ItemResource::getInstance()->countResources($itemId));
     }
 
     /**
@@ -304,7 +304,7 @@ final class PhotoService
                 if (!$actor->isAdmin() && osc_moderate_admin_edit()) {
                     (new ListingService())->disable($itemId);
                 }
-                osc_run_hook('edited_item', \Item::newInstance()->findByPrimaryKey($itemId));
+                osc_run_hook('edited_item', \Item::getInstance()->findByPrimaryKey($itemId));
 
                 return $this->storedIds;
             });
@@ -319,7 +319,7 @@ final class PhotoService
      */
     public function delete(int $photoId, ?int $itemId, Actor $actor, ?string $code = null): bool
     {
-        $resource = $photoId > 0 ? \ItemResource::newInstance()->findByPrimaryKey($photoId) : null;
+        $resource = $photoId > 0 ? \ItemResource::getInstance()->findByPrimaryKey($photoId) : null;
         if (!is_array($resource) || !isset($resource['pk_i_id'])
             || ($itemId !== null && (int) ($resource['fk_i_item_id'] ?? 0) !== $itemId)
             || ($code !== null && ($code === '' || !hash_equals((string) ($resource['s_name'] ?? ''), $code)))
@@ -338,7 +338,7 @@ final class PhotoService
                     throw new \RuntimeException('The photo row was not deleted.');
                 }
                 $this->removeFiles($resource, $actor);
-                \Log::newInstance()->insertLog('item', 'deleteResource', $photoId, $photoId, $actor->logRole(), $actor->logId());
+                \Log::getInstance()->insertLog('item', 'deleteResource', $photoId, $photoId, $actor->logRole(), $actor->logId());
 
                 return true;
             });
@@ -360,7 +360,7 @@ final class PhotoService
         if (defined('DEMO')) {
             return false;
         }
-        \Log::newInstance()->insertLog('item', 'delete resource', $resource['pk_i_id'], $resource['pk_i_id'], $actor->logRole(), $actor->logId());
+        \Log::getInstance()->insertLog('item', 'delete resource', $resource['pk_i_id'], $resource['pk_i_id'], $actor->logRole(), $actor->logId());
 
         $backtrace = '';
         foreach (debug_backtrace() as $k => $v) {
@@ -370,7 +370,7 @@ final class PhotoService
                 $backtrace .= '#' . $k . ' ' . $v['function'] . ' called@ [' . ($v['file'] ?? '') . ':' . ($v['line'] ?? '') . '] / ';
             }
         }
-        \Log::newInstance()->insertLog('item', 'delete resource backtrace', $resource['pk_i_id'], $backtrace, $actor->logRole(), $actor->logId());
+        \Log::getInstance()->insertLog('item', 'delete resource backtrace', $resource['pk_i_id'], $backtrace, $actor->logRole(), $actor->logId());
 
         // A file cannot come back, so it goes only once the delete has committed.
         \mindstellar\database\Db::afterCommit(static function () use ($resource): void {
@@ -447,9 +447,9 @@ final class PhotoService
         // them before its transaction and calls this after the commit, when the rows are
         // gone and a fresh lookup would find nothing to unlink.
         if (!is_array($resources)) {
-            $resources = \ItemResource::newInstance()->getAllResourcesFromItem($itemId);
+            $resources = \ItemResource::getInstance()->getAllResourcesFromItem($itemId);
         }
-        \Log::newInstance()
+        \Log::getInstance()
             ->insertLog(
                 'itemActions',
                 'deleteResourcesFromHD',
@@ -463,7 +463,7 @@ final class PhotoService
             osc_deleteResource($resource['pk_i_id'], $is_admin, $resource);
             $log_ids .= $resource['pk_i_id'] . ',';
         }
-        \Log::newInstance()->insertLog(
+        \Log::getInstance()->insertLog(
             'itemActions',
             'deleteResourcesFromHD',
             $itemId,
@@ -545,7 +545,7 @@ final class PhotoService
 
         osc_run_hook(
             'regenerated_image',
-            \ItemResource::newInstance()->findByPrimaryKey($resource['pk_i_id'])
+            \ItemResource::getInstance()->findByPrimaryKey($resource['pk_i_id'])
         );
     }
 }

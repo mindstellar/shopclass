@@ -79,9 +79,14 @@ function osc_user_unsubscribe_alert_url($id = '', $email = '', $secret = '')
 
 class Page
 {
-    public static function newInstance()
+    public static function getInstance()
     {
         return new self();
+    }
+
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     public function findByInternalName($name)
@@ -95,9 +100,14 @@ class Page
 
 class User
 {
-    public static function newInstance()
+    public static function getInstance()
     {
         return new self();
+    }
+
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     public function findByPrimaryKey($id)

@@ -28,9 +28,9 @@
 function osc_search_pagination()
 {
     $params = array();
-    if (View::newInstance()->_exists('search_uri')) { // CANONICAL URL
-        $params['url']       = osc_base_url() . View::newInstance()->_get('search_uri') . '/{PAGE}';
-        $params['first_url'] = osc_base_url() . View::newInstance()->_get('search_uri');
+    if (View::getInstance()->_exists('search_uri')) { // CANONICAL URL
+        $params['url']       = osc_base_url() . View::getInstance()->_get('search_uri') . '/{PAGE}';
+        $params['first_url'] = osc_base_url() . View::getInstance()->_get('search_uri');
     } else {
         $params['first_url'] = osc_update_search_url(array('iPage' => null));
     }

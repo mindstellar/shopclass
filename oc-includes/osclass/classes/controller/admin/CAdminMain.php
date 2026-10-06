@@ -48,20 +48,20 @@ class CAdminMain extends AdminSecBaseModel
             default:            //default dashboard page (main page at oc-admin)
                 $this->_exportVariableToView('numItemsPerCategory', osc_get_non_empty_categories());
 
-                $this->_exportVariableToView('numUsers', User::newInstance()->count());
-                $this->_exportVariableToView('numItems', Item::newInstance()->count());
+                $this->_exportVariableToView('numUsers', User::getInstance()->count());
+                $this->_exportVariableToView('numItems', Item::getInstance()->count());
 
                 // At-a-glance moderation counters for the dashboard. Each is a single
                 // indexed COUNT on a boolean column, cheap enough to run on load.
                 $this->_exportVariableToView(
                     'numPendingComments',
-                    ItemComment::newInstance()->countAll('( c.b_active = 0 OR c.b_enabled = 0 OR c.b_spam = 1 )')
+                    ItemComment::getInstance()->countAll('( c.b_active = 0 OR c.b_enabled = 0 OR c.b_spam = 1 )')
                 );
-                $this->_exportVariableToView('numReportedItems', Item::newInstance()->countByMarkas('spam'));
+                $this->_exportVariableToView('numReportedItems', Item::getInstance()->countByMarkas('spam'));
 
                 // stats
                 $items       = array();
-                $stats_items = Stats::newInstance()->new_items_count(date(
+                $stats_items = Stats::getInstance()->new_items_count(date(
                     'Y-m-d H:i:s',
                     mktime(0, 0, 0, date('m'), date('d') - 10, date('Y'))
                 ), 'day');
@@ -72,7 +72,7 @@ class CAdminMain extends AdminSecBaseModel
                     $items[$item['d_date']] = $item['num'];
                 }
                 $users       = array();
-                $stats_users = Stats::newInstance()->new_users_count(date(
+                $stats_users = Stats::getInstance()->new_users_count(date(
                     'Y-m-d H:i:s',
                     mktime(0, 0, 0, date('m'), date('d') - 10, date('Y'))
                 ), 'day');

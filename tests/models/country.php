@@ -51,7 +51,7 @@ require_once __DIR__ . '/../lib/harness.php';
 $admin = scratchdb_session('osc_models_country');
 $table = DB_TABLE_PREFIX . 't_country';
 
-$model = Country::newInstance();
+$model = Country::getInstance();
 
 $rowCount = static function () use ($admin, $table): int {
     return (int) $admin->query("SELECT COUNT(*) c FROM $table")->fetch_assoc()['c'];

@@ -55,7 +55,7 @@ class CWebUserNonSecure extends BaseModel
                     // Request-scoped refresh only — the next request re-resolves the
                     // email from the database via the signed identity cookie, so no
                     // physical session is started for this logged-in user.
-                    Session::newInstance()->_setEphemeral('userEmail', $change['new']);
+                    Session::getInstance()->_setEphemeral('userEmail', $change['new']);
 
                     osc_run_hook(
                         'change_email_confirm',
@@ -82,7 +82,7 @@ class CWebUserNonSecure extends BaseModel
                 $secret = Params::getParam('secret');
                 $id     = Params::getParam('id');
 
-                $alert  = Alerts::newInstance()->findByPrimaryKey($id);
+                $alert  = Alerts::getInstance()->findByPrimaryKey($id);
                 $result = 0;
                 // A held alert has no search left to send, so its link no longer works.
                 if (!empty($alert)
@@ -94,14 +94,14 @@ class CWebUserNonSecure extends BaseModel
                 if (!empty($alert) && hash_equals((string)$alert['s_email'], (string)$email)
                     && hash_equals((string)$alert['s_secret'], (string)$secret)
                 ) {
-                    $user = User::newInstance()->findByEmail($alert['s_email']);
+                    $user = User::getInstance()->findByEmail($alert['s_email']);
                     if (isset($user['pk_i_id'])) {
-                        Alerts::newInstance()->update(
+                        Alerts::getInstance()->update(
                             array('fk_i_user_id' => $user['pk_i_id']),
                             array('pk_i_id' => $id)
                         );
                     }
-                    $result = Alerts::newInstance()->activate($id);
+                    $result = Alerts::getInstance()->activate($id);
                 }
 
                 if ($result == 1) {
@@ -117,12 +117,12 @@ class CWebUserNonSecure extends BaseModel
                 $secret = Params::getParam('secret');
                 $id     = Params::getParam('id');
 
-                $alert  = Alerts::newInstance()->findByPrimaryKey($id);
+                $alert  = Alerts::getInstance()->findByPrimaryKey($id);
                 $result = 0;
                 if (!empty($alert) && hash_equals((string)$alert['s_email'], (string)$email)
                     && hash_equals((string)$alert['s_secret'], (string)$secret)
                 ) {
-                    $result = Alerts::newInstance()->unsub($id);
+                    $result = Alerts::getInstance()->unsub($id);
                 }
 
                 if ($result == 1) {
@@ -135,9 +135,9 @@ class CWebUserNonSecure extends BaseModel
                 break;
             case 'pub_profile':
                 if (Params::getParam('username') != '') {
-                    $user = User::newInstance()->findByUsername(Params::getParam('username'));
+                    $user = User::getInstance()->findByUsername(Params::getParam('username'));
                 } else {
-                    $user = User::newInstance()->findByPrimaryKey(Params::getParam('id'));
+                    $user = User::getInstance()->findByPrimaryKey(Params::getParam('id'));
                 }
                 // user doesn't exist, show 404 error
                 if (!$user) {
@@ -172,15 +172,15 @@ class CWebUserNonSecure extends BaseModel
                 }
 
                 $total_items =
-                    Item::newInstance()->countItemTypesByUserID($user['pk_i_id'], 'active');
+                    Item::getInstance()->countItemTypesByUserID($user['pk_i_id'], 'active');
 
                 if ($itemsPerPage === 'all') {
                     $total_pages = 1;
-                    $items       = Item::newInstance()
+                    $items       = Item::getInstance()
                         ->findItemTypesByUserID($user['pk_i_id'], 0, null, 'active');
                 } else {
                     $total_pages = ceil($total_items / $itemsPerPage);
-                    $items       = Item::newInstance()
+                    $items       = Item::getInstance()
                         ->findItemTypesByUserID(
                             $user['pk_i_id'],
                             $page * $itemsPerPage,
@@ -189,7 +189,7 @@ class CWebUserNonSecure extends BaseModel
                         );
                 }
 
-                View::newInstance()->_exportVariableToView('user', $user);
+                View::getInstance()->_exportVariableToView('user', $user);
                 osc_prime_item_upgrades($items);
                 $this->_exportVariableToView('items', $items);
                 $this->_exportVariableToView('search_total_pages', $total_pages);
@@ -205,13 +205,13 @@ class CWebUserNonSecure extends BaseModel
                 break;
             case 'contact_post':
                 osc_csrf_check();
-                $user = User::newInstance()->findByPrimaryKey(Params::getParamInt('id'));
+                $user = User::getInstance()->findByPrimaryKey(Params::getParamInt('id'));
                 if (!$user || !$user['b_active'] || !$user['b_enabled']) {
                     $this->do404();
 
                     return;
                 }
-                View::newInstance()->_exportVariableToView('user', $user);
+                View::getInstance()->_exportVariableToView('user', $user);
                 $back = osc_user_public_profile_url((int) $user['pk_i_id']);
 
                 if (osc_reg_user_can_contact() && !osc_is_web_user_logged_in()) {
@@ -290,7 +290,7 @@ class CWebUserNonSecure extends BaseModel
         if (!osc_gui_account_view($file)) {
             osc_current_web_theme_path($file);
         }
-        Session::newInstance()->_clearVariables();
+        Session::getInstance()->_clearVariables();
         osc_run_hook('after_html');
     }
 }

@@ -300,8 +300,8 @@ class Cli
         }
 
         // Locale for the seeded site language and admin, mirroring the GUI installer.
-        \Session::newInstance()->_set('userLocale', $locale);
-        \Session::newInstance()->_set('adminLocale', $locale);
+        \Session::getInstance()->_set('userLocale', $locale);
+        \Session::getInstance()->_set('adminLocale', $locale);
 
         // Feed oc_install() the settings it reads from the request in the GUI.
         Params::setParam('dbhost', $dbHost);
@@ -977,7 +977,7 @@ class Cli
      */
     private function cmdSitemapWarm(array $args): int
     {
-        $map = Sitemap::newInstance()->warmCache();
+        $map = Sitemap::getInstance()->warmCache();
         foreach ($map as $doc => $ok) {
             $this->out(sprintf("  %-12s %s\n", $doc, $ok ? 'ok' : 'FAILED'));
         }
@@ -1008,12 +1008,12 @@ class Cli
 
             return 2;
         }
-        if (Admin::newInstance()->findByUsername($username)) {
+        if (Admin::getInstance()->findByUsername($username)) {
             $this->err(sprintf("An admin with username '%s' already exists.\n", $username));
 
             return 1;
         }
-        if (Admin::newInstance()->findByEmail($email)) {
+        if (Admin::getInstance()->findByEmail($email)) {
             $this->err(sprintf("An admin with email '%s' already exists.\n", $email));
 
             return 1;
@@ -1023,7 +1023,7 @@ class Cli
 
         // Mirrors the installer's admin insert: s_secret and b_moderator are left
         // to their column defaults (empty secret, full admin).
-        $inserted = Admin::newInstance()->insert([
+        $inserted = Admin::getInstance()->insert([
             's_name'     => $name,
             's_username' => $username,
             's_password' => osc_hash_password($password),
@@ -1062,8 +1062,8 @@ class Cli
         }
 
         $admin = $username !== ''
-            ? Admin::newInstance()->findByUsername($username)
-            : Admin::newInstance()->findByEmail($email);
+            ? Admin::getInstance()->findByUsername($username)
+            : Admin::getInstance()->findByEmail($email);
         if (!$admin) {
             $this->err("No matching admin found.\n");
 
@@ -1095,7 +1095,7 @@ class Cli
      */
     private function cmdUserTwoFactorOff(array $args): int
     {
-        $admin = Admin::newInstance()->findByUsername(trim((string) ($args['user'] ?? '')));
+        $admin = Admin::getInstance()->findByUsername(trim((string) ($args['user'] ?? '')));
         if (!$admin) {
             $this->err("Usage: user:2fa-off --user=<username>\nNo matching admin found.\n");
 
@@ -1256,7 +1256,7 @@ class Cli
      */
     private function cmdThemeList(array $args): int
     {
-        $themes  = WebThemes::newInstance()->getListThemes();
+        $themes  = WebThemes::getInstance()->getListThemes();
         $current = osc_theme();
         if ($themes === array()) {
             $this->out("No themes found.\n");
@@ -1288,7 +1288,7 @@ class Cli
             return 2;
         }
 
-        if (!in_array($theme, WebThemes::newInstance()->getListThemes(), true)) {
+        if (!in_array($theme, WebThemes::getInstance()->getListThemes(), true)) {
             $this->err(sprintf("Theme '%s' is not installed. Run theme:list to see available themes.\n", $theme));
 
             return 1;

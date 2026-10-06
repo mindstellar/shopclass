@@ -279,13 +279,21 @@ class Category extends DAO
      *
      * @return \Category
      */
-    public static function newInstance($l = '')
+    public static function getInstance($l = '')
     {
         if (!self::$instance instanceof self) {
             self::$instance = new self($l);
         }
 
         return self::$instance;
+    }
+
+    /**
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
+     */
+    public static function newInstance($l = '')
+    {
+        return self::getInstance($l);
     }
 
     /**
@@ -474,7 +482,7 @@ class Category extends DAO
      */
     public function deleteByPrimaryKey($pk)
     {
-        $items   = Item::newInstance()->findByCategoryID((int)($pk));
+        $items   = Item::getInstance()->findByCategoryID((int)($pk));
         $subcats = $this->findSubcategories((int)($pk));
         if (count($subcats) > 0) {
             foreach ($subcats as $s) {
@@ -484,7 +492,7 @@ class Category extends DAO
 
         if (count($items) > 0) {
             foreach ($items as $item) {
-                Item::newInstance()->deleteByPrimaryKey($item['pk_i_id']);
+                Item::getInstance()->deleteByPrimaryKey($item['pk_i_id']);
             }
         }
 
@@ -963,7 +971,7 @@ class Category extends DAO
      */
     public function updateExpiration($pk_i_id, $expiration, $updateSubcategories = false)
     {
-        $itemManager = Item::newInstance();
+        $itemManager = Item::getInstance();
 
         try {
             $items = osc_db_table(DB_TABLE_PREFIX . 't_item')

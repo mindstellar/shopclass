@@ -111,7 +111,7 @@ final class StrictRefusals
             }
             while (self::$queue !== array()) {
                 $refusal = array_shift(self::$queue);
-                \Log::newInstance()->insertLog(self::SECTION, $refusal['kind'], 0, $refusal['column'], 'system', 0);
+                \Log::getInstance()->insertLog(self::SECTION, $refusal['kind'], 0, $refusal['column'], 'system', 0);
             }
         } catch (Throwable $e) {
             self::$queue = array();

@@ -157,7 +157,7 @@ final class SignIn
             return $user;
         }
         $user['s_password'] = osc_hash_password($password);
-        \User::newInstance()->update(['s_password' => $user['s_password']], ['pk_i_id' => $user['pk_i_id']]);
+        \User::getInstance()->update(['s_password' => $user['s_password']], ['pk_i_id' => $user['pk_i_id']]);
 
         return $user;
     }
@@ -169,9 +169,9 @@ final class SignIn
      */
     private static function find(string $account): ?array
     {
-        $user = osc_validate_email($account) ? \User::newInstance()->findByEmail($account) : null;
+        $user = osc_validate_email($account) ? \User::getInstance()->findByEmail($account) : null;
         if (empty($user)) {
-            $user = \User::newInstance()->findByUsername($account);
+            $user = \User::getInstance()->findByUsername($account);
         }
 
         return is_array($user) && isset($user['pk_i_id']) ? $user : null;

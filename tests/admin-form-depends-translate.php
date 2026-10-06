@@ -83,9 +83,14 @@ class Params
 
 class Preference
 {
-    public static function newInstance()
+    public static function getInstance()
     {
         return new self();
+    }
+
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     public function get($key, $section = 'osclass')
@@ -111,9 +116,14 @@ class Preference
 /** Read at call time, so a test can change which locales are enabled. */
 class OSCLocale
 {
-    public static function newInstance()
+    public static function getInstance()
     {
         return new self();
+    }
+
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     public function listAllEnabled($isBo = false, $indexedByPk = false)

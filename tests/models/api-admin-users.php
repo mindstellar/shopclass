@@ -65,7 +65,7 @@ $tomComment     = $comment($sueCar, $tom, 'Any rust?');
 seed_exec($admin, "INSERT INTO {$p}t_alerts (s_email, fk_i_user_id, s_search, s_secret, b_active, e_type, dt_date) VALUES ('tom@example.test', ?, '{}', 'x', 1, 'DAILY', NOW())", 'i', [$tom]);
 seed_exec($admin, "INSERT INTO {$p}t_user_description (fk_i_user_id, fk_c_locale_code, s_info) VALUES (?, 'en_US', 'About Tom')", 'i', [$tom]);
 foreach (['enabled_users' => '1', 'enabled_comments' => '1', 'language' => 'en_US', 'logs_admin' => '1'] as $k => $v) {
-    Preference::newInstance()->set($k, $v);
+    Preference::getInstance()->set($k, $v);
 }
 scratchdb_forget_cache();
 osc_reset_preferences();

@@ -220,7 +220,7 @@ osc_register_field_type('AUTOCOMPLETE', array(
  */
 function osc_get_field_groups()
 {
-    return FieldGroup::newInstance()->listAll();
+    return FieldGroup::getInstance()->listAll();
 }
 
 /**
@@ -233,7 +233,7 @@ function osc_get_field_groups()
  */
 function osc_get_category_field_groups($categoryId)
 {
-    return FieldGroup::newInstance()->findByCategory($categoryId);
+    return FieldGroup::getInstance()->findByCategory($categoryId);
 }
 
 /**
@@ -279,7 +279,7 @@ function osc_field_is_visible($field, $item = null)
     // Map the item's stored custom-field values by slug so a rule referencing a sibling
     // field can be resolved — the same shape FieldValidator evaluates against.
     $slugValues = array();
-    foreach (Item::newInstance()->metaFields($itemId) as $row) {
+    foreach (Item::getInstance()->metaFields($itemId) as $row) {
         if (isset($row['s_slug'])) {
             $slugValues[$row['s_slug']] = $row['s_value'] ?? null;
         }

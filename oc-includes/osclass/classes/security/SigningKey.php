@@ -43,12 +43,12 @@ class SigningKey
         if (defined('OSC_CSRF_SECRET') && OSC_CSRF_SECRET !== '') {
             return self::$key = OSC_CSRF_SECRET;
         }
-        $secret = Preference::newInstance()->get('csrf_secret');
+        $secret = Preference::getInstance()->get('csrf_secret');
         if ($secret === '' || $secret === null) {
             $secret = bin2hex(random_bytes(32));
             // Prime the in-memory cache so this same request signs and verifies consistently;
             // replace() only writes the row, it does not refresh the loaded preferences.
-            Preference::newInstance()->set('csrf_secret', $secret);
+            Preference::getInstance()->set('csrf_secret', $secret);
             osc_set_preference('csrf_secret', $secret, 'osclass', 'STRING');
         }
 

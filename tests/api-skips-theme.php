@@ -41,9 +41,14 @@ $GLOBALS['stub'] = ['page' => '', 'uri' => '/', 'rewrite' => '1', 'filter' => fa
 
 class Session
 {
-    public static function newInstance()
+    public static function getInstance()
     {
         return new self();
+    }
+
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     public function _get($key)
@@ -67,9 +72,14 @@ class Params
 
 class Preference
 {
-    public static function newInstance()
+    public static function getInstance()
     {
         return new self();
+    }
+
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     public function get($key)
@@ -130,7 +140,7 @@ pin('a page request loads it', 1, $GLOBALS['probe_functions_loaded']);
 $GLOBALS['probe_functions_loaded'] = 0;
 $GLOBALS['stub_theme'] = 'probe-two';
 $set('api', '/index.php?page=api');
-$themes = WebThemes::newInstance();
+$themes = WebThemes::getInstance();
 $load   = new ReflectionMethod('WebThemes', 'loadActive');
 $load->setAccessible(true);
 $load->invoke($themes);

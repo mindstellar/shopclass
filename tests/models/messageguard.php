@@ -60,7 +60,7 @@ use mindstellar\security\SignedPayload;
 $setPref = static function (string $key, ?string $value): void {
     if ($value === null) {
         osc_delete_preference($key);
-        Preference::newInstance()->set($key, '');
+        Preference::getInstance()->set($key, '');
 
         return;
     }

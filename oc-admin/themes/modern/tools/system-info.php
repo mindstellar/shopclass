@@ -90,7 +90,7 @@ if (!function_exists('oscsi_row')) {
     }
 }
 
-$view   = View::newInstance();
+$view   = View::getInstance();
 $tab    = (string) $view->_get('sysinfo_tab');
 $env    = (array) $view->_get('sysinfo_env');
 $report = (array) $view->_get('sysinfo_report');

@@ -160,7 +160,7 @@ class CAdminBilling extends AdminSecBaseModel
         $gateway = PaymentGatewayRegistry::getInstance()->get($order->getGateway());
 
         $this->_exportVariableToView('order', $order);
-        $this->_exportVariableToView('user', User::newInstance()->findByPrimaryKey($order->getUserId()));
+        $this->_exportVariableToView('user', User::getInstance()->findByPrimaryKey($order->getUserId()));
         $this->_exportVariableToView('gateway', $gateway);
         $this->_exportVariableToView('refundable', Billing::refundableGateway($order) !== null);
         $this->_exportVariableToView('dashboardUrl', Billing::dashboardUrl($order));
@@ -332,7 +332,7 @@ class CAdminBilling extends AdminSecBaseModel
     private function walletView()
     {
         $userId = Params::getParamInt('userId');
-        $user   = User::newInstance()->findByPrimaryKey($userId);
+        $user   = User::getInstance()->findByPrimaryKey($userId);
         if ($user === null) {
             osc_add_flash_error_message(_m('That user no longer exists'), 'admin');
             $this->redirectTo(osc_admin_base_url(true) . '?page=billing&action=credits');
@@ -367,7 +367,7 @@ class CAdminBilling extends AdminSecBaseModel
         osc_csrf_check();
 
         $userId = Params::getParamInt('userId');
-        $user   = User::newInstance()->findByPrimaryKey($userId);
+        $user   = User::getInstance()->findByPrimaryKey($userId);
         if ($user === null) {
             osc_add_flash_error_message(_m('That user no longer exists'), 'admin');
             $this->redirectTo(osc_admin_base_url(true) . '?page=billing&action=credits');

@@ -426,7 +426,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
     {
         $regionName  = Params::getParamString('region');
         $countryCode = Params::getParamString('country_c_parent');
-        $country     = Country::newInstance()->findByCode($countryCode);
+        $country     = Country::getInstance()->findByCode($countryCode);
         if (!isset($country['pk_c_code'])) {
             $this->respond('error', _m('This location no longer exists.'), $this->listUrl());
         }
@@ -442,7 +442,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
     {
         $newRegion = Params::getParamString('e_region');
         $regionId  = Params::getParamInt('region_id');
-        $aRegion   = $regionId > 0 ? Region::newInstance()->findByPrimaryKey($regionId) : false;
+        $aRegion   = $regionId > 0 ? Region::getInstance()->findByPrimaryKey($regionId) : false;
         if (!is_array($aRegion)) {
             $this->respond('error', _m('This location no longer exists.'), $this->listUrl());
         }
@@ -458,7 +458,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
     private function addCity(): void
     {
         $regionId = Params::getParamInt('region_parent');
-        $region   = $regionId > 0 ? Region::newInstance()->findByPrimaryKey($regionId) : false;
+        $region   = $regionId > 0 ? Region::getInstance()->findByPrimaryKey($regionId) : false;
         $newCity  = Params::getParamString('city');
         if (!is_array($region)) {
             $this->respond('error', _m('This location no longer exists.'), $this->listUrl());
@@ -475,11 +475,11 @@ class CAdminSettingsLocations extends AdminSecBaseModel
     {
         $newCity = Params::getParamString('e_city');
         $cityId  = Params::getParamInt('city_id');
-        $city    = $cityId > 0 ? City::newInstance()->findByPrimaryKey($cityId) : false;
+        $city    = $cityId > 0 ? City::getInstance()->findByPrimaryKey($cityId) : false;
         if (!is_array($city)) {
             $this->respond('error', _m('This location no longer exists.'), $this->listUrl());
         }
-        $region = Region::newInstance()->findByPrimaryKey($city['fk_i_region_id']);
+        $region = Region::getInstance()->findByPrimaryKey($city['fk_i_region_id']);
         $back   = $this->listUrl(array(
             'country' => is_array($region) ? $region['fk_c_country_code'] : '',
             'region'  => (int) $city['fk_i_region_id'],
@@ -558,7 +558,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
         $region  = Params::getParamInt('region');
         if ($country === '' && $region === 0 && $rows !== array() && $level !== 'country') {
             $first   = reset($rows);
-            $parent  = $level === 'city' ? Region::newInstance()->findByPrimaryKey($first['fk_i_region_id']) : $first;
+            $parent  = $level === 'city' ? Region::getInstance()->findByPrimaryKey($first['fk_i_region_id']) : $first;
             $country = is_array($parent) ? (string) $parent['fk_c_country_code'] : '';
             $region  = $level === 'city' ? (int) $first['fk_i_region_id'] : 0;
         }
@@ -694,7 +694,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
             $this->respond('ok', '', $this->dataUrl(), array('html' => (string) ob_get_clean()));
         }
 
-        Session::newInstance()->_set(self::PREVIEW_SESSION, $preview);
+        Session::getInstance()->_set(self::PREVIEW_SESSION, $preview);
         $this->redirectTo($this->dataUrl(array('preview' => $offer['code'])));
     }
 
@@ -730,9 +730,9 @@ class CAdminSettingsLocations extends AdminSecBaseModel
 
         $preview = null;
         $code    = strtoupper(Params::getParamString('preview'));
-        $stored  = Session::newInstance()->_get(self::PREVIEW_SESSION);
+        $stored  = Session::getInstance()->_get(self::PREVIEW_SESSION);
         if ($code !== '' && is_array($stored)) {
-            Session::newInstance()->_drop(self::PREVIEW_SESSION);
+            Session::getInstance()->_drop(self::PREVIEW_SESSION);
             $preview = ($stored['code'] ?? '') === $code ? $stored : null;
             $this->_exportVariableToView('locationPreview', $preview);
         }

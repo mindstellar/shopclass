@@ -267,7 +267,7 @@ class AlertEnvelope
                 if (!is_string($value) || strlen($value) !== 2) {
                     return null;
                 }
-                $row = \Country::newInstance()->findByCode($value);
+                $row = \Country::getInstance()->findByCode($value);
 
                 return is_array($row) ? ($row['s_name'] ?? null) : null;
             }),
@@ -303,7 +303,7 @@ class AlertEnvelope
                 $id = (int)$value;
             } elseif (is_string($value) && trim($value, " /") !== '') {
                 $path = explode('/', trim($value, " /"));
-                $row  = \Category::newInstance()->findBySlug(end($path));
+                $row  = \Category::getInstance()->findBySlug(end($path));
                 $id   = is_array($row) ? (int)($row['pk_i_id'] ?? 0) : 0;
             } else {
                 continue;
@@ -322,7 +322,7 @@ class AlertEnvelope
         $kept = array();
         foreach ($ids as $id) {
             $covered = false;
-            $row     = \Category::newInstance()->findByPrimaryKey($id);
+            $row     = \Category::getInstance()->findByPrimaryKey($id);
             // Bounded, so a parent loop in bad data cannot hang the page.
             for ($depth = 0; $depth < 32 && is_array($row) && !empty($row['fk_i_parent_id']); $depth++) {
                 $parentId = (int)$row['fk_i_parent_id'];
@@ -330,7 +330,7 @@ class AlertEnvelope
                     $covered = true;
                     break;
                 }
-                $row = \Category::newInstance()->findByPrimaryKey($parentId);
+                $row = \Category::getInstance()->findByPrimaryKey($parentId);
             }
             if (!$covered) {
                 $kept[] = $id;

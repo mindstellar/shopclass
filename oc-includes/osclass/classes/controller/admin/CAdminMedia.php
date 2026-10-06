@@ -170,7 +170,7 @@ class CAdminMedia extends AdminSecBaseModel
             $row = (new \mindstellar\model\Resource())->findByPrimaryKey($id);
             if ($row !== null) {
                 (new \mindstellar\storage\ResourceUploader())->delete($row);
-                Log::newInstance()
+                Log::getInstance()
                     ->insertLog('media', 'delete', (string) $id, (string) $id, 'admin', osc_logged_admin_id());
             }
         }

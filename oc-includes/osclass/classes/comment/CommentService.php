@@ -35,7 +35,7 @@ final class CommentService
 
     public function __construct()
     {
-        $this->comments = \ItemComment::newInstance();
+        $this->comments = \ItemComment::getInstance();
     }
 
     /**
@@ -53,13 +53,13 @@ final class CommentService
      */
     public function post(int $itemId, array $input, Actor $actor): SavedComment
     {
-        $item = \Item::newInstance()->findByPrimaryKey($itemId);
+        $item = \Item::getInstance()->findByPrimaryKey($itemId);
         // Anti-spam plugins check the comment here.
         osc_run_hook('pre_item_add_comment_post', $item);
 
         $user = null;
         if ($actor->userId() !== null) {
-            $user = \User::newInstance()->findByPrimaryKey($actor->userId());
+            $user = \User::getInstance()->findByPrimaryKey($actor->userId());
             if (!is_array($user) || $user === []) {
                 throw new NotFoundException(_m('No such user.'));
             }
@@ -118,9 +118,9 @@ final class CommentService
                 throw new \RuntimeException('The comment could not be saved.');
             }
             if ($status === SavedComment::LIVE && $actor->userId() !== null) {
-                $user = \User::newInstance()->findByPrimaryKey($actor->userId());
+                $user = \User::getInstance()->findByPrimaryKey($actor->userId());
                 if ($user) {
-                    \User::newInstance()->update(['i_comments' => $user['i_comments'] + 1], ['pk_i_id' => $user['pk_i_id']]);
+                    \User::getInstance()->update(['i_comments' => $user['i_comments'] + 1], ['pk_i_id' => $user['pk_i_id']]);
                 }
                 if (osc_notify_new_comment_user()) {
                     osc_run_hook('hook_email_new_comment_user', $mail);
@@ -149,7 +149,7 @@ final class CommentService
     {
         $comment = $this->comments->findByPrimaryKey($commentId);
         $found   = is_array($comment) && $comment !== [];
-        $item    = \Item::newInstance()->findByPrimaryKey($found ? (int) $comment['fk_i_item_id'] : $itemId);
+        $item    = \Item::getInstance()->findByPrimaryKey($found ? (int) $comment['fk_i_item_id'] : $itemId);
         osc_run_hook('pre_item_delete_comment_post', $item, $commentId);
 
         if ($actor->userId() === null) {
@@ -187,7 +187,7 @@ final class CommentService
         $status    = $threshold === -1 || ($threshold !== 0 && $approved >= $threshold) ? SavedComment::LIVE : SavedComment::PENDING;
 
         if (osc_akismet_key()) {
-            \View::newInstance()->_exportVariableToView('item', $item);
+            \View::getInstance()->_exportVariableToView('item', $item);
             $akismet = new \Akismet(osc_base_url(), osc_akismet_key());
             $akismet->setCommentAuthor($name);
             $akismet->setCommentAuthorEmail($email);

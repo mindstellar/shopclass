@@ -166,9 +166,14 @@ class Rewrite
 {
     private static $instance;
 
-    public static function newInstance()
+    public static function getInstance()
     {
         return self::$instance ?? (self::$instance = new self());
+    }
+
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     public function rebuildAndPersistRules()
@@ -276,7 +281,7 @@ class AdminSecBaseModel
 
     public function _exportVariableToView($key, $value)
     {
-        View::newInstance()->_exportVariableToView($key, $value);
+        View::getInstance()->_exportVariableToView($key, $value);
     }
 
     /**

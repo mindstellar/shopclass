@@ -69,7 +69,7 @@ final class AccountService
 
     public function __construct()
     {
-        $this->users    = \User::newInstance();
+        $this->users    = \User::getInstance();
         $this->sanitize = new Sanitize();
     }
 
@@ -175,7 +175,7 @@ final class AccountService
                 foreach ($info as $locale => $text) {
                     $this->users->updateDescription($userId, $locale, $text);
                 }
-                \Log::newInstance()->insertLog('user', $admin ? 'add' : 'register', $userId, $input['s_email'], $admin ? 'admin' : 'user', $admin ? $actor->logId() : $userId);
+                \Log::getInstance()->insertLog('user', $admin ? 'add' : 'register', $userId, $input['s_email'], $admin ? 'admin' : 'user', $admin ? $actor->logId() : $userId);
 
                 $user = $this->users->findByPrimaryKey($userId);
                 if (!$admin && osc_notify_new_user()) {
@@ -288,7 +288,7 @@ final class AccountService
                 self::byUser('t_item_comment', $userId)->update(['s_author_name' => $input['s_name']]);
                 $email = (string) ($this->users->findByPrimaryKey($userId)['s_email'] ?? '');
             }
-            \Log::newInstance()->insertLog('user', 'edit', $userId, $email, $actor->logRole(), $actor->logId());
+            \Log::getInstance()->insertLog('user', 'edit', $userId, $email, $actor->logRole(), $actor->logId());
 
             foreach ((array) ($form['s_info'] ?? []) as $locale => $info) {
                 $this->users->updateDescription($userId, $locale, $info);
@@ -339,7 +339,7 @@ final class AccountService
         }
 
         return (bool) DeferredMail::transaction(function () use ($userId, $newEmail): bool {
-            \UserEmailTmp::newInstance()->insertOrUpdate(['fk_i_user_id' => $userId, 's_new_email' => $newEmail]);
+            \UserEmailTmp::getInstance()->insertOrUpdate(['fk_i_user_id' => $userId, 's_new_email' => $newEmail]);
             $code = (string) $this->users->issuePassCode($userId, \User::PASS_CODE_EMAIL);
             osc_run_hook('hook_email_new_email', $newEmail, osc_change_user_email_confirm_url($userId, $code));
 
@@ -371,7 +371,7 @@ final class AccountService
             return $result;
         }
 
-        $pending = \UserEmailTmp::newInstance()->findByPrimaryKey($userId);
+        $pending = \UserEmailTmp::getInstance()->findByPrimaryKey($userId);
         $new     = (string) ($pending['s_new_email'] ?? '');
         if ($new === '') {
             return $result;
@@ -459,7 +459,7 @@ final class AccountService
         }
 
         return (bool) osc_db_transaction(static function () use ($userId, $values, $where): bool {
-            if (!\User::newInstance()->update($values, $where)) {
+            if (!\User::getInstance()->update($values, $where)) {
                 return false;
             }
             SignOut::everywhereUser($userId);
@@ -493,7 +493,7 @@ final class AccountService
 
         DeferredMail::transaction(function () use ($userId, $user, $actor): void {
             osc_run_hook('before_user_delete', $user);
-            \Log::newInstance()->insertLog('user', 'delete', $userId, (string) $user['s_email'], $actor->logRole(), $actor->logId());
+            \Log::getInstance()->insertLog('user', 'delete', $userId, (string) $user['s_email'], $actor->logRole(), $actor->logId());
             if (!$this->users->deleteUser($userId)) {
                 throw new \RuntimeException('The user could not be deleted.');
             }
@@ -519,7 +519,7 @@ final class AccountService
             if (!$actor->isAdmin()) {
                 osc_run_hook('hook_email_admin_new_user', $user);
             }
-            \Log::newInstance()->insertLog('user', 'activate', $userId, $user['s_email'], $actor->logRole(), $actor->logId());
+            \Log::getInstance()->insertLog('user', 'activate', $userId, $user['s_email'], $actor->logRole(), $actor->logId());
             if ((int) $user['b_enabled'] === 1) {
                 $this->eachListing($userId, 'enable');
             }
@@ -575,12 +575,12 @@ final class AccountService
      */
     public static function refreshIdentity(int $userId): void
     {
-        $user = \User::newInstance()->findByPrimaryKey($userId);
+        $user = \User::getInstance()->findByPrimaryKey($userId);
         if (!is_array($user) || $user === []) {
             return;
         }
-        \Session::newInstance()->_setEphemeral('userName', $user['s_name']);
-        \Session::newInstance()->_setEphemeral('userPhone', $user['s_phone_mobile'] ?: $user['s_phone_land']);
+        \Session::getInstance()->_setEphemeral('userName', $user['s_name']);
+        \Session::getInstance()->_setEphemeral('userPhone', $user['s_phone_mobile'] ?: $user['s_phone_land']);
     }
 
     /**
@@ -595,14 +595,14 @@ final class AccountService
         }
 
         try {
-            $claimed = osc_db_table(\Item::newInstance()->getTableName())
+            $claimed = osc_db_table(\Item::getInstance()->getTableName())
                 ->where('s_contact_email', $user['s_email'])
                 ->whereNull('fk_i_user_id')
                 ->update(['fk_i_user_id' => $userId, 's_contact_name' => $user['s_name']]);
             if ($claimed > 0) {
                 $this->users->increaseNumItems($userId, $claimed);
             }
-            osc_db_table(\Alerts::newInstance()->getTableName())
+            osc_db_table(\Alerts::getInstance()->getTableName())
                 ->where('s_email', $user['s_email'])
                 ->whereRaw('(fk_i_user_id IS NULL OR fk_i_user_id = 0)')
                 ->update(['fk_i_user_id' => $userId]);
@@ -699,7 +699,7 @@ final class AccountService
 
         return (bool) DeferredMail::transaction(function () use ($userId, $user, $actor, $column, $value, $logAction, $other, $itemAction, $hook): bool {
             $this->users->update([$column => $value], ['pk_i_id' => $userId]);
-            \Log::newInstance()->insertLog('user', $logAction, $userId, $user['s_email'], $actor->logRole(), $actor->logId());
+            \Log::getInstance()->insertLog('user', $logAction, $userId, $user['s_email'], $actor->logRole(), $actor->logId());
             if ((int) $user[$other] === 1) {
                 $this->eachListing($userId, $itemAction);
             }
@@ -712,7 +712,7 @@ final class AccountService
     private function eachListing(int $userId, string $action): void
     {
         $listings = new ListingService();
-        foreach (\Item::newInstance()->findByUserID($userId) as $item) {
+        foreach (\Item::getInstance()->findByUserID($userId) as $item) {
             $listings->$action((int) $item['pk_i_id']);
         }
     }

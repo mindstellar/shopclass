@@ -28,7 +28,7 @@ final class CustomFieldValues
      */
     public function __construct(?\Closure $definitions = null)
     {
-        $this->definitions = $definitions ?? static fn (int $categoryId): array => (array) \Field::newInstance()->findByCategory($categoryId);
+        $this->definitions = $definitions ?? static fn (int $categoryId): array => (array) \Field::getInstance()->findByCategory($categoryId);
     }
 
     /**

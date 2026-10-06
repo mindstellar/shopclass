@@ -34,7 +34,7 @@ class CAdminEmails extends AdminSecBaseModel
         parent::__construct();
 
         //specific things for this class
-        $this->emailManager = Page::newInstance();
+        $this->emailManager = Page::getInstance();
         osc_run_hook('init_admin_emails');
     }
 
@@ -56,10 +56,10 @@ class CAdminEmails extends AdminSecBaseModel
                     $this->redirectTo(osc_admin_base_url(true) . '?page=emails');
                 }
 
-                $form     = count(Session::newInstance()->_getForm());
-                $keepForm = count(Session::newInstance()->_getKeepForm());
+                $form     = count(Session::getInstance()->_getForm());
+                $keepForm = count(Session::getInstance()->_getKeepForm());
                 if ($form == 0 || $form == $keepForm) {
-                    Session::newInstance()->_dropKeepForm();
+                    Session::getInstance()->_dropKeepForm();
                 }
 
                 $this->_exportVariableToView('email', $this->emailManager->findByPrimaryKey(Params::getParam('id')));
@@ -70,7 +70,7 @@ class CAdminEmails extends AdminSecBaseModel
                 $id = Params::getParam('id');
 
                 $aFieldsDescription = self::descriptions(Params::getParamsAsArray('', false));
-                Session::newInstance()->_setForm('aFieldsDescription', $aFieldsDescription);
+                Session::getInstance()->_setForm('aFieldsDescription', $aFieldsDescription);
 
                 if (!self::save($id, $aFieldsDescription, $this->emailManager)) {
                     $error = _m('The email couldn\'t be updated, at least one title should not be empty');
@@ -81,7 +81,7 @@ class CAdminEmails extends AdminSecBaseModel
                     break;
                 }
 
-                Session::newInstance()->_clearVariables();
+                Session::getInstance()->_clearVariables();
                 osc_add_flash_ok_message(_m('The email/alert has been updated'), 'admin');
                 $this->redirectTo(osc_admin_base_url(true) . '?page=emails');
                 break;

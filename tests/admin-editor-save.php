@@ -194,7 +194,7 @@ class AdminSecBaseModel
 
     public function _exportVariableToView($key, $value)
     {
-        View::newInstance()->_exportVariableToView($key, $value);
+        View::getInstance()->_exportVariableToView($key, $value);
     }
 
     public function doView($view)

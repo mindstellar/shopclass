@@ -61,7 +61,7 @@ require_once dirname(__DIR__, 2) . '/oc-includes/osclass/helpers/hUsers.php';
 $admin = scratchdb_session('osc_models_itemreport');
 $table = DB_TABLE_PREFIX . 't_item_report_log';
 
-$model = ItemReport::newInstance();
+$model = ItemReport::getInstance();
 
 /* Keep Session writes in memory: force the singleton's private `started` flag so
  * _set() never reaches session_start() (which fatals once harness output has
@@ -71,9 +71,9 @@ $startedProp = new ReflectionProperty('Session', 'started');
 if (PHP_VERSION_ID < 80100) {
     $startedProp->setAccessible(true);
 }
-$startedProp->setValue(Session::newInstance(), true);
+$startedProp->setValue(Session::getInstance(), true);
 
-$view = View::newInstance();
+$view = View::getInstance();
 
 /**
  * Report as an anonymous visitor from $ip. An empty _loggedUser short-circuits

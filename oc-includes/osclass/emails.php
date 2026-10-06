@@ -31,7 +31,7 @@ function fn_email_alert_validation($alert, $email, $secret)
 
     // send alert validation email
     $prefLocale       = osc_language();
-    $page             = Page::newInstance()->findByInternalName('email_alert_validation');
+    $page             = Page::getInstance()->findByInternalName('email_alert_validation');
     $page_description = $page['locale'];
 
     $_title = osc_apply_filter(
@@ -108,7 +108,7 @@ osc_add_hook('hook_email_alert_validation', 'fn_email_alert_validation');
  */
 function _alert_email_template($internalName)
 {
-    $page = Page::newInstance()->findByInternalName($internalName);
+    $page = Page::getInstance()->findByInternalName($internalName);
 
     return $page['locale'][osc_language()];
 }
@@ -134,7 +134,7 @@ function _alert_email_template($internalName)
 function _alert_email_recipient($user, $ads, $s_search)
 {
     if (empty($user['s_name']) && !empty($user['fk_i_user_id'])) {
-        $account = User::newInstance()->findByPrimaryKey($user['fk_i_user_id']);
+        $account = User::getInstance()->findByPrimaryKey($user['fk_i_user_id']);
         if (isset($account['s_email'])) {
             $user = $account;
         }
@@ -564,7 +564,7 @@ osc_add_hook('hook_email_new_item_non_register_user', 'fn_email_new_item_non_reg
  */
 function fn_email_user_forgot_password($user, $password_url)
 {
-    $aPage  = Page::newInstance()->findByInternalName('email_user_forgot_password');
+    $aPage  = Page::getInstance()->findByInternalName('email_user_forgot_password');
     $locale = osc_current_user_locale();
 
     if (isset($aPage['locale'][$locale]['s_title'])) {
@@ -710,7 +710,7 @@ osc_add_hook('hook_email_user_registration', 'fn_email_user_registration');
 function fn_email_new_email($new_email, $validation_url)
 {
     $locale = osc_current_user_locale();
-    $aPage  = Page::newInstance()->findByInternalName('email_new_email');
+    $aPage  = Page::getInstance()->findByInternalName('email_new_email');
 
     if (isset($aPage['locale'][$locale]['s_title'])) {
         $content = $aPage['locale'][$locale];
@@ -727,7 +727,7 @@ function fn_email_new_email($new_email, $validation_url)
             '{VALIDATION_URL}'
         );
         $words[] = array(
-            Session::newInstance()->_get('userName'),
+            Session::getInstance()->_get('userName'),
             Params::getParam('new_email'),
             '<a href="' . $validation_url . '" >' . $validation_url . '</a>',
             $validation_url
@@ -758,7 +758,7 @@ function fn_email_new_email($new_email, $validation_url)
         $emailParams = array(
             'from'     => _osc_from_email_aux(),
             'to'       => $new_email,
-            'to_name'  => Session::newInstance()->_get('userName'),
+            'to_name'  => Session::getInstance()->_get('userName'),
             'subject'  => $title,
             'body'     => $body,
             'secret_link' => true,
@@ -909,7 +909,7 @@ function fn_email_send_friend($aItem)
     );
 
     if (osc_notify_contact_friends()) {
-        $admins      = Admin::newInstance()->listAll();
+        $admins      = Admin::getInstance()->listAll();
         $adminEmails = array();
         foreach ($admins as $admin) {
             if (!empty($admin['s_email'])) {
@@ -965,8 +965,8 @@ function fn_email_item_inquiry($aItem)
     $message     = $aItem['message'];
 
     $path = null;
-    $item = Item::newInstance()->findByPrimaryKey($id);
-    View::newInstance()->_exportVariableToView('item', $item);
+    $item = Item::getInstance()->findByPrimaryKey($id);
+    View::getInstance()->_exportVariableToView('item', $item);
 
     $mPages = new Page();
     $aPage  = $mPages->findByInternalName('email_item_inquiry');
@@ -1022,7 +1022,7 @@ function fn_email_item_inquiry($aItem)
     );
 
     if (osc_notify_contact_item()) {
-        $admins      = Admin::newInstance()->listAll();
+        $admins      = Admin::getInstance()->listAll();
         $adminEmails = array();
         foreach ($admins as $admin) {
             if (!empty($admin['s_email'])) {
@@ -1062,8 +1062,8 @@ function fn_email_new_comment_admin($aItem)
     $title  = $aItem['title'];
     $itemId = $aItem['id'];
 
-    $item = Item::newInstance()->findByPrimaryKey($itemId);
-    View::newInstance()->_exportVariableToView('item', $item);
+    $item = Item::getInstance()->findByPrimaryKey($itemId);
+    View::getInstance()->_exportVariableToView('item', $item);
     $itemURL = osc_item_url();
     $itemURL = '<a href="' . $itemURL . '" >' . $itemURL . '</a>';
 
@@ -1119,7 +1119,7 @@ function fn_email_new_comment_admin($aItem)
         $aItem
     );
 
-    $admins = Admin::newInstance()->listAll();
+    $admins = Admin::getInstance()->listAll();
     foreach ($admins as $admin) {
         if (!empty($admin['s_email'])) {
             $emailParams = array(
@@ -1145,7 +1145,7 @@ osc_add_hook('hook_email_new_comment_admin', 'fn_email_new_comment_admin');
  */
 function fn_email_item_validation($item)
 {
-    View::newInstance()->_exportVariableToView('item', $item);
+    View::getInstance()->_exportVariableToView('item', $item);
     $contactEmail = $item['s_contact_email'];
     $contactName  = $item['s_contact_name'];
     $mPages       = new Page();
@@ -1165,7 +1165,7 @@ function fn_email_item_validation($item)
 
     if (isset($item['locale'])) {
         foreach ($item['locale'] as $locale => $data) {
-            $locale_name = OSCLocale::newInstance()->findByCode($locale);
+            $locale_name = OSCLocale::getInstance()->findByCode($locale);
             $all         .= '<br/>';
             if (isset($locale_name[0]) && isset($locale_name[0]['s_name'])) {
                 $all .= __('Language') . ': ' . $locale_name[0]['s_name'] . '<br/>';
@@ -1256,7 +1256,7 @@ osc_add_hook('hook_email_item_validation', 'fn_email_item_validation');
  */
 function fn_email_admin_new_item($item)
 {
-    View::newInstance()->_exportVariableToView('item', $item);
+    View::getInstance()->_exportVariableToView('item', $item);
     $title  = osc_item_title();
     $mPages = new Page();
     $locale = osc_current_user_locale();
@@ -1275,7 +1275,7 @@ function fn_email_admin_new_item($item)
 
     if (isset($item['locale'])) {
         foreach ($item['locale'] as $locale => $data) {
-            $locale_name = OSCLocale::newInstance()->findByCode($locale);
+            $locale_name = OSCLocale::getInstance()->findByCode($locale);
             $all         .= '<br/>';
             if (isset($locale_name[0]) && isset($locale_name[0]['s_name'])) {
                 $all .= __('Language') . ': ' . $locale_name[0]['s_name'] . '<br/>';
@@ -1351,7 +1351,7 @@ function fn_email_admin_new_item($item)
         $item
     );
 
-    $admins = Admin::newInstance()->listAll();
+    $admins = Admin::getInstance()->listAll();
     foreach ($admins as $admin) {
         if (!empty($admin['s_email'])) {
             $emailParams = array(
@@ -1378,7 +1378,7 @@ osc_add_hook('hook_email_admin_new_item', 'fn_email_admin_new_item');
  */
 function fn_email_item_validation_non_register_user($item)
 {
-    View::newInstance()->_exportVariableToView('item', $item);
+    View::getInstance()->_exportVariableToView('item', $item);
 
     $mPages = new Page();
     $aPage  = $mPages->findByInternalName('email_item_validation_non_register_user');
@@ -1399,7 +1399,7 @@ function fn_email_item_validation_non_register_user($item)
 
     if (isset($item['locale'])) {
         foreach ($item['locale'] as $locale => $data) {
-            $locale_name = OSCLocale::newInstance()->findByCode($locale);
+            $locale_name = OSCLocale::getInstance()->findByCode($locale);
             $all         .= '<br/>';
             if (isset($locale_name[0]) && isset($locale_name[0]['s_name'])) {
                 $all .= __('Language') . ': ' . $locale_name[0]['s_name'] . '<br/>';
@@ -1547,7 +1547,7 @@ function fn_email_admin_new_user($user)
             $user
         );
 
-        $admins = Admin::newInstance()->listAll();
+        $admins = Admin::getInstance()->listAll();
         foreach ($admins as $admin) {
             if (!empty($admin['s_email'])) {
                 $emailParams = array(
@@ -1642,7 +1642,7 @@ function fn_email_contact_user($id, $yourEmail, $yourName, $phoneNumber, $messag
     );
 
     if (osc_notify_contact_item()) {
-        $admins      = Admin::newInstance()->listAll();
+        $admins      = Admin::getInstance()->listAll();
         $adminEmails = array();
         foreach ($admins as $admin) {
             if (!empty($admin['s_email'])) {
@@ -1673,8 +1673,8 @@ function fn_email_new_comment_user($aItem)
     $title       = $aItem['title'];
     $itemId      = $aItem['id'];
 
-    $item = Item::newInstance()->findByPrimaryKey($itemId);
-    View::newInstance()->_exportVariableToView('item', $item);
+    $item = Item::getInstance()->findByPrimaryKey($itemId);
+    View::getInstance()->_exportVariableToView('item', $item);
     $itemURL = osc_item_url();
     $itemURL = '<a href="' . $itemURL . '" >' . $itemURL . '</a>';
 
@@ -1826,7 +1826,7 @@ function fn_email_warn_expiration($aItem)
 
     $itemId = $aItem['pk_i_id'];
 
-    View::newInstance()->_exportVariableToView('item', $aItem);
+    View::getInstance()->_exportVariableToView('item', $aItem);
     $itemURL = osc_item_url();
     $itemURL = '<a href="' . $itemURL . '" >' . $itemURL . '</a>';
 
@@ -1952,7 +1952,7 @@ function fn_email_auto_upgrade($result)
         $result
     );
 
-    $admins = Admin::newInstance()->listAll();
+    $admins = Admin::getInstance()->listAll();
     foreach ($admins as $admin) {
         if (!empty($admin['s_email']) && ($admin['b_moderator'] == 0)) {
             $emailParams = array(

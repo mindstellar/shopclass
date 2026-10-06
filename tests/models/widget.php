@@ -35,7 +35,7 @@ require_once __DIR__ . '/../lib/harness.php';
 $admin = scratchdb_session('osc_models_widget');
 $table = DB_TABLE_PREFIX . 't_widget';
 
-$model = Widget::newInstance();
+$model = Widget::getInstance();
 
 $rowCount = static function () use ($admin, $table): int {
     return (int) $admin->query("SELECT COUNT(*) c FROM $table")->fetch_assoc()['c'];

@@ -38,8 +38,8 @@ class ManageItemsForm extends Form
         $catId = Params::getParam('catId');
 
         if ($categories == null) {
-            if (View::newInstance()->_exists('categories')) {
-                $categories = View::newInstance()->_get('categories');
+            if (View::getInstance()->_exists('categories')) {
+                $categories = View::getInstance()->_get('categories');
             } else {
                 $categories = osc_get_categories();
             }

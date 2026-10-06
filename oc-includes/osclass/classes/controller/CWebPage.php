@@ -28,7 +28,7 @@ class CWebPage extends BaseModel
     {
         parent::__construct();
 
-        $this->pageManager = Page::newInstance();
+        $this->pageManager = Page::getInstance();
         osc_run_hook('init_page');
     }
 
@@ -112,7 +112,7 @@ class CWebPage extends BaseModel
         ) {
             osc_run_hook('before_html');
             require osc_plugins_path() . '/' . $meta['template'];
-            Session::newInstance()->_clearVariables();
+            Session::getInstance()->_clearVariables();
             osc_run_hook('after_html');
         } else {
             $this->doView(osc_locate_template(array('page.php'), 'page'));
@@ -138,7 +138,7 @@ class CWebPage extends BaseModel
         if (is_callable($render)) {
             osc_run_hook('before_html');
             $render($page);
-            Session::newInstance()->_clearVariables();
+            Session::getInstance()->_clearVariables();
             osc_run_hook('after_html');
 
             return;
@@ -153,7 +153,7 @@ class CWebPage extends BaseModel
         if (file_exists(osc_plugins_path() . '/' . $render)) {
             osc_run_hook('before_html');
             require osc_plugins_path() . '/' . $render;
-            Session::newInstance()->_clearVariables();
+            Session::getInstance()->_clearVariables();
             osc_run_hook('after_html');
 
             return;
@@ -173,7 +173,7 @@ class CWebPage extends BaseModel
     {
         osc_run_hook('before_html');
         osc_current_web_theme_path($file);
-        Session::newInstance()->_clearVariables();
+        Session::getInstance()->_clearVariables();
         osc_run_hook('after_html');
     }
 }

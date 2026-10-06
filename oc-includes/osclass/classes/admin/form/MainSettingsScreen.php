@@ -203,7 +203,7 @@ final class MainSettingsScreen extends SettingsScreen
     private static function locales(): array
     {
         $options = array();
-        foreach (\OSCLocale::newInstance()->listAllEnabled() as $locale) {
+        foreach (\OSCLocale::getInstance()->listAllEnabled() as $locale) {
             $options[$locale['pk_c_code']] = $locale['s_name'];
         }
 
@@ -218,7 +218,7 @@ final class MainSettingsScreen extends SettingsScreen
     private static function currencies(): array
     {
         $options = array();
-        foreach (\Currency::newInstance()->listAll() as $currency) {
+        foreach (\Currency::getInstance()->listAll() as $currency) {
             $options[$currency['pk_c_code']] = $currency['pk_c_code'];
         }
 

@@ -45,13 +45,21 @@ class City extends DAO
      *
      * @return City
      */
-    public static function newInstance()
+    public static function getInstance()
     {
         if (!self::$instance instanceof self) {
             self::$instance = new self();
         }
 
         return self::$instance;
+    }
+
+    /**
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
+     */
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     /**
@@ -74,7 +82,7 @@ class City extends DAO
         // constructor, never user input, so they are safe to concatenate.
         $sql = 'SELECT a.pk_i_id AS id, a.s_name AS label, a.s_name AS value, aux.s_name AS region'
             . ' FROM ' . $this->getTableName() . ' AS a'
-            . ' LEFT JOIN ' . Region::newInstance()->getTableName() . ' AS aux'
+            . ' LEFT JOIN ' . Region::getInstance()->getTableName() . ' AS aux'
             . ' ON aux.pk_i_id = a.fk_i_region_id'
             . ' WHERE a.s_name LIKE ?';
         // Matches dao->like()'s escaping: '%'/'_' in the payload are escaped
@@ -200,15 +208,15 @@ class City extends DAO
     {
         osc_run_hook('before_delete_city', $pk);
 
-        $mCityAreas = CityArea::newInstance();
+        $mCityAreas = CityArea::getInstance();
         $aCityAreas = $mCityAreas->findByCity($pk);
         $result     = 0;
         foreach ($aCityAreas as $cityarea) {
             $result += $mCityAreas->deleteByPrimaryKey($cityarea['pk_i_id']);
         }
-        Item::newInstance()->deleteByCity($pk);
-        CityStats::newInstance()->delete(array('fk_i_city_id' => $pk));
-        User::newInstance()->update(array('fk_i_city_id' => null, 's_city' => ''), array('fk_i_city_id' => $pk));
+        Item::getInstance()->deleteByCity($pk);
+        CityStats::getInstance()->delete(array('fk_i_city_id' => $pk));
+        User::getInstance()->update(array('fk_i_city_id' => null, 's_city' => ''), array('fk_i_city_id' => $pk));
 
         // See Region::deleteByPrimaryKey(): the slug history has no foreign key to
         // clean it up, so a rename recorded for this city would outlive the city.

@@ -67,7 +67,7 @@ class CWebForm extends BaseModel
             return true;
         }
 
-        return FieldGroup::newInstance()->categories((int)$form['pk_i_id']) === array();
+        return FieldGroup::getInstance()->categories((int)$form['pk_i_id']) === array();
     }
 
     /**
@@ -83,7 +83,7 @@ class CWebForm extends BaseModel
         $return = $this->safeReturnUrl();
 
         $formId = Params::getParamInt('osc_form_id');
-        $form   = $formId > 0 ? FieldGroup::newInstance()->findByPrimaryKey($formId) : array();
+        $form   = $formId > 0 ? FieldGroup::getInstance()->findByPrimaryKey($formId) : array();
         if (!$this->takesSubmissions($form)) {
             osc_add_flash_error_message(_m('That form is no longer available.'));
             $this->redirectTo($return);

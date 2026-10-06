@@ -40,7 +40,7 @@ if (isset($argv[1])) {
     define('IS_AJAX', true);
     $case = json_decode($argv[1], true);
     if ($case['user'] !== '') {
-        Session::newInstance()->_setEphemeral('userId', $case['user']);
+        Session::getInstance()->_setEphemeral('userId', $case['user']);
     }
     $csrf  = new Csrf();
     $_POST = $_REQUEST = array('CSRFName' => $csrf->getCsrfTokenName(), 'CSRFToken' => $csrf->getCsrfTokenValue());

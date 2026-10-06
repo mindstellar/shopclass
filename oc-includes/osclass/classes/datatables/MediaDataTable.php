@@ -45,7 +45,7 @@ class MediaDataTable extends DataTable
         $this->addTableHeader();
         $this->getDBParams($params);
 
-        $media = ItemResource::newInstance()->getResources(
+        $media = ItemResource::getInstance()->getResources(
             $this->resourceID,
             $this->start,
             $this->limit,
@@ -54,12 +54,12 @@ class MediaDataTable extends DataTable
         );
         $this->processData($media);
 
-        $this->total = ItemResource::newInstance()->countResources();
+        $this->total = ItemResource::getInstance()->countResources();
         if ($this->resourceID === null) {
             $this->total_filtered = $this->total;
             $this->totalFiltered = $this->total;
         } else {
-            $this->total_filtered = ItemResource::newInstance()->countResources($this->resourceID);
+            $this->total_filtered = ItemResource::getInstance()->countResources($this->resourceID);
             $this->totalFiltered = $this->total_filtered;
         }
 
@@ -83,7 +83,7 @@ class MediaDataTable extends DataTable
             $arg_item .= '&direction=asc';
         }
 
-        Rewrite::newInstance()->init();
+        Rewrite::getInstance()->init();
         $page = Params::getParamInt('iPage');
         if ($page == 0) {
             $page = 1;
@@ -92,7 +92,7 @@ class MediaDataTable extends DataTable
         $url_base = preg_replace(
             '|&direction=([^&]*)|',
             '',
-            preg_replace('|&sort=([^&]*)|', '', osc_base_url() . Rewrite::newInstance()->get_raw_request_uri())
+            preg_replace('|&sort=([^&]*)|', '', osc_base_url() . Rewrite::getInstance()->get_raw_request_uri())
         );
 
         $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" />');

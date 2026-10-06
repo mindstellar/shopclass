@@ -78,8 +78,8 @@ class CAdminSettingsMain extends AdminSecBaseModel
         // The declared form carries its own choice lists. These two are exported beside it
         // under the names they have always had, because a replaced admin theme's own view
         // reads them and would silently draw empty selects without them.
-        $this->_exportVariableToView('aLanguages', OSCLocale::newInstance()->listAllEnabled());
-        $this->_exportVariableToView('aCurrencies', Currency::newInstance()->listAll());
+        $this->_exportVariableToView('aLanguages', OSCLocale::getInstance()->listAllEnabled());
+        $this->_exportVariableToView('aCurrencies', Currency::getInstance()->listAll());
         $this->_exportVariableToView('main_form', MainSettingsScreen::formVars($values));
         $this->doView('settings/index.php');
     }

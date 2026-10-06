@@ -28,19 +28,19 @@ final class ListingStats
     public static function increase(array $item): void
     {
         if ($item['fk_i_user_id'] !== null) {
-            \User::newInstance()->increaseNumItems($item['fk_i_user_id']);
+            \User::getInstance()->increaseNumItems($item['fk_i_user_id']);
         }
         if ($item['fk_i_category_id'] !== null && $item['fk_i_category_id'] !== '') {
-            \CategoryStats::newInstance()->increaseNumItems($item['fk_i_category_id']);
+            \CategoryStats::getInstance()->increaseNumItems($item['fk_i_category_id']);
         }
         if ($item['fk_c_country_code'] !== null && $item['fk_c_country_code'] !== '') {
-            \CountryStats::newInstance()->increaseNumItems($item['fk_c_country_code']);
+            \CountryStats::getInstance()->increaseNumItems($item['fk_c_country_code']);
         }
         if ($item['fk_i_region_id'] !== null && $item['fk_i_region_id'] !== '') {
-            \RegionStats::newInstance()->increaseNumItems($item['fk_i_region_id']);
+            \RegionStats::getInstance()->increaseNumItems($item['fk_i_region_id']);
         }
         if ($item['fk_i_city_id'] !== null && $item['fk_i_city_id'] !== '') {
-            \CityStats::newInstance()->increaseNumItems($item['fk_i_city_id']);
+            \CityStats::getInstance()->increaseNumItems($item['fk_i_city_id']);
         }
         osc_run_hook('item_increase_stat', $item);
     }
@@ -53,12 +53,12 @@ final class ListingStats
     public static function decrease($item): void
     {
         if ($item['fk_i_user_id'] != null) {
-            \User::newInstance()->decreaseNumItems($item['fk_i_user_id']);
+            \User::getInstance()->decreaseNumItems($item['fk_i_user_id']);
         }
-        \CategoryStats::newInstance()->decreaseNumItems($item['fk_i_category_id']);
-        \CountryStats::newInstance()->decreaseNumItems($item['fk_c_country_code']);
-        \RegionStats::newInstance()->decreaseNumItems($item['fk_i_region_id']);
-        \CityStats::newInstance()->decreaseNumItems($item['fk_i_city_id']);
+        \CategoryStats::getInstance()->decreaseNumItems($item['fk_i_category_id']);
+        \CountryStats::getInstance()->decreaseNumItems($item['fk_c_country_code']);
+        \RegionStats::getInstance()->decreaseNumItems($item['fk_i_region_id']);
+        \CityStats::getInstance()->decreaseNumItems($item['fk_i_city_id']);
         osc_run_hook('item_decrease_stat', $item);
     }
 
@@ -81,52 +81,52 @@ final class ListingStats
             if ($oldIsExpired && !$newIsExpired) {
                 // increment new item stats (user, category, location_stats)
                 if (is_numeric($aItem['userId'])) {
-                    \User::newInstance()->increaseNumItems($aItem['userId']);
+                    \User::getInstance()->increaseNumItems($aItem['userId']);
                 }
-                \CategoryStats::newInstance()->increaseNumItems($aItem['catId']);
-                \CountryStats::newInstance()->increaseNumItems($location['fk_c_country_code']);
-                \RegionStats::newInstance()->increaseNumItems($location['fk_i_region_id']);
-                \CityStats::newInstance()->increaseNumItems($location['fk_i_city_id']);
+                \CategoryStats::getInstance()->increaseNumItems($aItem['catId']);
+                \CountryStats::getInstance()->increaseNumItems($location['fk_c_country_code']);
+                \RegionStats::getInstance()->increaseNumItems($location['fk_i_region_id']);
+                \CityStats::getInstance()->increaseNumItems($location['fk_i_city_id']);
             }
             // if old is not expired and new is expired
             if (!$oldIsExpired && $newIsExpired) {
                 // decrement new item stats (user, category, location_stats)
                 if (is_numeric($oldItem['fk_i_user_id'])) {
-                    \User::newInstance()->decreaseNumItems($oldItem['fk_i_user_id']);
+                    \User::getInstance()->decreaseNumItems($oldItem['fk_i_user_id']);
                 }
-                \CategoryStats::newInstance()->decreaseNumItems($aItem['catId']);
-                \CountryStats::newInstance()->decreaseNumItems($location['fk_c_country_code']);
-                \RegionStats::newInstance()->decreaseNumItems($location['fk_i_region_id']);
-                \CityStats::newInstance()->decreaseNumItems($location['fk_i_city_id']);
+                \CategoryStats::getInstance()->decreaseNumItems($aItem['catId']);
+                \CountryStats::getInstance()->decreaseNumItems($location['fk_c_country_code']);
+                \RegionStats::getInstance()->decreaseNumItems($location['fk_i_region_id']);
+                \CityStats::getInstance()->decreaseNumItems($location['fk_i_city_id']);
             }
             // if old item is not expired and new item is not expired
             if (!$oldIsExpired && !$newIsExpired) {
                 // Update user stats - if old user diferent to actual user, update user stats
                 if ($oldItem['fk_i_user_id'] != $aItem['userId']) {
                     if (is_numeric($oldItem['fk_i_user_id'])) {
-                        \User::newInstance()->decreaseNumItems($oldItem['fk_i_user_id']);
+                        \User::getInstance()->decreaseNumItems($oldItem['fk_i_user_id']);
                     }
                     if (is_numeric($aItem['userId'])) {
-                        \User::newInstance()->increaseNumItems($aItem['userId']);
+                        \User::getInstance()->increaseNumItems($aItem['userId']);
                     }
                 }
                 // Update category numbers
                 if ($oldItem['fk_i_category_id'] != $aItem['catId']) {
-                    \CategoryStats::newInstance()->increaseNumItems($aItem['catId']);
-                    \CategoryStats::newInstance()->decreaseNumItems($oldItem['fk_i_category_id']);
+                    \CategoryStats::getInstance()->increaseNumItems($aItem['catId']);
+                    \CategoryStats::getInstance()->decreaseNumItems($oldItem['fk_i_category_id']);
                 }
                 // Update location stats
                 if ($oldLocation['fk_c_country_code'] != $location['fk_c_country_code']) {
-                    \CountryStats::newInstance()->decreaseNumItems($oldLocation['fk_c_country_code']);
-                    \CountryStats::newInstance()->increaseNumItems($location['fk_c_country_code']);
+                    \CountryStats::getInstance()->decreaseNumItems($oldLocation['fk_c_country_code']);
+                    \CountryStats::getInstance()->increaseNumItems($location['fk_c_country_code']);
                 }
                 if ($oldLocation['fk_i_region_id'] != $location['fk_i_region_id']) {
-                    \RegionStats::newInstance()->decreaseNumItems($oldLocation['fk_i_region_id']);
-                    \RegionStats::newInstance()->increaseNumItems($location['fk_i_region_id']);
+                    \RegionStats::getInstance()->decreaseNumItems($oldLocation['fk_i_region_id']);
+                    \RegionStats::getInstance()->increaseNumItems($location['fk_i_region_id']);
                 }
                 if ($oldLocation['fk_i_city_id'] != $location['fk_i_city_id']) {
-                    \CityStats::newInstance()->decreaseNumItems($oldLocation['fk_i_city_id']);
-                    \CityStats::newInstance()->increaseNumItems($location['fk_i_city_id']);
+                    \CityStats::getInstance()->decreaseNumItems($oldLocation['fk_i_city_id']);
+                    \CityStats::getInstance()->increaseNumItems($location['fk_i_city_id']);
                 }
             }
             // if old and new items are expired [nothing to do]

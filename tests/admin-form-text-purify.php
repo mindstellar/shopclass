@@ -47,9 +47,14 @@ $GLOBALS['locales']     = array(
 
 class Preference
 {
-    public static function newInstance()
+    public static function getInstance()
     {
         return new self();
+    }
+
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     public function get($key, $section = 'osclass')
@@ -74,9 +79,14 @@ class Preference
 
 class OSCLocale
 {
-    public static function newInstance()
+    public static function getInstance()
     {
         return new self();
+    }
+
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     public function listAllEnabled()

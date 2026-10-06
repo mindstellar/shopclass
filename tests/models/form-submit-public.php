@@ -89,9 +89,9 @@ $codeForm     = $group('code', null, false);
 
 $_SERVER['REMOTE_ADDR'] = '198.51.100.20';
 // A guest, whatever an earlier file in the suite left signed in.
-Session::newInstance()->_drop('userId');
-Session::newInstance()->_dropEphemeral('userId');
-View::newInstance()->_erase('_loggedUser');
+Session::getInstance()->_drop('userId');
+Session::getInstance()->_dropEphemeral('userId');
+View::getInstance()->_erase('_loggedUser');
 
 /** Post the form and return the flash message the visitor is sent back with. */
 $submit = static function (int $formId): string {
@@ -101,7 +101,7 @@ $submit = static function (int $formId): string {
         'CSRFName' => $csrf->getCsrfTokenName(), 'CSRFToken' => $csrf->getCsrfTokenValue(),
     );
     Params::init();
-    Session::newInstance()->_dropMessage('pubMessages');
+    Session::getInstance()->_dropMessage('pubMessages');
     $form   = (new ReflectionClass('TestWebForm'))->newInstanceWithoutConstructor();
     $action = new ReflectionProperty('BaseModel', 'action');
     $action->setAccessible(true);
@@ -110,7 +110,7 @@ $submit = static function (int $formId): string {
         $form->doModel();
     } catch (FormRedirect $e) {
     }
-    $messages = Session::newInstance()->_getMessage('pubMessages');
+    $messages = Session::getInstance()->_getMessage('pubMessages');
 
     return is_array($messages) ? implode(' ', array_column($messages, 'msg')) : (string) $messages;
 };

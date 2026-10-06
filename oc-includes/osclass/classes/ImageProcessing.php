@@ -604,7 +604,7 @@ class ImageProcessing
     ) {
         $this->watermarked = true;
         if ($watermark_text !== null && $watermark_text) {
-            $path_watermark = osc_uploads_path() . Preference::newInstance()->get('watermark_text_image_name');
+            $path_watermark = osc_uploads_path() . Preference::getInstance()->get('watermark_text_image_name');
             if (!file_exists($path_watermark)) {
                 $path_watermark = self::createWatermarkImageFromText(
                     $watermark_text,
@@ -685,7 +685,7 @@ class ImageProcessing
         }
 
         if ($aOptions === null) {
-            $aOptions = json_decode(Preference::newInstance()->get('watermark_text_options'), true);
+            $aOptions = json_decode(Preference::getInstance()->get('watermark_text_options'), true);
         }
 
         $validate_option = static function ($options_array, $option_name, $default_value) {
@@ -704,7 +704,7 @@ class ImageProcessing
         $background_color = ltrim($validate_option($aOptions, 'background_color', '#000000'), '#');
 
         $imagickLoaded = extension_loaded('imagick');
-        $use_imagick   = Preference::newInstance()->get('use_imagick');
+        $use_imagick   = Preference::getInstance()->get('use_imagick');
 
         $watermark_settings_md5 = md5($watermark_text . $font_color . $font_size . json_encode($aOptions) .
             $use_imagick);
@@ -717,7 +717,7 @@ class ImageProcessing
         }
 
         //Check if any image saved in preference
-        $pref_watermark_text_image_name = Preference::newInstance()->get('watermark_text_image_name');
+        $pref_watermark_text_image_name = Preference::getInstance()->get('watermark_text_image_name');
         if ($pref_watermark_text_image_name && file_exists(osc_uploads_path() . $pref_watermark_text_image_name)) {
             //Remove it because we will generate a new one.
             unlink(osc_uploads_path() . $pref_watermark_text_image_name);
@@ -771,9 +771,9 @@ class ImageProcessing
         }
 
         // save new image name to preference
-        Preference::newInstance()->replace('watermark_text_image_name', $watermark_filename);
+        Preference::getInstance()->replace('watermark_text_image_name', $watermark_filename);
         // Reset preferences
-        Preference::newInstance()->toArray();
+        Preference::getInstance()->toArray();
 
         // return path of new image
         return osc_uploads_path() . $watermark_filename;

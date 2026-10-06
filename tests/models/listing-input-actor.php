@@ -55,7 +55,7 @@ $admin->query('UPDATE ' . DB_TABLE_PREFIX . 't_user SET i_items = 3 WHERE pk_i_i
 
 $setPref = static function (array $values): void {
     foreach ($values as $k => $v) {
-        Preference::newInstance()->set($k, $v);
+        Preference::getInstance()->set($k, $v);
     }
     scratchdb_forget_cache();
     osc_reset_preferences();

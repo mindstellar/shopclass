@@ -62,7 +62,7 @@ $posted = array(
 $actions  = (new ReflectionClass(\mindstellar\listing\ListingValidator::class))->newInstanceWithoutConstructor();
 $sanitize = new ReflectionMethod(\mindstellar\listing\ListingValidator::class, 'sanitizeMeta');
 $sanitize->setAccessible(true);
-$model = Field::newInstance();
+$model = Field::getInstance();
 foreach ($posted as $fieldId => $value) {
     $type = $fieldId === $dateField ? 'DATE' : 'DATEINTERVAL';
     $model->replace($itemId, $fieldId, $sanitize->invoke($actions, $type, $value));

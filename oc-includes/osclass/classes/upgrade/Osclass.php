@@ -127,7 +127,7 @@ class Osclass extends UpgradePackage
                 // request loaded still predates them; rebuilding off it would compile the
                 // same missing routes all over again.
                 osc_reset_preferences();
-                Rewrite::newInstance()->rebuildAndPersistRules();
+                Rewrite::getInstance()->rebuildAndPersistRules();
             } catch (Throwable $e) {
                 // A rules rebuild is a repair, not the upgrade; never fail the upgrade on it.
             }
@@ -214,7 +214,7 @@ class Osclass extends UpgradePackage
         // because the fetch produced nothing (rate limit, outage). Only a fresh result
         // should be allowed to reset the once-a-day check clock or claim "checked now".
         $isFresh    = false;
-        $preference = Preference::newInstance();
+        $preference = Preference::getInstance();
         if ($force === true
             || (
                 !$preference->get('update_core_json') && (time() - $preference->get('last_version_check')) > (24 * 3600)

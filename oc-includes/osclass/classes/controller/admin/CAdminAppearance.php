@@ -87,7 +87,7 @@ class CAdminAppearance extends AdminSecBaseModel
                 }
                 osc_csrf_check();
                 $theme   = Params::getParamString('webtheme');
-                $themes  = WebThemes::newInstance();
+                $themes  = WebThemes::getInstance();
                 // The name decides which directory is included and then deleted, so it is
                 // matched against the installed themes rather than trusted.
                 $known   = $themes->getListThemes();
@@ -134,7 +134,7 @@ class CAdminAppearance extends AdminSecBaseModel
                 break;
                 /* widgets */
             case ('widgets'):
-                $info = WebThemes::newInstance()->loadThemeInfo(osc_theme());
+                $info = WebThemes::getInstance()->loadThemeInfo(osc_theme());
 
                 $this->_exportVariableToView('info', $info);
 
@@ -146,7 +146,7 @@ class CAdminAppearance extends AdminSecBaseModel
             case ('edit_widget'):
                 $id = Params::getParam('id');
 
-                $widget = Widget::newInstance()->findByPrimaryKey($id);
+                $widget = Widget::getInstance()->findByPrimaryKey($id);
                 $this->_exportVariableToView('widget', $widget);
 
                 $this->doView('appearance/add_widget.php');
@@ -155,7 +155,7 @@ class CAdminAppearance extends AdminSecBaseModel
                 osc_csrf_check();
                 $widgetId = Params::getParamInt('id');
                 osc_run_hook('before_delete_widget', $widgetId);
-                Widget::newInstance()->delete(
+                Widget::getInstance()->delete(
                     array('pk_i_id' => $widgetId)
                 );
                 osc_run_hook('after_delete_widget', $widgetId);
@@ -172,7 +172,7 @@ class CAdminAppearance extends AdminSecBaseModel
                 $type = $this->resolveWidgetType(Params::getParam('s_type'));
 
                 if ($type !== null) {
-                    $res = Widget::newInstance()->update(
+                    $res = Widget::getInstance()->update(
                         array(
                             's_description' => Params::getParam('description'),
                             's_content'     => '',
@@ -182,7 +182,7 @@ class CAdminAppearance extends AdminSecBaseModel
                         array('pk_i_id' => Params::getParam('id'))
                     );
                 } else {
-                    $res = Widget::newInstance()->update(
+                    $res = Widget::getInstance()->update(
                         array(
                             's_description' => Params::getParam('description'),
                             's_content'     => Params::getParam('content', false, false)
@@ -213,7 +213,7 @@ class CAdminAppearance extends AdminSecBaseModel
                 $type     = $this->resolveWidgetType(Params::getParam('s_type'));
 
                 if ($type !== null) {
-                    Widget::newInstance()->insert(
+                    Widget::getInstance()->insert(
                         array(
                             's_location'    => $location,
                             'e_kind'        => 'html',
@@ -221,17 +221,17 @@ class CAdminAppearance extends AdminSecBaseModel
                             's_content'     => '',
                             's_type'        => $type['id'],
                             's_config'      => json_encode($this->buildWidgetConfig($type)),
-                            'i_order'       => Widget::newInstance()->getNextOrder($location)
+                            'i_order'       => Widget::getInstance()->getNextOrder($location)
                         )
                     );
                 } else {
-                    Widget::newInstance()->insert(
+                    Widget::getInstance()->insert(
                         array(
                             's_location'    => $location,
                             'e_kind'        => 'html',
                             's_description' => Params::getParam('description'),
                             's_content'     => Params::getParam('content', false, false),
-                            'i_order'       => Widget::newInstance()->getNextOrder($location)
+                            'i_order'       => Widget::getInstance()->getNextOrder($location)
                         )
                     );
                 }
@@ -258,7 +258,7 @@ class CAdminAppearance extends AdminSecBaseModel
                     'e_kind'        => 'html',
                     's_description' => $label,
                     's_content'     => '',
-                    'i_order'       => Widget::newInstance()->getNextOrder($location)
+                    'i_order'       => Widget::getInstance()->getNextOrder($location)
                 );
                 if ($type !== null) {
                     $row['s_type']   = $type['id'];
@@ -306,7 +306,7 @@ class CAdminAppearance extends AdminSecBaseModel
                 // The section must be one the active theme actually offers, so a
                 // forged post cannot invent a location.
                 $locations = osc_widget_locations();
-                $widgetRow = $moved > 0 ? Widget::newInstance()->findByPrimaryKey($moved) : null;
+                $widgetRow = $moved > 0 ? Widget::getInstance()->findByPrimaryKey($moved) : null;
                 $ok        = false;
 
                 if ($widgetRow !== null && is_string($location) && isset($locations[$location])) {
@@ -316,13 +316,13 @@ class CAdminAppearance extends AdminSecBaseModel
                     \mindstellar\cache\CacheGroup::invalidate('widget');
                     // Only ids that live in the target section after the move.
                     $validIds = array();
-                    foreach (Widget::newInstance()->findByLocation($location) as $widget) {
+                    foreach (Widget::getInstance()->findByLocation($location) as $widget) {
                         $validIds[(int)$widget['pk_i_id']] = true;
                     }
                     $ids = array_values(array_filter($ids, static function ($id) use ($validIds) {
                         return isset($validIds[$id]);
                     }));
-                    $ok = Widget::newInstance()->reorder($ids);
+                    $ok = Widget::getInstance()->reorder($ids);
                     osc_purge_page_cache('widget');
                 }
 
@@ -344,14 +344,14 @@ class CAdminAppearance extends AdminSecBaseModel
                 // Defence in depth: only reorder ids that currently belong to this
                 // location, so a forged post cannot move widgets from elsewhere.
                 $validIds = array();
-                foreach (Widget::newInstance()->findByLocation($location) as $widget) {
+                foreach (Widget::getInstance()->findByLocation($location) as $widget) {
                     $validIds[(int) $widget['pk_i_id']] = true;
                 }
                 $ids = array_values(array_filter($ids, static function ($id) use ($validIds) {
                     return isset($validIds[$id]);
                 }));
 
-                $ok = Widget::newInstance()->reorder($ids);
+                $ok = Widget::getInstance()->reorder($ids);
                 if ($ok) {
                     osc_purge_page_cache('widget');
                 }
@@ -363,7 +363,7 @@ class CAdminAppearance extends AdminSecBaseModel
                 osc_csrf_check();
                 // Only an installed theme, the same rule theme:activate applies on the CLI.
                 $theme = Params::getParamString('theme');
-                if (!in_array($theme, WebThemes::newInstance()->getListThemes(), true)) {
+                if (!in_array($theme, WebThemes::getInstance()->getListThemes(), true)) {
                     osc_add_flash_error_message(_m('That theme is not installed.'), 'admin');
                     $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
                     break;
@@ -378,7 +378,7 @@ class CAdminAppearance extends AdminSecBaseModel
                 break;
             case ('render'):
                 if (Params::existParam('route')) {
-                    $routes = Rewrite::newInstance()->getRoutes();
+                    $routes = Rewrite::getInstance()->getRoutes();
                     $rid    = Params::getParam('route');
                     $file   = '../';
                     if (isset($routes[$rid]['file'])) {
@@ -418,7 +418,7 @@ class CAdminAppearance extends AdminSecBaseModel
                     osc_admin_toolbar_update_themes(true);
                 }
 
-                $themes = WebThemes::newInstance()->getListThemes();
+                $themes = WebThemes::getInstance()->getListThemes();
 
                 //preparing variables for the view
                 $this->_exportVariableToView('themes', $themes);

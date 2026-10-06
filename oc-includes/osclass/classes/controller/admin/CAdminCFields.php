@@ -35,7 +35,7 @@ class CAdminCFields extends AdminSecBaseModel
         parent::__construct();
 
         //specific things for this class
-        $this->fieldManager = Field::newInstance();
+        $this->fieldManager = Field::getInstance();
         osc_run_hook('init_admin_fields');
     }
 
@@ -57,7 +57,7 @@ class CAdminCFields extends AdminSecBaseModel
                 $this->submissionsView();
                 break;
             default:
-                $categories = Category::newInstance()->toTreeAll();
+                $categories = Category::getInstance()->toTreeAll();
                 $selected   = array();
                 foreach ($categories as $c) {
                     $selected[] = $c['pk_i_id'];
@@ -72,7 +72,7 @@ class CAdminCFields extends AdminSecBaseModel
                 // for the two-pane drag-and-drop builder.
                 $allFields = $this->fieldManager->listAll();
                 $service   = new \mindstellar\form\builder\FormService();
-                $groupModel = FieldGroup::newInstance();
+                $groupModel = FieldGroup::getInstance();
                 $forms     = $groupModel->listAll();
                 foreach ($forms as &$form) {
                     $form['field_ids']    = $service->formFieldIds((int)$form['pk_i_id']);
@@ -142,7 +142,7 @@ class CAdminCFields extends AdminSecBaseModel
     private function submissionsView()
     {
         $submissionModel = new \mindstellar\model\FormSubmission();
-        $forms           = FieldGroup::newInstance()->listAll();
+        $forms           = FieldGroup::getInstance()->listAll();
 
         // Which form to show — the requested one, else the first with entries, else
         // the first form.
@@ -184,7 +184,7 @@ class CAdminCFields extends AdminSecBaseModel
             }
             $submissions  = $submissionModel->listByForm($formId, $status, $perPage, ($page - 1) * $perPage);
             $statusCounts = $submissionModel->statusCounts($formId);
-            $formFields   = Field::newInstance()->findByGroup($formId);
+            $formFields   = Field::getInstance()->findByGroup($formId);
             // attach each submission's values
             foreach ($submissions as &$s) {
                 $s['values'] = $submissionModel->valuesFor((int)$s['pk_i_id']);

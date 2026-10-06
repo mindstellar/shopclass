@@ -114,7 +114,7 @@ class ActionThrottle
         try {
             $since = date('Y-m-d H:i:s', time() - (int)$windowSeconds);
 
-            return LoginAttempt::newInstance()->countByIpContext($context, $ip, $since) >= $max;
+            return LoginAttempt::getInstance()->countByIpContext($context, $ip, $since) >= $max;
         } catch (\Throwable $e) {
             self::unavailable($e);
 
@@ -139,7 +139,7 @@ class ActionThrottle
 
         try {
             // Account is empty: these limits key on the address, not a name.
-            LoginAttempt::newInstance()->record($context, '', $ip, date('Y-m-d H:i:s'));
+            LoginAttempt::getInstance()->record($context, '', $ip, date('Y-m-d H:i:s'));
         } catch (\Throwable $e) {
             self::unavailable($e);
         }

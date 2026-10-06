@@ -494,7 +494,7 @@ class Connection
         }
         $display = $params === [] ? $sql : $this->interpolate($sql, $params);
         $errno   = (int) $this->conn->errno;
-        \LogDatabase::newInstance()->addMessage(
+        \LogDatabase::getInstance()->addMessage(
             $display,
             microtime(true) - $start,
             $errno,
@@ -578,7 +578,7 @@ class Connection
             }
 
             if ($rows !== []) {
-                \LogDatabase::newInstance()->addExplainMessage($display, $rows);
+                \LogDatabase::getInstance()->addExplainMessage($display, $rows);
             }
         } catch (Throwable $e) {
             // A plan we could not fetch is not worth failing (or logging) the request over.

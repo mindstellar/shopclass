@@ -24,7 +24,7 @@ function osc_cache_add($key, $data, $expire = 0)
 {
     $key .= osc_current_user_locale();
 
-    return Object_Cache_Factory::newInstance()->add($key, $data, $expire);
+    return Object_Cache_Factory::getInstance()->add($key, $data, $expire);
 }
 
 /**
@@ -37,7 +37,7 @@ function osc_cache_add($key, $data, $expire = 0)
  */
 function osc_cache_close()
 {
-    $cache = Object_Cache_Factory::newInstance();
+    $cache = Object_Cache_Factory::getInstance();
 
     return method_exists($cache, 'close') ? $cache->close() : true;
 }
@@ -53,7 +53,7 @@ function osc_cache_delete($key)
 {
     $key .= osc_current_user_locale();
 
-    return Object_Cache_Factory::newInstance()->delete($key);
+    return Object_Cache_Factory::getInstance()->delete($key);
 }
 
 /**
@@ -63,7 +63,7 @@ function osc_cache_delete($key)
  */
 function osc_cache_flush()
 {
-    return Object_Cache_Factory::newInstance()->flush();
+    return Object_Cache_Factory::getInstance()->flush();
 }
 
 /**
@@ -76,7 +76,7 @@ function osc_cache_flush()
  */
 function osc_cache_stats()
 {
-    $cache = Object_Cache_Factory::newInstance();
+    $cache = Object_Cache_Factory::getInstance();
     if (!method_exists($cache, 'statsData')) {
         return null;
     }
@@ -104,7 +104,7 @@ function osc_cache_stats()
 function osc_cache_increment($key, $by = 1, $initial = 0, $expire = 0)
 {
     $key  .= osc_current_user_locale();
-    $cache = Object_Cache_Factory::newInstance();
+    $cache = Object_Cache_Factory::getInstance();
 
     if (method_exists($cache, 'increment')) {
         return (int)$cache->increment($key, $by, $initial, $expire);
@@ -125,7 +125,7 @@ function osc_cache_increment($key, $by = 1, $initial = 0, $expire = 0)
  */
 function osc_cache_init()
 {
-    Object_Cache_Factory::newInstance();
+    Object_Cache_Factory::getInstance();
 }
 
 /**
@@ -140,7 +140,7 @@ function osc_cache_get($key, &$found)
 {
     $key .= osc_current_user_locale();
 
-    return Object_Cache_Factory::newInstance()->get($key, $found);
+    return Object_Cache_Factory::getInstance()->get($key, $found);
 }
 
 /**
@@ -156,7 +156,7 @@ function osc_cache_set($key, $data, $expire = 0)
 {
     $key .= osc_current_user_locale();
 
-    return Object_Cache_Factory::newInstance()->set($key, $data, $expire);
+    return Object_Cache_Factory::getInstance()->set($key, $data, $expire);
 }
 
 /**
@@ -181,7 +181,7 @@ function osc_invalidate_item_cache($itemId)
     }
 
     $baseKey = md5(osc_base_url() . 'ItemResource:getAllResourcesFromItem:' . $itemId);
-    $cache   = Object_Cache_Factory::newInstance();
+    $cache   = Object_Cache_Factory::getInstance();
 
     $locales = function_exists('osc_get_locales') ? osc_get_locales() : array();
     if (empty($locales)) {
@@ -223,7 +223,7 @@ function osc_invalidate_user_cache($userId)
     }
 
     $baseKey = md5(osc_base_url() . 'User:findByPrimaryKey:' . $userId);
-    $cache   = Object_Cache_Factory::newInstance();
+    $cache   = Object_Cache_Factory::getInstance();
 
     $locales = function_exists('osc_get_locales') ? osc_get_locales() : array();
     if (empty($locales)) {

@@ -45,7 +45,7 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hDatabase.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hJobs.php';
 require_once ABS_PATH . 'oc-includes/osclass/utils.php';
 
-Preference::newInstance();
+Preference::getInstance();
 
 $p      = DB_TABLE_PREFIX;
 $locale = seed_locale($admin);

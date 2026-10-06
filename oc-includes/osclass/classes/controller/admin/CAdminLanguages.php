@@ -34,7 +34,7 @@ class CAdminLanguages extends AdminSecBaseModel
         parent::__construct();
 
         //specific things for this class
-        $this->localeManager = OSCLocale::newInstance();
+        $this->localeManager = OSCLocale::getInstance();
         osc_run_hook('init_admin_languages');
     }
 
@@ -148,7 +148,7 @@ class CAdminLanguages extends AdminSecBaseModel
                         }
                     }
                     if (isset($importedLocale)) {
-                        OSCLocale::newInstance()->insertLocaleInfo($importedLocale, $languageToImport);
+                        OSCLocale::getInstance()->insertLocaleInfo($importedLocale, $languageToImport);
                         // inserting e-mail translations get mail.json from github
                         $mailJSON =
                             osc_file_get_contents(osc_get_i18n_repository_url('src/translations/' . $languageToImport . '/mail.json'));
@@ -516,7 +516,7 @@ class CAdminLanguages extends AdminSecBaseModel
 
                 $p_iPage = ListPaging::page();
 
-                $aLanguages = OSCLocale::newInstance()->listAll();
+                $aLanguages = OSCLocale::getInstance()->listAll();
 
                 // pagination
                 $limit = ListPaging::length();
@@ -672,7 +672,7 @@ class CAdminLanguages extends AdminSecBaseModel
     private function importEmailJson($mailJSON)
     {
         if ($mailJSON) {
-            $mailImported = Page::newInstance()->importEmailJsonTemplates($mailJSON);
+            $mailImported = Page::getInstance()->importEmailJsonTemplates($mailJSON);
             if (!$mailImported) {
                 osc_add_flash_error_message(_m('There was a problem importing email templates'), 'admin');
             }

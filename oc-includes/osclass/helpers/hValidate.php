@@ -162,13 +162,13 @@ function osc_validate_range($value, $min = 6, $max = 255)
 function osc_validate_location($city, $sCity, $region, $sRegion, $country, $sCountry)
 {
     if (osc_validate_nozero($city) && osc_validate_nozero($region) && osc_validate_text($country, 2)) {
-        $data      = Country::newInstance()->findByCode($country);
+        $data      = Country::getInstance()->findByCode($country);
         $countryId = $data['pk_c_code'];
         if ($countryId) {
-            $data     = Region::newInstance()->findByPrimaryKey($region);
+            $data     = Region::getInstance()->findByPrimaryKey($region);
             $regionId = $data['pk_i_id'];
             if ($data['b_active'] == 1) {
-                $data = City::newInstance()->findByPrimaryKey($city);
+                $data = City::getInstance()->findByPrimaryKey($city);
                 if ($data['b_active'] == 1 && $data['fk_i_region_id'] == $regionId
                     && strtolower($data['fk_c_country_code']) == strtolower($countryId)
                 ) {
@@ -197,7 +197,7 @@ function osc_validate_location($city, $sCity, $region, $sRegion, $country, $sCou
 function osc_validate_category($value)
 {
     if (osc_validate_nozero($value)) {
-        $data = Category::newInstance()->findByPrimaryKey($value);
+        $data = Category::getInstance()->findByPrimaryKey($value);
         if (isset($data['b_enabled']) && $data['b_enabled'] == 1) {
             if (osc_selectable_parent_categories()) {
                 return true;
@@ -270,7 +270,7 @@ function osc_validate_spam_delay($type = 'item')
 
     // Allowed when this address has not posted of this kind within the delay window. The
     // throttle records live in the DB now (see ItemActions), not the session.
-    return LoginAttempt::newInstance()->countByIpContext(
+    return LoginAttempt::getInstance()->countByIpContext(
         $context,
         (string)Params::getServerParam('REMOTE_ADDR'),
         date('Y-m-d H:i:s', time() - (int)$delay)

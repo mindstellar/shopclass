@@ -156,7 +156,7 @@ class AdminSecBaseModel
 
     public function _exportVariableToView($key, $value)
     {
-        View::newInstance()->_exportVariableToView($key, $value);
+        View::getInstance()->_exportVariableToView($key, $value);
     }
 
     /** Mirrors the real guard: flashes, redirects, and says that it refused. */
@@ -267,8 +267,8 @@ function drive(string $pageId, array $fields, string $action = 'custom_post'): a
 /** What core's shared view actually emits for a page, with the theme chrome stubbed out. */
 function draw(array $spec, array $stored): string
 {
-    View::newInstance()->_exportVariableToView('settings_page', $spec);
-    View::newInstance()->_exportVariableToView('settings_values', $stored);
+    View::getInstance()->_exportVariableToView('settings_page', $spec);
+    View::getInstance()->_exportVariableToView('settings_values', $stored);
 
     ob_start();
     require ABS_PATH . 'oc-includes/osclass/gui/admin/settings-page.php';
@@ -611,7 +611,7 @@ harness_section('a page that declared no store still writes preferences');
 $result = post('prefs', array('s_name' => 'Carol'));
 pin('the preference page saves cleanly', array(), $result['errors']);
 pin('and writes its one value', 1, $result['updated']);
-pin('into the page section', 'Carol', Preference::newInstance()->get('s_name', 'prefs'));
+pin('into the page section', 'Carol', Preference::getInstance()->get('s_name', 'prefs'));
 pin('reading it back goes through the same store', 'Carol', osc_settings_value('prefs', 's_name'));
 // Preferences are keyed by name, not by row, so there is nothing for an id to mean and
 // the effects keep being handed null -- unchanged from before the store existed.
@@ -626,12 +626,12 @@ pin('and no ban rule was written by it', 4, rows($admin, 't_ban_rule'));
 // unchanged save reports a change and the screen can never say "Nothing to update".
 $result = post('prefs', array('s_name' => 'Carol'));
 pin('re-posting the same value changes nothing', 0, $result['updated']);
-pin('and the stored value is still there', 'Carol', Preference::newInstance()->get('s_name', 'prefs'));
+pin('and the stored value is still there', 'Carol', Preference::getInstance()->get('s_name', 'prefs'));
 $result = post('prefs', array('s_name' => 'Carol '));
 pin('a value that only differs by the trim is no change either', 0, $result['updated']);
 $result = post('prefs', array('s_name' => 'Dave'));
 pin('changing it is one change', 1, $result['updated']);
-pin('and the new value is stored', 'Dave', Preference::newInstance()->get('s_name', 'prefs'));
+pin('and the new value is stored', 'Dave', Preference::getInstance()->get('s_name', 'prefs'));
 
 // get() answers '' both for a key that is absent and for one stored empty, so a
 // write-only-if-changed that compared values would skip the write that creates the row --
@@ -641,8 +641,8 @@ $result = post('prefs_blank', array('s_opt' => ''));
 pin('a first save of a blank value is still a write', 1, $result['updated']);
 check(
     'so the key exists rather than staying absent',
-    array_key_exists('s_opt', Preference::newInstance()->getSection('prefs_blank')),
-    var_export(Preference::newInstance()->getSection('prefs_blank'), true)
+    array_key_exists('s_opt', Preference::getInstance()->getSection('prefs_blank')),
+    var_export(Preference::getInstance()->getSection('prefs_blank'), true)
 );
 $result = post('prefs_blank', array('s_opt' => ''));
 pin('and saving the same blank again changes nothing', 0, $result['updated']);
@@ -663,17 +663,17 @@ pin('the mapped page saves cleanly on update', array(), $result['errors']);
 pin(
     'a field with a column lands under that key, punctuation and all',
     'value',
-    Preference::newInstance()->get('stored@as', 'mapped')
+    Preference::getInstance()->get('stored@as', 'mapped')
 );
-pin('and not under the name of its control', '', Preference::newInstance()->get('shown_as', 'mapped'));
-pin('a field that is stored nowhere is stored nowhere', '', Preference::newInstance()->get('helper', 'mapped'));
+pin('and not under the name of its control', '', Preference::getInstance()->get('shown_as', 'mapped'));
+pin('a field that is stored nowhere is stored nowhere', '', Preference::getInstance()->get('helper', 'mapped'));
 check('with no row of its own in the table', pref_type($admin, 'mapped', 'helper') === null);
-pin('a derived value is what its callable returned', '7', Preference::newInstance()->get('switch', 'mapped'));
-pin('a secret that was typed is written', 'sekrit', Preference::newInstance()->get('token', 'mapped'));
+pin('a derived value is what its callable returned', '7', Preference::getInstance()->get('switch', 'mapped'));
+pin('a secret that was typed is written', 'sekrit', Preference::getInstance()->get('token', 'mapped'));
 
 $result = post('prefs_mapped', array('shown_as' => 'value', 'helper' => '7', 'switch' => '', 'token' => ''));
-pin('the derivation answers the other way when the switch is off', '-1', Preference::newInstance()->get('switch', 'mapped'));
-pin('and a callable returning null leaves the value alone', 'sekrit', Preference::newInstance()->get('token', 'mapped'));
+pin('the derivation answers the other way when the switch is off', '-1', Preference::getInstance()->get('switch', 'mapped'));
+pin('and a callable returning null leaves the value alone', 'sekrit', Preference::getInstance()->get('token', 'mapped'));
 
 // Nothing in core reads e_type, but it is what a site owner sees looking at the table and
 // what the screens this replaced had already decided, so it is derived rather than dropped.
@@ -1421,7 +1421,7 @@ pin('and nothing was drawn before the refusal', '', $driven['drawn']);
 // The control, without which the guard could refuse every page and still look right.
 $driven = drive('prefs', array('s_name' => 'Through the controller'));
 pin('the same controller serves a preference page', array(array('ok', 'Settings have been updated')), $driven['flashes']);
-pin('writing its value', 'Through the controller', Preference::newInstance()->get('s_name', 'prefs'));
+pin('writing its value', 'Through the controller', Preference::getInstance()->get('s_name', 'prefs'));
 pin('and sending the admin back to the page', array(osc_settings_page_url('prefs')), $driven['redirects']);
 
 // The cheap extra: the guard has to be asked before the action switch, or the save has

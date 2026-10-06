@@ -29,18 +29,18 @@ if (!defined('ABS_PATH')) {
     <div class="col-md-12 text-center">
         <div class="form-signin">
             <h1 class="mb-3">
-                <a href="<?php echo View::newInstance()->_get('login_admin_url'); ?>"
-                   title="<?php echo View::newInstance()->_get('login_admin_title'); ?>">
-                    <img class="img-fluid" src="<?php echo View::newInstance()->_get('login_admin_image'); ?>"
+                <a href="<?php echo View::getInstance()->_get('login_admin_url'); ?>"
+                   title="<?php echo View::getInstance()->_get('login_admin_title'); ?>">
+                    <img class="img-fluid" src="<?php echo View::getInstance()->_get('login_admin_image'); ?>"
                          title="<?php echo
-                            View::newInstance()->_get('login_admin_title'); ?>"
-                         alt="<?php echo View::newInstance()->_get('login_admin_title'); ?>"/>
+                            View::getInstance()->_get('login_admin_title'); ?>"
+                         alt="<?php echo View::getInstance()->_get('login_admin_title'); ?>"/>
                 </a>
             </h1>
             <div class="mb-3">
                 <?php osc_show_flash_message('admin', 'alert'); ?>
             </div>
-            <?php require_once osc_admin_base_path() . View::newInstance()->_get('login_admin_form'); ?>
+            <?php require_once osc_admin_base_path() . View::getInstance()->_get('login_admin_form'); ?>
         </div>
         <script type="text/javascript" src="<?php echo osc_assets_url('bootstrap/bootstrap.min.js'); ?>"></script>
         <script type="text/javascript">

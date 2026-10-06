@@ -45,7 +45,7 @@ require_once __DIR__ . '/../lib/harness.php';
 
 $admin = scratchdb_session('osc_models_keywordblock');
 
-$model = KeywordBlock::newInstance();
+$model = KeywordBlock::getInstance();
 $table = DB_TABLE_PREFIX . 't_keyword_block';
 
 /**

@@ -88,7 +88,7 @@ class Csrf
      */
     public function __construct()
     {
-        $this->session = Session::newInstance();
+        $this->session = Session::getInstance();
     }
 
     /**

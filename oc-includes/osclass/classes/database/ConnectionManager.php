@@ -530,7 +530,7 @@ class ConnectionManager
      */
     private function debug($printFrontend = true)
     {
-        $log = \LogDatabase::newInstance();
+        $log = \LogDatabase::getInstance();
 
         if (OSC_DEBUG_DB_EXPLAIN) {
             $log->writeExplainMessages();

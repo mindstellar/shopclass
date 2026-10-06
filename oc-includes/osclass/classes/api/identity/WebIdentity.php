@@ -42,14 +42,14 @@ final class WebIdentity
 
     public static function forget(): void
     {
-        self::$signIn = SignInCookie::from(Cookie::newInstance()->val);
-        Session::newInstance()->_forgetForRequest(self::SESSION_KEYS);
-        $cookie = Cookie::newInstance();
+        self::$signIn = SignInCookie::from(Cookie::getInstance()->val);
+        Session::getInstance()->_forgetForRequest(self::SESSION_KEYS);
+        $cookie = Cookie::getInstance();
         foreach (self::COOKIES as $name) {
             $cookie->pop($name);
         }
         // An empty user row reads as "nobody", and stops osc_resolve_web_user() looking again.
-        View::newInstance()->_exportVariableToView('_loggedUser', []);
+        View::getInstance()->_exportVariableToView('_loggedUser', []);
     }
 
     /**
@@ -78,7 +78,7 @@ final class WebIdentity
      */
     public static function assumeAdmin(array $admin): void
     {
-        $session = Session::newInstance();
+        $session = Session::getInstance();
         $session->_setEphemeral('adminId', (string) $admin['pk_i_id']);
         $session->_setEphemeral('adminUserName', (string) ($admin['s_username'] ?? ''));
         $session->_setEphemeral('adminName', (string) ($admin['s_name'] ?? ''));

@@ -136,7 +136,7 @@ final class OpenApi
      */
     private function cached(): array
     {
-        if (!function_exists('osc_cache_get') || \Object_Cache_Factory::newInstance() instanceof \Object_Cache_default) {
+        if (!function_exists('osc_cache_get') || \Object_Cache_Factory::getInstance() instanceof \Object_Cache_default) {
             return $this->build();
         }
         $key = 'api_openapi_' . $this->fingerprint();

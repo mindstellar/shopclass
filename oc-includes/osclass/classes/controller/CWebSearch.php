@@ -28,7 +28,7 @@ class CWebSearch extends BaseModel
     {
         parent::__construct();
 
-        $this->mSearch = Search::newInstance();
+        $this->mSearch = Search::getInstance();
 
         $request = array();
         foreach (array('sCategory', 'sFeed') as $key) {
@@ -180,7 +180,7 @@ class CWebSearch extends BaseModel
             $p_sPattern  = $criteria->pattern();
             $savePattern = osc_apply_filter('save_latest_searches_pattern', $p_sPattern);
             if ($savePattern != '') {
-                LatestSearches::newInstance()->insert(array(
+                LatestSearches::getInstance()->insert(array(
                     's_search' => $savePattern,
                     'd_date'   => date('Y-m-d H:i:s')
                 ));
@@ -205,7 +205,7 @@ class CWebSearch extends BaseModel
         $p_sCountry  = implode(', ', $criteria->countries());
         $countryName = $p_sCountry;
         if (strlen($p_sCountry) == 2) {
-            $c = Country::newInstance()->findByCode($p_sCountry);
+            $c = Country::getInstance()->findByCode($p_sCountry);
             if ($c) {
                 $countryName = $c['s_name'];
             }
@@ -213,7 +213,7 @@ class CWebSearch extends BaseModel
         $p_sRegion  = implode(', ', $criteria->regions());
         $regionName = $p_sRegion;
         if (is_numeric($p_sRegion)) {
-            $r = Region::newInstance()->findByPrimaryKey($p_sRegion);
+            $r = Region::getInstance()->findByPrimaryKey($p_sRegion);
             if ($r) {
                 $regionName = $r['s_name'];
             }
@@ -221,7 +221,7 @@ class CWebSearch extends BaseModel
         $p_sCity  = implode(', ', $criteria->cities());
         $cityName = $p_sCity;
         if (is_numeric($p_sCity)) {
-            $c = City::newInstance()->findByPrimaryKey($p_sCity);
+            $c = City::getInstance()->findByPrimaryKey($p_sCity);
             if ($c) {
                 $cityName = $c['s_name'];
             }
@@ -271,7 +271,7 @@ class CWebSearch extends BaseModel
         $this->_exportVariableToView('search_alert', $encoded_alert);
         $alerts_sub = 0;
         if (osc_is_web_user_logged_in()) {
-            $alerts = Alerts::newInstance()->findBySearchAndUser($json, osc_logged_user_id());
+            $alerts = Alerts::getInstance()->findBySearchAndUser($json, osc_logged_user_id());
             if (count($alerts) > 0) {
                 $alerts_sub = 1;
             }
@@ -419,10 +419,10 @@ class CWebSearch extends BaseModel
         return new \mindstellar\search\SearchUriResolver(
             (string)osc_get_preference('rewrite_search_url'),
             osc_base_url(),
-            static fn ($id) => Region::newInstance()->findByPrimaryKey($id),
-            static fn ($id) => City::newInstance()->findByPrimaryKey($id),
+            static fn ($id) => Region::getInstance()->findByPrimaryKey($id),
+            static fn ($id) => City::getInstance()->findByPrimaryKey($id),
             static fn ($value) => self::findCategory($value),
-            static fn ($slug) => Category::newInstance()->findBySlug($slug),
+            static fn ($slug) => Category::getInstance()->findBySlug($slug),
             fn ($slug) => $this->categorySlugRedirectUrl($slug)
         );
     }
@@ -473,7 +473,7 @@ class CWebSearch extends BaseModel
     {
         osc_run_hook('before_html');
         osc_current_web_theme_path($file);
-        Session::newInstance()->_clearVariables();
+        Session::getInstance()->_clearVariables();
         osc_run_hook('after_html');
     }
 
@@ -515,9 +515,9 @@ class CWebSearch extends BaseModel
      */
     public static function findCategory($value)
     {
-        $category = Category::newInstance()->findBySlug($value);
+        $category = Category::getInstance()->findBySlug($value);
         if (empty($category) && is_numeric($value)) {
-            $byId = Category::newInstance()->findByPrimaryKey($value);
+            $byId = Category::getInstance()->findByPrimaryKey($value);
             if (!empty($byId)) {
                 return $byId;
             }
@@ -589,7 +589,7 @@ class CWebSearch extends BaseModel
         if (count($rows) === 0) {
             return null;
         }
-        $category = Category::newInstance()->findByPrimaryKey((int)$rows[0]['fk_i_category_id']);
+        $category = Category::getInstance()->findByPrimaryKey((int)$rows[0]['fk_i_category_id']);
         if (!$category || (int)$category['b_enabled'] === 0) {
             return null; // deleted/disabled -> let the caller 404
         }

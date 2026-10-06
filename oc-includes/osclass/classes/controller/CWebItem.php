@@ -42,12 +42,12 @@ class CWebItem extends BaseModel
     public function __construct()
     {
         parent::__construct();
-        $this->itemManager = Item::newInstance();
+        $this->itemManager = Item::getInstance();
 
         // here allways userId == ''
         if (osc_is_web_user_logged_in()) {
             $this->userId = osc_logged_user_id();
-            $this->user   = User::newInstance()->findByPrimaryKey($this->userId);
+            $this->user   = User::getInstance()->findByPrimaryKey($this->userId);
         } else {
             $this->userId = null;
             $this->user   = null;
@@ -76,7 +76,7 @@ class CWebItem extends BaseModel
             return;
         }
 
-        $locales = OSCLocale::newInstance()->listAllEnabled();
+        $locales = OSCLocale::getInstance()->listAllEnabled();
         $this->_exportVariableToView('locales', $locales);
 
         switch ($this->action) {
@@ -101,7 +101,7 @@ class CWebItem extends BaseModel
                     $this->redirectTo(osc_user_list_items_url());
                 }
 
-                $countries = Country::newInstance()->listAll();
+                $countries = Country::getInstance()->listAll();
 
                 // Regions and cities follow a country and a region the seller
                 // actually chose. Falling back to the first country listed filled
@@ -112,35 +112,35 @@ class CWebItem extends BaseModel
                 $regionId  = $this->user['fk_i_region_id'] ?? '';
 
                 $regions = $countryId != ''
-                    ? Region::newInstance()->findByCountry($countryId)
+                    ? Region::getInstance()->findByCountry($countryId)
                     : array();
                 $cities = $regionId != ''
-                    ? City::newInstance()->findByRegion($regionId)
+                    ? City::getInstance()->findByRegion($regionId)
                     : array();
 
                 $this->_exportVariableToView('countries', $countries);
                 $this->_exportVariableToView('regions', $regions);
                 $this->_exportVariableToView('cities', $cities);
 
-                $form     = count(Session::newInstance()->_getForm());
-                $keepForm = count(Session::newInstance()->_getKeepForm());
+                $form     = count(Session::getInstance()->_getForm());
+                $keepForm = count(Session::getInstance()->_getKeepForm());
                 if ($form == 0 || $form == $keepForm) {
-                    Session::newInstance()->_dropKeepForm();
+                    Session::getInstance()->_dropKeepForm();
                 }
                 if ($form == 0) {
                     // Fresh post form (no submitted data to restore): drop any temp
                     // uploads a previous, abandoned posting left in the session so they
                     // can't silently attach to this new listing.
-                    ItemTmpUpload::newInstance()->deleteByToken(osc_upload_token());
+                    ItemTmpUpload::getInstance()->deleteByToken(osc_upload_token());
                 }
 
-                if (Session::newInstance()->_getForm('countryId') != '') {
-                    $countryId = Session::newInstance()->_getForm('countryId');
-                    $regions   = Region::newInstance()->findByCountry($countryId);
+                if (Session::getInstance()->_getForm('countryId') != '') {
+                    $countryId = Session::getInstance()->_getForm('countryId');
+                    $regions   = Region::getInstance()->findByCountry($countryId);
                     $this->_exportVariableToView('regions', $regions);
-                    if (Session::newInstance()->_getForm('regionId') != '') {
-                        $regionId = Session::newInstance()->_getForm('regionId');
-                        $cities   = City::newInstance()->findByRegion($regionId);
+                    if (Session::getInstance()->_getForm('regionId') != '') {
+                        $regionId = Session::getInstance()->_getForm('regionId');
+                        $cities   = City::getInstance()->findByRegion($regionId);
                         $this->_exportVariableToView('cities', $cities);
                     }
                 }
@@ -155,14 +155,14 @@ class CWebItem extends BaseModel
                 // SAVE form data before CSRF CHECK
                 $formData = ListingInput::read(false, true);
                 foreach ($formData as $key => $value) {
-                    Session::newInstance()->_setForm($key, $value);
+                    Session::getInstance()->_setForm($key, $value);
                 }
 
                 $meta = Params::getParam('meta');
                 if (is_array($meta)) {
                     foreach ($meta as $key => $value) {
-                        Session::newInstance()->_setForm('meta_' . $key, $value);
-                        Session::newInstance()->_keepForm('meta_' . $key);
+                        Session::getInstance()->_setForm('meta_' . $key, $value);
+                        Session::getInstance()->_keepForm('meta_' . $key);
                     }
                 }
 
@@ -184,7 +184,7 @@ class CWebItem extends BaseModel
 
                 if (ListingPolicy::usesAccountEmail($this->actor(false), (string) $formData['contactEmail'])) {
                     foreach ($formData as $key => $value) {
-                        Session::newInstance()->_keepForm($key);
+                        Session::getInstance()->_keepForm($key);
                     }
                     osc_add_flash_error_message(ListingService::accountEmailMessage());
                     $this->redirectTo(osc_user_login_url());
@@ -205,13 +205,13 @@ class CWebItem extends BaseModel
 
                 if (is_array($meta)) {
                     foreach ($meta as $key => $value) {
-                        Session::newInstance()->_dropKeepForm('meta_' . $key);
+                        Session::getInstance()->_dropKeepForm('meta_' . $key);
                     }
                 }
-                Session::newInstance()->_clearVariables();
+                Session::getInstance()->_clearVariables();
                 // Uploads were consumed by the successful post; drop the session
                 // mapping so it can't bleed into the next listing.
-                ItemTmpUpload::newInstance()->deleteByToken(osc_upload_token());
+                ItemTmpUpload::getInstance()->deleteByToken(osc_upload_token());
                 if ($saved->needsValidation()) {
                     osc_add_flash_ok_message(_m('Check your inbox to validate your listing'));
                 } elseif (osc_moderate_admin_post()) {
@@ -221,8 +221,8 @@ class CWebItem extends BaseModel
                 }
 
                 $category =
-                    Category::newInstance()->findByPrimaryKey(Params::getParam('catId'));
-                View::newInstance()->_exportVariableToView('category', $category);
+                    Category::getInstance()->findByPrimaryKey(Params::getParam('catId'));
+                View::getInstance()->_exportVariableToView('category', $category);
                 // Let a theme or plugin send the seller somewhere other than the category
                 // search page after publishing — e.g. straight to the new listing.
                 $this->redirectTo(
@@ -234,15 +234,15 @@ class CWebItem extends BaseModel
                 $id     = Params::getParamInt('id');
                 $item   = $this->editable($id, $secret);
                 if ($item !== null) {
-                    $form     = count(Session::newInstance()->_getForm());
-                    $keepForm = count(Session::newInstance()->_getKeepForm());
+                    $form     = count(Session::getInstance()->_getForm());
+                    $keepForm = count(Session::getInstance()->_getKeepForm());
                     if ($form == 0 || $form == $keepForm) {
-                        Session::newInstance()->_dropKeepForm();
+                        Session::getInstance()->_dropKeepForm();
                     }
                     if ($form == 0) {
                         // Fresh edit form: drop temp uploads left by an earlier,
                         // abandoned posting so they can't attach to this item.
-                        ItemTmpUpload::newInstance()->deleteByToken(osc_upload_token());
+                        ItemTmpUpload::getInstance()->deleteByToken(osc_upload_token());
                     }
 
                     $this->_exportVariableToView('item', $item);
@@ -271,14 +271,14 @@ class CWebItem extends BaseModel
                 $formData = ListingInput::read(false, false);
                 // set all parameters into session
                 foreach ($formData as $key => $value) {
-                    Session::newInstance()->_setForm($key, $value);
+                    Session::getInstance()->_setForm($key, $value);
                 }
 
                 $meta = Params::getParam('meta');
                 if (is_array($meta)) {
                     foreach ($meta as $key => $value) {
-                        Session::newInstance()->_setForm('meta_' . $key, $value);
-                        Session::newInstance()->_keepForm('meta_' . $key);
+                        Session::getInstance()->_setForm('meta_' . $key, $value);
+                        Session::getInstance()->_keepForm('meta_' . $key);
                     }
                 }
 
@@ -316,21 +316,21 @@ class CWebItem extends BaseModel
                     if ($success === 1) {
                         if (is_array($meta)) {
                             foreach ($meta as $key => $value) {
-                                Session::newInstance()->_dropKeepForm('meta_' . $key);
+                                Session::getInstance()->_dropKeepForm('meta_' . $key);
                             }
                         }
-                        Session::newInstance()->_clearVariables();
+                        Session::getInstance()->_clearVariables();
                         // Uploads were consumed by the successful edit; drop the session
                         // mapping so it can't bleed into a later listing.
-                        ItemTmpUpload::newInstance()->deleteByToken(osc_upload_token());
+                        ItemTmpUpload::getInstance()->deleteByToken(osc_upload_token());
                         if (osc_moderate_admin_edit()) {
                             osc_add_flash_ok_message(_m('Your listing will be published after an admin approves the changes.'));
                         } else {
                             osc_add_flash_ok_message(_m("Great! We've just updated your listing"));
                         }
-                        View::newInstance()->_exportVariableToView(
+                        View::getInstance()->_exportVariableToView(
                             'item',
-                            Item::newInstance()->findByPrimaryKey($id)
+                            Item::getInstance()->findByPrimaryKey($id)
                         );
                         $this->redirectTo(osc_item_url());
                     } else {
@@ -358,7 +358,7 @@ class CWebItem extends BaseModel
                     return;
                 }
 
-                View::newInstance()->_exportVariableToView('item', $item[0]);
+                View::getInstance()->_exportVariableToView('item', $item[0]);
                 if ($item[0]['b_active'] == 0) {
                     $success = (new ListingService())->activate((int) $item[0]['pk_i_id'], (string) $item[0]['s_secret']);
 
@@ -421,7 +421,7 @@ class CWebItem extends BaseModel
                     $this->redirectTo(osc_item_edit_url($secret, $item));
                 }
 
-                $aItem = Item::newInstance()->findByPrimaryKey($item);
+                $aItem = Item::getInstance()->findByPrimaryKey($item);
                 if (count($aItem) == 0) {
                     osc_add_flash_error_message(_m("The listing doesn't exist"));
                     $this->redirectTo(osc_item_edit_url($secret, $item));
@@ -433,10 +433,10 @@ class CWebItem extends BaseModel
                     $this->redirectTo(osc_item_edit_url($secret, $item));
                 }
 
-                $result = ItemResource::newInstance()->existResource($id, $code);
+                $result = ItemResource::getInstance()->existResource($id, $code);
 
                 if ($result > 0) {
-                    $resource = ItemResource::newInstance()->findByPrimaryKey($id);
+                    $resource = ItemResource::getInstance()->findByPrimaryKey($id);
 
                     if (ListingPolicy::isPhotoOf($resource, $aItem, $code)
                         && (new PhotoService())->delete((int) $id, (int) $item, $actor, $code)
@@ -462,12 +462,12 @@ class CWebItem extends BaseModel
                 $id = Params::getParam('id');
                 $as = Params::getParam('as');
 
-                $item = Item::newInstance()->findByPrimaryKey($id);
+                $item = Item::getInstance()->findByPrimaryKey($id);
                 if (count($item) == 0) {
                     osc_add_flash_error_message(_m("This listing doesn't exist"));
                     $this->redirectTo(osc_base_url(true));
                 }
-                View::newInstance()->_exportVariableToView('item', $item);
+                View::getInstance()->_exportVariableToView('item', $item);
 
                 // Optional CAPTCHA on the report, when enabled and a provider is active —
                 // the anonymous-abuse gate for installs that want it.
@@ -529,11 +529,11 @@ class CWebItem extends BaseModel
                 $this->notFoundIfHidden($item);
                 $this->_exportVariableToView('item', $item);
 
-                Session::newInstance()->_setForm('yourEmail', Params::getParam('yourEmail'));
-                Session::newInstance()->_setForm('yourName', Params::getParam('yourName'));
-                Session::newInstance()->_setForm('friendName', Params::getParam('friendName'));
-                Session::newInstance()->_setForm('friendEmail', Params::getParam('friendEmail'));
-                Session::newInstance()->_setForm('message_body', Params::getParam('message'));
+                Session::getInstance()->_setForm('yourEmail', Params::getParam('yourEmail'));
+                Session::getInstance()->_setForm('yourName', Params::getParam('yourName'));
+                Session::getInstance()->_setForm('friendName', Params::getParam('friendName'));
+                Session::getInstance()->_setForm('friendEmail', Params::getParam('friendEmail'));
+                Session::getInstance()->_setForm('message_body', Params::getParam('message'));
 
                 if (osc_captcha_enabled() && !osc_check_captcha()) {
                     osc_add_flash_error_message(_m('Please complete the security check.'));
@@ -566,7 +566,7 @@ class CWebItem extends BaseModel
                 if ($sent) {
                     osc_add_flash_ok_message(sprintf(_m('We just sent your message to %s'), Params::getParamString('friendName')));
                 }
-                Session::newInstance()->_clearVariables();
+                Session::getInstance()->_clearVariables();
                 $this->redirectTo(osc_item_url());
                 break;
             case 'contact':
@@ -657,7 +657,7 @@ class CWebItem extends BaseModel
                 osc_csrf_check();
 
                 $itemId = Params::getParamInt('id');
-                $item   = Item::newInstance()->findByPrimaryKey($itemId);
+                $item   = Item::getInstance()->findByPrimaryKey($itemId);
                 $this->notFoundIfHidden($item);
                 $this->_exportVariableToView('item', $item);
 
@@ -700,12 +700,12 @@ class CWebItem extends BaseModel
 
                 $commentId = Params::getParamInt('comment');
                 $itemId    = Params::getParamInt('id');
-                $item      = Item::newInstance()->findByPrimaryKey($itemId);
+                $item      = Item::getInstance()->findByPrimaryKey($itemId);
                 if (!is_array($item) || $item === array()) {
                     osc_add_flash_error_message(_m("This listing doesn't exist"));
                     $this->redirectTo(osc_base_url(true));
                 }
-                View::newInstance()->_exportVariableToView('item', $item);
+                View::getInstance()->_exportVariableToView('item', $item);
 
                 try {
                     (new CommentService())->delete($commentId, $this->actor(false), $itemId);
@@ -775,7 +775,7 @@ class CWebItem extends BaseModel
                         && $item['fk_i_user_id'] == osc_logged_user_id())
                     && osc_apply_filter('count_view_on_render', osc_request_counts_as_view(), $item)
                 ) {
-                    ItemStats::newInstance()->increase('i_num_views', $item['pk_i_id']);
+                    ItemStats::getInstance()->increase('i_num_views', $item['pk_i_id']);
                 }
 
                 // When the client beacon owns counting (default), remember this listing id so the
@@ -797,7 +797,7 @@ class CWebItem extends BaseModel
                 }
 
                 if ($item['fk_i_user_id'] != '') {
-                    $user = User::newInstance()->findByPrimaryKey($item['fk_i_user_id']);
+                    $user = User::getInstance()->findByPrimaryKey($item['fk_i_user_id']);
                     $this->_exportVariableToView('user', $user);
                 }
 
@@ -880,7 +880,7 @@ class CWebItem extends BaseModel
                 && !osc_is_admin_user_logged_in()
                 && !($item['fk_i_user_id'] != '' && $item['fk_i_user_id'] == osc_logged_user_id())
             ) {
-                ItemStats::newInstance()->increase('i_num_views', $id);
+                ItemStats::getInstance()->increase('i_num_views', $id);
             }
         }
 
@@ -902,7 +902,7 @@ class CWebItem extends BaseModel
         if (!osc_gui_page_view($file)) {
             osc_current_web_theme_path($file);
         }
-        Session::newInstance()->_clearVariables();
+        Session::getInstance()->_clearVariables();
         osc_run_hook('after_html');
     }
 
@@ -913,10 +913,10 @@ class CWebItem extends BaseModel
      */
     private function keepCommentForm(array $input): void
     {
-        Session::newInstance()->_setForm('commentAuthorName', trim(strip_tags($input['author_name'])));
-        Session::newInstance()->_setForm('commentAuthorEmail', trim(strip_tags($input['author_email'])));
-        Session::newInstance()->_setForm('commentTitle', trim(strip_tags($input['title'])));
-        Session::newInstance()->_setForm('commentBody', trim(strip_tags($input['body'])));
+        Session::getInstance()->_setForm('commentAuthorName', trim(strip_tags($input['author_name'])));
+        Session::getInstance()->_setForm('commentAuthorEmail', trim(strip_tags($input['author_email'])));
+        Session::getInstance()->_setForm('commentTitle', trim(strip_tags($input['title'])));
+        Session::getInstance()->_setForm('commentBody', trim(strip_tags($input['body'])));
     }
 
     /**

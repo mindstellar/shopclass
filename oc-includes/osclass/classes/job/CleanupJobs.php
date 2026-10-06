@@ -46,7 +46,7 @@ final class CleanupJobs
         if (self::isRunning()) {
             return 0;
         }
-        $engine = Cleanup::newInstance();
+        $engine = Cleanup::getInstance();
         $queued = 0;
         foreach (Cleanup::RULES as $rule) {
             if (!Cleanup::isEnabled($rule) || $engine->countFor($rule, Cleanup::days($rule)) === 0) {
@@ -89,7 +89,7 @@ final class CleanupJobs
             return;
         }
 
-        $engine  = Cleanup::newInstance();
+        $engine  = Cleanup::getInstance();
         $days    = Cleanup::days($rule);
         $removed = $engine->purge($rule, $days, Cleanup::batchLimit());
         $total   = (int) $job->get('removed', 0) + $removed;

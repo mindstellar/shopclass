@@ -185,7 +185,7 @@ final class PermalinkSettingsScreen extends SettingsScreen
         // Rebuild the cached rule table from the just-saved permalink preferences.
         // buildRules() fires the before/after_rewrite_rules hooks and stamps the cache
         // version, so live requests pick the new structure up immediately.
-        Rewrite::newInstance()->rebuildAndPersistRules();
+        Rewrite::getInstance()->rebuildAndPersistRules();
 
         self::reportEnabled(self::writeRules($file, $rules), $file, $rules);
     }

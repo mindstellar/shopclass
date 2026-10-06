@@ -42,7 +42,7 @@ $admin = scratchdb_session('osc_models_page');
 $locale = seed_locale($admin);
 seed_locale($admin, 'fr_FR', 'French');
 
-$model = Page::newInstance();
+$model = Page::getInstance();
 $table = DB_TABLE_PREFIX . 't_pages';
 $dtbl  = DB_TABLE_PREFIX . 't_pages_description';
 

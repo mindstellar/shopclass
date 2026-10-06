@@ -75,13 +75,21 @@ class Sitemap extends DAO
      *
      * @return Sitemap
      */
-    public static function newInstance()
+    public static function getInstance()
     {
         if (!self::$instance instanceof self) {
             self::$instance = new self();
         }
 
         return self::$instance;
+    }
+
+    /**
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
+     */
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     /**
@@ -168,7 +176,7 @@ class Sitemap extends DAO
         }
 
         if (class_exists('Session', false)) {
-            Session::newInstance()->_clearVariables();
+            Session::getInstance()->_clearVariables();
         }
         exit;
     }
@@ -281,7 +289,7 @@ class Sitemap extends DAO
     {
         $xml = $this->render('sitemap_category_xml', false, function () {
             $categories = new Category();
-            View::newInstance()->_exportVariableToView('categories', $categories->listWhere('i_num_items > 0'));
+            View::getInstance()->_exportVariableToView('categories', $categories->listWhere('i_num_items > 0'));
 
             if (osc_count_categories() > 0) {
                 while (osc_has_categories()) {

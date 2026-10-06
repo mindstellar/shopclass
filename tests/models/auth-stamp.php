@@ -83,31 +83,31 @@ $uma = seed_user($admin, 'uma', 'uma@example.test');
 $admin->query("UPDATE {$p}t_user SET s_password = '" . $admin->real_escape_string(password_hash('pass', PASSWORD_BCRYPT, array('cost' => BCRYPT_COST))) . "' WHERE pk_i_id = $uma");
 $admin->query("INSERT INTO {$p}t_admin (pk_i_id, s_name, s_username, s_password, s_email) VALUES (9, 'Boss', 'boss', '"
     . $admin->real_escape_string(password_hash('pass', PASSWORD_BCRYPT, array('cost' => BCRYPT_COST))) . "', 'boss@example.test')");
-Preference::newInstance()->set('enabled_users', '1');
+Preference::getInstance()->set('enabled_users', '1');
 scratchdb_forget_cache();
 
 $userRow  = static fn (): array => $admin->query("SELECT * FROM {$p}t_user WHERE pk_i_id = $uma")->fetch_assoc();
 $adminRow = static fn (): array => $admin->query("SELECT * FROM {$p}t_admin WHERE pk_i_id = 9")->fetch_assoc();
 // A new request: no identity resolved yet, no cached admin row.
 $request = static function (): void {
-    View::newInstance()->_erase('_loggedUser');
-    $session = Session::newInstance();
+    View::getInstance()->_erase('_loggedUser');
+    $session = Session::getInstance();
     foreach (array('userId', 'adminId', 'adminStamp') as $key) {
         $session->_dropEphemeral($key);
         $session->_drop($key);
     }
-    $cookie = Cookie::newInstance();
+    $cookie = Cookie::getInstance();
     foreach (array('oc_userId', 'oc_userSecret', 'oc_adminId', 'oc_adminSecret') as $name) {
         $cookie->pop($name);
     }
     $cache = new ReflectionProperty(Admin::class, 'cachedAdmin');
     $cache->setAccessible(true);
-    $cache->setValue(Admin::newInstance(), array());
+    $cache->setValue(Admin::getInstance(), array());
 };
 $webUser = static function (string $id, string $secret) use ($request): ?int {
     $request();
-    Cookie::newInstance()->push('oc_userId', $id);
-    Cookie::newInstance()->push('oc_userSecret', $secret);
+    Cookie::getInstance()->push('oc_userId', $id);
+    Cookie::getInstance()->push('oc_userSecret', $secret);
     $user = osc_resolve_web_user();
 
     return isset($user['pk_i_id']) ? (int) $user['pk_i_id'] : null;
@@ -115,7 +115,7 @@ $webUser = static function (string $id, string $secret) use ($request): ?int {
 
 harness_section('the column');
 pin('users and admins start at stamp 0', array('0', '0'), array($userRow()['i_auth_stamp'] ?? null, $adminRow()['i_auth_stamp'] ?? null));
-check('the Admin model reads it', array_key_exists('i_auth_stamp', (array) Admin::newInstance()->findByPrimaryKey(9)));
+check('the Admin model reads it', array_key_exists('i_auth_stamp', (array) Admin::getInstance()->findByPrimaryKey(9)));
 $migration = require ABS_PATH . 'oc-includes/osclass/installer/migrations/0062_auth_stamp.php';
 $admin->query("ALTER TABLE {$p}t_admin DROP COLUMN i_auth_stamp");
 $beforeUpgrade = new Admin();
@@ -145,7 +145,7 @@ scratchdb_forget_cache();
 $queries = harness_query_count(static fn () => $webUser((string) $uma, $copied));
 pin('reading the stamp costs no query: the user row and its descriptions, as before', 2, $queries);
 $request();
-Session::newInstance()->_setEphemeral('userId', (string) $uma);
+Session::getInstance()->_setEphemeral('userId', (string) $uma);
 pin('a session-only sign-in from before the cookie still works while the stamp is 0', $uma, (int) (osc_resolve_web_user()['pk_i_id'] ?? 0));
 
 $webUser((string) $uma, $copied);
@@ -154,7 +154,7 @@ pin('signing out of all devices raises the stamp', array(true, 1), array(SignOut
 pin('the copied cookie is dead at once, cached row or not', null, $webUser((string) $uma, $copied));
 pin('so is the legacy cookie', null, $webUser((string) $uma, $legacy));
 $request();
-Session::newInstance()->_setEphemeral('userId', (string) $uma);
+Session::getInstance()->_setEphemeral('userId', (string) $uma);
 pin('and the session-only sign-in', null, osc_resolve_web_user());
 pin('a new sign-in works', $uma, $webUser((string) $uma, RememberMe::issue('web', $uma, $userRow()['s_password'], 3600, AuthStamp::of($userRow()))));
 pin('an unknown user is not bumped', false, SignOut::everywhereUser(999999));
@@ -164,7 +164,7 @@ pin('only SignOut raises a stamp: AuthStamp has no public way to', [[], false], 
 ]);
 
 harness_section('an admin session and remember-me cookie');
-$session = Session::newInstance();
+$session = Session::getInstance();
 $signIn  = static function () use ($request, $session, $adminRow): void {
     $request();
     $session->_set('adminId', '9');
@@ -175,8 +175,8 @@ pin('a signed-in admin session counts', true, osc_is_admin_user_logged_in());
 $remember = RememberMe::issue('admin', 9, AdminTwoFactor::rememberBinding($adminRow()), 3600, AuthStamp::of($adminRow()));
 $byCookie = static function () use ($request, $remember): bool {
     $request();
-    Cookie::newInstance()->push('oc_adminId', '9');
-    Cookie::newInstance()->push('oc_adminSecret', $remember);
+    Cookie::getInstance()->push('oc_adminId', '9');
+    Cookie::getInstance()->push('oc_adminSecret', $remember);
 
     return osc_is_admin_user_logged_in();
 };

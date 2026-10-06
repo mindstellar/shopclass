@@ -36,7 +36,7 @@ if (!function_exists('osc_is_api_request')) {
         if (Params::getParamString('page') === 'api') {
             return true;
         }
-        if (!Preference::newInstance()->get('rewriteEnabled')) {
+        if (!Preference::getInstance()->get('rewriteEnabled')) {
             return false;
         }
 

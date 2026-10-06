@@ -110,9 +110,9 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hCache.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hUsers.php';      // osc_logged_user_id (delete cascade -> ItemActions)
 require_once ABS_PATH . 'oc-includes/osclass/utils.php';               // osc_isExpired, osc_deleteResource
 
-Preference::newInstance(); // warm the preference map so osc_current_user_locale() never charges a query to a count pin
+Preference::getInstance(); // warm the preference map so osc_current_user_locale() never charges a query to a count pin
 
-$cache        = Object_Cache_Factory::newInstance();
+$cache        = Object_Cache_Factory::getInstance();
 $itemTable    = DB_TABLE_PREFIX . 't_item';
 $descTable    = DB_TABLE_PREFIX . 't_item_description';
 $locTable     = DB_TABLE_PREFIX . 't_item_location';
@@ -124,7 +124,7 @@ $fieldTable   = DB_TABLE_PREFIX . 't_meta_fields';
 $locale       = 'en_US';
 $country      = 'US';
 
-$model = Item::newInstance();
+$model = Item::getInstance();
 
 /* ----------------------------------------------------------------------------
  * Local helpers.
@@ -270,15 +270,49 @@ pin(
 pin(
     'the model declares exactly these public methods of its own, nothing added or removed',
     array(
-        '__construct', 'clearStat', 'countByMarkas', 'countByUserID', 'countByUserIDEnabled',
-        'countItemTypesByEmail', 'countItemTypesByUserID', 'deleteByCity', 'deleteByCityArea',
-        'deleteByCountry', 'deleteByPrimaryKey', 'deleteByRegion', 'enableByCategory', 'extendCategoryName',
-        'extendData', 'extendDataSingle', 'extendRows', 'findAdjacentLive', 'findByCategoryID', 'findByDayExpiration', 'findByEmail',
-        'findByHourExpiration', 'findByPhone', 'findByPrimaryKey', 'findByUserID', 'findByUserIDEnabled',
-        'findItemByTypes', 'findItemTypesByUserID', 'findLocationByID', 'findResourcesByID', 'insertLocale',
-        'listAllWithCategories', 'listLatest', 'listWhere', 'liveConditions', 'metaFields', 'mostViewed',
+        '__construct',
+        'clearStat',
+        'countByMarkas',
+        'countByUserID',
+        'countByUserIDEnabled',
+        'countItemTypesByEmail',
+        'countItemTypesByUserID',
+        'deleteByCity',
+        'deleteByCityArea',
+        'deleteByCountry',
+        'deleteByPrimaryKey',
+        'deleteByRegion',
+        'enableByCategory',
+        'extendCategoryName',
+        'extendData',
+        'extendDataSingle',
+        'extendRows',
+        'findAdjacentLive',
+        'findByCategoryID',
+        'findByDayExpiration',
+        'findByEmail',
+        'findByHourExpiration',
+        'findByPhone',
+        'findByPrimaryKey',
+        'findByUserID',
+        'findByUserIDEnabled',
+        'findItemByTypes',
+        'findItemTypesByUserID',
+        'findLocationByID',
+        'findResourcesByID',
+        'getInstance',
+        'insertLocale',
+        'listAllWithCategories',
+        'listLatest',
+        'listWhere',
+        'liveConditions',
+        'metaFields',
+        'mostViewed',
         'newInstance',
-        'numItems', 'totalItems', 'updateExpirationDate', 'updateLocaleForce',
+        'numItems',
+        'totalItems',
+        'updateExpirationDate',
+        'updateLocaleForce',
     ),
     (static function () {
         $own = array();
@@ -423,10 +457,10 @@ harness_section('Item::extendData — it primes the resource cache so a followin
 $flush();
 $model->extendData($five);
 $primedCost = harness_query_count(static function () use ($batchIds) {
-    ItemResource::newInstance()->getAllResourcesFromItem($batchIds[0]);
+    ItemResource::getInstance()->getAllResourcesFromItem($batchIds[0]);
 });
 pin('after extendData over the set, a per-item resource read costs zero queries — the prime seeded it', 0, $primedCost);
-pin('...and returns that item\'s one seeded resource', 1, count(ItemResource::newInstance()->getAllResourcesFromItem($batchIds[0])));
+pin('...and returns that item\'s one seeded resource', 1, count(ItemResource::getInstance()->getAllResourcesFromItem($batchIds[0])));
 
 harness_section('Item::findByPrimaryKey / extendDataSingle — the single-row path');
 
@@ -1046,7 +1080,7 @@ pin('and cuts it the same way', str_repeat('ü', 100), $afterReplace);
 harness_section('osc_max_characters_per_title — never wider than the column');
 
 $titlePref = static function ($value): int {
-    Preference::newInstance()->set('title_character_length', $value);
+    Preference::getInstance()->set('title_character_length', $value);
 
     return osc_max_characters_per_title();
 };

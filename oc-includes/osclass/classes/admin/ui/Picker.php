@@ -43,7 +43,7 @@ class Picker
         $listId  = $id . '-list';
         $rows    = $opts['categories'] ?? null;
         if (!is_array($rows)) {
-            $rows = \Category::newInstance()->listEnabled();
+            $rows = \Category::getInstance()->listEnabled();
         }
         $options = self::categoryOptions($rows);
         $chosen  = $options[$value] ?? null;

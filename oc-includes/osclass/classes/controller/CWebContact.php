@@ -81,7 +81,7 @@ class CWebContact extends BaseModel
                     return false;
                 }
 
-                $user = User::newInstance()->findByEmail($yourEmail);
+                $user = User::getInstance()->findByEmail($yourEmail);
                 if (isset($user['b_active'])
                     && ($user['b_active'] == 0
                         || $user['b_enabled'] == 0)
@@ -150,7 +150,7 @@ MESSAGE;
                     $status = \mindstellar\security\MessageGuard::report($token);
                     if ($status === 'done') {
                         $sender = (string) (\mindstellar\security\MessageGuard::readReport($token)['sender'] ?? '');
-                        Log::newInstance()->insertLog('ban', 'report', 0, $sender, 'user', 0);
+                        Log::getInstance()->insertLog('ban', 'report', 0, $sender, 'user', 0);
                     }
 
                     return $status;
@@ -246,7 +246,7 @@ MESSAGE;
             ABS_PATH . 'oc-includes/osclass/gui/contact-message-content.php',
             array('heading' => $heading, 'title' => $heading . ' — ' . osc_page_title())
         );
-        Session::newInstance()->_clearVariables();
+        Session::getInstance()->_clearVariables();
         osc_run_hook('after_html');
     }
 
@@ -268,7 +268,7 @@ MESSAGE;
         if (!osc_gui_page_view($file)) {
             osc_current_web_theme_path($file);
         }
-        Session::newInstance()->_clearVariables();
+        Session::getInstance()->_clearVariables();
         osc_run_hook('after_html');
     }
 }

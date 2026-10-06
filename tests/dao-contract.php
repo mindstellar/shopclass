@@ -225,9 +225,9 @@ function admin_count(mysqli $admin, string $table): int
 /* ----------------------------------------------------------------------------
  * The models under test share the DAO singleton mysqli handle.
  * ------------------------------------------------------------------------- */
-$region   = Region::newInstance();
-$currency = Currency::newInstance();
-$alerts   = AlertsStats::newInstance();
+$region   = Region::getInstance();
+$currency = Currency::getInstance();
+$alerts   = AlertsStats::getInstance();
 
 echo "== 1. findByPrimaryKey ==\n";
 // Base method via Region (no override).

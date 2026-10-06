@@ -39,13 +39,21 @@ class Cleanup extends DAO
      *
      * @return self
      */
-    public static function newInstance()
+    public static function getInstance()
     {
         if (!self::$instance instanceof self) {
             self::$instance = new self();
         }
 
         return self::$instance;
+    }
+
+    /**
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
+     */
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     /**
@@ -265,7 +273,7 @@ class Cleanup extends DAO
                 }
             }
         } elseif (self::isUserRule($rule)) {
-            $users = User::newInstance();
+            $users = User::getInstance();
             foreach ($rows as $row) {
                 if ($users->deleteUser($row['pk_i_id'])) {
                     $deleted++;

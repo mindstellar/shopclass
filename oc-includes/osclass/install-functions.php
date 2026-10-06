@@ -621,10 +621,10 @@ function install_test_db_connection()
  */
 function install_nonce()
 {
-    $nonce = Session::newInstance()->_get('install_nonce');
+    $nonce = Session::getInstance()->_get('install_nonce');
     if (!$nonce) {
         $nonce = bin2hex(random_bytes(16));
-        Session::newInstance()->_set('install_nonce', $nonce);
+        Session::getInstance()->_set('install_nonce', $nonce);
     }
 
     return $nonce;
@@ -639,7 +639,7 @@ function install_nonce()
 function install_nonce_check()
 {
     $token   = (string)Params::getParam('install_nonce');
-    $session = (string)Session::newInstance()->_get('install_nonce');
+    $session = (string)Session::getInstance()->_get('install_nonce');
 
     return $token !== '' && $session !== '' && hash_equals($session, $token);
 }
@@ -660,7 +660,7 @@ function set_allow_report_osclass($value)
         'e_type'    => 'BOOLEAN'
     );
 
-    Preference::newInstance()->insert($values);
+    Preference::getInstance()->insert($values);
 }
 
 /**
@@ -905,7 +905,7 @@ function oc_install()
         $mail_templates      = json_encode($decoded);
     }
 
-    Page::newInstance()->importEmailJsonTemplates($mail_templates);
+    Page::getInstance()->importEmailJsonTemplates($mail_templates);
 
     // Seed the installer's own preference rows through the parameterized API,
     // grouped in one transaction so a mid-write failure leaves none of them
@@ -939,14 +939,14 @@ function oc_install()
         oc_install_example_data();
     } catch (\Throwable $e) {
         error_log('Shopclass install: sample content could not be added: ' . $e->getMessage());
-        Session::newInstance()->_set('install_sample_warning', 1);
+        Session::getInstance()->_set('install_sample_warning', 1);
     }
 
     if ($writesConfig) {
         copy_config_file($dbname, $username, $password, $dbhost, $tableprefix);
     }
     // The site step creates the admin; it runs only after this session installed the database.
-    Session::newInstance()->_set('install_db_done', 1);
+    Session::getInstance()->_set('install_db_done', 1);
 
     return false;
 }
@@ -964,7 +964,7 @@ function oc_install_example_data()
     require_once LIB_PATH . 'osclass/helpers/hSecurity.php';
     require_once LIB_PATH . 'osclass/helpers/hValidate.php';
     require_once LIB_PATH . 'osclass/helpers/hUsers.php';
-    $mCat = Category::newInstance();
+    $mCat = Category::getInstance();
 
     if (!function_exists('osc_apply_filter')) {
         /**
@@ -1012,7 +1012,7 @@ function oc_install_example_data()
     $mItem->prepareData(true);
     $mItem->add();
 
-    Page::newInstance()->insert(
+    Page::getInstance()->insert(
         array(
             's_internal_name' => $page['s_internal_name'],
             'b_indelible'     => 0,

@@ -25,7 +25,7 @@ class CWebApi extends BaseModel
         $this->ajax = true;
         $this->setParams();
         $this->time = microtime(true);
-        WebThemes::newInstance();
+        WebThemes::getInstance();
         osc_run_hook('init');
     }
 

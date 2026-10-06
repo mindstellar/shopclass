@@ -243,7 +243,7 @@ final class Receipts
      */
     public static function vars(Order $order): array
     {
-        $user = User::newInstance()->findByPrimaryKey($order->getUserId());
+        $user = User::getInstance()->findByPrimaryKey($order->getUserId());
         $user = is_array($user) ? $user : array();
         $paid = $order->getPaidDate() ?? $order->getDate();
 

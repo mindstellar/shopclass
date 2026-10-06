@@ -46,7 +46,7 @@ $admin->query("UPDATE {$prefix}t_user SET s_secret = 'aB3xK9qLmZ' WHERE pk_i_id 
 $digitId = seed_user($admin, 'other', 'other@example.test', 1, 1);
 $admin->query("UPDATE {$prefix}t_user SET s_secret = '7fQw2ZzP' WHERE pk_i_id = $digitId");
 
-$user = User::newInstance();
+$user = User::getInstance();
 
 /* ----------------------------------------------------------------------------
  * The login cookie path.
@@ -103,7 +103,7 @@ $adminId = seed_exec(
     array('Root', 'root', str_repeat('x', 60), 'root@example.test', 'kR4tYbN8wL')
 );
 
-$adminModel = Admin::newInstance();
+$adminModel = Admin::getInstance();
 $adminMatch = $adminModel->findByIdSecret($adminId, 'kR4tYbN8wL');
 check('the real admin secret still authenticates', is_array($adminMatch) && ($adminMatch['pk_i_id'] ?? null) == $adminId);
 check('the admin secret "0" matches nothing', !$adminModel->findByIdSecret($adminId, '0'), describe($adminModel->findByIdSecret($adminId, '0')));

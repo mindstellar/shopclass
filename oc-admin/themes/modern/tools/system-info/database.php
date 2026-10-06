@@ -18,7 +18,7 @@ use mindstellar\database\SchemaDoctor;
 $findings   = (array) ($env['findings'] ?? array());
 $error      = (string) ($env['findings_error'] ?? '');
 $pending    = (array) ($env['pending'] ?? array());
-$repair     = View::newInstance()->_get('db_repair');
+$repair     = View::getInstance()->_get('db_repair');
 $hasPending = $pending !== array();
 $canRepair  = DatabaseTools::repairAllowed($findings, $pending);
 $self       = SystemChecks::url($env, 'database');

@@ -36,9 +36,14 @@ class Params
 
 class Session
 {
-    public static function newInstance(): self
+    public static function getInstance(): self
     {
         return new self();
+    }
+
+    public static function newInstance(): self
+    {
+        return self::getInstance();
     }
 
     public function _getForm($key)

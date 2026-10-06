@@ -85,7 +85,7 @@ final class ListingModeration
         if ($changed) {
             // The change has committed; a failed log line must not turn it into an error.
             try {
-                \Log::newInstance()->insertLog('item', $action, $id, $note, 'admin', $adminId);
+                \Log::getInstance()->insertLog('item', $action, $id, $note, 'admin', $adminId);
             } catch (\Throwable $e) {
                 error_log('ListingModeration: the ' . $action . ' of listing ' . $id . ' was not logged: ' . $e->getMessage());
             }

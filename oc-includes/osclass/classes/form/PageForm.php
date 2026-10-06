@@ -47,8 +47,8 @@ class PageForm extends Form
         if (is_array($page) && isset($page['s_internal_name'])) {
             $internal_name = $page['s_internal_name'];
         }
-        if (Session::newInstance()->_getForm('s_internal_name') != '') {
-            $internal_name = Session::newInstance()->_getForm('s_internal_name');
+        if (Session::getInstance()->_getForm('s_internal_name') != '') {
+            $internal_name = Session::getInstance()->_getForm('s_internal_name');
         }
         $attrs = array();
         if ((isset($page['b_indelible']) && $page['b_indelible'] == 1)) {
@@ -101,7 +101,7 @@ class PageForm extends Form
         if ($num_locales > 1) {
             echo '<div class="tabber">';
         }
-        $aFieldsDescription = Session::newInstance()->_getForm('aFieldsDescription');
+        $aFieldsDescription = Session::getInstance()->_getForm('aFieldsDescription');
         foreach ($locales as $locale) {
             if ($num_locales > 1) {
                 echo '<div class="tabbertab">';
@@ -204,7 +204,7 @@ class PageForm extends Form
      */
     private static function printPageTitleInput($locale, array $page)
     {
-        $aFieldsDescription = Session::newInstance()->_getForm('aFieldsDescription');
+        $aFieldsDescription = Session::getInstance()->_getForm('aFieldsDescription');
         $title = '';
         if (isset($aFieldsDescription[$locale['pk_c_code']]['s_title'])) {
             $title = $aFieldsDescription[$locale['pk_c_code']]['s_title'];
@@ -241,7 +241,7 @@ class PageForm extends Form
     private static function printPageDescriptionInput($locale, ?array $page = null)
     {
         $description = '';
-        $aFieldsDescription = Session::newInstance()->_getForm('aFieldsDescription');
+        $aFieldsDescription = Session::getInstance()->_getForm('aFieldsDescription');
         if (isset($page['locale'][$locale['pk_c_code']])) {
             $description = $page['locale'][$locale['pk_c_code']]['s_text'];
         }

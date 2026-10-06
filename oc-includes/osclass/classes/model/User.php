@@ -117,13 +117,21 @@ class User extends DAO
      *
      * @return \User
      */
-    public static function newInstance()
+    public static function getInstance()
     {
         if (!self::$instance instanceof self) {
             self::$instance = new self();
         }
 
         return self::$instance;
+    }
+
+    /**
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
+     */
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     /**
@@ -410,12 +418,12 @@ class User extends DAO
                 $items = array();
             }
 
-            $itemManager = Item::newInstance();
+            $itemManager = Item::getInstance();
             foreach ($items as $item) {
                 $itemManager->deleteByPrimaryKey($item['pk_i_id']);
             }
 
-            ItemComment::newInstance()->delete(array('fk_i_user_id' => $id));
+            ItemComment::getInstance()->delete(array('fk_i_user_id' => $id));
 
             // All four cascade, and stay listed for installs whose foreign keys were
             // never created. t_billing_ledger and t_billing_order are deliberately left

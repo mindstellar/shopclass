@@ -42,9 +42,9 @@ if (!defined('OSC_DEBUG')) {
 
 $_SERVER['REMOTE_ADDR'] = '198.51.100.9';
 // A guest, whatever an earlier file in the suite left signed in.
-Session::newInstance()->_drop('userId');
-Session::newInstance()->_dropEphemeral('userId');
-View::newInstance()->_erase('_loggedUser');
+Session::getInstance()->_drop('userId');
+Session::getInstance()->_dropEphemeral('userId');
+View::getInstance()->_erase('_loggedUser');
 Params::init();
 
 $refusal = static function (): string {
@@ -72,12 +72,12 @@ $prefs = static function (array $values): void {
 };
 $signIn = static function (bool $in): void {
     if ($in) {
-        View::newInstance()->_exportVariableToView('_loggedUser', array(
+        View::getInstance()->_exportVariableToView('_loggedUser', array(
             'pk_i_id' => 7, 's_name' => 'U', 's_email' => 'u@example.com', 's_username' => 'u',
             'b_enabled' => 1, 'b_active' => 1, 'fk_c_country_code' => '', 'fk_i_region_id' => null,
         ));
     } else {
-        View::newInstance()->_erase('_loggedUser');
+        View::getInstance()->_erase('_loggedUser');
     }
 };
 

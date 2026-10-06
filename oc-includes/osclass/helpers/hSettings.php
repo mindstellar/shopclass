@@ -256,7 +256,7 @@ if (!function_exists('osc_settings_locales')) {
         }
 
         $cache = array();
-        foreach (OSCLocale::newInstance()->listAllEnabled() as $locale) {
+        foreach (OSCLocale::getInstance()->listAllEnabled() as $locale) {
             $code = (string)($locale['pk_c_code'] ?? '');
             if ($code !== '') {
                 $cache[$code] = (string)($locale['s_name'] ?? $code);
@@ -892,7 +892,7 @@ if (!function_exists('osc_settings_image_url')) {
             }
             $id = osc_settings_value($pageId, $name);
         } elseif (osc_settings_page($pageId) === null) {
-            $id = Preference::newInstance()->get($name, $pageId);
+            $id = Preference::getInstance()->get($name, $pageId);
         } else {
             return '';
         }

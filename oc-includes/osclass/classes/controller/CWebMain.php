@@ -39,15 +39,15 @@ class CWebMain extends BaseModel
         if ($i === 'logout') {         // unset only the required parameters in Session
             osc_run_hook('logout');
 
-            Session::newInstance()->_drop('userId');
-            Session::newInstance()->_drop('userName');
-            Session::newInstance()->_drop('userEmail');
-            Session::newInstance()->_drop('userPhone');
-            Session::newInstance()->session_end();
+            Session::getInstance()->_drop('userId');
+            Session::getInstance()->_drop('userName');
+            Session::getInstance()->_drop('userEmail');
+            Session::getInstance()->_drop('userPhone');
+            Session::getInstance()->session_end();
 
-            Cookie::newInstance()->pop('oc_userId');
-            Cookie::newInstance()->pop('oc_userSecret');
-            Cookie::newInstance()->set();
+            Cookie::getInstance()->pop('oc_userId');
+            Cookie::getInstance()->pop('oc_userSecret');
+            Cookie::getInstance()->set();
 
             $this->redirectTo(osc_base_url());
         } else {
@@ -72,7 +72,7 @@ class CWebMain extends BaseModel
     {
         osc_run_hook('before_html');
         osc_current_web_theme_path($file);
-        Session::newInstance()->_clearVariables();
+        Session::getInstance()->_clearVariables();
         osc_run_hook('after_html');
     }
 }

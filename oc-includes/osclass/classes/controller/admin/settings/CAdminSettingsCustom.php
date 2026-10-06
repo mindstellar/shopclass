@@ -133,7 +133,7 @@ class CAdminSettingsCustom extends AdminSecBaseModel
 
         osc_run_hook('before_admin_html');
         require osc_lib_path() . 'osclass/gui/admin/settings-page.php';
-        Session::newInstance()->_clearVariables();
+        Session::getInstance()->_clearVariables();
         osc_run_hook('after_admin_html');
     }
 }

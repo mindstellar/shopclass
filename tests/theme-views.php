@@ -38,16 +38,21 @@ require_once ABS_PATH . 'oc-includes/osclass/classes/widgets/WidgetRegistry.php'
 
 $themeRoot = sys_get_temp_dir() . '/osc-theme-views-' . getmypid() . '/';
 
-/** Stands in for WebThemes::newInstance()->getCurrentThemePath(). */
+/** Stands in for WebThemes::getInstance()->getCurrentThemePath(). */
 class WebThemes
 {
     public static string $path = '';
     /** @var string[] what the theme's `Widgets:` line parses to */
     public static array $headerLocations = array();
 
-    public static function newInstance(): self
+    public static function getInstance(): self
     {
         return new self();
+    }
+
+    public static function newInstance(): self
+    {
+        return self::getInstance();
     }
 
     public function getCurrentThemePath(): string

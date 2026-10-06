@@ -58,9 +58,9 @@ function osc_checkLocales()
             return true;
         }
 
-        $data = OSCLocale::newInstance()->findByPrimaryKey($locale['locale_code']);
+        $data = OSCLocale::getInstance()->findByPrimaryKey($locale['locale_code']);
         if (!is_array($data)) {
-            $result = OSCLocale::newInstance()->insertLocaleInfo($locale);
+            $result = OSCLocale::getInstance()->insertLocaleInfo($locale);
 
             if ($result === false) {
                 return false;
@@ -76,11 +76,11 @@ function osc_checkLocales()
             if (file_exists($mailJsonPath)) {
                 $mailJson = file_get_contents($mailJsonPath);
                 if ($mailJson) {
-                    Page::newInstance()->importEmailJsonTemplates($mailJson);
+                    Page::getInstance()->importEmailJsonTemplates($mailJson);
                 }
             }
         } else {
-            OSCLocale::newInstance()->insertLocaleInfo($locale);
+            OSCLocale::getInstance()->insertLocaleInfo($locale);
         }
     }
 

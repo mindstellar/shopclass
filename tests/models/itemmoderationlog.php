@@ -40,7 +40,7 @@ require_once __DIR__ . '/../lib/harness.php';
 $admin = scratchdb_session('osc_models_itemmoderationlog');
 $table = DB_TABLE_PREFIX . 't_item_moderation_log';
 
-$model = ItemModerationLog::newInstance();
+$model = ItemModerationLog::getInstance();
 
 /**
  * t_item_moderation_log declares no FK constraint on fk_i_item_id (an index

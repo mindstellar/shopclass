@@ -127,12 +127,12 @@ $register = static function (string $username, string $email) {
 };
 
 pin('a free chosen name registers', 2, $register('newcomer', 'newcomer@example.test'));
-pin('and the account holds that name', 'newcomer', (string)(User::newInstance()->findByEmail('newcomer@example.test')['s_username'] ?? ''));
+pin('and the account holds that name', 'newcomer', (string)(User::getInstance()->findByEmail('newcomer@example.test')['s_username'] ?? ''));
 
 $before = $userCount();
 pin('a name another account holds is refused', "Username is already taken\n", $register('newcomer', 'second@example.test'));
 pin('the half-created account is removed', $before, $userCount());
-pin('the refused e-mail has no account', array(), User::newInstance()->findByEmail('second@example.test'));
+pin('the refused e-mail has no account', array(), User::getInstance()->findByEmail('second@example.test'));
 
 check('the test holds the username lock again', $holdLock());
 $before = $userCount();

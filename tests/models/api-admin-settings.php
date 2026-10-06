@@ -45,7 +45,7 @@ $secrets = [
 ];
 foreach (['pageTitle' => 'My shop', 'contactEmail' => 'owner@example.test', 'language' => 'en_US', 'currency' => 'USD',
     'timezone' => 'UTC', 'comments_per_page' => '10', 'enabled_comments' => '1', 'dateFormat' => 'Y-m-d', 'timeFormat' => 'H:i'] + $secrets as $k => $v) {
-    Preference::newInstance()->replace($k, $v);
+    Preference::getInstance()->replace($k, $v);
 }
 scratchdb_forget_cache();
 osc_reset_preferences();

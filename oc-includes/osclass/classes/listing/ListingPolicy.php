@@ -89,7 +89,7 @@ final class ListingPolicy
      */
     public static function manageable(int $id, Actor $actor): ?array
     {
-        $item = $id > 0 ? \Item::newInstance()->findByPrimaryKey($id) : null;
+        $item = $id > 0 ? \Item::getInstance()->findByPrimaryKey($id) : null;
 
         return is_array($item) && isset($item['pk_i_id']) && self::canManage($item, $actor) ? $item : null;
     }
@@ -148,7 +148,7 @@ final class ListingPolicy
      */
     public static function usesAccountEmail(Actor $actor, string $email): bool
     {
-        return $actor->isGuest() && $email !== '' && isset(\User::newInstance()->findByEmail($email)['pk_i_id']);
+        return $actor->isGuest() && $email !== '' && isset(\User::getInstance()->findByEmail($email)['pk_i_id']);
     }
 
     /**
@@ -171,7 +171,7 @@ final class ListingPolicy
         $wait = (int) osc_items_wait_time_for_user($actor->userId());
 
         return $wait > 0
-            && \LoginAttempt::newInstance()->countByIpContext('item_post', $actor->ip(), date('Y-m-d H:i:s', time() - $wait)) > 0;
+            && \LoginAttempt::getInstance()->countByIpContext('item_post', $actor->ip(), date('Y-m-d H:i:s', time() - $wait)) > 0;
     }
 
     /**
@@ -183,7 +183,7 @@ final class ListingPolicy
      */
     public static function owner(Actor $actor, ?int $ownerId, string $contactEmail): ?array
     {
-        $users = \User::newInstance();
+        $users = \User::getInstance();
         if ($actor->isAdmin()) {
             $row = $ownerId === null ? $users->findByEmail($contactEmail) : ($ownerId > 0 ? $users->findByPrimaryKey($ownerId) : array());
         } else {
@@ -211,7 +211,7 @@ final class ListingPolicy
             if (osc_logged_user_item_validation()) {
                 return 'ACTIVE';
             }
-            $user = \User::newInstance()->findByPrimaryKey($actor->userId());
+            $user = \User::getInstance()->findByPrimaryKey($actor->userId());
 
             return $user['i_items'] < $moderate ? 'INACTIVE' : 'ACTIVE';
         }

@@ -41,9 +41,14 @@ namespace mindstellar\model {
         public const OWNER_PAGE    = 'page';
         public const OWNER_SETTING = 'setting';
 
-        public static function newInstance(): self
+        public static function getInstance(): self
         {
             return new self();
+        }
+
+        public static function newInstance(): self
+        {
+            return self::getInstance();
         }
 
         public static function isValidOwnerType(string $type): bool
@@ -152,9 +157,14 @@ namespace {
 
     class Preference
     {
-        public static function newInstance()
+        public static function getInstance()
         {
             return new self();
+        }
+
+        public static function newInstance()
+        {
+            return self::getInstance();
         }
 
         public function get($key, $section = 'osclass')

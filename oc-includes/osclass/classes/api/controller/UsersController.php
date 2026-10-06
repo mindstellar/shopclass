@@ -43,7 +43,7 @@ final class UsersController
     {
         $context = $this->api->context($request, $credential, 'user', UserSerializer::MEMBERS);
         $id      = (int) $args['id'];
-        $user    = $this->api->facts()->usersEnabled() ? \User::newInstance()->findByPrimaryKey($id) : null;
+        $user    = $this->api->facts()->usersEnabled() ? \User::getInstance()->findByPrimaryKey($id) : null;
         if (!is_array($user) || $user === [] || !self::visible($user, $credential)) {
             throw ProblemException::of('not_found', 'No such user.');
         }

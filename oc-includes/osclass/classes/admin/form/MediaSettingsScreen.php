@@ -463,7 +463,7 @@ final class MediaSettingsScreen extends SettingsScreen
         \ImageProcessing::createWatermarkImageFromText(osc_watermark_text(), osc_watermark_text_color());
         echo '<div class="help-box"><img src="'
              . osc_base_url() . str_replace(osc_base_path(), '', osc_uploads_path())
-             . \Preference::newInstance()->get('watermark_text_image_name') . '"/></div>';
+             . \Preference::getInstance()->get('watermark_text_image_name') . '"/></div>';
         osc_admin_form_row_close();
     }
 
@@ -475,7 +475,7 @@ final class MediaSettingsScreen extends SettingsScreen
      */
     private static function textOptions(): array
     {
-        $stored  = json_decode((string)\Preference::newInstance()->get('watermark_text_options'), true);
+        $stored  = json_decode((string)\Preference::getInstance()->get('watermark_text_options'), true);
         $stored  = is_array($stored) ? $stored : array();
         $options = array();
         foreach (self::TEXT_OPTIONS as $name => $default) {

@@ -129,7 +129,7 @@ final class JobWorker
      */
     public static function log(string $action, int $id, string $text): void
     {
-        \Log::newInstance()->insertLog('jobs', $action, $id, mb_substr($text, 0, 250), 'system', 0);
+        \Log::getInstance()->insertLog('jobs', $action, $id, mb_substr($text, 0, 250), 'system', 0);
     }
 
     /**

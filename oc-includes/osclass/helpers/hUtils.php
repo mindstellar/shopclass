@@ -30,7 +30,7 @@ use mindstellar\utility\Deprecate;
  */
 function __get($key)
 {
-    return View::newInstance()->_get($key);
+    return View::getInstance()->_get($key);
 }
 
 /**
@@ -91,7 +91,7 @@ function osc_field($item, $field, $locale)
  */
 function osc_show_widgets($location)
 {
-    $widgets = Widget::newInstance()->findByLocation($location);
+    $widgets = Widget::getInstance()->findByLocation($location);
     foreach ($widgets as $w) {
         osc_render_widget($w);
     }
@@ -106,7 +106,7 @@ function osc_show_widgets($location)
  */
 function osc_show_widgets_by_description($description)
 {
-    $widgets = Widget::newInstance()->findByDescription($description);
+    $widgets = Widget::getInstance()->findByDescription($description);
     foreach ($widgets as $w) {
         osc_render_widget($w);
     }
@@ -980,7 +980,7 @@ function osc_add_route(
     $section = 'custom',
     $title = 'Custom'
 ) {
-    Rewrite::newInstance()->addRoute($id, $regexp, $url, $file, $user_menu, $location, $section, $title);
+    Rewrite::getInstance()->addRoute($id, $regexp, $url, $file, $user_menu, $location, $section, $title);
 }
 
 /**
@@ -998,7 +998,7 @@ function osc_add_route(
  */
 function osc_add_route_hook($id, $regexp, $url)
 {
-    Rewrite::newInstance()->addRouteHook($id, $regexp, $url);
+    Rewrite::getInstance()->addRouteHook($id, $regexp, $url);
 }
 
 /**
@@ -1317,7 +1317,7 @@ if (!function_exists('osc_server_rewrite_rules')) {
  */
 function osc_keep_form(array $values, string $error): void
 {
-    $session = Session::newInstance();
+    $session = Session::getInstance();
     foreach ($values as $key => $value) {
         $session->_setForm($key, (string) $value);
     }
@@ -1350,7 +1350,7 @@ if (!function_exists('osc_cron_last_run')) {
     {
         $last = 0;
         try {
-            foreach ((array)Cron::newInstance()->listAll() as $row) {
+            foreach ((array)Cron::getInstance()->listAll() as $row) {
                 $time = !empty($row['d_last_exec']) ? (int)strtotime($row['d_last_exec']) : 0;
                 $last = max($last, $time);
             }

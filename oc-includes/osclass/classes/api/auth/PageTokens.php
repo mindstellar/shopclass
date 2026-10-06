@@ -70,7 +70,7 @@ final class PageTokens
      */
     public function forWebUser(): ?PageToken
     {
-        if ((string) \Cookie::newInstance()->get_value('oc_userId') === '' || !osc_is_web_user_logged_in()) {
+        if ((string) \Cookie::getInstance()->get_value('oc_userId') === '' || !osc_is_web_user_logged_in()) {
             return null;
         }
         $user = osc_resolve_web_user();

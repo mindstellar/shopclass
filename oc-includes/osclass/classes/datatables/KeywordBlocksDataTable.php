@@ -41,7 +41,7 @@ class KeywordBlocksDataTable extends DataTable
         $this->addTableHeader();
         $this->getDBParams($params);
 
-        $list = KeywordBlock::newInstance()->search(
+        $list = KeywordBlock::getInstance()->search(
             $this->start,
             $this->limit,
             $this->order_by['column_name'],

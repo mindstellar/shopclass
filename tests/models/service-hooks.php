@@ -57,7 +57,7 @@ foreach ([
     'currency'                 => 'USD',
     'logs_admin'               => '1',
 ] as $k => $v) {
-    Preference::newInstance()->set($k, $v);
+    Preference::getInstance()->set($k, $v);
 }
 scratchdb_forget_cache();
 osc_reset_preferences();
@@ -98,9 +98,9 @@ $record = static function (callable $fn) use (&$trace): array {
 $asUser = static function (?int $userId): void {
     \mindstellar\api\identity\WebIdentity::forget();
     Params::init();
-    Session::newInstance()->_dropEphemeral('userId');
+    Session::getInstance()->_dropEphemeral('userId');
     if ($userId !== null) {
-        Session::newInstance()->_setEphemeral('userId', (string) $userId);
+        Session::getInstance()->_setEphemeral('userId', (string) $userId);
     }
 };
 $user     = static fn (int $id): array => (array) $admin->query("SELECT * FROM {$p}t_user WHERE pk_i_id = $id")->fetch_assoc();
@@ -252,10 +252,10 @@ $legacy = static function (array $form) use ($asUser, $tom): array {
 };
 pin('a saved comment: 2 and its id', [2, true], $legacy(['id' => (string) $sueCar, 'body' => 'Legacy']));
 pin('an empty body: 4', [4, false], $legacy(['id' => (string) $sueCar, 'body' => '']));
-Preference::newInstance()->set('enabled_comments', '0');
+Preference::getInstance()->set('enabled_comments', '0');
 osc_reset_preferences();
 pin('comments off: 7', [7, false], $legacy(['id' => (string) $sueCar, 'body' => 'Off']));
-Preference::newInstance()->set('enabled_comments', '1');
+Preference::getInstance()->set('enabled_comments', '1');
 osc_reset_preferences();
 $admin->query("INSERT INTO {$p}t_ban_rule (s_name, s_ip) VALUES ('test', '192.0.2.70')");
 osc_reset_preferences();
@@ -408,7 +408,7 @@ pin('the default currency is not deleted on either side', [false, 409], [$web['d
 
 harness_section('registering');
 foreach (['enabled_user_registration' => '1', 'enabled_user_validation' => '0', 'notify_new_user' => '1'] as $k => $v) {
-    Preference::newInstance()->set($k, $v);
+    Preference::getInstance()->set($k, $v);
 }
 osc_reset_preferences();
 $signUp = api_admin_caller(static fn (): \mindstellar\api\ApiSettings => new \mindstellar\api\ApiSettings(enabled: true, registration: true));
@@ -446,7 +446,7 @@ pin('a taken username is refused on both sides', ['Username is already taken' . 
 ]);
 pin('a blank name and a bad e-mail: both messages', 'The name cannot be empty' . PHP_EOL . 'The email is not valid' . PHP_EOL, $webRegister($form('', 'nope')));
 
-Preference::newInstance()->set('enabled_user_validation', '1');
+Preference::getInstance()->set('enabled_user_validation', '1');
 osc_reset_preferences();
 $webPending = $record(static fn () => $webRegister($form('Kim', 'kim@example.test')));
 $apiPending = $record(static fn () => $apiRegister($body('Lee', 'lee@example.test')));
@@ -454,7 +454,7 @@ pin('with activation on, the sign-up form fires these, in order', ['before_user_
 pin('the API fires the same, in the same order', $webPending, $apiPending);
 pin('both wait for the link', [['Kim', '0', '1'], ['Lee', '0', '1']], [array_values($joined('kim@example.test')), array_values($joined('lee@example.test'))]);
 pin('the old add() answers 1, the API says not active', [1, false], [$webRegister($form('Max', 'max@example.test')), $apiRegister($body('Ned', 'ned@example.test'))->body()['data']['active'] ?? null]);
-Preference::newInstance()->set('enabled_user_validation', '0');
+Preference::getInstance()->set('enabled_user_validation', '0');
 osc_reset_preferences();
 
 // CAdminUsers 'create_post'

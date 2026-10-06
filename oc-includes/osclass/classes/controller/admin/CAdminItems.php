@@ -42,7 +42,7 @@ class CAdminItems extends AdminSecBaseModel
         parent::__construct();
 
         //specific things for this class
-        $this->itemManager = Item::newInstance();
+        $this->itemManager = Item::getInstance();
         osc_run_hook('init_admin_items');
     }
 
@@ -147,7 +147,7 @@ class CAdminItems extends AdminSecBaseModel
                                     return false;
                                 }
                                 $manager->clearStat($id, 'all');
-                                ItemReport::newInstance()->clear((int)$id);
+                                ItemReport::getInstance()->clear((int)$id);
 
                                 return true;
                             },
@@ -226,7 +226,7 @@ class CAdminItems extends AdminSecBaseModel
                 }
 
                 $this->itemManager->clearStat($id, 'all');
-                ItemReport::newInstance()->clear($id);
+                ItemReport::getInstance()->clear($id);
 
                 osc_add_flash_ok_message(_m('Reports have been cleared for this listing'), 'admin');
                 $this->redirectTo(Params::getServerParam('HTTP_REFERER', false, false));
@@ -263,18 +263,18 @@ class CAdminItems extends AdminSecBaseModel
             case 'item_edit':       // edit item
                 $id = Params::getParam('id');
 
-                $item = Item::newInstance()->findByPrimaryKey($id);
+                $item = Item::getInstance()->findByPrimaryKey($id);
                 if (count($item) <= 0) {
                     $this->redirectTo(osc_admin_base_url(true) . '?page=items');
                 }
 
                 $this->exportItemState($item);
 
-                $form     = count(Session::newInstance()->_getForm());
-                $keepForm = count(Session::newInstance()->_getKeepForm());
+                $form     = count(Session::getInstance()->_getForm());
+                $keepForm = count(Session::getInstance()->_getKeepForm());
 
                 if ($form == 0 || $form == $keepForm) {
-                    Session::newInstance()->_dropKeepForm();
+                    Session::getInstance()->_dropKeepForm();
                 }
 
                 // save referer if belongs to manage items
@@ -284,11 +284,11 @@ class CAdminItems extends AdminSecBaseModel
                     if (preg_match('/page=items/', $referer)) {
                         if (preg_match("/action=([\p{L}|_|-]+)/u", $referer, $matches)) {
                             if ($matches[1] === 'items_reported') {
-                                Session::newInstance()->_set('osc_admin_referer', $referer);
+                                Session::getInstance()->_set('osc_admin_referer', $referer);
                             }
                         } else {
                             // no actions - Manage Listings
-                            Session::newInstance()->_set('osc_admin_referer', $referer);
+                            Session::getInstance()->_set('osc_admin_referer', $referer);
                         }
                     }
                 }
@@ -304,14 +304,14 @@ class CAdminItems extends AdminSecBaseModel
                 $formData = ListingInput::read(true, false);
                 // set all parameters into session
                 foreach ($formData as $key => $value) {
-                    Session::newInstance()->_setForm($key, $value);
+                    Session::getInstance()->_setForm($key, $value);
                 }
 
                 $meta = Params::getParam('meta');
                 if (is_array($meta)) {
                     foreach ($meta as $key => $value) {
-                        Session::newInstance()->_setForm('meta_' . $key, $value);
-                        Session::newInstance()->_keepForm('meta_' . $key);
+                        Session::getInstance()->_setForm('meta_' . $key, $value);
+                        Session::getInstance()->_keepForm('meta_' . $key);
                     }
                 }
 
@@ -324,13 +324,13 @@ class CAdminItems extends AdminSecBaseModel
                     osc_add_flash_ok_message(_m('Changes saved correctly'), 'admin');
                     $url = osc_admin_base_url(true) . '?page=items';
                     // if Referer is saved that means referer is ManageListings or ReportListings
-                    if (Session::newInstance()->_get('osc_admin_referer') != '') {
-                        $url = Session::newInstance()->_get('osc_admin_referer');
+                    if (Session::getInstance()->_get('osc_admin_referer') != '') {
+                        $url = Session::getInstance()->_get('osc_admin_referer');
                     }
-                    Session::newInstance()->_clearVariables();
+                    Session::getInstance()->_clearVariables();
                     if (is_array($meta)) {
                         foreach ($meta as $key => $value) {
-                            Session::newInstance()->_dropKeepForm('meta_' . $key);
+                            Session::getInstance()->_dropKeepForm('meta_' . $key);
                         }
                     }
 
@@ -361,10 +361,10 @@ class CAdminItems extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=items');
                 break;
             case 'post':            // add item
-                $form     = count(Session::newInstance()->_getForm());
-                $keepForm = count(Session::newInstance()->_getKeepForm());
+                $form     = count(Session::getInstance()->_getForm());
+                $keepForm = count(Session::getInstance()->_getKeepForm());
                 if ($form == 0 || $form == $keepForm) {
-                    Session::newInstance()->_dropKeepForm();
+                    Session::getInstance()->_dropKeepForm();
                 }
 
                 $this->_exportVariableToView('new_item', true);
@@ -376,15 +376,15 @@ class CAdminItems extends AdminSecBaseModel
                 $formData = ListingInput::read(true, true);
                 // set all parameters into session
                 foreach ($formData as $key => $value) {
-                    Session::newInstance()->_setForm($key, $value);
+                    Session::getInstance()->_setForm($key, $value);
                 }
 
                 $meta = Params::getParam('meta');
 
                 if (is_array($meta)) {
                     foreach ($meta as $key => $value) {
-                        Session::newInstance()->_setForm('meta_' . $key, $value);
-                        Session::newInstance()->_keepForm('meta_' . $key);
+                        Session::getInstance()->_setForm('meta_' . $key, $value);
+                        Session::getInstance()->_keepForm('meta_' . $key);
                     }
                 }
 
@@ -393,14 +393,14 @@ class CAdminItems extends AdminSecBaseModel
                 if ($success == 1 || $success == 2) {
                     $url = osc_admin_base_url(true) . '?page=items';
                     // if Referer is saved that means referer is ManageListings or ReportListings
-                    if (Session::newInstance()->_get('osc_admin_referer') != '') {
-                        $url = Session::newInstance()->_get('osc_admin_referer');
-                        Session::newInstance()->_drop('osc_admin_referer');
+                    if (Session::getInstance()->_get('osc_admin_referer') != '') {
+                        $url = Session::getInstance()->_get('osc_admin_referer');
+                        Session::getInstance()->_drop('osc_admin_referer');
                     }
-                    Session::newInstance()->_clearVariables();
+                    Session::getInstance()->_clearVariables();
                     if (is_array($meta)) {
                         foreach ($meta as $key => $value) {
-                            Session::newInstance()->_dropKeepForm('meta_' . $key);
+                            Session::getInstance()->_dropKeepForm('meta_' . $key);
                         }
                     }
                     osc_add_flash_ok_message(_m('A new listing has been added'), 'admin');
@@ -597,7 +597,7 @@ class CAdminItems extends AdminSecBaseModel
                 }
 
                 $this->_exportVariableToView('aData', $aData);
-                $this->_exportVariableToView('countries', Country::newInstance()->listAll());
+                $this->_exportVariableToView('countries', Country::getInstance()->listAll());
                 $this->_exportVariableToView('withFilters', $itemsDataTable->withFilters());
                 $this->_exportVariableToView('aRawRows', $itemsDataTable->rawRows());
 
@@ -768,7 +768,7 @@ class CAdminItems extends AdminSecBaseModel
 
         // The seller is whichever account matches the contact e-mail -- the rule the save
         // applies -- so the editor says so instead of leaving it to be guessed.
-        $user = User::newInstance()->findByEmail($item['s_contact_email'] ?? '');
+        $user = User::getInstance()->findByEmail($item['s_contact_email'] ?? '');
         $this->_exportVariableToView('itemUser', is_array($user) && isset($user['pk_i_id'])
             ? array(
                 'id'    => $user['pk_i_id'],
@@ -890,7 +890,7 @@ class CAdminItems extends AdminSecBaseModel
             return;
         }
 
-        $item = Item::newInstance()->findByPrimaryKey(Params::getParam('id'));
+        $item = Item::getInstance()->findByPrimaryKey(Params::getParam('id'));
         $this->exportItemState($item);
         $this->_exportVariableToView('item', $item);
         $this->_exportVariableToView('new_item', false);

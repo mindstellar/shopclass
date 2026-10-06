@@ -641,7 +641,7 @@ final class Billing
      */
     private static function log(string $action, Order $order, ?string $externalRef): void
     {
-        Log::newInstance()->insertLog(
+        Log::getInstance()->insertLog(
             'billing',
             $action,
             $order->getId(),

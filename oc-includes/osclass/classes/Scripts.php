@@ -60,7 +60,7 @@ class Scripts extends Dependencies
      */
     public static function enqueueScriptCode($code, $dependencies = null, $admin = false, $id = null)
     {
-        $self   = self::newInstance();
+        $self   = self::getInstance();
         $prefix = $admin === true ? 'admin_' : '';
 
         if ($id !== null) {
@@ -99,13 +99,21 @@ class Scripts extends Dependencies
      *
      * @return \Scripts
      */
-    public static function newInstance()
+    public static function getInstance()
     {
         if (!self::$instance instanceof self) {
             self::$instance = new self();
         }
 
         return self::$instance;
+    }
+
+    /**
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
+     */
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     /**
@@ -180,9 +188,9 @@ class Scripts extends Dependencies
             $prefix = 'admin_';
         }
         $printScript = function () {
-            Scripts::newInstance()->printScripts();
+            Scripts::getInstance()->printScripts();
         };
-        if (!Preference::newInstance()->get($prefix.'enqueue_scripts_in_footer')) {
+        if (!Preference::getInstance()->get($prefix.'enqueue_scripts_in_footer')) {
             Plugins::addHook($prefix.'header', $printScript, 8);
             Deprecate::deprecatedRunHook($prefix.'header_scripts_loaded', '5.1.0', $prefix.'scripts_loaded');
         }

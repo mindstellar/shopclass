@@ -68,7 +68,7 @@ $clearTable = static function () use ($admin, $table): void {
     $admin->query("DELETE FROM $table");
 };
 
-$model = LatestSearches::newInstance();
+$model = LatestSearches::getInstance();
 
 /* ----------------------------------------------------------------------------
  * Surface (C2): the public API must survive the conversion byte-identical.

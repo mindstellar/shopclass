@@ -88,7 +88,7 @@ final class ListingWritesController
         $before  = 0;
         $room    = null;
         if (!empty($input['photo_tokens']) || !empty($input['photo_urls'])) {
-            $before = (int) \ItemResource::newInstance()->countResources($id);
+            $before = (int) \ItemResource::getInstance()->countResources($id);
             $room   = PhotoService::room($id, $listing->userId());
         }
         $batch = $this->photos->batch($input, $userId, $room);
@@ -146,7 +146,7 @@ final class ListingWritesController
             $warnings[] = ['code' => 'listing_pending', 'message' => 'The listing goes live once it is activated or approved.'];
         }
         if (!$batch->isEmpty()) {
-            $added = (int) \ItemResource::newInstance()->countResources($id) - $photosBefore;
+            $added = (int) \ItemResource::getInstance()->countResources($id) - $photosBefore;
             if ($added < $batch->sent()) {
                 $warnings[] = ['code' => 'photo_skipped', 'message' => ($batch->sent() - $added) . ' photo(s) were not added: the listing has as many as it may hold.'];
             }

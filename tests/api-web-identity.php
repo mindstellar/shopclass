@@ -32,7 +32,7 @@ require_once __DIR__ . '/lib/api-boot.php';
 
 use mindstellar\api\identity\WebIdentity;
 
-$stored = Session::newInstance();
+$stored = Session::getInstance();
 $stored->session_resume();
 $activeBefore = session_status() === PHP_SESSION_ACTIVE;
 $idBefore     = $stored->_get('userId');
@@ -56,11 +56,11 @@ pin('a later destroy and restart does not bring it back', '', $idAfterRestart);
 check('the stored session is not rewritten, so the browser stays logged in', str_contains($fileAfter, 'userId|i:10;'));
 
 $_COOKIE = ['oc_userId' => '10', 'oc_userSecret' => 's', 'oc_adminId' => '1', 'oc_adminSecret' => 'a', 'other' => 'kept'];
-$session = Session::newInstance();
+$session = Session::getInstance();
 $session->_setEphemeral('userId', 10);
 $session->_setEphemeral('userEmail', 'u@x.test');
 $session->_setEphemeral('adminId', 1);
-View::newInstance()->_exportVariableToView('_loggedUser', ['pk_i_id' => 10, 'b_enabled' => 1, 'b_active' => 1]);
+View::getInstance()->_exportVariableToView('_loggedUser', ['pk_i_id' => 10, 'b_enabled' => 1, 'b_active' => 1]);
 
 WebIdentity::forget();
 
@@ -70,8 +70,8 @@ pin('the e-mail is gone', '', $session->_get('userEmail'));
 pin('the admin id is gone', '', $session->_get('adminId'));
 pin('the identity cookies are gone from this request', [], array_values(array_intersect(array_keys($_COOKIE), WebIdentity::COOKIES)));
 pin('other cookies stay', 'kept', $_COOKIE['other'] ?? null);
-pin('the logged user reads as nobody, so it is not looked up again', [], View::newInstance()->_get('_loggedUser'));
-check('nobody is not a logged-in user', !isset(View::newInstance()->_get('_loggedUser')['b_enabled']));
+pin('the logged user reads as nobody, so it is not looked up again', [], View::getInstance()->_get('_loggedUser'));
+check('nobody is not a logged-in user', !isset(View::getInstance()->_get('_loggedUser')['b_enabled']));
 check('no session was started', session_status() !== PHP_SESSION_ACTIVE);
 
 harness_section('index.php');

@@ -15,7 +15,7 @@
 
 //getting variables for this view
 $themes = __get('themes');
-$info   = WebThemes::newInstance()->loadThemeInfo(osc_theme());
+$info   = WebThemes::getInstance()->loadThemeInfo(osc_theme());
 
 osc_admin_page(array(
     'section' => __('Appearance'),
@@ -109,7 +109,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 
         // The parent a theme declares, when it names one that is actually installed.
         $parentOf = static function ($slug) {
-            $i = WebThemes::newInstance()->loadThemeInfo($slug);
+            $i = WebThemes::getInstance()->loadThemeInfo($slug);
             if (!is_array($i) || empty($i['template'])
                 || !\mindstellar\utility\Validate::packageName((string) $i['template'])
                 || $i['template'] === $slug
@@ -122,7 +122,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 
         /** A theme's display name, falling back to its directory name. */
         $nameOf = static function ($slug) {
-            $i = WebThemes::newInstance()->loadThemeInfo($slug);
+            $i = WebThemes::getInstance()->loadThemeInfo($slug);
 
             return is_array($i) && $i['name'] !== '' ? ucfirst($i['name']) : $slug;
         };
@@ -207,7 +207,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         <?php if ($otherThemes) : ?>
             <?php osc_package_list_open('osc-pkg-list--themes'); ?>
             <?php foreach ($otherThemes as $theme) :
-                $tInfo  = WebThemes::newInstance()->loadThemeInfo($theme);
+                $tInfo  = WebThemes::getInstance()->loadThemeInfo($theme);
                 $tName  = ucfirst($tInfo['name']);
                 $update = $bThemesToUpdate && in_array($theme, $aThemesToUpdate, true);
                 // Deleting this one would leave the active theme rendering on the default.

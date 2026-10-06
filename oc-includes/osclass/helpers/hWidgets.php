@@ -59,7 +59,7 @@ function osc_widget_locations()
     $locations = _osc_widget_locations_normalize(osc_theme_supports('widget_locations'));
 
     if ($locations === array()) {
-        $info   = WebThemes::newInstance()->loadThemeInfo(osc_theme());
+        $info   = WebThemes::getInstance()->loadThemeInfo(osc_theme());
         $header = (is_array($info) && isset($info['locations']) && is_array($info['locations']))
             ? $info['locations']
             : array();

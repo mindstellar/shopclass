@@ -57,7 +57,7 @@ $base = memory_get_usage();
 if (function_exists('memory_reset_peak_usage')) {
     memory_reset_peak_usage();
 }
-pin('table_data() finishes', true, Dump::newInstance()->table_data($file, $table));
+pin('table_data() finishes', true, Dump::getInstance()->table_data($file, $table));
 if (function_exists('memory_reset_peak_usage')) {
     $growth = memory_get_peak_usage() - $base;
     check('...holding a few MB at most, not the table', $growth < 4 * 1048576, round($growth / 1048576, 1) . ' MB');
@@ -125,8 +125,8 @@ $admin->query("INSERT INTO `$child` VALUES (10, 1), (11, 2)");
 $fk = tempnam(sys_get_temp_dir(), 'osc_backup_fk_');
 file_put_contents($fk, '');
 foreach (array($child, $parent) as $t) {
-    Dump::newInstance()->table_structure($fk, $t);
-    Dump::newInstance()->table_data($fk, $t);
+    Dump::getInstance()->table_structure($fk, $t);
+    Dump::getInstance()->table_data($fk, $t);
 }
 $admin->query("DROP TABLE `$child`");
 $admin->query("DROP TABLE `$parent`");
@@ -155,8 +155,8 @@ harness_section('Prefix token');
 
 $tok = tempnam(sys_get_temp_dir(), 'osc_backup_tok_');
 file_put_contents($tok, '');
-Dump::newInstance()->table_structure($tok, $table, true);
-Dump::newInstance()->table_data($tok, $table, true);
+Dump::getInstance()->table_structure($tok, $table, true);
+Dump::getInstance()->table_data($tok, $table, true);
 $head = (string) file_get_contents($tok, false, null, 0, 4096);
 check('a backup dump names the table by the prefix token', strpos($head, 'CREATE TABLE IF NOT EXISTS `/*TABLE_PREFIX*/t_backup_probe`') !== false
     && strpos($head, "insert into `/*TABLE_PREFIX*/t_backup_probe` values\n") !== false, $head);
@@ -216,8 +216,8 @@ unlink($foreign);
 pin('a restore or rollback never drops it', 3, (int) $admin->query('SELECT COUNT(*) FROM `oc_shop2_t_x`')->fetch_row()[0]);
 $other = tempnam(sys_get_temp_dir(), 'osc_backup_other_');
 file_put_contents($other, '');
-Dump::newInstance()->table_structure($other, 'oc_shop2_t_x', true);
-Dump::newInstance()->table_data($other, 'oc_shop2_t_x', true);
+Dump::getInstance()->table_structure($other, 'oc_shop2_t_x', true);
+Dump::getInstance()->table_data($other, 'oc_shop2_t_x', true);
 check('...and the prefix token never takes its name', strpos((string) file_get_contents($other), '/*TABLE_PREFIX*/') === false, (string) file_get_contents($other));
 unlink($other);
 

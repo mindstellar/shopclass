@@ -85,7 +85,7 @@ final class AdminFieldsController
      */
     private function field(int $id): array
     {
-        $fields = \Field::newInstance();
+        $fields = \Field::getInstance();
 
         return (new CustomFieldSerializer())->definition($fields->findByPrimaryKey($id), $this->api->facts()->defaultLocale())
             + ['categories' => array_map('intval', $fields->categories($id))];

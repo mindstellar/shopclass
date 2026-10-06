@@ -64,7 +64,7 @@ Params::setParam('s_username', 'squatter');
 Params::setParam('s_password', 'correct horse battery');
 Params::setParam('s_password2', 'correct horse battery');
 pin('the account is created and active straight away', 2, (new UserActions(false))->add());
-$newId = (int)(User::newInstance()->findByEmail($victim)['pk_i_id'] ?? 0);
+$newId = (int)(User::getInstance()->findByEmail($victim)['pk_i_id'] ?? 0);
 check('the account exists', $newId > 0);
 pin('the guest listing stays a guest listing', null, $ownerOf('t_item', $guestItem));
 pin('the guest alert stays a guest alert', null, $ownerOf('t_alerts', $alertId));
@@ -100,7 +100,7 @@ Params::setParam('s_name', 'Made by admin');
 Params::setParam('s_email', 'made@example.test');
 Params::setParam('s_username', 'madebyadmin');
 (new UserActions(true))->add();
-$madeId = (int)(User::newInstance()->findByEmail('made@example.test')['pk_i_id'] ?? 0);
+$madeId = (int)(User::getInstance()->findByEmail('made@example.test')['pk_i_id'] ?? 0);
 check('the account exists', $madeId > 0);
 pin('it takes the guest listing at once', $madeId, $ownerOf('t_item', $adminGuest));
 

@@ -241,7 +241,7 @@ class FieldForm extends Form
         $aCustomFields = array();
         // we check if the category is the same as our plugin
         foreach ($catId as $id) {
-            $aTemp = Field::newInstance()->findByCategory($id);
+            $aTemp = Field::getInstance()->findByCategory($id);
             foreach ($aTemp as $field) {
                 if ($field['b_searchable']) {
                     $aCustomFields[$field['pk_i_id']] = $field;
@@ -317,7 +317,7 @@ class FieldForm extends Form
             }
 
             if ($field['e_type'] === 'DATEINTERVAL' && !$search) {
-                $aInterval = Field::newInstance()
+                $aInterval = Field::getInstance()
                                   ->getDateIntervalByPrimaryKey($field['fk_i_item_id'], $field['pk_i_id']);
 
                 if (is_array($aInterval) && $aInterval !== array()) {
@@ -330,8 +330,8 @@ class FieldForm extends Form
                 $field['s_value'] = self::rangeFromRequest($field['pk_i_id']);
             }
 
-            if (Session::newInstance()->_getForm('meta_' . $field['pk_i_id']) != '') {
-                $field['s_value'] = Session::newInstance()->_getForm('meta_' . $field['pk_i_id']);
+            if (Session::getInstance()->_getForm('meta_' . $field['pk_i_id']) != '') {
+                $field['s_value'] = Session::getInstance()->_getForm('meta_' . $field['pk_i_id']);
             } elseif (!isset($field['s_value']) || !$field['s_value']) {
                 $s_value          = Params::getParam('meta');
                 $field['s_value'] = '';
@@ -774,7 +774,7 @@ class FieldForm extends Form
      */
     public static function meta_fields_input($catId = null, $itemId = null)
     {
-        $fields = Field::newInstance()->findByCategoryItem($catId, $itemId);
+        $fields = Field::getInstance()->findByCategoryItem($catId, $itemId);
         self::renderFieldList($fields, 'meta_list card-body');
     }
 

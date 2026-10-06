@@ -79,7 +79,7 @@ final class AdminListingsController
         }
         $rows  = osc_db_stringify_rows($query->orderBy('pk_i_id', 'DESC')->limit($pager->limit() + 1)->get());
         $items = $pager->page($rows);
-        $items = $items === [] ? [] : \Item::newInstance()->extendRows($items, $context->locale());
+        $items = $items === [] ? [] : \Item::getInstance()->extendRows($items, $context->locale());
 
         return (new Page($this->reader->many($items, $context), $total, $pager->limit(), $pager->next($rows)))
             ->response($this->api->links(), 'admin/listings', $request->query());
@@ -104,7 +104,7 @@ final class AdminListingsController
         $listing = OwnedListing::load((int) $args['id'], true);
         $input   = $request->input();
         $owner   = (int) ($input['owner_id'] ?? 0);
-        if ($owner > 0 && empty(\User::newInstance()->findByPrimaryKey($owner)['pk_i_id'])) {
+        if ($owner > 0 && empty(\User::getInstance()->findByPrimaryKey($owner)['pk_i_id'])) {
             throw ProblemException::field('/owner_id', 'unknown', 'is not a user');
         }
         $this->writer->adminUpdate($listing, $this->writer->editForm($listing, $input, $request, $credential) + self::adminMembers($listing, $input), $credential->actor($request->ip(), 'admin:listings'));

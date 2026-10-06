@@ -49,22 +49,22 @@ class CWebAjax extends BaseModel
             case 'bulk_actions':
                 break;
             case 'regions': //Return regions given a countryId
-                $regions = Region::newInstance()->findByCountry(Params::getParam('countryId'));
+                $regions = Region::getInstance()->findByCountry(Params::getParam('countryId'));
                 AjaxResponse::json($regions);
                 break;
             case 'cities': //Returns cities given a regionId
-                $cities = City::newInstance()->findByRegion(Params::getParam('regionId'));
+                $cities = City::getInstance()->findByRegion(Params::getParam('regionId'));
                 AjaxResponse::json($cities);
                 break;
             case 'location': // This is the autocomplete AJAX
-                $cities = City::newInstance()->ajax(Params::getParam('term'));
+                $cities = City::getInstance()->ajax(Params::getParam('term'));
                 foreach ($cities as $k => $city) {
                     $cities[$k]['label'] = $city['label'] . ' (' . $city['region'] . ')';
                 }
                 AjaxResponse::json($cities);
                 break;
             case 'location_countries': // This is the autocomplete AJAX
-                $countries = Country::newInstance()->ajax(Params::getParam('term'));
+                $countries = Country::getInstance()->ajax(Params::getParam('term'));
                 AjaxResponse::json($countries);
                 break;
             case 'custom_field_autocomplete': // Suggestions for an AUTOCOMPLETE custom field
@@ -74,13 +74,13 @@ class CWebAjax extends BaseModel
                 ));
                 break;
             case 'location_regions': // This is the autocomplete AJAX
-                $regions = Region::newInstance()
+                $regions = Region::getInstance()
                     ->ajax(Params::getParam('term'), Params::getParam('country'));
                 AjaxResponse::json($regions);
                 break;
             case 'location_cities': // This is the autocomplete AJAX
                 $cities =
-                    City::newInstance()->ajax(Params::getParam('term'), Params::getParam('region'));
+                    City::getInstance()->ajax(Params::getParam('term'), Params::getParam('region'));
                 AjaxResponse::json($cities);
                 break;
             case 'delete_image': // Delete images via AJAX
@@ -98,7 +98,7 @@ class CWebAjax extends BaseModel
                     // browser's upload token really staged that file, so it may be removed.
                     // Anything else (a forged or foreign filename) matches no row and is left
                     // untouched, which also keeps the unlink below to real staged basenames.
-                    if (ItemTmpUpload::newInstance()->deleteByTokenFile(osc_upload_token(), $ajax_photo) > 0) {
+                    if (ItemTmpUpload::getInstance()->deleteByTokenFile(osc_upload_token(), $ajax_photo) > 0) {
                         $success = @unlink(osc_content_path() . 'uploads/temp/' . $ajax_photo);
                     }
 
@@ -126,7 +126,7 @@ class CWebAjax extends BaseModel
                     return false;
                 }
 
-                $aItem = Item::newInstance()->findByPrimaryKey($item);
+                $aItem = Item::getInstance()->findByPrimaryKey($item);
 
                 // Check if the item exists
                 if (count($aItem) == 0) {
@@ -152,10 +152,10 @@ class CWebAjax extends BaseModel
                 }
 
                 // Does id & code combination exist?
-                $result = ItemResource::newInstance()->existResource($id, $code);
+                $result = ItemResource::getInstance()->existResource($id, $code);
 
                 if ($result > 0) {
-                    $resource = ItemResource::newInstance()->findByPrimaryKey($id);
+                    $resource = ItemResource::getInstance()->findByPrimaryKey($id);
 
                     if (ListingPolicy::isPhotoOf($resource, $aItem, $code)
                         && (new PhotoService())->delete((int) $id, (int) $item, $actor, $code)
@@ -213,7 +213,7 @@ class CWebAjax extends BaseModel
                 break;
             case 'custom': // Execute via AJAX custom file
                 if (Params::existParam('route')) {
-                    $routes = Rewrite::newInstance()->getRoutes();
+                    $routes = Rewrite::getInstance()->getRoutes();
                     $rid    = Params::getParam('route');
                     $file   = '../';
                     if (isset($routes[$rid]['file'])) {
@@ -259,7 +259,7 @@ class CWebAjax extends BaseModel
                 if (osc_is_username_blacklisted($username)) {
                     AjaxResponse::json(array('exists' => 1, 's_username' => $username));
                 } else {
-                    $user = User::newInstance()->findByUsername($username);
+                    $user = User::getInstance()->findByUsername($username);
                     if (isset($user['s_username'])) {
                         AjaxResponse::json(array('exists' => 1, 's_username' => $username));
                     } else {
@@ -315,7 +315,7 @@ class CWebAjax extends BaseModel
                 // Stage the file against the form's upload token (a cookie, not the session).
                 // Record the name the client attaches and deletes by (uploadName), so the
                 // "remove photo" action authorises against — and unlinks — the right file.
-                ItemTmpUpload::newInstance()->add(
+                ItemTmpUpload::getInstance()->add(
                     osc_upload_token(),
                     Params::getParam('qquuid'),
                     $result['uploadName']
@@ -386,7 +386,7 @@ class CWebAjax extends BaseModel
             return array();
         }
 
-        $field = Field::newInstance()->findByPrimaryKey($fieldId);
+        $field = Field::getInstance()->findByPrimaryKey($fieldId);
         if (!is_array($field) || (int) ($field['b_searchable'] ?? 0) !== 1) {
             return array();
         }

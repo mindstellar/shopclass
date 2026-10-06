@@ -129,7 +129,7 @@ class CWebRegister extends BaseModel
         if (!osc_gui_account_view($file)) {
             osc_current_web_theme_path($file);
         }
-        Session::newInstance()->_clearVariables();
+        Session::getInstance()->_clearVariables();
         osc_run_hook('after_html');
     }
 }

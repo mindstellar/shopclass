@@ -150,7 +150,7 @@ $car3 = $mkItem('Green Coupe', $catCars, 9000.0, 0, $regionB, $cityB, 'Beta', 'B
  * category-filtered pins below see this file's own categories.
  */
 if (class_exists('Object_Cache_Factory')) {
-    Object_Cache_Factory::newInstance()->flush();
+    Object_Cache_Factory::getInstance()->flush();
 }
 $searchCategoryReset = new ReflectionProperty('Category', 'instance');
 if (PHP_VERSION_ID < 80100) {
@@ -172,7 +172,7 @@ $sorted = static function (array $a): array {
  * ------------------------------------------------------------------------- */
 harness_section('Search: public surface');
 
-$s = Search::newInstance();
+$s = Search::getInstance();
 check('Search still extends DAO', is_subclass_of('Search', 'DAO'));
 check('$s->dao is a live DBCommandClass (C5)', $s->dao instanceof DBCommandClass);
 pin('table name is unchanged', $prefix . 't_item', $s->getTableName());

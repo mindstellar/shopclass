@@ -190,7 +190,7 @@ $sources = [
 foreach ($sources as $who => $code) {
     check("the $who goes through AccountService::changePassword()", str_contains($code, '->changePassword('));
 }
-$code  = User::newInstance()->issuePassCode($uma, User::PASS_CODE_RESET);
+$code  = User::getInstance()->issuePassCode($uma, User::PASS_CODE_RESET);
 $stamp = AuthStamp::of($row());
 $fired = [];
 pin('a wrong reset code stores nothing and signs no one out', [false, $stamp, []], [\mindstellar\user\AccountService::setPassword($uma, 'reset-password', 'not-the-code'), AuthStamp::of($row()), $fired]);
@@ -201,7 +201,7 @@ pin('so the same link cannot be used twice', [false, $stamp + 1], [\mindstellar\
 $failing = static function (): void {
     throw new RuntimeException('listener failed');
 };
-$code = User::newInstance()->issuePassCode($uma, User::PASS_CODE_RESET);
+$code = User::getInstance()->issuePassCode($uma, User::PASS_CODE_RESET);
 osc_add_hook(SignOut::USER_HOOK, $failing);
 try {
     \mindstellar\user\AccountService::setPassword($uma, 'kept-out', $code);

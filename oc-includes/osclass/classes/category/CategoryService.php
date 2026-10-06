@@ -34,7 +34,7 @@ final class CategoryService
 
     public static function make(): self
     {
-        return new self(Category::newInstance());
+        return new self(Category::getInstance());
     }
 
     /**
@@ -145,7 +145,7 @@ final class CategoryService
             foreach ($this->categories->findSubcategories($id) as $subcategory) {
                 $ids[] = (int) $subcategory['pk_i_id'];
             }
-            Item::newInstance()->enableByCategory($value, $ids);
+            Item::getInstance()->enableByCategory($value, $ids);
         } else {
             if ($enabled && !$this->canEnableUnder((int) $category['fk_i_parent_id'])) {
                 return null;

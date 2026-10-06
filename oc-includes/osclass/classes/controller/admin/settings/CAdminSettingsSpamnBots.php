@@ -155,7 +155,7 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
                     break;
                 }
                 osc_csrf_check();
-                LoginAttempt::newInstance()->pruneBefore(date('Y-m-d H:i:s'));
+                LoginAttempt::getInstance()->pruneBefore(date('Y-m-d H:i:s'));
                 osc_add_flash_ok_message(_m('Recorded sign-in attempts have been cleared'), 'admin');
                 $this->redirectTo(self::securityUrl());
                 break;

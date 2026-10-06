@@ -28,8 +28,8 @@ class Breadcrumb
      */
     public function __construct($lang = array())
     {
-        $this->location = Rewrite::newInstance()->get_location();
-        $this->section  = Rewrite::newInstance()->get_section();
+        $this->location = Rewrite::getInstance()->get_location();
+        $this->section  = Rewrite::getInstance()->get_section();
         $this->aLevel   = array();
         $this->setTitles($lang);
     }
@@ -111,9 +111,9 @@ class Breadcrumb
                     trigger_error($e->getMessage(), E_USER_WARNING);
                 }
                 // remove
-                View::newInstance()->_erase('categories');
-                View::newInstance()->_erase('subcategories');
-                View::newInstance()->_exportVariableToView('category', $aCategory);
+                View::getInstance()->_erase('categories');
+                View::getInstance()->_erase('subcategories');
+                View::getInstance()->_exportVariableToView('category', $aCategory);
 
                 try {
                     $l = array(
@@ -161,7 +161,7 @@ class Breadcrumb
                         $this->addLevel($l);
                         break;
                     default:
-                        $l = array('title' => Rewrite::newInstance()->get_title());
+                        $l = array('title' => Rewrite::getInstance()->get_title());
                         $this->addLevel($l);
                         break;
                 }
@@ -194,14 +194,14 @@ class Breadcrumb
                 // category
                 if ($b_category) {
                     try {
-                        $aCategories = Category::newInstance()->toRootTree($category);
+                        $aCategories = Category::getInstance()->toRootTree($category);
                     } catch (Exception $e) {
                         trigger_error($e->getMessage(), E_USER_WARNING);
                     }
                     foreach ($aCategories as $c) {
-                        View::newInstance()->_erase('categories');
-                        View::newInstance()->_erase('subcategories');
-                        View::newInstance()->_exportVariableToView('category', $c);
+                        View::getInstance()->_erase('categories');
+                        View::getInstance()->_erase('subcategories');
+                        View::getInstance()->_exportVariableToView('category', $c);
 
                         try {
                             $l = array(
@@ -224,12 +224,12 @@ class Breadcrumb
                     if ($b_city) {
                         $aCity = array();
                         if ($b_region) {
-                            $_region = Region::newInstance()->findByName($region);
+                            $_region = Region::getInstance()->findByName($region);
                             if (isset($_region['pk_i_id'])) {
-                                $aCity = City::newInstance()->findByName($city, $_region['pk_i_id']);
+                                $aCity = City::getInstance()->findByName($city, $_region['pk_i_id']);
                             }
                         } else {
-                            $aCity = City::newInstance()->findByName($city);
+                            $aCity = City::getInstance()->findByName($city);
                         }
 
                         if (count($aCity) == 0) {
@@ -244,7 +244,7 @@ class Breadcrumb
                             }
                             $this->addLevel($l);
                         } else {
-                            $aRegion = Region::newInstance()->findByPrimaryKey($aCity['fk_i_region_id']);
+                            $aRegion = Region::getInstance()->findByPrimaryKey($aCity['fk_i_region_id']);
 
                             $params['sRegion'] = $aRegion['s_name'];
                             try {
@@ -342,7 +342,7 @@ class Breadcrumb
                         $this->addLevel($l);
                         break;
                     default:
-                        $l = array('title' => Rewrite::newInstance()->get_title());
+                        $l = array('title' => Rewrite::getInstance()->get_title());
                         $this->addLevel($l);
                         break;
                 }
@@ -376,7 +376,7 @@ class Breadcrumb
                 $this->addLevel($l);
                 break;
             case ('custom'):
-                $l = array('title' => Rewrite::newInstance()->get_title());
+                $l = array('title' => Rewrite::getInstance()->get_title());
                 $this->addLevel($l);
                 break;
         }

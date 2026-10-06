@@ -56,7 +56,7 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hCache.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hKv.php';
 require_once ABS_PATH . 'oc-includes/osclass/formatting.php';
 
-Preference::newInstance();
+Preference::getInstance();
 
 $p      = DB_TABLE_PREFIX;
 $locale = seed_locale($admin);

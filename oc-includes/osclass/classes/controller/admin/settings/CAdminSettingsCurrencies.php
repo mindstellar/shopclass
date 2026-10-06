@@ -82,7 +82,7 @@ class CAdminSettingsCurrencies extends AdminSecBaseModel
                     $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=currencies');
                 }
 
-                $aCurrency = Currency::newInstance()->findByPrimaryKey($currencyCode);
+                $aCurrency = Currency::getInstance()->findByPrimaryKey($currencyCode);
 
                 if (!$aCurrency) {
                     osc_add_flash_warning_message(
@@ -171,7 +171,7 @@ class CAdminSettingsCurrencies extends AdminSecBaseModel
                 break;
             default:
                 // calling the currencies view
-                $aCurrencies = Currency::newInstance()->listAll();
+                $aCurrencies = Currency::getInstance()->listAll();
                 $this->_exportVariableToView('aCurrencies', $aCurrencies);
 
                 $this->doView('settings/currencies.php');

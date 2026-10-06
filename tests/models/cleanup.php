@@ -60,7 +60,7 @@ require_once __DIR__ . '/../lib/harness.php';
 
 $admin  = scratchdb_session('osc_models_cleanup');
 $prefix = DB_TABLE_PREFIX;
-$engine = Cleanup::newInstance();
+$engine = Cleanup::getInstance();
 
 $dir = 'tests/tmp-cleanup-' . getmypid() . '/';
 @mkdir(ABS_PATH . $dir, 0777, true);

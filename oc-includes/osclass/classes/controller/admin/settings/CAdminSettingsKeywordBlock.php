@@ -120,7 +120,7 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
                 $this->_saveKeywordBlock(null);
                 break;
             case ('keyword_block_edit'):
-                $keyword = KeywordBlock::newInstance()->findByPrimaryKey(Params::getParam('id'));
+                $keyword = KeywordBlock::getInstance()->findByPrimaryKey(Params::getParam('id'));
                 if (empty($keyword)) {
                     osc_add_flash_error_message(_m('That keyword no longer exists'), 'admin');
                     $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=keyword_block');
@@ -141,7 +141,7 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
                     $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=keyword_block');
                 }
 
-                $model = KeywordBlock::newInstance();
+                $model = KeywordBlock::getInstance();
                 BulkAction::apply(
                     static fn ($id) => (bool)$model->deleteByPrimaryKey($id),
                     'One keyword has been deleted',
@@ -216,7 +216,7 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
             'dt_date'     => date('Y-m-d H:i:s'),
         );
 
-        $model = KeywordBlock::newInstance();
+        $model = KeywordBlock::getInstance();
         if ($id) {
             $ok = $model->update($values, array('pk_i_id' => $id));
             $msgOk = _m('Keyword updated correctly');

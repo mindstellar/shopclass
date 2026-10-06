@@ -29,7 +29,7 @@ $oeCommentTotal = (int)osc_count_item_comments();
 // their post would be rejected from. The thread itself stays readable either way.
 $oeCommentGated = osc_reg_user_post_comments() && !osc_is_web_user_logged_in();
 $oeCommentOld   = static function ($key) {
-    return osc_esc_html((string)Session::newInstance()->_getForm($key));
+    return osc_esc_html((string)Session::getInstance()->_getForm($key));
 };
 ?>
 <section class="oe-comments" id="comments" aria-labelledby="oe-comments-title">

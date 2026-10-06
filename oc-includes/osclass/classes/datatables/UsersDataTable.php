@@ -71,7 +71,7 @@ class UsersDataTable extends DataTable
         $dummy = &$this;
         osc_run_hook('manage_user_search_conditions', $dummy);
 
-        $list_users = User::newInstance()->search(
+        $list_users = User::getInstance()->search(
             $this->start,
             $this->limit,
             $this->order_by['column_name'],

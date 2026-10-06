@@ -30,10 +30,10 @@ $cleanup_rules = array(
 );
 $rule_labels = Cleanup::ruleLabels();
 
-$engine      = Cleanup::newInstance();
+$engine      = Cleanup::getInstance();
 $batch_limit = Cleanup::batchLimit();
 $running     = \mindstellar\job\CleanupJobs::isRunning();
-$history     = View::newInstance()->_get('cleanup_history') ?: array();
+$history     = View::getInstance()->_get('cleanup_history') ?: array();
 
 osc_current_admin_theme_path('parts/header.php'); ?>
     <?php osc_admin_page_head(__('Cleanup'), array(array(

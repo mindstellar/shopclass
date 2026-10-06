@@ -51,7 +51,7 @@ $admin->query("UPDATE {$p}t_item SET dt_expiration = '2020-01-01 00:00:00' WHERE
 $admin->query("UPDATE {$p}t_item SET dt_pub_date = '2026-01-01 00:00:00', dt_first_pub_date = '2026-01-01 00:00:00' WHERE pk_i_id = $live");
 foreach (['enabled_users' => '1', 'moderate_items' => '-1', 'items_wait_time' => '0', 'language' => 'en_US', 'logs_admin' => '1',
     'title_character_length' => '100', 'description_character_length' => '5000'] as $k => $v) {
-    Preference::newInstance()->set($k, $v);
+    Preference::getInstance()->set($k, $v);
 }
 scratchdb_forget_cache();
 osc_reset_preferences();

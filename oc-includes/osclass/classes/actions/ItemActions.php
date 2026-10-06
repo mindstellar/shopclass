@@ -65,7 +65,7 @@ class ItemActions
     public function __construct($is_admin = false)
     {
         $this->is_admin = $is_admin;
-        $this->manager  = Item::newInstance();
+        $this->manager  = Item::getInstance();
     }
 
     /**
@@ -232,7 +232,7 @@ class ItemActions
      */
     public function sendEmails($aItem)
     {
-        (new ListingService())->notifyNew($aItem['item'], (string) $aItem['active'], new Actor((int) Session::newInstance()->_get('userId'), null));
+        (new ListingService())->notifyNew($aItem['item'], (string) $aItem['active'], new Actor((int) Session::getInstance()->_get('userId'), null));
     }
 
     /**
@@ -259,7 +259,7 @@ class ItemActions
      */
     public static function decreaseStatsFor(int $id): void
     {
-        $item = Item::newInstance()->findByPrimaryKey($id);
+        $item = Item::getInstance()->findByPrimaryKey($id);
         if ($item) {
             ListingStats::decrease($item);
         }
@@ -395,7 +395,7 @@ class ItemActions
         if (!is_array($item) || $item === array()) {
             return __("This listing doesn't exist");
         }
-        View::newInstance()->_exportVariableToView('item', $item);
+        View::getInstance()->_exportVariableToView('item', $item);
 
         try {
             $sent = (new ListingMailService())->shareWithFriend($item, $this->mailForm(array('yourName', 'yourEmail', 'friendName', 'friendEmail', 'message')));
@@ -424,7 +424,7 @@ class ItemActions
         if (!is_array($item) || $item === array()) {
             return __("This listing doesn't exist");
         }
-        View::newInstance()->_exportVariableToView('item', $item);
+        View::getInstance()->_exportVariableToView('item', $item);
 
         try {
             return (new ListingMailService())->contactSeller($item, $this->mailForm(array('yourName', 'yourEmail', 'phoneNumber', 'message')));

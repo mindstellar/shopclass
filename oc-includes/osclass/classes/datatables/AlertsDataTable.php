@@ -61,7 +61,7 @@ class AlertsDataTable extends DataTable
                 (string)$this->search
             );
         } else {
-            $alerts = Alerts::newInstance()
+            $alerts = Alerts::getInstance()
                 ->search(
                     $this->start,
                     $this->limit,

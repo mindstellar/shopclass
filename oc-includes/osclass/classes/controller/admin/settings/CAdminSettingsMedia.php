@@ -82,7 +82,7 @@ class CAdminSettingsMedia extends AdminSecBaseModel
                     // No remote storage configured: regenerate every resource inline, exactly as before.
                     // One photo that cannot be opened, such as one over the pixel limit, is skipped.
                     $skipped = 0;
-                    foreach (ItemResource::newInstance()->getAllResources() as $resource) {
+                    foreach (ItemResource::getInstance()->getAllResources() as $resource) {
                         try {
                             \mindstellar\listing\PhotoService::regenerateImages($resource);
                         } catch (Throwable $e) {
@@ -100,7 +100,7 @@ class CAdminSettingsMedia extends AdminSecBaseModel
                     // download per resource, so page through resource ids (never loading full rows)
                     // and queue a 'regenerate' job per resource for the storage worker to process.
                     $remoteId = \mindstellar\storage\StorageManager::getInstance()->remote()->getId();
-                    $itemResourceManager = ItemResource::newInstance();
+                    $itemResourceManager = ItemResource::getInstance();
                     $batchSize = 500;
                     $offset    = 0;
                     $count     = 0;

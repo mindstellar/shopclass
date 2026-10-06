@@ -106,11 +106,11 @@ $pageErrors   = is_array($pageErrors) ? $pageErrors : array();
 $pageLocales  = array();
 $pageTitles   = array();
 $pageBodies   = array();
-$pageSubmitted = Session::newInstance()->_getForm('aFieldsDescription');
+$pageSubmitted = Session::getInstance()->_getForm('aFieldsDescription');
 // What was typed wins here too, the way PageForm::internal_name_input_text() reads it.
 $pageInternalName = $page['s_internal_name'] ?? '';
-if (Session::newInstance()->_getForm('s_internal_name') != '') {
-    $pageInternalName = Session::newInstance()->_getForm('s_internal_name');
+if (Session::getInstance()->_getForm('s_internal_name') != '') {
+    $pageInternalName = Session::getInstance()->_getForm('s_internal_name');
 }
 foreach (osc_get_admin_locales() as $pageLocale) {
     $code                = $pageLocale['pk_c_code'];
@@ -219,7 +219,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     if ($pb_is_builder) {
         $blockLocation = $pb_location;
         $pageId        = $pb_page_id;
-        $blocks        = Widget::newInstance()->findByLocation($blockLocation);
+        $blocks        = Widget::getInstance()->findByLocation($blockLocation);
         $widgetTypes   = osc_widget_types();
 
         osc_admin_panel_open(__('Widgets'), array(

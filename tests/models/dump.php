@@ -60,7 +60,7 @@ require_once __DIR__ . '/../lib/harness.php';
 
 $admin = scratchdb_session('osc_models_dump');
 
-$model = Dump::newInstance();
+$model = Dump::getInstance();
 
 /**
  * Create a fresh, writable, EMPTY temp file and return its path. table_structure
@@ -105,7 +105,13 @@ pin(
 );
 pin(
     'Dump declares exactly newInstance/showTables/table_structure/table_data (plus private helpers)',
-    array('newInstance', 'showTables', 'table_data', 'table_structure'),
+    array(
+        'getInstance',
+        'newInstance',
+        'showTables',
+        'table_data',
+        'table_structure',
+    ),
     (static function (): array {
         // Only methods DECLARED on Dump itself; the inherited DAO base surface is
         // pinned separately by tests/dao-contract.php and is out of scope here.
@@ -121,7 +127,7 @@ pin(
     })()
 );
 
-pin('newInstance returns the singleton', true, Dump::newInstance() === $model);
+pin('newInstance returns the singleton', true, Dump::getInstance() === $model);
 pin('model exposes a live DBCommandClass dao (C5)', true, $model->dao instanceof DBCommandClass);
 
 /* ----------------------------------------------------------------------------

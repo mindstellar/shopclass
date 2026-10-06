@@ -18,7 +18,7 @@ if (!defined('ABS_PATH')) {
  * controller exported.
  */
 
-$itemsType = (string) View::newInstance()->_get('items_type');
+$itemsType = (string) View::getInstance()->_get('items_type');
 $itemsTabs = array(
     'all'     => _m('All'),
     'active'  => _m('Published'),

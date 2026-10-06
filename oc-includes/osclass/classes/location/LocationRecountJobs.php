@@ -99,7 +99,7 @@ final class LocationRecountJobs
         }
 
         if ($level === 'country') {
-            $stats = CountryStats::newInstance();
+            $stats = CountryStats::getInstance();
             foreach ($ids as $code) {
                 if ($stats->setNumItems($code, $stats->calculateNumItems($code)) !== true) {
                     throw new \RuntimeException('Could not save the listing count of country ' . $code);
@@ -108,8 +108,8 @@ final class LocationRecountJobs
         } else {
             $ids = array_map('intval', $ids);
             $ok  = $level === 'region'
-                ? RegionStats::newInstance()->updateAllStats($ids)
-                : CityStats::newInstance()->updateAllStats($ids);
+                ? RegionStats::getInstance()->updateAllStats($ids)
+                : CityStats::getInstance()->updateAllStats($ids);
             if ($ok !== true) {
                 throw new \RuntimeException('Could not save the listing counts of ' . count($ids) . ' ' . $level . ' rows');
             }

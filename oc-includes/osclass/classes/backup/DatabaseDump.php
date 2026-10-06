@@ -83,7 +83,7 @@ final class DatabaseDump
     public static function tables(): array
     {
         $tables = array();
-        foreach (Dump::newInstance()->showTables() as $row) {
+        foreach (Dump::getInstance()->showTables() as $row) {
             $name = (string) current($row);
             if (TablePrefix::owns($name, DB_TABLE_PREFIX)) {
                 $tables[] = $name;
@@ -111,7 +111,7 @@ final class DatabaseDump
         if (@file_put_contents($file, '/* Shopclass database backup ' . date('c') . " */\n", FILE_APPEND) === false) {
             throw new RuntimeException('Could not write the database backup');
         }
-        $dump = Dump::newInstance();
+        $dump = Dump::getInstance();
         foreach ($tables as $i => $table) {
             if ($each !== null) {
                 $each($i, count($tables), $table);

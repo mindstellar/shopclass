@@ -46,7 +46,7 @@ final class AlertsController
      */
     public function index(Request $request, Credential $credential, array $args): Response
     {
-        $rows = \Alerts::newInstance()->findByUser((int) $credential->userId());
+        $rows = \Alerts::getInstance()->findByUser((int) $credential->userId());
 
         return Response::collection(array_map([$this->serializer, 'one'], $rows));
     }
@@ -67,12 +67,12 @@ final class AlertsController
             throw ProblemException::field('/filters', 'minProperties', 'must name at least one filter');
         }
 
-        $existing = \Alerts::newInstance()->findBySearchAndUser($alert, $userId);
+        $existing = \Alerts::getInstance()->findBySearchAndUser($alert, $userId);
         if ($existing !== []) {
             return Response::ok($this->serializer->one($existing[0]));
         }
         $result = osc_subscribe_alert(base64_encode((string) osc_encrypt_alert($alert)), '');
-        $saved  = \Alerts::newInstance()->findBySearchAndUser($alert, $userId);
+        $saved  = \Alerts::getInstance()->findBySearchAndUser($alert, $userId);
         if ($result !== 1 || $saved === []) {
             throw $result === -1
                 ? ProblemException::of('forbidden', 'This account cannot save alerts.')
@@ -99,7 +99,7 @@ final class AlertsController
      */
     public function delete(Request $request, Credential $credential, array $args): Response
     {
-        \Alerts::newInstance()->unsub((int) $this->own($credential, (int) $args['id'])['pk_i_id']);
+        \Alerts::getInstance()->unsub((int) $this->own($credential, (int) $args['id'])['pk_i_id']);
 
         return Response::noContent();
     }
@@ -112,7 +112,7 @@ final class AlertsController
      */
     private function own(Credential $credential, int $id): array
     {
-        $alert = \Alerts::newInstance()->findByPrimaryKey($id);
+        $alert = \Alerts::getInstance()->findByPrimaryKey($id);
         if (!is_array($alert) || (int) ($alert['fk_i_user_id'] ?? 0) !== (int) $credential->userId() || !empty($alert['dt_unsub_date'])) {
             throw ProblemException::of('not_found', 'No such alert.');
         }

@@ -154,7 +154,7 @@ seed_exec(
 
 pin('the submitted value is there to begin with', 1, $rows('t_form_submission_value', "fk_i_field_id = $field"));
 
-$deleted = Field::newInstance()->deleteByPrimaryKey($field);
+$deleted = Field::getInstance()->deleteByPrimaryKey($field);
 
 pin('the field reports one row removed', 1, $deleted);
 pin('the field is gone', 0, $rows('t_meta_fields', "pk_i_id = $field"));
@@ -190,7 +190,7 @@ seed_exec(
     array($submission, $loose)
 );
 
-$deleted = FieldGroup::newInstance()->deleteByPrimaryKey($group);
+$deleted = FieldGroup::getInstance()->deleteByPrimaryKey($group);
 
 pin('the form reports one row removed', 1, $deleted);
 pin('the form is gone', 0, $rows('t_meta_group', "pk_i_id = $group"));
@@ -265,7 +265,7 @@ seed_exec(
     array($item)
 );
 
-$deleted = Item::newInstance()->deleteByPrimaryKey($item);
+$deleted = Item::getInstance()->deleteByPrimaryKey($item);
 
 pin('the item reports one row removed', 1, $deleted);
 pin('the item is gone', 0, $rows('t_item', "pk_i_id = $item"));
@@ -321,7 +321,7 @@ seed_exec(
     array($blocked)
 );
 
-$refused = Item::newInstance()->deleteByPrimaryKey($blocked);
+$refused = Item::getInstance()->deleteByPrimaryKey($blocked);
 
 pin('the delete reports failure rather than a row count', false, $refused);
 pin('the listing is still there', 1, $rows('t_item', "pk_i_id = $blocked"));
@@ -366,7 +366,7 @@ seed_exec(
     array($child)
 );
 
-$deleted = Category::newInstance()->deleteByPrimaryKey($parent);
+$deleted = Category::getInstance()->deleteByPrimaryKey($parent);
 
 pin('the parent category reports one row removed', 1, $deleted);
 pin('the parent is gone', 0, $rows('t_category', "pk_i_id = $parent"));
@@ -456,7 +456,7 @@ seed_exec(
     array($owner)
 );
 
-$ok = User::newInstance()->deleteUser($owner);
+$ok = User::getInstance()->deleteUser($owner);
 
 pin('the user delete reports success', true, $ok);
 pin('the user is gone', 0, $rows('t_user', "pk_i_id = $owner"));
@@ -495,11 +495,11 @@ seed_exec(
     array($histRegion)
 );
 
-City::newInstance()->deleteByPrimaryKey($histCity);
+City::getInstance()->deleteByPrimaryKey($histCity);
 pin('the city is gone', 0, $rows('t_city', "pk_i_id = $histCity"));
 pin("the city's slug history is gone", 0, $rows('t_location_slug_history', "e_type = 'CITY' AND fk_i_id = $histCity"));
 
-Region::newInstance()->deleteByPrimaryKey($histRegion);
+Region::getInstance()->deleteByPrimaryKey($histRegion);
 pin('the region is gone', 0, $rows('t_region', "pk_i_id = $histRegion"));
 pin("the region's slug history is gone", 0, $rows('t_location_slug_history', "e_type = 'REGION' AND fk_i_id = $histRegion"));
 
@@ -511,7 +511,7 @@ harness_section('Page::deleteByPrimaryKey');
 
 $page = seed_page($admin, 'terms', 'Terms');
 
-$deleted = Page::newInstance()->deleteByPrimaryKey($page);
+$deleted = Page::getInstance()->deleteByPrimaryKey($page);
 
 pin('the page reports one row removed', 1, $deleted);
 pin('the page is gone', 0, $rows('t_pages', "pk_i_id = $page"));

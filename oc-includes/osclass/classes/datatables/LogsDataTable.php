@@ -49,7 +49,7 @@ class LogsDataTable extends DataTable
             'q'       => (string) Params::getParam('q'),
         );
 
-        $list = Log::newInstance()->search(
+        $list = Log::getInstance()->search(
             $this->start,
             $this->limit,
             $this->order_by['column_name'],

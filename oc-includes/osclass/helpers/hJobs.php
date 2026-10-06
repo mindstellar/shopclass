@@ -299,7 +299,7 @@ function osc_auto_cron_dispatch(bool $responseSent = false): void
     // fails open (write fails or file unwritable => cron still runs), never closed.
     $window = 300;
     $fire   = false;
-    $cache  = Object_Cache_Factory::newInstance();
+    $cache  = Object_Cache_Factory::getInstance();
 
     if (!($cache instanceof Object_Cache_default)) {
         $found = false;

@@ -190,7 +190,7 @@ class CAdminPlugins extends AdminSecBaseModel
                 break;
             case 'renderplugin':
                 if (Params::existParam('route')) {
-                    $routes = Rewrite::newInstance()->getRoutes();
+                    $routes = Rewrite::getInstance()->getRoutes();
                     $rid    = Params::getParam('route');
                     $file   = '../';
                     if (isset($routes[$rid], $routes[$rid]['file'])) {
@@ -229,10 +229,10 @@ class CAdminPlugins extends AdminSecBaseModel
                 $plugin = Params::getParam('plugin');
                 if ($plugin != '') {
                     $plugin_data = Plugins::getInfo($plugin);
-                    $this->_exportVariableToView('categories', Category::newInstance()->toTreeAll());
+                    $this->_exportVariableToView('categories', Category::getInstance()->toTreeAll());
                     $this->_exportVariableToView(
                         'selected',
-                        PluginCategory::newInstance()->listSelected($plugin_data['short_name'])
+                        PluginCategory::getInstance()->listSelected($plugin_data['short_name'])
                     );
                     $this->_exportVariableToView('plugin_data', $plugin_data);
                     $this->doView('plugins/configuration.php');

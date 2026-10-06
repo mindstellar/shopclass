@@ -352,13 +352,21 @@ class Search extends DAO
      *
      * @return \Search
      */
-    public static function newInstance()
+    public static function getInstance()
     {
         if (!self::$instance instanceof self) {
             self::$instance = new self();
         }
 
         return self::$instance;
+    }
+
+    /**
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
+     */
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     /**
@@ -792,7 +800,7 @@ class Search extends DAO
         }
 
         if (($extended === true) && !empty($items)) {
-            return $this->primeResources ? Item::newInstance()->extendData($items) : Item::newInstance()->extendRows($items);
+            return $this->primeResources ? Item::getInstance()->extendData($items) : Item::getInstance()->extendRows($items);
         }
 
         return $items;
@@ -1517,13 +1525,13 @@ class Search extends DAO
             // — this path had no such check at all, so bots drove both the counter
             // and the write load.
             if (osc_request_counts_as_view()) {
-                ItemStats::newInstance()->increaseBatch(
+                ItemStats::getInstance()->increaseBatch(
                     'i_num_premium_views',
                     array_column($items, 'pk_i_id')
                 );
             }
 
-            return Item::newInstance()->extendData($items);
+            return Item::getInstance()->extendData($items);
         }
 
         return array();
@@ -1726,7 +1734,7 @@ class Search extends DAO
         if (!is_numeric($category)) {
             $category  = preg_replace('|/$|', '', $category);
             $aCategory = explode('/', $category);
-            $category  = Category::newInstance()->findBySlug($aCategory[count($aCategory) - 1]);
+            $category  = Category::getInstance()->findBySlug($aCategory[count($aCategory) - 1]);
 
             if (count($category) == 0) {
                 return false;
@@ -1734,7 +1742,7 @@ class Search extends DAO
 
             $category = $category['pk_i_id'];
         }
-        $tree = Category::newInstance()->toSubTree($category);
+        $tree = Category::getInstance()->toSubTree($category);
         if (!in_array($category, $this->categories)) {
             $this->categories[] = $category;
         }
@@ -1892,7 +1900,7 @@ class Search extends DAO
             $ids              = array();
             foreach ($id as $_id) {
                 if (!is_numeric($_id)) {
-                    $user = User::newInstance()->findByUsername($_id);
+                    $user = User::getInstance()->findByUsername($_id);
                     if (isset($user['pk_i_id'])) {
                         $ids[] = sprintf(
                             '%st_item.fk_i_user_id = %d ',
@@ -1908,7 +1916,7 @@ class Search extends DAO
         } else {
             $this->withUserId = true;
             if (!is_numeric($id)) {
-                $user = User::newInstance()->findByUsername($id);
+                $user = User::getInstance()->findByUsername($id);
                 if (isset($user['pk_i_id'])) {
                     $this->user_ids = $this->escapeValue($user['pk_i_id']);
                 }
@@ -1931,13 +1939,13 @@ class Search extends DAO
      */
     public function listCountries($zero = '>', $order = 'items DESC')
     {
-        return CountryStats::newInstance()->listCountries($zero, $order);
+        return CountryStats::getInstance()->listCountries($zero, $order);
     }
 
     /**
      * Returns number of ads from each region
      * <code>
-     *  Search::newInstance()->listRegions($country, ">=", "country_name ASC" )
+     *  Search::getInstance()->listRegions($country, ">=", "country_name ASC" )
      * </code>
      *
      * @param string $country
@@ -1951,14 +1959,14 @@ class Search extends DAO
      */
     public function listRegions($country = '%%%%', $zero = '>', $order = 'items DESC')
     {
-        return RegionStats::newInstance()->listRegions($country, $zero, $order);
+        return RegionStats::getInstance()->listRegions($country, $zero, $order);
     }
 
     /**
      * Returns number of ads from each city
      *
      * <code>
-     *  Search::newInstance()->listCities($region, ">=", "city_name ASC" )
+     *  Search::getInstance()->listCities($region, ">=", "city_name ASC" )
      * </code>
      *
      * @param string $region
@@ -1972,7 +1980,7 @@ class Search extends DAO
      */
     public function listCities($region = null, $zero = '>', $order = 'city_name ASC')
     {
-        return CityStats::newInstance()->listCities($region, $zero, $order);
+        return CityStats::getInstance()->listCities($region, $zero, $order);
     }
 
     /**

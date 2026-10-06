@@ -29,7 +29,7 @@
  */
 function __($key, $domain = 'core')
 {
-    $gt     = Translation::newInstance()->_get();
+    $gt     = Translation::getInstance()->_get();
     $string = $gt->dgettext($domain, $key);
 
     return osc_apply_filter('gettext', $string);
@@ -76,7 +76,7 @@ function _m($key)
  */
 function _x($key, $context, $domain = 'core')
 {
-    $gt     = Translation::newInstance()->_get();
+    $gt     = Translation::getInstance()->_get();
     $string = $gt->dpgettext($domain, $context, $key);
 
     return osc_apply_filter('gettext', $string);
@@ -123,7 +123,7 @@ function _mx($key, $context)
  */
 function _n($single_key, $plural_key, $count, $domain = 'core')
 {
-    $gt     = Translation::newInstance()->_get();
+    $gt     = Translation::getInstance()->_get();
     $string = $gt->dngettext($domain, $single_key, $plural_key, $count);
 
     return osc_apply_filter('ngettext', $string);

@@ -109,7 +109,7 @@ if (PHP_VERSION_ID < 80100) {
 }
 $prefInstance->setValue(null, null);
 
-$model = Preference::newInstance();
+$model = Preference::getInstance();
 
 /* ----------------------------------------------------------------------------
  * Surface (C2): the public API must survive the conversion byte-identical.
@@ -370,14 +370,14 @@ pin('one replace() call costs one query', 1, harness_query_count(static function
  * ------------------------------------------------------------------------- */
 harness_section('Preference: singleton persistence (C9)');
 
-$modelAgain = Preference::newInstance();
+$modelAgain = Preference::getInstance();
 check('newInstance() returns the SAME object on a later call', $model === $modelAgain);
 pin('the cache built earlier in this process is still there', 'newVal', $modelAgain->get('newKey', 'osclass'));
 
 /* ----------------------------------------------------------------------------
  * Constructor-time loading, exercised on a FRESH instance.
  *
- * Preference::newInstance() is a process-lifetime singleton, so it only ever
+ * Preference::getInstance() is a process-lifetime singleton, so it only ever
  * runs its constructor once per process — not enough to characterize what the
  * constructor does at construction time against different table states.
  * __construct() is public and does nothing singleton-specific itself (only
@@ -413,7 +413,7 @@ pin(
 
 check(
     'nothing above touched the process-wide singleton',
-    Preference::newInstance() === $modelAgain
+    Preference::getInstance() === $modelAgain
 );
 
 if (!defined('MODELS_RUNNER')) {

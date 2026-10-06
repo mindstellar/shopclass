@@ -106,12 +106,12 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hCache.php';
  * preference; the Preference singleton loads the whole table on construction.
  * Warm it here so that one-off query is never attributed to a query-count pin.
  */
-Preference::newInstance();
+Preference::getInstance();
 
-$model     = RegionStats::newInstance();
+$model     = RegionStats::getInstance();
 $table     = DB_TABLE_PREFIX . 't_region_stats';
 $locations = DB_TABLE_PREFIX . 't_item_location';
-$cache     = Object_Cache_Factory::newInstance();
+$cache     = Object_Cache_Factory::getInstance();
 
 seed_country($admin, 'US', 'United States');
 seed_country($admin, 'ES', 'Spain');
@@ -232,7 +232,7 @@ pin(
     harness_method_signature('RegionStats', 'newInstance')
 );
 check('RegionStats still extends DAO', is_subclass_of('RegionStats', 'DAO'));
-check('newInstance() is a singleton', RegionStats::newInstance() === $model);
+check('newInstance() is a singleton', RegionStats::getInstance() === $model);
 check('$model->dao is a live DBCommandClass (C5)', $model->dao instanceof DBCommandClass);
 pin('table name is unchanged', $table, $model->getTableName());
 pin('primary key is unchanged', 'fk_i_region_id', $model->getPrimaryKey());

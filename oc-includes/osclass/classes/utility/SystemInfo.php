@@ -251,10 +251,10 @@ class SystemInfo
      */
     public function setOsclassInfo(): self
     {
-        $all_preferences_serialized = serialize(Preference::newInstance()->listAll());
+        $all_preferences_serialized = serialize(Preference::getInstance()->listAll());
         $all_preference_bytes       = round(mb_strlen($all_preferences_serialized, '8bit') / 1024, 2);
 
-        $this->osclass_preference_count = count(Preference::newInstance()->listAll());
+        $this->osclass_preference_count = count(Preference::getInstance()->listAll());
         $this->osclass_preference_size  = $all_preference_bytes . 'KB';
 
         $this->osclass_version      = osc_version();

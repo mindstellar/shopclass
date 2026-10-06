@@ -528,9 +528,9 @@ $userPlaces = static function () use ($admin, $prefix): array {
 };
 
 foreach (array(
-    'city'    => array($c11, static fn ($id) => City::newInstance()->deleteByPrimaryKey($id)),
-    'region'  => array($d1, static fn ($id) => Region::newInstance()->deleteByPrimaryKey($id)),
-    'country' => array('DD', static fn ($id) => Country::newInstance()->deleteByPrimaryKey($id)),
+    'city'    => array($c11, static fn ($id) => City::getInstance()->deleteByPrimaryKey($id)),
+    'region'  => array($d1, static fn ($id) => Region::getInstance()->deleteByPrimaryKey($id)),
+    'country' => array('DD', static fn ($id) => Country::getInstance()->deleteByPrimaryKey($id)),
 ) as $level => [$id, $delete]) {
     $impact      = $q->impact($level, array($id));
     $itemsBefore = $scalar("SELECT COUNT(*) FROM {$prefix}t_item");

@@ -58,7 +58,7 @@ $sue    = seed_user($admin, 'sue', 'sue@example.test');
 
 $setPref = static function (array $values): void {
     foreach ($values as $k => $v) {
-        Preference::newInstance()->set($k, $v);
+        Preference::getInstance()->set($k, $v);
     }
     scratchdb_forget_cache();
     osc_reset_preferences();
@@ -101,11 +101,11 @@ osc_add_hook('hook_email_user_validation', static function () use (&$sent): void
 $accounts = new AccountService();
 $admin->query("UPDATE {$p}t_user SET dt_access_date = NOW() WHERE pk_i_id = $pending");
 pin('right after a link, the holder is told to wait', [false, 0], [$accounts->resendActivation($pending, true), $sent]);
-pin('and the wait is the 20 minutes', true, AccountService::resendWait(User::newInstance()->findByPrimaryKey($pending)) > 1100);
+pin('and the wait is the 20 minutes', true, AccountService::resendWait(User::getInstance()->findByPrimaryKey($pending)) > 1100);
 pin('an admin does not wait', [true, 1], [$accounts->resendActivation($pending), $sent]);
 $admin->query("UPDATE {$p}t_user SET dt_access_date = NOW() - INTERVAL 21 MINUTE WHERE pk_i_id = $pending");
 pin('after 20 minutes the holder gets a link', [true, 2], [$accounts->resendActivation($pending, true), $sent]);
-pin('and the wait starts again', true, AccountService::resendWait(User::newInstance()->findByPrimaryKey($pending)) > 0);
+pin('and the wait starts again', true, AccountService::resendWait(User::getInstance()->findByPrimaryKey($pending)) > 0);
 $adminNotes = 0;
 osc_add_hook('hook_email_admin_new_user', static function () use (&$adminNotes): void {
     $adminNotes++;

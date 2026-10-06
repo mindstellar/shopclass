@@ -237,7 +237,7 @@ foreach (array(
     'currency'                     => 'USD',
     'rewriteEnabled'               => '0',
 ) as $k => $v) {
-    Preference::newInstance()->set($k, $v);
+    Preference::getInstance()->set($k, $v);
 }
 scratchdb_forget_cache();
 $_COOKIE['oc_userLocale'] = 'en_US';
@@ -301,10 +301,10 @@ pin('the site root', array(200, 'Test site', 'en_US', array('users' => true, 're
 pin('what the API allows here, all off by default', array('registration' => false, 'personal_keys' => false, 'photo_urls' => false, 'public_reads' => false), $r->body()['data']['api'] ?? null);
 $api = static fn (ApiSettings $settings): ?array => $get('', array(), $publicKey, $makeKernel($settings))->body()['data']['api'] ?? null;
 pin('switched on in the API settings', array('registration' => false, 'personal_keys' => true, 'photo_urls' => true, 'public_reads' => true), $api(new ApiSettings(true, true, userKeys: true, registration: true, photoUrls: true)));
-Preference::newInstance()->set('enabled_user_registration', '1');
+Preference::getInstance()->set('enabled_user_registration', '1');
 osc_reset_preferences();
 pin('sign-up through the API also needs the site to take sign-ups', true, $api(new ApiSettings(true, registration: true))['registration'] ?? null);
-Preference::newInstance()->set('enabled_user_registration', '0');
+Preference::getInstance()->set('enabled_user_registration', '0');
 osc_reset_preferences();
 pin('links to the collections', 'http://localhost/api/v1/listings', $r->body()['data']['links']['listings']);
 pin('matches the schema', array(), $schemaErrors('SiteDocument', $r));
@@ -312,9 +312,9 @@ $lazy = Schema::definitions();
 $r    = $get('currencies', array(), $publicKey, $makeKernel(new ApiSettings(true), new Validator($lazy)));
 pin('currencies', array(array('code' => 'USD', 'name' => 'US Dollar', 'symbol' => 'US Dollar')), $r->body()['data']);
 pin('a request whose route follows no $ref never builds the component schemas', false, $lazy->isBuilt());
-Preference::newInstance()->set('pageTitle', 'Renamed site');
+Preference::getInstance()->set('pageTitle', 'Renamed site');
 pin('the site root follows a settings change at once', 'Renamed site', $get('', array(), $publicKey)->body()['data']['name']);
-Preference::newInstance()->set('pageTitle', 'Test site');
+Preference::getInstance()->set('pageTitle', 'Test site');
 
 harness_section('categories and fields');
 $r = $get('categories', array(), $publicKey);

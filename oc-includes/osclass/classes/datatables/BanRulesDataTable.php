@@ -56,7 +56,7 @@ class BanRulesDataTable extends DataTable
         $this->addTableHeader();
         $this->getDBParams($params);
 
-        $list_rules = BanRule::newInstance()->search(
+        $list_rules = BanRule::getInstance()->search(
             $this->start,
             $this->limit,
             $this->order_by['column_name'],

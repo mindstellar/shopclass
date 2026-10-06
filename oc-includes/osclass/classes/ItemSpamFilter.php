@@ -62,13 +62,21 @@ class ItemSpamFilter
      *
      * @return ItemSpamFilter
      */
-    public static function newInstance()
+    public static function getInstance()
     {
         if (!self::$instance instanceof self) {
             self::$instance = new self();
         }
 
         return self::$instance;
+    }
+
+    /**
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
+     */
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     /**
@@ -102,7 +110,7 @@ class ItemSpamFilter
         }
 
         if (!empty($buckets['meta']) && $itemId > 0) {
-            $metaFields = Item::newInstance()->metaFields($itemId);
+            $metaFields = Item::getInstance()->metaFields($itemId);
             if (!empty($metaFields)) {
                 foreach ($metaFields as $metaField) {
                     if (!isset($metaField['s_value']) || $metaField['s_value'] === '') {
@@ -176,7 +184,7 @@ class ItemSpamFilter
 
         $buckets = array('title' => array(), 'description' => array(), 'all' => array(), 'meta' => array());
 
-        foreach (KeywordBlock::newInstance()->listAll() as $row) {
+        foreach (KeywordBlock::getInstance()->listAll() as $row) {
             $bare = trim(str_replace('*', '', (string)$row['s_keyword']));
             if (mb_strlen($bare) < self::MIN_KEYWORD_LENGTH) {
                 continue;
@@ -304,7 +312,7 @@ class ItemSpamFilter
             $scope = 'all';
         }
 
-        $model    = KeywordBlock::newInstance();
+        $model    = KeywordBlock::getInstance();
         $existing = array();
         foreach ($model->listAll() as $row) {
             $existing[$row['s_scope'] . '|' . mb_strtolower((string)$row['s_keyword'])] = true;

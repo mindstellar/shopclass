@@ -196,7 +196,7 @@ class PersonalData
     public static function export($userId)
     {
         $userId = (int)$userId;
-        $user   = User::newInstance()->findByPrimaryKey($userId);
+        $user   = User::getInstance()->findByPrimaryKey($userId);
         if (!is_array($user) || $user === array()) {
             return null;
         }
@@ -296,7 +296,7 @@ class PersonalData
     {
         $urls = array();
         try {
-            $items = Item::newInstance()->findByUserID((int)$userId);
+            $items = Item::getInstance()->findByUserID((int)$userId);
         } catch (\Throwable $e) {
             return $urls;
         }

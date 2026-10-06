@@ -29,8 +29,8 @@ class SendFriendForm extends Form
     public static function your_name()
     {
 
-        if (Session::newInstance()->_getForm('yourName') != '') {
-            $yourName = Session::newInstance()->_getForm('yourName');
+        if (Session::getInstance()->_getForm('yourName') != '') {
+            $yourName = Session::getInstance()->_getForm('yourName');
             parent::generic_input_text('yourName', $yourName);
         } else {
             parent::generic_input_text('yourName', '');
@@ -47,8 +47,8 @@ class SendFriendForm extends Form
     public static function your_email()
     {
 
-        if (Session::newInstance()->_getForm('yourEmail') != '') {
-            $yourEmail = Session::newInstance()->_getForm('yourEmail');
+        if (Session::getInstance()->_getForm('yourEmail') != '') {
+            $yourEmail = Session::getInstance()->_getForm('yourEmail');
             parent::generic_input_text('yourEmail', $yourEmail);
         } else {
             parent::generic_input_text('yourEmail', '');
@@ -64,8 +64,8 @@ class SendFriendForm extends Form
      */
     public static function friend_name()
     {
-        if (Session::newInstance()->_getForm('friendName') != '') {
-            $friendName = Session::newInstance()->_getForm('friendName');
+        if (Session::getInstance()->_getForm('friendName') != '') {
+            $friendName = Session::getInstance()->_getForm('friendName');
             parent::generic_input_text('friendName', $friendName);
         } else {
             parent::generic_input_text('friendName', '');
@@ -81,8 +81,8 @@ class SendFriendForm extends Form
      */
     public static function friend_email()
     {
-        if (Session::newInstance()->_getForm('friendEmail') != '') {
-            $friendEmail = Session::newInstance()->_getForm('friendEmail');
+        if (Session::getInstance()->_getForm('friendEmail') != '') {
+            $friendEmail = Session::getInstance()->_getForm('friendEmail');
             parent::generic_input_text('friendEmail', $friendEmail);
         } else {
             parent::generic_input_text('friendEmail', '');
@@ -98,8 +98,8 @@ class SendFriendForm extends Form
      */
     public static function your_message()
     {
-        if (Session::newInstance()->_getForm('message_body') != '') {
-            $message_body = Session::newInstance()->_getForm('message_body');
+        if (Session::getInstance()->_getForm('message_body') != '') {
+            $message_body = Session::getInstance()->_getForm('message_body');
             parent::generic_textarea('message', $message_body);
         } else {
             parent::generic_textarea('message', '');

@@ -44,7 +44,7 @@ final class ListingReader
      */
     public function row(int $id): ?array
     {
-        $item = \Item::newInstance()->findByPrimaryKey($id);
+        $item = \Item::getInstance()->findByPrimaryKey($id);
 
         return is_array($item) && $item !== [] ? $item : null;
     }

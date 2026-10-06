@@ -1542,7 +1542,7 @@ $slotItemId = seed_item($admin, $categoryId, $slotUserId, 'Occupies the one free
 pin('a published listing occupies one slot', 1, EntitlementStore::liveListings($slotUserId));
 check('the free slot is now taken, and nothing was bought', EntitlementStore::canPublish($slotUserId) === false);
 
-Item::newInstance()->deleteByPrimaryKey($slotItemId);
+Item::getInstance()->deleteByPrimaryKey($slotItemId);
 pin('deleting the listing frees its slot', 0, EntitlementStore::liveListings($slotUserId));
 check('the freed slot allows publishing again', EntitlementStore::canPublish($slotUserId));
 
@@ -1558,11 +1558,11 @@ check('the expired listing\'s slot is available again', EntitlementStore::canPub
 
 $pendingItemId = seed_item($admin, $categoryId, $slotUserId, 'Pending moderation', 19.50, 0, 1);
 pin('a pending (not yet active) listing still occupies a slot', 1, EntitlementStore::liveListings($slotUserId));
-Item::newInstance()->deleteByPrimaryKey($pendingItemId);
+Item::getInstance()->deleteByPrimaryKey($pendingItemId);
 
 $disabledItemId = seed_item($admin, $categoryId, $slotUserId, 'Admin-disabled', 19.50, 1, 0);
 pin('an admin-disabled listing still occupies a slot', 1, EntitlementStore::liveListings($slotUserId));
-Item::newInstance()->deleteByPrimaryKey($disabledItemId);
+Item::getInstance()->deleteByPrimaryKey($disabledItemId);
 
 osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
 osc_reset_preferences();
@@ -1984,7 +1984,7 @@ $offerIds = static function (array $item): array {
 $freeBump = static function (int $userId, int $itemId): bool {
     return Billing::spend($userId, 'item.bump', array('itemId' => $itemId, 'ref_type' => 'item', 'ref_id' => $itemId));
 };
-\Session::newInstance()->_setEphemeral('userId', $overUser);
+\Session::getInstance()->_setEphemeral('userId', $overUser);
 
 osc_set_preference('billing_bump_credits', '0', 'osclass', 'INTEGER');
 osc_set_preference('billing_free_live_listings', '3', 'osclass', 'INTEGER');
@@ -2055,7 +2055,7 @@ for ($i = 0; $i < 8; $i++) {
     $manyItems[] = $admin->query('SELECT * FROM ' . DB_TABLE_PREFIX . 't_item WHERE pk_i_id = '
         . seed_item($admin, $categoryId, $manyUser, 'Many ' . $i))->fetch_assoc();
 }
-\Session::newInstance()->_setEphemeral('userId', $manyUser);
+\Session::getInstance()->_setEphemeral('userId', $manyUser);
 harness_assert_no_n_plus_1(
     'drawing the offers for N listings costs the same queries for any N',
     static function (int $n) use ($manyItems) {
@@ -2071,7 +2071,7 @@ harness_assert_no_n_plus_1(
     8
 );
 
-\Session::newInstance()->_setEphemeral('userId', 0);
+\Session::getInstance()->_setEphemeral('userId', 0);
 osc_set_preference('billing_free_live_listings', '0', 'osclass', 'INTEGER');
 osc_set_preference('billing_bump_credits', '5', 'osclass', 'INTEGER');
 osc_reset_preferences();
@@ -2510,9 +2510,9 @@ pin('a spam listing is not counted', 1, $catCount($countChild));
 $actions->spam($lapsed, false);
 pin('unspam counts an expired premium listing', 2, $catCount($countChild));
 
-Item::newInstance()->updateExpirationDate($lapsed, date('Y-m-d H:i:s', time() + 86400));
+Item::getInstance()->updateExpirationDate($lapsed, date('Y-m-d H:i:s', time() + 86400));
 pin('extending an expired premium listing does not count it twice', 2, $catCount($countChild));
-Item::newInstance()->updateExpirationDate($lapsed, date('Y-m-d H:i:s', time() - 86400));
+Item::getInstance()->updateExpirationDate($lapsed, date('Y-m-d H:i:s', time() - 86400));
 pin('expiring a premium listing keeps it counted', 2, $catCount($countChild));
 
 $admin->query(

@@ -62,7 +62,7 @@ $rowCount = static function () use ($admin, $table): int {
     return (int) $admin->query("SELECT COUNT(*) c FROM $table")->fetch_assoc()['c'];
 };
 
-$model = BanRule::newInstance();
+$model = BanRule::getInstance();
 
 /* ----------------------------------------------------------------------------
  * Surface (C2): the public API must survive the conversion byte-identical.

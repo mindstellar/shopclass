@@ -45,13 +45,21 @@ class CategoryStats extends DAO
      *
      * @return CategoryStats
      */
-    public static function newInstance()
+    public static function getInstance()
     {
         if (!self::$instance instanceof self) {
             self::$instance = new self();
         }
 
         return self::$instance;
+    }
+
+    /**
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
+     */
+    public static function newInstance()
+    {
+        return self::getInstance();
     }
 
     /**
@@ -90,7 +98,7 @@ class CategoryStats extends DAO
 
         // Runs unconditionally, exactly as legacy did: the && below only
         // short-circuits the recursive add, not this lookup.
-        $result = Category::newInstance()->findByPrimaryKey($categoryId);
+        $result = Category::getInstance()->findByPrimaryKey($categoryId);
         if (($return !== false) && $result['fk_i_parent_id'] != null) {
             $parent_res = $this->increaseNumItems($result['fk_i_parent_id']);
             if ($parent_res !== false) {
@@ -161,7 +169,7 @@ class CategoryStats extends DAO
         }
 
         if ($return !== false) {
-            $result = Category::newInstance()->findByPrimaryKey($categoryId);
+            $result = Category::getInstance()->findByPrimaryKey($categoryId);
             if ($result['fk_i_parent_id'] != null) {
                 $parent_res = $this->decreaseNumItems($result['fk_i_parent_id']);
                 if ($parent_res !== false) {
@@ -285,7 +293,7 @@ class CategoryStats extends DAO
             return array();
         }
 
-        $roots = Category::newInstance()->findRootCategories();
+        $roots = Category::getInstance()->findRootCategories();
 
         foreach ($all as $a) {
             $map[$a['fk_i_category_id']] = $a['i_num_items'];
@@ -293,13 +301,13 @@ class CategoryStats extends DAO
 
         $new_map = array();
         foreach ($roots as $root) {
-            $root_description                    = Category::newInstance()->findByPrimaryKey($root['pk_i_id']);
+            $root_description                    = Category::getInstance()->findByPrimaryKey($root['pk_i_id']);
             $new_map['parent'][$root['pk_i_id']] =
                 array('numItems' => @$map[$root['pk_i_id']], 's_name' => @$root_description['s_name']);
-            $subcategories                       = Category::newInstance()->findSubcategories($root['pk_i_id']);
+            $subcategories                       = Category::getInstance()->findSubcategories($root['pk_i_id']);
             $aux                                 = array();
             foreach ($subcategories as $sub) {
-                $sub_description      = Category::newInstance()->findByPrimaryKey($sub['pk_i_id']);
+                $sub_description      = Category::getInstance()->findByPrimaryKey($sub['pk_i_id']);
                 $aux[$sub['pk_i_id']] =
                     array('numItems' => $map[$sub['pk_i_id']], 's_name' => $sub_description['s_name']);
             }

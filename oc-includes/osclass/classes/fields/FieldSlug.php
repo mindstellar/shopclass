@@ -34,7 +34,7 @@ final class FieldSlug
         $base = (string) preg_replace('|([-]+)|', '-', (string) preg_replace('|[^a-z0-9_-]|', '-', strtolower($wanted)));
         $slug = $base;
         for ($n = 1; ; $n++) {
-            $field = Field::newInstance()->findBySlug($slug);
+            $field = Field::getInstance()->findBySlug($slug);
             if (!$field || (int) $field['pk_i_id'] === $self) {
                 return $slug;
             }

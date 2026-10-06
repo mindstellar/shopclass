@@ -32,7 +32,7 @@ class CAdminCategories extends AdminSecBaseModel
         parent::__construct();
 
         //specific things for this class
-        $this->categoryManager = Category::newInstance(osc_current_admin_locale());
+        $this->categoryManager = Category::getInstance(osc_current_admin_locale());
         osc_run_hook('init_admin_categories');
     }
 

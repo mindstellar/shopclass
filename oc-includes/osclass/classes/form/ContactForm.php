@@ -60,8 +60,8 @@ class ContactForm extends Form
      */
     public static function your_name()
     {
-        if (Session::newInstance()->_getForm('yourName') != '') {
-            $name = Session::newInstance()->_getForm('yourName');
+        if (Session::getInstance()->_getForm('yourName') != '') {
+            $name = Session::getInstance()->_getForm('yourName');
             parent::generic_input_text('yourName', $name);
         } else {
             parent::generic_input_text('yourName', osc_logged_user_name());
@@ -77,8 +77,8 @@ class ContactForm extends Form
      */
     public static function your_email()
     {
-        if (Session::newInstance()->_getForm('yourEmail') != '') {
-            $email = Session::newInstance()->_getForm('yourEmail');
+        if (Session::getInstance()->_getForm('yourEmail') != '') {
+            $email = Session::getInstance()->_getForm('yourEmail');
             parent::generic_input_text('yourEmail', $email);
         } else {
             parent::generic_input_text('yourEmail', osc_logged_user_email());
@@ -94,8 +94,8 @@ class ContactForm extends Form
      */
     public static function your_phone_number()
     {
-        if (Session::newInstance()->_getForm('phoneNumber') != '') {
-            $phoneNumber = Session::newInstance()->_getForm('phoneNumber');
+        if (Session::getInstance()->_getForm('phoneNumber') != '') {
+            $phoneNumber = Session::getInstance()->_getForm('phoneNumber');
             parent::generic_input_text('phoneNumber', $phoneNumber);
         } else {
             parent::generic_input_text('phoneNumber', osc_logged_user_phone());
@@ -111,8 +111,8 @@ class ContactForm extends Form
      */
     public static function the_subject()
     {
-        if (Session::newInstance()->_getForm('subject') != '') {
-            $subject = Session::newInstance()->_getForm('subject');
+        if (Session::getInstance()->_getForm('subject') != '') {
+            $subject = Session::getInstance()->_getForm('subject');
             parent::generic_input_text('subject', $subject);
         } else {
             parent::generic_input_text('subject', '');
@@ -128,8 +128,8 @@ class ContactForm extends Form
      */
     public static function your_message()
     {
-        if (Session::newInstance()->_getForm('message_body') != '') {
-            $message = Session::newInstance()->_getForm('message_body');
+        if (Session::getInstance()->_getForm('message_body') != '') {
+            $message = Session::getInstance()->_getForm('message_body');
             parent::generic_textarea('message', $message);
         } else {
             parent::generic_textarea('message', '');

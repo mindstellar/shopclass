@@ -68,7 +68,7 @@ function osc_deleteResource($id, $admin, $resource = null)
     // $resource lets a caller hand over the row it already read: a listing delete unlinks
     // the files after its transaction removed the rows.
     if (!is_array($resource)) {
-        $resource = ItemResource::newInstance()->findByPrimaryKey($id);
+        $resource = ItemResource::getInstance()->findByPrimaryKey($id);
     }
     if (is_array($resource)) {
         $actor = \mindstellar\auth\Actor::fromSession((bool) $admin);
@@ -688,7 +688,7 @@ function osc_mail_layout_file(?array $bases = null): string
 {
     if ($bases === null) {
         $bases  = array();
-        $themes = WebThemes::newInstance();
+        $themes = WebThemes::getInstance();
         // Cron, the admin and the CLI never load the public theme; set it from the site
         // setting, so the layout and the theme URL helpers it calls both find it.
         if ((string) $themes->getCurrentTheme() === '' && \mindstellar\utility\Validate::packageName((string) osc_theme())) {
@@ -801,7 +801,7 @@ function osc_dbdump($path, $file)
     }
 
     //checking connection
-    $dump = Dump::newInstance();
+    $dump = Dump::getInstance();
     if (!$dump) {
         return -2;
     }

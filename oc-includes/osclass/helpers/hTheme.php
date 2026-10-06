@@ -101,7 +101,7 @@ function osc_theme_template_paths(): array
 {
     static $cache = array();
 
-    $themes = WebThemes::newInstance();
+    $themes = WebThemes::getInstance();
     $active = $themes->getCurrentThemePath();
     $key    = (string) $themes->getCurrentTheme();
 
@@ -229,7 +229,7 @@ function osc_locate_template($candidates, string $context = ''): string
  */
 function osc_theme_chrome(): ?array
 {
-    $themes = WebThemes::newInstance();
+    $themes = WebThemes::getInstance();
     $bases  = array($themes->getCurrentThemePath());
 
     // A declared parent theme is part of the active theme's own identity, so a
@@ -402,7 +402,7 @@ function osc_gui_view(string $themeView, string $contentFile, array $opts = arra
     require_once ABS_PATH . 'oc-includes/osclass/gui/page-fn.php';
 
     if ($themeView !== '') {
-        $themes = WebThemes::newInstance();
+        $themes = WebThemes::getInstance();
         if (file_exists($themes->getCurrentThemePath() . $themeView)) {
             require $themes->getCurrentThemePath() . $themeView;
 
@@ -492,7 +492,7 @@ function osc_gui_view(string $themeView, string $contentFile, array $opts = arra
  */
 function osc_gui_custom_heading(): string
 {
-    $title = trim((string) Rewrite::newInstance()->get_title());
+    $title = trim((string) Rewrite::getInstance()->get_title());
 
     return ($title === '' || $title === 'Custom') ? _m('Your account') : $title;
 }
@@ -918,10 +918,10 @@ function osc_render_file_url($file = '')
  */
 function osc_resend_flash_messages($section = 'pubMessages')
 {
-    $messages = Session::newInstance()->_getMessage($section);
+    $messages = Session::getInstance()->_getMessage($section);
     if (is_array($messages)) {
         foreach ($messages as $message) {
-            $message = Session::newInstance()->_getMessage($section);
+            $message = Session::getInstance()->_getMessage($section);
             if (isset($message['msg'])) {
                 if (isset($message['type']) && $message['type'] === 'info') {
                     osc_add_flash_info_message($message['msg'], $section);
@@ -944,7 +944,7 @@ function osc_resend_flash_messages($section = 'pubMessages')
  */
 function osc_enqueue_script($id)
 {
-    Scripts::newInstance()->enqueueScript($id);
+    Scripts::getInstance()->enqueueScript($id);
 }
 
 /**
@@ -971,7 +971,7 @@ function osc_enqueue_script_code($code, $dependencies = null, $id = null)
  */
 function osc_remove_script($id)
 {
-    Scripts::newInstance()->removeScript($id);
+    Scripts::getInstance()->removeScript($id);
 }
 
 /**
@@ -985,7 +985,7 @@ function osc_remove_script($id)
  */
 function osc_register_script($id, $url, $dependencies = null)
 {
-    Scripts::newInstance()->registerScript($id, $url, $dependencies);
+    Scripts::getInstance()->registerScript($id, $url, $dependencies);
 }
 
 /**
@@ -997,7 +997,7 @@ function osc_register_script($id, $url, $dependencies = null)
  */
 function osc_unregister_script($id)
 {
-    Scripts::newInstance()->unregisterScript($id);
+    Scripts::getInstance()->unregisterScript($id);
 }
 
 /**
@@ -1007,7 +1007,7 @@ function osc_unregister_script($id)
  */
 function osc_load_scripts()
 {
-    Scripts::newInstance()->printScripts();
+    Scripts::getInstance()->printScripts();
     if (defined('OC_ADMIN') && OC_ADMIN) {
         osc_run_hook('admin_scripts_loaded');
     } else {
@@ -1026,7 +1026,7 @@ function osc_load_scripts()
  */
 function osc_register_style($id, $url, $dependencies = null)
 {
-    Styles::newInstance()->register($id, $url, $dependencies);
+    Styles::getInstance()->register($id, $url, $dependencies);
 }
 
 /**
@@ -1038,7 +1038,7 @@ function osc_register_style($id, $url, $dependencies = null)
  */
 function osc_unregister_style($id)
 {
-    Styles::newInstance()->unregister($id);
+    Styles::getInstance()->unregister($id);
 }
 
 /**
@@ -1053,9 +1053,9 @@ function osc_unregister_style($id)
 function osc_enqueue_style($id, $url = null)
 {
     if ($url === null) {
-        Styles::newInstance()->enqueue($id);
+        Styles::getInstance()->enqueue($id);
     } else {
-        Styles::newInstance()->addStyle($id, $url);
+        Styles::getInstance()->addStyle($id, $url);
     }
 }
 
@@ -1068,7 +1068,7 @@ function osc_enqueue_style($id, $url = null)
  */
 function osc_remove_style($id)
 {
-    Styles::newInstance()->removeStyle($id);
+    Styles::getInstance()->removeStyle($id);
 }
 
 /**
@@ -1078,7 +1078,7 @@ function osc_remove_style($id)
  */
 function osc_load_styles()
 {
-    Styles::newInstance()->printStyles();
+    Styles::getInstance()->printStyles();
 }
 
 /**

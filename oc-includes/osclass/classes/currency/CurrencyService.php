@@ -34,7 +34,7 @@ final class CurrencyService
 
     public static function make(): self
     {
-        return new self(Currency::newInstance());
+        return new self(Currency::getInstance());
     }
 
     /**

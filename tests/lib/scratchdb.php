@@ -325,7 +325,7 @@ if (!function_exists('seed_exec')) {
     function scratchdb_forget_cache(): void
     {
         if (class_exists('Object_Cache_Factory')) {
-            Object_Cache_Factory::newInstance()->flush();
+            Object_Cache_Factory::getInstance()->flush();
         }
     }
 

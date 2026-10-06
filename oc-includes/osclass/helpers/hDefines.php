@@ -170,7 +170,7 @@ function osc_uploads_path()
  */
 function osc_current_admin_theme()
 {
-    return AdminThemes::newInstance()->getCurrentTheme();
+    return AdminThemes::getInstance()->getCurrentTheme();
 }
 
 /**
@@ -182,7 +182,7 @@ function osc_current_admin_theme()
  */
 function osc_current_admin_theme_url($file = '')
 {
-    return AdminThemes::newInstance()->getCurrentThemeUrl() . $file;
+    return AdminThemes::getInstance()->getCurrentThemeUrl() . $file;
 }
 
 /**
@@ -194,7 +194,7 @@ function osc_current_admin_theme_url($file = '')
  */
 function osc_current_admin_theme_path($file = '')
 {
-    require AdminThemes::newInstance()->getCurrentThemePath() . $file;
+    require AdminThemes::getInstance()->getCurrentThemePath() . $file;
 }
 
 /**
@@ -206,7 +206,7 @@ function osc_current_admin_theme_path($file = '')
  */
 function osc_current_admin_theme_styles_url($file = '')
 {
-    return AdminThemes::newInstance()->getCurrentThemeStyles() . $file;
+    return AdminThemes::getInstance()->getCurrentThemeStyles() . $file;
 }
 
 /**
@@ -218,7 +218,7 @@ function osc_current_admin_theme_styles_url($file = '')
  */
 function osc_current_admin_theme_js_url($file = '')
 {
-    return AdminThemes::newInstance()->getCurrentThemeJs() . $file;
+    return AdminThemes::getInstance()->getCurrentThemeJs() . $file;
 }
 
 /**
@@ -228,7 +228,7 @@ function osc_current_admin_theme_js_url($file = '')
  */
 function osc_current_web_theme()
 {
-    return WebThemes::newInstance()->getCurrentTheme();
+    return WebThemes::getInstance()->getCurrentTheme();
 }
 
 /**
@@ -258,7 +258,7 @@ function osc_current_web_theme_url($file = '')
  */
 function osc_theme_asset_url($file = '')
 {
-    $themes  = WebThemes::newInstance();
+    $themes  = WebThemes::getInstance();
     $ownUrl  = $themes->getCurrentThemeUrl() . $file;
 
     if ($file === '' || file_exists($themes->getCurrentThemePath() . $file)) {
@@ -291,7 +291,7 @@ function osc_theme_asset_url($file = '')
  */
 function osc_current_web_theme_path($file = '')
 {
-    $themes = WebThemes::newInstance();
+    $themes = WebThemes::getInstance();
 
     if (file_exists($themes->getCurrentThemePath() . $file)) {
         require $themes->getCurrentThemePath() . $file;
@@ -653,7 +653,7 @@ function osc_user_export_url()
         return '';
     }
 
-    $user = User::newInstance()->findByPrimaryKey(osc_logged_user_id());
+    $user = User::getInstance()->findByPrimaryKey(osc_logged_user_id());
     if (empty($user) || !isset($user['s_secret'])) {
         return '';
     }
@@ -945,7 +945,7 @@ function osc_core_url($name, $args = array())
  */
 function osc_route_url($id, $args = array())
 {
-    $routes = Rewrite::newInstance()->getRoutes();
+    $routes = Rewrite::getInstance()->getRoutes();
     if (!isset($routes[$id])) {
         return '';
     }
@@ -987,7 +987,7 @@ function osc_route_url($id, $args = array())
  */
 function osc_route_admin_url($id, $args = array())
 {
-    $routes = Rewrite::newInstance()->getRoutes();
+    $routes = Rewrite::getInstance()->getRoutes();
     if (!isset($routes[$id])) {
         return '';
     }
@@ -1010,7 +1010,7 @@ function osc_route_admin_url($id, $args = array())
  */
 function osc_route_ajax_url($id, $args = array())
 {
-    $routes = Rewrite::newInstance()->getRoutes();
+    $routes = Rewrite::getInstance()->getRoutes();
     if (!isset($routes[$id])) {
         return '';
     }
@@ -1033,7 +1033,7 @@ function osc_route_ajax_url($id, $args = array())
  */
 function osc_route_admin_ajax_url($id, $args = array())
 {
-    $routes = Rewrite::newInstance()->getRoutes();
+    $routes = Rewrite::getInstance()->getRoutes();
     if (!isset($routes[$id])) {
         return '';
     }
@@ -1056,11 +1056,11 @@ function osc_route_admin_ajax_url($id, $args = array())
  */
 function osc_get_countries()
 {
-    if (View::newInstance()->_exists('countries')) {
-        return View::newInstance()->_get('countries');
+    if (View::getInstance()->_exists('countries')) {
+        return View::getInstance()->_get('countries');
     }
 
-    return Country::newInstance()->listAll();
+    return Country::getInstance()->listAll();
 }
 
 /**
@@ -1072,15 +1072,15 @@ function osc_get_countries()
  */
 function osc_get_regions($country = '')
 {
-    if (View::newInstance()->_exists('regions')) {
-        return View::newInstance()->_get('regions');
+    if (View::getInstance()->_exists('regions')) {
+        return View::getInstance()->_get('regions');
     }
 
     if ($country == '') {
-        return Region::newInstance()->listAll();
+        return Region::getInstance()->listAll();
     }
 
-    return Region::newInstance()->findByCountry($country);
+    return Region::getInstance()->findByCountry($country);
 }
 
 /**
@@ -1092,15 +1092,15 @@ function osc_get_regions($country = '')
  */
 function osc_get_cities($region = '')
 {
-    if (View::newInstance()->_exists('cities')) {
-        return View::newInstance()->_get('cities');
+    if (View::getInstance()->_exists('cities')) {
+        return View::getInstance()->_get('cities');
     }
 
     if ($region == '') {
-        return City::newInstance()->listAll();
+        return City::getInstance()->listAll();
     }
 
-    return City::newInstance()->findByRegion($region);
+    return City::getInstance()->findByRegion($region);
 }
 
 /**
@@ -1110,11 +1110,11 @@ function osc_get_cities($region = '')
  */
 function osc_get_currencies()
 {
-    if (!View::newInstance()->_exists('currencies')) {
-        View::newInstance()->_exportVariableToView('currencies', Currency::newInstance()->listAll());
+    if (!View::getInstance()->_exists('currencies')) {
+        View::getInstance()->_exportVariableToView('currencies', Currency::getInstance()->listAll());
     }
 
-    return View::newInstance()->_get('currencies');
+    return View::getInstance()->_get('currencies');
 }
 
 /**
@@ -1299,7 +1299,7 @@ function osc_is_forgot_page()
  */
 function osc_is_custom_page($value = null)
 {
-    if (Rewrite::newInstance()->get_location() === 'custom') {
+    if (Rewrite::getInstance()->get_location() === 'custom') {
         if ($value == null || Params::getParam('file') == $value || Params::getParam('route') == $value) {
             return true;
         }
@@ -1408,7 +1408,7 @@ function osc_is_current_page($location, $section)
  */
 function osc_is_404()
 {
-    return (Rewrite::newInstance()->get_location() === 'error');
+    return (Rewrite::getInstance()->get_location() === 'error');
 }
 
 /**
@@ -1418,7 +1418,7 @@ function osc_is_404()
  */
 function osc_get_osclass_location()
 {
-    return Rewrite::newInstance()->get_location();
+    return Rewrite::getInstance()->get_location();
 }
 
 /**
@@ -1428,7 +1428,7 @@ function osc_get_osclass_location()
  */
 function osc_get_osclass_section()
 {
-    return Rewrite::newInstance()->get_section();
+    return Rewrite::getInstance()->get_section();
 }
 
 /**
@@ -1438,7 +1438,7 @@ function osc_get_osclass_section()
  */
 function osc_is_moderator()
 {
-    $admin = Admin::newInstance()->findByPrimaryKey(osc_logged_admin_id());
+    $admin = Admin::getInstance()->findByPrimaryKey(osc_logged_admin_id());
 
     return isset($admin['b_moderator']) && $admin['b_moderator'] != 0;
 }
@@ -1484,7 +1484,7 @@ function osc_breadcrumb($separator = '&raquo;', $echo = true, $lang = array())
  */
 function osc_subdomain_name()
 {
-    return View::newInstance()->_get('subdomain_name');
+    return View::getInstance()->_get('subdomain_name');
 }
 
 /**
@@ -1494,7 +1494,7 @@ function osc_subdomain_name()
  */
 function osc_subdomain_slug()
 {
-    return View::newInstance()->_get('subdomain_slug');
+    return View::getInstance()->_get('subdomain_slug');
 }
 
 /**
@@ -1504,6 +1504,6 @@ function osc_subdomain_slug()
  */
 function osc_is_subdomain()
 {
-    return View::newInstance()->_get('subdomain_slug') != '';
+    return View::getInstance()->_get('subdomain_slug') != '';
 }
 /* file end: ./oc-includes/osclass/helpers/hDefines.php */

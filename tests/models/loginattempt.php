@@ -36,7 +36,7 @@ require_once __DIR__ . '/../lib/harness.php';
 $admin = scratchdb_session('osc_models_loginattempt');
 $table = DB_TABLE_PREFIX . 't_login_attempt';
 
-$model = LoginAttempt::newInstance();
+$model = LoginAttempt::getInstance();
 
 $truncate = static function () use ($admin, $table): void {
     $admin->query("TRUNCATE TABLE $table");
@@ -89,7 +89,7 @@ pin(
     $model->getFields()
 );
 pin('newInstance signature', 'public static newInstance()', harness_method_signature('LoginAttempt', 'newInstance'));
-check('newInstance is a singleton', LoginAttempt::newInstance() === $model);
+check('newInstance is a singleton', LoginAttempt::getInstance() === $model);
 
 /* ----------------------------------------------------------------------------
  * record()

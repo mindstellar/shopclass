@@ -41,7 +41,7 @@ $cars     = seed_category($admin, 'Cars', $vehicles, $locale);
 $sue      = seed_user($admin, 'sue', 'sue@example.test');
 $car      = seed_item($admin, $cars, $sue, 'A car', 100.0);
 foreach (['language' => 'en_US', 'currency' => 'USD'] as $k => $v) {
-    Preference::newInstance()->set($k, $v);
+    Preference::getInstance()->set($k, $v);
 }
 scratchdb_forget_cache();
 osc_reset_preferences();
@@ -81,7 +81,7 @@ pin('an unknown parent is 422', [422, '/parent_id'], $pointer($call('POST', 'adm
 pin('a language the site does not have is 422', [422, '/translations/fr_FR'], $pointer($call('POST', 'admin/categories', ['translations' => ['fr_FR' => ['name' => 'X']]], $boss)));
 
 $before = osc_cache_category_generation();
-\Category::newInstance()->toTree();
+\Category::getInstance()->toTree();
 $fired = [];
 $r     = $call('PATCH', 'admin/categories/' . $cars, ['translations' => ['en_US' => ['slug' => 'automobiles']]], $boss);
 pin('PATCH a slug: the name is kept', [200, 'automobiles', 'Cars'], [$r->status(), $r->body()['data']['translations']['en_US']['slug'] ?? null, $r->body()['data']['translations']['en_US']['name'] ?? null]);
@@ -264,7 +264,7 @@ pin('sending expiration_days writes it to the listings', '9999-12-31 23:59:59', 
 harness_section('the admin identity is taken on for admin routes only');
 $seen = [];
 osc_add_hook('api_request_before', static function ($request, $route) use (&$seen): void {
-    $seen[$route->path()] = (string) Session::newInstance()->_get('adminId');
+    $seen[$route->path()] = (string) Session::getInstance()->_get('adminId');
 });
 $call('GET', 'categories', null, $boss);
 $call('GET', 'admin/categories', null, $boss);

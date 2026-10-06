@@ -41,7 +41,7 @@ class CWebCustom extends BaseModel
         $user_menu = false;
         $fromRoute = false;
         if (Params::existParam('route')) {
-            $routes = Rewrite::newInstance()->getRoutes();
+            $routes = Rewrite::getInstance()->getRoutes();
             $rid    = Params::getParam('route');
             $file   = '../';
             if (isset($routes[$rid]['file'])) {
@@ -113,7 +113,7 @@ class CWebCustom extends BaseModel
         if (!osc_gui_account_view($file) && !osc_gui_page_view($file)) {
             osc_current_web_theme_path($file);
         }
-        Session::newInstance()->_clearVariables();
+        Session::getInstance()->_clearVariables();
         osc_run_hook('after_html');
     }
 }

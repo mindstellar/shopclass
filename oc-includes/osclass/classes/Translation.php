@@ -228,13 +228,21 @@ class Translation
      *
      * @return \Translation
      */
-    public static function newInstance($install = false)
+    public static function getInstance($install = false)
     {
         if (!self::$instance instanceof self) {
             self::$instance = new self($install);
         }
 
         return self::$instance;
+    }
+
+    /**
+     * @deprecated 7.0.0 Use getInstance(); it returns the shared instance, not a new one.
+     */
+    public static function newInstance($install = false)
+    {
+        return self::getInstance($install);
     }
 
     /**

@@ -64,7 +64,7 @@ foreach (array($guestItem, $userItem) as $id) {
 
 // What the edit-form ajax call renders for the item id it ends up with.
 $storedValue = static function (int $itemId) use ($cat): string {
-    $fields = Field::newInstance()->findByCategoryItem($cat, $itemId);
+    $fields = Field::getInstance()->findByCategoryItem($cat, $itemId);
 
     return (string)($fields[0]['s_value'] ?? '');
 };
@@ -140,10 +140,10 @@ $openEdit = static function (string $id, string $secret): int {
     $_GET = $_REQUEST = array('page' => 'item', 'action' => 'item_edit', 'id' => $id, 'secret' => $secret);
     $_POST = array();
     Params::init();
-    View::newInstance()->_erase('item');
+    View::getInstance()->_erase('item');
     $GLOBALS['editView'] = null;
     $web = (new ReflectionClass('TestWebItem'))->newInstanceWithoutConstructor();
-    foreach (array('action' => 'item_edit', 'itemManager' => Item::newInstance(), 'userId' => null, 'user' => null) as $name => $value) {
+    foreach (array('action' => 'item_edit', 'itemManager' => Item::getInstance(), 'userId' => null, 'user' => null) as $name => $value) {
         $prop = new ReflectionProperty('CWebItem', $name);
         $prop->setAccessible(true);
         $prop->setValue($web, $value);
@@ -153,7 +153,7 @@ $openEdit = static function (string $id, string $secret): int {
     } catch (EditRedirect $e) {
         return 0;
     }
-    $item = View::newInstance()->_get('item');
+    $item = View::getInstance()->_get('item');
 
     return $GLOBALS['editView'] !== null ? (int) ($item['pk_i_id'] ?? 0) : 0;
 };
@@ -161,7 +161,7 @@ pin('the secret holder gets the form', $guestItem, $openEdit((string) $guestItem
 pin('a secret in the wrong case is refused', 0, $openEdit((string) $guestItem, strtoupper($secret)));
 pin('a fractional id opens the listing the owner check passed', $guestItem, $openEdit($guestItem . '.9', $secret));
 
-View::newInstance()->_erase('item');
+View::getInstance()->_erase('item');
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
