@@ -19,7 +19,7 @@ use Preference;
  * signed token (CSRF tokens, remember-me cookies). Prefers an OSC_CSRF_SECRET config constant
  * so the key can live outside the database; otherwise a persisted csrf_secret preference,
  * generated once on first use so existing installs need no migration. Rotating the key
- * invalidates every outstanding token at once — a one-time re-issue, no data loss.
+ * invalidates every outstanding token at once, and webhook secrets must then be rotated.
  */
 class SigningKey
 {

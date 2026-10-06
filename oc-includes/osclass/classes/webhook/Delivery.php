@@ -81,11 +81,14 @@ final class Delivery
         $body  = (string) ($payload['body'] ?? '');
         $now   = $this->clock->now();
 
-        $check = $this->guard->check($endpoint->url());
-        if (!$check['ok']) {
+        $check   = $this->guard->check($endpoint->url());
+        $secrets = $endpoint->signingSecrets($now);
+        if ($secrets === []) {
+            $result = TransportResult::failed('The signing secret cannot be read. Rotate it.');
+        } elseif (!$check['ok']) {
             $result = TransportResult::failed('Address refused: ' . rtrim((string) ($check['error'] ?? 'not allowed'), '.'));
         } else {
-            $result = $this->transport->post($endpoint->url(), (string) $check['ip'], self::headers($msgId, $now, $body, $endpoint->signingSecrets($now)), $body);
+            $result = $this->transport->post($endpoint->url(), (string) $check['ip'], self::headers($msgId, $now, $body, $secrets), $body);
         }
 
         $status  = $result->describe();

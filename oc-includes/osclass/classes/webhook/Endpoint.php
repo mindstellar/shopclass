@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\webhook;
 
+use mindstellar\security\SecretBox;
+
 /**
  * One webhook endpoint as t_key_value stores it, plus the version its row was read at. Changes
  * return a copy; WebhookEndpointStore writes a copy back only if nobody wrote in between.
@@ -26,6 +28,8 @@ final class Endpoint
 
     /** Consecutive failed deliveries that pause an endpoint. */
     public const PAUSE_AFTER = 8;
+
+    private const SECRET_PURPOSE = 'webhook-secret';
 
     /**
      * @param string[] $events
@@ -68,8 +72,8 @@ final class Endpoint
             array_map('strval', (array) ($data['events'] ?? [])),
             (string) ($data['description'] ?? ''),
             (bool) ($data['enabled'] ?? false),
-            (string) ($data['secret'] ?? ''),
-            $str($data['previous_secret'] ?? null),
+            (string) SecretBox::open(self::SECRET_PURPOSE, (string) ($data['secret'] ?? '')),
+            $str(SecretBox::open(self::SECRET_PURPOSE, (string) ($data['previous_secret'] ?? ''))),
             $int($data['previous_until'] ?? null),
             (int) ($data['failures'] ?? 0),
             $str($data['last_status'] ?? null),
@@ -95,8 +99,8 @@ final class Endpoint
             'events'          => $this->events,
             'description'     => $this->description,
             'enabled'         => $this->enabled,
-            'secret'          => $this->secret,
-            'previous_secret' => $this->previousSecret,
+            'secret'          => $this->secret === '' ? '' : SecretBox::seal(self::SECRET_PURPOSE, $this->secret),
+            'previous_secret' => $this->previousSecret === null ? null : SecretBox::seal(self::SECRET_PURPOSE, $this->previousSecret),
             'previous_until'  => $this->previousUntil,
             'failures'        => $this->failures,
             'last_status'     => $this->lastStatus,
@@ -159,12 +163,16 @@ final class Endpoint
 
     /**
      * The secrets a delivery is signed with now: the current one, and the one it replaced
-     * while that is still valid.
+     * while that is still valid. Empty when the stored secret cannot be read, such as after
+     * the install's signing key changed; the secret must then be rotated.
      *
      * @return string[]
      */
     public function signingSecrets(int $now): array
     {
+        if ($this->secret === '') {
+            return [];
+        }
         $secrets = [$this->secret];
         if ($this->previousSecret !== null && $this->previousUntil !== null && $now < $this->previousUntil) {
             $secrets[] = $this->previousSecret;

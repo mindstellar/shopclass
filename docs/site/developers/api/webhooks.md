@@ -224,6 +224,9 @@ For 24 hours every delivery carries **two** signatures, one for each secret, in 
 accepts any matching signature needs no other change. After 24 hours only the new secret
 signs.
 
+The site stores secrets encrypted with its signing key (`OSC_CSRF_SECRET`). If that key
+changes, deliveries fail with "The signing secret cannot be read" until you rotate the secret.
+
 ## Where the site may send
 
 | Rule | Detail |

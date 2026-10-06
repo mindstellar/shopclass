@@ -17,6 +17,7 @@
  * DB-free.  Usage: php tests/api-webhooks.php
  */
 
+define('OSC_CSRF_SECRET', 'api-webhooks-test-secret');
 require_once __DIR__ . '/lib/api-boot.php';
 
 use mindstellar\api\write\ImageFetcher;
@@ -94,7 +95,11 @@ pin('a test result neither counts nor clears', [7, 'HTTP 500'], [$tested->failur
 $on = $paused->withEnabled(true, 400);
 pin('switching it on clears the pause and the count', [true, false, 0, null], [$on->enabled(), $on->paused(), $on->failures(), $on->pausedReason()]);
 pin('switched off by hand is off, not paused', [false, false], [$on->withEnabled(false, 500)->enabled(), $on->withEnabled(false, 500)->paused()]);
-pin('stored and read back, it is the same', $paused->toStored(), Endpoint::fromStored($paused->id(), json_decode((string) json_encode($paused->toStored()), true), 3)->toStored());
+$back = Endpoint::fromStored($paused->id(), json_decode((string) json_encode($paused->toStored()), true), 3);
+pin('stored and read back, it is the same', [$paused->toArray(500), $paused->signingSecrets(500)], [$back->toArray(500), $back->signingSecrets(500)]);
+check('the stored secret is encrypted', !str_contains((string) json_encode($paused->toStored()), $paused->secret()));
+pin('a secret sealed under another signing key cannot be read, so nothing is signed with it', [], Endpoint::fromStored('x', ['secret' => 'enc1:' . base64_encode(str_repeat('x', 40))], 1)->signingSecrets(500));
+pin('a secret stored before encryption still reads', ['whsec_old'], Endpoint::fromStored('x', ['secret' => 'whsec_old'], 1)->signingSecrets(500));
 
 harness_section('serializer');
 $out = $paused->toArray(1_900_000_000);

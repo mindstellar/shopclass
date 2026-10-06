@@ -129,7 +129,8 @@ harness_section('store: compare-and-swap on the state column');
 [$ep] = $manager()->create('https://hooks.example/a', ['listing.created'], 'A', true, 1);
 $raw  = static fn (string $id): array => $admin->query("SELECT s_state, s_value FROM {$p}t_key_value WHERE s_group = 'api_webhook' AND s_key = '$id'")->fetch_assoc();
 pin('stored in t_key_value under api_webhook at version 1', 'v1', $raw($ep->id())['s_state']);
-check('the secret is stored as written, since it must sign', str_contains($raw($ep->id())['s_value'], $ep->secret()));
+check('the secret is stored encrypted, not as written', !str_contains($raw($ep->id())['s_value'], $ep->secret()) && str_contains($raw($ep->id())['s_value'], '"secret":"enc1:'));
+pin('and reads back as written, so it still signs', $ep->secret(), $store->find($ep->id())?->secret());
 $calls = 0;
 $store->change($ep->id(), static function (Endpoint $e) use (&$calls, $store, $clock): Endpoint {
     if (++$calls === 1) {
