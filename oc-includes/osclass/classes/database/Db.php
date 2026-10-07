@@ -158,8 +158,11 @@ class Db
     }
 
     /**
-     * A row with every value a string, null kept, true and false as '1' and '0': the shape
-     * the legacy query layer gave. A FLOAT column keeps its type's value, not its rendered form.
+     * A row with every value a string, null kept, true and false as '1' and '0'. The legacy
+     * query layer read every column as a string, while prepared statements return ints and
+     * floats, so rows read this way keep the shape callers compare against ('1', not 1).
+     * A FLOAT column loses its trailing zeros ('1.50' becomes '1.5'); select it with a CAST
+     * when the rendered form matters. DECIMAL already arrives as a string.
      *
      * @param array<string,mixed> $row
      *

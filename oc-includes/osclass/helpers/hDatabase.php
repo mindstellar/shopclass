@@ -208,28 +208,7 @@ if (!function_exists('osc_db_in_transaction')) {
 
 if (!function_exists('osc_db_stringify_row')) {
     /**
-     * Coerce every value in a result row to a string, leaving null as null.
-     *
-     * The legacy query layer returns every column as a PHP string because it
-     * reads results through mysqli::query(). The parameterized layer returns
-     * native types for INT/FLOAT/DOUBLE columns, because a prepared statement
-     * carries column metadata. A model whose body moves from one to the other
-     * would therefore start handing callers ints where they have always had
-     * strings, and comparisons such as `$row['b_active'] === '1'` would begin
-     * failing silently across the call sites that consume these rows.
-     *
-     * Converted read methods pipe their rows through this so their observable
-     * row shape is unchanged.
-     *
-     * Booleans map to '1'/'0' rather than PHP's '' for false, matching how
-     * MySQL renders a boolean column through the legacy path.
-     *
-     * Fidelity limit: this restores the string TYPE, not the exact lexical form
-     * the legacy driver produced. A FLOAT/DOUBLE column arrives already widened
-     * to a PHP float, so trailing-zero formatting is lost ('1.50' becomes
-     * '1.5'). DECIMAL is unaffected — the driver hands it back as a string. When
-     * a caller depends on the rendered form of a floating-point column, select
-     * it with an explicit CAST rather than relying on this helper.
+     * A row with every value a string, as Db::stringifyRow() gives it.
      *
      * @param array $row
      *

@@ -15,7 +15,7 @@ namespace mindstellar\stats;
 use mindstellar\database\Db;
 
 /**
- * Aggregate counts behind the admin statistics screens, read with osc_db_select(): the
+ * Aggregate counts behind the admin statistics screens, read with Db::select(): the
  * grouped date buckets and the derived table in itemsPerContact() are not expressible
  * through QueryBuilder. Only $from_date varies at runtime and it is bound.
  */
