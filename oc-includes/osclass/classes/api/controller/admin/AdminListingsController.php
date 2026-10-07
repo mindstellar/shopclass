@@ -57,7 +57,7 @@ final class AdminListingsController
     {
         $request = $call->request();
 
-        $users = array_map('intval', array_values(array_filter($request->queryList('user'), 'ctype_digit')));
+        $users = $request->queryIds('user');
 
         return $this->list->run($request, $call->credential(), 'admin/listings', $request->queryList('status'), $users, $this->categories($request), trim($request->queryString('q')));
     }

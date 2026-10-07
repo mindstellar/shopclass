@@ -54,12 +54,11 @@ final class AdminCommentsController
         $request = $call->request();
 
         $pager = Pager::fromRequest($request, $this->api->cursor(), ListSpec::byId(), ['list' => 'admin/comments'] + $request->query());
-        $filter = static fn (string $name): ?int => $request->queryString($name) === '' ? null : $request->queryInt($name);
-        [$statuses, $listing, $user] = [$request->queryList('status'), $filter('listing'), $filter('user')];
+        [$statuses, $listings, $users] = [$request->queryList('status'), $request->queryIds('listing'), $request->queryIds('user')];
 
         return $pager->respond(
-            fn (): array => $this->comments->newest($statuses, $listing, $user, $pager->afterId(), $pager->limit() + 1),
-            fn (): int => $this->comments->count($statuses, $listing, $user),
+            fn (): array => $this->comments->newest($statuses, $listings, $users, $pager->afterId(), $pager->limit() + 1),
+            fn (): int => $this->comments->count($statuses, $listings, $users),
             fn (array $page): array => array_map([$this->serializer, 'admin'], $page),
             $this->api->links(),
             'admin/comments',

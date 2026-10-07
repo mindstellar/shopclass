@@ -485,4 +485,14 @@ final class Request
 
         return $out;
     }
+
+    /**
+     * queryList() kept to row ids: digits only, as integers.
+     *
+     * @return int[]
+     */
+    public function queryIds(string $name): array
+    {
+        return array_map('intval', array_values(array_filter($this->queryList($name), 'ctype_digit')));
+    }
 }

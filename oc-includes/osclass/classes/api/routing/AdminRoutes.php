@@ -97,8 +97,8 @@ final class AdminRoutes
         return [
             'GET admin/comments' => self::read($c, 'index', $tag, $scope, 'Every comment, whatever its status, newest first', 'AdminCommentPage', [
                 'status'  => Schema::listOf(CommentStatus::ALL),
-                'listing' => ['type' => 'integer', 'minimum' => 1],
-                'user'    => ['type' => 'integer', 'minimum' => 1],
+                'listing' => self::IDS + ['description' => 'Listing ids: one, a comma list, or repeated.'],
+                'user'    => self::IDS + ['description' => 'Author user ids: one, a comma list, or repeated.'],
             ] + self::PAGING + self::COUNT, [400, 422]),
             'GET admin/comments/{id}'             => self::read($c, 'show', $tag, $scope, 'One comment', 'AdminCommentDocument', [], [404]),
             'PATCH admin/comments/{id}'           => self::write($c, 'update', $tag, $scope, 'Edit a comment\'s text or author, or approve or block it', 'AdminCommentPatch', 'AdminCommentDocument', 200, [404]),

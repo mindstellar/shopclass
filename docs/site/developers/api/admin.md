@@ -95,7 +95,7 @@ curl "$API/admin/listings?status=pending&limit=50" -H "Authorization: Bearer $KE
 
 | Endpoint | Does |
 |---|---|
-| `GET /admin/comments` | List. Filters: `status` (`active`, `pending`, `disabled`, `spam`), `listing`, `user`, `limit`, `cursor`, `count`. |
+| `GET /admin/comments` | List. Filters: `status` (`active`, `pending`, `disabled`, `spam`), `listing` and `user` (ids), each a comma list or repeated, `limit`, `cursor`, `count`. |
 | `GET /admin/comments/{id}` | One comment, with the author's e-mail, `approved` and `blocked`. |
 | `PATCH /admin/comments/{id}` | Edit `title`, `body`, `author_name`, `author_email`. `approved: true` approves it and tells the author; `false` holds it back. `blocked: true` blocks it; `false` unblocks it. |
 | `DELETE /admin/comments/{id}` | Delete. |

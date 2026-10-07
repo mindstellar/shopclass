@@ -215,8 +215,8 @@ Every comment, whatever its status, newest first
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `status` | query | string or array | no | One value, a comma list, or repeated. |
-| `listing` | query | integer | no |  |
-| `user` | query | integer | no |  |
+| `listing` | query | string or array | no | Listing ids: one, a comma list, or repeated. |
+| `user` | query | string or array | no | Author user ids: one, a comma list, or repeated. |
 | `limit` | query | integer | no |  |
 | `cursor` | query | string | no |  |
 | `count` | query | boolean | no | true: also count every match for meta.total; skipped otherwise, as it costs a query. |

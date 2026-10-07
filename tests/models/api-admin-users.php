@@ -124,6 +124,7 @@ pin('matches the schema', [], api_admin_schema_errors('AdminCommentPage', $r));
 pin('status=pending', [$pendingComment], $ids($call('GET', 'admin/comments', null, $mod, [], ['status' => 'pending'])));
 pin('status=disabled,spam', [$spamComment, $blockedComment], $ids($call('GET', 'admin/comments', null, $mod, [], ['status' => ['disabled', 'spam']])));
 pin('listing=', [$tomComment, $pendingComment, $liveComment], $ids($call('GET', 'admin/comments', null, $mod, [], ['listing' => (string) $sueCar])));
+pin('listing= takes a list, as the listing filters do', 5, count($ids($call('GET', 'admin/comments', null, $mod, [], ['listing' => [(string) $sueCar, (string) $tomCar]]))));
 pin('an unknown status is 422', 422, $call('GET', 'admin/comments', null, $mod, [], ['status' => 'nope'])->status());
 
 harness_section('comments: moderation');

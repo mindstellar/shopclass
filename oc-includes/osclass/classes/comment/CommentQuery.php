@@ -49,34 +49,40 @@ final class CommentQuery
     /**
      * Comments newest first, below $beforeId when given.
      *
-     * @param string[] $statuses names from CommentStatus::ALL; all when empty
+     * @param string[] $statuses   names from CommentStatus::ALL; all when empty
+     * @param int[]    $listingIds only these listings; any when empty
+     * @param int[]    $userIds    only these authors; any when empty
      *
      * @return array<int,array<string,mixed>>
      */
-    public function newest(array $statuses, ?int $listingId, ?int $userId, ?int $beforeId, int $limit): array
+    public function newest(array $statuses, array $listingIds, array $userIds, ?int $beforeId, int $limit): array
     {
-        return Db::stringifyRows($this->filtered($statuses, $listingId, $userId)->newestBefore($beforeId, $limit));
+        return Db::stringifyRows($this->filtered($statuses, $listingIds, $userIds)->newestBefore($beforeId, $limit));
     }
 
     /**
-     * @param string[] $statuses names from CommentStatus::ALL; all when empty
+     * @param string[] $statuses   names from CommentStatus::ALL; all when empty
+     * @param int[]    $listingIds only these listings; any when empty
+     * @param int[]    $userIds    only these authors; any when empty
      */
-    public function count(array $statuses, ?int $listingId, ?int $userId): int
+    public function count(array $statuses, array $listingIds, array $userIds): int
     {
-        return $this->filtered($statuses, $listingId, $userId)->count();
+        return $this->filtered($statuses, $listingIds, $userIds)->count();
     }
 
     /**
      * @param string[] $statuses
+     * @param int[]    $listingIds
+     * @param int[]    $userIds
      */
-    private function filtered(array $statuses, ?int $listingId, ?int $userId): QueryBuilder
+    private function filtered(array $statuses, array $listingIds, array $userIds): QueryBuilder
     {
         $query = CommentStatus::condition($this->table(), $statuses);
-        if ($listingId !== null) {
-            $query = $query->where('fk_i_item_id', $listingId);
+        if ($listingIds !== []) {
+            $query = $query->whereIn('fk_i_item_id', $listingIds);
         }
-        if ($userId !== null) {
-            $query = $query->where('fk_i_user_id', $userId);
+        if ($userIds !== []) {
+            $query = $query->whereIn('fk_i_user_id', $userIds);
         }
 
         return $query;
