@@ -457,8 +457,16 @@ pin('an expired listing shows no contact e-mail or phone', array(null, null), ar
     array('email' => 0, 'phone' => 0)
 )));
 $gated = $makeKernel(new ApiSettings(true), null, new SiteFacts('en_US', array('en_US' => array('name' => 'English', 'direction' => 'ltr')), true, true, 10, 12, 50, false, false, false, true));
-pin('when only signed-in users may contact, a public key sees no phone', null, $get('listings/' . $live[0], array(), $publicKey, $gated)->body()['data']['contact']['phone']);
-pin('but a signed-in user does', '555-0100', $get('listings/' . $live[0], array(), $otherKey, $gated)->body()['data']['contact']['phone']);
+$admin->query("UPDATE {$p}t_item SET b_show_email = 1 WHERE pk_i_id = {$live[0]}");
+pin('when only signed-in users may contact, a public key sees no e-mail or phone', array(null, null), array_values(array_intersect_key(
+    $get('listings/' . $live[0], array(), $publicKey, $gated)->body()['data']['contact'],
+    array('email' => 1, 'phone' => 1)
+)));
+pin('but a signed-in user does', array('contact@example.test', '555-0100'), array_values(array_intersect_key(
+    $get('listings/' . $live[0], array(), $otherKey, $gated)->body()['data']['contact'],
+    array('email' => 1, 'phone' => 1)
+)));
+$admin->query("UPDATE {$p}t_item SET b_show_email = 0 WHERE pk_i_id = {$live[0]}");
 check('only admins see the IP', !isset($get('listings/' . $live[0], array(), $sellerKey)->body()['data']['ip']) && $get('listings/' . $live[0], array(), $adminKey)->body()['data']['ip'] === '127.0.0.1');
 pin('an admin key without admin:listings sees no hidden listing', 404, $get('listings/' . $pending, array(), $narrowKey)->status());
 check('nor the IP of a live one', !isset($get('listings/' . $live[0], array(), $narrowKey)->body()['data']['ip']));

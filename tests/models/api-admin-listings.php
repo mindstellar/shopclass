@@ -83,6 +83,7 @@ pin('a moderator key, as the listings screen is open to moderators: 200', 200, $
 pin('an admin key without admin:listings: 403 insufficient_scope', '403 insufficient_scope', api_admin_code($call('GET', 'admin/listings', null, $noScope)));
 pin('a user key: 403 wrong_credential', '403 wrong_credential', api_admin_code($call('GET', 'admin/listings', null, $userKey)));
 pin('no key: 401', 401, $call('GET', 'admin/listings')->status());
+pin('an admin key on a user\'s endpoint: 403 wrong_credential', '403 wrong_credential', api_admin_code($call('GET', 'account', null, $boss)));
 pin('a moderator cannot reach the users screen\'s endpoints', '403 insufficient_scope', api_admin_code($call('GET', 'admin/users', null, $mod)));
 
 harness_section('the list');

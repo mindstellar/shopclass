@@ -484,4 +484,38 @@ check('the failed alert update stops the save', $threw);
 pin('the user row is rolled back', $tomBefore, $nameOf("SELECT s_name FROM {$p}t_user WHERE pk_i_id = $tom"));
 pin('the listing contact name is rolled back', $carBefore, $nameOf("SELECT s_contact_name FROM {$p}t_item WHERE pk_i_id = $tomCar"));
 
+harness_section('refusal reasons');
+$reason = static function (callable $act): string {
+    try {
+        $act();
+    } catch (\mindstellar\validation\ForbiddenException $e) {
+        return $e->reason();
+    }
+
+    return 'allowed';
+};
+$listings = new \mindstellar\listing\ListingService();
+$comments = new \mindstellar\comment\CommentService();
+$guestAct = \mindstellar\auth\Actor::guest('192.0.2.90');
+$comment  = ['author_name' => 'Ann', 'author_email' => 'banned@example.test', 'body' => 'Refused'];
+Preference::getInstance()->set('reg_user_post', '1');
+Preference::getInstance()->set('reg_user_post_comments', '1');
+osc_reset_preferences();
+pin('signed-in only: a guest\'s listing and comment need a sign-in', ['wrong_credential', 'wrong_credential'], [
+    $reason(static fn () => $listings->mayPost($guestAct, 'ann@example.test')),
+    $reason(static fn () => $comments->post($sueCar, $comment, $guestAct)),
+]);
+pin('a guest deleting a comment needs a sign-in', 'wrong_credential', $reason(static fn () => $comments->delete(1, $guestAct)));
+Preference::getInstance()->set('reg_user_post', '0');
+Preference::getInstance()->set('reg_user_post_comments', '0');
+$admin->query("INSERT INTO {$p}t_ban_rule (s_name, s_email) VALUES ('test', 'banned@example.test')");
+\mindstellar\security\BanRuleStore::forget();
+osc_reset_preferences();
+pin('a banned e-mail: the listing and the comment are refused as banned', ['banned', 'banned'], [
+    $reason(static fn () => $listings->mayPost($guestAct, 'banned@example.test')),
+    $reason(static fn () => $comments->post($sueCar, $comment, $guestAct)),
+]);
+$admin->query("DELETE FROM {$p}t_ban_rule");
+\mindstellar\security\BanRuleStore::forget();
+
 exit(harness_result());

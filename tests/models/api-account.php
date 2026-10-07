@@ -459,6 +459,11 @@ pin('an e-mail in use is 422 with the form\'s message', array(422, 'The specifie
 for ($i = 0; $i < 5; $i++) {
     $last = $call('POST', 'users', array('email' => 'n' . $i . '@example.test') + $signup, null, array(), '203.0.113.7');
 }
+$admin->query("INSERT INTO {$p}t_ban_rule (s_name, s_email) VALUES ('test', 'trinity@example.test')");
+\mindstellar\security\BanRuleStore::forget();
+pin('a banned e-mail cannot sign up', '403 banned', $code($call('POST', 'users', array('email' => 'trinity@example.test', 'username' => 'trinity') + $signup, null, array(), '203.0.113.50')));
+$admin->query("DELETE FROM {$p}t_ban_rule");
+\mindstellar\security\BanRuleStore::forget();
 pin('each address gets a few tries an hour, then 429', '429 rate_limited', $code($last));
 $GLOBALS['aa_limiter'] = api_test_limiter(static fn (string $bucket) => $bucket === 'api_register_site' ? \mindstellar\api\ratelimit\RatePolicy::SIGN_UPS_PER_SITE + 1 : 1);
 pin('the whole site has a cap too', '429 rate_limited', $code($call('POST', 'users', array('email' => 'cap@example.test') + $signup, null, array(), '203.0.113.99')));
@@ -522,5 +527,11 @@ $r = $call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh
 pin('the same sign-in\'s next access token shares its keys', 'true', $call('PATCH', 'account', array('website' => 'https://uma.example.test'), $r->body()['access_token'], array('Idempotency-Key' => 'edit-1'))->header('Idempotency-Replayed'));
 pin('another sign-in of the same user does not', null, $call('PATCH', 'account', array('website' => 'https://uma.example.test'), $login('uma', 'battery staple')->body()['access_token'], array('Idempotency-Key' => 'edit-1'))->header('Idempotency-Replayed'));
 check('no session was started', session_status() !== PHP_SESSION_ACTIVE);
+
+Preference::getInstance()->set('enabled_users', '0');
+osc_reset_preferences();
+pin('with user accounts off there is no sign-in: 403', '403 feature_disabled', $code($login('uma', 'battery staple')));
+Preference::getInstance()->set('enabled_users', '1');
+osc_reset_preferences();
 
 exit(harness_result());
