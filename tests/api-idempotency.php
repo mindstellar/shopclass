@@ -144,6 +144,8 @@ pin('the replay says so', ['true', null], [$second->header('Idempotency-Replayed
 pin('only a hash of the key is stored', [64, false], [strlen((string) array_key_first($kept->rows)), str_contains((string) json_encode(array_keys($kept->rows)), 'key-1')]);
 $r = $post('things', ['a' => 2], 'key-1');
 pin('the same key with another body is 422 idempotency_key_reused', [422, 'idempotency_key_reused', 1], [$r->status(), $r->body()['code'], Writes::$runs]);
+$fp = static fn (string $ifMatch): string => Idempotency::fingerprint(new Request('PATCH', 'v1/things/1', [], $ifMatch === '' ? [] : ['If-Match' => $ifMatch], '', '{"a":1}'));
+pin('If-Match is part of the request: another tag is another request', [false, true], [$fp('"v1"') === $fp('"v2"'), $fp('"v1"') === $fp(' "v1" ')]);
 pin('without a key every call runs', 3, ($post('things', ['a' => 1]) && $post('things', ['a' => 1])) ? Writes::$runs : 0);
 
 harness_section('owners');
@@ -153,12 +155,13 @@ $r = $post('things', ['a' => 1], 'key-1', $alice2);
 pin('so is another credential of the same user', [201, null], [$r->status(), $r->header('Idempotency-Replayed')]);
 
 harness_section('in flight and expiry');
+pin('a lock outlives the longest a request may run, and has a floor', [Idempotency::LOCK_TTL, 330, Idempotency::UNLIMITED_LOCK_TTL], [Idempotency::lockTtl(30), Idempotency::lockTtl(300), Idempotency::lockTtl(0)]);
 $hash               = hash('sha256', 'key:1' . "\n" . 'key-2');
 $kept->rows[$hash]  = ['fp' => Idempotency::fingerprint(new Request('POST', 'v1/things', [], [], '', (string) json_encode(['a' => 1]))), 'lock' => 'first', 'status' => IdempotencyRecord::LOCKED, 'response' => null, 'created' => $now, 'expires' => $now + 86400];
 $runs               = Writes::$runs;
 $r                  = $post('things', ['a' => 1], 'key-2');
 pin('a key whose first request still runs is 409 idempotency_in_flight', [409, 'idempotency_in_flight', '1', $runs], [$r->status(), $r->body()['code'], $r->header('Retry-After'), Writes::$runs]);
-$now += Idempotency::LOCK_TTL + 1;
+$now += Idempotency::lockTtl() + 1;
 $r    = $post('things', ['a' => 2], 'key-2');
 pin('a lock whose request died is not taken over by another request', [422, 'idempotency_key_reused', $runs], [$r->status(), $r->body()['code'], Writes::$runs]);
 pin('a lock whose request died is taken over by the same request', 201, $post('things', ['a' => 1], 'key-2')->status());

@@ -26,8 +26,9 @@ use mindstellar\validation\RefusedException;
  *
  * Keys belong to the credential that sent them (one sign-in, one key, or one user's same-site
  * session), and are kept for a day. The first request locks the key while it runs; the same
- * key meanwhile answers 409. A lock left for LOCK_TTL seconds is taken over only by the same
- * request. The same key with a different method, path, query or body answers 422. A 5xx or 429
+ * key meanwhile answers 409. A lock left longer than PHP may run a request (lockTtl()) is taken
+ * over only by the same request. The same key with a different method, path, query, If-Match
+ * or body answers 422. A 5xx or 429
  * answer is not kept, so the request can be retried; any other answer is, a core refusal included.
  */
 final class Idempotency
@@ -35,8 +36,11 @@ final class Idempotency
     /** Seconds a key is kept. */
     public const TTL = 86400;
 
-    /** Seconds after which a lock whose request never finished is taken over. */
+    /** The least seconds after which a lock whose request never finished is taken over. */
     public const LOCK_TTL = 120;
+
+    /** The lock's life when PHP has no time limit. */
+    public const UNLIMITED_LOCK_TTL = 900;
 
     public const MAX_KEY = 255;
 
@@ -66,7 +70,7 @@ final class Idempotency
         $fingerprint = self::fingerprint($request);
         $now         = $this->clock->now();
         $lock        = bin2hex(random_bytes(16));
-        $stored      = $this->store->claim($hash, $fingerprint, $now, $now + self::TTL, self::LOCK_TTL, $lock);
+        $stored      = $this->store->claim($hash, $fingerprint, $now, $now + self::TTL, self::lockTtl(), $lock);
         if ($stored !== null) {
             return self::replay($stored, $fingerprint);
         }
@@ -95,7 +99,18 @@ final class Idempotency
     }
 
     /**
-     * What makes two requests the same: method, path, query, body and uploaded files.
+     * Seconds a lock lasts: longer than PHP may run the request that holds it, so a slow write
+     * is never run a second time by a retry that takes over its lock.
+     */
+    public static function lockTtl(?int $maxExecutionTime = null): int
+    {
+        $limit = $maxExecutionTime ?? (int) ini_get('max_execution_time');
+
+        return $limit > 0 ? max(self::LOCK_TTL, $limit + 30) : self::UNLIMITED_LOCK_TTL;
+    }
+
+    /**
+     * What makes two requests the same: method, path, query, If-Match, body and uploaded files.
      */
     public static function fingerprint(Request $request): string
     {
@@ -107,7 +122,7 @@ final class Idempotency
             $body .= "\n" . $field . '=' . (string) @hash_file('sha256', $file['tmp_name']);
         }
 
-        return hash('sha256', $request->method() . ' ' . ($request->path() ?? '') . "\n" . json_encode($query) . "\n" . $body);
+        return hash('sha256', $request->method() . ' ' . ($request->path() ?? '') . "\n" . json_encode($query) . "\n" . trim($request->ifMatch()) . "\n" . $body);
     }
 
     /**

@@ -343,8 +343,8 @@ curl -X POST $API/listings -H "Authorization: Bearer $TOKEN" \
 | Key | 1 to 255 visible ASCII characters. A random UUID is fine. Otherwise `400 invalid_header`. |
 | Kept | 24 hours. Keys belong to one sign-in (across its refreshed tokens) or one key. Another user cannot use yours. |
 | Replay | The same status, headers and body come back, plus `Idempotency-Replayed: true`. |
-| Different request | The same key with another method, path, query or body is `422 idempotency_key_reused`. |
-| Still running | The same key while the first call runs is `409 idempotency_in_flight`, with `Retry-After: 1`. |
+| Different request | The same key with another method, path, query, `If-Match` or body is `422 idempotency_key_reused`. |
+| Still running | The same key while the first call runs is `409 idempotency_in_flight`, with `Retry-After: 1`. A call that died is retried only after the longest a PHP request may run. |
 | Errors | A `5xx` or `429` is not kept: retry runs again. Any other `4xx` is kept and replays. Fix the request and use a **new** key. |
 | Not covered | `POST /auth/token`, `POST /account/password` and `POST /account/keys`. They carry secrets, so they never replay. |
 
