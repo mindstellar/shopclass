@@ -104,7 +104,7 @@ foreach ($doc['paths'] as $path => $operations) {
         }
     }
 }
-pin('every 201 documents its Location', [], $missing);
+pin('every 201 documents its Location, but sign-up, whose account cannot be read yet', ['POST /users'], $missing);
 
 harness_section('custom fields');
 $fields = new CustomFieldValues(static fn (int $category): array => $category === 5

@@ -77,7 +77,7 @@ curl -X POST $API/auth/token \
   "access_token": "sca_…",
   "token_type": "Bearer",
   "expires_in": 900,
-  "scope": "listings:read listings:write listings:delete comments:write alerts:write account:read account:write",
+  "scope": "listings:read listings:write listings:delete comments:write alerts:read alerts:write account:read account:write",
   "refresh_token": "scr_…",
   "refresh_expires_in": 2592000
 }
@@ -253,7 +253,7 @@ curl -X POST $API/account/keys \
 | Who calls | An access token with `account:write`. A key cannot make or list keys. |
 | Password | `current_password` is checked again, and counts toward the sign-in limit. A wrong one is a `422` on `/current_password`. |
 | `name` | 1 to 100 characters. |
-| `scopes` | At least one of: `listings:read`, `listings:write`, `listings:delete`, `comments:write`, `alerts:write`, `account:read`, plus any plugin scope users may hold. Never `account:write`. |
+| `scopes` | At least one of: `listings:read`, `listings:write`, `listings:delete`, `comments:write`, `alerts:read`, `alerts:write`, `account:read`, plus any plugin scope users may hold. Never `account:write`. |
 | `expires_at` | Required. `YYYY-MM-DD`, the last day it works, in the future and within a year (366 days). |
 | Ends on sign-out | The key is revoked when the user changes their password or signs out of all devices. Make a new one. |
 | Ends also | When revoked, expired, or the user is disabled or deleted. |
@@ -341,7 +341,7 @@ origin, so they can read each other's pages. Give each its own host.
 | Admin view and non-live listings | no | with `admin:*` | no | no | no |
 | Post, edit, delete own listings and photos | no | no | yes | with `listings:write` / `listings:delete` | yes |
 | Comment, delete own comment | no | no | yes | with `comments:write` | yes |
-| Saved searches (`/account/alerts`) | no | no | yes | with `alerts:write` | yes |
+| Saved searches (`/account/alerts`) | no | no | yes | with `alerts:read` / `alerts:write` | yes |
 | Read the account, own listings in any status, and sessions | no | no | yes | with `account:read` | yes |
 | Edit the account, change password, manage keys | no | no | yes | no | no |
 | `POST /auth/token`, `POST /users` | no credential needed | | | | |
@@ -364,9 +364,10 @@ also grants `listings:read`, and `account:write` also grants `account:read`.
 | `listings:write` | Users | Post and edit own listings, upload photos. |
 | `listings:delete` | Users | Delete own listings. |
 | `comments:write` | Users | Post comments, delete own comments. |
-| `alerts:write` | Users | List, make and stop own saved searches. |
+| `alerts:read` | Users | List own saved searches. `alerts:write` includes it. |
+| `alerts:write` | Users | Make and stop own saved searches. |
 | `account:read` | Users | Read the own account, the own listings in any status, and the list of sign-ins and keys. |
-| `account:write` | Access tokens only | Edit the account, change the password, manage personal keys, end sessions. |
+| `account:write` | Access tokens only | Edit the account, change the password, manage personal keys (listing them too, so a key never sees other keys), end sessions. |
 | `admin:listings` | Admin keys, moderators' keys | The admin view of listings, reading listings that are not live, and `/admin/listings`. |
 | `admin:comments` | Admin keys, moderators' keys | Moderate comments: `/admin/comments`. |
 | `admin:users` | Admin keys | The admin view of users, reading disabled users, and `/admin/users`. |

@@ -18,9 +18,9 @@ endpoints, at `/api/v1/openapi.json`.
 |---|---|---|---|---|
 | GET | `/account` | user | `account:read` | The signed-in user's own profile |
 | PATCH | `/account` | user | `account:write` | Edit the profile; a new e-mail address is confirmed by a link first |
-| GET | `/account/alerts` | user | `alerts:write` | Your saved searches |
+| GET | `/account/alerts` | user | `alerts:read` | Your saved searches |
 | POST | `/account/alerts` | user | `alerts:write` | Save a search, with the filters GET /listings takes; an existing one is answered as it is |
-| GET | `/account/alerts/{id}` | user | `alerts:write` | One of your saved searches |
+| GET | `/account/alerts/{id}` | user | `alerts:read` | One of your saved searches |
 | DELETE | `/account/alerts/{id}` | user | `alerts:write` | Stop a saved search |
 | GET | `/account/keys` | user | `account:write` | Personal API keys, when the site allows them |
 | POST | `/account/keys` | user | `account:write` | Make a personal API key; its token is shown once |

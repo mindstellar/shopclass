@@ -1388,17 +1388,17 @@
                 "security": [
                     {
                         "bearer": [
-                            "alerts:write"
+                            "alerts:read"
                         ]
                     },
                     {
                         "pageSession": [
-                            "alerts:write"
+                            "alerts:read"
                         ]
                     }
                 ],
                 "x-auth": "user",
-                "x-scope": "alerts:write"
+                "x-scope": "alerts:read"
             },
             "post": {
                 "operationId": "postAccountAlerts",
@@ -2154,17 +2154,17 @@
                 "security": [
                     {
                         "bearer": [
-                            "alerts:write"
+                            "alerts:read"
                         ]
                     },
                     {
                         "pageSession": [
-                            "alerts:write"
+                            "alerts:read"
                         ]
                     }
                 ],
                 "x-auth": "user",
-                "x-scope": "alerts:write"
+                "x-scope": "alerts:read"
             },
             "delete": {
                 "operationId": "deleteAccountAlertsById",
@@ -42253,6 +42253,7 @@
         "listings:write": "Create and edit own listings and their photos.",
         "listings:delete": "Delete own listings.",
         "comments:write": "Post and delete own comments.",
+        "alerts:read": "Read own saved searches.",
         "alerts:write": "Create and delete own saved searches.",
         "account:read": "Read own profile and sessions.",
         "account:write": "Edit own profile, password and e-mail.",

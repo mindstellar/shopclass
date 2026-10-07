@@ -40,6 +40,7 @@ final class Scopes
         'listings:write'  => 'Create and edit own listings and their photos.',
         'listings:delete' => 'Delete own listings.',
         'comments:write'  => 'Post and delete own comments.',
+        'alerts:read'     => 'Read own saved searches.',
         'alerts:write'    => 'Create and delete own saved searches.',
         'account:read'    => 'Read own profile and sessions.',
         'account:write'   => 'Edit own profile, password and e-mail.',
@@ -55,7 +56,7 @@ final class Scopes
     public const PUBLIC = [self::PUBLIC_READ];
 
     public const USER = [
-        'listings:read', 'listings:write', 'listings:delete', 'comments:write', 'alerts:write',
+        'listings:read', 'listings:write', 'listings:delete', 'comments:write', 'alerts:read', 'alerts:write',
         'account:read', 'account:write',
     ];
 
@@ -78,6 +79,7 @@ final class Scopes
     private const IMPLIES = [
         'listings:write' => ['listings:read'],
         'account:write'  => ['account:read'],
+        'alerts:write'   => ['alerts:read'],
     ];
 
     /** @var array<string,array{description:string,audience:string}> */

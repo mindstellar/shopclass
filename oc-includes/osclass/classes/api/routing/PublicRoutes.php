@@ -412,7 +412,7 @@ final class PublicRoutes
                 summary: 'Your saved searches',
                 response: 'AlertList',
                 auth: RouteSpec::AUTH_USER,
-                scope: 'alerts:write'
+                scope: 'alerts:read'
             ),
             'POST account/alerts' => RouteSpec::write(
                 handler: [AlertsController::class, 'create'],
@@ -433,7 +433,7 @@ final class PublicRoutes
                 response: 'AlertDocument',
                 errors: [404],
                 auth: RouteSpec::AUTH_USER,
-                scope: 'alerts:write'
+                scope: 'alerts:read'
             ),
             'DELETE account/alerts/{id}' => RouteSpec::write(
                 handler: [AlertsController::class, 'delete'],

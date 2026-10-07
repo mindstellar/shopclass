@@ -252,7 +252,7 @@ $reset();
 $r = $kernel->handle($session($ok(10), $cookie(10)));
 $held = $r->body()['data']['scopes'];
 pin('a session holds the user scopes without account:write, plus plugin user scopes', [
-    'listings:read', 'listings:write', 'listings:delete', 'comments:write', 'alerts:write', 'account:read', 'ext:acme:offers:write',
+    'listings:read', 'listings:write', 'listings:delete', 'comments:write', 'alerts:read', 'alerts:write', 'account:read', 'ext:acme:offers:write',
 ], $held);
 $reset();
 $r = $kernel->handle($session($ok(10) + ['Content-Type' => 'application/json'], $cookie(10), 'POST', 'v1/secret'));
