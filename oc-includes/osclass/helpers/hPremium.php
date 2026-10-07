@@ -613,46 +613,6 @@ function osc_get_premium_resources()
 }
 
 /**
- * Gets number of premium comments of current premium
- *
- * @return int
- */
-function osc_count_premium_comments()
-{
-    if (!View::getInstance()->_exists('comments')) {
-        View::getInstance()->_exportVariableToView('comments', ItemComment::getInstance()
-            // @phpstan-ignore method.notFound (legacy premium comments; method is missing in core)
-            ->findBypremiumID(
-                osc_premium_id(),
-                osc_premium_comments_page(),
-                osc_comments_per_page()
-            ));
-    }
-
-    return View::getInstance()->_count('comments');
-}
-
-/**
- * Gets next comment of current premium comments
- *
- * @return bool False once the loop is exhausted
- */
-function osc_has_premium_comments()
-{
-    if (!View::getInstance()->_exists('comments')) {
-        View::getInstance()->_exportVariableToView('comments', ItemComment::getInstance()
-            // @phpstan-ignore method.notFound (legacy premium comments; method is missing in core)
-            ->findBypremiumID(
-                osc_premium_id(),
-                osc_premium_comments_page(),
-                osc_comments_per_page()
-            ));
-    }
-
-    return View::getInstance()->_next('comments');
-}
-
-/**
  * Gets number of premiums
  *
  * @return int
