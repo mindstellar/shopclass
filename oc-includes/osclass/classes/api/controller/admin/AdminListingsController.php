@@ -80,7 +80,7 @@ final class AdminListingsController
 
     public function show(ApiCall $call): Response
     {
-        return Response::ok($this->view($call->request(), $call->credential(), (int) $call->arg('id')));
+        return Response::ok($this->view($call, $call->intArg()));
     }
 
     /**
@@ -93,7 +93,7 @@ final class AdminListingsController
         $request = $call->request();
         $credential = $call->credential();
 
-        $listing = OwnedListing::load((int) $call->arg('id'), true);
+        $listing = OwnedListing::load($call->intArg(), true);
         $input   = $request->input();
         $status  = array_intersect_key($input, self::STATUS_MEMBERS);
         $edit    = array_diff_key($input, self::STATUS_MEMBERS);
@@ -108,7 +108,7 @@ final class AdminListingsController
             $this->moderate($action, $listing->id(), $credential);
         }
 
-        return Response::ok($this->view($request, $credential, $listing->id()));
+        return Response::ok($this->view($call, $listing->id()));
     }
 
     /**
@@ -116,7 +116,7 @@ final class AdminListingsController
      */
     public function delete(ApiCall $call): Response
     {
-        $this->writer->delete(OwnedListing::load((int) $call->arg('id')), $call->credential()->actor($call->request()->ip(), 'admin:listings'));
+        $this->writer->delete(OwnedListing::load($call->intArg()), $call->credential()->actor($call->request()->ip(), 'admin:listings'));
 
         return Response::noContent();
     }
@@ -126,7 +126,7 @@ final class AdminListingsController
      */
     public function bump(ApiCall $call): Response
     {
-        $this->moderate('bump', (int) $call->arg('id'), $call->credential());
+        $this->moderate('bump', $call->intArg(), $call->credential());
 
         return $this->show($call);
     }
@@ -166,11 +166,11 @@ final class AdminListingsController
      * @return array<string,mixed>
      * @throws ProblemException 404
      */
-    private function view(Request $request, Credential $credential, int $id): array
+    private function view(ApiCall $call, int $id): array
     {
-        $context = $this->api->context($request, $credential, 'listing', ListingSerializer::MEMBERS, ListingSerializer::INCLUDES);
+        $context = $this->api->context($call->request(), $call->credential(), 'listing', ListingSerializer::MEMBERS, ListingSerializer::INCLUDES);
 
-        return $this->reader->one($id, $context) ?? throw ProblemException::of('not_found', 'No such listing.');
+        return $this->reader->one($id, $context) ?? throw ProblemException::notFound('No such listing.');
     }
 
     /**

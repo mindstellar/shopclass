@@ -68,7 +68,7 @@ final class AdminCommentsController
 
     public function show(ApiCall $call): Response
     {
-        return Response::ok($this->serializer->admin($this->comment((int) $call->arg('id'))));
+        return Response::ok($this->serializer->admin($this->comment($call->intArg())));
     }
 
     /**
@@ -77,9 +77,9 @@ final class AdminCommentsController
      */
     public function update(ApiCall $call): Response
     {
-        $comment = $this->comment((int) $call->arg('id'));
+        $comment = $this->comment($call->intArg());
         $id      = (int) $comment['pk_i_id'];
-        $input   = $call->request()->input();
+        $input   = $call->input();
         $status  = array_intersect_key($input, self::STATUS_MEMBERS);
         if ($status === [] || array_diff_key($input, self::STATUS_MEMBERS) !== []) {
             $this->moderation->edit($id, [
@@ -102,7 +102,7 @@ final class AdminCommentsController
 
     public function delete(ApiCall $call): Response
     {
-        if (!$this->moderation->delete((int) $this->comment((int) $call->arg('id'))['pk_i_id'])) {
+        if (!$this->moderation->delete((int) $this->comment($call->intArg())['pk_i_id'])) {
             throw ProblemException::of('server_error', 'The comment could not be deleted.');
         }
 
@@ -115,6 +115,6 @@ final class AdminCommentsController
      */
     private function comment(int $id): array
     {
-        return $this->comments->find($id) ?? throw ProblemException::of('not_found', 'No such comment.');
+        return $this->comments->find($id) ?? throw ProblemException::notFound('No such comment.');
     }
 }

@@ -50,7 +50,7 @@ final class CategoriesController
         $context  = $this->api->context($call->request(), $call->credential(), 'category', CategorySerializer::MEMBERS);
         $category = CategoryCatalog::fromSite()->lookup((string) ($call->arg('category') ?? ''), $context->locale());
         if ($category === null) {
-            throw ProblemException::of('not_found', 'No such category.');
+            throw ProblemException::notFound('No such category.');
         }
         $fields = $this->api->fieldService()->forCategory((int) $category['pk_i_id']);
 

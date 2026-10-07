@@ -19,12 +19,10 @@ use mindstellar\api\read\ListingReader;
 use mindstellar\api\read\ListingSearch;
 use mindstellar\api\read\ListSpec;
 use mindstellar\api\read\Pager;
-use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\CommentSerializer;
 use mindstellar\api\serializer\ListingSerializer;
 use mindstellar\api\serializer\ViewContext;
-use mindstellar\apiaccess\Credential;
 use mindstellar\comment\CommentQuery;
 use mindstellar\listing\ListingPolicy;
 use mindstellar\listing\ListingQuery;
@@ -57,9 +55,9 @@ final class ListingsController
         $credential = $call->credential();
 
         $context = $this->api->context($request, $credential, 'listing', ListingSerializer::MEMBERS, ListingSerializer::INCLUDES);
-        $item    = $this->reader->row((int) $call->arg('id'));
+        $item    = $this->reader->row($call->intArg());
         if ($item === null || !ListingPolicy::canView($item, $credential->actor($request->ip(), ViewContext::LISTINGS_SCOPE))) {
-            throw ProblemException::of('not_found', 'No such listing.');
+            throw ProblemException::notFound('No such listing.');
         }
 
         return Response::ok($this->reader->view($item, $context));
@@ -67,7 +65,7 @@ final class ListingsController
 
     public function photos(ApiCall $call): Response
     {
-        $id = (int) $this->visibleRow((int) $call->arg('id'), $call->request(), $call->credential())['pk_i_id'];
+        $id = (int) $this->visibleRow($call, $call->intArg())['pk_i_id'];
 
         return Response::collection($this->reader->photos($id));
     }
@@ -77,17 +75,15 @@ final class ListingsController
      */
     public function photo(ApiCall $call): Response
     {
-        $args = $call->args();
-
-        $id      = (int) $this->visibleRow((int) $args['id'], $call->request(), $call->credential())['pk_i_id'];
-        $photoId = ctype_digit($args['photo']) ? (int) $args['photo'] : 0;
+        $id      = (int) $this->visibleRow($call, $call->intArg())['pk_i_id'];
+        $photoId = $call->intArg('photo');
         foreach ($this->reader->photos($id) as $photo) {
             if ($photo['id'] === $photoId) {
                 return Response::ok($photo);
             }
         }
 
-        throw ProblemException::of('not_found', 'No such photo on this listing.');
+        throw ProblemException::notFound('No such photo on this listing.');
     }
 
     /**
@@ -98,9 +94,9 @@ final class ListingsController
         $request = $call->request();
 
         if (!$this->api->facts()->commentsEnabled()) {
-            throw ProblemException::of('not_found', 'Comments are switched off on this site.');
+            throw ProblemException::notFound('Comments are switched off on this site.');
         }
-        $id    = (int) $this->visibleRow((int) $call->arg('id'), $request, $call->credential())['pk_i_id'];
+        $id    = (int) $this->visibleRow($call, $call->intArg())['pk_i_id'];
         $facts = $this->api->facts();
         $pager = Pager::fromRequest($request, $this->api->cursor(), ListSpec::byId('asc', $facts->commentsPerPage(), $facts->maxLimit()), ['listing' => $id] + $request->query());
 
@@ -122,11 +118,11 @@ final class ListingsController
      * @return array<string,mixed>
      * @throws ProblemException 404
      */
-    private function visibleRow(int $id, Request $request, Credential $credential): array
+    private function visibleRow(ApiCall $call, int $id): array
     {
         $row = (new ListingQuery($this->api->clock()))->statusRow($id);
-        if ($row === null || !ListingPolicy::canView($row, $credential->actor($request->ip(), ViewContext::LISTINGS_SCOPE))) {
-            throw ProblemException::of('not_found', 'No such listing.');
+        if ($row === null || !ListingPolicy::canView($row, $call->credential()->actor($call->request()->ip(), ViewContext::LISTINGS_SCOPE))) {
+            throw ProblemException::notFound('No such listing.');
         }
 
         return $row;

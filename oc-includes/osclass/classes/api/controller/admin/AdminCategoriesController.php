@@ -54,7 +54,7 @@ final class AdminCategoriesController
      */
     public function show(ApiCall $call): Response
     {
-        return Response::ok($this->categoryData((int) $call->arg('id')));
+        return Response::ok($this->categoryData($call->intArg()));
     }
 
     /**
@@ -62,7 +62,7 @@ final class AdminCategoriesController
      */
     public function create(ApiCall $call): Response
     {
-        $input        = $call->request()->input();
+        $input        = $call->input();
         $descriptions = [];
         foreach ($this->localized((array) $input['translations']) as $locale => $text) {
             $descriptions[$locale] = [
@@ -89,11 +89,11 @@ final class AdminCategoriesController
      */
     public function update(ApiCall $call): Response
     {
-        $id    = (int) $call->arg('id');
+        $id    = $call->intArg();
         $row   = $this->query->rows($id)[0] ?? null;
-        $input = $call->request()->input();
+        $input = $call->input();
         if ($row === null) {
-            throw ProblemException::of('not_found', 'No such category.');
+            throw ProblemException::notFound('No such category.');
         }
         $editor = $this->categories;
         DeferredMail::transaction(function () use ($editor, $id, $row, $input): void {
@@ -123,7 +123,7 @@ final class AdminCategoriesController
      */
     public function delete(ApiCall $call): Response
     {
-        return $this->categories->delete((int) $call->arg('id')) === 'queued' ? new Response(202) : Response::noContent();
+        return $this->categories->delete($call->intArg()) === 'queued' ? new Response(202) : Response::noContent();
     }
 
     /**
@@ -134,7 +134,7 @@ final class AdminCategoriesController
     {
         $row = $this->query->rows($id)[0] ?? null;
         if ($row === null) {
-            throw ProblemException::of('not_found', 'No such category.');
+            throw ProblemException::notFound('No such category.');
         }
 
         return CategorySerializer::admin($row, $this->query->texts([$id])[$id] ?? []);

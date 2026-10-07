@@ -81,9 +81,7 @@ final class AdminUsersController
 
     public function show(ApiCall $call): Response
     {
-        $context = $this->api->context($call->request(), $call->credential(), 'user', UserSerializer::MEMBERS);
-
-        return Response::ok($this->serializer()->one($this->user((int) $call->arg('id')), $context));
+        return $this->one($call, $call->intArg());
     }
 
     /**
@@ -92,15 +90,12 @@ final class AdminUsersController
      */
     public function update(ApiCall $call): Response
     {
-        $request = $call->request();
-        $credential = $call->credential();
-
-        $user     = $this->user((int) $call->arg('id'));
+        $user     = $this->user($call->intArg());
         $userId   = (int) $user['pk_i_id'];
-        $input    = $request->input();
+        $input    = $call->input();
         $status   = array_intersect_key($input, self::STATUS_MEMBERS);
         $accounts = new AccountService();
-        $actor    = $credential->actor($request->ip(), 'admin:users');
+        $actor    = $call->credential()->actor($call->request()->ip(), 'admin:users');
         if ($status === [] || array_diff_key($input, self::STATUS_MEMBERS) !== []) {
             $accounts->update($userId, AccountBody::admin($user, array_diff_key($input, self::STATUS_MEMBERS)), $actor);
         }
@@ -127,7 +122,7 @@ final class AdminUsersController
      */
     public function delete(ApiCall $call): Response
     {
-        $id = (int) $this->user((int) $call->arg('id'))['pk_i_id'];
+        $id = (int) $this->user($call->intArg())['pk_i_id'];
         (new AccountService())->delete($id, $call->credential()->actor($call->request()->ip(), 'admin:users'));
         $this->users->forget($id);
 
@@ -140,7 +135,7 @@ final class AdminUsersController
      */
     public function signOutEverywhere(ApiCall $call): Response
     {
-        $id = (int) $this->user((int) $call->arg('id'))['pk_i_id'];
+        $id = (int) $this->user($call->intArg())['pk_i_id'];
         \mindstellar\auth\SignOut::everywhereUser($id);
         $this->users->forget($id);
 
@@ -152,7 +147,7 @@ final class AdminUsersController
      */
     public function sessions(ApiCall $call): Response
     {
-        $id         = (int) $this->user((int) $call->arg('id'))['pk_i_id'];
+        $id         = (int) $this->user($call->intArg())['pk_i_id'];
         $serializer = new AccessEntrySerializer();
 
         return Response::collection(array_map(
@@ -166,11 +161,9 @@ final class AdminUsersController
      */
     public function endSession(ApiCall $call): Response
     {
-        $args = $call->args();
-
-        $id = (int) $this->user((int) $args['id'])['pk_i_id'];
-        if (!$this->sessions->end($id, $args['session'])) {
-            throw ProblemException::of('not_found', 'No such session.');
+        $id = (int) $this->user($call->intArg())['pk_i_id'];
+        if (!$this->sessions->end($id, $call->arg('session') ?? '')) {
+            throw ProblemException::notFound('No such session.');
         }
 
         return Response::noContent();
@@ -183,7 +176,14 @@ final class AdminUsersController
     {
         $this->users->forget($id);
 
-        return $this->show(new ApiCall($call->request(), $call->credential(), ['id' => (string) $id]));
+        return $this->one($call, $id);
+    }
+
+    private function one(ApiCall $call, int $id): Response
+    {
+        $context = $this->api->context($call->request(), $call->credential(), 'user', UserSerializer::MEMBERS);
+
+        return Response::ok($this->serializer()->one($this->user($id), $context));
     }
 
     /**
@@ -194,7 +194,7 @@ final class AdminUsersController
     {
         $user = $this->users->find($id);
         if ($user === null) {
-            throw ProblemException::of('not_found', 'No such user.');
+            throw ProblemException::notFound('No such user.');
         }
 
         return $user;

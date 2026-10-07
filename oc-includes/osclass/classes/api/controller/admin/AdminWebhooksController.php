@@ -55,7 +55,7 @@ final class AdminWebhooksController
      */
     public function create(ApiCall $call): Response
     {
-        $input = $call->request()->input();
+        $input = $call->input();
         [$endpoint, $secret] = $this->webhooks->create(
             (string) $input['url'],
             array_map('strval', (array) $input['events']),
@@ -73,7 +73,7 @@ final class AdminWebhooksController
     public function update(ApiCall $call): Response
     {
         $id    = $this->endpoint($call->arg('webhook'))->id();
-        $input = $call->request()->input();
+        $input = $call->input();
         $endpoint = $this->webhooks->update(
             $id,
             array_key_exists('url', $input) ? (string) $input['url'] : null,
@@ -161,7 +161,7 @@ final class AdminWebhooksController
     {
         $endpoint = $this->webhooks->find($id);
         if ($endpoint === null) {
-            throw ProblemException::of('not_found', 'No such webhook endpoint.');
+            throw ProblemException::notFound('No such webhook endpoint.');
         }
 
         return $endpoint;

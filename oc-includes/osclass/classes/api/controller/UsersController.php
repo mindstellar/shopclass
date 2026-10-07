@@ -43,10 +43,10 @@ final class UsersController
         $credential = $call->credential();
 
         $context = $this->api->context($call->request(), $credential, 'user', UserSerializer::MEMBERS);
-        $id      = (int) $call->arg('id');
+        $id      = $call->intArg();
         $user    = $this->api->facts()->usersEnabled() ? (new UserQuery())->find($id) : null;
         if ($user === null || !self::visible($user, $credential)) {
-            throw ProblemException::of('not_found', 'No such user.');
+            throw ProblemException::notFound('No such user.');
         }
 
         return Response::ok((new UserSerializer($this->api->links(), $this->api->extensions()))->one($user, $context));
@@ -56,13 +56,13 @@ final class UsersController
     {
         $credential = $call->credential();
 
-        $id   = (int) $call->arg('id');
+        $id   = $call->intArg();
         $user = null;
         if ($this->api->facts()->usersEnabled()) {
             $user = (new UserQuery())->statusRow($id);
         }
         if ($user === null || !self::visible($user, $credential)) {
-            throw ProblemException::of('not_found', 'No such user.');
+            throw ProblemException::notFound('No such user.');
         }
 
         return $this->search->run($call->request(), $credential, $id, 'users/' . $id . '/listings');

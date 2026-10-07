@@ -46,7 +46,7 @@ final class OwnedListing
         if (!ListingPolicy::isOwner($row, $actor)) {
             throw ListingPolicy::canView($row, $actor)
                 ? ProblemException::of('not_owner', 'Only the seller may change this listing.')
-                : ProblemException::of('not_found', 'No such listing.');
+                : ProblemException::notFound('No such listing.');
         }
 
         return $listing;
@@ -67,7 +67,7 @@ final class OwnedListing
             throw ProblemException::of('server_error', 'The listing could not be read.');
         }
         if ($rows === []) {
-            throw ProblemException::of('not_found', 'No such listing.');
+            throw ProblemException::notFound('No such listing.');
         }
         $row   = $rows[0];
         $texts = [];

@@ -35,6 +35,14 @@ final class ProblemException extends \RuntimeException
     }
 
     /**
+     * 404 not_found with $detail, such as "No such user."
+     */
+    public static function notFound(string $detail): self
+    {
+        return self::of('not_found', $detail);
+    }
+
+    /**
      * Wrap a problem answer that already has its headers, e.g. Problem::unauthorized().
      */
     public static function from(Response $response): self

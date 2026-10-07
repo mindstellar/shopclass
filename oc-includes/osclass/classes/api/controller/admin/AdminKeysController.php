@@ -50,7 +50,7 @@ final class AdminKeysController
 
     public function show(ApiCall $call): Response
     {
-        return Response::ok($this->serializer->admin($this->key((int) $call->arg('id'))));
+        return Response::ok($this->serializer->admin($this->key($call->intArg())));
     }
 
     /**
@@ -60,7 +60,7 @@ final class AdminKeysController
     {
         $credential = $call->credential();
 
-        $input  = $call->request()->input();
+        $input  = $call->input();
         $kind   = ($input['kind'] ?? 'admin') === 'public' ? CredentialKind::PUBLIC : CredentialKind::KEY;
         $scopes = array_values(array_map('strval', (array) ($input['scopes'] ?? [])));
         if ($scopes === [] && $kind === CredentialKind::PUBLIC) {
@@ -84,7 +84,7 @@ final class AdminKeysController
      */
     public function revoke(ApiCall $call): Response
     {
-        $id = (int) $this->key((int) $call->arg('id'))['id'];
+        $id = (int) $this->key($call->intArg())['id'];
         $this->keys->revoke($id, (int) $call->credential()->adminId());
 
         return Response::noContent();
@@ -98,7 +98,7 @@ final class AdminKeysController
     {
         $credential = $call->credential();
 
-        $old = $this->key((int) $call->arg('id'));
+        $old = $this->key($call->intArg());
         if ($old['kind'] !== 'public' && $old['owner_admin'] !== $credential->adminId()) {
             throw ProblemException::of('not_owner', 'Only your own keys and public keys can be rotated. Revoke this one and make a new key instead.');
         }
@@ -131,7 +131,7 @@ final class AdminKeysController
     {
         $row = $this->keys->row($id);
         if ($row === null) {
-            throw ProblemException::of('not_found', 'No such key.');
+            throw ProblemException::notFound('No such key.');
         }
 
         return $row;

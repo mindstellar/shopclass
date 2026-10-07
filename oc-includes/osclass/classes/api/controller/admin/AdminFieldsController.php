@@ -35,7 +35,7 @@ final class AdminFieldsController
      */
     public function create(ApiCall $call): Response
     {
-        $id = $this->fields->create($call->request()->input());
+        $id = $this->fields->create($call->input());
 
         return Response::created($this->field($id), $this->api->links()->api('admin/custom-fields/' . $id));
     }
@@ -45,11 +45,9 @@ final class AdminFieldsController
      */
     public function show(ApiCall $call): Response
     {
-        $args = $call->args();
+        $this->fields->find($call->intArg());
 
-        $this->fields->find((int) $args['id']);
-
-        return Response::ok($this->field((int) $args['id']));
+        return Response::ok($this->field($call->intArg()));
     }
 
     /**
@@ -58,11 +56,9 @@ final class AdminFieldsController
      */
     public function update(ApiCall $call): Response
     {
-        $args = $call->args();
+        $this->fields->update($call->intArg(), $call->input());
 
-        $this->fields->update((int) $args['id'], $call->request()->input());
-
-        return Response::ok($this->field((int) $args['id']));
+        return Response::ok($this->field($call->intArg()));
     }
 
     /**
@@ -70,7 +66,7 @@ final class AdminFieldsController
      */
     public function delete(ApiCall $call): Response
     {
-        $this->fields->delete((int) $call->arg('id'));
+        $this->fields->delete($call->intArg());
 
         return Response::noContent();
     }

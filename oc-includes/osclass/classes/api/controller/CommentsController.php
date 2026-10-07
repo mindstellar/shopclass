@@ -40,7 +40,7 @@ final class CommentsController
 
         $input = $request->input();
         $comments = new CommentService();
-        $saved    = $comments->post((int) $call->arg('id'), [
+        $saved    = $comments->post($call->intArg(), [
             'title' => (string) ($input['title'] ?? ''),
             'body'  => (string) ($input['body'] ?? ''),
         ], $call->credential()->actor($request->ip(), ViewContext::LISTINGS_SCOPE));
@@ -57,9 +57,9 @@ final class CommentsController
      */
     public function show(ApiCall $call): Response
     {
-        $comment = (new CommentService())->visible((int) $call->arg('id'), $call->credential()->actor($call->request()->ip(), ViewContext::LISTINGS_SCOPE));
+        $comment = (new CommentService())->visible($call->intArg(), $call->credential()->actor($call->request()->ip(), ViewContext::LISTINGS_SCOPE));
         if ($comment === null) {
-            throw ProblemException::of('not_found', 'No such comment.');
+            throw ProblemException::notFound('No such comment.');
         }
 
         return Response::ok((new CommentSerializer())->one($comment));
@@ -70,7 +70,7 @@ final class CommentsController
      */
     public function delete(ApiCall $call): Response
     {
-        (new CommentService())->delete((int) $call->arg('id'), $call->credential()->actor($call->request()->ip()));
+        (new CommentService())->delete($call->intArg(), $call->credential()->actor($call->request()->ip()));
 
         return Response::noContent();
     }

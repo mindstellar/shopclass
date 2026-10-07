@@ -89,7 +89,7 @@ final class AlertsController
      */
     public function show(ApiCall $call): Response
     {
-        return Response::ok($this->serializer->one($this->own($call->credential(), (int) $call->arg('id'))));
+        return Response::ok($this->serializer->one($this->own($call->credential(), $call->intArg())));
     }
 
     /**
@@ -97,7 +97,7 @@ final class AlertsController
      */
     public function delete(ApiCall $call): Response
     {
-        $this->alerts->unsubscribe((int) $this->own($call->credential(), (int) $call->arg('id'))['pk_i_id']);
+        $this->alerts->unsubscribe((int) $this->own($call->credential(), $call->intArg())['pk_i_id']);
 
         return Response::noContent();
     }
@@ -112,7 +112,7 @@ final class AlertsController
     {
         $alert = $this->alerts->own($id, (int) $credential->userId());
         if ($alert === null) {
-            throw ProblemException::of('not_found', 'No such alert.');
+            throw ProblemException::notFound('No such alert.');
         }
 
         return $alert;

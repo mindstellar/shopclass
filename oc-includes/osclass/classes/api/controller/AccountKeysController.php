@@ -63,9 +63,9 @@ final class AccountKeysController
         $userId = (int) $call->credential()->userId();
         $user   = $this->users->find($userId);
         if ($user === null) {
-            throw ProblemException::of('not_found', 'No such user.');
+            throw ProblemException::notFound('No such user.');
         }
-        $input = $call->request()->input();
+        $input = $call->input();
         $issued = $this->keys->create(
             $user,
             (string) ($input['current_password'] ?? ''),
@@ -84,9 +84,9 @@ final class AccountKeysController
     public function show(ApiCall $call): Response
     {
         $this->allowed();
-        $key = $this->keys->find((int) $call->credential()->userId(), (int) $call->arg('id'));
+        $key = $this->keys->find((int) $call->credential()->userId(), $call->intArg());
         if ($key === null) {
-            throw ProblemException::of('not_found', 'No such key.');
+            throw ProblemException::notFound('No such key.');
         }
 
         return Response::ok($this->serializer->personal($key, $this->clock->now()));
@@ -95,8 +95,8 @@ final class AccountKeysController
     public function revoke(ApiCall $call): Response
     {
         $this->allowed();
-        if (!$this->keys->revoke((int) $call->credential()->userId(), (int) $call->arg('id'))) {
-            throw ProblemException::of('not_found', 'No such key.');
+        if (!$this->keys->revoke((int) $call->credential()->userId(), $call->intArg())) {
+            throw ProblemException::notFound('No such key.');
         }
 
         return Response::noContent();

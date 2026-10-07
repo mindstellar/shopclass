@@ -331,7 +331,7 @@ final class Kernel
     {
         $methods = $this->router->methodsFor($this->routePath($request));
         if ($methods === []) {
-            throw ProblemException::of('not_found', 'No such endpoint.');
+            throw ProblemException::notFound('No such endpoint.');
         }
 
         return $methods;
@@ -350,7 +350,7 @@ final class Kernel
         $allowed = $this->router->methodsFor($path);
 
         throw $allowed === []
-            ? ProblemException::of('not_found', 'No such endpoint.')
+            ? ProblemException::notFound('No such endpoint.')
             : ProblemException::from(Problem::methodNotAllowed($allowed));
     }
 
@@ -366,11 +366,11 @@ final class Kernel
         }
         $path = $request->path();
         if ($path === null) {
-            throw ProblemException::of('not_found', 'No such endpoint.');
+            throw ProblemException::notFound('No such endpoint.');
         }
         $segments = explode('/', $path, 2);
         if ($segments[0] !== self::VERSION) {
-            throw ProblemException::of('not_found', 'No such API version.');
+            throw ProblemException::notFound('No such API version.');
         }
 
         return $segments[1] ?? '';

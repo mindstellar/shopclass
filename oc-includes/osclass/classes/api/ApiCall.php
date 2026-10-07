@@ -52,4 +52,25 @@ final class ApiCall
     {
         return $this->args[$name] ?? null;
     }
+
+    /**
+     * A {name} value as a row id, or 0 when it is missing or not digits, which finds no row.
+     */
+    public function intArg(string $name = 'id'): int
+    {
+        $value = $this->args[$name] ?? '';
+
+        return ctype_digit($value) ? (int) $value : 0;
+    }
+
+    /**
+     * The decoded JSON body, or [] when there is none.
+     *
+     * @return array<mixed>
+     * @throws ProblemException 413, 415 or 400 when a body was sent that cannot be used
+     */
+    public function input(): array
+    {
+        return $this->request->input();
+    }
 }

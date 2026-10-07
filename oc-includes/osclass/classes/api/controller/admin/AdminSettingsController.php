@@ -43,7 +43,7 @@ final class AdminSettingsController
      */
     public function update(ApiCall $call): Response
     {
-        $input = $call->request()->input();
+        $input = $call->input();
         if ($input !== []) {
             $this->settings->save($input);
         }

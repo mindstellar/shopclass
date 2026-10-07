@@ -55,7 +55,7 @@ final class PhotosController
         $request = $call->request();
         $credential = $call->credential();
 
-        $listing = OwnedListing::own((int) $call->arg('id'), $credential);
+        $listing = OwnedListing::own($call->intArg(), $credential);
         $id      = $listing->id();
         $cap     = PhotoService::cap($listing->userId());
         if (PhotoService::room($id, $listing->userId()) === 0) {
@@ -86,12 +86,10 @@ final class PhotosController
     public function remove(ApiCall $call): Response
     {
         $credential = $call->credential();
-        $args = $call->args();
-
-        $id      = OwnedListing::own((int) $args['id'], $credential)->id();
-        $photoId = ctype_digit($args['photo']) ? (int) $args['photo'] : 0;
+        $id      = OwnedListing::own($call->intArg(), $credential)->id();
+        $photoId = $call->intArg('photo');
         if (!(new PhotoService())->delete($photoId, $id, $credential->actor($call->request()->ip()))) {
-            throw ProblemException::of('not_found', 'No such photo on this listing.');
+            throw ProblemException::notFound('No such photo on this listing.');
         }
 
         return Response::noContent();

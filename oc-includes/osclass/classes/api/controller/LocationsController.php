@@ -50,7 +50,7 @@ final class LocationsController
     {
         $code = strtoupper((string) ($call->arg('code') ?? ''));
         if (preg_match('/^[A-Z]{2}$/D', $code) !== 1) {
-            throw ProblemException::of('not_found', 'No such country.');
+            throw ProblemException::notFound('No such country.');
         }
 
         return $this->page($call->request(), 'countries/' . $code . '/regions', 'region', [LocationQuery::COUNTRY, $code, 'No such country.'], fn (string $q, int $limit, int $offset): array => $this->places->regions($code, $q, $limit, $offset));
@@ -58,14 +58,14 @@ final class LocationsController
 
     public function cities(ApiCall $call): Response
     {
-        $id = (int) ($call->arg('id') ?? 0);
+        $id = $call->intArg();
 
         return $this->page($call->request(), 'regions/' . $id . '/cities', 'city', [LocationQuery::REGION, $id, 'No such region.'], fn (string $q, int $limit, int $offset): array => $this->places->cities($id, $q, $limit, $offset));
     }
 
     public function areas(ApiCall $call): Response
     {
-        $id = (int) ($call->arg('id') ?? 0);
+        $id = $call->intArg();
 
         return $this->page($call->request(), 'cities/' . $id . '/areas', 'area', [LocationQuery::CITY, $id, 'No such city.'], fn (string $q, int $limit, int $offset): array => $this->places->areas($id, $q, $limit, $offset));
     }
@@ -86,7 +86,7 @@ final class LocationsController
             function () use ($request, $pager, $parent, $read): array {
                 $rows = $read(trim($request->queryString('q')), $pager->limit() + 1, $pager->offset());
                 if ($rows === [] && $parent !== null && !$this->places->exists($parent[0], $parent[1])) {
-                    throw ProblemException::of('not_found', $parent[2]);
+                    throw ProblemException::notFound($parent[2]);
                 }
 
                 return $rows;

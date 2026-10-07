@@ -469,4 +469,9 @@ foreach (array_keys($classes) as $class) {
 pin('every core route\'s controller is built from the services', [], $unbuilt);
 pin('a controller is built once per request', true, ($services->handlers())(\mindstellar\api\controller\AuthController::class) === ($services->handlers())(\mindstellar\api\controller\AuthController::class));
 
+harness_section('ApiCall');
+$apiCall = new ApiCall(new Request('GET', 'v1/x'), Credential::anonymous(), ['id' => '12', 'photo' => '-3', 'slug' => 'cars']);
+pin('intArg: digits as an int, anything else 0', [12, 0, 0, 0], [$apiCall->intArg(), $apiCall->intArg('photo'), $apiCall->intArg('slug'), $apiCall->intArg('missing')]);
+pin('arg: the value, or null', ['cars', null], [$apiCall->arg('slug'), $apiCall->arg('missing')]);
+
 exit(harness_result());

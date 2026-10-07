@@ -20,7 +20,6 @@ use mindstellar\api\auth\TokenIssuer;
 use mindstellar\api\auth\UserRows;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\ListingList;
-use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\AccessEntrySerializer;
 use mindstellar\api\serializer\UserSerializer;
@@ -71,9 +70,7 @@ final class AccountController
 
     public function show(ApiCall $call): Response
     {
-        $credential = $call->credential();
-
-        return Response::ok($this->serialize($call->request(), $credential, $this->user($credential)));
+        return Response::ok($this->serialize($call, $this->user($call->credential())));
     }
 
     public function update(ApiCall $call): Response
@@ -110,7 +107,7 @@ final class AccountController
             $warnings[] = ['code' => 'email_confirmation_sent', 'message' => 'A confirmation link went to the new address. The e-mail changes once it is opened.'];
         }
 
-        $data = $this->serialize($request, $credential, $this->user($credential));
+        $data = $this->serialize($call, $this->user($credential));
 
         return Response::ok($data, 200, $warnings === [] ? [] : ['warnings' => $warnings]);
     }
@@ -175,8 +172,8 @@ final class AccountController
 
     public function endSession(ApiCall $call): Response
     {
-        if (!$this->sessions->end((int) $call->credential()->userId(), $call->arg('session'))) {
-            throw ProblemException::of('not_found', 'No such session.');
+        if (!$this->sessions->end((int) $call->credential()->userId(), $call->arg('session') ?? '')) {
+            throw ProblemException::notFound('No such session.');
         }
 
         return Response::noContent();
@@ -190,7 +187,7 @@ final class AccountController
     {
         $user = $this->users->find((int) $credential->userId());
         if ($user === null) {
-            throw ProblemException::of('not_found', 'No such user.');
+            throw ProblemException::notFound('No such user.');
         }
 
         return $user;
@@ -201,9 +198,9 @@ final class AccountController
      *
      * @return array<string,mixed>
      */
-    private function serialize(Request $request, Credential $credential, array $user): array
+    private function serialize(ApiCall $call, array $user): array
     {
-        $context = $this->api->context($request, $credential, 'user', UserSerializer::MEMBERS);
+        $context = $this->api->context($call->request(), $call->credential(), 'user', UserSerializer::MEMBERS);
 
         return (new UserSerializer($this->api->links(), $this->api->extensions()))->one($user, $context);
     }

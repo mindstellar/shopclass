@@ -88,7 +88,7 @@ final class AuthController
         if ($family === null) {
             throw ProblemException::of('wrong_credential', 'Signing out needs an access token. Revoke a key at /account/keys.');
         }
-        $this->refresh->end((int) $credential->userId(), ($call->request()->input()['all'] ?? false) === true ? null : $family);
+        $this->refresh->end((int) $credential->userId(), ($call->input()['all'] ?? false) === true ? null : $family);
 
         return Response::noContent();
     }

@@ -36,7 +36,7 @@ final class AdminCurrenciesController
      */
     public function create(ApiCall $call): Response
     {
-        $input = $call->request()->input();
+        $input = $call->input();
         $code  = $this->currencies->create((string) $input['code'], (string) $input['name'], (string) ($input['symbol'] ?? ''));
 
         return Response::created($this->currency($code), $this->api->links()->api('admin/currencies/' . $code));
@@ -61,7 +61,7 @@ final class AdminCurrenciesController
     public function update(ApiCall $call): Response
     {
         $code  = self::code($call->args());
-        $input = $call->request()->input();
+        $input = $call->input();
         $this->currencies->update(
             $code,
             array_key_exists('name', $input) ? (string) $input['name'] : null,

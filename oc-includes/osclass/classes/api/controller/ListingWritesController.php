@@ -17,14 +17,12 @@ use mindstellar\api\ApiServices;
 use mindstellar\api\auth\UserRows;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\ListingReader;
-use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\ListingSerializer;
 use mindstellar\api\write\ListingWriter;
 use mindstellar\api\write\OwnedListing;
 use mindstellar\api\write\PhotoBatch;
 use mindstellar\api\write\PhotoIntake;
-use mindstellar\apiaccess\Credential;
 use mindstellar\listing\ListingStatus;
 use mindstellar\listing\PhotoService;
 
@@ -72,7 +70,7 @@ final class ListingWritesController
         $batch = $this->photos->batch($input, $userId, PhotoService::cap($userId));
         $id    = (int) $this->withPhotos($batch, $userId, fn (): int => $this->writer->create($form, $batch->paths(), $actor));
 
-        return $this->saved($request, $credential, $id, true, $batch, 0);
+        return $this->saved($call, $id, true, $batch, 0);
     }
 
     /**
@@ -84,7 +82,7 @@ final class ListingWritesController
         $credential = $call->credential();
 
         $userId  = (int) $credential->userId();
-        $listing = OwnedListing::own((int) $call->arg('id'), $credential, true);
+        $listing = OwnedListing::own($call->intArg(), $credential, true);
         $id      = $listing->id();
         $input   = $request->input();
         $form    = $this->writer->editForm($listing, $input, $request, $credential);
@@ -97,7 +95,7 @@ final class ListingWritesController
         $batch = $this->photos->batch($input, $userId, $room);
         $this->withPhotos($batch, $userId, fn () => $this->writer->update($listing, $form, $batch->paths(), $credential->actor($request->ip())));
 
-        return $this->saved($request, $credential, $id, false, $batch, $before);
+        return $this->saved($call, $id, false, $batch, $before);
     }
 
     /**
@@ -107,7 +105,7 @@ final class ListingWritesController
     {
         $credential = $call->credential();
 
-        $this->writer->delete(OwnedListing::own((int) $call->arg('id'), $credential), $credential->actor($call->request()->ip()));
+        $this->writer->delete(OwnedListing::own($call->intArg(), $credential), $credential->actor($call->request()->ip()));
 
         return Response::noContent();
     }
@@ -136,9 +134,9 @@ final class ListingWritesController
     /**
      * The saved listing in the owner's view, with warnings for what did not go as asked.
      */
-    private function saved(Request $request, Credential $credential, int $id, bool $created, PhotoBatch $batch, int $photosBefore): Response
+    private function saved(ApiCall $call, int $id, bool $created, PhotoBatch $batch, int $photosBefore): Response
     {
-        $context = $this->api->context($request, $credential, 'listing', ListingSerializer::MEMBERS, ListingSerializer::INCLUDES);
+        $context = $this->api->context($call->request(), $call->credential(), 'listing', ListingSerializer::MEMBERS, ListingSerializer::INCLUDES);
         $data    = $this->reader->one($id, $context);
         if ($data === null) {
             throw ProblemException::of('server_error', 'The listing could not be read back.');
