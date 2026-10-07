@@ -16,6 +16,7 @@ use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\CategoryCatalog;
+use mindstellar\api\read\Page;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\CategorySerializer;
 use mindstellar\api\serializer\CustomFieldSerializer;
@@ -40,9 +41,9 @@ final class CategoriesController
         $context = $this->api->context($request, $call->credential(), 'category', CategorySerializer::MEMBERS);
         $catalog = CategoryCatalog::fromSite();
 
-        return Response::collection($request->queryBool('tree')
+        return Page::whole($request->queryBool('tree')
             ? $this->serializer->tree($catalog, $context)
-            : $this->serializer->flat($catalog, $context));
+            : $this->serializer->flat($catalog, $context), $this->api->links(), $call);
     }
 
     public function show(ApiCall $call): Response
@@ -70,6 +71,6 @@ final class CategoriesController
         }
         $serializer = new CustomFieldSerializer();
 
-        return Response::collection(array_map(static fn (array $f): array => $serializer->definition($f, $locale), $fields));
+        return Page::whole(array_map(static fn (array $f): array => $serializer->definition($f, $locale), $fields), $this->api->links(), $call);
     }
 }

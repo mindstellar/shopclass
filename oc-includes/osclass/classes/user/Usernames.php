@@ -13,14 +13,52 @@ declare(strict_types=1);
 namespace mindstellar\user;
 
 use mindstellar\database\Db;
+use mindstellar\model\KeyValue;
 
 /**
  * Usernames: which are allowed, and claiming one so no two accounts hold it.
  */
 final class Usernames
 {
+    /** The key-value group of usernames held for a sign-up that made no account. */
+    public const HOLD_GROUP = 'core.username_hold';
+
+    /** The longest a username stays held. */
+    public const HOLD_MAX_SECONDS = 604800;
+
     private function __construct()
     {
+    }
+
+    /**
+     * Hold a username as an unconfirmed account would: until the cleanup of unactivated users
+     * would remove that account, and never longer than 7 days (also when there is no cleanup).
+     */
+    public static function hold(string $username): void
+    {
+        $ttl = self::HOLD_MAX_SECONDS;
+        if (osc_user_validation_enabled() && \Cleanup::isEnabled('inactive_users')) {
+            $ttl = min($ttl, \Cleanup::days('inactive_users') * 86400);
+        }
+        (new KeyValue())->set(self::HOLD_GROUP, self::holdKey($username), '1', time() + $ttl);
+    }
+
+    /**
+     * Whether a username is held by hold().
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public static function held(string $username): bool
+    {
+        return $username !== '' && (new KeyValue())->get(self::HOLD_GROUP, self::holdKey($username)) !== null;
+    }
+
+    /**
+     * Usernames compare without case, as the column does.
+     */
+    private static function holdKey(string $username): string
+    {
+        return hash('sha256', mb_strtolower($username, 'UTF-8'));
     }
 
     /**
@@ -41,11 +79,12 @@ final class Usernames
     /**
      * Give a user a username unless another account already holds it. The check and the
      * write run under a named lock; without the lock within 5 seconds nothing is written. A
-     * duplicate-key error from the unique index on s_username counts as taken.
+     * duplicate-key error from the unique index on s_username counts as taken. An admin
+     * ($ignoreHolds) may take a name a hidden sign-up holds.
      *
      * @return string 'ok', 'taken' or 'failed'
      */
-    public static function claim(int $userId, string $username): string
+    public static function claim(int $userId, string $username, bool $ignoreHolds = false): string
     {
         $lock = UserStore::usernameLock();
         try {
@@ -58,7 +97,7 @@ final class Usernames
         }
 
         try {
-            if (UserStore::usernameTaken($username, $userId)) {
+            if (UserStore::usernameTaken($username, $userId, $ignoreHolds)) {
                 return 'taken';
             }
             UserStore::setUsername($userId, $username);

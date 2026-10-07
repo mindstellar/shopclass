@@ -17,13 +17,9 @@ use Session;
 use View;
 
 /**
- * The identity core code sees on an API request. Whoever the cookies or the session name is
- * forgotten for the rest of the request, and is not looked up again. Only the user's signed
- * sign-in cookie is kept aside, unchecked, for the same-site session mode, which reads it
- * when a page token comes with it; admin cookies and the session are never kept. The user a
- * credential stands for is then taken on for this request only, so the listing and account
- * services and osc_logged_user_id() act for them; an admin key's admin the same way, so core's
- * activity log names them.
+ * The identity core code sees on an API request: cookies and the session are forgotten, and
+ * the credential's user (or an admin key's admin) is taken on for this request only. The user's
+ * signed sign-in cookie is kept aside, unchecked, for the same-site session mode.
  */
 final class WebIdentity
 {
@@ -36,12 +32,29 @@ final class WebIdentity
 
     private static ?SignInCookie $signIn = null;
 
+    /** @var (\Closure(string, array<string,mixed>): void)|null */
+    private static ?\Closure $sink = null;
+
     private function __construct()
     {
     }
 
+    /**
+     * Send forget(), assume() and assumeAdmin() to $sink, as fn(string $action, array $row),
+     * instead of the session, cookie and view; null goes back to them. For tests.
+     */
+    public static function intercept(?\Closure $sink): void
+    {
+        self::$sink = $sink;
+    }
+
     public static function forget(): void
     {
+        if (self::$sink !== null) {
+            (self::$sink)('forget', []);
+
+            return;
+        }
         self::$signIn = SignInCookie::from(Cookie::getInstance()->val);
         Session::getInstance()->_forgetForRequest(self::SESSION_KEYS);
         $cookie = Cookie::getInstance();
@@ -67,6 +80,11 @@ final class WebIdentity
      */
     public static function assume(array $user): void
     {
+        if (self::$sink !== null) {
+            (self::$sink)('assume', $user);
+
+            return;
+        }
         osc_web_user_apply_identity($user);
     }
 
@@ -78,6 +96,11 @@ final class WebIdentity
      */
     public static function assumeAdmin(array $admin): void
     {
+        if (self::$sink !== null) {
+            (self::$sink)('assumeAdmin', $admin);
+
+            return;
+        }
         $session = Session::getInstance();
         $session->_setEphemeral('adminId', (string) $admin['pk_i_id']);
         $session->_setEphemeral('adminUserName', (string) ($admin['s_username'] ?? ''));

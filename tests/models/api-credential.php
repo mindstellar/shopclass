@@ -9,13 +9,8 @@
  */
 
 /**
- * ApiCredential on t_api_credential: typed StoredKey values with the owner joined in one
- * query, a case-sensitive token id, one guarded revoke, family revoke, owners that must still
- * exist and be enabled, rows removed with their user or admin, and ApiKeys end to end over
- * the table in at most three queries per keyed request.
- *
- * Usage:  php tests/models/api-credential.php        (standalone, own scratch database)
- *         php tests/run-models.php api-credential    (as part of the suite)
+ * ApiCredential on t_api_credential: StoredKey values, revokes, owners and ApiKeys over the table.
+ * Usage: php tests/models/api-credential.php
  */
 
 require_once __DIR__ . '/../lib/scratchdb.php';
@@ -30,6 +25,7 @@ use mindstellar\api\ratelimit\RateBucket;
 use mindstellar\api\ratelimit\RateLimiter;
 use mindstellar\api\Request;
 use mindstellar\apiaccess\ApiKeys;
+use mindstellar\apiaccess\ApiSettings;
 use mindstellar\apiaccess\CredentialKind;
 use mindstellar\apiaccess\KeyOwner;
 use mindstellar\apiaccess\Scopes;
@@ -75,7 +71,7 @@ check('an unknown kind is refused', $threw(static fn () => $model->insert($newKe
 check('a key with no owner is refused', $threw(static fn () => $model->insert($newKey('B000000000000001', null))));
 check('a token id is unique', $threw(static fn () => $model->insert($newKey('AAAAAAAAAAAAAAA1', KeyOwner::admin($adminId)))));
 $lower = $model->insert($newKey('aaaaaaaaaaaaaaa1', KeyOwner::admin($adminId)));
-check('but only byte for byte: another case is another key', $lower > 0 && $model->findByTokenId('aaaaaaaaaaaaaaa1')->id() === $lower);
+check('a token id matches byte for byte: another case is another key', $lower > 0 && $model->findByTokenId('aaaaaaaaaaaaaaa1')->id() === $lower);
 
 $model->touch($id, '192.0.2.9', 1_800_000_000);
 pin('touch records when and where', ['192.0.2.9', 1_800_000_000], [
@@ -83,17 +79,26 @@ pin('touch records when and where', ['192.0.2.9', 1_800_000_000], [
 ]);
 
 harness_section('revoke');
-pin('revoke disables and stamps', true, $model->revoke($id));
+check('revoke disables and stamps', $model->revoke($id));
 pin('the row stays', [false, true], [$model->find($id)->enabled(), $model->find($id)->revokedAt() !== null]);
-pin('a second revoke changes nothing', false, $model->revoke($id));
-pin('revoking a missing row changes nothing', false, $model->revoke(99999));
+check('a second revoke changes nothing', !($model->revoke($id)));
+check('revoking a missing row changes nothing', !($model->revoke(99999)));
 
 foreach (['R1', 'R2', 'R3'] as $i => $t) {
     $model->insert($newKey(str_pad($t, 16, '0'), KeyOwner::user($userId), CredentialKind::REFRESH, ['account:read'], $i < 2 ? 'FAMILY0000000001' : 'FAMILY0000000002'));
 }
 pin('a family revoke takes every token of that family', 2, $model->revokeFamily('FAMILY0000000001'));
-pin('and only that family', 1, count(array_filter($model->listBy(CredentialKind::REFRESH, $userId), static fn (StoredKey $k): bool => $k->revokedAt() === null)));
+pin('a family revoke leaves other families alone', 1, count(array_filter($model->listBy(CredentialKind::REFRESH, $userId), static fn (StoredKey $k): bool => $k->revokedAt() === null)));
 pin('listBy filters by kind and owner', [3, 2, 0], [count($model->listBy(CredentialKind::REFRESH)), count($model->listBy(CredentialKind::KEY, null, $adminId)), count($model->listBy(CredentialKind::KEY, $userId))]);
+$rows = new UserRows();
+$q = harness_query_count(static function () use ($rows, $userId, &$live, &$dead, &$none): void {
+    [, $live] = $rows->findWithFamily($userId, 'FAMILY0000000002');
+    [, $dead] = $rows->findWithFamily($userId, 'FAMILY0000000001');
+    [$none]   = $rows->findWithFamily(999999, 'FAMILY0000000002');
+});
+pin('user and sign-in state come in one query each: live family, revoked family, no user', [3, true, false, null], [$q, $live, $dead, $none]);
+$joined = $rows->findWithFamily($userId, 'FAMILY0000000002')[0];
+check('the row has no helper column and is cached for find()', !array_key_exists('b_family_live', $joined) && $rows->find($userId) === $joined);
 $all = $model->listBy();
 check('newest first', $all[0]->id() > $all[count($all) - 1]->id());
 
@@ -122,11 +127,22 @@ harness_section('queries per keyed request');
 $auth    = api_test_authenticator($keys, new FailureCounter());
 $limiter = RateLimiter::fromSite(new SystemClock());
 $request = new Request('GET', 'v1/x', [], ['Authorization' => 'Bearer ' . $made->token()], '192.0.2.50');
-$queries = harness_query_count(static function () use ($auth, $limiter, $request): void {
+$keyed   = static fn (): int => harness_query_count(static function () use ($auth, $limiter, $request): void {
     $credential = $auth->authenticate($request);
     $limiter->hit(new RateBucket('api_key', (string) $credential->id(), 120));
 });
-pin('failure check + key with owner + rate count: 3 queries', 3, $queries);
+osc_get_preference(FailureCounter::MARKER, ApiSettings::SECTION);
+pin('key with owner + rate count: 2 queries; no failure check while no key failed (was 3)', 2, $keyed());
+$problem = null;
+try {
+    $auth->authenticate(new Request('GET', 'v1/x', [], ['Authorization' => 'Bearer sck_' . $made->tokenId() . '.' . str_repeat('0', 64)], '192.0.2.51'));
+} catch (\mindstellar\api\ProblemException $e) {
+    $problem = $e->response()->status();
+}
+pin('a wrong secret for a stored key is a 401 that sets the marker in the preferences', [401, true], [$problem, (int) osc_get_preference(FailureCounter::MARKER, ApiSettings::SECTION) > time()]);
+osc_reset_preferences();
+check('a request loading the preferences after it sees the marker', (int) osc_get_preference(FailureCounter::MARKER, ApiSettings::SECTION) > time());
+pin('after the marker clears, the failure check runs again: 3 queries', 3, $keyed());
 
 $keys->revoke($made->id());
 pin('a revoked key fails', null, $keys->verify($made->token()));
@@ -143,7 +159,7 @@ pin('listBy can skip revoked rows', ['FAMA000000000001'], array_map(static fn (S
 $admin->query("UPDATE $table SET dt_revoked = '2020-01-01 00:00:00' WHERE s_token_id = 'F2T0000000000001'");
 $keptKeys = (int) $admin->query("SELECT COUNT(*) FROM $table WHERE e_kind <> 'refresh'")->fetch_row()[0];
 pin('pruning drops refresh rows revoked before the cutoff', 1, $model->pruneRefresh(strtotime('2021-01-01')));
-pin('and leaves keys alone', $keptKeys, (int) $admin->query("SELECT COUNT(*) FROM $table WHERE e_kind <> 'refresh'")->fetch_row()[0]);
+pin('pruning leaves keys alone', $keptKeys, (int) $admin->query("SELECT COUNT(*) FROM $table WHERE e_kind <> 'refresh'")->fetch_row()[0]);
 
 harness_section('transactions');
 $fa = $model->insert($refreshRow('TX00000000000001', 'FAMT000000000001'));
@@ -156,11 +172,11 @@ try {
 } catch (\RuntimeException $e) {
 }
 pin('atomically rolls back when its work throws', null, $model->find($fa)->revokedAt());
-pin('and returns what its work returns', 7, $model->atomically(static fn () => 7));
+pin('atomically returns what its work returns', 7, $model->atomically(static fn () => 7));
 $auto = $model->insert(new StoredKey(0, CredentialKind::KEY, 'AUTOKEY000000001', str_repeat('c', 64), 'k', array('listings:read'), KeyOwner::user($userId)));
 $admin->query("UPDATE " . DB_TABLE_PREFIX . "t_user SET s_password = 'another-hash' WHERE pk_i_id = " . (int) $userId);
 pin('a user key does not hang on the password hash', $userId, $model->find($auto)->owner()?->userId());
-check('and the table has no password column', $admin->query("SHOW COLUMNS FROM $table LIKE 's_pw_bind'")->num_rows === 0);
+check('the key table has no password column', $admin->query("SHOW COLUMNS FROM $table LIKE 's_pw_bind'")->num_rows === 0);
 
 harness_section('the sign-out stamp');
 $userRow  = static fn (): array => $admin->query('SELECT * FROM ' . DB_TABLE_PREFIX . 't_user WHERE pk_i_id = ' . (int) $userId)->fetch_assoc();
@@ -187,7 +203,7 @@ try {
 } catch (ProblemException $e) {
     $rotated = 'refused';
 }
-pin('and their refresh token cannot be swapped', 'refused', $rotated);
+pin('a rotated refresh token cannot be swapped after the stamp goes up', 'refused', $rotated);
 pin('a row from before stamps still works', $userId, $keys->verify($legacy->token())?->userId());
 $newGrant = $refresh->start($userRow(), ['account:read'], 'Phone', '192.0.2.1');
 pin('a key or sign-in made after works', [$userId, true], [
@@ -210,7 +226,7 @@ $admin->query('DELETE FROM ' . DB_TABLE_PREFIX . 't_user WHERE pk_i_id = ' . (in
 pin('deleting a user removes their credentials', 0, (int) $admin->query("SELECT COUNT(*) FROM $table WHERE fk_i_user_id = " . (int) $userId)->fetch_row()[0]);
 $admin->query('DELETE FROM ' . DB_TABLE_PREFIX . 't_admin WHERE pk_i_id = ' . (int) $modId);
 pin('deleting an admin removes their keys', 0, (int) $admin->query("SELECT COUNT(*) FROM $table WHERE fk_i_admin_id = " . (int) $modId)->fetch_row()[0]);
-pin('so the key is dead', null, $keys->verify($modKey->token()));
+pin('a deleted admin key no longer verifies', null, $keys->verify($modKey->token()));
 $admin->query('SET FOREIGN_KEY_CHECKS = 0');
 pin('delete removes a row', 1, $model->delete($lower));
 
@@ -219,7 +235,7 @@ date_default_timezone_set('America/New_York');
 $utcId = $model->insert(new StoredKey(0, CredentialKind::KEY, 'UTC0000000000001', str_repeat('c', 64), 'UTC', ['admin:listings'], KeyOwner::admin($adminId), null, true, 1_800_003_600, null, null, null, 1_800_000_000));
 pin('times are written as UTC', ['2027-01-15 08:00:00', '2027-01-15 09:00:00'], $admin->query('SELECT dt_created, dt_expires FROM ' . DB_TABLE_PREFIX . "t_api_credential WHERE pk_i_id = $utcId")->fetch_row());
 date_default_timezone_set('Asia/Kolkata');
-pin('and read back the same in another zone', [1_800_000_000, 1_800_003_600], [$model->find($utcId)?->createdAt(), $model->find($utcId)?->expiresAt()]);
+pin('times read back the same in another time zone', [1_800_000_000, 1_800_003_600], [$model->find($utcId)?->createdAt(), $model->find($utcId)?->expiresAt()]);
 date_default_timezone_set('America/New_York');
 // 2026-11-01 01:45 EDT; half an hour later the clocks have fallen back to 01:15 EST.
 $fallBack = 1_793_511_900;

@@ -17,11 +17,10 @@ use mindstellar\security\LoginThrottle;
 /**
  * The one decision on a user's sign-in with a password, for the web form and the API alike.
  *
- * In order: the sign-in limit (before any lookup or hashing), the account by e-mail or
+ * In order: the `before_validating_login` action, the sign-in limit (before any lookup or hashing), the account by e-mail or
  * username, the limit again under the account's e-mail, the password (an unknown account takes as long as a wrong password), a rehash
  * at the current cost, the ban rules, the `before_login` action, then whether the account is
- * confirmed and enabled. Callers fire `before_validating_login` before and `after_login`
- * after, as each has its own input and its own answer.
+ * confirmed and enabled. Once the caller has signed the user in, complete() fires `after_login`.
  */
 final class SignIn
 {
@@ -50,6 +49,7 @@ final class SignIn
      */
     public static function attempt(string $account, string $password, bool $captchaSolved = false, ?string $ip = null): self
     {
+        osc_run_hook('before_validating_login');
         $throttle = LoginThrottle::evaluate(Reauth::CONTEXT, $account, $captchaSolved);
         if ($throttle['status'] === LoginThrottle::BLOCKED) {
             return new self(self::BLOCKED, null, max(1, (int) $throttle['retry_after']));
@@ -103,6 +103,17 @@ final class SignIn
         }
 
         return new self(self::OK, $user);
+    }
+
+    /**
+     * Fire `after_login` for a user this request has just signed in.
+     *
+     * @param array<string,mixed> $user
+     * @param string              $redirect where the user goes next; '' when nowhere
+     */
+    public static function complete(array $user, string $redirect = ''): void
+    {
+        osc_run_hook('after_login', $user, $redirect);
     }
 
     public function status(): string

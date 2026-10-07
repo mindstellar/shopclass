@@ -45,8 +45,6 @@ use mindstellar\validation\RefusedException;
  */
 final class Kernel
 {
-    public const VERSION = ApiSettings::VERSION;
-
     /** Where deprecations are announced. */
     public const CHANGELOG = 'https://mindstellar.com/docs/developers/api/changelog/';
 
@@ -67,12 +65,15 @@ final class Kernel
         private UserRows $users,
         private AdminRows $admins,
         private Idempotency $idempotency,
-        ?ResourceVersions $versions = null
+        ?ResourceVersions $versions = null,
+        ?Authorizer $authorizer = null,
+        ?RatePolicy $ratePolicy = null,
+        ?CachePolicy $cachePolicy = null
     ) {
         $this->versions    = $versions ?? new RowVersions();
-        $this->authorizer  = new Authorizer();
-        $this->ratePolicy  = new RatePolicy($settings);
-        $this->cachePolicy = new CachePolicy($settings->cacheMaxAge());
+        $this->authorizer  = $authorizer ?? new Authorizer();
+        $this->ratePolicy  = $ratePolicy ?? new RatePolicy($settings);
+        $this->cachePolicy = $cachePolicy ?? new CachePolicy($settings->cacheMaxAge());
     }
 
     /**
@@ -146,12 +147,13 @@ final class Kernel
             $version = null;
             $run     = function () use (&$request, &$version, $route, $credential, $match): Response {
                 $request = $this->validate($request, $route);
-                if ($request->isRead()) {
+                if ($request->isRead() && $this->mayWrite($request, $credential)) {
                     // Read first: a write landing meanwhile then fails If-Match instead of slipping past it.
                     $version = $this->storedVersion($route, $credential, $match->args());
                 }
+                $prepared = $route->prepare($request, $credential, $match->args());
 
-                return $this->callChecked($request, $route, $credential, $match->args());
+                return $this->callChecked($request, $route, $credential, $match->args(), $prepared);
             };
             $response = $route->replayable() ? $this->idempotency->run($request, $credential, $run) : $run();
             $filtered = osc_apply_filter('api_response', $response, $request, $route);
@@ -197,24 +199,21 @@ final class Kernel
 
     /**
      * Run the handler, honouring If-Match on a PATCH or DELETE (`*`: any existing resource).
-     * Where the same path's GET keeps a stored version, the version is read with its rows
-     * locked and the write runs in that transaction, so no other write lands in between.
-     * Otherwise the GET is run and its ETag compared. A path with no GET is not checked.
-     * A 412 never tells a caller more than the GET would: a credential that cannot read the
-     * path is refused before anything is looked up, and a stale version is answered with the
-     * GET's refusal (404, say) when this credential cannot see the resource.
+     * A stored GET version is read with its rows locked and the write runs in that transaction;
+     * otherwise the GET's ETag is compared. A 412 never tells a caller more than the GET would.
      *
      * @param array<string,string> $args
+     * @param mixed                $prepared what the route's prepare step returned
      * @throws ProblemException 412 when the resource has changed, or cannot be checked
      */
-    private function callChecked(Request $request, RouteSpec $route, Credential $credential, array $args): Response
+    private function callChecked(Request $request, RouteSpec $route, Credential $credential, array $args, mixed $prepared): Response
     {
         $header = trim($request->ifMatch());
         $read   = $header !== '' && in_array($route->method(), ['PATCH', 'DELETE'], true)
-            ? $this->router->match('GET', $this->routePath($request))
+            ? $this->router->match('GET', $this->routePath($request), $request->version())
             : null;
         if ($read === null) {
-            return $route->call($request, $credential, $args);
+            return $route->call($request, $credential, $args, $prepared);
         }
         try {
             $this->authorizer->check($read->route(), $credential);
@@ -225,18 +224,22 @@ final class Kernel
         if (!$this->versions->supports($path)) {
             $this->checkRepresentation($header, $request, $read, $credential);
 
-            return $route->call($request, $credential, $args);
+            return $route->call($request, $credential, $args, $prepared);
         }
 
-        return $this->versions->atomically(function () use ($header, $request, $route, $credential, $args, $read, $path): Response {
+        return $this->versions->atomically(function () use ($header, $request, $route, $credential, $args, $read, $path, $prepared): Response {
             $version = $this->versions->version($path, $read->args(), $credential, true);
             // No version means no current resource, which If-Match never matches, not even `*`.
             if ($version === null || !Response::versionMatches($header, $version)) {
                 $current = $read->route()->call($request->asRead(), $credential, $read->args());
                 throw $current->status() < 300 ? self::preconditionFailed() : ProblemException::from($current);
             }
-            $response = $route->call($request, $credential, $args);
-            $version  = $response->status() === 200 ? $this->versions->version($path, $read->args(), $credential) : null;
+            $response = $route->call($request, $credential, $args, $prepared);
+            // Only a PATCH answer with a body carries the new version; a DELETE leaves none to read.
+            if ($route->method() !== 'PATCH' || $response->status() !== 200 || $response->body() === null) {
+                return $response;
+            }
+            $version = $this->versions->version($path, $read->args(), $credential);
 
             return $version === null ? $response : $response->withVersion($version);
         });
@@ -267,8 +270,34 @@ final class Kernel
     }
 
     /**
-     * The stored version for a GET's ETag, where its path keeps one. One that cannot be read
-     * leaves the plain ETag.
+     * Whether the credential may PATCH or DELETE the path it reads. Only such a caller can send
+     * If-Match, so only its ETag needs the stored version; others get the plain body hash.
+     */
+    private function mayWrite(Request $request, Credential $credential): bool
+    {
+        if ($credential->isAnonymous() || $credential->kind() === CredentialKind::PUBLIC) {
+            return false;
+        }
+        foreach (['PATCH', 'DELETE'] as $method) {
+            $write = $this->router->match($method, $request->routePath(), $request->version());
+            if ($write === null) {
+                continue;
+            }
+            try {
+                $this->authorizer->check($write->route(), $credential);
+
+                return true;
+            } catch (ProblemException $e) {
+                continue;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The stored version for a GET's ETag, where its path keeps one and the caller owns it. One
+     * that cannot be read leaves the plain ETag.
      *
      * @param array<string,string> $args
      */
@@ -278,7 +307,7 @@ final class Kernel
             return null;
         }
         try {
-            return $this->versions->version($route->path(), $args, $credential);
+            return $this->versions->version($route->path(), $args, $credential, false, true);
         } catch (\Throwable $e) {
             error_log('api: resource version: ' . $e->getMessage());
 
@@ -334,7 +363,7 @@ final class Kernel
      */
     private function methodsForOptions(Request $request): array
     {
-        $methods = $this->router->methodsFor($this->routePath($request));
+        $methods = $this->router->methodsFor($this->routePath($request), $request->version());
         if ($methods === []) {
             throw ProblemException::notFound('No such endpoint.');
         }
@@ -348,11 +377,11 @@ final class Kernel
     private function match(Request $request): RouteMatch
     {
         $path  = $this->routePath($request);
-        $match = $this->router->match($request->method(), $path);
+        $match = $this->router->match($request->method(), $path, $request->version());
         if ($match !== null) {
             return $match;
         }
-        $allowed = $this->router->methodsFor($path);
+        $allowed = $this->router->methodsFor($path, $request->version());
 
         throw $allowed === []
             ? ProblemException::notFound('No such endpoint.')
@@ -362,23 +391,21 @@ final class Kernel
     /**
      * The request's path below the version, e.g. `listings/12`.
      *
-     * @throws ProblemException 403 when the API is off, 404 for a refused path or another version
+     * @throws ProblemException 403 when the API is off, 404 for a refused path or a version the site does not answer
      */
     private function routePath(Request $request): string
     {
         if (!$this->settings->enabled()) {
             throw ProblemException::of('api_disabled', 'Ask the site owner to switch the API on.');
         }
-        $path = $request->path();
-        if ($path === null) {
+        if ($request->path() === null) {
             throw ProblemException::notFound('No such endpoint.');
         }
-        $segments = explode('/', $path, 2);
-        if ($segments[0] !== self::VERSION) {
+        if (!isset(ApiSettings::VERSIONS[$request->version()])) {
             throw ProblemException::notFound('No such API version.');
         }
 
-        return $segments[1] ?? '';
+        return $request->routePath();
     }
 
     /**

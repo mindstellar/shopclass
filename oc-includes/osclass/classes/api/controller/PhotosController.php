@@ -17,8 +17,9 @@ use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\Format;
-use mindstellar\api\write\OwnedListing;
+use mindstellar\api\write\OwnedListings;
 use mindstellar\api\write\PhotoIntake;
+use mindstellar\listing\PhotoRoom;
 use mindstellar\listing\PhotoService;
 
 /**
@@ -31,9 +32,13 @@ use mindstellar\listing\PhotoService;
 final class PhotosController
 {
     private PhotoIntake $photos;
+    private PhotoRoom $room;
+    private OwnedListings $owned;
 
-    public function __construct(private ApiServices $api)
+    public function __construct(private ApiServices $api, ?PhotoRoom $room = null, ?OwnedListings $owned = null)
     {
+        $this->room   = $room ?? new PhotoRoom();
+        $this->owned  = $owned ?? new OwnedListings();
         $this->photos = $api->photoIntake();
     }
 
@@ -55,10 +60,10 @@ final class PhotosController
         $request = $call->request();
         $credential = $call->credential();
 
-        $listing = OwnedListing::own($call->intArg(), $credential);
+        $listing = $this->owned->own($call->intArg(), $credential);
         $id      = $listing->id();
-        $cap     = PhotoService::cap($listing->userId());
-        if (PhotoService::room($id, $listing->userId()) === 0) {
+        $cap     = $this->room->cap($listing->userId());
+        if ($this->room->room($id, $listing->userId()) === 0) {
             throw ProblemException::field('/photo', 'limit', 'cannot be added: the listing already has ' . $cap . ' photos, as many as it may hold');
         }
 
@@ -75,9 +80,15 @@ final class PhotosController
 
             throw ProblemException::of('server_error', 'The photo could not be saved.');
         }
-        $data = $this->api->listingSerializer()->photos([PhotoService::find($new[0])])[0];
+        $data = null;
+        foreach ($this->api->listingReader()->photos($id) as $stored) {
+            $data = $stored['id'] === $new[0] ? $stored : $data;
+        }
+        if ($data === null) {
+            throw ProblemException::of('server_error', 'The photo could not be read back.');
+        }
 
-        return Response::created($data, $this->api->links()->api('listings/' . $id . '/photos/' . $new[0]));
+        return Response::created($data, $this->api->links()->api('listings/' . $id . '/photos/' . $new[0], $call->request()->version()));
     }
 
     /**
@@ -86,7 +97,7 @@ final class PhotosController
     public function remove(ApiCall $call): Response
     {
         $credential = $call->credential();
-        $id      = OwnedListing::own($call->intArg(), $credential)->id();
+        $id      = $this->owned->own($call->intArg(), $credential)->id();
         $photoId = $call->intArg('photo');
         if (!(new PhotoService())->delete($photoId, $id, $credential->actor($call->request()->ip()))) {
             throw ProblemException::notFound('No such photo on this listing.');

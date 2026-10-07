@@ -9,12 +9,8 @@
  */
 
 /**
- * The API serializers on row fixtures: what each view of a listing, user, category and
- * comment exposes (the e-mail only when the seller shows it, the phone unless the site
- * hides it, never the IP or the edit secret outside admin), prices as decimal strings,
- * times in UTC, sparse fieldsets, includes, and the schemas the output must match.
- *
- * DB-free.  Usage: php tests/api-serializers.php
+ * The API serializers on row fixtures: what each view exposes, price and time formats, fieldsets and schemas.
+ * Usage: php tests/api-serializers.php
  */
 
 require_once __DIR__ . '/lib/api-boot.php';
@@ -66,9 +62,9 @@ final class FakeLinks implements Links
         return 'https://site.test/avatar/' . $userId . '.png';
     }
 
-    public function api(string $path): string
+    public function api(string $path, ?string $version = null): string
     {
-        return 'https://site.test/api/v1/' . $path;
+        return 'https://site.test/api/' . ($version ?? 'v1') . '/' . $path;
     }
 
     public function price(?int $micros, string $symbol): string
@@ -147,7 +143,7 @@ $public = $listings->one($item, $relations, $ctx($anonymous));
 $json   = json_encode($public);
 pin('ids are integers', 42, $public['id']);
 pin('the status of a live listing', 'active', $public['status']);
-pin('the price', ['amount' => '12.50', 'currency' => 'EUR', 'formatted' => '12.50 €'], $public['price']);
+pin('a listing price has amount, currency and formatted text', ['amount' => '12.50', 'currency' => 'EUR', 'formatted' => '12.50 €'], $public['price']);
 pin('the category with its path, root first', ['id' => 2, 'slug' => 'cars', 'name' => 'Cars', 'path' => [['id' => 1, 'slug' => 'vehicles', 'name' => 'Vehicles']]], $public['category']);
 pin('the contact e-mail is hidden when the seller does not show it', null, $public['contact']['email']);
 pin('the phone is shown, as the theme shows it', '+49 30 1234', $public['contact']['phone']);
@@ -176,24 +172,24 @@ pin('originals are linked when the site keeps them', 'https://site.test/oc-conte
 harness_section('listing: owner and admin views');
 $mine = $hiding->one($item, $relations, $ctx($owner));
 pin('the owner always sees the e-mail', 'ana@example.test', $mine['contact']['email']);
-pin('and the phone, even when it is hidden from the public', '+49 30 1234', $mine['contact']['phone']);
-pin('and the show-email switch', false, $mine['show_email']);
-check('but not the IP or the counters', !array_key_exists('ip', $mine) && !array_key_exists('stats', $mine));
+pin('the owner sees the phone, even when it is hidden from the public', '+49 30 1234', $mine['contact']['phone']);
+check('the owner sees the show-email switch', !$mine['show_email']);
+check('the owner does not see the IP or the counters', !array_key_exists('ip', $mine) && !array_key_exists('stats', $mine));
 check('nor the secret', !str_contains((string) json_encode($mine), 'SECRET123'));
 $all = $hiding->one($item, $relations, $ctx($admin));
 pin('admins see the IP', '203.0.113.9', $all['ip']);
-pin('and the report counters', 2, $all['stats']['spam']);
-check('and still never the secret', !str_contains((string) json_encode($all), 'SECRET123'));
+pin('an admin sees the report counters', 2, $all['stats']['spam']);
+check('an admin view never carries the secret', !str_contains((string) json_encode($all), 'SECRET123'));
 pin('the owner view matches the schema', [], $validator->check(Schema::ref('Listing'), $mine));
 pin('the admin view matches the schema', [], $validator->check(Schema::ref('Listing'), $all));
 pin('an admin key without admin:listings gets the public view', $hiding->one($item, $relations, $ctx($anonymous)), $hiding->one($item, $relations, $ctx($readOnly)));
-check('so does one holding only admin:users', !array_key_exists('ip', $hiding->one($item, $relations, $ctx($userAdmin))));
+check('an admin key holding only admin:users gets the public listing view', !array_key_exists('ip', $hiding->one($item, $relations, $ctx($userAdmin))));
 pin('a moderator key with admin:listings moderates, so it gets the admin view', '203.0.113.9', $hiding->one($item, $relations, $ctx($moderator))['ip']);
 
 harness_section('listing: status, price, text');
 $now = strtotime('2026-10-03 12:00:00');
 pin('spam wins over everything', 'spam', ListingStatus::of(['b_spam' => '1', 'b_enabled' => '0'] + $item, $now));
-pin('disabled', 'disabled', ListingStatus::of(['b_enabled' => '0'] + $item, $now));
+pin('a listing with b_enabled 0 has the status disabled', 'disabled', ListingStatus::of(['b_enabled' => '0'] + $item, $now));
 pin('not yet activated is pending', 'pending', ListingStatus::of(['b_active' => '0'] + $item, $now));
 pin('past its expiry', 'expired', ListingStatus::of(['dt_expiration' => '2026-01-01 00:00:00'] + $item, $now));
 pin('a premium listing stays live past its expiry', 'active', ListingStatus::of(['dt_expiration' => '2026-01-01 00:00:00', 'b_premium' => '1'] + $item, $now));
@@ -209,7 +205,7 @@ pin('a status filter takes one status, a comma list or repeated ones', [[], [], 
     (new Validator())->check($statusQuery, ['status' => 'spam, expired']),
     (new Validator())->check($statusQuery, ['status' => ['spam', 'expired']]),
 ]);
-pin('...and refuses an unknown one in any form', ['pattern', 'pattern', 'enum'], array_map(
+pin('a status filter refuses an unknown value in any form', ['pattern', 'pattern', 'enum'], array_map(
     static fn ($status): string => (new Validator())->check($statusQuery, ['status' => $status])[0]['code'] ?? '',
     ['gone', 'spam,gone', ['spam', 'gone']]
 ));
@@ -287,11 +283,17 @@ pin('an empty city is null', null, $profile['location']['city']);
 pin('the public profile matches the schema', [], $validator->check(Schema::ref('User'), $profile));
 $self = $users->one($user, $ctx($owner));
 pin('the user sees their own e-mail', 'ana@example.test', $self['email']);
-pin('and the last access', ['2026-10-01T07:00:00Z', '198.51.100.4'], [$self['last_access_at'], $self['last_access_ip']]);
+pin('a confirmed user is active, an unconfirmed one pending, a blocked one disabled', ['active', 'pending', 'disabled'], [
+    $self['status'],
+    $users->one(['b_active' => '0'] + $user, $ctx($owner))['status'],
+    $users->one(['b_enabled' => '0'] + $user, $ctx($owner))['status'],
+]);
+pin('the public profile has no status', null, $profile['status'] ?? null);
+pin('the owner sees the last access time and IP', ['2026-10-01T07:00:00Z', '198.51.100.4'], [$self['last_access_at'], $self['last_access_ip']]);
 pin('admin keys with admin:users get the same', $self['phone_mobile'], $users->one($user, $ctx($userAdmin))['phone_mobile']);
 pin('an admin key without admin:users gets the public profile', UserSerializer::PUBLIC_MEMBERS, array_keys($users->one($user, $ctx($admin))));
 pin('as does a moderator', UserSerializer::PUBLIC_MEMBERS, array_keys($users->one($user, $ctx($moderator))));
-pin('and a least-privilege listings:read admin key', UserSerializer::PUBLIC_MEMBERS, array_keys($users->one($user, $ctx($readOnly))));
+pin('a least-privilege listings:read admin key gets the public profile members', UserSerializer::PUBLIC_MEMBERS, array_keys($users->one($user, $ctx($readOnly))));
 check('another user does not', !array_key_exists('email', $users->one($user, $ctx($stranger))));
 check('even the full profile never carries the password', !str_contains((string) json_encode($self), 'HASH'));
 pin('the full profile matches the schema', [], $validator->check(Schema::ref('User'), $self));
@@ -320,7 +322,7 @@ $comment = (new CommentSerializer())->one([
 check('a comment never carries the author\'s e-mail', !str_contains((string) json_encode($comment), 'bo@example.test'));
 pin('a comment matches the schema', [], $validator->check(Schema::ref('Comment'), $comment));
 $places = new LocationSerializer();
-pin('a country', ['code' => 'DE', 'name' => 'Germany', 'slug' => null], $places->country(['pk_c_code' => 'de', 's_name' => 'Germany', 's_slug' => '']));
-pin('a currency', ['code' => 'EUR', 'name' => 'Euro', 'symbol' => '€'], $places->currency(['pk_c_code' => 'EUR', 's_name' => 'Euro', 's_description' => '€']));
+pin('a country row becomes code, name and a null slug when empty', ['code' => 'DE', 'name' => 'Germany', 'slug' => null], $places->country(['pk_c_code' => 'de', 's_name' => 'Germany', 's_slug' => '']));
+pin('a currency row becomes code, name and symbol', ['code' => 'EUR', 'name' => 'Euro', 'symbol' => '€'], $places->currency(['pk_c_code' => 'EUR', 's_name' => 'Euro', 's_description' => '€']));
 
 exit(harness_result());

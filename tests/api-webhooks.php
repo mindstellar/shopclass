@@ -9,12 +9,8 @@
  */
 
 /**
- * Webhooks without a database: Standard Webhooks signatures against the spec's own test
- * vector, two signatures while a rotated-out secret is valid, the receiver's check, message
- * ids, an endpoint's failure count pausing it on the eighth failure in a row, the event
- * catalogue with plugin events, and AddressGuard's private-network switch.
- *
- * DB-free.  Usage: php tests/api-webhooks.php
+ * Webhooks without a database: signatures, the receiver check, endpoint pausing, the event catalogue and AddressGuard.
+ * Usage: php tests/api-webhooks.php
  */
 
 define('OSC_CSRF_SECRET', 'api-webhooks-test-secret');
@@ -43,7 +39,7 @@ check('the receiver\'s check accepts it', Signer::verify($vector['secret'], $vec
 check('a changed body is refused', !Signer::verify($vector['secret'], $vector['id'], (string) $vector['ts'], '{"test": 2432232315}', $vector['sig'], $vector['ts']));
 check('a changed id is refused', !Signer::verify($vector['secret'], 'msg_other', (string) $vector['ts'], $vector['body'], $vector['sig'], $vector['ts']));
 check('a timestamp over five minutes old is refused', !Signer::verify($vector['secret'], $vector['id'], (string) $vector['ts'], $vector['body'], $vector['sig'], $vector['ts'] + 301));
-check('so is one from the future', !Signer::verify($vector['secret'], $vector['id'], (string) $vector['ts'], $vector['body'], $vector['sig'], $vector['ts'] - 301));
+check('a timestamp from the future is refused', !Signer::verify($vector['secret'], $vector['id'], (string) $vector['ts'], $vector['body'], $vector['sig'], $vector['ts'] - 301));
 check('another secret\'s signature is refused', !Signer::verify('whsec_' . base64_encode(random_bytes(24)), $vector['id'], (string) $vector['ts'], $vector['body'], $vector['sig'], $vector['ts']));
 
 harness_section('rotation: two signatures');
@@ -86,7 +82,7 @@ for ($i = 1; $i < Endpoint::PAUSE_AFTER; $i++) {
 pin('seven failures in a row: still on', [true, 7, false], [$e->enabled(), $e->failures(), $e->paused()]);
 $paused = $e->withFailure('HTTP 503', 200);
 pin('the eighth pauses it', [false, true, 200, 'HTTP 503'], [$paused->enabled(), $paused->paused(), $paused->pausedAt(), $paused->lastStatus()]);
-check('...and says why', str_contains((string) $paused->pausedReason(), '8 deliveries failed'));
+check('the pause records why: 8 deliveries failed', str_contains((string) $paused->pausedReason(), '8 deliveries failed'));
 pin('a ninth does not pause it again', 200, $paused->withFailure('HTTP 503', 300)->pausedAt());
 $ok = $e->withSuccess('HTTP 204', 150);
 pin('a success clears the count', [0, 'HTTP 204', 150], [$ok->failures(), $ok->lastStatus(), $ok->lastSuccess()]);
@@ -137,14 +133,14 @@ harness_section('AddressGuard: private addresses');
 $resolve = static fn (string $host): array => ['localhost' => ['127.0.0.1'], 'lan.test' => ['192.168.1.20'], 'public.test' => ['93.184.216.34']][$host] ?? [];
 $strict  = new AddressGuard($resolve);
 $lan     = new AddressGuard($resolve, true);
-pin('a LAN host is refused by default', false, $strict->check('http://lan.test/hook')['ok']);
-pin('...and passed when private addresses are allowed', [true, '192.168.1.20'], [$lan->check('http://lan.test/hook')['ok'], $lan->check('http://lan.test/hook')['ip'] ?? null]);
+check('a LAN host is refused by default', !($strict->check('http://lan.test/hook')['ok']));
+pin('a LAN host passes when private addresses are allowed', [true, '192.168.1.20'], [$lan->check('http://lan.test/hook')['ok'], $lan->check('http://lan.test/hook')['ip'] ?? null]);
 pin('a port of its own is refused even then', [false, false], [$lan->check('http://localhost:8080/hook')['ok'], $lan->check('http://lan.test:8443/hook')['ok']]);
-pin('...the standard port passes', [true, true], [$lan->check('http://localhost/hook')['ok'], $lan->check('http://lan.test:80/hook')['ok']]);
-pin('but not on the strict guard', false, $strict->check('http://public.test:8080/hook')['ok']);
-pin('a user name in the address is refused either way', false, $lan->check('http://user:pass@lan.test/hook')['ok']);
+pin('a LAN host on the standard port passes when private addresses are allowed', [true, true], [$lan->check('http://localhost/hook')['ok'], $lan->check('http://lan.test:80/hook')['ok']]);
+check('port 8080 is refused on the strict guard', !($strict->check('http://public.test:8080/hook')['ok']));
+check('a user name in the address is refused either way', !($lan->check('http://user:pass@lan.test/hook')['ok']));
 pin('a public host passes both', [true, true], [$strict->check('https://public.test/hook')['ok'], $lan->check('https://public.test/hook')['ok']]);
-pin('a scheme other than http(s) is refused either way', false, $lan->check('ftp://lan.test/hook')['ok']);
+check('a scheme other than http(s) is refused either way', !($lan->check('ftp://lan.test/hook')['ok']));
 
 harness_section('cURL pinning');
 pin('a host name is pinned to the checked IPv4', ['public.test:443:93.184.216.34'], AddressGuard::curlOptions('https://public.test/hook', '93.184.216.34')[CURLOPT_RESOLVE]);
@@ -152,7 +148,7 @@ pin('a host name resolving to IPv6 is pinned with the address bracketed', ['v6.t
 pin('an IPv6 literal host needs no pin', [], AddressGuard::curlOptions('http://[2606:2800:220:1::1]/hook', '2606:2800:220:1::1')[CURLOPT_RESOLVE]);
 pin('nor does an IPv4 literal', [], AddressGuard::curlOptions('http://93.184.216.34/hook', '93.184.216.34')[CURLOPT_RESOLVE]);
 pin('the webhook transport uses them', AddressGuard::curlOptions('https://[::1]/hook', '::1'), array_intersect_key(CurlTransport::options('https://[::1]/hook', '::1'), AddressGuard::curlOptions('https://[::1]/hook', '::1')));
-pin('...as does the photo download', AddressGuard::curlOptions('http://public.test/a.jpg', '93.184.216.34'), array_intersect_key(ImageFetcher::curlOptions('http://public.test/a.jpg', '93.184.216.34', 10), AddressGuard::curlOptions('http://public.test/a.jpg', '93.184.216.34')));
+pin('the photo download uses the same address guard options', AddressGuard::curlOptions('http://public.test/a.jpg', '93.184.216.34'), array_intersect_key(ImageFetcher::curlOptions('http://public.test/a.jpg', '93.184.216.34', 10), AddressGuard::curlOptions('http://public.test/a.jpg', '93.184.216.34')));
 
 harness_section('transport status');
 pin('a timeout is "Timed out"', 'Timed out', CurlTransport::failure(28));

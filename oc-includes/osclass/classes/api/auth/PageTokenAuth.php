@@ -28,17 +28,10 @@ use mindstellar\user\UserStore;
 
 /**
  * The same-site session mode: theme JavaScript on the site's own pages calls the API as the
- * signed-in web user, with no key or token of its own.
- *
- * It applies only to a request with no API token that carries a page token in the
- * X-Shopclass-Token header. The page token is the CSRF guard: a page on another site can
- * neither read it nor, without a CORS grant the API never gives for it, send the header.
- * Then every guard must pass, or the call is refused rather than run as anonymous:
- * - the request comes from a page of this site (SiteOrigin),
- * - the signed sign-in cookie is valid for a user who may sign in and is not banned,
- * - the page token was made for that user and their current password, and has not expired.
- * The credential holds the user scopes a key may hold: never account:write, never admin.
- * A cookie with no page token stays anonymous.
+ * signed-in web user. It applies only to a request with no API token that carries a page
+ * token in X-Shopclass-Token, and is refused, not run as anonymous, unless the request comes
+ * from this site, the sign-in cookie is valid and the page token matches that user.
+ * The credential never holds account:write or admin.
  */
 final class PageTokenAuth
 {

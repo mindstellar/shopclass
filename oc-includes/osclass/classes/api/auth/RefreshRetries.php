@@ -17,12 +17,8 @@ use mindstellar\model\KeyValue;
 
 /**
  * The token a refresh swap just handed out, kept for WINDOW seconds, so a client that lost the
- * answer and sends the old token again gets the same new token instead of having its sign-in
- * revoked. One row per sign-in, replaced on each swap and deleted when the sign-in ends.
- *
- * The row is encrypted with a key made from the old token's secret, which the site never
- * stores, so a copy of the database cannot open it: only the client that holds the old
- * token can.
+ * answer gets the same new token when it retries. One row per sign-in, encrypted with a key
+ * made from the old token's secret, which the site never stores.
  */
 final class RefreshRetries
 {

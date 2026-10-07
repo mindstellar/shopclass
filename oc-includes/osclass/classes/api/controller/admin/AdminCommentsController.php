@@ -20,8 +20,8 @@ use mindstellar\api\read\Pager;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\CommentSerializer;
 use mindstellar\comment\CommentQuery;
-use mindstellar\database\Db;
 use mindstellar\moderation\CommentModeration;
+use mindstellar\utility\DeferredMail;
 
 /**
  * `/admin/comments`: every comment whatever its status, and what the comments screen does to
@@ -30,8 +30,8 @@ use mindstellar\moderation\CommentModeration;
  */
 final class AdminCommentsController
 {
-    /** The PATCH members that change the status rather than the text. */
-    private const STATUS_MEMBERS = ['approved' => true, 'blocked' => true];
+    /** The PATCH members that change the status rather than the text => CommentModeration's flag. */
+    private const STATUS_MEMBERS = ['approved' => 'active', 'blocked' => 'blocked'];
 
     private CommentSerializer $serializer;
 
@@ -62,7 +62,8 @@ final class AdminCommentsController
             fn (array $page): array => array_map([$this->serializer, 'admin'], $page),
             $this->api->links(),
             'admin/comments',
-            $request->query()
+            $request->query(),
+            $request->version()
         );
     }
 
@@ -80,9 +81,12 @@ final class AdminCommentsController
         $comment = $this->comment($call->intArg());
         $id      = (int) $comment['pk_i_id'];
         $input   = $call->input();
-        $status  = array_intersect_key($input, self::STATUS_MEMBERS);
+        $flags   = [];
+        foreach (array_intersect_key($input, self::STATUS_MEMBERS) as $member => $value) {
+            $flags[self::STATUS_MEMBERS[$member]] = (bool) $value;
+        }
         // The edit and the status changes land together or not at all.
-        Db::transaction(function () use ($comment, $id, $input, $status): void {
+        DeferredMail::transaction(function () use ($comment, $id, $input, $flags): void {
             if (array_diff_key($input, self::STATUS_MEMBERS) !== []) {
                 $this->moderation->edit($id, [
                     'title'        => (string) ($input['title'] ?? $comment['s_title']),
@@ -91,12 +95,8 @@ final class AdminCommentsController
                     'author_email' => (string) ($input['author_email'] ?? $comment['s_author_email']),
                 ]);
             }
-            // Unblock before approving, so the author is told once the comment is live.
-            if (isset($status['blocked']) && $status['blocked'] === ((string) $comment['b_enabled'] === '1')) {
-                $this->moderation->{$status['blocked'] ? 'disable' : 'enable'}($id);
-            }
-            if (isset($status['approved']) && $status['approved'] !== ((string) $comment['b_active'] === '1')) {
-                $this->moderation->{$status['approved'] ? 'activate' : 'deactivate'}($id);
+            if ($flags !== []) {
+                $this->moderation->applyFlags($id, $flags);
             }
         });
 

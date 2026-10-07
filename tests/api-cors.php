@@ -9,11 +9,8 @@
  */
 
 /**
- * CORS: listed origins answered exactly, `*` only for calls with no key or a public key,
- * the preflight (no credential, not counted), the headers a browser app may read, Vary,
- * the `api_cors_origins` filter, and nothing at all when no origin is listed.
- *
- * DB-free.  Usage: php tests/api-cors.php
+ * CORS: origin matching, the preflight, exposed headers, Vary and the `api_cors_origins` filter.
+ * Usage: php tests/api-cors.php
  */
 
 require_once __DIR__ . '/lib/api-boot.php';
@@ -28,7 +25,6 @@ use mindstellar\api\routing\Router;
 use mindstellar\api\schema\Validator;
 use mindstellar\apiaccess\ApiKeys;
 use mindstellar\apiaccess\ApiSettings;
-use mindstellar\apiaccess\Credential;
 use mindstellar\apiaccess\CredentialKind;
 use mindstellar\apiaccess\CredentialStore;
 use mindstellar\apiaccess\KeyOwner;
@@ -123,8 +119,8 @@ pin('a listed origin is echoed, in any case and without a trailing slash', 'http
 pin('an origin not listed gets nothing', null, $listed->allowedOrigin($req('GET', 'v1', 'https://evil.test')));
 pin('no Origin header gets nothing', null, $listed->allowedOrigin($req('GET', 'v1')));
 pin('* answers a call with no key', '*', $any->allowedOrigin($req('GET', 'v1', 'https://anyone.test')));
-pin('and a call with a public key', '*', $any->allowedOrigin($req('GET', 'v1', 'https://anyone.test', $public)));
-pin('but not a call with any other key', null, $any->allowedOrigin($req('GET', 'v1', 'https://anyone.test', $admin)));
+pin('* answers a call with a public key', '*', $any->allowedOrigin($req('GET', 'v1', 'https://anyone.test', $public)));
+pin('* does not answer a call with any other key', null, $any->allowedOrigin($req('GET', 'v1', 'https://anyone.test', $admin)));
 pin('a keyed call from an exactly listed origin is answered', 'https://app.test', $both->allowedOrigin($req('GET', 'v1', 'https://app.test', $admin)));
 pin('Basic auth in front is not a key', '*', $any->allowedOrigin($req('GET', 'v1', 'https://anyone.test', '', ['Authorization' => 'Basic eDp5'])));
 check('nothing listed means CORS is off', !(new Cors(['', ' ']))->enabled());
@@ -134,14 +130,14 @@ $k       = $kernel("https://app.test\n*");
 $counted = 0;
 $r       = $k->handle($req('OPTIONS', 'v1/users', 'https://app.test', '', ['Access-Control-Request-Method' => 'POST', 'Access-Control-Request-Headers' => 'authorization, idempotency-key']));
 pin('a preflight is 204 with no body', [204, ''], [$r->status(), $r->prepare('OPTIONS')['body']]);
-pin('it echoes the origin', 'https://app.test', $r->header('Access-Control-Allow-Origin'));
-pin('it lists the methods the path answers', 'GET, POST, OPTIONS', $r->header('Access-Control-Allow-Methods'));
+pin('a preflight echoes the origin', 'https://app.test', $r->header('Access-Control-Allow-Origin'));
+pin('a preflight lists the methods the path answers', 'GET, POST, OPTIONS', $r->header('Access-Control-Allow-Methods'));
 $allowHeaders = array_map('trim', explode(',', (string) $r->header('Access-Control-Allow-Headers')));
-check('it allows Authorization, Content-Type, Idempotency-Key and If-None-Match', array_diff(['Authorization', 'Content-Type', 'Idempotency-Key', 'If-None-Match'], $allowHeaders) === []);
+check('a preflight allows Authorization, Content-Type, Idempotency-Key and If-None-Match', array_diff(['Authorization', 'Content-Type', 'Idempotency-Key', 'If-None-Match'], $allowHeaders) === []);
 pin('a browser may reuse it for ten minutes', '600', $r->header('Access-Control-Max-Age'));
 pin('credentials are never allowed', null, $r->header('Access-Control-Allow-Credentials'));
-pin('it needs no credential and is not counted', 0, $counted);
-pin('it varies on Origin', 'Origin', $r->header('Vary'));
+pin('a preflight needs no credential and is not counted', 0, $counted);
+pin('a preflight varies on Origin', 'Origin', $r->header('Vary'));
 $r = $k->handle($req('OPTIONS', 'v1/users', 'https://other.test', '', ['Access-Control-Request-Method' => 'GET']));
 pin('a preflight from another origin is answered by * (no credential rides on it)', '*', $r->header('Access-Control-Allow-Origin'));
 $r = $kernel('https://app.test')->handle($req('OPTIONS', 'v1/users', 'https://other.test', '', ['Access-Control-Request-Method' => 'GET']));
@@ -157,7 +153,7 @@ check('the app may read ETag, Location, the rate limit headers, Deprecation and 
 pin('a cacheable answer varies on Authorization, the page token and Origin', 'Authorization, X-Shopclass-Token, Origin', $r->header('Vary'));
 pin('a keyed call from another origin is not granted, though * is listed', null, $k->handle($req('GET', 'v1/users', 'https://other.test', $admin))->header('Access-Control-Allow-Origin'));
 pin('an anonymous call from another origin gets *', '*', $k->handle($req('GET', 'v1/site', 'https://other.test'))->header('Access-Control-Allow-Origin'));
-pin('so does a public key', '*', $k->handle($req('GET', 'v1/site', 'https://other.test', $public))->header('Access-Control-Allow-Origin'));
+pin('a public key from another origin gets * too', '*', $k->handle($req('GET', 'v1/site', 'https://other.test', $public))->header('Access-Control-Allow-Origin'));
 $r = $k->handle($req('GET', 'v1/users', 'https://app.test'));
 pin('a refusal is granted too, so the app can read the problem', [401, 'https://app.test', 'Origin'], [$r->status(), $r->header('Access-Control-Allow-Origin'), $r->header('Vary')]);
 pin('a write varies on Origin only', 'Origin', $k->handle($req('POST', 'v1/users', 'https://app.test', $admin))->header('Vary'));
@@ -168,7 +164,7 @@ ini_set('error_log', (string) $logged);
 pin('an unexpected error is a 500 problem that still carries CORS and rate-limit headers', [500, 'server_error', 'https://app.test', true], [
     $r->status(), $r->body()['code'] ?? null, $r->header('Access-Control-Allow-Origin'), $r->header('RateLimit') !== null,
 ]);
-check('...and never the error text', !str_contains((string) json_encode($r->body()), 'database went away'));
+check('a 500 problem body never carries the error text', !str_contains((string) json_encode($r->body()), 'database went away'));
 
 harness_section('the api_cors_origins filter');
 $r = api_with_filter('api_cors_origins', static fn (array $origins, Request $request): array => array_merge($origins, ['https://partner.test']), static fn () => $kernel('')->handle($req('GET', 'v1/users', 'https://partner.test', $admin)));

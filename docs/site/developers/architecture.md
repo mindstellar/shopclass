@@ -122,7 +122,7 @@ fire the same hooks in the same order. Tests pin that order.
 | Delete a photo | `PhotoService::delete()` | `delete_resource` |
 | Post a comment | `CommentService::post()` | `pre_item_add_comment_post`, the `action_throttle_limit` filter, `before_add_comment`, the new-comment e-mail hooks, `add_comment` |
 | Delete your own comment | `CommentService::delete()` | `pre_item_delete_comment_post`, `delete_comment` |
-| Sign up, or create a user on the users screen | `AccountService::register()` | the sign-up form and the API fire `before_user_register` first; then `register_email_taken`, `user_add_flash_error`, then `user_register_failed` on a refusal; otherwise `pre_user_post`, `hook_email_admin_new_user`, `hook_email_user_validation`, `user_register_completed` |
+| Sign up, or create a user on the users screen | `AccountService::register()` | a visitor's sign-up is refused when sign-ups are off or the e-mail or address is banned, after `before_user_register`; then `register_email_taken`, `user_add_flash_error`, then `user_register_failed` on a refusal; otherwise `pre_user_post`, `hook_email_admin_new_user`, `hook_email_user_validation`, `user_register_completed` |
 | Edit a profile | `AccountService::update()` | `pre_user_post`, `user_edit_flash_error`, `user_edit_completed` |
 | Ask to change the e-mail | `AccountService::requestEmailChange()` | `hook_email_new_email` |
 | Delete an account | `AccountService::delete()` | `before_user_delete`, `delete_user`, `after_delete_user` |

@@ -12,13 +12,14 @@ declare(strict_types=1);
 
 namespace mindstellar\api\schema;
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\idempotency\Idempotency;
-use mindstellar\api\Kernel;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\RouteSpec;
 use mindstellar\api\routing\Router;
 use mindstellar\api\routing\RouteTable;
+use mindstellar\apiaccess\ApiSettings;
 use mindstellar\apiaccess\CredentialKind;
 use mindstellar\apiaccess\KeyOwner;
 use mindstellar\apiaccess\PageTokens;
@@ -26,10 +27,11 @@ use mindstellar\apiaccess\Scopes;
 use mindstellar\webhook\Events;
 
 /**
- * The API described in OpenAPI 3.1, built from the route table and the component schemas,
- * so the document cannot promise what the kernel does not serve. Served live at
- * GET /api/v1/openapi.json (with the site's plugins) and written for core alone to
- * docs/site/developers/api/openapi.json by tools/gen-openapi.php.
+ * One API version described in OpenAPI 3.1, built from that version's routes and the
+ * component schemas, so the document cannot promise what the kernel does not serve. Served
+ * live at GET /api/<version>/openapi.json (with the site's plugins) and written for core
+ * alone to docs/site/developers/api/openapi.json by tools/gen-openapi.php. `info.version` is
+ * the version's document revision (ApiSettings::VERSIONS), not the CMS's.
  */
 final class OpenApi
 {
@@ -77,9 +79,6 @@ final class OpenApi
         'Idempotency-Replayed' => ['description' => 'true on an answer replayed for a repeated Idempotency-Key.', 'schema' => ['type' => 'string', 'enum' => ['true']]],
     ];
 
-    /** info.version: the API's, not the CMS's, so a release does not change the document. */
-    public const API_VERSION = '1';
-
     /** Seconds a cached document is kept, in case a plugin changed what the fingerprint cannot see. */
     private const CACHE_TTL = 300;
 
@@ -87,7 +86,7 @@ final class OpenApi
     private Events $events;
 
     /**
-     * @param string                          $version info.version
+     * @param string                          $version the API version described, e.g. `v1`
      * @param array<int,array<string,string>> $servers
      */
     public function __construct(
@@ -98,34 +97,51 @@ final class OpenApi
         private array $servers,
         ?Events $events = null
     ) {
+        if (!isset(ApiSettings::VERSIONS[$version])) {
+            throw new \InvalidArgumentException('Unknown API version ' . $version . '.');
+        }
         $this->events = $events ?? new Events(Events::core());
     }
 
     /**
      * The document for this site, from the kernel's router, schemas and scopes, with its own URL.
      */
-    public static function forSite(Router $router, Definitions $definitions, Scopes $scopes): self
+    public static function forSite(Router $router, Definitions $definitions, Scopes $scopes, string $version = ApiSettings::VERSION): self
     {
-        return new self($router, $definitions, $scopes, self::API_VERSION, [['url' => rtrim(osc_api_url(), '/'), 'description' => 'This site']], Events::fromHooks());
+        return new self($router, $definitions, $scopes, $version, self::siteServers($version), Events::fromHooks());
     }
 
     /**
-     * The document for core alone, with no database and no plugins. Its version is the
-     * API's, so it does not change with every release.
+     * The document for core alone, with no database and no plugins.
      */
-    public static function core(): self
+    public static function core(string $version = ApiSettings::VERSION): self
     {
         $definitions = Schema::definitions();
 
-        return new self(new Router(new Validator($definitions), RouteTable::core()), $definitions, new Scopes(), self::API_VERSION, self::relativeServers());
+        return new self(new Router(new Validator($definitions), RouteTable::core()), $definitions, new Scopes(), $version, self::relativeServers($version));
     }
 
     /**
-     * GET /openapi.json
+     * GET /openapi.json, for the version the call asked for.
      */
-    public function show(): Response
+    public function show(?ApiCall $call = null): Response
     {
-        return new Response(200, $this->cached());
+        $version = $call === null ? $this->version : $call->request()->version();
+        $doc     = $version === $this->version || !isset(ApiSettings::VERSIONS[$version])
+            ? $this
+            : new self($this->router, $this->definitions, $this->scopes, $version, self::siteServers($version), $this->events);
+
+        return new Response(200, $doc->cached());
+    }
+
+    /**
+     * @return array<int,array<string,string>>
+     */
+    private static function siteServers(string $version): array
+    {
+        $url = osc_api_url('', $version);
+
+        return [['url' => rtrim($url, '/'), 'description' => 'This site']];
     }
 
     /**
@@ -153,7 +169,7 @@ final class OpenApi
     private function fingerprint(): string
     {
         $routes = [];
-        foreach ($this->router->all() as $key => $route) {
+        foreach ($this->router->all($this->version) as $key => $route) {
             $handler  = $route->handler();
             $routes[] = [
                 $key, is_array($handler) ? implode('::', array_map('strval', $handler)) : spl_object_id((object) $handler),
@@ -168,11 +184,11 @@ final class OpenApi
     /**
      * @return array<int,array<string,string>>
      */
-    public static function relativeServers(): array
+    public static function relativeServers(string $version = ApiSettings::VERSION): array
     {
         return [
-            ['url' => '/api/' . Kernel::VERSION, 'description' => 'With friendly URLs'],
-            ['url' => '/index.php?page=api&path=' . Kernel::VERSION, 'description' => 'Without friendly URLs: the rest of the path follows in the path parameter'],
+            ['url' => '/api/' . $version, 'description' => 'With friendly URLs'],
+            ['url' => '/index.php?page=api&path=' . $version, 'description' => 'Without friendly URLs: the rest of the path follows in the path parameter'],
         ];
     }
 
@@ -183,7 +199,7 @@ final class OpenApi
     {
         $paths = [];
         $tags  = [];
-        foreach ($this->router->all() as $route) {
+        foreach ($this->router->all($this->version) as $route) {
             $path = '/' . $route->path();
             $paths[$path][strtolower($route->method())] = $this->operation($route);
             array_push($tags, ...$route->tags());
@@ -196,7 +212,7 @@ final class OpenApi
             'openapi' => self::SPEC_VERSION,
             'info'    => [
                 'title'       => 'Shopclass REST API',
-                'version'     => $this->version,
+                'version'     => ApiSettings::VERSIONS[$this->version],
                 'description' => 'JSON over HTTPS. Send a credential as `Authorization: Bearer <token>`: `sck_...` for an admin\'s or a user\'s key, '
                     . '`scp_...` for a public key, which only reads public data (it may also go in `?api_key=` on a GET), or `sca_...`, '
                     . 'a signed-in user\'s access token from POST /auth/token. Writes accept an `Idempotency-Key` header. '
@@ -366,7 +382,7 @@ final class OpenApi
      */
     private function hasRead(RouteSpec $route): bool
     {
-        return in_array($route->method(), ['PATCH', 'DELETE'], true) && isset($this->router->all()['GET ' . $route->path()]);
+        return in_array($route->method(), ['PATCH', 'DELETE'], true) && isset($this->router->all($this->version)['GET ' . $route->path()]);
     }
 
     /**
@@ -379,8 +395,10 @@ final class OpenApi
         $declared = $route->responses();
         $problem  = Schema::ref('Problem');
         if ($route->auth() !== RouteSpec::AUTH_NONE) {
-            $declared += [401 => $problem, 403 => $problem, 429 => $problem];
+            $declared += [401 => $problem, 403 => $problem];
         }
+        // Every route is rate limited, a sign-in with no credential too.
+        $declared += [429 => $problem];
         if ($route->query() !== null || $route->body() !== null) {
             $declared += [422 => $problem];
         }
@@ -396,8 +414,8 @@ final class OpenApi
             $declared += [400 => $problem];
         }
         if (array_filter(array_keys($declared), static fn ($s): bool => (int) $s < 400) === []) {
-            // A route that names no success, such as a plugin's: say only that it answers.
-            $declared[$route->method() === 'POST' ? 201 : 200] = ['type' => 'null'];
+            // A route that names no success, such as a plugin's: a 200 whose body is not described.
+            $declared[200] = [];
         }
         if ($this->hasRead($route)) {
             $declared += [412 => $problem];
@@ -421,7 +439,7 @@ final class OpenApi
             }
             if ($status >= 400) {
                 $response['content'] = ['application/problem+json' => ['schema' => $problem]];
-            } elseif ($status !== 204 && $status < 300 && $schema !== ['type' => 'null']) {
+            } elseif ($status !== 204 && $status < 300 && $schema !== ['type' => 'null'] && $schema !== []) {
                 $response['content'] = ['application/json' => ['schema' => $schema]];
             }
             $out[(string) $status] = $response;
@@ -445,7 +463,7 @@ final class OpenApi
         if (($route->method() === 'GET' && ($status === 200 || $status === 304)) || ($route->method() === 'PATCH' && $status === 200 && $this->hasRead($route))) {
             $names[] = 'ETag';
         }
-        if ($route->auth() !== RouteSpec::AUTH_NONE) {
+        if ($route->auth() !== RouteSpec::AUTH_NONE || $status === 429) {
             array_push($names, 'RateLimit', 'RateLimit-Policy', 'X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset');
         }
         if ($status === 429 || $status === 503 || ($status === 409 && $this->idempotent($route))) {

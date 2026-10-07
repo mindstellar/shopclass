@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\api\serializer;
 
+use mindstellar\user\UserStatus;
+
 /**
  * A user's profile, ending with the `api_user` filter. The user themself and admins also get
  * contact details, address and account state.
@@ -23,7 +25,7 @@ final class UserSerializer
     ];
 
     public const PRIVATE_MEMBERS = [
-        'email', 'phone_land', 'phone_mobile', 'address', 'zip', 'lat', 'lng', 'confirmed', 'blocked', 'last_access_at',
+        'email', 'phone_land', 'phone_mobile', 'address', 'zip', 'lat', 'lng', 'status', 'confirmed', 'blocked', 'last_access_at',
         'last_access_ip',
     ];
 
@@ -67,6 +69,7 @@ final class UserSerializer
                 'zip'            => Format::text($user['s_zip'] ?? null),
                 'lat'            => Format::float($user['d_coord_lat'] ?? null),
                 'lng'            => Format::float($user['d_coord_long'] ?? null),
+                'status'         => UserStatus::of($user),
                 'confirmed'      => Format::bool($user['b_active'] ?? 0),
                 'blocked'        => !Format::bool($user['b_enabled'] ?? 0),
                 'last_access_at' => Format::time($user['dt_access_date'] ?? null),

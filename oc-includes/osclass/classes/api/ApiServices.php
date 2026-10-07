@@ -35,6 +35,7 @@ use mindstellar\api\read\SiteFacts;
 use mindstellar\api\routing\Router;
 use mindstellar\api\routing\RouteTable;
 use mindstellar\api\schema\Definitions;
+use mindstellar\api\schema\ExtensionSchemas;
 use mindstellar\api\schema\OpenApi;
 use mindstellar\api\schema\Schema;
 use mindstellar\api\schema\Validator;
@@ -186,7 +187,8 @@ final class ApiServices
             $this->settings,
             $this->users,
             $this->admins(),
-            new Idempotency(new KvIdempotencyStore(), $this->clock)
+            new Idempotency(new KvIdempotencyStore(), $this->clock),
+            ratePolicy: $this->ratePolicy()
         ));
     }
 
@@ -195,7 +197,12 @@ final class ApiServices
      */
     public function router(): Router
     {
-        return $this->once(__FUNCTION__, fn (): Router => Router::build($this->validator(), RouteTable::core(), handlers: $this->handlers()));
+        return $this->once(__FUNCTION__, fn (): Router => Router::build(
+            $this->validator(),
+            RouteTable::core(),
+            handlers: $this->handlers(),
+            kit: fn (): ApiKit => $this->once(ApiKit::class, fn (): ApiKit => new ApiKit($this))
+        ));
     }
 
     /**
@@ -226,11 +233,15 @@ final class ApiServices
     }
 
     /**
-     * The component schemas, built only when a `$ref` needs them.
+     * Core's component schemas and the plugins' `Ext*` ones, built only when a `$ref` needs them.
      */
     public function definitions(): Definitions
     {
-        return $this->once(__FUNCTION__, fn (): Definitions => Schema::definitions($this->fields()));
+        return $this->once(__FUNCTION__, function (): Definitions {
+            $ext = ExtensionSchemas::fromHooks();
+
+            return Definitions::lazy([...Schema::names(), ...array_keys($ext)], fn (): array => Schema::components($this->fields()) + $ext);
+        });
     }
 
     public function validator(): Validator
@@ -238,7 +249,7 @@ final class ApiServices
         return $this->once(__FUNCTION__, fn (): Validator => new Validator($this->definitions()));
     }
 
-    public function openApi(): OpenApi
+    private function openApi(): OpenApi
     {
         return $this->once(__FUNCTION__, fn (): OpenApi => OpenApi::forSite($this->router(), $this->definitions(), $this->scopes));
     }
@@ -302,7 +313,8 @@ final class ApiServices
             new CustomFieldSerializer(),
             $this->facts()->hidePhone(),
             $this->facts()->keepOriginal(),
-            $this->facts()->contactNeedsSignIn()
+            $this->facts()->contactNeedsSignIn(),
+            $this->clock
         ));
     }
 
@@ -339,7 +351,9 @@ final class ApiServices
             $credential,
             $this->locale($request),
             SparseFieldset::parse($request->queryString('fields'), $members, $this->extensions()->declared(), $object),
-            $include
+            $include,
+            ViewContext::PUBLIC,
+            $request->version() !== '' ? $request->version() : ApiSettings::PINNED_VERSION
         );
     }
 
@@ -348,13 +362,9 @@ final class ApiServices
         return $this->access()->keys();
     }
 
-    public function accessTokens(): AccessTokens
+    private function accessTokens(): AccessTokens
     {
-        return $this->once(__FUNCTION__, fn (): AccessTokens => new AccessTokens(
-            $this->scopes,
-            $this->users,
-            familyLive: fn (string $family): bool => $this->store->familyIsLive($family)
-        ));
+        return $this->once(__FUNCTION__, fn (): AccessTokens => new AccessTokens($this->scopes, $this->users));
     }
 
     public function refreshTokens(): RefreshTokens

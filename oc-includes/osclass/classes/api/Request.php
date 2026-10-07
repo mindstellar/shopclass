@@ -201,6 +201,7 @@ final class Request
         return $out;
     }
 
+    /** @api */
     public function method(): string
     {
         return $this->method;
@@ -208,12 +209,35 @@ final class Request
 
     /**
      * Below /api/, e.g. `v1/listings/12`; null when the path was refused.
+     *
+     * @api
      */
     public function path(): ?string
     {
         return $this->path;
     }
 
+    /**
+     * The API version the path names, e.g. `v1`; '' when the path was refused.
+     *
+     * @api
+     */
+    public function version(): string
+    {
+        return $this->path === null ? '' : explode('/', $this->path, 2)[0];
+    }
+
+    /**
+     * The path below the version, e.g. `listings/12`; '' for the version root.
+     *
+     * @api
+     */
+    public function routePath(): string
+    {
+        return $this->path === null ? '' : (explode('/', $this->path, 2)[1] ?? '');
+    }
+
+    /** @api */
     public function ip(): string
     {
         return $this->ip;
@@ -271,6 +295,8 @@ final class Request
     }
 
     /**
+     * @api
+     *
      * @return array<string,mixed>
      */
     public function query(): array
@@ -290,6 +316,8 @@ final class Request
     }
 
     /**
+     * @api
+     *
      * @return string '' when absent
      */
     public function header(string $name): string
@@ -340,11 +368,13 @@ final class Request
         return trim($this->header('Idempotency-Key'));
     }
 
+    /** @api */
     public function isRead(): bool
     {
         return $this->method === 'GET' || $this->method === 'HEAD';
     }
 
+    /** @api */
     public function isWrite(): bool
     {
         return in_array($this->method, ['POST', 'PUT', 'PATCH', 'DELETE'], true);
@@ -356,7 +386,7 @@ final class Request
      * @return array<mixed>
      * @throws ProblemException 413, 415 or 400 when the body cannot be used
      */
-    public function json(): array
+    private function json(): array
     {
         $body = $this->body();
         if ($body === null) {
@@ -409,6 +439,8 @@ final class Request
     /**
      * The body as a JSON object; no body at all reads as an empty object.
      *
+     * @api
+     *
      * @return array<mixed>
      * @throws ProblemException 413, 415 or 400 when a body was sent that cannot be used
      */
@@ -419,6 +451,8 @@ final class Request
 
     /**
      * A query value as a string. An array yields $default.
+     *
+     * @api
      */
     public function queryString(string $name, string $default = ''): string
     {
@@ -427,6 +461,7 @@ final class Request
         return is_scalar($value) ? (string) $value : $default;
     }
 
+    /** @api */
     public function queryInt(string $name, int $default = 0): int
     {
         $value = $this->query[$name] ?? null;
@@ -436,6 +471,8 @@ final class Request
 
     /**
      * `1/0`, `true/false`, `on/off`, `yes/no`; anything else yields $default.
+     *
+     * @api
      */
     public function queryBool(string $name, bool $default = false): bool
     {
@@ -470,6 +507,8 @@ final class Request
     /**
      * A repeatable query value: `a[]=1&a[]=2` or a comma list `a=1,2`.
      *
+     * @api
+     *
      * @return string[]
      */
     public function queryList(string $name): array
@@ -488,6 +527,8 @@ final class Request
 
     /**
      * queryList() kept to row ids: digits only, as integers.
+     *
+     * @api
      *
      * @return int[]
      */

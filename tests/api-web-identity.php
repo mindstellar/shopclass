@@ -9,11 +9,8 @@
  */
 
 /**
- * A cookie never authenticates an API call: WebIdentity::forget() drops the user and admin
- * identity the bootstrap resolved from cookies or the session, for this request only, and
- * the front controller runs it for page=api before maintenance, the user switch and lastAccess.
- *
- * DB-free.  Usage: php tests/api-web-identity.php
+ * A cookie never authenticates an API call: WebIdentity::forget() and where the front controller runs it.
+ * Usage: php tests/api-web-identity.php
  */
 
 define('WEB_PATH', 'http://example.test/');
@@ -49,9 +46,9 @@ array_map('unlink', glob($sessionDir . '/*') ?: []);
 
 harness_section('an active session');
 pin('the stored session was active and named the user', [true, 10], [$activeBefore, $idBefore]);
-pin('forget() closes it', false, $activeAfter);
+check('forget() closes it', !$activeAfter);
 pin('the user is gone for this request', '', $idAfter);
-pin('and from $_SESSION, while other keys stay', [false, false, 'kept'], [isset($sessionAfter['userId']), isset($sessionAfter['adminId']), $sessionAfter['other'] ?? null]);
+pin('the admin id is also cleared from $_SESSION, while other keys stay', [false, false, 'kept'], [isset($sessionAfter['userId']), isset($sessionAfter['adminId']), $sessionAfter['other'] ?? null]);
 pin('a later destroy and restart does not bring it back', '', $idAfterRestart);
 check('the stored session is not rewritten, so the browser stays logged in', str_contains($fileAfter, 'userId|i:10;'));
 
@@ -88,5 +85,16 @@ check('an API call under maintenance gets problem+json', str_contains($index, "i
     && str_contains($boot, 'static fn () => \\mindstellar\\api\\Problem::maintenance()->send()'));
 check('an API call never records last access nor touches the user cookies', str_contains($run, "if (!\$api) {\n            self::userUpkeep();"));
 check('user upkeep runs before the page', $at('self::userUpkeep();') < $at('PageDispatcher::web()->dispatch('));
+
+harness_section('intercept()');
+$seen = [];
+WebIdentity::intercept(static function (string $action, array $row) use (&$seen): void {
+    $seen[] = [$action, $row['pk_i_id'] ?? null];
+});
+WebIdentity::forget();
+WebIdentity::assume(['pk_i_id' => 7]);
+WebIdentity::assumeAdmin(['pk_i_id' => 2]);
+WebIdentity::intercept(null);
+pin('a test can take the session, cookie and view out of the way', [['forget', null], ['assume', 7], ['assumeAdmin', 2]], $seen);
 
 exit(harness_result());

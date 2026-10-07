@@ -9,14 +9,8 @@
  */
 
 /**
- * Idempotency-Key through the kernel: the same key and request replays the first answer
- * with Idempotency-Replayed and runs nothing again; another request under the key is 422;
- * a key still running is 409; a key past its day runs again; a refusal is kept whether it
- * was thrown as a problem or as a core service's refusal; a 5xx, a 429 or a crash is not kept;
- * keys belong to their sender; a write whose answer holds a secret and an anonymous call
- * ignore the header; a malformed key is 422.
- *
- * DB-free: keys live in an array.  Usage: php tests/api-idempotency.php
+ * Idempotency-Key through the kernel: replay, conflict, expiry and which answers are kept.
+ * Usage: php tests/api-idempotency.php
  */
 
 require_once __DIR__ . '/lib/api-boot.php';
@@ -152,7 +146,7 @@ harness_section('owners');
 $r = $post('things', ['a' => 1], 'key-1', $bob);
 pin('another sender\'s same key is their own', [201, 11], [$r->status(), $r->body()['data']['by']]);
 $r = $post('things', ['a' => 1], 'key-1', $alice2);
-pin('so is another credential of the same user', [201, null], [$r->status(), $r->header('Idempotency-Replayed')]);
+pin('another credential of the same user is its own sender too', [201, null], [$r->status(), $r->header('Idempotency-Replayed')]);
 
 harness_section('in flight and expiry');
 pin('a lock outlives the longest a request may run, and has a floor', [Idempotency::LOCK_TTL, 330, Idempotency::UNLIMITED_LOCK_TTL], [Idempotency::lockTtl(30), Idempotency::lockTtl(300), Idempotency::lockTtl(0)]);
@@ -179,7 +173,7 @@ $again = $post('things', ['do' => 'refuse'], 'key-8');
 pin('a core service\'s 422 refusal is kept and replayed like a thrown problem', [422, 'true', 'Not allowed.', $runs + 1], [$again->status(), $again->header('Idempotency-Replayed'), $again->body()['detail'], Writes::$runs]);
 $post('things', ['do' => 'conflict'], 'key-9');
 $r = $post('things', ['do' => 'conflict'], 'key-9');
-pin('so is its 409', [409, 'conflict', 'true', $runs + 2], [$r->status(), $r->body()['code'], $r->header('Idempotency-Replayed'), Writes::$runs]);
+pin('a core service\'s 409 refusal is kept and replayed too', [409, 'conflict', 'true', $runs + 2], [$r->status(), $r->body()['code'], $r->header('Idempotency-Replayed'), Writes::$runs]);
 $post('things', ['do' => 'busy'], 'key-10');
 $r = $post('things', ['do' => 'busy'], 'key-10');
 pin('a 429 is not kept, so a retry runs', [429, null, $runs + 4], [$r->status(), $r->header('Idempotency-Replayed'), Writes::$runs]);
@@ -199,7 +193,7 @@ pin('a write whose answer holds a secret ignores the key', [$runs + 2, false], [
 $runs = Writes::$runs;
 $post('open', ['a' => 1], 'key-7', '');
 $post('open', ['a' => 1], 'key-7', '');
-pin('so does an anonymous call', $runs + 2, Writes::$runs);
+pin('an anonymous call ignores the key too', $runs + 2, Writes::$runs);
 
 harness_section('the key itself');
 pin('a key over 255 characters is 400', [400, 'invalid_header'], [$post('things', [], str_repeat('k', 256))->status(), $post('things', [], str_repeat('k', 256))->body()['code']]);

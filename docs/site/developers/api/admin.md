@@ -78,7 +78,8 @@ is refused, nothing is saved.
 | `POST /admin/listings/{id}/bump` | Move to the top of "newest first". |
 
 The admin view reads `approved`, `blocked`, `spam` and `premium` back under the same names;
-`status` sums them up. A status change answers `409` when the listing refuses it, such as
+`status` sums them up. A flag already as asked changes nothing. An unblock runs first and a
+block last, whatever order the members come in. A status change answers `409` when the listing refuses it, such as
 approving a blocked one; send `blocked: false` in the same call. The e-mails the screens send
 go out after the change is saved.
 
@@ -100,6 +101,8 @@ curl "$API/admin/listings?status=pending&limit=50" -H "Authorization: Bearer $KE
 | `PATCH /admin/comments/{id}` | Edit `title`, `body`, `author_name`, `author_email`. `approved: true` approves it and tells the author; `false` holds it back. `blocked: true` blocks it; `false` unblocks it. |
 | `DELETE /admin/comments/{id}` | Delete. |
 
+As for listings, a flag already as asked changes nothing, and an unblock runs before an approval.
+
 ## Users
 
 `admin:users`.
@@ -108,7 +111,7 @@ curl "$API/admin/listings?status=pending&limit=50" -H "Authorization: Bearer $KE
 |---|---|
 | `GET /admin/users` | List. Filters: `q` (e-mail, username or name starting with it), `confirmed`, `blocked`, `locale`, `fields`, `limit`, `cursor`, `count`. |
 | `GET /admin/users/{id}` | One user, every member. |
-| `PATCH /admin/users/{id}` | Edit the profile, `email`, `username` or `password`. A new password ends every sign-in and key of that user. `confirmed` marks the account confirmed, or not. `blocked: true` blocks the user, and their sign-ins and keys stop working. Both read back under the same names. |
+| `PATCH /admin/users/{id}` | Edit the profile, `email`, `username` or `password`. A new password ends every sign-in and key of that user. `confirmed` marks the account confirmed, or not. `blocked: true` blocks the user, and their sign-ins and keys stop working. Both read back under the same names, and `status` (`active`, `pending` or `disabled`) sums them up. A flag already as asked changes nothing; an unblock runs before a confirm. |
 | `DELETE /admin/users/{id}` | Delete the user with their listings, comments and saved searches. |
 | `GET /admin/users/{id}/sessions` | The user's live sign-ins. Their keys are at `/admin/keys`. |
 | `DELETE /admin/users/{id}/sessions/{session}` | End one sign-in. |
@@ -128,7 +131,7 @@ curl -X DELETE $API/admin/users/23/sessions/9 -H "Authorization: Bearer $KEY"
 | `GET /admin/categories`, `GET /admin/categories/{id}` | Every category, enabled or not, with each language's `name`, `slug` and `description` under `translations`. |
 | `POST /admin/categories` | Add one. Needs `translations`. The slug is made from the name. Optional: `parent_id`, `expiration_days`, `price_enabled`, `enabled`. |
 | `PATCH /admin/categories/{id}` | Edit. A new slug keeps the old one redirecting. `apply_to_subcategories` copies the expiry and price setting down. `enabled: false` on a top category takes its subcategories and their listings with it. |
-| `DELETE /admin/categories/{id}` | Delete with its subcategories and their listings. A large one answers `202`: it is hidden now and emptied in the background. |
+| `DELETE /admin/categories/{id}` | Delete with its subcategories and their listings. A large one answers `202` with no body and no `Location`: it is hidden now and emptied in the background. Read `GET /admin/categories/{id}` until it answers `404`. |
 | `GET`, `PATCH`, `DELETE /admin/currencies/{code}`, `POST /admin/currencies` | Add, rename or change the symbol of, or delete a currency. A currency a listing uses, or the site default, cannot be deleted (`409`). |
 | `GET`, `PATCH`, `DELETE /admin/custom-fields/{id}`, `POST /admin/custom-fields` | Custom fields: `name`, `type`, `slug`, `required`, `searchable`, `options`, `categories`. Deleting a field deletes its values. |
 | `GET`, `PATCH`, `DELETE /admin/regions/{id}`, `POST /admin/regions` | Regions. `POST` takes `country` and `name`. |

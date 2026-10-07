@@ -770,6 +770,12 @@ harness_section('Category::deleteByPrimaryKey — deleting a nonexistent id');
 
 pin('deleting an id that never existed returns int 0 (no rows affected, no error)', 0, $m->deleteByPrimaryKey(999999));
 
+harness_section('listEnabled reads the shared enabled rows');
+$shared = $freshCategory();
+$oldRead = $shared->listWhere("b.s_name != '' AND a.b_enabled = 1");
+pin('listEnabled() matches the old listWhere() read, row for row and in order', [array_column($oldRead, 'pk_i_id'), $oldRead], [array_column($shared->listEnabled(), 'pk_i_id'), $shared->listEnabled()]);
+pin('...and costs no query once the enabled tree has read them', 0, harness_query_count(static fn () => (new \mindstellar\category\CategoryQuery())->enabledTree($locale)));
+
 /* ----------------------------------------------------------------------------
  * formatValue — pure helper, no query.
  * ------------------------------------------------------------------------- */

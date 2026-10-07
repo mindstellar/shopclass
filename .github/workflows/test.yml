@@ -136,6 +136,12 @@ jobs:
         run: php tests/api-if-match.php
       - name: API listing form
         run: php tests/api-listing-body.php
+      - name: API request counter
+        run: php tests/api-apcu-counter.php
+      - name: Account form input
+        run: php tests/account-input.php
+      - name: Status flag order
+        run: php tests/status-flags.php
       - name: Listing live rule and actor
         run: php tests/listing-status.php
       - name: Listing view and manage policy

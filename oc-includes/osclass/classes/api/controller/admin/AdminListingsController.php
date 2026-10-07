@@ -22,12 +22,13 @@ use mindstellar\api\Response;
 use mindstellar\api\serializer\ListingSerializer;
 use mindstellar\api\write\ListingWriter;
 use mindstellar\api\write\OwnedListing;
+use mindstellar\api\write\OwnedListings;
 use mindstellar\apiaccess\Credential;
-use mindstellar\database\Db;
 use mindstellar\moderation\ListingModeration;
 use mindstellar\search\query\CategoryFilter;
 use mindstellar\user\UserQuery;
 use mindstellar\utility\DateInput;
+use mindstellar\utility\DeferredMail;
 
 /**
  * `/admin/listings`: every listing whatever its status, the admin's edit (status included),
@@ -35,16 +36,18 @@ use mindstellar\utility\DateInput;
  */
 final class AdminListingsController
 {
-    /** The PATCH members that change the status, as the screen's actions do. */
-    private const STATUS_MEMBERS = ['approved' => true, 'blocked' => true, 'spam' => true, 'premium' => true];
+    /** The PATCH members that change the status => ListingModeration's flag. */
+    private const STATUS_MEMBERS = ['approved' => 'active', 'blocked' => 'blocked', 'spam' => 'spam', 'premium' => 'premium'];
 
     private ListingReader $reader;
     private ListingWriter $writer;
     private ListingModeration $moderation;
     private ListingList $list;
+    private OwnedListings $owned;
 
-    public function __construct(private ApiServices $api)
+    public function __construct(private ApiServices $api, ?OwnedListings $owned = null)
     {
+        $this->owned = $owned ?? new OwnedListings();
         $this->reader = $api->listingReader();
         $this->writer = $api->listingWriter();
         $this->moderation = $api->listingModeration();
@@ -95,7 +98,7 @@ final class AdminListingsController
         $request = $call->request();
         $credential = $call->credential();
 
-        $listing = OwnedListing::load($call->intArg(), true);
+        $listing = $this->owned->load($call->intArg(), true);
         $input   = $request->input();
         $status  = array_intersect_key($input, self::STATUS_MEMBERS);
         $edit    = array_diff_key($input, self::STATUS_MEMBERS);
@@ -103,13 +106,17 @@ final class AdminListingsController
         if ($owner > 0 && !(new UserQuery())->exists($owner)) {
             throw ProblemException::field('/owner_id', 'unknown', 'is not a user');
         }
+        $flags = [];
+        foreach ($status as $member => $value) {
+            $flags[self::STATUS_MEMBERS[$member]] = (bool) $value;
+        }
         // The edit and the status changes land together or not at all.
-        Db::transaction(function () use ($listing, $edit, $status, $request, $credential): void {
+        DeferredMail::transaction(function () use ($listing, $edit, $flags, $request, $credential): void {
             if ($edit !== []) {
                 $this->writer->adminUpdate($listing, $this->writer->editForm($listing, $edit, $request, $credential) + self::adminMembers($listing, $edit), $credential->actor($request->ip(), 'admin:listings'));
             }
-            foreach (self::actions($status) as $action) {
-                $this->moderate($action, $listing->id(), $credential);
+            if ($flags !== []) {
+                $this->moderation->applyFlags($listing->id(), $flags, (int) $credential->adminId(), self::note($credential));
             }
         });
 
@@ -121,7 +128,7 @@ final class AdminListingsController
      */
     public function delete(ApiCall $call): Response
     {
-        $this->writer->delete(OwnedListing::load($call->intArg()), $call->credential()->actor($call->request()->ip(), 'admin:listings'));
+        $this->writer->delete($this->owned->load($call->intArg()), $call->credential()->actor($call->request()->ip(), 'admin:listings'));
 
         return Response::noContent();
     }
@@ -131,38 +138,17 @@ final class AdminListingsController
      */
     public function bump(ApiCall $call): Response
     {
-        $this->moderate('bump', $call->intArg(), $call->credential());
+        $this->moderation->apply('bump', $call->intArg(), (int) $call->credential()->adminId(), self::note($call->credential()));
 
         return $this->show($call);
     }
 
     /**
-     * The ListingModeration actions a PATCH's status members ask for. An unblock runs first and
-     * a block last, so approving a blocked listing in the same call works.
-     *
-     * @param array<string,bool> $status
-     *
-     * @return string[]
+     * What the activity log says a change came through.
      */
-    private static function actions(array $status): array
+    private static function note(Credential $credential): string
     {
-        $pairs   = ['approved' => ['activate', 'deactivate'], 'spam' => ['spam', 'unspam'], 'premium' => ['premium', 'unpremium']];
-        $actions = ($status['blocked'] ?? null) === false ? ['enable'] : [];
-        foreach ($pairs as $member => [$on, $off]) {
-            if (isset($status[$member])) {
-                $actions[] = $status[$member] ? $on : $off;
-            }
-        }
-        if (($status['blocked'] ?? null) === true) {
-            $actions[] = 'disable';
-        }
-
-        return $actions;
-    }
-
-    private function moderate(string $action, int $id, Credential $credential): void
-    {
-        $this->moderation->apply($action, $id, (int) $credential->adminId(), 'API key #' . (int) $credential->id());
+        return 'API key #' . (int) $credential->id();
     }
 
     /**

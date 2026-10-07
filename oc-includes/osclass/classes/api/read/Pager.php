@@ -81,12 +81,12 @@ final class Pager
      * @param callable(array<int,array<string,mixed>>): array<int,mixed> $shape this page's rows as the answer's data
      * @param array<string,mixed>                                 $query the request's query, for the links
      */
-    public function respond(callable $fetch, ?callable $total, callable $shape, Links $links, string $path, array $query): Response
+    public function respond(callable $fetch, ?callable $total, callable $shape, Links $links, string $path, array $query, ?string $version = null): Response
     {
         $rows  = $fetch();
         $count = $total !== null && $this->counts() ? $total() : null;
 
-        return (new Page($shape($this->page($rows)), $count, $this->limit, $this->next($rows), $this->truncated($rows)))->response($links, $path, $query);
+        return (new Page($shape($this->page($rows)), $count, $this->limit, $this->next($rows), $this->truncated($rows)))->response($links, $path, $query, $version);
     }
 
     public function offset(): int

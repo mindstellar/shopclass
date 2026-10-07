@@ -39,7 +39,7 @@ final class AdminCurrenciesController
         $input = $call->input();
         $code  = $this->currencies->create((string) $input['code'], (string) $input['name'], (string) ($input['symbol'] ?? ''));
 
-        return Response::created($this->currency($code), $this->api->links()->api('admin/currencies/' . $code));
+        return Response::created($this->currency($code), $this->api->links()->api('admin/currencies/' . $code, $call->request()->version()));
     }
 
     /**

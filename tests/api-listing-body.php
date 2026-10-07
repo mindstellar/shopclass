@@ -9,12 +9,8 @@
  */
 
 /**
- * ListingBody: a listing body as the listing form posts it. A new listing maps each member
- * to its form field; an edit starts from the stored listing, so a member not sent keeps its
- * value; prices are written in the site's own decimal format; uploads are routes of their
- * own in the OpenAPI document.
- *
- * DB-free.  Usage: php tests/api-listing-body.php
+ * ListingBody: a listing body as the listing form posts it, and who may view a listing.
+ * Usage: php tests/api-listing-body.php
  */
 
 require_once __DIR__ . '/lib/api-boot.php';
@@ -95,7 +91,7 @@ harness_section('uploads');
 $doc  = OpenApi::core()->build();
 $post = $doc['paths']['/listings/{id}/photos']['post'];
 pin('a photo upload takes a multipart form or the image itself', ['multipart/form-data', 'image/*'], array_keys($post['requestBody']['content']));
-check('and can answer 413, 415 and 422', isset($post['responses']['413'], $post['responses']['415'], $post['responses']['422']));
+check('a photo upload can answer 413, 415 and 422', isset($post['responses']['413'], $post['responses']['415'], $post['responses']['422']));
 pin('POST /listings takes a JSON body', ['application/json'], array_keys($doc['paths']['/listings']['post']['requestBody']['content']));
 pin('PATCH takes a JSON Merge Patch too', ['application/json', 'application/merge-patch+json'], array_keys($doc['paths']['/listings/{id}']['patch']['requestBody']['content']));
 $missing = [];
@@ -131,10 +127,10 @@ pin('a category with no fields takes none', [], $fields->clean(6, ['1' => 'red']
 harness_section('who sees a listing');
 $live    = ['fk_i_user_id' => '9', 'b_enabled' => '1', 'b_active' => '1', 'b_spam' => '0', 'b_premium' => '0', 'dt_expiration' => '2020-01-01 00:00:00'];
 $pending = ['b_active' => '0'] + $live;
-pin('an expired listing is still shown on its own, as its page shows it', true, ListingPolicy::canView($live, Credential::anonymous()->actor('')));
-pin('a pending one is not', false, ListingPolicy::canView($pending, Credential::anonymous()->actor('')));
-pin('except to its owner', true, ListingPolicy::canView($pending, (new Credential(CredentialKind::USER, ['listings:read'], 9))->actor('')));
-pin('and to an admin key with admin:listings', [true, false], [
+check('an expired listing is still shown on its own, as its page shows it', ListingPolicy::canView($live, Credential::anonymous()->actor('')));
+check('a pending one is not', !(ListingPolicy::canView($pending, Credential::anonymous()->actor(''))));
+check('except to its owner', ListingPolicy::canView($pending, (new Credential(CredentialKind::USER, ['listings:read'], 9))->actor('')));
+pin('a pending listing is shown to an admin key with admin:listings, not to one with admin:users only', [true, false], [
     ListingPolicy::canView($pending, (new Credential(CredentialKind::KEY, ['admin:listings'], null, 1))->actor('', ViewContext::LISTINGS_SCOPE)),
     ListingPolicy::canView($pending, (new Credential(CredentialKind::KEY, ['admin:users'], null, 1))->actor('', ViewContext::LISTINGS_SCOPE)),
 ]);

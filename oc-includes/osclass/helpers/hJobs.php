@@ -266,6 +266,7 @@ osc_add_hook('register_jobs', static function () {
     \mindstellar\backup\BackupJobs::register();
     \mindstellar\security\MessageHold::registerJobs();
     \mindstellar\billing\Receipts::registerJobs();
+    \mindstellar\user\SignUpMail::registerJobs();
     \mindstellar\webhook\Delivery::register();
 });
 

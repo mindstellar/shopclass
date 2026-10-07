@@ -25,18 +25,10 @@ use mindstellar\api\Response;
 use mindstellar\auth\SignIn;
 
 /**
- * `POST /auth/token` and `POST /auth/sign-out`: a user signs in with their password and gets an
- * access token and a refresh token, swaps the refresh token for new ones, or signs out.
+ * `POST /auth/token` and `POST /auth/sign-out`: password sign-in, refresh and sign-out.
  *
- * Sign-in is the web login's decision (SignIn): the same limit and counter, the same
- * password check and timing for an unknown account, the same ban, confirmation and suspension
- * answers, and the same hooks. There is no captcha, so a blocked account or address answers
- * 429. Admins never sign in here; they use keys.
- *
- * The token endpoint speaks OAuth 2 (RFC 6749): it takes JSON or a form, answers the token
- * members at the top level with `Cache-Control: no-store`, and a refused grant is a 400 with
- * the OAuth `error` (`invalid_grant`, `invalid_request`, `invalid_scope` or
- * `unsupported_grant_type`); Kernel shapes the refusals through OAuthError.
+ * Sign-in uses the web login's rules (SignIn), without a captcha; admins use keys. The token
+ * endpoint speaks OAuth 2 (RFC 6749), and Kernel shapes its refusals through OAuthError.
  */
 final class AuthController
 {
@@ -112,7 +104,6 @@ final class AuthController
             throw ProblemException::from(Problem::validation($missing)->withBodyMember('error', 'invalid_request'));
         }
 
-        osc_run_hook('before_validating_login');
         $signIn = SignIn::attempt($account, $password, false, $request->ip());
         $user   = $signIn->user();
         if ($user !== null) {
@@ -134,9 +125,7 @@ final class AuthController
         }
         WebIdentity::assume($user);
         $grant = $this->refresh->start($user, $scopes, (string) ($input['label'] ?? ''), $request->ip());
-        // The web login passes where it sends the user next; an API sign-in goes nowhere.
-        $url_redirect = '';
-        osc_run_hook('after_login', $user, $url_redirect);
+        SignIn::complete($user);
 
         return $this->tokens->answer($user, $scopes, $grant->family(), $grant);
     }

@@ -18,6 +18,7 @@ use ItemComment;
 use mindstellar\utility\DeferredMail;
 use mindstellar\utility\ViewScope;
 use mindstellar\validation\InvalidException;
+use mindstellar\validation\NotFoundException;
 
 /**
  * What an admin does to a comment: approve, hold, block, unblock, edit, delete. Each fires
@@ -27,6 +28,12 @@ use mindstellar\validation\InvalidException;
  */
 final class CommentModeration
 {
+    /** Each status flag => [its action when true, when false]; StatusFlags orders them. */
+    public const FLAG_ACTIONS = [
+        'blocked' => ['disable', 'enable'],
+        'active'  => ['activate', 'deactivate'],
+    ];
+
     public function __construct(private ItemComment $comments)
     {
     }
@@ -101,6 +108,34 @@ final class CommentModeration
 
             return $updated;
         });
+    }
+
+    /**
+     * Set several status flags at once, all or none: an unblock first, so the author is told
+     * once the comment is live, a block last, and a flag already as asked left alone.
+     *
+     * @param array<string,bool> $flags keys of FLAG_ACTIONS
+     *
+     * @return string[] the actions that ran
+     * @throws NotFoundException for no such comment
+     * @throws \LogicException for an unknown flag
+     */
+    public function applyFlags(int $id, array $flags): array
+    {
+        $row = $this->comments->findByPrimaryKey($id);
+        if (!is_array($row) || $row === []) {
+            throw new NotFoundException(_m('No such comment.'));
+        }
+        $plan = StatusFlags::plan($flags, $row, self::FLAG_ACTIONS);
+        if ($plan !== []) {
+            DeferredMail::transaction(function () use ($plan, $id): void {
+                foreach ($plan as $action) {
+                    $this->{$action}($id);
+                }
+            });
+        }
+
+        return $plan;
     }
 
     /**

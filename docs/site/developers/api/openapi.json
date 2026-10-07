@@ -2,7 +2,7 @@
     "openapi": "3.1.0",
     "info": {
         "title": "Shopclass REST API",
-        "version": "1",
+        "version": "1.0",
         "description": "JSON over HTTPS. Send a credential as `Authorization: Bearer <token>`: `sck_...` for an admin's or a user's key, `scp_...` for a public key, which only reads public data (it may also go in `?api_key=` on a GET), or `sca_...`, a signed-in user's access token from POST /auth/token. Writes accept an `Idempotency-Key` header. Errors are RFC 9457 problem documents. A cookie alone never authenticates a call: theme JavaScript on the site's own pages sends the signed-in user's page token in `X-Shopclass-Token` with the sign-in cookie.",
         "license": {
             "name": "GPL-3.0-or-later",
@@ -27168,6 +27168,21 @@
                             "Request-Id": {
                                 "$ref": "#/components/headers/Request-Id"
                             },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
+                            },
                             "Retry-After": {
                                 "$ref": "#/components/headers/Retry-After"
                             }
@@ -34693,6 +34708,39 @@
                             }
                         }
                     },
+                    "429": {
+                        "description": "Too many requests",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
+                            },
+                            "Retry-After": {
+                                "$ref": "#/components/headers/Retry-After"
+                            }
+                        },
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
                     "500": {
                         "description": "Server error",
                         "headers": {
@@ -35629,6 +35677,21 @@
                         "headers": {
                             "Request-Id": {
                                 "$ref": "#/components/headers/Request-Id"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
                             },
                             "Retry-After": {
                                 "$ref": "#/components/headers/Retry-After"
@@ -37399,7 +37462,7 @@
                             "integer",
                             "null"
                         ],
-                        "description": "Matches across every page; null unless the request sent count=true, and on a page reached by a keyset cursor or a location list."
+                        "description": "Matches across every page; null unless the request sent count=true, and on a page reached by a keyset cursor or a location list. A list that is not paged always has it, equal to its size."
                     },
                     "limit": {
                         "type": "integer"
@@ -37430,21 +37493,6 @@
                 },
                 "required": [
                     "self",
-                    "next"
-                ]
-            },
-            "ListLinks": {
-                "type": "object",
-                "properties": {
-                    "next": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "description": "Null: the list is whole. A later version may page it, so follow next when it is set."
-                    }
-                },
-                "required": [
                     "next"
                 ]
             },
@@ -38088,6 +38136,15 @@
                         ],
                         "description": "The user themself and admins."
                     },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "active",
+                            "pending",
+                            "disabled"
+                        ],
+                        "description": "The user themself and admins. disabled: blocked; pending: not confirmed yet."
+                    },
                     "confirmed": {
                         "type": [
                             "boolean",
@@ -38107,7 +38164,8 @@
                             "string",
                             "null"
                         ],
-                        "description": "The user themself and admins."
+                        "description": "The user themself and admins. RFC 3339, UTC.",
+                        "format": "date-time"
                     },
                     "last_access_ip": {
                         "type": [
@@ -39043,16 +39101,12 @@
             "NewAccount": {
                 "type": "object",
                 "properties": {
-                    "id": {
-                        "type": "integer"
-                    },
                     "confirmed": {
                         "type": "boolean",
                         "description": "False until the link in the activation e-mail is opened."
                     }
                 },
                 "required": [
-                    "id",
                     "confirmed"
                 ]
             },
@@ -39687,12 +39741,16 @@
                             "$ref": "#/components/schemas/Category"
                         }
                     },
+                    "meta": {
+                        "$ref": "#/components/schemas/PageMeta"
+                    },
                     "links": {
-                        "$ref": "#/components/schemas/ListLinks"
+                        "$ref": "#/components/schemas/PageLinks"
                     }
                 },
                 "required": [
                     "data",
+                    "meta",
                     "links"
                 ]
             },
@@ -39705,12 +39763,16 @@
                             "$ref": "#/components/schemas/CustomField"
                         }
                     },
+                    "meta": {
+                        "$ref": "#/components/schemas/PageMeta"
+                    },
                     "links": {
-                        "$ref": "#/components/schemas/ListLinks"
+                        "$ref": "#/components/schemas/PageLinks"
                     }
                 },
                 "required": [
                     "data",
+                    "meta",
                     "links"
                 ]
             },
@@ -39723,12 +39785,16 @@
                             "$ref": "#/components/schemas/Currency"
                         }
                     },
+                    "meta": {
+                        "$ref": "#/components/schemas/PageMeta"
+                    },
                     "links": {
-                        "$ref": "#/components/schemas/ListLinks"
+                        "$ref": "#/components/schemas/PageLinks"
                     }
                 },
                 "required": [
                     "data",
+                    "meta",
                     "links"
                 ]
             },
@@ -39741,12 +39807,16 @@
                             "$ref": "#/components/schemas/Photo"
                         }
                     },
+                    "meta": {
+                        "$ref": "#/components/schemas/PageMeta"
+                    },
                     "links": {
-                        "$ref": "#/components/schemas/ListLinks"
+                        "$ref": "#/components/schemas/PageLinks"
                     }
                 },
                 "required": [
                     "data",
+                    "meta",
                     "links"
                 ]
             },
@@ -39759,12 +39829,16 @@
                             "$ref": "#/components/schemas/Session"
                         }
                     },
+                    "meta": {
+                        "$ref": "#/components/schemas/PageMeta"
+                    },
                     "links": {
-                        "$ref": "#/components/schemas/ListLinks"
+                        "$ref": "#/components/schemas/PageLinks"
                     }
                 },
                 "required": [
                     "data",
+                    "meta",
                     "links"
                 ]
             },
@@ -39777,12 +39851,16 @@
                             "$ref": "#/components/schemas/PersonalKey"
                         }
                     },
+                    "meta": {
+                        "$ref": "#/components/schemas/PageMeta"
+                    },
                     "links": {
-                        "$ref": "#/components/schemas/ListLinks"
+                        "$ref": "#/components/schemas/PageLinks"
                     }
                 },
                 "required": [
                     "data",
+                    "meta",
                     "links"
                 ]
             },
@@ -39795,12 +39873,16 @@
                             "$ref": "#/components/schemas/Alert"
                         }
                     },
+                    "meta": {
+                        "$ref": "#/components/schemas/PageMeta"
+                    },
                     "links": {
-                        "$ref": "#/components/schemas/ListLinks"
+                        "$ref": "#/components/schemas/PageLinks"
                     }
                 },
                 "required": [
                     "data",
+                    "meta",
                     "links"
                 ]
             },
@@ -40740,12 +40822,16 @@
                             "$ref": "#/components/schemas/AdminCategory"
                         }
                     },
+                    "meta": {
+                        "$ref": "#/components/schemas/PageMeta"
+                    },
                     "links": {
-                        "$ref": "#/components/schemas/ListLinks"
+                        "$ref": "#/components/schemas/PageLinks"
                     }
                 },
                 "required": [
                     "data",
+                    "meta",
                     "links"
                 ]
             },
@@ -41582,12 +41668,16 @@
                             "$ref": "#/components/schemas/ApiKey"
                         }
                     },
+                    "meta": {
+                        "$ref": "#/components/schemas/PageMeta"
+                    },
                     "links": {
-                        "$ref": "#/components/schemas/ListLinks"
+                        "$ref": "#/components/schemas/PageLinks"
                     }
                 },
                 "required": [
                     "data",
+                    "meta",
                     "links"
                 ]
             },
@@ -41880,12 +41970,16 @@
                             "$ref": "#/components/schemas/Webhook"
                         }
                     },
+                    "meta": {
+                        "$ref": "#/components/schemas/PageMeta"
+                    },
                     "links": {
-                        "$ref": "#/components/schemas/ListLinks"
+                        "$ref": "#/components/schemas/PageLinks"
                     }
                 },
                 "required": [
                     "data",
+                    "meta",
                     "links"
                 ]
             },
@@ -42053,12 +42147,16 @@
                             "$ref": "#/components/schemas/WebhookEvent"
                         }
                     },
+                    "meta": {
+                        "$ref": "#/components/schemas/PageMeta"
+                    },
                     "links": {
-                        "$ref": "#/components/schemas/ListLinks"
+                        "$ref": "#/components/schemas/PageLinks"
                     }
                 },
                 "required": [
                     "data",
+                    "meta",
                     "links"
                 ]
             },

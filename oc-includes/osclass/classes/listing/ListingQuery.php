@@ -167,8 +167,78 @@ final class ListingQuery
         return Db::select($sql, $params);
     }
 
+    /**
+     * The bare t_item row, or null.
+     *
+     * @return array<string,mixed>|null
+     * @throws \mindstellar\database\DbException
+     */
+    public function find(int $id): ?array
+    {
+        $row = $this->table()->where('pk_i_id', $id)->first();
+
+        return $row === null ? null : Db::stringifyRow($row);
+    }
+
+    /**
+     * Title and description rows of some listings, in one query.
+     *
+     * @param int[]       $ids
+     * @param string|null $locale only this language; every language when null
+     *
+     * @return array<int,array<string,mixed>> fk_i_item_id, fk_c_locale_code, s_title, s_description
+     * @throws \mindstellar\database\DbException
+     */
+    public function descriptions(array $ids, ?string $locale = null): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+        $sql    = 'SELECT fk_i_item_id, fk_c_locale_code, s_title, s_description FROM ' . DB_TABLE_PREFIX . 't_item_description'
+            . ' WHERE fk_i_item_id IN (' . implode(', ', array_fill(0, count($ids), '?')) . ')';
+        $params = array_values($ids);
+        if ($locale !== null) {
+            $sql     .= ' AND fk_c_locale_code = ?';
+            $params[] = $locale;
+        }
+
+        return Db::stringifyRows(Db::select($sql, $params));
+    }
+
+    /**
+     * View counters and the location of some listings, in one query.
+     *
+     * @param int[] $ids
+     *
+     * @return array<int,array<string,mixed>> the t_item_stats counters with the t_item_location columns
+     * @throws \mindstellar\database\DbException
+     */
+    public function statsAndLocations(array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+        $p = DB_TABLE_PREFIX;
+
+        return Db::stringifyRows(Db::select(
+            'SELECT s.i_num_views, s.i_num_spam, s.i_num_bad_classified, s.i_num_repeated, s.i_num_offensive,'
+            . ' s.i_num_expired, s.i_num_premium_views, l.*'
+            . ' FROM ' . $p . 't_item_stats s INNER JOIN ' . $p . 't_item_location l ON s.fk_i_item_id = l.fk_i_item_id'
+            . ' WHERE s.fk_i_item_id IN (' . implode(', ', array_fill(0, count($ids), '?')) . ')',
+            array_values($ids)
+        ));
+    }
+
+    /**
+     * The listing table's full name, for SQL fragments the search compiler takes.
+     */
+    public static function tableName(): string
+    {
+        return DB_TABLE_PREFIX . 't_item';
+    }
+
     private function table(): QueryBuilder
     {
-        return Db::table(DB_TABLE_PREFIX . 't_item');
+        return Db::table(self::tableName());
     }
 }

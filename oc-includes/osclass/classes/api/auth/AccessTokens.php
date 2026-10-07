@@ -18,7 +18,6 @@ use mindstellar\apiaccess\KeyCheck;
 use mindstellar\apiaccess\KeyOwner;
 use mindstellar\apiaccess\Scopes;
 use mindstellar\auth\AuthStamp;
-use mindstellar\model\ApiCredential;
 use mindstellar\security\SignedPayload;
 use mindstellar\user\UserStore;
 
@@ -39,12 +38,12 @@ final class AccessTokens
 
     private const PURPOSE = 'api-access';
 
-    /** @var \Closure(string): bool */
-    private \Closure $familyLive;
+    /** @var \Closure(string): bool|null */
+    private ?\Closure $familyLive;
 
     /**
      * @param int           $ttl        seconds a token lives
-     * @param callable|null $familyLive (family) => whether the sign-in still has a live refresh token; t_api_credential by default
+     * @param callable|null $familyLive (family) => whether the sign-in still has a live refresh token; by default checked in the same query as the user
      */
     public function __construct(
         private Scopes $scopes,
@@ -52,7 +51,7 @@ final class AccessTokens
         private int $ttl = self::TTL,
         ?callable $familyLive = null
     ) {
-        $this->familyLive = \Closure::fromCallable($familyLive ?? static fn (string $family): bool => (new ApiCredential())->familyIsLive($family));
+        $this->familyLive = $familyLive === null ? null : \Closure::fromCallable($familyLive);
     }
 
     public static function looksLikeToken(string $token): bool
@@ -109,10 +108,14 @@ final class AccessTokens
         if ($opened['expired']) {
             return KeyCheck::stale(true);
         }
-        $user = $this->users->find($data['sub']);
-        if ($user === null || !UserStore::isLive($user)
+        if ($this->familyLive === null) {
+            [$user, $familyLive] = $this->users->findWithFamily($data['sub'], $data['fam']);
+        } else {
+            $user       = $this->users->find($data['sub']);
+            $familyLive = $user !== null && ($this->familyLive)($data['fam']);
+        }
+        if ($user === null || !$familyLive || !UserStore::isLive($user)
             || !hash_equals(AuthStamp::fingerprint($user), $data['st'])
-            || !($this->familyLive)($data['fam'])
         ) {
             return KeyCheck::stale(false);
         }

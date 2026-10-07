@@ -56,7 +56,8 @@ Every `Location` can be read with `GET`.
 | `POST /listings/{id}/comments` | `/comments/{id}` |
 | `POST /account/alerts` | `/account/alerts/{id}` |
 | `POST /account/keys` | `/account/keys/{id}` |
-| `POST /users` | `/users/{id}`, which is a `404` until the account is confirmed |
+
+`POST /users` has no `Location` either: see [Sign up](#sign-up).
 
 `POST /photos` answers `200`, not `201`, and has no `Location`. A staged token is not a
 resource you can read back.
@@ -266,8 +267,13 @@ address**. With it off, `photo_urls` is a `422` on `/photo_urls`: upload to `/ph
 The site downloads each address itself:
 
 - Only public `http` and `https` addresses on their usual ports. Private and local addresses are refused.
-- Redirects are not followed. A download stops after 15 seconds and at the site's largest photo size.
+- Redirects are not followed. A download stops after 15 seconds, when it stays below 1 KB a second
+  for 5 seconds, and at the site's largest photo size.
+- All downloads of one request share 30 seconds. An address reached after that is a `422` with code
+  `timeout` on `/photo_urls/<n>`.
 - One bad address fails the whole request with a `422` on `/photo_urls/<n>`. Nothing is saved.
+- Downloads happen before an `If-Match` check, so a `412` can still cost a download. A write that
+  is refused after the downloads keeps none of them.
 - Each download counts toward 30 an hour per user on `PATCH`. See [Limits](#limits).
 
 ## Comments
@@ -325,6 +331,7 @@ curl -i -X POST $API/account/alerts \
 |---|---|
 | Filters | `q`, `category`, `country`, `region`, `city`, `city_area`, `user`, `locale`, `price_min`, `price_max`, `with_photos`, `premium`, `custom_field`. At least one. |
 | Same search again | Answers `200` with the saved one, not a second `201`. |
+| Limit | A user keeps at most 20 saved searches; the site owner can change it. One more is `422 validation_failed` at `/`. |
 | `type` | How often it mails: `instant`, `hourly`, `daily` or `weekly`. |
 | List and stop | `GET /account/alerts`, `DELETE /account/alerts/{id}` (`204`). |
 | Shown on the web | The same search appears on the account's alerts page. |
@@ -340,15 +347,46 @@ curl -i -X POST $API/users -H "Content-Type: application/json" \
 ```
 
 ```json
-{ "data": { "id": 31, "confirmed": false } }
+{ "data": { "confirmed": false } }
 ```
 
 `confirmed` is `false` until the link in the activation e-mail is opened. The user cannot sign in
-before that. Optional: `username`, `phone_land`, `phone_mobile`. A site that is off answers
+before that. An e-mail that already has an account gets the same `201` and body, and no account
+is made, so sign-up does not tell which addresses are taken. A `username` sent with a taken
+e-mail is held as a new account would hold it, so a later sign-up meets it taken either way.
+Optional: `username`, `phone_land`, `phone_mobile`. A site that is off answers
 `403 feature_disabled`. A banned e-mail or address answers `403 banned`.
+
+The sign-up e-mails are sent from the [job queue](/docs/developers/jobs/), so they arrive when
+cron next runs. This keeps a new address from answering slower than a taken one. The queue holds
+only the account id for the activation e-mail; its link is made when the job runs.
+
+The hiding needs the activation e-mail. If the site switches off **Users need to validate their
+account**, a new account can sign in at once and a taken e-mail cannot, so a caller can tell them
+apart.
 
 There is no captcha to show, so sign-up is limited: **5 per address and 100 for the whole
 site an hour**. If the site cannot count, it refuses.
+
+## Editing safely with If-Match
+
+To avoid overwriting a change made meanwhile, send the `ETag` of your last `GET` in
+`If-Match` on a `PATCH` or `DELETE`. If the resource changed you get `412 precondition_failed`.
+
+- `If-Match: *` only checks that the resource exists. If it is gone, the write answers as its
+  `GET` does (`404`) and runs nothing.
+- A tag a proxy made weak (`W/"…"`) still matches.
+- A caller who can `PATCH` or `DELETE` a listing, comment, photo, the account, a user, key, saved
+  search, category, field, currency or location gets an `ETag` that holds the stored version
+  (`"<version>.<hash>"`). Any `GET` of the path works, whatever its `fields`, `include` or
+  `locale`. For a listing or comment that means its owner, or an admin key.
+- Other callers get a plain hash of the body. Use the tag of the plain `GET`, with no `fields`
+  or `include`.
+- The check and the write run as one, so no other write can land between them.
+- A `PATCH` sent with `If-Match` answers with the new `ETag`, ready for the next edit.
+- A credential that cannot read the path's `GET` is refused, as the check cannot be made. A
+  resource it cannot see answers `404`, never `412`.
+- Without `If-Match` the write is never refused.
 
 ## Retrying safely with Idempotency-Key
 

@@ -63,8 +63,9 @@ An event is sent whichever way the change was made: the web, the admin or the AP
 | `data` | The resource, or its id for a delete. |
 | `thin` | Present and `true` only when the body was cut down. See below. |
 
-- **`data` is the public view.** It is what an anonymous `GET` of the same resource
-  returns, in the site's default language. An e-mail address or phone number appears only
+- **`data` is the public view.** It is what an anonymous `GET /api/v1/` of the same
+  resource returns, in the site's default language. It stays in the v1 shape when a newer
+  API version ships. An e-mail address or phone number appears only
   where that public view shows one. For anything more, call the API with your own key.
 - **A deleted resource has its id only.**
 - **A big body is sent thin.** Over about 64 KB, `data` holds only `id` and `url`, and

@@ -59,15 +59,32 @@ final class RateLimit extends Model
      */
     public static function increment(string $context, string $key, int $windowSeconds = 60, bool $failOpen = true): ?int
     {
+        return self::add($context, $key, 1, $windowSeconds, $failOpen);
+    }
+
+    /**
+     * Count $by requests for $key at once and return the count in the current window.
+     *
+     * @param string $context as for hit()
+     * @param string $key
+     * @param int    $by      requests to add; at least 1
+     * @param int    $windowSeconds
+     * @param bool   $failOpen only changes how an unreachable counter is logged
+     *
+     * @return int|null null when the counter cannot be reached
+     */
+    public static function add(string $context, string $key, int $by, int $windowSeconds = 60, bool $failOpen = true): ?int
+    {
+        $by            = max(1, $by);
         $windowSeconds = max(1, $windowSeconds);
         $now           = time();
         $window        = $now - ($now % $windowSeconds);
         $bucket        = self::bucket($context, $key, $windowSeconds);
 
         // LAST_INSERT_ID(expr) hands the new count back with the insert; a fresh row reports 0.
-        $sql = 'INSERT INTO ' . self::tableName() . ' (s_bucket, i_window, i_expires, i_count) VALUES (?, ?, ?, 1)'
-            . ' ON DUPLICATE KEY UPDATE i_count = LAST_INSERT_ID(i_count + 1)';
-        $params = array($bucket, $window, $window + $windowSeconds);
+        $sql = 'INSERT INTO ' . self::tableName() . ' (s_bucket, i_window, i_expires, i_count) VALUES (?, ?, ?, ?)'
+            . ' ON DUPLICATE KEY UPDATE i_count = LAST_INSERT_ID(i_count + ?)';
+        $params = array($bucket, $window, $window + $windowSeconds, $by, $by);
 
         try {
             try {
@@ -82,7 +99,7 @@ final class RateLimit extends Model
             return null;
         }
 
-        return max(1, $count);
+        return max($by, $count);
     }
 
     /**

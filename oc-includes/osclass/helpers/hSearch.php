@@ -424,7 +424,7 @@ function osc_search_alert()
  * @param string $email ignored when a user is signed in
  *
  * @return int 1 done, 0 not saved, -1 bad email or inactive user, -2 bad alert, -4 sign-in required,
- *             -5 too many from this address
+ *             -5 too many from this address, or the user keeps the most saved searches allowed
  */
 function osc_subscribe_alert(string $token, string $email): int
 {
@@ -438,11 +438,15 @@ function osc_subscribe_alert(string $token, string $email): int
         return -2;
     }
 
-    $userid = 0;
     if (osc_is_web_user_logged_in()) {
-        $userid = osc_logged_user_id();
-        $user   = User::getInstance()->findByPrimaryKey($userid);
-        $email  = (string)$user['s_email'];
+        $saved = (new \mindstellar\search\UserAlerts())->subscribe((int) osc_logged_user_id(), $alert);
+
+        return match ($saved['status']) {
+            \mindstellar\search\UserAlerts::CREATED => 1,
+            \mindstellar\search\UserAlerts::REFUSED => -1,
+            \mindstellar\search\UserAlerts::LIMIT   => -5,
+            default                                  => 0,
+        };
     }
     if ($alert == '' || $email === '') {
         return 0;
@@ -451,29 +455,17 @@ function osc_subscribe_alert(string $token, string $email): int
         return -1;
     }
     // A guest's alert mails a confirmation to any address, so it is limited and ban-checked.
-    if ((int)$userid === 0) {
-        if (osc_is_banned($email) !== 0) {
-            return -1;
-        }
-        if (\mindstellar\security\ActionThrottle::exceededFor('alert_subscribe')) {
-            return -5;
-        }
+    if (osc_is_banned($email) !== 0) {
+        return -1;
+    }
+    if (\mindstellar\security\ActionThrottle::exceededFor('alert_subscribe')) {
+        return -5;
     }
 
     $secret  = osc_genRandomPassword();
-    $alertID = Alerts::getInstance()->createAlert($userid, $email, $alert, $secret);
+    $alertID = Alerts::getInstance()->createAlert(0, $email, $alert, $secret);
     if (!$alertID) {
         return 0;
-    }
-    if ((int)$userid > 0) {
-        $user = User::getInstance()->findByPrimaryKey($userid);
-        if ($user['b_active'] == 1 && $user['b_enabled'] == 1) {
-            Alerts::getInstance()->activate($alertID);
-
-            return 1;
-        }
-
-        return -1;
     }
 
     \mindstellar\security\ActionThrottle::record('alert_subscribe');

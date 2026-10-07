@@ -25,13 +25,14 @@ class of error and on `code` for the exact case.
 | `type` | A link to the code's entry on this page. |
 | `title` | The same text for every case of a code. |
 | `status` | The HTTP status, repeated. |
-| `detail` | What went wrong this time. For people: do not parse it. |
+| `detail` | What went wrong this time, for people. It may be in the site's language. Do not parse it. |
 | `code` | The stable machine name. Match on this. |
 | `instance` | `urn:request:<id>`: the same id as the `Request-Id` response header. Quote it when you report a problem. |
 | `errors` | On `422` only: one entry per bad field. |
 | `error` | At `POST /auth/token` only: the OAuth 2 error, the same as `code`. |
 
-Codes do not change inside v1. `detail` wording may.
+Codes do not change inside v1. `detail` wording and language may: branch on `code`, never on
+`detail`. Plugin endpoints may answer their own codes, named `ext_<slug>_<name>`.
 
 Every response carries a `Request-Id` header. Send your own `Request-Id` or `X-Request-Id` (8 to 64 characters from `A-Za-z0-9._-`) and it is echoed back.
 
@@ -58,198 +59,100 @@ A `422 validation_failed` lists every problem at once in `errors`:
 | `pointer` | The field, as a [JSON Pointer](https://www.rfc-editor.org/rfc/rfc6901): `/limit`, or `/price/amount` for a nested body field. Empty means the whole input. |
 | `code` | `type`, `enum`, `minimum`, `maximum`, `minLength`, `maxLength`, `pattern`, `format`, `minItems`, `maxItems`, `required` or `additionalProperties`. Writes add `invalid`, `unknown`, `limit`, `mismatch`, `minProperties` and `rejected` (the web form's own message). |
 | `message` | What is wrong with it. |
-| `in` | `query` or `body`: where the field was. |
+| `in` | `query` or `body`: where the field was. Always present. |
 
 ## Codes
 
-### 400 Bad request
+Each code's `type` link points at its anchor here.
 
-#### `invalid_json`
+| Code | Status | Meaning |
+|---|---|---|
+| <a id="invalid_json"></a>`invalid_json` | 400 | The body is not valid JSON, or not a JSON object. |
+| <a id="invalid_cursor"></a>`invalid_cursor` | 400 | The `cursor` is forged, over a day old, or made for other filters, sort or order. Start again and follow `links.next`. |
+| <a id="invalid_header"></a>`invalid_header` | 400 | A malformed header: an `Idempotency-Key` that is empty, over 255 characters, or not plain visible ASCII. |
+| <a id="banned"></a>`banned` | 403 | A ban rule matches the account, its e-mail or the address. Covers every call with a user's token, key or session, sign-up, and posting. |
+| <a id="feature_disabled"></a>`feature_disabled` | 403 | The site has user accounts, API sign-up, personal keys or comments switched off. |
+| <a id="forbidden"></a>`forbidden` | 403 | Any other refusal: making or rotating a key with a scope the admin key lacks, rotating another admin's key, or an account that cannot save alerts. |
+| <a id="insufficient_scope"></a>`insufficient_scope` | 403 | The key lacks the endpoint's scope. `WWW-Authenticate` names it: `Bearer error="insufficient_scope", scope="admin:users"`. |
+| <a id="not_owner"></a>`not_owner` | 403 | The resource is real and live but belongs to someone else, such as another user's listing or comment. |
+| <a id="cross_origin"></a>`cross_origin` | 403 | A page-token call that did not come from the site's own pages: another `Origin`, a `Sec-Fetch-Site` other than `same-origin`, or neither. |
+| <a id="api_disabled"></a>`api_disabled` | 403 | The site owner switched the API off. |
+| <a id="not_found"></a>`not_found` | 404 | No such endpoint, API version or record. Also a pending, disabled or spam listing, a disabled user, an unapproved comment that is not the caller's, and a photo, key or saved search that is not the caller's. |
+| <a id="method_not_allowed"></a>`method_not_allowed` | 405 | The path exists but not for this method. `Allow` lists the methods that work. |
+| <a id="idempotency_in_flight"></a>`idempotency_in_flight` | 409 | A request with the same `Idempotency-Key` is still running. `Retry-After: 1`. |
+| <a id="too_large"></a>`too_large` | 413 | The body is over 1 MB, or a photo is over the site's largest photo size or 16 MB. |
+| <a id="unsupported_media_type"></a>`unsupported_media_type` | 415 | The body is not `application/json` (or `application/merge-patch+json` on `PATCH`). A photo is `multipart/form-data` in a field named `photo`, or the image itself. |
+| <a id="idempotency_key_reused"></a>`idempotency_key_reused` | 422 | The same `Idempotency-Key` was sent with a different request. |
+| <a id="listing_limit"></a>`listing_limit` | 422 | The user has reached the site's listing limit. `detail` says what it is. |
+| <a id="login_blocked"></a>`login_blocked` | 429 | Too many wrong passwords for this account or address, at `POST /auth/token`, `POST /account/password` or `POST /account/keys`. See `Retry-After`. |
+| <a id="too_many_failures"></a>`too_many_failures` | 429 | Too many wrong keys from this address in 15 minutes. `Retry-After: 900`. See [lockout](/docs/developers/api/authentication/#lockout-after-failed-keys). |
+| <a id="server_error"></a>`server_error` | 500 | The site hit an error; the cause is in the server's error log. Retry later. |
+| <a id="maintenance"></a>`maintenance` | 503 | The site is in maintenance mode. `Retry-After: 900`. |
 
-The body is not valid JSON, or not a JSON object. Every endpoint that takes a body can return it.
+### `invalid_request`, `invalid_grant`, `invalid_scope`, `unsupported_grant_type`
 
-#### `invalid_cursor`
+<a id="invalid_request"></a><a id="invalid_grant"></a><a id="invalid_scope"></a><a id="unsupported_grant_type"></a>
 
-The `cursor` is forged, more than a day old, or was made for other filters, sort or order. Start again from the
-first page and follow `links.next`.
-
-#### `invalid_header`
-
-A request header is malformed. Today that is an `Idempotency-Key` that is empty, over 255
-characters, or not plain visible ASCII.
-
-#### `invalid_request`, `invalid_grant`, `invalid_scope`, `unsupported_grant_type`
-
-Only from `POST /auth/token`, which answers as OAuth 2 asks (RFC 6749 §5.2): `invalid_request`
+400. Only from `POST /auth/token`, which answers as OAuth 2 asks (RFC 6749 §5.2): `invalid_request`
 for a body that is missing members or cannot be read, `invalid_grant` for a wrong password, a
 bad or reused refresh token, or an account that may not sign in, `invalid_scope` for a `scope`
 naming no user scope, and `unsupported_grant_type` for a `grant_type` other than `password` or
 `refresh_token`. The body also has the same `error` member.
 
-### 401 Unauthorized
+### `unauthorized`
 
-#### `unauthorized`
-
-No key, or a key or token the site refused. The reason is never given. The answer carries
+401. No key, or a key or token the site refused. The reason is never given. The answer carries
 `WWW-Authenticate: Bearer` (nothing sent) or `Bearer error="invalid_token"` (something was sent).
 
-#### `token_expired`
+### `token_expired`
 
-An access token was genuine but has run out. Swap the refresh token for a new one and retry
+401. An access token was genuine but has run out. Swap the refresh token for a new one and retry
 the call. For a page token, reload the page. It is not counted as a failed guess. The answer carries
 `WWW-Authenticate: Bearer error="invalid_token", error_description="The access token expired"`.
 See [Authentication](/docs/developers/api/authentication/#access-tokens).
 
-#### `session_required`
+### `session_required`
 
-A call with a page token (`X-Shopclass-Token`) whose sign-in cookie is missing or not valid,
+401. A call with a page token (`X-Shopclass-Token`) whose sign-in cookie is missing or not valid,
 whose page token belongs to another user or an old password, or whose user is suspended or not
 confirmed. Reload the page. See
 [Same-site session](/docs/developers/api/authentication/#same-site-session-theme-javascript).
 
-### 403 Forbidden
+### `wrong_credential`
 
-#### `wrong_credential`
-
-The endpoint needs another kind of credential: an admin key, a full admin's key (not a
+403. The endpoint needs another kind of credential: an admin key, a full admin's key (not a
 moderator's), a user's token or key, an access token (to change the password or sign out), or
 a same-site session call. Posting or commenting where the site allows only signed-in users
 also answers this.
 
-#### `banned`
+### `conflict`
 
-A ban rule matches the account, its e-mail or the address. It covers every call made with a
-user's token, key or session, sign-up, and posting a listing or comment.
-
-#### `feature_disabled`
-
-The site has the feature switched off: user accounts, sign-up through the API, personal keys
-or comments.
-
-#### `forbidden`
-
-Any other refusal: an admin key making or rotating a key with a scope it does not hold,
-rotating another admin's key, or an account that cannot save alerts.
-
-#### `insufficient_scope`
-
-The key lacks the scope the endpoint needs. `WWW-Authenticate` names it:
-`Bearer error="insufficient_scope", scope="admin:users"`.
-
-#### `not_owner`
-
-The resource is real and live, but belongs to someone else: another user's listing or comment.
-
-#### `cross_origin`
-
-A call with a page token that did not come from the site's own pages: another `Origin`, a
-`Sec-Fetch-Site` other than `same-origin`, or no sign of where it came from.
-
-#### `api_disabled`
-
-The site owner switched the API off. Nothing a client can do.
-
-### 404 Not found
-
-#### `not_found`
-
-No such endpoint, API version or record. A pending, disabled or spam listing and a disabled user
-are also `404`. So is a comment that is not approved
-and not the caller's own, and a photo, key or saved search that is not the caller's.
-
-### 405 Method not allowed
-
-#### `method_not_allowed`
-
-The path exists but not for this method. `Allow` lists the methods that work.
-
-### 409 Conflict
-
-#### `conflict`
-
-The request clashes with the current state:
+409. The request clashes with the current state:
 
 - a stored `Idempotency-Key` answer that cannot be read
 - an [admin action](/docs/developers/api/admin/) the state refuses: activating a blocked
   listing, deleting a currency a listing uses or the site defaults to, revoking a key that is
   already revoked
 
-#### `idempotency_in_flight`
+### `precondition_failed`
 
-A request with the same `Idempotency-Key` is still running. `Retry-After: 1`. Send the call again
-in a moment.
+412. The resource changed since the `If-Match` value you sent. `GET` it again and retry. See
+[Writes](/docs/developers/api/writes/#editing-safely-with-if-match).
 
-### 412 Precondition failed
+### `validation_failed`
 
-#### `precondition_failed`
-
-The resource changed since the `If-Match` value you sent. `PATCH` and `DELETE` on a path that
-has a `GET` check it: send the `ETag` of your last `GET` of that resource, or `*` for any
-existing one. `GET` it again and retry. Without `If-Match` the write is never refused. It is
-also refused when your credential cannot read the path's `GET`, as the check cannot be made.
-A resource your credential cannot see answers `404`, never `412`.
-
-### 413 Payload too large
-
-#### `too_large`
-
-The body is over 1 MB, or a photo is over the site's largest photo size or 16 MB.
-
-### 415 Unsupported media type
-
-#### `unsupported_media_type`
-
-The body was not sent as `application/json` (or `application/merge-patch+json` on `PATCH`). A
-photo must come as `multipart/form-data` in a field named `photo`, or as the image itself.
-
-### 422 Unprocessable
-
-#### `validation_failed`
-
-A query or body value broke a rule. Read `errors`. For listing searches this includes an
+422. A query or body value broke a rule. Read `errors`. For listing searches this includes an
 unknown `category`, a query parameter the endpoint does not take (`api_key` always works), a `limit` outside 1 to the site's maximum, and an unknown `locale`. For
 writes it also covers the web form's own refusals: a missing field, an unknown place, an
 unknown or expired `photo_tokens` entry, a wrong `current_password`, or a language the site
 does not have. A write refused by the form has `code: "rejected"` on each entry in `errors`.
 
-#### `idempotency_key_reused`
+### `rate_limited`
 
-The same `Idempotency-Key` was sent with a different request. Use a new key for a different
-request.
-
-#### `listing_limit`
-
-The user has reached the site's listing limit. `detail` says what the limit is.
-
-### 429 Too many requests
-
-#### `rate_limited`
-
-Over a rate limit: the per-minute limits, or an hourly cap on listings, comments, photo
+429. Over a rate limit: the per-minute limits, or an hourly cap on listings, comments, photo
 downloads, e-mail changes or sign-ups. Wait `Retry-After` seconds. See
 [rate limits](/docs/developers/api/authentication/#rate-limits) and
 [write limits](/docs/developers/api/writes/#limits).
-
-#### `login_blocked`
-
-Too many wrong passwords for this account or address, at `POST /auth/token`, `POST /account/password`
-or `POST /account/keys`. `Retry-After` says how long.
-
-#### `too_many_failures`
-
-Too many wrong keys from this address in 15 minutes. `Retry-After: 900`. See
-[lockout](/docs/developers/api/authentication/#lockout-after-failed-keys).
-
-### 500 and 503
-
-#### `server_error`
-
-The site hit an error. The cause is in the server's error log, not in the answer. Retry
-later; report it if it persists.
-
-#### `maintenance`
-
-The site is in maintenance mode. `Retry-After: 900`.
 
 ## Handling errors
 

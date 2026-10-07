@@ -21,12 +21,14 @@ use mindstellar\auth\SignOut;
 use mindstellar\database\Db;
 use mindstellar\listing\ListingService;
 use mindstellar\location\LocationService;
+use mindstellar\moderation\StatusFlags;
 use mindstellar\security\ActionToken;
 use mindstellar\security\RateLimit;
 use mindstellar\utility\DeferredMail;
 use mindstellar\utility\Sanitize;
 use mindstellar\validation\BlockedException;
 use mindstellar\validation\ConflictException;
+use mindstellar\validation\ForbiddenException;
 use mindstellar\validation\InvalidException;
 use mindstellar\validation\NotFoundException;
 
@@ -65,6 +67,12 @@ final class AccountService
     /** E-mail changes a user may ask for in an hour. */
     public const EMAIL_CHANGES = 5;
 
+    /** Each state flag => [its action when true, when false]; StatusFlags orders them. */
+    public const FLAG_ACTIONS = [
+        'blocked' => ['disable', 'enable'],
+        'active'  => ['activate', 'deactivate'],
+    ];
+
     private \User $users;
     private Sanitize $sanitize;
     private ?ListingService $listings;
@@ -81,19 +89,28 @@ final class AccountService
 
     /**
      * Make an account from the sign-up form, as AccountInput::signUp() reads it, or from the
-     * users screen when the actor is an admin. Fires `register_email_taken`, the
-     * `user_add_flash_error` filter and `user_register_failed` on a refusal; otherwise
-     * `pre_user_post`, the new-user e-mail hooks and `user_register_completed`.
+     * users screen when the actor is an admin. A visitor's sign-up first needs users and
+     * sign-ups switched on, fires `before_user_register`, and is refused for a banned e-mail
+     * or address. Fires `register_email_taken`, the `user_add_flash_error` filter and
+     * `user_register_failed` on a refusal; otherwise `pre_user_post`, the new-user e-mail
+     * hooks and `user_register_completed`.
      *
      * @param array<string,mixed> $form
      * @param bool                $captchaPassed false when the form's captcha was not solved
+     * @param bool                $hideTaken     answer a taken e-mail as a new one, with id 0 and
+     *                                           nothing made, so the answer does not tell it is taken;
+     *                                           a new account's e-mails then go through the job queue
      *
      * @return array{id:int,active:bool} active is false while the activation link waits
      * @throws InvalidException with the form's messages, one per line
+     * @throws ForbiddenException DISABLED when sign-ups are off, BANNED for a ban rule
      */
-    public function register(array $form, Actor $actor, bool $captchaPassed = true): array
+    public function register(array $form, Actor $actor, bool $captchaPassed = true, bool $hideTaken = false): array
     {
         $admin  = $actor->isAdmin();
+        if (!$admin) {
+            self::signUpGate((string) ($form['s_email'] ?? ''), $actor->ip());
+        }
         $flash  = '';
         $codes  = [];
         $refuse = static function (string $message, int $code) use (&$flash, &$codes): void {
@@ -129,9 +146,14 @@ final class AccountService
             $flash  .= $tooLong;
             $codes[] = 11;
         }
+        $taken = false;
         if ($this->users->findByEmail($input['s_email']) != false) {
             osc_run_hook('register_email_taken', $input['s_email']);
-            $refuse(_m('The specified e-mail is already in use'), 3);
+            if ($hideTaken && !$admin) {
+                $taken = true;
+            } else {
+                $refuse(_m('The specified e-mail is already in use'), 3);
+            }
         }
         $username = (string) $input['s_username'];
         if ($username !== '') {
@@ -140,6 +162,9 @@ final class AccountService
                 $refuse($numeric, 13);
             } elseif (osc_is_username_blacklisted($username)) {
                 $refuse(_m('The specified username is not valid, it contains some invalid words'), 9);
+            } elseif (UserStore::usernameTaken($username, 0, $admin)) {
+                // Checked here as well as when claimed, so a taken e-mail refuses it the same way.
+                $refuse(_m('Username is already taken'), 8);
             }
         }
 
@@ -148,6 +173,15 @@ final class AccountService
             osc_run_hook('user_register_failed', $codes);
 
             throw self::refusal($flash);
+        }
+        if ($taken) {
+            if ($username !== '') {
+                // A new e-mail would have claimed the name, so hold it the same way.
+                Usernames::hold($username);
+            }
+            osc_run_hook('user_register_failed', [3]);
+
+            return ['id' => 0, 'active' => !osc_user_validation_enabled()];
         }
 
         osc_run_hook('pre_user_post');
@@ -160,7 +194,11 @@ final class AccountService
 
         $failed = 12;
         try {
-            return DeferredMail::transaction(function () use ($input, $info, $username, $activation, $admin, $actor, &$failed): array {
+            // A hidden sign-up sends from the queue, so a new e-mail answers as fast as a taken one.
+            $hidden = $hideTaken && !$admin;
+            $send   = $hidden ? [SignUpMail::class, 'queue'] : null;
+
+            return DeferredMail::transaction(function () use ($input, $info, $username, $activation, $admin, $actor, $hidden, &$failed): array {
                 $userId = (int) $this->users->insertGetId($input);
                 if ($userId <= 0) {
                     trigger_error('User insert produced no row; registration aborted.', E_USER_WARNING);
@@ -170,7 +208,7 @@ final class AccountService
                 if ($username === '') {
                     $input['s_username'] = Usernames::assignDefault($userId);
                 } else {
-                    $claim = Usernames::claim($userId, $username);
+                    $claim = Usernames::claim($userId, $username, $admin);
                     if ($claim !== 'ok') {
                         $failed = $claim === 'taken' ? 8 : 12;
 
@@ -188,7 +226,10 @@ final class AccountService
                     osc_run_hook('hook_email_admin_new_user', $user);
                 }
                 $active = $admin || !osc_user_validation_enabled();
-                if (!$active) {
+                if (!$active && $hidden) {
+                    // The queue holds only the id; the job mails a code made when it runs.
+                    SignUpMail::queueActivation($userId);
+                } elseif (!$active) {
                     $input['s_secret'] = $activation;
                     osc_run_hook('hook_email_user_validation', $user, $input);
                 } else {
@@ -202,11 +243,44 @@ final class AccountService
                 osc_run_hook('user_register_completed', $userId);
 
                 return ['id' => $userId, 'active' => $active];
-            });
+            }, $send);
         } catch (InvalidException $e) {
             osc_run_hook('user_register_failed', [$failed]);
 
             throw $e;
+        }
+    }
+
+    /**
+     * Why the site takes no sign-ups now, or null when it takes them.
+     */
+    public static function signUpOpen(): ?string
+    {
+        if (!osc_users_enabled()) {
+            return _m('Users are not enabled');
+        }
+        if (!osc_user_registration_enabled()) {
+            return _m('User registration is not enabled');
+        }
+
+        return null;
+    }
+
+    /**
+     * What a visitor's sign-up must pass before its form is read.
+     *
+     * @throws ForbiddenException
+     */
+    private static function signUpGate(string $email, string $ip): void
+    {
+        $closed = self::signUpOpen();
+        if ($closed !== null) {
+            throw new ForbiddenException($closed, ForbiddenException::DISABLED);
+        }
+        osc_run_hook('before_user_register');
+        $banned = (int) osc_is_banned(trim($email), $ip !== '' ? $ip : null);
+        if ($banned !== 0) {
+            throw new ForbiddenException(($banned & 1) ? _m('Your current email is not allowed') : _m('Your current IP is not allowed'), ForbiddenException::BANNED);
         }
     }
 
@@ -268,7 +342,7 @@ final class AccountService
         }
 
         return (int) DeferredMail::transaction(function () use ($userId, $form, $input, $admin, $actor, $newUsername, $newPassword): int {
-            $claim = $newUsername !== null ? Usernames::claim($userId, $newUsername) : 'ok';
+            $claim = $newUsername !== null ? Usernames::claim($userId, $newUsername, $admin) : 'ok';
             if ($claim === 'taken') {
                 throw self::refusal(_m('The specified username is already in use'));
             }
@@ -299,12 +373,8 @@ final class AccountService
 
             osc_run_hook('user_edit_completed', $userId);
 
-            if ($admin) {
-                $changed = (int) $this->users->update(['b_enabled' => empty($form['b_enabled']) ? 0 : 1], ['pk_i_id' => $userId])
-                    + (int) $this->users->update(['b_active' => empty($form['b_active']) ? 0 : 1], ['pk_i_id' => $userId]);
-                if ($changed > 0) {
-                    return 2;
-                }
+            if ($admin && $this->applyFlags($userId, ['blocked' => empty($form['b_enabled']), 'active' => !empty($form['b_active'])], $actor) !== []) {
+                return 2;
             }
 
             return 1;
@@ -619,15 +689,48 @@ final class AccountService
     }
 
     /**
+     * Set several state flags at once, all or none, with each action's hooks and listings: an
+     * unblock first, so the listings come back with an activation, a block last, and a flag
+     * already as asked left alone.
+     *
+     * @param array<string,bool> $flags `blocked` and `active`
+     *
+     * @return string[] the actions that ran
+     * @throws NotFoundException for no such user
+     * @throws \LogicException for an unknown flag
+     * @throws \RuntimeException when a change fails
+     */
+    public function applyFlags(int $userId, array $flags, Actor $actor): array
+    {
+        $user = $this->users->findByPrimaryKey($userId);
+        if (!is_array($user) || empty($user['pk_i_id'])) {
+            throw new NotFoundException(_m('No such user.'));
+        }
+        $plan = StatusFlags::plan($flags, $user, self::FLAG_ACTIONS);
+        if ($plan !== []) {
+            DeferredMail::transaction(function () use ($plan, $userId, $actor): void {
+                foreach ($plan as $action) {
+                    if (!$this->{$action}($userId, $actor)) {
+                        throw new \RuntimeException('The user could not be changed.');
+                    }
+                }
+            });
+        }
+
+        return $plan;
+    }
+
+    /**
      * Send a new activation link to an account not yet active, when the site asks for one.
      * The account's own request waits RESEND_WAIT seconds between links and tells the admin
      * as a sign-up does. Fires `hook_email_user_validation`.
      *
      * @param bool $selfService the account holder asked, not an admin or the API
+     * @param (callable(array<string,mixed>): mixed)|null $send sends one e-mail; osc_sendMail() by default
      *
      * @return bool whether a link went out
      */
-    public function resendActivation(int $userId, bool $selfService = false): bool
+    public function resendActivation(int $userId, bool $selfService = false, ?callable $send = null): bool
     {
         $user = $this->users->findByPrimaryKey($userId);
         if (!$user || (int) $user['b_active'] === 1 || !osc_user_validation_enabled()) {
@@ -648,7 +751,7 @@ final class AccountService
             osc_run_hook('hook_email_user_validation', $user, $user);
 
             return true;
-        });
+        }, $send);
     }
 
     /**

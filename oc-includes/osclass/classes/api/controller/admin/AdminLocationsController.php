@@ -47,7 +47,7 @@ final class AdminLocationsController
         $code  = strtoupper((string) $input['country']);
         $id    = (int) $this->write(fn () => $this->locations->addRegion($code, AdminText::clean($input['name'])));
 
-        return Response::created($this->serializer->region($this->row(LocationQuery::REGION, $id)), $this->api->links()->api('admin/regions/' . $id));
+        return Response::created($this->serializer->region($this->row(LocationQuery::REGION, $id)), $this->api->links()->api('admin/regions/' . $id, $call->request()->version()));
     }
 
     /**
@@ -89,7 +89,7 @@ final class AdminLocationsController
         $region = (int) $input['region_id'];
         $id     = (int) $this->write(fn () => $this->locations->addCity($region, AdminText::clean($input['name'])));
 
-        return Response::created($this->serializer->city($this->row(LocationQuery::CITY, $id)), $this->api->links()->api('admin/cities/' . $id));
+        return Response::created($this->serializer->city($this->row(LocationQuery::CITY, $id)), $this->api->links()->api('admin/cities/' . $id, $call->request()->version()));
     }
 
     /**
@@ -131,7 +131,7 @@ final class AdminLocationsController
         $city  = (int) $input['city_id'];
         $id    = (int) $this->write(fn () => $this->locations->addArea($city, AdminText::clean($input['name'])));
 
-        return Response::created($this->serializer->area($this->row(LocationQuery::AREA, $id)), $this->api->links()->api('admin/areas/' . $id));
+        return Response::created($this->serializer->area($this->row(LocationQuery::AREA, $id)), $this->api->links()->api('admin/areas/' . $id, $call->request()->version()));
     }
 
     /**

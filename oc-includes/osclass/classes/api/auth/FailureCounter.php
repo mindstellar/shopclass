@@ -12,23 +12,15 @@ declare(strict_types=1);
 
 namespace mindstellar\api\auth;
 
+use mindstellar\apiaccess\ApiSettings;
 use mindstellar\security\AddressBucket;
 use mindstellar\security\RateLimit;
 
 /**
- * Failed token checks, counted so guessing is slow without one bad caller locking out
- * everyone behind a shared address (an office, a CDN, carrier NAT).
- *
- * Two counters:
- * - per address and key id: MAX failures shut that one key out from that address before it
- *   is looked at, so a stale key left in a deployed app stops only itself;
- * - per address: ADDRESS_MAX failures with no known key id (guesses, garbage) turn that
- *   address's failed tokens into 429s. A valid token from it still works. Wrong secrets for a
- *   real key id count only in the first.
- *
- * Both fail open: when the counter cannot be read, the token is checked as usual. A key's
- * secret is 256 random bits, so the counters only slow a noisy caller; refusing every keyed
- * request whenever t_rate_counter is unreachable would take the API down for nothing.
+ * Failed token checks, counted per address and key id (MAX) and per address with no known key
+ * id (ADDRESS_MAX), so guessing is slow without locking out a shared address. Both fail open
+ * when the counter cannot be read. A site-wide marker, written before the first failure of a
+ * known key id in each window, lets keyBlocked() skip the counter while no such failure exists.
  */
 final class FailureCounter
 {
@@ -43,20 +35,50 @@ final class FailureCounter
 
     private const CONTEXT = 'api_auth_fail';
 
+    /** The preference holding the end of the last window with a failure for a known key id. */
+    public const MARKER = 'auth_failures_until';
+
     /** @var \Closure(string, string[], int): ?array<string,int> */
     private \Closure $counts;
 
     /** @var \Closure(string, string, int): ?int */
     private \Closure $increment;
 
+    /** @var (\Closure(): int)|null */
+    private ?\Closure $markedUntil;
+
+    /** @var (\Closure(int): bool)|null */
+    private ?\Closure $mark;
+
+    /** @var \Closure(): int */
+    private \Closure $now;
+
     /**
-     * @param callable|null $counts    (context, keys, window) => key => failures, null when unreadable
-     * @param callable|null $increment (context, key, window) => failures after this one
+     * Without $markedUntil and $mark every check reads the counter, unless the counters are the
+     * site's own, which keep the marker in the `api` preferences (loaded on every request).
+     *
+     * @param callable|null $counts      (context, keys, window) => key => failures, null when unreadable
+     * @param callable|null $increment   (context, key, window) => failures after this one
+     * @param callable|null $markedUntil () => the marker's time, 0 when unset
+     * @param callable|null $mark        (time) => whether the marker was written
+     * @param callable|null $now         () => the current time
      */
-    public function __construct(?callable $counts = null, ?callable $increment = null)
-    {
-        $this->counts    = \Closure::fromCallable($counts ?? [RateLimit::class, 'countMany']);
-        $this->increment = \Closure::fromCallable($increment ?? [RateLimit::class, 'increment']);
+    public function __construct(
+        ?callable $counts = null,
+        ?callable $increment = null,
+        ?callable $markedUntil = null,
+        ?callable $mark = null,
+        ?callable $now = null
+    ) {
+        if ($counts === null && $increment === null && $markedUntil === null && $mark === null) {
+            $markedUntil = static fn (): int => (int) osc_get_preference(self::MARKER, ApiSettings::SECTION);
+            $mark        = static fn (int $until): bool => (bool) osc_set_preference(self::MARKER, (string) $until, ApiSettings::SECTION, 'INTEGER');
+        }
+        $this->counts      = \Closure::fromCallable($counts ?? [RateLimit::class, 'countMany']);
+        $this->increment   = \Closure::fromCallable($increment ?? [RateLimit::class, 'increment']);
+        $this->markedUntil = $markedUntil !== null && $mark !== null ? \Closure::fromCallable($markedUntil) : null;
+        $this->mark        = $markedUntil !== null && $mark !== null ? \Closure::fromCallable($mark) : null;
+        $this->now         = \Closure::fromCallable($now ?? 'time');
     }
 
     /**
@@ -68,6 +90,9 @@ final class FailureCounter
     public function keyBlocked(string $ip, ?string $tokenId): bool
     {
         if ($ip === '' || $tokenId === null) {
+            return false;
+        }
+        if ($this->markedUntil !== null && ($this->markedUntil)() <= ($this->now)()) {
             return false;
         }
 
@@ -98,8 +123,27 @@ final class FailureCounter
         if ($ip === '') {
             return;
         }
-        $key = $known && $tokenId !== null ? self::keyKey($ip, $tokenId) : self::addressKey($ip);
-        ($this->increment)(self::CONTEXT, $key, self::WINDOW);
+        $byKey = $known && $tokenId !== null;
+        if ($byKey) {
+            $this->markWindow();
+        }
+        ($this->increment)(self::CONTEXT, $byKey ? self::keyKey($ip, $tokenId) : self::addressKey($ip), self::WINDOW);
+    }
+
+    /**
+     * Set the marker to the end of the current window, before the failure is counted, so a
+     * request that can see the count can see the marker. Written once per window at most.
+     */
+    private function markWindow(): void
+    {
+        if ($this->mark === null) {
+            return;
+        }
+        $now = ($this->now)();
+        $end = $now - ($now % self::WINDOW) + self::WINDOW;
+        if (($this->markedUntil)() < $end) {
+            ($this->mark)($end);
+        }
     }
 
     private static function addressKey(string $ip): string

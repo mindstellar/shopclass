@@ -37,7 +37,7 @@ final class AdminFieldsController
     {
         $id = $this->fields->create($call->input());
 
-        return Response::created($this->field($id), $this->api->links()->api('admin/custom-fields/' . $id));
+        return Response::created($this->field($id), $this->api->links()->api('admin/custom-fields/' . $id, $call->request()->version()));
     }
 
     /**

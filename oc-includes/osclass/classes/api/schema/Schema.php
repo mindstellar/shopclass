@@ -18,6 +18,7 @@ use mindstellar\api\serializer\CustomFieldSerializer;
 
 use mindstellar\api\serializer\ExtensionMembers;
 use mindstellar\listing\ListingStatus;
+use mindstellar\user\UserStatus;
 use mindstellar\utility\DateInput;
 
 /**
@@ -29,7 +30,7 @@ final class Schema
 {
     /** The object schemas, each written out below. */
     private const OBJECTS = [
-        'Problem', 'PageMeta', 'PageLinks', 'ListLinks', 'Photo', 'CategoryRef', 'CustomFieldValue', 'Listing', 'User', 'Category', 'CustomField',
+        'Problem', 'PageMeta', 'PageLinks', 'Photo', 'CategoryRef', 'CustomFieldValue', 'Listing', 'User', 'Category', 'CustomField',
         'Country', 'Region', 'City', 'CityArea', 'Currency', 'Comment', 'Site', 'OpenApiDocument',
         'Warning', 'TokenDocument', 'TokenRequest', 'SessionToken', 'AccountInput', 'AccountDocument', 'PasswordChange', 'Session',
         'PersonalKey', 'PersonalKeyInput', 'Registration', 'NewAccount',
@@ -54,13 +55,20 @@ final class Schema
     }
 
     /**
-     * A list answered whole: its items and `links.next`, null until the list is paged.
+     * The envelope of every list answer: `data`, `meta` and `links`. A list that is not paged
+     * has `meta.total` and `meta.limit` equal to its size, and a null `links.next`.
+     *
+     * @api
      *
      * @return array<string,mixed>
      */
     public static function wholeList(string $item): array
     {
-        return self::object(['data' => ['type' => 'array', 'items' => self::ref($item)], 'links' => self::ref('ListLinks')], ['data', 'links']);
+        return self::object([
+            'data'  => ['type' => 'array', 'items' => self::ref($item)],
+            'meta'  => self::ref('PageMeta'),
+            'links' => self::ref('PageLinks'),
+        ], ['data', 'meta', 'links']);
     }
 
     /**
@@ -100,7 +108,7 @@ final class Schema
         $schemas = [
             'Problem'      => self::problem(),
             'PageMeta'     => self::object([
-                'total' => self::nullable('integer', 'Matches across every page; null unless the request sent count=true, and on a page reached by a keyset cursor or a location list.'),
+                'total' => self::nullable('integer', 'Matches across every page; null unless the request sent count=true, and on a page reached by a keyset cursor or a location list. A list that is not paged always has it, equal to its size.'),
                 'limit' => ['type' => 'integer'],
                 'truncated' => ['type' => 'boolean', 'description' => 'Present and true when more matches exist but paging stops here: links.next is null. Narrow the filters, or sort by created or id.'],
             ], ['limit']),
@@ -108,9 +116,6 @@ final class Schema
                 'self' => ['type' => 'string', 'format' => 'uri'],
                 'next' => self::nullable('string', 'The next page; null on the last one.'),
             ], ['self', 'next']),
-            'ListLinks'    => self::object([
-                'next' => ['type' => ['string', 'null'], 'description' => 'Null: the list is whole. A later version may page it, so follow next when it is set.'],
-            ], ['next']),
             'Photo'        => self::object([
                 'id'        => ['type' => 'integer'],
                 'thumbnail' => ['type' => 'string'],
@@ -189,11 +194,7 @@ final class Schema
             'OpenApiDocument' => ['type' => 'object', 'description' => 'An OpenAPI 3.1 document.'],
         ] + self::account() + self::writes();
 
-        $page = static fn (string $name): array => self::object([
-            'data'  => ['type' => 'array', 'items' => self::ref($name)],
-            'meta'  => self::ref('PageMeta'),
-            'links' => self::ref('PageLinks'),
-        ], ['data', 'meta', 'links']);
+        $page = static fn (string $name): array => self::wholeList($name);
         foreach (self::LISTS as $name) {
             $schemas[$name . 'List'] = self::wholeList($name);
         }
@@ -214,6 +215,8 @@ final class Schema
      * `{"$ref": "#/components/schemas/<name>"}`
      *
      * @return array{'$ref':string}
+     *
+     * @api
      */
     public static function ref(string $name): array
     {
@@ -227,6 +230,8 @@ final class Schema
      * A date input: a day or an RFC 3339 date-time, or with $days also a number of days, `90d`.
      *
      * @return array<string,mixed>
+     *
+     * @api
      */
     public static function dateInput(string $description, bool $days = false, bool $nullable = false): array
     {
@@ -244,6 +249,8 @@ final class Schema
      * @param string[] $values
      *
      * @return array<string,mixed>
+     *
+     * @api
      */
     public static function listOf(array $values): array
     {
@@ -376,9 +383,10 @@ final class Schema
             'zip'            => $private('string'),
             'lat'            => $private('number'),
             'lng'            => $private('number'),
+            'status'         => ['type' => 'string', 'enum' => UserStatus::ALL, 'description' => 'The user themself and admins. disabled: blocked; pending: not confirmed yet.'],
             'confirmed'      => $private('boolean'),
             'blocked'        => $private('boolean'),
-            'last_access_at' => $private('string'),
+            'last_access_at' => self::time('The user themself and admins.'),
             'last_access_ip' => $private('string'),
             'ext'            => $ext->schemaFor('user'),
         ], ['id', 'name', 'url']);
@@ -517,9 +525,8 @@ final class Schema
                 'phone_mobile' => $text(45),
             ], ['name', 'email', 'password']),
             'NewAccount' => self::object([
-                'id'     => ['type' => 'integer'],
                 'confirmed' => ['type' => 'boolean', 'description' => 'False until the link in the activation e-mail is opened.'],
-            ], ['id', 'confirmed']),
+            ], ['confirmed']),
         ];
     }
 
@@ -706,6 +713,8 @@ final class Schema
      * @param string[]            $required
      *
      * @return array<string,mixed>
+     *
+     * @api
      */
     public static function object(array $properties, array $required = []): array
     {
@@ -719,6 +728,8 @@ final class Schema
 
     /**
      * @return array<string,mixed>
+     *
+     * @api
      */
     public static function nullable(string $type, string $description = ''): array
     {
@@ -732,6 +743,8 @@ final class Schema
 
     /**
      * @return array<string,mixed>
+     *
+     * @api
      */
     public static function time(string $description = ''): array
     {

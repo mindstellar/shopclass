@@ -19,23 +19,17 @@ use mindstellar\api\ProblemException;
 use mindstellar\api\read\ListingReader;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\ListingSerializer;
+use mindstellar\api\write\FetchedPhotos;
 use mindstellar\api\write\ListingWriter;
-use mindstellar\api\write\OwnedListing;
+use mindstellar\api\write\OwnedListings;
 use mindstellar\api\write\PhotoBatch;
 use mindstellar\api\write\PhotoIntake;
 use mindstellar\listing\ListingStatus;
-use mindstellar\listing\PhotoService;
+use mindstellar\listing\PhotoRoom;
 
 /**
- * The seller's own listings: `POST /listings`, `PATCH` and `DELETE /listings/{id}`.
- *
- * Writes go through ListingService as the listing form's do, so its checks, moderation,
- * listing limit, posting wait, spam checks, e-mails and hooks all apply. There is no
- * captcha to show, so each user and address may post a limited number of listings an hour.
- *
- * A save runs in one database transaction, so a failure part way leaves nothing behind.
- * ListingService fires its hooks while it writes, so they run inside it; the e-mails they
- * send are held until the commit, and dropped with a rollback.
+ * The seller's own listings: `POST /listings`, `PATCH` and `DELETE /listings/{id}`, through
+ * ListingService as the listing form's writes are. A save is one transaction; e-mails wait for the commit.
  */
 final class ListingWritesController
 {
@@ -43,9 +37,13 @@ final class ListingWritesController
     private ListingWriter $writer;
     private PhotoIntake $photos;
     private UserRows $users;
+    private PhotoRoom $room;
+    private OwnedListings $owned;
 
-    public function __construct(private ApiServices $api)
+    public function __construct(private ApiServices $api, ?PhotoRoom $room = null, ?OwnedListings $owned = null)
     {
+        $this->room = $room ?? new PhotoRoom();
+        $this->owned = $owned ?? new OwnedListings();
         $this->reader = $api->listingReader();
         $this->writer = $api->listingWriter();
         $this->photos = $api->photoIntake();
@@ -53,7 +51,41 @@ final class ListingWritesController
     }
 
     /**
-     * POST /listings
+     * The prepare step of `POST /listings`: the hourly cap and the posting checks, then the
+     * photos named by URL, fetched before the save. Null when the body names no URL.
+     *
+     * @throws ProblemException 403, 422 or 429
+     */
+    public function prepareCreate(ApiCall $call): ?FetchedPhotos
+    {
+        $request    = $call->request();
+        $credential = $call->credential();
+        $userId     = (int) $credential->userId();
+        $this->api->limiter()->enforceAll($this->api->ratePolicy()->newListing($userId, $request->ip()), 'Too many new listings in an hour. Try again later.');
+        $this->api->listings()->mayPost($credential->actor($request->ip()), (string) ($this->users->find($userId)['s_email'] ?? ''));
+
+        return $this->fetch($call->input(), $userId, $this->room->cap($userId));
+    }
+
+    /**
+     * The prepare step of `PATCH /listings/{id}`: the photos named by URL, fetched outside
+     * the If-Match transaction. Null when the body names no URL.
+     *
+     * @throws ProblemException 403, 404, 422 or 429
+     */
+    public function prepareUpdate(ApiCall $call): ?FetchedPhotos
+    {
+        $input = $call->input();
+        if (empty($input['photo_urls'])) {
+            return null;
+        }
+        $listing = $this->owned->own($call->intArg(), $call->credential());
+
+        return $this->fetch($input, (int) $call->credential()->userId(), $this->room->room($listing->id(), $listing->userId()));
+    }
+
+    /**
+     * POST /listings. prepareCreate() has checked the caller may post.
      */
     public function create(ApiCall $call): Response
     {
@@ -61,14 +93,10 @@ final class ListingWritesController
         $credential = $call->credential();
 
         $userId = (int) $credential->userId();
-        $actor  = $credential->actor($request->ip());
-        $this->api->limiter()->enforceAll($this->api->ratePolicy()->newListing($userId, $request->ip()), 'Too many new listings in an hour. Try again later.');
-        // Before the body is read and its photos fetched; the save asks no more.
-        $this->api->listings()->mayPost($actor, (string) ($this->users->find($userId)['s_email'] ?? ''));
-        $input = $request->input();
-        $form  = $this->writer->newForm($input, $request, $credential);
-        $batch = $this->photos->batch($input, $userId, PhotoService::cap($userId));
-        $id    = (int) $this->withPhotos($batch, $userId, fn (): int => $this->writer->create($form, $batch->paths(), $actor));
+        $input  = $request->input();
+        $form   = $this->writer->newForm($input, $request, $credential);
+        $batch  = $this->batch($call, $input, $userId, $this->room->cap($userId));
+        $id     = (int) $this->withPhotos($batch, $userId, fn (): int => $this->writer->create($form, $batch->paths(), $credential->actor($request->ip())));
 
         return $this->saved($call, $id, true, $batch, 0);
     }
@@ -82,17 +110,17 @@ final class ListingWritesController
         $credential = $call->credential();
 
         $userId  = (int) $credential->userId();
-        $listing = OwnedListing::own($call->intArg(), $credential, true);
+        $listing = $this->owned->own($call->intArg(), $credential, true);
         $id      = $listing->id();
         $input   = $request->input();
         $form    = $this->writer->editForm($listing, $input, $request, $credential);
         $before  = 0;
         $room    = null;
         if (!empty($input['photo_tokens']) || !empty($input['photo_urls'])) {
-            $before = PhotoService::count($id);
-            $room   = PhotoService::room($id, $listing->userId());
+            $before = $this->room->count($id);
+            $room   = $this->room->room($id, $listing->userId());
         }
-        $batch = $this->photos->batch($input, $userId, $room);
+        $batch = $this->batch($call, $input, $userId, $room);
         $this->withPhotos($batch, $userId, fn () => $this->writer->update($listing, $form, $batch->paths(), $credential->actor($request->ip())));
 
         return $this->saved($call, $id, false, $batch, $before);
@@ -105,9 +133,29 @@ final class ListingWritesController
     {
         $credential = $call->credential();
 
-        $this->writer->delete(OwnedListing::own($call->intArg(), $credential), $credential->actor($call->request()->ip()));
+        $this->writer->delete($this->owned->own($call->intArg(), $credential), $credential->actor($call->request()->ip()));
 
         return Response::noContent();
+    }
+
+    /**
+     * @param array<mixed> $input
+     */
+    private function fetch(array $input, int $userId, ?int $room): ?FetchedPhotos
+    {
+        return empty($input['photo_urls']) ? null : new FetchedPhotos($this->photos->batch($input, $userId, $room));
+    }
+
+    /**
+     * The photos the prepare step fetched, else the body's photos read here.
+     *
+     * @param array<mixed> $input
+     */
+    private function batch(ApiCall $call, array $input, int $userId, ?int $room): PhotoBatch
+    {
+        $fetched = $call->prepared();
+
+        return $fetched instanceof FetchedPhotos ? $fetched->take() : $this->photos->batch($input, $userId, $room);
     }
 
     /**
@@ -147,13 +195,13 @@ final class ListingWritesController
             $warnings[] = ['code' => 'listing_pending', 'message' => 'The listing goes live once it is activated or approved.'];
         }
         if (!$batch->isEmpty()) {
-            $added = PhotoService::count($id) - $photosBefore;
+            $added = $this->room->count($id) - $photosBefore;
             if ($added < $batch->sent()) {
                 $warnings[] = ['code' => 'photo_skipped', 'message' => ($batch->sent() - $added) . ' photo(s) were not added: the listing has as many as it may hold.'];
             }
         }
         $extra = $warnings === [] ? [] : ['warnings' => $warnings];
 
-        return $created ? Response::created($data, $this->api->links()->api('listings/' . $id), $extra) : Response::ok($data, 200, $extra);
+        return $created ? Response::created($data, $this->api->links()->api('listings/' . $id, $call->request()->version()), $extra) : Response::ok($data, 200, $extra);
     }
 }

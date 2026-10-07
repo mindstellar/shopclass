@@ -15,7 +15,6 @@ namespace mindstellar\api\controller;
 use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
-use mindstellar\api\read\ListingSearch;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\Format;
 use mindstellar\api\serializer\UserSerializer;
@@ -31,11 +30,8 @@ use mindstellar\user\UserStore;
  */
 final class UsersController
 {
-    private ListingSearch $search;
-
     public function __construct(private ApiServices $api)
     {
-        $this->search = $api->listingSearch();
     }
 
     public function show(ApiCall $call): Response
@@ -65,7 +61,7 @@ final class UsersController
             throw ProblemException::notFound('No such user.');
         }
 
-        return $this->search->run($call->request(), $credential, $id, 'users/' . $id . '/listings');
+        return $this->api->listingSearch()->run($call->request(), $credential, $id, 'users/' . $id . '/listings');
     }
 
     /**

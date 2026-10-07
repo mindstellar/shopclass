@@ -12,12 +12,14 @@ declare(strict_types=1);
 
 namespace mindstellar\api\read;
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\Links;
 
 /**
  * One page of a list as the API sends it: the rows, `meta` (total, limit, and truncated when
  * offset paging stops before the end) and `links` (self, next). The links never carry an `api_key`.
+ * Every list answer has this shape, a list that is not paged included.
  */
 final class Page
 {
@@ -35,7 +37,7 @@ final class Page
      * @param string              $path  the endpoint, below /api/v1/
      * @param array<string,mixed> $query the request's query
      */
-    public function response(Links $links, string $path, array $query): Response
+    public function response(Links $links, string $path, array $query, ?string $version = null): Response
     {
         $rest = $query;
         unset($rest['cursor']);
@@ -44,10 +46,25 @@ final class Page
             $this->items,
             ['total' => $this->total, 'limit' => $this->limit] + ($this->truncated ? ['truncated' => true] : []),
             [
-                'self' => $links->api(self::url($path, $query)),
-                'next' => $this->next === null ? null : $links->api(self::url($path, $rest + ['cursor' => $this->next])),
+                'self' => $links->api(self::url($path, $query), $version),
+                'next' => $this->next === null ? null : $links->api(self::url($path, $rest + ['cursor' => $this->next]), $version),
             ]
         );
+    }
+
+    /**
+     * A list answered whole: the same envelope as a page, with `total` and `limit` the item
+     * count and no `next`.
+     *
+     * @api
+     *
+     * @param array<int,mixed> $items the shaped rows
+     */
+    public static function whole(array $items, Links $links, ApiCall $call): Response
+    {
+        $items = array_values($items);
+
+        return (new self($items, count($items), count($items), null))->response($links, $call->request()->routePath(), $call->request()->query(), $call->request()->version());
     }
 
     /**

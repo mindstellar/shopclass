@@ -5,11 +5,8 @@ sidebar:
   order: 1
 ---
 
-The REST API gives another program access to a ShopClass site. With a key it reads listings,
-categories, custom fields, locations, currencies and public user profiles. As a signed-in
-user it also posts, edits and deletes listings, uploads photos, comments and saves searches.
-With an admin key it moderates and manages the site, and signed webhooks tell your server
-when something changes. It speaks JSON over HTTPS.
+The API speaks JSON over HTTPS. Reading needs a key, writing needs a signed-in user or an admin key,
+and signed webhooks tell your server when something changes.
 
 | | |
 |---|---|
@@ -154,8 +151,9 @@ An expired listing answers with `status: "expired"`, as its page shows it; searc
 ### Paging
 
 Follow `links.next` until it is `null`. Do not build cursors yourself; each one works for a day.
-Every list has `links.next`, including short ones answered whole, such as categories or your
-keys: there it is `null` today, and a later version may page them.
+Every list has `meta` and `links.self` and `links.next`, including short ones answered whole, such
+as categories or your keys: there `meta.total` and `meta.limit` are the item count and `next` is
+`null` today. A later version may page them.
 
 ```bash
 URL="$API/listings?limit=50"
@@ -192,19 +190,11 @@ curl -i -H "Authorization: Bearer $KEY" -H 'If-None-Match: "9a04037fc4f6b5e68d56
 
 Answers for public keys and anonymous calls also carry
 `Cache-Control: public, max-age=60, stale-while-revalidate=60`, so a CDN may keep them.
-The site owner sets the number of seconds. Answers for admin keys are never shared-cached.
+The site owner sets the number of seconds. Reads with any other key are `private, no-cache`.
+Reads of `account*`, `admin/*` and `*/sessions` are `private, no-store`, and so is every write.
 
-To avoid overwriting a change made meanwhile, send the `ETag` of your last `GET` in
-`If-Match` on a `PATCH` or `DELETE`. If the resource changed you get `412 precondition_failed`.
-`If-Match: *` only checks that the resource exists. If it is gone, the write answers as its `GET`
-does (`404`) and runs nothing. A tag a proxy made weak (`W/"…"`) still matches.
-
-On listings, comments, photos, the account, users, keys, saved searches, categories, fields,
-currencies and locations, the `ETag` holds the stored version (`"<version>.<hash>"`). Any `GET`
-of the path works for `If-Match`, whatever its `fields`, `include` or `locale`. The check and
-the write run as one, so no other write can land between them. A `PATCH` sent with `If-Match`
-answers with the new `ETag`, ready for the next edit. On other paths, use the tag of the plain
-`GET` (no `fields` or `include`).
+To avoid overwriting a change made meanwhile, send the `ETag` of your last `GET` in `If-Match` on a
+`PATCH` or `DELETE`: see [Writes](/docs/developers/api/writes/#editing-safely-with-if-match).
 
 ## Quick start: writing
 
@@ -272,9 +262,8 @@ curl -i -X DELETE $API/listings/412 -H "Authorization: Bearer $TOKEN"   # 204 No
 
 ### Retrying a write
 
-Send an `Idempotency-Key` on a `POST`. If the connection drops, send the **same** call with
-the **same** key: the server runs it once and replays the first answer, marked
-`Idempotency-Replayed: true`. Details: [Writes](/docs/developers/api/writes/#retrying-safely-with-idempotency-key).
+Send an `Idempotency-Key` on a `POST` and retry the same call with the same key:
+see [Writes](/docs/developers/api/writes/#retrying-safely-with-idempotency-key).
 
 More: comments, saved searches, photo uploads, limits and warnings are in
 [Writes](/docs/developers/api/writes/).
@@ -328,7 +317,8 @@ The API does not count views.
 
 The version is in the path: `/api/v1`. Inside v1 changes only add things: new members, new
 endpoints, new optional parameters. Removing or retyping a member, or changing a status
-or error `code`, would be a new version. How old endpoints are retired is in the
+or error `code`, would be a new version, served beside v1 for at least 12 months. Endpoints
+that do not change answer under both. How old endpoints are retired is in the
 [API changelog](/docs/developers/api/changelog/).
 
 ## Next

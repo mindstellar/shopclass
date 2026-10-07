@@ -9,17 +9,8 @@
  */
 
 /**
- * Sign-in and the user's own account end to end through Kernel::handle() on a seeded site:
- * password login gives an access and a refresh token with the web login's hooks and
- * answers, the throttle answers 429 login_blocked, a refresh rotates and a reused one ends
- * its family, a password change ends the other sign-ins and the old access token, a
- * suspended user is refused on the next call, sign-out, the profile read and edit through
- * UserActions with its hooks, an e-mail change through the confirmation link, sessions,
- * personal keys, sign-up behind its switch with the activation e-mail and a per-address
- * limit, and an Idempotency-Key replayed from the table.
- *
- * Usage:  php tests/models/api-account.php        (standalone, own scratch database)
- *         php tests/run-models.php api-account    (as part of the suite)
+ * Sign-in and the user own account end to end through Kernel::handle() on a seeded site.
+ * Usage: php tests/models/api-account.php
  */
 
 require_once __DIR__ . '/../lib/harness.php';
@@ -141,9 +132,9 @@ final class AccountLinks implements Links
         return 'http://localhost/avatar/' . $userId;
     }
 
-    public function api(string $path): string
+    public function api(string $path, ?string $version = null): string
     {
-        return 'http://localhost/api/v1/' . $path;
+        return 'http://localhost/api/' . ($version ?? 'v1') . '/' . $path;
     }
 
     public function price(?int $micros, string $symbol): string
@@ -189,6 +180,34 @@ foreach (array(
         $fired[] = $hook;
     });
 }
+// The core e-mail functions are not loaded here; this one stands in for the activation e-mail.
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hJobs.php';
+$aaSent = array();
+if (!function_exists('osc_sendMail')) {
+    function osc_sendMail($params)
+    {
+        if (\mindstellar\utility\DeferredMail::hold($params)) {
+            return true;
+        }
+        $GLOBALS['aaSent'][] = $params['to'] ?? '';
+
+        return true;
+    }
+}
+$aaCodes = array();
+// Stands in for the mail transport when a queued job sends.
+$aaMailer = static function (array $params): bool {
+    if (!($GLOBALS['aaMailWorks'] ?? true)) {
+        throw new \RuntimeException('test transport is down');
+    }
+    $GLOBALS['aaSent'][] = $params['to'] ?? '';
+
+    return true;
+};
+osc_add_hook('hook_email_user_validation', static function ($user, $input): void {
+    $GLOBALS['aaCodes'][] = $input['s_secret'];
+    osc_sendMail(array('to' => $user['s_email'], 'subject' => 'Activate', 'body' => 'validate/' . $user['pk_i_id'] . '/' . $input['s_secret'], 'secret_link' => true));
+});
 $seen = array();
 osc_add_hook('after_login', static function ($user, $redirect) use (&$seen): void {
     $seen['after_login'] = array((int) $user['pk_i_id'], $redirect, osc_logged_user_id());
@@ -259,7 +278,7 @@ $sameAnswer = static function (string $account) use ($login): array {
 
     return $body;
 };
-pin('so is an unknown account, with the same answer', $sameAnswer('uma@example.test'), $sameAnswer('nobody@example.test'));
+pin('an unknown account answers the same as a wrong password', $sameAnswer('uma@example.test'), $sameAnswer('nobody@example.test'));
 check('a failed sign-in is counted with the web sign-in form\'s failures, one budget', (int) $admin->query("SELECT COUNT(*) FROM {$p}t_login_attempt WHERE s_context = 'web'")->fetch_row()[0] > 0 && (int) $admin->query("SELECT COUNT(*) FROM {$p}t_login_attempt WHERE s_context = 'api'")->fetch_row()[0] === 0);
 $login('nobody@example.test', 'wrong', array(), '198.51.100.77');
 $login('uma', 'correct horse', array(), '198.51.100.77');
@@ -275,7 +294,7 @@ pin('an unknown member is 400 invalid_request', '400 invalid_request', $code($ca
 $r = $call('POST', 'auth/token', http_build_query(array('grant_type' => 'password', 'username' => 'uma', 'password' => 'correct horse', 'scope' => 'listings:read')), null, array('Content-Type' => 'application/x-www-form-urlencoded'));
 pin('a form-encoded token request works too (RFC 6749)', array(200, 'listings:read', true, false), array($r->status(), $r->body()['scope'] ?? null, isset($r->body()['access_token']), isset($r->body()['data'])));
 $r = $call('POST', 'auth/token', 'grant_type=password&username=uma', null, array('Content-Type' => 'application/x-www-form-urlencoded'));
-pin('...and its refusals are OAuth ones, never cached', array('400 invalid_request', 'invalid_request', 'no-store'), array($code($r), $r->body()['error'] ?? null, $r->header('Cache-Control')));
+pin('a form-encoded token refusal is an OAuth error and never cached', array('400 invalid_request', 'invalid_request', 'no-store'), array($code($r), $r->body()['error'] ?? null, $r->header('Cache-Control')));
 pin('a body that is not JSON is invalid_request', '400 invalid_request', $code($call('POST', 'auth/token', '{nope', null, array('Content-Type' => 'application/json'))));
 
 harness_section('the throttle');
@@ -315,6 +334,11 @@ $current = array_values(array_filter($list->body()['data'], static fn (array $s)
 check('the sign-ins are listed with their names, and no key among them', in_array('Phone', $labels, true) && in_array('Laptop', $labels, true));
 pin('the one asking is marked current', array('Phone'), array_column($current, 'name'));
 pin('matches the schema', array(), $schemaErrors('SessionList', $list));
+pin('a whole list has the page envelope', array(count($list->body()['data']), null, true), array(
+    $list->body()['meta']['total'],
+    $list->body()['links']['next'],
+    str_ends_with($list->body()['links']['self'], 'account/sessions'),
+));
 check('with the address it was last used from', $current[0]['last_ip'] === '192.0.2.50');
 $laptopId = array_values(array_filter($list->body()['data'], static fn (array $s): bool => $s['name'] === 'Laptop'))[0]['id'];
 pin('one can be ended', 204, $call('DELETE', 'account/sessions/' . $laptopId, null, $phone['access_token'])->status());
@@ -352,14 +376,14 @@ pin('the link applies it as on the web', array('ok', 'uma.new@example.test'), ar
 $fired = array();
 $r     = $call('PATCH', 'account', array('email' => 'sam@example.test'), $phone['access_token']);
 pin('an e-mail another account holds answers the same, so nobody learns it is taken', array(200, 'email_confirmation_sent'), array($r->status(), $r->body()['warnings'][0]['code'] ?? null));
-pin('but no link goes out', array(), $fired);
+pin('a sign-up with a taken e-mail sends no link', array(), $fired);
 for ($i = 0; $i < \mindstellar\user\AccountService::EMAIL_CHANGES - 2; $i++) {
     $call('PATCH', 'account', array('email' => 'try' . $i . '@example.test'), $phone['access_token']);
 }
 pin('a user gets a few e-mail changes an hour, then 429', '429 rate_limited', $code($call('PATCH', 'account', array('email' => 'one-more@example.test'), $phone['access_token'])));
 $userKey = (new ApiKeys(new ApiCredential(), new Scopes(), new SystemClock()))->create('key', 'script', array('listings:read', 'account:read'), \mindstellar\apiaccess\KeyOwner::user($uma))->token();
 pin('a key can read the account', 200, $call('GET', 'account', null, $userKey)->status());
-pin('but never edit it: account:write is access-token only', '403 insufficient_scope', $code($call('PATCH', 'account', array('name' => 'X'), $userKey)));
+pin('a personal key cannot edit the account: account:write is access-token only', '403 insufficient_scope', $code($call('PATCH', 'account', array('name' => 'X'), $userKey)));
 
 harness_section('changing the password');
 $tablet = $login('uma', 'correct horse', array('label' => 'Tablet'))->body();
@@ -372,7 +396,7 @@ check('the password is changed', password_verify('battery staple', $userRow($uma
 pin('the old access token is dead at once', 401, $call('GET', 'account', null, $phone['access_token'])->status());
 pin('the new one works', 200, $call('GET', 'account', null, $r->body()['access_token'])->status());
 pin('another sign-in\'s access token is dead', 401, $call('GET', 'account', null, $tablet['access_token'])->status());
-pin('and its refresh token too', 400, $call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $tablet['refresh_token']))->status());
+pin('the other sign-in refresh token is dead too', 400, $call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $tablet['refresh_token']))->status());
 pin('this sign-in\'s old refresh token ended with the rest', 400, $call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $phone['refresh_token']))->status());
 pin('the client carries on with the new one', 200, $call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $r->body()['refresh_token']))->status());
 pin('the old password no longer signs in', 400, $login('uma', 'correct horse')->status());
@@ -384,17 +408,17 @@ $admin->query("INSERT INTO {$p}t_ban_rule (s_name, s_email) VALUES ('test', 'uma
 pin('a ban stops a refresh', '400 invalid_grant', $code($call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $s['refresh_token']))));
 $admin->query("DELETE FROM {$p}t_ban_rule");
 \mindstellar\security\BanRuleStore::forget();
-pin('and ends that sign-in', 400, $call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $s['refresh_token']))->status());
+pin('a banned user cannot refresh, which ends that sign-in', 400, $call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $s['refresh_token']))->status());
 
 harness_section('suspension and sign-out');
 $s = $login('uma', 'battery staple')->body();
 $admin->query("UPDATE {$p}t_user SET b_enabled = 0 WHERE pk_i_id = $uma");
 pin('a suspended user\'s token is 401 on the next call', 401, $call('GET', 'account', null, $s['access_token'])->status());
-pin('and cannot refresh', 400, $call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $s['refresh_token']))->status());
+pin('a suspended user cannot refresh', 400, $call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $s['refresh_token']))->status());
 $admin->query("UPDATE {$p}t_user SET b_enabled = 1 WHERE pk_i_id = $uma");
 $s = $login('uma', 'battery staple')->body();
 pin('sign-out answers 204', 204, $call('POST', 'auth/sign-out', null, $s['access_token'])->status());
-pin('and ends the refresh token', 400, $call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $s['refresh_token']))->status());
+pin('sign-out ends the refresh token', 400, $call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $s['refresh_token']))->status());
 $a = $login('uma', 'battery staple')->body();
 $b = $login('uma', 'battery staple')->body();
 pin('sign-out ends only this sign-in', array(204, 400, 200), array(
@@ -413,7 +437,7 @@ $s       = $login('uma', 'battery staple')->body();
 $keyBody = array('name' => 'Backup script', 'scopes' => array('listings:read', 'account:read'), 'expires_at' => date('Y-m-d', time() + 30 * 86400), 'current_password' => 'battery staple');
 $settings = new ApiSettings(true);
 pin('off by default: 403', '403 feature_disabled', $code($call('POST', 'account/keys', $keyBody, $s['access_token'])));
-pin('and a personal key stops working while they are off', '403 feature_disabled', $code($call('GET', 'account', null, $userKey)));
+pin('a personal key stops working while personal keys are off', '403 feature_disabled', $code($call('GET', 'account', null, $userKey)));
 $settings = new ApiSettings(true, userKeys: true);
 $r        = $call('POST', 'account/keys', $keyBody, $s['access_token']);
 pin('when on, a key is made and its token shown once', array(201, 'Backup script', array('listings:read', 'account:read'), true), array($r->status(), $r->body()['data']['name'] ?? null, $r->body()['data']['scopes'] ?? null, str_starts_with((string) ($r->body()['data']['token'] ?? ''), 'sck_')));
@@ -424,7 +448,7 @@ pin('the key works for its user', array(200, $uma), array($keyMe->status(), $key
 pin('account:write is refused', '422 validation_failed', $code($call('POST', 'account/keys', array('scopes' => array('account:write')) + $keyBody, $s['access_token'])));
 pin('an expiry is required', '422 validation_failed', $code($call('POST', 'account/keys', array('name' => 'x', 'scopes' => array('listings:read'), 'current_password' => 'battery staple'), $s['access_token'])));
 pin('the password is required', '422 validation_failed', $code($call('POST', 'account/keys', array_diff_key($keyBody, array('current_password' => 1)), $s['access_token'])));
-pin('and must be right', array(422, '/current_password'), (static function (Response $r): array {
+pin('the current password must be right', array(422, '/current_password'), (static function (Response $r): array {
     return array($r->status(), $r->body()['errors'][0]['pointer'] ?? null);
 })($call('POST', 'account/keys', array('current_password' => 'wrong') + $keyBody, $s['access_token'])));
 pin('a personal key takes a number of days too, as an admin key does', 201, $call('POST', 'account/keys', array('expires_at' => '30d', 'name' => 'Days') + $keyBody, $s['access_token'])->status());
@@ -445,7 +469,7 @@ $s = $call('POST', 'account/password', array('current_password' => 'battery stap
 pin('a password change through the API ends the user\'s keys', 401, $call('GET', 'account', null, $bound)->status());
 $bound = (string) $call('POST', 'account/keys', array('current_password' => 'third pass') + $keyBody, $s['access_token'])->body()['data']['token'];
 \mindstellar\user\AccountService::setPassword($uma, 'reset pass');
-pin('so does a change anywhere else, such as a reset or an admin\'s edit', 401, $call('GET', 'account', null, $bound)->status());
+pin('a password change anywhere else, such as a reset or an admin edit, ends the keys too', 401, $call('GET', 'account', null, $bound)->status());
 
 // A password stored at another cost is stored again at sign-in: that is not a change.
 $admin->query("UPDATE {$p}t_user SET s_password = '" . $admin->real_escape_string(password_hash('battery staple', PASSWORD_BCRYPT, array('cost' => BCRYPT_COST + 1))) . "' WHERE pk_i_id = $uma");
@@ -454,7 +478,7 @@ $bound = (string) $call('POST', 'account/keys', $keyBody, $old['access_token'])-
 $fresh = $login('uma', 'battery staple');
 check('the next sign-in rehashed the password at the current cost', str_starts_with($userRow($uma)['s_password'], sprintf('$2y$%02d$', BCRYPT_COST)) && $fresh->status() === 200);
 pin('the key survives a rehash', 200, $call('GET', 'account', null, $bound)->status());
-pin('and so does the earlier sign-in\'s refresh token', 200, $call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $old['refresh_token']))->status());
+pin('the earlier sign-in refresh token survives a rehash', 200, $call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $old['refresh_token']))->status());
 $settings = new ApiSettings(true, userKeys: true);
 
 harness_section('sign-up');
@@ -465,13 +489,74 @@ $fired    = array();
 $r        = $call('POST', 'users', $signup, null, array(), '203.0.113.7');
 pin('when on, an account is made: 201, waiting for activation', array(201, false), array($r->status(), $r->body()['data']['confirmed'] ?? null));
 pin('no Location, as the account cannot be read until it is confirmed', null, $r->header('Location'));
+pin('the body says only whether the account is confirmed, no id', array('confirmed' => false), $r->body()['data'] ?? null);
 pin('matches the schema', array(), $schemaErrors('NewAccountDocument', $r));
 check('the site asks for a captcha on its own form', osc_captcha_enabled());
-pin('the sign-up form\'s hooks fire, with the activation e-mail', array('before_user_register', 'pre_user_post', 'hook_email_user_validation', 'user_register_completed'), $fired);
-pin('without the captcha the form would ask for', array('0', 'neo'), array($userRow((int) $r->body()['data']['id'])['b_active'], $userRow((int) $r->body()['data']['id'])['s_username']));
-pin('an e-mail in use is 422 with the form\'s message', array(422, 'The specified e-mail is already in use'), (static function (Response $r): array {
-    return array($r->status(), $r->body()['errors'][0]['message'] ?? null);
-})($call('POST', 'users', $signup, null, array(), '203.0.113.7')));
+pin('the sign-up form\'s hooks fire; the activation e-mail waits for its job', array('before_user_register', 'pre_user_post', 'user_register_completed'), $fired);
+$neo = (int) $admin->query("SELECT pk_i_id FROM {$p}t_user WHERE s_email = 'neo@example.test'")->fetch_row()[0];
+pin('without the captcha the form would ask for', array('0', 'neo'), array($userRow($neo)['b_active'], $userRow($neo)['s_username']));
+$taken = $call('POST', 'users', array('username' => '') + $signup, null, array(), '203.0.113.7');
+pin('an e-mail in use answers as a new one: 201, the same body, no Location', array(201, array('confirmed' => false), null), array($taken->status(), $taken->body()['data'] ?? null, $taken->header('Location')));
+pin('a sign-up with a taken e-mail makes no second account', 1, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_user WHERE s_email = 'neo@example.test'")->fetch_row()[0]);
+$queued = $admin->query("SELECT s_type, s_payload FROM {$p}t_job_queue WHERE s_type LIKE 'user.%'")->fetch_all();
+pin('the activation e-mail waits on the job queue, which holds only the user id', array(array(array('user.activation_mail', array('user' => $neo))), array(), array()), array(
+    array_map(static fn ($r) => array($r[0], json_decode($r[1], true)), array_filter($queued, static fn ($r) => $r[0] === 'user.activation_mail')),
+    $aaSent,
+    $aaCodes,
+));
+check('no queued e-mail carries an activation link', !str_contains((string) json_encode($queued), 'validate/'));
+$neoRow = $userRow($neo);
+pin('the job mails a fresh code to the account', array(true, array('neo@example.test'), 1), array(\mindstellar\user\SignUpMail::sendActivation($neo, $aaMailer), $aaSent, count($aaCodes)));
+$firstCode = (string) $aaCodes[0];
+check('the user row keeps only the code\'s hash', $userRow($neo)['s_secret'] === \mindstellar\security\ActionToken::hash($firstCode) && $neoRow['s_secret'] !== $userRow($neo)['s_secret']);
+\mindstellar\user\SignUpMail::sendActivation($neo, $aaMailer);
+$secondCode = (string) $aaCodes[1];
+$refused    = static function (int $id, string $code): string {
+    try {
+        (new \mindstellar\user\AccountService())->confirm($id, $code);
+    } catch (\mindstellar\validation\RefusedException $e) {
+        return get_class($e);
+    }
+
+    return 'confirmed';
+};
+pin('a retried job makes a new code, and the old one no longer works', \mindstellar\validation\NotFoundException::class, $refused($neo, $firstCode));
+pin('the code in the sent link activates the account', array('confirmed', '1'), array($refused($neo, $secondCode), $userRow($neo)['b_active']));
+$admin->query("UPDATE {$p}t_user SET b_active = 0 WHERE pk_i_id = $neo");
+scratchdb_forget_cache();
+$GLOBALS['aaMailWorks'] = false;
+pin('a failed send throws, so the job is tried again', 'RuntimeException', (static function (int $id) use ($aaMailer): string {
+    try {
+        \mindstellar\user\SignUpMail::sendActivation($id, $aaMailer);
+    } catch (\RuntimeException $e) {
+        return get_class($e);
+    }
+
+    return 'no exception';
+})($neo));
+unset($GLOBALS['aaMailWorks']);
+$admin->query("UPDATE {$p}t_user SET b_active = 1 WHERE pk_i_id = $neo");
+scratchdb_forget_cache();
+$aaSent = array('neo@example.test', 'neo@example.test');
+pin('once active, the job sends nothing', array(false, 2), array(\mindstellar\user\SignUpMail::sendActivation($neo, $aaMailer), count($aaSent)));
+check('a job for an account that is gone sends nothing', !\mindstellar\user\SignUpMail::sendActivation(999999, $aaMailer));
+$aaSent = array();
+$nameNew   = $call('POST', 'users', array('email' => 'morpheus@example.test') + $signup, null, array(), '203.0.113.60');
+$nameTaken = $call('POST', 'users', $signup, null, array(), '203.0.113.61');
+pin('a taken username is refused the same way with a new e-mail and a taken one', array(422, $nameNew->body()['errors'] ?? null), array($nameTaken->status(), $nameTaken->body()['errors'] ?? null));
+pin('a taken username is refused as 422 with a new e-mail', 422, $nameNew->status());
+// Sign up with a name and an e-mail, then with the same name and a fresh e-mail.
+$twoStep = static function (string $firstEmail, string $name, int $n) use ($call): array {
+    $first  = $call('POST', 'users', array('email' => $firstEmail, 'username' => $name, 'name' => 'Two', 'password' => 'red pill'), null, array(), '203.0.113.' . (70 + $n));
+    $second = $call('POST', 'users', array('email' => 'second' . $n . '@example.test', 'username' => $name, 'name' => 'Two', 'password' => 'red pill'), null, array(), '203.0.113.' . (80 + $n));
+
+    return array($first->status(), $first->body(), $second->status(), $second->body()['errors'] ?? null);
+};
+$withTaken = $twoStep('sam@example.test', 'cypher', 1);
+$withNew   = $twoStep('switch@example.test', 'apoc', 2);
+pin('the second sign-up answers the same whether the first e-mail was taken or new', $withNew, $withTaken);
+pin('a sign-up with a taken e-mail answers 201 first, then the username refusal', array(201, 422, 'Username is already taken'), array($withTaken[0], $withTaken[2], $withTaken[3][0]['message'] ?? null));
+pin('the taken e-mail made no account', 0, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_user WHERE s_username = 'cypher'")->fetch_row()[0]);
 for ($i = 0; $i < 5; $i++) {
     $last = $call('POST', 'users', array('email' => 'n' . $i . '@example.test') + $signup, null, array(), '203.0.113.7');
 }
@@ -484,7 +569,7 @@ pin('each address gets a few tries an hour, then 429', '429 rate_limited', $code
 $GLOBALS['aa_limiter'] = api_test_limiter(static fn (string $bucket) => $bucket === 'api_register_site' ? \mindstellar\api\ratelimit\RatePolicy::SIGN_UPS_PER_SITE + 1 : 1);
 pin('the whole site has a cap too', '429 rate_limited', $code($call('POST', 'users', array('email' => 'cap@example.test') + $signup, null, array(), '203.0.113.99')));
 $GLOBALS['aa_limiter'] = api_test_limiter(static fn () => null);
-pin('and sign-up fails closed when the counter cannot be reached', '429 rate_limited', $code($call('POST', 'users', array('email' => 'closed@example.test') + $signup, null, array(), '203.0.113.98')));
+pin('sign-up fails closed when the counter cannot be reached', '429 rate_limited', $code($call('POST', 'users', array('email' => 'closed@example.test') + $signup, null, array(), '203.0.113.98')));
 unset($GLOBALS['aa_limiter']);
 pin('no account was made by either', 0, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_user WHERE s_email IN ('cap@example.test', 'closed@example.test')")->fetch_row()[0]);
 $settings = new ApiSettings(true, userKeys: true);
@@ -511,9 +596,9 @@ pin('the stamp went up by one', $stampBefore + 1, AuthStamp::of($row));
 pin('every access token is dead, this one too', array(401, 401), array(
     $call('GET', 'account', null, $one['access_token'])->status(), $call('GET', 'account', null, $two['access_token'])->status(),
 ));
-pin('so are the refresh tokens', '400 invalid_grant', $code($call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $two['refresh_token']))));
-pin('and the personal key', 401, $call('GET', 'account', null, $key)->status());
-pin('and the page token and the web cookie', array(PageTokens::REFUSED, false), array(
+pin('a password reset kills the refresh tokens', '400 invalid_grant', $code($call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $two['refresh_token']))));
+pin('a password reset kills the personal key', 401, $call('GET', 'account', null, $key)->status());
+pin('a password reset kills the page token and the web cookie', array(PageTokens::REFUSED, false), array(
     (new PageTokens())->check($page, $row), RememberMe::verify('web', $uma, $cookie, $row['s_password'], AuthStamp::of($row)),
 ));
 pin('the session list holds only a sign-in made after', 1, count($call('GET', 'account/sessions', null, $login('uma', 'battery staple')->body()['access_token'])->body()['data'] ?? array()));

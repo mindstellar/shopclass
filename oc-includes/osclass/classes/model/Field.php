@@ -214,37 +214,7 @@ class Field extends DAO
      */
     public function categoryPath($catId)
     {
-        $catId = (int)$catId;
-        if ($catId <= 0) {
-            return array();
-        }
-
-        // Every category's parent in one cached query; category edits clear the group.
-        $parents = \mindstellar\cache\CacheGroup::remember('category', 'parents', static function () {
-            try {
-                $rows = Db::select('SELECT pk_i_id, fk_i_parent_id FROM ' . DB_TABLE_PREFIX . 't_category');
-            } catch (\mindstellar\database\DbException $e) {
-                return null;
-            }
-
-            return array_map('intval', array_column($rows, 'fk_i_parent_id', 'pk_i_id'));
-        }) ?? array();
-
-        $path    = array();
-        $current = $catId;
-        $guard   = 0;
-        while ($current > 0 && $guard < 100) {
-            $path[]  = $current;
-            $current = $parents[$current] ?? 0;
-            // defensive: a parent chain that points back at a category already seen
-            // would loop; break instead of spinning to the guard.
-            if (in_array($current, $path, true)) {
-                break;
-            }
-            $guard++;
-        }
-
-        return $path;
+        return \mindstellar\fields\FieldQuery::categoryPath((int) $catId);
     }
 
     /**
@@ -292,55 +262,13 @@ class Field extends DAO
      */
     public function findByCategory($id)
     {
-        $path = $this->categoryPath($id);
-        if (empty($path)) {
-            return array();
-        }
-        // Every id in $path is an (int) produced by categoryPath(); each IN list
-        // is generated placeholders bound to those ids. The two arms each carry
-        // the whole path, so it is bound twice. Every identifier is a literal or
-        // the DB_TABLE_PREFIX constant.
-        $placeholders = implode(', ', array_fill(0, count($path), '?'));
-        $p            = DB_TABLE_PREFIX;
-
-        // Loose fields directly assigned (and in NO form), plus grouped fields whose
-        // form is assigned to the category — form membership now comes from the link
-        // table t_meta_group_fields (a field can be in several forms).
-        // The union carries ids and group positions only, it is collapsed to one row
-        // per field inside its own subquery, and the field columns are read back from
-        // t_meta_fields with no GROUP BY in sight: selecting whole rows alongside a
-        // GROUP BY is rejected under ONLY_FULL_GROUP_BY. MIN() also makes a field that
-        // is both loose and grouped sort as loose rather than as whichever row the
-        // server reached first.
-        $sql = 'SELECT mf.*, query.cf_group_position'
-            . ' FROM ' . $p . 't_meta_fields mf JOIN ('
-            . 'SELECT u.pk_i_id AS pk_i_id, MIN(u.cf_group_position) AS cf_group_position FROM ('
-            . 'SELECT mfa.pk_i_id AS pk_i_id, 0 AS cf_group_position'
-            . ' FROM ' . $p . 't_meta_fields mfa, ' . $p . 't_meta_categories mc'
-            . ' WHERE mc.fk_i_category_id IN (' . $placeholders . ') AND mfa.pk_i_id = mc.fk_i_field_id'
-            . ' AND NOT EXISTS (SELECT 1 FROM ' . $p . 't_meta_group_fields gfx WHERE gfx.fk_i_field_id = mfa.pk_i_id)'
-            . ' UNION '
-            . 'SELECT mfb.pk_i_id AS pk_i_id, g.i_position AS cf_group_position FROM ' . $p . 't_meta_fields mfb'
-            . ' JOIN ' . $p . 't_meta_group_fields gf ON gf.fk_i_field_id = mfb.pk_i_id'
-            . ' JOIN ' . $p . 't_meta_group g ON gf.fk_i_group_id = g.pk_i_id'
-            . ' JOIN ' . $p . 't_meta_group_categories gc ON gc.fk_i_group_id = g.pk_i_id'
-            . ' WHERE gc.fk_i_category_id IN (' . $placeholders . ')'
-            . ') AS u GROUP BY u.pk_i_id'
-            . ') AS query ON query.pk_i_id = mf.pk_i_id'
-            . ' ORDER BY query.cf_group_position ASC, mf.i_position ASC';
-
         try {
-            $fields = Db::select($sql, array_merge($path, $path));
+            $fields = \mindstellar\fields\FieldQuery::forCategory((int) $id);
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        $extendedFields = [];
-        foreach (Db::stringifyRows($fields) as $field) {
-            $extendedFields[] = $this->extendField($field);
-        }
-
-        return $extendedFields;
+        return array_map(fn (array $field): array => $this->extendField($field), $fields);
     }
 
     /**

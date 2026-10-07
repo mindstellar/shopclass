@@ -9,13 +9,8 @@
  */
 
 /**
- * Categories, currencies, custom fields and locations through `/admin/...` end to end: who
- * may call, a category's slug history and cache flush, switching a top category off with
- * its subcategories, the currency rules, field slugs, and region, city and area writes with
- * the public location reads showing them at once.
- *
- * Usage:  php tests/models/api-admin-taxonomy.php        (standalone, own scratch database)
- *         php tests/run-models.php api-admin-taxonomy    (as part of the suite)
+ * Categories, currencies, custom fields and locations through `/admin/...` end to end.
+ * Usage: php tests/models/api-admin-taxonomy.php
  */
 
 require_once __DIR__ . '/../lib/harness.php';
@@ -107,13 +102,13 @@ pin('switching it on again', ['1', '1'], [
     $admin->query("SELECT b_enabled FROM {$p}t_item WHERE pk_i_id = $car")->fetch_row()[0],
 ]);
 pin('DELETE: 204', 204, $call('DELETE', 'admin/categories/' . $vans, null, $boss)->status());
-pin('it is gone, and again it is 404', [0, 404], [
+pin('a deleted category is gone and answers 404 again', [0, 404], [
     (int) $admin->query("SELECT COUNT(*) FROM {$p}t_category WHERE pk_i_id = $vans")->fetch_row()[0], $call('DELETE', 'admin/categories/' . $vans, null, $boss)->status(),
 ]);
 
 harness_section('currencies');
 $r = $call('POST', 'admin/currencies', ['code' => 'GBP', 'name' => 'Pound', 'symbol' => '£'], $boss);
-pin('POST: 201', [201, 'GBP', '£'], [$r->status(), $r->body()['data']['code'] ?? null, $r->body()['data']['symbol'] ?? null]);
+pin('POST a currency: 201 with its code and symbol', [201, 'GBP', '£'], [$r->status(), $r->body()['data']['code'] ?? null, $r->body()['data']['symbol'] ?? null]);
 pin('matches the schema', [], api_admin_schema_errors('CurrencyDocument', $r));
 pin('Location names it, and a GET there reads it', ['http://localhost/api/v1/admin/currencies/GBP', 200, 'GBP', 404], [
     $r->header('Location'), $call('GET', 'admin/currencies/GBP', null, $boss)->status(), $call('GET', 'admin/currencies/GBP', null, $boss)->body()['data']['code'] ?? null, $call('GET', 'admin/currencies/ZZZ', null, $boss)->status(),
@@ -138,7 +133,7 @@ pin('a code added by another request meanwhile is 409, not 201 for the other row
 pin('a code in lower case is 422', 422, $call('POST', 'admin/currencies', ['code' => 'gbp', 'name' => 'x'], $boss)->status());
 $r = $call('PATCH', 'admin/currencies/GBP', ['symbol' => 'GBP £'], $boss);
 pin('PATCH keeps the name', [200, 'Pound', 'GBP £'], [$r->status(), $r->body()['data']['name'] ?? null, $r->body()['data']['symbol'] ?? null]);
-pin('the public currency list shows it at once', true, in_array('GBP', array_column($call('GET', 'currencies', null, $boss)->body()['data'] ?? [], 'code'), true));
+check('the public currency list shows it at once', in_array('GBP', array_column($call('GET', 'currencies', null, $boss)->body()['data'] ?? [], 'code'), true));
 pin('the default currency cannot be deleted', '409 conflict', api_admin_code($call('DELETE', 'admin/currencies/USD', null, $boss)));
 $admin->query("UPDATE {$p}t_item SET fk_c_currency_code = 'EUR' WHERE pk_i_id = $car");
 pin('nor one a listing is priced in', '409 conflict', api_admin_code($call('DELETE', 'admin/currencies/EUR', null, $boss)));
@@ -162,7 +157,7 @@ $r = $call('PATCH', 'admin/custom-fields/' . $field, ['required' => true, 'categ
 pin('PATCH: members not sent keep their values; categories are replaced', [200, true, 'body-style', [], 'Body style'], [
     $r->status(), $r->body()['data']['required'] ?? null, $r->body()['data']['slug'] ?? null, $r->body()['data']['categories'] ?? null, $r->body()['data']['name'] ?? null,
 ]);
-pin('the public field list shows it', true, in_array($field, array_column($call('GET', 'custom-fields', null, $boss)->body()['data'] ?? [], 'id'), true));
+check('the public field list shows it', in_array($field, array_column($call('GET', 'custom-fields', null, $boss)->body()['data'] ?? [], 'id'), true));
 pin('DELETE: 204, then 404', [204, 404], [$call('DELETE', 'admin/custom-fields/' . $field, null, $boss)->status(), $call('DELETE', 'admin/custom-fields/' . $field, null, $boss)->status()]);
 
 harness_section('locations');
@@ -173,7 +168,7 @@ pin('matches the schema', [], api_admin_schema_errors('RegionDocument', $r));
 pin('Location names it, and a GET there reads it', ['http://localhost/api/v1/admin/regions/' . $beta, 200, 'Beta', 404], [
     $r->header('Location'), $call('GET', 'admin/regions/' . $beta, null, $boss)->status(), $call('GET', 'admin/regions/' . $beta, null, $boss)->body()['data']['name'] ?? null, $call('GET', 'admin/regions/99999', null, $boss)->status(),
 ]);
-pin('the public region list shows it at once', true, in_array($beta, array_column($call('GET', 'countries/US/regions', null, $boss)->body()['data'] ?? [], 'id'), true));
+check('the public region list shows it at once', in_array($beta, array_column($call('GET', 'countries/US/regions', null, $boss)->body()['data'] ?? [], 'id'), true));
 pin('the same name again is 422', [422, '/name'], $pointer($call('POST', 'admin/regions', ['country' => 'US', 'name' => 'Beta'], $boss)));
 pin('an unknown country is 404', 404, $call('POST', 'admin/regions', ['country' => 'ZZ', 'name' => 'Gamma'], $boss)->status());
 $r = $call('PATCH', 'admin/regions/' . $region, ['name' => 'Alpha North'], $boss);
@@ -213,9 +208,9 @@ $trucks = (int) ($r->body()['data']['id'] ?? 0);
 pin('POST a category: tags out, as the category screen stores them', [201, 'Trucks', 'Big &amp; small'], [
     $r->status(), $text("SELECT s_name FROM {$p}t_category_description WHERE fk_i_category_id = $trucks"), $text("SELECT s_description FROM {$p}t_category_description WHERE fk_i_category_id = $trucks"),
 ]);
-pin('and the API reads it back as the text that was sent, not HTML-encoded', 'Big & small', $call('GET', 'admin/categories/' . $trucks, null, $boss)->body()['data']['translations']['en_US']['description'] ?? null);
+pin('the API reads a category description back as the text that was sent, not HTML-encoded', 'Big & small', $call('GET', 'admin/categories/' . $trucks, null, $boss)->body()['data']['translations']['en_US']['description'] ?? null);
 pin('a blank name is 422', [422, '/translations/en_US/name'], $pointer($call('POST', 'admin/categories', ['translations' => ['en_US' => ['name' => '   ']]], $boss)));
-pin('so is one of tags only', [422, '/translations/en_US/name'], $pointer($call('POST', 'admin/categories', ['translations' => ['en_US' => ['name' => '<b></b>']]], $boss)));
+pin('a name of tags only is 422', [422, '/translations/en_US/name'], $pointer($call('POST', 'admin/categories', ['translations' => ['en_US' => ['name' => '<b></b>']]], $boss)));
 $call('PATCH', 'admin/categories/' . $trucks, ['translations' => ['en_US' => ['name' => '<b onmouseover="x()">Lorries</b>', 'description' => '<script>x</script>']]], $boss);
 pin('PATCH a category\'s texts: tags out', ['Lorries', ''], [
     $text("SELECT s_name FROM {$p}t_category_description WHERE fk_i_category_id = $trucks"), $text("SELECT s_description FROM {$p}t_category_description WHERE fk_i_category_id = $trucks"),

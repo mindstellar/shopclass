@@ -133,7 +133,7 @@ class Category extends DAO
      */
     public function listEnabled()
     {
-        return $this->listWhere("b.s_name != '' AND a.b_enabled = 1");
+        return $this->mergeLocales(\mindstellar\category\CategoryQuery::enabledRows() ?? array());
     }
 
     /**
@@ -201,14 +201,25 @@ class Category extends DAO
             return array();
         }
 
-        if ($allResults === array()) {
-            return array();
-        }
-
         // The prepared path (%d/%s callers) returns native ints; the unprepared
         // path (literal callers) returns strings. Normalise to the legacy
         // all-strings row shape before the per-locale merge.
-        $allResults       = Db::stringifyRows($allResults);
+        return $this->mergeLocales(Db::stringifyRows($allResults));
+    }
+
+    /**
+     * One row per category from its rows per language: each language's text under `locale`,
+     * and the category's own text in this model's language, else its first.
+     *
+     * @param array<int,array<string,mixed>> $allResults joined category and description rows
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private function mergeLocales(array $allResults): array
+    {
+        if ($allResults === array()) {
+            return array();
+        }
         $mergedCategories = [];
         foreach ($allResults as $cat) {
             // merge all the array with the same pk_i_id

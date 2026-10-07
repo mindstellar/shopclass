@@ -78,6 +78,8 @@ final class SparseFieldset
 
     /**
      * Whether a top-level member is wanted, so a serializer can skip work.
+     *
+     * @api
      */
     public function wants(string $member): bool
     {

@@ -9,11 +9,8 @@
  */
 
 /**
- * Every API answer carries a `Request-Id` header and an error's `instance` is
- * `urn:request:<id>`. A valid id from the client is reused; anything else is replaced.
- * Also: the OAuth password grant answers `unsupported_grant_type` while its switch is off.
- *
- * DB-free.  Usage: php tests/api-request-id.php
+ * The Request-Id header and the error `instance`, plus the password grant switch.
+ * Usage: php tests/api-request-id.php
  */
 
 require_once __DIR__ . '/lib/api-boot.php';
@@ -82,13 +79,13 @@ $call = static fn (string $path, array $headers = []): Response => $kernel->hand
 
 harness_section('Request-Id on every answer');
 $ok = $call('ping');
-pin('a success has one', 1, preg_match('/^[A-Za-z0-9_-]{8,64}$/', (string) $ok->header('Request-Id')));
+pin('a success carries a well-formed Request-Id', 1, preg_match('/^[A-Za-z0-9_-]{8,64}$/', (string) $ok->header('Request-Id')));
 check('a success has no problem instance', !isset($ok->body()['instance']));
 check('each request gets its own', $call('ping')->header('Request-Id') !== $ok->header('Request-Id'));
 
 $missing = $call('nothing');
-pin('a 404 has one', 404, $missing->status());
-pin('...and its instance is urn:request:<id>', 'urn:request:' . $missing->header('Request-Id'), $missing->body()['instance']);
+pin('an unknown path answers 404', 404, $missing->status());
+pin('a 404 problem instance is urn:request:<Request-Id>', 'urn:request:' . $missing->header('Request-Id'), $missing->body()['instance']);
 
 $logged = [];
 $prev   = ini_set('error_log', $file = tempnam(sys_get_temp_dir(), 'apilog'));
@@ -97,13 +94,13 @@ ini_set('error_log', (string) $prev);
 $line = (string) file_get_contents($file);
 unlink($file);
 pin('a 500 is a problem with an instance and a header', [500, 'urn:request:' . $boom->header('Request-Id')], [$boom->status(), $boom->body()['instance']]);
-check('...and its log line names the request id', str_contains($line, '(request ' . $boom->header('Request-Id') . ')'));
-check('...but the response does not leak the exception', !str_contains((string) json_encode($boom->body()), 'secret detail'));
-pin('an OPTIONS preflight has one too', true, $kernel->handle(new Request('OPTIONS', 'v1/ping', [], [], '192.0.2.1'))->header('Request-Id') !== null);
+check('a 500 log line names the request id', str_contains($line, '(request ' . $boom->header('Request-Id') . ')'));
+check('a 500 response does not leak the exception', !str_contains((string) json_encode($boom->body()), 'secret detail'));
+check('an OPTIONS preflight carries a Request-Id', $kernel->handle(new Request('OPTIONS', 'v1/ping', [], [], '192.0.2.1'))->header('Request-Id') !== null);
 
 harness_section('A client\'s id is reused when it is valid');
-pin('Request-Id', 'abc-12345_x.y', $call('ping', ['Request-Id' => 'abc-12345_x.y'])->header('Request-Id'));
-pin('X-Request-Id', 'abc-12345', $call('ping', ['X-Request-Id' => 'abc-12345'])->header('Request-Id'));
+pin('a valid client Request-Id is echoed', 'abc-12345_x.y', $call('ping', ['Request-Id' => 'abc-12345_x.y'])->header('Request-Id'));
+pin('a valid client X-Request-Id is echoed', 'abc-12345', $call('ping', ['X-Request-Id' => 'abc-12345'])->header('Request-Id'));
 pin('Request-Id wins over X-Request-Id', 'first-one-1', $call('ping', ['Request-Id' => 'first-one-1', 'X-Request-Id' => 'second-one-2'])->header('Request-Id'));
 $bad = ['short', str_repeat('a', 65), "has space1", "new\nline-123", 'semi;colon1', 'slash/slash1', ''];
 foreach ($bad as $value) {
@@ -133,10 +130,10 @@ $token = static function (ApiSettings $s, string $grant) use ($services): ?array
 
     return null;
 };
-pin('the switch is on by default', true, (new ApiSettings())->passwordGrant());
-pin('off: the password grant is unsupported_grant_type', [400, 'unsupported_grant_type'], $token(new ApiSettings(true, passwordGrant: false), 'password'));
+check('the password grant is on by default', (new ApiSettings())->passwordGrant());
+pin('with the password grant off, a password grant is unsupported_grant_type', [400, 'unsupported_grant_type'], $token(new ApiSettings(true, passwordGrant: false), 'password'));
 $on = $token(new ApiSettings(true), 'password');
 pin('on: it gets past the grant check and asks for the credentials', 'invalid_request', $on[1] ?? null);
-pin('an unknown grant is unsupported_grant_type either way', [400, 'unsupported_grant_type'], $token(new ApiSettings(true), 'implicit'));
+pin('an unknown grant type is unsupported_grant_type with the switch on or off', [400, 'unsupported_grant_type'], $token(new ApiSettings(true), 'implicit'));
 
 exit(harness_result());

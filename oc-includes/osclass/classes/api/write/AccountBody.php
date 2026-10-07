@@ -13,8 +13,8 @@ declare(strict_types=1);
 namespace mindstellar\api\write;
 
 use mindstellar\api\ProblemException;
+use mindstellar\location\LocationQuery;
 use mindstellar\user\AccountInput;
-use Params;
 
 /**
  * An account body read as the profile form, for AccountService::update(): the stored values
@@ -49,7 +49,7 @@ final class AccountBody
      */
     public static function profile(array $user, array $patch): array
     {
-        return Params::withRequest(self::params($user, $patch), static fn (): array => AccountInput::read(false));
+        return AccountInput::fromArray(self::params($user, $patch), false);
     }
 
     /**
@@ -63,7 +63,7 @@ final class AccountBody
      */
     public static function admin(array $user, array $patch): array
     {
-        return Params::withRequest(self::adminParams($user, $patch), static fn (): array => AccountInput::read(true));
+        return AccountInput::fromArray(self::adminParams($user, $patch), true);
     }
 
     /**
@@ -101,20 +101,21 @@ final class AccountBody
         if (array_key_exists('is_company', $patch)) {
             $params['b_company'] = $patch['is_company'] === true ? '1' : '0';
         }
+        $places = new LocationQuery();
         if (array_key_exists('country', $patch)) {
             $code = strtoupper((string) ($patch['country'] ?? ''));
-            if ($code !== '' && \Country::getInstance()->findByCode($code) == false) {
+            if ($code !== '' && !$places->exists(LocationQuery::COUNTRY, $code)) {
                 throw ProblemException::field('/country', 'unknown', 'is not a country of this site');
             }
             $params['countryId'] = $code;
             $params['country']   = '';
         }
-        foreach (['region_id' => ['regionId', 'region', \Region::class], 'city_id' => ['cityId', 'city', \City::class]] as $member => [$idField, $nameField, $model]) {
+        foreach (['region_id' => ['regionId', 'region', LocationQuery::REGION], 'city_id' => ['cityId', 'city', LocationQuery::CITY]] as $member => [$idField, $nameField, $level]) {
             if (!array_key_exists($member, $patch)) {
                 continue;
             }
             $id = (int) ($patch[$member] ?? 0);
-            if ($id > 0 && $model::newInstance()->findByPrimaryKey($id) == false) {
+            if ($id > 0 && !$places->exists($level, $id)) {
                 throw ProblemException::field('/' . $member, 'unknown', 'does not exist');
             }
             $params[$idField]   = $id > 0 ? (string) $id : '';

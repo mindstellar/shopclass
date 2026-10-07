@@ -15,17 +15,18 @@ namespace mindstellar\api\controller;
 use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
-use mindstellar\api\read\ListingReader;
-use mindstellar\api\read\ListingSearch;
 use mindstellar\api\read\ListSpec;
+use mindstellar\api\read\Page;
 use mindstellar\api\read\Pager;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\CommentSerializer;
 use mindstellar\api\serializer\ListingSerializer;
 use mindstellar\api\serializer\ViewContext;
 use mindstellar\comment\CommentQuery;
+use mindstellar\database\Db;
 use mindstellar\listing\ListingPolicy;
 use mindstellar\listing\ListingQuery;
+use mindstellar\listing\PhotoStore;
 
 /**
  * Listings: search, one listing, its photos and its comments. Search leaves out listings that
@@ -35,18 +36,13 @@ use mindstellar\listing\ListingQuery;
  */
 final class ListingsController
 {
-    private ListingSearch $search;
-    private ListingReader $reader;
-
     public function __construct(private ApiServices $api)
     {
-        $this->search = $api->listingSearch();
-        $this->reader = $api->listingReader();
     }
 
     public function index(ApiCall $call): Response
     {
-        return $this->search->run($call->request(), $call->credential(), null, 'listings');
+        return $this->api->listingSearch()->run($call->request(), $call->credential(), null, 'listings');
     }
 
     public function show(ApiCall $call): Response
@@ -55,19 +51,20 @@ final class ListingsController
         $credential = $call->credential();
 
         $context = $this->api->context($request, $credential, 'listing', ListingSerializer::MEMBERS, ListingSerializer::INCLUDES);
-        $item    = $this->reader->row($call->intArg());
+        $reader  = $this->api->listingReader();
+        $item    = $reader->row($call->intArg());
         if ($item === null || !ListingPolicy::canView($item, $credential->actor($request->ip(), ViewContext::LISTINGS_SCOPE))) {
             throw ProblemException::notFound('No such listing.');
         }
 
-        return Response::ok($this->reader->view($item, $context));
+        return Response::ok($reader->view($item, $context));
     }
 
     public function photos(ApiCall $call): Response
     {
         $id = (int) $this->visibleRow($call, $call->intArg())['pk_i_id'];
 
-        return Response::collection($this->reader->photos($id));
+        return Page::whole($this->photoList($id), $this->api->links(), $call);
     }
 
     /**
@@ -77,7 +74,7 @@ final class ListingsController
     {
         $id      = (int) $this->visibleRow($call, $call->intArg())['pk_i_id'];
         $photoId = $call->intArg('photo');
-        foreach ($this->reader->photos($id) as $photo) {
+        foreach ($this->photoList($id) as $photo) {
             if ($photo['id'] === $photoId) {
                 return Response::ok($photo);
             }
@@ -108,8 +105,21 @@ final class ListingsController
             static fn (array $page): array => array_map([new CommentSerializer(), 'one'], $page),
             $this->api->links(),
             'listings/' . $id . '/comments',
-            $request->query()
+            $request->query(),
+            $request->version()
         );
+    }
+
+    /**
+     * A listing's photos, oldest first, without loading the category catalog a reader carries.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private function photoList(int $id): array
+    {
+        $rows = Db::stringifyRows(PhotoStore::ofItems([$id]));
+
+        return $this->api->listingSerializer()->photos($rows);
     }
 
     /**

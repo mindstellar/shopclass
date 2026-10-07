@@ -33,6 +33,8 @@ final class Response
     /** @var array<string,array{0:string,1:string}> lowercase name => [name, value] */
     private array $headers = [];
 
+    private ?string $json = null;
+
     /**
      * @param array<string,mixed>|null $body    null sends no body
      * @param array<string,string>     $headers
@@ -49,6 +51,8 @@ final class Response
      *
      * @param array<mixed>        $data
      * @param array<string,mixed> $extra more top-level members, e.g. `warnings`
+     *
+     * @api
      */
     public static function ok(array $data, int $status = 200, array $extra = []): self
     {
@@ -61,6 +65,8 @@ final class Response
      * @param array<mixed>        $data
      * @param string              $location the new resource's URL
      * @param array<string,mixed> $extra    more top-level members, e.g. `warnings`
+     *
+     * @api
      */
     public static function created(array $data, string $location, array $extra = []): self
     {
@@ -73,6 +79,8 @@ final class Response
      * @param array<int,mixed>      $items
      * @param array<string,mixed>   $meta
      * @param array<string,?string> $links
+     *
+     * @api
      */
     public static function collection(array $items, array $meta = [], array $links = ['next' => null]): self
     {
@@ -85,6 +93,7 @@ final class Response
         return new self(200, $body);
     }
 
+    /** @api */
     public static function noContent(): self
     {
         return new self(204);
@@ -123,6 +132,8 @@ final class Response
 
     /**
      * A copy with one header set. A Set-Cookie header is refused.
+     *
+     * @api
      */
     public function withHeader(string $name, string $value): self
     {
@@ -157,8 +168,17 @@ final class Response
         $copy              = clone $this;
         $copy->body        = $copy->body ?? [];
         $copy->body[$name] = $value;
+        $copy->json        = null;
 
         return $copy;
+    }
+
+    /**
+     * The body as JSON, encoded once for the length, the ETag and the wire.
+     */
+    private function json(): string
+    {
+        return $this->json ??= json_encode($this->body, self::JSON_FLAGS | JSON_THROW_ON_ERROR);
     }
 
     /**
@@ -170,7 +190,7 @@ final class Response
             return null;
         }
 
-        return $this->header('ETag') ?? osc_response_etag_value(json_encode($this->body, self::JSON_FLAGS | JSON_THROW_ON_ERROR));
+        return $this->header('ETag') ?? osc_response_etag_value($this->json());
     }
 
     /**
@@ -183,7 +203,7 @@ final class Response
             return $this;
         }
 
-        return $this->withHeader('ETag', '"' . $version . '.' . trim((string) osc_response_etag_value(json_encode($this->body, self::JSON_FLAGS | JSON_THROW_ON_ERROR)), '"') . '"');
+        return $this->withHeader('ETag', '"' . $version . '.' . trim((string) osc_response_etag_value($this->json()), '"') . '"');
     }
 
     /**
@@ -223,7 +243,7 @@ final class Response
         ]);
         $status  = $this->status;
         $headers = $response->headers();
-        $body    = $this->body === null ? '' : json_encode($this->body, self::JSON_FLAGS | JSON_THROW_ON_ERROR);
+        $body    = $this->body === null ? '' : $this->json();
 
         $method = strtoupper($method);
         if (($method === 'GET' || $method === 'HEAD') && $status === 200 && $this->body !== null) {
@@ -267,7 +287,7 @@ final class Response
     }
 
     /**
-     * With auto-cron as the site's mode, lets the job queue run now that the answer has gone.
+     * With auto-cron as the site's mode, lets the job queue run after the answer is sent.
      * A failure here never changes the response.
      */
     private static function tickAutoCron(): void

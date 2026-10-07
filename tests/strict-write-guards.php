@@ -119,6 +119,10 @@ $userCount = static function () use ($admin, $prefix): int {
  * Post a registration and hand back whatever add() answered. Params is static and
  * request-scoped, so every field one call sets is cleared before the next.
  */
+foreach (array('enabled_users' => '1', 'enabled_user_registration' => '1') as $k => $v) {
+    Preference::getInstance()->set($k, $v);
+}
+osc_reset_preferences();
 $register = static function (array $params, bool $isAdmin = false) {
     foreach (array(
         's_name', 's_email', 's_username', 's_password', 's_password2', 's_website',

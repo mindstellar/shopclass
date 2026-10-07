@@ -1360,6 +1360,12 @@ msgstr ""
 msgid "No listings with this status."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebSearch.php
+msgid ""
+"No more alerts can be saved right now. Delete one you no longer need, or "
+"try again later."
+msgstr ""
+
 #: oc-includes/osclass/gui/billing/buy-content.php
 msgid "No payment method is set up yet."
 msgstr ""
@@ -1390,6 +1396,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/category/CategoryService.php
 msgid "No such category."
+msgstr ""
+
+#: oc-includes/osclass/classes/moderation/CommentModeration.php
+msgid "No such comment."
 msgstr ""
 
 #: oc-includes/osclass/classes/api/controller/admin/AdminCurrenciesController.php
@@ -3073,10 +3083,6 @@ msgstr ""
 msgid "Too fast. You should wait a little to publish your ad."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/CWebSearch.php
-msgid "Too many alerts were saved from here. Please try again later."
-msgstr ""
-
 #: oc-includes/osclass/classes/comment/CommentService.php
 msgid "Too many comments in an hour. Try again later."
 msgstr ""
@@ -3157,7 +3163,7 @@ msgstr ""
 msgid "User not enabled"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/CWebRegister.php
+#: oc-includes/osclass/classes/user/AccountService.php
 msgid "User registration is not enabled"
 msgstr ""
 
@@ -3183,12 +3189,11 @@ msgid "Username is already taken"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebLogin.php
-#: oc-includes/osclass/classes/controller/CWebRegister.php
+#: oc-includes/osclass/classes/user/AccountService.php
 msgid "Users are not enabled"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebLogin.php
-#: oc-includes/osclass/classes/controller/CWebRegister.php
 #: oc-includes/osclass/classes/controller/CWebUser.php
 #: oc-includes/osclass/classes/controller/CWebUserNonSecure.php
 msgid "Users not enabled"
@@ -3449,17 +3454,17 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebForm.php
 #: oc-includes/osclass/classes/controller/CWebLogin.php
-#: oc-includes/osclass/classes/controller/CWebRegister.php
 #: oc-includes/osclass/classes/listing/ListingService.php
 #: oc-includes/osclass/classes/security/MessageGuard.php
+#: oc-includes/osclass/classes/user/AccountService.php
 msgid "Your current IP is not allowed"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebContact.php
 #: oc-includes/osclass/classes/controller/CWebLogin.php
-#: oc-includes/osclass/classes/controller/CWebRegister.php
 #: oc-includes/osclass/classes/listing/ListingService.php
 #: oc-includes/osclass/classes/security/MessageGuard.php
+#: oc-includes/osclass/classes/user/AccountService.php
 msgid "Your current email is not allowed"
 msgstr ""
 

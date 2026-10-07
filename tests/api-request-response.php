@@ -9,12 +9,8 @@
  */
 
 /**
- * The API's Request, Response and Problem values: the path read once from the raw URI and
- * refused when it hides a slash, a dot segment or NUL; body cap, content type and JSON errors
- * as ProblemException; the Apache Authorization fallback; the query read as sent; problem+json;
- * core's ETag and 304; HTML-safe JSON; immutability; and no cookie ever sent.
- *
- * DB-free.  Usage: php tests/api-request-response.php
+ * The API Request, Response and Problem values: path rules, body limits, ETag and JSON output.
+ * Usage: php tests/api-request-response.php
  */
 
 require_once __DIR__ . '/lib/api-boot.php';
@@ -44,22 +40,22 @@ pin('method is upper case', 'POST', $r->method());
 pin('path loses its slashes', 'v1/listings', $r->path());
 pin('content type is the bare media type, lower case', 'application/json', $r->contentType());
 pin('headers are read in any case', 'Bearer x', $r->authorization());
-pin('a JSON object body decodes', ['a' => 1], $r->json());
+pin('a JSON object body decodes', ['a' => 1], $r->input());
 check('a POST is a write, not a read', $r->isWrite() && !$r->isRead());
 pin('withQuery returns a changed copy', [['limit' => '5'], ['x' => 1]], [$r->query(), $r->withQuery(['x' => 1])->query()]);
 
-pin('a body over the cap is 413', 'too_large 413', $thrown(static fn () => (new Request('POST', 'v1', [], ['Content-Type' => 'application/json'], '', null))->json()));
-pin('a non-JSON content type is 415', 'unsupported_media_type 415', $thrown(static fn () => (new Request('POST', 'v1', [], ['Content-Type' => 'text/plain'], '', '{}'))->json()));
-pin('broken JSON is 400', 'invalid_json 400', $thrown(static fn () => (new Request('POST', 'v1', [], ['Content-Type' => 'application/json'], '', '{"a":'))->json()));
-pin('a JSON scalar is 400', 'invalid_json 400', $thrown(static fn () => (new Request('POST', 'v1', [], ['Content-Type' => 'application/json'], '', '"x"'))->json()));
+pin('a body over the cap is 413', 'too_large 413', $thrown(static fn () => (new Request('POST', 'v1', [], ['Content-Type' => 'application/json'], '', null))->input()));
+pin('a non-JSON content type is 415', 'unsupported_media_type 415', $thrown(static fn () => (new Request('POST', 'v1', [], ['Content-Type' => 'text/plain'], '', '{}'))->input()));
+pin('broken JSON is 400', 'invalid_json 400', $thrown(static fn () => (new Request('POST', 'v1', [], ['Content-Type' => 'application/json'], '', '{"a":'))->input()));
+pin('a JSON scalar is 400', 'invalid_json 400', $thrown(static fn () => (new Request('POST', 'v1', [], ['Content-Type' => 'application/json'], '', '"x"'))->input()));
 $deep = str_repeat('[', 40) . str_repeat(']', 40);
-pin('JSON nested past the limit is 400', 'invalid_json 400', $thrown(static fn () => (new Request('POST', 'v1', [], ['Content-Type' => 'application/json'], '', $deep))->json()));
+pin('JSON nested past the limit is 400', 'invalid_json 400', $thrown(static fn () => (new Request('POST', 'v1', [], ['Content-Type' => 'application/json'], '', $deep))->input()));
 
 $q = new Request('GET', 'v1', ['limit' => '20', 'arr' => ['1', '2'], 'cat' => '3, 4,,5', 'yes' => 'true']);
 pin('queryInt reads a number', 20, $q->queryInt('limit'));
 pin('queryInt of an array is the default', 7, $q->queryInt('arr', 7));
 pin('queryString of an array is the default', 'd', $q->queryString('arr', 'd'));
-pin('queryBool reads true', true, $q->queryBool('yes'));
+check('queryBool reads true', $q->queryBool('yes'));
 pin('queryList splits a comma list', ['3', '4', '5'], $q->queryList('cat'));
 pin('queryList reads a repeated param', ['1', '2'], $q->queryList('arr'));
 pin('queryList of a missing param is empty', [], $q->queryList('none'));
@@ -121,7 +117,7 @@ $ok  = Response::ok(['id' => 1, 'html' => '<script>&']);
 $out = $ok->prepare('GET');
 pin('ok wraps data, with <, > and & escaped', '{"data":{"id":1,"html":"\u003Cscript\u003E\u0026"}}', $out['body']);
 pin('JSON content type', Response::JSON_TYPE, $out['headers']['Content-Type']);
-pin('nosniff', 'nosniff', $out['headers']['X-Content-Type-Options']);
+pin('a JSON answer sends X-Content-Type-Options: nosniff', 'nosniff', $out['headers']['X-Content-Type-Options']);
 pin('private, no-store by default', 'private, no-store', $out['headers']['Cache-Control']);
 pin('a GET 200 gets core\'s ETag of the body', osc_response_etag_value($out['body']), $out['headers']['ETag']);
 
@@ -129,16 +125,50 @@ $again = $ok->prepare('GET', $out['headers']['ETag']);
 pin('a matching If-None-Match is a 304 with no body', [304, ''], [$again['status'], $again['body']]);
 pin('a weak tag in a list also matches', 304, $ok->prepare('GET', 'W/"zz", W/' . $out['headers']['ETag'])['status']);
 pin('another tag does not', 200, $ok->prepare('GET', '"zz"')['status']);
-pin('a POST gets no ETag', false, isset($ok->prepare('POST')['headers']['ETag']));
+pin('a POST gets no ETag', null, $ok->prepare('POST')['headers']['ETag'] ?? null);
 pin('HEAD keeps headers and drops the body', [200, ''], [$ok->prepare('HEAD')['status'], $ok->prepare('HEAD')['body']]);
 pin('204 has no body', '', Response::noContent()->prepare('DELETE')['body']);
 
 $list = Response::collection([5 => 'a', 9 => 'b'], ['total' => 2], ['next' => null]);
 pin('a collection is a list with meta and links', '{"data":["a","b"],"meta":{"total":2},"links":{"next":null}}', $list->prepare('GET')['body']);
 
+$api = new class () implements \mindstellar\api\serializer\Links {
+    public function listing(array $item): string
+    {
+        return '';
+    }
+
+    public function photo(array $resource, string $variant): string
+    {
+        return '';
+    }
+
+    public function user(int $id, string $username): string
+    {
+        return '';
+    }
+
+    public function avatar(int $userId): string
+    {
+        return '';
+    }
+
+    public function api(string $path, ?string $version = null): string
+    {
+        return 'https://x.test/api/' . ($version ?? 'v1') . '/' . $path;
+    }
+
+    public function price(?int $micros, string $symbol): string
+    {
+        return '';
+    }
+};
+$whole = \mindstellar\api\read\Page::whole(['a', 'b'], $api, new \mindstellar\api\ApiCall(new Request('GET', 'v1/currencies', ['api_key' => 'k', 'x' => '1'], [], '', null), \mindstellar\apiaccess\Credential::anonymous()));
+pin('a whole list has the page envelope', '{"data":["a","b"],"meta":{"total":2,"limit":2},"links":{"self":"https://x.test/api/v1/currencies?x=1","next":null}}', $whole->prepare('GET')['body']);
+
 $cookie = (new Response(200, ['data' => []], ['Set-Cookie' => 'a=b', 'X-Test' => "1\r\nSet-Cookie: c=d"]))->withHeader('set-cookie', 'e=f');
 $names  = array_map('strtolower', array_keys($cookie->prepare('GET')['headers']));
-pin('a Response never carries Set-Cookie', false, in_array('set-cookie', $names, true));
+check('a Response never carries Set-Cookie', !in_array('set-cookie', $names, true));
 pin('a header value cannot smuggle a line break', '1Set-Cookie: c=d', $cookie->header('X-Test'));
 $src = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/api/Response.php');
 check('send() removes cookies queued elsewhere, ends every buffer and flushes before exit', str_contains($src, "header_remove('Set-Cookie')")
@@ -170,7 +200,7 @@ pin('RFC 9457 members plus code', [
     'detail' => 'No such endpoint.',
     'code'   => 'not_found',
 ], json_decode($wire['body'], true));
-pin('a problem gets no ETag', false, isset($wire['headers']['ETag']));
+pin('a problem gets no ETag', null, $wire['headers']['ETag'] ?? null);
 pin('the problem does not set Content-Type itself', null, $p->header('Content-Type'));
 pin('an unknown code is a 500', [500, 'server_error'], [Problem::make('nope')->status(), Problem::make('nope')->body()['code']]);
 
@@ -218,7 +248,7 @@ try {
 } catch (ProblemException $e) {
     $refused = $e->response();
 }
-pin('and a 415 on PATCH names it in Accept-Patch', [415, Request::MERGE_PATCH], [$refused?->status(), $refused?->header('Accept-Patch')]);
+pin('a 415 on PATCH names merge-patch in Accept-Patch', [415, Request::MERGE_PATCH], [$refused?->status(), $refused?->header('Accept-Patch')]);
 
 $bad = array_filter(Problem::CATALOGUE, static fn (array $e, string $c): bool => preg_match('/^[a-z_]+$/', $c) !== 1 || $e[0] < 400 || $e[0] > 599 || $e[1] === '', ARRAY_FILTER_USE_BOTH);
 pin('every catalogue entry is well formed', [], array_keys($bad));

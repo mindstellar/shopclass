@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\api\auth;
 
 use mindstellar\database\Db;
+use mindstellar\user\UserStore;
 
 /**
  * User rows as the API reads them, each loaded once per request: checking an access token,
@@ -44,6 +45,26 @@ final class UserRows
         }
 
         return $this->rows[$id];
+    }
+
+    /**
+     * The row, and whether the refresh family has a live token, in one query. Null row for no user.
+     *
+     * @return array{0: array<string,mixed>|null, 1: bool}
+     * @throws \mindstellar\database\DbException
+     */
+    public function findWithFamily(int $id, string $family): array
+    {
+        $row = $id > 0 ? UserStore::findWithFamily($id, $family) : null;
+        if ($row === null) {
+            return [null, false];
+        }
+        $live = (int) $row['b_family_live'] === 1;
+        unset($row['b_family_live']);
+        $row = Db::stringifyRow($row);
+        $this->rows[$id] = $row;
+
+        return [$row, $live];
     }
 
     /**

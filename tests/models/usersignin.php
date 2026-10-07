@@ -130,13 +130,23 @@ pin('a banned e-mail is refused before before_login, also when signing in by use
 $admin->query("DELETE FROM {$p}t_ban_rule");
 scratchdb_forget_cache();
 
+$hooked = [];
+osc_add_hook('before_validating_login', static function () use (&$hooked): void {
+    $hooked[] = 'before_validating_login';
+});
+osc_add_hook('after_login', static function (array $user, string $redirect) use (&$hooked): void {
+    $hooked[] = 'after_login ' . $user['s_username'] . ' ' . $redirect;
+});
+SignIn::attempt('nobody@example.test', 'wrong');
+SignIn::complete(['s_username' => 'uma'], '/dashboard');
+pin('attempt() fires before_validating_login once, complete() after_login with the user and where they go', ['before_validating_login', 'after_login uma /dashboard'], $hooked);
+
 $web = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebLogin.php');
 $api = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/api/controller/AuthController.php');
 $web = substr($web, (int) strpos($web, "case ('login_post'):"), (int) strpos($web, "case ('resend'):") - (int) strpos($web, "case ('login_post'):"));
 foreach (['the web form' => $web, 'the API' => $api] as $who => $code) {
-    $start = (int) strpos($code, "osc_run_hook('before_validating_login');");
-    check("$who fires before_validating_login, then asks UserSignIn, then fires after_login", $start > 0
-        && $start < (int) strpos($code, 'SignIn::attempt(') && (int) strpos($code, 'SignIn::attempt(') < (int) strpos($code, "osc_run_hook('after_login'"));
+    check("$who leaves before_validating_login and after_login to SignIn, completing after the attempt", !str_contains($code, "osc_run_hook('before_validating_login'")
+        && !str_contains($code, "osc_run_hook('after_login'") && (int) strpos($code, 'SignIn::attempt(') > 0 && (int) strpos($code, 'SignIn::attempt(') < (int) strpos($code, 'SignIn::complete('));
     check("$who checks no password itself", !str_contains($code, 'osc_verify_password(') && !str_contains($code, 'LoginThrottle::'));
 }
 

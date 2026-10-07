@@ -28,10 +28,11 @@ interface ResourceVersions
     /**
      * The resource's current version, or null when it does not exist.
      *
-     * @param array<string,string> $args the path's arguments
-     * @param bool                 $lock lock the rows until the transaction around it ends
+     * @param array<string,string> $args      the path's arguments
+     * @param bool                 $lock      lock the rows until the transaction around it ends
+     * @param bool                 $ownerOnly null for a user-owned resource the credential's user does not own
      */
-    public function version(string $path, array $args, Credential $credential, bool $lock = false): ?string;
+    public function version(string $path, array $args, Credential $credential, bool $lock = false, bool $ownerOnly = false): ?string;
 
     /**
      * Run $fn in one transaction: committed when it returns, rolled back when it throws.

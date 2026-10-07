@@ -494,7 +494,7 @@ class CWebSearch extends BaseModel
                 -1 => _m('Enter a valid email address.'),
                 -2 => _m('This search could not be saved. Search again and try once more.'),
                 -4 => _m('Sign in to save a search.'),
-                -5 => _m('Too many alerts were saved from here. Please try again later.'),
+                -5 => _m('No more alerts can be saved right now. Delete one you no longer need, or try again later.'),
             );
             osc_add_flash_error_message($messages[$code] ?? _m('This search could not be saved.'));
         }

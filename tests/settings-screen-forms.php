@@ -650,7 +650,7 @@ pin(
 );
 pin(
     'and the Akismet key and the search-alert rule',
-    array('akismetKey' => 'osclass/akismetKey', 'alerts_require_login' => 'osclass/alerts_require_login'),
+    array('akismetKey' => 'osclass/akismetKey', 'alerts_require_login' => 'osclass/alerts_require_login', 'alerts_max_per_user' => 'osclass/alerts_max_per_user'),
     keymap(SpamSettingsScreen::registerAkismet()) + keymap(SpamSettingsScreen::registerAlerts())
 );
 // The sitemap readers ask for these exact keys in the osclass section, and robots.txt is a
@@ -986,6 +986,8 @@ pin('the limits save reports itself once', array('ok:Limits have been updated'),
 
 $run = drive('CAdminSettingsSpamnBots', 'alerts_post', array('alerts_require_login' => '1'));
 pin('the alert rule is a boolean', array('1', 'BOOLEAN'), pref($admin, 'alerts_require_login'));
+$run = drive('CAdminSettingsSpamnBots', 'alerts_post', array('alerts_max_per_user' => '-4'));
+pin('the saved-search limit is a number, floored at 0', array('0', 'INTEGER'), pref($admin, 'alerts_max_per_user'));
 
 harness_section('keyword blocklist moderation');
 

@@ -92,14 +92,28 @@ class SearchBuilder
      * changes either inside the hook keeps its change. Listeners get the request params,
      * the Search being built and the context.
      *
-     * @param \Search $search
-     * @param string  $context 'request' for the search page, 'alert' for a saved alert
+     * @param \Search                  $search
+     * @param string                   $context 'request' for the search page, 'alert' for a saved alert
+     * @param array<string,mixed>|null $params  the search parameters; null for the request's
      *
      * @return void
      */
-    public static function fireConditions(\Search $search, string $context = 'request'): void
+    public static function fireConditions(\Search $search, string $context = 'request', ?array $params = null): void
     {
-        osc_run_hook('search_conditions', \Params::getParamsAsArray(), $search, $context);
+        self::asRequest($params, static fn () => osc_run_hook('search_conditions', \Params::getParamsAsArray(), $search, $context));
+    }
+
+    /**
+     * Run a listener call with $params as the request, so a listener reading Params itself
+     * sees the same values it is given; with null, the request as it is.
+     *
+     * @param array<string,mixed>|null $params
+     *
+     * @return mixed what $fn returns
+     */
+    public static function asRequest(?array $params, callable $fn)
+    {
+        return $params === null ? $fn() : \Params::withRequest($params, $fn);
     }
 
     /**

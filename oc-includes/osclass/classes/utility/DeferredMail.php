@@ -29,8 +29,9 @@ final class DeferredMail
 
     /**
      * Run $fn with e-mails held: they are sent once it returns and dropped if it throws.
-     * A hold inside another leaves the sending to the outer one. A send that throws is
-     * logged, never thrown: the write has committed, so the caller must still see success.
+     * A hold inside another leaves the sending to the outer one, and one inside an open
+     * database transaction sends after that commits. A send that throws is logged, never
+     * thrown: the write has committed, so the caller must still see success.
      *
      * @param callable(): mixed                         $fn
      * @param (callable(array<string,mixed>): mixed)|null $send sends one e-mail; osc_sendMail() by default
@@ -52,8 +53,20 @@ final class DeferredMail
         }
         $mails      = self::$held;
         self::$held = null;
-        $send ??= 'osc_sendMail';
-        // @phpstan-ignore foreach.emptyArray (the callback queues e-mails while it runs)
+        // @phpstan-ignore notIdentical.alwaysFalse (the callback queues e-mails while it runs)
+        if ($mails !== []) {
+            Db::afterCommit(static fn () => self::send($mails, $send ?? 'osc_sendMail'));
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param array<int,array<string,mixed>>        $mails
+     * @param callable(array<string,mixed>): mixed $send
+     */
+    private static function send(array $mails, callable $send): void
+    {
         foreach ($mails as $params) {
             try {
                 $send($params);
@@ -61,24 +74,23 @@ final class DeferredMail
                 error_log('DeferredMail: a held e-mail was not sent: ' . $e->getMessage());
             }
         }
-
-        return $result;
     }
 
     /**
      * Run $fn in one database transaction with e-mails held until it commits.
      *
-     * @param callable(): mixed $fn
+     * @param callable(): mixed                         $fn
+     * @param (callable(array<string,mixed>): mixed)|null $send as for during()
      *
      * @return mixed what $fn returns
      */
-    public static function transaction(callable $fn): mixed
+    public static function transaction(callable $fn, ?callable $send = null): mixed
     {
-        return self::during(static fn (): mixed => Db::transaction($fn));
+        return self::during(static fn (): mixed => Db::transaction($fn), $send);
     }
 
     /**
-     * Keep an e-mail for later while a hold is open.
+     * Keep an e-mail for later while a hold or a database transaction is open.
      *
      * @param array<string,mixed> $params osc_sendMail()'s
      *
@@ -87,7 +99,13 @@ final class DeferredMail
     public static function hold(array $params): bool
     {
         if (self::$held === null) {
-            return false;
+            if (!Db::inTransaction()) {
+                return false;
+            }
+            // Sent when the transaction commits, dropped when it rolls back.
+            Db::afterCommit(static fn () => self::send([$params], 'osc_sendMail'));
+
+            return true;
         }
         self::$held[] = $params;
 

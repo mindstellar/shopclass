@@ -26,7 +26,8 @@ use mindstellar\user\AccountService;
  * `POST /users`: sign up, when the site switches it on. AccountService::register() makes the
  * account as it does for the sign-up form, with the same checks, hooks and activation e-mail.
  * There is no captcha to show, so each address gets a few tries an hour and the site a cap,
- * both refusing when they cannot count.
+ * both refusing when they cannot count. A taken e-mail gets the answer a new one gets, so
+ * sign-up does not tell which addresses have an account.
  */
 final class RegistrationController
 {
@@ -43,34 +44,27 @@ final class RegistrationController
     {
         $request = $call->request();
 
-        if (!$this->settings->registration() || !osc_users_enabled() || !osc_user_registration_enabled()) {
+        if (!$this->settings->registration()) {
             throw ProblemException::of('feature_disabled', 'This site does not take sign-ups through the API.');
         }
         // Both limits stand in for a captcha, so they fail closed: no counter, no sign-up.
         $this->limiter->enforceAll($this->api->ratePolicy()->signUp($request->ip()), 'Too many sign-ups right now. Try again later.', false);
 
-        $input = $request->input();
-        $email = trim((string) ($input['email'] ?? ''));
-        osc_run_hook('before_user_register');
-        if (osc_is_banned($email, $request->ip()) !== 0) {
-            throw ProblemException::of('banned', 'This e-mail address or your address may not sign up.');
-        }
-
+        $input    = $request->input();
         $password = (string) ($input['password'] ?? '');
-        $params   = [
+        $form     = AccountInput::signUpFromArray([
             's_name'         => (string) ($input['name'] ?? ''),
-            's_email'        => $email,
+            's_email'        => trim((string) ($input['email'] ?? '')),
             's_password'     => $password,
             's_password2'    => $password,
             's_username'     => (string) ($input['username'] ?? ''),
             's_phone_land'   => (string) ($input['phone_land'] ?? ''),
             's_phone_mobile' => (string) ($input['phone_mobile'] ?? ''),
-        ];
-        $form    = \Params::withRequest($params, static fn (): array => AccountInput::signUp());
-        $account = (new AccountService())->register($form, Actor::guest($request->ip()));
+        ]);
+        $account = (new AccountService())->register($form, Actor::guest($request->ip()), true, true);
 
-        // No Location: until the activation link is opened the account is not confirmed, and its
-        // profile is not shown.
-        return Response::ok(['id' => $account['id'], 'confirmed' => $account['active']], 201);
+        // No id and no Location: a taken e-mail must answer the same, and until the activation
+        // link is opened the account's profile is not shown.
+        return Response::ok(['confirmed' => $account['active']], 201);
     }
 }

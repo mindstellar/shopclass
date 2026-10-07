@@ -21,8 +21,20 @@ final class ApiSettings
 {
     public const SECTION = 'api';
 
-    /** The API's version, the first part of every path. */
+    /** The newest API version. A core route that names no versions serves every version in VERSIONS. */
     public const VERSION = 'v1';
+
+    /**
+     * The version plugin routes, webhook payloads and osc_api_url() use when they name none.
+     * It never moves, so a new version changes nothing a plugin or a webhook receiver relies on.
+     */
+    public const PINNED_VERSION = 'v1';
+
+    /**
+     * Every version the site answers => its OpenAPI document revision (`info.version`). The
+     * revision's minor part goes up when a version gains something.
+     */
+    public const VERSIONS = ['v1' => '1.0'];
 
     /** New listings one user may post through the API in an hour, when the setting is 0. */
     public const LISTINGS_PER_HOUR = 30;

@@ -57,11 +57,7 @@ final class AdminSchema
         $input  = static fn (array $properties, array $required = []): array => Schema::object($properties, $required) + ['additionalProperties' => false];
         $doc    = static fn (string $name): array => Schema::object(['data' => Schema::ref($name)], ['data']);
         $list   = static fn (string $name): array => Schema::wholeList($name);
-        $page   = static fn (string $name): array => Schema::object([
-            'data'  => ['type' => 'array', 'items' => Schema::ref($name)],
-            'meta'  => Schema::ref('PageMeta'),
-            'links' => Schema::ref('PageLinks'),
-        ], ['data', 'meta', 'links']);
+        $page   = $list;
         $id     = ['type' => 'integer', 'minimum' => 1];
         $name   = $text(100, 1);
         $places = static fn (string $parent, array $parentSchema): array => [

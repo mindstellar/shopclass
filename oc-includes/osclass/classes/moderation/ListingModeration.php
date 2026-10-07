@@ -41,6 +41,14 @@ final class ListingModeration
         'bump'       => 'Move a listing to the top of "newest first"',
     ];
 
+    /** Each status flag => [its action when true, when false]; StatusFlags orders them. */
+    public const FLAG_ACTIONS = [
+        'blocked' => ['disable', 'enable'],
+        'active'  => ['activate', 'deactivate'],
+        'spam'    => ['spam', 'unspam'],
+        'premium' => ['premium', 'unpremium'],
+    ];
+
     public function __construct(private Clock $clock)
     {
     }
@@ -91,6 +99,36 @@ final class ListingModeration
         }
 
         return $changed;
+    }
+
+    /**
+     * Set several status flags at once, all or none: an unblock first, a block last, and a flag
+     * already as asked left alone.
+     *
+     * @param array<string,bool> $flags keys of FLAG_ACTIONS
+     *
+     * @return string[] the actions that ran
+     * @throws NotFoundException for no such listing
+     * @throws ConflictException when activating a listing that stays blocked
+     * @throws \LogicException for an unknown flag
+     * @throws \RuntimeException when a write fails
+     */
+    public function applyFlags(int $id, array $flags, int $adminId, string $note): array
+    {
+        $row = ListingStore::find($id, ['pk_i_id', 'b_active', 'b_enabled', 'b_spam', 'b_premium']);
+        if ($row === null) {
+            throw new NotFoundException(_m('No such listing.'));
+        }
+        $plan = StatusFlags::plan($flags, Db::stringifyRow($row), self::FLAG_ACTIONS);
+        if ($plan !== []) {
+            DeferredMail::transaction(function () use ($plan, $id, $adminId, $note): void {
+                foreach ($plan as $action) {
+                    $this->apply($action, $id, $adminId, $note);
+                }
+            });
+        }
+
+        return $plan;
     }
 
     /**

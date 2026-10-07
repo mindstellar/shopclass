@@ -49,14 +49,6 @@ const OSC_RENAMED_CLASSES = array(
     'mindstellar\\admin\\form\\SitemapSettingsForm' => 'mindstellar\\admin\\form\\SitemapSettingsScreen',
     'mindstellar\\admin\\form\\SpamSettingsForm' => 'mindstellar\\admin\\form\\SpamSettingsScreen',
     'mindstellar\\admin\\form\\StorageSettingsForm' => 'mindstellar\\admin\\form\\StorageSettingsScreen',
-    'mindstellar\\api\\ApiSettings' => 'mindstellar\\apiaccess\\ApiSettings',
-    'mindstellar\\api\\auth\\ApiKeys' => 'mindstellar\\apiaccess\\ApiKeys',
-    'mindstellar\\api\\auth\\Credential' => 'mindstellar\\apiaccess\\Credential',
-    'mindstellar\\api\\auth\\CredentialKind' => 'mindstellar\\apiaccess\\CredentialKind',
-    'mindstellar\\api\\auth\\CredentialStore' => 'mindstellar\\apiaccess\\CredentialStore',
-    'mindstellar\\api\\auth\\KeyOwner' => 'mindstellar\\apiaccess\\KeyOwner',
-    'mindstellar\\api\\auth\\Scopes' => 'mindstellar\\apiaccess\\Scopes',
-    'mindstellar\\api\\auth\\StoredKey' => 'mindstellar\\apiaccess\\StoredKey',
 );
 
 spl_autoload_register(static function (string $class): void {

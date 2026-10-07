@@ -122,7 +122,7 @@ final class PublicRoutes
                 response: 'SavedListing',
                 status: 201,
                 errors: [403, 429]
-            ),
+            ) + ['prepare' => [ListingWritesController::class, 'prepareCreate']],
             'PATCH listings/{id}' => RouteSpec::write(
                 handler: [ListingWritesController::class, 'update'],
                 tag: 'Listings',
@@ -132,7 +132,7 @@ final class PublicRoutes
                 body: 'ListingPatch',
                 response: 'SavedListing',
                 errors: [403, 404]
-            ),
+            ) + ['prepare' => [ListingWritesController::class, 'prepareUpdate']],
             'DELETE listings/{id}' => RouteSpec::write(
                 handler: [ListingWritesController::class, 'delete'],
                 tag: 'Listings',

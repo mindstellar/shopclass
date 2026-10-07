@@ -14,14 +14,20 @@ namespace mindstellar\api\serializer;
 
 /**
  * The last step of every serializer: keep what the `api_listing`, `api_user` and
- * `api_category` filters returned inside the rules, then apply the sparse fieldset. Plugin
- * data lives under `ext.<slug>`; a declared field reaches only its views and an undeclared
- * one only the admin view.
+ * `api_category` filters returned inside the rules, then apply the sparse fieldset. A filter
+ * may change a core member's value but not its JSON type, may not remove one and may not add
+ * one. Only top-level members and their JSON types are guarded: a filter can still change
+ * values or add keys inside an object member.
+ * Plugin data lives under `ext.<slug>`; a declared field reaches only its views and an
+ * undeclared one only the admin view.
  */
 final class Extensions
 {
     /** @var \Closure(string): void */
     private \Closure $log;
+
+    /** @var array<string,true> messages already logged, so a page of 50 rows logs each once */
+    private array $logged = [];
 
     /**
      * @param callable|null $log receives each message; error_log() by default
@@ -37,8 +43,8 @@ final class Extensions
     }
 
     /**
-     * Check a filter's result against the members the object may have, then apply the
-     * context's fieldset. A top-level key the filter added is dropped and logged.
+     * Check a filter's result against the members the view has, then apply the context's
+     * fieldset. A top-level key the filter added, other than `ext`, is dropped and logged.
      *
      * @param string              $hook     the filter that ran, to name its callbacks
      * @param string              $object   ExtensionMembers::OBJECTS
@@ -70,16 +76,78 @@ final class Extensions
 
             return $before;
         }
-        $extra = array_diff(array_keys($filtered), $members);
+        // The view's members are the ones the serializer built, plus `ext`.
+        $allowed = array_values(array_intersect($members, [...array_keys($before), 'ext']));
+        $extra   = array_diff(array_keys($filtered), $allowed);
         if ($extra !== []) {
-            $this->blame($hook, $members, $before, $args, $extra);
+            $this->blame($hook, $allowed, $before, $args, $extra);
             $filtered = array_diff_key($filtered, array_flip($extra));
         }
+        $filtered = $this->keepCore($hook, $before, $filtered);
         if (array_key_exists('ext', $filtered)) {
             $filtered = $this->cleanExt($hook, $object, $filtered, $view);
         }
 
         return $filtered;
+    }
+
+    /**
+     * Put back each core member a filter removed or changed to another JSON type, in core's order. Nothing inside an object member is checked.
+     *
+     * @param array<string,mixed> $before
+     * @param array<string,mixed> $filtered
+     *
+     * @return array<string,mixed>
+     */
+    private function keepCore(string $hook, array $before, array $filtered): array
+    {
+        $out = [];
+        foreach ($before as $name => $value) {
+            if ($name === 'ext') {
+                continue;
+            }
+            if (!array_key_exists($name, $filtered)) {
+                $this->once($hook . ': core member ' . $name . ' was removed by a filter and is restored; plugins add data under ext.<plugin-slug>.');
+                $out[$name] = $value;
+            } elseif (!self::sameType($value, $filtered[$name])) {
+                $this->once($hook . ': core member ' . $name . ' was changed from ' . self::jsonType($value) . ' to ' . self::jsonType($filtered[$name]) . ' by a filter and is restored.');
+                $out[$name] = $value;
+            } else {
+                $out[$name] = $filtered[$name];
+            }
+        }
+
+        return $out + $filtered;
+    }
+
+    private static function sameType(mixed $core, mixed $new): bool
+    {
+        $a = self::jsonType($core);
+        $b = self::jsonType($new);
+
+        // An empty PHP array encodes as `[]` but may stand for an empty object.
+        return $a === $b || ($core === [] && $b === 'object') || ($new === [] && $a === 'object');
+    }
+
+    private static function jsonType(mixed $value): string
+    {
+        return match (true) {
+            $value === null                            => 'null',
+            is_bool($value)                            => 'boolean',
+            is_int($value) || is_float($value)         => 'number',
+            is_string($value)                          => 'string',
+            is_array($value) && ($value === [] || array_keys($value) === range(0, count($value) - 1)) => 'array',
+            is_array($value), is_object($value)        => 'object',
+            default                                    => get_debug_type($value),
+        };
+    }
+
+    private function once(string $message): void
+    {
+        if (!isset($this->logged[$message])) {
+            $this->logged[$message] = true;
+            ($this->log)($message);
+        }
     }
 
     /**

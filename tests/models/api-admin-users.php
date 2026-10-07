@@ -9,13 +9,8 @@
  */
 
 /**
- * `/admin/users` and `/admin/comments` end to end through Kernel::handle(): who may call
- * them, the lists and their filters, the users screen's edit and actions (hooks, activity
- * log, a blocked user's keys stop working), a user's sign-ins, the delete with everything
- * the user owns in one transaction, and the comments screen's moderation.
- *
- * Usage:  php tests/models/api-admin-users.php        (standalone, own scratch database)
- *         php tests/run-models.php api-admin-users    (as part of the suite)
+ * `/admin/users` and `/admin/comments` end to end through Kernel::handle().
+ * Usage: php tests/models/api-admin-users.php
  */
 
 require_once __DIR__ . '/../lib/harness.php';
@@ -107,7 +102,7 @@ pin('matches the schema', [], api_admin_schema_errors('UserPage', $r));
 pin('confirmed=false', [$ann], $ids($call('GET', 'admin/users', null, $boss, [], ['confirmed' => 'false'])));
 pin('q= matches the start of an e-mail, username or name', [$tom], $ids($call('GET', 'admin/users', null, $boss, [], ['q' => 'tom@'])));
 pin('limit=1 pages by id', [[$ann], true], (static fn (Response $r): array => [$ids($r), is_string($r->body()['links']['next'] ?? null)])($call('GET', 'admin/users', null, $boss, [], ['limit' => '1'])));
-pin('one user', [200, 'tom@example.test'], (static fn (Response $r): array => [$r->status(), $r->body()['data']['email'] ?? null])($call('GET', 'admin/users/' . $tom, null, $boss)));
+pin('GET one user: 200 with the e-mail', [200, 'tom@example.test'], (static fn (Response $r): array => [$r->status(), $r->body()['data']['email'] ?? null])($call('GET', 'admin/users/' . $tom, null, $boss)));
 pin('matches the schema', [], api_admin_schema_errors('UserDocument', $call('GET', 'admin/users/' . $tom, null, $boss)));
 pin('an unknown user is 404', 404, $call('GET', 'admin/users/99999', null, $boss)->status());
 
@@ -123,7 +118,7 @@ pin('with the author\'s e-mail and the status', ['author@example.test', 'spam'],
 pin('matches the schema', [], api_admin_schema_errors('AdminCommentPage', $r));
 pin('status=pending', [$pendingComment], $ids($call('GET', 'admin/comments', null, $mod, [], ['status' => 'pending'])));
 pin('status=disabled,spam', [$spamComment, $blockedComment], $ids($call('GET', 'admin/comments', null, $mod, [], ['status' => ['disabled', 'spam']])));
-pin('listing=', [$tomComment, $pendingComment, $liveComment], $ids($call('GET', 'admin/comments', null, $mod, [], ['listing' => (string) $sueCar])));
+pin('the listing filter returns that listing comments of every status', [$tomComment, $pendingComment, $liveComment], $ids($call('GET', 'admin/comments', null, $mod, [], ['listing' => (string) $sueCar])));
 pin('listing= takes a list, as the listing filters do', 5, count($ids($call('GET', 'admin/comments', null, $mod, [], ['listing' => [(string) $sueCar, (string) $tomCar]]))));
 pin('an unknown status is 422', 422, $call('GET', 'admin/comments', null, $mod, [], ['status' => 'nope'])->status());
 
@@ -132,8 +127,8 @@ $fired = [];
 $r     = $call('PATCH', 'admin/comments/' . $pendingComment, ['approved' => true], $mod);
 pin('activate: approved, the author is told, activate_comment once', [200, 'active', 1, 1], [$r->status(), $r->body()['data']['status'] ?? null, $fired['hook_email_comment_validated'] ?? 0, $fired['activate_comment'] ?? 0]);
 pin('matches the schema', [], api_admin_schema_errors('AdminCommentDocument', $r));
-pin('deactivate', ['pending', 1], [$call('PATCH', 'admin/comments/' . $pendingComment, ['approved' => false], $mod)->body()['data']['status'] ?? null, $fired['deactivate_comment'] ?? 0]);
-pin('disable', ['disabled', 1], [$call('PATCH', 'admin/comments/' . $liveComment, ['blocked' => true], $mod)->body()['data']['status'] ?? null, $fired['disable_comment'] ?? 0]);
+pin('deactivating a comment sets it pending and fires deactivate_comment once', ['pending', 1], [$call('PATCH', 'admin/comments/' . $pendingComment, ['approved' => false], $mod)->body()['data']['status'] ?? null, $fired['deactivate_comment'] ?? 0]);
+pin('blocking a comment disables it and fires disable_comment once', ['disabled', 1], [$call('PATCH', 'admin/comments/' . $liveComment, ['blocked' => true], $mod)->body()['data']['status'] ?? null, $fired['disable_comment'] ?? 0]);
 $fired = [];
 pin('enable: live again, so the author is told', ['active', 1, 1], [
     $call('PATCH', 'admin/comments/' . $liveComment, ['blocked' => false], $mod)->body()['data']['status'] ?? null, $fired['enable_comment'] ?? 0, $fired['hook_email_comment_validated'] ?? 0,
@@ -192,15 +187,15 @@ pin('user_edit_completed fired once, logged under the admin', [1, (string) $boss
 pin('members not sent keep their values, account state too', ['sue', '1', '1'], [$user($sue)['s_username'], $user($sue)['b_enabled'], $user($sue)['b_active']]);
 pin('an e-mail another user has is refused', 422, $call('PATCH', 'admin/users/' . $sue, ['email' => 'tom@example.test'], $boss)->status());
 pin('a new password', 200, $call('PATCH', 'admin/users/' . $sue, ['password' => 'new secret'], $boss)->status());
-check('is stored', password_verify('new secret', (string) $user($sue)['s_password']));
-pin('and ends the user\'s keys', 401, $call('GET', 'account', null, $sueKey)->status());
+check('the new password is stored', password_verify('new secret', (string) $user($sue)['s_password']));
+pin('a new password ends the user keys', 401, $call('GET', 'account', null, $sueKey)->status());
 
 harness_section('users: the actions');
 pin('the key works while the user is enabled', 200, $call('GET', 'account', null, $tomKey)->status());
 $fired = [];
 $r     = $call('PATCH', 'admin/users/' . $tom, ['blocked' => true], $boss);
 pin('disable: 200, blocked, disable_user once, logged', [200, true, 1, (string) $bossId], [$r->status(), $r->body()['data']['blocked'] ?? null, $fired['disable_user'] ?? 0, $log('disable', $tom)]);
-pin('and the user\'s listings are blocked with it', [1, '0'], [$fired['disable_item'] ?? 0, $admin->query("SELECT b_enabled FROM {$p}t_item WHERE pk_i_id = $tomCar")->fetch_row()[0]]);
+pin('disabling a user blocks the user listings', [1, '0'], [$fired['disable_item'] ?? 0, $admin->query("SELECT b_enabled FROM {$p}t_item WHERE pk_i_id = $tomCar")->fetch_row()[0]]);
 pin('a blocked user\'s key stops working', 401, $call('GET', 'account', null, $tomKey)->status());
 pin('enable: enable_user once', [200, 1], [$call('PATCH', 'admin/users/' . $tom, ['blocked' => false], $boss)->status(), $fired['enable_user'] ?? 0]);
 pin('activate: activate_user once, active', [1, '1'], [($call('PATCH', 'admin/users/' . $ann, ['confirmed' => true], $boss) && true) ? ($fired['activate_user'] ?? 0) : 0, $user($ann)['b_active']]);
@@ -247,7 +242,7 @@ pin('the access token, refresh token and key stop at once', [401, 400, 401], [
     $call('POST', 'auth/token', ['grant_type' => 'refresh_token', 'refresh_token' => (string) ($again->body()['refresh_token'] ?? '')])->status(),
     $call('GET', 'account', null, $tomKey2)->status(),
 ]);
-pin('and the user has no live sign-in or key left', [], $call('GET', 'admin/users/' . $tom . '/sessions', null, $boss)->body()['data'] ?? null);
+pin('a disabled user has no live sign-in or key left', [], $call('GET', 'admin/users/' . $tom . '/sessions', null, $boss)->body()['data'] ?? null);
 pin('an unknown user is 404 here too', 404, $call('POST', 'admin/users/99999/sign-out-everywhere', null, $boss)->status());
 
 harness_section('users: delete');
@@ -263,7 +258,7 @@ $logged = ini_set('error_log', '/dev/null');
 $failed = $call('DELETE', 'admin/users/' . $tom, null, $boss);
 ini_set('error_log', (string) $logged);
 pin('a failure part way is the kernel\'s 500', [500, 'server_error'], [$failed->status(), $failed->body()['code'] ?? null]);
-pin('and leaves everything as it was', [true, 1, 1, $tomCredentials], [
+pin('a failure part way leaves everything as it was', [true, 1, 1, $tomCredentials], [
     $user($tom) !== null,
     (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item WHERE fk_i_user_id = $tom")->fetch_row()[0],
     (int) $admin->query("SELECT COUNT(*) FROM {$p}t_alerts WHERE fk_i_user_id = $tom")->fetch_row()[0],
@@ -313,13 +308,13 @@ pin('signing out raises the stamp', [true, '1'], [\mindstellar\auth\SignOut::eve
 pin('every key the admin made answers 401', [401, 401, 401], [
     $call('GET', 'admin/users', null, $bossKey)->status(), $call('GET', 'admin/users', null, $boss)->status(), $call('GET', 'listings', null, $bossPublic)->status(),
 ]);
-pin('and is revoked, so none is left to count', [0, 0], [
+pin('deleted admin keys are revoked, so none is left to count', [0, 0], [
     $liveCount($bossId),
     (int) $admin->query("SELECT COUNT(*) FROM {$p}t_api_credential WHERE fk_i_admin_id = $bossId AND dt_revoked IS NULL")->fetch_row()[0],
 ]);
 pin('another admin\'s key still works', [200, '0'], [$call('GET', 'admin/users', null, $otherKey)->status(), $adminRow($otherId)['i_auth_stamp']]);
 pin('a user\'s key is not touched', 200, $call('GET', 'account', null, $sueKey2)->status());
-pin('an unknown admin is not signed out', false, \mindstellar\auth\SignOut::everywhereAdmin(999999));
+check('an unknown admin is not signed out', !\mindstellar\auth\SignOut::everywhereAdmin(999999));
 $admins = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminAdmins.php');
 check('the profile button signs out through it', str_contains(substr($admins, (int) strpos($admins, 'private function signOutEverywhere()'), 900), 'SignOut::everywhereAdmin('));
 check('the profile counts keys without the API layer', !str_contains($admins, 'mindstellar\\api\\'));

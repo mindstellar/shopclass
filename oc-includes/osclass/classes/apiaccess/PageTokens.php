@@ -16,13 +16,9 @@ use mindstellar\auth\AuthStamp;
 use mindstellar\security\SignedPayload;
 
 /**
- * Page tokens for the same-site session mode: `scs_<SignedPayload>`, signed with the
- * install's key and stored nowhere. A page token is the CSRF half of a session call; the
- * signed-in cookie is the other half, so neither works alone.
- *
- * The payload names the user and the fingerprint of their sign-out stamp,
- * as access tokens do, so a password change or signing out of all devices ends every page
- * token at once.
+ * Page tokens for the same-site session mode: `scs_<SignedPayload>`, signed with the install's
+ * key and stored nowhere. The payload names the user and their sign-out stamp fingerprint, so a
+ * password change or sign-out everywhere ends every page token.
  */
 final class PageTokens
 {

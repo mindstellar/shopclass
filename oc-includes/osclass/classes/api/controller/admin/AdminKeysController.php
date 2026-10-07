@@ -15,6 +15,7 @@ namespace mindstellar\api\controller\admin;
 use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
+use mindstellar\api\read\Page;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\KeySerializer;
 use mindstellar\api\serializer\Links;
@@ -43,9 +44,9 @@ final class AdminKeysController
         $this->serializer = new KeySerializer();
     }
 
-    public function index(): Response
+    public function index(ApiCall $call): Response
     {
-        return Response::collection(array_map([$this->serializer, 'admin'], $this->keys->rows()));
+        return Page::whole(array_map([$this->serializer, 'admin'], $this->keys->rows()), $this->links, $call);
     }
 
     public function show(ApiCall $call): Response
@@ -76,7 +77,7 @@ final class AdminKeysController
             $this->keys->expiresAt((int) $credential->id())
         );
 
-        return Response::created($this->serializer->admin($this->key($issued->id()), $issued->token()), $this->links->api('admin/keys/' . $issued->id()));
+        return Response::created($this->serializer->admin($this->key($issued->id()), $issued->token()), $this->links->api('admin/keys/' . $issued->id(), $call->request()->version()));
     }
 
     /**
@@ -105,7 +106,7 @@ final class AdminKeysController
         self::checkGrant($credential, $old['scopes']);
         $issued = $this->keys->rotate((int) $old['id'], (int) $credential->adminId(), $this->keys->expiresAt((int) $credential->id()));
 
-        return Response::created($this->serializer->admin($this->key($issued->id()), $issued->token()), $this->links->api('admin/keys/' . $issued->id()));
+        return Response::created($this->serializer->admin($this->key($issued->id()), $issued->token()), $this->links->api('admin/keys/' . $issued->id(), $call->request()->version()));
     }
 
     /**

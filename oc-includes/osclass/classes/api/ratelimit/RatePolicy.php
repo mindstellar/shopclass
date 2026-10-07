@@ -20,13 +20,10 @@ use mindstellar\apiaccess\CredentialKind;
 use mindstellar\security\AddressBucket;
 
 /**
- * Every rate limit the API counts, in one place. Each request is counted for who is calling,
- * plus a write bucket for POST, PUT, PATCH and DELETE: anonymous calls per client address, a
- * public key per key and address (one app has many users), any other key per key, an access
- * token or a same-site session per user.
- *
- * The API shows no captcha, so new listings, photos fetched by URL and sign-ups also have
- * hourly caps that stand in for one.
+ * Every rate limit the API counts, in one place: per client address when anonymous, per key
+ * (and address for a public key), per user for a token or session, plus a write bucket.
+ * Hourly caps on new listings, photos fetched by URL and sign-ups stand in for a captcha.
+ * Those caps and the write bucket are exact: counted in the database, never in APCu.
  */
 final class RatePolicy
 {
@@ -67,7 +64,7 @@ final class RatePolicy
         $buckets = [new RateBucket($name, $key, (int) ($limit['max'] ?? $max), (int) ($limit['window'] ?? 60))];
 
         if ($request->isWrite()) {
-            $buckets[] = new RateBucket('api_write', $name . ':' . $key, $this->settings->rateWrite());
+            $buckets[] = new RateBucket('api_write', $name . ':' . $key, $this->settings->rateWrite(), 60, true);
         }
 
         return $buckets;
@@ -83,8 +80,8 @@ final class RatePolicy
         $max = $this->settings->listingsPerHour();
 
         return [
-            new RateBucket('api_listing_post', (string) $userId, $max, self::HOUR),
-            new RateBucket('api_listing_ip', AddressBucket::of($ip), $max * self::ADDRESS_FACTOR, self::HOUR),
+            new RateBucket('api_listing_post', (string) $userId, $max, self::HOUR, true),
+            new RateBucket('api_listing_ip', AddressBucket::of($ip), $max * self::ADDRESS_FACTOR, self::HOUR, true),
         ];
     }
 
@@ -93,7 +90,7 @@ final class RatePolicy
      */
     public function photoFetch(int $userId): RateBucket
     {
-        return new RateBucket('api_photo_fetch', (string) $userId, self::PHOTO_FETCHES_PER_HOUR, self::HOUR);
+        return new RateBucket('api_photo_fetch', (string) $userId, self::PHOTO_FETCHES_PER_HOUR, self::HOUR, true);
     }
 
     /**
@@ -104,8 +101,8 @@ final class RatePolicy
     public function signUp(string $ip): array
     {
         return [
-            new RateBucket('api_register', AddressBucket::of($ip), self::SIGN_UPS_PER_ADDRESS, self::HOUR),
-            new RateBucket('api_register_site', 'all', self::SIGN_UPS_PER_SITE, self::HOUR),
+            new RateBucket('api_register', AddressBucket::of($ip), self::SIGN_UPS_PER_ADDRESS, self::HOUR, true),
+            new RateBucket('api_register_site', 'all', self::SIGN_UPS_PER_SITE, self::HOUR, true),
         ];
     }
 }

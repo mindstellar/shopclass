@@ -16,6 +16,7 @@ use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\auth\UserRows;
 use mindstellar\api\ProblemException;
+use mindstellar\api\read\Page;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\KeySerializer;
 use mindstellar\api\serializer\Links;
@@ -51,10 +52,10 @@ final class AccountKeysController
         $this->allowed();
         $now = $this->clock->now();
 
-        return Response::collection(array_map(
+        return Page::whole(array_map(
             fn (StoredKey $key): array => $this->serializer->personal($key, $now),
             $this->keys->list((int) $call->credential()->userId())
-        ));
+        ), $this->links, $call);
     }
 
     public function create(ApiCall $call): Response
@@ -78,7 +79,7 @@ final class AccountKeysController
             throw ProblemException::of('server_error', 'The key was not stored.');
         }
 
-        return Response::created($this->serializer->personal($key, $this->clock->now(), $issued->token()), $this->links->api('account/keys/' . $key->id()));
+        return Response::created($this->serializer->personal($key, $this->clock->now(), $issued->token()), $this->links->api('account/keys/' . $key->id(), $call->request()->version()));
     }
 
     public function show(ApiCall $call): Response

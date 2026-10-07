@@ -1361,7 +1361,7 @@ This API described in OpenAPI 3.1, with the site's plugin endpoints
 |---|---|---|---|---|
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
-Answers: 200 OK (`OpenApiDocument`); 304 Not modified; 422 Not valid; 500 Server error; 503 Maintenance.
+Answers: 200 OK (`OpenApiDocument`); 304 Not modified; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
 
 ## Site
 

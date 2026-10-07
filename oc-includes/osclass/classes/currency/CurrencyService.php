@@ -52,6 +52,32 @@ final class CurrencyService
     }
 
     /**
+     * The rows of some currencies by upper-cased code. The enabled list is cached, so a page
+     * of listings in enabled currencies costs no query.
+     *
+     * @param string[] $codes
+     *
+     * @return array<string,array<string,mixed>>
+     */
+    public function findMany(array $codes): array
+    {
+        $known = [];
+        foreach ($this->enabled() as $row) {
+            $known[strtoupper((string) $row['pk_c_code'])] = $row;
+        }
+        $found = [];
+        foreach ($codes as $code) {
+            $key = strtoupper($code);
+            $row = $known[$key] ?? $this->find($code);
+            if ($row !== null) {
+                $found[$key] = $row;
+            }
+        }
+
+        return $found;
+    }
+
+    /**
      * The enabled currencies by code, cached in the `currency` group.
      *
      * @return array<int,array<string,mixed>>

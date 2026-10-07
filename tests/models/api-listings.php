@@ -9,15 +9,8 @@
  */
 
 /**
- * The read endpoints end to end through Kernel::handle() on a seeded site, with real keys:
- * the site root, categories, locations, currencies, fields, listing search on the search
- * page's runner (cursor paging that never repeats or skips, a `search_conditions` listener
- * applied with context 'api'), one listing with its photos and comments (404 when not live
- * unless the owner or an admin asks), user profiles, ETag/304, no view counted, 401 when
- * anonymous reads are off, and the query count of a 20-listing page.
- *
- * Usage:  php tests/models/api-listings.php        (standalone, own scratch database)
- *         php tests/run-models.php api-listings    (as part of the suite)
+ * The read endpoints end to end through Kernel::handle() on a seeded site, with real keys.
+ * Usage: php tests/models/api-listings.php
  */
 
 require_once __DIR__ . '/../lib/harness.php';
@@ -155,9 +148,9 @@ final class TestLinks implements Links
         return 'http://localhost/avatar/' . $userId;
     }
 
-    public function api(string $path): string
+    public function api(string $path, ?string $version = null): string
     {
-        return 'http://localhost/api/v1/' . $path;
+        return 'http://localhost/api/' . ($version ?? 'v1') . '/' . $path;
     }
 
     public function price(?int $micros, string $symbol): string
@@ -293,27 +286,28 @@ pin('anonymous reads are off: 401 with a Bearer challenge', array(401, 'unauthor
 $open = $makeKernel(new ApiSettings(true, true, userKeys: true));
 $r    = $get('categories', array(), null, $open);
 pin('with anonymous reads on, a public endpoint answers', 200, $r->status());
-pin('and may be cached publicly', 'public, max-age=60, stale-while-revalidate=60', $r->header('Cache-Control'));
+pin('an anonymous public endpoint may be cached publicly', 'public, max-age=60, stale-while-revalidate=60', $r->header('Cache-Control'));
 check('a user-keyed answer is never cached publicly', str_starts_with((string) $get('categories', array(), $sellerKey)->header('Cache-Control'), 'private'));
 
 harness_section('site');
 $r = $get('', array(), $publicKey);
 pin('the site root', array(200, 'Test site', 'en_US', array('users' => true, 'registration' => false, 'comments' => true)), array($r->status(), $r->body()['data']['name'], $r->body()['data']['default_locale'], $r->body()['data']['features']));
-pin('the software version is not shown to callers', false, array_key_exists('version', $r->body()['data']));
+check('the software version is not shown to callers', !(array_key_exists('version', $r->body()['data'])));
 pin('what the API allows here, as this test site sets it', array('registration' => false, 'personal_keys' => true, 'photo_urls' => false, 'public_reads' => false), $r->body()['data']['api'] ?? null);
 $api = static fn (ApiSettings $settings): ?array => $get('', array(), $publicKey, $makeKernel($settings))->body()['data']['api'] ?? null;
 pin('switched on in the API settings', array('registration' => false, 'personal_keys' => true, 'photo_urls' => true, 'public_reads' => true), $api(new ApiSettings(true, true, userKeys: true, registration: true, photoUrls: true)));
 Preference::getInstance()->set('enabled_user_registration', '1');
 osc_reset_preferences();
-pin('sign-up through the API also needs the site to take sign-ups', true, $api(new ApiSettings(true, userKeys: true, registration: true))['registration'] ?? null);
+check('sign-up through the API also needs the site to take sign-ups', $api(new ApiSettings(true, userKeys: true, registration: true))['registration'] === true);
 Preference::getInstance()->set('enabled_user_registration', '0');
 osc_reset_preferences();
 pin('links to the collections', 'http://localhost/api/v1/listings', $r->body()['data']['links']['listings']);
+pin('api_version is the version the request asked for', 'v1', $r->body()['data']['api_version']);
 pin('matches the schema', array(), $schemaErrors('SiteDocument', $r));
 $lazy = Schema::definitions();
 $r    = $get('currencies', array(), $publicKey, $makeKernel(new ApiSettings(true, userKeys: true), new Validator($lazy)));
-pin('currencies', array(array('code' => 'USD', 'name' => 'US Dollar', 'symbol' => 'US Dollar')), $r->body()['data']);
-pin('a request whose route follows no $ref never builds the component schemas', false, $lazy->isBuilt());
+pin('the currency list matches the stored currencies', array(array('code' => 'USD', 'name' => 'US Dollar', 'symbol' => 'US Dollar')), $r->body()['data']);
+check('a request whose route follows no $ref never builds the component schemas', !($lazy->isBuilt()));
 Preference::getInstance()->set('pageTitle', 'Renamed site');
 pin('the site root follows a settings change at once', 'Renamed site', $get('', array(), $publicKey)->body()['data']['name']);
 Preference::getInstance()->set('pageTitle', 'Test site');
@@ -323,17 +317,17 @@ $r = $get('categories', array(), $publicKey);
 pin('every enabled category, parents first', array('vehicles', 'cars', 'bikes', 'boats'), array_column($r->body()['data'], 'slug'));
 pin('matches the schema', array(), $schemaErrors('CategoryList', $r));
 $r = $get('categories', array('tree' => '1'), $publicKey);
-pin('as a tree', array('cars', 'bikes'), array_column($r->body()['data'][0]['children'], 'slug'));
+pin('the category tree lists the children by slug', array('cars', 'bikes'), array_column($r->body()['data'][0]['children'], 'slug'));
 $r = $get('categories/cars', array(), $publicKey);
 pin('one category by slug, with its custom fields', array($cars, $vehicles, array('colour')), array($r->body()['data']['id'], $r->body()['data']['parent_id'], array_column($r->body()['data']['custom_fields'], 'slug')));
-pin('by id', 'cars', $get('categories/' . $cars, array(), $publicKey)->body()['data']['slug']);
+pin('one category is also found by its id', 'cars', $get('categories/' . $cars, array(), $publicKey)->body()['data']['slug']);
 pin('an unknown category is 404', 404, $get('categories/nosuch', array(), $publicKey)->status());
 pin('fields of a category', array('colour'), array_column($get('custom-fields', array('category' => 'cars'), $publicKey)->body()['data'], 'slug'));
 pin('fields of an unknown category is 422', 422, $get('custom-fields', array('category' => 'nosuch'), $publicKey)->status());
 pin('fields= trims a category', array('id', 'slug'), array_keys($get('categories/cars', array('fields' => 'slug'), $publicKey)->body()['data']));
 
 harness_section('locations');
-pin('countries', array(array('code' => 'US', 'name' => 'United States', 'slug' => 'us')), $get('countries', array(), $publicKey)->body()['data']);
+pin('the country list has code, name and slug', array(array('code' => 'US', 'name' => 'United States', 'slug' => 'us')), $get('countries', array(), $publicKey)->body()['data']);
 pin('a country\'s regions', array('Alpha'), array_column($get('countries/us/regions', array(), $publicKey)->body()['data'], 'name'));
 pin('an unknown country is 404', 404, $get('countries/zz/regions', array(), $publicKey)->status());
 pin('a region\'s cities', array('Aville'), array_column($get('regions/' . $region . '/cities', array(), $publicKey)->body()['data'], 'name'));
@@ -361,14 +355,21 @@ $r = $get('listings', array('category' => 'cars', 'limit' => 10, 'count' => 'tru
 pin('the total counts every match when count=true', 25, $r->body()['meta']['total']);
 check('a next link while there are more', is_string($r->body()['links']['next']));
 pin('the page matches the schema', array(), $schemaErrors('ListingPage', $r));
+pin('each listing on a page reads as its own GET does', array_map(
+    static fn (array $one): array => $get('listings/' . $one['id'], array(), $publicKey)->body()['data'],
+    $r->body()['data']
+), $r->body()['data']);
 pin('the parent category includes its children', 26, $get('listings', array('category' => 'vehicles', 'limit' => 1, 'count' => 'true'), $publicKey)->body()['meta']['total']);
 pin('an unknown category is refused, not widened', 422, $get('listings', array('category' => 'nosuch'), $publicKey)->status());
 pin('a slug path names its last slug, as search URLs do', 25, $get('listings', array('category' => 'vehicles/cars', 'limit' => 1, 'count' => 'true'), $publicKey)->body()['meta']['total']);
 pin('one unknown category in a list is refused too', 422, $get('listings', array('category' => 'cars,nosuch'), $publicKey)->status());
 pin('a limit past the site cap is refused', 422, $get('listings', array('limit' => 51), $publicKey)->status());
+$badUser = $get('listings', array('user' => 'abc'), $publicKey);
+pin('a user filter that is not an id is refused', 422, $badUser->status());
+pin('the refused user filter is named', array('/user', 'query'), array($badUser->body()['errors'][0]['pointer'] ?? null, $badUser->body()['errors'][0]['in'] ?? null));
 pin('a schema-invalid sort is refused', 422, $get('listings', array('sort' => 'secret'), $publicKey)->status());
 pin('a pattern search', array($bike), $ids($get('listings', array('q' => 'racing'), $publicKey)));
-pin('by seller', 1, $get('listings', array('user' => (string) $other, 'count' => 'true'), $publicKey)->body()['meta']['total']);
+pin('the user filter finds that seller listings', 1, $get('listings', array('user' => (string) $other, 'count' => 'true'), $publicKey)->body()['meta']['total']);
 pin('a custom field filter', 12, $get('listings', array('category' => 'cars', 'custom_field' => array((string) $fieldId => 'red'), 'count' => 'true'), $publicKey)->body()['meta']['total']);
 
 $walk = static function (array $query) use ($get, $publicKey, $ids): array {
@@ -411,14 +412,22 @@ pin('a cursor reused with other filters is refused', 400, $get('listings', array
 harness_section('search_conditions');
 $calls     = array();
 $condition = static function ($params, $search, $context) use (&$calls, $live) {
-    $calls[] = array($context, $params['sCategory'] ?? null);
+    $calls[] = array($context, $params['sCategory'] ?? null, Params::getParam('sCategory'));
     $search->addConditions(DB_TABLE_PREFIX . 't_item.pk_i_id <> ' . (int) $live[24]);
 };
 osc_add_hook('search_conditions', $condition);
 $r = $get('listings', array('category' => 'cars', 'limit' => 50, 'count' => 'true'), $publicKey);
 osc_remove_hook('search_conditions', $condition);
-pin('a plugin listener runs with context api and the search page\'s parameters', array(array('api', array((string) $cars))), $calls);
-pin('and its condition applies', array(24, false), array($r->body()['meta']['total'], in_array($live[24], $ids($r), true)));
+pin('a plugin listener runs with context api and the search page\'s parameters, also through Params', array(array('api', array((string) $cars), array((string) $cars))), $calls);
+pin('the request is put back after it', '', Params::getParam('sCategory'));
+pin('the search_conditions hook condition applies to the answer', array(24, false), array($r->body()['meta']['total'], in_array($live[24], $ids($r), true)));
+$backend = static function ($answer, $search, $params) use ($admin, $p, $live) {
+    return array('items' => array($admin->query("SELECT * FROM {$p}t_item WHERE pk_i_id = " . (int) $live[3])->fetch_assoc()), 'total' => 1);
+};
+osc_add_filter('search_results', $backend);
+$r = $get('listings', array('category' => 'cars'), $publicKey);
+osc_remove_filter('search_results', $backend);
+pin('a search_results backend may answer with bare rows; they are read as any page\'s', array(array($live[3]), $get('listings/' . $live[3], array(), $publicKey)->body()['data']), array($ids($r), $r->body()['data'][0] ?? null));
 
 harness_section('one listing');
 $views = static fn (int $id): int => (int) $admin->query("SELECT i_num_views FROM {$p}t_item_stats WHERE fk_i_item_id = $id")->fetch_row()[0];
@@ -427,7 +436,7 @@ $data  = $r->body()['data'];
 pin('a live listing', array(200, $live[0], 'active', 'Car 0', 'cars', 'vehicles'), array($r->status(), $data['id'], $data['status'], $data['title'], $data['category']['slug'], $data['category']['path'][0]['slug']));
 pin('its price as a decimal string', array('amount' => '1000.00', 'currency' => 'USD', 'formatted' => '1,000.00 US Dollar'), $data['price']);
 pin('the contact e-mail stays hidden, the phone shows', array(null, '555-0100'), array($data['contact']['email'], $data['contact']['phone']));
-pin('the seller', array('id' => $seller, 'name' => 'seller', 'username' => 'seller', 'url' => 'http://localhost/user/' . $seller), $data['seller']);
+pin('a listing seller member has id, name, username and url', array('id' => $seller, 'name' => 'seller', 'username' => 'seller', 'url' => 'http://localhost/user/' . $seller), $data['seller']);
 pin('custom fields with include=custom_fields', array(array('id' => $fieldId, 'slug' => 'colour', 'name' => 'Colour', 'type' => 'text', 'value' => 'blue')), $data['custom_fields']);
 pin('the location', array('Alpha', 'Aville'), array($data['location']['region']['name'], $data['location']['city']['name']));
 pin('matches the schema', array(), $schemaErrors('ListingDocument', $r));
@@ -467,7 +476,7 @@ pin('when only signed-in users may contact, a public key sees no e-mail or phone
     $get('listings/' . $live[0], array(), $publicKey, $gated)->body()['data']['contact'],
     array('email' => 1, 'phone' => 1)
 )));
-pin('but a signed-in user does', array('contact@example.test', '555-0100'), array_values(array_intersect_key(
+pin('a signed-in user sees the contact e-mail and phone', array('contact@example.test', '555-0100'), array_values(array_intersect_key(
     $get('listings/' . $live[0], array(), $otherKey, $gated)->body()['data']['contact'],
     array('email' => 1, 'phone' => 1)
 )));
@@ -479,10 +488,25 @@ pin('nor a hidden listing\'s photos or comments', array(404, 404), array($get('l
 pin('an unknown locale is refused', 422, $get('listings/' . $live[0], array('locale' => 'fr_FR'), $publicKey)->status());
 pin('an unknown listing is 404', 404, $get('listings/999999', array(), $publicKey)->status());
 pin('an unknown include is 422, as any unknown query value', 422, $get('listings/' . $live[0], array('include' => 'secrets'), $publicKey)->status());
+$dbDown = static function (string $table, callable $fn) use ($admin, $p) {
+    $admin->query("RENAME TABLE {$p}{$table} TO {$p}{$table}_off");
+    try {
+        return $fn();
+    } finally {
+        $admin->query("RENAME TABLE {$p}{$table}_off TO {$p}{$table}");
+    }
+};
+$down = static fn (Response $r): array => array($r->status(), $r->prepare()['headers']['Cache-Control'] ?? null);
+pin('a database error on the listing row is a 500 with no-store, not a 404', array(500, 'private, no-store'), $dbDown('t_item_description', static fn (): array => $down($get('listings/' . $live[0], array(), null, $open))));
+pin('a database error on its photos is a 500, not a 200 a cache could keep without them', array(500, 'private, no-store'), $dbDown('t_item_resource', static fn (): array => $down($get('listings/' . $live[0], array(), null, $open))));
+pin('the same on the photos endpoint', array(500, 'private, no-store'), $dbDown('t_item_resource', static fn (): array => $down($get('listings/' . $live[0] . '/photos', array(), null, $open))));
+pin('a database error on the seller is a 500', array(500, 'private, no-store'), $dbDown('t_user', static fn (): array => $down($get('listings/' . $live[0], array(), null, $open))));
+pin('a database error on custom fields is a 500', array(500, 'private, no-store'), $dbDown('t_item_meta', static fn (): array => $down($get('listings/' . $live[0], array('include' => 'custom_fields'), null, $open))));
+pin('the listing answers again once the database is back', 200, $get('listings/' . $live[0], array(), null, $open)->status());
 
 harness_section('photos and comments');
 $r = $get('listings/' . $live[0] . '/photos', array(), $publicKey);
-pin('photos', array(1, 'http://localhost/oc-content/uploads/0/' . $r->body()['data'][0]['id'] . '_thumbnail.jpg'), array(count($r->body()['data']), $r->body()['data'][0]['thumbnail']));
+pin('a listing photos list has the thumbnail URL', array(1, 'http://localhost/oc-content/uploads/0/' . $r->body()['data'][0]['id'] . '_thumbnail.jpg'), array(count($r->body()['data']), $r->body()['data'][0]['thumbnail']));
 pin('a hidden listing\'s photos are 404', 404, $get('listings/' . $pending . '/photos', array(), $publicKey)->status());
 $r = $get('listings/' . $live[0] . '/comments', array('limit' => 2, 'count' => 'true'), $publicKey);
 pin('approved comments only, oldest first, paged', array(array('Comment 0', 'Comment 1'), 3), array(array_column($r->body()['data'], 'title'), $r->body()['meta']['total']));
@@ -499,9 +523,9 @@ check('without the e-mail', !isset($r->body()['data']['email']));
 pin('matches the schema', array(), $schemaErrors('UserDocument', $r));
 pin('the user themself gets the e-mail', 'seller@example.test', $get('users/' . $seller, array(), $sellerKey)->body()['data']['email']);
 pin('a disabled user is 404', 404, $get('users/' . $blocked, array(), $publicKey)->status());
-pin('but an admin key with admin:users sees them', 200, $get('users/' . $blocked, array(), $adminKey)->status());
+pin('an admin key with admin:users sees a disabled user', 200, $get('users/' . $blocked, array(), $adminKey)->status());
 pin('an admin key without admin:users does not', array(404, 404), array($get('users/' . $blocked, array(), $narrowKey)->status(), $get('users/' . $blocked . '/listings', array(), $narrowKey)->status()));
-check('and gets only the public profile of others', !isset($get('users/' . $seller, array(), $narrowKey)->body()['data']['email']));
+check('an admin key without admin:users gets only the public profile of others', !isset($get('users/' . $seller, array(), $narrowKey)->body()['data']['email']));
 $r = $get('users/' . $other . '/listings', array(), $publicKey);
 pin('a user\'s live listings', array($bike), $ids($r));
 pin('the user filter is refused: it is the path, not a parameter', 422, $get('users/' . $other . '/listings', array('user' => (string) $seller), $publicKey)->status());
@@ -534,7 +558,7 @@ $five   = $count(array('category' => 'cars', 'limit' => 5));
 $twenty = $count(array('category' => 'cars', 'limit' => 20));
 echo "  a 20-listing page, warm: $twenty queries\n";
 pin('a 20-listing page costs the same queries as a 5-listing page', $five, $twenty);
-pin('a warm 20-listing page costs 8 queries: key, searchable fields, search, three in extendData, photos, sellers', 8, $twenty);
+pin('a warm 20-listing page costs 7 queries: key, searchable fields, search, texts in the asked language, stats and locations, photos, sellers', 7, $twenty);
 pin('count=true adds the count query', $twenty + 1, $count(array('category' => 'cars', 'limit' => 20, 'count' => 'true')));
 pin('include=custom_fields adds one query, whatever the page size', array($twenty + 1, $twenty + 1), array(
     $count(array('category' => 'cars', 'limit' => 5, 'include' => 'custom_fields')), $count(array('category' => 'cars', 'limit' => 20, 'include' => 'custom_fields')),
@@ -563,6 +587,6 @@ $cold = static function () use ($admin, $makeKernel, $publicKey): int {
 };
 $coldCount = $cold();
 echo "  a 20-listing page, cold: $coldCount queries\n";
-pin('a cold 20-listing page adds the category tree, the category parent map and the currencies: 11 queries', 11, $coldCount);
+pin('a cold 20-listing page adds the category rows (one read for the catalog and search), the category parent map and the currencies: 10 queries', 10, $coldCount);
 
 exit(harness_result());

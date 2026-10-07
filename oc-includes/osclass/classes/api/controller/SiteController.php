@@ -12,8 +12,9 @@ declare(strict_types=1);
 
 namespace mindstellar\api\controller;
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
-use mindstellar\api\Kernel;
+use mindstellar\api\read\Page;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\Format;
 use mindstellar\api\serializer\LocationSerializer;
@@ -32,7 +33,7 @@ final class SiteController
         $this->settings = $api->settings();
     }
 
-    public function show(): Response
+    public function show(ApiCall $call): Response
     {
         // Built per request, not cached: every value is a preference already in memory, and a
         // cached copy would outlive a settings change.
@@ -43,14 +44,14 @@ final class SiteController
         }
         $links = [];
         foreach (['listings' => 'listings', 'categories' => 'categories', 'countries' => 'countries', 'currencies' => 'currencies', 'custom_fields' => 'custom-fields', 'openapi' => 'openapi.json'] as $name => $path) {
-            $links[$name] = $this->api->links()->api($path);
+            $links[$name] = $this->api->links()->api($path, $call->request()->version());
         }
         $settings = $this->settings;
         $site     = [
             'name'           => (string) osc_page_title(),
             'description'    => Format::text(osc_page_description()),
             'url'            => (string) osc_base_url(),
-            'api_version'    => Kernel::VERSION,
+            'api_version'    => $call->request()->version(),
             'default_locale' => $facts->defaultLocale(),
             'locales'        => $locales,
             'currency'       => Format::text(osc_currency()),
@@ -73,11 +74,11 @@ final class SiteController
         return Response::ok($site);
     }
 
-    public function currencies(): Response
+    public function currencies(ApiCall $call): Response
     {
         $rows = $this->api->currencyService()->enabled();
         $serializer = new LocationSerializer();
 
-        return Response::collection(array_map([$serializer, 'currency'], $rows));
+        return Page::whole(array_map([$serializer, 'currency'], $rows), $this->api->links(), $call);
     }
 }

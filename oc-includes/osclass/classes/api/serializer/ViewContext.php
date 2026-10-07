@@ -12,17 +12,21 @@ declare(strict_types=1);
 
 namespace mindstellar\api\serializer;
 
+use mindstellar\apiaccess\ApiSettings;
 use mindstellar\apiaccess\Credential;
 
 /**
  * Who a resource is shaped for and how: the caller, the view it gets (public, owner or
- * admin), the locale, the sparse fieldset and the includes. The `api_listing`, `api_user`
- * and `api_category` filters receive it as their third argument.
+ * admin), the API version, the locale, the sparse fieldset and the includes. The
+ * `api_listing`, `api_user` and `api_category` filters receive it as their third argument.
  */
 final class ViewContext
 {
+    /** @api */
     public const PUBLIC = 'public';
+    /** @api */
     public const OWNER  = 'owner';
+    /** @api */
     public const ADMIN  = 'admin';
 
     public const VIEWS = [self::PUBLIC, self::OWNER, self::ADMIN];
@@ -42,7 +46,8 @@ final class ViewContext
         private string $locale,
         private ?SparseFieldset $fields = null,
         private array $include = [],
-        private string $view = self::PUBLIC
+        private string $view = self::PUBLIC,
+        private string $version = ApiSettings::PINNED_VERSION
     ) {
         $this->include = array_values($include);
     }
@@ -88,16 +93,35 @@ final class ViewContext
         return $this->viewer->isUser();
     }
 
+    /** @api */
+    public function viewer(): Credential
+    {
+        return $this->viewer;
+    }
+
+    /** @api */
     public function view(): string
     {
         return $this->view;
     }
 
+    /**
+     * The API version the answer is for, e.g. `v1`.
+     *
+     * @api
+     */
+    public function version(): string
+    {
+        return $this->version;
+    }
+
+    /** @api */
     public function locale(): string
     {
         return $this->locale;
     }
 
+    /** @api */
     public function fields(): ?SparseFieldset
     {
         return $this->fields;
@@ -105,6 +129,8 @@ final class ViewContext
 
     /**
      * Whether the fieldset keeps a top-level member, so a serializer can skip building it.
+     *
+     * @api
      */
     public function wants(string $member): bool
     {
@@ -112,6 +138,8 @@ final class ViewContext
     }
 
     /**
+     * @api
+     *
      * @return string[]
      */
     public function include(): array
@@ -119,6 +147,7 @@ final class ViewContext
         return $this->include;
     }
 
+    /** @api */
     public function includes(string $name): bool
     {
         return in_array($name, $this->include, true);

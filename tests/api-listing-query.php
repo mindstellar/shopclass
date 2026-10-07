@@ -9,12 +9,8 @@
  */
 
 /**
- * How list endpoints read their query: listing filters onto the search page's own
- * parameters (category slugs to ids, an unknown one refused), the shared Pager (limits,
- * cursors that only work for their filters, sort and order, totals skipped on keyset pages)
- * and the page links, which never carry an api_key.
- *
- * DB-free.  Usage: php tests/api-listing-query.php
+ * How list endpoints read their query: listing filters, the shared Pager, cursors and page links.
+ * Usage: php tests/api-listing-query.php
  */
 
 require_once __DIR__ . '/lib/api-boot.php';
@@ -76,7 +72,7 @@ pin('API names become the search page\'s own', [
     'meta'      => ['12' => 'blue'],
 ], $params([
     'q' => 'red bike', 'category' => 'cars,1', 'country' => 'DE', 'region' => ['5', '6'], 'city' => '9', 'city_area' => '3',
-    'user' => '7,x', 'locale' => 'de_DE', 'price_min' => 10, 'price_max' => 500, 'with_photos' => true, 'premium' => true,
+    'user' => '7', 'locale' => 'de_DE', 'price_min' => 10, 'price_max' => 500, 'with_photos' => true, 'premium' => true,
     'custom_field' => ['12' => 'blue'],
 ]));
 pin('a pattern sorts by relevance unless told otherwise', ['relevance', 'created', 'price'], [
@@ -88,9 +84,10 @@ pin('a sort is made total by the id, in its direction', [[['dt_pub_date', 'DESC'
 pin('the keyset condition for newest first', [
     '(t.dt_pub_date < ? OR (t.dt_pub_date = ? AND t.pk_i_id < ?))', ['2026-10-01 10:00:00', '2026-10-01 10:00:00', 5],
 ], ListingSort::of('created')->after('t', ['2026-10-01 10:00:00', 5]));
-pin('and for ids, oldest first', ['t.pk_i_id > ?', [5]], ListingSort::of('id', 'asc')->after('t', [5]));
+pin('the keyset condition for ids, oldest first', ['t.pk_i_id > ?', [5]], ListingSort::of('id', 'asc')->after('t', [5]));
 pin('/users/{id}/listings fixes the seller, whatever user= says', ['3'], $params(['user' => '7'], 3)['sUser']);
 pin('an unknown category is refused, not ignored', '422 validation_failed /category', $problem(static fn () => $params(['category' => 'boats'])));
+pin('a user that is not an id is refused, not ignored', '422 validation_failed /user', $problem(static fn () => $params(['user' => '7,x'])));
 $facts = new SiteFacts('en_US', ['en_US' => ['name' => 'English', 'direction' => 'ltr'], 'de_DE' => ['name' => 'Deutsch', 'direction' => 'ltr']]);
 pin('the locale is resolved once: asked, or the default', ['de_DE', 'en_US'], [$facts->locale('de_DE'), $facts->locale('')]);
 pin('a locale the site lacks is refused', '422 validation_failed /locale', $problem(static fn () => $facts->locale('fr_FR')));
@@ -110,7 +107,7 @@ check('a full page plus one makes a next cursor', is_string($next));
 pin('no next cursor on the last page', null, $first->next(array_slice($rows, 0, 3)));
 $second = $pager(['category' => 'cars', 'limit' => 3, 'cursor' => $next]);
 pin('the next page starts after the last row', [['2026-10-03 10:00:00', 18], 0], [$second->after(), $second->offset()]);
-pin('a keyset page after the first is not counted, even when asked', false, $pager(['category' => 'cars', 'limit' => 3, 'count' => 'true', 'cursor' => $next])->counts());
+check('a keyset page after the first is not counted, even when asked', !($pager(['category' => 'cars', 'limit' => 3, 'count' => 'true', 'cursor' => $next])->counts()));
 pin('a cursor survives a changed limit', null, $problem(static fn () => $pager(['category' => 'cars', 'limit' => 5, 'cursor' => $next])));
 pin('a cursor made for other filters is refused', '400 invalid_cursor', $problem(static fn () => $pager(['category' => 'vehicles', 'limit' => 3, 'cursor' => $next])));
 pin('a cursor made for another order is refused', '400 invalid_cursor', $problem(static fn () => $pager(['category' => 'cars', 'cursor' => $next], 'created', 'asc')));
@@ -122,11 +119,11 @@ $byPrice = $pager(['sort' => 'price', 'limit' => 3], 'price');
 $offset  = $byPrice->next($rows);
 $later   = $pager(['sort' => 'price', 'limit' => 3, 'count' => '1', 'cursor' => $offset], 'price');
 pin('price pages by offset, and offset pages keep their total when asked', [3, null, true], [$later->offset(), $later->after(), $later->counts()]);
-pin('a page with a next one is not truncated', false, $byPrice->truncated($rows));
+check('a page with a next one is not truncated', !($byPrice->truncated($rows)));
 $deep     = $cursor->encode(CursorState::offset('price', 'desc', Cursor::filterHash(['sort' => 'price', 'order' => 'desc']), 9998));
 $deepPage = $pager(['sort' => 'price', 'limit' => 3, 'cursor' => $deep], 'price');
 pin('past the deepest offset: no next cursor, and truncated', [null, true], [$deepPage->next($rows), $deepPage->truncated($rows)]);
-pin('the real end of the list is not truncated', false, $deepPage->truncated(array_slice($rows, 0, 3)));
+check('the real end of the list is not truncated', !($deepPage->truncated(array_slice($rows, 0, 3))));
 
 harness_section('page links');
 $links = new class () implements Links {
@@ -150,9 +147,9 @@ $links = new class () implements Links {
         return '';
     }
 
-    public function api(string $path): string
+    public function api(string $path, ?string $version = null): string
     {
-        return 'https://site.test/api/v1/' . $path;
+        return 'https://site.test/api/' . ($version ?? 'v1') . '/' . $path;
     }
 
     public function price(?int $micros, string $symbol): string

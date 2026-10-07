@@ -14,6 +14,7 @@ namespace mindstellar\api\read;
 
 use mindstellar\api\Problem;
 use mindstellar\api\ProblemException;
+use mindstellar\category\CategoryQuery;
 
 /**
  * Every enabled category, with its translations, read once and looked up by id or slug.
@@ -28,11 +29,23 @@ final class CategoryCatalog
     /** @var array<int,int[]> parent id (0 for roots) => child ids */
     private array $children = [];
 
+    private ?\Closure $source = null;
+
     /**
-     * @param array<int,array<string,mixed>> $rows Category::listEnabled() rows, each with a
+     * @param array<int,array<string,mixed>> $rows CategoryQuery::enabledTree() rows, each with a
      *                                             `locale` map of s_name, s_description, s_slug
      */
-    public function __construct(array $rows)
+    public function __construct(array|\Closure $rows)
+    {
+        if ($rows instanceof \Closure) {
+            $this->source = $rows;
+
+            return;
+        }
+        $this->fill($rows);
+    }
+
+    private function fill(array $rows): void
     {
         foreach ($rows as $row) {
             $id = (int) ($row['pk_i_id'] ?? 0);
@@ -48,21 +61,21 @@ final class CategoryCatalog
         }
     }
 
+    private function load(): void
+    {
+        if ($this->source !== null) {
+            $source       = $this->source;
+            $this->source = null;
+            $this->fill($source());
+        }
+    }
+
     /**
-     * The site's categories, from the cached tree core already keeps.
+     * The site's enabled categories, read on first use from the cache the category group keeps.
      */
     public static function fromSite(): self
     {
-        $rows = [];
-        $walk = static function (array $branch) use (&$walk, &$rows): void {
-            foreach ($branch as $category) {
-                $rows[] = $category;
-                $walk((array) ($category['categories'] ?? []));
-            }
-        };
-        $walk(\Category::getInstance()->toTree(true));
-
-        return new self($rows);
+        return new self(static fn (): array => (new CategoryQuery())->enabledTree(OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale()));
     }
 
     /**
@@ -70,6 +83,7 @@ final class CategoryCatalog
      */
     public function find(int $id): ?array
     {
+        $this->load();
         return $this->byId[$id] ?? null;
     }
 
@@ -81,6 +95,7 @@ final class CategoryCatalog
      */
     public function lookup(string $idOrSlug, string $locale): ?array
     {
+        $this->load();
         if (ctype_digit($idOrSlug)) {
             return $this->find((int) $idOrSlug);
         }
@@ -108,6 +123,7 @@ final class CategoryCatalog
      */
     public function ancestors(int $id): array
     {
+        $this->load();
         $path = [];
         $seen = [$id => true];
         $row  = $this->find($id);
@@ -155,6 +171,7 @@ final class CategoryCatalog
      */
     public function childIds(int $id): array
     {
+        $this->load();
         return $this->children[$id] ?? [];
     }
 
@@ -163,6 +180,7 @@ final class CategoryCatalog
      */
     public function all(): array
     {
+        $this->load();
         $out  = [];
         $walk = function (int $parent) use (&$walk, &$out): void {
             foreach ($this->childIds($parent) as $id) {

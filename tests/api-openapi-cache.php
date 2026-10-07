@@ -89,6 +89,7 @@ class Object_Cache_probe implements iObject_Cache
     }
 }
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\routing\Router;
@@ -102,14 +103,14 @@ use mindstellar\apiaccess\Scopes;
 $definitions = Schema::definitions();
 $validator   = new Validator($definitions);
 $make        = static fn (array $extra = []): OpenApi => OpenApi::forSite(new Router($validator, RouteTable::core() + $extra), $definitions, new Scopes());
-$show        = static fn (OpenApi $api): Response => $api->show(new Request('GET', 'v1/openapi.json', [], [], '127.0.0.1'), Credential::anonymous(), []);
+$show        = static fn (OpenApi $api): Response => $api->show(new ApiCall(new Request('GET', 'v1/openapi.json', [], [], '127.0.0.1'), Credential::anonymous()));
 
 harness_section('the cache');
 $first = $show($make());
 pin('the first call builds and stores it', [200, 1], [$first->status(), Object_Cache_probe::$sets]);
 $second = $show($make());
 pin('the next reads it back: nothing more is stored, the same document', [1, $first->body()], [Object_Cache_probe::$sets, $second->body()]);
-pin('it is kept for a short while', true, array_values(Object_Cache_probe::$store)[0][1] > 0);
+pin('the stored OpenAPI document lives 300 seconds', 300, array_values(Object_Cache_probe::$store)[0][1]);
 
 harness_section('the key');
 $plugin = ['GET ext/acme/offers' => ['handler' => static fn (): Response => Response::ok([]), 'auth' => 'none']];
@@ -119,6 +120,6 @@ $GLOBALS['probe_plugins'] = 'a:1:{i:0;s:4:"acme";}';
 $show($make());
 pin('a change in the active plugins makes a new one', 3, Object_Cache_probe::$sets);
 $show($make());
-pin('and the same state again is a hit', 3, Object_Cache_probe::$sets);
+pin('the same plugin state again is a cache hit', 3, Object_Cache_probe::$sets);
 
 exit(harness_result());

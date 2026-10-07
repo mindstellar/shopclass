@@ -14,22 +14,33 @@ namespace mindstellar\api\read;
 
 use mindstellar\api\serializer\ListingSerializer;
 use mindstellar\api\serializer\ViewContext;
+use mindstellar\currency\CurrencyService;
 use mindstellar\database\Db;
+use mindstellar\listing\ListingQuery;
 
 /**
  * Listings as the API answers with them: the rows read, what they link to looked up once
  * per page, and each serialized in the caller's view. A page costs a fixed number of
  * queries, whatever its size: one each for photos, sellers and custom field values, each
- * only when the response includes it.
+ * only when the response includes it. A database error is not caught: it reaches the kernel
+ * as a 500, never a 404 or a partial answer a cache could keep.
  */
 final class ListingReader
 {
-    public function __construct(private CategoryCatalog $categories, private ListingSerializer $serializer)
+    private ListingRows $rows;
+
+    private ?CurrencyService $currencies;
+
+    public function __construct(private CategoryCatalog $categories, private ListingSerializer $serializer, ?ListingQuery $listings = null, ?CurrencyService $currencies = null)
     {
+        $this->rows       = new ListingRows($listings ?? new ListingQuery());
+        $this->currencies = $currencies;
     }
 
     /**
      * One listing in the context's view, or null when there is no such listing.
+     *
+     * @api
      *
      * @return array<string,mixed>|null
      */
@@ -41,15 +52,28 @@ final class ListingReader
     }
 
     /**
-     * The listing's extended row (Item::extendData()), or null.
+     * The listing's row with its texts in every language, its counters and its location, or null.
      *
      * @return array<string,mixed>|null
      */
     public function row(int $id): ?array
     {
-        $item = \Item::getInstance()->findByPrimaryKey($id);
+        return $this->rows->find($id, OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale());
+    }
 
-        return is_array($item) && $item !== [] ? $item : null;
+    /**
+     * Listing rows made ready for many(). Only the context's language is read, unless the
+     * response carries `translations`.
+     *
+     * @api
+     *
+     * @param array<int,array<string,mixed>> $items t_item rows
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function extend(array $items, ViewContext $context): array
+    {
+        return $this->rows->extend($items, $context->locale(), $context->includes('translations') && $context->wants('translations'));
     }
 
     /**
@@ -63,6 +87,10 @@ final class ListingReader
     }
 
     /**
+     * Listing rows from extend(), each in the context's view.
+     *
+     * @api
+     *
      * @param array<int,array<string,mixed>> $items extended listing rows
      *
      * @return array<int,array<string,mixed>>
@@ -74,6 +102,8 @@ final class ListingReader
 
     /**
      * A listing's photos, oldest first.
+     *
+     * @api
      *
      * @return array<int,array<string,mixed>>
      */
@@ -112,11 +142,9 @@ final class ListingReader
             return new ListingRelations($this->categories);
         }
         $currencies = [];
-        foreach (array_keys($codes) as $code) {
-            $row = \Currency::getInstance()->findByPrimaryKey($code);
-            if (is_array($row)) {
-                $currencies[$code] = $row;
-            }
+        if ($codes !== []) {
+            $this->currencies ??= CurrencyService::make();
+            $currencies         = $this->currencies->findMany(array_keys($codes));
         }
 
         return new ListingRelations(
@@ -137,11 +165,7 @@ final class ListingReader
      */
     private function photoRows(array $ids): array
     {
-        try {
-            $rows = Db::stringifyRows(\mindstellar\listing\PhotoStore::ofItems($ids));
-        } catch (\mindstellar\database\DbException $e) {
-            return [];
-        }
+        $rows = Db::stringifyRows(\mindstellar\listing\PhotoStore::ofItems($ids));
         $out = [];
         foreach ($rows as $row) {
             $out[(int) $row['fk_i_item_id']][] = $row;
@@ -162,11 +186,7 @@ final class ListingReader
         if ($ids === []) {
             return [];
         }
-        try {
-            $rows = \mindstellar\user\UserStore::byIds($ids, ['pk_i_id', 's_name', 's_username'], true);
-        } catch (\mindstellar\database\DbException $e) {
-            return [];
-        }
+        $rows = \mindstellar\user\UserStore::byIds($ids, ['pk_i_id', 's_name', 's_username'], true);
 
         return array_column(Db::stringifyRows($rows), null, 'pk_i_id');
     }
@@ -180,11 +200,7 @@ final class ListingReader
      */
     private function fieldValues(array $ids): array
     {
-        try {
-            $rows = Db::stringifyRows(\mindstellar\fields\FieldQuery::valuesOf($ids));
-        } catch (\mindstellar\database\DbException $e) {
-            return [];
-        }
+        $rows = Db::stringifyRows(\mindstellar\fields\FieldQuery::valuesOf($ids));
         $out = [];
         foreach ($rows as $row) {
             $out[(int) $row['fk_i_item_id']][] = $row;

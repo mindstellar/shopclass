@@ -20,6 +20,7 @@ use mindstellar\api\auth\TokenIssuer;
 use mindstellar\api\auth\UserRows;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\ListingList;
+use mindstellar\api\read\Page;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\AccessEntrySerializer;
 use mindstellar\api\serializer\UserSerializer;
@@ -164,10 +165,10 @@ final class AccountController
 
         $serializer = new AccessEntrySerializer();
 
-        return Response::collection(array_map(
+        return Page::whole(array_map(
             static fn (AccessEntry $session): array => $serializer->one($session, $credential),
             $this->sessions->signIns((int) $credential->userId())
-        ));
+        ), $this->api->links(), $call);
     }
 
     public function endSession(ApiCall $call): Response

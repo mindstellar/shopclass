@@ -417,10 +417,9 @@ foreach (['enabled_user_registration' => '1', 'enabled_user_validation' => '0', 
 }
 osc_reset_preferences();
 $signUp = api_admin_caller(static fn (): \mindstellar\apiaccess\ApiSettings => new \mindstellar\apiaccess\ApiSettings(enabled: true, registration: true));
-// CWebRegister 'register_post'
+// CWebRegister 'register_post'; AccountService::register() fires before_user_register.
 $webRegister = static function (array $form) use ($asUser) {
     $asUser(null);
-    osc_run_hook('before_user_register');
 
     return Params::withRequest($form, static fn () => (new UserActions(false))->add());
 };
@@ -443,20 +442,34 @@ $webTaken = $record(static fn () => $webRegister($form('Dee', 'dee@example.test'
 $apiTaken = $record(static fn () => $apiRegister($body('Eve', 'eve@example.test')));
 pin('a taken e-mail fires these, in order', ['before_user_register', 'register_email_taken', 'user_add_flash_error', 'user_register_failed'], $webTaken);
 pin('the API fires the same, in the same order', $webTaken, $apiTaken);
-pin('a taken e-mail: the message, and 422 from the API', ['The specified e-mail is already in use' . PHP_EOL, 422], [$webRegister($form('Dee', 'dee@example.test')), $apiRegister($body('Eve', 'eve@example.test'))->status()]);
+pin('a taken e-mail: the message on the form; the API answers as for a new one', ['The specified e-mail is already in use' . PHP_EOL, 201, ['confirmed' => true]], [
+    $webRegister($form('Dee', 'dee@example.test')), $apiRegister($body('Eve', 'eve@example.test'))->status(), $apiRegister($body('Eve', 'eve@example.test'))->body()['data'] ?? null,
+]);
 $webRegister($form('Hal', 'hal@example.test', 'hal'));
 pin('a taken username is refused on both sides', ['Username is already taken' . PHP_EOL, 422, 0], [
     $webRegister($form('Ida', 'ida@example.test', 'hal')), $apiRegister($body('Jon', 'jon@example.test', 'hal'))->status(),
     (int) $admin->query("SELECT COUNT(*) FROM {$p}t_user WHERE s_email IN ('ida@example.test', 'jon@example.test')")->fetch_row()[0],
 ]);
 pin('a blank name and a bad e-mail: both messages', 'The name cannot be empty' . PHP_EOL . 'The email is not valid' . PHP_EOL, $webRegister($form('', 'nope')));
+$admin->query("INSERT INTO {$p}t_ban_rule (s_name, s_email) VALUES ('test', 'pat@example.test')");
+\mindstellar\security\BanRuleStore::forget();
+pin('the old add() answers a ban with its message, as before, not an exception', 'Your current email is not allowed', $webRegister($form('Pat', 'pat@example.test')));
+$admin->query("DELETE FROM {$p}t_ban_rule");
+\mindstellar\security\BanRuleStore::forget();
+Preference::getInstance()->set('enabled_user_registration', '0');
+osc_reset_preferences();
+pin('...and closed sign-ups the same way', ['User registration is not enabled', 'User registration is not enabled'], [$webRegister($form('Pat', 'pat@example.test')), \mindstellar\user\AccountService::signUpOpen()]);
+Preference::getInstance()->set('enabled_user_registration', '1');
+osc_reset_preferences();
 
 Preference::getInstance()->set('enabled_user_validation', '1');
 osc_reset_preferences();
 $webPending = $record(static fn () => $webRegister($form('Kim', 'kim@example.test')));
 $apiPending = $record(static fn () => $apiRegister($body('Lee', 'lee@example.test')));
 pin('with activation on, the sign-up form fires these, in order', ['before_user_register', 'user_add_flash_error', 'pre_user_post', 'hook_email_admin_new_user', 'hook_email_user_validation', 'user_register_completed'], $webPending);
-pin('the API fires the same, in the same order', $webPending, $apiPending);
+pin('the API fires the same, but its activation e-mail waits for the job', array_values(array_diff($webPending, ['hook_email_user_validation'])), $apiPending);
+$leeId = (int) $admin->query("SELECT pk_i_id FROM {$p}t_user WHERE s_email = 'lee@example.test'")->fetch_row()[0];
+pin('...which fires it when it runs', ['hook_email_user_validation'], $record(static fn () => \mindstellar\user\SignUpMail::sendActivation($leeId, static fn (array $mail): bool => true)));
 pin('both wait for the link', [['Kim', '0', '1'], ['Lee', '0', '1']], [array_values($joined('kim@example.test')), array_values($joined('lee@example.test'))]);
 pin('the old add() answers 1, the API says not confirmed', [1, false], [$webRegister($form('Max', 'max@example.test')), $apiRegister($body('Ned', 'ned@example.test'))->body()['data']['confirmed'] ?? null]);
 Preference::getInstance()->set('enabled_user_validation', '0');
@@ -501,11 +514,11 @@ $comment  = ['author_name' => 'Ann', 'author_email' => 'banned@example.test', 'b
 Preference::getInstance()->set('reg_user_post', '1');
 Preference::getInstance()->set('reg_user_post_comments', '1');
 osc_reset_preferences();
-pin('signed-in only: a guest\'s listing and comment need a sign-in', ['wrong_credential', 'wrong_credential'], [
+pin('signed-in only: a guest\'s listing and comment need a sign-in', ['sign_in', 'sign_in'], [
     $reason(static fn () => $listings->mayPost($guestAct, 'ann@example.test')),
     $reason(static fn () => $comments->post($sueCar, $comment, $guestAct)),
 ]);
-pin('a guest deleting a comment needs a sign-in', 'wrong_credential', $reason(static fn () => $comments->delete(1, $guestAct)));
+pin('a guest deleting a comment needs a sign-in', 'sign_in', $reason(static fn () => $comments->delete(1, $guestAct)));
 Preference::getInstance()->set('reg_user_post', '0');
 Preference::getInstance()->set('reg_user_post_comments', '0');
 $admin->query("INSERT INTO {$p}t_ban_rule (s_name, s_email) VALUES ('test', 'banned@example.test')");

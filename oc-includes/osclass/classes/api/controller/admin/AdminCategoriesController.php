@@ -16,6 +16,7 @@ use mindstellar\admin\AdminText;
 use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
+use mindstellar\api\read\Page;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\CategorySerializer;
 use mindstellar\category\CategoryQuery;
@@ -41,12 +42,12 @@ final class AdminCategoriesController
     /**
      * GET /admin/categories: every category, enabled or not.
      */
-    public function index(): Response
+    public function index(ApiCall $call): Response
     {
         $rows  = $this->query->rows(null);
         $texts = $this->query->texts(array_column($rows, 'pk_i_id'));
 
-        return Response::collection(array_map(static fn (array $row): array => CategorySerializer::admin($row, $texts[(int) $row['pk_i_id']] ?? []), $rows));
+        return Page::whole(array_map(static fn (array $row): array => CategorySerializer::admin($row, $texts[(int) $row['pk_i_id']] ?? []), $rows), $this->api->links(), $call);
     }
 
     /**
@@ -80,7 +81,7 @@ final class AdminCategoriesController
             array_key_exists('enabled', $input) ? (bool) $input['enabled'] : null
         );
 
-        return Response::created($this->categoryData($id), $this->api->links()->api('admin/categories/' . $id));
+        return Response::created($this->categoryData($id), $this->api->links()->api('admin/categories/' . $id, $call->request()->version()));
     }
 
     /**

@@ -144,7 +144,7 @@ The answer has the same shape as a sign-in, with a **new** refresh token.
 | Retry | The same token sent again within 30 seconds, before its new token is used, gets that same new token. A client that lost the answer keeps its sign-in. |
 | Reuse | Any other second use ends the whole sign-in: `400 invalid_grant`, and every token of that sign-in stops. Sign in again. |
 | Password change | Ends every sign-in. The one that changed the password gets a new one. |
-| Other refusals | An unknown, expired or revoked token, or an account that may no longer sign in, is `400 invalid_grant`. |
+| Other refusals | An unknown, expired or revoked token, or an account that may not sign in, is `400 invalid_grant`. |
 
 Two requests with the same refresh token at once both get the same new token. Once a thread
 uses that new token, a late refresh with the old one ends the sign-in, so a client with several
@@ -431,6 +431,9 @@ Limits count requests in a fixed 60-second window. The site owner sets the numbe
 | `api_write` | an extra bucket for `POST`, `PUT`, `PATCH`, `DELETE` | 30 a minute |
 
 Posting has its own hourly limits on top: see [Writes](/docs/developers/api/writes/#limits).
+
+With APCu, the per-minute read buckets count on each web server, so a site behind several servers
+allows that many per server. `api_write` and the hourly caps always count in the database.
 
 IPv6 addresses count by their `/64`. An IPv4-mapped IPv6 address counts as that IPv4 client.
 

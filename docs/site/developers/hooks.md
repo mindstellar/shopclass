@@ -142,7 +142,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 553 names. Generated from the source; do not edit by hand.
+Core fires 555 names. Generated from the source; do not edit by hand.
 
 ### Admin (79)
 
@@ -434,7 +434,7 @@ Core fires 553 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/osclass/classes/search/query/PluginClauses.php` |
 
-### Other (213)
+### Other (215)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -456,7 +456,7 @@ Core fires 553 names. Generated from the source; do not edit by hand.
 | `after_delete_region` | action | `$pk` | `oc-includes/osclass/classes/model/Region.php` |
 | `after_delete_widget` | action | `$widgetId` | `oc-includes/osclass/classes/controller/admin/CAdminAppearance.php` |
 | `after_html` | action | none | `oc-includes/osclass/classes/controller/CWebAjax.php` |
-| `after_login` | action | `$user, $url_redirect` | `oc-includes/osclass/classes/api/controller/AuthController.php` |
+| `after_login` | action | `$user, $redirect` | `oc-includes/osclass/classes/auth/SignIn.php` |
 | `after_rewrite_rules` | action | `array(&$rewrite)` | `oc-includes/osclass/classes/Rewrite.php` |
 | `after_show_pagination_admin` | action | none | `oc-includes/osclass/helpers/hPagination.php` |
 | `alert_email_daily_description` | filter | `$template['s_text'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/osclass/emails.php` |
@@ -478,10 +478,12 @@ Core fires 553 names. Generated from the source; do not edit by hand.
 | `api_listing` | filter | `$data, $item, $context` | `oc-includes/osclass/classes/api/serializer/ListingSerializer.php` |
 | `api_listing_input` | filter | `$input, $request, $credential` | `oc-includes/osclass/classes/api/write/ListingWriter.php` |
 | `api_listings_prefetch` | action | `$ids, $context` | `oc-includes/osclass/classes/api/serializer/ListingSerializer.php` |
+| `api_problem_codes` | filter | `[]` | `oc-includes/osclass/classes/api/Problem.php` |
 | `api_rate_limit` | filter | `$limit, $credential, $route` | `oc-includes/osclass/classes/api/ratelimit/RatePolicy.php` |
 | `api_request_before` | action | `$request, $route, $credential` | `oc-includes/osclass/classes/api/Kernel.php` |
 | `api_response` | filter | `$response, $request, $route` | `oc-includes/osclass/classes/api/Kernel.php` |
 | `api_routes` | filter | `$routes` | `oc-includes/osclass/classes/api/routing/Router.php` |
+| `api_schemas` | filter | `[]` | `oc-includes/osclass/classes/api/schema/ExtensionSchemas.php` |
 | `api_scopes` | filter | `$scopes` | `oc-includes/osclass/classes/apiaccess/Scopes.php` |
 | `api_webhook_delivered` | action | `$endpointData, $event, $httpStatus, $attempt` | `oc-includes/osclass/classes/webhook/Delivery.php` |
 | `api_webhook_events` | filter | `$events` | `oc-includes/osclass/classes/webhook/Events.php` |
@@ -503,7 +505,7 @@ Core fires 553 names. Generated from the source; do not edit by hand.
 | `before_login_admin` | action | none | `oc-includes/osclass/classes/controller/admin/CAdminLogin.php` |
 | `before_rewrite_rules` | action | `array(&$rewrite)` | `oc-includes/osclass/classes/Rewrite.php` |
 | `before_show_pagination_admin` | action | none | `oc-includes/osclass/helpers/hPagination.php` |
-| `before_validating_login` | action | none | `oc-includes/osclass/classes/api/controller/AuthController.php` |
+| `before_validating_login` | action | none | `oc-includes/osclass/classes/auth/SignIn.php` |
 | `billing_can_publish` | filter | `$allowed, $userId, $ctx` | `oc-includes/osclass/classes/billing/EntitlementStore.php` |
 | `billing_credits_changed` | action | `$userId, $delta, $reason` | `oc-includes/osclass/classes/billing/Wallet.php` |
 | `billing_feature_applied` | action | `$featureId, $userId, $price` | `oc-includes/osclass/classes/billing/Billing.php` |
@@ -709,7 +711,7 @@ Core fires 553 names. Generated from the source; do not edit by hand.
 | `api_user` | filter | `$data, $user, $context` | `oc-includes/osclass/classes/api/serializer/UserSerializer.php` |
 | `before_user_delete` | action | `$user` | `oc-includes/osclass/classes/user/AccountService.php` |
 | `before_user_recover` | action | none | `oc-includes/osclass/classes/controller/CWebLogin.php` |
-| `before_user_register` | action | none | `oc-includes/osclass/classes/api/controller/RegistrationController.php` |
+| `before_user_register` | action | none | `oc-includes/osclass/classes/user/AccountService.php` |
 | `before_username_change` | action | `Session::getInstance()->_get('userId'), $username` | `oc-includes/osclass/classes/controller/CWebUser.php` |
 | `bot_user_agents` | filter | `array( // Generic: catches the long tail, which is most of it. 'bot', 'crawler', 'crawling', 'spider', 'scraper', 'archiver', 'fetcher', // Search engines. 'googlebot', 'bingbot', 'slurp', 'duckduckbot', 'baiduspider', 'yandex', 'sogou', 'exabot', 'seznambot', 'petalbot', 'applebot', 'qwantify', // AI and dataset collectors. 'gptbot', 'oai-searchbot', 'chatgpt-user', 'ccbot', 'claudebot', 'claude-web', 'anthropic-ai', 'perplexitybot', 'google-extended', 'bytespider', 'amazonbot', 'meta-externalagent', 'diffbot', // SEO and marketing crawlers. 'ahrefs', 'semrush', 'mj12bot', 'dotbot', 'blexbot', 'dataforseo', 'screaming frog', 'serpstat', 'megaindex', // Monitoring, previews and libraries. 'uptimerobot', 'pingdom', 'statuscake', 'facebookexternalhit', 'telegrambot', 'whatsapp', 'slackbot', 'discordbot', 'embedly', 'curl/', 'wget', 'python-requests', 'python-urllib', 'go-http-client', 'java/', 'okhttp', 'libwww-perl', 'headlesschrome', 'phantomjs', )` | `oc-includes/osclass/helpers/hUtils.php` |
 | `datatable_user_class` | filter | `array(), $aRawRows[$key], $row` | `oc-admin/themes/modern/users/index.php` |

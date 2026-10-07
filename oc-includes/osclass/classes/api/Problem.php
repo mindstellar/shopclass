@@ -23,14 +23,26 @@ use mindstellar\validation\RefusedException;
  * RFC 9457 problem answers and the error catalogue.
  *
  * `code` is the stable machine name a client branches on; `title` is the same for every
- * occurrence of a code and `detail` says what went wrong this time.
+ * occurrence of a code and `detail` says what went wrong this time, as human text that may be
+ * in the site's language. Plugins add `ext_<slug>_<name>` codes on `api_problem_codes`.
  */
 final class Problem
 {
     /** Where the `type` URLs point. */
     public const TYPE_BASE = 'https://mindstellar.com/docs/developers/api/errors/#';
 
-    /** code => [status, title] */
+    /** A plugin's code: `ext_<slug>_<name>`, the slug's `-` written `_`. */
+    public const PLUGIN_CODE = '/^ext_[a-z0-9]+(?:_[a-z0-9]+)+$/D';
+
+    /** ForbiddenException reason => code. */
+    private const REFUSALS = [
+        ForbiddenException::BANNED    => 'banned',
+        ForbiddenException::DISABLED  => 'feature_disabled',
+        ForbiddenException::SIGN_IN   => 'wrong_credential',
+        ForbiddenException::NOT_OWNER => 'not_owner',
+    ];
+
+    /** @api code => [status, title] */
     public const CATALOGUE = [
         'invalid_json'           => [400, 'The request body is not valid JSON.'],
         'invalid_cursor'         => [400, 'The cursor is not valid for this request.'],
@@ -72,17 +84,22 @@ final class Problem
     }
 
     /**
-     * A problem answer for a catalogued code. An unknown code is a 500, so a typo cannot
-     * invent a status.
+     * A problem answer for a catalogued or plugin code. An unknown code is a logged 500, so a
+     * typo cannot invent a status.
+     *
+     * @api
      *
      * @param array<string,mixed> $extra more members, e.g. `errors`
      */
     public static function make(string $code, string $detail = '', array $extra = []): Response
     {
-        if (!isset(self::CATALOGUE[$code])) {
-            $code = 'server_error';
+        $entry = self::CATALOGUE[$code] ?? self::pluginCode($code);
+        if ($entry === null) {
+            error_log('api: unknown problem code ' . $code . '; answered as server_error.');
+            $code  = 'server_error';
+            $entry = self::CATALOGUE[$code];
         }
-        [$status, $title] = self::CATALOGUE[$code];
+        [$status, $title] = $entry;
         $body = ['type' => self::TYPE_BASE . $code, 'title' => $title, 'status' => $status];
         if ($detail !== '') {
             $body['detail'] = $detail;
@@ -93,12 +110,33 @@ final class Problem
     }
 
     /**
-     * 422 with one entry per failed field.
+     * A plugin's code from `api_problem_codes` (code => [status 400-599, title]), or null.
      *
-     * @param array<int,array{pointer:string,code:string,message:string}> $errors
+     * @return array{0:int,1:string}|null
+     */
+    private static function pluginCode(string $code): ?array
+    {
+        if (preg_match(self::PLUGIN_CODE, $code) !== 1) {
+            return null;
+        }
+        $entry = ((array) osc_apply_filter('api_problem_codes', []))[$code] ?? null;
+        if (!is_array($entry) || !is_int($entry[0] ?? null) || $entry[0] < 400 || $entry[0] > 599 || !is_string($entry[1] ?? null)) {
+            return null;
+        }
+
+        return [$entry[0], $entry[1]];
+    }
+
+    /**
+     * 422 with one entry per failed field. An entry without `in` is about the body.
+     *
+     * @api
+     *
+     * @param array<int,array{pointer:string,code:string,message:string,in?:string}> $errors
      */
     public static function validation(array $errors): Response
     {
+        $errors = array_map(static fn (array $error): array => $error + ['in' => 'body'], $errors);
         $detail = '';
         if ($errors !== []) {
             $field  = ltrim(str_replace('/', '.', $errors[0]['pointer']), '.');
@@ -143,7 +181,7 @@ final class Problem
         return match (true) {
             $e instanceof NotFoundException  => self::make('not_found', $e->getMessage()),
             $e instanceof ConflictException  => self::make('conflict', $e->getMessage()),
-            $e instanceof ForbiddenException => self::make($e->reason() !== '' ? $e->reason() : 'forbidden', $e->getMessage()),
+            $e instanceof ForbiddenException => self::make(self::REFUSALS[$e->reason()] ?? 'forbidden', $e->getMessage()),
             $e instanceof BlockedException   => self::make($e->isRateLimit() ? 'rate_limited' : 'login_blocked', $e->getMessage())->withHeader('Retry-After', (string) $e->retryAfter()),
             $e instanceof InvalidException   => self::validation($e->errors()),
             default                          => self::rejected($e->getMessage()),
@@ -162,11 +200,11 @@ final class Problem
         foreach (preg_split('/\R/', $messages) ?: [] as $line) {
             $line = trim(html_entity_decode(strip_tags($line), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
             if ($line !== '') {
-                $errors[] = ['pointer' => $pointer, 'code' => 'rejected', 'message' => $line];
+                $errors[] = ['pointer' => $pointer, 'code' => 'rejected', 'message' => $line, 'in' => 'body'];
             }
         }
         if ($errors === []) {
-            $errors[] = ['pointer' => $pointer, 'code' => 'rejected', 'message' => 'The request was refused.'];
+            $errors[] = ['pointer' => $pointer, 'code' => 'rejected', 'message' => 'The request was refused.', 'in' => 'body'];
         }
 
         return self::make('validation_failed', $errors[0]['message'], ['errors' => $errors]);

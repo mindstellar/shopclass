@@ -17,6 +17,7 @@ use mindstellar\api\ApiServices;
 use mindstellar\api\auth\UserRows;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\ListSpec;
+use mindstellar\api\read\Page;
 use mindstellar\api\read\Pager;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\AccessEntrySerializer;
@@ -24,10 +25,10 @@ use mindstellar\api\serializer\UserSerializer;
 use mindstellar\api\write\AccountBody;
 use mindstellar\apiaccess\AccessEntries;
 use mindstellar\apiaccess\AccessEntry;
-use mindstellar\database\Db;
 use mindstellar\model\Resource;
 use mindstellar\user\AccountService;
 use mindstellar\user\UserQuery;
+use mindstellar\utility\DeferredMail;
 
 /**
  * `/admin/users`: every user in full, the users screen's edit, actions and delete through
@@ -36,8 +37,8 @@ use mindstellar\user\UserQuery;
  */
 final class AdminUsersController
 {
-    /** The PATCH members that change the account's status rather than its profile. */
-    private const STATUS_MEMBERS = ['confirmed' => true, 'blocked' => true];
+    /** The PATCH members that change the account's status rather than its profile => AccountService's flag. */
+    private const STATUS_MEMBERS = ['confirmed' => 'active', 'blocked' => 'blocked'];
 
     private UserRows $users;
     private AccessEntries $sessions;
@@ -76,7 +77,8 @@ final class AdminUsersController
             },
             $this->api->links(),
             'admin/users',
-            $request->query()
+            $request->query(),
+            $request->version()
         );
     }
 
@@ -94,26 +96,19 @@ final class AdminUsersController
         $user     = $this->user($call->intArg());
         $userId   = (int) $user['pk_i_id'];
         $input    = $call->input();
-        $status   = array_intersect_key($input, self::STATUS_MEMBERS);
         $accounts = new AccountService();
         $actor    = $call->credential()->actor($call->request()->ip(), 'admin:users');
-        // Unblock before confirming, so the account's listings come back with it.
-        $changes = [];
-        if (isset($status['blocked']) && $status['blocked'] === ((string) $user['b_enabled'] === '1')) {
-            $changes[] = $status['blocked'] ? 'disable' : 'enable';
-        }
-        if (isset($status['confirmed']) && $status['confirmed'] !== ((string) $user['b_active'] === '1')) {
-            $changes[] = $status['confirmed'] ? 'activate' : 'deactivate';
+        $flags    = [];
+        foreach (array_intersect_key($input, self::STATUS_MEMBERS) as $member => $value) {
+            $flags[self::STATUS_MEMBERS[$member]] = (bool) $value;
         }
         // The edit and the status changes land together or not at all.
-        Db::transaction(static function () use ($accounts, $user, $userId, $input, $actor, $changes): void {
+        DeferredMail::transaction(static function () use ($accounts, $user, $userId, $input, $actor, $flags): void {
             if (array_diff_key($input, self::STATUS_MEMBERS) !== []) {
                 $accounts->update($userId, AccountBody::admin($user, array_diff_key($input, self::STATUS_MEMBERS)), $actor);
             }
-            foreach ($changes as $change) {
-                if (!$accounts->$change($userId, $actor)) {
-                    throw ProblemException::of('server_error', 'The user could not be changed.');
-                }
+            if ($flags !== []) {
+                $accounts->applyFlags($userId, $flags, $actor);
             }
         });
 
@@ -154,10 +149,10 @@ final class AdminUsersController
         $id         = (int) $this->user($call->intArg())['pk_i_id'];
         $serializer = new AccessEntrySerializer();
 
-        return Response::collection(array_map(
+        return Page::whole(array_map(
             static fn (AccessEntry $session): array => $serializer->one($session, $call->credential()),
             $this->sessions->signIns($id)
-        ));
+        ), $this->api->links(), $call);
     }
 
     /**

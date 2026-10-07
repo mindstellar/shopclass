@@ -50,19 +50,19 @@ pin('an empty array is both', array(array(), array()), array($errs(array('type' 
 pin('the message says what was wanted', 'must be a string or null', $v->check(array('type' => array('string', 'null')), 1)[0]['message']);
 
 harness_section('numbers and strings');
-pin('minimum', array(' minimum'), $errs(array('type' => 'integer', 'minimum' => 1), 0));
-pin('maximum', array(' maximum'), $errs(array('type' => 'integer', 'maximum' => 100), 101));
+pin('a value under minimum names minimum', array(' minimum'), $errs(array('type' => 'integer', 'minimum' => 1), 0));
+pin('a value over maximum names maximum', array(' maximum'), $errs(array('type' => 'integer', 'maximum' => 100), 101));
 pin('within bounds', array(), $errs(array('type' => 'integer', 'minimum' => 1, 'maximum' => 100), 50));
 pin('minLength counts characters, not bytes', array(), $errs(array('type' => 'string', 'minLength' => 2), 'éé'));
-pin('minLength', array(' minLength'), $errs(array('type' => 'string', 'minLength' => 2), 'é'));
-pin('maxLength', array(' maxLength'), $errs(array('type' => 'string', 'maxLength' => 3), 'abcd'));
-pin('pattern', array(' pattern'), $errs(array('type' => 'string', 'pattern' => '^[a-z]+$'), 'AB'));
+pin('a string under minLength names minLength', array(' minLength'), $errs(array('type' => 'string', 'minLength' => 2), 'é'));
+pin('a string over maxLength names maxLength', array(' maxLength'), $errs(array('type' => 'string', 'maxLength' => 3), 'abcd'));
+pin('a string failing the pattern names pattern', array(' pattern'), $errs(array('type' => 'string', 'pattern' => '^[a-z]+$'), 'AB'));
 pin('a pattern holding the delimiter still works', array(), $errs(array('type' => 'string', 'pattern' => '^a~b$'), 'a~b'));
-pin('enum', array(array(), array(' enum')), array($errs(array('enum' => array('asc', 'desc')), 'asc'), $errs(array('enum' => array('asc', 'desc')), 'up')));
+pin('an enum accepts a listed value and names enum for another', array(array(), array(' enum')), array($errs(array('enum' => array('asc', 'desc')), 'asc'), $errs(array('enum' => array('asc', 'desc')), 'up')));
 pin('enum is strict', array(' enum'), $errs(array('enum' => array(1, 2)), '1'));
 
 harness_section('format');
-pin('email', array(array(), array(' format')), array($errs(array('type' => 'string', 'format' => 'email'), 'a@b.co'), $errs(array('type' => 'string', 'format' => 'email'), 'a@')));
+pin('an e-mail format accepts a full address and names format for a partial one', array(array(), array(' format')), array($errs(array('type' => 'string', 'format' => 'email'), 'a@b.co'), $errs(array('type' => 'string', 'format' => 'email'), 'a@')));
 pin('uri wants http or https', array(array(), array(' format')), array($errs(array('type' => 'string', 'format' => 'uri'), 'https://x.test/a'), $errs(array('type' => 'string', 'format' => 'uri'), 'javascript:alert(1)')));
 pin('date-time is RFC 3339', array(array(), array(), array(' format')), array(
     $errs(array('type' => 'string', 'format' => 'date-time'), '2026-10-03T12:00:00Z'),
@@ -147,7 +147,7 @@ pin('schemas that are not the ones named are refused', 'LogicException', (static
 pin('Schema::names() lists every component, in order', array_keys(Schema::components()), Schema::names());
 $core   = Schema::definitions();
 $routes = (new Router(new Validator($core), RouteTable::core()))->all();
-pin('building the core routes does not build the component set', false, $core->isBuilt());
+check('building the core routes does not build the component set', !($core->isBuilt()));
 $broken = [];
 foreach ($routes as $key => $route) {
     try {

@@ -164,33 +164,9 @@ class Item extends DAO
             }
             $items = $this->extendItemDescription($items, $prefLocale);
             $items = $this->extendCategoryName($items, $prefLocale);
-            $itemIds = array_column($items, 'pk_i_id');
-            // First get stats and locations data. The s.*/l.* aliases are outside
-            // the query builder's identifier allowlist, so this is hand-written
-            // SQL. The only values are the item ids, bound as an IN (?, ...) list.
-            //
-            // The stats row holds the total, so the seven counters come back as plain
-            // columns rather than an aggregate over every dated row.
-            if (!empty($itemIds)) {
-                $placeholders = implode(', ', array_fill(0, count($itemIds), '?'));
-                $sql = 'SELECT s.i_num_views,'
-                    . ' s.i_num_spam,'
-                    . ' s.i_num_bad_classified,'
-                    . ' s.i_num_repeated,'
-                    . ' s.i_num_offensive,'
-                    . ' s.i_num_expired,'
-                    . ' s.i_num_premium_views,'
-                    . ' l.*'
-                    . ' FROM ' . DB_TABLE_PREFIX . 't_item_stats s'
-                    . ' INNER JOIN ' . DB_TABLE_PREFIX . 't_item_location l ON s.fk_i_item_id = l.fk_i_item_id'
-                    . ' WHERE s.fk_i_item_id IN (' . $placeholders . ')';
-
-                try {
-                    $itemStatsLocations = Db::stringifyRows(Db::select($sql, array_values($itemIds)));
-                } catch (\mindstellar\database\DbException $e) {
-                    $itemStatsLocations = array();
-                }
-            } else {
+            try {
+                $itemStatsLocations = (new \mindstellar\listing\ListingQuery())->statsAndLocations(array_column($items, 'pk_i_id'));
+            } catch (\mindstellar\database\DbException $e) {
                 $itemStatsLocations = array();
             }
 
@@ -1556,16 +1532,8 @@ class Item extends DAO
             if (null === $prefLocale) {
                 $prefLocale = OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale();
             }
-            $itemIds = array_column($items, 'pk_i_id');
-
-            // One fan-out over every listed item's descriptions, bound as IN (?, ...).
-            $placeholders = implode(', ', array_fill(0, count($itemIds), '?'));
-            $sql = 'SELECT fk_i_item_id, fk_c_locale_code, s_title, s_description'
-                . ' FROM ' . DB_TABLE_PREFIX . 't_item_description'
-                . ' WHERE fk_i_item_id IN (' . $placeholders . ')';
-
             try {
-                $descriptions = Db::stringifyRows(Db::select($sql, array_values($itemIds)));
+                $descriptions = (new \mindstellar\listing\ListingQuery())->descriptions(array_column($items, 'pk_i_id'));
             } catch (\mindstellar\database\DbException $e) {
                 return $items;
             }

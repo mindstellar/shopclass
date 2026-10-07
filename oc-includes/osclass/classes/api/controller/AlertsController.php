@@ -17,6 +17,7 @@ use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\CategoryCatalog;
 use mindstellar\api\read\ListingSearch;
+use mindstellar\api\read\Page;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\AlertSerializer;
 use mindstellar\apiaccess\Credential;
@@ -26,7 +27,7 @@ use mindstellar\search\UserAlerts;
 /**
  * The user's saved searches at `/account/alerts`. A new one takes the filters of
  * `GET /listings`; the server builds the alert from them as the search page does and saves
- * it through osc_subscribe_alert(), so it shows on the account's alerts page too.
+ * it through UserAlerts, as the search page's alert form does.
  */
 final class AlertsController
 {
@@ -50,7 +51,7 @@ final class AlertsController
     {
         $rows = $this->alerts->live((int) $call->credential()->userId());
 
-        return Response::collection(array_map([$this->serializer, 'one'], $rows));
+        return Page::whole(array_map([$this->serializer, 'one'], $rows), $this->api->links(), $call);
     }
 
     /**
@@ -69,19 +70,15 @@ final class AlertsController
             throw ProblemException::field('/filters', 'minProperties', 'must name at least one filter');
         }
 
-        $existing = $this->alerts->matching($alert, $userId);
-        if ($existing !== []) {
-            return Response::ok($this->serializer->one($existing[0]));
-        }
-        $result = osc_subscribe_alert(base64_encode((string) osc_encrypt_alert($alert)), '');
-        $saved  = $this->alerts->matching($alert, $userId);
-        if ($result !== 1 || $saved === []) {
-            throw $result === -1
-                ? ProblemException::of('forbidden', 'This account cannot save alerts.')
-                : ProblemException::of('server_error', 'The alert could not be saved.');
-        }
+        $saved = $this->alerts->subscribe($userId, $alert);
 
-        return Response::created($this->serializer->one($saved[0]), $this->api->links()->api('account/alerts/' . (int) $saved[0]['pk_i_id']));
+        return match ($saved['status']) {
+            UserAlerts::EXISTS  => Response::ok($this->serializer->one((array) $saved['alert'])),
+            UserAlerts::CREATED => Response::created($this->serializer->one((array) $saved['alert']), $this->api->links()->api('account/alerts/' . (int) ($saved['alert']['pk_i_id'] ?? 0), $call->request()->version())),
+            UserAlerts::REFUSED => throw ProblemException::of('forbidden', 'This account cannot save alerts.'),
+            UserAlerts::LIMIT   => throw ProblemException::field('/', 'maxItems', sprintf('the account already keeps the most saved searches allowed (%d); delete one first', UserAlerts::maxPerUser())),
+            default             => throw ProblemException::of('server_error', 'The alert could not be saved.'),
+        };
     }
 
     /**

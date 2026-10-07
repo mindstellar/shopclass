@@ -19,13 +19,9 @@ use mindstellar\apiaccess\ApiKeys;
 use mindstellar\apiaccess\ApiSettings;
 
 /**
- * Cross-origin access for browser apps.
- *
- * The site lists allowed origins (preference `api_cors_origins`, one per line, plus the
- * `api_cors_origins` filter). `*` admits any page, but only for calls with no key or a
- * public key; a call with any other key is answered for an exactly listed origin only.
- * Credentials (cookies) are never allowed, and the page token header of the same-site session
- * mode is not an allowed header, so a page on another site can never make a session call.
+ * Cross-origin access for browser apps, from the `api_cors_origins` preference and filter.
+ * `*` admits any page, but only for no key or a public key. Cookies and the page token header
+ * are never allowed.
  */
 final class Cors
 {

@@ -320,9 +320,11 @@ filter api_cors_origins
 filter api_fields
 filter api_listing
 filter api_listing_input
+filter api_problem_codes
 filter api_rate_limit
 filter api_response
 filter api_routes
+filter api_schemas
 filter api_scopes
 filter api_theme_functions_enabled
 filter api_user

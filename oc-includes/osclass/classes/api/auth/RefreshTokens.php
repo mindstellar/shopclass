@@ -27,18 +27,8 @@ use mindstellar\utility\Clock;
 
 /**
  * Refresh tokens: `scr_<token id>.<secret>`, one t_api_credential row each, the secret kept
- * only as a sha256 hash.
- *
- * Each sign-in starts a family. Every use swaps the token for a new one in the same family
- * and pushes the expiry out again. A token that was already swapped coming back means two
- * parties hold the family, so the whole family is revoked. A family also ends when its user
- * can no longer sign in, and is revoked when they are signed out everywhere (SignOut), which
- * a password change does. Each token also carries the user's sign-out stamp, so a raised
- * stamp ends it even if that revoke never ran.
- *
- * A swapped token that comes back within RefreshRetries::WINDOW seconds, while its successor
- * is unused, gets that same successor again: a client that lost the answer keeps its sign-in,
- * and no second live token is ever made, so the family cannot fork.
+ * only as a sha256 hash. Each use swaps the token for a new one in the same family.
+ * A swapped token coming back revokes the family, except within RefreshRetries::WINDOW.
  */
 final class RefreshTokens
 {
@@ -94,10 +84,8 @@ final class RefreshTokens
         }
         $family = $found->family();
 
-        // One transaction with the family's rows locked: a rotation and a revoke of the same
-        // family, or two rotations, run one after the other, so a family revoke also takes a
-        // token another request has just made. Refusals are decided inside and thrown after
-        // the commit, so the revokes they made are kept.
+        // The family's rows are locked, so rotations and revokes run one at a time. Refusals are
+        // thrown after the commit, so the revokes they made are kept.
         $secret  = $m[2];
         $outcome = $this->store->atomically(function () use ($found, $family, $ip, $secret) {
             $this->store->lockFamily($family);

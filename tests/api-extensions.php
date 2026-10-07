@@ -9,12 +9,8 @@
  */
 
 /**
- * The plugin side of the API serializers: `api_listing`, `api_user` and `api_category` may
- * add data only under `ext.<slug>` (a top-level key is dropped and the callback named),
- * osc_api_register_field() declares fields for the schema and `?fields=`, a declared field
- * reaches only its views, and `api_listings_prefetch` runs once per list with every id.
- *
- * DB-free.  Usage: php tests/api-extensions.php
+ * The plugin side of the API serializers: `ext.<slug>` data, declared fields and the prefetch hook.
+ * Usage: php tests/api-extensions.php
  */
 
 require_once __DIR__ . '/lib/api-boot.php';
@@ -59,9 +55,9 @@ final class PlainLinks implements Links
         return 'https://site.test/avatar.png';
     }
 
-    public function api(string $path): string
+    public function api(string $path, ?string $version = null): string
     {
-        return 'https://site.test/api/v1/' . $path;
+        return 'https://site.test/api/' . ($version ?? 'v1') . '/' . $path;
     }
 
     public function price(?int $micros, string $symbol): string
@@ -115,7 +111,7 @@ pin('an admin field reaches admins only', [false, false, true], array_map(
 ));
 $schemas = Schema::components($declared);
 pin('a declared field is in the Listing schema under ext.<slug>', ['type' => 'integer', 'minimum' => 0, 'maximum' => 5], $schemas['Listing']['properties']['ext']['properties']['acme']['properties']['rating']);
-pin('and a user field under User', ['type' => 'string'], $schemas['User']['properties']['ext']['properties']['acme']['properties']['badge']);
+pin('a declared user field is in the User schema under ext.<slug>', ['type' => 'string'], $schemas['User']['properties']['ext']['properties']['acme']['properties']['badge']);
 pin('the schema with plugin fields is still one the validator can check', [], (new Validator($schemas))->schemaProblems($schemas['Listing']));
 
 harness_section('fields= with plugin fields');
@@ -179,12 +175,39 @@ $closure  = static function (array $data): array {
 };
 api_with_filter('api_listing', $closure, static fn () => $listings->one($row(3), $relations, new ViewContext($anonymous, 'en_US')));
 check('a closure is named by its file and line', str_contains($warnings[0] ?? '', 'closure in ' . __FILE__ . ':'));
-$removed = api_with_filter('api_listing', static function (array $data): array {
+$warnings = [];
+$leaky    = api_with_filter('api_listing', static function (array $data): array {
+    $data['ip'] = '192.0.2.9';
+
+    return $data;
+}, static fn () => $listings->one($row(3), $relations, new ViewContext($anonymous, 'en_US')));
+check('a core member the view does not have is dropped, even when the filter adds it', !array_key_exists('ip', $leaky) && str_contains($warnings[0] ?? '', 'top-level ip dropped'));
+$plain    = $listings->one($row(4), $relations, new ViewContext($anonymous, 'en_US'));
+$warnings = [];
+$remove   = static function (array $data): array {
     unset($data['contact']);
 
     return $data;
+};
+$removed = api_with_filter('api_listing', $remove, static fn () => $listings->one($row(4), $relations, new ViewContext($anonymous, 'en_US')));
+pin('a core member a filter removes is restored, in its place', array_keys($plain), array_keys($removed));
+pin('the restored member keeps the core value', $plain['contact'], $removed['contact']);
+check('the removal is logged', count($warnings) === 1 && str_contains($warnings[0], 'core member contact was removed'));
+api_with_filter('api_listing', $remove, static fn () => $listings->many([$row(4), $row(5)], $relations, new ViewContext($anonymous, 'en_US')));
+pin('the same removal is logged once per request, however many rows', 1, count($warnings));
+$warnings = [];
+$retyped  = api_with_filter('api_listing', static function (array $data): array {
+    $data['id']    = (string) $data['id'];
+    $data['title'] = 'Changed';
+    $data['price'] = 12.5;
+
+    return $data;
 }, static fn () => $listings->one($row(4), $relations, new ViewContext($anonymous, 'en_US')));
-check('a filter may remove a core member', !array_key_exists('contact', $removed));
+pin('a core member whose JSON type changed is reverted to the core value', 4, $retyped['id']);
+check('the type change is logged', str_contains($warnings[0] ?? '', 'core member id was changed from number to string'));
+pin('a same-type change is kept', 'Changed', $retyped['title']);
+pin('null to a number is a type change, so price stays null', null, $retyped['price']);
+pin('only the bad member is logged', 2, count($warnings));
 $warnings = [];
 $kept     = api_with_filter('api_listing', static fn (array $data) => 'oops', static fn () => $listings->one($row(5), $relations, new ViewContext($anonymous, 'en_US')));
 check('a filter that returns no array is ignored, with a warning', $kept['id'] === 5 && str_contains($warnings[0] ?? '', 'returned string'));
@@ -211,7 +234,7 @@ $badge = static function (array $data): array {
     return $data;
 };
 check('an owner-only user field stays out of the public profile', !isset(api_with_filter('api_user', $badge, static fn () => $users->one($user, new ViewContext($anonymous, 'en_US')))['ext']));
-pin('and reaches the user', 'gold', api_with_filter('api_user', $badge, static fn () => $users->one($user, new ViewContext(new Credential(CredentialKind::USER, [], 7), 'en_US')))['ext']['acme']['badge']);
+pin('an owner-only user field reaches the owner', 'gold', api_with_filter('api_user', $badge, static fn () => $users->one($user, new ViewContext(new Credential(CredentialKind::USER, [], 7), 'en_US')))['ext']['acme']['badge']);
 $warnings   = [];
 $categories = new CategorySerializer($ext, new CustomFieldSerializer());
 $catalog    = new CategoryCatalog([['pk_i_id' => '1', 'fk_i_parent_id' => null, 's_name' => 'A', 's_slug' => 'a']]);

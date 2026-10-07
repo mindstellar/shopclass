@@ -172,6 +172,8 @@ contact a seller (15), contact a user (15), send to a friend (5) and search aler
 sign-ups (10). 0 means no limit. Developers can still change them with the
 `action_throttle_limit` filter.
 
+**Settings → Spam and bots → Search alerts** sets how many saved searches one user may keep (default 20, 0 means no limit).
+
 ## Rate limits and registration rules
 
 The settings that do the most, and are easiest to forget:

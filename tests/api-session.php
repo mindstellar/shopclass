@@ -9,12 +9,8 @@
  */
 
 /**
- * The same-site session mode: theme JavaScript calls the API as the signed-in web user with
- * the sign-in cookie plus a page token in X-Shopclass-Token. Pins each guard: the page token
- * (bound to the user and password, expiring, header only), the site's own origin, the user
- * checks, user scopes without account:write or admin, and no CORS grant or stored answer.
- *
- * DB-free: users live in an array.  Usage: php tests/api-session.php
+ * The same-site session mode: the page token guard, origin check, scopes and no CORS grant.
+ * Usage: php tests/api-session.php
  */
 
 define('OSC_CSRF_SECRET', 'api-session-test-secret');
@@ -178,7 +174,7 @@ $rows[10]['i_auth_stamp'] = 1;
 pin('a raised sign-out stamp (a password change, or signing out everywhere) ends the page token', PageTokens::REFUSED, $tokens->check($before, $rows[10]));
 $reset();
 $r = $kernelFor()->handle($session(['Origin' => $site, 'X-Shopclass-Token' => $before], $cookie(10)));
-pin('and the call made with it', [401, 'session_required'], $code($r));
+pin('a call with a page token from before the stamp rise is 401 session_required', [401, 'session_required'], $code($r));
 unset($rows[10]['i_auth_stamp']);
 $twin                = $rows[10];
 $twin['pk_i_id']     = '11';
@@ -222,7 +218,7 @@ pin('a write from the site is accepted', [201, null], $call(['Origin' => $site, 
 pin('the site origin drops the subdirectory and default port', ['https://shop.example.test', 'http://a.test:8080', null], [
     (new SiteOrigin('https://shop.example.test:443/sub/'))->origin(), SiteOrigin::of('http://A.test:8080/x'), SiteOrigin::of('ftp://a.test'),
 ]);
-pin('a site with no usable base URL accepts nobody', false, (new SiteOrigin(''))->matches($session(['Origin' => ''])));
+check('a site with no usable base URL accepts nobody', !(new SiteOrigin(''))->matches($session(['Origin' => ''])));
 
 harness_section('guard 3: SameSite on the cookies this mode reads');
 $cookieSource  = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/Cookie.php');
@@ -238,7 +234,7 @@ $jar->push('oc_adminId', '1');
 $jar->push('oc_adminSecret', 'admin-signed');
 WebIdentity::forget();
 pin('forget() keeps only the user sign-in cookie aside', ['10', 'signed'], [WebIdentity::signInCookie()?->rawUserId(), WebIdentity::signInCookie()?->secret()]);
-pin('and still drops every identity cookie from the request', [[], '', ''], [
+pin('forget() drops every identity cookie from the request', [[], '', ''], [
     array_values(array_intersect(array_keys($_COOKIE), WebIdentity::COOKIES)), $jar->get_value('oc_userId'), $jar->get_value('oc_adminId'),
 ]);
 $jar->push('oc_adminId', '1');
@@ -283,6 +279,12 @@ $bucket = (new RatePolicy(new ApiSettings(true)))->bucketsFor(
     new Credential(CredentialKind::SESSION, [], 10)
 )[0];
 pin('a session counts in the user\'s bucket, shared with their tokens', ['api_user', '10'], [$bucket->name(), $bucket->key()]);
+$writeBuckets = (new RatePolicy(new ApiSettings(true)))->bucketsFor(
+    $session($ok(10), $cookie(10), 'POST', 'v1/notes'),
+    new RouteSpec('GET', 'me', $routes['GET me']),
+    new Credential(CredentialKind::SESSION, [], 10)
+);
+pin('the request bucket may count in memory, the write bucket only in the database', [['api_user', false], ['api_write', true]], array_map(static fn ($b): array => [$b->name(), $b->exact()], $writeBuckets));
 
 harness_section('guard 5: no CORS, never stored');
 $cors = $kernelFor(['corsOrigins' => "*\n" . $site]);
@@ -291,9 +293,9 @@ $r = $cors->handle($session($ok(10), $cookie(10)));
 pin('a session answer has no CORS grant, though * and the site are listed', [200, null, null], [
     $r->status(), $r->header('Access-Control-Allow-Origin'), $r->header('Access-Control-Expose-Headers'),
 ]);
-pin('it is never stored', 'private, no-store', $r->header('Cache-Control'));
-pin('it varies on the cookie', 'Authorization, X-Shopclass-Token, Cookie, Origin', $r->header('Vary'));
-pin('no rate headers are dropped from it', true, $r->header('RateLimit-Policy') !== null);
+pin('a session answer is never stored', 'private, no-store', $r->header('Cache-Control'));
+pin('a session answer varies on the cookie', 'Authorization, X-Shopclass-Token, Cookie, Origin', $r->header('Vary'));
+check('a session answer keeps its rate limit headers', $r->header('RateLimit-Policy') !== null);
 $reset();
 $r = $cors->handle($session(['Origin' => 'https://evil.test', 'X-Shopclass-Token' => $page(10)], $cookie(10)));
 pin('a refused cross-origin session call gets no CORS grant either', [403, null], [$r->status(), $r->header('Access-Control-Allow-Origin')]);
@@ -307,7 +309,7 @@ check('a preflight never allows the page token header', !str_contains(strtolower
 check('nor does the allowed header list', !in_array(PageTokens::HEADER, Cors::ALLOW_HEADERS, true));
 $headers = array_change_key_case($r->headers(), CASE_LOWER);
 check('no answer sets a cookie', !isset($headers['set-cookie']));
-pin('and a handler cannot add one', null, Response::ok([])->withHeader('Set-Cookie', 'a=b')->header('Set-Cookie'));
+pin('a handler cannot add a Set-Cookie header', null, Response::ok([])->withHeader('Set-Cookie', 'a=b')->header('Set-Cookie'));
 
 harness_section('Idempotency-Key per user and session');
 $calls = 0;

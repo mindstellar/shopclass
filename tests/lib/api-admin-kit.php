@@ -189,9 +189,9 @@ function api_admin_caller(?Closure $settings = null): Closure
             return osc_user_avatar_url($userId);
         }
 
-        public function api(string $path): string
+        public function api(string $path, ?string $version = null): string
         {
-            return 'http://localhost/api/v1/' . $path;
+            return 'http://localhost/api/' . ($version ?? 'v1') . '/' . $path;
         }
 
         public function price(?int $micros, string $symbol): string

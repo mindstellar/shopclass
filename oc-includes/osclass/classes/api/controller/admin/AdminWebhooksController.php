@@ -15,6 +15,7 @@ namespace mindstellar\api\controller\admin;
 use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
+use mindstellar\api\read\Page;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\Format;
 use mindstellar\api\serializer\Links;
@@ -40,9 +41,9 @@ final class AdminWebhooksController
         $this->clock = $api->clock();
     }
 
-    public function index(): Response
+    public function index(ApiCall $call): Response
     {
-        return Response::collection(array_map(fn (Endpoint $e): array => $e->toArray($this->clock->now()), $this->webhooks->all()));
+        return Page::whole(array_map(fn (Endpoint $e): array => $e->toArray($this->clock->now()), $this->webhooks->all()), $this->links, $call);
     }
 
     public function show(ApiCall $call): Response
@@ -64,7 +65,7 @@ final class AdminWebhooksController
             $call->credential()->adminId()
         );
 
-        return Response::created($endpoint->toArray($this->clock->now(), $secret), $this->links->api('admin/webhooks/' . $endpoint->id()));
+        return Response::created($endpoint->toArray($this->clock->now(), $secret), $this->links->api('admin/webhooks/' . $endpoint->id(), $call->request()->version()));
     }
 
     /**
@@ -144,14 +145,14 @@ final class AdminWebhooksController
     /**
      * GET /admin/webhook-events
      */
-    public function events(): Response
+    public function events(ApiCall $call): Response
     {
         $out = [];
         foreach ($this->webhooks->events()->all() as $type => $spec) {
             $out[] = ['type' => $type, 'description' => $spec['description'], 'schema' => $spec['schema'] === '' ? null : $spec['schema']];
         }
 
-        return Response::collection($out);
+        return Page::whole($out, $this->links, $call);
     }
 
     /**

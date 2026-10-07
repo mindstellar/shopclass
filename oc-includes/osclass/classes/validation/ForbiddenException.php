@@ -20,9 +20,9 @@ final class ForbiddenException extends RefusedException
     /** The account, e-mail or address is banned. */
     public const BANNED = 'banned';
     /** The site has the feature switched off. */
-    public const DISABLED = 'feature_disabled';
+    public const DISABLED = 'disabled';
     /** Only a signed-in user may do this. */
-    public const SIGN_IN = 'wrong_credential';
+    public const SIGN_IN = 'sign_in';
     /** Only the owner or author may do this. */
     public const NOT_OWNER = 'not_owner';
 

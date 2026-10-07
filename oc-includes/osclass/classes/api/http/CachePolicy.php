@@ -18,13 +18,9 @@ use mindstellar\apiaccess\CredentialKind;
 use mindstellar\apiaccess\PageTokens;
 
 /**
- * Caching headers for a successful answer.
- *
- * What anyone may see (no credential, or a public key, which only reads the public view)
- * may sit in a shared cache. An answer for a particular key is private and revalidated with
- * its ETag (no-cache, not no-store). A write, and any answer to a same-site session call,
- * is never stored. Every read varies on Authorization and the page token header, and a session
- * answer on the cookie as well, so a shared cache never hands one caller's answer to another.
+ * Caching headers for a successful answer. Public answers may sit in a shared cache; an answer
+ * for a key is private and revalidated, except account, admin and session reads; a write or
+ * session answer is never stored. Reads vary on Authorization and the page token header.
  */
 final class CachePolicy
 {
@@ -46,7 +42,7 @@ final class CachePolicy
      */
     public function header(Request $request, Credential $credential): string
     {
-        if (!$request->isRead() || $credential->isSession()) {
+        if (!$request->isRead() || $credential->isSession() || self::isPersonal($request->routePath())) {
             return 'private, no-store';
         }
         if (!$this->isPublic($request, $credential)) {
@@ -56,6 +52,14 @@ final class CachePolicy
         return $this->maxAge > 0
             ? 'public, max-age=' . $this->maxAge . ', stale-while-revalidate=' . $this->maxAge
             : 'public, no-cache';
+    }
+
+    /**
+     * Whether a path below the version reads an account, admin data or sign-ins.
+     */
+    private static function isPersonal(string $path): bool
+    {
+        return preg_match('#^(?:account(?:/|$)|admin/)|(?:^|/)sessions(?:/|$)#', $path) === 1;
     }
 
     /**

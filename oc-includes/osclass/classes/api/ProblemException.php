@@ -25,7 +25,9 @@ final class ProblemException extends \RuntimeException
     }
 
     /**
-     * @param string              $code   a Problem::CATALOGUE code
+     * @api
+     *
+     * @param string              $code   a Problem::CATALOGUE code or a plugin's `ext_<slug>_<name>` code
      * @param string              $detail
      * @param array<string,mixed> $extra
      */
@@ -36,6 +38,8 @@ final class ProblemException extends \RuntimeException
 
     /**
      * 404 not_found with $detail, such as "No such user."
+     *
+     * @api
      */
     public static function notFound(string $detail): self
     {
@@ -44,6 +48,8 @@ final class ProblemException extends \RuntimeException
 
     /**
      * Wrap a problem answer that already has its headers, e.g. Problem::unauthorized().
+     *
+     * @api
      */
     public static function from(Response $response): self
     {
@@ -51,18 +57,23 @@ final class ProblemException extends \RuntimeException
     }
 
     /**
-     * 422 for one member of the body.
+     * 422 for one field.
+     *
+     * @api
      *
      * @param string $pointer a JSON pointer, e.g. `/photo_tokens/0`
      * @param string $code    a short machine name, e.g. `invalid`
+     * @param string $in      `body` or `query`
      */
-    public static function field(string $pointer, string $code, string $message): self
+    public static function field(string $pointer, string $code, string $message, string $in = 'body'): self
     {
-        return new self(Problem::validation([['pointer' => $pointer, 'code' => $code, 'message' => $message]]));
+        return new self(Problem::validation([['pointer' => $pointer, 'code' => $code, 'message' => $message, 'in' => $in]]));
     }
 
     /**
      * 429 with the seconds to wait.
+     *
+     * @api
      *
      * @param string $code `rate_limited`, or another 429 code of the catalogue
      */
@@ -71,6 +82,7 @@ final class ProblemException extends \RuntimeException
         return new self(Problem::make($code, $message)->withHeader('Retry-After', (string) max(1, $retryAfter)));
     }
 
+    /** @api */
     public function response(): Response
     {
         return $this->response;

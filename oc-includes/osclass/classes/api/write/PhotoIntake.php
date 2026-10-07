@@ -23,9 +23,16 @@ use mindstellar\api\Request;
  */
 final class PhotoIntake
 {
+    /** Seconds all of one request's URL downloads may take together. */
+    public const FETCH_BUDGET = 30;
+
+    /** @var \Closure(): float */
+    private \Closure $now;
+
     /**
-     * @param bool $urls     whether the site downloads photos named by URL
-     * @param int  $maxBytes the largest photo the site takes
+     * @param bool          $urls     whether the site downloads photos named by URL
+     * @param int           $maxBytes the largest photo the site takes
+     * @param callable|null $now      the time in seconds; microtime(true) by default
      */
     public function __construct(
         private PhotoStage $stage,
@@ -33,8 +40,10 @@ final class PhotoIntake
         private RateLimiter $limiter,
         private RatePolicy $limits,
         private bool $urls,
-        private int $maxBytes
+        private int $maxBytes,
+        ?callable $now = null
     ) {
+        $this->now = \Closure::fromCallable($now ?? static fn (): float => microtime(true));
     }
 
     /**
@@ -66,16 +75,15 @@ final class PhotoIntake
     }
 
     /**
-     * The photos a listing body names in `photo_tokens` and `photo_urls`. URLs are only
-     * downloaded while the listing has room for them, and each download counts in the
-     * user's hourly fetch limit. The listing is given copies of the staged photos, so they
-     * are still there if its save is rolled back.
+     * The photos a listing body names in `photo_tokens` and `photo_urls`. URLs are fetched only
+     * while the listing has room, count in the user's hourly fetch limit and share FETCH_BUDGET
+     * seconds. The listing gets copies of staged photos, so a rolled-back save keeps them.
      *
      * @param array<mixed> $input the listing body
      * @param int|null     $room  photos the listing can still take; null for no limit
      *
-     * @throws ProblemException 422 for an unknown token, a URL when the site does not fetch them or
-     *                    a bad photo; 429 past the fetch limit; 500 when a staged photo
+     * @throws ProblemException 422 for an unknown token, a URL when the site does not fetch them,
+     *                    one past the time budget or a bad photo; 429 past the fetch limit; 500 when a staged photo
      *                    cannot be copied
      */
     public function batch(array $input, int $userId, ?int $room): PhotoBatch
@@ -95,13 +103,14 @@ final class PhotoIntake
         $left    = $room === null ? count($urls) : max(0, min(count($urls), $room - count($staged)));
         $copies  = [];
         $fetched = [];
+        $until   = ($this->now)() + self::FETCH_BUDGET;
         try {
             foreach ($staged as $photo) {
                 $copies[] = $this->copy($photo);
             }
             foreach (array_slice($urls, 0, $left) as $i => $url) {
                 $this->limiter->enforce($this->limits->photoFetch($userId), 'Too many photos fetched by URL in an hour. Try again later.');
-                $fetched[] = $this->fetch($url, '/photo_urls/' . $i);
+                $fetched[] = $this->fetch($url, '/photo_urls/' . $i, $until);
             }
         } catch (ProblemException $e) {
             (new PhotoBatch([], $fetched, 0, $copies))->discard(false);
@@ -142,12 +151,18 @@ final class PhotoIntake
     }
 
     /**
-     * @throws ProblemException 422 when the address is refused or the file is not a usable photo
+     * @param float $until when the batch's time budget runs out
+     *
+     * @throws ProblemException 422 when the address is refused, the budget is spent or the file is not a usable photo
      */
-    private function fetch(string $url, string $pointer): PhotoFile
+    private function fetch(string $url, string $pointer, float $until): PhotoFile
     {
+        $left = (int) floor($until - ($this->now)());
+        if ($left < 1) {
+            throw ProblemException::field($pointer, 'timeout', 'was not fetched: the photo URLs took longer than ' . self::FETCH_BUDGET . ' seconds together');
+        }
         $file  = $this->stage->tempPath('fetch');
-        $error = $this->fetcher->fetch($url, $file, $this->maxBytes);
+        $error = $this->fetcher->fetch($url, $file, $this->maxBytes, $left);
         if ($error !== null) {
             @unlink($file);
 

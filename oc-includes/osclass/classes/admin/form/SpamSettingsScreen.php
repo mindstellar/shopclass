@@ -167,7 +167,8 @@ final class SpamSettingsScreen
     }
 
     /**
-     * Whether a visitor must be signed in before subscribing to a search alert.
+     * Whether a visitor must be signed in before subscribing to a search alert, and how many
+     * saved searches one user may keep.
      *
      * @return string the page id
      */
@@ -180,6 +181,13 @@ final class SpamSettingsScreen
         CoreSettings::page(self::PAGE_ALERTS, __('Search alerts'))
             ->checkbox('alerts_require_login', __('Only logged-in users can subscribe to search alerts'))
                 ->rowLabel(__('Require login for alerts'))
+            ->number(
+                'alerts_max_per_user',
+                __('Saved searches per user'),
+                __('A user with this many cannot save another until one is deleted. 0 means no limit.')
+            )
+                ->clampMin(0)
+                ->default(\mindstellar\search\UserAlerts::DEFAULT_MAX_PER_USER)
             ->register();
 
         return self::PAGE_ALERTS;

@@ -9,13 +9,8 @@
  */
 
 /**
- * API authentication: key create/rotate/revoke/expiry, public keys held to the public read
- * scope, plugin scopes held to their audience, the same 401 for every bad token, the failure
- * counter checked before any token is looked at, only Bearer as a token, cookies ignored,
- * anonymous reads off by default, scope and auth-level refusals, rate limit buckets and
- * headers, and request validation through the kernel.
- *
- * DB-free: credentials live in an array.  Usage: php tests/api-auth.php
+ * API keys and authentication: key lifecycle, scopes, the failure counter, rate limit buckets and request validation.
+ * Usage: php tests/api-auth.php
  */
 
 require_once __DIR__ . '/lib/api-boot.php';
@@ -174,7 +169,7 @@ pin('an undeclared audience defaults to admin only', [], array_values(array_inte
 $withExt = $keys->create(CredentialKind::KEY, 'Ext', ['ext:acme:settings', 'admin:listings'], KeyOwner::admin(3));
 $store->admins[3] = true;
 pin('demoting the admin takes the admin-only plugin scope away at once', ['admin:listings'], $keys->verify($withExt->token())->scopes());
-pin('Scopes::fromHooks reads api_scopes', true, api_with_filter('api_scopes', static fn (array $s): array => $s + ['ext:hook:x' => 'From a hook.'], static fn () => isset(Scopes::fromHooks()->all()['ext:hook:x'])));
+check('Scopes::fromHooks reads api_scopes', (bool) api_with_filter('api_scopes', static fn (array $s): array => $s + ['ext:hook:x' => 'From a hook.'], static fn () => isset(Scopes::fromHooks()->all()['ext:hook:x'])));
 check('implies: write reads, any admin scope reads public data, nothing else', Scopes::implies(['listings:write'], 'listings:read')
     && Scopes::implies(['admin:keys'], 'listings:read') && !Scopes::implies(['listings:read'], 'listings:write')
     && !Scopes::implies(['admin:listings'], 'admin:users'));
@@ -197,10 +192,10 @@ check('an admin key reads public data', $c->has('listings:read'));
 pin('its last use is written', ['10.0.0.9', $now], [$store->rows[$admin->id()]['ip'], $store->rows[$admin->id()]['lastUsed']]);
 $touches = $store->touches;
 $keys->verify($admin->token(), '10.0.0.9');
-pin('but not again within five minutes', $touches, $store->touches);
+pin('a key used again within five minutes is not touched again', $touches, $store->touches);
 $now += 301;
 $keys->verify($admin->token(), '10.0.0.9');
-pin('and again after', $touches + 1, $store->touches);
+pin('a key used after five minutes is touched again', $touches + 1, $store->touches);
 
 $pc = $keys->verify($public->token());
 pin('a public key gives a public credential, never an admin one', [CredentialKind::PUBLIC, ['listings:read'], false], [$pc->kind(), $pc->scopes(), $pc->isAdmin()]);
@@ -217,7 +212,7 @@ pin('a trailing newline is refused', null, $keys->verify($admin->token() . "\n")
 $exp = $keys->create(CredentialKind::KEY, 'Short', ['admin:listings'], $admin1, $now + 60);
 check('a key works until it expires', $keys->verify($exp->token()) !== null);
 $now += 61;
-pin('and not after', null, $keys->verify($exp->token()));
+pin('a key is refused after it expires', null, $keys->verify($exp->token()));
 
 $store->admins[2] = false;
 pin('a moderator promoted to admin keeps the scopes the key was made with', ['admin:listings'], $keys->verify($mod->token())->scopes());
@@ -236,10 +231,10 @@ $new = $keys->rotate($admin->id());
 check('rotation makes a new token', $new !== null && $new->token() !== $admin->token());
 pin('with the same name and scopes', ['CI', ['admin:listings', 'admin:users']], [$store->rows[$new->id()]['name'], $store->rows[$new->id()]['scopes']]);
 check('the old key still works until revoked', $keys->verify($admin->token()) !== null && $keys->verify($new->token()) !== null);
-pin('revoke says it revoked', true, $keys->revoke($admin->id()));
-pin('a second revoke says it did nothing', false, $keys->revoke($admin->id()));
+check('revoking a live key reports a change', $keys->revoke($admin->id()));
+check('revoking an already revoked key reports no change', !$keys->revoke($admin->id()));
 pin('a revoked key is refused', null, $keys->verify($admin->token()));
-pin('and cannot be rotated back to life', null, $keys->rotate($admin->id()));
+pin('a revoked key cannot be rotated', null, $keys->rotate($admin->id()));
 pin('nor can an expired one', null, $keys->rotate($exp->id()));
 $store->rows[$withExt->id()]['enabled'] = false;
 pin('nor a disabled one', null, $keys->rotate($withExt->id()));
@@ -278,7 +273,7 @@ pin('a cookie never authenticates', null, $auth->authenticate($req('', [], 'GET'
 check('a good key authenticates', $auth->authenticate($req('Bearer ' . $new->token())) instanceof Credential);
 check('the scheme is case-insensitive', $auth->authenticate($req('bearer ' . $new->token())) instanceof Credential);
 check('a public key works as ?api_key= on a GET', $auth->authenticate($req('', ['api_key' => $public->token()])) instanceof Credential);
-pin('but an admin key does not', null, $auth->authenticate($req('', ['api_key' => $new->token()])));
+pin('an admin key is refused as ?api_key=', null, $auth->authenticate($req('', ['api_key' => $new->token()])));
 pin('nor a public key on a POST', null, $auth->authenticate($req('', ['api_key' => $public->token()], 'POST')));
 pin('a Basic header is not a token', null, $auth->authenticate($req('Basic dXNlcjpwYXNz')));
 check('with Basic auth in front, ?api_key= still works', $auth->authenticate($req('Basic dXNlcjpwYXNz', ['api_key' => $public->token()])) instanceof Credential);
@@ -302,7 +297,7 @@ pin('20 failures for one revoked key from one address are each a 401', 401, $las
 $lookups = $store->lookups;
 $r       = $problem(static fn () => $auth->authenticate($req($known)));
 pin('the 21st is a 429', [429, 'too_many_failures', '900'], [$r->status(), $r->body()['code'], $r->header('Retry-After')]);
-pin('and that key was not looked up while shut out', $lookups, $store->lookups);
+pin('a key shut out by failures is not looked up', $lookups, $store->lookups);
 check('a stale key in a shared app does not lock out other keys behind the same address', $auth->authenticate($req('Bearer ' . $new->token())) instanceof Credential);
 $guess = 'Bearer sck_' . $id . '.' . str_repeat('f', 64);
 pin('a guessed secret for that key id from that address is shut out too', 429, $problem(static fn () => $auth->authenticate($req($guess)))?->status());
@@ -316,7 +311,7 @@ for ($i = 0; $i < FailureCounter::ADDRESS_MAX - 1; $i++) {
 check('unknown key ids count per address, with a much higher ceiling', $auth->authenticate($req('Bearer ' . $new->token())) instanceof Credential);
 $problem(static fn () => $auth->authenticate($req('Bearer nonsense')));
 pin('past it, a bad token from that address is a 429', 429, $problem(static fn () => $auth->authenticate($req('Bearer nonsense')))?->status());
-check('but a valid token from the same shared address still works', $auth->authenticate($req('Bearer ' . $new->token())) instanceof Credential);
+check('a valid token from the same shared address still works past the failure cap', $auth->authenticate($req('Bearer ' . $new->token())) instanceof Credential);
 check('other addresses are not', $auth->authenticate($req('Bearer ' . $new->token(), [], 'GET', [], '203.0.113.7')) instanceof Credential);
 
 $fails = ['addr:2001:db8:1:2::/64' => FailureCounter::ADDRESS_MAX];
@@ -324,9 +319,63 @@ pin('IPv6 floods count per /64, so stepping through a /64 does not help', 429, $
 pin('AddressBucket keys IPv6 by /64 and IPv4 as it is', ['2001:db8:1:2::/64', '192.0.2.1'], [AddressBucket::of('2001:db8:1:2:aaaa:bbbb:cccc:dddd'), AddressBucket::of('192.0.2.1')]);
 pin('an IPv4-mapped IPv6 address is its IPv4 client, not ::/64', ['192.0.2.5', '192.0.2.5'], [AddressBucket::of('::ffff:192.0.2.5'), AddressBucket::of('::FFFF:c000:205')]);
 $fails = ['addr:192.0.2.5' => FailureCounter::ADDRESS_MAX];
-pin('so a mapped address shares its IPv4 client\'s counter', 429, $problem(static fn () => $auth->authenticate($req('Bearer nope', [], 'GET', [], '::ffff:192.0.2.5')))?->status());
+pin('a mapped address shares its IPv4 client\'s failure counter', 429, $problem(static fn () => $auth->authenticate($req('Bearer nope', [], 'GET', [], '::ffff:192.0.2.5')))?->status());
 $unreadable = api_test_authenticator($keys, new FailureCounter(static fn () => null, static fn () => null));
 check('when the failure counter cannot be read, tokens are checked as usual', $unreadable->authenticate($req('Bearer ' . $new->token())) instanceof Credential);
+$fails = [];
+
+harness_section('the failure marker');
+$now     = 9000;
+$marker  = 0;
+$reads   = 0;
+$order   = [];
+$marked  = new FailureCounter(
+    static function (string $c, array $keys, int $w) use (&$fails, &$reads): ?array {
+        $reads++;
+
+        return array_combine($keys, array_map(static fn (string $k): int => $fails[$k] ?? 0, $keys));
+    },
+    static function (string $c, string $k, int $w) use (&$fails, &$order): ?int {
+        $order[] = 'count';
+
+        return $fails[$k] = ($fails[$k] ?? 0) + 1;
+    },
+    static function () use (&$marker): int {
+        return $marker;
+    },
+    static function (int $until) use (&$marker, &$order): bool {
+        $order[] = 'mark';
+        $marker  = $until;
+
+        return true;
+    },
+    static function () use (&$now): int {
+        return $now;
+    }
+);
+$mauth = api_test_authenticator($keys, $marked);
+check('with no marker a good key authenticates', $mauth->authenticate($req('Bearer ' . $new->token())) instanceof Credential);
+pin('a good key with no marker reads the failure counter 0 times', 0, $reads);
+$problem(static fn () => $mauth->authenticate($req('Bearer nonsense')));
+pin('a token with no known key id leaves the marker unset', 0, $marker);
+$order = [];
+$problem(static fn () => $mauth->authenticate($req($known)));
+pin('a failure for a known key id marks the window before it is counted', [['mark', 'count'], 9900], [$order, $marker]);
+$order = [];
+$reads = 0;
+$problem(static fn () => $mauth->authenticate($req($known)));
+pin('the marker is written once per window', ['count'], $order);
+pin('while it is set, the key check reads the counter (and the refusal its address count)', 2, $reads);
+for ($i = 2; $i < FailureCounter::MAX; $i++) {
+    $problem(static fn () => $mauth->authenticate($req($known)));
+}
+$lookups = $store->lookups;
+pin('the 21st is still a 429, and the key is not looked up', [429, $lookups], [$problem(static fn () => $mauth->authenticate($req($known)))?->status(), $store->lookups]);
+$now   = 9900;
+$fails = [];
+$reads = 0;
+check('when the window ends the marker lapses with the counter', $mauth->authenticate($req('Bearer ' . $new->token())) instanceof Credential);
+pin('after the marker lapses the failure counter is not read again', 0, $reads);
 $fails = [];
 
 harness_section('the Kernel: auth levels and scopes');
@@ -373,18 +422,18 @@ pin('an auth none route needs nothing', 200, $call('GET', 'open')->status());
 $anon = $make(new ApiSettings(true, true));
 $r    = $call('GET', 'listings', '', [], null, $anon);
 pin('with anonymous reads on, public data answers', [200, CredentialKind::ANONYMOUS], [$r->status(), $r->body()['data']['kind']]);
-pin('and may be cached publicly', 'public, max-age=60, stale-while-revalidate=60', $r->header('Cache-Control'));
-pin('but a user route still wants a token', 401, $call('POST', 'mine', '', [], '{"title":"x"}', $anon)->status());
+pin('anonymous public data may be cached publicly', 'public, max-age=60, stale-while-revalidate=60', $r->header('Cache-Control'));
+pin('with anonymous reads on, a user route still wants a token', 401, $call('POST', 'mine', '', [], '{"title":"x"}', $anon)->status());
 
 $r = $call('GET', 'listings', $public->token());
 pin('a public key reads listings', [200, CredentialKind::PUBLIC], [$r->status(), $r->body()['data']['kind']]);
 pin('a public key reads the public view, so its answer may be cached publicly', 'public, max-age=60, stale-while-revalidate=60', $r->header('Cache-Control'));
 pin('a public answer carries no one caller\'s rate counters', [null, null], [$r->header('RateLimit'), $r->header('X-RateLimit-Remaining')]);
-pin('and varies on Authorization and the page token', 'Authorization, X-Shopclass-Token', $r->header('Vary'));
+pin('a public answer varies on Authorization and the page token', 'Authorization, X-Shopclass-Token', $r->header('Vary'));
 $r = $call('GET', 'users', $new->token());
 pin('a keyed answer is private, revalidated by ETag rather than never stored', 'private, no-cache', $r->header('Cache-Control'));
-pin('it varies on Authorization and the page token too', 'Authorization, X-Shopclass-Token', $r->header('Vary'));
-check('and keeps its rate limit headers', $r->header('RateLimit') !== null);
+pin('a keyed answer varies on Authorization and the page token', 'Authorization, X-Shopclass-Token', $r->header('Vary'));
+check('a keyed answer keeps its rate limit headers', $r->header('RateLimit') !== null);
 pin('a write is never stored and varies on nothing', ['private, no-store', null], [
     $call('POST', 'mine', $user->token(), [], '{"title":"x"}')->header('Cache-Control'), $call('POST', 'mine', $user->token(), [], '{"title":"x"}')->header('Vary'),
 ]);
@@ -394,11 +443,11 @@ $r = $call('GET', 'users', $mod->token());
 pin('a key without the scope is 403 insufficient_scope', [403, 'insufficient_scope', 'Bearer error="insufficient_scope", scope="admin:users"'], [$r->status(), $r->body()['code'], $r->header('WWW-Authenticate')]);
 pin('an admin key with the scope passes', 200, $call('GET', 'users', $new->token())->status());
 pin('an admin route naming no scope turns a moderator away', [403, 'wrong_credential'], [$call('GET', 'staff', $mod->token())->status(), $call('GET', 'staff', $mod->token())->body()['code']]);
-pin('and admits a full admin', 200, $call('GET', 'staff', $new->token())->status());
+pin('an admin route naming no scope admits a full admin', 200, $call('GET', 'staff', $new->token())->status());
 pin('an admin key on a user route is 403', 403, $call('POST', 'mine', $new->token(), [], '{"title":"x"}')->status());
 pin('a user key with the scope passes', 200, $call('POST', 'mine', $user->token(), [], '{"title":"x"}')->status());
 $r = $call('GET', 'listings', 'sck_' . str_repeat('C', 16) . '.' . str_repeat('c', 64));
-pin('a bad token through the kernel is 401 with instance', [401, true, true], [$r->status(), str_starts_with($r->body()['instance'], 'urn:request:'), $r->header('Request-Id') === substr($r->body()['instance'], 12)]);
+pin('a bad token through the kernel is 401 with an instance naming the Request-Id', [401, 'urn:request:' . $r->header('Request-Id')], [$r->status(), $r->body()['instance']]);
 
 harness_section('the Kernel: validation');
 $r = $call('GET', 'listings', $public->token(), ['limit' => '20']);
@@ -421,7 +470,7 @@ osc_add_hook('api_request_before', $before);
 pin('api_request_before can refuse', 403, $call('GET', 'site', $public->token())->status());
 osc_remove_filter('api_request_before', $before);
 pin('api_response has the last word', '1', api_with_filter('api_response', static fn (Response $r): Response => $r->withHeader('X-Seen', '1'), static fn () => $call('GET', 'open')->header('X-Seen')));
-pin('a problem after counting keeps the rate limit headers', true, $call('POST', 'mine', $user->token(), [], '{"title":""}')->header('RateLimit') !== null);
+check('a problem after counting keeps the RateLimit header', $call('POST', 'mine', $user->token(), [], '{"title":""}')->header('RateLimit') !== null);
 
 harness_section('the Kernel: rate limits');
 $counts = [];
@@ -446,7 +495,7 @@ pin('a public key is counted per client: one app user at the limit', 429, $call(
 pin('does not stop another', 200, $call('GET', 'site', $public->token(), [], null, $small, '198.51.100.2')->status());
 check('the public key bucket names the key and the address', isset($counts['api_key|' . $public->id() . '@198.51.100.2']));
 $call('GET', 'site', $public->token(), [], null, $small, '2001:db8:9:9::1');
-check('and an IPv6 client by its /64', isset($counts['api_key|' . $public->id() . '@2001:db8:9:9::/64']));
+check('an IPv6 client is counted by its /64 in the public key bucket', isset($counts['api_key|' . $public->id() . '@2001:db8:9:9::/64']));
 
 $store->rows[$new->id()]['rate'] = 1;
 $counts = [];
@@ -459,8 +508,8 @@ $anonSmall = $make(new ApiSettings(true, true, 120, 2));
 $call('GET', 'site', '', [], null, $anonSmall);
 $r = $call('GET', 'site', '', [], null, $anonSmall);
 pin('anonymous answers are public, so they carry no rate headers', null, $r->header('RateLimit-Policy'));
-check('but anonymous calls are still counted per address', isset($counts['api_anon|198.51.100.1']));
-pin('and stop at the anonymous limit', 429, $call('GET', 'site', '', [], null, $anonSmall)->status());
+check('anonymous calls are counted per address', isset($counts['api_anon|198.51.100.1']));
+pin('anonymous calls stop at the anonymous limit', 429, $call('GET', 'site', '', [], null, $anonSmall)->status());
 
 $counts = [];
 $r      = $call('POST', 'mine', $user->token(), [], '{"title":"a"}', $small);

@@ -9,13 +9,8 @@
  */
 
 /**
- * `/admin/settings`, `/admin/keys` and `/admin/jobs` end to end: the settings list holds no
- * secret and is saved through the settings screens' own forms, all or none; keys are made,
- * rotated and revoked with the token shown once and never a scope the caller lacks; the job
- * queue is read without payloads.
- *
- * Usage:  php tests/models/api-admin-settings.php        (standalone, own scratch database)
- *         php tests/run-models.php api-admin-settings    (as part of the suite)
+ * `/admin/settings`, `/admin/keys` and `/admin/jobs` end to end.
+ * Usage: php tests/models/api-admin-settings.php
  */
 
 require_once __DIR__ . '/../lib/harness.php';
@@ -98,10 +93,10 @@ pin('the API switch cannot be reached', 422, $call('PATCH', 'admin/settings', ['
 pin('nor a secret', 422, $call('PATCH', 'admin/settings', ['mailserver_password' => 'x'], $boss)->status());
 $r = $call('PATCH', 'admin/settings', ['site_title' => 'Never saved', 'language' => 'xx_XX'], $boss);
 pin('what the form refuses is 422', [422, 'rejected'], [$r->status(), $r->body()['errors'][0]['code'] ?? null]);
-pin('and nothing of the request is saved', ['Our shop', 'en_US'], [$pref('pageTitle'), $pref('language')]);
+pin('a refused settings request saves nothing', ['Our shop', 'en_US'], [$pref('pageTitle'), $pref('language')]);
 $r = $call('PATCH', 'admin/settings', ['site_title' => 'Saved first', 'api_cors_origins' => 'not an origin'], $boss);
 pin('a refusal in a later form is 422', 422, $r->status());
-pin('and rolls back the form saved before it', 'Our shop', $pref('pageTitle'));
+pin('a refusal in a later form rolls back the form saved before it', 'Our shop', $pref('pageTitle'));
 
 harness_section('keys');
 $r = $call('GET', 'admin/keys', null, $boss);
@@ -118,9 +113,9 @@ pin('Location names it, and it belongs to the caller\'s admin', ['http://localho
 pin('matches the schema', [], api_admin_schema_errors('ApiKeyDocument', $r));
 pin('its owner is the admin as {type, id, name}', ['admin', $bossId], [$r->body()['data']['owner']['type'] ?? null, $r->body()['data']['owner']['id'] ?? null]);
 pin('the token works', 200, $call('GET', 'admin/listings', null, $token)->status());
-pin('it is not shown again', false, isset($call('GET', 'admin/keys/' . $made, null, $boss)->body()['data']['token']));
+check('a new key token is not shown again', !(isset($call('GET', 'admin/keys/' . $made, null, $boss)->body()['data']['token'])));
 pin('a key cannot grant a scope it lacks', '403 forbidden', api_admin_code($call('POST', 'admin/keys', ['name' => 'Escalate', 'scopes' => ['admin:users']], $keyMaker)));
-pin('but can make a public key', [201, 'public', ['listings:read']], (static fn (Response $r): array => [$r->status(), $r->body()['data']['kind'] ?? null, $r->body()['data']['scopes'] ?? null])(
+pin('a key can make a public key with a scope it holds', [201, 'public', ['listings:read']], (static fn (Response $r): array => [$r->status(), $r->body()['data']['kind'] ?? null, $r->body()['data']['scopes'] ?? null])(
     $call('POST', 'admin/keys', ['name' => 'Mobile app', 'kind' => 'public'], $keyMaker)
 ));
 pin('an unknown scope is refused', 403, $call('POST', 'admin/keys', ['name' => 'Typo', 'scopes' => ['admin:everything']], $boss)->status());
@@ -132,7 +127,7 @@ $short    = (string) ($call('POST', 'admin/keys', ['name' => 'Short', 'scopes' =
 $shortEnd = $call('GET', 'admin/keys', null, $boss)->body()['data'][0]['expires_at'] ?? null;
 $child    = $call('POST', 'admin/keys', ['name' => 'Child', 'scopes' => ['admin:listings']], $short);
 pin('a key made by a short-lived key gets its expiry', [201, true], [$child->status(), $shortEnd !== null && ($child->body()['data']['expires_at'] ?? null) === $shortEnd]);
-pin('and cannot outlive it', 422, $call('POST', 'admin/keys', ['name' => 'Longer', 'scopes' => ['admin:listings'], 'expires_at' => '30d'], $short)->status());
+pin('a key made by a short-lived key cannot outlive it', 422, $call('POST', 'admin/keys', ['name' => 'Longer', 'scopes' => ['admin:listings'], 'expires_at' => '30d'], $short)->status());
 $long = (int) ($call('POST', 'admin/keys', ['name' => 'Long', 'scopes' => ['admin:listings'], 'expires_at' => '90d'], $boss)->body()['data']['id'] ?? 0);
 $r    = $call('POST', 'admin/keys/' . $long . '/rotate', null, $short);
 pin('nor rotate a longer key into one that outlives it', [201, true], [$r->status(), $shortEnd !== null && ($r->body()['data']['expires_at'] ?? null) === $shortEnd]);
@@ -149,7 +144,7 @@ $r        = $call('POST', 'admin/keys/' . $theirApp . '/rotate', null, $boss);
 pin('another admin\'s public key rotates into one the caller owns', [201, (string) $bossId], [
     $r->status(), $admin->query("SELECT fk_i_admin_id FROM {$p}t_api_credential WHERE pk_i_id = " . (int) ($r->body()['data']['id'] ?? 0))->fetch_row()[0] ?? null,
 ]);
-pin('and their public key can be revoked', 204, $call('DELETE', 'admin/keys/' . $theirApp, null, $boss)->status());
+pin('another admin public key can be revoked', 204, $call('DELETE', 'admin/keys/' . $theirApp, null, $boss)->status());
 pin('DELETE revokes: 204, then the key is refused', [204, 401], [$call('DELETE', 'admin/keys/' . $made, null, $boss)->status(), $call('GET', 'admin/listings', null, $token)->status()]);
 pin('revoking it again is 409', '409 conflict', api_admin_code($call('DELETE', 'admin/keys/' . $made, null, $boss)));
 pin('a revoked key cannot be rotated', '409 conflict', api_admin_code($call('POST', 'admin/keys/' . $made . '/rotate', null, $boss)));

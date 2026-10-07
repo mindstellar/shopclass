@@ -16,6 +16,8 @@ if (!function_exists('osc_api_enabled')) {
     /**
      * Whether the REST API answers at all.
      *
+     * @api
+     *
      * @return bool
      */
     function osc_api_enabled(): bool
@@ -28,6 +30,8 @@ if (!function_exists('osc_is_api_request')) {
     /**
      * Whether this request is for the REST API: `?page=api`, or the /api/ path while friendly
      * URLs are on. It works before the router has run.
+     *
+     * @api
      *
      * @return bool
      */
@@ -48,6 +52,8 @@ if (!function_exists('osc_api_public_reads')) {
     /**
      * Whether public data may be read with no credential at all. Off by default.
      *
+     * @api
+     *
      * @return bool
      */
     function osc_api_public_reads(): bool
@@ -60,23 +66,70 @@ if (!function_exists('osc_api_register_route')) {
     /**
      * Add an API endpoint, through the `api_routes` filter. The path is below /api/v1/ and
      * must start with `ext/<plugin-slug>/`; other paths are refused when the table is built,
-     * except a route marked `deprecated`, which may keep a plugin's old path for a release.
+     * except a route with both `deprecated` and `sunset`, which may keep a plugin's old path
+     * until its sunset day. A second route with the same method and path is refused and logged.
+     *
+     * @api
      *
      * @param string              $method GET, POST, PUT, PATCH or DELETE
      * @param string              $path   e.g. 'ext/acme/offers/{id}'
-     * @param array<string,mixed> $spec   handler, auth, scope, summary, query, body, responses
+     * @param array<string,mixed> $spec   handler, auth, scope, summary, description, tags, query,
+     *                                    body, responses, deprecated, sunset, where, versions
      *
      * @return void
      */
     function osc_api_register_route(string $method, string $path, array $spec): void
     {
         $key = strtoupper($method) . ' ' . trim($path, '/');
+        if (!isset($spec['plugin']) && function_exists('osc_plugins_path')) {
+            $plugins = rtrim(str_replace('\\', '/', osc_plugins_path()), '/') . '/';
+            foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $frame) {
+                $file = str_replace('\\', '/', (string) ($frame['file'] ?? ''));
+                if (str_starts_with($file, $plugins)) {
+                    $spec['plugin'] = explode('/', substr($file, strlen($plugins)), 2)[0];
+                    break;
+                }
+            }
+        }
         osc_add_filter('api_routes', static function ($routes) use ($key, $spec) {
-            $routes       = is_array($routes) ? $routes : [];
+            $routes = is_array($routes) ? $routes : [];
+            if (isset($routes[$key])) {
+                error_log('API route ' . $key . ' refused: it is already registered' . (isset($routes[$key]['plugin']) ? ' by plugin ' . $routes[$key]['plugin'] : '') . '.');
+
+                return $routes;
+            }
             $routes[$key] = $spec;
 
             return $routes;
         });
+    }
+}
+
+if (!function_exists('osc_api_register_schema')) {
+    /**
+     * Add a component schema for a plugin's routes, through the `api_schemas` filter. It is
+     * named `Ext<Slug><Name>` (`acme-ratings`, `Rating`: `ExtAcmeRatingsRating`), so it never
+     * clashes with core's components, which are not part of the plugin contract.
+     *
+     * @api
+     *
+     * @param string              $slug   the plugin's slug, e.g. 'acme-ratings'
+     * @param string              $name   StudlyCaps, e.g. 'Rating'
+     * @param array<string,mixed> $schema JSON Schema
+     *
+     * @return array{'$ref':string} the reference to use in a route's schemas
+     */
+    function osc_api_register_schema(string $slug, string $name, array $schema): array
+    {
+        $component = 'Ext' . str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', strtolower($slug)))) . $name;
+        osc_add_filter('api_schemas', static function ($schemas) use ($component, $schema) {
+            $schemas             = is_array($schemas) ? $schemas : [];
+            $schemas[$component] = $schema;
+
+            return $schemas;
+        });
+
+        return ['$ref' => '#/components/schemas/' . $component];
     }
 }
 
@@ -87,6 +140,8 @@ if (!function_exists('osc_api_register_field')) {
      * `ext.<slug>.<name>` from the `api_listing`, `api_user` or `api_category` filter. A
      * public field reaches everyone, an owner field the owner and admins, an admin field
      * admins only.
+     *
+     * @api
      *
      * @param string              $object listing, user or category
      * @param string              $slug   the plugin's slug, e.g. 'acme'
@@ -112,14 +167,17 @@ if (!function_exists('osc_api_url')) {
     /**
      * The absolute URL of an API path, with or without friendly URLs.
      *
-     * @param string $path below /api/v1/, may carry a query string
+     * @api
+     *
+     * @param string      $path    below the version, may carry a query string
+     * @param string|null $version e.g. `v1`; ApiSettings::PINNED_VERSION when null
      *
      * @return string
      */
-    function osc_api_url(string $path = ''): string
+    function osc_api_url(string $path = '', ?string $version = null): string
     {
         $parts = explode('?', ltrim($path, '/'), 2);
-        $route = \mindstellar\apiaccess\ApiSettings::VERSION . ($parts[0] === '' ? '' : '/' . $parts[0]);
+        $route = ($version ?? \mindstellar\apiaccess\ApiSettings::PINNED_VERSION) . ($parts[0] === '' ? '' : '/' . $parts[0]);
         $query = $parts[1] ?? '';
 
         if (osc_rewrite_enabled()) {
@@ -134,6 +192,8 @@ if (!function_exists('osc_api_session_token')) {
     /**
      * The page token theme JavaScript sends as the X-Shopclass-Token header to call the API as
      * the signed-in user, from this site's own pages. It lives two hours.
+     *
+     * @api
      *
      * @return string '' when the API is off or nobody is signed in
      */
@@ -153,6 +213,8 @@ if (!function_exists('osc_api_session_meta')) {
      * A `<meta name="shopclass-api">` tag for the page head. Its content is JSON: the API's
      * address (`url`), the page token (`token`, '' when nobody is signed in), the `header` to
      * send it in and when it expires (`expires_at`).
+     *
+     * @api
      *
      * @return string '' when the API is off
      */
@@ -177,6 +239,8 @@ if (!function_exists('osc_webhook_emit')) {
     /**
      * Queue a webhook event for every enabled endpoint that subscribes to it. A plugin's
      * event is named `ext.<plugin-slug>.<name>` and registered on `api_webhook_events` first.
+     *
+     * @api
      *
      *     osc_webhook_emit('ext.acme.offer_created', ['id' => $offerId, 'url' => $url]);
      *

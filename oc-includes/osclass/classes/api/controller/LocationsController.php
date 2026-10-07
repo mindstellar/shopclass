@@ -95,7 +95,8 @@ final class LocationsController
             fn (array $page): array => array_map([$this->serializer, $shape], $page),
             $this->api->links(),
             $path,
-            $request->query()
+            $request->query(),
+            $request->version()
         );
     }
 }

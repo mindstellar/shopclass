@@ -46,10 +46,11 @@ final class ListingList
         return $pager->respond(
             fn (): array => $this->listings->newest($statuses, $userIds, $categoryIds, $title, $pager->afterId(), $pager->limit() + 1),
             fn (): int => $this->listings->count($statuses, $userIds, $categoryIds, $title),
-            fn (array $items): array => $this->reader->many($items === [] ? [] : \Item::getInstance()->extendRows($items, $context->locale()), $context),
+            fn (array $items): array => $this->reader->many($this->reader->extend($items, $context), $context),
             $this->api->links(),
             $path,
-            $request->query()
+            $request->query(),
+            $request->version()
         );
     }
 }

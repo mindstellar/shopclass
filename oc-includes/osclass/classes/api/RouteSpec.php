@@ -14,31 +14,44 @@ namespace mindstellar\api;
 
 use mindstellar\api\schema\Schema;
 use mindstellar\api\schema\Validator;
+use mindstellar\apiaccess\ApiSettings;
 use mindstellar\apiaccess\Credential;
 use mindstellar\apiaccess\Scopes;
 
 /**
  * One endpoint: method, path, handler, who may call it and what it accepts. The kernel
  * enforces these fields and the OpenAPI document is built from them; immutable.
+ *
+ * The spec keys in PLUGIN_KEYS and the AUTH_* values are the plugin contract; CORE_KEYS are
+ * refused on a plugin route.
  */
 final class RouteSpec
 {
+    /** @api The spec keys a plugin route may use. */
+    public const PLUGIN_KEYS = [
+        'handler', 'auth', 'scope', 'summary', 'description', 'tags', 'query', 'body', 'responses',
+        'deprecated', 'sunset', 'where', 'versions', 'plugin',
+    ];
+
+    /** Spec keys only core routes may use. */
+    public const CORE_KEYS = ['replayable', 'upload', 'oauth', 'prepare'];
+
     public const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 
-    /** No credential needed. */
+    /** @api No credential needed. */
     public const AUTH_NONE = 'none';
-    /** Any credential, or none when the site allows anonymous reads. GET only. */
+    /** @api Any credential, or none when the site allows anonymous reads. GET only. */
     public const AUTH_PUBLIC = 'public';
-    /** A user's key or access token. */
+    /** @api A user's key or access token. */
     public const AUTH_USER = 'user';
-    /** An admin's key. */
+    /** @api An admin's key. */
     public const AUTH_ADMIN = 'admin';
 
     public const AUTH = [self::AUTH_NONE, self::AUTH_PUBLIC, self::AUTH_USER, self::AUTH_ADMIN];
 
     private const PLACEHOLDER = '#\{([a-zA-Z_][a-zA-Z0-9_]*)\}#';
 
-    /** Placeholders that are row ids: digits only, and integers in the OpenAPI document. */
+    /** @api Placeholders that are row ids: digits only, and integers in the OpenAPI document. */
     public const NUMERIC_ARGS = ['id', 'photo'];
 
     private string $method;
@@ -83,6 +96,19 @@ final class RouteSpec
 
     private bool $oauth;
 
+    /** @var callable|array{0:string,1:string}|null */
+    private $prepare;
+
+    private ?\Closure $preparer = null;
+
+    /** @var string[] */
+    private array $versions;
+
+    private ?string $plugin;
+
+    /** @var (\Closure(): ApiKit)|null */
+    private ?\Closure $kit;
+
     private string $regex;
 
     /** @var string[] */
@@ -93,28 +119,19 @@ final class RouteSpec
 
     /**
      * @param string              $path     below the version, e.g. `listings/{id}`; '' is the version root
-     * @param array<string,mixed> $spec     handler, auth (default public for GET, admin otherwise),
-     *                                      scope, summary, description, tags, query
-     *                                      (an object schema), body (a schema), responses
-     *                                      (status => schema), deprecated and sunset (Y-m-d dates),
-     *                                      replayable (false: a write whose answer holds a secret,
-     *                                      so it is never stored for an Idempotency-Key),
-     *                                      upload (true: the body is one file, multipart field
-     *                                      `photo` or a raw image, not JSON),
-     *                                      oauth (true: an OAuth 2 token endpoint, RFC 6749: the
-     *                                      body may be a form too, and a refusal is a 400 with
-     *                                      the OAuth `error` member),
-     *                                      where (placeholder => regex for one segment, instead
-     *                                      of digits for `{id}` and anything else otherwise)
+     * @param array<string,mixed> $spec     route options; the keys are listed in the plugin endpoints guide
      * @param \Closure|null       $handlers fn(class-string): object, builds the instance a
      *                                      `[class, method]` handler runs on; `new $class()` by default
+     * @param \Closure|null       $kit      fn(): ApiKit, the services a handler reaches through ApiCall::kit()
+     * @param string[]|null       $live     the versions the site answers; ApiSettings::VERSIONS by default.
+     *                                      A route that names no `versions` serves all of them.
      *
      * Only the shape is checked here, so building the core table loads no handler class and
      * walks no schema; check() does the rest for a route from a plugin.
      *
      * @throws \InvalidArgumentException when the route cannot be served
      */
-    public function __construct(string $method, string $path, array $spec, ?\Closure $handlers = null)
+    public function __construct(string $method, string $path, array $spec, ?\Closure $handlers = null, ?\Closure $kit = null, ?array $live = null)
     {
         $method = strtoupper($method);
         $path   = trim($path, '/');
@@ -161,6 +178,22 @@ final class RouteSpec
         $this->replayable  = (bool) ($spec['replayable'] ?? true);
         $this->upload      = (bool) ($spec['upload'] ?? false);
         $this->oauth       = (bool) ($spec['oauth'] ?? false);
+        $this->prepare     = $spec['prepare'] ?? null;
+        if ($this->prepare !== null && !self::isPair($this->prepare) && !is_callable($this->prepare)) {
+            throw new \InvalidArgumentException($key . ': prepare must be callable.');
+        }
+        $this->plugin      = isset($spec['plugin']) && $spec['plugin'] !== '' ? (string) $spec['plugin'] : null;
+        $this->kit         = $kit;
+        $live              = $live ?? array_keys(ApiSettings::VERSIONS);
+        $this->versions    = array_values(array_unique(array_map('strval', (array) ($spec['versions'] ?? $live))));
+        foreach ($this->versions as $version) {
+            if (!in_array($version, $live, true)) {
+                throw new \InvalidArgumentException($key . ': unknown API version ' . $version . '.');
+            }
+        }
+        if ($this->versions === []) {
+            throw new \InvalidArgumentException($key . ': versions names no version.');
+        }
         if ($this->upload && $this->body !== null) {
             throw new \InvalidArgumentException($key . ': an upload takes a file, not a JSON body.');
         }
@@ -348,7 +381,7 @@ final class RouteSpec
     {
         $values = [];
         foreach ($this->argNames as $name) {
-            $pattern = '#^(?:' . ($this->where[$name] ?? ($name === 'id' ? '[0-9]+' : '[^/]+')) . ')$#D';
+            $pattern = '#^(?:' . ($this->where[$name] ?? (in_array($name, self::NUMERIC_ARGS, true) ? '[0-9]+' : '[^/]+')) . ')$#D';
             $values[$name] = array_values(array_filter(
                 ['1', '42', 'a', 'abc', 'a1', '1a', 'A_b-c', 'a.b', 'a:b', '-', 'Z9'],
                 static fn (string $value): bool => preg_match($pattern, $value) === 1
@@ -381,27 +414,63 @@ final class RouteSpec
      * not static runs on an instance from the handler factory, built on the first call.
      *
      * @param array<string,string> $args
+     * @param mixed                $prepared what the route's prepare step returned
      */
-    public function call(Request $request, Credential $credential, array $args): Response
+    public function call(Request $request, Credential $credential, array $args, mixed $prepared = null): Response
     {
-        if ($this->resolved === null) {
-            $handler = $this->handler;
-            if (self::isPair($handler)) {
-                if (!method_exists($handler[0], $handler[1])) {
-                    throw new \LogicException('API handler for ' . $this->key() . ' does not exist.');
-                }
-                if (!(new \ReflectionMethod($handler[0], $handler[1]))->isStatic()) {
-                    $handler = [($this->handlers)($handler[0]), $handler[1]];
-                }
-            }
-            $this->resolved = \Closure::fromCallable($handler);
-        }
-        $response = ($this->resolved)(new ApiCall($request, $credential, $args));
+        $this->resolved ??= $this->resolve($this->handler, 'handler');
+        $response = ($this->resolved)(new ApiCall($request, $credential, $args, $prepared, $this->kit));
         if (!$response instanceof Response) {
             throw new \UnexpectedValueException('API handler for ' . $this->key() . ' did not return a Response.');
         }
 
         return $response;
+    }
+
+    /**
+     * Run the route's prepare step, outside any transaction; null when it has none.
+     *
+     * @param array<string,string> $args
+     */
+    public function prepare(Request $request, Credential $credential, array $args): mixed
+    {
+        if ($this->prepare === null) {
+            return null;
+        }
+        $this->preparer ??= $this->resolve($this->prepare, 'prepare step');
+
+        return ($this->preparer)(new ApiCall($request, $credential, $args, null, $this->kit));
+    }
+
+    /**
+     * The API versions the route serves, e.g. `['v1']`.
+     *
+     * @return string[]
+     */
+    public function versions(): array
+    {
+        return $this->versions;
+    }
+
+    /**
+     * The plugin that registered the route, when known.
+     */
+    public function plugin(): ?string
+    {
+        return $this->plugin;
+    }
+
+    /**
+     * Every component the route's schemas `$ref`, by name.
+     *
+     * @return string[]
+     */
+    public function refs(): array
+    {
+        $json = (string) json_encode([$this->query, $this->body, $this->responses], JSON_UNESCAPED_SLASHES);
+        preg_match_all('~"\$ref":"' . preg_quote(Validator::REF_PREFIX, '~') . '([^"]*)"~', $json, $m);
+
+        return array_values(array_unique($m[1]));
     }
 
     public function method(): string
@@ -538,6 +607,26 @@ final class RouteSpec
         }
 
         return $value;
+    }
+
+    /**
+     * A callable, or a `[class, method]` pair whose method, unless static, runs on an
+     * instance from the handler factory.
+     *
+     * @param callable|array{0:string,1:string} $callable
+     */
+    private function resolve(mixed $callable, string $what): \Closure
+    {
+        if (self::isPair($callable)) {
+            if (!method_exists($callable[0], $callable[1])) {
+                throw new \LogicException('API ' . $what . ' for ' . $this->key() . ' does not exist.');
+            }
+            if (!(new \ReflectionMethod($callable[0], $callable[1]))->isStatic()) {
+                $callable = [($this->handlers)($callable[0]), $callable[1]];
+            }
+        }
+
+        return \Closure::fromCallable($callable);
     }
 
     /**

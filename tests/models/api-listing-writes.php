@@ -9,14 +9,8 @@
  */
 
 /**
- * The seller's writes end to end through Kernel::handle() on a seeded site: posting a
- * listing through ItemActions (identity from the token, moderation, the listing limit, the
- * posting wait, the hourly cap, hooks once, an Idempotency-Key replayed), editing one with
- * the stored values kept, deleting, photos (staged tokens, uploads, the cap, bad images,
- * photo_urls), comments, saved searches, and the account's "API access" page.
- *
- * Usage:  php tests/models/api-listing-writes.php        (standalone, own scratch database)
- *         php tests/run-models.php api-listing-writes    (as part of the suite)
+ * The seller writes end to end through Kernel::handle(): listings, photos, comments, saved searches and the API access page.
+ * Usage: php tests/models/api-listing-writes.php
  */
 
 require_once __DIR__ . '/../lib/harness.php';
@@ -189,9 +183,9 @@ final class WriteLinks implements Links
         return 'http://localhost/avatar/' . $userId;
     }
 
-    public function api(string $path): string
+    public function api(string $path, ?string $version = null): string
     {
-        return 'http://localhost/api/v1/' . $path;
+        return 'http://localhost/api/' . ($version ?? 'v1') . '/' . $path;
     }
 
     public function price(?int $micros, string $symbol): string
@@ -279,6 +273,7 @@ $settings  = new ApiSettings(true, userKeys: true);
 $fetches   = 0;
 $transport = static function (string $url, string $ip, string $file, int $max) use ($jpeg, &$fetches): ?string {
     $fetches++;
+    $GLOBALS['lw_fetch_in_transaction'][] = \mindstellar\database\Db::inTransaction();
 
     return copy($jpeg, $file) ? null : 'copy failed';
 };
@@ -394,7 +389,7 @@ osc_reset_preferences();
 $fired = array();
 $r     = $call('POST', 'listings', $listing(array('title' => 'Moderated wagon')), $sueToken);
 pin('with moderation on the listing waits: pending, with a warning', array(201, 'pending', 'listing_pending'), array($r->status(), $r->body()['data']['status'] ?? null, $r->body()['warnings'][0]['code'] ?? null));
-pin('and the activation e-mail goes out as from the form', 1, $fired['hook_email_item_validation'] ?? 0);
+pin('a pending listing sends the activation e-mail as from the form', 1, $fired['hook_email_item_validation'] ?? 0);
 $pendingId = (int) $r->body()['data']['id'];
 Preference::getInstance()->set('moderate_items', '-1');
 
@@ -465,7 +460,7 @@ pin('a JSON body is not a photo', '415 unsupported_media_type', $code($call('POS
 $fired = array();
 $r     = $call('POST', 'listings', $listing(array('title' => 'With a photo', 'photo_tokens' => array($token))), $sueToken);
 $withPhoto = (int) ($r->body()['data']['id'] ?? 0);
-pin('every error of a refused edit is listed, not one joined line', true, count($call('PATCH', 'listings/' . $withPhoto, array('title' => str_repeat('t', 150), 'description' => 'ab'), $sueToken)->body()['errors'] ?? array()) >= 2);
+check('every error of a refused edit is listed, not one joined line', count($call('PATCH', 'listings/' . $withPhoto, array('title' => str_repeat('t', 150), 'description' => 'ab'), $sueToken)->body()['errors'] ?? array()) >= 2);
 pin('photo_tokens attach the staged photo', array(201, 1, 1), array($r->status(), count($r->body()['data']['photos'] ?? array()), $fired['uploaded_file'] ?? 0));
 pin('a token works once', array(422, '/photo_tokens/0'), (static fn (Response $r): array => array($r->status(), $r->body()['errors'][0]['pointer'] ?? null))($call('POST', 'listings', $listing(array('title' => 'Again', 'photo_tokens' => array($token))), $sueToken)));
 $tomsToken = (string) $call('POST', 'photos', null, $tomToken, array(), $photoFile($jpeg))->body()['data']['token'];
@@ -475,7 +470,7 @@ $r = $call('POST', 'listings/' . $withPhoto . '/photos', null, $sueToken, array(
 pin('a raw image body adds a photo', array(201, true), array($r->status(), is_int($r->body()['data']['id'] ?? null)));
 pin('Location names it', 'http://localhost/api/v1/listings/' . $withPhoto . '/photos/' . ($r->body()['data']['id'] ?? ''), $r->header('Location'));
 $one = $call('GET', 'listings/' . $withPhoto . '/photos/' . ($r->body()['data']['id'] ?? ''), null, $sueToken);
-pin('and it can be read', array(200, $r->body()['data']['id'] ?? null), array($one->status(), $one->body()['data']['id'] ?? null));
+pin('a created listing can be read at its Location', array(200, $r->body()['data']['id'] ?? null), array($one->status(), $one->body()['data']['id'] ?? null));
 pin('matches the schema', array(), $schemaErrors('PhotoDocument', $one));
 pin('a photo of another listing is 404 there', 404, $call('GET', 'listings/' . $made . '/photos/' . ($r->body()['data']['id'] ?? ''), null, $sueToken)->status());
 pin('matches the schema', array(), $schemaErrors('PhotoDocument', $r));
@@ -489,7 +484,7 @@ pin('another seller cannot add one', '403 not_owner', $code($call('POST', 'listi
 $photoId = (int) $third->body()['data']['id'];
 pin('another seller cannot remove one', '403 not_owner', $code($call('DELETE', 'listings/' . $withPhoto . '/photos/' . $photoId, null, $tomToken)));
 pin('the owner removes one', 204, $call('DELETE', 'listings/' . $withPhoto . '/photos/' . $photoId, null, $sueToken)->status());
-pin('it is gone', 0, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_resource WHERE pk_i_id = $photoId")->fetch_row()[0]);
+pin('a removed photo is gone from the table', 0, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_resource WHERE pk_i_id = $photoId")->fetch_row()[0]);
 pin('a photo of another listing is 404 here', 404, $call('DELETE', 'listings/' . $made . '/photos/' . $photoId, null, $sueToken)->status());
 $tokens = array();
 for ($i = 0; $i < 3; $i++) {
@@ -569,7 +564,7 @@ harness_section('photo URLs on an edit');
 $settings = new ApiSettings(true, userKeys: true, photoUrls: true);
 $GLOBALS['lw_limiter'] = api_test_limiter(static fn (string $bucket) => $bucket === 'api_photo_fetch' ? RatePolicy::PHOTO_FETCHES_PER_HOUR + 1 : 1);
 pin('fetches on an edit have an hourly cap per user', '429 rate_limited', $code($call('PATCH', 'listings/' . $withPhoto, array('photo_urls' => array('https://photos.example.com/car.jpg')), $sueToken)));
-pin('so do fetches for a new listing, in the same count', '429 rate_limited', $code($call('POST', 'listings', $listing(array('title' => 'Fetched', 'photo_urls' => array('https://photos.example.com/car.jpg'))), $sueToken)));
+pin('fetches for a new listing count in the same hourly cap', '429 rate_limited', $code($call('POST', 'listings', $listing(array('title' => 'Fetched', 'photo_urls' => array('https://photos.example.com/car.jpg'))), $sueToken)));
 unset($GLOBALS['lw_limiter']);
 $fetches = 0;
 $r = $call('PATCH', 'listings/' . $withPhoto, array('photo_urls' => array('https://photos.example.com/a.jpg', 'https://photos.example.com/b.jpg')), $sueToken);
@@ -579,6 +574,24 @@ pin('only what the listing has room for is fetched; the rest is a warning', arra
 $fetches = 0;
 $r = $call('PATCH', 'listings/' . $withPhoto, array('photo_urls' => array('https://photos.example.com/c.jpg')), $sueToken);
 pin('a full listing fetches nothing', array(200, 0), array($r->status(), $fetches));
+$roomy  = (int) ($call('POST', 'listings', $listing(array('title' => 'Room for photos')), $sueToken)->body()['data']['id'] ?? 0);
+$etag   = (string) $call('GET', 'listings/' . $roomy, null, $sueToken)->header('ETag');
+$tomGet = $call('GET', 'listings/' . $roomy, null, $tomToken);
+pin('another user with the write scope gets the plain ETag, not the stored version', array(200, $call('GET', 'listings/' . $roomy)->header('ETag'), false), array($tomGet->status(), $tomGet->header('ETag'), $tomGet->header('ETag') === $etag));
+$staged = static fn (): int => count(glob($lwRoot . 'stage/qqfile_api_*') ?: array());
+$files  = $staged();
+$fetches = 0;
+$GLOBALS['lw_fetch_in_transaction'] = array();
+$r = $call('PATCH', 'listings/' . $roomy, array('photo_urls' => array('https://photos.example.com/d.jpg')), $sueToken, array('If-Match' => '"stale"'));
+pin('a stale If-Match is 412; the photo fetched before it is not left in the temp folder', array('412 precondition_failed', 1, $files), array($code($r), $fetches, $staged()));
+$GLOBALS['lw_fetch_in_transaction'] = array();
+$r = $call('PATCH', 'listings/' . $roomy, array('photo_urls' => array('https://photos.example.com/d.jpg')), $sueToken, array('If-Match' => $etag));
+pin('with a current one the photo is added, fetched outside the If-Match transaction', array(200, 1, array(false), $files), array(
+    $r->status(), count($r->body()['data']['photos'] ?? array()), $GLOBALS['lw_fetch_in_transaction'], $staged(),
+));
+$fetches = 0;
+$r = $call('PATCH', 'listings/' . $roomy, array('photo_urls' => array('https://photos.example.com/e.jpg'), 'category_id' => 999999), $sueToken);
+pin('an edit refused after the fetch leaves no file either', array(422, 1, $files), array($r->status(), $fetches, $staged()));
 $settings = new ApiSettings(true, userKeys: true);
 
 harness_section('a save is all or nothing');
@@ -621,7 +634,7 @@ pin('the e-mail was written but not sent', array(1, 1, array()), array($fired['h
 pin('the photo\'s copies in the uploads folder are removed', $before, $uploads());
 $r = $call('POST', 'listings', $listing(array('title' => 'Saved with a photo', 'photo_tokens' => array($token))), $sueToken);
 pin('the staged photo is still there, so its token works again', array(201, 1), array($r->status(), count($r->body()['data']['photos'] ?? array())));
-pin('and the e-mail goes out once the save is committed', array('Activate your listing'), HeldMailer::$sent);
+pin('the e-mail goes out once the save is committed', array('Activate your listing'), HeldMailer::$sent);
 Preference::getInstance()->set('moderate_items', '-1');
 osc_reset_preferences();
 
@@ -658,10 +671,37 @@ try {
     $overflow = true;
 }
 pin('one photo past the cap is taken back out, even when it raced the count', array(true, PhotoStage::MAX_PENDING), array($overflow, $stageRows($tom)));
-pin('and the API answers 422', array(422, 'limit'), (static fn (Response $r): array => array($r->status(), $r->body()['errors'][0]['code'] ?? null))($call('POST', 'photos', null, $tomToken, array(), $photoFile($jpeg))));
+pin('the API answers 422 limit for a photo past the cap', array(422, 'limit'), (static fn (Response $r): array => array($r->status(), $r->body()['errors'][0]['code'] ?? null))($call('POST', 'photos', null, $tomToken, array(), $photoFile($jpeg))));
 $admin->query("DELETE FROM {$p}t_item_upload_tmp WHERE s_token = 'api:$tom'");
 $fetcher = ImageFetcher::curlOptions('https://photos.example.com/car.jpg', '93.184.216.34', 1024);
 pin('a download never goes through a proxy, so it reaches the checked address', array('', '*'), array($fetcher[CURLOPT_PROXY] ?? null, $fetcher[CURLOPT_NOPROXY] ?? null));
+pin('a download that crawls is dropped', array(ImageFetcher::LOW_SPEED, ImageFetcher::LOW_SPEED_TIME), array($fetcher[CURLOPT_LOW_SPEED_LIMIT] ?? null, $fetcher[CURLOPT_LOW_SPEED_TIME] ?? null));
+$clockNow  = 1000.0;
+$timeouts  = array();
+$slowFetch = static function (string $url, string $ip, string $file, int $max, int $timeout) use ($jpeg, &$clockNow, &$timeouts): ?string {
+    $timeouts[] = $timeout;
+    $clockNow  += 20;
+
+    return copy($jpeg, $file) ? null : 'copy failed';
+};
+$slowIntake = new \mindstellar\api\write\PhotoIntake(
+    new PhotoStage($lwRoot . 'stage/', new SystemClock()),
+    new ImageFetcher(new AddressGuard(static fn (): array => array('93.184.216.34')), $slowFetch),
+    api_test_limiter(static fn () => 1),
+    new RatePolicy(new ApiSettings(true, photoUrls: true)),
+    true,
+    2048 * 1024,
+    static function () use (&$clockNow): float {
+        return $clockNow;
+    }
+);
+try {
+    $slowIntake->batch(array('photo_urls' => array('https://photos.example.com/a.jpg', 'https://photos.example.com/b.jpg', 'https://photos.example.com/c.jpg')), $sue, null);
+    $budget = null;
+} catch (\mindstellar\api\ProblemException $e) {
+    $budget = array($e->response()->status(), $e->response()->body()['errors'][0]['pointer'] ?? null);
+}
+pin('URL downloads share one time budget: each gets what is left, and one past it is 422 at its pointer', array(array(15, 10), array(422, '/photo_urls/2')), array($timeouts, $budget));
 
 harness_section('queries');
 $qMade = 0;
@@ -670,8 +710,8 @@ $qPost = harness_query_count(static function () use ($call, $listing, $sueToken,
 });
 $qPatch = harness_query_count(static fn () => $call('PATCH', 'listings/' . $qMade, array('price' => '999'), $sueToken));
 echo "  POST /listings: $qPost queries, PATCH: $qPatch\n";
-pin('POST /listings, no photos: 32 queries (one checks the sign-in is live; ban rules come from the cache)', 32, $qPost);
-pin('PATCH /listings/{id}, no photos: 31 queries', 31, $qPatch);
+pin('POST /listings, no photos: 30 queries (one checks the sign-in is live; ban rules come from the cache)', 30, $qPost);
+pin('PATCH /listings/{id}, no photos: 29 queries', 29, $qPatch);
 
 harness_section('deleting a listing');
 pin('another seller cannot delete it', '403 not_owner', $code($call('DELETE', 'listings/' . $made, null, $tomToken)));
@@ -711,7 +751,7 @@ osc_reset_preferences();
 pin('only the author deletes a comment', '403 not_owner', $code($call('DELETE', 'comments/' . $commentId, null, $sueToken)));
 $fired = array();
 pin('the author does: 204', array(204, 1), array($call('DELETE', 'comments/' . $commentId, null, $tomToken)->status(), $fired['pre_item_delete_comment_post'] ?? 0));
-pin('it is gone', 0, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_comment WHERE pk_i_id = $commentId")->fetch_row()[0]);
+pin('a deleted comment is gone from the table', 0, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_comment WHERE pk_i_id = $commentId")->fetch_row()[0]);
 
 harness_section('saved searches');
 $r = $call('POST', 'account/alerts', array('filters' => array('category' => array($cars), 'q' => 'hatchback', 'with_photos' => true)), $sueToken);
@@ -721,9 +761,9 @@ pin('an alert is saved from GET /listings filters', array(201, array($cars), 'ha
 ));
 pin('matches the schema', array(), $schemaErrors('AlertDocument', $r));
 pin('Location names it', 'http://localhost/api/v1/account/alerts/' . $alertId, $r->header('Location'));
-pin('and it can be read', array(200, $alertId), (static fn (Response $one): array => array($one->status(), $one->body()['data']['id'] ?? null))($call('GET', 'account/alerts/' . $alertId, null, $sueToken)));
+pin('a created alert can be read at its Location', array(200, $alertId), (static fn (Response $one): array => array($one->status(), $one->body()['data']['id'] ?? null))($call('GET', 'account/alerts/' . $alertId, null, $sueToken)));
 pin('by its owner only', 404, $call('GET', 'account/alerts/' . $alertId, null, $tomToken)->status());
-pin('it is the account page\'s alert too', array($alertId), array_map('intval', array_column(Alerts::getInstance()->findByUser($sue), 'pk_i_id')));
+pin('an alert made through the API is the account page alert too', array($alertId), array_map('intval', array_column(Alerts::getInstance()->findByUser($sue), 'pk_i_id')));
 $again = $call('POST', 'account/alerts', array('filters' => array('q' => 'hatchback', 'category' => (string) $cars, 'with_photos' => true)), $sueToken);
 pin('the same search again answers the existing alert', array(200, $alertId), array($again->status(), $again->body()['data']['id'] ?? null));
 $list = $call('GET', 'account/alerts', null, $sueToken);
@@ -734,7 +774,25 @@ pin('an unknown category is 422', 422, $call('POST', 'account/alerts', array('fi
 pin('an unknown filter is 422', 422, $call('POST', 'account/alerts', array('filters' => array('colour' => 'red')), $sueToken)->status());
 pin('another user cannot stop it', 404, $call('DELETE', 'account/alerts/' . $alertId, null, $tomToken)->status());
 pin('its owner can', 204, $call('DELETE', 'account/alerts/' . $alertId, null, $sueToken)->status());
-pin('then it is no longer listed', array(), $call('GET', 'account/alerts', null, $sueToken)->body()['data']);
+pin('a deleted alert is no longer listed', array(), $call('GET', 'account/alerts', null, $sueToken)->body()['data']);
+Preference::getInstance()->set('alerts_max_per_user', '2');
+osc_reset_preferences();
+$saveAlert = static fn (string $q): Response => $call('POST', 'account/alerts', array('filters' => array('q' => $q)), $sueToken);
+pin('up to the site\'s number of saved searches is fine', array(201, 201), array($saveAlert('one')->status(), $saveAlert('two')->status()));
+$over = $saveAlert('three');
+pin('one more is 422 at the root, saying why', array(422, '/', 'maxItems'), array($over->status(), $over->body()['errors'][0]['pointer'] ?? null, $over->body()['errors'][0]['code'] ?? null));
+pin('a refused alert is not saved', 2, count(Alerts::getInstance()->findByUser($sue)));
+pin('the same search again still answers the one there', 200, $saveAlert('two')->status());
+$webToken = base64_encode(osc_encrypt_alert(\mindstellar\search\AlertEnvelope::fromValues(array('sPattern' => 'four'), array('sPattern' => 'four'))));
+View::getInstance()->_exportVariableToView('_loggedUser', $admin->query("SELECT * FROM {$p}t_user WHERE pk_i_id = $sue")->fetch_assoc());
+pin('the search page\'s form gets its "too many" answer, -5', array(-5, 2), array(osc_subscribe_alert($webToken, ''), count(Alerts::getInstance()->findByUser($sue))));
+$first = (int) Alerts::getInstance()->findByUser($sue)[0]['pk_i_id'];
+$call('DELETE', 'account/alerts/' . $first, null, $sueToken);
+pin('after deleting one, the form saves again', 1, osc_subscribe_alert($webToken, ''));
+View::getInstance()->_exportVariableToView('_loggedUser', null);
+Preference::getInstance()->set('alerts_max_per_user', '0');
+osc_reset_preferences();
+pin('0 means no limit', 201, $saveAlert('five')->status());
 
 harness_section('the account\'s API access page');
 $pageFor = static function (ApiSettings $settings) use ($facts): AccountAccess {
@@ -744,7 +802,7 @@ $pageFor = static function (ApiSettings $settings) use ($facts): AccountAccess {
 $page     = $pageFor($settings);
 $sessions = $page->sessions($sue);
 $types    = array_count_values(array_column($sessions, 'type'));
-check('it lists the sign-ins and the keys', ($types['token'] ?? 0) >= 1 && ($types['key'] ?? 0) >= 2);
+check('the sessions list shows the sign-ins and the keys', ($types['token'] ?? 0) >= 1 && ($types['key'] ?? 0) >= 2);
 check('no secret is in the list', !str_contains((string) json_encode($sessions), $readOnly) && !str_contains((string) json_encode($sessions), substr($sueToken, 4, 40)));
 check('the menu entry shows for a user with access', $page->relevant($sue));
 $userRow = $admin->query("SELECT * FROM {$p}t_user WHERE pk_i_id = $sue")->fetch_assoc();
@@ -761,25 +819,25 @@ pin('making a key is off unless the site allows it', 'This site does not let use
 $settings = new ApiSettings(true, userKeys: true);
 $page     = $pageFor($settings);
 pin('a wrong password is refused', 'The password is not right.', $threw(static fn () => $page->createKey($userRow, 'wrong', 'Script', array('listings:read'), date('Y-m-d', time() + 86400 * 30))));
-pin('account:write cannot go on a key', true, $threw(static fn () => $page->createKey($userRow, 'open sesame', 'Script', array('account:write'), date('Y-m-d', time() + 86400 * 30))) !== '');
+check('account:write cannot go on a key', $threw(static fn () => $page->createKey($userRow, 'open sesame', 'Script', array('account:write'), date('Y-m-d', time() + 86400 * 30))) !== '');
 pin('an expiry past a year is refused', 'Choose an expiry date within a year.', $threw(static fn () => $page->createKey($userRow, 'open sesame', 'Script', array('listings:read'), date('Y-m-d', time() + 86400 * 400))));
 $made = $page->createKey($userRow, 'open sesame', 'Backup script', array('listings:read', 'account:read'), date('Y-m-d', time() + 86400 * 30));
 pin('a key made on the page works on the API', 200, $call('GET', 'account', null, $made)->status());
 $keyRow = array_values(array_filter($page->sessions($sue), static fn (array $s): bool => $s['label'] === 'Backup script'))[0] ?? array('id' => '');
-check('and is listed by its prefix', str_starts_with($made, (string) ($keyRow['prefix'] ?? '-')));
+check('a key made on the page is listed by its prefix', str_starts_with($made, (string) ($keyRow['prefix'] ?? '-')));
 pin('revoking it from the page ends it', array(true, 401), array($page->end($sue, $keyRow['id']), $call('GET', 'account', null, $made)->status()));
 $family = array_values(array_filter($page->sessions($sue), static fn (array $s): bool => $s['type'] === 'token'))[0]['id'] ?? '';
-pin('another user cannot end it', false, $pageFor($settings)->end($tom, $family));
+check('another user cannot end it', !($pageFor($settings)->end($tom, $family)));
 pin('ending a sign-in revokes its refresh family', array(true, 0), array(
     $page->end($sue, $family), (int) $admin->query("SELECT COUNT(*) FROM {$p}t_api_credential WHERE s_family = '" . $admin->real_escape_string($family) . "' AND dt_revoked IS NULL")->fetch_row()[0],
 ));
-pin('an unknown session is refused', false, $page->end($sue, 'nope'));
+check('an unknown session is refused', !($page->end($sue, 'nope')));
 $settings = new ApiSettings(true, userKeys: true);
 $web      = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebUser.php');
 preg_match("/case 'api_access_post':.*?break;/s", $web, $postCase);
 check('the page\'s POST checks the CSRF token', isset($postCase[0]) && str_contains($postCase[0], 'osc_csrf_check()'));
 preg_match('/private function apiAccessPost\(.*?\n    }\n/s', $web, $postMethod);
-check('and does nothing while the API is off', isset($postMethod[0]) && str_contains($postMethod[0], 'if (!osc_api_enabled())'));
+check('the key page does nothing while the API is off', isset($postMethod[0]) && str_contains($postMethod[0], 'if (!osc_api_enabled())'));
 $partial = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/gui/account/user-api_access-content.php');
 pin('every form on the page posts the CSRF token', substr_count($partial, '<form'), substr_count($partial, 'osc_csrf_token_form()'));
 check('no session was started', session_status() !== PHP_SESSION_ACTIVE);

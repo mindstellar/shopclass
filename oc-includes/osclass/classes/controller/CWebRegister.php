@@ -25,13 +25,9 @@ class CWebRegister extends BaseModel
     {
         parent::__construct();
 
-        if (!osc_users_enabled()) {
-            osc_add_flash_error_message(_m('Users not enabled'));
-            $this->redirectTo(osc_base_url());
-        }
-
-        if (!osc_user_registration_enabled()) {
-            osc_add_flash_error_message(_m('User registration is not enabled'));
+        $closed = \mindstellar\user\AccountService::signUpOpen();
+        if ($closed !== null) {
+            osc_add_flash_error_message($closed);
             $this->redirectTo(osc_base_url());
         }
 
@@ -59,22 +55,6 @@ class CWebRegister extends BaseModel
                 break;
             case ('register_post'):  //register user
                 osc_csrf_check();
-                if (!osc_users_enabled()) {
-                    osc_add_flash_error_message(_m('Users are not enabled'));
-                    $this->redirectTo(osc_base_url());
-                }
-
-                osc_run_hook('before_user_register');
-
-                $banned = osc_is_banned(Params::getParam('s_email'));
-                if ($banned == 1) {
-                    osc_add_flash_error_message(_m('Your current email is not allowed'));
-                    $this->redirectTo(osc_register_account_url());
-                } elseif ($banned == 2) {
-                    osc_add_flash_error_message(_m('Your current IP is not allowed'));
-                    $this->redirectTo(osc_register_account_url());
-                }
-
                 $userActions = new UserActions(false);
                 $success     = $userActions->add();
                 if ($success == 1) {

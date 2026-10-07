@@ -9,13 +9,8 @@
  */
 
 /**
- * The OpenAPI 3.1 document: every route documented and only those, a structurally valid
- * document (required members, unique operation ids, path parameters matching the template,
- * every $ref resolving, every error answer a Problem, schemas inside the validator's
- * subset), plugin routes and declared ext fields included, the committed copy and the
- * reference page current, and Deprecation/Sunset headers from a route's dates.
- *
- * DB-free, no network.  Usage: php tests/api-openapi.php
+ * The OpenAPI 3.1 document: every route documented, structurally valid, plugin routes and Sunset headers.
+ * Usage: php tests/api-openapi.php
  */
 
 require_once __DIR__ . '/lib/api-boot.php';
@@ -167,7 +162,7 @@ function openapi_problems(array $doc): array
 
 harness_section('the core document');
 $core = OpenApi::core()->build();
-pin('it is structurally sound', [], openapi_problems($core));
+pin('the core document is structurally sound', [], openapi_problems($core));
 $op = $core['paths']['/admin/areas']['post'];
 pin('a replayable write declares 409, 500 and 503, and Idempotency-Replayed and Request-Id', [true, true, true, true, true], [
     isset($op['responses']['409']), isset($op['responses']['500']), isset($op['responses']['503']),
@@ -177,7 +172,10 @@ pin('a read declares 500 and 503 but no 409', [true, true, false], [
     isset($core['paths']['/listings']['get']['responses']['500']), isset($core['paths']['/listings']['get']['responses']['503']), isset($core['paths']['/listings']['get']['responses']['409']),
 ]);
 pin('Problem.code is an open string, the known codes only examples', [false, true], [isset($core['components']['schemas']['Problem']['properties']['code']['enum']), count($core['components']['schemas']['Problem']['properties']['code']['examples'] ?? []) > 10]);
-pin('info.version is the API\'s', '1', $core['info']['version']);
+pin('info.version is the v1 document revision', '1.0', $core['info']['version']);
+pin('a route needing no credential is still documented as rate limited', [true, true], [
+    isset($core['paths']['/auth/token']['post']['responses']['429']), isset($core['paths']['/auth/token']['post']['responses']['429']['headers']['RateLimit']),
+]);
 $documented = [];
 foreach ($core['paths'] as $path => $item) {
     foreach (array_keys($item) as $method) {
@@ -189,13 +187,13 @@ sort($documented);
 sort($served);
 pin('every core route is documented, and only those', $served, $documented);
 check('GET /openapi.json itself is documented', isset($core['paths']['/openapi.json']['get']));
-pin('it needs no credential', [[], 'none'], [$core['paths']['/openapi.json']['get']['security'], $core['paths']['/openapi.json']['get']['x-auth']]);
+pin('GET /openapi.json needs no credential', [[], 'none'], [$core['paths']['/openapi.json']['get']['security'], $core['paths']['/openapi.json']['get']['x-auth']]);
 $show = $core['paths']['/listings/{id}']['get'];
 pin('a public read names its scope, both ways to send a key, a page token, and none at all', [['bearer' => ['listings:read']], ['pageSession' => ['listings:read']], ['publicKey' => ['listings:read']], []], array_map(static fn ($r): array => (array) $r, $show['security']));
 pin('a GET takes If-None-Match and can answer 304 with its ETag', [true, true, '#/components/headers/ETag'], [
     in_array('If-None-Match', array_column($show['parameters'], 'name'), true), isset($show['responses']['304']), $show['responses']['200']['headers']['ETag']['$ref'] ?? null,
 ]);
-check('...and every counted answer carries the rate limit headers', isset($show['responses']['200']['headers']['RateLimit'], $show['responses']['429']['headers']['Retry-After']));
+check('every counted answer documents the rate limit headers', isset($show['responses']['200']['headers']['RateLimit'], $show['responses']['429']['headers']['Retry-After']));
 $post = $core['paths']['/listings']['post'];
 check('a write takes Idempotency-Key', in_array('Idempotency-Key', array_column($post['parameters'] ?? [], 'name'), true));
 check('a write whose answer holds a secret does not', !in_array('Idempotency-Key', array_column($core['paths']['/auth/token']['post']['parameters'] ?? [], 'name'), true));
@@ -206,7 +204,7 @@ pin('the webhooks are described', ['listing.created', 'WebhookMessage', '#/compo
     array_key_first($core['webhooks']), substr((string) ($core['webhooks']['listing.created']['post']['requestBody']['content']['application/json']['schema']['allOf'][0]['$ref'] ?? ''), 21),
     $core['webhooks']['listing.created']['post']['requestBody']['content']['application/json']['schema']['allOf'][1]['properties']['data']['$ref'] ?? null,
 ]);
-check('...ping and deletes with their own schemas', str_ends_with((string) ($core['webhooks']['ping']['post']['requestBody']['content']['application/json']['schema']['allOf'][1]['properties']['data']['$ref'] ?? ''), 'WebhookPing')
+check('the webhook ping and delete use their own schemas', str_ends_with((string) ($core['webhooks']['ping']['post']['requestBody']['content']['application/json']['schema']['allOf'][1]['properties']['data']['$ref'] ?? ''), 'WebhookPing')
     && str_ends_with((string) ($core['webhooks']['user.deleted']['post']['requestBody']['content']['application/json']['schema']['allOf'][1]['properties']['data']['$ref'] ?? ''), 'WebhookDeleted'));
 foreach (['ListingList', 'UserList', 'CommentList'] as $unused) {
     check($unused . ' is not listed, since no route answers with it', !isset($core['components']['schemas'][$unused]));
@@ -233,7 +231,7 @@ $router->addPlugin('POST', 'ext/acme/offers', [
     'summary' => 'Make an offer',
     'body'    => ['type' => 'object', 'required' => ['amount'], 'properties' => ['amount' => ['type' => 'integer']]],
 ]);
-$doc = (new OpenApi($router, Definitions::of($components), new Scopes(['ext:acme:offers:write' => ['description' => 'Make offers.', 'audience' => 'user']]), '7.0.0', OpenApi::relativeServers()))->build();
+$doc = (new OpenApi($router, Definitions::of($components), new Scopes(['ext:acme:offers:write' => ['description' => 'Make offers.', 'audience' => 'user']]), 'v1', OpenApi::relativeServers()))->build();
 pin('with a plugin route it is still sound', [], openapi_problems($doc));
 $op = $doc['paths']['/ext/acme/offers']['post'] ?? [];
 pin('the plugin route is documented with its body, scope and tag; a user scope also takes a page token', [[['bearer' => ['ext:acme:offers:write']], ['pageSession' => ['ext:acme:offers:write']]], ['Acme'], ['amount']], [
@@ -241,6 +239,9 @@ pin('the plugin route is documented with its body, scope and tag; a user scope a
 ]);
 check('a write with a body can answer 400, 413, 415 and 422', isset($op['responses']['400'], $op['responses']['413'], $op['responses']['415'], $op['responses']['422']));
 check('the plugin scope is listed', isset($doc['x-scopes']['ext:acme:offers:write']));
+pin('a plugin POST that names no response is a 200 with its body undescribed', [true, false, false], [
+    isset($op['responses']['200']), isset($op['responses']['200']['content']), isset($op['responses']['201']),
+]);
 check('a declared ext field is in the Listing schema', str_contains((string) json_encode($doc['components']['schemas']['Listing']), 'offer_count'));
 check('the plugin\'s tag is listed', in_array(['name' => 'Acme'], $doc['tags'], true));
 
@@ -249,7 +250,7 @@ $old = new Router(new Validator(), ['GET old' => [
     'handler' => static fn (): Response => Response::ok([]), 'auth' => RouteSpec::AUTH_NONE,
     'deprecated' => '2026-10-01', 'sunset' => '2027-06-01',
 ]]);
-$doc = (new OpenApi($old, Definitions::of([]), new Scopes(), '1', OpenApi::relativeServers()))->build();
+$doc = (new OpenApi($old, Definitions::of([]), new Scopes(), 'v1', OpenApi::relativeServers()))->build();
 pin('a deprecated route says so, with its sunset date', [true, '2027-06-01'], [$doc['paths']['/old']['get']['deprecated'] ?? null, $doc['paths']['/old']['get']['x-sunset'] ?? null]);
 $bad = static function (array $spec): string {
     try {
@@ -298,8 +299,8 @@ $router      = new Router($full, RouteTable::core() + ['GET old' => [
 $kernel   = api_test_kernel($router, api_test_authenticator(new ApiKeys($store, new Scopes(), new SystemClock())), $settings, validator: $full);
 $r = $kernel->handle(new Request('GET', 'v1/openapi.json', [], [], '127.0.0.1'));
 pin('GET /api/v1/openapi.json answers with no credential', [200, '3.1.0'], [$r->status(), $r->body()['openapi'] ?? null]);
-pin('with the API version and its own URL', ['1', 'https://shop.test/api/v1'], [$r->body()['info']['version'], $r->body()['servers'][0]['url']]);
-pin('it may be cached publicly and gets an ETag', ['public, max-age=60, stale-while-revalidate=60', true], [$r->header('Cache-Control'), isset($r->prepare('GET')['headers']['ETag'])]);
+pin('with the document revision and its own URL', ['1.0', 'https://shop.test/api/v1'], [$r->body()['info']['version'], $r->body()['servers'][0]['url']]);
+pin('the OpenAPI document may be cached publicly and gets an ETag', ['public, max-age=60, stale-while-revalidate=60', true], [$r->header('Cache-Control'), isset($r->prepare('GET')['headers']['ETag'])]);
 pin('the live document is sound', [], openapi_problems($r->body()));
 $r = $kernel->handle(new Request('GET', 'v1/old', [], [], '127.0.0.1'));
 pin('a deprecated route answers with Deprecation, Sunset and a changelog link', [

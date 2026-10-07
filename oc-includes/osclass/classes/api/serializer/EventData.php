@@ -14,10 +14,13 @@ namespace mindstellar\api\serializer;
 
 use mindstellar\api\ApiServices;
 use mindstellar\api\read\ListingReader;
+use mindstellar\apiaccess\ApiSettings;
 use mindstellar\apiaccess\Credential;
+use mindstellar\comment\CommentQuery;
 use mindstellar\comment\CommentStatus;
 use mindstellar\database\Db;
 use mindstellar\listing\ListingStatus;
+use mindstellar\user\UserStore;
 use mindstellar\utility\Clock;
 use mindstellar\webhook\WebhookServices;
 
@@ -25,7 +28,8 @@ use mindstellar\webhook\WebhookServices;
  * The `data` of a core event: the resource in the shape an anonymous GET of it has, in the
  * site's default language. So an event never carries what the public view leaves out, such
  * as a user's e-mail or a listing's IP; a receiver that needs more reads it from the API.
- * A listing or comment that is not live is sent as `{id, url, live: false}` only.
+ * A listing or comment that is not live is sent as `{id, url, live: false}` only. The shape is
+ * always ApiSettings::PINNED_VERSION's, whatever versions the site answers.
  */
 final class EventData
 {
@@ -54,8 +58,8 @@ final class EventData
      */
     public function user(int $id): ?array
     {
-        $user = \User::getInstance()->findByPrimaryKey($id);
-        if (!is_array($user) || $user === []) {
+        $user = UserStore::find($id);
+        if ($user === null) {
             return null;
         }
 
@@ -67,8 +71,8 @@ final class EventData
      */
     public function comment(int $id): ?array
     {
-        $row = \ItemComment::getInstance()->findByPrimaryKey($id);
-        if (!is_array($row) || $row === []) {
+        $row = (new CommentQuery())->find($id);
+        if ($row === null) {
             return null;
         }
         if (CommentStatus::of($row) !== CommentStatus::ACTIVE) {
@@ -149,6 +153,6 @@ final class EventData
 
     private function context(): ViewContext
     {
-        return new ViewContext(Credential::anonymous(), $this->api->facts()->defaultLocale());
+        return new ViewContext(Credential::anonymous(), $this->api->facts()->defaultLocale(), version: ApiSettings::PINNED_VERSION);
     }
 }

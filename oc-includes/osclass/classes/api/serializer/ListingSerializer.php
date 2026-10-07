@@ -14,6 +14,8 @@ namespace mindstellar\api\serializer;
 
 use mindstellar\api\read\ListingRelations;
 use mindstellar\listing\ListingStatus;
+use mindstellar\utility\Clock;
+use mindstellar\utility\SystemClock;
 
 /**
  * A listing in the caller's view, ending with the `api_listing` filter. The public view shows
@@ -44,8 +46,10 @@ final class ListingSerializer
         private CustomFieldSerializer $fields,
         private bool $hidePhone = false,
         private bool $originals = false,
-        private bool $contactNeedsSignIn = false
+        private bool $contactNeedsSignIn = false,
+        private ?Clock $clock = null
     ) {
+        $this->clock ??= new SystemClock();
     }
 
     /**
@@ -63,7 +67,7 @@ final class ListingSerializer
         }
         $ids = array_map(static fn (array $item): int => Format::int($item['pk_i_id'] ?? 0), $items);
         osc_run_hook('api_listings_prefetch', $ids, $context);
-        $now = time();
+        $now = $this->clock->now();
 
         return array_map(fn (array $item): array => $this->one($item, $relations, $context, $now), array_values($items));
     }
@@ -85,14 +89,14 @@ final class ListingSerializer
         // Members the fieldset leaves out are not built, so their lookups and formatting are skipped.
         $build = [
             'url'          => fn () => $this->links->listing($item),
-            'status'       => static fn () => ListingStatus::of($item, $now ?? time()),
+            'status'       => fn () => ListingStatus::of($item, $now ?? $this->clock->now()),
             'title'        => static fn () => Format::plain($title),
             'description'  => static fn () => $description,
             'locale'       => static fn () => $textLocale,
             'category'     => fn () => $this->category($item, $relations, $locale),
             'price'        => fn () => $this->price($item, $relations),
             'location'     => static fn () => self::location($item),
-            'contact'      => fn () => $this->contact($item, $context, $now ?? time()),
+            'contact'      => fn () => $this->contact($item, $context, $now ?? $this->clock->now()),
             'seller'       => fn () => $this->seller($item, $relations),
             'photos'       => fn () => $this->photos($relations->photos($id)),
             'custom_fields' => $context->includes('custom_fields') ? fn () => $this->fields->values($relations->fields($id), $locale) : null,

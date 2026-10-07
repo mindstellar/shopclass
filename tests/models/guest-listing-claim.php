@@ -58,6 +58,10 @@ $itemsOf = static function (int $id) use ($admin, $prefix): string {
 };
 
 harness_section('registering with validation off');
+foreach (['enabled_users' => '1', 'enabled_user_registration' => '1', 'enabled_user_validation' => '0'] as $k => $v) {
+    Preference::getInstance()->set($k, $v);
+}
+osc_reset_preferences();
 Params::setParam('s_name', 'Not the seller');
 Params::setParam('s_email', $victim);
 Params::setParam('s_username', 'squatter');

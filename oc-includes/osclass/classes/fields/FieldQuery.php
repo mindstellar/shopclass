@@ -15,8 +15,8 @@ namespace mindstellar\fields;
 use mindstellar\database\Db;
 
 /**
- * Custom field reads: one field's row, and the values listings hold, joined to their field.
- * The legacy Field model keeps its own methods.
+ * Custom field reads: one field's row, the fields of a category, and the values listings
+ * hold, joined to their field. The legacy Field model reads its category fields from here.
  */
 final class FieldQuery
 {
@@ -64,6 +64,74 @@ final class FieldQuery
             . ' ORDER BY mf.i_position ASC, mf.pk_i_id ASC',
             $itemIds
         );
+    }
+
+    /**
+     * The fields that apply to a category, honouring inheritance: loose fields and the fields
+     * of forms assigned to the category or any ancestor, once each, in form order. The union
+     * is grouped in its own subquery to satisfy ONLY_FULL_GROUP_BY; MIN() sorts a field that is
+     * both loose and in a form as loose.
+     *
+     * @return array<int,array<string,mixed>> t_meta_fields rows with cf_group_position
+     * @throws \mindstellar\database\DbException
+     */
+    public static function forCategory(int $categoryId): array
+    {
+        $path = self::categoryPath($categoryId);
+        if ($path === []) {
+            return [];
+        }
+        $in = implode(', ', array_fill(0, count($path), '?'));
+        $p  = DB_TABLE_PREFIX;
+
+        return Db::stringifyRows(Db::select(
+            'SELECT mf.*, query.cf_group_position FROM ' . $p . 't_meta_fields mf JOIN ('
+            . 'SELECT u.pk_i_id AS pk_i_id, MIN(u.cf_group_position) AS cf_group_position FROM ('
+            . 'SELECT mfa.pk_i_id AS pk_i_id, 0 AS cf_group_position'
+            . ' FROM ' . $p . 't_meta_fields mfa, ' . $p . 't_meta_categories mc'
+            . ' WHERE mc.fk_i_category_id IN (' . $in . ') AND mfa.pk_i_id = mc.fk_i_field_id'
+            . ' AND NOT EXISTS (SELECT 1 FROM ' . $p . 't_meta_group_fields gfx WHERE gfx.fk_i_field_id = mfa.pk_i_id)'
+            . ' UNION '
+            . 'SELECT mfb.pk_i_id AS pk_i_id, g.i_position AS cf_group_position FROM ' . $p . 't_meta_fields mfb'
+            . ' JOIN ' . $p . 't_meta_group_fields gf ON gf.fk_i_field_id = mfb.pk_i_id'
+            . ' JOIN ' . $p . 't_meta_group g ON gf.fk_i_group_id = g.pk_i_id'
+            . ' JOIN ' . $p . 't_meta_group_categories gc ON gc.fk_i_group_id = g.pk_i_id'
+            . ' WHERE gc.fk_i_category_id IN (' . $in . ')'
+            . ') AS u GROUP BY u.pk_i_id'
+            . ') AS query ON query.pk_i_id = mf.pk_i_id'
+            . ' ORDER BY query.cf_group_position ASC, mf.i_position ASC',
+            array_merge($path, $path)
+        ));
+    }
+
+    /**
+     * The category and its ancestors, leaf first, from the cached parent map. A parent
+     * cycle stops at the first repeat.
+     *
+     * @return int[]
+     */
+    public static function categoryPath(int $categoryId): array
+    {
+        if ($categoryId <= 0) {
+            return [];
+        }
+        $parents = \mindstellar\cache\CacheGroup::remember('category', 'parents', static function () {
+            try {
+                $rows = Db::select('SELECT pk_i_id, fk_i_parent_id FROM ' . DB_TABLE_PREFIX . 't_category');
+            } catch (\mindstellar\database\DbException $e) {
+                return null;
+            }
+
+            return array_map('intval', array_column($rows, 'fk_i_parent_id', 'pk_i_id'));
+        }) ?? [];
+        $path    = [];
+        $current = $categoryId;
+        while ($current > 0 && count($path) < 100 && !in_array($current, $path, true)) {
+            $path[]  = $current;
+            $current = $parents[$current] ?? 0;
+        }
+
+        return $path;
     }
 
     /**

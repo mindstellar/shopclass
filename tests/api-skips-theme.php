@@ -9,11 +9,8 @@
  */
 
 /**
- * An API request does not load the active theme's functions.php, and a page request still does.
- * A plugin can switch the theme back on for the API with the `api_theme_functions_enabled` filter.
- * Also: osc_is_api_request() reads both URL forms.
- *
- * DB-free. Usage:  php tests/api-skips-theme.php
+ * An API request does not load the theme functions.php; a page request does.
+ * Usage: php tests/api-skips-theme.php
  */
 
 if (!defined('ABS_PATH')) {
@@ -145,7 +142,7 @@ $load   = new ReflectionMethod('WebThemes', 'loadActive');
 $load->setAccessible(true);
 $load->invoke($themes);
 pin('an API request does not', 0, $GLOBALS['probe_functions_loaded']);
-pin('...but the theme is still selected', 'probe-two', $themes->getCurrentTheme());
+pin('after an API request the theme is still selected', 'probe-two', $themes->getCurrentTheme());
 
 $GLOBALS['stub_theme'] = 'probe-three';
 $set('api', '/index.php?page=api');

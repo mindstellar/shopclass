@@ -9,15 +9,8 @@
  */
 
 /**
- * Webhooks end to end on t_key_value and t_job_queue: endpoint writes never lose a counter, even
- * from several processes at once; an event queues one job per enabled subscribed endpoint;
- * a delivery is signed, retried with backoff, dead-lettered, and pauses its endpoint on the
- * eighth failure in a row with one e-mail; the address is checked again at send time; and
- * `/admin/webhooks` shows a secret once, keeps the old one signing for 24 hours after a
- * rotation and refuses private addresses unless the site allows them.
- *
- * Usage:  php tests/models/api-webhooks.php        (standalone, own scratch database)
- *         php tests/run-models.php api-webhooks    (as part of the suite)
+ * Webhooks end to end on t_key_value and t_job_queue: delivery, retries, pausing and `/admin/webhooks`.
+ * Usage: php tests/models/api-webhooks.php
  */
 
 require_once __DIR__ . '/../lib/harness.php';
@@ -130,7 +123,7 @@ harness_section('store: compare-and-swap on the state column');
 $raw  = static fn (string $id): array => $admin->query("SELECT s_state, s_value FROM {$p}t_key_value WHERE s_group = 'api_webhook' AND s_key = '$id'")->fetch_assoc();
 pin('stored in t_key_value under api_webhook at version 1', 'v1', $raw($ep->id())['s_state']);
 check('the secret is stored encrypted, not as written', !str_contains($raw($ep->id())['s_value'], $ep->secret()) && str_contains($raw($ep->id())['s_value'], '"secret":"enc1:'));
-pin('and reads back as written, so it still signs', $ep->secret(), $store->find($ep->id())?->secret());
+pin('a stored secret reads back as written, so it still signs', $ep->secret(), $store->find($ep->id())?->secret());
 $calls = 0;
 $store->change($ep->id(), static function (Endpoint $e) use (&$calls, $store, $clock): Endpoint {
     if (++$calls === 1) {
@@ -163,7 +156,7 @@ if (substr_count($printed, "done") !== $workers) {
 pin($workers . ' processes counting ' . $each . ' failures each lose none', $workers * $each, $after?->failures());
 pin('every process finished', $workers, substr_count($printed, 'done'));
 pin('exactly one write saw the pause happen', 1, substr_count($printed, 'paused'));
-pin('...and the endpoint is paused', [false, true], [$after?->enabled(), $after?->paused()]);
+pin('the endpoint is paused after the write that saw the pause', [false, true], [$after?->enabled(), $after?->paused()]);
 $store->delete($id);
 
 harness_section('the "any endpoint on" flag');
@@ -172,7 +165,7 @@ foreach ($store->all() as $e) {
 }
 $flag = static fn (): string => (string) osc_get_preference(WebhookEndpointStore::FLAG, ApiSettings::SECTION);
 pin('with no endpoint the flag is off', '0', $flag());
-pin('so an event reads nothing from t_key_value', 0, harness_query_count(static fn () => (new Dispatcher($store, Events::fromHooks(), $clock, $enqueue))->dispatch('listing.created', static fn (): array => ['id' => 1])));
+pin('with no endpoint an event reads nothing from t_key_value', 0, harness_query_count(static fn () => (new Dispatcher($store, Events::fromHooks(), $clock, $enqueue))->dispatch('listing.created', static fn (): array => ['id' => 1])));
 [$flagged] = $manager()->create('https://hooks.example/flag', ['listing.created'], '', false, 1);
 pin('a switched-off endpoint leaves it off', '0', $flag());
 $manager()->update($flagged->id(), null, null, null, true);
@@ -225,7 +218,7 @@ pin('an event nobody subscribes to queues nothing', null, $dispatcher->dispatch(
 
     return ['id' => 1];
 }));
-check('...and its data is never built', !$built && count($queued) === $queuedBefore);
+check('an event nobody subscribes to never builds its data', !$built && count($queued) === $queuedBefore);
 $threw = false;
 try {
     $dispatcher->emit('listing.renamed', ['id' => 1]);
@@ -239,7 +232,7 @@ $clearJobs();
 $dispatcher->emit('listing.created', ['id' => 8, 'url' => 'http://localhost/item/8', 'description' => str_repeat('é', 40000)]);
 $thin = json_decode($queued[0]['payload']['body'], true);
 pin('a body over 64 KB is sent thin: id and url only', [true, ['id' => 8, 'url' => 'http://localhost/item/8']], [$thin['thin'] ?? null, $thin['data']]);
-check('...and fits a job', count($jobs()) === 2);
+check('a thin body fits a job', count($jobs()) === 2);
 $clearJobs();
 api_with_filter('api_webhook_payload', static function (array $payload, string $type, array $endpoint): array {
     $payload['data']['for'] = $endpoint['id'];
@@ -272,7 +265,7 @@ ApiServices::reset();
 osc_run_hook('after_delete_user', 42);
 $rows = $jobs();
 pin('after_delete_user queues user.deleted for the endpoint that wants it', [1, $one->id()], [count($rows), json_decode($rows[0]['s_payload'] ?? '{}', true)['endpoint_id'] ?? null]);
-pin('...with the id only', ['id' => 42], json_decode(json_decode($rows[0]['s_payload'] ?? '{}', true)['body'] ?? '{}', true)['data'] ?? null);
+pin('a user.deleted payload carries the id only', ['id' => 42], json_decode(json_decode($rows[0]['s_payload'] ?? '{}', true)['body'] ?? '{}', true)['data'] ?? null);
 $clearJobs();
 osc_run_hook('after_delete_item', 5, []);
 pin('after_delete_item queues listing.deleted? Nobody subscribes, so nothing', 0, count($jobs()));
@@ -336,9 +329,9 @@ $kit    = new ApiServices(
             return '';
         }
 
-        public function api(string $path): string
+        public function api(string $path, ?string $version = null): string
         {
-            return 'http://localhost/api/v1/' . $path;
+            return 'http://localhost/api/' . ($version ?? 'v1') . '/' . $path;
         }
 
         public function price(?int $micros, string $symbol): string
@@ -350,7 +343,14 @@ $kit    = new ApiServices(
 $eventData = static fn (ApiServices $kit): EventData => new EventData(new ListingReader(CategoryCatalog::fromSite(), $kit->listingSerializer()), $kit, new SystemClock());
 $data = $eventData($kit)->listing($item);
 pin('a listing event carries the public listing', [$item, 'Red bike', 'http://localhost/item/' . $item], [$data['id'] ?? null, $data['title'] ?? null, $data['url'] ?? null]);
-check('...never its IP or the seller e-mail', !array_key_exists('ip', (array) $data) && !str_contains((string) json_encode($data), '@'));
+check('a listing event never carries the IP or the seller e-mail', !array_key_exists('ip', (array) $data) && !str_contains((string) json_encode($data), '@'));
+$eventVersion = null;
+api_with_filter('api_listing', static function (array $d, $row, $context) use (&$eventVersion): array {
+    $eventVersion = $context->version();
+
+    return $d;
+}, static fn () => $eventData($kit)->listing($item));
+pin('a listing event is shaped as the pinned version, whatever the newest one is', ApiSettings::PINNED_VERSION, $eventVersion);
 $user = $eventData($kit)->user($userId);
 check('a user event leaves the e-mail out', is_array($user) && !array_key_exists('email', $user) && ($user['id'] ?? null) === $userId);
 pin('a gone resource gives no event', [null, null], [$eventData($kit)->listing(999999), $eventData($kit)->comment(999999)]);
@@ -429,19 +429,19 @@ $transport->answers = [TransportResult::answered(500)];
 $started = time();
 pin('a 500 is retried', ['retry'], $run());
 $row = $queue->page(null, Delivery::TYPE)[0];
-pin('...after about a minute, with the error kept', [1, 'pending', true], [(int) $row['i_attempts'], $row['s_status'], abs(strtotime((string) $row['dt_next_run']) - ($started + 60)) <= 10]);
-check('...the error names the answer', str_contains((string) $row['s_last_error'], 'HTTP 500'));
-check('...and the endpoint by id, never its URL', str_contains((string) $row['s_last_error'], $one->id()) && !str_contains((string) $row['s_last_error'], 'hooks.example'));
+pin('a 500 is retried after about a minute, with the error kept', [1, 'pending', true], [(int) $row['i_attempts'], $row['s_status'], abs(strtotime((string) $row['dt_next_run']) - ($started + 60)) <= 10]);
+check('a retried 500 error names the answer', str_contains((string) $row['s_last_error'], 'HTTP 500'));
+check('a retried 500 error names the endpoint by id, never its URL', str_contains((string) $row['s_last_error'], $one->id()) && !str_contains((string) $row['s_last_error'], 'hooks.example'));
 pin('the endpoint counts one failure', 1, $store->find($one->id())?->failures());
 $admin->query("UPDATE {$p}t_job_queue SET i_attempts = 6, dt_next_run = NOW() WHERE pk_i_id = $jobId");
 $transport->answers = [TransportResult::failed('Connection refused')];
 $run();
 $row = $queue->page(null, Delivery::TYPE)[0];
-pin('the seventh failure waits about 10 hours, not 64 minutes', true, abs(strtotime((string) $row['dt_next_run']) - (time() + 36000)) <= 3700);
+check('the seventh failure waits about 10 hours, not 64 minutes', abs(strtotime((string) $row['dt_next_run']) - (time() + 36000)) <= 3700);
 $admin->query("UPDATE {$p}t_job_queue SET i_attempts = 11, dt_next_run = NOW() WHERE pk_i_id = $jobId");
 $transport->answers = [TransportResult::answered(503)];
 pin('the twelfth failure dead-letters the job', ['dead'], $run());
-pin('...visible as a dead letter', ['error', 'HTTP 503'], [$queue->page('error', Delivery::TYPE)[0]['s_status'] ?? null, substr((string) ($queue->page('error', Delivery::TYPE)[0]['s_last_error'] ?? ''), -8)]);
+pin('a dead-lettered job is visible with its last error', ['error', 'HTTP 503'], [$queue->page('error', Delivery::TYPE)[0]['s_status'] ?? null, substr((string) ($queue->page('error', Delivery::TYPE)[0]['s_last_error'] ?? ''), -8)]);
 $clearJobs();
 for ($i = 0; $i < 5; $i++) {
     $transport->answers[] = TransportResult::answered(500);
@@ -452,7 +452,7 @@ for ($i = 0; $i < 5; $i++) {
 }
 $paused = $store->find($one->id());
 pin('the eighth failure in a row pauses the endpoint', [8, false, true], [$paused?->failures(), $paused?->enabled(), $paused?->paused()]);
-pin('...and e-mails once', [$one->id()], $mails);
+pin('the eighth failure in a row e-mails once', [$one->id()], $mails);
 $before = count($transport->sent);
 pin('a delivery to a paused endpoint is dropped, not sent', [null, $before], [$delivery->run(['endpoint_id' => $one->id()] + $job), count($transport->sent)]);
 pin('no second e-mail', 1, count($mails));
@@ -464,7 +464,7 @@ pin('switching it on clears the pause and the count', [true, 0], [$store->find($
 harness_section('delivery: schedule, Retry-After and 410 Gone');
 $span = array_sum(\mindstellar\webhook\RetrySchedule::WAITS);
 check('the schedule spans about 72 hours', $span >= 70 * 3600 && $span <= 74 * 3600);
-pin('and gives one try more than it has waits', count(\mindstellar\webhook\RetrySchedule::WAITS) + 1, \mindstellar\webhook\RetrySchedule::MAX_ATTEMPTS);
+pin('the retry schedule gives one try more than it has waits', count(\mindstellar\webhook\RetrySchedule::WAITS) + 1, \mindstellar\webhook\RetrySchedule::MAX_ATTEMPTS);
 $jitterOk = true;
 for ($i = 0; $i < 50; $i++) {
     $d = \mindstellar\webhook\RetrySchedule::delay(3);
@@ -472,7 +472,7 @@ for ($i = 0; $i < 50; $i++) {
 }
 check('each wait is jittered by no more than 10%', $jitterOk);
 pin('Retry-After replaces the wait', 120, \mindstellar\webhook\RetrySchedule::delay(1, 120));
-pin('...up to a day', 86400, \mindstellar\webhook\RetrySchedule::delay(1, 999999));
+pin('a Retry-After wait is capped at a day', 86400, \mindstellar\webhook\RetrySchedule::delay(1, 999999));
 pin('Retry-After as seconds or as a date', [30, 90, 0, 0], [
     \mindstellar\webhook\CurlTransport::seconds('30'),
     \mindstellar\webhook\CurlTransport::seconds(gmdate('D, d M Y H:i:s', 1000090) . ' GMT', 1000000),
@@ -498,12 +498,12 @@ try {
 }
 $after = $store->find($two->id());
 pin('410 Gone ends the job without a retry and pauses the endpoint', [false, false, true, 'HTTP 410'], [$threw, $after?->enabled(), $after?->paused(), $after?->lastStatus()]);
-pin('...with one e-mail', [$two->id()], $mails);
-pin('...whose reason says why', 'The receiver answered 410 Gone', $after?->pausedReason());
+pin('a 410 Gone sends one e-mail', [$two->id()], $mails);
+pin('a 410 Gone pause reason says why', 'The receiver answered 410 Gone', $after?->pausedReason());
 $manager()->update($two->id(), null, null, null, true);
 $transport->answers = [TransportResult::answered(410)];
 $delivery->run(['endpoint_id' => $two->id(), 'test' => true] + $job);
-pin('a test that gets 410 changes nothing', true, $store->find($two->id())?->enabled());
+check('a test that gets 410 changes nothing', $store->find($two->id())?->enabled() === true);
 
 harness_section('delivery: the address is checked again at send time');
 $store->change($two->id(), static fn (Endpoint $e): Endpoint => $e->withSettings('http://lan.example/hook', $e->events(), '', 1));
@@ -515,7 +515,7 @@ try {
     $threw = $e->getMessage();
 }
 pin('a host that now resolves to a private address is not called', $before, count($transport->sent));
-check('...and the failure says why', str_contains($threw, 'Address refused') && str_contains((string) $store->find($two->id())?->lastStatus(), 'private'));
+check('a host that resolves to a private address fails with the reason', str_contains($threw, 'Address refused') && str_contains((string) $store->find($two->id())?->lastStatus(), 'private'));
 $lanDelivery = new Delivery($store, $transport, new AddressGuard($resolve, true), $clock, static fn () => null);
 pin('with private addresses allowed, it is sent', [true, '192.168.1.20'], [$lanDelivery->run($job)?->ok(), end($transport->sent)['ip']]);
 $store->change($two->id(), static fn (Endpoint $e): Endpoint => $e->withSettings('https://hooks.example/two', $e->events(), '', 1));
@@ -526,16 +526,16 @@ $oldSecret = $two->secret();
 $delivery->run($job);
 $sig = end($transport->sent)['headers']['webhook-signature'];
 $ts  = end($transport->sent)['headers']['webhook-timestamp'];
-pin('the new secret is not the old one', true, $newSecret !== $oldSecret && $rotated->secret() === $newSecret);
+check('the new secret is not the old one', $newSecret !== $oldSecret && $rotated->secret() === $newSecret);
 pin('two signatures', 2, count(explode(' ', $sig)));
 check('a receiver still on the old secret accepts it', Signer::verify($oldSecret, $job['msg_id'], $ts, $job['body'], $sig, $clock->now));
-check('so does one on the new secret', Signer::verify($newSecret, $job['msg_id'], $ts, $job['body'], $sig, $clock->now));
+check('a receiver on the new secret accepts it', Signer::verify($newSecret, $job['msg_id'], $ts, $job['body'], $sig, $clock->now));
 $clock->now += WebhookService::ROTATION_OVERLAP;
 $delivery->run($job);
 $sig = end($transport->sent)['headers']['webhook-signature'];
 $ts  = end($transport->sent)['headers']['webhook-timestamp'];
 pin('a day later, one signature', 1, count(explode(' ', $sig)));
-check('...that the old secret no longer matches', !Signer::verify($oldSecret, $job['msg_id'], $ts, $job['body'], $sig, $clock->now) && Signer::verify($newSecret, $job['msg_id'], $ts, $job['body'], $sig, $clock->now));
+check('a day after rotating, the old secret no longer matches', !Signer::verify($oldSecret, $job['msg_id'], $ts, $job['body'], $sig, $clock->now) && Signer::verify($newSecret, $job['msg_id'], $ts, $job['body'], $sig, $clock->now));
 osc_remove_hook('api_webhook_delivered', $watch);
 $clock->now = 1_900_000_000;
 
@@ -581,7 +581,7 @@ scratchdb_forget_cache();
 osc_reset_preferences();
 pin('with private addresses allowed, a port of its own is still refused', 422, $call('POST', 'admin/webhooks', ['url' => 'http://127.0.0.1:8080/hook', 'events' => ['listing.created']], $boss)->status());
 $r = $call('POST', 'admin/webhooks', ['url' => 'http://127.0.0.1/hook', 'events' => ['listing.created'], 'enabled' => false], $boss);
-pin('...a LAN receiver on port 80 is accepted', [201, 'disabled'], [$r->status(), $r->body()['data']['status'] ?? null]);
+pin('a LAN receiver on port 80 is accepted when private addresses are allowed', [201, 'disabled'], [$r->status(), $r->body()['data']['status'] ?? null]);
 $lanId = (string) ($r->body()['data']['id'] ?? '');
 Preference::getInstance()->replace('api_webhooks_allow_private', '0', ApiSettings::SECTION, 'BOOLEAN');
 scratchdb_forget_cache();
@@ -616,11 +616,11 @@ pin('rotate: a new secret, shown once, the old one valid for 24 hours', [200, tr
     $r->status(), $fresh !== '' && $fresh !== $secret,
     abs(strtotime((string) ($r->body()['data']['previous_secret_until'] ?? '')) - (time() + 86400)) <= 5,
 ]);
-pin('...and stored to sign with both', 2, count($store->find($hookId)?->signingSecrets(time()) ?? []));
+pin('a rotated secret is stored to sign with both', 2, count($store->find($hookId)?->signingSecrets(time()) ?? []));
 $clearJobs();
 $r = $call('POST', 'admin/webhooks/' . $hookId . '/test', null, $boss);
 pin('test: 202 with the message id', [202, 'ping', true], [$r->status(), $r->body()['data']['type'] ?? null, str_starts_with((string) ($r->body()['data']['message_id'] ?? ''), 'msg_')]);
-pin('...a ping queued for a switched-off endpoint, marked as a test', [1, true, 'ping'], (static function () use ($jobs): array {
+pin('a ping to a switched-off endpoint is queued, marked as a test', [1, true, 'ping'], (static function () use ($jobs): array {
     $rows    = $jobs();
     $payload = json_decode($rows[0]['s_payload'] ?? '{}', true);
 

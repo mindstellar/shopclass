@@ -109,6 +109,10 @@ harness_section('Registration with a chosen username claims it under the lock');
 require_once __DIR__ . '/../lib/action-standins.php';
 
 seed_locale($admin);
+foreach (['enabled_users' => '1', 'enabled_user_registration' => '1'] as $k => $v) {
+    Preference::getInstance()->set($k, $v);
+}
+osc_reset_preferences();
 
 $userCount = static function () use ($admin, $prefix): int {
     return (int)$admin->query("SELECT COUNT(*) c FROM {$prefix}t_user")->fetch_assoc()['c'];
@@ -143,6 +147,48 @@ pin(
 );
 pin('and leaves no account behind', $before, $userCount());
 $dropLock();
+
+harness_section('A username held for a sign-up that made no account');
+
+\mindstellar\user\Usernames::hold('Ghost');
+check('a held name counts as taken, in any case', \mindstellar\user\UserStore::usernameTaken('ghost', 0) && \mindstellar\user\Usernames::held('GHOST'));
+pin('a claim of a held name is refused', 'taken', \mindstellar\user\Usernames::claim($bob, 'ghost'));
+pin('registering it is refused as for an account\'s name', "Username is already taken\n", $register('ghost', 'ghost@example.test'));
+check('a name nobody holds is free', !\mindstellar\user\UserStore::usernameTaken('spectre', 0));
+$admin->query("UPDATE {$prefix}t_key_value SET dt_expires = '2000-01-01 00:00:00' WHERE s_group = 'core.username_hold'");
+check('a hold that has run out frees the name', !\mindstellar\user\UserStore::usernameTaken('ghost', 0));
+$holdExpiry = static function () use ($admin, $prefix) {
+    $row = $admin->query("SELECT dt_expires FROM {$prefix}t_key_value WHERE s_group = 'core.username_hold' ORDER BY dt_created DESC, s_key LIMIT 1")->fetch_row();
+
+    return $row === null ? 'none' : $row[0];
+};
+osc_set_preference('enabled_user_validation', '1');
+osc_set_preference('enabled_inactive_users', '1');
+osc_set_preference('days_inactive_users', '7');
+osc_reset_preferences();
+$admin->query("DELETE FROM {$prefix}t_key_value WHERE s_group = 'core.username_hold'");
+\mindstellar\user\Usernames::hold('wraith');
+$expires = strtotime((string) $holdExpiry() . ' UTC');
+check('with the cleanup of unactivated users on, a hold lasts as long as it keeps them (7 days)', abs($expires - (time() + 7 * 86400)) < 120, (string) $holdExpiry());
+osc_set_preference('enabled_inactive_users', '0');
+osc_reset_preferences();
+$admin->query("DELETE FROM {$prefix}t_key_value WHERE s_group = 'core.username_hold'");
+\mindstellar\user\Usernames::hold('wraith');
+$expires = strtotime((string) $holdExpiry() . ' UTC');
+check('with that cleanup off, a hold lasts 7 days', abs($expires - (time() + 7 * 86400)) < 120, (string) $holdExpiry());
+osc_set_preference('enabled_inactive_users', '1');
+osc_set_preference('days_inactive_users', '30');
+osc_reset_preferences();
+$admin->query("DELETE FROM {$prefix}t_key_value WHERE s_group = 'core.username_hold'");
+\mindstellar\user\Usernames::hold('wraith');
+$expires = strtotime((string) $holdExpiry() . ' UTC');
+check('a 30-day cleanup period is capped at 7 days', abs($expires - (time() + 7 * 86400)) < 120, (string) $holdExpiry());
+$holder = seed_user($admin, 'holder', 'holder@example.test');
+pin('a held name is refused to a normal claim', 'taken', \mindstellar\user\Usernames::claim($holder, 'wraith'));
+pin('an admin claim ignores the hold', 'ok', \mindstellar\user\Usernames::claim($holder, 'wraith', true));
+pin('the admin\'s name was written', 'wraith', $usernameOf($holder));
+osc_set_preference('enabled_user_validation', '0');
+osc_reset_preferences();
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

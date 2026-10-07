@@ -9,12 +9,8 @@
  */
 
 /**
- * Signed-in user tokens: access tokens (signed, stored nowhere, ended by a password change,
- * a suspension or their expiry), refresh tokens (hashed, rotated on every use within their
- * family, a reused one revoking the family), the authenticator taking `sca_` tokens, and the
- * kernel acting for the token's user while a cookie user stays anonymous.
- *
- * DB-free: users and credentials live in arrays.  Usage: php tests/api-tokens.php
+ * Signed-in user tokens: access and refresh tokens, the authenticator and the kernel acting for the user.
+ * Usage: php tests/api-tokens.php
  */
 
 define('OSC_CSRF_SECRET', 'api-tokens-test-secret');
@@ -232,7 +228,7 @@ $access = api_test_access_tokens($scopes, $accounts(), 900);
 $token  = $access->issue($store->users[10], ['listings:read', 'account:write', 'admin:users'], 'FAMILY0000000001');
 check('an access token is sca_<signed payload>', preg_match('/^sca_[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/D', $token) === 1);
 $c = $access->verify($token);
-pin('it stands for its user, from its sign-in', [CredentialKind::USER, 10, 'FAMILY0000000001', true, false], [$c->kind(), $c->userId(), $c->family(), $c->isUser(), $c->isAdmin()]);
+pin('an access token stands for its user, from its sign-in', [CredentialKind::USER, 10, 'FAMILY0000000001', true, false], [$c->kind(), $c->userId(), $c->family(), $c->isUser(), $c->isAdmin()]);
 pin('scopes a user may not hold are cut on every use', ['listings:read', 'account:write'], $c->scopes());
 check('the payload holds no password hash, only the sign-out stamp\'s fingerprint', !str_contains(base64_decode(strtr(explode('.', substr($token, 4))[0], '-_', '+/')), '$2y$'));
 pin('an expired token is refused', null, $access->verify($access->issue($store->users[10], ['listings:read'], 'F', -1)));
@@ -246,12 +242,12 @@ $store->users[10]['s_password']   = '$2y$12$first';
 $store->users[10]['i_auth_stamp'] = '1';
 pin('a raised sign-out stamp (a password change, or signing out everywhere) ends the token at once', null, (api_test_access_tokens($scopes, $accounts(), 900))->verify($token));
 unset($store->users[10]['i_auth_stamp']);
-pin('the token names its user: another account\'s stamp never matches', false, \mindstellar\auth\AuthStamp::fingerprint($store->users[10]) === \mindstellar\auth\AuthStamp::fingerprint($store->users[11]));
+check('another account\'s stamp has a different fingerprint', \mindstellar\auth\AuthStamp::fingerprint($store->users[10]) !== \mindstellar\auth\AuthStamp::fingerprint($store->users[11]));
 $store->users[10]['b_enabled']  = '0';
 pin('a suspended user\'s token is refused on the next call', null, (api_test_access_tokens($scopes, $accounts(), 900))->verify($token));
 $store->users[10]['b_enabled'] = '1';
 $store->users[10]['b_active']  = '0';
-pin('so is an unconfirmed user\'s', null, (api_test_access_tokens($scopes, $accounts(), 900))->verify($token));
+pin('an unconfirmed user\'s token is refused on the next call', null, (api_test_access_tokens($scopes, $accounts(), 900))->verify($token));
 $store->users[10]['b_active'] = '1';
 pin('a revoked sign-in\'s token is refused on the next call', null, api_test_access_tokens($scopes, $accounts(), 900, static fn (string $f): bool => $f !== 'FAMILY0000000001')->verify($token));
 pin('a deleted user\'s too', null, (api_test_access_tokens($scopes, $accounts(), 900))->verify($access->issue(['pk_i_id' => 99, 's_password' => 'x'], [], 'F')));
@@ -288,8 +284,8 @@ try {
     $reused = $e->response()->body();
 }
 pin('the old token coming back is thrown as an OAuth invalid_grant that says so', ['invalid_grant', 'invalid_grant', true], [$reused['code'] ?? null, $reused['error'] ?? null, str_contains((string) ($reused['detail'] ?? ''), 'already used')]);
-pin('and the whole family is revoked', 0, $store->live($first->family()));
-pin('so the newest token is refused too', 'invalid_grant', $problem(static fn () => $refresh->rotate($second->token(), '192.0.2.2')));
+pin('a reused refresh token leaves no live token in its family', 0, $store->live($first->family()));
+pin('a reused refresh token also refuses the newest token', 'invalid_grant', $problem(static fn () => $refresh->rotate($second->token(), '192.0.2.2')));
 
 $other = $refresh->start($store->users[10], ['listings:read'], 'Laptop', '192.0.2.3');
 pin('a wrong secret is refused and revokes nothing', ['invalid_grant', 1], [$problem(static fn () => $refresh->rotate(substr($other->token(), 0, -1) . (str_ends_with($other->token(), 'f') ? 'e' : 'f'), '1.1.1.1')), $store->live($other->family())]);
@@ -393,15 +389,15 @@ $asToken = new Request('GET', 'v1/x', [], ['Authorization' => 'Bearer ' . $good]
 pin('not banned, both work', [10, 10], [$banning->authenticate($asKey)?->userId(), $banning->authenticate($asToken)?->userId()]);
 $bannedIds = [10];
 pin('a banned user\'s key is 403', 'banned', $problem(static fn () => $banning->authenticate($asKey)));
-pin('and so is their access token', 'banned', $problem(static fn () => $banning->authenticate($asToken)));
+pin('a banned user\'s access token is 403 banned', 'banned', $problem(static fn () => $banning->authenticate($asToken)));
 $bannedIds = [];
 pin('a banned address is 403 too', 'banned', $problem(static fn () => $banning->authenticate(new Request('GET', 'v1/x', [], ['Authorization' => 'Bearer ' . $good], '203.0.113.9'))));
 
 harness_section('limits and settings');
-pin('the API is off by default', false, (new ApiSettings())->enabled());
+check('the API is off by default', !(new ApiSettings())->enabled());
 $strict = api_test_limiter(static fn () => null);
-pin('a limit fails open by default when the counter is unreachable', true, $strict->hit(new \mindstellar\api\ratelimit\RateBucket('x', 'k', 5))->allowed());
-pin('and closed when asked to', false, $strict->hit(new \mindstellar\api\ratelimit\RateBucket('x', 'k', 5), false)->allowed());
+check('a limit fails open by default when the counter is unreachable', $strict->hit(new \mindstellar\api\ratelimit\RateBucket('x', 'k', 5))->allowed());
+check('a limit fails closed when asked to when the counter is unreachable', !$strict->hit(new \mindstellar\api\ratelimit\RateBucket('x', 'k', 5), false)->allowed());
 pin('an access token lives 15 minutes, a refresh token 30 days unused', [900, 900, 30], [\mindstellar\api\auth\AccessTokens::TTL, (api_test_access_tokens($scopes, $accounts()))->ttl(), \mindstellar\api\auth\RefreshTokens::TTL_DAYS]);
 
 harness_section('the identity core code sees');
@@ -426,7 +422,7 @@ $r = $kernel->handle(new Request('GET', 'v1/me', [], [], '192.0.2.20'));
 pin('a valid oc_userId cookie and no header is anonymous', [200, 0, ''], [$r->status(), $r->body()['data']['user'], $r->body()['data']['email']]);
 $r = $kernel->handle(new Request('GET', 'v1/me', [], ['Authorization' => 'Bearer ' . $good], '192.0.2.20'));
 pin('with a token, core sees the token\'s user', [10, 'uma@x.test'], [$r->body()['data']['user'], $r->body()['data']['email']]);
-pin('and the cookie user never', false, $r->body()['data']['user'] === 11);
+check('the cookie user is never the caller when a token is sent', $r->body()['data']['user'] !== 11);
 check('nothing started a session', session_status() !== PHP_SESSION_ACTIVE);
 
 exit(harness_result());

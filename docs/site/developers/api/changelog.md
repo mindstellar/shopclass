@@ -9,7 +9,10 @@ This page is the API's own log. The site's release notes link here for API chang
 
 ## Versioning
 
-The version is in the path: `/api/v1`. `GET /api/v1/` reports it as `api_version`.
+The version is in the path: `/api/v1`. `GET /api/<version>/` reports the version asked for as `api_version`. Each
+version has its own OpenAPI document at `/api/<version>/openapi.json`; its `info.version` is
+that document's revision (`1.0` for v1), whose minor part goes up when the version gains
+something.
 
 Inside v1, a change only **adds**:
 
@@ -28,7 +31,16 @@ These need a new version, v2:
 - making an optional parameter required
 - changing how authentication works
 
-If v2 ships, it runs beside v1 for at least 12 months.
+If v2 ships, it runs beside v1 for at least 12 months. A core endpoint that does not change
+serves both; one that does keeps its v1 form under `/api/v1`. These stay on v1 until they
+opt in:
+
+- plugin endpoints that do not list `versions`
+- webhook bodies
+- `osc_api_url()`, unless given a version
+
+A member is deprecated inside a version by marking it `deprecated: true` in the OpenAPI
+document and listing it below. It keeps its type and meaning until the version is retired.
 
 ## Deprecation policy
 
@@ -88,7 +100,7 @@ Also added:
   `listing.deactivated`, `listing.spam`, `comment.created`, `user.registered`, `user.updated`,
   `user.deleted`), with retries, auto-pause and secret rotation. Plugins add events named
   `ext.<slug>.<name>`.
-- Scopes now used: `admin:comments`, `admin:settings`, `admin:keys`, `admin:webhooks`.
+- Scopes: `admin:comments`, `admin:settings`, `admin:keys`, `admin:webhooks`.
   `admin:listings`, `admin:users` and `admin:taxonomy` also open their admin endpoints.
 - An `api` member on `GET /`: `registration`, `personal_keys`, `photo_urls`, `public_reads`.
 - Hooks: `api_webhook_events`, `api_webhook_payload`, `api_webhook_delivered`. Function:
@@ -96,50 +108,11 @@ Also added:
 - Settings: **Allow webhook addresses on a private network**.
 - No new error codes. Admin actions the state refuses answer `409 conflict`.
 
-Also settled before the first release, so no released client saw the old behaviour:
-
-- `POST /photos` answers `200` with no `Location`, because a token is not a resource to read.
-- On public routes an admin key runs as nobody. Admin rights apply on `/admin/` routes only.
-- A `GET` route refuses a query parameter it does not take with `422`. `api_key` is always allowed.
-- Each `POST` under `/admin/regions`, `/admin/cities`, `/admin/areas`, `/admin/currencies` and `/admin/custom-fields` has a `GET` for the new item, and `Location` points at it.
-- `Problem.code` is an open string in the OpenAPI document, and `info.version` is `1`.
-- `If-Match` checks the stored version, so a tag from a `GET` with `fields`, `include` or `locale` works. The check and the write run as one. A `PATCH` sent with `If-Match` answers with the new `ETag`.
-- A credential that cannot read the `GET` of the path gets `412` for `If-Match`, instead of the check being skipped.
-- A stale `If-Match` on a resource the credential cannot see answers as its `GET` does (`404`), not `412`.
-- `If-Match`, `*` included, on a resource that is gone answers as its `GET` does and runs nothing, instead of leaving it to the write.
-- A refresh token sent again within 30 seconds, before its new token is used, gets that same new token instead of ending the sign-in.
-- `Idempotency-Key` treats another `If-Match` as another request, and a lock outlives the longest a PHP request may run.
-- `GET /` no longer shows the software version, and `features.public_reads` is gone: `api.public_reads` says the same.
-- Token endpoint errors carry `error_description`, as RFC 6749 names it.
-- An unknown `fields` or `include` value is `422 validation_failed` at `/fields` or `/include`, as every other bad query value is. `invalid_query` is gone.
-- With comments off, reading a listing's comments is `403 feature_disabled`, as posting one is. Revoking a personal key twice is `409`, as for an admin key. `POST /users` sends no `Location`, since the new account cannot be read until it is confirmed.
-- `{photo}` in a path is an integer, as `{id}` is. An API key's `owner` is `{type, id, name}` instead of a name.
-- The OpenAPI document declares the `X-RateLimit-*` headers, the `200` of `POST /account/alerts` for a search already saved, and `400` instead of `422` on `POST /auth/token`.
-- New scope `alerts:read`, which `alerts:write` includes, for reading saved searches.
-- Sessions are sign-ins only, each with a `name`: keys are listed and revoked at `/account/keys` and `/admin/keys`. `POST /auth/sign-out` ends this sign-in only; `POST /account/sign-out-everywhere` ends them all.
-- Every date input takes a day or an RFC 3339 date-time; both key types also take a number of days such as `90d`.
-- `null` clears any optional member of a listing or account, as JSON Merge Patch says, and `null` on a language in `translations` removes it.
-- A listing's `location.city_area` is `{id, name}`, as region and city are. The writes page maps each write member to where it reads back.
-- A valid token from an address that sent many bad ones works; only that address's failing tokens answer `429 too_many_failures`.
-- `Idempotency-Key` keeps every `4xx` except `429`, including a `409` or `422` from a core refusal.
-- A banned user's access token or personal key answers `403 banned`, as a session call does.
-- A key made through `POST /admin/keys` cannot outlive the key that makes it.
-- `POST /auth/revoke` is now `POST /auth/sign-out`.
-- A list that stops at the offset paging limit says so with `meta.truncated: true`.
-- A rotated key cannot outlive the key that rotates it.
-- A listing's contact e-mail and phone are hidden as its page hides them.
-- Listing status changes go through `PATCH /admin/listings/{id}` (`approved`, `blocked`, `spam`, `premium`). Only `bump` stays an action.
-- Custom fields are `custom_fields` everywhere: the listing and category member, `include=custom_fields`, the write body, the `custom_field[<id>]` filter, and the `/custom-fields` and `/admin/custom-fields` paths. `fields` is only the sparse fieldset.
-- A `403` names its reason: `wrong_credential`, `banned` or `feature_disabled`. `forbidden` is left for the other refusals.
-- Every list has `links.next`, `null` on a list answered whole, so a list can be paged later without breaking clients.
-- `GET /admin/listings` takes `user` and `category` as lists, as search does. `category` takes slugs and includes subcategories.
-- Admin comments read back `approved` and `blocked`. Users read and filter on `confirmed` and `blocked` instead of `active` and `enabled`. Sign-up answers `confirmed`.
-
 See [Admin endpoints](/docs/developers/api/admin/) and [Webhooks](/docs/developers/api/webhooks/).
 
 ### v1: writes and sign-in
 
-Added to v1. Nothing that was there changed.
+Added to v1.
 
 | Endpoint | Does |
 |---|---|
@@ -159,15 +132,15 @@ Also added:
 - Credentials: access tokens (`sca_`, 15 minutes), single-use refresh tokens
   (`scr_`) with reuse detection, and personal keys (`sck_`) that expire within a year and stop
   when the password changes.
-- Scopes now held by users: `listings:write`, `listings:delete`, `comments:write`,
+- Scopes held by users: `listings:write`, `listings:delete`, `comments:write`,
   `alerts:read`, `alerts:write`, `account:read`, `account:write`.
 - The `owner` view for a user's own listings and account.
 - `Idempotency-Key` on writes, answered again with `Idempotency-Replayed: true`.
 - `PATCH` takes `application/merge-patch+json` and answers `Accept-Patch`.
 - `Location` on every `201`, and `warnings` next to `data`: `listing_pending`, `photo_skipped`,
   `comment_pending`, `email_confirmation_sent`.
-- Error codes now returned: `token_expired`, `not_owner`, `listing_limit`,
-  `login_blocked`, `idempotency_key_reused`, `idempotency_in_flight`, `conflict`. New codes:
+- Error codes: `token_expired`, `not_owner`, `listing_limit`,
+  `login_blocked`, `idempotency_key_reused`, `idempotency_in_flight`, `conflict`,
   `invalid_header`, and at `POST /auth/token` the OAuth 2 ones: `invalid_request`,
   `invalid_grant`, `invalid_scope`, `unsupported_grant_type`. The token endpoint also takes a form.
 - Settings: personal keys, sign-up, photos by address, and new listings per user an hour.

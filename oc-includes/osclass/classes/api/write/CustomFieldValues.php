@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\api\write;
 
 use mindstellar\api\ProblemException;
+use mindstellar\fields\FieldQuery;
 use mindstellar\utility\DateInput;
 use Params;
 
@@ -26,11 +27,11 @@ final class CustomFieldValues
     private \Closure $definitions;
 
     /**
-     * @param \Closure|null $definitions fn(category id) => its field rows; Field::findByCategory() by default
+     * @param \Closure|null $definitions fn(category id) => its field rows; FieldQuery::forCategory() by default
      */
     public function __construct(?\Closure $definitions = null)
     {
-        $this->definitions = $definitions ?? static fn (int $categoryId): array => (array) \Field::getInstance()->findByCategory($categoryId);
+        $this->definitions = $definitions ?? static fn (int $categoryId): array => FieldQuery::forCategory($categoryId);
     }
 
     /**

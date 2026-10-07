@@ -47,15 +47,15 @@ $expiry = static fn (string $token): int => (int) (json_decode((string) base64_d
 $state  = CursorState::keyset('created', 'desc', $hash, ['2026-10-03 12:00:00', 42]);
 $x      = $expiry($cursor->encode($state));
 pin('the expiry is on an hour boundary', 0, $x % 3600);
-pin('and at least a day away', true, $x >= time() + Cursor::TTL);
+check('the expiry is at least a day ahead', $x >= time() + Cursor::TTL);
 // Encoded twice inside one hour; a retry covers the rare run that crosses the boundary.
 $same = $cursor->encode($state) === $cursor->encode($state) || $cursor->encode($state) === $cursor->encode($state);
-pin('so the same page gives the same cursor', true, $same);
-pin('a day stays at most a day and an hour', true, $x <= time() + Cursor::TTL + 3600);
+check('the same page gives the same cursor within an hour', $same);
+check('the expiry is at most a day and an hour ahead', $x <= time() + Cursor::TTL + 3600);
 
 harness_section('filter hash');
 pin('the hash ignores key order', $hash, Cursor::filterHash(['q' => 'bike', 'category' => '3']));
-pin('and paging params', $hash, Cursor::filterHash(['q' => 'bike', 'category' => '3', 'cursor' => 'x', 'limit' => '5', 'fields' => 'id', 'api_key' => 'k']));
+pin('the hash ignores paging params', $hash, Cursor::filterHash(['q' => 'bike', 'category' => '3', 'cursor' => 'x', 'limit' => '5', 'fields' => 'id', 'api_key' => 'k']));
 check('other filters hash differently', $hash !== Cursor::filterHash(['category' => '4', 'q' => 'bike']));
 pin('a cursor made for other filters is refused', null, $cursor->decode($key, Cursor::filterHash(['category' => '4']), $sorts, 1000));
 

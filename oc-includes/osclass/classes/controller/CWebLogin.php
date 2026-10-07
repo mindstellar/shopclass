@@ -47,7 +47,6 @@ class CWebLogin extends BaseModel
                     $this->redirectTo(osc_base_url());
                 }
                 osc_csrf_check();
-                osc_run_hook('before_validating_login');
 
                 // e-mail or/and password is/are empty or incorrect
                 $wrongCredentials = false;
@@ -153,7 +152,7 @@ class CWebLogin extends BaseModel
                     $url_redirect = osc_user_dashboard_url();
                 }
 
-                osc_run_hook('after_login', $user, $url_redirect);
+                \mindstellar\auth\SignIn::complete($user, (string) $url_redirect);
 
                 $this->redirectTo(osc_apply_filter(
                     'correct_login_url_redirect',

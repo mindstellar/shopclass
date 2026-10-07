@@ -9,13 +9,8 @@
  */
 
 /**
- * `/admin/listings` end to end through Kernel::handle(): who may call it (admin, moderator,
- * a key without the scope, a user, a deleted admin), the list with its filters and paging,
- * each action firing the listings screen's hooks once and writing the activity log, the
- * admin's edit with owner and expiry, delete, Idempotency-Key, and the query count of a page.
- *
- * Usage:  php tests/models/api-admin-listings.php        (standalone, own scratch database)
- *         php tests/run-models.php api-admin-listings    (as part of the suite)
+ * `/admin/listings` end to end through Kernel::handle(): access, filters, actions, edit and delete.
+ * Usage: php tests/models/api-admin-listings.php
  */
 
 require_once __DIR__ . '/../lib/harness.php';
@@ -101,7 +96,7 @@ pin('status=spam,expired', [$expired, $spam], $ids($call('GET', 'admin/listings'
 pin('status=active', [$live], $ids($call('GET', 'admin/listings', null, $boss, [], ['status' => 'active'])));
 pin('status=disabled', [$blocked], $ids($call('GET', 'admin/listings', null, $boss, [], ['status' => 'disabled'])));
 pin('an unknown status is 422', '422 validation_failed', api_admin_code($call('GET', 'admin/listings', null, $boss, [], ['status' => 'gone'])));
-pin('user=', [$spam, $blocked], $ids($call('GET', 'admin/listings', null, $boss, [], ['user' => (string) $tom])));
+pin('the user filter returns that user listings, spam and blocked included', [$spam, $blocked], $ids($call('GET', 'admin/listings', null, $boss, [], ['user' => (string) $tom])));
 pin('user= takes a list, as search does', 5, count($ids($call('GET', 'admin/listings', null, $boss, [], ['user' => $sue . ',' . $tom]))));
 pin('category= by the parent\'s id or slug takes its subcategories', [5, 5, 0], [
     count($ids($call('GET', 'admin/listings', null, $boss, [], ['category' => (string) $vehicles]))),
@@ -182,7 +177,7 @@ $first = $row($live)['dt_first_pub_date'];
 $r     = $call('POST', 'admin/listings/' . $live . '/bump', null, $boss, ['Idempotency-Key' => 'bump-1']);
 $again = $call('POST', 'admin/listings/' . $live . '/bump', null, $boss, ['Idempotency-Key' => 'bump-1']);
 check('bump moves the publish date to now', strtotime((string) $row($live)['dt_pub_date']) > time() - 60);
-pin('and keeps the first publish date', $first, $row($live)['dt_first_pub_date']);
+pin('bump keeps the first publish date', $first, $row($live)['dt_first_pub_date']);
 pin('item_bumped fired once; the same Idempotency-Key is replayed', [1, 'true', 1], [$fired['item_bumped'] ?? 0, $again->header('Idempotency-Replayed'), count($logs('bump', $live))]);
 pin('an unknown listing cannot be bumped', 404, $call('POST', 'admin/listings/99999/bump', null, $boss)->status());
 
@@ -215,7 +210,7 @@ harness_section('a key whose admin is gone');
 $admin->query("DELETE FROM {$p}t_api_credential WHERE fk_i_admin_id = $modId");
 $gone = api_admin_key($modId, true);
 $admin->query("DELETE FROM {$p}t_admin WHERE pk_i_id = $modId");
-pin('it answers 401', 401, $call('GET', 'admin/listings', null, $gone)->status());
+pin('an admin key that is gone answers 401', 401, $call('GET', 'admin/listings', null, $gone)->status());
 
 harness_section('queries');
 for ($i = 0; $i < 6; $i++) {
@@ -228,6 +223,6 @@ $two  = $count(2);
 $six  = $count(6);
 echo "  a page of 2: $two queries, of 6: $six\n";
 pin('a page of 6 costs the same queries as a page of 2', $two, $six);
-pin('a page of admin listings: 9 queries, the count is skipped', 9, $six);
+pin('a page of admin listings: 8 queries, the count is skipped', 8, $six);
 
 exit(harness_result());

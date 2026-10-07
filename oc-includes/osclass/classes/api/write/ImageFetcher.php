@@ -24,11 +24,15 @@ final class ImageFetcher
     /** Seconds for the whole download. */
     public const TIMEOUT = 15;
 
-    /** @var \Closure(string, string, string, int): ?string */
+    /** A download slower than LOW_SPEED bytes a second for LOW_SPEED_TIME seconds is dropped. */
+    public const LOW_SPEED = 1024;
+    public const LOW_SPEED_TIME = 5;
+
+    /** @var \Closure(string, string, string, int, int): ?string */
     private \Closure $transport;
 
     /**
-     * @param callable|null $transport (url, pinned ip, file, max bytes) => an error, or null
+     * @param callable|null $transport (url, pinned ip, file, max bytes, seconds) => an error, or null
      *                                 once the file is written; cURL by default
      */
     public function __construct(private AddressGuard $guard, ?callable $transport = null)
@@ -42,24 +46,24 @@ final class ImageFetcher
     }
 
     /**
-     * Download $url into $file.
+     * Download $url into $file within $timeout seconds.
      *
      * @return string|null why it was not fetched, or null on success
      */
-    public function fetch(string $url, string $file, int $maxBytes): ?string
+    public function fetch(string $url, string $file, int $maxBytes, int $timeout = self::TIMEOUT): ?string
     {
         $check = $this->guard->check($url);
         if (!$check['ok']) {
             return (string) ($check['error'] ?? 'The address is not fetched.');
         }
 
-        return ($this->transport)($url, (string) $check['ip'], $file, $maxBytes);
+        return ($this->transport)($url, (string) $check['ip'], $file, $maxBytes, max(1, min(self::TIMEOUT, $timeout)));
     }
 
     /**
      * An HTTP GET with cURL, connecting only to $ip.
      */
-    public static function curl(string $url, string $ip, string $file, int $maxBytes): ?string
+    public static function curl(string $url, string $ip, string $file, int $maxBytes, int $timeout = self::TIMEOUT): ?string
     {
         if (!function_exists('curl_init')) {
             return 'This server cannot download files.';
@@ -69,7 +73,7 @@ final class ImageFetcher
             return 'The temp folder is not writable.';
         }
         $curl = curl_init($url);
-        curl_setopt_array($curl, self::curlOptions($url, $ip, $maxBytes) + [CURLOPT_FILE => $out]);
+        curl_setopt_array($curl, self::curlOptions($url, $ip, $maxBytes, $timeout) + [CURLOPT_FILE => $out]);
         $ok     = curl_exec($curl);
         $status = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
         fclose($out);
@@ -85,11 +89,13 @@ final class ImageFetcher
      *
      * @return array<int,mixed>
      */
-    public static function curlOptions(string $url, string $ip, int $maxBytes): array
+    public static function curlOptions(string $url, string $ip, int $maxBytes, int $timeout = self::TIMEOUT): array
     {
         return AddressGuard::curlOptions($url, $ip) + [
-            CURLOPT_CONNECTTIMEOUT   => 5,
-            CURLOPT_TIMEOUT          => self::TIMEOUT,
+            CURLOPT_CONNECTTIMEOUT   => min(5, $timeout),
+            CURLOPT_TIMEOUT          => $timeout,
+            CURLOPT_LOW_SPEED_LIMIT  => self::LOW_SPEED,
+            CURLOPT_LOW_SPEED_TIME   => self::LOW_SPEED_TIME,
             CURLOPT_MAXFILESIZE      => $maxBytes,
             CURLOPT_NOPROGRESS       => false,
             CURLOPT_XFERINFOFUNCTION => static fn ($c, $total, $now): int => $now > $maxBytes ? 1 : 0,

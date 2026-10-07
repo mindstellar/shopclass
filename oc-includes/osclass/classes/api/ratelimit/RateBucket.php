@@ -21,8 +21,15 @@ final class RateBucket
         private string $name,
         private string $key,
         private int $max,
-        private int $window = 60
+        private int $window = 60,
+        private bool $exact = false
     ) {
+    }
+
+    /** True when the bucket is counted in the database only, never in per-server memory. */
+    public function exact(): bool
+    {
+        return $this->exact;
     }
 
     public function name(): string

@@ -24,12 +24,9 @@ use mindstellar\validation\RefusedException;
  * `Idempotency-Key` on POST, PUT, PATCH and DELETE: a write sent again with the same key gets
  * the first answer back instead of running twice.
  *
- * Keys belong to the credential that sent them (one sign-in, one key, or one user's same-site
- * session), and are kept for a day. The first request locks the key while it runs; the same
- * key meanwhile answers 409. A lock left longer than PHP may run a request (lockTtl()) is taken
- * over only by the same request. The same key with a different method, path, query, If-Match
- * or body answers 422. A 5xx or 429
- * answer is not kept, so the request can be retried; any other answer is, a core refusal included.
+ * Keys belong to the credential that sent them and are kept for a day. The same key while
+ * the first request runs answers 409; with a different method, path, query, If-Match or body,
+ * 422. A 5xx or 429 answer is not kept.
  */
 final class Idempotency
 {

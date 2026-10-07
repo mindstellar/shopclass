@@ -13,20 +13,19 @@ declare(strict_types=1);
 namespace mindstellar\api\read;
 
 use mindstellar\api\ApiServices;
+use mindstellar\api\Problem;
 use mindstellar\api\ProblemException;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\ListingSerializer;
 use mindstellar\apiaccess\Credential;
+use mindstellar\listing\ListingQuery;
 use mindstellar\search\SearchCriteria;
 use mindstellar\search\SearchRunner;
 
 /**
  * A page of listings through the search page's own runner, so its filters, hooks, result
  * cache and any search backend apply. Behind `GET /listings` and `GET /users/{id}/listings`.
- * The API's filters become the search page's own parameters (`sCategory`, `sPattern`, ...),
- * so SearchCriteria, the `search_pattern` filter and `search_conditions` listeners see what
- * they see on the page. Sorting is ListingSort's, paging Pager's.
  */
 final class ListingSearch
 {
@@ -57,17 +56,15 @@ final class ListingSearch
             'iOrderType' => $sort->direction(),
             'iPagesize'  => $pager->limit(),
         ];
-        $search = new \Search();
-        $search->primeResources(false);
-        // Listeners on search_conditions and search_results, and plugins reading Params
-        // inside them, see the search page's own parameter names while the search runs.
-        $result = \Params::withRequest($params, fn () => SearchRunner::run(
+        $result = SearchRunner::run(
             SearchCriteria::fromRequest($params, ['pageSize' => $pager->limit(), 'maxPageSize' => $pager->limit()]),
-            $search,
+            new \Search(),
             'api',
             fn (\Search $search) => $this->shape($sort, $pager, $search),
-            $pager->counts()
-        ));
+            $pager->counts(),
+            $params,
+            fn (array $rows): array => $this->reader->extend($rows, $context)
+        );
 
         return $pager->respond(
             static fn (): array => $result->items(),
@@ -75,7 +72,8 @@ final class ListingSearch
             fn (array $page): array => $this->reader->many($page, $context),
             $this->api->links(),
             $path,
-            $request->query()
+            $request->query(),
+            $request->version()
         );
     }
 
@@ -91,7 +89,7 @@ final class ListingSearch
         }
         $after = $pager->after();
         if ($after !== null) {
-            $search->addCondition(...$sort->after(\Item::getInstance()->getTableName(), $after));
+            $search->addCondition(...$sort->after(ListingQuery::tableName(), $after));
         }
         $search->limit($pager->offset(), $pager->limit() + 1);
     }
@@ -103,7 +101,7 @@ final class ListingSearch
      * @param int|null $userId a seller the list is fixed to (`/users/{id}/listings`)
      *
      * @return array<string,mixed>
-     * @throws ProblemException 422 for an unknown category
+     * @throws ProblemException 422 for an unknown category or a user that is not an id
      */
     public static function params(Request $request, CategoryCatalog $categories, string $locale, ?int $userId = null): array
     {
@@ -117,7 +115,14 @@ final class ListingSearch
                 $params[$param] = $values;
             }
         }
-        $users = $userId !== null ? [(string) $userId] : array_values(array_filter($request->queryList('user'), 'ctype_digit'));
+        $users = $userId !== null ? [(string) $userId] : $request->queryList('user');
+        foreach ($users as $user) {
+            if (!ctype_digit($user)) {
+                throw ProblemException::from(Problem::validation([
+                    ['pointer' => '/user', 'code' => 'format', 'message' => 'must be a user id: ' . $user, 'in' => 'query'],
+                ]));
+            }
+        }
         if ($users !== []) {
             $params['sUser'] = $users;
         }

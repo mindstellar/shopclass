@@ -51,12 +51,15 @@ final class Credential
         return new self(CredentialKind::ANONYMOUS, $scopes);
     }
 
+    /** @api */
     public function kind(): string
     {
         return $this->kind;
     }
 
     /**
+     * @api
+     *
      * @return string[]
      */
     public function scopes(): array
@@ -64,11 +67,13 @@ final class Credential
         return $this->scopes;
     }
 
+    /** @api */
     public function userId(): ?int
     {
         return $this->userId;
     }
 
+    /** @api */
     public function adminId(): ?int
     {
         return $this->adminId;
@@ -107,12 +112,15 @@ final class Credential
 
     /**
      * A signed-in web user calling from the site's own pages (cookie plus page token).
+     *
+     * @api
      */
     public function isSession(): bool
     {
         return $this->kind === CredentialKind::SESSION && $this->userId !== null;
     }
 
+    /** @api */
     public function isAnonymous(): bool
     {
         return $this->kind === CredentialKind::ANONYMOUS;
@@ -120,12 +128,15 @@ final class Credential
 
     /**
      * An admin's API key. A public key made by an admin is not one.
+     *
+     * @api
      */
     public function isAdmin(): bool
     {
         return $this->kind === CredentialKind::KEY && $this->adminId !== null;
     }
 
+    /** @api */
     public function isModerator(): bool
     {
         return $this->isAdmin() && $this->moderator;
@@ -133,12 +144,15 @@ final class Credential
 
     /**
      * A user's API key, access token or same-site session.
+     *
+     * @api
      */
     public function isUser(): bool
     {
         return in_array($this->kind, [CredentialKind::KEY, CredentialKind::USER, CredentialKind::SESSION], true) && $this->userId !== null;
     }
 
+    /** @api */
     public function has(string $scope): bool
     {
         return Scopes::implies($this->scopes, $scope);

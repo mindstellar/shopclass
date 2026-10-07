@@ -40,9 +40,9 @@ final class SiteLinks implements Links
         return osc_user_avatar_url($userId, 'thumbnail');
     }
 
-    public function api(string $path): string
+    public function api(string $path, ?string $version = null): string
     {
-        return osc_api_url($path);
+        return osc_api_url($path, $version);
     }
 
     public function price(?int $micros, string $symbol): string

@@ -17,6 +17,7 @@ use mindstellar\user\AccountInput;
 use mindstellar\user\AccountService;
 use mindstellar\user\Usernames;
 use mindstellar\utility\Sanitize;
+use mindstellar\validation\ForbiddenException;
 use mindstellar\validation\InvalidException;
 
 /**
@@ -50,7 +51,8 @@ class UserActions
      * Make an account from the sign-up form a request carries, or from the users screen in
      * admin mode. Compatibility: use \mindstellar\user\AccountService::register().
      *
-     * @return int|string 1 on success, 2 when activation is pending, else an error message
+     * @return int|string 1 on success, 2 when activation is pending, else an error message (also when
+     *                    sign-ups are closed or a ban rule matches)
      */
     public function add()
     {
@@ -67,6 +69,8 @@ class UserActions
             $session->_setForm('user_s_phone_mobile', $this->Sanitize->phone((string) $form['s_phone_mobile']));
 
             return implode(PHP_EOL, array_column($e->errors(), 'message')) . PHP_EOL;
+        } catch (ForbiddenException $e) {
+            return $e->getMessage();
         }
 
         return $account['active'] ? 2 : 1;

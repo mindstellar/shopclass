@@ -9,12 +9,8 @@
  */
 
 /**
- * The API route table and the kernel's dispatch: matching, {id} and {slug} without a second
- * decode, 404 vs 405 with Allow, unknown versions and refused paths, schemas checked when a
- * route is built, the plugin `ext/<slug>/` rule, core routes that cannot be replaced, the
- * `api_routes` filter and osc_api_register_route().
- *
- * DB-free.  Usage: php tests/api-router.php
+ * The API route table and the kernel dispatch: matching, 404 vs 405, plugin routes and replacement rules.
+ * Usage: php tests/api-router.php
  */
 
 require_once __DIR__ . '/lib/api-boot.php';
@@ -102,9 +98,9 @@ pin('a schema keyword outside the subset is refused when checked', 'GET x: body 
 pin('a $ref that does not resolve is refused when checked', 'GET x: query schema: unknown reference #/components/schemas/Nope.', $bad('GET', 'x', ['handler' => $handler, 'query' => ['$ref' => '#/components/schemas/Nope']]));
 pin('a $ref that resolves is accepted', 'accepted', $bad('GET', 'x', ['handler' => $handler, 'body' => ['$ref' => '#/components/schemas/Thing']]));
 $missing = new RouteSpec('GET', 'x', ['handler' => ['NoSuch\\Controller', 'show']]);
-pin('a [class, method] handler is not loaded when the route is built', false, class_exists('NoSuch\\Controller', false));
-pin('...a missing one is refused by check()', 'GET x: no handler.', $bad('GET', 'x', ['handler' => ['NoSuch\\Controller', 'show']]));
-pin('...and fails on its first call', 'LogicException', (static function () use ($missing): string {
+check('a [class, method] handler is not loaded when the route is built', !class_exists('NoSuch\\Controller', false));
+pin('a missing handler class is refused by check()', 'GET x: no handler.', $bad('GET', 'x', ['handler' => ['NoSuch\\Controller', 'show']]));
+pin('a missing handler class fails on its first call', 'LogicException', (static function () use ($missing): string {
     try {
         $missing->call(new Request('GET', 'v1/x'), Credential::anonymous(), []);
     } catch (\LogicException $e) {
@@ -317,7 +313,7 @@ pin('an ext/<slug>/ route is added', ['id' => '5'], $built->match('GET', 'ext/ac
 pin('a path outside ext/ is dropped', null, $built->match('GET', 'offers'));
 pin('a slug in capitals is dropped', null, $built->match('GET', 'ext/Acme/x'));
 pin('a deprecated route with a sunset may keep an old path outside ext/', ['id' => '7'], $built->match('GET', 'runs/7')?->args());
-check('...but cannot replace a core route either', (bool) array_filter($logged, static fn (string $m): bool => str_contains($m, 'GET listings/{id} refused: it would replace a core route')));
+check('a deprecated route cannot replace a core route either', (bool) array_filter($logged, static fn (string $m): bool => str_contains($m, 'GET listings/{id} refused: it would replace a core route')));
 check('each refusal is logged once, naming the rule', count($logged) === 5 && str_contains($logged[0], 'ext/<plugin-slug>/'));
 check('a core route cannot be replaced', $built->isCore('GET listings')
     && (bool) array_filter($logged, static fn (string $m): bool => str_contains($m, 'GET listings refused: plugin paths')));
@@ -333,14 +329,14 @@ $built  = api_with_filter('api_routes', static fn (array $routes): array => $rou
 ], static fn () => Router::build($validator, $core, $log, null, '2026-10-04'));
 $refusedFor = static fn (string $key): string => (string) (array_values(array_filter($logged, static fn (string $m): bool => str_contains($m, $key . ' refused')))[0] ?? '');
 check('a deprecated old path needs a sunset date', str_contains($refusedFor('GET archive/{id}'), 'deprecated with a sunset date'));
-check('and is refused from its sunset day', str_contains($refusedFor('GET gone/{id}'), 'sunset date has passed') && $built->match('GET', 'gone/1') === null);
+check('a deprecated path is refused from its sunset day', str_contains($refusedFor('GET gone/{id}'), 'sunset date has passed') && $built->match('GET', 'gone/1') === null);
 check('an old path cannot add a method on a core resource path', str_contains($refusedFor('PUT listings/{id}'), 'core route GET listings/{id} answers that path')
     && $built->match('PUT', 'listings/7') === null);
 check('nor a pattern that takes a core id too', $refusedFor('POST listings/{slug}') !== '' && $refusedFor('PATCH categories/{x}') !== '');
 pin('a pattern that refuses digits keeps clear of the core ids', [['external_id' => 'abc'], null, []], [
     $built->match('PUT', 'listings/abc')?->args(), $built->match('PUT', 'listings/7'), $refusedFor('PUT listings/{external_id}') === '' ? [] : [$refusedFor('PUT listings/{external_id}')],
 ]);
-pin('and a path no core route has is kept', 'POST listings:batch', $built->match('POST', 'listings:batch')?->route()->key());
+pin('a path no core route has is kept', 'POST listings:batch', $built->match('POST', 'listings:batch')?->route()->key());
 pin('those five refusals and nothing else', 5, count($logged));
 $router2 = new Router($validator, ['GET ext/core/thing' => $none], $log);
 $logged  = [];
@@ -355,7 +351,7 @@ $built = api_with_filter('api_routes', static function (array $routes): array {
 
     return $routes;
 }, static fn () => Router::build($validator, $core, $log));
-pin('and a later filter can remove it', null, $built->match('GET', 'ext/acme/hello'));
+pin('a later filter can remove a plugin route', null, $built->match('GET', 'ext/acme/hello'));
 check('Router keeps no static registry', (new ReflectionClass(Router::class))->getStaticProperties() === []);
 
 harness_section('Kernel dispatch');
@@ -434,12 +430,10 @@ $services = new ApiServices(
     new SystemClock(),
     api_test_limiter()
 );
-pin('each service is built once and shared', [true, true, true], [
-    $services->keys() === $services->keys(),
-    $services->authenticator() === $services->authenticator(),
-    $services->keyService() === $services->keyService(),
-]);
-pin('one clock for every service', true, $services->clock() === $services->clock());
+check('each service is built once and shared', $services->keys() === $services->keys()
+    && $services->authenticator() === $services->authenticator()
+    && $services->keyService() === $services->keyService());
+check('one clock for every service', $services->clock() === $services->clock());
 pin('a class that is not a core controller is refused', 'LogicException', (static function () use ($services): string {
     try {
         ($services->handlers())(InstanceController::class);
@@ -467,11 +461,139 @@ foreach (array_keys($classes) as $class) {
     }
 }
 pin('every core route\'s controller is built from the services', [], $unbuilt);
-pin('a controller is built once per request', true, ($services->handlers())(\mindstellar\api\controller\AuthController::class) === ($services->handlers())(\mindstellar\api\controller\AuthController::class));
+check('a controller is built once per request', ($services->handlers())(\mindstellar\api\controller\AuthController::class) === ($services->handlers())(\mindstellar\api\controller\AuthController::class));
 
 harness_section('ApiCall');
 $apiCall = new ApiCall(new Request('GET', 'v1/x'), Credential::anonymous(), ['id' => '12', 'photo' => '-3', 'slug' => 'cars']);
 pin('intArg: digits as an int, anything else 0', [12, 0, 0, 0], [$apiCall->intArg(), $apiCall->intArg('photo'), $apiCall->intArg('slug'), $apiCall->intArg('missing')]);
 pin('arg: the value, or null', ['cars', null], [$apiCall->arg('slug'), $apiCall->arg('missing')]);
+
+harness_section('versions');
+pin('a core route serves every live version by default', ['v1'], (new RouteSpec('GET', 'x', $none))->versions());
+pin('with a v2 live too, it serves both', ['v1', 'v2'], (new RouteSpec('GET', 'x', $none, live: ['v1', 'v2']))->versions());
+$v2Handler = static fn (ApiCall $call): Response => Response::ok(['v2' => true]);
+$v2        = new Router($validator, $core + ['v2 GET listings' => ['handler' => $v2Handler, 'auth' => RouteSpec::AUTH_NONE]], $log, versions: ['v1', 'v2']);
+pin('an unchanged core route answers in v1 and v2', ['GET listings/{id}', 'GET listings/{id}'], [$v2->match('GET', 'listings/3', 'v1')?->route()->key(), $v2->match('GET', 'listings/3', 'v2')?->route()->key()]);
+check('a route that names v2 replaces the shared one in v2 only', $v2->match('GET', 'listings', 'v2')?->route()->handler() === $v2Handler
+    && $v2->match('GET', 'listings', 'v1')?->route()->handler() === $handler);
+check('a plugin route that names no version stays on v1', $v2->addPlugin('GET', 'ext/pinned/x', $none)
+    && $v2->match('GET', 'ext/pinned/x', 'v1') !== null && $v2->match('GET', 'ext/pinned/x', 'v2') === null);
+check('a plugin route may opt in to v2', $v2->addPlugin('GET', 'ext/pinned/both', $none + ['versions' => ['v1', 'v2']])
+    && $v2->match('GET', 'ext/pinned/both', 'v2') !== null);
+pin('a context built without a request, as a webhook payload is, keeps the pinned version', 'v1', (new \mindstellar\api\serializer\ViewContext(Credential::anonymous(), 'en_US'))->version());
+pin('osc_api_url() points at the pinned version unless told otherwise', ['https://shop.test/api/v1/ext/a', 'https://shop.test/api/v2'], [osc_api_url('ext/a'), osc_api_url('', 'v2')]);
+pin('an unknown version is refused', 'GET x: unknown API version v9.', (static function () use ($none): string {
+    try {
+        new RouteSpec('GET', 'x', $none + ['versions' => ['v9']]);
+    } catch (\InvalidArgumentException $e) {
+        return $e->getMessage();
+    }
+
+    return 'accepted';
+})());
+$versioned = new Router($validator, ['v1 GET only-v1' => $none]);
+pin('a table key may name its version', [['v1'], null], [$versioned->match('GET', 'only-v1')?->route()->versions(), $versioned->match('GET', 'only-v1', 'v9')]);
+
+harness_section('plugin route rules');
+$photo = new RouteSpec('GET', 'x/{photo}', $none);
+$named = new RouteSpec('GET', 'x/{name}', $none + ['where' => ['name' => '[a-z]+']]);
+check('{photo} is digits when overlaps are checked, as when matching', !$photo->overlaps($named) && !$named->overlaps($photo));
+$extValidator = new Validator(['Thing' => ['type' => 'object'], 'Problem' => ['type' => 'object'], 'ExtAcmeThing' => ['type' => 'object']]);
+$logged       = [];
+$rules        = new Router($extValidator, $core, $log);
+check('a core-only key is refused on a plugin route', !$rules->addPlugin('POST', 'ext/acme/up', ['handler' => $handler, 'upload' => true])
+    && str_contains($logged[0] ?? '', 'only core routes may set upload'));
+$logged = [];
+check('a $ref to a core component is refused', !$rules->addPlugin('GET', 'ext/acme/thing', $none + ['responses' => [200 => ['$ref' => '#/components/schemas/Thing']]])
+    && str_contains($logged[0] ?? '', 'core component Thing'));
+check('its own Ext component and Problem are allowed', $rules->addPlugin('GET', 'ext/acme/own', $none + ['responses' => [
+    200 => ['$ref' => '#/components/schemas/ExtAcmeThing'], 404 => ['$ref' => '#/components/schemas/Problem'],
+]]));
+$logged = [];
+check('a slug belongs to the first plugin that uses it', $rules->addPlugin('GET', 'ext/acme/a', $none + ['plugin' => 'acme'])
+    && !$rules->addPlugin('GET', 'ext/acme/b', $none + ['plugin' => 'evil'])
+    && str_contains($logged[0] ?? '', 'belongs to plugin acme'));
+$logged = [];
+$rules->addPlugin('GET', 'ext/acme/{any}', $none + ['plugin' => 'acme']);
+$rules->addPlugin('GET', 'ext/acme/fixed', $none + ['plugin' => 'acme']);
+check('an overlap is logged and the first route answers', str_contains(implode("\n", $logged), 'GET ext/acme/fixed (plugin acme) overlaps GET ext/acme/{any}')
+    && $rules->match('GET', 'ext/acme/fixed')?->route()->key() === 'GET ext/acme/{any}');
+$logged = [];
+check('the same method and path twice is refused', !$rules->addPlugin('GET', 'ext/acme/a', $none + ['plugin' => 'acme'])
+    && str_contains($logged[0] ?? '', 'same method and path'));
+$logged = [];
+check('a plugin write with user or admin auth and no scope is refused', !$rules->addPlugin('POST', 'ext/acme/w1', ['handler' => $handler])
+    && !$rules->addPlugin('PATCH', 'ext/acme/w2', ['handler' => $handler, 'auth' => RouteSpec::AUTH_USER])
+    && count($logged) === 2 && str_contains($logged[0], 'must name a scope'));
+check('with a scope, or with auth none, it is kept', $rules->addPlugin('POST', 'ext/acme/w3', ['handler' => $handler, 'scope' => 'ext:acme:write'])
+    && $rules->addPlugin('POST', 'ext/acme/w4', ['handler' => $handler, 'auth' => RouteSpec::AUTH_NONE])
+    && $rules->addPlugin('GET', 'ext/acme/r1', ['handler' => $handler, 'auth' => RouteSpec::AUTH_USER]));
+osc_api_register_route('GET', 'ext/dup/x', $none + ['summary' => 'first']);
+osc_api_register_route('GET', 'ext/dup/x', $none + ['summary' => 'second']);
+pin('osc_api_register_route() keeps the first of two registrations', 'first', Router::build($validator, $core, $log)->match('GET', 'ext/dup/x')?->route()->summary());
+
+harness_section('prepare and kit');
+$prepCore = ['POST prep' => [
+    'handler' => static fn (ApiCall $c): Response => Response::ok(['prepared' => $c->prepared()]),
+    'auth'    => RouteSpec::AUTH_NONE,
+    'prepare' => static fn (ApiCall $c): string => 'staged for ' . $c->request()->method(),
+]];
+$prepKernel = api_test_kernel(new Router($validator, $prepCore), api_test_authenticator(new ApiKeys($store, new Scopes(), new SystemClock())), new ApiSettings(true), validator: $validator);
+pin('a prepare step runs first and the handler reads its result', 'staged for POST', $prepKernel->handle(new Request('POST', 'v1/prep', [], [], '127.0.0.1'))->body()['data']['prepared'] ?? null);
+pin('a call built without services has no kit', 'LogicException', (static function (): string {
+    try {
+        (new ApiCall(new Request('GET', 'v1/x'), Credential::anonymous()))->kit();
+    } catch (\LogicException $e) {
+        return 'LogicException';
+    }
+
+    return 'kit';
+})());
+$kitRouter = new Router($validator, ['GET k' => ['handler' => static fn (ApiCall $c): Response => Response::ok(['kit' => get_class($c->kit())]), 'auth' => RouteSpec::AUTH_NONE]], kit: static fn (): \mindstellar\api\ApiKit => new \mindstellar\api\ApiKit($services));
+pin('a route built with a kit hands it to the call', \mindstellar\api\ApiKit::class, $kitRouter->match('GET', 'k')->route()->call(new Request('GET', 'v1/k'), Credential::anonymous(), [])->body()['data']['kit']);
+
+harness_section('cache headers');
+$policy = new \mindstellar\api\http\CachePolicy(60);
+$keyed  = new Credential(\mindstellar\apiaccess\CredentialKind::KEY, ['listings:read'], 4);
+$cc     = static fn (string $path): string => $policy->header(new Request('GET', 'v1/' . $path), $keyed);
+pin('account, admin and session reads are never stored', ['private, no-store', 'private, no-store', 'private, no-store', 'private, no-store'], [
+    $cc('account'), $cc('account/keys/3'), $cc('admin/listings'), $cc('admin/users/4/sessions'),
+]);
+pin('other keyed reads are revalidated', ['private, no-cache', 'private, no-cache'], [$cc('listings/4'), $cc('accounts-like')]);
+
+harness_section('plugin schemas');
+$schemaLog = [];
+$checked   = \mindstellar\api\schema\ExtensionSchemas::check([
+    'ExtAcmeRating' => ['type' => 'object', 'properties' => ['by' => ['$ref' => '#/components/schemas/ExtAcmeUser'], 'err' => ['$ref' => '#/components/schemas/Problem']]],
+    'ExtAcmeUser'   => ['type' => 'object'],
+    'ExtAcmeLeak'   => ['$ref' => '#/components/schemas/Listing'],
+    'Listing'       => ['type' => 'object'],
+], static function (string $m) use (&$schemaLog): void {
+    $schemaLog[] = $m;
+});
+pin('Ext components that refer to each other and to Problem are kept', ['ExtAcmeRating', 'ExtAcmeUser'], array_keys($checked));
+check('a core name, or a $ref to a core component, is refused', count($schemaLog) === 2 && str_contains(implode("\n", $schemaLog), 'core component Listing'));
+pin('osc_api_register_schema() names the component and returns its $ref', ['$ref' => '#/components/schemas/ExtAcmeRatingsRating'], osc_api_register_schema('acme-ratings', 'Rating', ['type' => 'object']));
+
+harness_section('problems');
+pin('a plugin code from api_problem_codes', [409, 'ext_acme_taken', 'Already taken.'], api_with_filter(
+    'api_problem_codes',
+    static fn (array $codes): array => $codes + ['ext_acme_taken' => [409, 'Already taken.']],
+    static fn (): array => [\mindstellar\api\Problem::make('ext_acme_taken')->status(), \mindstellar\api\Problem::make('ext_acme_taken')->body()['code'], \mindstellar\api\Problem::make('ext_acme_taken')->body()['title']]
+));
+pin('an unknown code is a 500', [500, 'server_error'], [\mindstellar\api\Problem::make('ext_acme_nope')->status(), \mindstellar\api\Problem::make('ext_acme_nope')->body()['code']]);
+pin('a field error is about the body unless it says otherwise', ['body', 'query'], [
+    \mindstellar\api\ProblemException::field('/a', 'x', 'bad')->response()->body()['errors'][0]['in'],
+    \mindstellar\api\ProblemException::field('/a', 'x', 'bad', 'query')->response()->body()['errors'][0]['in'],
+]);
+pin('refused and rejected errors are about the body', ['body', 'body'], [
+    \mindstellar\api\Problem::refused([['pointer' => '/a', 'code' => 'x', 'message' => 'bad']])->body()['errors'][0]['in'],
+    \mindstellar\api\Problem::rejected('No.')->body()['errors'][0]['in'],
+]);
+pin('a core refusal reason maps to its API code', ['feature_disabled', 'wrong_credential', 'forbidden'], [
+    \mindstellar\api\Problem::fromRefusal(new \mindstellar\validation\ForbiddenException('Off.', \mindstellar\validation\ForbiddenException::DISABLED))->body()['code'],
+    \mindstellar\api\Problem::fromRefusal(new \mindstellar\validation\ForbiddenException('Sign in.', \mindstellar\validation\ForbiddenException::SIGN_IN))->body()['code'],
+    \mindstellar\api\Problem::fromRefusal(new \mindstellar\validation\ForbiddenException('No.', 'something_else'))->body()['code'],
+]);
 
 exit(harness_result());

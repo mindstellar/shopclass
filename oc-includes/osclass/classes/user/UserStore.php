@@ -35,6 +35,20 @@ final class UserStore extends Model
     }
 
     /**
+     * A user row with `b_family_live`: whether the API sign-in $family still has an unrevoked token.
+     *
+     * @return array<string,mixed>|null
+     */
+    public static function findWithFamily(int $id, string $family): ?array
+    {
+        return Db::selectOne(
+            'SELECT u.*, EXISTS(SELECT 1 FROM ' . DB_TABLE_PREFIX . 't_api_credential c WHERE c.s_family = ? AND c.dt_revoked IS NULL) AS b_family_live'
+            . ' FROM ' . DB_TABLE_PREFIX . 't_user u WHERE u.pk_i_id = ? LIMIT 1',
+            [$family, $id]
+        );
+    }
+
+    /**
      * Whether an account is live: confirmed and not blocked. byIds() with $liveOnly asks the
      * same in SQL.
      *
@@ -99,14 +113,16 @@ final class UserStore extends Model
     }
 
     /**
+     * Whether another account holds the username, or a hidden sign-up holds it (Usernames::hold()) unless $ignoreHolds.
+     *
      * @throws \mindstellar\database\DbException
      */
-    public static function usernameTaken(string $username, int $exceptId): bool
+    public static function usernameTaken(string $username, int $exceptId, bool $ignoreHolds = false): bool
     {
         return self::table()
             ->where('s_username', $username)
             ->where('pk_i_id', '!=', $exceptId)
-            ->count() > 0;
+            ->count() > 0 || (!$ignoreHolds && Usernames::held($username));
     }
 
     /**
