@@ -33,6 +33,7 @@ use mindstellar\api\routing\Router;
 use mindstellar\api\schema\Validator;
 use mindstellar\apiaccess\ApiSettings;
 use mindstellar\apiaccess\Credential;
+use mindstellar\apiaccess\CredentialKind;
 use mindstellar\apiaccess\Scopes;
 use mindstellar\validation\RefusedException;
 
@@ -381,7 +382,8 @@ final class Kernel
     }
 
     /**
-     * @throws ProblemException 401 when a credential is needed and none (or a bad one) came
+     * @throws ProblemException 401 when a credential is needed and none (or a bad one) came, 403 for a
+     *                    personal key while the site has them switched off
      */
     private function credentialFor(Request $request, RouteSpec $route): Credential
     {
@@ -389,6 +391,9 @@ final class Kernel
             return Credential::anonymous();
         }
         $credential = $this->authenticator->authenticate($request);
+        if ($credential !== null && $credential->kind() === CredentialKind::KEY && $credential->isUser() && !$this->settings->userKeys()) {
+            throw ProblemException::of('feature_disabled', 'Personal keys are switched off on this site.');
+        }
         if ($credential !== null) {
             return $credential;
         }

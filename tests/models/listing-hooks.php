@@ -249,7 +249,7 @@ file_put_contents($fake, "<?php echo 'not an image';");
  * ------------------------------------------------------------------------- */
 $validator = new Validator(Schema::components());
 $facts     = new SiteFacts('en_US', array('en_US' => array('name' => 'English', 'direction' => 'ltr')), true, true, 10, 12, 50, false, false);
-$settings  = new ApiSettings(true);
+$settings  = new ApiSettings(true, userKeys: true);
 $fetches   = 0;
 $transport = static function (string $url, string $ip, string $file, int $max) use ($jpeg, &$fetches): ?string {
     $fetches++;

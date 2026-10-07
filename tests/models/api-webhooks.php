@@ -308,7 +308,7 @@ $cat    = seed_category($admin);
 $userId = seed_user($admin);
 $item   = seed_item($admin, $cat, $userId, 'Red bike');
 $kit    = new ApiServices(
-    new ApiSettings(true),
+    new ApiSettings(true, userKeys: true),
     new Scopes(),
     new ApiCredential(),
     new UserRows(),

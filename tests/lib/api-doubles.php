@@ -134,7 +134,7 @@ function api_test_kernel(
         $authenticator,
         $limiter ?? api_test_limiter(),
         $validator ?? new Validator(),
-        $settings ?? new ApiSettings(true),
+        $settings ?? new ApiSettings(true, userKeys: true),
         $users ?? api_test_users(),
         $admins ?? new AdminRows(static fn (): ?array => null),
         $idempotency ?? new Idempotency(new MemoryIdempotencyStore(), new SystemClock())

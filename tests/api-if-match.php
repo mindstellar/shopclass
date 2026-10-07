@@ -231,7 +231,7 @@ $vkernel  = new Kernel(
     api_test_authenticator($keys),
     api_test_limiter(),
     new Validator(),
-    new ApiSettings(true),
+    new ApiSettings(true, userKeys: true),
     api_test_users(),
     new AdminRows(static fn (): ?array => null),
     new Idempotency(new MemoryIdempotencyStore(), new SystemClock()),

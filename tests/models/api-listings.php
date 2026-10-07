@@ -270,7 +270,7 @@ $makeKernel = static function (ApiSettings $settings, ?Validator $with = null, ?
         validator: $with
     );
 };
-$kernel = $makeKernel(new ApiSettings(true));
+$kernel = $makeKernel(new ApiSettings(true, userKeys: true));
 
 /**
  * One GET through the kernel.
@@ -290,7 +290,7 @@ $schemaErrors = static fn (string $schema, Response $r): array => $validator->ch
 harness_section('anonymous reads');
 $r = $get('listings');
 pin('anonymous reads are off: 401 with a Bearer challenge', array(401, 'unauthorized', 'Bearer'), array($r->status(), $r->body()['code'], $r->header('WWW-Authenticate')));
-$open = $makeKernel(new ApiSettings(true, true));
+$open = $makeKernel(new ApiSettings(true, true, userKeys: true));
 $r    = $get('categories', array(), null, $open);
 pin('with anonymous reads on, a public endpoint answers', 200, $r->status());
 pin('and may be cached publicly', 'public, max-age=60, stale-while-revalidate=60', $r->header('Cache-Control'));
@@ -299,18 +299,18 @@ check('a user-keyed answer is never cached publicly', str_starts_with((string) $
 harness_section('site');
 $r = $get('', array(), $publicKey);
 pin('the site root', array(200, 'Test site', 'en_US', array('users' => true, 'registration' => false, 'comments' => true, 'public_reads' => false)), array($r->status(), $r->body()['data']['name'], $r->body()['data']['default_locale'], $r->body()['data']['features']));
-pin('what the API allows here, all off by default', array('registration' => false, 'personal_keys' => false, 'photo_urls' => false, 'public_reads' => false), $r->body()['data']['api'] ?? null);
+pin('what the API allows here, as this test site sets it', array('registration' => false, 'personal_keys' => true, 'photo_urls' => false, 'public_reads' => false), $r->body()['data']['api'] ?? null);
 $api = static fn (ApiSettings $settings): ?array => $get('', array(), $publicKey, $makeKernel($settings))->body()['data']['api'] ?? null;
 pin('switched on in the API settings', array('registration' => false, 'personal_keys' => true, 'photo_urls' => true, 'public_reads' => true), $api(new ApiSettings(true, true, userKeys: true, registration: true, photoUrls: true)));
 Preference::getInstance()->set('enabled_user_registration', '1');
 osc_reset_preferences();
-pin('sign-up through the API also needs the site to take sign-ups', true, $api(new ApiSettings(true, registration: true))['registration'] ?? null);
+pin('sign-up through the API also needs the site to take sign-ups', true, $api(new ApiSettings(true, userKeys: true, registration: true))['registration'] ?? null);
 Preference::getInstance()->set('enabled_user_registration', '0');
 osc_reset_preferences();
 pin('links to the collections', 'http://localhost/api/v1/listings', $r->body()['data']['links']['listings']);
 pin('matches the schema', array(), $schemaErrors('SiteDocument', $r));
 $lazy = Schema::definitions();
-$r    = $get('currencies', array(), $publicKey, $makeKernel(new ApiSettings(true), new Validator($lazy)));
+$r    = $get('currencies', array(), $publicKey, $makeKernel(new ApiSettings(true, userKeys: true), new Validator($lazy)));
 pin('currencies', array(array('code' => 'USD', 'name' => 'US Dollar', 'symbol' => 'US Dollar')), $r->body()['data']);
 pin('a request whose route follows no $ref never builds the component schemas', false, $lazy->isBuilt());
 Preference::getInstance()->set('pageTitle', 'Renamed site');
@@ -458,7 +458,7 @@ pin('an expired listing shows no contact e-mail or phone', array(null, null), ar
     $get('listings/' . $expired, array(), $publicKey)->body()['data']['contact'],
     array('email' => 0, 'phone' => 0)
 )));
-$gated = $makeKernel(new ApiSettings(true), null, new SiteFacts('en_US', array('en_US' => array('name' => 'English', 'direction' => 'ltr')), true, true, 10, 12, 50, false, false, false, true));
+$gated = $makeKernel(new ApiSettings(true, userKeys: true), null, new SiteFacts('en_US', array('en_US' => array('name' => 'English', 'direction' => 'ltr')), true, true, 10, 12, 50, false, false, false, true));
 $admin->query("UPDATE {$p}t_item SET b_show_email = 1 WHERE pk_i_id = {$live[0]}");
 pin('when only signed-in users may contact, a public key sees no e-mail or phone', array(null, null), array_values(array_intersect_key(
     $get('listings/' . $live[0], array(), $publicKey, $gated)->body()['data']['contact'],
@@ -552,7 +552,7 @@ $cold = static function () use ($admin, $makeKernel, $publicKey): int {
     scratchdb_forget_cache();
 
     return harness_query_count(static function () use ($makeKernel, $publicKey): void {
-        $kernel = $makeKernel(new ApiSettings(true));
+        $kernel = $makeKernel(new ApiSettings(true, userKeys: true));
         $_GET   = array('category' => 'cars', 'limit' => 20);
         Params::init();
         $kernel->handle(new Request('GET', 'v1/listings', $_GET, array('Authorization' => 'Bearer ' . $publicKey), '127.0.0.1'));

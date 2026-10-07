@@ -275,7 +275,7 @@ osc_add_hook('posted_item', static function ($item) use (&$postedBy): void {
  * ------------------------------------------------------------------------- */
 $validator = new Validator(Schema::components());
 $facts     = new SiteFacts('en_US', array('en_US' => array('name' => 'English', 'direction' => 'ltr')), true, true, 10, 12, 50, false, false);
-$settings  = new ApiSettings(true);
+$settings  = new ApiSettings(true, userKeys: true);
 $fetches   = 0;
 $transport = static function (string $url, string $ip, string $file, int $max) use ($jpeg, &$fetches): ?string {
     $fetches++;
@@ -495,11 +495,11 @@ $r = $call('POST', 'listings', $listing(array('title' => 'Four photos', 'photo_t
 pin('more tokens than the cap: three are added and a warning says so', array(201, 3, 'photo_skipped'), array($r->status(), count($r->body()['data']['photos'] ?? array()), $r->body()['warnings'][0]['code'] ?? null));
 
 pin('photo_urls is off by default', array(422, '/photo_urls'), (static fn (Response $r): array => array($r->status(), $r->body()['errors'][0]['pointer'] ?? null))($call('POST', 'listings', $listing(array('title' => 'By URL', 'photo_urls' => array('https://photos.example.com/car.jpg'))), $sueToken)));
-$settings = new ApiSettings(true, photoUrls: true);
+$settings = new ApiSettings(true, userKeys: true, photoUrls: true);
 pin('when on, a private address is refused', array(422, '/photo_urls/0'), (static fn (Response $r): array => array($r->status(), $r->body()['errors'][0]['pointer'] ?? null))($call('POST', 'listings', $listing(array('title' => 'By URL', 'photo_urls' => array('https://intranet.example.com/car.jpg'))), $sueToken)));
 $r = $call('POST', 'listings', $listing(array('title' => 'By URL', 'photo_urls' => array('https://photos.example.com/car.jpg'))), $sueToken);
 pin('a public one is downloaded and attached', array(201, 1), array($r->status(), count($r->body()['data']['photos'] ?? array())));
-$settings = new ApiSettings(true);
+$settings = new ApiSettings(true, userKeys: true);
 
 harness_section('custom fields are the category\'s own, cleaned as the form cleans them');
 $r = $call('POST', 'listings', $listing(array('category_id' => $misc, 'title' => 'No fields here', 'custom_fields' => array((string) $colour => '<script>alert(1)</script>'))), $sueToken);
@@ -543,13 +543,13 @@ $admin->query("DELETE FROM {$p}t_ban_rule");
 pin('none of it was saved', 0, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_description WHERE s_title = 'Banned car'")->fetch_row()[0]);
 
 $GLOBALS['lw_limiter'] = api_test_limiter(static fn (string $bucket) => $bucket === 'api_listing_post' ? 3 : 1);
-$settings = new ApiSettings(true, listingRate: 2);
+$settings = new ApiSettings(true, userKeys: true, listingRate: 2);
 pin('the hourly listing cap is a setting', '429 rate_limited', $code($call('POST', 'listings', $listing(array('title' => 'Third this hour')), $sueToken)));
-$settings = new ApiSettings(true, listingRate: 5);
+$settings = new ApiSettings(true, userKeys: true, listingRate: 5);
 pin('a higher one lets it through', 201, $call('POST', 'listings', $listing(array('title' => 'Third this hour')), $sueToken)->status());
-$settings = new ApiSettings(true);
+$settings = new ApiSettings(true, userKeys: true);
 pin('the default is 30 an hour, 10 while the listing form asks for a captcha', array(30, 10, 7), array(
-    (new ApiSettings(true))->listingsPerHour(), (new ApiSettings(true, listingCaptcha: true))->listingsPerHour(), (new ApiSettings(true, listingRate: 7, listingCaptcha: true))->listingsPerHour(),
+    (new ApiSettings(true, userKeys: true))->listingsPerHour(), (new ApiSettings(true, userKeys: true, listingCaptcha: true))->listingsPerHour(), (new ApiSettings(true, userKeys: true, listingRate: 7, listingCaptcha: true))->listingsPerHour(),
 ));
 $GLOBALS['lw_limiter'] = api_test_limiter(static fn (string $bucket) => $bucket === 'api_listing_ip' ? 1000 : 1);
 pin('one address is capped across accounts too', '429 rate_limited', $code($call('POST', 'listings', $listing(array('title' => 'From a busy address')), $sueToken)));
@@ -561,7 +561,7 @@ pin('comments have an hourly cap per user, shared with the comment form', '429 r
 $admin->query("DELETE FROM {$p}t_rate_counter");
 
 harness_section('photo URLs on an edit');
-$settings = new ApiSettings(true, photoUrls: true);
+$settings = new ApiSettings(true, userKeys: true, photoUrls: true);
 $GLOBALS['lw_limiter'] = api_test_limiter(static fn (string $bucket) => $bucket === 'api_photo_fetch' ? RatePolicy::PHOTO_FETCHES_PER_HOUR + 1 : 1);
 pin('fetches on an edit have an hourly cap per user', '429 rate_limited', $code($call('PATCH', 'listings/' . $withPhoto, array('photo_urls' => array('https://photos.example.com/car.jpg')), $sueToken)));
 pin('so do fetches for a new listing, in the same count', '429 rate_limited', $code($call('POST', 'listings', $listing(array('title' => 'Fetched', 'photo_urls' => array('https://photos.example.com/car.jpg'))), $sueToken)));
@@ -574,7 +574,7 @@ pin('only what the listing has room for is fetched; the rest is a warning', arra
 $fetches = 0;
 $r = $call('PATCH', 'listings/' . $withPhoto, array('photo_urls' => array('https://photos.example.com/c.jpg')), $sueToken);
 pin('a full listing fetches nothing', array(200, 0), array($r->status(), $fetches));
-$settings = new ApiSettings(true);
+$settings = new ApiSettings(true, userKeys: true);
 
 harness_section('a save is all or nothing');
 $GLOBALS['lw_fail_posted'] = true;
@@ -752,7 +752,7 @@ $threw   = static function (callable $fn): string {
 
     return '';
 };
-pin('making a key is off unless the site allows it', 'This site does not let users make API keys.', $threw(static fn () => $page->createKey($userRow, 'open sesame', 'Script', array('listings:read'), date('Y-m-d', time() + 86400 * 30))));
+pin('making a key is off unless the site allows it', 'This site does not let users make API keys.', $threw(static fn () => $pageFor(new ApiSettings(true))->createKey($userRow, 'open sesame', 'Script', array('listings:read'), date('Y-m-d', time() + 86400 * 30))));
 $settings = new ApiSettings(true, userKeys: true);
 $page     = $pageFor($settings);
 pin('a wrong password is refused', 'The password is not right.', $threw(static fn () => $page->createKey($userRow, 'wrong', 'Script', array('listings:read'), date('Y-m-d', time() + 86400 * 30))));
@@ -769,7 +769,7 @@ pin('ending a sign-in revokes its refresh family', array(true, 0), array(
     $page->end($sue, $family), (int) $admin->query("SELECT COUNT(*) FROM {$p}t_api_credential WHERE s_family = '" . $admin->real_escape_string($family) . "' AND dt_revoked IS NULL")->fetch_row()[0],
 ));
 pin('an unknown session is refused', false, $page->end($sue, 'nope'));
-$settings = new ApiSettings(true);
+$settings = new ApiSettings(true, userKeys: true);
 $web      = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebUser.php');
 preg_match("/case 'api_access_post':.*?break;/s", $web, $postCase);
 check('the page\'s POST checks the CSRF token', isset($postCase[0]) && str_contains($postCase[0], 'osc_csrf_check()'));

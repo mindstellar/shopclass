@@ -353,7 +353,7 @@ $limiter   = new RateLimiter(
     $clock
 );
 $make = static function (?ApiSettings $settings = null) use ($validator, $routes, $auth, $limiter): Kernel {
-    $settings ??= new ApiSettings(true);
+    $settings ??= new ApiSettings(true, userKeys: true);
 
     return api_test_kernel(new Router($validator, $routes), $auth, $settings, $limiter, $validator);
 };
@@ -425,7 +425,7 @@ pin('a problem after counting keeps the rate limit headers', true, $call('POST',
 
 harness_section('the Kernel: rate limits');
 $counts = [];
-$small  = $make(new ApiSettings(true, false, 3, 2, 1));
+$small  = $make(new ApiSettings(true, false, 3, 2, 1, userKeys: true));
 $r      = $call('GET', 'users', $new->token(), [], null, $small);
 pin('IETF policy header', '"api_key";q=3;w=60', $r->header('RateLimit-Policy'));
 $reset = 60 - ($now % 60);

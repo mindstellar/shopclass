@@ -220,7 +220,8 @@ token and a refresh token. Store both. Wrong passwords count toward the same lim
 
 A personal key is for a user's own script: a long-lived credential that needs no sign-in
 dance. The site owner must switch on **Let users make personal API keys**, or `/account/keys`
-answers `403 feature_disabled`.
+answers `403 feature_disabled`. While it is off, existing personal keys answer `403
+feature_disabled` too; they work again when it is switched back on.
 
 ```bash
 curl -X POST $API/account/keys \

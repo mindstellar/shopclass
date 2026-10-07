@@ -203,7 +203,7 @@ osc_add_hook('user_edit_completed', static function ($userId) use (&$seen): void
  * ------------------------------------------------------------------------- */
 $validator = new Validator(Schema::components());
 $facts     = new SiteFacts('en_US', array('en_US' => array('name' => 'English', 'direction' => 'ltr')), true, true, 10, 12, 50, false, false);
-$settings  = new ApiSettings(true);
+$settings  = new ApiSettings(true, userKeys: true);
 $call      = static function (string $method, string $path, array|string|null $body = null, ?string $token = null, array $headers = array(), string $ip = '192.0.2.50') use ($validator, $facts, &$settings): Response {
     $users    = new UserRows();
     $services = new ApiServices($settings, new Scopes(), new ApiCredential(), $users, new SystemClock(), $GLOBALS['aa_limiter'] ?? RateLimiter::fromSite(new SystemClock()), $facts, new AccountLinks());
@@ -402,7 +402,9 @@ pin('a key cannot sign out', '403 wrong_credential', $code($call('POST', 'auth/s
 harness_section('personal keys');
 $s       = $login('uma', 'battery staple')->body();
 $keyBody = array('name' => 'Backup script', 'scopes' => array('listings:read', 'account:read'), 'expires_at' => date('Y-m-d', time() + 30 * 86400), 'current_password' => 'battery staple');
+$settings = new ApiSettings(true);
 pin('off by default: 403', '403 feature_disabled', $code($call('POST', 'account/keys', $keyBody, $s['access_token'])));
+pin('and a personal key stops working while they are off', '403 feature_disabled', $code($call('GET', 'account', null, $userKey)));
 $settings = new ApiSettings(true, userKeys: true);
 $r        = $call('POST', 'account/keys', $keyBody, $s['access_token']);
 pin('when on, a key is made and its token shown once', array(201, 'Backup script', array('listings:read', 'account:read'), true), array($r->status(), $r->body()['data']['name'] ?? null, $r->body()['data']['scopes'] ?? null, str_starts_with((string) ($r->body()['data']['token'] ?? ''), 'sck_')));
@@ -442,12 +444,12 @@ $fresh = $login('uma', 'battery staple');
 check('the next sign-in rehashed the password at the current cost', str_starts_with($userRow($uma)['s_password'], sprintf('$2y$%02d$', BCRYPT_COST)) && $fresh->status() === 200);
 pin('the key survives a rehash', 200, $call('GET', 'account', null, $bound)->status());
 pin('and so does the earlier sign-in\'s refresh token', 200, $call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $old['refresh_token']))->status());
-$settings = new ApiSettings(true);
+$settings = new ApiSettings(true, userKeys: true);
 
 harness_section('sign-up');
 $signup = array('name' => 'Neo', 'email' => 'neo@example.test', 'password' => 'red pill', 'username' => 'neo');
 pin('off by default: 403', '403 feature_disabled', $code($call('POST', 'users', $signup)));
-$settings = new ApiSettings(true, registration: true);
+$settings = new ApiSettings(true, userKeys: true, registration: true);
 $fired    = array();
 $r        = $call('POST', 'users', $signup, null, array(), '203.0.113.7');
 pin('when on, an account is made: 201, waiting for activation', array(201, false), array($r->status(), $r->body()['data']['confirmed'] ?? null));
@@ -474,7 +476,7 @@ $GLOBALS['aa_limiter'] = api_test_limiter(static fn () => null);
 pin('and sign-up fails closed when the counter cannot be reached', '429 rate_limited', $code($call('POST', 'users', array('email' => 'closed@example.test') + $signup, null, array(), '203.0.113.98')));
 unset($GLOBALS['aa_limiter']);
 pin('no account was made by either', 0, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_user WHERE s_email IN ('cap@example.test', 'closed@example.test')")->fetch_row()[0]);
-$settings = new ApiSettings(true);
+$settings = new ApiSettings(true, userKeys: true);
 
 harness_section('signing out of all devices');
 $settings = new ApiSettings(true, userKeys: true);
@@ -518,7 +520,7 @@ pin('with a stamp set, a rehash still keeps the key and the refresh token', arra
     AuthStamp::of($userRow($uma)), $call('GET', 'account', null, $bound)->status(),
     $call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $grant->token()))->status(),
 ));
-$settings = new ApiSettings(true);
+$settings = new ApiSettings(true, userKeys: true);
 
 harness_section('an Idempotency-Key, kept in the table');
 $s   = $login('uma', 'battery staple')->body();
