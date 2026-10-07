@@ -95,9 +95,12 @@ final class AccountKeysController
     public function revoke(ApiCall $call): Response
     {
         $this->allowed();
-        if (!$this->keys->revoke((int) $call->credential()->userId(), $call->intArg())) {
-            throw ProblemException::notFound('No such key.');
+        $userId = (int) $call->credential()->userId();
+        $key    = $this->keys->find($userId, $call->intArg()) ?? throw ProblemException::notFound('No such key.');
+        if ($key->revokedAt() !== null) {
+            throw ProblemException::of('conflict', 'That key is already revoked.');
         }
+        $this->keys->revoke($userId, $key->id());
 
         return Response::noContent();
     }

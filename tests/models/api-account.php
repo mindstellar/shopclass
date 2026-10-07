@@ -426,6 +426,7 @@ $one = $call('GET', substr((string) $r->header('Location'), strlen('http://local
 pin('Location is a key that can be read, never with its secret', array(200, $madeId, false), array($one->status(), $one->body()['data']['id'] ?? null, isset($one->body()['data']['token'])));
 pin('matches the schema', array(), $schemaErrors('PersonalKeyDocument', $one));
 pin('revoking it answers 204', 204, $call('DELETE', 'account/keys/' . $madeId, null, $s['access_token'])->status());
+pin('revoking it again is 409, as for an admin key', '409 conflict', $code($call('DELETE', 'account/keys/' . $madeId, null, $s['access_token'])));
 pin('another user\'s key, or an unknown one, is 404 to read', 404, $call('GET', 'account/keys/999999', null, $s['access_token'])->status());
 pin('another user\'s key is 404', 404, $call('DELETE', 'account/keys/999999', null, $s['access_token'])->status());
 $bound = (string) $call('POST', 'account/keys', $keyBody, $s['access_token'])->body()['data']['token'];
@@ -453,7 +454,7 @@ $settings = new ApiSettings(true, userKeys: true, registration: true);
 $fired    = array();
 $r        = $call('POST', 'users', $signup, null, array(), '203.0.113.7');
 pin('when on, an account is made: 201, waiting for activation', array(201, false), array($r->status(), $r->body()['data']['confirmed'] ?? null));
-pin('Location names the new user', 'http://localhost/api/v1/users/' . (int) ($r->body()['data']['id'] ?? 0), $r->header('Location'));
+pin('no Location, as the account cannot be read until it is confirmed', null, $r->header('Location'));
 pin('matches the schema', array(), $schemaErrors('NewAccountDocument', $r));
 check('the site asks for a captcha on its own form', osc_captcha_enabled());
 pin('the sign-up form\'s hooks fire, with the activation e-mail', array('before_user_register', 'pre_user_post', 'hook_email_user_validation', 'user_register_completed'), $fired);

@@ -27187,9 +27187,6 @@
                         "headers": {
                             "Request-Id": {
                                 "$ref": "#/components/headers/Request-Id"
-                            },
-                            "Location": {
-                                "$ref": "#/components/headers/Location"
                             }
                         },
                         "content": {

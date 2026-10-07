@@ -17,7 +17,6 @@ use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
 use mindstellar\api\ratelimit\RateLimiter;
 use mindstellar\api\Response;
-use mindstellar\api\serializer\Links;
 use mindstellar\apiaccess\ApiSettings;
 use mindstellar\auth\Actor;
 use mindstellar\user\AccountInput;
@@ -33,13 +32,11 @@ final class RegistrationController
 {
     private ApiSettings $settings;
     private RateLimiter $limiter;
-    private Links $links;
 
     public function __construct(private ApiServices $api)
     {
         $this->settings = $api->settings();
         $this->limiter = $api->limiter();
-        $this->links = $api->links();
     }
 
     public function register(ApiCall $call): Response
@@ -72,7 +69,8 @@ final class RegistrationController
         $form    = \Params::withRequest($params, static fn (): array => AccountInput::signUp());
         $account = (new AccountService())->register($form, Actor::guest($request->ip()));
 
-        // Until the activation link is opened the account is not confirmed, and its profile is not shown.
-        return Response::created(['id' => $account['id'], 'confirmed' => $account['active']], $this->links->api('users/' . $account['id']));
+        // No Location: until the activation link is opened the account is not confirmed, and its
+        // profile is not shown.
+        return Response::ok(['id' => $account['id'], 'confirmed' => $account['active']], 201);
     }
 }

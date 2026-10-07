@@ -460,6 +460,8 @@ pin('an expired listing shows no contact e-mail or phone', array(null, null), ar
     array('email' => 0, 'phone' => 0)
 )));
 $gated = $makeKernel(new ApiSettings(true, userKeys: true), null, new SiteFacts('en_US', array('en_US' => array('name' => 'English', 'direction' => 'ltr')), true, true, 10, 12, 50, false, false, false, true));
+$noComments = $makeKernel(new ApiSettings(true, userKeys: true), null, new SiteFacts('en_US', array('en_US' => array('name' => 'English', 'direction' => 'ltr')), true, false));
+pin('with comments off, reading them is 403 feature_disabled, as posting one is', 403, $get('listings/' . $live[0] . '/comments', array(), $publicKey, $noComments)->status());
 $admin->query("UPDATE {$p}t_item SET b_show_email = 1 WHERE pk_i_id = {$live[0]}");
 pin('when only signed-in users may contact, a public key sees no e-mail or phone', array(null, null), array_values(array_intersect_key(
     $get('listings/' . $live[0], array(), $publicKey, $gated)->body()['data']['contact'],

@@ -430,7 +430,8 @@ final class OpenApi
     private function responseHeaders(RouteSpec $route, int $status): array
     {
         $names = ['Request-Id'];
-        if ($status === 201 || ($status >= 300 && $status < 400 && $status !== 304)) {
+        // A new account cannot be read until it is confirmed, so its 201 names no Location.
+        if (($status === 201 && $route->key() !== 'POST users') || ($status >= 300 && $status < 400 && $status !== 304)) {
             $names[] = 'Location';
         }
         if (($route->method() === 'GET' && ($status === 200 || $status === 304)) || ($route->method() === 'PATCH' && $status === 200 && $this->hasRead($route))) {

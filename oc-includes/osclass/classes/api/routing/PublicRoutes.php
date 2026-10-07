@@ -110,7 +110,7 @@ final class PublicRoutes
                 summary: 'A listing\'s approved comments, oldest first',
                 response: 'CommentPage',
                 query: $paging + ['count' => self::COUNT],
-                errors: [404]
+                errors: [403, 404]
             ),
             'POST listings' => RouteSpec::write(
                 handler: [ListingWritesController::class, 'create'],
@@ -404,7 +404,7 @@ final class PublicRoutes
                 auth: RouteSpec::AUTH_USER,
                 scope: 'account:write',
                 status: 204,
-                errors: [404]
+                errors: [404, 409]
             ),
             'GET account/alerts' => RouteSpec::read(
                 handler: [AlertsController::class, 'index'],

@@ -94,7 +94,7 @@ final class ListingsController
         $request = $call->request();
 
         if (!$this->api->facts()->commentsEnabled()) {
-            throw ProblemException::notFound('Comments are switched off on this site.');
+            throw ProblemException::of('feature_disabled', 'Comments are switched off on this site.');
         }
         $id    = (int) $this->visibleRow($call, $call->intArg())['pk_i_id'];
         $facts = $this->api->facts();
