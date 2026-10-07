@@ -144,7 +144,7 @@ Added to v1. Nothing that was there changed.
 | Endpoint | Does |
 |---|---|
 | `POST /auth/token` | Sign in with a password, or swap a refresh token for new tokens |
-| `POST /auth/sign-out` | Sign out one sign-in, or all with `all: true` |
+| `POST /auth/sign-out` | Sign out this sign-in |
 | `GET`, `PATCH /account`, `POST /account/password` | The user's own profile and password |
 | `GET /account/sessions`, `DELETE /account/sessions/{id}` | The user's sign-ins |
 | `GET`, `POST /account/keys`, `DELETE /account/keys/{id}` | Personal API keys, when the site allows them |
@@ -160,7 +160,7 @@ Also added:
   (`scr_`) with reuse detection, and personal keys (`sck_`) that expire within a year and stop
   when the password changes.
 - Scopes now held by users: `listings:write`, `listings:delete`, `comments:write`,
-  `alerts:write`, `account:read`, `account:write`.
+  `alerts:read`, `alerts:write`, `account:read`, `account:write`.
 - The `owner` view for a user's own listings and account.
 - `Idempotency-Key` on writes, answered again with `Idempotency-Replayed: true`.
 - `PATCH` takes `application/merge-patch+json` and answers `Accept-Patch`.

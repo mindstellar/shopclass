@@ -24,9 +24,9 @@ TOKEN=sca_…        # an access token, or a personal key
 | `POST /listings/{id}/comments` | `comments:write` | Comment on a listing. `201`. |
 | `GET /comments/{id}` | `listings:read` | One comment: an approved one on a listing you can see, or your own. The `Location` of a new comment. |
 | `DELETE /comments/{id}` | `comments:write` | Delete your own approved comment. `204`. |
-| `GET /account/alerts` | `alerts:write` | Your saved searches. |
+| `GET /account/alerts` | `alerts:read` | Your saved searches. |
 | `POST /account/alerts` | `alerts:write` | Save a search. |
-| `GET /account/alerts/{id}` | `alerts:write` | One saved search. The `Location` of a new one. |
+| `GET /account/alerts/{id}` | `alerts:read` | One saved search. The `Location` of a new one. |
 | `DELETE /account/alerts/{id}` | `alerts:write` | Stop a saved search. `204`. |
 | `POST /users` | none | Sign up, when the site allows it. `201`. |
 

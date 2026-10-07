@@ -153,8 +153,8 @@ The site owner switched the API off. Nothing a client can do.
 
 #### `not_found`
 
-No such endpoint, API version or record. A pending, disabled or spam listing, a disabled user, and a
-comments list on a site with comments off are also `404`. So is a comment that is not approved
+No such endpoint, API version or record. A pending, disabled or spam listing and a disabled user
+are also `404`. So is a comment that is not approved
 and not the caller's own, and a photo, key or saved search that is not the caller's.
 
 ### 405 Method not allowed
