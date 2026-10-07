@@ -149,6 +149,10 @@ $fired = [];
 $call('PATCH', 'admin/listings/' . $pending, ['approved' => true], $boss);
 pin('asking again changes nothing: no hook, no log', [0, 1], [$fired['activate_item'] ?? 0, count($logs('activate', $pending))]);
 pin('approving a blocked listing is 409', '409 conflict', api_admin_code($call('PATCH', 'admin/listings/' . $blocked, ['approved' => true], $boss)));
+$before = $row($blocked)['i_price'];
+pin('an edit sent with a refused status change is 409 and saves nothing', ['409 conflict', $before], [api_admin_code($call('PATCH', 'admin/listings/' . $blocked, ['price' => '4321', 'approved' => true], $boss)), $row($blocked)['i_price']]);
+$edits = $fired['edited_item'] ?? 0;
+pin('an empty PATCH saves nothing and fires no edit hook', [200, $edits], [$call('PATCH', 'admin/listings/' . $live, [], $boss)->status(), $fired['edited_item'] ?? 0]);
 $fired = [];
 foreach ([
     ['deactivate', ['approved' => false], 'deactivate_item', 'b_active', '0'],

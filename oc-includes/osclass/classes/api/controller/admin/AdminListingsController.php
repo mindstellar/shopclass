@@ -23,6 +23,7 @@ use mindstellar\api\serializer\ListingSerializer;
 use mindstellar\api\write\ListingWriter;
 use mindstellar\api\write\OwnedListing;
 use mindstellar\apiaccess\Credential;
+use mindstellar\database\Db;
 use mindstellar\moderation\ListingModeration;
 use mindstellar\search\query\CategoryFilter;
 use mindstellar\user\UserQuery;
@@ -101,12 +102,15 @@ final class AdminListingsController
         if ($owner > 0 && !(new UserQuery())->exists($owner)) {
             throw ProblemException::field('/owner_id', 'unknown', 'is not a user');
         }
-        if ($status === [] || $edit !== []) {
-            $this->writer->adminUpdate($listing, $this->writer->editForm($listing, $edit, $request, $credential) + self::adminMembers($listing, $edit), $credential->actor($request->ip(), 'admin:listings'));
-        }
-        foreach (self::actions($status) as $action) {
-            $this->moderate($action, $listing->id(), $credential);
-        }
+        // The edit and the status changes land together or not at all.
+        Db::transaction(function () use ($listing, $edit, $status, $request, $credential): void {
+            if ($edit !== []) {
+                $this->writer->adminUpdate($listing, $this->writer->editForm($listing, $edit, $request, $credential) + self::adminMembers($listing, $edit), $credential->actor($request->ip(), 'admin:listings'));
+            }
+            foreach (self::actions($status) as $action) {
+                $this->moderate($action, $listing->id(), $credential);
+            }
+        });
 
         return Response::ok($this->view($call, $listing->id()));
     }

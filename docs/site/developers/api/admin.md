@@ -66,6 +66,9 @@ admin's rights.
 
 `admin:listings`. These show every listing, whatever its status, in the admin view.
 
+A `PATCH` on a listing, comment or user saves its edit and its status changes together: when one
+is refused, nothing is saved.
+
 | Endpoint | Does |
 |---|---|
 | `GET /admin/listings` | Search. Filters: `status` (`active`, `pending`, `disabled`, `expired`, `spam`; a comma list or repeated), `user` (ids) and `category` (ids or slugs, subcategories included; an id may name a category that is off), each a comma list or repeated as in search, `q` (title contains), `include`, `locale`, `fields`, `limit`, `cursor`, `count`. |

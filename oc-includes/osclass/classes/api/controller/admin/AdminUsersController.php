@@ -24,6 +24,7 @@ use mindstellar\api\serializer\UserSerializer;
 use mindstellar\api\write\AccountBody;
 use mindstellar\apiaccess\AccessEntries;
 use mindstellar\apiaccess\AccessEntry;
+use mindstellar\database\Db;
 use mindstellar\model\Resource;
 use mindstellar\user\AccountService;
 use mindstellar\user\UserQuery;
@@ -96,9 +97,6 @@ final class AdminUsersController
         $status   = array_intersect_key($input, self::STATUS_MEMBERS);
         $accounts = new AccountService();
         $actor    = $call->credential()->actor($call->request()->ip(), 'admin:users');
-        if ($status === [] || array_diff_key($input, self::STATUS_MEMBERS) !== []) {
-            $accounts->update($userId, AccountBody::admin($user, array_diff_key($input, self::STATUS_MEMBERS)), $actor);
-        }
         // Unblock before confirming, so the account's listings come back with it.
         $changes = [];
         if (isset($status['blocked']) && $status['blocked'] === ((string) $user['b_enabled'] === '1')) {
@@ -107,11 +105,17 @@ final class AdminUsersController
         if (isset($status['confirmed']) && $status['confirmed'] !== ((string) $user['b_active'] === '1')) {
             $changes[] = $status['confirmed'] ? 'activate' : 'deactivate';
         }
-        foreach ($changes as $change) {
-            if (!$accounts->$change($userId, $actor)) {
-                throw ProblemException::of('server_error', 'The user could not be changed.');
+        // The edit and the status changes land together or not at all.
+        Db::transaction(static function () use ($accounts, $user, $userId, $input, $actor, $changes): void {
+            if (array_diff_key($input, self::STATUS_MEMBERS) !== []) {
+                $accounts->update($userId, AccountBody::admin($user, array_diff_key($input, self::STATUS_MEMBERS)), $actor);
             }
-        }
+            foreach ($changes as $change) {
+                if (!$accounts->$change($userId, $actor)) {
+                    throw ProblemException::of('server_error', 'The user could not be changed.');
+                }
+            }
+        });
 
         return $this->fresh($call, $userId);
     }

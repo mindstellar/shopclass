@@ -20,6 +20,7 @@ use mindstellar\api\read\Pager;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\CommentSerializer;
 use mindstellar\comment\CommentQuery;
+use mindstellar\database\Db;
 use mindstellar\moderation\CommentModeration;
 
 /**
@@ -81,21 +82,24 @@ final class AdminCommentsController
         $id      = (int) $comment['pk_i_id'];
         $input   = $call->input();
         $status  = array_intersect_key($input, self::STATUS_MEMBERS);
-        if ($status === [] || array_diff_key($input, self::STATUS_MEMBERS) !== []) {
-            $this->moderation->edit($id, [
-                'title'        => (string) ($input['title'] ?? $comment['s_title']),
-                'body'         => (string) ($input['body'] ?? $comment['s_body']),
-                'author_name'  => (string) ($input['author_name'] ?? $comment['s_author_name']),
-                'author_email' => (string) ($input['author_email'] ?? $comment['s_author_email']),
-            ]);
-        }
-        // Unblock before approving, so the author is told once the comment is live.
-        if (isset($status['blocked']) && $status['blocked'] === ((string) $comment['b_enabled'] === '1')) {
-            $this->moderation->{$status['blocked'] ? 'disable' : 'enable'}($id);
-        }
-        if (isset($status['approved']) && $status['approved'] !== ((string) $comment['b_active'] === '1')) {
-            $this->moderation->{$status['approved'] ? 'activate' : 'deactivate'}($id);
-        }
+        // The edit and the status changes land together or not at all.
+        Db::transaction(function () use ($comment, $id, $input, $status): void {
+            if (array_diff_key($input, self::STATUS_MEMBERS) !== []) {
+                $this->moderation->edit($id, [
+                    'title'        => (string) ($input['title'] ?? $comment['s_title']),
+                    'body'         => (string) ($input['body'] ?? $comment['s_body']),
+                    'author_name'  => (string) ($input['author_name'] ?? $comment['s_author_name']),
+                    'author_email' => (string) ($input['author_email'] ?? $comment['s_author_email']),
+                ]);
+            }
+            // Unblock before approving, so the author is told once the comment is live.
+            if (isset($status['blocked']) && $status['blocked'] === ((string) $comment['b_enabled'] === '1')) {
+                $this->moderation->{$status['blocked'] ? 'disable' : 'enable'}($id);
+            }
+            if (isset($status['approved']) && $status['approved'] !== ((string) $comment['b_active'] === '1')) {
+                $this->moderation->{$status['approved'] ? 'activate' : 'deactivate'}($id);
+            }
+        });
 
         return $this->show($call);
     }
