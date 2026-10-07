@@ -316,6 +316,9 @@ $retries  = new RefreshRetries(
     },
     static function (string $key, string $value, int $expiresAt) use (&$kept): void {
         $kept[$key] = [$value, $expiresAt];
+    },
+    static function (string $key) use (&$kept): void {
+        unset($kept[$key]);
     }
 );
 $retrying = new RefreshTokens($store, $scopes, $accounts(), 30, $clock, $retries);
@@ -323,13 +326,23 @@ $begun    = $retrying->start($store->users[10], ['listings:read'], 'Retry', '');
 $next     = $retrying->rotate($begun->token(), '');
 $again    = $retrying->rotate($begun->token(), '');
 pin('the old token sent again within the window gets the same new token, and the sign-in lives', [$next->token(), 1], [$again->token(), $store->live($begun->family())]);
+pin('one row per sign-in, keyed by the sign-in', [$begun->family()], array_keys($kept));
 check('the kept token is encrypted', !str_contains((string) json_encode($kept), explode('.', $next->token())[1]));
+$hashOnly = (string) $store->rows[array_key_first(array_filter($store->rows, static fn (array $r): bool => ($r['family'] ?? null) === $begun->family()))]['hash'];
+pin('nothing the site stores opens it: not the stored hash of the old token', null, $retries->recall($begun->family(), 0, $hashOnly));
 $retrying->rotate($next->token(), '');
-pin('once the new token was used, the old one coming back ends the sign-in', ['invalid_grant', 0], [$problem(static fn () => $retrying->rotate($begun->token(), '')), $store->live($begun->family())]);
+pin('once the new token was used, the old one coming back ends the sign-in', ['invalid_grant', 0, []], [$problem(static fn () => $retrying->rotate($begun->token(), '')), $store->live($begun->family()), $kept]);
 $late = $retrying->start($store->users[10], ['listings:read'], 'Late', '');
 $retrying->rotate($late->token(), '');
 $now += RefreshRetries::WINDOW;
 pin('after the window, it ends the sign-in too', ['invalid_grant', 0], [$problem(static fn () => $retrying->rotate($late->token(), '')), $store->live($late->family())]);
+$held = $retrying->start($store->users[10], ['listings:read'], 'Held', '');
+$retrying->rotate($held->token(), '');
+$store->users[10]['b_enabled'] = '0';
+pin('a user blocked in the window gets no token back', 'invalid_grant', $problem(static fn () => (new RefreshTokens($store, $scopes, $accounts(), 30, $clock, $retries))->rotate($held->token(), '')));
+$store->users[10]['b_enabled'] = '1';
+$kept[$held->family()] = ['{"old":1,"id":1,"token":"scr_plain"}', $now + 60];
+pin('a value that is not sealed is never handed out', null, $retries->recall($held->family(), 1, 'x'));
 
 $a = $fresh->start($store->users[10], ['listings:read'], 'A', '');
 $b = $fresh->start($store->users[10], ['listings:read'], 'B', '');

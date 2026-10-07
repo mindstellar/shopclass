@@ -98,7 +98,8 @@ final class RefreshTokens
         // family, or two rotations, run one after the other, so a family revoke also takes a
         // token another request has just made. Refusals are decided inside and thrown after
         // the commit, so the revokes they made are kept.
-        $outcome = $this->store->atomically(function () use ($found, $family, $ip) {
+        $secret  = $m[2];
+        $outcome = $this->store->atomically(function () use ($found, $family, $ip, $secret) {
             $this->store->lockFamily($family);
             $row = $this->store->find($found->id());
             if ($row === null) {
@@ -107,16 +108,19 @@ final class RefreshTokens
             $userId = $row->owner()?->userId();
             $user   = $userId === null ? null : $this->users->find($userId);
             if ($row->revokedAt() !== null) {
-                $retry = $this->retries?->recall($row->id());
+                $retry = $this->retries?->recall($family, $row->id(), $secret);
                 $next  = $retry === null ? null : $this->store->find((int) $retry->id());
                 if ($next !== null && $next->revokedAt() === null && $next->isUsableAt($this->clock->now()) && $user !== null && UserStore::isLive($user)) {
                     return $retry;
                 }
 
                 // A family with live tokens left means this one was swapped and is back.
+                $this->retries?->forget($family);
+
                 return $this->store->revokeFamily($family) > 0 ? self::REUSED : self::REFUSED;
             }
             if ($user === null || !$row->isUsableAt($this->clock->now()) || !UserStore::isLive($user)) {
+                $this->retries?->forget($family);
                 $this->store->revokeFamily($family);
 
                 return self::REFUSED;
@@ -129,7 +133,7 @@ final class RefreshTokens
             $scopes = Scopes::normalize($row->scopes(), $this->scopes->allowedFor(CredentialKind::USER, KeyOwner::user((int) $userId)));
 
             $issued = $this->issue((int) $userId, AuthStamp::of($user), $family, $scopes, $row->name(), $ip);
-            $this->retries?->remember($row->id(), $issued, $this->clock->now());
+            $this->retries?->remember($family, $row->id(), $secret, $issued, $this->clock->now());
 
             return $issued;
         });
@@ -156,6 +160,8 @@ final class RefreshTokens
         }
         foreach ($this->store->listBy(CredentialKind::REFRESH, $userId, null, true) as $key) {
             if ($key->family() === $family) {
+                $this->retries?->forget($family);
+
                 return $this->store->revokeFamily($family);
             }
         }
