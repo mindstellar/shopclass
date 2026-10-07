@@ -4,6 +4,9 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 ## Shopclass 6.4.5
 
+This release fixes the admin password reset, which ended in an error page after a new
+password was set.
+
 ### Fixed
 
 - Setting a new admin password from the reset link no longer ends in an error page.
