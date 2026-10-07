@@ -317,7 +317,7 @@ final class OpenApi
     {
         $parameters = [];
         foreach ($route->argNames() as $name) {
-            $parameters[] = ['name' => $name, 'in' => 'path', 'required' => true, 'schema' => ['type' => $name === 'id' ? 'integer' : 'string']];
+            $parameters[] = ['name' => $name, 'in' => 'path', 'required' => true, 'schema' => ['type' => in_array($name, RouteSpec::NUMERIC_ARGS, true) ? 'integer' : 'string']];
         }
         $query    = $route->query() ?? [];
         $required = (array) ($query['required'] ?? []);

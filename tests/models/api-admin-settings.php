@@ -116,6 +116,7 @@ pin('Location names it, and it belongs to the caller\'s admin', ['http://localho
     $r->header('Location'), $admin->query("SELECT fk_i_admin_id FROM {$p}t_api_credential WHERE pk_i_id = $made")->fetch_row()[0],
 ]);
 pin('matches the schema', [], api_admin_schema_errors('ApiKeyDocument', $r));
+pin('its owner is the admin as {type, id, name}', ['admin', $bossId], [$r->body()['data']['owner']['type'] ?? null, $r->body()['data']['owner']['id'] ?? null]);
 pin('the token works', 200, $call('GET', 'admin/listings', null, $token)->status());
 pin('it is not shown again', false, isset($call('GET', 'admin/keys/' . $made, null, $boss)->body()['data']['token']));
 pin('a key cannot grant a scope it lacks', '403 forbidden', api_admin_code($call('POST', 'admin/keys', ['name' => 'Escalate', 'scopes' => ['admin:users']], $keyMaker)));

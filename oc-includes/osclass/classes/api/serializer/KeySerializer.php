@@ -38,7 +38,7 @@ final class KeySerializer
             'kind'         => (string) $row['kind'],
             'prefix'       => (string) $row['prefix'],
             'scopes'       => array_values((array) $row['scopes']),
-            'owner'        => Format::text($row['owner'] ?? null),
+            'owner'        => self::owner($row),
             'status'       => (string) $row['status'],
             'created_at'   => Format::timestamp($row['created'] ?? null),
             'last_used_at' => Format::timestamp($row['last_used'] ?? null),
@@ -49,6 +49,24 @@ final class KeySerializer
         }
 
         return $out;
+    }
+
+    /**
+     * Who a key acts for: `{type, id, name}`, or null for none.
+     *
+     * @param array<string,mixed> $row
+     *
+     * @return array{type:string,id:int,name:?string}|null
+     */
+    private static function owner(array $row): ?array
+    {
+        $admin = $row['owner_admin'] ?? null;
+        $user  = $row['owner_user'] ?? null;
+        if ($admin === null && $user === null) {
+            return null;
+        }
+
+        return ['type' => $admin !== null ? 'admin' : 'user', 'id' => (int) ($admin ?? $user), 'name' => Format::text($row['owner'] ?? null)];
     }
 
     /**

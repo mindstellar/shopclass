@@ -113,6 +113,7 @@ Also settled before the first release, so no released client saw the old behavio
 - Token endpoint errors carry `error_description`, as RFC 6749 names it.
 - An unknown `fields` or `include` value is `422 validation_failed` at `/fields` or `/include`, as every other bad query value is. `invalid_query` is gone.
 - With comments off, reading a listing's comments is `403 feature_disabled`, as posting one is. Revoking a personal key twice is `409`, as for an admin key. `POST /users` sends no `Location`, since the new account cannot be read until it is confirmed.
+- `{photo}` in a path is an integer, as `{id}` is. An API key's `owner` is `{type, id, name}` instead of a name.
 - A valid token from an address that sent many bad ones works; only that address's failing tokens answer `429 too_many_failures`.
 - `Idempotency-Key` keeps every `4xx` except `429`, including a `409` or `422` from a core refusal.
 - A banned user's access token or personal key answers `403 banned`, as a session call does.

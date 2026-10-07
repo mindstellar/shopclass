@@ -38,6 +38,9 @@ final class RouteSpec
 
     private const PLACEHOLDER = '#\{([a-zA-Z_][a-zA-Z0-9_]*)\}#';
 
+    /** Placeholders that are row ids: digits only, and integers in the OpenAPI document. */
+    public const NUMERIC_ARGS = ['id', 'photo'];
+
     private string $method;
 
     private string $path;
@@ -176,7 +179,7 @@ final class RouteSpec
         $this->where = $where;
         $this->regex = '#^' . preg_replace_callback(
             '#\\\\\{([a-zA-Z_][a-zA-Z0-9_]*)\\\\\}#',
-            static fn (array $m): string => '(' . ($where[$m[1]] ?? ($m[1] === 'id' ? '[0-9]+' : '[^/]+')) . ')',
+            static fn (array $m): string => '(' . ($where[$m[1]] ?? (in_array($m[1], self::NUMERIC_ARGS, true) ? '[0-9]+' : '[^/]+')) . ')',
             preg_quote($path, '#')
         ) . '$#D';
     }
@@ -297,8 +300,8 @@ final class RouteSpec
     }
 
     /**
-     * The path's arguments for a request path, or null when it does not match. `{id}`
-     * matches digits, any other `{name}` one path segment. The request path is already
+     * The path's arguments for a request path, or null when it does not match. `{id}` and
+     * `{photo}` match digits, any other `{name}` one path segment. The request path is already
      * decoded, so the values are used as they are.
      *
      * @return array<string,string>|null

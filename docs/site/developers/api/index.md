@@ -302,7 +302,7 @@ Rules that hold everywhere:
 | Rule | Detail |
 |---|---|
 | Names | `snake_case`. |
-| Ids | Integers. Countries and currencies use their code, such as `"DE"`, `"EUR"`. |
+| Ids | Integers. Countries and currencies use their code, such as `"DE"`, `"EUR"`; webhook endpoints a string such as `"ep_3f…"`. |
 | Times | RFC 3339 in UTC: `2026-07-05T01:47:36Z`. |
 | Money | `{"amount": "90.00", "currency": "USD", "formatted": "$ 90"}`. The amount is a decimal string. `price` is `null` when the listing or its category has no price. |
 | Missing values | `null`, never `""`. |

@@ -196,7 +196,11 @@ final class AdminSchema
                 'kind'         => ['type' => 'string', 'enum' => ['admin', 'public', 'user']],
                 'prefix'       => ['type' => 'string'],
                 'scopes'       => ['type' => 'array', 'items' => ['type' => 'string']],
-                'owner'        => Schema::nullable('string', 'The admin or user it acts for.'),
+                'owner'        => ['type' => ['object', 'null'], 'description' => 'The admin or user it acts for.', 'properties' => [
+                    'type' => ['type' => 'string', 'enum' => ['admin', 'user']],
+                    'id'   => ['type' => 'integer'],
+                    'name' => ['type' => ['string', 'null']],
+                ], 'required' => ['type', 'id', 'name']],
                 'status'       => ['type' => 'string', 'enum' => [
                     ApiKeyService::STATUS_ACTIVE, ApiKeyService::STATUS_REVOKED, ApiKeyService::STATUS_EXPIRED,
                     ApiKeyService::STATUS_DISABLED, ApiKeyService::STATUS_ORPHANED,

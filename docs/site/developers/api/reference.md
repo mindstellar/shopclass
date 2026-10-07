@@ -1255,7 +1255,7 @@ One photo of a listing
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
-| `photo` | path | string | yes |  |
+| `photo` | path | integer | yes |  |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
 Answers: 200 OK (`PhotoDocument`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
@@ -1267,7 +1267,7 @@ Remove a photo from your listing
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
-| `photo` | path | string | yes |  |
+| `photo` | path | integer | yes |  |
 | `If-Match` | header | string | no | An ETag from a GET of the same path (any fields, include or locale) or from the last write's answer, or `*`: 412 precondition_failed when the resource has changed since. |
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 

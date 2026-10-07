@@ -25971,7 +25971,7 @@
                         "in": "path",
                         "required": true,
                         "schema": {
-                            "type": "string"
+                            "type": "integer"
                         }
                     },
                     {
@@ -26221,7 +26221,7 @@
                         "in": "path",
                         "required": true,
                         "schema": {
-                            "type": "string"
+                            "type": "integer"
                         }
                     },
                     {
@@ -32866,10 +32866,33 @@
                     },
                     "owner": {
                         "type": [
-                            "string",
+                            "object",
                             "null"
                         ],
-                        "description": "The admin or user it acts for."
+                        "description": "The admin or user it acts for.",
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "enum": [
+                                    "admin",
+                                    "user"
+                                ]
+                            },
+                            "id": {
+                                "type": "integer"
+                            },
+                            "name": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "type",
+                            "id",
+                            "name"
+                        ]
                     },
                     "status": {
                         "type": "string",

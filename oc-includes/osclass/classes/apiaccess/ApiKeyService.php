@@ -171,7 +171,7 @@ final class ApiKeyService
      * or its hash.
      *
      * @return array<int,array{id:int,name:string,kind:string,prefix:string,scopes:string[],owner:string,
-     *         owner_admin:int|null,created:int|null,last_used:int|null,expires:int|null,status:string}>
+     *         owner_admin:int|null,owner_user:int|null,created:int|null,last_used:int|null,expires:int|null,status:string}>
      */
     public function rows(): array
     {
@@ -222,6 +222,7 @@ final class ApiKeyService
                 'scopes'      => $k->scopes(),
                 'owner'       => $label,
                 'owner_admin' => $owner?->adminId(),
+                'owner_user'  => $owner?->userId(),
                 'created'     => $k->createdAt(),
                 'last_used'   => $k->lastUsedAt(),
                 'expires'     => $k->expiresAt(),

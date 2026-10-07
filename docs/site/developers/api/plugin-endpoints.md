@@ -51,7 +51,7 @@ Call `osc_api_register_route()` when your plugin loads. The route is then
   rest of your routes still load.
 - One exception: a route with `deprecated` set may keep an old path outside `ext/`, so a
   plugin can redirect it for a release after moving. It still cannot replace a core route.
-- `{id}` matches digits. Any other `{name}` matches one path segment. Read a value with `$call->arg('name')`.
+- `{id}` and `{photo}` match digits. Any other `{name}` matches one path segment. Read a value with `$call->arg('name')`.
 - Allowed characters: letters, digits, `_`, `:`, `-` and `{name}`, with `/` between segments.
 - Methods: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`. `HEAD` is answered by `GET` routes.
 
