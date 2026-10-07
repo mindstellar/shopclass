@@ -270,7 +270,7 @@ pin('a password grant without a password is 400 invalid_request', '400 invalid_r
 $r = $call('POST', 'auth/token', array('grant_type' => 'client_credentials'));
 pin('an unknown grant is 400 unsupported_grant_type, as OAuth names it', array('400 unsupported_grant_type', 'unsupported_grant_type'), array($code($r), $r->body()['error'] ?? null));
 $r = $login('nobody@example.test', 'wrong', array(), '198.51.100.78');
-pin('a refused sign-in is an OAuth invalid_grant', array(400, 'invalid_grant'), array($r->status(), $r->body()['error'] ?? null));
+pin('a refused sign-in is an OAuth invalid_grant, with error_description as RFC 6749 names it', array(400, 'invalid_grant', true), array($r->status(), $r->body()['error'] ?? null, ($r->body()['error_description'] ?? '') !== '' && $r->body()['error_description'] === $r->body()['detail']));
 pin('an unknown member is 400 invalid_request', '400 invalid_request', $code($call('POST', 'auth/token', array('grant_type' => 'password', 'username' => 'uma', 'password' => 'x', 'admin' => true))));
 $r = $call('POST', 'auth/token', http_build_query(array('grant_type' => 'password', 'username' => 'uma', 'password' => 'correct horse', 'scope' => 'listings:read')), null, array('Content-Type' => 'application/x-www-form-urlencoded'));
 pin('a form-encoded token request works too (RFC 6749)', array(200, 'listings:read', true, false), array($r->status(), $r->body()['scope'] ?? null, isset($r->body()['access_token']), isset($r->body()['data'])));

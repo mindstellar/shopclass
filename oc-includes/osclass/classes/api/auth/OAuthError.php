@@ -45,7 +45,7 @@ final class OAuthError
             $error = 'invalid_request';
         }
         $extra = array_diff_key($body, array_flip(['type', 'title', 'status', 'detail', 'code']));
-        $out   = Problem::make($error, (string) ($body['detail'] ?? ''), ['error' => $error] + $extra);
+        $out   = Problem::make($error, (string) ($body['detail'] ?? ''), ['error' => $error, 'error_description' => (string) ($body['detail'] ?? '')] + $extra);
 
         return $out->withHeader('Cache-Control', 'no-store')->withHeader('Pragma', 'no-cache');
     }

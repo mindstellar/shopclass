@@ -50,7 +50,6 @@ final class SiteController
             'name'           => (string) osc_page_title(),
             'description'    => Format::text(osc_page_description()),
             'url'            => (string) osc_base_url(),
-            'version'        => OSCLASS_VERSION,
             'api_version'    => Kernel::VERSION,
             'default_locale' => $facts->defaultLocale(),
             'locales'        => $locales,
@@ -61,7 +60,6 @@ final class SiteController
                 'users'        => $facts->usersEnabled(),
                 'registration' => (bool) osc_user_registration_enabled(),
                 'comments'     => $facts->commentsEnabled(),
-                'public_reads' => $facts->publicReads(),
             ],
             'api'            => [
                 'registration'  => $settings->registration() && $facts->usersEnabled() && (bool) osc_user_registration_enabled(),

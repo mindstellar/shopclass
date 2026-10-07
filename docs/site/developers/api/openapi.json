@@ -28864,6 +28864,14 @@
                                 "message"
                             ]
                         }
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "On POST /auth/token only: the RFC 6749 error, such as invalid_grant."
+                    },
+                    "error_description": {
+                        "type": "string",
+                        "description": "On POST /auth/token only: the same text as detail."
                     }
                 },
                 "required": [
@@ -29932,9 +29940,6 @@
                         "type": "string",
                         "format": "uri"
                     },
-                    "version": {
-                        "type": "string"
-                    },
                     "api_version": {
                         "type": "string"
                     },
@@ -29981,9 +29986,26 @@
                     },
                     "features": {
                         "type": "object",
-                        "additionalProperties": {
-                            "type": "boolean"
-                        }
+                        "properties": {
+                            "users": {
+                                "type": "boolean",
+                                "description": "Whether the site has user accounts."
+                            },
+                            "registration": {
+                                "type": "boolean",
+                                "description": "Whether the site's own sign-up form is open."
+                            },
+                            "comments": {
+                                "type": "boolean",
+                                "description": "Whether listings take comments."
+                            }
+                        },
+                        "required": [
+                            "users",
+                            "registration",
+                            "comments"
+                        ],
+                        "description": "What the site itself offers."
                     },
                     "api": {
                         "type": "object",
@@ -30023,7 +30045,6 @@
                 "required": [
                     "name",
                     "url",
-                    "version",
                     "api_version",
                     "default_locale",
                     "locales",

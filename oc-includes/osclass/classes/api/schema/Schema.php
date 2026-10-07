@@ -394,7 +394,6 @@ final class Schema
             'name'           => ['type' => 'string'],
             'description'    => self::nullable('string'),
             'url'            => ['type' => 'string', 'format' => 'uri'],
-            'version'        => ['type' => 'string'],
             'api_version'    => ['type' => 'string'],
             'default_locale' => ['type' => 'string'],
             'locales'        => ['type' => 'array', 'items' => self::object([
@@ -405,7 +404,11 @@ final class Schema
             'currency'       => self::nullable('string'),
             'timezone'       => ['type' => 'string'],
             'friendly_urls'  => ['type' => 'boolean'],
-            'features'       => ['type' => 'object', 'additionalProperties' => ['type' => 'boolean']],
+            'features'       => self::object([
+                'users'        => ['type' => 'boolean', 'description' => 'Whether the site has user accounts.'],
+                'registration' => ['type' => 'boolean', 'description' => 'Whether the site\'s own sign-up form is open.'],
+                'comments'     => ['type' => 'boolean', 'description' => 'Whether listings take comments.'],
+            ], ['users', 'registration', 'comments']) + ['description' => 'What the site itself offers.'],
             'api'            => self::object([
                 'registration'  => ['type' => 'boolean', 'description' => 'Whether POST /users signs up new accounts.'],
                 'personal_keys' => ['type' => 'boolean', 'description' => 'Whether users may make their own keys at /account/keys.'],
@@ -413,7 +416,7 @@ final class Schema
                 'public_reads'  => ['type' => 'boolean', 'description' => 'Whether public endpoints answer without a credential.'],
             ], ['registration', 'personal_keys', 'photo_urls', 'public_reads']) + ['description' => 'What the API allows on this site.'],
             'links'          => ['type' => 'object', 'additionalProperties' => ['type' => 'string']],
-        ], ['name', 'url', 'version', 'api_version', 'default_locale', 'locales', 'features', 'api', 'links']);
+        ], ['name', 'url', 'api_version', 'default_locale', 'locales', 'features', 'api', 'links']);
     }
 
     /**
@@ -662,6 +665,8 @@ final class Schema
                 'message' => ['type' => 'string'],
                 'in'      => ['type' => 'string', 'enum' => ['query', 'body']],
             ], ['pointer', 'code', 'message'])],
+            'error'             => ['type' => 'string', 'description' => 'On POST /auth/token only: the RFC 6749 error, such as invalid_grant.'],
+            'error_description' => ['type' => 'string', 'description' => 'On POST /auth/token only: the same text as detail.'],
         ], ['type', 'title', 'status', 'code']);
     }
 

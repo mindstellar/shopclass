@@ -152,9 +152,9 @@ threads should still refresh in one place.
 
 ### Errors from the token endpoint
 
-A refused grant is a `400` with the OAuth 2 `error` member
+A refused grant is a `400` with the OAuth 2 `error` and `error_description` members
 ([RFC 6749 §5.2](https://www.rfc-editor.org/rfc/rfc6749#section-5.2)). The usual problem
-members are there too, and `code` is the same as `error`:
+members are there too: `code` is the same as `error`, and `detail` as `error_description`:
 
 ```json
 {
@@ -164,6 +164,7 @@ members are there too, and `code` is the same as `error`:
   "detail": "The e-mail, username or password is wrong.",
   "code": "invalid_grant",
   "error": "invalid_grant",
+  "error_description": "The e-mail, username or password is wrong.",
   "instance": "urn:request:Xq3v9LmT2aBc"
 }
 ```

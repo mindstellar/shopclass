@@ -298,7 +298,8 @@ check('a user-keyed answer is never cached publicly', str_starts_with((string) $
 
 harness_section('site');
 $r = $get('', array(), $publicKey);
-pin('the site root', array(200, 'Test site', 'en_US', array('users' => true, 'registration' => false, 'comments' => true, 'public_reads' => false)), array($r->status(), $r->body()['data']['name'], $r->body()['data']['default_locale'], $r->body()['data']['features']));
+pin('the site root', array(200, 'Test site', 'en_US', array('users' => true, 'registration' => false, 'comments' => true)), array($r->status(), $r->body()['data']['name'], $r->body()['data']['default_locale'], $r->body()['data']['features']));
+pin('the software version is not shown to callers', false, array_key_exists('version', $r->body()['data']));
 pin('what the API allows here, as this test site sets it', array('registration' => false, 'personal_keys' => true, 'photo_urls' => false, 'public_reads' => false), $r->body()['data']['api'] ?? null);
 $api = static fn (ApiSettings $settings): ?array => $get('', array(), $publicKey, $makeKernel($settings))->body()['data']['api'] ?? null;
 pin('switched on in the API settings', array('registration' => false, 'personal_keys' => true, 'photo_urls' => true, 'public_reads' => true), $api(new ApiSettings(true, true, userKeys: true, registration: true, photoUrls: true)));
