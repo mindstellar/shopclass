@@ -15,8 +15,10 @@ namespace mindstellar\api\schema;
 use mindstellar\api\Problem;
 
 use mindstellar\api\serializer\CustomFieldSerializer;
+
 use mindstellar\api\serializer\ExtensionMembers;
 use mindstellar\listing\ListingStatus;
+use mindstellar\utility\DateInput;
 
 /**
  * The component schemas routes `$ref`, the validator checks and the OpenAPI document lists,
@@ -219,7 +221,7 @@ final class Schema
     }
 
     /** A day, `2027-03-01`, or an RFC 3339 date-time: what every date input takes. */
-    public const DATE_INPUT = '[0-9]{4}-[0-9]{2}-[0-9]{2}(T[0-9]{2}:[0-9]{2}(:[0-9]{2}(\\.[0-9]+)?)?(Z|[+-][0-9]{2}:[0-9]{2}))?';
+    public const DATE_INPUT = DateInput::PATTERN;
 
     /**
      * A date input: a day or an RFC 3339 date-time, or with $days also a number of days, `90d`.

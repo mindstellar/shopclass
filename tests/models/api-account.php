@@ -306,6 +306,7 @@ pin('once that one was used, the old one again is 400 invalid_grant', '400 inval
 pin('which ended the family: the newest one is refused too', '400 invalid_grant', $code($call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $refresh3))));
 
 harness_section('sessions');
+$umaKey  = (new ApiKeys(new ApiCredential(), new Scopes(), new SystemClock()))->create('key', 'sessions-key', array('listings:read', 'account:read'), \mindstellar\apiaccess\KeyOwner::user($uma));
 $phone   = $login('uma', 'correct horse', array('label' => 'Phone'))->body();
 $laptop  = $login('uma', 'correct horse', array('label' => 'Laptop'))->body();
 $list    = $call('GET', 'account/sessions', null, $phone['access_token']);
@@ -319,7 +320,11 @@ $laptopId = array_values(array_filter($list->body()['data'], static fn (array $s
 pin('one can be ended', 204, $call('DELETE', 'account/sessions/' . $laptopId, null, $phone['access_token'])->status());
 pin('its refresh token then fails', 400, $call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $laptop['refresh_token']))->status());
 pin('another user\'s or an unknown session is 404', 404, $call('DELETE', 'account/sessions/AAAAAAAAAAAAAAAA', null, $phone['access_token'])->status());
-pin('a key is not a session: revoke it at /account/keys', 404, $call('DELETE', 'account/sessions/key-1', null, $phone['access_token'])->status());
+pin('a key is not a session: it is not listed, and its id cannot be ended here', array(false, 404, 200), array(
+    in_array('sessions-key', $labels, true),
+    $call('DELETE', 'account/sessions/key-' . $umaKey->id(), null, $phone['access_token'])->status(),
+    $call('GET', 'account', null, $umaKey->token())->status(),
+));
 
 harness_section('editing the profile');
 $fired = array();
@@ -330,6 +335,9 @@ pin('acting as the token\'s user', $uma, $seen['edit_as'] ?? null);
 pin('a member not sent keeps its value', '5550100', $userRow($uma)['s_phone_mobile']);
 pin('the country is stored', array('US', 'United States'), array($userRow($uma)['fk_c_country_code'], $userRow($uma)['s_country']));
 pin('an unknown country is 422', '422 validation_failed', $code($call('PATCH', 'account', array('country' => 'ZZ'), $phone['access_token'])));
+$call('PATCH', 'account', array('website' => 'https://uma.example.test'), $phone['access_token']);
+$r = $call('PATCH', 'account', array('website' => null), $phone['access_token']);
+pin('null clears an optional member of the account', array(200, null), array($r->status(), $r->body()['data']['website'] ?? null));
 pin('UserActions\' own refusal is 422 with its message', array(422, 'The name cannot be empty'), (static function (Response $r): array {
     return array($r->status(), $r->body()['errors'][0]['message'] ?? null);
 })($call('PATCH', 'account', array('name' => '<b></b>'), $phone['access_token'])));

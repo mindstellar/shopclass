@@ -1212,6 +1212,7 @@ return array(
     'mindstellar\\user\\Usernames' => $baseDir . '/oc-includes/osclass/classes/user/Usernames.php',
     'mindstellar\\utility\\AjaxResponse' => $baseDir . '/oc-includes/osclass/classes/utility/AjaxResponse.php',
     'mindstellar\\utility\\Clock' => $baseDir . '/oc-includes/osclass/classes/utility/Clock.php',
+    'mindstellar\\utility\\DateInput' => $baseDir . '/oc-includes/osclass/classes/utility/DateInput.php',
     'mindstellar\\utility\\DeferredMail' => $baseDir . '/oc-includes/osclass/classes/utility/DeferredMail.php',
     'mindstellar\\utility\\Deprecate' => $baseDir . '/oc-includes/osclass/classes/utility/Deprecate.php',
     'mindstellar\\utility\\Escape' => $baseDir . '/oc-includes/osclass/classes/utility/Escape.php',

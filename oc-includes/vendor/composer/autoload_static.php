@@ -1329,6 +1329,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\user\\Usernames' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/user/Usernames.php',
         'mindstellar\\utility\\AjaxResponse' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/utility/AjaxResponse.php',
         'mindstellar\\utility\\Clock' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/utility/Clock.php',
+        'mindstellar\\utility\\DateInput' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/utility/DateInput.php',
         'mindstellar\\utility\\DeferredMail' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/utility/DeferredMail.php',
         'mindstellar\\utility\\Deprecate' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/utility/Deprecate.php',
         'mindstellar\\utility\\Escape' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/utility/Escape.php',

@@ -27,6 +27,7 @@ use mindstellar\database\Db;
 use mindstellar\moderation\ListingModeration;
 use mindstellar\search\query\CategoryFilter;
 use mindstellar\user\UserQuery;
+use mindstellar\utility\DateInput;
 
 /**
  * `/admin/listings`: every listing whatever its status, the admin's edit (status included),
@@ -192,12 +193,11 @@ final class AdminListingsController
         $expiry = (string) ($row['dt_expiration'] ?? '');
         if (array_key_exists('expires_at', $input)) {
             // A date-time names its day: a listing shows to the end of the day it expires.
-            $value  = (string) $input['expires_at'];
-            $expiry = match (true) {
-                $input['expires_at'] === null => '-1',
-                str_contains($value, 'T')     => (new \DateTimeImmutable($value))->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d'),
-                default                       => $value,
-            };
+            $date   = $input['expires_at'] === null ? null : DateInput::parse((string) $input['expires_at']);
+            if ($input['expires_at'] !== null && $date === null) {
+                throw ProblemException::field('/expires_at', 'format', 'must be a day, as 2030-06-30, or an RFC 3339 date-time');
+            }
+            $expiry = $date === null ? '-1' : $date->format('Y-m-d');
         }
 
         return [

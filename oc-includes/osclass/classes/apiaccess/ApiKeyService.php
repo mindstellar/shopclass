@@ -15,6 +15,7 @@ namespace mindstellar\apiaccess;
 use mindstellar\auth\AdminStore;
 use mindstellar\user\UserStore;
 use mindstellar\utility\Clock;
+use mindstellar\utility\DateInput;
 use mindstellar\validation\ConflictException;
 use mindstellar\validation\ForbiddenException;
 use mindstellar\validation\NotFoundException;
@@ -257,15 +258,13 @@ final class ApiKeyService
         $now = $this->clock->now();
         if (preg_match('/^(\d{1,4})d$/D', $expires, $m) === 1) {
             $at = (int) $m[1] > 0 ? $now + (int) $m[1] * 86400 : false;
-        } elseif (str_contains($expires, 'T')) {
-            $time = \DateTimeImmutable::createFromFormat(\DateTimeInterface::RFC3339_EXTENDED, $expires) ?: \DateTimeImmutable::createFromFormat(\DateTimeInterface::RFC3339, $expires);
-            $at   = $time !== false ? $time->getTimestamp() : false;
         } else {
-            $date = \DateTime::createFromFormat('!Y-m-d', $expires);
-            $at   = $date !== false && $date->format('Y-m-d') === $expires ? $date->getTimestamp() + 86399 : false;
+            $date = DateInput::parse($expires);
+            // A day works to its end; a date-time to its moment.
+            $at = $date === null ? false : $date->getTimestamp() + (DateInput::isDay($expires) ? 86399 : 0);
         }
         if ($at === false) {
-            throw new RefusedException(_m('Write the expiry date as YYYY-MM-DD.'));
+            throw new RefusedException(_m('Write the expiry as a day such as 2027-03-01, a date and time, or a number of days such as 90d.'));
         }
         if ($at <= $now) {
             throw new RefusedException(_m('The expiry date has to be in the future.'));

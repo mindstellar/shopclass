@@ -110,7 +110,7 @@ pin('every 201 documents its Location, but sign-up, whose account cannot be read
 
 harness_section('custom fields');
 $fields = new CustomFieldValues(static fn (int $category): array => $category === 5
-    ? [['pk_i_id' => '1', 'e_type' => 'TEXT'], ['pk_i_id' => '3', 'e_type' => 'DATEINTERVAL'], ['pk_i_id' => '4', 'e_type' => 'CHECKBOX']]
+    ? [['pk_i_id' => '1', 'e_type' => 'TEXT'], ['pk_i_id' => '3', 'e_type' => 'DATEINTERVAL'], ['pk_i_id' => '4', 'e_type' => 'CHECKBOX'], ['pk_i_id' => '5', 'e_type' => 'DATE']]
     : []);
 pin('only the category\'s fields; text purified as the form\'s', [1 => 'red', 3 => ['from' => '1', 'to' => '9'], 4 => '1'], $fields->clean(5, [
     '1' => '<script>alert(1)</script>red', '2' => 'other category', '3' => ['from' => 1, 'to' => '9', 'x' => 'y'], '4' => true, 'x' => 'no id',
@@ -123,6 +123,7 @@ try {
     $bad = [$e->response()->status(), $e->response()->body()['errors'][0]['pointer'] ?? null];
 }
 pin('a date that cannot be read is 422 at its pointer, never saved as a wrong number', [422, '/custom_fields/3/from'], $bad);
+pin('a single date, and a date-time with fractions of a second, are read too', [5 => '1767225600'], $fields->clean(5, ['5' => '2026-01-01T00:00:00.250Z']));
 pin('a value of the wrong shape is dropped', [], $fields->clean(5, ['1' => ['a', 'b'], '3' => 'not a range']));
 pin('a category with no fields takes none', [], $fields->clean(6, ['1' => 'red']));
 

@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\api\write;
 
 use mindstellar\api\ProblemException;
+use mindstellar\utility\DateInput;
 use Params;
 
 /**
@@ -99,12 +100,8 @@ final class CustomFieldValues
             // Empty clears it; digits are the Unix time a stored value already holds.
             return $value;
         }
-        $utc  = new \DateTimeZone('UTC');
-        $date = preg_match('/^\d{4}-\d{2}-\d{2}$/D', $value) === 1
-            ? \DateTimeImmutable::createFromFormat('!Y-m-d', $value, $utc)
-            : \DateTimeImmutable::createFromFormat(\DateTimeInterface::RFC3339, $value, $utc);
-        $errors = \DateTimeImmutable::getLastErrors();
-        if ($date === false || ($errors !== false && ($errors['warning_count'] > 0 || $errors['error_count'] > 0))) {
+        $date = DateInput::parse($value);
+        if ($date === null) {
             throw ProblemException::field($pointer, 'format', 'must be a date, as 2026-01-31, or an RFC 3339 date-time');
         }
 
