@@ -20,6 +20,7 @@ use mindstellar\apiaccess\Scopes;
 use mindstellar\auth\AuthStamp;
 use mindstellar\model\ApiCredential;
 use mindstellar\security\SignedPayload;
+use mindstellar\user\UserStore;
 
 /**
  * Access tokens: `sca_<SignedPayload>`, signed with the install's key and stored nowhere.
@@ -109,7 +110,7 @@ final class AccessTokens
             return KeyCheck::stale(true);
         }
         $user = $this->users->find($data['sub']);
-        if ($user === null || !UserRows::canSignIn($user)
+        if ($user === null || !UserStore::isLive($user)
             || !hash_equals(AuthStamp::fingerprint($user), $data['st'])
             || !($this->familyLive)($data['fam'])
         ) {

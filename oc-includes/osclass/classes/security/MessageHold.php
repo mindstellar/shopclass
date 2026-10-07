@@ -11,6 +11,7 @@
 namespace mindstellar\security;
 
 use mindstellar\job\JobQueue;
+use mindstellar\user\UserStore;
 use mindstellar\utility\ViewScope;
 
 /**
@@ -232,7 +233,7 @@ final class MessageHold
                 return true;
             case 'user_contact':
                 $user = \User::getInstance()->findByPrimaryKey((int) ($args['id'] ?? 0));
-                if (!$user || !$user['b_active'] || !$user['b_enabled']) {
+                if (!$user || !UserStore::isLive($user)) {
                     return false;
                 }
                 ViewScope::with('user', $user, static fn () => osc_run_hook(

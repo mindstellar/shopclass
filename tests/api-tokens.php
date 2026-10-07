@@ -192,7 +192,7 @@ final class ArraySessions implements SignInStore
     {
         $r     = $this->rows[$id];
         $user  = $this->users[$r['userId']] ?? null;
-        $owner = $user !== null && UserRows::canSignIn($user) ? KeyOwner::user($r['userId']) : null;
+        $owner = $user !== null && \mindstellar\user\UserStore::isLive($user) ? KeyOwner::user($r['userId']) : null;
 
         return new StoredKey($id, $r['kind'], $r['tokenId'], $r['hash'], $r['name'], $r['scopes'], $owner, null, true, $r['expires'], $r['revoked'], $r['lastUsed'], $r['family'], $r['created'], $r['ip']);
     }

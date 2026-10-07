@@ -34,6 +34,17 @@ final class UserStore extends Model
     }
 
     /**
+     * Whether an account is live: confirmed and not blocked. byIds() with $liveOnly asks the
+     * same in SQL.
+     *
+     * @param array<string,mixed> $user a t_user row
+     */
+    public static function isLive(array $user): bool
+    {
+        return (int) ($user['b_enabled'] ?? 0) === 1 && (int) ($user['b_active'] ?? 0) === 1;
+    }
+
+    /**
      * Bare rows for these ids, keyed by nothing.
      *
      * @param int[]    $ids

@@ -24,6 +24,7 @@ use mindstellar\apiaccess\PageTokens;
 use mindstellar\apiaccess\Scopes;
 use mindstellar\auth\AuthStamp;
 use mindstellar\security\RememberMe;
+use mindstellar\user\UserStore;
 
 /**
  * The same-site session mode: theme JavaScript on the site's own pages calls the API as the
@@ -114,7 +115,7 @@ final class PageTokenAuth
             return null;
         }
         $user = $this->users->find($cookie->userId());
-        if ($user === null || !UserRows::canSignIn($user)
+        if ($user === null || !UserStore::isLive($user)
             || !RememberMe::verify('web', $cookie->rawUserId(), $cookie->secret(), (string) ($user['s_password'] ?? ''), AuthStamp::of($user))
         ) {
             return null;

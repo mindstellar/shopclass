@@ -53,16 +53,6 @@ final class UserRows
     }
 
     /**
-     * Whether the account may sign in and use its tokens: confirmed and not suspended.
-     *
-     * @param array<string,mixed> $user
-     */
-    public static function canSignIn(array $user): bool
-    {
-        return (int) ($user['b_enabled'] ?? 0) === 1 && (int) ($user['b_active'] ?? 0) === 1;
-    }
-
-    /**
      * @return array<string,mixed>|null
      * @throws \mindstellar\database\DbException
      */

@@ -22,6 +22,7 @@ use mindstellar\apiaccess\Scopes;
 use mindstellar\apiaccess\SignInStore;
 use mindstellar\apiaccess\StoredKey;
 use mindstellar\auth\AuthStamp;
+use mindstellar\user\UserStore;
 use mindstellar\utility\Clock;
 
 /**
@@ -107,7 +108,7 @@ final class RefreshTokens
             }
             $userId = $row->owner()?->userId();
             $user   = $userId === null ? null : $this->users->find($userId);
-            if ($user === null || !$row->isUsableAt($this->clock->now()) || !UserRows::canSignIn($user)) {
+            if ($user === null || !$row->isUsableAt($this->clock->now()) || !UserStore::isLive($user)) {
                 $this->store->revokeFamily($family);
 
                 return self::REFUSED;

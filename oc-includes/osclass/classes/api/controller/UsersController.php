@@ -22,6 +22,7 @@ use mindstellar\api\serializer\UserSerializer;
 use mindstellar\api\serializer\ViewContext;
 use mindstellar\apiaccess\Credential;
 use mindstellar\user\UserQuery;
+use mindstellar\user\UserStore;
 
 /**
  * `GET /users/{id}` and `GET /users/{id}/listings`. A disabled or unconfirmed account is 404
@@ -74,7 +75,7 @@ final class UsersController
      */
     private static function visible(array $user, Credential $credential): bool
     {
-        return (Format::bool($user['b_enabled'] ?? 0) && Format::bool($user['b_active'] ?? 0))
+        return UserStore::isLive($user)
             || ViewContext::viewOf($credential, Format::int($user['pk_i_id'] ?? 0), ViewContext::USERS_SCOPE) !== ViewContext::PUBLIC;
     }
 }
