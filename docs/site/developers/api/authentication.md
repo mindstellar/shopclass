@@ -141,13 +141,14 @@ The answer has the same shape as a sign-in, with a **new** refresh token.
 |---|---|
 | Single use | Each refresh token works once. Store the new one and drop the old. |
 | Life | 30 days by default, counted from the last use. `refresh_expires_in` says. |
-| Reuse | A token used a second time ends the whole sign-in: `400 invalid_grant`, and every token of that sign-in stops. Sign in again. |
+| Retry | The same token sent again within 30 seconds, before its new token is used, gets that same new token. A client that lost the answer keeps its sign-in. |
+| Reuse | Any other second use ends the whole sign-in: `400 invalid_grant`, and every token of that sign-in stops. Sign in again. |
 | Password change | Ends every sign-in. The one that changed the password gets a new one. |
 | Other refusals | An unknown, expired or revoked token, or an account that may no longer sign in, is `400 invalid_grant`. |
 
-Two requests with the same refresh token at once count as reuse: the second gets
-`invalid_grant` and the sign-in ends, including the new token the first one got. A client with
-several threads must refresh in one place.
+Two requests with the same refresh token at once both get the same new token. Once a thread
+uses that new token, a late refresh with the old one ends the sign-in, so a client with several
+threads should still refresh in one place.
 
 ### Errors from the token endpoint
 

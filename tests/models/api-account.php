@@ -299,8 +299,11 @@ $refresh2 = (string) ($r->body()['refresh_token'] ?? '');
 pin('a refresh answers new tokens', array(200, true, true), array($r->status(), $refresh2 !== '' && $refresh2 !== $refresh1, str_starts_with((string) ($r->body()['access_token'] ?? ''), 'sca_')));
 $access2 = (string) $r->body()['access_token'];
 pin('the new access token works', 200, $call('GET', 'account', null, $access2)->status());
-pin('the old refresh token again is 400 invalid_grant', '400 invalid_grant', $code($call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $refresh1))));
-pin('which ended the family: the newest one is refused too', '400 invalid_grant', $code($call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $refresh2))));
+$retry = $call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $refresh1));
+pin('the old refresh token sent again at once, as after a lost answer, gets the same new one', array(200, $refresh2), array($retry->status(), $retry->body()['refresh_token'] ?? null));
+$refresh3 = (string) ($call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $refresh2))->body()['refresh_token'] ?? '');
+pin('once that one was used, the old one again is 400 invalid_grant', '400 invalid_grant', $code($call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $refresh1))));
+pin('which ended the family: the newest one is refused too', '400 invalid_grant', $code($call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $refresh3))));
 
 harness_section('sessions');
 $phone   = $login('uma', 'correct horse', array('label' => 'Phone'))->body();

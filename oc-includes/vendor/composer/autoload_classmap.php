@@ -883,6 +883,7 @@ return array(
     'mindstellar\\api\\auth\\FailureCounter' => $baseDir . '/oc-includes/osclass/classes/api/auth/FailureCounter.php',
     'mindstellar\\api\\auth\\OAuthError' => $baseDir . '/oc-includes/osclass/classes/api/auth/OAuthError.php',
     'mindstellar\\api\\auth\\PageTokenAuth' => $baseDir . '/oc-includes/osclass/classes/api/auth/PageTokenAuth.php',
+    'mindstellar\\api\\auth\\RefreshRetries' => $baseDir . '/oc-includes/osclass/classes/api/auth/RefreshRetries.php',
     'mindstellar\\api\\auth\\RefreshTokens' => $baseDir . '/oc-includes/osclass/classes/api/auth/RefreshTokens.php',
     'mindstellar\\api\\auth\\TokenIssuer' => $baseDir . '/oc-includes/osclass/classes/api/auth/TokenIssuer.php',
     'mindstellar\\api\\auth\\UserRows' => $baseDir . '/oc-includes/osclass/classes/api/auth/UserRows.php',

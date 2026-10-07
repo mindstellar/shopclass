@@ -36,8 +36,9 @@ use mindstellar\utility\Clock;
  * a password change does. Each token also carries the user's sign-out stamp, so a raised
  * stamp ends it even if that revoke never ran.
  *
- * There is no grace window for a retried swap: only hashes are kept, so the same new pair
- * cannot be handed out twice, and a second live token would let a thief fork the family.
+ * A swapped token that comes back within RefreshRetries::WINDOW seconds, while its successor
+ * is unused, gets that same successor again: a client that lost the answer keeps its sign-in,
+ * and no second live token is ever made, so the family cannot fork.
  */
 final class RefreshTokens
 {
@@ -59,7 +60,8 @@ final class RefreshTokens
         private Scopes $scopes,
         private UserRows $users,
         private int $ttlDays,
-        private Clock $clock
+        private Clock $clock,
+        private ?RefreshRetries $retries = null
     ) {
     }
 
@@ -102,12 +104,18 @@ final class RefreshTokens
             if ($row === null) {
                 return self::REFUSED;
             }
+            $userId = $row->owner()?->userId();
+            $user   = $userId === null ? null : $this->users->find($userId);
             if ($row->revokedAt() !== null) {
+                $retry = $this->retries?->recall($row->id());
+                $next  = $retry === null ? null : $this->store->find((int) $retry->id());
+                if ($next !== null && $next->revokedAt() === null && $next->isUsableAt($this->clock->now()) && $user !== null && UserStore::isLive($user)) {
+                    return $retry;
+                }
+
                 // A family with live tokens left means this one was swapped and is back.
                 return $this->store->revokeFamily($family) > 0 ? self::REUSED : self::REFUSED;
             }
-            $userId = $row->owner()?->userId();
-            $user   = $userId === null ? null : $this->users->find($userId);
             if ($user === null || !$row->isUsableAt($this->clock->now()) || !UserStore::isLive($user)) {
                 $this->store->revokeFamily($family);
 
@@ -120,7 +128,10 @@ final class RefreshTokens
             }
             $scopes = Scopes::normalize($row->scopes(), $this->scopes->allowedFor(CredentialKind::USER, KeyOwner::user((int) $userId)));
 
-            return $this->issue((int) $userId, AuthStamp::of($user), $family, $scopes, $row->name(), $ip);
+            $issued = $this->issue((int) $userId, AuthStamp::of($user), $family, $scopes, $row->name(), $ip);
+            $this->retries?->remember($row->id(), $issued, $this->clock->now());
+
+            return $issued;
         });
         if ($outcome instanceof IssuedToken) {
             return $outcome;
@@ -176,7 +187,7 @@ final class RefreshTokens
         ));
         $this->store->touch($id, substr($ip, 0, 45), $now);
 
-        return new IssuedToken(self::PREFIX . $tokenId . '.' . $secret, $expires, $scopes, userId: $userId, family: $family);
+        return new IssuedToken(self::PREFIX . $tokenId . '.' . $secret, $expires, $scopes, id: $id, userId: $userId, family: $family);
     }
 
     private static function refused(): ProblemException

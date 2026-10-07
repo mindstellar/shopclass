@@ -1000,6 +1000,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\api\\auth\\FailureCounter' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/api/auth/FailureCounter.php',
         'mindstellar\\api\\auth\\OAuthError' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/api/auth/OAuthError.php',
         'mindstellar\\api\\auth\\PageTokenAuth' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/api/auth/PageTokenAuth.php',
+        'mindstellar\\api\\auth\\RefreshRetries' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/api/auth/RefreshRetries.php',
         'mindstellar\\api\\auth\\RefreshTokens' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/api/auth/RefreshTokens.php',
         'mindstellar\\api\\auth\\TokenIssuer' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/api/auth/TokenIssuer.php',
         'mindstellar\\api\\auth\\UserRows' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/api/auth/UserRows.php',

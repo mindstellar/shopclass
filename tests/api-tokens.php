@@ -26,6 +26,7 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hUsers.php';
 use mindstellar\api\ApiCall;
 use mindstellar\api\auth\Authenticator;
 use mindstellar\api\auth\FailureCounter;
+use mindstellar\api\auth\RefreshRetries;
 use mindstellar\api\auth\RefreshTokens;
 use mindstellar\api\auth\UserRows;
 use mindstellar\api\Kernel;
@@ -306,6 +307,29 @@ $fifth = $fresh->start($store->users[10], ['listings:read'], 'Five', '');
 $store->users[10]['b_enabled'] = '0';
 pin('a suspended user cannot refresh', 'invalid_grant', $problem(static fn () => (new RefreshTokens($store, $scopes, $accounts(), 30, $clock))->rotate($fifth->token(), '')));
 $store->users[10]['b_enabled'] = '1';
+
+harness_section('refresh retries');
+$kept     = [];
+$retries  = new RefreshRetries(
+    static function (string $key) use (&$kept, &$now): ?string {
+        return isset($kept[$key]) && $kept[$key][1] > $now ? $kept[$key][0] : null;
+    },
+    static function (string $key, string $value, int $expiresAt) use (&$kept): void {
+        $kept[$key] = [$value, $expiresAt];
+    }
+);
+$retrying = new RefreshTokens($store, $scopes, $accounts(), 30, $clock, $retries);
+$begun    = $retrying->start($store->users[10], ['listings:read'], 'Retry', '');
+$next     = $retrying->rotate($begun->token(), '');
+$again    = $retrying->rotate($begun->token(), '');
+pin('the old token sent again within the window gets the same new token, and the sign-in lives', [$next->token(), 1], [$again->token(), $store->live($begun->family())]);
+check('the kept token is encrypted', !str_contains((string) json_encode($kept), explode('.', $next->token())[1]));
+$retrying->rotate($next->token(), '');
+pin('once the new token was used, the old one coming back ends the sign-in', ['invalid_grant', 0], [$problem(static fn () => $retrying->rotate($begun->token(), '')), $store->live($begun->family())]);
+$late = $retrying->start($store->users[10], ['listings:read'], 'Late', '');
+$retrying->rotate($late->token(), '');
+$now += RefreshRetries::WINDOW;
+pin('after the window, it ends the sign-in too', ['invalid_grant', 0], [$problem(static fn () => $retrying->rotate($late->token(), '')), $store->live($late->family())]);
 
 $a = $fresh->start($store->users[10], ['listings:read'], 'A', '');
 $b = $fresh->start($store->users[10], ['listings:read'], 'B', '');

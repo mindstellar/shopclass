@@ -18,6 +18,7 @@ use mindstellar\api\auth\AdminRows;
 use mindstellar\api\auth\Authenticator;
 use mindstellar\api\auth\FailureCounter;
 use mindstellar\api\auth\PageTokenAuth;
+use mindstellar\api\auth\RefreshRetries;
 use mindstellar\api\auth\RefreshTokens;
 use mindstellar\api\auth\TokenIssuer;
 use mindstellar\api\auth\UserRows;
@@ -358,7 +359,7 @@ final class ApiServices
     {
         return $this->once(
             __FUNCTION__,
-            fn (): RefreshTokens => new RefreshTokens($this->store, $this->scopes, $this->users, RefreshTokens::TTL_DAYS, $this->clock)
+            fn (): RefreshTokens => new RefreshTokens($this->store, $this->scopes, $this->users, RefreshTokens::TTL_DAYS, $this->clock, new RefreshRetries())
         );
     }
 

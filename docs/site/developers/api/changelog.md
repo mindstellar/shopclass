@@ -107,6 +107,7 @@ Also settled before the first release, so no released client saw the old behavio
 - A credential that cannot read the `GET` of the path gets `412` for `If-Match`, instead of the check being skipped.
 - A stale `If-Match` on a resource the credential cannot see answers as its `GET` does (`404`), not `412`.
 - `If-Match`, `*` included, on a resource that is gone answers as its `GET` does and runs nothing, instead of leaving it to the write.
+- A refresh token sent again within 30 seconds, before its new token is used, gets that same new token instead of ending the sign-in.
 - A valid token from an address that sent many bad ones works; only that address's failing tokens answer `429 too_many_failures`.
 - `Idempotency-Key` keeps every `4xx` except `429`, including a `409` or `422` from a core refusal.
 - A banned user's access token or personal key answers `403 banned`, as a session call does.
