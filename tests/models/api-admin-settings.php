@@ -138,7 +138,14 @@ pin('rotate: 201, a new token with the same scopes', [201, true, ['admin:listing
 pin('both keys work until the old one is revoked', [200, 200], [$call('GET', 'admin/listings', null, $token)->status(), $call('GET', 'admin/listings', null, $fresh)->status()]);
 $others = api_admin_key($otherId);
 $theirs = (int) $admin->query("SELECT MAX(pk_i_id) FROM {$p}t_api_credential WHERE fk_i_admin_id = $otherId")->fetch_row()[0];
-pin('another admin\'s key cannot be rotated', '403 forbidden', api_admin_code($call('POST', 'admin/keys/' . $theirs . '/rotate', null, $boss)));
+pin('another admin\'s key cannot be rotated', '403 not_owner', api_admin_code($call('POST', 'admin/keys/' . $theirs . '/rotate', null, $boss)));
+pin('nor revoked', ['403 not_owner', 200], [api_admin_code($call('DELETE', 'admin/keys/' . $theirs, null, $boss)), $call('GET', 'admin/listings', null, $others)->status()]);
+$theirApp = (int) ($call('POST', 'admin/keys', ['name' => 'Their app', 'kind' => 'public'], $others)->body()['data']['id'] ?? 0);
+$r        = $call('POST', 'admin/keys/' . $theirApp . '/rotate', null, $boss);
+pin('another admin\'s public key rotates into one the caller owns', [201, (string) $bossId], [
+    $r->status(), $admin->query("SELECT fk_i_admin_id FROM {$p}t_api_credential WHERE pk_i_id = " . (int) ($r->body()['data']['id'] ?? 0))->fetch_row()[0] ?? null,
+]);
+pin('and their public key can be revoked', 204, $call('DELETE', 'admin/keys/' . $theirApp, null, $boss)->status());
 pin('DELETE revokes: 204, then the key is refused', [204, 401], [$call('DELETE', 'admin/keys/' . $made, null, $boss)->status(), $call('GET', 'admin/listings', null, $token)->status()]);
 pin('revoking it again is 409', '409 conflict', api_admin_code($call('DELETE', 'admin/keys/' . $made, null, $boss)));
 pin('a revoked key cannot be rotated', '409 conflict', api_admin_code($call('POST', 'admin/keys/' . $made . '/rotate', null, $boss)));

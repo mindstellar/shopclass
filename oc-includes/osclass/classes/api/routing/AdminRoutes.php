@@ -204,7 +204,7 @@ final class AdminRoutes
             'GET admin/keys'               => self::read($k, 'index', $tag, 'admin:keys', 'Every API key, newest first; never a secret', 'ApiKeyList'),
             'GET admin/keys/{id}'          => self::read($k, 'show', $tag, 'admin:keys', 'One API key; never its secret', 'ApiKeyDocument', [], [404]),
             'POST admin/keys'              => self::write($k, 'create', $tag, 'admin:keys', 'Make an admin or public key; its token is shown once', 'ApiKeyInput', 'ApiKeyDocument', 201, [403], false),
-            'DELETE admin/keys/{id}'       => self::write($k, 'revoke', $tag, 'admin:keys', 'Revoke a key', null, null, 204, [404, 409]),
+            'DELETE admin/keys/{id}'       => self::write($k, 'revoke', $tag, 'admin:keys', 'Revoke a key; never another admin\'s own key', null, null, 204, [403, 404, 409]),
             'POST admin/keys/{id}/rotate'  => self::write($k, 'rotate', $tag, 'admin:keys', 'Make a new key in place of one of yours or a public key; the old one works until revoked', null, 'ApiKeyDocument', 201, [403, 404, 409], false),
         ];
     }

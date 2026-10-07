@@ -40,7 +40,7 @@ final class PublicRoutes
 {
     private const LOCALE = ['type' => 'string', 'pattern' => '^[A-Za-z]{2,3}_[A-Za-z]{2}$'];
 
-    private const INCLUDE = ['type' => 'string', 'maxLength' => 100, 'description' => 'Comma list: fields, translations.'];
+    private const INCLUDE = ['type' => 'string', 'maxLength' => 100, 'description' => 'Comma list: custom_fields, translations.'];
 
     private const COUNT = ['type' => 'boolean', 'description' => 'true: also count every match for meta.total; skipped otherwise, as it costs a query.'];
 

@@ -2902,7 +2902,7 @@
                         "name": "include",
                         "in": "query",
                         "required": false,
-                        "description": "Comma list: fields, translations.",
+                        "description": "Comma list: custom_fields, translations.",
                         "schema": {
                             "type": "string",
                             "maxLength": 100
@@ -12280,7 +12280,7 @@
             },
             "delete": {
                 "operationId": "deleteAdminKeysById",
-                "summary": "Revoke a key",
+                "summary": "Revoke a key; never another admin's own key",
                 "tags": [
                     "Admin settings"
                 ],
@@ -23237,7 +23237,7 @@
                         "name": "include",
                         "in": "query",
                         "required": false,
-                        "description": "Comma list: fields, translations.",
+                        "description": "Comma list: custom_fields, translations.",
                         "schema": {
                             "type": "string",
                             "maxLength": 100
@@ -23824,7 +23824,7 @@
                         "name": "include",
                         "in": "query",
                         "required": false,
-                        "description": "Comma list: fields, translations.",
+                        "description": "Comma list: custom_fields, translations.",
                         "schema": {
                             "type": "string",
                             "maxLength": 100
@@ -27834,7 +27834,7 @@
                         "name": "include",
                         "in": "query",
                         "required": false,
-                        "description": "Comma list: fields, translations.",
+                        "description": "Comma list: custom_fields, translations.",
                         "schema": {
                             "type": "string",
                             "maxLength": 100

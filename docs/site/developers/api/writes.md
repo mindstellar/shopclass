@@ -153,7 +153,7 @@ Send `application/merge-patch+json` or `application/json`. The answer repeats `A
 |---|---|
 | A member | Replaces that value. |
 | `null` on `price`, `lat`, `lng`, `region_id`, `city_id` | Clears it. |
-| `fields: {"4": null}` | Removes that custom field value. |
+| `custom_fields: {"4": null}` | Removes that custom field value. |
 | `translations` | Merges by locale. Other locales stay. |
 | `photo_tokens`, `photo_urls` | **Adds** photos. It never replaces or removes any. |
 
@@ -300,7 +300,7 @@ curl -i -X POST $API/account/alerts \
 
 | Rule | Detail |
 |---|---|
-| Filters | `q`, `category`, `country`, `region`, `city`, `city_area`, `user`, `locale`, `price_min`, `price_max`, `with_photos`, `premium`, `field`. At least one. |
+| Filters | `q`, `category`, `country`, `region`, `city`, `city_area`, `user`, `locale`, `price_min`, `price_max`, `with_photos`, `premium`, `custom_field`. At least one. |
 | Same search again | Answers `200` with the saved one, not a second `201`. |
 | `type` | How often it mails: `instant`, `hourly`, `daily` or `weekly`. |
 | List and stop | `GET /account/alerts`, `DELETE /account/alerts/{id}` (`204`). |

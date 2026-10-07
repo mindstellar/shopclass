@@ -16,6 +16,7 @@ use mindstellar\auth\AdminStore;
 use mindstellar\user\UserStore;
 use mindstellar\utility\Clock;
 use mindstellar\validation\ConflictException;
+use mindstellar\validation\ForbiddenException;
 use mindstellar\validation\NotFoundException;
 use mindstellar\validation\RefusedException;
 
@@ -117,7 +118,8 @@ final class ApiKeyService
         if ($key->kind() !== CredentialKind::PUBLIC && $key->owner()?->adminId() !== $actorAdminId) {
             throw new RefusedException(_m('You can only rotate your own keys and public keys. Revoke this one and make a new key instead.'));
         }
-        $issued = $this->keys->rotate($id, $notAfter);
+        $owner  = $key->kind() === CredentialKind::PUBLIC ? KeyOwner::admin($actorAdminId) : null;
+        $issued = $this->keys->rotate($id, $notAfter, $owner);
         if ($issued === null) {
             throw new ConflictException(_m('That key is revoked, expired or its owner is gone, so it cannot be rotated.'));
         }
@@ -134,11 +136,18 @@ final class ApiKeyService
     }
 
     /**
+     * @param int|null $actorAdminId when set, another admin's own key is refused
+     *
      * @throws NotFoundException|ConflictException when there is no such key or it is already revoked
+     * @throws ForbiddenException when the key is another admin's own key
      */
-    public function revoke(int $id): void
+    public function revoke(int $id, ?int $actorAdminId = null): void
     {
-        $this->manageable($id);
+        $key   = $this->manageable($id);
+        $owner = $key->owner()?->adminId();
+        if ($actorAdminId !== null && $key->kind() === CredentialKind::KEY && $owner !== null && $owner !== $actorAdminId) {
+            throw new ForbiddenException(_m('You can only revoke your own keys, public keys and users\' keys.'), ForbiddenException::NOT_OWNER);
+        }
         if (!$this->keys->revoke($id)) {
             throw new ConflictException(_m('That key is already revoked.'));
         }

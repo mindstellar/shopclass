@@ -99,9 +99,10 @@ final class ApiKeys
      *
      * @return IssuedToken|null null when there is no such key, or it is revoked, disabled,
      *                        expired or its owner is gone
-     * @param int|null $notAfter the latest expiry the new key may have
+     * @param int|null      $notAfter the latest expiry the new key may have
+     * @param KeyOwner|null $owner    the new key's owner, or null to keep the old one's
      */
-    public function rotate(int $id, ?int $notAfter = null): ?IssuedToken
+    public function rotate(int $id, ?int $notAfter = null, ?KeyOwner $owner = null): ?IssuedToken
     {
         $old = $this->store->find($id);
         if ($old === null || !in_array($old->kind(), [CredentialKind::KEY, CredentialKind::PUBLIC], true)
@@ -115,7 +116,7 @@ final class ApiKeys
             $expiresAt = $notAfter;
         }
 
-        return $this->create($old->kind(), $old->name(), $old->scopes(), $old->owner(), $expiresAt, $old->rateLimit());
+        return $this->create($old->kind(), $old->name(), $old->scopes(), $owner ?? $old->owner(), $expiresAt, $old->rateLimit());
     }
 
     public function revoke(int $id): bool

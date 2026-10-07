@@ -93,7 +93,7 @@ final class AdminKeysController
     public function revoke(Request $request, Credential $credential, array $args): Response
     {
         $id = (int) $this->key((int) $args['id'])['id'];
-        $this->keys->revoke($id);
+        $this->keys->revoke($id, (int) $credential->adminId());
 
         return Response::noContent();
     }
@@ -108,7 +108,7 @@ final class AdminKeysController
     {
         $old = $this->key((int) $args['id']);
         if ($old['kind'] !== 'public' && $old['owner_admin'] !== $credential->adminId()) {
-            throw ProblemException::of('forbidden', 'Only your own keys and public keys can be rotated. Revoke this one and make a new key instead.');
+            throw ProblemException::of('not_owner', 'Only your own keys and public keys can be rotated. Revoke this one and make a new key instead.');
         }
         self::checkGrant($credential, $old['scopes']);
         $issued = $this->keys->rotate((int) $old['id'], (int) $credential->adminId(), $this->keys->expiresAt((int) $credential->id()));

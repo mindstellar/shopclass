@@ -153,7 +153,7 @@ Your own listings in any status, newest first
 | `limit` | query | integer | no |  |
 | `cursor` | query | string | no |  |
 | `count` | query | boolean | no | true: also count every match for meta.total; skipped otherwise, as it costs a query. |
-| `include` | query | string | no | Comma list: fields, translations. |
+| `include` | query | string | no | Comma list: custom_fields, translations. |
 | `locale` | query | string | no |  |
 | `fields` | query | string | no |  |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
@@ -350,7 +350,7 @@ Answers: 200 OK (`ListingDocument`); 401 No valid credential; 403 Not allowed fo
 | GET | `/admin/keys` | admin | `admin:keys` | Every API key, newest first; never a secret |
 | POST | `/admin/keys` | admin | `admin:keys` | Make an admin or public key; its token is shown once |
 | GET | `/admin/keys/{id}` | admin | `admin:keys` | One API key; never its secret |
-| DELETE | `/admin/keys/{id}` | admin | `admin:keys` | Revoke a key |
+| DELETE | `/admin/keys/{id}` | admin | `admin:keys` | Revoke a key; never another admin's own key |
 | POST | `/admin/keys/{id}/rotate` | admin | `admin:keys` | Make a new key in place of one of yours or a public key; the old one works until revoked |
 | GET | `/admin/settings` | admin | `admin:settings` | The settings the API can change |
 | PATCH | `/admin/settings` | admin | `admin:settings` | Change some settings, all or none, checked as on the settings screens |
@@ -397,7 +397,7 @@ Answers: 200 OK (`ApiKeyDocument`); 304 Not modified; 401 No valid credential; 4
 
 ### DELETE `/admin/keys/{id}`
 
-Revoke a key
+Revoke a key; never another admin's own key
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
@@ -1140,7 +1140,7 @@ Search listings
 | `cursor` | query | string | no |  |
 | `count` | query | boolean | no | true: also count every match for meta.total; skipped otherwise, as it costs a query. |
 | `fields` | query | string | no |  |
-| `include` | query | string | no | Comma list: fields, translations. |
+| `include` | query | string | no | Comma list: custom_fields, translations. |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
 Answers: 200 OK (`ListingPage`); 304 Not modified; 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
@@ -1166,7 +1166,7 @@ One listing
 | `id` | path | integer | yes |  |
 | `locale` | query | string | no |  |
 | `fields` | query | string | no |  |
-| `include` | query | string | no | Comma list: fields, translations. |
+| `include` | query | string | no | Comma list: custom_fields, translations. |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
 Answers: 200 OK (`ListingDocument`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
@@ -1446,7 +1446,7 @@ A user's live listings
 | `cursor` | query | string | no |  |
 | `count` | query | boolean | no | true: also count every match for meta.total; skipped otherwise, as it costs a query. |
 | `fields` | query | string | no |  |
-| `include` | query | string | no | Comma list: fields, translations. |
+| `include` | query | string | no | Comma list: custom_fields, translations. |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
 Answers: 200 OK (`ListingPage`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
