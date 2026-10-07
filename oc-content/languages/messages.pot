@@ -3312,6 +3312,10 @@ msgid "You are using %1$d of your %2$d listings."
 msgstr ""
 
 #: oc-includes/osclass/classes/apiaccess/ApiKeyService.php
+msgid "You can only revoke your own keys, public keys and users' keys."
+msgstr ""
+
+#: oc-includes/osclass/classes/apiaccess/ApiKeyService.php
 msgid ""
 "You can only rotate your own keys and public keys. Revoke this one and make "
 "a new key instead."
