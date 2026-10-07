@@ -19,7 +19,7 @@ namespace mindstellar\utility;
 final class DateInput
 {
     /** The same grammar as a regex, for a JSON Schema `pattern`. */
-    public const PATTERN = '[0-9]{4}-[0-9]{2}-[0-9]{2}(T[0-9]{2}:[0-9]{2}(:[0-9]{2}(\\.[0-9]+)?)?(Z|[+-][0-9]{2}:[0-9]{2}))?';
+    public const PATTERN = '[0-9]{4}-[0-9]{2}-[0-9]{2}(T[0-9]{2}:[0-9]{2}(:[0-9]{2}(\\.[0-9]+)?)?(Z|[+-](0[0-9]|1[0-4]):[0-5][0-9]))?';
 
     private function __construct()
     {
@@ -39,7 +39,7 @@ final class DateInput
         if (!str_contains($value, 'T')) {
             $day = \DateTimeImmutable::createFromFormat('!Y-m-d', $value, $utc);
 
-            return $day !== false && $day->format('Y-m-d') === $value ? $day : null;
+            return $day !== false && $day->format('Y-m-d') === $value && (int) $day->format('Y') >= 1000 ? $day : null;
         }
         // Fractions of a second change nothing a site stores, so they are dropped before reading.
         $whole = (string) preg_replace('/(T\d{2}:\d{2}:\d{2})\.\d+/', '$1', $value);
@@ -50,7 +50,10 @@ final class DateInput
             return null;
         }
 
-        return $time->setTimezone($utc);
+        $time = $time->setTimezone($utc);
+
+        // A year the database cannot store is no date for it.
+        return (int) $time->format('Y') >= 1000 && (int) $time->format('Y') <= 9999 ? $time : null;
     }
 
     /**

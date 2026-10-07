@@ -124,6 +124,7 @@ try {
 }
 pin('a date that cannot be read is 422 at its pointer, never saved as a wrong number', [422, '/custom_fields/3/from'], $bad);
 pin('a single date, and a date-time with fractions of a second, are read too', [5 => '1767225600'], $fields->clean(5, ['5' => '2026-01-01T00:00:00.250Z']));
+pin('no impossible offset or year', [null, null, null], [\mindstellar\utility\DateInput::parse('2026-01-01T10:00:00+99:99'), \mindstellar\utility\DateInput::parse('0000-01-01'), \mindstellar\utility\DateInput::parse('9999-12-31T23:59:59-14:00')]);
 pin('a value of the wrong shape is dropped', [], $fields->clean(5, ['1' => ['a', 'b'], '3' => 'not a range']));
 pin('a category with no fields takes none', [], $fields->clean(6, ['1' => 'red']));
 
