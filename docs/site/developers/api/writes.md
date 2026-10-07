@@ -121,8 +121,9 @@ Required: `category_id`, `title`, `description`.
 | `ext` | object | Plugin members, under the plugin's slug. |
 
 `custom_fields` are limited to the listing's category and cleaned as the web form cleans them.
-A field that is not in the category is dropped without an error. A date range is
-`{"from": "2026-01-01", "to": "2026-01-31"}`. `null` removes a value.
+A field that is not in the category is dropped without an error. A date is `"2026-01-31"` or an
+RFC 3339 date-time, and a date range is `{"from": "2026-01-01", "to": "2026-01-31"}`. A date that
+cannot be read is a `422`. `null` removes a value.
 
 Plugins can change the body before it is saved with the `api_listing_input` filter.
 

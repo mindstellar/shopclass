@@ -113,6 +113,14 @@ $fields = new CustomFieldValues(static fn (int $category): array => $category ==
 pin('only the category\'s fields; text purified as the form\'s', [1 => 'red', 3 => ['from' => '1', 'to' => '9'], 4 => '1'], $fields->clean(5, [
     '1' => '<script>alert(1)</script>red', '2' => 'other category', '3' => ['from' => 1, 'to' => '9', 'x' => 'y'], '4' => true, 'x' => 'no id',
 ]));
+pin('a date arrives as a day or an RFC 3339 time and is kept as Unix time', [3 => ['from' => '1767225600', 'to' => '1769904000']], $fields->clean(5, ['3' => ['from' => '2026-01-01', 'to' => '2026-02-01T00:00:00Z']]));
+$bad = null;
+try {
+    $fields->clean(5, ['3' => ['from' => '2026-13-45', 'to' => '']]);
+} catch (\mindstellar\api\ProblemException $e) {
+    $bad = [$e->response()->status(), $e->response()->body()['errors'][0]['pointer'] ?? null];
+}
+pin('a date that cannot be read is 422 at its pointer, never saved as a wrong number', [422, '/custom_fields/3/from'], $bad);
 pin('a value of the wrong shape is dropped', [], $fields->clean(5, ['1' => ['a', 'b'], '3' => 'not a range']));
 pin('a category with no fields takes none', [], $fields->clean(6, ['1' => 'red']));
 

@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\api\write;
 
+use mindstellar\api\ProblemException;
 use Params;
 
 /**
@@ -52,7 +53,7 @@ final class CustomFieldValues
             if ($type === null || !ctype_digit((string) $id)) {
                 continue;
             }
-            $value = self::shaped($type, $value);
+            $value = self::shaped($type, $value, '/custom_fields/' . $id);
             if ($value !== null) {
                 $out[(int) $id] = Params::purifyText($value);
             }
@@ -62,11 +63,13 @@ final class CustomFieldValues
     }
 
     /**
-     * A date range is {from, to}; every other type one value.
+     * A date range is {from, to}; every other type one value. Dates arrive as `2026-01-31` or an
+     * RFC 3339 date-time and are kept as the Unix time the field stores.
      *
      * @return string|array{from:string,to:string}|null null for a value of the wrong shape
+     * @throws ProblemException 422 for a date that cannot be read
      */
-    private static function shaped(string $type, mixed $value): string|array|null
+    private static function shaped(string $type, mixed $value, string $pointer): string|array|null
     {
         if ($type === 'DATEINTERVAL') {
             if (!is_array($value)) {
@@ -74,12 +77,37 @@ final class CustomFieldValues
             }
             $range = [];
             foreach (['from', 'to'] as $end) {
-                $range[$end] = is_scalar($value[$end] ?? null) ? (string) $value[$end] : '';
+                $range[$end] = self::date(is_scalar($value[$end] ?? null) ? (string) $value[$end] : '', $pointer . '/' . $end);
             }
 
             return $range;
         }
+        if (!is_scalar($value)) {
+            return null;
+        }
 
-        return is_scalar($value) ? (string) $value : null;
+        return $type === 'DATE' ? self::date((string) $value, $pointer) : (string) $value;
+    }
+
+    /**
+     * @throws ProblemException 422 for a date that cannot be read
+     */
+    private static function date(string $value, string $pointer): string
+    {
+        $value = trim($value);
+        if ($value === '' || ctype_digit($value)) {
+            // Empty clears it; digits are the Unix time a stored value already holds.
+            return $value;
+        }
+        $utc  = new \DateTimeZone('UTC');
+        $date = preg_match('/^\d{4}-\d{2}-\d{2}$/D', $value) === 1
+            ? \DateTimeImmutable::createFromFormat('!Y-m-d', $value, $utc)
+            : \DateTimeImmutable::createFromFormat(\DateTimeInterface::RFC3339, $value, $utc);
+        $errors = \DateTimeImmutable::getLastErrors();
+        if ($date === false || ($errors !== false && ($errors['warning_count'] > 0 || $errors['error_count'] > 0))) {
+            throw ProblemException::field($pointer, 'format', 'must be a date, as 2026-01-31, or an RFC 3339 date-time');
+        }
+
+        return (string) $date->getTimestamp();
     }
 }
