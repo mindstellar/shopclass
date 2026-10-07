@@ -166,14 +166,14 @@ final class AccountController
 
         return Response::collection(array_map(
             static fn (AccessEntry $session): array => $serializer->one($session, $credential),
-            $this->sessions->list((int) $credential->userId())
+            $this->sessions->signIns((int) $credential->userId())
         ));
     }
 
     public function endSession(ApiCall $call): Response
     {
-        if (!$this->sessions->end((int) $call->credential()->userId(), $call->arg('session') ?? '')) {
-            throw ProblemException::notFound('No such session.');
+        if (!$this->sessions->endSignIn((int) $call->credential()->userId(), $call->arg('session') ?? '')) {
+            throw ProblemException::notFound('No such sign-in.');
         }
 
         return Response::noContent();

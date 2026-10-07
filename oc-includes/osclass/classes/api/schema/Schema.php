@@ -29,7 +29,7 @@ final class Schema
     private const OBJECTS = [
         'Problem', 'PageMeta', 'PageLinks', 'ListLinks', 'Photo', 'CategoryRef', 'CustomFieldValue', 'Listing', 'User', 'Category', 'CustomField',
         'Country', 'Region', 'City', 'CityArea', 'Currency', 'Comment', 'Site', 'OpenApiDocument',
-        'Warning', 'TokenDocument', 'TokenRequest', 'SignOutRequest', 'SessionToken', 'AccountInput', 'AccountDocument', 'PasswordChange', 'Session',
+        'Warning', 'TokenDocument', 'TokenRequest', 'SessionToken', 'AccountInput', 'AccountDocument', 'PasswordChange', 'Session',
         'PersonalKey', 'PersonalKeyInput', 'Registration', 'NewAccount',
         'ListingInput', 'ListingPatch', 'SavedListing', 'PhotoToken', 'CommentInput', 'SavedComment',
         'AlertFilters', 'Alert', 'AlertInput',
@@ -449,7 +449,6 @@ final class Schema
                 'label'         => $text(100) + ['description' => 'A name for this sign-in, such as the device, shown in the session list.'],
                 'refresh_token' => $text(200) + ['description' => 'For the refresh_token grant.'],
             ], ['grant_type']),
-            'SignOutRequest'      => $input(['all' => ['type' => 'boolean', 'description' => 'End every sign-in of this user, not only this one.']]),
             'SessionToken'       => self::object([
                 'token'      => ['type' => 'string', 'description' => '`scs_...`, sent as the X-Shopclass-Token header with the sign-in cookie.'],
                 'header'     => ['type' => 'string', 'enum' => ['X-Shopclass-Token']],
@@ -465,16 +464,14 @@ final class Schema
                 'new_password'     => $text(4096, 1),
             ], ['current_password', 'new_password']),
             'Session'            => self::object([
-                'id'           => ['type' => 'string', 'description' => 'A sign-in\'s id, or `key-<id>` for a key.'],
-                'type'         => ['type' => 'string', 'enum' => ['token', 'key']],
-                'label'        => ['type' => 'string'],
-                'prefix'       => self::nullable('string', 'A key\'s public prefix.'),
+                'id'           => ['type' => 'string', 'description' => 'The sign-in\'s id.'],
+                'name'         => ['type' => 'string', 'description' => 'The label the client signed in with; may be empty.'],
                 'scopes'       => $scopes,
                 'last_used_at' => self::time(),
                 'last_ip'      => self::nullable('string'),
                 'expires_at'   => self::time(),
-                'current'      => ['type' => 'boolean', 'description' => 'The sign-in or key making this request.'],
-            ], ['id', 'type', 'label', 'scopes', 'current']),
+                'current'      => ['type' => 'boolean', 'description' => 'The sign-in making this request.'],
+            ], ['id', 'name', 'scopes', 'current']),
             'PersonalKey'        => self::object([
                 'id'           => ['type' => 'integer'],
                 'name'         => ['type' => 'string'],

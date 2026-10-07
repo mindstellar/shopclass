@@ -110,8 +110,8 @@ curl "$API/admin/listings?status=pending&limit=50" -H "Authorization: Bearer $KE
 | `GET /admin/users/{id}` | One user, every member. |
 | `PATCH /admin/users/{id}` | Edit the profile, `email`, `username` or `password`. A new password ends every sign-in and key of that user. `confirmed` marks the account confirmed, or not. `blocked: true` blocks the user, and their sign-ins and keys stop working. Both read back under the same names. |
 | `DELETE /admin/users/{id}` | Delete the user with their listings, comments and saved searches. |
-| `GET /admin/users/{id}/sessions` | The user's sign-ins and API keys. |
-| `DELETE /admin/users/{id}/sessions/{session}` | End one sign-in, or revoke one key. |
+| `GET /admin/users/{id}/sessions` | The user's live sign-ins. Their keys are at `/admin/keys`. |
+| `DELETE /admin/users/{id}/sessions/{session}` | End one sign-in. |
 
 ```bash
 curl -X PATCH $API/admin/users/23 -H "Authorization: Bearer $KEY" \

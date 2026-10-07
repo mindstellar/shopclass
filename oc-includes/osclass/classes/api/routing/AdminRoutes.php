@@ -125,8 +125,8 @@ final class AdminRoutes
             'PATCH admin/users/{id}'                      => self::write($c, 'update', $tag, $scope, 'Edit a user\'s profile, e-mail, username or password, or confirm or block them', 'AdminUserPatch', 'UserDocument', 200, [404]),
             'DELETE admin/users/{id}'                     => self::write($c, 'delete', $tag, $scope, 'Delete a user with their listings, comments and saved searches', null, null, 204, [404]),
             'POST admin/users/{id}/sign-out-everywhere'   => self::write($c, 'signOutEverywhere', $tag, $scope, 'Sign a user out of every device: web sign-ins, API tokens and personal keys', null, null, 204, [404]),
-            'GET admin/users/{id}/sessions'               => self::read($c, 'sessions', $tag, $scope, 'A user\'s sign-ins and API keys', 'SessionList', [], [404]),
-            'DELETE admin/users/{id}/sessions/{session}'  => self::write($c, 'endSession', $tag, $scope, 'End one of a user\'s sign-ins, or revoke one of their keys', null, null, 204, [404]),
+            'GET admin/users/{id}/sessions'               => self::read($c, 'sessions', $tag, $scope, 'A user\'s live sign-ins; their keys are at /admin/keys', 'SessionList', [], [404]),
+            'DELETE admin/users/{id}/sessions/{session}'  => self::write($c, 'endSession', $tag, $scope, 'End one of a user\'s sign-ins', null, null, 204, [404]),
         ];
     }
 

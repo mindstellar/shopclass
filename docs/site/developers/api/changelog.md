@@ -116,6 +116,7 @@ Also settled before the first release, so no released client saw the old behavio
 - `{photo}` in a path is an integer, as `{id}` is. An API key's `owner` is `{type, id, name}` instead of a name.
 - The OpenAPI document declares the `X-RateLimit-*` headers, the `200` of `POST /account/alerts` for a search already saved, and `400` instead of `422` on `POST /auth/token`.
 - New scope `alerts:read`, which `alerts:write` includes, for reading saved searches.
+- Sessions are sign-ins only, each with a `name`: keys are listed and revoked at `/account/keys` and `/admin/keys`. `POST /auth/sign-out` ends this sign-in only; `POST /account/sign-out-everywhere` ends them all.
 - A valid token from an address that sent many bad ones works; only that address's failing tokens answer `429 too_many_failures`.
 - `Idempotency-Key` keeps every `4xx` except `429`, including a `409` or `422` from a core refusal.
 - A banned user's access token or personal key answers `403 banned`, as a session call does.
@@ -142,7 +143,7 @@ Added to v1. Nothing that was there changed.
 | `POST /auth/token` | Sign in with a password, or swap a refresh token for new tokens |
 | `POST /auth/sign-out` | Sign out one sign-in, or all with `all: true` |
 | `GET`, `PATCH /account`, `POST /account/password` | The user's own profile and password |
-| `GET /account/sessions`, `DELETE /account/sessions/{id}` | Sign-ins and keys that act for the user |
+| `GET /account/sessions`, `DELETE /account/sessions/{id}` | The user's sign-ins |
 | `GET`, `POST /account/keys`, `DELETE /account/keys/{id}` | Personal API keys, when the site allows them |
 | `POST /users` | Sign up, when the site allows it |
 | `POST /listings`, `PATCH /listings/{id}`, `DELETE /listings/{id}` | Post, edit and delete the user's listings |

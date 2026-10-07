@@ -309,16 +309,17 @@ harness_section('sessions');
 $phone   = $login('uma', 'correct horse', array('label' => 'Phone'))->body();
 $laptop  = $login('uma', 'correct horse', array('label' => 'Laptop'))->body();
 $list    = $call('GET', 'account/sessions', null, $phone['access_token']);
-$labels  = array_column($list->body()['data'], 'label');
+$labels  = array_column($list->body()['data'], 'name');
 $current = array_values(array_filter($list->body()['data'], static fn (array $s): bool => $s['current']));
-check('the sign-ins are listed with their labels', in_array('Phone', $labels, true) && in_array('Laptop', $labels, true));
-pin('the one asking is marked current', array('Phone'), array_column($current, 'label'));
+check('the sign-ins are listed with their names, and no key among them', in_array('Phone', $labels, true) && in_array('Laptop', $labels, true));
+pin('the one asking is marked current', array('Phone'), array_column($current, 'name'));
 pin('matches the schema', array(), $schemaErrors('SessionList', $list));
 check('with the address it was last used from', $current[0]['last_ip'] === '192.0.2.50');
-$laptopId = array_values(array_filter($list->body()['data'], static fn (array $s): bool => $s['label'] === 'Laptop'))[0]['id'];
+$laptopId = array_values(array_filter($list->body()['data'], static fn (array $s): bool => $s['name'] === 'Laptop'))[0]['id'];
 pin('one can be ended', 204, $call('DELETE', 'account/sessions/' . $laptopId, null, $phone['access_token'])->status());
 pin('its refresh token then fails', 400, $call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $laptop['refresh_token']))->status());
 pin('another user\'s or an unknown session is 404', 404, $call('DELETE', 'account/sessions/AAAAAAAAAAAAAAAA', null, $phone['access_token'])->status());
+pin('a key is not a session: revoke it at /account/keys', 404, $call('DELETE', 'account/sessions/key-1', null, $phone['access_token'])->status());
 
 harness_section('editing the profile');
 $fired = array();
@@ -388,8 +389,8 @@ pin('sign-out answers 204', 204, $call('POST', 'auth/sign-out', null, $s['access
 pin('and ends the refresh token', 400, $call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $s['refresh_token']))->status());
 $a = $login('uma', 'battery staple')->body();
 $b = $login('uma', 'battery staple')->body();
-$call('POST', 'auth/sign-out', array('all' => true), $a['access_token']);
-pin('all=true ends every sign-in', array(400, 400), array(
+pin('sign-out ends only this sign-in', array(204, 400, 200), array(
+    $call('POST', 'auth/sign-out', null, $a['access_token'])->status(),
     $call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $a['refresh_token']))->status(),
     $call('POST', 'auth/token', array('grant_type' => 'refresh_token', 'refresh_token' => $b['refresh_token']))->status(),
 ));

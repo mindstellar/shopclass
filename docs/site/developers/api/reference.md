@@ -28,8 +28,8 @@ endpoints, at `/api/v1/openapi.json`.
 | DELETE | `/account/keys/{id}` | user | `account:write` | Revoke a personal API key |
 | GET | `/account/listings` | user | `account:read` | Your own listings in any status, newest first |
 | POST | `/account/password` | user | `account:write` | Change the password; every sign-in ends and this client gets a new one |
-| GET | `/account/sessions` | user | `account:read` | The sign-ins and keys that act for this user |
-| DELETE | `/account/sessions/{session}` | user | `account:write` | End one sign-in, or revoke one key |
+| GET | `/account/sessions` | user | `account:read` | Your live sign-ins; personal keys are at /account/keys |
+| DELETE | `/account/sessions/{session}` | user | `account:write` | End one sign-in |
 | POST | `/account/sign-out-everywhere` | user | `account:write` | Sign out of every device: web sign-ins, every API sign-in including this one, and personal keys |
 
 ### GET `/account`
@@ -170,7 +170,7 @@ Answers: 200 OK (`TokenDocument`); 400 Bad request; 401 No valid credential; 403
 
 ### GET `/account/sessions`
 
-The sign-ins and keys that act for this user
+Your live sign-ins; personal keys are at /account/keys
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
@@ -180,7 +180,7 @@ Answers: 200 OK (`SessionList`); 304 Not modified; 401 No valid credential; 403 
 
 ### DELETE `/account/sessions/{session}`
 
-End one sign-in, or revoke one key
+End one sign-in
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
@@ -782,8 +782,8 @@ Answers: 204 No content; 401 No valid credential; 403 Not allowed for this crede
 | GET | `/admin/users/{id}` | admin | `admin:users` | One user, every member |
 | PATCH | `/admin/users/{id}` | admin | `admin:users` | Edit a user's profile, e-mail, username or password, or confirm or block them |
 | DELETE | `/admin/users/{id}` | admin | `admin:users` | Delete a user with their listings, comments and saved searches |
-| GET | `/admin/users/{id}/sessions` | admin | `admin:users` | A user's sign-ins and API keys |
-| DELETE | `/admin/users/{id}/sessions/{session}` | admin | `admin:users` | End one of a user's sign-ins, or revoke one of their keys |
+| GET | `/admin/users/{id}/sessions` | admin | `admin:users` | A user's live sign-ins; their keys are at /admin/keys |
+| DELETE | `/admin/users/{id}/sessions/{session}` | admin | `admin:users` | End one of a user's sign-ins |
 | POST | `/admin/users/{id}/sign-out-everywhere` | admin | `admin:users` | Sign a user out of every device: web sign-ins, API tokens and personal keys |
 
 ### GET `/admin/users`
@@ -845,7 +845,7 @@ Answers: 204 No content; 401 No valid credential; 403 Not allowed for this crede
 
 ### GET `/admin/users/{id}/sessions`
 
-A user's sign-ins and API keys
+A user's live sign-ins; their keys are at /admin/keys
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
@@ -856,7 +856,7 @@ Answers: 200 OK (`SessionList`); 304 Not modified; 401 No valid credential; 403 
 
 ### DELETE `/admin/users/{id}/sessions/{session}`
 
-End one of a user's sign-ins, or revoke one of their keys
+End one of a user's sign-ins
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
@@ -994,7 +994,7 @@ Answers: 202 Accepted (`WebhookTestDocument`); 401 No valid credential; 403 Not 
 | Method | Path | Auth | Scope | Summary |
 |---|---|---|---|---|
 | GET | `/auth/session` | user | `account:read` | A fresh page token, for theme JavaScript on a page open longer than its token lives |
-| POST | `/auth/sign-out` | user | - | Sign out this sign-in, or every sign-in with all=true |
+| POST | `/auth/sign-out` | user | - | Sign out this sign-in; POST /account/sign-out-everywhere ends them all |
 | POST | `/auth/token` | none | - | Sign in with a password, or swap a refresh token for new tokens |
 
 ### GET `/auth/session`
@@ -1009,15 +1009,13 @@ Answers: 200 OK (`SessionTokenDocument`); 304 Not modified; 401 No valid credent
 
 ### POST `/auth/sign-out`
 
-Sign out this sign-in, or every sign-in with all=true
+Sign out this sign-in; POST /account/sign-out-everywhere ends them all
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `Idempotency-Key` | header | string | no | Up to 255 visible ASCII characters. A retry with the same key and body gets the first answer again, with Idempotency-Replayed: true. |
 
-Body: `SignOutRequest` as JSON, optional.
-
-Answers: 204 No content; 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 409 Conflict; 413 Body too large; 415 Unsupported content type; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+Answers: 204 No content; 401 No valid credential; 403 Not allowed for this credential; 409 Conflict; 429 Too many requests; 500 Server error; 503 Maintenance.
 
 ### POST `/auth/token`
 

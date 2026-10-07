@@ -230,8 +230,8 @@ $signIn = $call('POST', 'auth/token', ['grant_type' => 'password', 'username' =>
 $access = (string) ($signIn->body()['access_token'] ?? '');
 pin('the user signs in', 200, $signIn->status());
 $r       = $call('GET', 'admin/users/' . $tom . '/sessions', null, $boss);
-$session = array_values(array_filter($r->body()['data'] ?? [], static fn (array $s): bool => $s['type'] === 'token'))[0] ?? [];
-pin('the admin sees the sign-in and the key', [200, 'Phone', 2], [$r->status(), $session['label'] ?? null, count($r->body()['data'] ?? [])]);
+$session = $r->body()['data'][0] ?? [];
+pin('the admin sees the sign-in, and not the key, which is at /admin/keys', [200, 'Phone', 1], [$r->status(), $session['name'] ?? null, count($r->body()['data'] ?? [])]);
 pin('matches the schema', [], api_admin_schema_errors('SessionList', $r));
 pin('ending it: 204', 204, $call('DELETE', 'admin/users/' . $tom . '/sessions/' . ($session['id'] ?? 'x'), null, $boss)->status());
 pin('its refresh token no longer works', 400, $call('POST', 'auth/token', ['grant_type' => 'refresh_token', 'refresh_token' => (string) ($signIn->body()['refresh_token'] ?? '')])->status());

@@ -4510,7 +4510,7 @@
         "/account/sessions": {
             "get": {
                 "operationId": "getAccountSessions",
-                "summary": "The sign-ins and keys that act for this user",
+                "summary": "Your live sign-ins; personal keys are at /account/keys",
                 "tags": [
                     "Account"
                 ],
@@ -4791,7 +4791,7 @@
         "/account/sessions/{session}": {
             "delete": {
                 "operationId": "deleteAccountSessionsBySession",
-                "summary": "End one sign-in, or revoke one key",
+                "summary": "End one sign-in",
                 "tags": [
                     "Account"
                 ],
@@ -22690,7 +22690,7 @@
         "/admin/users/{id}/sessions": {
             "get": {
                 "operationId": "getAdminUsersByIdSessions",
-                "summary": "A user's sign-ins and API keys",
+                "summary": "A user's live sign-ins; their keys are at /admin/keys",
                 "tags": [
                     "Admin users"
                 ],
@@ -23004,7 +23004,7 @@
         "/admin/users/{id}/sessions/{session}": {
             "delete": {
                 "operationId": "deleteAdminUsersByIdSessionsBySession",
-                "summary": "End one of a user's sign-ins, or revoke one of their keys",
+                "summary": "End one of a user's sign-ins",
                 "tags": [
                     "Admin users"
                 ],
@@ -26810,7 +26810,7 @@
         "/auth/sign-out": {
             "post": {
                 "operationId": "postAuthSignOut",
-                "summary": "Sign out this sign-in, or every sign-in with all=true",
+                "summary": "Sign out this sign-in; POST /account/sign-out-everywhere ends them all",
                 "tags": [
                     "Auth"
                 ],
@@ -26826,16 +26826,6 @@
                         }
                     }
                 ],
-                "requestBody": {
-                    "required": false,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/SignOutRequest"
-                            }
-                        }
-                    }
-                },
                 "responses": {
                     "204": {
                         "description": "No content",
@@ -26860,39 +26850,6 @@
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad request",
-                        "headers": {
-                            "Request-Id": {
-                                "$ref": "#/components/headers/Request-Id"
-                            },
-                            "RateLimit": {
-                                "$ref": "#/components/headers/RateLimit"
-                            },
-                            "RateLimit-Policy": {
-                                "$ref": "#/components/headers/RateLimit-Policy"
-                            },
-                            "X-RateLimit-Limit": {
-                                "$ref": "#/components/headers/X-RateLimit-Limit"
-                            },
-                            "X-RateLimit-Remaining": {
-                                "$ref": "#/components/headers/X-RateLimit-Remaining"
-                            },
-                            "X-RateLimit-Reset": {
-                                "$ref": "#/components/headers/X-RateLimit-Reset"
-                            },
-                            "Idempotency-Replayed": {
-                                "$ref": "#/components/headers/Idempotency-Replayed"
-                            }
-                        },
-                        "content": {
-                            "application/problem+json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Problem"
-                                }
                             }
                         }
                     },
@@ -26985,105 +26942,6 @@
                             },
                             "Retry-After": {
                                 "$ref": "#/components/headers/Retry-After"
-                            },
-                            "Idempotency-Replayed": {
-                                "$ref": "#/components/headers/Idempotency-Replayed"
-                            }
-                        },
-                        "content": {
-                            "application/problem+json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Problem"
-                                }
-                            }
-                        }
-                    },
-                    "413": {
-                        "description": "Body too large",
-                        "headers": {
-                            "Request-Id": {
-                                "$ref": "#/components/headers/Request-Id"
-                            },
-                            "RateLimit": {
-                                "$ref": "#/components/headers/RateLimit"
-                            },
-                            "RateLimit-Policy": {
-                                "$ref": "#/components/headers/RateLimit-Policy"
-                            },
-                            "X-RateLimit-Limit": {
-                                "$ref": "#/components/headers/X-RateLimit-Limit"
-                            },
-                            "X-RateLimit-Remaining": {
-                                "$ref": "#/components/headers/X-RateLimit-Remaining"
-                            },
-                            "X-RateLimit-Reset": {
-                                "$ref": "#/components/headers/X-RateLimit-Reset"
-                            },
-                            "Idempotency-Replayed": {
-                                "$ref": "#/components/headers/Idempotency-Replayed"
-                            }
-                        },
-                        "content": {
-                            "application/problem+json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Problem"
-                                }
-                            }
-                        }
-                    },
-                    "415": {
-                        "description": "Unsupported content type",
-                        "headers": {
-                            "Request-Id": {
-                                "$ref": "#/components/headers/Request-Id"
-                            },
-                            "RateLimit": {
-                                "$ref": "#/components/headers/RateLimit"
-                            },
-                            "RateLimit-Policy": {
-                                "$ref": "#/components/headers/RateLimit-Policy"
-                            },
-                            "X-RateLimit-Limit": {
-                                "$ref": "#/components/headers/X-RateLimit-Limit"
-                            },
-                            "X-RateLimit-Remaining": {
-                                "$ref": "#/components/headers/X-RateLimit-Remaining"
-                            },
-                            "X-RateLimit-Reset": {
-                                "$ref": "#/components/headers/X-RateLimit-Reset"
-                            },
-                            "Idempotency-Replayed": {
-                                "$ref": "#/components/headers/Idempotency-Replayed"
-                            }
-                        },
-                        "content": {
-                            "application/problem+json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Problem"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Not valid",
-                        "headers": {
-                            "Request-Id": {
-                                "$ref": "#/components/headers/Request-Id"
-                            },
-                            "RateLimit": {
-                                "$ref": "#/components/headers/RateLimit"
-                            },
-                            "RateLimit-Policy": {
-                                "$ref": "#/components/headers/RateLimit-Policy"
-                            },
-                            "X-RateLimit-Limit": {
-                                "$ref": "#/components/headers/X-RateLimit-Limit"
-                            },
-                            "X-RateLimit-Remaining": {
-                                "$ref": "#/components/headers/X-RateLimit-Remaining"
-                            },
-                            "X-RateLimit-Reset": {
-                                "$ref": "#/components/headers/X-RateLimit-Reset"
                             },
                             "Idempotency-Replayed": {
                                 "$ref": "#/components/headers/Idempotency-Replayed"
@@ -38805,16 +38663,6 @@
                 ],
                 "additionalProperties": false
             },
-            "SignOutRequest": {
-                "type": "object",
-                "properties": {
-                    "all": {
-                        "type": "boolean",
-                        "description": "End every sign-in of this user, not only this one."
-                    }
-                },
-                "additionalProperties": false
-            },
             "SessionToken": {
                 "type": "object",
                 "properties": {
@@ -38970,24 +38818,11 @@
                 "properties": {
                     "id": {
                         "type": "string",
-                        "description": "A sign-in's id, or `key-<id>` for a key."
+                        "description": "The sign-in's id."
                     },
-                    "type": {
+                    "name": {
                         "type": "string",
-                        "enum": [
-                            "token",
-                            "key"
-                        ]
-                    },
-                    "label": {
-                        "type": "string"
-                    },
-                    "prefix": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "description": "A key's public prefix."
+                        "description": "The label the client signed in with; may be empty."
                     },
                     "scopes": {
                         "type": "array",
@@ -39019,13 +38854,12 @@
                     },
                     "current": {
                         "type": "boolean",
-                        "description": "The sign-in or key making this request."
+                        "description": "The sign-in making this request."
                     }
                 },
                 "required": [
                     "id",
-                    "type",
-                    "label",
+                    "name",
                     "scopes",
                     "current"
                 ]

@@ -372,8 +372,8 @@ Each `429` has `Retry-After`. The site owner sets the listing number: [Set up th
 | `PATCH /account` | `account:write` | Edit the profile: `name`, `website`, `phone_land`, `phone_mobile`, `country`, `region_id`, `city_id`, `city_area`, `address`, `zip`, `lat`, `lng`, `is_company`, `email`. |
 | `GET /account/listings` | `account:read` | Your listings in any status, newest first, as your listings page shows them. Filters: `status` (`active`, `pending`, `disabled`, `expired`, `spam`), `limit`, `cursor`, `count`. |
 | `POST /account/password` | `account:write` | Change the password. |
-| `GET /account/sessions` | `account:read` | Sign-ins and keys that act for you. |
-| `DELETE /account/sessions/{id}` | `account:write` | End one sign-in, or revoke one key (`key-<id>`). `204`. |
+| `GET /account/sessions` | `account:read` | Your live sign-ins. Keys are at `/account/keys`. |
+| `DELETE /account/sessions/{id}` | `account:write` | End one sign-in. `204`. |
 | `GET`, `POST`, `DELETE /account/keys` | `account:write` | [Personal keys](/docs/developers/api/authentication/#personal-keys). |
 
 A new `email` is not applied at once. A confirmation link goes to the new address, and the

@@ -184,16 +184,16 @@ answer the same, and take as long.
 ### Signing out
 
 ```bash
-curl -X POST $API/auth/sign-out -H "Authorization: Bearer $TOKEN"                       # this sign-in
-curl -X POST $API/auth/sign-out -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" -d '{"all":true}'                                  # every sign-in
+curl -X POST $API/auth/sign-out -H "Authorization: Bearer $TOKEN"
 ```
 
-Both answer `204`. This needs an access token, not a key. It ends the refresh tokens and
-the sign-in's access tokens at once.
+It answers `204` and ends this sign-in: its refresh token and its access tokens, at once. It
+needs an access token, not a key. To end every sign-in, use `POST /account/sign-out-everywhere`
+below.
 
-Users see their sign-ins and keys at `GET /account/sessions` and on the
-**API access** page of their account. `DELETE /account/sessions/{id}` ends one.
+Users see their sign-ins at `GET /account/sessions` and on the **API access** page of their
+account, each with its `id`, `name` and `current`. `DELETE /account/sessions/{id}` ends one.
+Personal keys are listed and revoked at `/account/keys`.
 
 ### Signing out of all devices
 

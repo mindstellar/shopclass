@@ -53,6 +53,34 @@ final class AccessEntries
     }
 
     /**
+     * The user's live sign-ins, without their keys: what the API calls sessions.
+     *
+     * @return AccessEntry[]
+     */
+    public function signIns(int $userId): array
+    {
+        return array_values(array_filter($this->list($userId), static fn (AccessEntry $entry): bool => !$entry->isKey()));
+    }
+
+    /**
+     * End one sign-in of the user; a key's id is not a sign-in.
+     *
+     * @return bool false when the user has no such sign-in
+     */
+    public function endSignIn(int $userId, string $id): bool
+    {
+        foreach ($this->signIns($userId) as $entry) {
+            if ($entry->id() === $id) {
+                $this->store->revokeFamily($id);
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * End one of the user's sign-ins or revoke one of their keys.
      *
      * @param string $id an AccessEntry id

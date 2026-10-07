@@ -27,6 +27,16 @@ final class AccessEntrySerializer
      */
     public function one(AccessEntry $session, Credential $credential): array
     {
-        return $session->toArray($credential);
+        $row = $session->row();
+
+        return [
+            'id'           => $session->id(),
+            'name'         => $row->name(),
+            'scopes'       => $row->scopes(),
+            'last_used_at' => Format::timestamp($row->lastUsedAt() ?? $row->createdAt()),
+            'last_ip'      => $row->lastIp() === '' ? null : $row->lastIp(),
+            'expires_at'   => Format::timestamp($row->expiresAt()),
+            'current'      => $session->isCurrent($credential),
+        ];
     }
 }

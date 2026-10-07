@@ -289,10 +289,9 @@ final class PublicRoutes
             'POST auth/sign-out' => RouteSpec::write(
                 handler: [AuthController::class, 'signOut'],
                 tag: 'Auth',
-                summary: 'Sign out this sign-in, or every sign-in with all=true',
+                summary: 'Sign out this sign-in; POST /account/sign-out-everywhere ends them all',
                 auth: RouteSpec::AUTH_USER,
                 scope: null,
-                body: 'SignOutRequest',
                 status: 204
             ),
             'GET auth/session' => RouteSpec::read(
@@ -355,7 +354,7 @@ final class PublicRoutes
             'GET account/sessions' => RouteSpec::read(
                 handler: [AccountController::class, 'sessions'],
                 tag: 'Account',
-                summary: 'The sign-ins and keys that act for this user',
+                summary: 'Your live sign-ins; personal keys are at /account/keys',
                 response: 'SessionList',
                 auth: RouteSpec::AUTH_USER,
                 scope: 'account:read'
@@ -363,7 +362,7 @@ final class PublicRoutes
             'DELETE account/sessions/{session}' => RouteSpec::write(
                 handler: [AccountController::class, 'endSession'],
                 tag: 'Account',
-                summary: 'End one sign-in, or revoke one key',
+                summary: 'End one sign-in',
                 auth: RouteSpec::AUTH_USER,
                 scope: 'account:write',
                 status: 204,

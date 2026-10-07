@@ -156,7 +156,7 @@ final class AdminUsersController
 
         return Response::collection(array_map(
             static fn (AccessEntry $session): array => $serializer->one($session, $call->credential()),
-            $this->sessions->list($id)
+            $this->sessions->signIns($id)
         ));
     }
 
@@ -166,8 +166,8 @@ final class AdminUsersController
     public function endSession(ApiCall $call): Response
     {
         $id = (int) $this->user($call->intArg())['pk_i_id'];
-        if (!$this->sessions->end($id, $call->arg('session') ?? '')) {
-            throw ProblemException::notFound('No such session.');
+        if (!$this->sessions->endSignIn($id, $call->arg('session') ?? '')) {
+            throw ProblemException::notFound('No such sign-in.');
         }
 
         return Response::noContent();
