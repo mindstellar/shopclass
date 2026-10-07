@@ -129,8 +129,7 @@ class Search extends DAO
         $this->parts->addOnce(DB_TABLE_PREFIX . 't_item.pk_i_id IN (' . SqlValue::placeholders(count($ids)) . ')', $ids);
 
         if ($preserveOrder) {
-            // A $dao order goes ahead of the model's own, so it decides the result order.
-            $this->dao->orderBy('FIND_IN_SET(' . DB_TABLE_PREFIX . "t_item.pk_i_id, '" . implode(',', $ids) . "')");
+            $this->parts->leadOrder = array('FIND_IN_SET(' . DB_TABLE_PREFIX . "t_item.pk_i_id, '" . implode(',', $ids) . "')");
         }
 
         $this->limit(0, count($ids));

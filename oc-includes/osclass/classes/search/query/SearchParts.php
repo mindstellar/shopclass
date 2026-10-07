@@ -45,6 +45,9 @@ final class SearchParts
     /** @var mixed the locale a keyword search falls back to */
     public $userLocale = null;
 
+    /** @var array<int,string> ORDER BY terms that go ahead of the sort, such as fromPrimaryKeys()' ranking */
+    public array $leadOrder = array();
+
     /**
      * Conditions for the next statement only (notFromUser(), fromPrimaryKeys()): the
      * first statement built takes them, so a count run after it does not see them.

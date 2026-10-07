@@ -99,6 +99,7 @@ final class SearchCompiler
         // Order and limit do not matter to a COUNT, and leaving the limit out keeps it exact.
         if (!$count) {
             $parts->ordering->apply($s);
+            $s->prependOrderBy($parts->leadOrder);
         }
         if ($dao !== null) {
             $s->mergeDao($dao, $count);
