@@ -153,6 +153,7 @@ pin('the contact e-mail is hidden when the seller does not show it', null, $publ
 pin('the phone is shown, as the theme shows it', '+49 30 1234', $public['contact']['phone']);
 pin('the seller links to the public profile', ['id' => 7, 'name' => 'Ana Example', 'username' => 'ana', 'url' => 'https://site.test/user/7'], $public['seller']);
 pin('the location', ['code' => 'DE', 'name' => 'Germany'], $public['location']['country']);
+pin('an empty city area is null, as an empty city is', null, $public['location']['city_area']);
 pin('coordinates are numbers', 52.521918, $public['location']['lat']);
 pin('photos carry each size', ['id' => 100, 'thumbnail' => 'https://site.test/oc-content/uploads/0/100_thumbnail.jpg', 'preview' => 'https://site.test/oc-content/uploads/0/100_preview.jpg', 'normal' => 'https://site.test/oc-content/uploads/0/100.jpg', 'original' => null], $public['photos'][0]);
 pin('times are UTC', '2026-10-03T12:00:00Z', $public['published_at']);

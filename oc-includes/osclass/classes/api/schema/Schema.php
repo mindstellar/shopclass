@@ -299,7 +299,7 @@ final class Schema
                 'country'   => self::place('code', 'string'),
                 'region'    => self::place('id', 'integer'),
                 'city'      => self::place('id', 'integer'),
-                'city_area' => self::nullable('string'),
+                'city_area' => self::place('id', 'integer'),
                 'address'   => self::nullable('string'),
                 'zip'       => self::nullable('string'),
                 'lat'       => self::nullable('number'),

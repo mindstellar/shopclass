@@ -119,6 +119,7 @@ Also settled before the first release, so no released client saw the old behavio
 - Sessions are sign-ins only, each with a `name`: keys are listed and revoked at `/account/keys` and `/admin/keys`. `POST /auth/sign-out` ends this sign-in only; `POST /account/sign-out-everywhere` ends them all.
 - Every date input takes a day or an RFC 3339 date-time; both key types also take a number of days such as `90d`.
 - `null` clears any optional member of a listing or account, as JSON Merge Patch says, and `null` on a language in `translations` removes it.
+- A listing's `location.city_area` is `{id, name}`, as region and city are. The writes page maps each write member to where it reads back.
 - A valid token from an address that sent many bad ones works; only that address's failing tokens answer `429 too_many_failures`.
 - `Idempotency-Key` keeps every `4xx` except `429`, including a `409` or `422` from a core refusal.
 - A banned user's access token or personal key answers `403 banned`, as a session call does.

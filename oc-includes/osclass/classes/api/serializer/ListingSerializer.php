@@ -209,7 +209,7 @@ final class ListingSerializer
             'country'   => Format::place($item['fk_c_country_code'] ?? null, $item['s_country'] ?? null, 'code'),
             'region'    => Format::place($item['fk_i_region_id'] ?? null, $item['s_region'] ?? null, 'id'),
             'city'      => Format::place($item['fk_i_city_id'] ?? null, $item['s_city'] ?? null, 'id'),
-            'city_area' => Format::text($item['s_city_area'] ?? null),
+            'city_area' => Format::place($item['fk_i_city_area_id'] ?? null, $item['s_city_area'] ?? null, 'id'),
             'address'   => Format::text($item['s_address'] ?? null),
             'zip'       => Format::text($item['s_zip'] ?? null),
             'lat'       => Format::float($item['d_coord_lat'] ?? null),

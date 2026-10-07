@@ -162,6 +162,27 @@ Send `application/merge-patch+json` or `application/json`. The answer repeats `A
 The answer is the saved listing, with `200`. If the site holds edited listings for review,
 the status goes back to `pending` and `warnings` says `listing_pending`.
 
+### Write members and where they read back
+
+A write body is flat; the listing you read back nests some of the same values. A `GET`
+cannot be sent back as a `PATCH` as it is: map these members.
+
+| Write member | Reads back as |
+|---|---|
+| `category_id` | `category.id` |
+| `price`, `currency` | `price.amount`, `price.currency` |
+| `country` | `location.country.code` |
+| `region_id`, `region` | `location.region.id`, `location.region.name` |
+| `city_id`, `city` | `location.city.id`, `location.city.name` |
+| `city_area` | `location.city_area.name` |
+| `address`, `zip`, `lat`, `lng` | `location.address`, `location.zip`, `location.lat`, `location.lng` |
+| `contact_phone` | `contact.phone` |
+| `custom_fields: {"4": "Blue"}` | `custom_fields: [{"id": 4, "value": "Blue", …}]` |
+| `owner_id` (admin) | `seller.id` |
+| `contact_name`, `contact_email` (admin) | `contact.name`, `contact.email` |
+
+A comment's `author_name` and `author_email` read back as `author.name` and `author.email`.
+
 ## Delete a listing
 
 ```bash

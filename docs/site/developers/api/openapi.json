@@ -37708,9 +37708,23 @@
                             },
                             "city_area": {
                                 "type": [
-                                    "string",
+                                    "object",
                                     "null"
-                                ]
+                                ],
+                                "properties": {
+                                    "id": {
+                                        "type": [
+                                            "integer",
+                                            "null"
+                                        ]
+                                    },
+                                    "name": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    }
+                                }
                             },
                             "address": {
                                 "type": [
