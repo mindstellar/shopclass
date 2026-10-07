@@ -44,7 +44,7 @@ final class UserSerializer
         $context = $context->withView($context->viewFor($id, ViewContext::USERS_SCOPE));
         $data    = [
             'id'             => $id,
-            'name'           => (string) ($user['s_name'] ?? ''),
+            'name'           => Format::plain($user['s_name'] ?? ''),
             'username'       => Format::text($user['s_username'] ?? null),
             'url'            => $this->links->user($id, (string) ($user['s_username'] ?? '')),
             'avatar'         => $context->wants('avatar') ? $this->links->avatar($id) : '',

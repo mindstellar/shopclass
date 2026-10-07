@@ -213,6 +213,7 @@ $trucks = (int) ($r->body()['data']['id'] ?? 0);
 pin('POST a category: tags out, as the category screen stores them', [201, 'Trucks', 'Big &amp; small'], [
     $r->status(), $text("SELECT s_name FROM {$p}t_category_description WHERE fk_i_category_id = $trucks"), $text("SELECT s_description FROM {$p}t_category_description WHERE fk_i_category_id = $trucks"),
 ]);
+pin('and the API reads it back as the text that was sent, not HTML-encoded', 'Big & small', $call('GET', 'admin/categories/' . $trucks, null, $boss)->body()['data']['translations']['en_US']['description'] ?? null);
 pin('a blank name is 422', [422, '/translations/en_US/name'], $pointer($call('POST', 'admin/categories', ['translations' => ['en_US' => ['name' => '   ']]], $boss)));
 pin('so is one of tags only', [422, '/translations/en_US/name'], $pointer($call('POST', 'admin/categories', ['translations' => ['en_US' => ['name' => '<b></b>']]], $boss)));
 $call('PATCH', 'admin/categories/' . $trucks, ['translations' => ['en_US' => ['name' => '<b onmouseover="x()">Lorries</b>', 'description' => '<script>x</script>']]], $boss);

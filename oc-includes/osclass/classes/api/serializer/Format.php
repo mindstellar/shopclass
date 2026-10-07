@@ -40,14 +40,26 @@ final class Format
         return (string) $value === '1' || $value === true;
     }
 
+    /**
+     * Stored plain text as the text it is: trimmed, null when empty, with the HTML encoding the
+     * site stores text in (`&amp;`, `&quot;`) undone.
+     */
     public static function text(mixed $value): ?string
     {
         if (!is_scalar($value)) {
             return null;
         }
-        $value = trim((string) $value);
+        $value = self::plain($value);
 
         return $value === '' ? null : $value;
+    }
+
+    /**
+     * text() for a member that is never null: '' when empty.
+     */
+    public static function plain(mixed $value): string
+    {
+        return is_scalar($value) ? trim(html_entity_decode((string) $value, ENT_QUOTES | ENT_HTML5, 'UTF-8')) : '';
     }
 
     public static function float(mixed $value): ?float

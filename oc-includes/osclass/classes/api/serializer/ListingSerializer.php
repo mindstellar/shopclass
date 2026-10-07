@@ -86,7 +86,7 @@ final class ListingSerializer
         $build = [
             'url'          => fn () => $this->links->listing($item),
             'status'       => static fn () => ListingStatus::of($item, $now ?? time()),
-            'title'        => static fn () => $title,
+            'title'        => static fn () => Format::plain($title),
             'description'  => static fn () => $description,
             'locale'       => static fn () => $textLocale,
             'category'     => fn () => $this->category($item, $relations, $locale),
@@ -272,7 +272,7 @@ final class ListingSerializer
 
         return [
             'id'       => $userId,
-            'name'     => (string) ($user['s_name'] ?? ''),
+            'name'     => Format::plain($user['s_name'] ?? ''),
             'username' => Format::text($username),
             'url'      => $this->links->user($userId, $username),
         ];
@@ -309,7 +309,7 @@ final class ListingSerializer
         $out = [];
         foreach ((array) ($item['locale'] ?? []) as $code => $text) {
             if (is_array($text) && (($text['s_title'] ?? '') !== '' || ($text['s_description'] ?? '') !== '')) {
-                $out[(string) $code] = ['title' => (string) ($text['s_title'] ?? ''), 'description' => (string) ($text['s_description'] ?? '')];
+                $out[(string) $code] = ['title' => Format::plain($text['s_title'] ?? ''), 'description' => (string) ($text['s_description'] ?? '')];
             }
         }
 

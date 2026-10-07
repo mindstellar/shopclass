@@ -30,7 +30,7 @@ final class CommentSerializer
             'id'           => Format::int($row['pk_i_id'] ?? 0),
             'listing_id'   => Format::int($row['fk_i_item_id'] ?? 0),
             'title'        => Format::text($row['s_title'] ?? null),
-            'body'         => (string) ($row['s_body'] ?? ''),
+            'body'         => Format::plain($row['s_body'] ?? ''),
             'author'       => [
                 'name'    => Format::text($row['s_author_name'] ?? null),
                 'user_id' => Format::id($row['fk_i_user_id'] ?? null),

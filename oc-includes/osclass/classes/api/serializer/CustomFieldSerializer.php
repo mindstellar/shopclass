@@ -128,6 +128,6 @@ final class CustomFieldSerializer
     {
         $name = $field['locale'][$locale]['s_name'] ?? null;
 
-        return is_string($name) && $name !== '' ? $name : (string) ($field['s_name'] ?? '');
+        return Format::plain(is_string($name) && $name !== '' ? $name : ($field['s_name'] ?? ''));
     }
 }

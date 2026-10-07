@@ -309,6 +309,7 @@ Rules that hold everywhere:
 | Missing values | `null`, never `""`. |
 | URLs | Absolute. |
 | Booleans | `true` and `false`. |
+| Text | Plain text: `Tom & Jerry`, not `Tom &amp; Jerry`. Escape it before you put it in HTML. A listing's `description` is the one exception: an HTML fragment the site has already cleaned. |
 | Unknown members | Ignore them. New ones can appear in v1. |
 
 A listing has: `id`, `url`, `status`, `title`, `description`, `locale`, `category`

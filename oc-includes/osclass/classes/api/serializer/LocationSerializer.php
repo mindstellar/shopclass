@@ -26,7 +26,7 @@ final class LocationSerializer
     {
         return [
             'code' => strtoupper((string) ($row['pk_c_code'] ?? '')),
-            'name' => (string) ($row['s_name'] ?? ''),
+            'name' => Format::plain($row['s_name'] ?? ''),
             'slug' => Format::text($row['s_slug'] ?? null),
         ];
     }
@@ -41,7 +41,7 @@ final class LocationSerializer
         return [
             'id'           => Format::int($row['pk_i_id'] ?? 0),
             'country_code' => strtoupper((string) ($row['fk_c_country_code'] ?? '')),
-            'name'         => (string) ($row['s_name'] ?? ''),
+            'name'         => Format::plain($row['s_name'] ?? ''),
             'slug'         => Format::text($row['s_slug'] ?? null),
             'lat'          => Format::float($row['d_coord_lat'] ?? null),
             'lng'          => Format::float($row['d_coord_long'] ?? null),
@@ -59,7 +59,7 @@ final class LocationSerializer
             'id'           => Format::int($row['pk_i_id'] ?? 0),
             'region_id'    => Format::int($row['fk_i_region_id'] ?? 0),
             'country_code' => Format::text(isset($row['fk_c_country_code']) ? strtoupper((string) $row['fk_c_country_code']) : null),
-            'name'         => (string) ($row['s_name'] ?? ''),
+            'name'         => Format::plain($row['s_name'] ?? ''),
             'slug'         => Format::text($row['s_slug'] ?? null),
             'lat'          => Format::float($row['d_coord_lat'] ?? null),
             'lng'          => Format::float($row['d_coord_long'] ?? null),
@@ -76,7 +76,7 @@ final class LocationSerializer
         return [
             'id'      => Format::int($row['pk_i_id'] ?? 0),
             'city_id' => Format::int($row['fk_i_city_id'] ?? 0),
-            'name'    => (string) ($row['s_name'] ?? ''),
+            'name'    => Format::plain($row['s_name'] ?? ''),
         ];
     }
 
@@ -91,7 +91,7 @@ final class LocationSerializer
     {
         return [
             'code'   => strtoupper((string) ($row['pk_c_code'] ?? '')),
-            'name'   => (string) ($row['s_name'] ?? ''),
+            'name'   => Format::plain($row['s_name'] ?? ''),
             'symbol' => Format::text($row['s_description'] ?? null),
         ];
     }

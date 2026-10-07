@@ -89,7 +89,7 @@ final class CategorySerializer
         return [
             'id'   => Format::int($category['pk_i_id'] ?? 0),
             'slug' => CategoryCatalog::text($category, 's_slug', $locale),
-            'name' => CategoryCatalog::text($category, 's_name', $locale),
+            'name' => Format::plain(CategoryCatalog::text($category, 's_name', $locale)),
         ];
     }
 
@@ -111,7 +111,7 @@ final class CategorySerializer
             'id'             => Format::int($category['pk_i_id'] ?? 0),
             'parent_id'      => Format::id($category['fk_i_parent_id'] ?? null),
             'slug'           => CategoryCatalog::text($category, 's_slug', $locale),
-            'name'           => CategoryCatalog::text($category, 's_name', $locale),
+            'name'           => Format::plain(CategoryCatalog::text($category, 's_name', $locale)),
             'description'    => Format::text(CategoryCatalog::text($category, 's_description', $locale)),
             'position'       => Format::int($category['i_position'] ?? 0),
             'listings_count' => Format::int($category['i_num_items'] ?? 0),
