@@ -362,6 +362,8 @@ check('a next link while there are more', is_string($r->body()['links']['next'])
 pin('the page matches the schema', array(), $schemaErrors('ListingPage', $r));
 pin('the parent category includes its children', 26, $get('listings', array('category' => 'vehicles', 'limit' => 1, 'count' => 'true'), $publicKey)->body()['meta']['total']);
 pin('an unknown category is refused, not widened', 422, $get('listings', array('category' => 'nosuch'), $publicKey)->status());
+pin('a slug path names its last slug, as search URLs do', 25, $get('listings', array('category' => 'vehicles/cars', 'limit' => 1, 'count' => 'true'), $publicKey)->body()['meta']['total']);
+pin('one unknown category in a list is refused too', 422, $get('listings', array('category' => 'cars,nosuch'), $publicKey)->status());
 pin('a limit past the site cap is refused', 422, $get('listings', array('limit' => 51), $publicKey)->status());
 pin('a schema-invalid sort is refused', 422, $get('listings', array('sort' => 'secret'), $publicKey)->status());
 pin('a pattern search', array($bike), $ids($get('listings', array('q' => 'racing'), $publicKey)));

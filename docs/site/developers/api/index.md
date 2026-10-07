@@ -119,7 +119,7 @@ Filters for `GET /listings`:
 | Parameter | Meaning |
 |---|---|
 | `q` | Search words (up to 200 characters). With `q`, the default sort is `relevance`. |
-| `category` | Category ids or slugs. Subcategories are included. An unknown one is a `422`. |
+| `category` | Category ids or slugs. A slug path such as `vehicles/cars` names its last slug. Subcategories are included. An unknown one is a `422`. |
 | `country` | A two-letter code (`DE`) or a name. |
 | `region`, `city`, `city_area` | An id or a name. |
 | `user` | Seller ids. |

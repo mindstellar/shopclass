@@ -13,7 +13,6 @@ declare(strict_types=1);
 namespace mindstellar\api\controller\admin;
 
 use mindstellar\api\ApiServices;
-use mindstellar\api\Problem;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\ListingList;
 use mindstellar\api\read\ListingReader;
@@ -24,6 +23,7 @@ use mindstellar\api\write\ListingWriter;
 use mindstellar\api\write\OwnedListing;
 use mindstellar\apiaccess\Credential;
 use mindstellar\moderation\ListingModeration;
+use mindstellar\search\query\CategoryFilter;
 use mindstellar\user\UserQuery;
 
 /**
@@ -61,27 +61,20 @@ final class AdminListingsController
     }
 
     /**
-     * The `category` filter as ids, subcategories included. An id may name a category that
-     * is switched off; a slug must name one that is on.
+     * The `category` filter as ids, subcategories included, as search widens them. An id
+     * may name a category that is switched off; a slug must name one that is on.
      *
      * @return int[]
      * @throws ProblemException 422 for an unknown slug
      */
     private function categories(Request $request): array
     {
-        $catalog = $this->reader->categories();
-        $ids     = [];
-        foreach ($request->queryList('category') as $value) {
-            $row = ctype_digit($value) ? null : $catalog->lookup($value, $this->api->locale($request));
-            if (!ctype_digit($value) && $row === null) {
-                throw ProblemException::from(Problem::validation([
-                    ['pointer' => '/category', 'code' => 'enum', 'message' => 'is not a known category: ' . $value, 'in' => 'query'],
-                ]));
-            }
-            array_push($ids, ...$catalog->withDescendants($row === null ? (int) $value : (int) $row['pk_i_id']));
+        $filter = new CategoryFilter();
+        foreach ($this->reader->categories()->resolve($request->queryList('category'), $this->api->locale($request), true) as $id) {
+            $filter->add($id);
         }
 
-        return array_values(array_unique($ids));
+        return array_map('intval', $filter->ids());
     }
 
     /**

@@ -13,7 +13,6 @@ declare(strict_types=1);
 namespace mindstellar\api\controller;
 
 use mindstellar\api\ApiServices;
-use mindstellar\api\Problem;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\CategoryCatalog;
 use mindstellar\api\Request;
@@ -73,13 +72,7 @@ final class CategoriesController
         if ($asked === '') {
             $fields = $this->api->fieldService()->all();
         } else {
-            $category = CategoryCatalog::fromSite()->lookup($asked, $locale);
-            if ($category === null) {
-                throw ProblemException::from(Problem::validation([
-                    ['pointer' => '/category', 'code' => 'enum', 'message' => 'is not a known category', 'in' => 'query'],
-                ]));
-            }
-            $fields = $this->api->fieldService()->forCategory((int) $category['pk_i_id']);
+            $fields = $this->api->fieldService()->forCategory(CategoryCatalog::fromSite()->resolve([$asked], $locale)[0]);
         }
         $serializer = new CustomFieldSerializer();
 

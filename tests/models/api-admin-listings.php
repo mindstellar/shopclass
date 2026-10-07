@@ -39,6 +39,8 @@ seed_currency($admin);
 $country  = seed_country($admin, 'US', 'United States');
 $vehicles = seed_category($admin, 'Vehicles', null, $locale);
 $cars     = seed_category($admin, 'Cars', $vehicles, $locale);
+$boats    = seed_category($admin, 'Boats', null, $locale);
+$retired  = seed_category($admin, 'Retired', null, $locale, 0);
 $sue      = seed_user($admin, 'sue', 'sue@example.test');
 $tom      = seed_user($admin, 'tom', 'tom@example.test');
 $live     = seed_item($admin, $cars, $sue, 'Live hatchback', 1500.0);
@@ -107,6 +109,17 @@ pin('category= by the parent\'s id or slug takes its subcategories', [5, 5, 0], 
     count($ids($call('GET', 'admin/listings', null, $boss, [], ['category' => '99999']))),
 ]);
 pin('an unknown category slug is 422', '422 validation_failed', api_admin_code($call('GET', 'admin/listings', null, $boss, [], ['category' => 'nosuch'])));
+$boat = seed_item($admin, $boats, $tom, 'Rowing boat', 50.0);
+$old  = seed_item($admin, $retired, $tom, 'Retired sofa', 50.0);
+pin('category= takes a list, and a slug path names its last slug', [6, 5], [
+    count($ids($call('GET', 'admin/listings', null, $boss, [], ['category' => $cars . ',boats']))),
+    count($ids($call('GET', 'admin/listings', null, $boss, [], ['category' => 'vehicles/cars']))),
+]);
+pin('an id may name a switched-off category, its slug may not', [[$old], '422 validation_failed'], [
+    $ids($call('GET', 'admin/listings', null, $boss, [], ['category' => (string) $retired])),
+    api_admin_code($call('GET', 'admin/listings', null, $boss, [], ['category' => 'retired'])),
+]);
+$admin->query("DELETE FROM {$p}t_item WHERE pk_i_id IN ($boat, $old)");
 pin('q= matches titles, with % taken literally', [[$pending], []], [
     $ids($call('GET', 'admin/listings', null, $boss, [], ['q' => 'wagon'])), $ids($call('GET', 'admin/listings', null, $boss, [], ['q' => '%'])),
 ]);

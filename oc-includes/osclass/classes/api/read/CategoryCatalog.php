@@ -12,6 +12,9 @@ declare(strict_types=1);
 
 namespace mindstellar\api\read;
 
+use mindstellar\api\Problem;
+use mindstellar\api\ProblemException;
+
 /**
  * Every enabled category, with its translations, read once and looked up by id or slug.
  * A listing's category, its path and the category endpoints all come from here, so a page
@@ -71,7 +74,8 @@ final class CategoryCatalog
     }
 
     /**
-     * A category by id, or by slug in any locale (the given one first).
+     * A category by id, or by slug in any locale (the given one first). A slug path such as
+     * `vehicles/cars` names its last slug, as search URLs do.
      *
      * @return array<string,mixed>|null
      */
@@ -80,6 +84,8 @@ final class CategoryCatalog
         if (ctype_digit($idOrSlug)) {
             return $this->find((int) $idOrSlug);
         }
+        $parts    = explode('/', trim($idOrSlug, '/'));
+        $idOrSlug = end($parts);
         $fallback = null;
         foreach ($this->byId as $row) {
             foreach ((array) ($row['locale'] ?? []) as $code => $text) {
@@ -119,20 +125,29 @@ final class CategoryCatalog
     }
 
     /**
-     * A category's id and the ids of every category below it.
+     * Category ids for ids or slugs. An unknown one is refused, so a typo never widens a
+     * filter to every category.
+     *
+     * @param string[] $values
+     * @param bool     $anyId  take an id as given, so an admin may name a category that is off
      *
      * @return int[]
+     * @throws ProblemException 422
      */
-    public function withDescendants(int $id): array
+    public function resolve(array $values, string $locale, bool $anyId = false): array
     {
-        $ids = [$id];
-        foreach ($this->childIds($id) as $child) {
-            if ($child !== $id) {
-                array_push($ids, ...$this->withDescendants($child));
+        $ids = [];
+        foreach ($values as $value) {
+            $row = $anyId && ctype_digit($value) ? ['pk_i_id' => $value] : $this->lookup($value, $locale);
+            if ($row === null) {
+                throw ProblemException::from(Problem::validation([
+                    ['pointer' => '/category', 'code' => 'enum', 'message' => 'is not a known category: ' . $value, 'in' => 'query'],
+                ]));
             }
+            $ids[] = (int) $row['pk_i_id'];
         }
 
-        return $ids;
+        return array_values(array_unique($ids));
     }
 
     /**

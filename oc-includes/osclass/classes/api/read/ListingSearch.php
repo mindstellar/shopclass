@@ -13,7 +13,6 @@ declare(strict_types=1);
 namespace mindstellar\api\read;
 
 use mindstellar\api\ApiServices;
-use mindstellar\api\Problem;
 use mindstellar\api\ProblemException;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
@@ -110,7 +109,7 @@ final class ListingSearch
         foreach (self::LISTS as $name => $param) {
             $values = $request->queryList($name);
             if ($name === 'category') {
-                $values = self::categoryIds($values, $categories, $locale);
+                $values = array_map('strval', $categories->resolve($values, $locale));
             }
             if ($values !== []) {
                 $params[$param] = $values;
@@ -140,30 +139,5 @@ final class ListingSearch
         }
 
         return $params;
-    }
-
-    /**
-     * Category ids for ids or slugs; an unknown one is refused, so a typo never widens the
-     * search to every category.
-     *
-     * @param string[] $values
-     *
-     * @return string[]
-     * @throws ProblemException 422
-     */
-    private static function categoryIds(array $values, CategoryCatalog $categories, string $locale): array
-    {
-        $ids = [];
-        foreach ($values as $value) {
-            $category = $categories->lookup($value, $locale);
-            if ($category === null) {
-                throw ProblemException::from(Problem::validation([
-                    ['pointer' => '/category', 'code' => 'enum', 'message' => 'is not a known category: ' . $value, 'in' => 'query'],
-                ]));
-            }
-            $ids[] = (string) $category['pk_i_id'];
-        }
-
-        return $ids;
     }
 }
