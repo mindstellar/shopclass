@@ -235,6 +235,7 @@ final class RouteSpec
      * @param bool                           $replayable false when the answer holds a secret
      * @param bool                           $upload   true when the body is one file instead of JSON
      * @param bool                           $oauth    true for an OAuth 2 token endpoint
+     * @param int[]                          $alsoStatuses other success statuses with the same body
      *
      * @return array<string,mixed>
      */
@@ -250,9 +251,13 @@ final class RouteSpec
         array $errors = [],
         bool $replayable = true,
         bool $upload = false,
-        bool $oauth = false
+        bool $oauth = false,
+        array $alsoStatuses = []
     ): array {
         $responses = [$status => $response === null ? ['type' => 'null'] : Schema::ref($response)];
+        foreach ($alsoStatuses as $also) {
+            $responses[$also] = $responses[$status];
+        }
         foreach ($errors as $code) {
             $responses[$code] = Schema::ref('Problem');
         }

@@ -77,7 +77,7 @@ Save a search, with the filters GET /listings takes; an existing one is answered
 
 Body: `AlertInput` as JSON.
 
-Answers: 201 Created (`AlertDocument`); 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 409 Conflict; 413 Body too large; 415 Unsupported content type; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+Answers: 200 OK (`AlertDocument`); 201 Created (`AlertDocument`); 400 Bad request; 401 No valid credential; 403 Not allowed for this credential; 409 Conflict; 413 Body too large; 415 Unsupported content type; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
 
 ### GET `/account/alerts/{id}`
 
@@ -1025,7 +1025,7 @@ Sign in with a password, or swap a refresh token for new tokens
 
 Body: `TokenRequest` as JSON.
 
-Answers: 200 OK (`TokenDocument`); 400 Bad request; 403 Not allowed for this credential; 413 Body too large; 415 Unsupported content type; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
+Answers: 200 OK (`TokenDocument`); 400 Bad request; 403 Not allowed for this credential; 413 Body too large; 415 Unsupported content type; 429 Too many requests; 500 Server error; 503 Maintenance.
 
 ## Categories
 

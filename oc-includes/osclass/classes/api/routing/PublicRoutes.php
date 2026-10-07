@@ -423,7 +423,8 @@ final class PublicRoutes
                 body: 'AlertInput',
                 response: 'AlertDocument',
                 status: 201,
-                errors: [403]
+                errors: [403],
+                alsoStatuses: [200]
             ),
             'GET account/alerts/{id}' => RouteSpec::read(
                 handler: [AlertsController::class, 'show'],

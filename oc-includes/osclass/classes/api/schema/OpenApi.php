@@ -66,6 +66,9 @@ final class OpenApi
         'ETag'             => ['description' => 'The answer\'s version. Send it back in If-None-Match for a 304, or in If-Match on a PATCH or DELETE. A PATCH sent with If-Match answers with the new one.', 'schema' => ['type' => 'string']],
         'RateLimit'        => ['description' => 'The tightest limit this call counted against: its name, requests left (r) and seconds to reset (t).', 'schema' => ['type' => 'string']],
         'RateLimit-Policy' => ['description' => 'Every limit this call counted against.', 'schema' => ['type' => 'string']],
+        'X-RateLimit-Limit'     => ['description' => 'The same tightest limit, for clients that read the older headers: requests allowed in its window.', 'schema' => ['type' => 'integer']],
+        'X-RateLimit-Remaining' => ['description' => 'Requests left in that window.', 'schema' => ['type' => 'integer']],
+        'X-RateLimit-Reset'     => ['description' => 'When that window resets, as Unix time.', 'schema' => ['type' => 'integer']],
         'Retry-After'      => ['description' => 'Seconds to wait before trying again.', 'schema' => ['type' => 'integer']],
         'Deprecation'      => ['description' => 'When the operation was deprecated, as @<unix time> (RFC 9745).', 'schema' => ['type' => 'string']],
         'Sunset'           => ['description' => 'When the operation stops working (RFC 8594).', 'schema' => ['type' => 'string']],
@@ -387,6 +390,11 @@ final class OpenApi
         if ($route->upload()) {
             $declared += [422 => $problem];
         }
+        if ($route->oauth()) {
+            // The token endpoint answers every refused or malformed request as an OAuth 400.
+            unset($declared[422]);
+            $declared += [400 => $problem];
+        }
         if (array_filter(array_keys($declared), static fn ($s): bool => (int) $s < 400) === []) {
             // A route that names no success, such as a plugin's: say only that it answers.
             $declared[$route->method() === 'POST' ? 201 : 200] = ['type' => 'null'];
@@ -438,7 +446,7 @@ final class OpenApi
             $names[] = 'ETag';
         }
         if ($route->auth() !== RouteSpec::AUTH_NONE) {
-            array_push($names, 'RateLimit', 'RateLimit-Policy');
+            array_push($names, 'RateLimit', 'RateLimit-Policy', 'X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset');
         }
         if ($status === 429 || $status === 503 || ($status === 409 && $this->idempotent($route))) {
             $names[] = 'Retry-After';

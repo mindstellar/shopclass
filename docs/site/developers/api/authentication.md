@@ -449,6 +449,9 @@ A `429` always carries them.
 When a call counts against two buckets, `RateLimit` and `X-RateLimit-*` describe the one
 closest to its limit.
 
+`RateLimit` and `RateLimit-Policy` follow the IETF draft. The `X-RateLimit-*` set says the same
+for clients and proxies that only know the older names; read whichever your client knows.
+
 ```json
 {
   "type": "https://mindstellar.com/docs/developers/api/errors/#rate_limited",
