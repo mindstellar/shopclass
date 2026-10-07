@@ -12,6 +12,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
 use mindstellar\database\TablePrefix;
 
 /**
@@ -100,12 +101,12 @@ class Dump extends DAO
         // SHOW TABLES is not a SELECT/INSERT/UPDATE/DELETE and carries no values,
         // so it runs as raw SQL through the parameterized layer with no bindings.
         try {
-            $rows = osc_db_select('SHOW TABLES');
+            $rows = Db::select('SHOW TABLES');
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -132,7 +133,7 @@ class Dump extends DAO
         $result = array();
         if ($this->isValidTableName($table)) {
             try {
-                $result = osc_db_select('SHOW CREATE TABLE `' . $table . '`');
+                $result = Db::select('SHOW CREATE TABLE `' . $table . '`');
             } catch (\mindstellar\database\DbException $e) {
                 $result = array();
             }

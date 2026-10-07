@@ -14,6 +14,7 @@ namespace mindstellar\api\read;
 
 use mindstellar\api\serializer\ListingSerializer;
 use mindstellar\api\serializer\ViewContext;
+use mindstellar\database\Db;
 
 /**
  * Listings as the API answers with them: the rows read, what they link to looked up once
@@ -137,7 +138,7 @@ final class ListingReader
     private function photoRows(array $ids): array
     {
         try {
-            $rows = osc_db_stringify_rows(\mindstellar\listing\PhotoStore::ofItems($ids));
+            $rows = Db::stringifyRows(\mindstellar\listing\PhotoStore::ofItems($ids));
         } catch (\mindstellar\database\DbException $e) {
             return [];
         }
@@ -167,7 +168,7 @@ final class ListingReader
             return [];
         }
 
-        return array_column(osc_db_stringify_rows($rows), null, 'pk_i_id');
+        return array_column(Db::stringifyRows($rows), null, 'pk_i_id');
     }
 
     /**
@@ -180,7 +181,7 @@ final class ListingReader
     private function fieldValues(array $ids): array
     {
         try {
-            $rows = osc_db_stringify_rows(\mindstellar\fields\FieldQuery::valuesOf($ids));
+            $rows = Db::stringifyRows(\mindstellar\fields\FieldQuery::valuesOf($ids));
         } catch (\mindstellar\database\DbException $e) {
             return [];
         }

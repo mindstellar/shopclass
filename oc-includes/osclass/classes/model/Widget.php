@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Class Widget
  */
@@ -69,7 +71,7 @@ class Widget extends DAO
     {
         return \mindstellar\cache\CacheGroup::remember('widget', 'location:' . $location, function () use ($location) {
             try {
-                return osc_db_stringify_rows(osc_db_table($this->getTableName())
+                return Db::stringifyRows(Db::table($this->getTableName())
                     ->select(...$this->getFields())
                     ->where('s_location', $location)
                     // i_order ascending, then primary key ascending as a tiebreak so
@@ -97,7 +99,7 @@ class Widget extends DAO
     {
         // New code uses the query builder rather than the legacy DAO this model is
         // otherwise written against.
-        $rows = osc_db_table($this->getTableName())
+        $rows = Db::table($this->getTableName())
             ->select('s_location')
             ->groupBy('s_location')
             ->get();
@@ -126,10 +128,10 @@ class Widget extends DAO
         try {
             $table = DB_TABLE_PREFIX . 't_widget';
             try {
-                osc_db_transaction(static function () use ($orderedIds, $table) {
+                Db::transaction(static function () use ($orderedIds, $table) {
                     $position = 0;
                     foreach ($orderedIds as $id) {
-                        osc_db_table($table)
+                        Db::table($table)
                             ->where('pk_i_id', (int) $id)
                             ->update(array('i_order' => $position));
                         $position++;
@@ -156,7 +158,7 @@ class Widget extends DAO
      */
     public function getNextOrder($location)
     {
-        $max = osc_db_scalar(
+        $max = Db::scalar(
             'SELECT MAX(i_order) FROM ' . DB_TABLE_PREFIX . 't_widget WHERE s_location = ?',
             array($location)
         );
@@ -175,7 +177,7 @@ class Widget extends DAO
     public function findByDescription($description)
     {
         try {
-            $rows = osc_db_table($this->getTableName())
+            $rows = Db::table($this->getTableName())
                 ->select(...$this->getFields())
                 ->where('s_description', $description)
                 ->get();
@@ -183,7 +185,7 @@ class Widget extends DAO
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 }
 

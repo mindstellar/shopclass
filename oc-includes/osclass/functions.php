@@ -469,7 +469,7 @@ function osc_search_footer_links()
     }
 
     try {
-        return osc_db_stringify_rows(
+        return \mindstellar\database\Db::stringifyRows(
             (new \mindstellar\listing\ListingQuery())->footerLocations($ids, $regionID != '' ? (int)$regionID : null)
         );
     } catch (\mindstellar\database\DbException $e) {

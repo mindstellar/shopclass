@@ -11,6 +11,7 @@
 
 namespace mindstellar\form\builder;
 
+use mindstellar\database\Db;
 use Throwable;
 
 /**
@@ -63,7 +64,7 @@ final class FormService
         }
 
         try {
-            osc_db_transaction(static function () use ($formId, $ordered) {
+            Db::transaction(static function () use ($formId, $ordered) {
                 FormFieldLinkStore::replace($formId, $ordered);
             });
         } catch (Throwable $e) {

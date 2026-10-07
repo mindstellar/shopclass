@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Model database for CategoryStats table
  *
@@ -90,7 +92,7 @@ class CategoryStats extends DAO
                ON DUPLICATE KEY UPDATE i_num_items = i_num_items + 1';
 
         try {
-            osc_db_execute($sql, array($categoryId));
+            Db::execute($sql, array($categoryId));
             $return = true;
         } catch (\mindstellar\database\DbException $e) {
             $return = false;
@@ -136,7 +138,7 @@ class CategoryStats extends DAO
         }
 
         try {
-            $row = osc_db_table($this->getTableName())
+            $row = Db::table($this->getTableName())
                 ->select('i_num_items')
                 ->where($this->getPrimaryKey(), $categoryId)
                 ->first();
@@ -144,12 +146,12 @@ class CategoryStats extends DAO
             return false;
         }
 
-        $categoryStat = $row !== null ? osc_db_stringify_row($row) : array();
+        $categoryStat = $row !== null ? Db::stringifyRow($row) : array();
         $return       = 0;
 
         if (isset($categoryStat['i_num_items'])) {
             try {
-                $return = osc_db_execute(
+                $return = Db::execute(
                     'UPDATE ' . $this->getTableName()
                     . ' SET i_num_items = i_num_items - 1 WHERE i_num_items > 0 AND fk_i_category_id = ?',
                     array($categoryId)
@@ -159,7 +161,7 @@ class CategoryStats extends DAO
             }
         } else {
             try {
-                osc_db_table($this->getTableName())->insert(array(
+                Db::table($this->getTableName())->insert(array(
                     'fk_i_category_id' => $categoryId,
                     'i_num_items'      => 0,
                 ));
@@ -200,7 +202,7 @@ class CategoryStats extends DAO
             . ' (fk_i_category_id, i_num_items) VALUES (?, ?) ON DUPLICATE KEY UPDATE i_num_items = ?';
 
         try {
-            osc_db_execute($sql, array($categoryID, $numItems, $numItems));
+            Db::execute($sql, array($categoryID, $numItems, $numItems));
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
@@ -230,7 +232,7 @@ class CategoryStats extends DAO
     public function countItemsFromCategory($categoryId)
     {
         try {
-            $row = osc_db_table($this->getTableName())
+            $row = Db::table($this->getTableName())
                 ->select('i_num_items')
                 ->where('fk_i_category_id', $categoryId)
                 ->first();
@@ -242,7 +244,7 @@ class CategoryStats extends DAO
             return 0;
         }
 
-        $row = osc_db_stringify_row($row);
+        $row = Db::stringifyRow($row);
 
         return $row['i_num_items'];
     }

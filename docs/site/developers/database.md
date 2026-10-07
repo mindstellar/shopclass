@@ -92,6 +92,10 @@ $rows = osc_db_table($p . 't_item AS i')
 When you need raw SQL, use `osc_db_select()` or `osc_db_execute()` with `?`
 placeholders, and never put request input into the string.
 
+Each `osc_db_*` helper calls the same method on `mindstellar\database\Db`, such as
+`Db::table()` and `Db::select()`, which core uses. The class needs Shopclass 7.0; the
+helpers also work on 6.x.
+
 ## Adding your own tables
 
 Create them on plugin install, drop them on uninstall, and prefix them with both

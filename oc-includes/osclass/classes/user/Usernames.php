@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\user;
 
+use mindstellar\database\Db;
+
 /**
  * Usernames: which are allowed, and claiming one so no two accounts hold it.
  */
@@ -47,7 +49,7 @@ final class Usernames
     {
         $lock = UserStore::usernameLock();
         try {
-            $locked = (int) osc_db_scalar('SELECT GET_LOCK(?, 5)', [$lock]) === 1;
+            $locked = (int) Db::scalar('SELECT GET_LOCK(?, 5)', [$lock]) === 1;
         } catch (\mindstellar\database\DbException $e) {
             $locked = false;
         }
@@ -64,7 +66,7 @@ final class Usernames
             return (int) $e->getCode() === 1062 ? 'taken' : 'failed';
         } finally {
             try {
-                osc_db_scalar('SELECT RELEASE_LOCK(?)', [$lock]);
+                Db::scalar('SELECT RELEASE_LOCK(?)', [$lock]);
             } catch (\mindstellar\database\DbException $e) {
                 // The lock is dropped with the connection anyway.
             }

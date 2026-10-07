@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\listing;
 
 use mindstellar\base\Model;
+use mindstellar\database\Db;
 
 /**
  * Small t_item_resource reads and writes for listing photos. The legacy ItemResource
@@ -57,7 +58,7 @@ final class PhotoStore extends Model
      */
     public static function firstImage(int $itemId): ?array
     {
-        $rows = osc_db_select(
+        $rows = Db::select(
             'SELECT pk_i_id, s_path, s_extension, s_content_type, s_storage FROM '
             . self::tableName() . " WHERE fk_i_item_id = ? AND s_content_type LIKE 'image/%' "
             . 'ORDER BY pk_i_id ASC LIMIT 1',

@@ -15,6 +15,7 @@ namespace mindstellar\category;
 
 use Category;
 use Item;
+use mindstellar\database\Db;
 use mindstellar\job\CategoryJobs;
 use mindstellar\routing\ReservedSlugs;
 use mindstellar\validation\ConflictException;
@@ -71,7 +72,7 @@ final class CategoryService
         ];
         $categories = $this->categories;
 
-        return (int) osc_db_transaction(static function () use ($categories, $fields, $descriptions, $first): int {
+        return (int) Db::transaction(static function () use ($categories, $fields, $descriptions, $first): int {
             $id = (int) $categories->insert($fields, $descriptions);
             if ($first) {
                 foreach ($categories->findRootCategories() as $root) {

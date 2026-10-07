@@ -11,6 +11,7 @@
 namespace mindstellar\location;
 
 use InvalidArgumentException;
+use mindstellar\database\Db;
 use mindstellar\database\DbException;
 use mindstellar\database\QueryBuilder;
 
@@ -51,8 +52,8 @@ final class LocationAdminQuery
     {
         [$countSql, $pageSql, $params, $page, $per] = $this->listQuery('country', null, $q, $page, $per);
 
-        $total = (int) osc_db_scalar($countSql, $params);
-        $rows  = $total > 0 ? osc_db_select($pageSql, $params) : array();
+        $total = (int) Db::scalar($countSql, $params);
+        $rows  = $total > 0 ? Db::select($pageSql, $params) : array();
         $codes = array_column($rows, 'pk_c_code');
 
         $listings = $this->keyedCounts(
@@ -104,8 +105,8 @@ final class LocationAdminQuery
         }
         $parent = array('level' => 'country', 'id' => $found['id'], 'name' => $found['name']);
 
-        $total = (int) osc_db_scalar($countSql, $params);
-        $rows  = $total > 0 ? osc_db_select($pageSql, $params) : array();
+        $total = (int) Db::scalar($countSql, $params);
+        $rows  = $total > 0 ? Db::select($pageSql, $params) : array();
         $ids   = array_map('intval', array_column($rows, 'pk_i_id'));
 
         $listings = $this->keyedCounts(
@@ -159,8 +160,8 @@ final class LocationAdminQuery
         }
         $parent = array('level' => 'region', 'id' => $found['id'], 'name' => $found['name'], 'country' => $found['country']);
 
-        $total = (int) osc_db_scalar($countSql, $params);
-        $rows  = $total > 0 ? osc_db_select($pageSql, $params) : array();
+        $total = (int) Db::scalar($countSql, $params);
+        $rows  = $total > 0 ? Db::select($pageSql, $params) : array();
         $ids   = array_map('intval', array_column($rows, 'pk_i_id'));
 
         $listings = $this->keyedCounts(
@@ -218,7 +219,7 @@ final class LocationAdminQuery
         }
         $limit = max(1, $max) + 2;
         $out   = array();
-        foreach (osc_db_select($sql . ' ORDER BY i LIMIT ' . $limit, $params) as $row) {
+        foreach (Db::select($sql . ' ORDER BY i LIMIT ' . $limit, $params) as $row) {
             $char = trim((string) $row['i']);
             // Only letters and digits make a useful jump; names starting otherwise stay searchable.
             if (preg_match('/^[\p{L}\p{N}]$/u', $char) === 1 && !in_array($char, $out, true)) {
@@ -248,7 +249,7 @@ final class LocationAdminQuery
         $limit   = $perLevel < 1 ? 10 : min(50, $perLevel);
         $pattern = self::prefixPattern($q);
 
-        $rows = osc_db_select(
+        $rows = Db::select(
             'SELECT pk_c_code, s_name, s_slug FROM ' . $this->table('t_country')
             . ' WHERE s_name LIKE ? ORDER BY s_name, pk_c_code LIMIT ' . $limit,
             array($pattern)
@@ -261,7 +262,7 @@ final class LocationAdminQuery
             );
         }
 
-        $rows = osc_db_select(
+        $rows = Db::select(
             'SELECT r.pk_i_id, r.s_name, r.s_slug, r.b_active, r.fk_c_country_code, co.s_name AS country_name'
             . ' FROM ' . $this->table('t_region') . ' r'
             . ' LEFT JOIN ' . $this->table('t_country') . ' co ON co.pk_c_code = r.fk_c_country_code'
@@ -279,7 +280,7 @@ final class LocationAdminQuery
             );
         }
 
-        $rows = osc_db_select(
+        $rows = Db::select(
             'SELECT c.pk_i_id, c.s_name, c.s_slug, c.b_active, c.fk_i_region_id, r.s_name AS region_name,'
             . ' COALESCE(r.fk_c_country_code, c.fk_c_country_code) AS country_code, co.s_name AS country_name'
             . ' FROM ' . $this->table('t_city') . ' c'
@@ -340,7 +341,7 @@ final class LocationAdminQuery
         $in    = implode(', ', array_fill(0, count($ids), '?'));
         $sets  = $this->placeSets($level, $in);
         $count = static function (string $sql, int $times) use ($ids): int {
-            return (int) osc_db_scalar($sql, array_merge(...array_fill(0, $times, $ids)));
+            return (int) Db::scalar($sql, array_merge(...array_fill(0, $times, $ids)));
         };
 
         switch ($level) {
@@ -399,7 +400,7 @@ final class LocationAdminQuery
 
         switch ($level) {
             case 'country':
-                $row = osc_db_select_one(
+                $row = Db::selectOne(
                     'SELECT pk_c_code, s_name, s_slug FROM ' . $this->table('t_country') . ' WHERE pk_c_code = ?',
                     array($id)
                 );
@@ -420,7 +421,7 @@ final class LocationAdminQuery
                 );
                 break;
             case 'region':
-                $row = osc_db_select_one(
+                $row = Db::selectOne(
                     'SELECT r.*, co.s_name AS country_name FROM ' . $this->table('t_region') . ' r'
                     . ' LEFT JOIN ' . $this->table('t_country') . ' co ON co.pk_c_code = r.fk_c_country_code'
                     . ' WHERE r.pk_i_id = ?',
@@ -435,7 +436,7 @@ final class LocationAdminQuery
                 );
                 break;
             default:
-                $row = osc_db_select_one(
+                $row = Db::selectOne(
                     'SELECT c.*, r.s_name AS region_name,'
                     . ' COALESCE(r.fk_c_country_code, c.fk_c_country_code) AS country_code, co.s_name AS country_name'
                     . ' FROM ' . $this->table('t_city') . ' c'
@@ -600,7 +601,7 @@ final class LocationAdminQuery
             return array();
         }
         $out = array();
-        foreach (osc_db_select(sprintf($sql, implode(', ', array_fill(0, count($keys), '?'))), array_values($keys)) as $row) {
+        foreach (Db::select(sprintf($sql, implode(', ', array_fill(0, count($keys), '?'))), array_values($keys)) as $row) {
             $key       = is_string($row['k']) ? strtoupper($row['k']) : (int) $row['k'];
             $out[$key] = (int) $row['n'];
         }

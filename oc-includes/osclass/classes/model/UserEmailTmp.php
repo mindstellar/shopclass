@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Model database for the t_user_email_tmp table (pending email changes).
  *
@@ -79,7 +81,7 @@ class UserEmailTmp extends DAO
                 ON DUPLICATE KEY UPDATE s_new_email = ?, dt_date = ?';
 
         try {
-            $affected = osc_db_execute($sql, array(
+            $affected = Db::execute($sql, array(
                 $userEmailTmp['fk_i_user_id'],
                 $userEmailTmp['s_new_email'],
                 $now,

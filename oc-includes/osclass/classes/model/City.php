@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Model database for City table
  *
@@ -101,12 +103,12 @@ class City extends DAO
         $sql .= ' LIMIT 10';
 
         try {
-            $rows = osc_db_select($sql, $params);
+            $rows = Db::select($sql, $params);
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -134,7 +136,7 @@ class City extends DAO
     public function findByRegion($regionId)
     {
         try {
-            $rows = osc_db_table($this->getTableName())
+            $rows = Db::table($this->getTableName())
                 ->select(...$this->getFields())
                 ->where('fk_i_region_id', $regionId)
                 ->orderBy('s_name', 'ASC')
@@ -143,7 +145,7 @@ class City extends DAO
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -156,7 +158,7 @@ class City extends DAO
      */
     public function findByName($cityName, $regionId = null)
     {
-        $query = osc_db_table($this->getTableName())
+        $query = Db::table($this->getTableName())
             ->select(...$this->getFields())
             ->where('s_name', $cityName);
 
@@ -174,7 +176,7 @@ class City extends DAO
             return array();
         }
 
-        return osc_db_stringify_row($row);
+        return Db::stringifyRow($row);
     }
 
     /**
@@ -185,7 +187,7 @@ class City extends DAO
     public function listAll()
     {
         try {
-            $rows = osc_db_table($this->getTableName())
+            $rows = Db::table($this->getTableName())
                 ->select(...$this->getFields())
                 ->orderBy('s_name', 'ASC')
                 ->get();
@@ -193,7 +195,7 @@ class City extends DAO
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -221,7 +223,7 @@ class City extends DAO
         // See Region::deleteByPrimaryKey(): the slug history has no foreign key to
         // clean it up, so a rename recorded for this city would outlive the city.
         try {
-            osc_db_table(DB_TABLE_PREFIX . 't_location_slug_history')
+            Db::table(DB_TABLE_PREFIX . 't_location_slug_history')
                 ->where('e_type', 'CITY')
                 ->where('fk_i_id', (int)$pk)
                 ->delete();
@@ -254,7 +256,7 @@ class City extends DAO
     public function findBySlug($slug)
     {
         try {
-            $row = osc_db_table($this->getTableName())
+            $row = Db::table($this->getTableName())
                 ->where('s_slug', $slug)
                 ->first();
         } catch (\mindstellar\database\DbException $e) {
@@ -265,7 +267,7 @@ class City extends DAO
             return array();
         }
 
-        return osc_db_stringify_row($row);
+        return Db::stringifyRow($row);
     }
 
     /**
@@ -284,7 +286,7 @@ class City extends DAO
     public function findBySourceId($sourceId)
     {
         try {
-            $row = osc_db_table($this->getTableName())
+            $row = Db::table($this->getTableName())
                 ->where('i_source_id', $sourceId)
                 ->first();
         } catch (\mindstellar\database\DbException $e) {
@@ -295,7 +297,7 @@ class City extends DAO
             return array();
         }
 
-        return osc_db_stringify_row($row);
+        return Db::stringifyRow($row);
     }
 
     /**
@@ -307,14 +309,14 @@ class City extends DAO
     public function listByEmptySlug()
     {
         try {
-            $rows = osc_db_table($this->getTableName())
+            $rows = Db::table($this->getTableName())
                 ->where('s_slug', '')
                 ->get();
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 }
 

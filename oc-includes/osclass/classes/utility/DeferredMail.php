@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\utility;
 
+use mindstellar\database\Db;
+
 /**
  * E-mails held back while a database write is open, so a write that is rolled back sends
  * none. osc_sendMail() hands each e-mail here first.
@@ -72,7 +74,7 @@ final class DeferredMail
      */
     public static function transaction(callable $fn): mixed
     {
-        return self::during(static fn (): mixed => osc_db_transaction($fn));
+        return self::during(static fn (): mixed => Db::transaction($fn));
     }
 
     /**

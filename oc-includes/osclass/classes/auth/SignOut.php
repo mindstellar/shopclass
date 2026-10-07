@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\auth;
 
+use mindstellar\database\Db;
+
 /**
  * "Sign out of all devices", the one way every sign-in of an account ends: its sign-out stamp
  * goes up, which ends every cookie and token signed over it, then an action lets stored
@@ -35,7 +37,7 @@ final class SignOut
      */
     public static function everywhereUser(int $userId): bool
     {
-        return (bool) osc_db_transaction(static function () use ($userId): bool {
+        return (bool) Db::transaction(static function () use ($userId): bool {
             if (!self::bump(\User::getInstance()->getTableName(), $userId)) {
                 return false;
             }
@@ -54,7 +56,7 @@ final class SignOut
      */
     public static function everywhereAdmin(int $adminId): bool
     {
-        return (bool) osc_db_transaction(static function () use ($adminId): bool {
+        return (bool) Db::transaction(static function () use ($adminId): bool {
             if (!self::bump(\Admin::getInstance()->getTableName(), $adminId)) {
                 return false;
             }
@@ -76,7 +78,7 @@ final class SignOut
             return false;
         }
 
-        return osc_db_execute(
+        return Db::execute(
             'UPDATE ' . $table . ' SET ' . AuthStamp::COLUMN . ' = ' . AuthStamp::COLUMN . ' + 1 WHERE pk_i_id = ?',
             [$id]
         ) > 0;

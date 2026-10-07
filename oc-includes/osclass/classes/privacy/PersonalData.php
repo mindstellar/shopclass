@@ -11,6 +11,7 @@
 namespace mindstellar\privacy;
 
 use Item;
+use mindstellar\database\Db;
 use User;
 
 /**
@@ -247,7 +248,7 @@ class PersonalData
     private static function rows($table, $column, $userId)
     {
         try {
-            return osc_db_select(
+            return Db::select(
                 'SELECT * FROM ' . DB_TABLE_PREFIX . $table . ' WHERE ' . $column . ' = ?',
                 array($userId)
             );

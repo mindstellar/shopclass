@@ -18,6 +18,7 @@ namespace mindstellar\user;
 use mindstellar\auth\Actor;
 use mindstellar\auth\Reauth;
 use mindstellar\auth\SignOut;
+use mindstellar\database\Db;
 use mindstellar\listing\ListingService;
 use mindstellar\location\LocationService;
 use mindstellar\security\ActionToken;
@@ -390,7 +391,7 @@ final class AccountService
 
         $status = 'failed';
         try {
-            osc_db_transaction(static function () use ($userId, $stored, $new, &$status) {
+            Db::transaction(static function () use ($userId, $stored, $new, &$status) {
                 // Matching on the code as well makes the link single-use under a double click.
                 try {
                     $switched = UserStore::switchEmail($userId, $stored, $new);
@@ -454,7 +455,7 @@ final class AccountService
             $where['s_pass_code'] = \User::passCodeHash(\User::PASS_CODE_RESET, $resetCode);
         }
 
-        return (bool) osc_db_transaction(static function () use ($userId, $values, $where): bool {
+        return (bool) Db::transaction(static function () use ($userId, $values, $where): bool {
             if (!\User::getInstance()->update($values, $where)) {
                 return false;
             }
@@ -545,7 +546,7 @@ final class AccountService
             throw new ConflictException(_m('Your account has already been validated'));
         }
 
-        $done = (bool) osc_db_transaction(function () use ($userId, $hash): bool {
+        $done = (bool) Db::transaction(function () use ($userId, $hash): bool {
             // A fresh plaintext secret replaces the used code; the account-delete link reads it.
             $updated = $this->users->update(
                 ['b_active' => '1', 's_secret' => osc_genRandomPassword()],

@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Model database for RegionStats table
  *
@@ -99,7 +101,7 @@ class RegionStats extends DAO
             );
 
         try {
-            osc_db_execute($sql, array($regionId));
+            Db::execute($sql, array($regionId));
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
@@ -123,7 +125,7 @@ class RegionStats extends DAO
         }
 
         try {
-            $regionStat = osc_db_table($this->getTableName())
+            $regionStat = Db::table($this->getTableName())
                 ->select('i_num_items')
                 ->where($this->getPrimaryKey(), $regionId)
                 ->first();
@@ -139,7 +141,7 @@ class RegionStats extends DAO
                 . ' SET i_num_items = i_num_items - 1 WHERE i_num_items > 0 AND fk_i_region_id = ?';
 
             try {
-                return osc_db_execute($sql, array($regionId));
+                return Db::execute($sql, array($regionId));
             } catch (\mindstellar\database\DbException $e) {
                 return false;
             }
@@ -169,7 +171,7 @@ class RegionStats extends DAO
             . ' (fk_i_region_id, i_num_items) VALUES (?, ?) ON DUPLICATE KEY UPDATE i_num_items = ?';
 
         try {
-            osc_db_execute($sql, array($regionID, $numItems, $numItems));
+            Db::execute($sql, array($regionID, $numItems, $numItems));
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
@@ -255,12 +257,12 @@ class RegionStats extends DAO
             $sql .= ' ORDER BY ' . $order;
 
             try {
-                $rows = osc_db_select($sql, $params);
+                $rows = Db::select($sql, $params);
             } catch (\mindstellar\database\DbException $e) {
                 return array();
             }
 
-            $return = osc_db_stringify_rows($rows);
+            $return = Db::stringifyRows($rows);
             osc_cache_set($key, $return, OSC_CACHE_TTL);
 
             return $return;
@@ -295,13 +297,13 @@ class RegionStats extends DAO
         $sql .= DB_TABLE_PREFIX . 't_category.b_enabled = 1 ';
 
         try {
-            $row = osc_db_select_one($sql, array((int)$regionId, date('Y-m-d H:i:s')));
+            $row = Db::selectOne($sql, array((int)$regionId, date('Y-m-d H:i:s')));
         } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
 
         if ($row !== null) {
-            $row = osc_db_stringify_row($row);
+            $row = Db::stringifyRow($row);
 
             return $row['total'];
         }
@@ -350,12 +352,12 @@ class RegionStats extends DAO
             . ' GROUP BY fk_i_region_id';
 
         try {
-            $rows = osc_db_select($sql, array_merge(array(date('Y-m-d H:i:s')), $ids));
+            $rows = Db::select($sql, array_merge(array(date('Y-m-d H:i:s')), $ids));
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        foreach (osc_db_stringify_rows($rows) as $a) {
+        foreach (Db::stringifyRows($rows) as $a) {
             $return[$a['fk_i_region_id']] = $a['i_num_items'];
         }
         // fill missing values with 0
@@ -404,7 +406,7 @@ class RegionStats extends DAO
             . ' ON DUPLICATE KEY UPDATE i_num_items = VALUES(i_num_items)';
 
         try {
-            osc_db_execute($sql, $params);
+            Db::execute($sql, $params);
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }

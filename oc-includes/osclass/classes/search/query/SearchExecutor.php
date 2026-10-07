@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\search\query;
 
+use mindstellar\database\Db;
 use mindstellar\database\DbException;
 
 /**
@@ -28,7 +29,7 @@ final class SearchExecutor
      */
     public static function rows(array $statement): array
     {
-        $rows = osc_db_select($statement[0], $statement[1]);
+        $rows = Db::select($statement[0], $statement[1]);
         if ($statement[1] !== array()) {
             // A prepared statement returns a double (relevance) as a float; give it the
             // digits the text protocol does.
@@ -41,7 +42,7 @@ final class SearchExecutor
             }
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -54,7 +55,7 @@ final class SearchExecutor
     public static function total(array $statement): int
     {
         try {
-            $row = osc_db_select_one($statement[0], $statement[1]);
+            $row = Db::selectOne($statement[0], $statement[1]);
 
             return (int)($row['total'] ?? 0);
         } catch (DbException $e) {

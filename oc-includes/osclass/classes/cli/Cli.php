@@ -15,6 +15,7 @@ use Admin;
 use mindstellar\admin\DatabaseTools;
 use mindstellar\admin\SystemChecks;
 use mindstellar\database\Connection;
+use mindstellar\database\Db;
 use mindstellar\market\Catalog;
 use mindstellar\market\Compatibility;
 use mindstellar\market\Installer;
@@ -338,7 +339,7 @@ class Cli
         [$adminPassword, $generated] = $this->resolvePassword($adminPwArgs);
 
         try {
-            osc_db_table(DB_TABLE_PREFIX . 't_admin')->insert([
+            Db::table(DB_TABLE_PREFIX . 't_admin')->insert([
                 's_name'     => $adminName,
                 's_username' => $adminUser,
                 's_password' => osc_hash_password($adminPassword),
@@ -348,8 +349,8 @@ class Cli
             // Site identity, matching the GUI installer's basic_info().
             $prefTable = DB_TABLE_PREFIX . 't_preference';
             $replace   = "REPLACE INTO $prefTable (s_name, s_value, s_section, e_type) VALUES (?, ?, ?, ?)";
-            osc_db_execute($replace, ['pageTitle', $siteTitle, 'osclass', 'STRING']);
-            osc_db_execute($replace, ['contactEmail', $adminEmail, 'osclass', 'STRING']);
+            Db::execute($replace, ['pageTitle', $siteTitle, 'osclass', 'STRING']);
+            Db::execute($replace, ['contactEmail', $adminEmail, 'osclass', 'STRING']);
         } catch (\Throwable $e) {
             $this->err('Schema installed, but creating the admin account failed: ' . $e->getMessage() . "\n");
 

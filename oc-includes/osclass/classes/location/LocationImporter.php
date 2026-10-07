@@ -10,6 +10,8 @@
 
 namespace mindstellar\location;
 
+use mindstellar\database\Db;
+
 /**
  * Imports one country's regions and cities, updating what is already there instead of
  * inserting beside it.
@@ -429,14 +431,14 @@ final class LocationImporter
             // code, so the counts are exact, ids of newly inserted regions are real enough
             // to hang their cities off, and a constraint a real run would violate is
             // violated here too — where it is harmless.
-            osc_db_begin();
+            Db::beginTransaction();
             try {
                 $run();
             } finally {
-                osc_db_rollback();
+                Db::rollBack();
             }
         } else {
-            osc_db_transaction($run);
+            Db::transaction($run);
         }
 
         return $this->report;

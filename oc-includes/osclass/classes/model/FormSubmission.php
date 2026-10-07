@@ -11,6 +11,7 @@
 namespace mindstellar\model;
 
 use mindstellar\base\Model;
+use mindstellar\database\Db;
 use mindstellar\database\QueryBuilder;
 use Throwable;
 
@@ -64,7 +65,7 @@ class FormSubmission extends Model
      */
     private function valueTable(): QueryBuilder
     {
-        return osc_db_table(DB_TABLE_PREFIX . self::VALUE_TABLE);
+        return Db::table(DB_TABLE_PREFIX . self::VALUE_TABLE);
     }
 
     /**
@@ -84,8 +85,8 @@ class FormSubmission extends Model
     {
         try {
             $submissionId = 0;
-            osc_db_transaction(function () use (&$submissionId, $formId, $contextType, $contextId, $userId, $ip, $values) {
-                $submissionId = osc_db_table(DB_TABLE_PREFIX . self::TABLE)->insert(array(
+            Db::transaction(function () use (&$submissionId, $formId, $contextType, $contextId, $userId, $ip, $values) {
+                $submissionId = Db::table(DB_TABLE_PREFIX . self::TABLE)->insert(array(
                     'fk_i_group_id'  => $formId,
                     's_context_type' => $contextType,
                     'i_context_id'   => $contextId,
@@ -98,7 +99,7 @@ class FormSubmission extends Model
                 foreach ($values as $fieldId => $value) {
                     if (is_array($value)) {
                         foreach ($value as $multi => $v) {
-                            osc_db_table(DB_TABLE_PREFIX . self::VALUE_TABLE)->insert(array(
+                            Db::table(DB_TABLE_PREFIX . self::VALUE_TABLE)->insert(array(
                                 'fk_i_submission_id' => $submissionId,
                                 'fk_i_field_id'      => (int) $fieldId,
                                 's_multi'            => (string) $multi,
@@ -106,7 +107,7 @@ class FormSubmission extends Model
                             ));
                         }
                     } else {
-                        osc_db_table(DB_TABLE_PREFIX . self::VALUE_TABLE)->insert(array(
+                        Db::table(DB_TABLE_PREFIX . self::VALUE_TABLE)->insert(array(
                             'fk_i_submission_id' => $submissionId,
                             'fk_i_field_id'      => (int) $fieldId,
                             's_multi'            => '',

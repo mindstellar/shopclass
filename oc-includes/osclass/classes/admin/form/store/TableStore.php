@@ -12,6 +12,7 @@
 namespace mindstellar\admin\form\store;
 
 use mindstellar\admin\ui\FormSpec;
+use mindstellar\database\Db;
 
 /**
  * One row of one table, addressed by its primary key.
@@ -244,7 +245,7 @@ final class TableStore implements Store
         // The builder is immutable, so every clause has to be reassigned or it is dropped
         // -- and a dropped WHERE would be an UPDATE across the whole table, which is why
         // QueryBuilder refuses one outright.
-        $query = osc_db_table(DB_TABLE_PREFIX . $this->table);
+        $query = Db::table(DB_TABLE_PREFIX . $this->table);
         if ($id === null) {
             $new = $query->insert($data);
 
@@ -283,7 +284,7 @@ final class TableStore implements Store
         $existing = $this->localeRows($id);
         $written  = 0;
         foreach ($perLocale as $code => $columns) {
-            $query = osc_db_table(DB_TABLE_PREFIX . $this->locale['table']);
+            $query = Db::table(DB_TABLE_PREFIX . $this->locale['table']);
             if (!isset($existing[$code])) {
                 $query->insert($columns + array(
                     $this->locale['fk']     => $id,
@@ -314,7 +315,7 @@ final class TableStore implements Store
             return array();
         }
 
-        $query = osc_db_table(DB_TABLE_PREFIX . $this->locale['table']);
+        $query = Db::table(DB_TABLE_PREFIX . $this->locale['table']);
         $query = $query->where($this->locale['fk'], $id);
 
         $rows = array();
@@ -357,7 +358,7 @@ final class TableStore implements Store
             return array();
         }
 
-        $query = osc_db_table(DB_TABLE_PREFIX . $this->table);
+        $query = Db::table(DB_TABLE_PREFIX . $this->table);
         $query = $query->where($this->pk, $id);
 
         return $query->first() ?? array();

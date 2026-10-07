@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\user;
 
 use mindstellar\base\Model;
+use mindstellar\database\Db;
 
 /**
  * Writes on t_user and on the rows an account owns elsewhere, plus the small reads the
@@ -77,7 +78,7 @@ final class UserStore extends Model
         if ($ids === []) {
             return [];
         }
-        $rows = osc_db_select(
+        $rows = Db::select(
             'SELECT pk_i_id, s_username FROM ' . self::tableName() . ' WHERE pk_i_id IN (' . implode(',', array_fill(0, count($ids), '?')) . ')',
             $ids
         );
@@ -141,7 +142,7 @@ final class UserStore extends Model
         self::owned('t_item', $userId)->update(['s_contact_email' => $email]);
         self::owned('t_item_comment', $userId)->update(['s_author_email' => $email]);
         self::owned('t_alerts', $userId)->update(['s_email' => $email]);
-        osc_db_table(DB_TABLE_PREFIX . 't_user_email_tmp')->where('s_new_email', $email)->delete();
+        Db::table(DB_TABLE_PREFIX . 't_user_email_tmp')->where('s_new_email', $email)->delete();
     }
 
     /**
@@ -174,7 +175,7 @@ final class UserStore extends Model
      */
     public static function prunePendingEmails(string $before): void
     {
-        osc_db_table(DB_TABLE_PREFIX . 't_user_email_tmp')->where('dt_date', '<', $before)->delete();
+        Db::table(DB_TABLE_PREFIX . 't_user_email_tmp')->where('dt_date', '<', $before)->delete();
     }
 
     /**
@@ -185,7 +186,7 @@ final class UserStore extends Model
      */
     public static function claimGuestListings(int $userId, string $email, ?string $name): int
     {
-        return osc_db_table(\Item::getInstance()->getTableName())
+        return Db::table(\Item::getInstance()->getTableName())
             ->where('s_contact_email', $email)
             ->whereNull('fk_i_user_id')
             ->update(['fk_i_user_id' => $userId, 's_contact_name' => $name]);
@@ -198,7 +199,7 @@ final class UserStore extends Model
      */
     public static function claimGuestAlerts(int $userId, string $email): void
     {
-        osc_db_table(\Alerts::getInstance()->getTableName())
+        Db::table(\Alerts::getInstance()->getTableName())
             ->where('s_email', $email)
             ->whereRaw('(fk_i_user_id IS NULL OR fk_i_user_id = 0)')
             ->update(['fk_i_user_id' => $userId]);
@@ -206,6 +207,6 @@ final class UserStore extends Model
 
     private static function owned(string $table, int $userId): \mindstellar\database\QueryBuilder
     {
-        return osc_db_table(DB_TABLE_PREFIX . $table)->where('fk_i_user_id', $userId);
+        return Db::table(DB_TABLE_PREFIX . $table)->where('fk_i_user_id', $userId);
     }
 }

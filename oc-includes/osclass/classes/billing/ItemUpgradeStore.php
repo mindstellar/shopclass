@@ -12,6 +12,7 @@
 namespace mindstellar\billing;
 
 use mindstellar\base\Model;
+use mindstellar\database\Db;
 use mindstellar\database\DbException;
 
 /**
@@ -72,7 +73,7 @@ final class ItemUpgradeStore extends Model
     {
         $now = date('Y-m-d H:i:s');
 
-        $granted = (bool) osc_db_transaction(static function () use ($itemId, $upgrade, $days, $hours, $now): bool {
+        $granted = (bool) Db::transaction(static function () use ($itemId, $upgrade, $days, $hours, $now): bool {
             $row = self::table()
                 ->where('fk_i_item_id', $itemId)
                 ->where('s_upgrade', $upgrade)
@@ -214,7 +215,7 @@ final class ItemUpgradeStore extends Model
      */
     public static function purge(): int
     {
-        return osc_db_execute(
+        return Db::execute(
             'DELETE FROM ' . self::tableName() . ' WHERE dt_expiration IS NOT NULL AND dt_expiration <= ?',
             array(date('Y-m-d H:i:s'))
         );

@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\listing;
 
 use mindstellar\base\Model;
+use mindstellar\database\Db;
 
 /**
  * Small t_item reads and writes for the listing services. The legacy Item model keeps
@@ -42,7 +43,7 @@ final class ListingStore extends Model
      */
     public static function ownerId(int $id): int
     {
-        return (int) osc_db_scalar('SELECT fk_i_user_id FROM ' . self::tableName() . ' WHERE pk_i_id = ?', array($id));
+        return (int) Db::scalar('SELECT fk_i_user_id FROM ' . self::tableName() . ' WHERE pk_i_id = ?', array($id));
     }
 
     /**
@@ -53,7 +54,7 @@ final class ListingStore extends Model
      */
     public static function premiumState(int $id): ?array
     {
-        return osc_db_select_one(
+        return Db::selectOne(
             'SELECT b_premium, dt_premium_expiration, b_enabled, b_active, b_spam, dt_expiration FROM '
             . self::tableName() . ' WHERE pk_i_id = ?',
             array($id)
@@ -77,7 +78,7 @@ final class ListingStore extends Model
      */
     public static function endedPremium(string $now): array
     {
-        return osc_db_select(
+        return Db::select(
             'SELECT pk_i_id, b_enabled, b_active, b_spam, b_premium, dt_expiration FROM ' . self::tableName()
             . ' WHERE b_premium = 1 AND dt_premium_expiration IS NOT NULL AND dt_premium_expiration <= ?',
             array($now)

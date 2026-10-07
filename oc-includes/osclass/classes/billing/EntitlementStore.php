@@ -12,6 +12,7 @@
 namespace mindstellar\billing;
 
 use mindstellar\base\Model;
+use mindstellar\database\Db;
 
 /**
  * What a user is entitled to: a quantity, a duration, or both, per feature.
@@ -98,7 +99,7 @@ final class EntitlementStore extends Model
             $setParts[] = 'pk_i_id = pk_i_id';
         }
 
-        osc_db_execute(
+        Db::execute(
             'INSERT INTO ' . $table
             . ' (fk_i_user_id, s_feature, i_quantity, dt_expiration, s_source, dt_date)'
             . ' VALUES (?, ?, ?, ?, ?, ?)'
@@ -193,7 +194,7 @@ final class EntitlementStore extends Model
         // merges, but a plugin granting directly need not. Without it a single spend would
         // decrement every one of them. The soonest to expire goes first, so quantity that is
         // about to lapse is used before quantity that is not.
-        $affected = osc_db_execute(
+        $affected = Db::execute(
             'UPDATE ' . $table . ' SET i_quantity = i_quantity - ?'
             . ' WHERE fk_i_user_id = ? AND s_feature = ? AND i_quantity IS NOT NULL AND i_quantity >= ?'
             . ' AND (dt_expiration IS NULL OR dt_expiration > ?)'
@@ -208,7 +209,7 @@ final class EntitlementStore extends Model
         // The UPDATE above can never match a NULL quantity, so failing it does not
         // yet mean "insufficient" -- an unlimited row consumes nothing and reports
         // success. Nothing is written on this path, so there is no race to guard.
-        return (bool) osc_db_scalar(
+        return (bool) Db::scalar(
             'SELECT 1 FROM ' . $table
             . ' WHERE fk_i_user_id = ? AND s_feature = ? AND i_quantity IS NULL'
             . ' AND (dt_expiration IS NULL OR dt_expiration > ?) LIMIT 1',
@@ -286,7 +287,7 @@ final class EntitlementStore extends Model
      */
     public static function purge(): int
     {
-        return osc_db_execute(
+        return Db::execute(
             'DELETE FROM ' . self::tableName() . ' WHERE dt_expiration IS NOT NULL AND dt_expiration <= ?',
             array(date('Y-m-d H:i:s'))
         );
@@ -389,7 +390,7 @@ final class EntitlementStore extends Model
      */
     public static function liveListings(int $userId): int
     {
-        return (int) osc_db_scalar(
+        return (int) Db::scalar(
             'SELECT COUNT(*) FROM ' . DB_TABLE_PREFIX . 't_item'
             . ' WHERE fk_i_user_id = ? AND (b_premium = 1 OR dt_expiration >= ?)',
             array($userId, date('Y-m-d H:i:s'))

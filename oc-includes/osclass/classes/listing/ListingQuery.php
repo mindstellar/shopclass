@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\listing;
 
+use mindstellar\database\Db;
 use mindstellar\database\QueryBuilder;
 use mindstellar\utility\Clock;
 use mindstellar\utility\SystemClock;
@@ -47,7 +48,7 @@ final class ListingQuery
     {
         $row = $this->table()->select(...self::STATUS_COLUMNS)->where('pk_i_id', $id)->first();
 
-        return $row === null ? null : osc_db_stringify_row($row);
+        return $row === null ? null : Db::stringifyRow($row);
     }
 
     /**
@@ -62,7 +63,7 @@ final class ListingQuery
      */
     public function newest(array $statuses, array $userIds, array $categoryIds, string $title, ?int $beforeId, int $limit): array
     {
-        return osc_db_stringify_rows($this->filtered($statuses, $userIds, $categoryIds, $title)->newestBefore($beforeId, $limit));
+        return Db::stringifyRows($this->filtered($statuses, $userIds, $categoryIds, $title)->newestBefore($beforeId, $limit));
     }
 
     /**
@@ -113,7 +114,7 @@ final class ListingQuery
             . ($withTexts ? ' LEFT JOIN ' . $p . 't_item_description d ON d.fk_i_item_id = i.pk_i_id' : '')
             . ' WHERE i.pk_i_id = ?';
 
-        return osc_db_select($sql, [$id]);
+        return Db::select($sql, [$id]);
     }
 
     /**
@@ -163,11 +164,11 @@ final class ListingQuery
             . ' JOIN ' . $p . 't_item_location as l ON l.fk_i_item_id = g.rep_id'
             . ' JOIN ' . $p . 't_item as i ON i.pk_i_id = g.rep_id';
 
-        return osc_db_select($sql, $params);
+        return Db::select($sql, $params);
     }
 
     private function table(): QueryBuilder
     {
-        return osc_db_table(DB_TABLE_PREFIX . 't_item');
+        return Db::table(DB_TABLE_PREFIX . 't_item');
     }
 }

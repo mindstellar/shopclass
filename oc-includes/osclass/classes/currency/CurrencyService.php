@@ -15,6 +15,7 @@ namespace mindstellar\currency;
 use Currency;
 use mindstellar\admin\AdminText;
 use mindstellar\cache\CacheGroup;
+use mindstellar\database\Db;
 use mindstellar\validation\ConflictException;
 use mindstellar\validation\InvalidException;
 use mindstellar\validation\NotFoundException;
@@ -47,7 +48,7 @@ final class CurrencyService
     {
         $row = CurrencyStore::find($code);
 
-        return $row === null ? null : osc_db_stringify_row($row);
+        return $row === null ? null : Db::stringifyRow($row);
     }
 
     /**
@@ -58,7 +59,7 @@ final class CurrencyService
     public function enabled(): array
     {
         return CacheGroup::remember('currency', 'enabled', static function (): array {
-            return osc_db_stringify_rows(CurrencyStore::enabled());
+            return Db::stringifyRows(CurrencyStore::enabled());
         }) ?? [];
     }
 

@@ -13,6 +13,7 @@ namespace mindstellar\billing;
 
 use DomainException;
 use Log;
+use mindstellar\database\Db;
 use Throwable;
 
 /**
@@ -179,7 +180,7 @@ final class Billing
      */
     public static function markPaid(Order $order, ?string $externalRef = null, bool $allowFailed = false): bool
     {
-        $settled = osc_db_transaction(static function () use ($order, $externalRef, $allowFailed): bool {
+        $settled = Db::transaction(static function () use ($order, $externalRef, $allowFailed): bool {
             $from = $allowFailed
                 ? array(Order::STATUS_PENDING, Order::STATUS_FAILED)
                 : array(Order::STATUS_PENDING);
@@ -227,7 +228,7 @@ final class Billing
      */
     public static function refund(Order $order): bool
     {
-        $reversed = osc_db_transaction(static function () use ($order): bool {
+        $reversed = Db::transaction(static function () use ($order): bool {
             if (!OrderStore::refund($order->getId())) {
                 return false;
             }
@@ -337,7 +338,7 @@ final class Billing
         $lock             = self::refundLockName($order->getId());
 
         try {
-            $locked = (int) osc_db_scalar('SELECT GET_LOCK(?, 2)', array($lock)) === 1;
+            $locked = (int) Db::scalar('SELECT GET_LOCK(?, 2)', array($lock)) === 1;
         } catch (Throwable $e) {
             $locked = false;
         }
@@ -349,7 +350,7 @@ final class Billing
             return self::refundLocked($order, $providerAccepted);
         } finally {
             try {
-                osc_db_scalar('SELECT RELEASE_LOCK(?)', array($lock));
+                Db::scalar('SELECT RELEASE_LOCK(?)', array($lock));
             } catch (Throwable $e) {
                 // The lock goes with the connection anyway.
             }
@@ -529,7 +530,7 @@ final class Billing
         self::$hookBatches[] = array();
 
         try {
-            $applied = osc_db_transaction(static function () use ($userId, $price, $feature, $ctx, $refType, $refId): bool {
+            $applied = Db::transaction(static function () use ($userId, $price, $feature, $ctx, $refType, $refId): bool {
                 if ($price > 0 && !Wallet::debit($userId, $price, Wallet::REASON_SPEND, null, $refType, $refId)) {
                     return false; // insufficient credit -- nothing was written
                 }

@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Class Preference
  */
@@ -49,7 +51,7 @@ class Preference extends DAO
     public function toArray()
     {
         try {
-            $rows = osc_db_table($this->getTableName())->get();
+            $rows = Db::table($this->getTableName())->get();
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
@@ -61,7 +63,7 @@ class Preference extends DAO
         // Merges into the existing map rather than replacing it, so a key
         // removed from the table since the last load stays cached until it is
         // overwritten by name.
-        foreach (osc_db_stringify_rows($rows) as $row) {
+        foreach (Db::stringifyRows($rows) as $row) {
             $this->pref[$row['s_section']][$row['s_name']] = $row['s_value'];
         }
 
@@ -100,7 +102,7 @@ class Preference extends DAO
     public function findValueByName($name)
     {
         try {
-            $row = osc_db_table($this->getTableName())
+            $row = Db::table($this->getTableName())
                 ->select('s_value')
                 ->where('s_name', $name)
                 ->first();
@@ -112,7 +114,7 @@ class Preference extends DAO
             return false;
         }
 
-        return osc_db_stringify_row($row)['s_value'];
+        return Db::stringifyRow($row)['s_value'];
     }
 
     /**
@@ -134,7 +136,7 @@ class Preference extends DAO
         }
 
         try {
-            $rows = osc_db_table($this->getTableName())
+            $rows = Db::table($this->getTableName())
                 ->where('s_section', $name)
                 ->get();
         } catch (\mindstellar\database\DbException $e) {
@@ -145,7 +147,7 @@ class Preference extends DAO
             return false;
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -209,7 +211,7 @@ class Preference extends DAO
         try {
             // No QueryBuilder equivalent for REPLACE INTO; the unique key on
             // (s_section, s_name) is what makes this an upsert.
-            osc_db_execute(
+            Db::execute(
                 'REPLACE INTO ' . $this->getTableName() . ' (s_name, s_value, s_section, e_type) VALUES (?, ?, ?, ?)',
                 array($key, $value, $section, $e_type)
             );
@@ -240,12 +242,12 @@ class Preference extends DAO
      */
     public function claim($key, $value, $section = 'osclass')
     {
-        osc_db_execute(
+        Db::execute(
             'INSERT IGNORE INTO ' . $this->getTableName() . " (s_section, s_name, s_value, e_type) VALUES (?, ?, '', 'STRING')",
             array($section, $key)
         );
 
-        return osc_db_execute(
+        return Db::execute(
             'UPDATE ' . $this->getTableName() . ' SET s_value = ? WHERE s_section = ? AND s_name = ? AND s_value <> ?',
             array($value, $section, $key, $value)
         ) === 1;

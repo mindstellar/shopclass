@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\logger;
 
+use mindstellar\database\Db;
+
 /**
  * Activity log reads. The legacy Log model keeps the writes.
  */
@@ -27,7 +29,7 @@ final class LogQuery
      */
     public static function jobs(array $actions, int $limit): array
     {
-        $query = osc_db_table(DB_TABLE_PREFIX . 't_log')
+        $query = Db::table(DB_TABLE_PREFIX . 't_log')
             ->select('dt_date', 's_action', 'fk_i_id', 's_data')
             ->where('s_section', 'jobs');
         if ($actions !== array()) {

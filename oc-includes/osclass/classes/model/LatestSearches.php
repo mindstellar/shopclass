@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * LatestSearches DAO
  */
@@ -84,12 +86,12 @@ class LatestSearches extends DAO
         }
 
         try {
-            $rows = osc_db_select($sql);
+            $rows = Db::select($sql);
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -120,12 +122,12 @@ class LatestSearches extends DAO
         }
 
         try {
-            $rows = osc_db_select($sql, $params);
+            $rows = Db::select($sql, $params);
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -158,7 +160,7 @@ class LatestSearches extends DAO
             $sql .= ' LIMIT ' . (int) $number . ', 1';
         }
 
-        $rows = osc_db_select($sql);
+        $rows = Db::select($sql);
 
         if (count($rows) === 0) {
             return false;
@@ -181,7 +183,7 @@ class LatestSearches extends DAO
         }
 
         try {
-            return osc_db_table($this->getTableName())
+            return Db::table($this->getTableName())
                 ->where('d_date', '<=', $date)
                 ->delete();
         } catch (\mindstellar\database\DbException $e) {

@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\location;
 
+use mindstellar\database\Db;
+
 /**
  * Location writes, and the reads the catalog importer matches against. LocationQuery holds
  * the plain reads; the legacy Country/Region/City models keep their own methods.
@@ -30,7 +32,7 @@ final class LocationStore
      */
     public static function addArea(int $cityId, string $name): int
     {
-        return (int) osc_db_table(DB_TABLE_PREFIX . 't_city_area')->insert(['fk_i_city_id' => $cityId, 's_name' => $name]);
+        return (int) Db::table(DB_TABLE_PREFIX . 't_city_area')->insert(['fk_i_city_id' => $cityId, 's_name' => $name]);
     }
 
     /**
@@ -39,7 +41,7 @@ final class LocationStore
      */
     public static function country(string $code): ?array
     {
-        return osc_db_select_one('SELECT pk_c_code, s_name, s_slug FROM ' . DB_TABLE_PREFIX . 't_country WHERE pk_c_code = ?', array($code));
+        return Db::selectOne('SELECT pk_c_code, s_name, s_slug FROM ' . DB_TABLE_PREFIX . 't_country WHERE pk_c_code = ?', array($code));
     }
 
     /**
@@ -47,7 +49,7 @@ final class LocationStore
      */
     public static function addCountry(string $code, string $name, string $slug): void
     {
-        osc_db_execute('INSERT INTO ' . DB_TABLE_PREFIX . 't_country (pk_c_code, s_name, s_slug) VALUES (?, ?, ?)', array($code, $name, $slug));
+        Db::execute('INSERT INTO ' . DB_TABLE_PREFIX . 't_country (pk_c_code, s_name, s_slug) VALUES (?, ?, ?)', array($code, $name, $slug));
     }
 
     /**
@@ -55,7 +57,7 @@ final class LocationStore
      */
     public static function renameCountry(string $code, string $name, string $slug): void
     {
-        osc_db_execute('UPDATE ' . DB_TABLE_PREFIX . 't_country SET s_name = ?, s_slug = ? WHERE pk_c_code = ?', array($name, $slug, $code));
+        Db::execute('UPDATE ' . DB_TABLE_PREFIX . 't_country SET s_name = ?, s_slug = ? WHERE pk_c_code = ?', array($name, $slug, $code));
     }
 
     /**
@@ -66,7 +68,7 @@ final class LocationStore
      */
     public static function regionsOf(string $countryCode): array
     {
-        return osc_db_select(
+        return Db::select(
             'SELECT pk_i_id, i_source_id, s_name, s_slug, d_coord_lat, d_coord_long, b_active'
             . ' FROM ' . DB_TABLE_PREFIX . 't_region WHERE fk_c_country_code = ?',
             array($countryCode)
@@ -79,7 +81,7 @@ final class LocationStore
      */
     public static function addRegion(string $countryCode, ?int $sourceId, string $name, string $slug, mixed $lat, mixed $lng): int
     {
-        return osc_db_insert_id(
+        return Db::insertGetId(
             'INSERT INTO ' . DB_TABLE_PREFIX . 't_region'
             . ' (fk_c_country_code, i_source_id, s_name, s_slug, d_coord_lat, d_coord_long, b_active)'
             . ' VALUES (?, ?, ?, ?, ?, ?, 1)',
@@ -95,7 +97,7 @@ final class LocationStore
      */
     public static function citiesOf(int $regionId): array
     {
-        return osc_db_select(
+        return Db::select(
             'SELECT pk_i_id, i_source_id, s_name, s_slug, d_coord_lat, d_coord_long, b_active'
             . ' FROM ' . DB_TABLE_PREFIX . 't_city WHERE fk_i_region_id = ?',
             array($regionId)
@@ -112,7 +114,7 @@ final class LocationStore
      */
     public static function citiesBySource(array $sourceIds, string $countryCode): array
     {
-        return osc_db_select(
+        return Db::select(
             'SELECT c.pk_i_id, c.fk_i_region_id, c.i_source_id, c.s_name, c.s_slug,'
             . ' c.d_coord_lat, c.d_coord_long, c.b_active'
             . ' FROM ' . DB_TABLE_PREFIX . 't_city c'
@@ -138,7 +140,7 @@ final class LocationStore
                 $params[] = $value;
             }
         }
-        osc_db_execute(
+        Db::execute(
             'INSERT INTO ' . DB_TABLE_PREFIX . 't_city'
             . ' (fk_i_region_id, fk_c_country_code, i_source_id, s_name, s_slug,'
             . ' d_coord_lat, d_coord_long, b_active)'
@@ -160,7 +162,7 @@ final class LocationStore
     {
         [$table, $pk] = self::PLACES[$type];
         $params[]     = $id;
-        osc_db_execute('UPDATE ' . DB_TABLE_PREFIX . $table . ' SET ' . implode(', ', $set) . ' WHERE ' . $pk . ' = ?', $params);
+        Db::execute('UPDATE ' . DB_TABLE_PREFIX . $table . ' SET ' . implode(', ', $set) . ' WHERE ' . $pk . ' = ?', $params);
     }
 
     /**
@@ -181,8 +183,8 @@ final class LocationStore
     public static function recordSlugChange(string $type, int $id, string $oldSlug, string $newSlug, string $at): void
     {
         $table = DB_TABLE_PREFIX . 't_location_slug_history';
-        osc_db_execute('DELETE FROM ' . $table . ' WHERE e_type = ? AND s_slug = ?', array($type, $newSlug));
-        osc_db_execute(
+        Db::execute('DELETE FROM ' . $table . ' WHERE e_type = ? AND s_slug = ?', array($type, $newSlug));
+        Db::execute(
             'INSERT INTO ' . $table . ' (e_type, s_slug, fk_i_id, dt_date) VALUES (?, ?, ?, ?)'
             . ' ON DUPLICATE KEY UPDATE fk_i_id = VALUES(fk_i_id), dt_date = VALUES(dt_date)',
             array($type, $oldSlug, $id, $at)
@@ -196,7 +198,7 @@ final class LocationStore
      */
     public static function idForOldSlug(string $type, string $slug): ?int
     {
-        $row = osc_db_select_one(
+        $row = Db::selectOne(
             'SELECT fk_i_id FROM ' . DB_TABLE_PREFIX . 't_location_slug_history WHERE e_type = ? AND s_slug = ?',
             array($type, $slug)
         );
@@ -218,7 +220,7 @@ final class LocationStore
         if (!in_array($column, array('fk_i_region_id', 'fk_i_city_id'), true)) {
             throw new \InvalidArgumentException('Unknown location column ' . $column . '.');
         }
-        $rows = osc_db_select(
+        $rows = Db::select(
             'SELECT DISTINCT ' . $column . ' AS id FROM ' . DB_TABLE_PREFIX . 't_item_location'
             . ' WHERE ' . $column . ' IN (' . implode(',', array_fill(0, count($ids), '?')) . ')',
             $ids

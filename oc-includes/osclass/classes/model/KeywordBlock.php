@@ -8,6 +8,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * KeywordBlock DAO — the operator-managed keyword blocklist consumed by
  * ItemSpamFilter. Table-backed and admin-managed in the same shape as BanRule.
@@ -129,12 +131,12 @@ class KeywordBlock extends DAO
         }
 
         try {
-            $rows = osc_db_select($sql, $params);
+            $rows = Db::select($sql, $params);
         } catch (\mindstellar\database\DbException $e) {
             return $result;
         }
 
-        $result['keywords'] = osc_db_stringify_rows($rows);
+        $result['keywords'] = Db::stringifyRows($rows);
 
         $counts = $this->pagedCounts($where, $params);
         if ($counts === null) {
@@ -153,7 +155,7 @@ class KeywordBlock extends DAO
     public function countKeywords()
     {
         try {
-            return osc_db_table($this->getTableName())->count();
+            return Db::table($this->getTableName())->count();
         } catch (\mindstellar\database\DbException $e) {
             return 0;
         }

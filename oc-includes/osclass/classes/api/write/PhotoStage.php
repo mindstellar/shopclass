@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\api\write;
 
 use mindstellar\base\Model;
+use mindstellar\database\Db;
 use mindstellar\utility\Clock;
 
 /**
@@ -64,11 +65,11 @@ final class PhotoStage extends Model
         }
         $now   = $this->clock->now();
         $owner = self::owner($userId);
-        osc_db_execute(
+        Db::execute(
             'INSERT INTO ' . self::tableName() . ' (s_token, s_uuid, s_file, dt_date) VALUES (?, ?, ?, ?)',
             [$owner, $token, $file, date('Y-m-d H:i:s', $now)]
         );
-        $pending = (int) osc_db_scalar('SELECT COUNT(*) FROM ' . self::tableName() . ' WHERE s_token = ? AND dt_date > ?', [$owner, $this->cutoff()]);
+        $pending = (int) Db::scalar('SELECT COUNT(*) FROM ' . self::tableName() . ' WHERE s_token = ? AND dt_date > ?', [$owner, $this->cutoff()]);
         if ($pending > self::MAX_PENDING) {
             $this->forget($userId, [$token]);
             @unlink($this->dir . $file);
@@ -93,7 +94,7 @@ final class PhotoStage extends Model
         if ($tokens === []) {
             return [];
         }
-        $rows = osc_db_select(
+        $rows = Db::select(
             'SELECT s_uuid, s_file, dt_date FROM ' . self::tableName() . ' WHERE s_token = ? AND dt_date > ? AND s_uuid IN ('
             . implode(', ', array_fill(0, count($tokens), '?')) . ')',
             array_merge([self::owner($userId), $this->cutoff()], $tokens)
@@ -120,7 +121,7 @@ final class PhotoStage extends Model
         if ($tokens === []) {
             return;
         }
-        osc_db_execute(
+        Db::execute(
             'DELETE FROM ' . self::tableName() . ' WHERE s_token = ? AND s_uuid IN (' . implode(', ', array_fill(0, count($tokens), '?')) . ')',
             array_merge([self::owner($userId)], $tokens)
         );

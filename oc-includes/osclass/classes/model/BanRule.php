@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * BanRule DAO
  */
@@ -132,12 +134,12 @@ class BanRule extends DAO
         }
 
         try {
-            $rows = osc_db_select($sql, $params);
+            $rows = Db::select($sql, $params);
         } catch (\mindstellar\database\DbException $e) {
             return $rules;
         }
 
-        $rules['rules'] = osc_db_stringify_rows($rows);
+        $rules['rules'] = Db::stringifyRows($rows);
 
         $counts = $this->pagedCounts($where, $params);
         if ($counts === null) {
@@ -160,6 +162,6 @@ class BanRule extends DAO
         // COUNT(*) always returns exactly one row, so the legacy numRows() == 0
         // branch was unreachable; only the query-failure branch matters, and
         // this table/query can't realistically produce one.
-        return (string)osc_db_scalar('SELECT COUNT(*) as i_total FROM ' . $this->getTableName());
+        return (string)Db::scalar('SELECT COUNT(*) as i_total FROM ' . $this->getTableName());
     }
 }

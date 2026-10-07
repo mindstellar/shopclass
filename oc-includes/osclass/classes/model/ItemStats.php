@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Model database for ItemStat table
  *
@@ -135,7 +137,7 @@ class ItemStats extends DAO
                 ON DUPLICATE KEY UPDATE ' . $column . ' = ' . $column . ' + 1, dt_date = CURDATE()';
 
         try {
-            osc_db_execute($sql, array($itemId));
+            Db::execute($sql, array($itemId));
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
@@ -184,7 +186,7 @@ class ItemStats extends DAO
                 ON DUPLICATE KEY UPDATE ' . $column . ' = ' . $column . ' + 1, dt_date = CURDATE()';
 
         try {
-            osc_db_execute($sql, $ids);
+            Db::execute($sql, $ids);
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
@@ -214,7 +216,7 @@ class ItemStats extends DAO
         $bucket = mt_rand(0, self::DAILY_BUCKETS - 1);
 
         try {
-            osc_db_execute($sql, array($bucket, $by, $by));
+            Db::execute($sql, array($bucket, $by, $by));
         } catch (\mindstellar\database\DbException $e) {
             // ignore: a missing chart point is not worth failing a request for
         }
@@ -275,7 +277,7 @@ class ItemStats extends DAO
         }
 
         try {
-            return (int)osc_db_table($this->dailyTableName())
+            return (int)Db::table($this->dailyTableName())
                 ->where('dt_date', '<', $date)
                 ->delete();
         } catch (\mindstellar\database\DbException $e) {
@@ -307,7 +309,7 @@ class ItemStats extends DAO
         // stays: it is what makes a listing with no stats row return SQL NULL
         // rather than no row at all, and callers distinguish the two.
         try {
-            $row = osc_db_select_one(
+            $row = Db::selectOne(
                 'SELECT SUM(i_num_views) AS i_num_views FROM ' . $this->getTableName() . ' WHERE fk_i_item_id = ?',
                 array($itemId)
             );
@@ -315,7 +317,7 @@ class ItemStats extends DAO
             return 0;
         }
 
-        $row = osc_db_stringify_row($row);
+        $row = Db::stringifyRow($row);
 
         return $row['i_num_views'];
     }
@@ -329,12 +331,12 @@ class ItemStats extends DAO
     public function getAllViews()
     {
         try {
-            $row = osc_db_select_one('SELECT SUM(i_num_views) AS i_num_views FROM ' . $this->getTableName());
+            $row = Db::selectOne('SELECT SUM(i_num_views) AS i_num_views FROM ' . $this->getTableName());
         } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
 
-        $row = osc_db_stringify_row($row);
+        $row = Db::stringifyRow($row);
 
         return $row['i_num_views'];
     }
@@ -366,7 +368,7 @@ class ItemStats extends DAO
         }
 
         try {
-            $total = osc_db_scalar($sql, array((int)$userId));
+            $total = Db::scalar($sql, array((int)$userId));
         } catch (\mindstellar\database\DbException $e) {
             return 0;
         }

@@ -8,6 +8,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Deduplicated item-report log.
  *
@@ -103,7 +105,7 @@ class ItemReport extends DAO
         // 'NULL' literal did; NOW() stays literal so MySQL, not PHP, is the clock.
         // The write's result was never read, so a failed query stays absorbed.
         try {
-            osc_db_execute(
+            Db::execute(
                 'INSERT IGNORE INTO ' . DB_TABLE_PREFIX . 't_item_report_log'
                 . ' (fk_i_item_id, s_reporter, fk_i_user_id, s_ip, s_reason, dt_date)'
                 . ' VALUES (?, ?, ?, ?, ?, NOW())',
@@ -130,7 +132,7 @@ class ItemReport extends DAO
     public function countReporters($itemId)
     {
         try {
-            $count = osc_db_scalar(
+            $count = Db::scalar(
                 'SELECT COUNT(*) FROM ' . DB_TABLE_PREFIX . 't_item_report_log WHERE fk_i_item_id = ?',
                 array((int)$itemId)
             );
@@ -151,7 +153,7 @@ class ItemReport extends DAO
     public function reasonBreakdown($itemId)
     {
         try {
-            $rows = osc_db_select(
+            $rows = Db::select(
                 'SELECT s_reason, COUNT(*) AS c FROM ' . DB_TABLE_PREFIX . 't_item_report_log'
                 . ' WHERE fk_i_item_id = ? GROUP BY s_reason',
                 array((int)$itemId)
@@ -181,7 +183,7 @@ class ItemReport extends DAO
     {
         // The delete result was never read, so a failed query stays absorbed.
         try {
-            osc_db_execute(
+            Db::execute(
                 'DELETE FROM ' . DB_TABLE_PREFIX . 't_item_report_log WHERE fk_i_item_id = ?',
                 array((int)$itemId)
             );

@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Model database for Region table
  *
@@ -83,7 +85,7 @@ class Region extends DAO
     public function findByCountry($countryId)
     {
         try {
-            $rows = osc_db_table($this->getTableName())
+            $rows = Db::table($this->getTableName())
                 ->where('fk_c_country_code', $countryId)
                 ->orderBy('s_name', 'ASC')
                 ->get();
@@ -91,7 +93,7 @@ class Region extends DAO
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -104,7 +106,7 @@ class Region extends DAO
      */
     public function findByName($name, $country = null)
     {
-        $query = osc_db_table($this->getTableName())->where('s_name', $name);
+        $query = Db::table($this->getTableName())->where('s_name', $name);
         if ($country != null) {
             $query = $query->where('fk_c_country_code', $country);
         }
@@ -119,7 +121,7 @@ class Region extends DAO
             return array();
         }
 
-        return osc_db_stringify_row($row);
+        return Db::stringifyRow($row);
     }
 
     /**
@@ -163,12 +165,12 @@ class Region extends DAO
         $sql .= ' LIMIT 5';
 
         try {
-            $rows = osc_db_select($sql, $params);
+            $rows = Db::select($sql, $params);
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -198,7 +200,7 @@ class Region extends DAO
         // removes these rows on its own, and a leftover slug would keep redirecting
         // to a region that no longer exists.
         try {
-            osc_db_table(DB_TABLE_PREFIX . 't_location_slug_history')
+            Db::table(DB_TABLE_PREFIX . 't_location_slug_history')
                 ->where('e_type', 'REGION')
                 ->where('fk_i_id', (int)$pk)
                 ->delete();
@@ -231,7 +233,7 @@ class Region extends DAO
     public function findBySlug($slug)
     {
         try {
-            $row = osc_db_table($this->getTableName())->where('s_slug', $slug)->first();
+            $row = Db::table($this->getTableName())->where('s_slug', $slug)->first();
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
@@ -240,7 +242,7 @@ class Region extends DAO
             return array();
         }
 
-        return osc_db_stringify_row($row);
+        return Db::stringifyRow($row);
     }
 
     /**
@@ -259,7 +261,7 @@ class Region extends DAO
     public function findBySourceId($sourceId)
     {
         try {
-            $row = osc_db_table($this->getTableName())->where('i_source_id', $sourceId)->first();
+            $row = Db::table($this->getTableName())->where('i_source_id', $sourceId)->first();
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
@@ -268,7 +270,7 @@ class Region extends DAO
             return array();
         }
 
-        return osc_db_stringify_row($row);
+        return Db::stringifyRow($row);
     }
 
     /**
@@ -280,12 +282,12 @@ class Region extends DAO
     public function listByEmptySlug()
     {
         try {
-            $rows = osc_db_table($this->getTableName())->where('s_slug', '')->get();
+            $rows = Db::table($this->getTableName())->where('s_slug', '')->get();
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 }
 

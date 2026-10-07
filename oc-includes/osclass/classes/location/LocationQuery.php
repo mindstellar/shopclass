@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\location;
 
+use mindstellar\database\Db;
 use mindstellar\database\QueryBuilder;
 
 /**
@@ -87,7 +88,7 @@ final class LocationQuery
     {
         $row = $this->table($level)->where(self::LEVELS[$level][1], $id)->first();
 
-        return $row === null ? null : osc_db_stringify_row($row);
+        return $row === null ? null : Db::stringifyRow($row);
     }
 
     /**
@@ -103,7 +104,7 @@ final class LocationQuery
         if ($ids === []) {
             return [];
         }
-        $rows = osc_db_select(
+        $rows = Db::select(
             'SELECT pk_i_id, s_name FROM ' . self::tableName($level)
             . ' WHERE pk_i_id IN (' . implode(',', array_fill(0, count($ids), '?')) . ')',
             $ids
@@ -147,7 +148,7 @@ final class LocationQuery
      */
     public function countriesWithRegions(): array
     {
-        $rows = osc_db_select('SELECT DISTINCT fk_c_country_code AS code FROM ' . self::tableName(self::REGION));
+        $rows = Db::select('SELECT DISTINCT fk_c_country_code AS code FROM ' . self::tableName(self::REGION));
         $out  = [];
         foreach ($rows as $row) {
             $out[strtolower((string) $row['code'])] = true;
@@ -176,12 +177,12 @@ final class LocationQuery
             $query = $query->like('s_name', $prefix, 'after');
         }
 
-        return osc_db_stringify_rows($query->limit($limit)->offset($offset)->get());
+        return Db::stringifyRows($query->limit($limit)->offset($offset)->get());
     }
 
     private function table(string $level): QueryBuilder
     {
-        return osc_db_table(self::tableName($level));
+        return Db::table(self::tableName($level));
     }
 
     private static function tableName(string $level): string

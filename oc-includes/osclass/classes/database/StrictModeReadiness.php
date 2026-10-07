@@ -54,7 +54,7 @@ class StrictModeReadiness
             'error'         => '',
         );
         try {
-            $modes                  = osc_db_select_one('SELECT @@GLOBAL.sql_mode AS g, @@SESSION.sql_mode AS s');
+            $modes                  = Db::selectOne('SELECT @@GLOBAL.sql_mode AS g, @@SESSION.sql_mode AS s');
             $report['server_mode']  = (string) ($modes['g'] ?? '');
             $report['session_mode'] = (string) ($modes['s'] ?? '');
             $report['zero_defaults'] = self::zeroDefaults($prefix);
@@ -141,7 +141,7 @@ class StrictModeReadiness
         $names  = array_keys(self::LENGTH_SETTINGS);
         $marks  = implode(', ', array_fill(0, count($names), '?'));
         $values = array();
-        foreach (osc_db_select(
+        foreach (Db::select(
             'SELECT s_name, s_value FROM ' . self::ident($prefix . 't_preference') . " WHERE s_section = 'osclass' AND s_name IN ($marks)",
             $names
         ) as $row) {
@@ -150,7 +150,7 @@ class StrictModeReadiness
 
         $widths = array();
         foreach (self::LENGTH_SETTINGS as $target) {
-            $row = osc_db_select_one(
+            $row = Db::selectOne(
                 'SELECT DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH, CHARACTER_SET_NAME FROM information_schema.COLUMNS'
                 . ' WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?',
                 array($prefix . $target[0], $target[1])
@@ -173,7 +173,7 @@ class StrictModeReadiness
      */
     public static function refused(string $prefix, int $since): array
     {
-        $rows = osc_db_select(
+        $rows = Db::select(
             'SELECT s_data, s_action, COUNT(*) AS n, MAX(dt_date) AS last FROM ' . self::ident($prefix . 't_log')
             . ' WHERE s_section = ? AND dt_date >= ? GROUP BY s_data, s_action ORDER BY last DESC LIMIT 50',
             array(StrictRefusals::SECTION, date('Y-m-d H:i:s', $since))
@@ -212,7 +212,7 @@ class StrictModeReadiness
                 $quoted = self::ident($name);
                 $sums[] = "SUM(MONTH($quoted) = 0 OR DAYOFMONTH($quoted) = 0) AS c$i";
             }
-            $row = osc_db_select_one('SELECT ' . implode(', ', $sums) . ' FROM ' . self::ident($table));
+            $row = Db::selectOne('SELECT ' . implode(', ', $sums) . ' FROM ' . self::ident($table));
             foreach ($columns as $i => $name) {
                 $rows = (int)($row['c' . $i] ?? 0);
                 if ($rows > 0) {
@@ -253,7 +253,7 @@ class StrictModeReadiness
     private static function dateColumns(string $prefix): array
     {
         // Compared with LEFT() rather than LIKE, so '_' in a prefix needs no escaping.
-        return osc_db_select(
+        return Db::select(
             'SELECT c.TABLE_NAME, c.COLUMN_NAME, c.COLUMN_DEFAULT FROM information_schema.COLUMNS c'
             . ' JOIN information_schema.TABLES t ON t.TABLE_SCHEMA = c.TABLE_SCHEMA AND t.TABLE_NAME = c.TABLE_NAME'
             . " WHERE c.TABLE_SCHEMA = DATABASE() AND t.TABLE_TYPE = 'BASE TABLE'"

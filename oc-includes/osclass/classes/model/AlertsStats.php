@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Model database for AlertsStats table
  *
@@ -89,7 +91,7 @@ class AlertsStats extends DAO
                 ON DUPLICATE KEY UPDATE i_num_alerts_sent = i_num_alerts_sent + 1';
 
         try {
-            osc_db_execute($sql, array($date));
+            Db::execute($sql, array($date));
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }

@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Model database for Item table
  *
@@ -117,12 +119,12 @@ class Item extends DAO
             . ' LIMIT ?';
 
         try {
-            $items = osc_db_select($sql, array((int)$limit));
+            $items = Db::select($sql, array((int)$limit));
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $this->extendData(osc_db_stringify_rows($items));
+        return $this->extendData(Db::stringifyRows($items));
     }
 
     /**
@@ -184,7 +186,7 @@ class Item extends DAO
                     . ' WHERE s.fk_i_item_id IN (' . $placeholders . ')';
 
                 try {
-                    $itemStatsLocations = osc_db_stringify_rows(osc_db_select($sql, array_values($itemIds)));
+                    $itemStatsLocations = Db::stringifyRows(Db::select($sql, array_values($itemIds)));
                 } catch (\mindstellar\database\DbException $e) {
                     $itemStatsLocations = array();
                 }
@@ -224,12 +226,12 @@ class Item extends DAO
             . ' WHERE c.pk_i_id = i.fk_i_category_id AND cd.fk_i_category_id = i.fk_i_category_id';
 
         try {
-            $rows = osc_db_select($sql);
+            $rows = Db::select($sql);
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -320,12 +322,12 @@ class Item extends DAO
             . ' WHERE l.fk_i_item_id = i.pk_i_id AND ' . $where;
 
         try {
-            $items = osc_db_select($sql, $params);
+            $items = Db::select($sql, $params);
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $this->extendData(osc_db_stringify_rows($items));
+        return $this->extendData(Db::stringifyRows($items));
     }
 
     /**
@@ -379,7 +381,7 @@ class Item extends DAO
         }
 
         try {
-            $total = osc_db_scalar($sql, $params);
+            $total = Db::scalar($sql, $params);
         } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
@@ -517,7 +519,7 @@ class Item extends DAO
             . ' ORDER BY d.fk_c_locale_code';
 
         try {
-            $rows = osc_db_stringify_rows(osc_db_select($sql, array($itemId)));
+            $rows = Db::stringifyRows(Db::select($sql, array($itemId)));
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
@@ -572,7 +574,7 @@ class Item extends DAO
         $sql = 'SELECT COUNT(*) AS total FROM ' . $this->getTableName() . ' WHERE ' . implode(' ', $conditions);
 
         try {
-            $total = osc_db_scalar($sql, $params);
+            $total = Db::scalar($sql, $params);
         } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
@@ -612,7 +614,7 @@ class Item extends DAO
         );
 
         try {
-            osc_db_table(DB_TABLE_PREFIX . 't_item_description')->insert($array_set);
+            Db::table(DB_TABLE_PREFIX . 't_item_description')->insert($array_set);
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
@@ -680,7 +682,7 @@ class Item extends DAO
         if ($count === true) {
             $sql = 'SELECT count(pk_i_id) as total FROM ' . $this->getTableName() . ' i' . $where;
             try {
-                $total = osc_db_scalar($sql, $params);
+                $total = Db::scalar($sql, $params);
             } catch (\mindstellar\database\DbException $e) {
                 return 0;
             }
@@ -707,12 +709,12 @@ class Item extends DAO
         }
 
         try {
-            $items = osc_db_select($sql, $params);
+            $items = Db::select($sql, $params);
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $this->extendData(osc_db_stringify_rows($items));
+        return $this->extendData(Db::stringifyRows($items));
     }
 
     /**
@@ -940,7 +942,7 @@ class Item extends DAO
         }
         if (isset($array_set)) {
             try {
-                return osc_db_table(DB_TABLE_PREFIX . 't_item_stats')
+                return Db::table(DB_TABLE_PREFIX . 't_item_stats')
                     ->where('fk_i_item_id', $id)
                     ->update($array_set);
             } catch (\mindstellar\database\DbException $e) {
@@ -981,7 +983,7 @@ class Item extends DAO
             . ' (s_title, s_description, fk_c_locale_code, fk_i_item_id) VALUES (?, ?, ?, ?)';
 
         try {
-            osc_db_execute($sql, array(self::fitTitle($title), $text, $locale, $id));
+            Db::execute($sql, array(self::fitTitle($title), $text, $locale, $id));
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
@@ -1010,7 +1012,7 @@ class Item extends DAO
         }
 
         try {
-            $item = osc_db_select_one(
+            $item = Db::selectOne(
                 'SELECT dt_expiration, b_enabled, b_active, b_spam, b_premium FROM ' . $this->getTableName() . ' WHERE pk_i_id = ?',
                 array($id)
             );
@@ -1023,7 +1025,7 @@ class Item extends DAO
         // nothing and the method fell through to false. A missing id here yields a
         // null row and converges on the same false, so it is guarded up front.
         if ($item !== null) {
-            $item        = osc_db_stringify_row($item);
+            $item        = Db::stringifyRow($item);
             $counted_old = osc_item_is_counted($item);
             if (ctype_digit($expiration_time)) {
                 if ($expiration_time > 0) {
@@ -1045,14 +1047,14 @@ class Item extends DAO
             }
 
             try {
-                $result = osc_db_execute($sql, $params);
+                $result = Db::execute($sql, $params);
             } catch (\mindstellar\database\DbException $e) {
                 $result = 0;
             }
 
             if ($result && $result > 0) {
                 try {
-                    $_item = osc_db_select_one(
+                    $_item = Db::selectOne(
                         'SELECT i.dt_expiration, i.fk_i_user_id, i.fk_i_category_id, l.fk_c_country_code,'
                         . ' l.fk_i_region_id, l.fk_i_city_id'
                         . ' FROM ' . $this->getTableName() . ' i, ' . DB_TABLE_PREFIX . 't_item_location l'
@@ -1069,7 +1071,7 @@ class Item extends DAO
                     // on the method's own false failure path.
                     return false;
                 }
-                $_item = osc_db_stringify_row($_item);
+                $_item = Db::stringifyRow($_item);
 
                 // Model-level write the controller-layer events never see. Announce the new
                 // expiry so an index or cache mirroring liveness can react (an expiry change can
@@ -1129,7 +1131,7 @@ class Item extends DAO
             . DB_TABLE_PREFIX . 't_item.fk_i_category_id IN (' . implode(',', $aIds) . ')';
 
         try {
-            osc_db_execute($sql, array((int)$enable));
+            Db::execute($sql, array((int)$enable));
             $result = true;
         } catch (\mindstellar\database\DbException $e) {
             $result = false;
@@ -1192,7 +1194,7 @@ class Item extends DAO
             . ' WHERE 1 = 1' . $extra;
 
         try {
-            $total = osc_db_scalar($sql);
+            $total = Db::scalar($sql);
         } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
@@ -1246,8 +1248,8 @@ class Item extends DAO
     {
         // Legacy had no error branch here (a failed read fataled on ->result()),
         // so a DbException is left to propagate rather than absorbed.
-        $items = osc_db_stringify_rows(
-            osc_db_table(DB_TABLE_PREFIX . 't_item_location')
+        $items = Db::stringifyRows(
+            Db::table(DB_TABLE_PREFIX . 't_item_location')
                 ->select('fk_i_item_id')
                 ->where('fk_i_city_area_id', $cityAreaId)
                 ->get()
@@ -1299,9 +1301,9 @@ class Item extends DAO
         );
 
         try {
-            $deleted = osc_db_transaction(function () use ($id, $dependents) {
+            $deleted = Db::transaction(function () use ($id, $dependents) {
                 foreach ($dependents as $depTable) {
-                    osc_db_table(DB_TABLE_PREFIX . $depTable)->where('fk_i_item_id', $id)->delete();
+                    Db::table(DB_TABLE_PREFIX . $depTable)->where('fk_i_item_id', $id)->delete();
                 }
 
                 // Not parent::deleteByPrimaryKey(): the inherited DAO reports a failed
@@ -1311,7 +1313,7 @@ class Item extends DAO
                 // to it already gone. This is the same statement the DAO would run, from
                 // the layer that raises, which is what makes the rollback real. It still
                 // reports 0 for an id that matched nothing, which is not a failure.
-                return osc_db_table(DB_TABLE_PREFIX . 't_item')->where('pk_i_id', $id)->delete();
+                return Db::table(DB_TABLE_PREFIX . 't_item')->where('pk_i_id', $id)->delete();
             });
         } catch (\Throwable $e) {
             return false;
@@ -1381,7 +1383,7 @@ class Item extends DAO
         }
         // Aliased i.* projection; hand-written with the id bound.
         try {
-            $rows = osc_db_select('SELECT i.* FROM ' . $this->getTableName() . ' i WHERE i.pk_i_id = ?', array($id));
+            $rows = Db::select('SELECT i.* FROM ' . $this->getTableName() . ' i WHERE i.pk_i_id = ?', array($id));
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
@@ -1390,7 +1392,7 @@ class Item extends DAO
             return array();
         }
 
-        return $this->extendDataSingle(osc_db_stringify_row($rows[0]));
+        return $this->extendDataSingle(Db::stringifyRow($rows[0]));
     }
 
     /**
@@ -1415,8 +1417,8 @@ class Item extends DAO
      */
     public function deleteByCity($cityId)
     {
-        $items = osc_db_stringify_rows(
-            osc_db_table(DB_TABLE_PREFIX . 't_item_location')
+        $items = Db::stringifyRows(
+            Db::table(DB_TABLE_PREFIX . 't_item_location')
                 ->select('fk_i_item_id')
                 ->where('fk_i_city_id', $cityId)
                 ->get()
@@ -1435,8 +1437,8 @@ class Item extends DAO
      */
     public function deleteByRegion($regionId)
     {
-        $items = osc_db_stringify_rows(
-            osc_db_table(DB_TABLE_PREFIX . 't_item_location')
+        $items = Db::stringifyRows(
+            Db::table(DB_TABLE_PREFIX . 't_item_location')
                 ->select('fk_i_item_id')
                 ->where('fk_i_region_id', $regionId)
                 ->get()
@@ -1455,8 +1457,8 @@ class Item extends DAO
      */
     public function deleteByCountry($countryId)
     {
-        $items = osc_db_stringify_rows(
-            osc_db_table(DB_TABLE_PREFIX . 't_item_location')
+        $items = Db::stringifyRows(
+            Db::table(DB_TABLE_PREFIX . 't_item_location')
                 ->select('fk_i_item_id')
                 ->where('fk_c_country_code', $countryId)
                 ->get()
@@ -1501,7 +1503,7 @@ class Item extends DAO
             . ' WHERE ' . implode(' AND ', $conditions);
 
         try {
-            $categories = osc_db_stringify_rows(osc_db_select($sql, $params));
+            $categories = Db::stringifyRows(Db::select($sql, $params));
         } catch (\mindstellar\database\DbException $e) {
             return $items;
         }
@@ -1563,7 +1565,7 @@ class Item extends DAO
                 . ' WHERE fk_i_item_id IN (' . $placeholders . ')';
 
             try {
-                $descriptions = osc_db_stringify_rows(osc_db_select($sql, array_values($itemIds)));
+                $descriptions = Db::stringifyRows(Db::select($sql, array_values($itemIds)));
             } catch (\mindstellar\database\DbException $e) {
                 return $items;
             }

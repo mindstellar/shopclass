@@ -12,6 +12,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
 use mindstellar\database\DbException;
 use mindstellar\search\query\SearchCompiler;
 use mindstellar\search\query\SearchExecutor;
@@ -542,7 +543,7 @@ class Search extends DAO
     {
         if (null === $this->total_results_table) {
             try {
-                $row                       = osc_db_select_one('SELECT COUNT(*) AS total FROM ' . DB_TABLE_PREFIX . 't_item');
+                $row                       = Db::selectOne('SELECT COUNT(*) AS total FROM ' . DB_TABLE_PREFIX . 't_item');
                 $this->total_results_table = $row === null ? null : (string)$row['total'];
             } catch (DbException $e) {
                 // A later call retries.
@@ -819,7 +820,7 @@ class Search extends DAO
             . ' ORDER BY ' . $orderCol . ' ' . $orderDir;
 
         try {
-            return osc_db_stringify_rows(osc_db_select($sql, $params));
+            return Db::stringifyRows(Db::select($sql, $params));
         } catch (DbException $e) {
             return array();
         }

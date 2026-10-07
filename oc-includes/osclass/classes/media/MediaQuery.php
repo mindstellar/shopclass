@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\media;
 
+use mindstellar\database\Db;
+
 /**
  * Media library reads: listing photos (t_item_resource) and other uploads (t_resource) as
  * one list, and the titles of what owns them.
@@ -33,7 +35,7 @@ final class MediaQuery
      */
     public static function ownerTypes(): array
     {
-        $rows = osc_db_select('SELECT DISTINCT s_owner_type FROM ' . DB_TABLE_PREFIX . 't_resource ORDER BY s_owner_type');
+        $rows = Db::select('SELECT DISTINCT s_owner_type FROM ' . DB_TABLE_PREFIX . 't_resource ORDER BY s_owner_type');
 
         return array_map(static fn (array $row): string => (string) $row['s_owner_type'], $rows);
     }
@@ -67,8 +69,8 @@ final class MediaQuery
             $params[] = $type;
         }
 
-        $total = (int) osc_db_scalar("SELECT COUNT(*) FROM ($base) AS m", $params);
-        $rows  = osc_db_select(
+        $total = (int) Db::scalar("SELECT COUNT(*) FROM ($base) AS m", $params);
+        $rows  = Db::select(
             "SELECT * FROM ($base) AS m ORDER BY (dt IS NULL), dt DESC, id DESC"
             . ' LIMIT ' . $perPage . ' OFFSET ' . $offset,
             $params
@@ -85,7 +87,7 @@ final class MediaQuery
      */
     public static function pageTexts(): array
     {
-        return osc_db_select(
+        return Db::select(
             'SELECT fk_i_pages_id AS id, s_title AS title, s_text AS text FROM ' . DB_TABLE_PREFIX . 't_pages_description'
         );
     }
@@ -107,7 +109,7 @@ final class MediaQuery
             return array();
         }
         [$table, $key, $title] = self::OWNERS[$type];
-        $rows = osc_db_select(
+        $rows = Db::select(
             "SELECT {$key} AS k, {$title} AS v FROM " . DB_TABLE_PREFIX . $table . " WHERE {$key} IN (" . implode(',', $ids) . ')'
         );
         $out = array();
@@ -136,6 +138,6 @@ final class MediaQuery
         }
         [$table, $key] = self::OWNERS[$type];
 
-        return osc_db_table(DB_TABLE_PREFIX . $table)->where($key, $id)->get();
+        return Db::table(DB_TABLE_PREFIX . $table)->where($key, $id)->get();
     }
 }

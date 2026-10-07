@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\auth;
 
+use mindstellar\database\Db;
+
 /**
  * An admin's new password, from the profile screen, the recovery link and the CLI alike: it is
  * stored and the admin is signed out everywhere in one transaction.
@@ -32,7 +34,7 @@ final class AdminPassword
     {
         $values = ['s_password' => osc_hash_password($new)] + $also;
 
-        return (bool) osc_db_transaction(static function () use ($adminId, $values): bool {
+        return (bool) Db::transaction(static function () use ($adminId, $values): bool {
             if (AdminStore::update($adminId, $values) === 0) {
                 return false;
             }

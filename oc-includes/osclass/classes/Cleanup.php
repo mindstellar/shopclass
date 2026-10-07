@@ -8,6 +8,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Core maintenance engine: finds and removes stale content — expired, unactivated, spam,
  * blocked and reported listings, unactivated users and avatars left by deleted users.
@@ -149,7 +151,7 @@ class Cleanup extends DAO
         list($from, $where, $params) = $this->ruleQuery($rule, (int)$days);
 
         try {
-            return (int)osc_db_scalar('SELECT COUNT(*) FROM ' . $from . ' WHERE ' . $where, $params);
+            return (int)Db::scalar('SELECT COUNT(*) FROM ' . $from . ' WHERE ' . $where, $params);
         } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
@@ -176,7 +178,7 @@ class Cleanup extends DAO
             . ' LIMIT ' . max(1, (int)$limit);
 
         try {
-            return osc_db_stringify_rows(osc_db_select($sql, $params));
+            return Db::stringifyRows(Db::select($sql, $params));
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }

@@ -14,6 +14,7 @@ namespace mindstellar\fields;
 
 use Field;
 use mindstellar\admin\AdminText;
+use mindstellar\database\Db;
 use mindstellar\validation\InvalidException;
 use mindstellar\validation\NotFoundException;
 
@@ -49,7 +50,7 @@ final class FieldService
             throw new NotFoundException(_m('No such custom field.'));
         }
 
-        return osc_db_stringify_row($row);
+        return Db::stringifyRow($row);
     }
 
     /**
@@ -104,7 +105,7 @@ final class FieldService
         $categories = $this->checkCategories((array) ($field['categories'] ?? []));
         $fields     = $this->fields;
 
-        return (int) osc_db_transaction(static function () use ($fields, $field, $name, $options, $categories): int {
+        return (int) Db::transaction(static function () use ($fields, $field, $name, $options, $categories): int {
             $id = (int) $fields->insertField(
                 $name,
                 strtoupper((string) $field['type']),
@@ -148,7 +149,7 @@ final class FieldService
             's_options'    => $has('options') ? AdminText::options((array) $changes['options']) : (string) $field['s_options'],
         ];
         $fields = $this->fields;
-        osc_db_transaction(function () use ($fields, $id, $row, $categories): void {
+        Db::transaction(function () use ($fields, $id, $row, $categories): void {
             if ($fields->update($row, ['pk_i_id' => $id]) === false) {
                 throw new \RuntimeException('The custom field could not be saved.');
             }

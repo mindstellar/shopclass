@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\api\auth;
 
+use mindstellar\database\Db;
+
 /**
  * Admin rows as the API reads them, each loaded once per request: the admin an admin key
  * acts for, so core code and its activity log see who made the change.
@@ -52,6 +54,6 @@ final class AdminRows
     {
         $row = \mindstellar\auth\AdminStore::find($id, ['pk_i_id', 's_name', 's_username', 's_email', 'b_moderator']);
 
-        return $row === null ? null : osc_db_stringify_row($row);
+        return $row === null ? null : Db::stringifyRow($row);
     }
 }

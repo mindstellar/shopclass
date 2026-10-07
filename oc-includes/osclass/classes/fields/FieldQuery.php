@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\fields;
 
+use mindstellar\database\Db;
+
 /**
  * Custom field reads: one field's row, and the values listings hold, joined to their field.
  * The legacy Field model keeps its own methods.
@@ -24,7 +26,7 @@ final class FieldQuery
      */
     public static function find(int $id): ?array
     {
-        return osc_db_table(DB_TABLE_PREFIX . 't_meta_fields')->where('pk_i_id', $id)->first();
+        return Db::table(DB_TABLE_PREFIX . 't_meta_fields')->where('pk_i_id', $id)->first();
     }
 
     /**
@@ -35,7 +37,7 @@ final class FieldQuery
      */
     public static function listingValues(int $itemId): array
     {
-        return osc_db_select(
+        return Db::select(
             'SELECT m.fk_i_field_id, m.s_multi, m.s_value, f.e_type FROM ' . DB_TABLE_PREFIX . 't_item_meta m'
             . ' LEFT JOIN ' . DB_TABLE_PREFIX . 't_meta_fields f ON f.pk_i_id = m.fk_i_field_id WHERE m.fk_i_item_id = ?',
             [$itemId]
@@ -54,7 +56,7 @@ final class FieldQuery
     {
         $p = DB_TABLE_PREFIX;
 
-        return osc_db_select(
+        return Db::select(
             'SELECT im.fk_i_item_id, mf.pk_i_id, im.s_value, im.s_multi, mf.s_name, mf.s_slug, mf.e_type, mf.s_meta'
             . ' FROM ' . $p . 't_item_meta im'
             . ' INNER JOIN ' . $p . 't_meta_fields mf ON mf.pk_i_id = im.fk_i_field_id'
@@ -72,7 +74,7 @@ final class FieldQuery
      */
     public static function suggest(int $fieldId, string $like): array
     {
-        return osc_db_select(
+        return Db::select(
             'SELECT DISTINCT m.s_value AS value FROM ' . DB_TABLE_PREFIX . 't_item_meta m'
             . ' JOIN ' . DB_TABLE_PREFIX . 't_item i ON i.pk_i_id = m.fk_i_item_id'
             . ' WHERE m.fk_i_field_id = ? AND m.s_value LIKE ?'

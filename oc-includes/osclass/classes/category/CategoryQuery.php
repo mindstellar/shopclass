@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\category;
 
+use mindstellar\database\Db;
+
 /**
  * Category reads for admin: rows with their listing counts, enabled or not, and every
  * language's texts.
@@ -28,9 +30,9 @@ final class CategoryQuery
         $p   = DB_TABLE_PREFIX;
         $sql = 'SELECT c.*, s.i_num_items FROM ' . $p . 't_category c LEFT JOIN ' . $p . 't_category_stats s ON s.fk_i_category_id = c.pk_i_id';
 
-        return osc_db_stringify_rows($id === null
-            ? osc_db_select($sql . ' ORDER BY c.i_position ASC, c.pk_i_id ASC')
-            : osc_db_select($sql . ' WHERE c.pk_i_id = ?', [$id]));
+        return Db::stringifyRows($id === null
+            ? Db::select($sql . ' ORDER BY c.i_position ASC, c.pk_i_id ASC')
+            : Db::select($sql . ' WHERE c.pk_i_id = ?', [$id]));
     }
 
     /**
@@ -45,7 +47,7 @@ final class CategoryQuery
         if ($ids === []) {
             return [];
         }
-        $rows = osc_db_stringify_rows(osc_db_table(DB_TABLE_PREFIX . 't_category_description')
+        $rows = Db::stringifyRows(Db::table(DB_TABLE_PREFIX . 't_category_description')
             ->whereIn('fk_i_category_id', array_map('intval', $ids))
             ->orderBy('fk_c_locale_code')
             ->get());

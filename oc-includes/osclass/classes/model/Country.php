@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Model database for Country table
  *
@@ -69,14 +71,14 @@ class Country extends DAO
     public function findByCode($code)
     {
         try {
-            $row = osc_db_table($this->getTableName())
+            $row = Db::table($this->getTableName())
                 ->where('pk_c_code', $code)
                 ->first();
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $row === null ? array() : osc_db_stringify_row($row);
+        return $row === null ? array() : Db::stringifyRow($row);
     }
 
     /**
@@ -89,14 +91,14 @@ class Country extends DAO
     public function findByName($name)
     {
         try {
-            $row = osc_db_table($this->getTableName())
+            $row = Db::table($this->getTableName())
                 ->where('s_name', $name)
                 ->first();
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $row === null ? array() : osc_db_stringify_row($row);
+        return $row === null ? array() : Db::stringifyRow($row);
     }
 
     /**
@@ -109,12 +111,12 @@ class Country extends DAO
         try {
             // The table name comes from getTableName(), fixed in the constructor
             // — never runtime input — so the query needs no placeholder for it.
-            $rows = osc_db_select(sprintf('SELECT * FROM %s ORDER BY s_name ASC', $this->getTableName()));
+            $rows = Db::select(sprintf('SELECT * FROM %s ORDER BY s_name ASC', $this->getTableName()));
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -164,12 +166,12 @@ class Country extends DAO
         try {
             // The table name comes from getTableName(), fixed in the constructor
             // — never runtime input — so the query needs no placeholder for it.
-            $rows = osc_db_select(sprintf('SELECT s_name FROM %s ORDER BY s_name ASC', $this->getTableName()));
+            $rows = Db::select(sprintf('SELECT s_name FROM %s ORDER BY s_name ASC', $this->getTableName()));
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return array_column(osc_db_stringify_rows($rows), 's_name');
+        return array_column(Db::stringifyRows($rows), 's_name');
     }
 
     /**
@@ -191,7 +193,7 @@ class Country extends DAO
         try {
             // The table name comes from getTableName(), fixed in the constructor
             // — never runtime input — so the query needs no placeholder for it.
-            $rows = osc_db_select(
+            $rows = Db::select(
                 sprintf(
                     'SELECT pk_c_code as id, s_name as label, s_name as value FROM %s WHERE s_name LIKE ? LIMIT 5',
                     $this->getTableName()
@@ -202,7 +204,7 @@ class Country extends DAO
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -216,14 +218,14 @@ class Country extends DAO
     public function findBySlug($slug)
     {
         try {
-            $row = osc_db_table($this->getTableName())
+            $row = Db::table($this->getTableName())
                 ->where('s_slug', $slug)
                 ->first();
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $row === null ? array() : osc_db_stringify_row($row);
+        return $row === null ? array() : Db::stringifyRow($row);
     }
 
     /**
@@ -235,14 +237,14 @@ class Country extends DAO
     public function listByEmptySlug()
     {
         try {
-            $rows = osc_db_table($this->getTableName())
+            $rows = Db::table($this->getTableName())
                 ->where('s_slug', '')
                 ->get();
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 }
 

@@ -17,6 +17,7 @@ use mindstellar\apiaccess\KeyOwner;
 use mindstellar\apiaccess\SignInStore;
 use mindstellar\apiaccess\StoredKey;
 use mindstellar\base\Model;
+use mindstellar\database\Db;
 use mindstellar\database\UtcDatetime;
 
 /**
@@ -115,12 +116,12 @@ final class ApiCredential extends Model implements SignInStore
      */
     public function atomically(callable $fn): mixed
     {
-        return osc_db_transaction($fn);
+        return Db::transaction($fn);
     }
 
     public function lockFamily(string $family): void
     {
-        osc_db_select('SELECT pk_i_id FROM ' . DB_TABLE_PREFIX . self::TABLE . ' WHERE s_family = ? FOR UPDATE', [$family]);
+        Db::select('SELECT pk_i_id FROM ' . DB_TABLE_PREFIX . self::TABLE . ' WHERE s_family = ? FOR UPDATE', [$family]);
     }
 
     /**
@@ -133,7 +134,7 @@ final class ApiCredential extends Model implements SignInStore
     {
         $at = self::datetime($before);
 
-        return osc_db_execute(
+        return Db::execute(
             'DELETE FROM ' . DB_TABLE_PREFIX . self::TABLE . " WHERE e_kind = 'refresh' AND (dt_revoked < ? OR dt_expires < ?)",
             [$at, $at]
         );
@@ -169,7 +170,7 @@ final class ApiCredential extends Model implements SignInStore
 
     public function hasLiveFor(int $userId): bool
     {
-        return osc_db_select_one(
+        return Db::selectOne(
             'SELECT 1 FROM ' . DB_TABLE_PREFIX . self::TABLE . ' WHERE fk_i_user_id = ? AND dt_revoked IS NULL AND e_kind IN (?, ?) LIMIT 1',
             [$userId, CredentialKind::REFRESH, CredentialKind::KEY]
         ) !== null;
@@ -177,7 +178,7 @@ final class ApiCredential extends Model implements SignInStore
 
     public function familyIsLive(string $family): bool
     {
-        return osc_db_select_one(
+        return Db::selectOne(
             'SELECT 1 FROM ' . DB_TABLE_PREFIX . self::TABLE . ' WHERE s_family = ? AND dt_revoked IS NULL LIMIT 1',
             [$family]
         ) !== null;
@@ -189,7 +190,7 @@ final class ApiCredential extends Model implements SignInStore
     private function stampOf(KeyOwner $owner): ?int
     {
         $table = $owner->isAdmin() ? 't_admin' : 't_user';
-        $stamp = osc_db_scalar('SELECT i_auth_stamp FROM ' . DB_TABLE_PREFIX . $table . ' WHERE pk_i_id = ?', [$owner->adminId() ?? $owner->userId()]);
+        $stamp = Db::scalar('SELECT i_auth_stamp FROM ' . DB_TABLE_PREFIX . $table . ' WHERE pk_i_id = ?', [$owner->adminId() ?? $owner->userId()]);
 
         return $stamp === null || $stamp === false ? null : (int) $stamp;
     }
@@ -205,7 +206,7 @@ final class ApiCredential extends Model implements SignInStore
     private function select(string $where, array $params, string $order = ''): array
     {
         $p    = DB_TABLE_PREFIX;
-        $rows = osc_db_select(
+        $rows = Db::select(
             'SELECT c.*, a.pk_i_id AS owner_admin, a.b_moderator AS owner_moderator, a.i_auth_stamp AS owner_admin_stamp,'
             . ' u.pk_i_id AS owner_user, u.b_enabled AS owner_enabled, u.b_active AS owner_active, u.i_auth_stamp AS owner_user_stamp'
             . ' FROM ' . $p . self::TABLE . ' c'

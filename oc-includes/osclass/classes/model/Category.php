@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Category DAO
  */
@@ -194,7 +196,7 @@ class Category extends DAO
         $sql .= ' ORDER BY i_position ASC';
 
         try {
-            $allResults = osc_db_select($sql, $params);
+            $allResults = Db::select($sql, $params);
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
@@ -206,7 +208,7 @@ class Category extends DAO
         // The prepared path (%d/%s callers) returns native ints; the unprepared
         // path (literal callers) returns strings. Normalise to the legacy
         // all-strings row shape before the per-locale merge.
-        $allResults       = osc_db_stringify_rows($allResults);
+        $allResults       = Db::stringifyRows($allResults);
         $mergedCategories = [];
         foreach ($allResults as $cat) {
             // merge all the array with the same pk_i_id
@@ -434,7 +436,7 @@ class Category extends DAO
             }
 
             try {
-                $sub_rows = osc_db_table($this->getTablePrefix() . 't_category_description')
+                $sub_rows = Db::table($this->getTablePrefix() . 't_category_description')
                     ->where('fk_i_category_id', $category['pk_i_id'])
                     ->orderBy('fk_c_locale_code')
                     ->get();
@@ -442,7 +444,7 @@ class Category extends DAO
                 return false;
             }
 
-            $sub_rows = osc_db_stringify_rows($sub_rows);
+            $sub_rows = Db::stringifyRows($sub_rows);
             $row      = array();
             foreach ($sub_rows as $sub_row) {
                 if (isset($sub_row['fk_c_locale_code'])) {
@@ -506,12 +508,12 @@ class Category extends DAO
         );
 
         try {
-            $deleted = osc_db_transaction(function () use ($pkInt, $dependents) {
+            $deleted = Db::transaction(function () use ($pkInt, $dependents) {
                 foreach ($dependents as $table) {
-                    osc_db_table(DB_TABLE_PREFIX . $table)->where('fk_i_category_id', $pkInt)->delete();
+                    Db::table(DB_TABLE_PREFIX . $table)->where('fk_i_category_id', $pkInt)->delete();
                 }
 
-                return osc_db_table(DB_TABLE_PREFIX . 't_category')->where('pk_i_id', $pkInt)->delete();
+                return Db::table(DB_TABLE_PREFIX . 't_category')->where('pk_i_id', $pkInt)->delete();
             });
         } catch (\Throwable $e) {
             // Rolled back together: a category that cannot be removed keeps its
@@ -556,7 +558,7 @@ class Category extends DAO
         $affectedRows       = 0;
         //UPDATE for category
         try {
-            $res = osc_db_table($this->getTableName())->where('pk_i_id', $pk)->update($fields);
+            $res = Db::table($this->getTableName())->where('pk_i_id', $pk)->update($fields);
         } catch (\mindstellar\database\DbException $e) {
             $res = false;
         }
@@ -568,7 +570,7 @@ class Category extends DAO
             $expiry = $fields['i_expiration_days'] ?? null;
             if ($expiry !== null && $expiry > 0) {
                 try {
-                    osc_db_execute(
+                    Db::execute(
                         'UPDATE ' . DB_TABLE_PREFIX . 't_item as a'
                         . ' LEFT JOIN ' . DB_TABLE_PREFIX . 't_category as b ON b.pk_i_id = a.fk_i_category_id'
                         . ' SET a.dt_expiration = DATE_ADD(a.dt_pub_date, INTERVAL b.i_expiration_days DAY)'
@@ -581,7 +583,7 @@ class Category extends DAO
                 // update dt_expiration (table t_item) using the max date value
             } elseif ($expiry !== null && $expiry == 0) {
                 try {
-                    osc_db_execute(
+                    Db::execute(
                         'UPDATE ' . DB_TABLE_PREFIX . 't_item as a'
                         . " SET a.dt_expiration = '9999-12-31 23:59:59'"
                         . ' WHERE a.fk_i_category_id = ?',
@@ -628,7 +630,7 @@ class Category extends DAO
 
                 $oldSlug = '';
                 try {
-                    $prev = osc_db_select(
+                    $prev = Db::select(
                         'SELECT s_slug FROM ' . DB_TABLE_PREFIX . 't_category_description'
                         . ' WHERE fk_i_category_id = ? AND fk_c_locale_code = ?',
                         array($pk, $k)
@@ -641,7 +643,7 @@ class Category extends DAO
                 }
 
                 try {
-                    $rs = osc_db_table(DB_TABLE_PREFIX . 't_category_description')
+                    $rs = Db::table(DB_TABLE_PREFIX . 't_category_description')
                         ->where('fk_i_category_id', $array_where['fk_i_category_id'])
                         ->where('fk_c_locale_code', $array_where['fk_c_locale_code'])
                         ->update($fieldsDescription);
@@ -652,7 +654,7 @@ class Category extends DAO
                 $newSlug = $fieldsDescription['s_slug'];
                 // A slug that is now live must never redirect - drop any stale history row for it.
                 try {
-                    osc_db_execute(
+                    Db::execute(
                         'DELETE FROM ' . DB_TABLE_PREFIX . 't_category_slug_history'
                         . ' WHERE s_slug = ? AND fk_c_locale_code = ?',
                         array($newSlug, $k)
@@ -663,7 +665,7 @@ class Category extends DAO
                 // Record the vacated old slug so its inbound links 301 to the new one.
                 if ($oldSlug !== '' && $oldSlug !== $newSlug) {
                     try {
-                        osc_db_execute(
+                        Db::execute(
                             'INSERT INTO ' . DB_TABLE_PREFIX . 't_category_slug_history'
                             . ' (fk_i_category_id, fk_c_locale_code, s_slug, dt_date) VALUES (?, ?, ?, ?)'
                             . ' ON DUPLICATE KEY UPDATE fk_i_category_id = VALUES(fk_i_category_id),'
@@ -680,7 +682,7 @@ class Category extends DAO
                     // both identifiers are compile-time literals and the two
                     // values are bound. Assumed to succeed, exactly as the legacy
                     // body did when it called result() on the handle unguarded.
-                    $exists = osc_db_select(
+                    $exists = Db::select(
                         'SELECT a.pk_i_id FROM ' . $this->tableName . ' as a'
                         . ' INNER JOIN ' . DB_TABLE_PREFIX . 't_category_description as b'
                         . ' ON a.pk_i_id = b.fk_i_category_id'
@@ -737,7 +739,7 @@ class Category extends DAO
     {
         if (!empty($fields_description['s_name'])) {
             try {
-                osc_db_table(DB_TABLE_PREFIX . 't_category_description')->insert($fields_description);
+                Db::table(DB_TABLE_PREFIX . 't_category_description')->insert($fields_description);
             } catch (\mindstellar\database\DbException $e) {
                 return false;
             }
@@ -762,7 +764,7 @@ class Category extends DAO
     {
         // Assumed to succeed, as the legacy body did (it read insertedId()
         // straight after with no error check); a genuine failure propagates.
-        $category_id = osc_db_table($this->getTableName())->insert($fields);
+        $category_id = Db::table($this->getTableName())->insert($fields);
         foreach ($aFieldsDescription as $k => $fieldsDescription) {
             $fieldsDescription['fk_i_category_id'] = $category_id;
             $fieldsDescription['fk_c_locale_code'] = $k;
@@ -784,7 +786,7 @@ class Category extends DAO
             // The result was discarded here before this conversion, so a
             // per-locale failure is swallowed rather than aborting the rest.
             try {
-                osc_db_table(DB_TABLE_PREFIX . 't_category_description')->insert($fieldsDescription);
+                Db::table(DB_TABLE_PREFIX . 't_category_description')->insert($fieldsDescription);
             } catch (\mindstellar\database\DbException $e) {
                 // Discarded, as before.
             }
@@ -879,7 +881,7 @@ class Category extends DAO
             $category = $this->categories[$categoryID];
         } else {
             try {
-                $row = osc_db_table($this->getTablePrefix() . 't_category_description')
+                $row = Db::table($this->getTablePrefix() . 't_category_description')
                     ->select('s_name')
                     ->where('fk_i_category_id', $categoryID)
                     ->first();
@@ -889,7 +891,7 @@ class Category extends DAO
 
             // Legacy row() returned an empty array for zero rows, not false; the
             // isset() below then falls through to the "Non-Existent" default.
-            $category = ($row === null) ? array() : osc_db_stringify_row($row);
+            $category = ($row === null) ? array() : Db::stringifyRow($row);
         }
 
         if (isset($category['s_name'])) {
@@ -917,7 +919,7 @@ class Category extends DAO
         // value is bound. Prepared-path native ints are normalised back to the
         // legacy all-strings row shape.
         try {
-            $rows = osc_db_select(
+            $rows = Db::select(
                 'SELECT s_name, fk_i_category_id as pk_i_id FROM '
                 . $this->getTablePrefix() . 't_category_description WHERE fk_c_locale_code = ?',
                 array($locale)
@@ -926,7 +928,7 @@ class Category extends DAO
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -940,7 +942,7 @@ class Category extends DAO
     public function updateOrder($pk_i_id, $order)
     {
         try {
-            return osc_db_table($this->tableName)->where('pk_i_id', $pk_i_id)->update(array('i_position' => $order));
+            return Db::table($this->tableName)->where('pk_i_id', $pk_i_id)->update(array('i_position' => $order));
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
@@ -960,11 +962,11 @@ class Category extends DAO
         $itemManager = Item::getInstance();
 
         try {
-            $items = osc_db_table(DB_TABLE_PREFIX . 't_item')
+            $items = Db::table(DB_TABLE_PREFIX . 't_item')
                 ->select('pk_i_id')
                 ->where('fk_i_category_id', (int)$pk_i_id)
                 ->get();
-            $items = osc_db_stringify_rows($items);
+            $items = Db::stringifyRows($items);
         } catch (\mindstellar\database\DbException $e) {
             $items = array();
         }
@@ -972,7 +974,7 @@ class Category extends DAO
             $itemManager->updateExpirationDate($item['pk_i_id'], $expiration);
         }
         try {
-            $result = osc_db_table($this->tableName)
+            $result = Db::table($this->tableName)
                 ->where('pk_i_id', $pk_i_id)
                 ->update(array('i_expiration_days' => $expiration));
         } catch (\mindstellar\database\DbException $e) {
@@ -1000,7 +1002,7 @@ class Category extends DAO
     public function updatePriceEnabled($pk_i_id, $enabled, $updateSubcategories = false)
     {
         try {
-            $result = osc_db_table($this->tableName)
+            $result = Db::table($this->tableName)
                 ->where('pk_i_id', $pk_i_id)
                 ->update(array('b_price_enabled' => $enabled));
         } catch (\mindstellar\database\DbException $e) {
@@ -1028,7 +1030,7 @@ class Category extends DAO
     public function updateName($pk_i_id, $locale, $name)
     {
         try {
-            return osc_db_table(DB_TABLE_PREFIX . 't_category_description')
+            return Db::table(DB_TABLE_PREFIX . 't_category_description')
                 ->where('fk_i_category_id', $pk_i_id)
                 ->where('fk_c_locale_code', $locale)
                 ->update(array('s_name' => $name));

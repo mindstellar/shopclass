@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Log DAO
  */
@@ -111,7 +113,7 @@ class Log extends DAO
         );
 
         try {
-            osc_db_table($this->getTableName())->insert($array_set);
+            Db::table($this->getTableName())->insert($array_set);
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
@@ -186,12 +188,12 @@ class Log extends DAO
         }
 
         try {
-            $rows = osc_db_select($sql, $params);
+            $rows = Db::select($sql, $params);
         } catch (\mindstellar\database\DbException $e) {
             return $result;
         }
 
-        $result['logs'] = osc_db_stringify_rows($rows);
+        $result['logs'] = Db::stringifyRows($rows);
 
         $counts = $this->pagedCounts(implode(' AND ', $where), $params);
         if ($counts === null) {
@@ -210,7 +212,7 @@ class Log extends DAO
     public function distinctSections()
     {
         try {
-            $rows = osc_db_select(
+            $rows = Db::select(
                 'SELECT DISTINCT s_section FROM ' . $this->getTableName() . ' ORDER BY s_section ASC'
             );
         } catch (\mindstellar\database\DbException $e) {
@@ -218,7 +220,7 @@ class Log extends DAO
         }
 
         $out = array();
-        foreach (osc_db_stringify_rows($rows) as $r) {
+        foreach (Db::stringifyRows($rows) as $r) {
             if ($r['s_section'] !== '') {
                 $out[] = $r['s_section'];
             }
@@ -241,7 +243,7 @@ class Log extends DAO
         }
 
         try {
-            return (int) osc_db_table($this->getTableName())
+            return (int) Db::table($this->getTableName())
                 ->where('dt_date', '<', $date)
                 ->delete();
         } catch (\mindstellar\database\DbException $e) {

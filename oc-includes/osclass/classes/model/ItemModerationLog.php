@@ -8,6 +8,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Durable "why was this listing hidden" record.
  *
@@ -96,7 +98,7 @@ class ItemModerationLog extends DAO
     public function findByItem($itemId)
     {
         try {
-            $rows = osc_db_table($this->getTableName())
+            $rows = Db::table($this->getTableName())
                 ->select(...$this->getFields())
                 ->where('fk_i_item_id', (int)$itemId)
                 ->orderBy('dt_date', 'DESC')
@@ -105,7 +107,7 @@ class ItemModerationLog extends DAO
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**

@@ -18,6 +18,7 @@ use mindstellar\api\read\SiteFacts;
 use mindstellar\api\Request;
 use mindstellar\apiaccess\Credential;
 use mindstellar\auth\Actor;
+use mindstellar\database\Db;
 use mindstellar\listing\ListingInput;
 use mindstellar\listing\ListingService;
 use mindstellar\validation\InvalidException;
@@ -242,6 +243,6 @@ final class ListingWriter
      */
     private static function metaRows(int $id): array
     {
-        return osc_db_stringify_rows(\mindstellar\fields\FieldQuery::listingValues($id));
+        return Db::stringifyRows(\mindstellar\fields\FieldQuery::listingValues($id));
     }
 }

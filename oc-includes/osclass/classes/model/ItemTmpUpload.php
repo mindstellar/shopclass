@@ -9,6 +9,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * ItemTmpUpload DAO — photos uploaded to a listing form before the listing is saved.
  *
@@ -69,7 +71,7 @@ class ItemTmpUpload extends DAO
      */
     public function add($token, $uuid, $file)
     {
-        return osc_db_execute(
+        return Db::execute(
             'INSERT INTO ' . $this->getTableName()
             . ' (s_token, s_uuid, s_file, dt_date) VALUES (?, ?, ?, ?)',
             array((string)$token, (string)$uuid, (string)$file, date('Y-m-d H:i:s'))
@@ -89,7 +91,7 @@ class ItemTmpUpload extends DAO
      */
     public function deleteByTokenFile($token, $file)
     {
-        return osc_db_execute(
+        return Db::execute(
             'DELETE FROM ' . $this->getTableName() . ' WHERE s_token = ? AND s_file = ?',
             array((string)$token, (string)$file)
         );
@@ -112,7 +114,7 @@ class ItemTmpUpload extends DAO
             return false;
         }
 
-        $row = osc_db_select_one(
+        $row = Db::selectOne(
             'SELECT 1 AS found FROM ' . $this->getTableName() . ' WHERE s_token = ? AND s_file = ? LIMIT 1',
             array((string)$token, (string)$file)
         );
@@ -130,7 +132,7 @@ class ItemTmpUpload extends DAO
      */
     public function deleteByToken($token)
     {
-        return osc_db_execute(
+        return Db::execute(
             'DELETE FROM ' . $this->getTableName() . ' WHERE s_token = ?',
             array((string)$token)
         );
@@ -147,7 +149,7 @@ class ItemTmpUpload extends DAO
      */
     public function pruneBefore($before)
     {
-        return osc_db_execute(
+        return Db::execute(
             'DELETE FROM ' . $this->getTableName() . ' WHERE dt_date <= ?',
             array($before)
         );

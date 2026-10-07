@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\base;
 
+use mindstellar\database\Db;
 use mindstellar\database\QueryBuilder;
 use mindstellar\database\UtcDatetime;
 
@@ -36,7 +37,7 @@ abstract class Model
      */
     protected static function table(): QueryBuilder
     {
-        return osc_db_table(static::tableName());
+        return Db::table(static::tableName());
     }
 
     /**

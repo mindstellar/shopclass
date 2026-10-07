@@ -9,6 +9,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Hookable XML sitemap generator.
  *
@@ -498,7 +500,7 @@ class Sitemap extends DAO
             . ' GROUP BY t.pk_i_id, t.fk_i_category_id, t.dt_pub_date, t.dt_mod_date';
 
         try {
-            return osc_db_stringify_rows(osc_db_select($sql));
+            return Db::stringifyRows(Db::select($sql));
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
@@ -523,7 +525,7 @@ class Sitemap extends DAO
             . ' LIMIT ' . self::MAX_SITEMAP_URLS;
 
         try {
-            return osc_db_stringify_rows(osc_db_select($sql));
+            return Db::stringifyRows(Db::select($sql));
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
@@ -569,7 +571,7 @@ class Sitemap extends DAO
     {
         if ($this->total_results_table === null) {
             try {
-                $total = osc_db_scalar(
+                $total = Db::scalar(
                     'SELECT COUNT(*) FROM ' . DB_TABLE_PREFIX . 't_item'
                     . ' WHERE ' . self::liveItemCondition()
                 );
@@ -606,7 +608,7 @@ class Sitemap extends DAO
     private function pagesModificationDate()
     {
         try {
-            $row = osc_db_select_one(
+            $row = Db::selectOne(
                 'SELECT MAX(dt_pub_date) AS max_pub_date, MAX(dt_mod_date) AS max_mod_date'
                 . ' FROM ' . DB_TABLE_PREFIX . 't_pages WHERE b_indelible < 1'
             );

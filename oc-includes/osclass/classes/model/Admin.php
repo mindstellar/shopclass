@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Model database for Admin table
  *
@@ -52,7 +54,7 @@ class Admin extends DAO
         // Columns added by upgrades are read only once they exist, so an admin can still sign
         // in to run the upgrade that adds them.
         try {
-            $columns = osc_db_select(
+            $columns = Db::select(
                 'SHOW COLUMNS FROM ' . $this->getTableName() . ' WHERE Field IN ("b_moderator", "i_auth_stamp")'
             );
         } catch (\mindstellar\database\DbException $e) {
@@ -120,7 +122,7 @@ class Admin extends DAO
     public function findByEmail($email)
     {
         try {
-            $row = osc_db_table($this->getTableName())->where('s_email', $email)->first();
+            $row = Db::table($this->getTableName())->where('s_email', $email)->first();
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
@@ -129,7 +131,7 @@ class Admin extends DAO
             return false;
         }
 
-        return osc_db_stringify_row($row);
+        return Db::stringifyRow($row);
     }
 
     /**
@@ -162,7 +164,7 @@ class Admin extends DAO
     public function findByUsername($username)
     {
         try {
-            $row = osc_db_table($this->getTableName())->where('s_username', $username)->first();
+            $row = Db::table($this->getTableName())->where('s_username', $username)->first();
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
@@ -171,7 +173,7 @@ class Admin extends DAO
             return false;
         }
 
-        return osc_db_stringify_row($row);
+        return Db::stringifyRow($row);
     }
 
     /**
@@ -186,7 +188,7 @@ class Admin extends DAO
     public function findByIdSecret($id, $secret)
     {
         try {
-            $row = osc_db_table($this->getTableName())
+            $row = Db::table($this->getTableName())
                 ->where('pk_i_id', $id)
                 ->where('s_secret', $secret)
                 ->first();
@@ -198,7 +200,7 @@ class Admin extends DAO
             return false;
         }
 
-        return osc_db_stringify_row($row);
+        return Db::stringifyRow($row);
     }
 
     /**
@@ -213,7 +215,7 @@ class Admin extends DAO
     public function findByIdPassword($id, $password)
     {
         try {
-            $row = osc_db_table($this->getTableName())
+            $row = Db::table($this->getTableName())
                 ->where('pk_i_id', $id)
                 ->where('s_password', $password)
                 ->first();
@@ -225,7 +227,7 @@ class Admin extends DAO
             return false;
         }
 
-        return osc_db_stringify_row($row);
+        return Db::stringifyRow($row);
     }
 
     /**
@@ -249,7 +251,7 @@ class Admin extends DAO
         }
 
         try {
-            return osc_db_table($this->getTableName())->whereIn('pk_i_id', $ids)->delete();
+            return Db::table($this->getTableName())->whereIn('pk_i_id', $ids)->delete();
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }

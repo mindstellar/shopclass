@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Model database for CityArea table
  *
@@ -72,7 +74,7 @@ class CityArea extends DAO
      */
     public function findByName($cityAreaName, $cityId = null)
     {
-        $query = osc_db_table($this->getTableName())
+        $query = Db::table($this->getTableName())
             ->select(...$this->getFields())
             ->where('s_name', $cityAreaName);
 
@@ -90,7 +92,7 @@ class CityArea extends DAO
             return array();
         }
 
-        return osc_db_stringify_row($row);
+        return Db::stringifyRow($row);
     }
 
     /**
@@ -104,7 +106,7 @@ class CityArea extends DAO
     public function findByCity($cityId)
     {
         try {
-            $rows = osc_db_table($this->getTableName())
+            $rows = Db::table($this->getTableName())
                 ->select(...$this->getFields())
                 ->where('fk_i_city_id', $cityId)
                 ->get();
@@ -112,7 +114,7 @@ class CityArea extends DAO
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**

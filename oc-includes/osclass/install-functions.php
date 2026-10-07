@@ -850,7 +850,7 @@ function oc_install()
     // rows carry a foreign key to t_locale. Written through the parameterized
     // query builder (bound values, one prepared statement).
     try {
-        osc_db_table(DB_TABLE_PREFIX . 't_locale')->insert($values);
+        \mindstellar\database\Db::table(DB_TABLE_PREFIX . 't_locale')->insert($values);
     } catch (\Throwable $e) {
         error_log('Shopclass install: could not save the site language row: ' . $e->getMessage());
 
@@ -914,12 +914,12 @@ function oc_install()
     try {
         $prefTable   = DB_TABLE_PREFIX . 't_preference';
         $adminLocale = osc_current_admin_locale();
-        osc_db_transaction(static function () use ($prefTable, $adminLocale) {
+        \mindstellar\database\Db::transaction(static function () use ($prefTable, $adminLocale) {
             $replace = "REPLACE INTO $prefTable (s_name, s_value, s_section, e_type) VALUES (?, ?, ?, ?)";
-            osc_db_execute($replace, array('language', $adminLocale, 'osclass', 'STRING'));
-            osc_db_execute($replace, array('admin_language', $adminLocale, 'osclass', 'STRING'));
-            osc_db_execute($replace, array('csrf_name', 'CSRF' . mt_rand(0, mt_getrandmax()), 'osclass', 'STRING'));
-            osc_db_execute($replace, array('csrf_secret', bin2hex(random_bytes(32)), 'osclass', 'STRING'));
+            \mindstellar\database\Db::execute($replace, array('language', $adminLocale, 'osclass', 'STRING'));
+            \mindstellar\database\Db::execute($replace, array('admin_language', $adminLocale, 'osclass', 'STRING'));
+            \mindstellar\database\Db::execute($replace, array('csrf_name', 'CSRF' . mt_rand(0, mt_getrandmax()), 'osclass', 'STRING'));
+            \mindstellar\database\Db::execute($replace, array('csrf_secret', bin2hex(random_bytes(32)), 'osclass', 'STRING'));
         });
     } catch (\Throwable $e) {
         error_log('Shopclass install: seeding preferences failed: ' . $e->getMessage());
@@ -1309,11 +1309,11 @@ function finish_installation($password)
     // LAST, so the row that is_osclass_installed() and upgrades key off can never
     // land beside a half-written finalize. REPLACE keeps a step-4 page refresh
     // from tripping a duplicate key; the row values are byte-identical to before.
-    osc_db_transaction(static function () use ($pingEngines) {
+    \mindstellar\database\Db::transaction(static function () use ($pingEngines) {
         $prefTable = DB_TABLE_PREFIX . 't_preference';
         $replace   = "REPLACE INTO $prefTable (s_name, s_value, s_section, e_type) VALUES (?, ?, ?, ?)";
-        osc_db_execute($replace, array('ping_search_engines', $pingEngines ? '1' : '0', 'osclass', 'BOOLEAN'));
-        osc_db_execute($replace, array('osclass_installed', '1', 'osclass', 'BOOLEAN'));
+        \mindstellar\database\Db::execute($replace, array('ping_search_engines', $pingEngines ? '1' : '0', 'osclass', 'BOOLEAN'));
+        \mindstellar\database\Db::execute($replace, array('osclass_installed', '1', 'osclass', 'BOOLEAN'));
     });
 
     // Network I/O never belongs inside a transaction: ping only after the
@@ -1323,7 +1323,7 @@ function finish_installation($password)
     }
 
     // Admin account for the credentials shown on the finish screen.
-    $admin = osc_db_table(DB_TABLE_PREFIX . 't_admin')->where('pk_i_id', 1)->first();
+    $admin = \mindstellar\database\Db::table(DB_TABLE_PREFIX . 't_admin')->where('pk_i_id', 1)->first();
 
     return array(
         's_email'    => $admin['s_email'] ?? '',
@@ -1420,8 +1420,8 @@ function basic_info()
     // in one transaction through the parameterized API: either the site has an
     // owner and a title, or nothing is saved. Success is the returned insert id,
     // never affected-rows (which don't propagate on the shared handle).
-    osc_db_transaction(static function () use ($adminUser, $adminEmail, $adminHash, $webTitle) {
-        osc_db_table(DB_TABLE_PREFIX . 't_admin')->insert(array(
+    \mindstellar\database\Db::transaction(static function () use ($adminUser, $adminEmail, $adminHash, $webTitle) {
+        \mindstellar\database\Db::table(DB_TABLE_PREFIX . 't_admin')->insert(array(
             's_name'     => 'Administrator',
             's_username' => $adminUser,
             's_password' => $adminHash,
@@ -1430,8 +1430,8 @@ function basic_info()
 
         $prefTable = DB_TABLE_PREFIX . 't_preference';
         $replace   = "REPLACE INTO $prefTable (s_name, s_value, s_section, e_type) VALUES (?, ?, ?, ?)";
-        osc_db_execute($replace, array('pageTitle', $webTitle, 'osclass', 'STRING'));
-        osc_db_execute($replace, array('contactEmail', $adminEmail, 'osclass', 'STRING'));
+        \mindstellar\database\Db::execute($replace, array('pageTitle', $webTitle, 'osclass', 'STRING'));
+        \mindstellar\database\Db::execute($replace, array('contactEmail', $adminEmail, 'osclass', 'STRING'));
     });
 
     $body = sprintf(__('Hi %s,'), Params::getParam('webtitle')) . '<br/>';

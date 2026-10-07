@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\stats;
 
+use mindstellar\database\Db;
+
 /**
  * Aggregate counts behind the admin statistics screens, read with osc_db_select(): the
  * grouped date buckets and the derived table in itemsPerContact() are not expressible
@@ -63,7 +65,7 @@ final class StatsQuery
     private function rows($sql, array $params = array(), $fallback = array())
     {
         try {
-            return osc_db_stringify_rows(osc_db_select($sql, $params));
+            return Db::stringifyRows(Db::select($sql, $params));
         } catch (\mindstellar\database\DbException $e) {
             return $fallback;
         }

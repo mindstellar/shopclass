@@ -15,6 +15,7 @@ namespace mindstellar\admin;
 use mindstellar\admin\form\ApiSettingsScreen;
 use mindstellar\admin\form\CommentSettingsScreen;
 use mindstellar\admin\form\MainSettingsScreen;
+use mindstellar\database\Db;
 use mindstellar\settings\SettingsPageRegistry;
 use mindstellar\validation\InvalidException;
 
@@ -108,7 +109,7 @@ final class ExposedSettings
             [$form, $field] = self::FIELDS[$member];
             $byPage[$form::register()][$field] = $value;
         }
-        osc_db_transaction(static function () use ($byPage): void {
+        Db::transaction(static function () use ($byPage): void {
             $errors = [];
             foreach ($byPage as $page => $changes) {
                 $post   = self::post(osc_settings_values($page), $changes, SettingsPageRegistry::getInstance()->fields($page));

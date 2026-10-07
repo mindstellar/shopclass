@@ -12,6 +12,7 @@ namespace mindstellar\search;
 
 use mindstellar\base\Model;
 use mindstellar\database\Connection;
+use mindstellar\database\Db;
 use mindstellar\database\DbException;
 use mindstellar\database\QueryBuilder;
 
@@ -217,7 +218,7 @@ final class AlertStore extends Model
             $conn                 = Connection::getInstance();
             $out['rows']          = (int)$conn->scalar('SELECT COUNT(*) FROM ' . self::tableName());
             $out['total_results'] = (int)$conn->scalar('SELECT COUNT(*) FROM ' . self::tableName() . $where, $params);
-            $out['alerts']        = osc_db_stringify_rows($conn->select(
+            $out['alerts']        = Db::stringifyRows($conn->select(
                 'SELECT * FROM ' . self::tableName() . $where . ' ORDER BY ' . $orderColumn . ' ' . $direction
                 . ', pk_i_id ' . $direction . ' LIMIT ' . max(0, $start) . ', ' . max(1, $limit),
                 $params

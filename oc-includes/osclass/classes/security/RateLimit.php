@@ -11,6 +11,7 @@
 namespace mindstellar\security;
 
 use mindstellar\base\Model;
+use mindstellar\database\Db;
 
 /**
  * A rate limit on any key: an API key, an account, a token. ActionThrottle limits by
@@ -70,10 +71,10 @@ final class RateLimit extends Model
 
         try {
             try {
-                $count = osc_db_insert_id($sql, $params);
+                $count = Db::insertGetId($sql, $params);
             } catch (\Throwable $e) {
                 // A burst on one key can deadlock its own row; one retry settles that.
-                $count = osc_db_insert_id($sql, $params);
+                $count = Db::insertGetId($sql, $params);
             }
         } catch (\Throwable $e) {
             FailOpen::log('RateLimit', 'the request', $e, $failOpen);
@@ -98,7 +99,7 @@ final class RateLimit extends Model
         $windowSeconds = max(1, $windowSeconds);
         $now           = time();
         try {
-            return (int) osc_db_scalar(
+            return (int) Db::scalar(
                 'SELECT i_count FROM ' . self::tableName() . ' WHERE s_bucket = ? AND i_window = ?',
                 array(self::bucket($context, $key, $windowSeconds), $now - ($now % $windowSeconds))
             );
@@ -131,7 +132,7 @@ final class RateLimit extends Model
             return $counts;
         }
         try {
-            $rows = osc_db_select(
+            $rows = Db::select(
                 'SELECT s_bucket, i_count FROM ' . self::tableName() . ' WHERE i_window = ? AND s_bucket IN ('
                 . implode(', ', array_fill(0, count($buckets), '?')) . ')',
                 array_merge(array($now - ($now % $windowSeconds)), array_keys($buckets))
@@ -176,7 +177,7 @@ final class RateLimit extends Model
         $removed = 0;
         try {
             for ($round = 0; $round < $maxRounds; $round++) {
-                $rows     = (int) osc_db_execute($sql, array(time()));
+                $rows     = (int) Db::execute($sql, array(time()));
                 $removed += $rows;
                 if ($rows < $batch) {
                     break;

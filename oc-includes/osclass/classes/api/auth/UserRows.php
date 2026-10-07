@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\api\auth;
 
+use mindstellar\database\Db;
+
 /**
  * User rows as the API reads them, each loaded once per request: checking an access token,
  * taking on the user's identity and the account endpoints share the same row.
@@ -60,6 +62,6 @@ final class UserRows
     {
         $row = \mindstellar\user\UserStore::find($id);
 
-        return $row === null ? null : osc_db_stringify_row($row);
+        return $row === null ? null : Db::stringifyRow($row);
     }
 }

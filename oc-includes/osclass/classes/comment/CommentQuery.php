@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\comment;
 
+use mindstellar\database\Db;
 use mindstellar\database\QueryBuilder;
 
 /**
@@ -27,7 +28,7 @@ final class CommentQuery
     {
         $row = $this->table()->where('pk_i_id', $id)->first();
 
-        return $row === null ? null : osc_db_stringify_row($row);
+        return $row === null ? null : Db::stringifyRow($row);
     }
 
     /**
@@ -37,7 +38,7 @@ final class CommentQuery
      */
     public function approved(int $listingId, int $afterId, int $limit): array
     {
-        return osc_db_stringify_rows($this->approvedQuery($listingId)->where('pk_i_id', '>', $afterId)->orderBy('pk_i_id')->limit($limit)->get());
+        return Db::stringifyRows($this->approvedQuery($listingId)->where('pk_i_id', '>', $afterId)->orderBy('pk_i_id')->limit($limit)->get());
     }
 
     public function countApproved(int $listingId): int
@@ -54,7 +55,7 @@ final class CommentQuery
      */
     public function newest(array $statuses, ?int $listingId, ?int $userId, ?int $beforeId, int $limit): array
     {
-        return osc_db_stringify_rows($this->filtered($statuses, $listingId, $userId)->newestBefore($beforeId, $limit));
+        return Db::stringifyRows($this->filtered($statuses, $listingId, $userId)->newestBefore($beforeId, $limit));
     }
 
     /**
@@ -88,6 +89,6 @@ final class CommentQuery
 
     private function table(): QueryBuilder
     {
-        return osc_db_table(DB_TABLE_PREFIX . 't_item_comment');
+        return Db::table(DB_TABLE_PREFIX . 't_item_comment');
     }
 }

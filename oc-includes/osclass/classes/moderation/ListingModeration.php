@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\moderation;
 
+use mindstellar\database\Db;
 use mindstellar\listing\ListingService;
 use mindstellar\listing\ListingStore;
 use mindstellar\utility\Clock;
@@ -70,7 +71,7 @@ final class ListingModeration
         if ($row === null) {
             throw new NotFoundException(_m('No such listing.'));
         }
-        $row     = osc_db_stringify_row($row);
+        $row     = Db::stringifyRow($row);
         $at      = date('Y-m-d H:i:s', $this->clock->now());
         $changed = (bool) DeferredMail::transaction(static function () use ($action, $id, $row, $at): bool {
             $result = self::change($action, $id, $row, new ListingService(), $at);

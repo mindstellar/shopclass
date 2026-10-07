@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\pages;
 
+use mindstellar\database\Db;
+
 /**
  * Static page reads for the page editor and the media library. The legacy Page model keeps
  * its own methods.
@@ -25,7 +27,7 @@ final class PageQuery
      */
     public static function maxOrder(): ?int
     {
-        $order = osc_db_scalar('SELECT MAX(i_order) AS o FROM ' . DB_TABLE_PREFIX . 't_pages');
+        $order = Db::scalar('SELECT MAX(i_order) AS o FROM ' . DB_TABLE_PREFIX . 't_pages');
 
         return $order === null ? null : (int) $order;
     }
@@ -40,7 +42,7 @@ final class PageQuery
     {
         return array_map(
             static fn (array $row): string => (string) $row['s_internal_name'],
-            osc_db_table(DB_TABLE_PREFIX . 't_pages')->select('s_internal_name')->like('s_internal_name', $prefix, 'after')->get()
+            Db::table(DB_TABLE_PREFIX . 't_pages')->select('s_internal_name')->like('s_internal_name', $prefix, 'after')->get()
         );
     }
 }

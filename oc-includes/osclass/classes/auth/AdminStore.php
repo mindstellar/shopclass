@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\auth;
 
 use mindstellar\base\Model;
+use mindstellar\database\Db;
 
 /**
  * Reads and writes on t_admin for the sign-in, password, two-step and API key code.
@@ -59,7 +60,7 @@ final class AdminStore extends Model
      */
     public static function keyOwner(int|string $who, bool $byId): ?array
     {
-        return osc_db_select_one(
+        return Db::selectOne(
             'SELECT pk_i_id, s_username, b_moderator FROM ' . self::tableName() . ' WHERE ' . ($byId ? 'pk_i_id' : 's_username') . ' = ?',
             [$who]
         );
@@ -84,7 +85,7 @@ final class AdminStore extends Model
      */
     public static function stampRow(int $id): ?array
     {
-        return osc_db_select_one('SELECT ' . AuthStamp::COLUMN . ' FROM ' . self::tableName() . ' WHERE pk_i_id = ?', [$id]);
+        return Db::selectOne('SELECT ' . AuthStamp::COLUMN . ' FROM ' . self::tableName() . ' WHERE pk_i_id = ?', [$id]);
     }
 
     /**
@@ -100,7 +101,7 @@ final class AdminStore extends Model
         if ($ids === []) {
             return [];
         }
-        $rows = osc_db_select(
+        $rows = Db::select(
             'SELECT pk_i_id, s_username FROM ' . self::tableName() . ' WHERE pk_i_id IN (' . implode(',', array_fill(0, count($ids), '?')) . ')',
             $ids
         );
@@ -120,7 +121,7 @@ final class AdminStore extends Model
      */
     public static function listing(bool $withTwoFactor): array
     {
-        return osc_db_select(
+        return Db::select(
             'SELECT pk_i_id, s_name, s_username, b_moderator' . ($withTwoFactor ? ', s_2fa' : '') . ' FROM ' . self::tableName() . ' ORDER BY pk_i_id'
         );
     }
@@ -131,7 +132,7 @@ final class AdminStore extends Model
      */
     public static function twoFactorRow(int $id): ?array
     {
-        return osc_db_select_one('SELECT s_2fa FROM ' . self::tableName() . ' WHERE pk_i_id = ?', [$id]);
+        return Db::selectOne('SELECT s_2fa FROM ' . self::tableName() . ' WHERE pk_i_id = ?', [$id]);
     }
 
     /**
@@ -139,7 +140,7 @@ final class AdminStore extends Model
      */
     public static function setTwoFactor(int $id, ?string $value): void
     {
-        osc_db_execute('UPDATE ' . self::tableName() . ' SET s_2fa = ? WHERE pk_i_id = ?', [$value, $id]);
+        Db::execute('UPDATE ' . self::tableName() . ' SET s_2fa = ? WHERE pk_i_id = ?', [$value, $id]);
     }
 
     /**
@@ -150,7 +151,7 @@ final class AdminStore extends Model
      */
     public static function swapTwoFactor(int $id, string $value, ?string $expected): int
     {
-        return osc_db_execute('UPDATE ' . self::tableName() . ' SET s_2fa = ? WHERE pk_i_id = ? AND s_2fa = ?', [$value, $id, $expected]);
+        return Db::execute('UPDATE ' . self::tableName() . ' SET s_2fa = ? WHERE pk_i_id = ? AND s_2fa = ?', [$value, $id, $expected]);
     }
 
 }

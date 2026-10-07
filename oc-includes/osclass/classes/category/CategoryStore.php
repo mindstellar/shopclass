@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\category;
 
 use mindstellar\base\Model;
+use mindstellar\database\Db;
 
 /**
  * Small t_category and t_category_stats reads and writes for the category services. The
@@ -92,7 +93,7 @@ final class CategoryStore extends Model
             $params[] = (int) $categoryId;
             $params[] = (int) $total;
         }
-        osc_db_execute(
+        Db::execute(
             'REPLACE INTO ' . DB_TABLE_PREFIX . 't_category_stats (fk_i_category_id, i_num_items) VALUES '
             . implode(', ', array_fill(0, count($totals), '(?, ?)')),
             $params
@@ -106,7 +107,7 @@ final class CategoryStore extends Model
      */
     public static function idForOldSlug(string $slug): ?int
     {
-        $id = osc_db_scalar(
+        $id = Db::scalar(
             'SELECT fk_i_category_id FROM ' . DB_TABLE_PREFIX . 't_category_slug_history WHERE s_slug = ? ORDER BY dt_date DESC LIMIT 1',
             array($slug)
         );
@@ -124,7 +125,7 @@ final class CategoryStore extends Model
     {
         return array_map(
             static fn (array $row): string => (string) $row['s_slug'],
-            osc_db_table(DB_TABLE_PREFIX . 't_category_description')->select('s_slug')->like('s_slug', $prefix, 'after')->get()
+            Db::table(DB_TABLE_PREFIX . 't_category_description')->select('s_slug')->like('s_slug', $prefix, 'after')->get()
         );
     }
 }

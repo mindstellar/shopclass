@@ -9,7 +9,7 @@
  */
 
 /**
- * Table SQL lives with the table's owner. osc_db_table(), a table name built from
+ * Table SQL lives with the table's owner. osc_db_table() or Db::table(), a table name built from
  * DB_TABLE_PREFIX, or a t_ table literal joined into SQL may appear only in:
  * classes/model/**, a *Store.php or *Query.php file, a class extending DAO or
  * mindstellar\base\Model, the DB layer (classes/database/**), and the installer and
@@ -52,8 +52,8 @@ function allowed_entry(string $rel): ?array
     return null;
 }
 
-/** A call of osc_db_table(), not its definition. */
-const P_BUILDER = '/(?<!function )\bosc_db_table\s*\(/';
+/** A call of osc_db_table() or Db::table(), not its definition. */
+const P_BUILDER = '/(?<!function )(?:\bosc_db_table|\bDb::table)\s*\(/';
 /** A table name built on the prefix, a t_ literal joined into SQL, or an interpolated prefix. */
 const P_TABLE = '/DB_TABLE_PREFIX\s*\.|\.\s*[\'"]t_[a-z]|%st_[a-z]|\{\$\w+\}t_[a-z]/';
 
@@ -84,7 +84,7 @@ function table_owner(string $rel, string $code): bool
             return true;
         }
     }
-    if ($rel === 'oc-includes/osclass/install-functions.php' || $rel === 'oc-includes/osclass/classes/base/Model.php') {
+    if (in_array($rel, array('oc-includes/osclass/install-functions.php', 'oc-includes/osclass/classes/base/Model.php', 'oc-includes/osclass/helpers/hDatabase.php'), true)) {
         return true;
     }
     if (preg_match('/(Store|Query)\.php$/', $rel) === 1) {
@@ -116,7 +116,7 @@ function raw_access(string $code): array
 
 harness_section('The patterns');
 
-check('catches a builder call', raw_access("<?php osc_db_table(\$t);") !== array());
+check('catches a builder call', raw_access("<?php osc_db_table(\$t);") !== array() && raw_access("<?php Db::table(\$t);") !== array());
 check('ignores the helper definition', raw_access("<?php function osc_db_table(string \$t) {}") === array());
 check('catches a prefixed name', raw_access("<?php \$t = DB_TABLE_PREFIX . 't_item';") !== array());
 check('catches a prefix ending a line', raw_access("<?php \$s = 'FROM ' . DB_TABLE_PREFIX\n . 't_item';") !== array());

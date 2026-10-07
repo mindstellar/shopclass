@@ -12,6 +12,7 @@
 namespace mindstellar\admin\form;
 
 use mindstellar\auth\AdminStore;
+use mindstellar\database\Db;
 
 /**
  * The administrator account screen, declared once: its fields, the row of t_admin they
@@ -234,7 +235,7 @@ final class AdminAccountForm
 
         $row = AdminStore::find($id);
 
-        return $row === null ? array() : osc_db_stringify_row($row);
+        return $row === null ? array() : Db::stringifyRow($row);
     }
 
     /**

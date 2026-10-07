@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Model database for ItemResource table
  *
@@ -77,12 +79,12 @@ class ItemResource extends DAO
             . ' INNER JOIN ' . $this->getTableItemName() . ' c ON c.pk_i_id = r.fk_i_item_id';
 
         try {
-            $rows = osc_db_select($sql);
+            $rows = Db::select($sql);
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -111,7 +113,7 @@ class ItemResource extends DAO
         $cache = osc_cache_get($key, $found);
         if ($cache === false) {
             try {
-                $rows = osc_db_table($this->getTableName())
+                $rows = Db::table($this->getTableName())
                     ->where('fk_i_item_id', (int)$itemId)
                     ->get();
             } catch (\mindstellar\database\DbException $e) {
@@ -119,7 +121,7 @@ class ItemResource extends DAO
                 return array();
             }
 
-            $return = osc_db_stringify_rows($rows);
+            $return = Db::stringifyRows($rows);
             osc_cache_set($key, $return, OSC_CACHE_TTL);
 
             return $return;
@@ -150,8 +152,8 @@ class ItemResource extends DAO
         }
 
         try {
-            $rows = osc_db_stringify_rows(
-                osc_db_table($this->getTableName())
+            $rows = Db::stringifyRows(
+                Db::table($this->getTableName())
                     ->whereIn('fk_i_item_id', $itemIds)
                     ->get()
             );
@@ -182,7 +184,7 @@ class ItemResource extends DAO
     public function getResource($itemId)
     {
         try {
-            $row = osc_db_table($this->getTableName())
+            $row = Db::table($this->getTableName())
                 ->select(...$this->getFields())
                 ->where('fk_i_item_id', $itemId)
                 ->first();
@@ -194,7 +196,7 @@ class ItemResource extends DAO
             return array();
         }
 
-        return osc_db_stringify_row($row);
+        return Db::stringifyRow($row);
     }
 
     /**
@@ -230,7 +232,7 @@ class ItemResource extends DAO
         }
 
         try {
-            $count = osc_db_table($this->getTableName())
+            $count = Db::table($this->getTableName())
                 ->where('pk_i_id', $resourceId)
                 ->where('s_name', $code)
                 ->count();
@@ -253,7 +255,7 @@ class ItemResource extends DAO
     public function countResources($itemId = null)
     {
         try {
-            $query = osc_db_table($this->getTableName());
+            $query = Db::table($this->getTableName());
             if (null !== $itemId && is_numeric($itemId)) {
                 $query = $query->where('fk_i_item_id', $itemId);
             }
@@ -326,12 +328,12 @@ class ItemResource extends DAO
         }
 
         try {
-            $rows = osc_db_select($sql, $params);
+            $rows = Db::select($sql, $params);
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -353,7 +355,7 @@ class ItemResource extends DAO
         }
 
         try {
-            $query = osc_db_table($this->getTableName())
+            $query = Db::table($this->getTableName())
                 ->select('pk_i_id')
                 ->orderBy('pk_i_id', 'ASC');
             // Legacy compiled "LIMIT <offset>, <limit>": the first argument is the
@@ -389,7 +391,7 @@ class ItemResource extends DAO
         }
 
         try {
-            $query = osc_db_table($this->getTableName())
+            $query = Db::table($this->getTableName())
                 ->select(...$this->getFields())
                 ->where('s_storage', $storage)
                 ->orderBy('pk_i_id', 'ASC');
@@ -401,7 +403,7 @@ class ItemResource extends DAO
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -422,7 +424,7 @@ class ItemResource extends DAO
         }
 
         try {
-            return osc_db_table($this->getTableName())
+            return Db::table($this->getTableName())
                 ->whereIn('pk_i_id', $values)
                 ->delete();
         } catch (\mindstellar\database\DbException $e) {

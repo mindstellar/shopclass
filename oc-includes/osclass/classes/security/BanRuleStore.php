@@ -14,6 +14,7 @@ namespace mindstellar\security;
 
 use mindstellar\base\Model;
 use mindstellar\cache\CacheGroup;
+use mindstellar\database\Db;
 
 /**
  * t_ban_rule reads and writes for the ban list and the report bans. The legacy BanRule
@@ -52,7 +53,7 @@ final class BanRuleStore extends Model
      */
     public static function all(): array
     {
-        return osc_db_select('SELECT * FROM ' . self::tableName());
+        return Db::select('SELECT * FROM ' . self::tableName());
     }
 
     /**
@@ -62,7 +63,7 @@ final class BanRuleStore extends Model
      */
     public static function activeId(string $pattern, string $scope, string $now): ?int
     {
-        $row = osc_db_select_one(
+        $row = Db::selectOne(
             'SELECT pk_i_id FROM ' . self::tableName() . ' WHERE s_email = ? AND s_scope = ?'
             . ' AND (dt_expires IS NULL OR dt_expires > ?)',
             array($pattern, $scope, $now)
@@ -76,7 +77,7 @@ final class BanRuleStore extends Model
      */
     public static function setExpiry(int $id, ?string $expires): void
     {
-        osc_db_execute('UPDATE ' . self::tableName() . ' SET dt_expires = ? WHERE pk_i_id = ?', array($expires, $id));
+        Db::execute('UPDATE ' . self::tableName() . ' SET dt_expires = ? WHERE pk_i_id = ?', array($expires, $id));
         self::forget();
     }
 
@@ -85,7 +86,7 @@ final class BanRuleStore extends Model
      */
     public static function add(string $name, string $ip, string $email, string $scope, ?string $expires): void
     {
-        osc_db_execute(
+        Db::execute(
             'INSERT INTO ' . self::tableName() . ' (s_name, s_ip, s_email, s_scope, dt_expires) VALUES (?, ?, ?, ?, ?)',
             array($name, $ip, $email, $scope, $expires)
         );
@@ -99,7 +100,7 @@ final class BanRuleStore extends Model
      */
     public static function purgeExpired(string $now): void
     {
-        if (osc_db_execute('DELETE FROM ' . self::tableName() . ' WHERE dt_expires IS NOT NULL AND dt_expires <= ?', array($now)) > 0) {
+        if (Db::execute('DELETE FROM ' . self::tableName() . ' WHERE dt_expires IS NOT NULL AND dt_expires <= ?', array($now)) > 0) {
             self::forget();
         }
     }

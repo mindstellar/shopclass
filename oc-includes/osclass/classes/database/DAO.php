@@ -18,6 +18,8 @@ define('DB_CONST_FALSE', 'FALSE');
 define('DB_CONST_NULL', 'NULL');
 define('DB_CUSTOM_COND', 'DB_CUSTOM_COND');
 
+use mindstellar\database\Db;
+
 /**
  * DAO base model
  *
@@ -457,7 +459,7 @@ class DAO
         $placeholders = implode(', ', array_fill(0, count($columns), '?'));
 
         try {
-            $id = osc_db_insert_id(
+            $id = Db::insertGetId(
                 'INSERT INTO ' . $this->getTableName() . ' (' . implode(', ', $columns) . ')'
                 . ' VALUES (' . $placeholders . ')',
                 array_values($values)
@@ -517,7 +519,7 @@ class DAO
     public function count()
     {
         try {
-            $total = osc_db_scalar('SELECT COUNT(*) FROM ' . $this->getTableName());
+            $total = Db::scalar('SELECT COUNT(*) FROM ' . $this->getTableName());
             $this->clearError();
         } catch (\mindstellar\database\DbException $e) {
             $this->recordError($e);
@@ -540,8 +542,8 @@ class DAO
     protected function pagedCounts(string $where, array $params = array()): ?array
     {
         try {
-            $total = osc_db_count($this->getTableName(), $where, $params);
-            $rows  = osc_db_count($this->getTableName());
+            $total = Db::count($this->getTableName(), $where, $params);
+            $rows  = Db::count($this->getTableName());
         } catch (\mindstellar\database\DbException $e) {
             return null;
         }
@@ -597,7 +599,7 @@ class DAO
     private function fetch($sql, array $params = array())
     {
         try {
-            $rows = osc_db_select($sql, $params);
+            $rows = Db::select($sql, $params);
             $this->clearError();
         } catch (\mindstellar\database\DbException $e) {
             $this->recordError($e);
@@ -605,7 +607,7 @@ class DAO
             return false;
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -619,7 +621,7 @@ class DAO
     private function write($sql, array $params = array())
     {
         try {
-            $affected = osc_db_execute($sql, $params);
+            $affected = Db::execute($sql, $params);
             $this->clearError();
             $this->cacheChanged();
         } catch (\mindstellar\database\DbException $e) {

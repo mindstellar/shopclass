@@ -13,6 +13,7 @@ namespace mindstellar\billing;
 
 use InvalidArgumentException;
 use mindstellar\base\Model;
+use mindstellar\database\Db;
 use mindstellar\database\DbException;
 use mindstellar\database\QueryBuilder;
 
@@ -432,7 +433,7 @@ final class OrderStore extends Model
      */
     public static function knownGateways(): array
     {
-        $rows = osc_db_select(
+        $rows = Db::select(
             'SELECT DISTINCT s_gateway FROM ' . self::tableName() . ' ORDER BY s_gateway ASC'
         );
 
@@ -487,7 +488,7 @@ final class OrderStore extends Model
      */
     public static function ledgerRows(int $orderId): array
     {
-        return osc_db_table(DB_TABLE_PREFIX . 't_billing_ledger')
+        return Db::table(DB_TABLE_PREFIX . 't_billing_ledger')
             ->where('s_ref_type', 'order')
             ->where('i_ref_id', $orderId)
             ->orderBy('pk_i_id', 'ASC')

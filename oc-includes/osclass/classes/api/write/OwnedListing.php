@@ -14,6 +14,7 @@ namespace mindstellar\api\write;
 
 use mindstellar\api\ProblemException;
 use mindstellar\apiaccess\Credential;
+use mindstellar\database\Db;
 use mindstellar\listing\ListingPolicy;
 
 /**
@@ -61,7 +62,7 @@ final class OwnedListing
     public static function load(int $id, bool $withTexts = false): self
     {
         try {
-            $rows = osc_db_stringify_rows((new \mindstellar\listing\ListingQuery())->editRows($id, $withTexts));
+            $rows = Db::stringifyRows((new \mindstellar\listing\ListingQuery())->editRows($id, $withTexts));
         } catch (\mindstellar\database\DbException $e) {
             throw ProblemException::of('server_error', 'The listing could not be read.');
         }

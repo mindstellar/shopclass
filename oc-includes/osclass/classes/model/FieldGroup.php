@@ -9,6 +9,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Model database for the field-group table (t_meta_group).
  *
@@ -76,12 +78,12 @@ class FieldGroup extends DAO
     {
         return \mindstellar\cache\CacheGroup::remember('field_group', 'id:' . (int)$id, function () use ($id) {
             try {
-                $row = osc_db_table($this->getTableName())->where('pk_i_id', $id)->first();
+                $row = Db::table($this->getTableName())->where('pk_i_id', $id)->first();
             } catch (\mindstellar\database\DbException $e) {
                 return null;
             }
 
-            return $row === null ? array() : osc_db_stringify_row($row);
+            return $row === null ? array() : Db::stringifyRow($row);
         }) ?? array();
     }
 
@@ -95,7 +97,7 @@ class FieldGroup extends DAO
     public function findBySlug($slug)
     {
         try {
-            $row = osc_db_table($this->getTableName())->where('s_slug', $slug)->first();
+            $row = Db::table($this->getTableName())->where('s_slug', $slug)->first();
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
@@ -103,7 +105,7 @@ class FieldGroup extends DAO
             return array();
         }
 
-        return osc_db_stringify_row($row);
+        return Db::stringifyRow($row);
     }
 
     /**
@@ -114,12 +116,12 @@ class FieldGroup extends DAO
     public function listAll()
     {
         try {
-            $rows = osc_db_table($this->getTableName())->orderBy('i_position', 'ASC')->get();
+            $rows = Db::table($this->getTableName())->orderBy('i_position', 'ASC')->get();
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -136,7 +138,7 @@ class FieldGroup extends DAO
         try {
             $slug = $this->uniqueSlug($slug !== '' ? $slug : $name);
             try {
-                $id = osc_db_table($this->getTableName())->insert(array(
+                $id = Db::table($this->getTableName())->insert(array(
                     's_name'     => $name,
                     's_slug'     => $slug,
                     'i_position' => (int)$position,
@@ -198,22 +200,22 @@ class FieldGroup extends DAO
             osc_run_hook('before_delete_field_group', $id);
 
             try {
-                $deleted = osc_db_transaction(function () use ($id) {
+                $deleted = Db::transaction(function () use ($id) {
                     foreach (array('t_meta_group_categories', 't_meta_group_fields') as $table) {
-                        osc_db_table(DB_TABLE_PREFIX . $table)->where('fk_i_group_id', $id)->delete();
+                        Db::table(DB_TABLE_PREFIX . $table)->where('fk_i_group_id', $id)->delete();
                     }
 
                     // The foreign keys cascade submissions and loosen fields too; both
                     // stay here for installs whose foreign keys were never created.
-                    osc_db_table(DB_TABLE_PREFIX . 't_form_submission')
+                    Db::table(DB_TABLE_PREFIX . 't_form_submission')
                         ->where('fk_i_group_id', $id)
                         ->delete();
 
-                    osc_db_table(DB_TABLE_PREFIX . 't_meta_fields')
+                    Db::table(DB_TABLE_PREFIX . 't_meta_fields')
                         ->where('fk_i_group_id', $id)
                         ->update(array('fk_i_group_id' => null));
 
-                    return osc_db_table($this->getTableName())->where('pk_i_id', $id)->delete();
+                    return Db::table($this->getTableName())->where('pk_i_id', $id)->delete();
                 });
             } catch (\Throwable $e) {
                 return false;
@@ -253,7 +255,7 @@ class FieldGroup extends DAO
             }
 
             try {
-                return osc_db_table($this->getTableName())
+                return Db::table($this->getTableName())
                     ->where('pk_i_id', (int)$id)
                     ->update(array('s_meta' => empty($meta) ? null : json_encode($meta)));
             } catch (\mindstellar\database\DbException $e) {
@@ -284,7 +286,7 @@ class FieldGroup extends DAO
             // rejects has always left the field detached without raising. Each keeps
             // its own swallowed catch so that stays true.
             try {
-                osc_db_table($link)->where('fk_i_field_id', (int)$fieldId)->delete();
+                Db::table($link)->where('fk_i_field_id', (int)$fieldId)->delete();
             } catch (\mindstellar\database\DbException $e) {
                 // discarded, as before
             }
@@ -292,7 +294,7 @@ class FieldGroup extends DAO
                 try {
                     // $link is built from the DB_TABLE_PREFIX constant and a literal
                     // suffix; the only caller-supplied value is bound.
-                    $pos = (int)osc_db_scalar(
+                    $pos = (int)Db::scalar(
                         'SELECT COALESCE(MAX(i_position), -1) + 1 AS pos FROM ' . $link
                         . ' WHERE fk_i_group_id = ?',
                         array((int)$groupId)
@@ -301,7 +303,7 @@ class FieldGroup extends DAO
                     $pos = 0;
                 }
                 try {
-                    osc_db_table($link)->insert(array(
+                    Db::table($link)->insert(array(
                         'fk_i_group_id' => (int)$groupId,
                         'fk_i_field_id' => (int)$fieldId,
                         'i_position'    => $pos,
@@ -325,7 +327,7 @@ class FieldGroup extends DAO
     public function categories($id)
     {
         try {
-            $rows = osc_db_table(sprintf('%st_meta_group_categories', DB_TABLE_PREFIX))
+            $rows = Db::table(sprintf('%st_meta_group_categories', DB_TABLE_PREFIX))
                 ->select('fk_i_category_id')
                 ->where('fk_i_group_id', $id)
                 ->get();
@@ -362,7 +364,7 @@ class FieldGroup extends DAO
                 // been folded into the return value while the remaining ids were
                 // still written, so the catch stays inside the loop.
                 try {
-                    osc_db_table(sprintf('%st_meta_group_categories', DB_TABLE_PREFIX))->insert(
+                    Db::table(sprintf('%st_meta_group_categories', DB_TABLE_PREFIX))->insert(
                         array('fk_i_group_id' => $id, 'fk_i_category_id' => (int)$c)
                     );
                 } catch (\mindstellar\database\DbException $e) {
@@ -393,7 +395,7 @@ class FieldGroup extends DAO
             }
 
             try {
-                return osc_db_table(sprintf('%st_meta_group_categories', DB_TABLE_PREFIX))
+                return Db::table(sprintf('%st_meta_group_categories', DB_TABLE_PREFIX))
                     ->where('fk_i_group_id', $id)
                     ->delete();
             } catch (\mindstellar\database\DbException $e) {
@@ -437,13 +439,13 @@ class FieldGroup extends DAO
             . ' ORDER BY g.i_position ASC';
 
         try {
-            $rows = osc_db_select($sql, $path);
+            $rows = Db::select($sql, $path);
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
         $groups = array();
-        foreach (osc_db_stringify_rows($rows) as $group) {
+        foreach (Db::stringifyRows($rows) as $group) {
             $fields = Field::getInstance()->findByGroup($group['pk_i_id']);
             if (empty($fields)) {
                 continue;

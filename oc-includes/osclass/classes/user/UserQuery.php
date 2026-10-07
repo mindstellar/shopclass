@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\user;
 
+use mindstellar\database\Db;
 use mindstellar\database\QueryBuilder;
 
 /**
@@ -44,7 +45,7 @@ final class UserQuery
     {
         $row = $this->table()->select('pk_i_id', 'b_enabled', 'b_active')->where('pk_i_id', $id)->first();
 
-        return $row === null ? null : osc_db_stringify_row($row);
+        return $row === null ? null : Db::stringifyRow($row);
     }
 
     /**
@@ -58,7 +59,7 @@ final class UserQuery
      */
     public function newest(?bool $active, ?bool $enabled, string $prefix, ?int $beforeId, int $limit): array
     {
-        return osc_db_stringify_rows($this->filtered($active, $enabled, $prefix)->newestBefore($beforeId, $limit));
+        return Db::stringifyRows($this->filtered($active, $enabled, $prefix)->newestBefore($beforeId, $limit));
     }
 
     public function count(?bool $active, ?bool $enabled, string $prefix): int
@@ -84,6 +85,6 @@ final class UserQuery
 
     private function table(): QueryBuilder
     {
-        return osc_db_table(DB_TABLE_PREFIX . 't_user');
+        return Db::table(DB_TABLE_PREFIX . 't_user');
     }
 }

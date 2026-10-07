@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\model;
 
 use mindstellar\base\Model;
+use mindstellar\database\Db;
 use mindstellar\database\UtcDatetime;
 
 /**
@@ -119,7 +120,7 @@ final class KeyValue extends Model
         self::check($group, $key, $state, $value);
         $now     = self::datetime($now ?? time());
         $expires = $expiresAt === null ? null : self::datetime($expiresAt);
-        osc_db_execute(
+        Db::execute(
             'INSERT INTO ' . DB_TABLE_PREFIX . self::TABLE . ' (s_group, s_key, s_value, s_state, dt_created, dt_updated, dt_expires)'
             . ' VALUES (?, ?, ?, ?, ?, NULL, ?)'
             . ' ON DUPLICATE KEY UPDATE s_value = ?, s_state = ?, dt_updated = ?, dt_expires = ?',
@@ -246,7 +247,7 @@ final class KeyValue extends Model
         $table   = DB_TABLE_PREFIX . self::TABLE;
 
         // A clash updates nothing, so it reports 0 rows and an insert reports 1.
-        $inserted = osc_db_execute(
+        $inserted = Db::execute(
             'INSERT INTO ' . $table . ' (s_group, s_key, s_value, s_state, dt_created, dt_updated, dt_expires)'
             . ' VALUES (?, ?, ?, ?, ?, NULL, ?) ON DUPLICATE KEY UPDATE s_group = s_group',
             [$group, $key, $value, $state, $created, $expires]
@@ -265,7 +266,7 @@ final class KeyValue extends Model
             $params[] = self::datetime($staleBefore);
         }
 
-        return osc_db_execute($sql . ')', $params) === 1;
+        return Db::execute($sql . ')', $params) === 1;
     }
 
     /**
@@ -283,7 +284,7 @@ final class KeyValue extends Model
         $now = self::datetime($now ?? time());
         $removed = 0;
         for ($round = 0; $round < $maxRounds; $round++) {
-            $rows     = osc_db_execute($sql, [$now]);
+            $rows     = Db::execute($sql, [$now]);
             $removed += $rows;
             if ($rows < $batch) {
                 break;

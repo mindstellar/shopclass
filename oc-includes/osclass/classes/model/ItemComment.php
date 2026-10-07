@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Model database for ItemComment table
  *
@@ -85,14 +87,14 @@ class ItemComment extends DAO
     public function findByItemIDAll($id)
     {
         try {
-            $rows = osc_db_table($this->getTableName())
+            $rows = Db::table($this->getTableName())
                 ->where('fk_i_item_id', $id)
                 ->get();
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -117,7 +119,7 @@ class ItemComment extends DAO
             $commentsPerPage = osc_comments_per_page();
         }
 
-        $query = osc_db_table($this->getTableName())
+        $query = Db::table($this->getTableName())
             ->where('fk_i_item_id', $id)
             ->where('b_active', 1)
             ->where('b_enabled', 1);
@@ -136,7 +138,7 @@ class ItemComment extends DAO
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -180,7 +182,7 @@ class ItemComment extends DAO
             . ' WHERE fk_i_item_id = ? AND b_active = ? AND b_enabled = ? GROUP BY fk_i_item_id';
 
         try {
-            $row = osc_db_select_one($sql, array($id, 1, 1));
+            $row = Db::selectOne($sql, array($id, 1, 1));
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
@@ -202,7 +204,7 @@ class ItemComment extends DAO
     public function findByAuthorID($id)
     {
         try {
-            $rows = osc_db_table($this->getTableName())
+            $rows = Db::table($this->getTableName())
                 ->where('fk_i_user_id', $id)
                 ->where('b_active', 1)
                 ->where('b_enabled', 1)
@@ -211,7 +213,7 @@ class ItemComment extends DAO
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -242,12 +244,12 @@ class ItemComment extends DAO
         $sql .= ' ORDER BY c.dt_pub_date DESC';
 
         try {
-            $comments = osc_db_select($sql, $params);
+            $comments = Db::select($sql, $params);
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return $this->extendData(osc_db_stringify_rows($comments));
+        return $this->extendData(Db::stringifyRows($comments));
     }
 
     /**
@@ -276,8 +278,8 @@ class ItemComment extends DAO
         }
 
         try {
-            $descriptions = osc_db_stringify_rows(
-                osc_db_table(DB_TABLE_PREFIX . 't_item_description')
+            $descriptions = Db::stringifyRows(
+                Db::table(DB_TABLE_PREFIX . 't_item_description')
                     ->whereIn('fk_i_item_id', array_keys($itemIds))
                     ->get()
             );
@@ -341,12 +343,12 @@ class ItemComment extends DAO
             . ' LIMIT ' . (int)$num;
 
         try {
-            $rows = osc_db_select($sql);
+            $rows = Db::select($sql);
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -419,12 +421,12 @@ class ItemComment extends DAO
         }
 
         try {
-            $rows = osc_db_select($sql, $params);
+            $rows = Db::select($sql, $params);
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -449,7 +451,7 @@ class ItemComment extends DAO
         }
 
         try {
-            $row = osc_db_select_one($sql, $params);
+            $row = Db::selectOne($sql, $params);
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
@@ -483,7 +485,7 @@ class ItemComment extends DAO
         $sql .= self::searchClause($term, $params);
 
         try {
-            $row = osc_db_select_one($sql, $params);
+            $row = Db::selectOne($sql, $params);
         } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
@@ -565,7 +567,7 @@ class ItemComment extends DAO
         }
 
         try {
-            $row = osc_db_select_one($sql, $params);
+            $row = Db::selectOne($sql, $params);
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }

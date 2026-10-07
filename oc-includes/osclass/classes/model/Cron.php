@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Class Cron
  */
@@ -64,7 +66,7 @@ class Cron extends DAO
      */
     public function getCronByType($type)
     {
-        $row = osc_db_table($this->getTableName())
+        $row = Db::table($this->getTableName())
             ->where('e_type', $type)
             ->first();
 
@@ -72,7 +74,7 @@ class Cron extends DAO
             return false;
         }
 
-        return osc_db_stringify_row($row);
+        return Db::stringifyRow($row);
     }
 
     /**
@@ -88,7 +90,7 @@ class Cron extends DAO
      */
     public function claim(string $type, string $seenNext, string $lastExec, string $nextExec): bool
     {
-        $q = osc_db_table($this->getTableName())->where('e_type', $type)->where('d_next_exec', $seenNext);
+        $q = Db::table($this->getTableName())->where('e_type', $type)->where('d_next_exec', $seenNext);
 
         try {
             return $q->update(array('d_last_exec' => $lastExec, 'd_next_exec' => $nextExec)) === 1;

@@ -83,6 +83,119 @@ class Db
     }
 
     /**
+     * Run a parameterized SELECT and return every row.
+     *
+     * @param array<int,mixed> $params
+     *
+     * @return array<int,array<string,mixed>>
+     * @throws DbException
+     */
+    public static function select(string $sql, array $params = []): array
+    {
+        return Connection::getInstance()->select($sql, $params);
+    }
+
+    /**
+     * Run a parameterized SELECT and return the first row, or null.
+     *
+     * @param array<int,mixed> $params
+     *
+     * @return array<string,mixed>|null
+     * @throws DbException
+     */
+    public static function selectOne(string $sql, array $params = []): ?array
+    {
+        return Connection::getInstance()->selectOne($sql, $params);
+    }
+
+    /**
+     * Run a parameterized SELECT and return the first column of the first row.
+     *
+     * @param array<int,mixed> $params
+     *
+     * @return mixed null when there is no row
+     * @throws DbException
+     */
+    public static function scalar(string $sql, array $params = [])
+    {
+        return Connection::getInstance()->scalar($sql, $params);
+    }
+
+    /**
+     * Count the rows of $table, optionally under a parameterized WHERE clause.
+     *
+     * @param array<int,mixed> $params
+     *
+     * @throws DbException
+     */
+    public static function count(string $table, string $where = '', array $params = []): int
+    {
+        return (int) self::scalar('SELECT COUNT(*) FROM ' . $table . ($where !== '' ? ' WHERE ' . $where : ''), $params);
+    }
+
+    /**
+     * Run a parameterized write and return the affected row count.
+     *
+     * @param array<int,mixed> $params
+     *
+     * @throws DbException
+     */
+    public static function execute(string $sql, array $params = []): int
+    {
+        return Connection::getInstance()->execute($sql, $params);
+    }
+
+    /**
+     * Run a parameterized INSERT and return the new row's id.
+     *
+     * @param array<int,mixed> $params
+     *
+     * @throws DbException
+     */
+    public static function insertGetId(string $sql, array $params = []): int
+    {
+        return Connection::getInstance()->insertGetId($sql, $params);
+    }
+
+    /**
+     * A row with every value a string, null kept, true and false as '1' and '0': the shape
+     * the legacy query layer gave. A FLOAT column keeps its type's value, not its rendered form.
+     *
+     * @param array<string,mixed> $row
+     *
+     * @return array<string,mixed>
+     */
+    public static function stringifyRow(array $row): array
+    {
+        foreach ($row as $k => $v) {
+            if ($v === null || is_string($v)) {
+                continue;
+            }
+            $row[$k] = is_bool($v) ? ($v ? '1' : '0') : (string)$v;
+        }
+
+        return $row;
+    }
+
+    /**
+     * stringifyRow() for each row.
+     *
+     * @param array<int,mixed> $rows
+     *
+     * @return array<int,mixed>
+     */
+    public static function stringifyRows(array $rows): array
+    {
+        foreach ($rows as $i => $row) {
+            if (is_array($row)) {
+                $rows[$i] = self::stringifyRow($row);
+            }
+        }
+
+        return $rows;
+    }
+
+    /**
      * Start a transaction, or a SAVEPOINT when one is already open, and increment
      * the nesting depth. This is depth-aware on purpose: a bare
      * begin_transaction() issued while a transaction is already open would cause

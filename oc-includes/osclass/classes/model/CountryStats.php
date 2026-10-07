@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\Db;
+
 /**
  * Model database for CountryStats table
  *
@@ -94,7 +96,7 @@ class CountryStats extends DAO
             );
 
         try {
-            osc_db_execute($sql, array($countryCode));
+            Db::execute($sql, array($countryCode));
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
@@ -119,7 +121,7 @@ class CountryStats extends DAO
         }
 
         try {
-            $countryStat = osc_db_table($this->getTableName())
+            $countryStat = Db::table($this->getTableName())
                 ->select('i_num_items')
                 ->where($this->getPrimaryKey(), $countryCode)
                 ->first();
@@ -135,7 +137,7 @@ class CountryStats extends DAO
                 . ' SET i_num_items = i_num_items - 1 WHERE i_num_items > 0 AND fk_c_country_code = ?';
 
             try {
-                return osc_db_execute($sql, array($countryCode));
+                return Db::execute($sql, array($countryCode));
             } catch (\mindstellar\database\DbException $e) {
                 return false;
             }
@@ -164,7 +166,7 @@ class CountryStats extends DAO
             . ' (fk_c_country_code, i_num_items) VALUES (?, ?) ON DUPLICATE KEY UPDATE i_num_items = ?';
 
         try {
-            osc_db_execute($sql, array($countryCode, $numItems, $numItems));
+            Db::execute($sql, array($countryCode, $numItems, $numItems));
         } catch (\mindstellar\database\DbException $e) {
             return false;
         }
@@ -221,12 +223,12 @@ class CountryStats extends DAO
             . ' ORDER BY ' . $order;
 
         try {
-            $rows = osc_db_select($sql);
+            $rows = Db::select($sql);
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        return osc_db_stringify_rows($rows);
+        return Db::stringifyRows($rows);
     }
 
     /**
@@ -254,13 +256,13 @@ class CountryStats extends DAO
         $sql .= DB_TABLE_PREFIX . 't_category.b_enabled = 1 ';
 
         try {
-            $row = osc_db_select_one($sql, array($countryCode, date('Y-m-d H:i:s')));
+            $row = Db::selectOne($sql, array($countryCode, date('Y-m-d H:i:s')));
         } catch (\mindstellar\database\DbException $e) {
             return 0;
         }
 
         if ($row !== null) {
-            $row = osc_db_stringify_row($row);
+            $row = Db::stringifyRow($row);
 
             return $row['total'];
         }
