@@ -101,7 +101,7 @@ final class Request
             $headers['AUTHORIZATION'] = (string) $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
         }
 
-        $query = Params::getParamsAsArray('get', false);
+        $query = self::repeatedKeys((string) Params::getServerParam('QUERY_STRING', false, false)) + Params::getParamsAsArray('get', false);
         unset($query['page'], $query['path']);
 
         return new self(
@@ -445,6 +445,26 @@ final class Request
         }
 
         return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? $default;
+    }
+
+    /**
+     * Keys sent more than once without brackets (`?city=1&city=2`), each as its list of values.
+     * PHP's own parsing keeps only the last one.
+     *
+     * @return array<string,string[]>
+     */
+    public static function repeatedKeys(string $queryString): array
+    {
+        $seen = [];
+        foreach ($queryString === '' ? [] : explode('&', $queryString) as $pair) {
+            [$key, $value] = array_pad(explode('=', $pair, 2), 2, '');
+            $key = urldecode($key);
+            if ($key !== '' && !str_contains($key, '[')) {
+                $seen[$key][] = urldecode($value);
+            }
+        }
+
+        return array_filter($seen, static fn (array $values): bool => count($values) > 1);
     }
 
     /**

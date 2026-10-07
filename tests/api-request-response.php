@@ -106,6 +106,12 @@ Params::init();
 $g = Request::fromGlobals();
 pin('a direct Authorization header wins', 'Bearer direct', $g->authorization());
 pin('a rewritten request takes its path from the URI', 'v1/y z', $g->path());
+$_GET                    = ['city' => '2', 'q' => 'x'];
+$_SERVER['QUERY_STRING'] = 'city=1&city=2&q=x&tag%5B%5D=a&tag%5B%5D=b';
+Params::init();
+$g = Request::fromGlobals();
+pin('a key sent twice is read as a list, as OpenAPI clients send one', [['1', '2'], ['1', '2'], 'x'], [$g->query()['city'] ?? null, $g->queryList('city'), $g->query()['q'] ?? null]);
+pin('bracketed and single keys are left to PHP', ['city' => ['1', '2']], Request::repeatedKeys('city=1&city=2&q=x&tag%5B%5D=a&tag%5B%5D=b'));
 $_SERVER = $saved;
 Params::init();
 
