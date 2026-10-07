@@ -25,9 +25,6 @@ use mindstellar\listing\ListingQuery;
  */
 final class ListingList
 {
-    public const DEFAULT_LIMIT = 20;
-    public const MAX_LIMIT     = 100;
-
     private ListingQuery $listings;
 
     public function __construct(private ApiServices $api, private ListingReader $reader)
@@ -44,14 +41,15 @@ final class ListingList
     public function run(Request $request, Credential $credential, string $path, array $statuses, array $userIds, array $categoryIds = [], string $title = ''): Response
     {
         $context = $this->api->context($request, $credential, 'listing', ListingSerializer::MEMBERS, ListingSerializer::INCLUDES);
-        $pager   = Pager::fromRequest($request, $this->api->cursor(), ListSpec::byId('desc', self::DEFAULT_LIMIT, self::MAX_LIMIT), ['list' => $path] + $request->query());
-        $total   = $pager->counts() ? $this->listings->count($statuses, $userIds, $categoryIds, $title) : null;
-        $after   = $pager->after();
-        $rows    = $this->listings->newest($statuses, $userIds, $categoryIds, $title, $after === null ? null : (int) $after[0], $pager->limit() + 1);
-        $items   = $pager->page($rows);
-        $items   = $items === [] ? [] : \Item::getInstance()->extendRows($items, $context->locale());
+        $pager   = Pager::fromRequest($request, $this->api->cursor(), ListSpec::byId(), ['list' => $path] + $request->query());
 
-        return (new Page($this->reader->many($items, $context), $total, $pager->limit(), $pager->next($rows), $pager->truncated($rows)))
-            ->response($this->api->links(), $path, $request->query());
+        return $pager->respond(
+            fn (): array => $this->listings->newest($statuses, $userIds, $categoryIds, $title, $pager->afterId(), $pager->limit() + 1),
+            fn (): int => $this->listings->count($statuses, $userIds, $categoryIds, $title),
+            fn (array $items): array => $this->reader->many($items === [] ? [] : \Item::getInstance()->extendRows($items, $context->locale()), $context),
+            $this->api->links(),
+            $path,
+            $request->query()
+        );
     }
 }

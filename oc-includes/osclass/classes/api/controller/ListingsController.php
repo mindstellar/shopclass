@@ -17,7 +17,6 @@ use mindstellar\api\ProblemException;
 use mindstellar\api\read\ListingReader;
 use mindstellar\api\read\ListingSearch;
 use mindstellar\api\read\ListSpec;
-use mindstellar\api\read\Page;
 use mindstellar\api\read\Pager;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
@@ -111,12 +110,15 @@ final class ListingsController
         $pager = Pager::fromRequest($request, $this->api->cursor(), ListSpec::byId('asc', $facts->commentsPerPage(), $facts->maxLimit()), ['listing' => $id] + $request->query());
 
         $comments = new CommentQuery();
-        $total    = $pager->counts() ? $comments->countApproved($id) : null;
-        $rows     = $comments->approved($id, (int) ($pager->after()[0] ?? 0), $pager->limit() + 1);
-        $next     = $pager->next($rows);
-        $data = array_map([new CommentSerializer(), 'one'], $pager->page($rows));
 
-        return (new Page($data, $total, $pager->limit(), $next, $pager->truncated($rows)))->response($this->api->links(), 'listings/' . $id . '/comments', $request->query());
+        return $pager->respond(
+            fn (): array => $comments->approved($id, $pager->afterId() ?? 0, $pager->limit() + 1),
+            fn (): int => $comments->countApproved($id),
+            static fn (array $page): array => array_map([new CommentSerializer(), 'one'], $page),
+            $this->api->links(),
+            'listings/' . $id . '/comments',
+            $request->query()
+        );
     }
 
     /**

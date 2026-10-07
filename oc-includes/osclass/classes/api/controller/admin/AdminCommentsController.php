@@ -15,7 +15,6 @@ namespace mindstellar\api\controller\admin;
 use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\ListSpec;
-use mindstellar\api\read\Page;
 use mindstellar\api\read\Pager;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
@@ -31,9 +30,6 @@ use mindstellar\moderation\CommentModeration;
  */
 final class AdminCommentsController
 {
-    public const DEFAULT_LIMIT = 20;
-    public const MAX_LIMIT     = 100;
-
     /** The PATCH members that change the status rather than the text. */
     private const STATUS_MEMBERS = ['approved' => true, 'blocked' => true];
 
@@ -57,16 +53,18 @@ final class AdminCommentsController
      */
     public function index(Request $request, Credential $credential, array $args): Response
     {
-        $pager = Pager::fromRequest($request, $this->api->cursor(), ListSpec::byId('desc', self::DEFAULT_LIMIT, self::MAX_LIMIT), ['list' => 'admin/comments'] + $request->query());
+        $pager = Pager::fromRequest($request, $this->api->cursor(), ListSpec::byId(), ['list' => 'admin/comments'] + $request->query());
         $filter = static fn (string $name): ?int => $request->queryString($name) === '' ? null : $request->queryInt($name);
         [$statuses, $listing, $user] = [$request->queryList('status'), $filter('listing'), $filter('user')];
-        $total  = $pager->counts() ? $this->comments->count($statuses, $listing, $user) : null;
-        $after  = $pager->after();
-        $rows   = $this->comments->newest($statuses, $listing, $user, $after === null ? null : (int) $after[0], $pager->limit() + 1);
-        $next = $pager->next($rows);
-        $data = array_map([$this->serializer, 'admin'], $pager->page($rows));
 
-        return (new Page($data, $total, $pager->limit(), $next, $pager->truncated($rows)))->response($this->api->links(), 'admin/comments', $request->query());
+        return $pager->respond(
+            fn (): array => $this->comments->newest($statuses, $listing, $user, $pager->afterId(), $pager->limit() + 1),
+            fn (): int => $this->comments->count($statuses, $listing, $user),
+            fn (array $page): array => array_map([$this->serializer, 'admin'], $page),
+            $this->api->links(),
+            'admin/comments',
+            $request->query()
+        );
     }
 
     /**

@@ -18,6 +18,10 @@ namespace mindstellar\api\read;
  */
 final class ListSpec
 {
+    /** The page size of a list that names none, and the most it may ask for. */
+    public const DEFAULT_LIMIT = 20;
+    public const MAX_LIMIT     = 100;
+
     /** @var \Closure(array<int,int|string>): bool */
     private \Closure $keysetFits;
 
@@ -47,7 +51,7 @@ final class ListSpec
     /**
      * Paged by row id, newest (`desc`) or oldest (`asc`) first.
      */
-    public static function byId(string $direction, int $defaultLimit, int $maxLimit): self
+    public static function byId(string $direction = 'desc', int $defaultLimit = self::DEFAULT_LIMIT, int $maxLimit = self::MAX_LIMIT): self
     {
         return new self(
             ['id'],

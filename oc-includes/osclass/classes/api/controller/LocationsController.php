@@ -15,7 +15,6 @@ namespace mindstellar\api\controller;
 use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\ListSpec;
-use mindstellar\api\read\Page;
 use mindstellar\api\read\Pager;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
@@ -94,13 +93,21 @@ final class LocationsController
     private function page(Request $request, string $path, string $shape, ?array $parent, callable $read): Response
     {
         $pager = Pager::fromRequest($request, $this->api->cursor(), new ListSpec(['name'], 'name', 'asc', self::DEFAULT_LIMIT, self::MAX_LIMIT, maxOffset: 100000), ['list' => $path] + $request->query());
-        $rows  = $read(trim($request->queryString('q')), $pager->limit() + 1, $pager->offset());
-        if ($rows === [] && $parent !== null && !$this->places->exists($parent[0], $parent[1])) {
-            throw ProblemException::of('not_found', $parent[2]);
-        }
-        $next = $pager->next($rows);
-        $data = array_map([$this->serializer, $shape], $pager->page($rows));
 
-        return (new Page($data, null, $pager->limit(), $next, $pager->truncated($rows)))->response($this->api->links(), $path, $request->query());
+        return $pager->respond(
+            function () use ($request, $pager, $parent, $read): array {
+                $rows = $read(trim($request->queryString('q')), $pager->limit() + 1, $pager->offset());
+                if ($rows === [] && $parent !== null && !$this->places->exists($parent[0], $parent[1])) {
+                    throw ProblemException::of('not_found', $parent[2]);
+                }
+
+                return $rows;
+            },
+            null,
+            fn (array $page): array => array_map([$this->serializer, $shape], $page),
+            $this->api->links(),
+            $path,
+            $request->query()
+        );
     }
 }

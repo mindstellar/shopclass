@@ -141,7 +141,7 @@ final class AdminWebhooksController
     public function deliveries(Request $request, Credential $credential, array $args): Response
     {
         $endpoint = $this->endpoint($args['webhook']);
-        $limit    = (int) ($request->query()['limit'] ?? 25);
+        $limit    = $request->queryInt('limit', 25);
         $rows     = array_map(static fn (array $d): array => [
             'job_id'      => $d['job_id'],
             'message_id'  => $d['message_id'],

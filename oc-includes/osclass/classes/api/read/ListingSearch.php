@@ -69,12 +69,14 @@ final class ListingSearch
             $pager->counts()
         ));
 
-        $rows = $result->items();
-        $page = $pager->page($rows);
-        $data = $this->reader->many($page, $context);
-        $next = $pager->next($rows);
-
-        return (new Page($data, $result->total(), $pager->limit(), $next, $pager->truncated($rows)))->response($this->api->links(), $path, $request->query());
+        return $pager->respond(
+            static fn (): array => $result->items(),
+            static fn (): ?int => $result->total(),
+            fn (array $page): array => $this->reader->many($page, $context),
+            $this->api->links(),
+            $path,
+            $request->query()
+        );
     }
 
     /**

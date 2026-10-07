@@ -631,6 +631,10 @@ $r = $call('GET', 'admin/webhooks/' . $hookId . '/deliveries', null, $boss);
 pin('deliveries: the waiting ping', [200, 1, 'ping', 'pending', true], [$r->status(), count($r->body()['data']['deliveries'] ?? []), $r->body()['data']['deliveries'][0]['type'] ?? null, $r->body()['data']['deliveries'][0]['status'] ?? null, $r->body()['data']['deliveries'][0]['test'] ?? null]);
 pin('matches the schema', [], api_admin_schema_errors('WebhookDeliveriesDocument', $r));
 check('no secret in the deliveries', !str_contains((string) json_encode($r->body()), $fresh));
+pin('a limit outside 1 to 100 is 422', [422, 422], [
+    $call('GET', 'admin/webhooks/' . $hookId . '/deliveries', null, $boss, [], ['limit' => '0'])->status(),
+    $call('GET', 'admin/webhooks/' . $hookId . '/deliveries', null, $boss, [], ['limit' => '-5'])->status(),
+]);
 pin('another endpoint\'s deliveries are not shown', 0, count($call('GET', 'admin/webhooks/' . $lanId . '/deliveries', null, $boss)->body()['data']['deliveries'] ?? [1]));
 $r = api_with_filter('api_webhook_events', static fn (array $e): array => $e + ['ext.acme.offer_created' => ['description' => 'An offer.', 'schema' => 'AcmeOffer']], static fn () => $call('GET', 'admin/webhook-events', null, $boss));
 $types = array_column($r->body()['data'] ?? [], 'type');

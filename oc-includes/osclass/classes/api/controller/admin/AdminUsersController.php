@@ -16,7 +16,6 @@ use mindstellar\api\ApiServices;
 use mindstellar\api\auth\UserRows;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\ListSpec;
-use mindstellar\api\read\Page;
 use mindstellar\api\read\Pager;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
@@ -37,9 +36,6 @@ use mindstellar\user\UserQuery;
  */
 final class AdminUsersController
 {
-    public const DEFAULT_LIMIT = 20;
-    public const MAX_LIMIT     = 100;
-
     /** The PATCH members that change the account's status rather than its profile. */
     private const STATUS_MEMBERS = ['confirmed' => true, 'blocked' => true];
 
@@ -62,22 +58,26 @@ final class AdminUsersController
     public function index(Request $request, Credential $credential, array $args): Response
     {
         $context = $this->api->context($request, $credential, 'user', UserSerializer::MEMBERS);
-        $pager   = Pager::fromRequest($request, $this->api->cursor(), ListSpec::byId('desc', self::DEFAULT_LIMIT, self::MAX_LIMIT), ['list' => 'admin/users'] + $request->query());
+        $pager   = Pager::fromRequest($request, $this->api->cursor(), ListSpec::byId(), ['list' => 'admin/users'] + $request->query());
         $flag    = static fn (string $name): ?bool => array_key_exists($name, $request->query()) ? $request->queryBool($name) : null;
         $blocked = $flag('blocked');
         [$active, $enabled, $q] = [$flag('confirmed'), $blocked === null ? null : !$blocked, trim($request->queryString('q'))];
-        $total   = $pager->counts() ? $this->query->count($active, $enabled, $q) : null;
-        $after   = $pager->after();
-        $rows    = $this->query->newest($active, $enabled, $q, $after === null ? null : (int) $after[0], $pager->limit() + 1);
-        $next = $pager->next($rows);
-        $page = $pager->page($rows);
-        if ($page !== [] && $context->wants('avatar')) {
-            (new Resource())->primeOwnerCache(Resource::OWNER_USER, array_column($page, 'pk_i_id'));
-        }
         $serializer = $this->serializer();
-        $data       = array_map(static fn (array $user): array => $serializer->one($user, $context), $page);
 
-        return (new Page($data, $total, $pager->limit(), $next, $pager->truncated($rows)))->response($this->api->links(), 'admin/users', $request->query());
+        return $pager->respond(
+            fn (): array => $this->query->newest($active, $enabled, $q, $pager->afterId(), $pager->limit() + 1),
+            fn (): int => $this->query->count($active, $enabled, $q),
+            static function (array $page) use ($serializer, $context): array {
+                if ($page !== [] && $context->wants('avatar')) {
+                    (new Resource())->primeOwnerCache(Resource::OWNER_USER, array_column($page, 'pk_i_id'));
+                }
+
+                return array_map(static fn (array $user): array => $serializer->one($user, $context), $page);
+            },
+            $this->api->links(),
+            'admin/users',
+            $request->query()
+        );
     }
 
     /**

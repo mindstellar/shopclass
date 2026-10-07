@@ -15,6 +15,8 @@ namespace mindstellar\api\read;
 use mindstellar\api\Problem;
 use mindstellar\api\ProblemException;
 use mindstellar\api\Request;
+use mindstellar\api\Response;
+use mindstellar\api\serializer\Links;
 
 /**
  * Paging for one list request: sort, order, limit and where the cursor left off. Every list
@@ -59,6 +61,32 @@ final class Pager
     public function limit(): int
     {
         return $this->limit;
+    }
+
+    /**
+     * The row id a by-id cursor left off at, or null on the first page.
+     */
+    public function afterId(): ?int
+    {
+        $after = $this->after();
+
+        return $after === null ? null : (int) $after[0];
+    }
+
+    /**
+     * This page as the answer, with its next link and, when asked for, its total.
+     *
+     * @param callable(): array<int,array<string,mixed>>          $fetch reads up to limit() + 1 rows from where the cursor left off
+     * @param (callable(): ?int)|null                             $total counts every match; called only when counts(), after $fetch
+     * @param callable(array<int,array<string,mixed>>): array<int,mixed> $shape this page's rows as the answer's data
+     * @param array<string,mixed>                                 $query the request's query, for the links
+     */
+    public function respond(callable $fetch, ?callable $total, callable $shape, Links $links, string $path, array $query): Response
+    {
+        $rows  = $fetch();
+        $count = $total !== null && $this->counts() ? $total() : null;
+
+        return (new Page($shape($this->page($rows)), $count, $this->limit, $this->next($rows), $this->truncated($rows)))->response($links, $path, $query);
     }
 
     public function offset(): int
