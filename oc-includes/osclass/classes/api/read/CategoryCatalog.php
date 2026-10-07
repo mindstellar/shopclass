@@ -138,7 +138,7 @@ final class CategoryCatalog
     {
         $ids = [];
         foreach ($values as $value) {
-            $row = $anyId && ctype_digit($value) ? ['pk_i_id' => $value] : $this->lookup($value, $locale);
+            $row = $anyId && ctype_digit($value) && (int) $value > 0 ? ['pk_i_id' => $value] : $this->lookup($value, $locale);
             if ($row === null) {
                 throw ProblemException::from(Problem::validation([
                     ['pointer' => '/category', 'code' => 'enum', 'message' => 'is not a known category: ' . $value, 'in' => 'query'],

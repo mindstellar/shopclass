@@ -119,6 +119,7 @@ pin('an id may name a switched-off category, its slug may not', [[$old], '422 va
     $ids($call('GET', 'admin/listings', null, $boss, [], ['category' => (string) $retired])),
     api_admin_code($call('GET', 'admin/listings', null, $boss, [], ['category' => 'retired'])),
 ]);
+pin('category=0 is 422, never every category', '422 validation_failed', api_admin_code($call('GET', 'admin/listings', null, $boss, [], ['category' => '0'])));
 $admin->query("DELETE FROM {$p}t_item WHERE pk_i_id IN ($boat, $old)");
 pin('q= matches titles, with % taken literally', [[$pending], []], [
     $ids($call('GET', 'admin/listings', null, $boss, [], ['q' => 'wagon'])), $ids($call('GET', 'admin/listings', null, $boss, [], ['q' => '%'])),
