@@ -198,6 +198,8 @@ pin('owner_id null leaves it with no owner and the given contact', [null, 'Walk-
 pin('expires_at sets the last day', '2030-06-30 23:59:59', $row($live)['dt_expiration']);
 $call('PATCH', 'admin/listings/' . $live, ['price' => '1100'], $boss);
 pin('an edit without expires_at keeps the expiry', '2030-06-30 23:59:59', $row($live)['dt_expiration']);
+$call('PATCH', 'admin/listings/' . $live, ['expires_at' => '2031-01-15T22:30:00-05:00'], $boss);
+pin('an RFC 3339 date-time names its day in UTC', '2031-01-16 23:59:59', $row($live)['dt_expiration']);
 pin('an unknown owner is 422', [422, '/owner_id'], (static fn (Response $r): array => [$r->status(), $r->body()['errors'][0]['pointer'] ?? null])($call('PATCH', 'admin/listings/' . $live, ['owner_id' => 99999], $boss)));
 pin('ItemActions\' own refusal is 422', 422, $call('PATCH', 'admin/listings/' . $live, ['description' => 'ab'], $boss)->status());
 pin('an unknown member is 422', 422, $call('PATCH', 'admin/listings/' . $live, ['photo_tokens' => []], $boss)->status());

@@ -218,6 +218,23 @@ final class Schema
         return ['$ref' => Validator::REF_PREFIX . $name];
     }
 
+    /** A day, `2027-03-01`, or an RFC 3339 date-time: what every date input takes. */
+    public const DATE_INPUT = '[0-9]{4}-[0-9]{2}-[0-9]{2}(T[0-9]{2}:[0-9]{2}(:[0-9]{2}(\\.[0-9]+)?)?(Z|[+-][0-9]{2}:[0-9]{2}))?';
+
+    /**
+     * A date input: a day or an RFC 3339 date-time, or with $days also a number of days, `90d`.
+     *
+     * @return array<string,mixed>
+     */
+    public static function dateInput(string $description, bool $days = false, bool $nullable = false): array
+    {
+        return [
+            'type'        => $nullable ? ['string', 'null'] : 'string',
+            'pattern'     => '^(' . self::DATE_INPUT . ($days ? '|[0-9]{1,4}d' : '') . ')$',
+            'description' => $description,
+        ];
+    }
+
     /**
      * A query parameter that takes some of $values: one, a comma list, or repeated. The
      * pattern checks a comma list, the items a repeated one.
@@ -486,7 +503,7 @@ final class Schema
             'PersonalKeyInput'   => $input([
                 'name'       => $text(100, 1),
                 'scopes'     => $scopes + ['minItems' => 1],
-                'expires_at' => ['type' => 'string', 'pattern' => '^[0-9]{4}-[0-9]{2}-[0-9]{2}$', 'description' => 'The last day the key works, within a year.'],
+                'expires_at' => self::dateInput('The last day the key works, within a year, or a number of days such as 90d.', true),
                 'current_password' => $text(4096, 1) + ['description' => 'The account\'s password, asked again before a key is made.'],
             ], ['name', 'scopes', 'expires_at', 'current_password']),
             'Registration'       => $input([

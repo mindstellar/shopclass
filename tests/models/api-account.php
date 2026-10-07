@@ -419,6 +419,7 @@ pin('the password is required', '422 validation_failed', $code($call('POST', 'ac
 pin('and must be right', array(422, '/current_password'), (static function (Response $r): array {
     return array($r->status(), $r->body()['errors'][0]['pointer'] ?? null);
 })($call('POST', 'account/keys', array('current_password' => 'wrong') + $keyBody, $s['access_token'])));
+pin('a personal key takes a number of days too, as an admin key does', 201, $call('POST', 'account/keys', array('expires_at' => '30d', 'name' => 'Days') + $keyBody, $s['access_token'])->status());
 pin('an expiry past a year is refused', '422 validation_failed', $code($call('POST', 'account/keys', array('expires_at' => date('Y-m-d', time() + 400 * 86400)) + $keyBody, $s['access_token'])));
 pin('a key cannot make keys', '403 insufficient_scope', $code($call('POST', 'account/keys', $keyBody, $userKey)));
 $list = $call('GET', 'account/keys', null, $s['access_token']);

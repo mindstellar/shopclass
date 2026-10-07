@@ -38946,8 +38946,8 @@
                     },
                     "expires_at": {
                         "type": "string",
-                        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
-                        "description": "The last day the key works, within a year."
+                        "pattern": "^([0-9]{4}-[0-9]{2}-[0-9]{2}(T[0-9]{2}:[0-9]{2}(:[0-9]{2}(\\.[0-9]+)?)?(Z|[+-][0-9]{2}:[0-9]{2}))?|[0-9]{1,4}d)$",
+                        "description": "The last day the key works, within a year, or a number of days such as 90d."
                     },
                     "current_password": {
                         "type": "string",
@@ -40147,7 +40147,7 @@
                             "string",
                             "null"
                         ],
-                        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+                        "pattern": "^([0-9]{4}-[0-9]{2}-[0-9]{2}(T[0-9]{2}:[0-9]{2}(:[0-9]{2}(\\.[0-9]+)?)?(Z|[+-][0-9]{2}:[0-9]{2}))?)$",
                         "description": "The last day it shows; null for never."
                     },
                     "approved": {
@@ -41442,7 +41442,7 @@
                     },
                     "expires_at": {
                         "type": "string",
-                        "pattern": "^([0-9]{4}-[0-9]{2}-[0-9]{2}|[0-9]{1,4}d)$",
+                        "pattern": "^([0-9]{4}-[0-9]{2}-[0-9]{2}(T[0-9]{2}:[0-9]{2}(:[0-9]{2}(\\.[0-9]+)?)?(Z|[+-][0-9]{2}:[0-9]{2}))?|[0-9]{1,4}d)$",
                         "description": "The last day it works, or a number of days such as 90d; never when left out."
                     }
                 },

@@ -73,7 +73,7 @@ is refused, nothing is saved.
 |---|---|
 | `GET /admin/listings` | Search. Filters: `status` (`active`, `pending`, `disabled`, `expired`, `spam`; a comma list or repeated), `user` (ids) and `category` (ids or slugs, subcategories included; an id may name a category that is off), each a comma list or repeated as in search, `q` (title contains), `include`, `locale`, `fields`, `limit`, `cursor`, `count`. |
 | `GET /admin/listings/{id}` | One listing. |
-| `PATCH /admin/listings/{id}` | Edit any member of a listing, plus `owner_id` (`null` for none), `contact_name`, `contact_email` and `expires_at` (`YYYY-MM-DD`, `null` for never). `approved` approves a listing that waits for moderation, or sends it back. `blocked`, `spam` and `premium` (no end date) set or clear each one. |
+| `PATCH /admin/listings/{id}` | Edit any member of a listing, plus `owner_id` (`null` for none), `contact_name`, `contact_email` and `expires_at` (a day or an RFC 3339 date-time, which names its day in UTC; `null` for never). `approved` approves a listing that waits for moderation, or sends it back. `blocked`, `spam` and `premium` (no end date) set or clear each one. |
 | `DELETE /admin/listings/{id}` | Delete. |
 | `POST /admin/listings/{id}/bump` | Move to the top of "newest first". |
 
@@ -182,7 +182,7 @@ curl -X PATCH $API/admin/settings -H "Authorization: Bearer $KEY" \
 | Endpoint | Does |
 |---|---|
 | `GET /admin/keys`, `GET /admin/keys/{id}` | Keys, newest first. Never the secret. `kind` is `admin`, `public` or `user`. |
-| `POST /admin/keys` | Make a key. Body: `name`, optional `kind` (`admin` by default, or `public`), `scopes`, `expires_at` (`2027-03-01`, or `90d`). A key that expires cannot make a key that outlives it: with no `expires_at`, the new key gets the same expiry. The answer has the `token`, once. |
+| `POST /admin/keys` | Make a key. Body: `name`, optional `kind` (`admin` by default, or `public`), `scopes`, `expires_at` (a day such as `2027-03-01`, an RFC 3339 date-time, or a number of days such as `90d`). A key that expires cannot make a key that outlives it: with no `expires_at`, the new key gets the same expiry. The answer has the `token`, once. |
 | `POST /admin/keys/{id}/rotate` | Make a new key with the same kind, scopes and expiry, but never past the calling key's expiry. The old one keeps working until you revoke it. Only for your own keys and public keys; a rotated public key becomes yours. Another admin's key answers `403 not_owner`. |
 | `DELETE /admin/keys/{id}` | Revoke. Not another admin's own key: that answers `403 not_owner`. |
 

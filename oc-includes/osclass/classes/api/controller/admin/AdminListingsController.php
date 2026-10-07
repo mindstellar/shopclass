@@ -191,7 +191,13 @@ final class AdminListingsController
         $row    = $listing->row();
         $expiry = (string) ($row['dt_expiration'] ?? '');
         if (array_key_exists('expires_at', $input)) {
-            $expiry = $input['expires_at'] === null ? '-1' : (string) $input['expires_at'];
+            // A date-time names its day: a listing shows to the end of the day it expires.
+            $value  = (string) $input['expires_at'];
+            $expiry = match (true) {
+                $input['expires_at'] === null => '-1',
+                str_contains($value, 'T')     => (new \DateTimeImmutable($value))->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d'),
+                default                       => $value,
+            };
         }
 
         return [

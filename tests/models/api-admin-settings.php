@@ -125,6 +125,9 @@ pin('but can make a public key', [201, 'public', ['listings:read']], (static fn 
 ));
 pin('an unknown scope is refused', 403, $call('POST', 'admin/keys', ['name' => 'Typo', 'scopes' => ['admin:everything']], $boss)->status());
 pin('a past expiry is 422', 422, $call('POST', 'admin/keys', ['name' => 'Old', 'scopes' => ['admin:listings'], 'expires_at' => '2020-01-01'], $boss)->status());
+$at = gmdate('Y-m-d\TH:i:s\Z', time() + 7200);
+$r  = $call('POST', 'admin/keys', ['name' => 'Timed', 'scopes' => ['admin:listings'], 'expires_at' => $at], $boss);
+pin('an RFC 3339 date-time is taken as it is, as every date input takes it', [201, $at], [$r->status(), $r->body()['data']['expires_at'] ?? null]);
 $short    = (string) ($call('POST', 'admin/keys', ['name' => 'Short', 'scopes' => ['admin:keys', 'admin:listings'], 'expires_at' => '10d'], $boss)->body()['data']['token'] ?? '');
 $shortEnd = $call('GET', 'admin/keys', null, $boss)->body()['data'][0]['expires_at'] ?? null;
 $child    = $call('POST', 'admin/keys', ['name' => 'Child', 'scopes' => ['admin:listings']], $short);

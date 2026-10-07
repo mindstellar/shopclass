@@ -254,7 +254,7 @@ curl -X POST $API/account/keys \
 | Password | `current_password` is checked again, and counts toward the sign-in limit. A wrong one is a `422` on `/current_password`. |
 | `name` | 1 to 100 characters. |
 | `scopes` | At least one of: `listings:read`, `listings:write`, `listings:delete`, `comments:write`, `alerts:read`, `alerts:write`, `account:read`, plus any plugin scope users may hold. Never `account:write`. |
-| `expires_at` | Required. `YYYY-MM-DD`, the last day it works, in the future and within a year (366 days). |
+| `expires_at` | Required. A day such as `2027-03-01` (it works to the end of that day), an RFC 3339 date-time, or a number of days such as `90d`. In the future and within a year (366 days). |
 | Ends on sign-out | The key is revoked when the user changes their password or signs out of all devices. Make a new one. |
 | Ends also | When revoked, expired, or the user is disabled or deleted. |
 | Manage | `GET /account/keys`, `GET /account/keys/{id}`, `DELETE /account/keys/{id}`, or the account's **API access** page. |
