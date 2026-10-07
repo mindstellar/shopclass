@@ -106,6 +106,8 @@ Also settled before the first release, so no released client saw the old behavio
 - `If-Match` checks the stored version, so a tag from a `GET` with `fields`, `include` or `locale` works. The check and the write run as one. A `PATCH` sent with `If-Match` answers with the new `ETag`.
 - A credential that cannot read the `GET` of the path gets `412` for `If-Match`, instead of the check being skipped.
 - A stale `If-Match` on a resource the credential cannot see answers as its `GET` does (`404`), not `412`.
+- `If-Match`, `*` included, on a resource that is gone answers as its `GET` does and runs nothing, instead of leaving it to the write.
+- A valid token from an address that sent many bad ones works; only that address's failing tokens answer `429 too_many_failures`.
 - `Idempotency-Key` keeps every `4xx` except `429`, including a `409` or `422` from a core refusal.
 - A banned user's access token or personal key answers `403 banned`, as a session call does.
 - A key made through `POST /admin/keys` cannot outlive the key that makes it.

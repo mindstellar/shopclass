@@ -229,7 +229,8 @@ final class Kernel
 
         return $this->versions->atomically(function () use ($header, $request, $route, $credential, $args, $read, $path): Response {
             $version = $this->versions->version($path, $read->args(), $credential, true);
-            if ($version !== null && !Response::versionMatches($header, $version)) {
+            // No version means no current resource, which If-Match never matches, not even `*`.
+            if ($version === null || !Response::versionMatches($header, $version)) {
                 $current = $read->route()->call($request->asRead(), $credential, $read->args());
                 throw $current->status() < 300 ? self::preconditionFailed() : ProblemException::from($current);
             }
@@ -250,7 +251,10 @@ final class Kernel
         $current  = $read->route()->call($request->asRead(), $credential, $read->args());
         $filtered = osc_apply_filter('api_response', $current, $request->asRead(), $read->route());
         $current  = $filtered instanceof Response ? $filtered : $current;
-        $etag     = $current->etag();
+        if ($current->status() >= 300) {
+            throw ProblemException::from($current);
+        }
+        $etag = $current->etag();
         if ($etag !== null && !Response::etagMatches($header, $etag)) {
             throw self::preconditionFailed();
         }

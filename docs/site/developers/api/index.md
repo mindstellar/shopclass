@@ -197,7 +197,8 @@ The site owner sets the number of seconds. Answers for admin keys are never shar
 
 To avoid overwriting a change made meanwhile, send the `ETag` of your last `GET` in
 `If-Match` on a `PATCH` or `DELETE`. If the resource changed you get `412 precondition_failed`.
-`If-Match: *` only checks that the resource exists.
+`If-Match: *` only checks that the resource exists. If it is gone, the write answers as its `GET`
+does (`404`) and runs nothing. A tag a proxy made weak (`W/"…"`) still matches.
 
 On listings, comments, photos, the account, users, keys, saved searches, categories, fields,
 currencies and locations, the `ETag` holds the stored version (`"<version>.<hash>"`). Any `GET`

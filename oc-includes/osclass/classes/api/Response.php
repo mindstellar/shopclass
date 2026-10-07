@@ -188,7 +188,8 @@ final class Response
 
     /**
      * Whether an If-Match header names this stored version: `*`, or a tag from withVersion(),
-     * weak or strong.
+     * weak or strong. A proxy that compresses the answer (nginx gzip, Cloudflare) turns the
+     * strong tag weak, and the version inside it is still exact, so `W/` is accepted.
      */
     public static function versionMatches(string $header, string $version): bool
     {

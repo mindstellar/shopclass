@@ -277,7 +277,9 @@ pin('a bare or weak tag of the current version matches', [200, 'five'], [$r->sta
 $r = $vcall('PATCH', 'versioned/5', '*', ['title' => 'six']);
 pin('* goes through', [200, 'six'], [$r->status(), Things::$title]);
 $r = $vcall('PATCH', 'versioned/404', '"v-gone"', ['title' => 'seven']);
-pin('a missing resource is left to the handler', [200, 'seven'], [$r->status(), Things::$title]);
+pin('a resource with no version is 412 and runs nothing', [412, 'six'], [$r->status(), Things::$title]);
+$r = $vcall('PATCH', 'versioned/404', '*', ['title' => 'seven']);
+pin('even for *', [412, 'six'], [$r->status(), Things::$title]);
 
 $versions->log = [];
 $logged        = ini_set('error_log', '/dev/null');
