@@ -19,11 +19,12 @@ use mindstellar\security\RateLimit;
  * Failed token checks, counted so guessing is slow without one bad caller locking out
  * everyone behind a shared address (an office, a CDN, carrier NAT).
  *
- * Two counters, both read in one query before any token is looked at:
- * - per address and key id: MAX failures shut that one key out from that address, so a
- *   stale key left in a deployed app stops only itself;
- * - per address: ADDRESS_MAX failures with no known key id (guesses, garbage) shut the
- *   whole address out. Wrong secrets for a real key id count only in the first.
+ * Two counters:
+ * - per address and key id: MAX failures shut that one key out from that address before it
+ *   is looked at, so a stale key left in a deployed app stops only itself;
+ * - per address: ADDRESS_MAX failures with no known key id (guesses, garbage) turn that
+ *   address's failed tokens into 429s. A valid token from it still works. Wrong secrets for a
+ *   real key id count only in the first.
  *
  * Both fail open: when the counter cannot be read, the token is checked as usual. A key's
  * secret is 256 random bits, so the counters only slow a noisy caller; refusing every keyed
@@ -59,24 +60,31 @@ final class FailureCounter
     }
 
     /**
-     * Whether a token from this address is refused before it is looked at.
+     * Whether this key id is shut out from this address, so its token is refused before it
+     * is looked at.
      *
      * @param string|null $tokenId the key id inside the token, null when it has none
      */
-    public function blocked(string $ip, ?string $tokenId): bool
+    public function keyBlocked(string $ip, ?string $tokenId): bool
     {
-        if ($ip === '') {
-            return false;
-        }
-        $address = self::addressKey($ip);
-        $keys    = $tokenId === null ? [$address] : [$address, self::keyKey($ip, $tokenId)];
-        $counts  = ($this->counts)(self::CONTEXT, $keys, self::WINDOW);
-        if ($counts === null) {
+        if ($ip === '' || $tokenId === null) {
             return false;
         }
 
-        return ($counts[$address] ?? 0) >= self::ADDRESS_MAX
-            || ($tokenId !== null && ($counts[self::keyKey($ip, $tokenId)] ?? 0) >= self::MAX);
+        return $this->count(self::keyKey($ip, $tokenId)) >= self::MAX;
+    }
+
+    /**
+     * Whether this address has failed so often that its failed tokens answer 429.
+     */
+    public function addressBlocked(string $ip): bool
+    {
+        return $ip !== '' && $this->count(self::addressKey($ip)) >= self::ADDRESS_MAX;
+    }
+
+    private function count(string $key): int
+    {
+        return (int) ((($this->counts)(self::CONTEXT, [$key], self::WINDOW) ?? [])[$key] ?? 0);
     }
 
     /**

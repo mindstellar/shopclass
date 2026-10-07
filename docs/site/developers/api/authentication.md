@@ -466,11 +466,11 @@ Wrong keys are counted so nobody can guess one.
 
 | Failures in 15 minutes | Result |
 |---|---|
-| 20 for one key id from one address | That address is refused for that key id. |
-| 500 from one address, with no known key id | That address is refused. |
+| 20 for one key id from one address | That key id is refused from that address, **even with the right secret**. |
+| 500 from one address, with no known key id | Every wrong token from that address gets `429` instead of `401`. A valid token still works, so a shared address (an office, carrier NAT) is not locked out. |
 
-A refused address gets `429 too_many_failures` with `Retry-After: 900`, **even with the
-right key**, until the window passes. One address's failures never lock out another address.
+Both answer `429 too_many_failures` with `Retry-After: 900` until the window passes. One
+address's failures never lock out another address.
 
 Fix the key before retrying. A client that retries a `401` in a loop locks itself out.
 An expired access token (`token_expired`) is not counted. Wrong passwords at

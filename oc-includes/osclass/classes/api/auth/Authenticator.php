@@ -60,8 +60,9 @@ final class Authenticator
 
     /**
      * @return Credential|null null when the request carries no token and no page token
-     * @throws ProblemException 429 when this address is shut out for this token, 401 for a refused
-     *                    token, 403 for a banned user, 401 or 403 for a refused session call
+     * @throws ProblemException 429 when this key is shut out from this address or a token fails from
+     *                    an address that failed too often, 401 for a refused token, 403 for a
+     *                    banned user, 401 or 403 for a refused session call
      */
     public function authenticate(Request $request): ?Credential
     {
@@ -70,11 +71,8 @@ final class Authenticator
             return $this->session?->authenticate($request);
         }
         $tokenId = ApiKeys::tokenId($token);
-        if ($this->failures->blocked($request->ip(), $tokenId)) {
-            throw ProblemException::from(
-                Problem::make('too_many_failures', 'Too many failed attempts from this address. Try again later.')
-                    ->withHeader('Retry-After', (string) FailureCounter::WINDOW)
-            );
+        if ($this->failures->keyBlocked($request->ip(), $tokenId)) {
+            throw self::tooManyFailures();
         }
 
         $check = match (true) {
@@ -93,7 +91,7 @@ final class Authenticator
         if ($credential === null) {
             $this->failures->record($request->ip(), $tokenId, $check->known());
 
-            throw ProblemException::from(Problem::unauthorized(true));
+            throw $this->failures->addressBlocked($request->ip()) ? self::tooManyFailures() : ProblemException::from(Problem::unauthorized(true));
         }
         $userId = $credential->userId();
         if ($userId !== null && $this->banned !== null && ($this->banned)($userId, $request->ip())) {
@@ -101,5 +99,13 @@ final class Authenticator
         }
 
         return $credential;
+    }
+
+    private static function tooManyFailures(): ProblemException
+    {
+        return ProblemException::from(
+            Problem::make('too_many_failures', 'Too many failed attempts from this address. Try again later.')
+                ->withHeader('Retry-After', (string) FailureCounter::WINDOW)
+        );
     }
 }

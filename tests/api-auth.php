@@ -315,7 +315,8 @@ for ($i = 0; $i < FailureCounter::ADDRESS_MAX - 1; $i++) {
 }
 check('unknown key ids count per address, with a much higher ceiling', $auth->authenticate($req('Bearer ' . $new->token())) instanceof Credential);
 $problem(static fn () => $auth->authenticate($req('Bearer nonsense')));
-pin('past it, a flood of unknown ids shuts the address out', 429, $problem(static fn () => $auth->authenticate($req('Bearer ' . $new->token())))?->status());
+pin('past it, a bad token from that address is a 429', 429, $problem(static fn () => $auth->authenticate($req('Bearer nonsense')))?->status());
+check('but a valid token from the same shared address still works', $auth->authenticate($req('Bearer ' . $new->token())) instanceof Credential);
 check('other addresses are not', $auth->authenticate($req('Bearer ' . $new->token(), [], 'GET', [], '203.0.113.7')) instanceof Credential);
 
 $fails = ['addr:2001:db8:1:2::/64' => FailureCounter::ADDRESS_MAX];
