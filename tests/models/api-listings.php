@@ -476,7 +476,7 @@ check('nor the IP of a live one', !isset($get('listings/' . $live[0], array(), $
 pin('nor a hidden listing\'s photos or comments', array(404, 404), array($get('listings/' . $pending . '/photos', array(), $narrowKey)->status(), $get('listings/' . $pending . '/comments', array(), $narrowKey)->status()));
 pin('an unknown locale is refused', 422, $get('listings/' . $live[0], array('locale' => 'fr_FR'), $publicKey)->status());
 pin('an unknown listing is 404', 404, $get('listings/999999', array(), $publicKey)->status());
-pin('an unknown include is 400', 400, $get('listings/' . $live[0], array('include' => 'secrets'), $publicKey)->status());
+pin('an unknown include is 422, as any unknown query value', 422, $get('listings/' . $live[0], array('include' => 'secrets'), $publicKey)->status());
 
 harness_section('photos and comments');
 $r = $get('listings/' . $live[0] . '/photos', array(), $publicKey);

@@ -329,7 +329,9 @@ final class ApiServices
         $include = $request->queryList('include');
         foreach ($include as $name) {
             if (!in_array($name, $includes, true)) {
-                throw ProblemException::of('invalid_query', 'include: unknown value ' . $name . '.');
+                throw ProblemException::from(Problem::validation([
+                    ['pointer' => '/include', 'code' => 'enum', 'message' => 'is not a known value: ' . $name, 'in' => 'query'],
+                ]));
             }
         }
 

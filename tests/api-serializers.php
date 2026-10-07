@@ -244,8 +244,8 @@ $problem = static function (callable $fn): ?string {
 
     return null;
 };
-pin('an unknown member is a 400', '400 invalid_query', $problem(static fn () => SparseFieldset::parse('title,secret', ListingSerializer::MEMBERS, new ExtensionMembers(), 'listing')));
-pin('a nested path is a 400', '400 invalid_query', $problem(static fn () => SparseFieldset::parse('price.amount', ListingSerializer::MEMBERS, new ExtensionMembers(), 'listing')));
+pin('an unknown member is a 422 at /fields', '422 validation_failed', $problem(static fn () => SparseFieldset::parse('title,secret', ListingSerializer::MEMBERS, new ExtensionMembers(), 'listing')));
+pin('a nested path is a 422 too', '422 validation_failed', $problem(static fn () => SparseFieldset::parse('price.amount', ListingSerializer::MEMBERS, new ExtensionMembers(), 'listing')));
 pin('an empty value selects everything', null, SparseFieldset::parse(' ', ListingSerializer::MEMBERS, new ExtensionMembers(), 'listing'));
 
 harness_section('the schema and the serializers agree');

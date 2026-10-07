@@ -28802,7 +28802,6 @@
                         "examples": [
                             "invalid_json",
                             "invalid_cursor",
-                            "invalid_query",
                             "invalid_header",
                             "unsupported_grant_type",
                             "invalid_request",

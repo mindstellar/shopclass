@@ -34,7 +34,6 @@ final class Problem
     public const CATALOGUE = [
         'invalid_json'           => [400, 'The request body is not valid JSON.'],
         'invalid_cursor'         => [400, 'The cursor is not valid for this request.'],
-        'invalid_query'          => [400, 'The query string is not valid.'],
         'invalid_header'         => [400, 'A request header is not valid.'],
         'unsupported_grant_type' => [400, 'The grant type is not supported.'],
         'invalid_request'        => [400, 'The token request is not valid.'],

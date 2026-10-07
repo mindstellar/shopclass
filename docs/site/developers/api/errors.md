@@ -73,10 +73,6 @@ The body is not valid JSON, or not a JSON object. Every endpoint that takes a bo
 The `cursor` is forged, more than a day old, or was made for other filters, sort or order. Start again from the
 first page and follow `links.next`.
 
-#### `invalid_query`
-
-A query value the endpoint cannot use, such as `fields=bogus` or `include=bogus`.
-
 #### `invalid_header`
 
 A request header is malformed. Today that is an `Idempotency-Key` that is empty, over 255

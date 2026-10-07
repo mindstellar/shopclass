@@ -135,7 +135,7 @@ $problem = static function (callable $fn): ?string {
 
     return null;
 };
-pin('an undeclared field cannot be selected by name', 'invalid_query', $problem(static fn () => SparseFieldset::parse('ext.acme.nope', ListingSerializer::MEMBERS, $declared, 'listing')));
+pin('an undeclared field cannot be selected by name', 'validation_failed', $problem(static fn () => SparseFieldset::parse('ext.acme.nope', ListingSerializer::MEMBERS, $declared, 'listing')));
 
 harness_section('api_listing');
 $ext       = new Extensions($declared, $warn);

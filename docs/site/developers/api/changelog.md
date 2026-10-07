@@ -111,6 +111,7 @@ Also settled before the first release, so no released client saw the old behavio
 - `Idempotency-Key` treats another `If-Match` as another request, and a lock outlives the longest a PHP request may run.
 - `GET /` no longer shows the software version, and `features.public_reads` is gone: `api.public_reads` says the same.
 - Token endpoint errors carry `error_description`, as RFC 6749 names it.
+- An unknown `fields` or `include` value is `422 validation_failed` at `/fields` or `/include`, as every other bad query value is. `invalid_query` is gone.
 - A valid token from an address that sent many bad ones works; only that address's failing tokens answer `429 too_many_failures`.
 - `Idempotency-Key` keeps every `4xx` except `429`, including a `409` or `422` from a core refusal.
 - A banned user's access token or personal key answers `403 banned`, as a session call does.
