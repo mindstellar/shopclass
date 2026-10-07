@@ -87,6 +87,8 @@ pin('a patch changes only what it names', $sorted([
 pin('a null field removes it; others stay', [6 => ['from' => '100', 'to' => '200'], 7 => 'new'], $patched['meta']);
 pin('a title in another locale leaves the default one', ['en_US' => 'Car', 'de_DE' => 'Wagen'], $form->patch($stored, ['locale' => 'de_DE', 'title' => 'Wagen'])['title']);
 pin('a null price clears it', '', $form->patch($stored, ['price' => null])['price']);
+$cleared = $form->patch($stored, ['address' => null, 'contact_phone' => null, 'translations' => ['de_DE' => null]]);
+pin('null clears an optional member, and removes a language', ['', '', ['en_US' => 'Car', 'de_DE' => '']], [$cleared['address'], $cleared['contactPhone'], $cleared['title']]);
 pin('a city id clears the stored city name', ['', '12'], [$form->patch($stored, ['city_id' => 12])['city'], $form->patch($stored, ['city_id' => 12])['cityId']]);
 
 harness_section('uploads');

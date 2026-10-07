@@ -138,7 +138,10 @@ final class ListingBody
         $locale = is_string($body['locale'] ?? null) && $body['locale'] !== '' ? $body['locale'] : $this->defaultLocale;
         $texts  = [$locale => array_intersect_key($body, ['title' => true, 'description' => true])];
         foreach ((array) ($body['translations'] ?? []) as $code => $text) {
-            if (is_string($code) && is_array($text)) {
+            if (is_string($code) && $text === null && $code !== $locale) {
+                // null removes the language: the form saves no text for a locale left empty.
+                $texts[$code] = ['title' => '', 'description' => ''];
+            } elseif (is_string($code) && is_array($text)) {
                 $texts[$code] = array_intersect_key($text, ['title' => true, 'description' => true]) + ($texts[$code] ?? []);
             }
         }

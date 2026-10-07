@@ -581,20 +581,21 @@ final class Schema
      */
     public static function profileMembers(): array
     {
-        $text = static fn (int $max, int $min = 0): array => ['type' => 'string', 'minLength' => $min, 'maxLength' => $max];
+        $text     = static fn (int $max, int $min = 0): array => ['type' => 'string', 'minLength' => $min, 'maxLength' => $max];
+        $optional = static fn (int $max): array => ['type' => ['string', 'null'], 'maxLength' => $max, 'description' => 'null or "" clears it.'];
 
         return [
             'name'         => $text(100, 1),
             'email'        => ['type' => 'string', 'format' => 'email', 'maxLength' => 100, 'description' => 'A new address is applied once the link e-mailed to it is opened.'],
-            'website'      => $text(100),
-            'phone_land'   => $text(45),
-            'phone_mobile' => $text(45),
-            'country'      => ['type' => 'string', 'pattern' => '^([A-Za-z]{2})?$', 'description' => 'Country code; empty to clear.'],
+            'website'      => $optional(100),
+            'phone_land'   => $optional(45),
+            'phone_mobile' => $optional(45),
+            'country'      => ['type' => ['string', 'null'], 'pattern' => '^([A-Za-z]{2})?$', 'description' => 'Country code; null or "" clears it.'],
             'region_id'    => ['type' => ['integer', 'null'], 'minimum' => 1],
             'city_id'      => ['type' => ['integer', 'null'], 'minimum' => 1],
-            'city_area'    => $text(200),
-            'address'      => $text(100),
-            'zip'          => $text(15),
+            'city_area'    => $optional(200),
+            'address'      => $optional(100),
+            'zip'          => $optional(15),
             'lat'          => ['type' => ['number', 'null'], 'minimum' => -90, 'maximum' => 90],
             'lng'          => ['type' => ['number', 'null'], 'minimum' => -180, 'maximum' => 180],
             'is_company'   => ['type' => 'boolean'],
@@ -608,8 +609,9 @@ final class Schema
      */
     public static function listingMembers(): array
     {
-        $text   = static fn (int $max, int $min = 0): array => ['type' => 'string', 'minLength' => $min, 'maxLength' => $max];
-        $locale = ['type' => 'string', 'pattern' => '^[A-Za-z]{2,3}_[A-Za-z]{2}$'];
+        $text     = static fn (int $max, int $min = 0): array => ['type' => 'string', 'minLength' => $min, 'maxLength' => $max];
+        $optional = static fn (int $max): array => ['type' => ['string', 'null'], 'maxLength' => $max, 'description' => 'null or "" clears it.'];
+        $locale   = ['type' => 'string', 'pattern' => '^[A-Za-z]{2,3}_[A-Za-z]{2}$'];
 
         return [
             'category_id'   => ['type' => 'integer', 'minimum' => 1],
@@ -618,8 +620,8 @@ final class Schema
             'locale'        => $locale + ['description' => 'The language of `title` and `description`.'],
             'translations'  => [
                 'type'                 => 'object',
-                'description'          => 'Locale => {title, description}, for other languages.',
-                'additionalProperties' => self::object(['title' => $text(1000), 'description' => $text(20000)]) + ['additionalProperties' => false],
+                'description'          => 'Locale => {title, description}, for other languages; null removes that language.',
+                'additionalProperties' => ['type' => ['object', 'null'], 'properties' => ['title' => $text(1000), 'description' => $text(20000)], 'additionalProperties' => false],
             ],
             'price'         => [
                 'type'        => ['string', 'number', 'null'],
@@ -628,17 +630,17 @@ final class Schema
                 'description' => 'A decimal such as "12.50"; null for no price.',
             ],
             'currency'      => ['type' => 'string', 'pattern' => '^[A-Z]{3}$'],
-            'country'       => ['type' => 'string', 'pattern' => '^([A-Za-z]{2})?$', 'description' => 'Country code; empty to clear.'],
+            'country'       => ['type' => ['string', 'null'], 'pattern' => '^([A-Za-z]{2})?$', 'description' => 'Country code; null or "" clears it.'],
             'region_id'     => ['type' => ['integer', 'null'], 'minimum' => 1],
-            'region'        => $text(100) + ['description' => 'A region name, when it has no id.'],
+            'region'        => ['description' => 'A region name, when it has no id; null or "" clears it.'] + $optional(100),
             'city_id'       => ['type' => ['integer', 'null'], 'minimum' => 1],
-            'city'          => $text(100) + ['description' => 'A city name, when it has no id.'],
-            'city_area'     => $text(200),
-            'address'       => $text(100),
-            'zip'           => $text(15),
+            'city'          => ['description' => 'A city name, when it has no id; null or "" clears it.'] + $optional(100),
+            'city_area'     => $optional(200),
+            'address'       => $optional(100),
+            'zip'           => $optional(15),
             'lat'           => ['type' => ['number', 'null'], 'minimum' => -90, 'maximum' => 90],
             'lng'           => ['type' => ['number', 'null'], 'minimum' => -180, 'maximum' => 180],
-            'contact_phone' => $text(45),
+            'contact_phone' => $optional(45),
             'show_email'    => ['type' => 'boolean'],
             'custom_fields' => [
                 'type'                 => 'object',

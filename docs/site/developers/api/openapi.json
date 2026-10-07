@@ -38706,24 +38706,36 @@
                         "description": "A new address is applied once the link e-mailed to it is opened."
                     },
                     "website": {
-                        "type": "string",
-                        "minLength": 0,
-                        "maxLength": 100
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 100,
+                        "description": "null or \"\" clears it."
                     },
                     "phone_land": {
-                        "type": "string",
-                        "minLength": 0,
-                        "maxLength": 45
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 45,
+                        "description": "null or \"\" clears it."
                     },
                     "phone_mobile": {
-                        "type": "string",
-                        "minLength": 0,
-                        "maxLength": 45
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 45,
+                        "description": "null or \"\" clears it."
                     },
                     "country": {
-                        "type": "string",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
                         "pattern": "^([A-Za-z]{2})?$",
-                        "description": "Country code; empty to clear."
+                        "description": "Country code; null or \"\" clears it."
                     },
                     "region_id": {
                         "type": [
@@ -38740,19 +38752,28 @@
                         "minimum": 1
                     },
                     "city_area": {
-                        "type": "string",
-                        "minLength": 0,
-                        "maxLength": 200
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 200,
+                        "description": "null or \"\" clears it."
                     },
                     "address": {
-                        "type": "string",
-                        "minLength": 0,
-                        "maxLength": 100
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 100,
+                        "description": "null or \"\" clears it."
                     },
                     "zip": {
-                        "type": "string",
-                        "minLength": 0,
-                        "maxLength": 15
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 15,
+                        "description": "null or \"\" clears it."
                     },
                     "lat": {
                         "type": [
@@ -39046,9 +39067,12 @@
                     },
                     "translations": {
                         "type": "object",
-                        "description": "Locale => {title, description}, for other languages.",
+                        "description": "Locale => {title, description}, for other languages; null removes that language.",
                         "additionalProperties": {
-                            "type": "object",
+                            "type": [
+                                "object",
+                                "null"
+                            ],
                             "properties": {
                                 "title": {
                                     "type": "string",
@@ -39079,9 +39103,12 @@
                         "pattern": "^[A-Z]{3}$"
                     },
                     "country": {
-                        "type": "string",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
                         "pattern": "^([A-Za-z]{2})?$",
-                        "description": "Country code; empty to clear."
+                        "description": "Country code; null or \"\" clears it."
                     },
                     "region_id": {
                         "type": [
@@ -39091,10 +39118,12 @@
                         "minimum": 1
                     },
                     "region": {
-                        "type": "string",
-                        "minLength": 0,
-                        "maxLength": 100,
-                        "description": "A region name, when it has no id."
+                        "description": "A region name, when it has no id; null or \"\" clears it.",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 100
                     },
                     "city_id": {
                         "type": [
@@ -39104,25 +39133,36 @@
                         "minimum": 1
                     },
                     "city": {
-                        "type": "string",
-                        "minLength": 0,
-                        "maxLength": 100,
-                        "description": "A city name, when it has no id."
-                    },
-                    "city_area": {
-                        "type": "string",
-                        "minLength": 0,
-                        "maxLength": 200
-                    },
-                    "address": {
-                        "type": "string",
-                        "minLength": 0,
+                        "description": "A city name, when it has no id; null or \"\" clears it.",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
                         "maxLength": 100
                     },
+                    "city_area": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 200,
+                        "description": "null or \"\" clears it."
+                    },
+                    "address": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 100,
+                        "description": "null or \"\" clears it."
+                    },
                     "zip": {
-                        "type": "string",
-                        "minLength": 0,
-                        "maxLength": 15
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 15,
+                        "description": "null or \"\" clears it."
                     },
                     "lat": {
                         "type": [
@@ -39141,9 +39181,12 @@
                         "maximum": 180
                     },
                     "contact_phone": {
-                        "type": "string",
-                        "minLength": 0,
-                        "maxLength": 45
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 45,
+                        "description": "null or \"\" clears it."
                     },
                     "show_email": {
                         "type": "boolean"
@@ -39217,9 +39260,12 @@
                     },
                     "translations": {
                         "type": "object",
-                        "description": "Locale => {title, description}, for other languages.",
+                        "description": "Locale => {title, description}, for other languages; null removes that language.",
                         "additionalProperties": {
-                            "type": "object",
+                            "type": [
+                                "object",
+                                "null"
+                            ],
                             "properties": {
                                 "title": {
                                     "type": "string",
@@ -39250,9 +39296,12 @@
                         "pattern": "^[A-Z]{3}$"
                     },
                     "country": {
-                        "type": "string",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
                         "pattern": "^([A-Za-z]{2})?$",
-                        "description": "Country code; empty to clear."
+                        "description": "Country code; null or \"\" clears it."
                     },
                     "region_id": {
                         "type": [
@@ -39262,10 +39311,12 @@
                         "minimum": 1
                     },
                     "region": {
-                        "type": "string",
-                        "minLength": 0,
-                        "maxLength": 100,
-                        "description": "A region name, when it has no id."
+                        "description": "A region name, when it has no id; null or \"\" clears it.",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 100
                     },
                     "city_id": {
                         "type": [
@@ -39275,25 +39326,36 @@
                         "minimum": 1
                     },
                     "city": {
-                        "type": "string",
-                        "minLength": 0,
-                        "maxLength": 100,
-                        "description": "A city name, when it has no id."
-                    },
-                    "city_area": {
-                        "type": "string",
-                        "minLength": 0,
-                        "maxLength": 200
-                    },
-                    "address": {
-                        "type": "string",
-                        "minLength": 0,
+                        "description": "A city name, when it has no id; null or \"\" clears it.",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
                         "maxLength": 100
                     },
+                    "city_area": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 200,
+                        "description": "null or \"\" clears it."
+                    },
+                    "address": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 100,
+                        "description": "null or \"\" clears it."
+                    },
                     "zip": {
-                        "type": "string",
-                        "minLength": 0,
-                        "maxLength": 15
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 15,
+                        "description": "null or \"\" clears it."
                     },
                     "lat": {
                         "type": [
@@ -39312,9 +39374,12 @@
                         "maximum": 180
                     },
                     "contact_phone": {
-                        "type": "string",
-                        "minLength": 0,
-                        "maxLength": 45
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 45,
+                        "description": "null or \"\" clears it."
                     },
                     "show_email": {
                         "type": "boolean"
@@ -40003,9 +40068,12 @@
                     },
                     "translations": {
                         "type": "object",
-                        "description": "Locale => {title, description}, for other languages.",
+                        "description": "Locale => {title, description}, for other languages; null removes that language.",
                         "additionalProperties": {
-                            "type": "object",
+                            "type": [
+                                "object",
+                                "null"
+                            ],
                             "properties": {
                                 "title": {
                                     "type": "string",
@@ -40036,9 +40104,12 @@
                         "pattern": "^[A-Z]{3}$"
                     },
                     "country": {
-                        "type": "string",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
                         "pattern": "^([A-Za-z]{2})?$",
-                        "description": "Country code; empty to clear."
+                        "description": "Country code; null or \"\" clears it."
                     },
                     "region_id": {
                         "type": [
@@ -40048,10 +40119,12 @@
                         "minimum": 1
                     },
                     "region": {
-                        "type": "string",
-                        "minLength": 0,
-                        "maxLength": 100,
-                        "description": "A region name, when it has no id."
+                        "description": "A region name, when it has no id; null or \"\" clears it.",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 100
                     },
                     "city_id": {
                         "type": [
@@ -40061,25 +40134,36 @@
                         "minimum": 1
                     },
                     "city": {
-                        "type": "string",
-                        "minLength": 0,
-                        "maxLength": 100,
-                        "description": "A city name, when it has no id."
-                    },
-                    "city_area": {
-                        "type": "string",
-                        "minLength": 0,
-                        "maxLength": 200
-                    },
-                    "address": {
-                        "type": "string",
-                        "minLength": 0,
+                        "description": "A city name, when it has no id; null or \"\" clears it.",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
                         "maxLength": 100
                     },
+                    "city_area": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 200,
+                        "description": "null or \"\" clears it."
+                    },
+                    "address": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 100,
+                        "description": "null or \"\" clears it."
+                    },
                     "zip": {
-                        "type": "string",
-                        "minLength": 0,
-                        "maxLength": 15
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 15,
+                        "description": "null or \"\" clears it."
                     },
                     "lat": {
                         "type": [
@@ -40098,9 +40182,12 @@
                         "maximum": 180
                     },
                     "contact_phone": {
-                        "type": "string",
-                        "minLength": 0,
-                        "maxLength": 45
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 45,
+                        "description": "null or \"\" clears it."
                     },
                     "show_email": {
                         "type": "boolean"
@@ -40352,24 +40439,36 @@
                         "maxLength": 100
                     },
                     "website": {
-                        "type": "string",
-                        "minLength": 0,
-                        "maxLength": 100
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 100,
+                        "description": "null or \"\" clears it."
                     },
                     "phone_land": {
-                        "type": "string",
-                        "minLength": 0,
-                        "maxLength": 45
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 45,
+                        "description": "null or \"\" clears it."
                     },
                     "phone_mobile": {
-                        "type": "string",
-                        "minLength": 0,
-                        "maxLength": 45
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 45,
+                        "description": "null or \"\" clears it."
                     },
                     "country": {
-                        "type": "string",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
                         "pattern": "^([A-Za-z]{2})?$",
-                        "description": "Country code; empty to clear."
+                        "description": "Country code; null or \"\" clears it."
                     },
                     "region_id": {
                         "type": [
@@ -40386,19 +40485,28 @@
                         "minimum": 1
                     },
                     "city_area": {
-                        "type": "string",
-                        "minLength": 0,
-                        "maxLength": 200
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 200,
+                        "description": "null or \"\" clears it."
                     },
                     "address": {
-                        "type": "string",
-                        "minLength": 0,
-                        "maxLength": 100
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 100,
+                        "description": "null or \"\" clears it."
                     },
                     "zip": {
-                        "type": "string",
-                        "minLength": 0,
-                        "maxLength": 15
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 15,
+                        "description": "null or \"\" clears it."
                     },
                     "lat": {
                         "type": [

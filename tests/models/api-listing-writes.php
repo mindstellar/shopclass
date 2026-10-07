@@ -441,6 +441,8 @@ pin('another seller\'s live listing is 403 not_owner', '403 not_owner', $code($c
 pin('another seller\'s pending listing is 404', 404, $call('PATCH', 'listings/' . $pendingId, array('price' => '1'), $tomToken)->status());
 pin('an unknown listing is 404', 404, $call('PATCH', 'listings/999999', array('price' => '1'), $sueToken)->status());
 pin('an edit is refused as the form refuses it', 422, $call('PATCH', 'listings/' . $made, array('title' => ''), $sueToken)->status());
+$r = $call('PATCH', 'listings/' . $made, array('contact_phone' => null, 'address' => null), $sueToken);
+pin('null clears an optional member, as JSON Merge Patch says', array(200, null, null), array($r->status(), $r->body()['data']['contact']['phone'] ?? null, $r->body()['data']['location']['address'] ?? null));
 $colourOf = static fn (): ?string => $admin->query("SELECT s_value FROM {$p}t_item_meta WHERE fk_i_item_id = $made AND fk_i_field_id = $colour")->fetch_row()[0] ?? null;
 $call('PATCH', 'listings/' . $made, array('custom_fields' => array((string) $colour => 'Black & white < "grey"')), $sueToken);
 $once = $colourOf();

@@ -153,7 +153,8 @@ Send `application/merge-patch+json` or `application/json`. The answer repeats `A
 | In the body | Effect |
 |---|---|
 | A member | Replaces that value. |
-| `null` on `price`, `lat`, `lng`, `region_id`, `city_id` | Clears it. |
+| `null` on any member that can be empty: `price`, the location members, `contact_phone`, `lat`, `lng` | Clears it, as `""` does. |
+| `translations: {"de_DE": null}` | Removes that language. |
 | `custom_fields: {"4": null}` | Removes that custom field value. |
 | `translations` | Merges by locale. Other locales stay. |
 | `photo_tokens`, `photo_urls` | **Adds** photos. It never replaces or removes any. |
