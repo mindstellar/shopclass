@@ -12,14 +12,13 @@ declare(strict_types=1);
 
 namespace mindstellar\api\controller;
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\auth\UserRows;
 use mindstellar\api\ProblemException;
-use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\KeySerializer;
 use mindstellar\api\serializer\Links;
-use mindstellar\apiaccess\Credential;
 use mindstellar\apiaccess\PersonalKeys;
 use mindstellar\apiaccess\StoredKey;
 use mindstellar\utility\Clock;
@@ -47,32 +46,26 @@ final class AccountKeysController
         $this->serializer = new KeySerializer();
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function index(Request $request, Credential $credential, array $args): Response
+    public function index(ApiCall $call): Response
     {
         $this->allowed();
         $now = $this->clock->now();
 
         return Response::collection(array_map(
             fn (StoredKey $key): array => $this->serializer->personal($key, $now),
-            $this->keys->list((int) $credential->userId())
+            $this->keys->list((int) $call->credential()->userId())
         ));
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function create(Request $request, Credential $credential, array $args): Response
+    public function create(ApiCall $call): Response
     {
         $this->allowed();
-        $userId = (int) $credential->userId();
+        $userId = (int) $call->credential()->userId();
         $user   = $this->users->find($userId);
         if ($user === null) {
             throw ProblemException::of('not_found', 'No such user.');
         }
-        $input = $request->input();
+        $input = $call->request()->input();
         $issued = $this->keys->create(
             $user,
             (string) ($input['current_password'] ?? ''),
@@ -88,13 +81,10 @@ final class AccountKeysController
         return Response::created($this->serializer->personal($key, $this->clock->now(), $issued->token()), $this->links->api('account/keys/' . $key->id()));
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function show(Request $request, Credential $credential, array $args): Response
+    public function show(ApiCall $call): Response
     {
         $this->allowed();
-        $key = $this->keys->find((int) $credential->userId(), (int) $args['id']);
+        $key = $this->keys->find((int) $call->credential()->userId(), (int) $call->arg('id'));
         if ($key === null) {
             throw ProblemException::of('not_found', 'No such key.');
         }
@@ -102,13 +92,10 @@ final class AccountKeysController
         return Response::ok($this->serializer->personal($key, $this->clock->now()));
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function revoke(Request $request, Credential $credential, array $args): Response
+    public function revoke(ApiCall $call): Response
     {
         $this->allowed();
-        if (!$this->keys->revoke((int) $credential->userId(), (int) $args['id'])) {
+        if (!$this->keys->revoke((int) $call->credential()->userId(), (int) $call->arg('id'))) {
             throw ProblemException::of('not_found', 'No such key.');
         }
 

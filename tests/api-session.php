@@ -23,6 +23,7 @@ define('WEB_PATH', 'https://shop.example.test/sub/');
 require_once __DIR__ . '/lib/api-boot.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hUsers.php';
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\auth\PageTokenAuth;
 use mindstellar\api\controller\PageTokenController;
 use mindstellar\api\http\Cors;
@@ -99,18 +100,18 @@ $session = static fn (array $headers = [], ?SignInCookie $signIn = null, string 
 
 $calls  = 0;
 $routes = [
-    'GET me'       => ['handler' => static fn (Request $r, Credential $c): Response => Response::ok([
-        'user' => osc_logged_user_id(), 'kind' => $c->kind(), 'scopes' => $c->scopes(),
+    'GET me'       => ['handler' => static fn (ApiCall $call): Response => Response::ok([
+        'user' => osc_logged_user_id(), 'kind' => $call->credential()->kind(), 'scopes' => $call->credential()->scopes(),
     ]), 'auth' => 'public', 'scope' => 'listings:read'],
-    'POST notes'   => ['handler' => static function (Request $r, Credential $c) use (&$calls): Response {
+    'POST notes'   => ['handler' => static function (ApiCall $call) use (&$calls): Response {
         $calls++;
 
-        return Response::ok(['calls' => $calls, 'user' => $c->userId()], 201);
+        return Response::ok(['calls' => $calls, 'user' => $call->credential()->userId()], 201);
     }, 'auth' => 'user', 'scope' => 'listings:write'],
     'POST secret'  => ['handler' => static fn (): Response => Response::ok(['done' => true]), 'auth' => 'user', 'scope' => 'account:write'],
     'GET admin/x'  => ['handler' => static fn (): Response => Response::ok(['admin' => true]), 'auth' => 'admin', 'scope' => 'admin:users'],
     'GET auth/session' => [
-        'handler' => static fn (Request $r, Credential $c, array $a): Response => (new PageTokenController(new \mindstellar\api\ApiServices(new ApiSettings(true), $scopes, new \mindstellar\model\ApiCredential(), $accounts(), new SystemClock(), api_test_limiter())))->show($r, $c, $a),
+        'handler' => static fn (ApiCall $call): Response => (new PageTokenController(new \mindstellar\api\ApiServices(new ApiSettings(true), $scopes, new \mindstellar\model\ApiCredential(), $accounts(), new SystemClock(), api_test_limiter())))->show($call),
         'auth'    => 'user',
         'scope'   => 'account:read',
     ],

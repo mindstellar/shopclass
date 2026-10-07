@@ -12,14 +12,13 @@ declare(strict_types=1);
 
 namespace mindstellar\api\controller;
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
-use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\Format;
 use mindstellar\api\write\OwnedListing;
 use mindstellar\api\write\PhotoIntake;
-use mindstellar\apiaccess\Credential;
 use mindstellar\listing\PhotoService;
 
 /**
@@ -40,24 +39,23 @@ final class PhotosController
 
     /**
      * POST /photos
-     *
-     * @param array<string,string> $args
      */
-    public function stage(Request $request, Credential $credential, array $args): Response
+    public function stage(ApiCall $call): Response
     {
-        $staged = $this->photos->stage((int) $credential->userId(), $this->photos->upload($request));
+        $staged = $this->photos->stage((int) $call->credential()->userId(), $this->photos->upload($call->request()));
 
         return Response::ok(['token' => $staged->token(), 'expires_at' => Format::timestamp($staged->expiresAt())]);
     }
 
     /**
      * POST /listings/{id}/photos
-     *
-     * @param array<string,string> $args
      */
-    public function add(Request $request, Credential $credential, array $args): Response
+    public function add(ApiCall $call): Response
     {
-        $listing = OwnedListing::own((int) $args['id'], $credential);
+        $request = $call->request();
+        $credential = $call->credential();
+
+        $listing = OwnedListing::own((int) $call->arg('id'), $credential);
         $id      = $listing->id();
         $cap     = PhotoService::cap($listing->userId());
         if (PhotoService::room($id, $listing->userId()) === 0) {
@@ -84,14 +82,15 @@ final class PhotosController
 
     /**
      * DELETE /listings/{id}/photos/{photo}
-     *
-     * @param array<string,string> $args
      */
-    public function remove(Request $request, Credential $credential, array $args): Response
+    public function remove(ApiCall $call): Response
     {
+        $credential = $call->credential();
+        $args = $call->args();
+
         $id      = OwnedListing::own((int) $args['id'], $credential)->id();
         $photoId = ctype_digit($args['photo']) ? (int) $args['photo'] : 0;
-        if (!(new PhotoService())->delete($photoId, $id, $credential->actor($request->ip()))) {
+        if (!(new PhotoService())->delete($photoId, $id, $credential->actor($call->request()->ip()))) {
             throw ProblemException::of('not_found', 'No such photo on this listing.');
         }
 

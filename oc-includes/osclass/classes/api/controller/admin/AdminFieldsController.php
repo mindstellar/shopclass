@@ -12,11 +12,10 @@ declare(strict_types=1);
 
 namespace mindstellar\api\controller\admin;
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
-use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\CustomFieldSerializer;
-use mindstellar\apiaccess\Credential;
 use mindstellar\fields\FieldService;
 
 /**
@@ -33,23 +32,21 @@ final class AdminFieldsController
 
     /**
      * POST /admin/custom-fields
-     *
-     * @param array<string,string> $args
      */
-    public function create(Request $request, Credential $credential, array $args): Response
+    public function create(ApiCall $call): Response
     {
-        $id = $this->fields->create($request->input());
+        $id = $this->fields->create($call->request()->input());
 
         return Response::created($this->field($id), $this->api->links()->api('admin/custom-fields/' . $id));
     }
 
     /**
      * GET /admin/custom-fields/{id}
-     *
-     * @param array<string,string> $args
      */
-    public function show(Request $request, Credential $credential, array $args): Response
+    public function show(ApiCall $call): Response
     {
+        $args = $call->args();
+
         $this->fields->find((int) $args['id']);
 
         return Response::ok($this->field((int) $args['id']));
@@ -58,24 +55,22 @@ final class AdminFieldsController
     /**
      * PATCH /admin/custom-fields/{id}. Members not sent keep their values; `categories` replaces
      * the list.
-     *
-     * @param array<string,string> $args
      */
-    public function update(Request $request, Credential $credential, array $args): Response
+    public function update(ApiCall $call): Response
     {
-        $this->fields->update((int) $args['id'], $request->input());
+        $args = $call->args();
+
+        $this->fields->update((int) $args['id'], $call->request()->input());
 
         return Response::ok($this->field((int) $args['id']));
     }
 
     /**
      * DELETE /admin/custom-fields/{id}
-     *
-     * @param array<string,string> $args
      */
-    public function delete(Request $request, Credential $credential, array $args): Response
+    public function delete(ApiCall $call): Response
     {
-        $this->fields->delete((int) $args['id']);
+        $this->fields->delete((int) $call->arg('id'));
 
         return Response::noContent();
     }

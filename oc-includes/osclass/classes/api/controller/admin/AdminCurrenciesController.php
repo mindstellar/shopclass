@@ -12,11 +12,10 @@ declare(strict_types=1);
 
 namespace mindstellar\api\controller\admin;
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
-use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\LocationSerializer;
-use mindstellar\apiaccess\Credential;
 use mindstellar\currency\CurrencyService;
 use mindstellar\validation\NotFoundException;
 
@@ -34,12 +33,10 @@ final class AdminCurrenciesController
 
     /**
      * POST /admin/currencies
-     *
-     * @param array<string,string> $args
      */
-    public function create(Request $request, Credential $credential, array $args): Response
+    public function create(ApiCall $call): Response
     {
-        $input = $request->input();
+        $input = $call->request()->input();
         $code  = $this->currencies->create((string) $input['code'], (string) $input['name'], (string) ($input['symbol'] ?? ''));
 
         return Response::created($this->currency($code), $this->api->links()->api('admin/currencies/' . $code));
@@ -47,12 +44,10 @@ final class AdminCurrenciesController
 
     /**
      * GET /admin/currencies/{code}
-     *
-     * @param array<string,string> $args
      */
-    public function show(Request $request, Credential $credential, array $args): Response
+    public function show(ApiCall $call): Response
     {
-        $code = self::code($args);
+        $code = self::code($call->args());
         if ($this->currencies->find($code) === null) {
             throw new NotFoundException(_m('No such currency.'));
         }
@@ -62,13 +57,11 @@ final class AdminCurrenciesController
 
     /**
      * PATCH /admin/currencies/{code}
-     *
-     * @param array<string,string> $args
      */
-    public function update(Request $request, Credential $credential, array $args): Response
+    public function update(ApiCall $call): Response
     {
-        $code  = self::code($args);
-        $input = $request->input();
+        $code  = self::code($call->args());
+        $input = $call->request()->input();
         $this->currencies->update(
             $code,
             array_key_exists('name', $input) ? (string) $input['name'] : null,
@@ -80,12 +73,10 @@ final class AdminCurrenciesController
 
     /**
      * DELETE /admin/currencies/{code}: not the site's default, nor one a listing is priced in.
-     *
-     * @param array<string,string> $args
      */
-    public function delete(Request $request, Credential $credential, array $args): Response
+    public function delete(ApiCall $call): Response
     {
-        $this->currencies->delete(self::code($args));
+        $this->currencies->delete(self::code($call->args()));
 
         return Response::noContent();
     }

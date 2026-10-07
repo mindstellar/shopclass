@@ -17,6 +17,7 @@
 
 require_once __DIR__ . '/lib/api-boot.php';
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\RouteSpec;
@@ -24,7 +25,6 @@ use mindstellar\api\routing\Router;
 use mindstellar\api\routing\RouteTable;
 use mindstellar\api\schema\Validator;
 use mindstellar\apiaccess\ApiKeys;
-use mindstellar\apiaccess\Credential;
 use mindstellar\apiaccess\Scopes;
 use mindstellar\utility\SystemClock;
 
@@ -52,7 +52,7 @@ $store = new class () implements \mindstellar\apiaccess\CredentialStore {
 
 harness_section('the Kernel');
 $spec      = RouteSpec::read([stdClass::class, 'x'], 'T', 'A read', 'Problem', ['limit' => ['type' => 'integer', 'minimum' => 1]]);
-$spec      = ['handler' => static fn (Request $r, Credential $c, array $a): Response => Response::ok(['query' => $r->query()]), 'auth' => RouteSpec::AUTH_NONE] + $spec;
+$spec      = ['handler' => static fn (ApiCall $call): Response => Response::ok(['query' => $call->request()->query()]), 'auth' => RouteSpec::AUTH_NONE] + $spec;
 $validator = new Validator([]);
 $kernel    = api_test_kernel(new Router($validator, ['GET things' => $spec]), api_test_authenticator(new ApiKeys($store, new Scopes(), new SystemClock())), validator: $validator);
 $call      = static fn (array $query): Response => $kernel->handle(new Request('GET', 'v1/things', $query, [], '127.0.0.1'));

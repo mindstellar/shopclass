@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\api\controller;
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\auth\RefreshTokens;
 use mindstellar\api\auth\TokenIssuer;
@@ -21,7 +22,6 @@ use mindstellar\api\Problem;
 use mindstellar\api\ProblemException;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
-use mindstellar\apiaccess\Credential;
 use mindstellar\auth\SignIn;
 
 /**
@@ -51,11 +51,10 @@ final class AuthController
         $this->refresh = $api->refreshTokens();
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function token(Request $request, Credential $credential, array $args): Response
+    public function token(ApiCall $call): Response
     {
+        $request = $call->request();
+
         $input = $request->input();
         if (!osc_users_enabled()) {
             throw ProblemException::of('feature_disabled', 'This site has no user accounts.');
@@ -81,16 +80,15 @@ final class AuthController
         };
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function signOut(Request $request, Credential $credential, array $args): Response
+    public function signOut(ApiCall $call): Response
     {
+        $credential = $call->credential();
+
         $family = $credential->isAccessToken() ? $credential->family() : null;
         if ($family === null) {
             throw ProblemException::of('wrong_credential', 'Signing out needs an access token. Revoke a key at /account/keys.');
         }
-        $this->refresh->end((int) $credential->userId(), ($request->input()['all'] ?? false) === true ? null : $family);
+        $this->refresh->end((int) $credential->userId(), ($call->request()->input()['all'] ?? false) === true ? null : $family);
 
         return Response::noContent();
     }

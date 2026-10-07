@@ -12,9 +12,9 @@ declare(strict_types=1);
 
 namespace mindstellar\api\controller\admin;
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
-use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\KeySerializer;
 use mindstellar\api\serializer\Links;
@@ -43,30 +43,24 @@ final class AdminKeysController
         $this->serializer = new KeySerializer();
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function index(Request $request, Credential $credential, array $args): Response
+    public function index(): Response
     {
         return Response::collection(array_map([$this->serializer, 'admin'], $this->keys->rows()));
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function show(Request $request, Credential $credential, array $args): Response
+    public function show(ApiCall $call): Response
     {
-        return Response::ok($this->serializer->admin($this->key((int) $args['id'])));
+        return Response::ok($this->serializer->admin($this->key((int) $call->arg('id'))));
     }
 
     /**
      * POST /admin/keys
-     *
-     * @param array<string,string> $args
      */
-    public function create(Request $request, Credential $credential, array $args): Response
+    public function create(ApiCall $call): Response
     {
-        $input  = $request->input();
+        $credential = $call->credential();
+
+        $input  = $call->request()->input();
         $kind   = ($input['kind'] ?? 'admin') === 'public' ? CredentialKind::PUBLIC : CredentialKind::KEY;
         $scopes = array_values(array_map('strval', (array) ($input['scopes'] ?? [])));
         if ($scopes === [] && $kind === CredentialKind::PUBLIC) {
@@ -87,13 +81,11 @@ final class AdminKeysController
 
     /**
      * DELETE /admin/keys/{id}
-     *
-     * @param array<string,string> $args
      */
-    public function revoke(Request $request, Credential $credential, array $args): Response
+    public function revoke(ApiCall $call): Response
     {
-        $id = (int) $this->key((int) $args['id'])['id'];
-        $this->keys->revoke($id, (int) $credential->adminId());
+        $id = (int) $this->key((int) $call->arg('id'))['id'];
+        $this->keys->revoke($id, (int) $call->credential()->adminId());
 
         return Response::noContent();
     }
@@ -101,12 +93,12 @@ final class AdminKeysController
     /**
      * POST /admin/keys/{id}/rotate: a new key with the old one's name, scopes and expiry, but
      * never outliving the calling key. The old key works until it is revoked.
-     *
-     * @param array<string,string> $args
      */
-    public function rotate(Request $request, Credential $credential, array $args): Response
+    public function rotate(ApiCall $call): Response
     {
-        $old = $this->key((int) $args['id']);
+        $credential = $call->credential();
+
+        $old = $this->key((int) $call->arg('id'));
         if ($old['kind'] !== 'public' && $old['owner_admin'] !== $credential->adminId()) {
             throw ProblemException::of('not_owner', 'Only your own keys and public keys can be rotated. Revoke this one and make a new key instead.');
         }

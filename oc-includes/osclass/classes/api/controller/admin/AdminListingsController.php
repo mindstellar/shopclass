@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\api\controller\admin;
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\ListingList;
@@ -50,14 +51,14 @@ final class AdminListingsController
 
     /**
      * GET /admin/listings: newest first, paged by id.
-     *
-     * @param array<string,string> $args
      */
-    public function index(Request $request, Credential $credential, array $args): Response
+    public function index(ApiCall $call): Response
     {
+        $request = $call->request();
+
         $users = array_map('intval', array_values(array_filter($request->queryList('user'), 'ctype_digit')));
 
-        return $this->list->run($request, $credential, 'admin/listings', $request->queryList('status'), $users, $this->categories($request), trim($request->queryString('q')));
+        return $this->list->run($request, $call->credential(), 'admin/listings', $request->queryList('status'), $users, $this->categories($request), trim($request->queryString('q')));
     }
 
     /**
@@ -77,24 +78,22 @@ final class AdminListingsController
         return array_map('intval', $filter->ids());
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function show(Request $request, Credential $credential, array $args): Response
+    public function show(ApiCall $call): Response
     {
-        return Response::ok($this->view($request, $credential, (int) $args['id']));
+        return Response::ok($this->view($call->request(), $call->credential(), (int) $call->arg('id')));
     }
 
     /**
      * PATCH /admin/listings/{id}. Members not sent keep their stored values, the owner and
      * the expiry date included. `approved`, `blocked`, `spam` and `premium` change the
      * status as the screen's actions do.
-     *
-     * @param array<string,string> $args
      */
-    public function update(Request $request, Credential $credential, array $args): Response
+    public function update(ApiCall $call): Response
     {
-        $listing = OwnedListing::load((int) $args['id'], true);
+        $request = $call->request();
+        $credential = $call->credential();
+
+        $listing = OwnedListing::load((int) $call->arg('id'), true);
         $input   = $request->input();
         $status  = array_intersect_key($input, self::STATUS_MEMBERS);
         $edit    = array_diff_key($input, self::STATUS_MEMBERS);
@@ -114,26 +113,22 @@ final class AdminListingsController
 
     /**
      * DELETE /admin/listings/{id}
-     *
-     * @param array<string,string> $args
      */
-    public function delete(Request $request, Credential $credential, array $args): Response
+    public function delete(ApiCall $call): Response
     {
-        $this->writer->delete(OwnedListing::load((int) $args['id']), $credential->actor($request->ip(), 'admin:listings'));
+        $this->writer->delete(OwnedListing::load((int) $call->arg('id')), $call->credential()->actor($call->request()->ip(), 'admin:listings'));
 
         return Response::noContent();
     }
 
     /**
      * POST /admin/listings/{id}/bump
-     *
-     * @param array<string,string> $args
      */
-    public function bump(Request $request, Credential $credential, array $args): Response
+    public function bump(ApiCall $call): Response
     {
-        $this->moderate('bump', (int) $args['id'], $credential);
+        $this->moderate('bump', (int) $call->arg('id'), $call->credential());
 
-        return $this->show($request, $credential, $args);
+        return $this->show($call);
     }
 
     /**

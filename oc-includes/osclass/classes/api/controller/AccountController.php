@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\api\controller;
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\auth\RefreshTokens;
 
@@ -58,28 +59,28 @@ final class AccountController
     /**
      * GET /account/listings: the user's own listings in any status, as their listings page
      * lists them, newest first.
-     *
-     * @param array<string,string> $args
      */
-    public function listings(Request $request, Credential $credential, array $args): Response
+    public function listings(ApiCall $call): Response
     {
+        $request = $call->request();
+        $credential = $call->credential();
+
         return (new ListingList($this->api, $this->api->listingReader()))
             ->run($request, $credential, 'account/listings', $request->queryList('status'), [(int) $credential->userId()]);
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function show(Request $request, Credential $credential, array $args): Response
+    public function show(ApiCall $call): Response
     {
-        return Response::ok($this->serialize($request, $credential, $this->user($credential)));
+        $credential = $call->credential();
+
+        return Response::ok($this->serialize($call->request(), $credential, $this->user($credential)));
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function update(Request $request, Credential $credential, array $args): Response
+    public function update(ApiCall $call): Response
     {
+        $request = $call->request();
+        $credential = $call->credential();
+
         $input    = $request->input();
         $user     = $this->user($credential);
         $userId   = (int) $user['pk_i_id'];
@@ -114,11 +115,11 @@ final class AccountController
         return Response::ok($data, 200, $warnings === [] ? [] : ['warnings' => $warnings]);
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function password(Request $request, Credential $credential, array $args): Response
+    public function password(ApiCall $call): Response
     {
+        $request = $call->request();
+        $credential = $call->credential();
+
         $input  = $request->input();
         $user   = $this->user($credential);
         $userId = (int) $user['pk_i_id'];
@@ -145,11 +146,11 @@ final class AccountController
 
     /**
      * POST /account/sign-out-everywhere: every sign-in of the user ends, this one too.
-     *
-     * @param array<string,string> $args
      */
-    public function signOutEverywhere(Request $request, Credential $credential, array $args): Response
+    public function signOutEverywhere(ApiCall $call): Response
     {
+        $credential = $call->credential();
+
         if ($credential->family() === null) {
             throw ProblemException::of('wrong_credential', 'Signing out of all devices needs an access token.');
         }
@@ -160,11 +161,10 @@ final class AccountController
         return Response::noContent();
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function sessions(Request $request, Credential $credential, array $args): Response
+    public function sessions(ApiCall $call): Response
     {
+        $credential = $call->credential();
+
         $serializer = new AccessEntrySerializer();
 
         return Response::collection(array_map(
@@ -173,12 +173,9 @@ final class AccountController
         ));
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function endSession(Request $request, Credential $credential, array $args): Response
+    public function endSession(ApiCall $call): Response
     {
-        if (!$this->sessions->end((int) $credential->userId(), $args['session'])) {
+        if (!$this->sessions->end((int) $call->credential()->userId(), $call->arg('session'))) {
             throw ProblemException::of('not_found', 'No such session.');
         }
 

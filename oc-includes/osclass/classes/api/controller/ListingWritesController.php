@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\api\controller;
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\auth\UserRows;
 use mindstellar\api\ProblemException;
@@ -55,11 +56,12 @@ final class ListingWritesController
 
     /**
      * POST /listings
-     *
-     * @param array<string,string> $args
      */
-    public function create(Request $request, Credential $credential, array $args): Response
+    public function create(ApiCall $call): Response
     {
+        $request = $call->request();
+        $credential = $call->credential();
+
         $userId = (int) $credential->userId();
         $actor  = $credential->actor($request->ip());
         $this->api->limiter()->enforceAll($this->api->ratePolicy()->newListing($userId, $request->ip()), 'Too many new listings in an hour. Try again later.');
@@ -75,13 +77,14 @@ final class ListingWritesController
 
     /**
      * PATCH /listings/{id}. Members not sent keep their stored values.
-     *
-     * @param array<string,string> $args
      */
-    public function update(Request $request, Credential $credential, array $args): Response
+    public function update(ApiCall $call): Response
     {
+        $request = $call->request();
+        $credential = $call->credential();
+
         $userId  = (int) $credential->userId();
-        $listing = OwnedListing::own((int) $args['id'], $credential, true);
+        $listing = OwnedListing::own((int) $call->arg('id'), $credential, true);
         $id      = $listing->id();
         $input   = $request->input();
         $form    = $this->writer->editForm($listing, $input, $request, $credential);
@@ -99,12 +102,12 @@ final class ListingWritesController
 
     /**
      * DELETE /listings/{id}
-     *
-     * @param array<string,string> $args
      */
-    public function delete(Request $request, Credential $credential, array $args): Response
+    public function delete(ApiCall $call): Response
     {
-        $this->writer->delete(OwnedListing::own((int) $args['id'], $credential), $credential->actor($request->ip()));
+        $credential = $call->credential();
+
+        $this->writer->delete(OwnedListing::own((int) $call->arg('id'), $credential), $credential->actor($call->request()->ip()));
 
         return Response::noContent();
     }

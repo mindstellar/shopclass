@@ -12,13 +12,12 @@ declare(strict_types=1);
 
 namespace mindstellar\api\controller\admin;
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
-use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\Format;
 use mindstellar\api\serializer\Links;
-use mindstellar\apiaccess\Credential;
 use mindstellar\utility\Clock;
 use mindstellar\webhook\Endpoint;
 use mindstellar\webhook\WebhookService;
@@ -41,36 +40,28 @@ final class AdminWebhooksController
         $this->clock = $api->clock();
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function index(Request $request, Credential $credential, array $args): Response
+    public function index(): Response
     {
         return Response::collection(array_map(fn (Endpoint $e): array => $e->toArray($this->clock->now()), $this->webhooks->all()));
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function show(Request $request, Credential $credential, array $args): Response
+    public function show(ApiCall $call): Response
     {
-        return Response::ok($this->endpoint($args['webhook'])->toArray($this->clock->now()));
+        return Response::ok($this->endpoint($call->arg('webhook'))->toArray($this->clock->now()));
     }
 
     /**
      * POST /admin/webhooks
-     *
-     * @param array<string,string> $args
      */
-    public function create(Request $request, Credential $credential, array $args): Response
+    public function create(ApiCall $call): Response
     {
-        $input = $request->input();
+        $input = $call->request()->input();
         [$endpoint, $secret] = $this->webhooks->create(
             (string) $input['url'],
             array_map('strval', (array) $input['events']),
             (string) ($input['description'] ?? ''),
             (bool) ($input['enabled'] ?? true),
-            $credential->adminId()
+            $call->credential()->adminId()
         );
 
         return Response::created($endpoint->toArray($this->clock->now(), $secret), $this->links->api('admin/webhooks/' . $endpoint->id()));
@@ -78,13 +69,11 @@ final class AdminWebhooksController
 
     /**
      * PATCH /admin/webhooks/{webhook}
-     *
-     * @param array<string,string> $args
      */
-    public function update(Request $request, Credential $credential, array $args): Response
+    public function update(ApiCall $call): Response
     {
-        $id    = $this->endpoint($args['webhook'])->id();
-        $input = $request->input();
+        $id    = $this->endpoint($call->arg('webhook'))->id();
+        $input = $call->request()->input();
         $endpoint = $this->webhooks->update(
             $id,
             array_key_exists('url', $input) ? (string) $input['url'] : null,
@@ -98,12 +87,10 @@ final class AdminWebhooksController
 
     /**
      * DELETE /admin/webhooks/{webhook}
-     *
-     * @param array<string,string> $args
      */
-    public function delete(Request $request, Credential $credential, array $args): Response
+    public function delete(ApiCall $call): Response
     {
-        $this->webhooks->delete($this->endpoint($args['webhook'])->id());
+        $this->webhooks->delete($this->endpoint($call->arg('webhook'))->id());
 
         return Response::noContent();
     }
@@ -111,37 +98,31 @@ final class AdminWebhooksController
     /**
      * POST /admin/webhooks/{webhook}/rotate-secret: a new secret; the old one keeps signing
      * for a day, as a second signature.
-     *
-     * @param array<string,string> $args
      */
-    public function rotate(Request $request, Credential $credential, array $args): Response
+    public function rotate(ApiCall $call): Response
     {
-        [$endpoint, $secret] = $this->webhooks->rotate($this->endpoint($args['webhook'])->id());
+        [$endpoint, $secret] = $this->webhooks->rotate($this->endpoint($call->arg('webhook'))->id());
 
         return Response::ok($endpoint->toArray($this->clock->now(), $secret));
     }
 
     /**
      * POST /admin/webhooks/{webhook}/test: queue a `ping`.
-     *
-     * @param array<string,string> $args
      */
-    public function test(Request $request, Credential $credential, array $args): Response
+    public function test(ApiCall $call): Response
     {
-        $msgId = $this->webhooks->test($this->endpoint($args['webhook'])->id());
+        $msgId = $this->webhooks->test($this->endpoint($call->arg('webhook'))->id());
 
         return Response::ok(['message_id' => $msgId, 'type' => 'ping'], 202);
     }
 
     /**
      * GET /admin/webhooks/{webhook}/deliveries
-     *
-     * @param array<string,string> $args
      */
-    public function deliveries(Request $request, Credential $credential, array $args): Response
+    public function deliveries(ApiCall $call): Response
     {
-        $endpoint = $this->endpoint($args['webhook']);
-        $limit    = $request->queryInt('limit', 25);
+        $endpoint = $this->endpoint($call->arg('webhook'));
+        $limit    = $call->request()->queryInt('limit', 25);
         $rows     = array_map(static fn (array $d): array => [
             'job_id'      => $d['job_id'],
             'message_id'  => $d['message_id'],
@@ -162,10 +143,8 @@ final class AdminWebhooksController
 
     /**
      * GET /admin/webhook-events
-     *
-     * @param array<string,string> $args
      */
-    public function events(Request $request, Credential $credential, array $args): Response
+    public function events(): Response
     {
         $out = [];
         foreach ($this->webhooks->events()->all() as $type => $spec) {

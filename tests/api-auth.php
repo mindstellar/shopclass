@@ -20,6 +20,7 @@
 
 require_once __DIR__ . '/lib/api-boot.php';
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\auth\FailureCounter;
 use mindstellar\api\Kernel;
 use mindstellar\api\ProblemException;
@@ -328,7 +329,7 @@ check('when the failure counter cannot be read, tokens are checked as usual', $u
 $fails = [];
 
 harness_section('the Kernel: auth levels and scopes');
-$echo   = static fn (Request $r, Credential $c, array $a): Response => Response::ok(['kind' => $c->kind(), 'query' => $r->query()]);
+$echo   = static fn (ApiCall $call): Response => Response::ok(['kind' => $call->credential()->kind(), 'query' => $call->request()->query()]);
 $routes = [
     'GET open'     => ['handler' => $echo, 'auth' => RouteSpec::AUTH_NONE],
     'GET listings' => ['handler' => $echo, 'auth' => RouteSpec::AUTH_PUBLIC, 'scope' => 'listings:read',

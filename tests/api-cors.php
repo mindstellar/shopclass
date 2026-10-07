@@ -18,6 +18,7 @@
 
 require_once __DIR__ . '/lib/api-boot.php';
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\http\Cors;
 use mindstellar\api\Kernel;
 use mindstellar\api\Request;
@@ -80,7 +81,7 @@ $keys   = new ApiKeys($store, new Scopes(), new SystemClock());
 $admin  = $keys->create(CredentialKind::KEY, 'Admin', ['admin:users'], KeyOwner::admin(1))->token();
 $public = $keys->create(CredentialKind::PUBLIC, 'App', ['listings:read'], KeyOwner::admin(1))->token();
 
-$echo   = static fn (Request $r, Credential $c, array $a): Response => Response::ok(['kind' => $c->kind()]);
+$echo   = static fn (ApiCall $call): Response => Response::ok(['kind' => $call->credential()->kind()]);
 $routes = [
     'GET site'   => ['handler' => $echo, 'auth' => RouteSpec::AUTH_PUBLIC],
     'GET users'  => ['handler' => $echo, 'auth' => RouteSpec::AUTH_ADMIN, 'scope' => 'admin:users'],

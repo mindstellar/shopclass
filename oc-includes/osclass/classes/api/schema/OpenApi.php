@@ -19,7 +19,6 @@ use mindstellar\api\Response;
 use mindstellar\api\RouteSpec;
 use mindstellar\api\routing\Router;
 use mindstellar\api\routing\RouteTable;
-use mindstellar\apiaccess\Credential;
 use mindstellar\apiaccess\CredentialKind;
 use mindstellar\apiaccess\KeyOwner;
 use mindstellar\apiaccess\PageTokens;
@@ -120,10 +119,8 @@ final class OpenApi
 
     /**
      * GET /openapi.json
-     *
-     * @param array<string,string> $args
      */
-    public function show(Request $request, Credential $credential, array $args): Response
+    public function show(): Response
     {
         return new Response(200, $this->cached());
     }

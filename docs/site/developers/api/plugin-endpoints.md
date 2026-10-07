@@ -16,9 +16,8 @@ whichever theme is active, and a theme change would change the API.
 ## Add an endpoint
 
 ```php
+use mindstellar\api\ApiCall;
 use mindstellar\api\ProblemException;
-use mindstellar\apiaccess\Credential;
-use mindstellar\api\Request;
 use mindstellar\api\Response;
 
 osc_api_register_route('GET', 'ext/acme-ratings/listings/{id}/rating', array(
@@ -30,14 +29,15 @@ osc_api_register_route('GET', 'ext/acme-ratings/listings/{id}/rating', array(
     'responses' => array(200 => array('type' => 'object')),
 ));
 
-function acme_ratings_api_show(Request $request, Credential $credential, array $args): Response
+function acme_ratings_api_show(ApiCall $call): Response
 {
-    $average = acme_ratings_average((int) $args['id']);
+    $id      = (int) $call->arg('id');
+    $average = acme_ratings_average($id);
     if ($average === null) {
         throw ProblemException::of('not_found', 'No ratings for this listing.');
     }
 
-    return Response::ok(array('listing_id' => (int) $args['id'], 'average' => $average));
+    return Response::ok(array('listing_id' => $id, 'average' => $average));
 }
 ```
 
@@ -51,7 +51,7 @@ Call `osc_api_register_route()` when your plugin loads. The route is then
   rest of your routes still load.
 - One exception: a route with `deprecated` set may keep an old path outside `ext/`, so a
   plugin can redirect it for a release after moving. It still cannot replace a core route.
-- `{id}` matches digits. Any other `{name}` matches one path segment. Values arrive in `$args`.
+- `{id}` matches digits. Any other `{name}` matches one path segment. Read a value with `$call->arg('name')`.
 - Allowed characters: letters, digits, `_`, `:`, `-` and `{name}`, with `/` between segments.
 - Methods: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`. `HEAD` is answered by `GET` routes.
 
@@ -90,11 +90,14 @@ should reach, name `listings:read` as the scope, or name none.
 ### The handler
 
 ```php
-function handler(Request $request, Credential $credential, array $args): Response
+function handler(ApiCall $call): Response
 ```
+
+A handler that needs nothing from the call may take no argument.
 
 | Class | Use |
 |---|---|
+| `ApiCall` | `request()`, `credential()`, `args()` (the path values), `arg($name)` (one value, or `null`) |
 | `Request` | `method()`, `path()`, `query()`, `queryString($name)`, `queryInt($name)`, `queryBool($name)`, `queryList($name)`, `header($name)`, `json()` (decoded body), `ip()` |
 | `Credential` | `kind()`, `scopes()`, `has($scope)`, `userId()`, `adminId()`, `isAdmin()`, `isUser()`, `isAnonymous()` |
 | `Response` | `Response::ok($data, $status = 200)`, `Response::collection($items, $meta, $links)`, `Response::noContent()`, `->withHeader($name, $value)` |

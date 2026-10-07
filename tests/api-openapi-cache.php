@@ -112,7 +112,7 @@ pin('the next reads it back: nothing more is stored, the same document', [1, $fi
 pin('it is kept for a short while', true, array_values(Object_Cache_probe::$store)[0][1] > 0);
 
 harness_section('the key');
-$plugin = ['GET ext/acme/offers' => ['handler' => static fn (Request $r, Credential $c, array $a): Response => Response::ok([]), 'auth' => 'none']];
+$plugin = ['GET ext/acme/offers' => ['handler' => static fn (): Response => Response::ok([]), 'auth' => 'none']];
 $r      = $show($make($plugin));
 pin('a plugin route makes a new document with its path', [2, true], [Object_Cache_probe::$sets, isset($r->body()['paths']['/ext/acme/offers'])]);
 $GLOBALS['probe_plugins'] = 'a:1:{i:0;s:4:"acme";}';

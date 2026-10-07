@@ -12,19 +12,18 @@ declare(strict_types=1);
 
 namespace mindstellar\api\controller\admin;
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\auth\UserRows;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\ListSpec;
 use mindstellar\api\read\Pager;
-use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\AccessEntrySerializer;
 use mindstellar\api\serializer\UserSerializer;
 use mindstellar\api\write\AccountBody;
 use mindstellar\apiaccess\AccessEntries;
 use mindstellar\apiaccess\AccessEntry;
-use mindstellar\apiaccess\Credential;
 use mindstellar\model\Resource;
 use mindstellar\user\AccountService;
 use mindstellar\user\UserQuery;
@@ -52,12 +51,12 @@ final class AdminUsersController
 
     /**
      * GET /admin/users: newest first, paged by id.
-     *
-     * @param array<string,string> $args
      */
-    public function index(Request $request, Credential $credential, array $args): Response
+    public function index(ApiCall $call): Response
     {
-        $context = $this->api->context($request, $credential, 'user', UserSerializer::MEMBERS);
+        $request = $call->request();
+
+        $context = $this->api->context($request, $call->credential(), 'user', UserSerializer::MEMBERS);
         $pager   = Pager::fromRequest($request, $this->api->cursor(), ListSpec::byId(), ['list' => 'admin/users'] + $request->query());
         $flag    = static fn (string $name): ?bool => array_key_exists($name, $request->query()) ? $request->queryBool($name) : null;
         $blocked = $flag('blocked');
@@ -80,25 +79,23 @@ final class AdminUsersController
         );
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function show(Request $request, Credential $credential, array $args): Response
+    public function show(ApiCall $call): Response
     {
-        $context = $this->api->context($request, $credential, 'user', UserSerializer::MEMBERS);
+        $context = $this->api->context($call->request(), $call->credential(), 'user', UserSerializer::MEMBERS);
 
-        return Response::ok($this->serializer()->one($this->user((int) $args['id']), $context));
+        return Response::ok($this->serializer()->one($this->user((int) $call->arg('id')), $context));
     }
 
     /**
      * PATCH /admin/users/{id}. Members not sent keep their values; `blocked` and `confirmed`
      * change the account's status as the screen's actions do.
-     *
-     * @param array<string,string> $args
      */
-    public function update(Request $request, Credential $credential, array $args): Response
+    public function update(ApiCall $call): Response
     {
-        $user     = $this->user((int) $args['id']);
+        $request = $call->request();
+        $credential = $call->credential();
+
+        $user     = $this->user((int) $call->arg('id'));
         $userId   = (int) $user['pk_i_id'];
         $input    = $request->input();
         $status   = array_intersect_key($input, self::STATUS_MEMBERS);
@@ -121,19 +118,17 @@ final class AdminUsersController
             }
         }
 
-        return $this->fresh($request, $credential, $userId);
+        return $this->fresh($call, $userId);
     }
 
     /**
      * DELETE /admin/users/{id}: the user, their listings and comments, profile texts, saved
      * searches, avatar, sign-ins and keys, all or none.
-     *
-     * @param array<string,string> $args
      */
-    public function delete(Request $request, Credential $credential, array $args): Response
+    public function delete(ApiCall $call): Response
     {
-        $id = (int) $this->user((int) $args['id'])['pk_i_id'];
-        (new AccountService())->delete($id, $credential->actor($request->ip(), 'admin:users'));
+        $id = (int) $this->user((int) $call->arg('id'))['pk_i_id'];
+        (new AccountService())->delete($id, $call->credential()->actor($call->request()->ip(), 'admin:users'));
         $this->users->forget($id);
 
         return Response::noContent();
@@ -142,12 +137,10 @@ final class AdminUsersController
     /**
      * POST /admin/users/{id}/sign-out-everywhere: every web sign-in, API token and personal key
      * of the user stops working.
-     *
-     * @param array<string,string> $args
      */
-    public function signOutEverywhere(Request $request, Credential $credential, array $args): Response
+    public function signOutEverywhere(ApiCall $call): Response
     {
-        $id = (int) $this->user((int) $args['id'])['pk_i_id'];
+        $id = (int) $this->user((int) $call->arg('id'))['pk_i_id'];
         \mindstellar\auth\SignOut::everywhereUser($id);
         $this->users->forget($id);
 
@@ -156,27 +149,25 @@ final class AdminUsersController
 
     /**
      * GET /admin/users/{id}/sessions
-     *
-     * @param array<string,string> $args
      */
-    public function sessions(Request $request, Credential $credential, array $args): Response
+    public function sessions(ApiCall $call): Response
     {
-        $id         = (int) $this->user((int) $args['id'])['pk_i_id'];
+        $id         = (int) $this->user((int) $call->arg('id'))['pk_i_id'];
         $serializer = new AccessEntrySerializer();
 
         return Response::collection(array_map(
-            static fn (AccessEntry $session): array => $serializer->one($session, $credential),
+            static fn (AccessEntry $session): array => $serializer->one($session, $call->credential()),
             $this->sessions->list($id)
         ));
     }
 
     /**
      * DELETE /admin/users/{id}/sessions/{session}
-     *
-     * @param array<string,string> $args
      */
-    public function endSession(Request $request, Credential $credential, array $args): Response
+    public function endSession(ApiCall $call): Response
     {
+        $args = $call->args();
+
         $id = (int) $this->user((int) $args['id'])['pk_i_id'];
         if (!$this->sessions->end($id, $args['session'])) {
             throw ProblemException::of('not_found', 'No such session.');
@@ -188,11 +179,11 @@ final class AdminUsersController
     /**
      * The user read again after a write.
      */
-    private function fresh(Request $request, Credential $credential, int $id): Response
+    private function fresh(ApiCall $call, int $id): Response
     {
         $this->users->forget($id);
 
-        return $this->show($request, $credential, ['id' => (string) $id]);
+        return $this->show(new ApiCall($call->request(), $call->credential(), ['id' => (string) $id]));
     }
 
     /**

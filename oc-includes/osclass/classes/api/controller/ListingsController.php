@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\api\controller;
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\ListingReader;
@@ -45,21 +46,18 @@ final class ListingsController
         $this->reader = $api->listingReader();
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function index(Request $request, Credential $credential, array $args): Response
+    public function index(ApiCall $call): Response
     {
-        return $this->search->run($request, $credential, null, 'listings');
+        return $this->search->run($call->request(), $call->credential(), null, 'listings');
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function show(Request $request, Credential $credential, array $args): Response
+    public function show(ApiCall $call): Response
     {
+        $request = $call->request();
+        $credential = $call->credential();
+
         $context = $this->api->context($request, $credential, 'listing', ListingSerializer::MEMBERS, ListingSerializer::INCLUDES);
-        $item    = $this->reader->row((int) $args['id']);
+        $item    = $this->reader->row((int) $call->arg('id'));
         if ($item === null || !ListingPolicy::canView($item, $credential->actor($request->ip(), ViewContext::LISTINGS_SCOPE))) {
             throw ProblemException::of('not_found', 'No such listing.');
         }
@@ -67,24 +65,21 @@ final class ListingsController
         return Response::ok($this->reader->view($item, $context));
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function photos(Request $request, Credential $credential, array $args): Response
+    public function photos(ApiCall $call): Response
     {
-        $id = (int) $this->visibleRow((int) $args['id'], $request, $credential)['pk_i_id'];
+        $id = (int) $this->visibleRow((int) $call->arg('id'), $call->request(), $call->credential())['pk_i_id'];
 
         return Response::collection($this->reader->photos($id));
     }
 
     /**
      * GET /listings/{id}/photos/{photo}
-     *
-     * @param array<string,string> $args
      */
-    public function photo(Request $request, Credential $credential, array $args): Response
+    public function photo(ApiCall $call): Response
     {
-        $id      = (int) $this->visibleRow((int) $args['id'], $request, $credential)['pk_i_id'];
+        $args = $call->args();
+
+        $id      = (int) $this->visibleRow((int) $args['id'], $call->request(), $call->credential())['pk_i_id'];
         $photoId = ctype_digit($args['photo']) ? (int) $args['photo'] : 0;
         foreach ($this->reader->photos($id) as $photo) {
             if ($photo['id'] === $photoId) {
@@ -97,15 +92,15 @@ final class ListingsController
 
     /**
      * Approved comments, oldest first, paged by id.
-     *
-     * @param array<string,string> $args
      */
-    public function comments(Request $request, Credential $credential, array $args): Response
+    public function comments(ApiCall $call): Response
     {
+        $request = $call->request();
+
         if (!$this->api->facts()->commentsEnabled()) {
             throw ProblemException::of('not_found', 'Comments are switched off on this site.');
         }
-        $id    = (int) $this->visibleRow((int) $args['id'], $request, $credential)['pk_i_id'];
+        $id    = (int) $this->visibleRow((int) $call->arg('id'), $request, $call->credential())['pk_i_id'];
         $facts = $this->api->facts();
         $pager = Pager::fromRequest($request, $this->api->cursor(), ListSpec::byId('asc', $facts->commentsPerPage(), $facts->maxLimit()), ['listing' => $id] + $request->query());
 

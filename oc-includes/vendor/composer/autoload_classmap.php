@@ -867,6 +867,7 @@ return array(
     'mindstellar\\admin\\ui\\PhotoGrid' => $baseDir . '/oc-includes/osclass/classes/admin/ui/PhotoGrid.php',
     'mindstellar\\admin\\ui\\Picker' => $baseDir . '/oc-includes/osclass/classes/admin/ui/Picker.php',
     'mindstellar\\admin\\ui\\SettingsForm' => $baseDir . '/oc-includes/osclass/classes/admin/ui/SettingsForm.php',
+    'mindstellar\\api\\ApiCall' => $baseDir . '/oc-includes/osclass/classes/api/ApiCall.php',
     'mindstellar\\api\\ApiServices' => $baseDir . '/oc-includes/osclass/classes/api/ApiServices.php',
     'mindstellar\\api\\Kernel' => $baseDir . '/oc-includes/osclass/classes/api/Kernel.php',
     'mindstellar\\api\\Problem' => $baseDir . '/oc-includes/osclass/classes/api/Problem.php',

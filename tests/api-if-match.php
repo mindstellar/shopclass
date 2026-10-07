@@ -21,6 +21,7 @@
 
 require_once __DIR__ . '/lib/api-boot.php';
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\auth\AdminRows;
 use mindstellar\api\http\ResourceVersions;
 use mindstellar\api\idempotency\Idempotency;
@@ -46,24 +47,24 @@ final class Things
 
     public static int $writes = 0;
 
-    public function show(Request $request, Credential $credential, array $args): Response
+    public function show(ApiCall $call): Response
     {
-        $doc = ['id' => (int) $args['id'], 'title' => self::$title];
+        $doc = ['id' => (int) $call->arg('id'), 'title' => self::$title];
 
-        return Response::ok(isset($request->query()['fields']) ? ['id' => $doc['id']] : $doc);
+        return Response::ok(isset($call->request()->query()['fields']) ? ['id' => $doc['id']] : $doc);
     }
 
     /** Only id 5 is the caller's; any other is 404, as if it did not exist. */
-    public function own(Request $request, Credential $credential, array $args): Response
+    public function own(ApiCall $call): Response
     {
-        if ($args['id'] !== '5') {
+        if ($call->arg('id') !== '5') {
             throw ProblemException::of('not_found', 'No such thing.');
         }
 
-        return $request->method() === 'GET' ? $this->show($request, $credential, $args) : $this->update($request, $credential, $args);
+        return $call->request()->method() === 'GET' ? $this->show($call) : $this->update($call);
     }
 
-    public function fail(Request $request, Credential $credential, array $args): Response
+    public function fail(ApiCall $call): Response
     {
         self::$writes++;
         Versions::$stored = 'v-broken';
@@ -71,15 +72,15 @@ final class Things
         throw new RuntimeException('handler failed');
     }
 
-    public function update(Request $request, Credential $credential, array $args): Response
+    public function update(ApiCall $call): Response
     {
         self::$writes++;
-        self::$title = (string) ($request->input()['title'] ?? self::$title);
+        self::$title = (string) ($call->request()->input()['title'] ?? self::$title);
 
-        return $this->show($request, $credential, $args);
+        return $this->show($call);
     }
 
-    public function delete(Request $request, Credential $credential, array $args): Response
+    public function delete(ApiCall $call): Response
     {
         self::$writes++;
 

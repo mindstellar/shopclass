@@ -12,10 +12,10 @@ declare(strict_types=1);
 
 namespace mindstellar\api\controller;
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\ListingSearch;
-use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\Format;
 use mindstellar\api\serializer\UserSerializer;
@@ -38,13 +38,12 @@ final class UsersController
         $this->search = $api->listingSearch();
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function show(Request $request, Credential $credential, array $args): Response
+    public function show(ApiCall $call): Response
     {
-        $context = $this->api->context($request, $credential, 'user', UserSerializer::MEMBERS);
-        $id      = (int) $args['id'];
+        $credential = $call->credential();
+
+        $context = $this->api->context($call->request(), $credential, 'user', UserSerializer::MEMBERS);
+        $id      = (int) $call->arg('id');
         $user    = $this->api->facts()->usersEnabled() ? (new UserQuery())->find($id) : null;
         if ($user === null || !self::visible($user, $credential)) {
             throw ProblemException::of('not_found', 'No such user.');
@@ -53,12 +52,11 @@ final class UsersController
         return Response::ok((new UserSerializer($this->api->links(), $this->api->extensions()))->one($user, $context));
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function listings(Request $request, Credential $credential, array $args): Response
+    public function listings(ApiCall $call): Response
     {
-        $id   = (int) $args['id'];
+        $credential = $call->credential();
+
+        $id   = (int) $call->arg('id');
         $user = null;
         if ($this->api->facts()->usersEnabled()) {
             $user = (new UserQuery())->statusRow($id);
@@ -67,7 +65,7 @@ final class UsersController
             throw ProblemException::of('not_found', 'No such user.');
         }
 
-        return $this->search->run($request, $credential, $id, 'users/' . $id . '/listings');
+        return $this->search->run($call->request(), $credential, $id, 'users/' . $id . '/listings');
     }
 
     /**

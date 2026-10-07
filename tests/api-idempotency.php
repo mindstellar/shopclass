@@ -21,6 +21,7 @@
 
 require_once __DIR__ . '/lib/api-boot.php';
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\idempotency\Idempotency;
 use mindstellar\api\idempotency\IdempotencyRecord;
 use mindstellar\api\Kernel;
@@ -31,7 +32,6 @@ use mindstellar\api\RouteSpec;
 use mindstellar\api\routing\Router;
 use mindstellar\api\schema\Validator;
 use mindstellar\apiaccess\ApiKeys;
-use mindstellar\apiaccess\Credential;
 use mindstellar\apiaccess\CredentialKind;
 use mindstellar\apiaccess\CredentialStore;
 use mindstellar\apiaccess\KeyOwner;
@@ -86,10 +86,10 @@ final class Writes
 {
     public static int $runs = 0;
 
-    public function create(Request $request, Credential $credential, array $args): Response
+    public function create(ApiCall $call): Response
     {
         self::$runs++;
-        $input = $request->input();
+        $input = $call->request()->input();
 
         return match ($input['do'] ?? '') {
             'fail'  => throw ProblemException::of('validation_failed', 'No.'),
@@ -98,7 +98,7 @@ final class Writes
             'conflict' => throw new ConflictException('Taken.'),
             'busy'     => throw BlockedException::rateLimit('Slow down.', 30),
             '500'   => new Response(500, ['code' => 'server_error']),
-            default => Response::ok(['run' => self::$runs, 'by' => $credential->userId()], 201)->withHeader('Location', '/api/v1/things/' . self::$runs),
+            default => Response::ok(['run' => self::$runs, 'by' => $call->credential()->userId()], 201)->withHeader('Location', '/api/v1/things/' . self::$runs),
         };
     }
 }

@@ -984,6 +984,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\admin\\ui\\PhotoGrid' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/admin/ui/PhotoGrid.php',
         'mindstellar\\admin\\ui\\Picker' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/admin/ui/Picker.php',
         'mindstellar\\admin\\ui\\SettingsForm' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/admin/ui/SettingsForm.php',
+        'mindstellar\\api\\ApiCall' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/api/ApiCall.php',
         'mindstellar\\api\\ApiServices' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/api/ApiServices.php',
         'mindstellar\\api\\Kernel' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/api/Kernel.php',
         'mindstellar\\api\\Problem' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/api/Problem.php',

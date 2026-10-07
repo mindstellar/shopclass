@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\api\controller;
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\ListSpec;
@@ -19,7 +20,6 @@ use mindstellar\api\read\Pager;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\LocationSerializer;
-use mindstellar\apiaccess\Credential;
 use mindstellar\location\LocationQuery;
 
 /**
@@ -41,45 +41,33 @@ final class LocationsController
         $this->places     = new LocationQuery();
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function countries(Request $request, Credential $credential, array $args): Response
+    public function countries(ApiCall $call): Response
     {
-        return $this->page($request, 'countries', 'country', null, fn (string $q, int $limit, int $offset): array => $this->places->countries($q, $limit, $offset));
+        return $this->page($call->request(), 'countries', 'country', null, fn (string $q, int $limit, int $offset): array => $this->places->countries($q, $limit, $offset));
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function regions(Request $request, Credential $credential, array $args): Response
+    public function regions(ApiCall $call): Response
     {
-        $code = strtoupper((string) ($args['code'] ?? ''));
+        $code = strtoupper((string) ($call->arg('code') ?? ''));
         if (preg_match('/^[A-Z]{2}$/D', $code) !== 1) {
             throw ProblemException::of('not_found', 'No such country.');
         }
 
-        return $this->page($request, 'countries/' . $code . '/regions', 'region', [LocationQuery::COUNTRY, $code, 'No such country.'], fn (string $q, int $limit, int $offset): array => $this->places->regions($code, $q, $limit, $offset));
+        return $this->page($call->request(), 'countries/' . $code . '/regions', 'region', [LocationQuery::COUNTRY, $code, 'No such country.'], fn (string $q, int $limit, int $offset): array => $this->places->regions($code, $q, $limit, $offset));
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function cities(Request $request, Credential $credential, array $args): Response
+    public function cities(ApiCall $call): Response
     {
-        $id = (int) ($args['id'] ?? 0);
+        $id = (int) ($call->arg('id') ?? 0);
 
-        return $this->page($request, 'regions/' . $id . '/cities', 'city', [LocationQuery::REGION, $id, 'No such region.'], fn (string $q, int $limit, int $offset): array => $this->places->cities($id, $q, $limit, $offset));
+        return $this->page($call->request(), 'regions/' . $id . '/cities', 'city', [LocationQuery::REGION, $id, 'No such region.'], fn (string $q, int $limit, int $offset): array => $this->places->cities($id, $q, $limit, $offset));
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function areas(Request $request, Credential $credential, array $args): Response
+    public function areas(ApiCall $call): Response
     {
-        $id = (int) ($args['id'] ?? 0);
+        $id = (int) ($call->arg('id') ?? 0);
 
-        return $this->page($request, 'cities/' . $id . '/areas', 'area', [LocationQuery::CITY, $id, 'No such city.'], fn (string $q, int $limit, int $offset): array => $this->places->areas($id, $q, $limit, $offset));
+        return $this->page($call->request(), 'cities/' . $id . '/areas', 'area', [LocationQuery::CITY, $id, 'No such city.'], fn (string $q, int $limit, int $offset): array => $this->places->areas($id, $q, $limit, $offset));
     }
 
     /**

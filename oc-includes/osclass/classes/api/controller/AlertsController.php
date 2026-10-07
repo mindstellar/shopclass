@@ -12,11 +12,11 @@ declare(strict_types=1);
 
 namespace mindstellar\api\controller;
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\CategoryCatalog;
 use mindstellar\api\read\ListingSearch;
-use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\AlertSerializer;
 use mindstellar\apiaccess\Credential;
@@ -45,24 +45,22 @@ final class AlertsController
 
     /**
      * GET /account/alerts
-     *
-     * @param array<string,string> $args
      */
-    public function index(Request $request, Credential $credential, array $args): Response
+    public function index(ApiCall $call): Response
     {
-        $rows = $this->alerts->live((int) $credential->userId());
+        $rows = $this->alerts->live((int) $call->credential()->userId());
 
         return Response::collection(array_map([$this->serializer, 'one'], $rows));
     }
 
     /**
      * POST /account/alerts
-     *
-     * @param array<string,string> $args
      */
-    public function create(Request $request, Credential $credential, array $args): Response
+    public function create(ApiCall $call): Response
     {
-        $userId  = (int) $credential->userId();
+        $request = $call->request();
+
+        $userId  = (int) $call->credential()->userId();
         $filters = (array) ($request->input()['filters'] ?? []);
         $search  = $request->withQuery(array_map(static fn ($v) => is_bool($v) ? ($v ? '1' : '0') : $v, $filters));
         $values  = ListingSearch::params($search, $this->categories, $this->api->locale($search));
@@ -88,22 +86,18 @@ final class AlertsController
 
     /**
      * GET /account/alerts/{id}
-     *
-     * @param array<string,string> $args
      */
-    public function show(Request $request, Credential $credential, array $args): Response
+    public function show(ApiCall $call): Response
     {
-        return Response::ok($this->serializer->one($this->own($credential, (int) $args['id'])));
+        return Response::ok($this->serializer->one($this->own($call->credential(), (int) $call->arg('id'))));
     }
 
     /**
      * DELETE /account/alerts/{id}
-     *
-     * @param array<string,string> $args
      */
-    public function delete(Request $request, Credential $credential, array $args): Response
+    public function delete(ApiCall $call): Response
     {
-        $this->alerts->unsubscribe((int) $this->own($credential, (int) $args['id'])['pk_i_id']);
+        $this->alerts->unsubscribe((int) $this->own($call->credential(), (int) $call->arg('id'))['pk_i_id']);
 
         return Response::noContent();
     }

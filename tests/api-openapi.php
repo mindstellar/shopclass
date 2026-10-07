@@ -48,7 +48,6 @@ use mindstellar\api\schema\Validator;
 use mindstellar\api\serializer\ExtensionMembers;
 use mindstellar\apiaccess\ApiKeys;
 use mindstellar\apiaccess\ApiSettings;
-use mindstellar\apiaccess\Credential;
 use mindstellar\apiaccess\CredentialStore;
 use mindstellar\apiaccess\Scopes;
 use mindstellar\apiaccess\StoredKey;
@@ -227,7 +226,7 @@ $ext       = ExtensionMembers::fromDeclarations([
 $components = Schema::components($ext);
 $router     = new Router(new Validator($components), RouteTable::core());
 $router->addPlugin('POST', 'ext/acme/offers', [
-    'handler' => static fn (Request $r, Credential $c, array $a): Response => Response::ok([]),
+    'handler' => static fn (): Response => Response::ok([]),
     'auth'    => RouteSpec::AUTH_USER,
     'scope'   => 'ext:acme:offers:write',
     'tags'    => ['Acme'],
@@ -247,7 +246,7 @@ check('the plugin\'s tag is listed', in_array(['name' => 'Acme'], $doc['tags'], 
 
 harness_section('deprecation');
 $old = new Router(new Validator(), ['GET old' => [
-    'handler' => static fn (Request $r, Credential $c, array $a): Response => Response::ok([]), 'auth' => RouteSpec::AUTH_NONE,
+    'handler' => static fn (): Response => Response::ok([]), 'auth' => RouteSpec::AUTH_NONE,
     'deprecated' => '2026-10-01', 'sunset' => '2027-06-01',
 ]]);
 $doc = (new OpenApi($old, Definitions::of([]), new Scopes(), '1', OpenApi::relativeServers()))->build();
@@ -291,7 +290,7 @@ $full        = new Validator($definitions);
 $settings    = new ApiSettings(true);
 $router      = null;
 $router      = new Router($full, RouteTable::core() + ['GET old' => [
-    'handler' => static fn (Request $r, Credential $c, array $a): Response => Response::ok([]), 'auth' => RouteSpec::AUTH_NONE,
+    'handler' => static fn (): Response => Response::ok([]), 'auth' => RouteSpec::AUTH_NONE,
     'deprecated' => '2026-10-01', 'sunset' => '2027-06-01', 'responses' => [200 => ['type' => 'object']],
 ]], handlers: static function (string $class) use (&$router, $definitions): object {
     return OpenApi::forSite($router, $definitions, new Scopes());

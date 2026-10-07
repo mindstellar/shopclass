@@ -12,14 +12,13 @@ declare(strict_types=1);
 
 namespace mindstellar\api\controller;
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\CategoryCatalog;
-use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\CategorySerializer;
 use mindstellar\api\serializer\CustomFieldSerializer;
-use mindstellar\apiaccess\Credential;
 
 /**
  * `GET /categories`, `GET /categories/{category}` (id or slug) and `GET /custom-fields`.
@@ -34,12 +33,11 @@ final class CategoriesController
         $this->serializer = new CategorySerializer($api->extensions(), new CustomFieldSerializer());
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function index(Request $request, Credential $credential, array $args): Response
+    public function index(ApiCall $call): Response
     {
-        $context = $this->api->context($request, $credential, 'category', CategorySerializer::MEMBERS);
+        $request = $call->request();
+
+        $context = $this->api->context($request, $call->credential(), 'category', CategorySerializer::MEMBERS);
         $catalog = CategoryCatalog::fromSite();
 
         return Response::collection($request->queryBool('tree')
@@ -47,13 +45,10 @@ final class CategoriesController
             : $this->serializer->flat($catalog, $context));
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function show(Request $request, Credential $credential, array $args): Response
+    public function show(ApiCall $call): Response
     {
-        $context  = $this->api->context($request, $credential, 'category', CategorySerializer::MEMBERS);
-        $category = CategoryCatalog::fromSite()->lookup((string) ($args['category'] ?? ''), $context->locale());
+        $context  = $this->api->context($call->request(), $call->credential(), 'category', CategorySerializer::MEMBERS);
+        $category = CategoryCatalog::fromSite()->lookup((string) ($call->arg('category') ?? ''), $context->locale());
         if ($category === null) {
             throw ProblemException::of('not_found', 'No such category.');
         }
@@ -62,11 +57,10 @@ final class CategoriesController
         return Response::ok($this->serializer->one($category, $context, $fields));
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function fields(Request $request, Credential $credential, array $args): Response
+    public function fields(ApiCall $call): Response
     {
+        $request = $call->request();
+
         $locale = $this->api->locale($request);
         $asked  = $request->queryString('category');
         if ($asked === '') {

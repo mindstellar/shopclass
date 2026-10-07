@@ -369,8 +369,8 @@ final class RouteSpec
     }
 
     /**
-     * Run the handler. A `[class, method]` pair whose method is not static runs on an
-     * instance from the handler factory, built on the first call.
+     * Run the handler with the call as one ApiCall. A `[class, method]` pair whose method is
+     * not static runs on an instance from the handler factory, built on the first call.
      *
      * @param array<string,string> $args
      */
@@ -388,7 +388,7 @@ final class RouteSpec
             }
             $this->resolved = \Closure::fromCallable($handler);
         }
-        $response = ($this->resolved)($request, $credential, $args);
+        $response = ($this->resolved)(new ApiCall($request, $credential, $args));
         if (!$response instanceof Response) {
             throw new \UnexpectedValueException('API handler for ' . $this->key() . ' did not return a Response.');
         }

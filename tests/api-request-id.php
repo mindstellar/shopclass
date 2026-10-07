@@ -18,6 +18,7 @@
 
 require_once __DIR__ . '/lib/api-boot.php';
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\controller\AuthController;
 use mindstellar\api\ProblemException;
@@ -125,7 +126,7 @@ $services = static fn (ApiSettings $s): ApiServices => new ApiServices(
 $token = static function (ApiSettings $s, string $grant) use ($services): ?array {
     $controller = new AuthController($services($s));
     try {
-        $controller->token(new Request('POST', 'v1/auth/token', [], ['Content-Type' => 'application/json'], '192.0.2.1', json_encode(['grant_type' => $grant])), Credential::anonymous(), []);
+        $controller->token(new ApiCall(new Request('POST', 'v1/auth/token', [], ['Content-Type' => 'application/json'], '192.0.2.1', json_encode(['grant_type' => $grant])), Credential::anonymous()));
     } catch (ProblemException $e) {
         return [$e->response()->status(), $e->response()->body()['error'] ?? $e->response()->body()['code'] ?? null];
     }

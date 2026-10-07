@@ -23,6 +23,7 @@ define('WEB_PATH', 'http://example.test/');
 require_once __DIR__ . '/lib/api-boot.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hUsers.php';
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\auth\Authenticator;
 use mindstellar\api\auth\FailureCounter;
 use mindstellar\api\auth\RefreshTokens;
@@ -35,7 +36,6 @@ use mindstellar\api\routing\Router;
 use mindstellar\api\schema\Validator;
 use mindstellar\apiaccess\ApiKeys;
 use mindstellar\apiaccess\ApiSettings;
-use mindstellar\apiaccess\Credential;
 use mindstellar\apiaccess\CredentialKind;
 use mindstellar\apiaccess\KeyOwner;
 use mindstellar\apiaccess\Scopes;
@@ -370,7 +370,7 @@ pin('an access token lives 15 minutes, a refresh token 30 days unused', [900, 90
 harness_section('the identity core code sees');
 final class WhoAmI
 {
-    public function show(Request $request, Credential $credential, array $args): Response
+    public function show(ApiCall $call): Response
     {
         return Response::ok(['user' => osc_logged_user_id(), 'email' => osc_logged_user_email()]);
     }

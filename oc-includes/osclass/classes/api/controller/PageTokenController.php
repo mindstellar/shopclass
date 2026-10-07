@@ -12,13 +12,12 @@ declare(strict_types=1);
 
 namespace mindstellar\api\controller;
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\auth\UserRows;
 use mindstellar\api\ProblemException;
-use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\Format;
-use mindstellar\apiaccess\Credential;
 use mindstellar\apiaccess\PageTokens;
 
 /**
@@ -36,11 +35,10 @@ final class PageTokenController
         $this->tokens = $api->pageTokens();
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function show(Request $request, Credential $credential, array $args): Response
+    public function show(ApiCall $call): Response
     {
+        $credential = $call->credential();
+
         $user = $credential->isSession() ? $this->users->find((int) $credential->userId()) : null;
         if ($user === null) {
             throw ProblemException::of('wrong_credential', 'Only a same-site session call can renew its page token.');

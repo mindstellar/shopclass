@@ -14,12 +14,10 @@ namespace mindstellar\api\controller;
 
 use mindstellar\api\ApiServices;
 use mindstellar\api\Kernel;
-use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\Format;
 use mindstellar\api\serializer\LocationSerializer;
 use mindstellar\apiaccess\ApiSettings;
-use mindstellar\apiaccess\Credential;
 
 /**
  * `GET /`: what the site is, what the API allows on it and where its collections are.
@@ -34,10 +32,7 @@ final class SiteController
         $this->settings = $api->settings();
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function show(Request $request, Credential $credential, array $args): Response
+    public function show(): Response
     {
         // Built per request, not cached: every value is a preference already in memory, and a
         // cached copy would outlive a settings change.
@@ -80,10 +75,7 @@ final class SiteController
         return Response::ok($site);
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function currencies(Request $request, Credential $credential, array $args): Response
+    public function currencies(): Response
     {
         $rows = $this->api->currencyService()->enabled();
         $serializer = new LocationSerializer();

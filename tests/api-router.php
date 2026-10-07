@@ -33,6 +33,7 @@ if (!function_exists('osc_rewrite_enabled')) {
     }
 }
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\Kernel;
 use mindstellar\api\Request;
@@ -56,7 +57,7 @@ $log       = static function (string $m) use (&$logged): void {
     $logged[] = $m;
 };
 
-$handler = static fn (Request $r, Credential $c, array $args): Response => Response::ok(['args' => $args]);
+$handler = static fn (ApiCall $call): Response => Response::ok(['args' => $call->args()]);
 $none    = ['handler' => $handler, 'auth' => RouteSpec::AUTH_NONE];
 $core    = [
     'GET '                             => $none,
@@ -117,7 +118,7 @@ final class InstanceController
 {
     private int $calls = 0;
 
-    public function show(Request $r, Credential $c, array $a): Response
+    public function show(): Response
     {
         return Response::ok(['calls' => ++$this->calls]);
     }
@@ -132,7 +133,7 @@ final class KitController
     {
     }
 
-    public function show(Request $r, Credential $c, array $a): Response
+    public function show(): Response
     {
         return Response::ok(['kit' => $this->kit]);
     }

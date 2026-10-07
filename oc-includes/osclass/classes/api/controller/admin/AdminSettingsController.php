@@ -13,11 +13,10 @@ declare(strict_types=1);
 namespace mindstellar\api\controller\admin;
 
 use mindstellar\admin\ExposedSettings;
+use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
-use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\JobSerializer;
-use mindstellar\apiaccess\Credential;
 
 /**
  * `/admin/settings`, the settings ExposedSettings lets the API read and change, and
@@ -34,41 +33,34 @@ final class AdminSettingsController
         $this->settings = $api->exposedSettings();
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function show(Request $request, Credential $credential, array $args): Response
+    public function show(): Response
     {
         return Response::ok($this->settings->read());
     }
 
     /**
      * PATCH /admin/settings: all or none.
-     *
-     * @param array<string,string> $args
      */
-    public function update(Request $request, Credential $credential, array $args): Response
+    public function update(ApiCall $call): Response
     {
-        $input = $request->input();
+        $input = $call->request()->input();
         if ($input !== []) {
             $this->settings->save($input);
         }
 
-        return $this->show($request, $credential, $args);
+        return $this->show();
     }
 
     /**
      * GET /admin/jobs
-     *
-     * @param array<string,string> $args
      */
-    public function jobs(Request $request, Credential $credential, array $args): Response
+    public function jobs(ApiCall $call): Response
     {
         $serializer = new JobSerializer();
 
         return Response::ok([
             'counts'       => array_map('intval', osc_job_summary()),
-            'dead_letters' => array_map([$serializer, 'one'], osc_job_dead_letters($request->queryInt('limit', self::DEAD_LETTERS))),
+            'dead_letters' => array_map([$serializer, 'one'], osc_job_dead_letters($call->request()->queryInt('limit', self::DEAD_LETTERS))),
         ]);
     }
 }

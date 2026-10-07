@@ -13,12 +13,11 @@ declare(strict_types=1);
 namespace mindstellar\api\controller\admin;
 
 use mindstellar\admin\AdminText;
+use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
-use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\LocationSerializer;
-use mindstellar\apiaccess\Credential;
 use mindstellar\location\LocationQuery;
 use mindstellar\location\LocationService;
 use mindstellar\utility\DeferredMail;
@@ -41,12 +40,10 @@ final class AdminLocationsController
 
     /**
      * POST /admin/regions
-     *
-     * @param array<string,string> $args
      */
-    public function createRegion(Request $request, Credential $credential, array $args): Response
+    public function createRegion(ApiCall $call): Response
     {
-        $input = $request->input();
+        $input = $call->request()->input();
         $code  = strtoupper((string) $input['country']);
         $id    = (int) $this->write(fn () => $this->locations->addRegion($code, AdminText::clean($input['name'])));
 
@@ -55,23 +52,19 @@ final class AdminLocationsController
 
     /**
      * GET /admin/regions/{id}
-     *
-     * @param array<string,string> $args
      */
-    public function showRegion(Request $request, Credential $credential, array $args): Response
+    public function showRegion(ApiCall $call): Response
     {
-        return Response::ok($this->serializer->region($this->row(LocationQuery::REGION, (int) $args['id'])));
+        return Response::ok($this->serializer->region($this->row(LocationQuery::REGION, (int) $call->arg('id'))));
     }
 
     /**
      * PATCH /admin/regions/{id}. A slug not sent is kept.
-     *
-     * @param array<string,string> $args
      */
-    public function updateRegion(Request $request, Credential $credential, array $args): Response
+    public function updateRegion(ApiCall $call): Response
     {
-        $row   = $this->row(LocationQuery::REGION, (int) $args['id']);
-        $input = $request->input();
+        $row   = $this->row(LocationQuery::REGION, (int) $call->arg('id'));
+        $input = $call->request()->input();
         $this->write(fn () => $this->locations->editRegion((int) $row['pk_i_id'], (array_key_exists('name', $input) ? AdminText::clean($input['name']) : (string) $row['s_name']), self::slug($input, $row)));
 
         return Response::ok($this->serializer->region($this->row(LocationQuery::REGION, (int) $row['pk_i_id'])));
@@ -79,24 +72,20 @@ final class AdminLocationsController
 
     /**
      * DELETE /admin/regions/{id}
-     *
-     * @param array<string,string> $args
      */
-    public function deleteRegion(Request $request, Credential $credential, array $args): Response
+    public function deleteRegion(ApiCall $call): Response
     {
-        $this->locations->delete('region', (int) $args['id']);
+        $this->locations->delete('region', (int) $call->arg('id'));
 
         return Response::noContent();
     }
 
     /**
      * POST /admin/cities
-     *
-     * @param array<string,string> $args
      */
-    public function createCity(Request $request, Credential $credential, array $args): Response
+    public function createCity(ApiCall $call): Response
     {
-        $input  = $request->input();
+        $input  = $call->request()->input();
         $region = (int) $input['region_id'];
         $id     = (int) $this->write(fn () => $this->locations->addCity($region, AdminText::clean($input['name'])));
 
@@ -105,23 +94,19 @@ final class AdminLocationsController
 
     /**
      * GET /admin/cities/{id}
-     *
-     * @param array<string,string> $args
      */
-    public function showCity(Request $request, Credential $credential, array $args): Response
+    public function showCity(ApiCall $call): Response
     {
-        return Response::ok($this->serializer->city($this->row(LocationQuery::CITY, (int) $args['id'])));
+        return Response::ok($this->serializer->city($this->row(LocationQuery::CITY, (int) $call->arg('id'))));
     }
 
     /**
      * PATCH /admin/cities/{id}. A slug not sent is kept.
-     *
-     * @param array<string,string> $args
      */
-    public function updateCity(Request $request, Credential $credential, array $args): Response
+    public function updateCity(ApiCall $call): Response
     {
-        $row   = $this->row(LocationQuery::CITY, (int) $args['id']);
-        $input = $request->input();
+        $row   = $this->row(LocationQuery::CITY, (int) $call->arg('id'));
+        $input = $call->request()->input();
         $this->write(fn () => $this->locations->editCity((int) $row['pk_i_id'], (array_key_exists('name', $input) ? AdminText::clean($input['name']) : (string) $row['s_name']), self::slug($input, $row)));
 
         return Response::ok($this->serializer->city($this->row(LocationQuery::CITY, (int) $row['pk_i_id'])));
@@ -129,24 +114,20 @@ final class AdminLocationsController
 
     /**
      * DELETE /admin/cities/{id}
-     *
-     * @param array<string,string> $args
      */
-    public function deleteCity(Request $request, Credential $credential, array $args): Response
+    public function deleteCity(ApiCall $call): Response
     {
-        $this->locations->delete('city', (int) $args['id']);
+        $this->locations->delete('city', (int) $call->arg('id'));
 
         return Response::noContent();
     }
 
     /**
      * POST /admin/areas
-     *
-     * @param array<string,string> $args
      */
-    public function createArea(Request $request, Credential $credential, array $args): Response
+    public function createArea(ApiCall $call): Response
     {
-        $input = $request->input();
+        $input = $call->request()->input();
         $city  = (int) $input['city_id'];
         $id    = (int) $this->write(fn () => $this->locations->addArea($city, AdminText::clean($input['name'])));
 
@@ -155,23 +136,19 @@ final class AdminLocationsController
 
     /**
      * GET /admin/areas/{id}
-     *
-     * @param array<string,string> $args
      */
-    public function showArea(Request $request, Credential $credential, array $args): Response
+    public function showArea(ApiCall $call): Response
     {
-        return Response::ok($this->serializer->area($this->row(LocationQuery::AREA, (int) $args['id'])));
+        return Response::ok($this->serializer->area($this->row(LocationQuery::AREA, (int) $call->arg('id'))));
     }
 
     /**
      * PATCH /admin/areas/{id}
-     *
-     * @param array<string,string> $args
      */
-    public function updateArea(Request $request, Credential $credential, array $args): Response
+    public function updateArea(ApiCall $call): Response
     {
-        $row   = $this->row(LocationQuery::AREA, (int) $args['id']);
-        $input = $request->input();
+        $row   = $this->row(LocationQuery::AREA, (int) $call->arg('id'));
+        $input = $call->request()->input();
         $this->write(fn () => $this->locations->editArea((int) $row['pk_i_id'], AdminText::clean($input['name'])));
 
         return Response::ok($this->serializer->area($this->row(LocationQuery::AREA, (int) $row['pk_i_id'])));
@@ -179,12 +156,10 @@ final class AdminLocationsController
 
     /**
      * DELETE /admin/areas/{id}
-     *
-     * @param array<string,string> $args
      */
-    public function deleteArea(Request $request, Credential $credential, array $args): Response
+    public function deleteArea(ApiCall $call): Response
     {
-        $this->locations->delete('area', (int) $args['id']);
+        $this->locations->delete('area', (int) $call->arg('id'));
 
         return Response::noContent();
     }

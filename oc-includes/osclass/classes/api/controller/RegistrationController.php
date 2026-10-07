@@ -12,14 +12,13 @@ declare(strict_types=1);
 
 namespace mindstellar\api\controller;
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
 use mindstellar\api\ratelimit\RateLimiter;
-use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\Links;
 use mindstellar\apiaccess\ApiSettings;
-use mindstellar\apiaccess\Credential;
 use mindstellar\auth\Actor;
 use mindstellar\user\AccountInput;
 use mindstellar\user\AccountService;
@@ -43,11 +42,10 @@ final class RegistrationController
         $this->links = $api->links();
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function register(Request $request, Credential $credential, array $args): Response
+    public function register(ApiCall $call): Response
     {
+        $request = $call->request();
+
         if (!$this->settings->registration() || !osc_users_enabled() || !osc_user_registration_enabled()) {
             throw ProblemException::of('feature_disabled', 'This site does not take sign-ups through the API.');
         }

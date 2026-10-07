@@ -12,14 +12,13 @@ declare(strict_types=1);
 
 namespace mindstellar\api\controller\admin;
 
+use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\ListSpec;
 use mindstellar\api\read\Pager;
-use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\CommentSerializer;
-use mindstellar\apiaccess\Credential;
 use mindstellar\comment\CommentQuery;
 use mindstellar\moderation\CommentModeration;
 
@@ -48,11 +47,11 @@ final class AdminCommentsController
 
     /**
      * GET /admin/comments: newest first, paged by id.
-     *
-     * @param array<string,string> $args
      */
-    public function index(Request $request, Credential $credential, array $args): Response
+    public function index(ApiCall $call): Response
     {
+        $request = $call->request();
+
         $pager = Pager::fromRequest($request, $this->api->cursor(), ListSpec::byId(), ['list' => 'admin/comments'] + $request->query());
         $filter = static fn (string $name): ?int => $request->queryString($name) === '' ? null : $request->queryInt($name);
         [$statuses, $listing, $user] = [$request->queryList('status'), $filter('listing'), $filter('user')];
@@ -67,25 +66,20 @@ final class AdminCommentsController
         );
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function show(Request $request, Credential $credential, array $args): Response
+    public function show(ApiCall $call): Response
     {
-        return Response::ok($this->serializer->admin($this->comment((int) $args['id'])));
+        return Response::ok($this->serializer->admin($this->comment((int) $call->arg('id'))));
     }
 
     /**
      * PATCH /admin/comments/{id}. Members not sent keep their values; `blocked` and `approved`
      * change the status as the screen's actions do.
-     *
-     * @param array<string,string> $args
      */
-    public function update(Request $request, Credential $credential, array $args): Response
+    public function update(ApiCall $call): Response
     {
-        $comment = $this->comment((int) $args['id']);
+        $comment = $this->comment((int) $call->arg('id'));
         $id      = (int) $comment['pk_i_id'];
-        $input   = $request->input();
+        $input   = $call->request()->input();
         $status  = array_intersect_key($input, self::STATUS_MEMBERS);
         if ($status === [] || array_diff_key($input, self::STATUS_MEMBERS) !== []) {
             $this->moderation->edit($id, [
@@ -103,15 +97,12 @@ final class AdminCommentsController
             $this->moderation->{$status['approved'] ? 'activate' : 'deactivate'}($id);
         }
 
-        return $this->show($request, $credential, $args);
+        return $this->show($call);
     }
 
-    /**
-     * @param array<string,string> $args
-     */
-    public function delete(Request $request, Credential $credential, array $args): Response
+    public function delete(ApiCall $call): Response
     {
-        if (!$this->moderation->delete((int) $this->comment((int) $args['id'])['pk_i_id'])) {
+        if (!$this->moderation->delete((int) $this->comment((int) $call->arg('id'))['pk_i_id'])) {
             throw ProblemException::of('server_error', 'The comment could not be deleted.');
         }
 

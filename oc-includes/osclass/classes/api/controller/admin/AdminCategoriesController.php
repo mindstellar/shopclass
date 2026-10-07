@@ -13,12 +13,11 @@ declare(strict_types=1);
 namespace mindstellar\api\controller\admin;
 
 use mindstellar\admin\AdminText;
+use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
-use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\CategorySerializer;
-use mindstellar\apiaccess\Credential;
 use mindstellar\category\CategoryQuery;
 use mindstellar\category\CategoryService;
 use mindstellar\utility\DeferredMail;
@@ -41,10 +40,8 @@ final class AdminCategoriesController
 
     /**
      * GET /admin/categories: every category, enabled or not.
-     *
-     * @param array<string,string> $args
      */
-    public function index(Request $request, Credential $credential, array $args): Response
+    public function index(): Response
     {
         $rows  = $this->query->rows(null);
         $texts = $this->query->texts(array_column($rows, 'pk_i_id'));
@@ -54,22 +51,18 @@ final class AdminCategoriesController
 
     /**
      * GET /admin/categories/{id}
-     *
-     * @param array<string,string> $args
      */
-    public function show(Request $request, Credential $credential, array $args): Response
+    public function show(ApiCall $call): Response
     {
-        return Response::ok($this->categoryData((int) $args['id']));
+        return Response::ok($this->categoryData((int) $call->arg('id')));
     }
 
     /**
      * POST /admin/categories: added last among its siblings; slugs are made from the names.
-     *
-     * @param array<string,string> $args
      */
-    public function create(Request $request, Credential $credential, array $args): Response
+    public function create(ApiCall $call): Response
     {
-        $input        = $request->input();
+        $input        = $call->request()->input();
         $descriptions = [];
         foreach ($this->localized((array) $input['translations']) as $locale => $text) {
             $descriptions[$locale] = [
@@ -93,14 +86,12 @@ final class AdminCategoriesController
     /**
      * PATCH /admin/categories/{id}. Texts not sent keep their values, slugs included; a
      * changed slug keeps the old one redirecting.
-     *
-     * @param array<string,string> $args
      */
-    public function update(Request $request, Credential $credential, array $args): Response
+    public function update(ApiCall $call): Response
     {
-        $id    = (int) $args['id'];
+        $id    = (int) $call->arg('id');
         $row   = $this->query->rows($id)[0] ?? null;
-        $input = $request->input();
+        $input = $call->request()->input();
         if ($row === null) {
             throw ProblemException::of('not_found', 'No such category.');
         }
@@ -129,12 +120,10 @@ final class AdminCategoriesController
     /**
      * DELETE /admin/categories/{id}: 204 when it is gone, 202 when it is too large and is
      * hidden now and emptied in the background.
-     *
-     * @param array<string,string> $args
      */
-    public function delete(Request $request, Credential $credential, array $args): Response
+    public function delete(ApiCall $call): Response
     {
-        return $this->categories->delete((int) $args['id']) === 'queued' ? new Response(202) : Response::noContent();
+        return $this->categories->delete((int) $call->arg('id')) === 'queued' ? new Response(202) : Response::noContent();
     }
 
     /**
