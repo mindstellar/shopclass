@@ -502,7 +502,7 @@ class Alerts extends DAO
             // Mirrors like()'s own escapeStr($v, true): % and _ are escaped in the
             // payload before the wildcard boundaries are added, so a literal
             // wildcard character typed by the caller stays literal.
-            $escaped  = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), (string)$name);
+            $escaped  = \mindstellar\database\QueryBuilder::escapeLike((string)$name);
             $where    = 's_email LIKE ?';
             $params[] = '%' . $escaped . '%';
         }

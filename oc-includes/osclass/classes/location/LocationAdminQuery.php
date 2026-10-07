@@ -12,6 +12,7 @@ namespace mindstellar\location;
 
 use InvalidArgumentException;
 use mindstellar\database\DbException;
+use mindstellar\database\QueryBuilder;
 
 /**
  * Read side of the location admin screen: one page of one level, a search across all
@@ -672,7 +673,7 @@ final class LocationAdminQuery
      */
     private static function prefixPattern(string $q): string
     {
-        return str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), $q) . '%';
+        return QueryBuilder::escapeLike($q) . '%';
     }
 
     /**

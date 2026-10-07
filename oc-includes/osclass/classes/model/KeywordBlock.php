@@ -115,7 +115,7 @@ class KeywordBlock extends DAO
             // Same wildcard escaping DBCommandClass::escapeStr($v, true) applied
             // before the legacy LIKE: a literal % or _ typed by an admin stays
             // literal rather than acting as a SQL wildcard.
-            $pattern  = '%' . str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), $keyword) . '%';
+            $pattern  = '%' . \mindstellar\database\QueryBuilder::escapeLike((string) $keyword) . '%';
             $where    = 's_keyword LIKE ?';
             $params[] = $pattern;
         }

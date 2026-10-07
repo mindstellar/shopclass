@@ -62,12 +62,7 @@ final class ListingQuery
      */
     public function newest(array $statuses, array $userIds, array $categoryIds, string $title, ?int $beforeId, int $limit): array
     {
-        $query = $this->filtered($statuses, $userIds, $categoryIds, $title);
-        if ($beforeId !== null) {
-            $query = $query->where('pk_i_id', '<', $beforeId);
-        }
-
-        return osc_db_stringify_rows($query->orderBy('pk_i_id', 'DESC')->limit($limit)->get());
+        return osc_db_stringify_rows($this->filtered($statuses, $userIds, $categoryIds, $title)->newestBefore($beforeId, $limit));
     }
 
     /**
@@ -97,7 +92,7 @@ final class ListingQuery
         if ($title !== '') {
             $query = $query->whereRaw(
                 'pk_i_id IN (SELECT fk_i_item_id FROM ' . DB_TABLE_PREFIX . 't_item_description WHERE s_title LIKE ?)',
-                ['%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $title) . '%']
+                ['%' . QueryBuilder::escapeLike($title) . '%']
             );
         }
 

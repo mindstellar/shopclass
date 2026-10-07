@@ -511,7 +511,7 @@ class ItemComment extends DAO
             return '';
         }
 
-        $value = str_replace(array('\\', '%', '_'), array('\\\\', '\%', '\_'), $term);
+        $value = \mindstellar\database\QueryBuilder::escapeLike((string) $term);
         $value = strpos($term, '*') === false ? '%' . $value . '%' : str_replace('*', '%', $value);
 
         $columns = array('c.s_author_name', 'c.s_author_email', 'c.s_title', 'c.s_body');

@@ -88,7 +88,7 @@ class City extends DAO
         // Matches dao->like()'s escaping: '%'/'_' in the payload are escaped
         // before the wildcard is appended, so a literal '%' typed by a caller
         // stays literal instead of being read back as a SQL wildcard.
-        $params = array(str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), $query) . '%');
+        $params = array(\mindstellar\database\QueryBuilder::escapeLike((string) $query) . '%');
 
         if ($regionId != null) {
             if (is_numeric($regionId)) {

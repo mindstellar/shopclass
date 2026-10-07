@@ -133,6 +133,14 @@ pin('whereNull validates its column', 'refused', $threw);
 
 pin('an empty whereIn matches nothing', 0, $items()->whereIn('i.pk_i_id', array())->count());
 
+harness_section('Keyset pages and LIKE');
+
+pin('newestBefore: newest first, below the id given', [['3', '2'], ['1']], [
+    array_map('strval', array_column($items()->newestBefore(null, 2, 'i.pk_i_id'), 'pk_i_id')),
+    array_map('strval', array_column($items()->newestBefore(2, 2, 'i.pk_i_id'), 'pk_i_id')),
+]);
+pin('escapeLike keeps %, _ and \\ literal', '50\\% off\\_now\\\\', QueryBuilder::escapeLike('50% off_now\\'));
+
 $admin->query('DROP TABLE IF EXISTS qb_items');
 $admin->query('DROP TABLE IF EXISTS qb_res');
 

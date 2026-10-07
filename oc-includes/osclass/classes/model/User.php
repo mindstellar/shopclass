@@ -148,7 +148,7 @@ class User extends DAO
         // builder's identifier allowlist, so this is hand-written. The search
         // term is bound; legacy like(..., 'after') matched a prefix and escaped
         // %/_ in the payload, reproduced here. LIMIT 0, 10 is offset 0, count 10.
-        $pattern = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), (string)$query) . '%';
+        $pattern = \mindstellar\database\QueryBuilder::escapeLike((string)$query) . '%';
         // The e-mail is its own key as well as part of the label: the admin listing editor
         // resolves a seller by e-mail, and reading it back out of a label is guesswork.
         $sql     = 'SELECT pk_i_id as id, CONCAT(s_name, \' (\', s_email, \')\') as label, s_name as value,'

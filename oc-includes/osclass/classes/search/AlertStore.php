@@ -13,6 +13,7 @@ namespace mindstellar\search;
 use mindstellar\base\Model;
 use mindstellar\database\Connection;
 use mindstellar\database\DbException;
+use mindstellar\database\QueryBuilder;
 
 /**
  * t_alerts queries for the stored-search format: converting old rows, and finding the
@@ -209,7 +210,7 @@ final class AlertStore extends Model
         $params = array(self::HELD_LIKE);
         if ($email !== '') {
             $where   .= ' AND s_email LIKE ?';
-            $params[] = '%' . str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), $email) . '%';
+            $params[] = '%' . QueryBuilder::escapeLike($email) . '%';
         }
 
         try {

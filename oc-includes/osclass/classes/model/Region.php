@@ -135,7 +135,7 @@ class Region extends DAO
         $country = trim($country);
         // Reproduces DBCommandClass::like()'s own escaping (escapeStr($v, true)):
         // a caller-typed '%' or '_' must stay literal, never a SQL wildcard.
-        $pattern = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), (string)$query) . '%';
+        $pattern = \mindstellar\database\QueryBuilder::escapeLike((string)$query) . '%';
 
         $sql    = 'SELECT a.pk_i_id as id, a.s_name as label, a.s_name as value FROM '
             . $this->getTableName() . ' as a';

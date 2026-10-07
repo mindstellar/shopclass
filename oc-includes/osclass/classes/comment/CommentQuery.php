@@ -54,12 +54,7 @@ final class CommentQuery
      */
     public function newest(array $statuses, ?int $listingId, ?int $userId, ?int $beforeId, int $limit): array
     {
-        $query = $this->filtered($statuses, $listingId, $userId);
-        if ($beforeId !== null) {
-            $query = $query->where('pk_i_id', '<', $beforeId);
-        }
-
-        return osc_db_stringify_rows($query->orderBy('pk_i_id', 'DESC')->limit($limit)->get());
+        return osc_db_stringify_rows($this->filtered($statuses, $listingId, $userId)->newestBefore($beforeId, $limit));
     }
 
     /**

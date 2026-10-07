@@ -186,7 +186,7 @@ class Country extends DAO
         // through escapeStr($v, true), which escapes LIKE metacharacters
         // before adding the wildcard, so a literal '%'/'_' typed by a caller
         // is preserved here the same way.
-        $pattern = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), (string) $query) . '%';
+        $pattern = \mindstellar\database\QueryBuilder::escapeLike((string) $query) . '%';
 
         try {
             // The table name comes from getTableName(), fixed in the constructor

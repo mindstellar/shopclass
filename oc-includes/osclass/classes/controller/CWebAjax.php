@@ -391,7 +391,7 @@ class CWebAjax extends BaseModel
         }
 
         // Escape LIKE wildcards in the user term so they match literally.
-        $like = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), $term) . '%';
+        $like = \mindstellar\database\QueryBuilder::escapeLike((string) $term) . '%';
         $rows = \mindstellar\fields\FieldQuery::suggest((int) $fieldId, $like);
 
         $results = array();

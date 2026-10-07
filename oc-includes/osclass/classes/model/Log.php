@@ -162,7 +162,7 @@ class Log extends DAO
             // Same wildcard escaping the builder applies before a LIKE: a literal
             // % or _ typed by an admin stays literal rather than acting as a
             // SQL wildcard.
-            $pattern  = '%' . str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), $filters['q']) . '%';
+            $pattern  = '%' . \mindstellar\database\QueryBuilder::escapeLike((string) $filters['q']) . '%';
             $where[]  = '(s_data LIKE ? OR s_action LIKE ? OR s_ip LIKE ?)';
             $params[] = $pattern;
             $params[] = $pattern;

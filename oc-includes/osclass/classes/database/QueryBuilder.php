@@ -372,6 +372,27 @@ class QueryBuilder
     }
 
     /**
+     * $value with the LIKE metacharacters escaped, so a typed '%' or '_' matches itself.
+     */
+    public static function escapeLike(string $value): string
+    {
+        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
+    }
+
+    /**
+     * Rows newest first by $column, below $before when given: one page of a keyset list.
+     *
+     * @return array<int,array<string,mixed>>
+     * @throws DbException
+     */
+    public function newestBefore(?int $before, int $limit, string $column = 'pk_i_id'): array
+    {
+        $query = $before !== null ? $this->where($column, '<', $before) : $this;
+
+        return $query->orderBy($column, 'DESC')->limit($limit)->get();
+    }
+
+    /**
      * Add a LIKE condition. The wildcard payload is built in PHP and bound as a
      * single parameter; LIKE metacharacters (% and _) in $value are escaped
      * first, so a literal '%' or '_' typed by a user stays literal.
@@ -386,7 +407,7 @@ class QueryBuilder
     public function like(string $column, string $value, string $side = 'both'): self
     {
         $this->assertIdent($column);
-        $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
+        $escaped = self::escapeLike($value);
         switch ($side) {
             case 'before':
                 $pattern = '%' . $escaped;
