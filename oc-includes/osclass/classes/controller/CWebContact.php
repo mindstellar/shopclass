@@ -82,10 +82,7 @@ class CWebContact extends BaseModel
                 }
 
                 $user = User::getInstance()->findByEmail($yourEmail);
-                if (isset($user['b_active'])
-                    && ($user['b_active'] == 0
-                        || $user['b_enabled'] == 0)
-                ) {
+                if (isset($user['b_active']) && !\mindstellar\user\UserStore::isLive($user)) {
                     $fail(_m('Your current email is not allowed'));
 
                     return false;

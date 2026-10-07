@@ -206,7 +206,7 @@ class CWebUserNonSecure extends BaseModel
             case 'contact_post':
                 osc_csrf_check();
                 $user = User::getInstance()->findByPrimaryKey(Params::getParamInt('id'));
-                if (!$user || !$user['b_active'] || !$user['b_enabled']) {
+                if (!$user || !\mindstellar\user\UserStore::isLive($user)) {
                     $this->do404();
 
                     return null;
