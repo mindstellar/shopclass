@@ -93,7 +93,7 @@ final class AdminUsersController
         $userId   = (int) $user['pk_i_id'];
         $input    = $call->input();
         $accounts = new AccountService();
-        $actor    = $call->credential()->actor($call->request()->ip(), 'admin:users');
+        $actor    = $call->actor('admin:users');
         $flags    = [];
         foreach (array_intersect_key($input, self::STATUS_MEMBERS) as $member => $value) {
             $flags[self::STATUS_MEMBERS[$member]] = (bool) $value;
@@ -111,7 +111,7 @@ final class AdminUsersController
     public function delete(ApiCall $call): Response
     {
         $id = (int) $this->user($call->intArg())['pk_i_id'];
-        (new AccountService())->delete($id, $call->credential()->actor($call->request()->ip(), 'admin:users'));
+        (new AccountService())->delete($id, $call->actor('admin:users'));
         $this->users->forget($id);
 
         return Response::noContent();

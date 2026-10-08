@@ -8,6 +8,7 @@ function osc_api_session_token(): string
 function osc_api_url(string $path = '', ?string $version = NULL): string
 function osc_is_api_request(): bool
 function osc_webhook_emit(string $type, array $data, array $options = []): ?string
+mindstellar\api\ApiCall::public actor(string $scope = ''): mindstellar\auth\Actor
 mindstellar\api\ApiCall::public arg(string $name): ?string
 mindstellar\api\ApiCall::public args(): array
 mindstellar\api\ApiCall::public canViewListing(?array $row): bool

@@ -83,7 +83,7 @@ final class AuthController
         if ($family === null) {
             throw ProblemException::of('wrong_credential', 'Signing out needs an access token. Revoke a key at /account/keys.');
         }
-        $this->refresh->end((int) $credential->userId(), $family);
+        $this->refresh->end($call->userId(), $family);
 
         return Response::noContent();
     }
@@ -175,7 +175,7 @@ final class AuthController
     {
         $credential = $call->credential();
 
-        $user = $credential->isSession() ? $this->users->find((int) $credential->userId()) : null;
+        $user = $credential->isSession() ? $this->users->find($call->userId()) : null;
         if ($user === null) {
             throw ProblemException::of('wrong_credential', 'Only a same-site session call can renew its page token.');
         }

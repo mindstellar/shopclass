@@ -58,11 +58,9 @@ final class ListingWritesController
      */
     public function prepareCreate(ApiCall $call): ?FetchedPhotos
     {
-        $request    = $call->request();
-        $credential = $call->credential();
-        $userId     = (int) $credential->userId();
-        $this->api->limiter()->enforceAll($this->api->ratePolicy()->newListing($userId, $request->ip()), 'Too many new listings in an hour. Try again later.');
-        $this->api->listings()->mayPost($credential->actor($request->ip()), (string) ($this->users->find($userId)['s_email'] ?? ''));
+        $userId = $call->userId();
+        $this->api->limiter()->enforceAll($this->api->ratePolicy()->newListing($userId, $call->request()->ip()), 'Too many new listings in an hour. Try again later.');
+        $this->api->listings()->mayPost($call->actor(), (string) ($this->users->find($userId)['s_email'] ?? ''));
 
         return $this->fetch($call->input(), $userId, $this->room->cap($userId));
     }
@@ -89,11 +87,11 @@ final class ListingWritesController
         $request = $call->request();
         $credential = $call->credential();
 
-        $userId = (int) $credential->userId();
+        $userId = $call->userId();
         $input  = $request->input();
         $form   = $this->writer->newForm($input, $request, $credential);
         $batch  = $this->batch($call, $input, $userId, $this->room->cap($userId));
-        $id     = (int) $this->withPhotos($batch, $userId, fn (): int => $this->writer->create($form, $batch->paths(), $credential->actor($request->ip())));
+        $id     = (int) $this->withPhotos($batch, $userId, fn (): int => $this->writer->create($form, $batch->paths(), $call->actor()));
 
         return $this->saved($call, $id, true, $batch, 0);
     }
@@ -103,7 +101,7 @@ final class ListingWritesController
         $request = $call->request();
         $credential = $call->credential();
 
-        $userId  = (int) $credential->userId();
+        $userId  = $call->userId();
         $listing = $this->owned->own($call->intArg(), $credential, true);
         $id      = $listing->id();
         $input   = $request->input();
@@ -115,7 +113,7 @@ final class ListingWritesController
             $room   = $this->room->room($id, $listing->userId());
         }
         $batch = $this->batch($call, $input, $userId, $room);
-        $this->withPhotos($batch, $userId, fn () => $this->writer->update($listing, $form, $batch->paths(), $credential->actor($request->ip())));
+        $this->withPhotos($batch, $userId, fn () => $this->writer->update($listing, $form, $batch->paths(), $call->actor()));
 
         return $this->saved($call, $id, false, $batch, $before);
     }
@@ -124,7 +122,7 @@ final class ListingWritesController
     {
         $credential = $call->credential();
 
-        $this->writer->delete($this->owned->own($call->intArg(), $credential), $credential->actor($call->request()->ip()));
+        $this->writer->delete($this->owned->own($call->intArg(), $credential), $call->actor());
 
         return Response::noContent();
     }

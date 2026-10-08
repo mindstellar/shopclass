@@ -135,7 +135,7 @@ A handler that needs nothing from the call may take no argument.
 
 | Class | Use |
 |---|---|
-| `ApiCall` | `request()`, `credential()`, `args()` (the path values), `arg($name)` (one value, or `null`), `intArg($name)`, `input()` (the decoded JSON body, `array()` when none was sent), `kit()` |
+| `ApiCall` | `request()`, `credential()`, `args()` (the path values), `arg($name)` (one value, or `null`), `intArg($name)`, `input()` (the decoded JSON body, `array()` when none was sent), `kit()`, `userId()` (0 when the caller is not a user), `actor($scope)` (the caller for core services), `listingActor()`, `canViewListing($row)` (`false` for a missing row) |
 | `ApiKit` | `context($call, $object, $members, $includes)` (a `ViewContext` for this caller), `listing($call, $id, $context)` (one listing, or `null` when it does not exist or the caller may not see it), `listings()` (core's listing reader for rows you found yourself; it does not check visibility), `links()` |
 | `Request` | `method()`, `path()`, `version()`, `routePath()`, `query()`, `queryString($name)`, `queryInt($name)`, `queryBool($name)`, `queryList($name)`, `queryIds($name)`, `header($name)`, `input()`, `ip()` |
 | `Credential` | `kind()`, `scopes()`, `has($scope)`, `userId()`, `adminId()`, `isAdmin()`, `isModerator()`, `isUser()`, `isSession()`, `isAnonymous()` |

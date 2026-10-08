@@ -60,13 +60,23 @@ final class ApiCall
     }
 
     /**
+     * The caller as an actor for core services; an admin key holding $scope acts as an admin.
+     *
+     * @api
+     */
+    public function actor(string $scope = ''): Actor
+    {
+        return $this->credential->actor($this->request->ip(), $scope);
+    }
+
+    /**
      * The caller as a listing viewer: an admin key with the listings scope sees every listing.
      *
      * @api
      */
     public function listingActor(): Actor
     {
-        return $this->credential->actor($this->request->ip(), ViewContext::LISTINGS_SCOPE);
+        return $this->actor(ViewContext::LISTINGS_SCOPE);
     }
 
     /**

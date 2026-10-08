@@ -72,7 +72,7 @@ final class PhotosController
             'tmp_name' => [$photo->path()],
             'error'    => [UPLOAD_ERR_OK],
             'size'     => [(int) filesize($photo->path())],
-        ], $credential->actor($request->ip()));
+        ], $call->actor());
         if ($new === []) {
             $photo->discard();
             $refuseWhenFull();
@@ -95,7 +95,7 @@ final class PhotosController
         $credential = $call->credential();
         $id      = $this->owned->own($call->intArg(), $credential)->id();
         $photoId = $call->intArg('photo');
-        if (!(new PhotoService())->delete($photoId, $id, $credential->actor($call->request()->ip()))) {
+        if (!(new PhotoService())->delete($photoId, $id, $call->actor())) {
             throw ProblemException::notFound('No such photo on this listing.');
         }
 

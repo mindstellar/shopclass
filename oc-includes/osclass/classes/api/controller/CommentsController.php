@@ -61,7 +61,7 @@ final class CommentsController
 
     public function delete(ApiCall $call): Response
     {
-        (new CommentService())->delete($call->intArg(), $call->credential()->actor($call->request()->ip()));
+        (new CommentService())->delete($call->intArg(), $call->actor());
 
         return Response::noContent();
     }

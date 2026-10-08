@@ -60,7 +60,7 @@ final class AccountController
         $credential = $call->credential();
 
         return $this->api->listingSearch()
-            ->newest($request, $credential, 'account/listings', $request->queryList('status'), [(int) $credential->userId()]);
+            ->newest($request, $credential, 'account/listings', $request->queryList('status'), [$call->userId()]);
     }
 
     public function show(ApiCall $call): Response
@@ -78,7 +78,7 @@ final class AccountController
         $userId   = (int) $user['pk_i_id'];
         $warnings = [];
 
-        $actor    = $credential->actor($request->ip());
+        $actor    = $call->actor();
         $newEmail = isset($input['email']) ? trim((string) $input['email']) : '';
         if (strcasecmp($newEmail, (string) $user['s_email']) === 0) {
             $newEmail = '';
@@ -149,7 +149,7 @@ final class AccountController
 
         return Page::whole(array_map(
             static fn (AccessEntry $session): array => $serializer->session($session, $credential),
-            $this->sessions->signIns((int) $credential->userId())
+            $this->sessions->signIns($call->userId())
         ), $this->api->links(), $call);
     }
 

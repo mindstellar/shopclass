@@ -99,14 +99,14 @@ final class AdminListingsController
             $flags[self::STATUS_MEMBERS[$member]] = (bool) $value;
         }
         $form = $edit === [] ? null : $this->writer->editForm($listing, $edit, $request, $credential) + self::adminMembers($listing, $edit);
-        $this->writer->adminUpdate($listing, $form, $flags, $credential->actor($request->ip(), 'admin:listings'), $this->moderation, (int) $credential->adminId(), self::note($credential));
+        $this->writer->adminUpdate($listing, $form, $flags, $call->actor('admin:listings'), $this->moderation, (int) $credential->adminId(), self::note($credential));
 
         return Response::ok($this->view($call, $listing->id()));
     }
 
     public function delete(ApiCall $call): Response
     {
-        $this->writer->delete($this->owned->load($call->intArg()), $call->credential()->actor($call->request()->ip(), 'admin:listings'));
+        $this->writer->delete($this->owned->load($call->intArg()), $call->actor('admin:listings'));
 
         return Response::noContent();
     }

@@ -157,7 +157,7 @@ access token and a longer refresh token. Admins never sign in this way: they use
 |---|---|
 | **Let users make personal API keys** | Off by default. Lets a user make a key for their own scripts. Each key must expire within a year, holds only some of the user's rights, and stops working when the password changes. Making one asks for the password again. |
 | **Allow sign-up through the API** | Off by default. Lets an app create accounts. It needs your site's registration on too. The new user gets the same activation e-mail as the sign-up form sends. Limited to 5 sign-ups an hour per address and **Sign-ups, whole site** for the site. |
-| **App sign-in lasts** | 30 days. An app not used for this long must sign in again. |
+| **App sign-in lasts** | 30 days by default. An app not used for this long must sign in again. |
 
 The API shows no captcha, so sign-up and posting have the hourly limits above instead.
 Posting still follows your rules: moderation, the listing limit, bans and spam checks.
