@@ -109,6 +109,11 @@ $admin->query("UPDATE $attempts SET dt_date = DATE_SUB(dt_date, INTERVAL " . (os
 pin('once the window ends, the right password passes', '', Reauth::verify($row(), 'right-password'));
 
 $reset();
+for ($i = 0; $i < $max; $i++) {
+    LoginThrottle::recordFailure('web', 'uma');
+}
+check('sign-in failures by username use up the same budget', Reauth::verify($row(), 'right-password') !== '');
+$reset();
 
 harness_section('The 6.4 class name');
 

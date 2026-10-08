@@ -12,7 +12,10 @@ declare(strict_types=1);
 
 namespace mindstellar\api;
 
+use mindstellar\api\serializer\ViewContext;
 use mindstellar\apiaccess\Credential;
+use mindstellar\auth\Actor;
+use mindstellar\listing\ListingPolicy;
 
 /**
  * One call to an endpoint, as its handler gets it: the request, who is calling, the values
@@ -44,6 +47,38 @@ final class ApiCall
     public function credential(): Credential
     {
         return $this->credential;
+    }
+
+    /**
+     * The calling user's id; 0 when the credential has none.
+     *
+     * @api
+     */
+    public function userId(): int
+    {
+        return (int) $this->credential->userId();
+    }
+
+    /**
+     * The caller as a listing viewer: an admin key with the listings scope sees every listing.
+     *
+     * @api
+     */
+    public function listingActor(): Actor
+    {
+        return $this->credential->actor($this->request->ip(), ViewContext::LISTINGS_SCOPE);
+    }
+
+    /**
+     * Whether the caller may see this listing row; false for a missing row.
+     *
+     * @api
+     *
+     * @param array<string,mixed>|null $row
+     */
+    public function canViewListing(?array $row): bool
+    {
+        return $row !== null && ListingPolicy::canView($row, $this->listingActor());
     }
 
     /**

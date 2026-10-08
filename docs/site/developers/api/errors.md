@@ -79,9 +79,9 @@ A `422 validation_failed` lists every problem at once in `errors`:
 | `required` | A required field is missing. |
 | `additionalProperties` | The field is not one the endpoint takes. |
 | `invalid` | The value is not accepted, for a reason `message` gives. |
-| `unknown` | The value names something that does not exist, such as a category or country. |
+| `unknown` | The value names something that does not exist, such as a category, country or custom field. |
 | `taken` | Another resource already uses the value. |
-| `mismatch` | The value does not match, such as a wrong current password. |
+| `mismatch` | The value does not match, such as a wrong current password, or a region outside the country or a city outside the region. |
 | `limit` | A limit is reached, such as the photos a listing may hold. |
 | `rejected` | The web form refused the input; `message` is its text. |
 

@@ -238,6 +238,11 @@ $pendingOwn = static fn (): int => seed_exec($admin, "INSERT INTO {$p}t_item_com
 pin('the author\'s comment still waiting for approval is kept on both sides', [false, '409 conflict'], [
     $web['deleteComment']($tom, $sueCar, $pendingOwn()), api_admin_code($call('DELETE', 'comments/' . $pendingOwn(), null, $tomToken)),
 ]);
+$hiddenOther = $pendingOwn();
+pin('someone else\'s comment waiting for approval is not there for them, on delete as on read', [false, '404 not_found', '404 not_found', 1], [
+    $web['deleteComment']($sue, $sueCar, $hiddenOther), api_admin_code($call('DELETE', 'comments/' . $hiddenOther, null, $sueToken)),
+    api_admin_code($call('GET', 'comments/' . $hiddenOther, null, $sueToken)), (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_comment WHERE pk_i_id = $hiddenOther")->fetch_row()[0],
+]);
 $admin->query("DELETE FROM {$p}t_item_comment WHERE fk_i_item_id = $sueCar AND pk_i_id <> $other");
 $asUser(null);
 

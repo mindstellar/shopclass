@@ -46,7 +46,7 @@ final class AlertsController
 
     public function index(ApiCall $call): Response
     {
-        $rows = $this->alerts->live((int) $call->credential()->userId());
+        $rows = $this->alerts->live($call->userId());
 
         return Page::whole(array_map([$this->serializer, 'one'], $rows), $this->api->links(), $call);
     }
@@ -55,7 +55,7 @@ final class AlertsController
     {
         $request = $call->request();
 
-        $userId  = (int) $call->credential()->userId();
+        $userId  = $call->userId();
         $filters = (array) ($request->input()['filters'] ?? []);
         $search  = $request->withQuery(array_map(static fn ($v) => is_bool($v) ? ($v ? '1' : '0') : $v, $filters));
         $values  = ListingSearch::params($search, $this->categories, $this->api->locale($search));

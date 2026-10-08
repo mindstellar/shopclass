@@ -21,7 +21,6 @@ use mindstellar\api\Response;
 use mindstellar\api\serializer\CommentSerializer;
 use mindstellar\comment\CommentQuery;
 use mindstellar\moderation\CommentModeration;
-use mindstellar\utility\DeferredMail;
 
 /**
  * `/admin/comments`: every comment whatever its status, and what the comments screen does to
@@ -82,20 +81,12 @@ final class AdminCommentsController
         foreach (array_intersect_key($input, self::STATUS_MEMBERS) as $member => $value) {
             $flags[self::STATUS_MEMBERS[$member]] = (bool) $value;
         }
-        // The edit and the status changes land together or not at all.
-        DeferredMail::transaction(function () use ($comment, $id, $input, $flags): void {
-            if (array_diff_key($input, self::STATUS_MEMBERS) !== []) {
-                $this->moderation->edit($id, [
-                    'title'        => (string) ($input['title'] ?? $comment['s_title']),
-                    'body'         => (string) ($input['body'] ?? $comment['s_body']),
-                    'author_name'  => (string) ($input['author_name'] ?? $comment['s_author_name']),
-                    'author_email' => (string) ($input['author_email'] ?? $comment['s_author_email']),
-                ]);
-            }
-            if ($flags !== []) {
-                $this->moderation->applyFlags($id, $flags);
-            }
-        });
+        $this->moderation->adminEdit($id, array_diff_key($input, self::STATUS_MEMBERS) === [] ? null : [
+            'title'        => (string) ($input['title'] ?? $comment['s_title']),
+            'body'         => (string) ($input['body'] ?? $comment['s_body']),
+            'author_name'  => (string) ($input['author_name'] ?? $comment['s_author_name']),
+            'author_email' => (string) ($input['author_email'] ?? $comment['s_author_email']),
+        ], $flags);
 
         return $this->show($call);
     }

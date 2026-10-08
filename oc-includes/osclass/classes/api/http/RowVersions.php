@@ -12,10 +12,14 @@ declare(strict_types=1);
 
 namespace mindstellar\api\http;
 
+use mindstellar\admin\ExposedSettings;
+use mindstellar\admin\form\store\PreferenceStore;
 use mindstellar\apiaccess\Credential;
 use mindstellar\database\Db;
 use mindstellar\resource\RowHashQuery;
 use mindstellar\security\SigningKey;
+use mindstellar\settings\SettingsPageRegistry;
+use mindstellar\webhook\WebhookEndpointStore;
 
 /**
  * Versions read from the stored rows: a keyed hash of the resource's row and its own child
@@ -57,6 +61,12 @@ final class RowVersions implements ResourceVersions
         'admin/areas/{id}'              => ['arg' => 'id', 'tables' => [['t_city_area', 'pk_i_id']]],
     ];
 
+    /**
+     * Resources stored as rows named by a compound key: the exposed settings' preferences, and a
+     * webhook endpoint's key-value row.
+     */
+    private const KEYED = ['admin/settings', 'admin/webhooks/{webhook}'];
+
     /** The columns each version hashes, and those left out; see RowHashQuery. */
     public const COLUMNS = RowHashQuery::COLUMNS;
 
@@ -64,11 +74,23 @@ final class RowVersions implements ResourceVersions
 
     public function supports(string $path): bool
     {
-        return isset(self::RESOURCES[$path]);
+        return isset(self::RESOURCES[$path]) || in_array($path, self::KEYED, true);
     }
 
     public function version(string $path, array $args, Credential $credential, bool $lock = false, bool $ownerOnly = false): ?string
     {
+        if ($path === 'admin/settings') {
+            // Always there: a setting never saved reads as its default.
+            return self::sign([RowHashQuery::keyedHashes('t_preference', self::settingKeys(), $lock)]);
+        }
+        if ($path === 'admin/webhooks/{webhook}') {
+            $id   = (string) ($args['webhook'] ?? '');
+            $rows = WebhookEndpointStore::validId($id)
+                ? RowHashQuery::keyedHashes('t_key_value', [['s_group' => WebhookEndpointStore::GROUP, 's_key' => $id]], $lock)
+                : [];
+
+            return $rows === [] ? null : self::sign([$rows]);
+        }
         $resource = self::RESOURCES[$path] ?? null;
         if ($resource === null) {
             return null;
@@ -100,7 +122,36 @@ final class RowVersions implements ResourceVersions
         }
         unset($hashes);
 
+        return self::sign($rows);
+    }
+
+    /**
+     * @param array<int,string[]> $rows each table's sorted row hashes
+     */
+    private static function sign(array $rows): string
+    {
         return substr(hash_hmac('sha256', (string) json_encode($rows), 'resource-version|' . SigningKey::get()), 0, 24);
+    }
+
+    /**
+     * The preference rows behind ExposedSettings, as the settings pages store them.
+     *
+     * @return array<int,array{s_section:string,s_name:string}>
+     */
+    private static function settingKeys(): array
+    {
+        $keys = [];
+        foreach (ExposedSettings::FIELDS as [$form, $field]) {
+            $page    = $form::register();
+            $section = (string) (osc_settings_page($page)['section'] ?? '');
+            $spec    = SettingsPageRegistry::getInstance()->fields($page)[$field] ?? [];
+            $name    = PreferenceStore::key($field, $spec);
+            foreach (osc_settings_field_locales($spec) ?: ['' => ''] as $code => $unused) {
+                $keys[] = ['s_section' => $section, 's_name' => $name . $code];
+            }
+        }
+
+        return $keys;
     }
 
     public function atomically(callable $fn): mixed

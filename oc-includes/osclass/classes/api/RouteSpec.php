@@ -113,7 +113,7 @@ final class RouteSpec
     /** @var string[] */
     private array $argNames;
 
-    /** @var array<string,string> placeholder => its pattern, where one was given */
+    /** @var array<string,string> placeholder => its anchored `where` regex, where one was given */
     private array $where = [];
 
     /**
@@ -202,18 +202,50 @@ final class RouteSpec
 
         preg_match_all(self::PLACEHOLDER, $path, $names);
         $this->argNames = $names[1];
-        $where          = (array) ($spec['where'] ?? []);
-        foreach ($where as $name => $pattern) {
-            if (!in_array($name, $this->argNames, true) || !is_string($pattern) || @preg_match('#^(?:' . $pattern . ')$#D', '') === false) {
-                throw new \InvalidArgumentException($key . ': where: ' . $name . ' is not a placeholder with a valid pattern.');
-            }
+        $where          = [];
+        foreach ((array) ($spec['where'] ?? []) as $name => $pattern) {
+            $where[(string) $name] = self::segmentPattern($key, (string) $name, $pattern, $this->argNames);
         }
         $this->where = $where;
+        // Each placeholder captures one whole segment; a `where` pattern is tested on that value alone.
         $this->regex = '#^' . preg_replace_callback(
             '#\\\\\{([a-zA-Z_][a-zA-Z0-9_]*)\\\\\}#',
-            static fn (array $m): string => '(' . ($where[$m[1]] ?? (in_array($m[1], self::NUMERIC_ARGS, true) ? '[0-9]+' : '[^/]+')) . ')',
+            static fn (array $m): string => !isset($where[$m[1]]) && in_array($m[1], self::NUMERIC_ARGS, true) ? '([0-9]+)' : '([^/]+)',
             preg_quote($path, '#')
         ) . '$#D';
+    }
+
+    /**
+     * A `where` pattern, checked and anchored for one segment value. It must compile on its own,
+     * have no capturing group or `(*VERB)`, and not match a `/`.
+     *
+     * @param string[] $argNames
+     *
+     * @throws \InvalidArgumentException naming the placeholder
+     */
+    private static function segmentPattern(string $key, string $name, mixed $pattern, array $argNames): string
+    {
+        $refuse = static fn (string $why): \InvalidArgumentException => new \InvalidArgumentException($key . ': where: ' . $name . ' ' . $why . '.');
+        if (!in_array($name, $argNames, true)) {
+            throw $refuse('is not a placeholder');
+        }
+        if (!is_string($pattern) || $pattern === '' || @preg_match('#' . $pattern . '#', '') === false) {
+            throw $refuse('is not a valid pattern');
+        }
+        $anchored = '#^(?:' . $pattern . ')$#D';
+        if (@preg_match($anchored, '') === false || str_contains($pattern, '(*')) {
+            throw $refuse('is not a valid pattern');
+        }
+        if (preg_match('#(?:' . $pattern . ')?#', '', $groups, PREG_UNMATCHED_AS_NULL) === 1 && count($groups) > 1) {
+            throw $refuse('has a capturing group; use (?:...)');
+        }
+        foreach (['/', 'a/b', '1/2', '/a', 'a/'] as $sample) {
+            if (preg_match($anchored, $sample) === 1) {
+                throw $refuse('matches a /; a placeholder is one path segment');
+            }
+        }
+
+        return $anchored;
     }
 
     /**
@@ -350,7 +382,14 @@ final class RouteSpec
             return null;
         }
 
-        return $this->argNames === [] ? [] : array_combine($this->argNames, array_slice($m, 1));
+        $args = $this->argNames === [] ? [] : array_combine($this->argNames, array_slice($m, 1));
+        foreach ($this->where as $name => $pattern) {
+            if (preg_match($pattern, $args[$name]) !== 1) {
+                return null;
+            }
+        }
+
+        return $args;
     }
 
     /**
@@ -381,7 +420,7 @@ final class RouteSpec
     {
         $values = [];
         foreach ($this->argNames as $name) {
-            $pattern = '#^(?:' . ($this->where[$name] ?? (in_array($name, self::NUMERIC_ARGS, true) ? '[0-9]+' : '[^/]+')) . ')$#D';
+            $pattern = $this->where[$name] ?? (in_array($name, self::NUMERIC_ARGS, true) ? '#^[0-9]+$#D' : '#^[^/]+$#D');
             $values[$name] = array_values(array_filter(
                 ['1', '42', 'a', 'abc', 'a1', '1a', 'A_b-c', 'a.b', 'a:b', '-', 'Z9'],
                 static fn (string $value): bool => preg_match($pattern, $value) === 1

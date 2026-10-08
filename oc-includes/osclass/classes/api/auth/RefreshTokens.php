@@ -15,6 +15,7 @@ namespace mindstellar\api\auth;
 use mindstellar\api\Problem;
 use mindstellar\api\ProblemException;
 use mindstellar\apiaccess\ApiKeys;
+use mindstellar\apiaccess\ApiSettings;
 use mindstellar\apiaccess\CredentialKind;
 use mindstellar\apiaccess\IssuedToken;
 use mindstellar\apiaccess\KeyOwner;
@@ -34,8 +35,8 @@ final class RefreshTokens
 {
     public const PREFIX = 'scr_';
 
-    /** Days a refresh token lives unused; each use starts the count again. */
-    public const TTL_DAYS = 30;
+    /** The default of the refresh-token setting: days a token lives unused, each use starting the count again. */
+    public const TTL_DAYS = ApiSettings::DEFAULTS['api_refresh_days'];
 
     private const REFUSED = 'refused';
     private const REUSED  = 'reused';

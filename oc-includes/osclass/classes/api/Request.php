@@ -414,7 +414,7 @@ final class Request
      * A copy whose application/x-www-form-urlencoded body reads as JSON, as an OAuth token
      * request sends it (RFC 6749 §4.3). Any other body is left as it is.
      *
-     * @throws ProblemException 413 when the body is too large
+     * @throws ProblemException 413 when the body is too large, 400 when it is not UTF-8
      */
     public function withFormAsJson(): self
     {
@@ -426,8 +426,13 @@ final class Request
             throw ProblemException::of('too_large', 'The body is larger than 1 MB.');
         }
         parse_str($body, $fields);
+        try {
+            $json = json_encode((object) $fields, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            throw ProblemException::of('invalid_json', 'The body is not valid UTF-8.');
+        }
         $copy                          = clone $this;
-        $copy->body                    = json_encode((object) $fields, JSON_THROW_ON_ERROR);
+        $copy->body                    = $json;
         $copy->headers['content-type'] = 'application/json';
 
         return $copy;

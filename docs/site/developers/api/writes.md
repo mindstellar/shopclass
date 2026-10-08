@@ -122,7 +122,8 @@ Required: `category_id`, `title`, `description`.
 | `ext` | object | Plugin members, under the plugin's slug. |
 
 `custom_fields` are limited to the listing's category and cleaned as the web form cleans them.
-A field that is not in the category is dropped without an error. A date is `"2026-01-31"` or an
+A field of another category is dropped without an error, so an edit can move the listing. An id
+that is no field is a `422` with `unknown`, and a value of the wrong shape one with `type`. A date is `"2026-01-31"` or an
 RFC 3339 date-time, and a date range is `{"from": "2026-01-01", "to": "2026-01-31"}`. A date that
 cannot be read is a `422`. `null` removes a value.
 
@@ -371,7 +372,8 @@ a taken e-mail is `422` with "The specified e-mail is already in use", and the n
 e-mails go out at once.
 
 There is no captcha to show, so sign-up is limited: **5 per address and 100 for the whole
-site an hour**. If the site cannot count, it refuses.
+site an hour** (the site's number is a setting). Only a sign-up that passed its checks counts for the
+site. If the site cannot count, it refuses.
 
 ## Editing safely with If-Match
 
@@ -382,7 +384,7 @@ To avoid overwriting a change made meanwhile, send the `ETag` of your last `GET`
   `GET` does (`404`) and runs nothing.
 - A tag a proxy made weak (`W/"…"`) still matches.
 - A caller who can `PATCH` or `DELETE` a listing, comment, photo, the account, a user, key, saved
-  search, category, field, currency or location gets an `ETag` that holds the stored version
+  search, category, field, currency, location, webhook or the settings gets an `ETag` that holds the stored version
   (`"<version>.<hash>"`). Any `GET` of the path works, whatever its `fields`, `include` or
   `locale`. For a listing or comment that means its owner, or an admin key.
 - Other callers get a plain hash of the body. Use the tag of the plain `GET`, with no `fields`
@@ -421,11 +423,11 @@ curl -X POST $API/listings -H "Authorization: Bearer $TOKEN" \
 | Requests | [The usual limits](/docs/developers/api/authentication/#rate-limits), and 30 writes a minute | `429 rate_limited` |
 | New listings | Per user an hour: the site's setting, or 30 when it is `0` (10 while the listing form asks for a captcha). Per address: three times that. | `429 rate_limited` |
 | Comments | 20 an hour per user, counted with the ones they post on the site's comment form | `429 rate_limited` |
-| Photos fetched by address | 30 an hour per user, counted on `PATCH` | `429 rate_limited` |
+| Photos fetched by address | 30 an hour per user by default (a setting), counted on `PATCH` | `429 rate_limited` |
 | E-mail changes on the account | 5 an hour per user | `429 rate_limited` |
 | Staged photos waiting | 50 per user | `422` on `/photo` |
 | `photo_tokens` / `photo_urls` in one body | 50 / 20 | `422 validation_failed` |
-| Sign-ups | 5 an hour per address, 100 for the site | `429 rate_limited` |
+| Sign-ups | 5 an hour per address; 100 for the site by default (a setting), counting only those that passed their checks | `429 rate_limited` |
 
 Each `429` has `Retry-After`. The site owner sets the listing number: [Set up the REST API](/docs/configure/api/#rate-limits).
 

@@ -78,6 +78,27 @@ pin('with name matching, typed places find their ids', [$region, $city], [$named
 $gone = LocationService::resolve(['countryCode' => 'US', 'regionId' => '9999', 'cityId' => 'abc']);
 pin('a posted id that does not exist gives null for the id and the name', [null, null, null, null], [$gone['regionId'], $gone['regionName'], $gone['cityId'], $gone['cityName']]);
 
+harness_section('LocationService::checkPlaces');
+$placeRefusal = static function (string $country, string $regionId, string $cityId): ?array {
+    try {
+        LocationService::checkPlaces($country, $regionId, $cityId);
+    } catch (\mindstellar\validation\InvalidException $e) {
+        return [$e->pointer(), $e->reason()];
+    }
+
+    return null;
+};
+$otherCountry = seed_country($admin, 'CA', 'Canada');
+$otherRegion  = seed_region($admin, $otherCountry, 'Ontario');
+$otherCity    = seed_city($admin, $otherRegion, 'Toronto', $otherCountry);
+pin('matching places, or none, pass', [null, null, null], [$placeRefusal('us', (string) $region, (string) $city), $placeRefusal('', '', ''), $placeRefusal('US', '', (string) $city)]);
+pin('a place that does not exist is unknown', [['/country', 'unknown'], ['/region_id', 'unknown'], ['/city_id', 'unknown'], ['/region_id', 'unknown']], [
+    $placeRefusal('ZZ', '', ''), $placeRefusal('US', '9999', ''), $placeRefusal('US', '', '9999'), $placeRefusal('US', 'abc', ''),
+]);
+pin('a place under another parent is a mismatch', [['/region_id', 'mismatch'], ['/city_id', 'mismatch'], ['/city_id', 'mismatch']], [
+    $placeRefusal('US', (string) $otherRegion, ''), $placeRefusal('', (string) $region, (string) $otherCity), $placeRefusal('US', '', (string) $otherCity),
+]);
+
 harness_section('listings and accounts resolve places the same way');
 $form    = [
     'catId' => (string) $cat, 'countryId' => 'US', 'country' => 'United States', 'regionId' => (string) $region,

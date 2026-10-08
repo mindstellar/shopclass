@@ -54,18 +54,15 @@ final class AccountKeysController
 
         return Page::whole(array_map(
             fn (StoredKey $key): array => $this->serializer->personal($key, $now),
-            $this->keys->list((int) $call->credential()->userId())
+            $this->keys->list($call->userId())
         ), $this->links, $call);
     }
 
     public function create(ApiCall $call): Response
     {
         $this->allowed();
-        $userId = (int) $call->credential()->userId();
-        $user   = $this->users->find($userId);
-        if ($user === null) {
-            throw ProblemException::notFound('No such user.');
-        }
+        $userId = $call->userId();
+        $user   = ProblemException::found($this->users->find($userId), 'user');
         $input  = $call->input();
         $scopes = (array) ($input['scopes'] ?? []);
         $call->credential()->checkGrant($scopes);
@@ -87,7 +84,7 @@ final class AccountKeysController
     public function show(ApiCall $call): Response
     {
         $this->allowed();
-        $key = ProblemException::found($this->keys->find((int) $call->credential()->userId(), $call->intArg()), 'key');
+        $key = ProblemException::found($this->keys->find($call->userId(), $call->intArg()), 'key');
 
         return Response::ok($this->serializer->personal($key, $this->clock->now()));
     }
@@ -95,7 +92,7 @@ final class AccountKeysController
     public function revoke(ApiCall $call): Response
     {
         $this->allowed();
-        $userId = (int) $call->credential()->userId();
+        $userId = $call->userId();
         $key    = ProblemException::found($this->keys->find($userId, $call->intArg()), 'key');
         if ($key->revokedAt() !== null) {
             throw ProblemException::of('conflict', 'That key is already revoked.');

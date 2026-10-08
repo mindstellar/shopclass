@@ -197,7 +197,10 @@ INSERT INTO /*TABLE_PREFIX*/t_preference VALUES
     ,('api', 'api_photo_urls', '0', 'BOOLEAN')
     ,('api', 'api_listing_rate', '0', 'INTEGER')
     ,('api', 'api_webhooks_allow_private', '0', 'BOOLEAN')
-    ,('api', 'api_password_grant', '1', 'BOOLEAN');
+    ,('api', 'api_password_grant', '1', 'BOOLEAN')
+    ,('api', 'api_signups_per_hour', '100', 'INTEGER')
+    ,('api', 'api_photo_fetches_per_hour', '30', 'INTEGER')
+    ,('api', 'api_refresh_days', '30', 'INTEGER');
 
 INSERT INTO /*TABLE_PREFIX*/t_cron (e_type, d_last_exec, d_next_exec) VALUES
     ('HOURLY', '1000-01-01 00:00:00', '1000-01-01 00:00:00'),

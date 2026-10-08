@@ -51,6 +51,8 @@ final class RowHashQuery extends Model
         't_region'               => ['pk_i_id', 'fk_c_country_code', 's_name', 's_slug', 'b_active', 'i_source_id', 'd_coord_lat', 'd_coord_long'],
         't_city'                 => ['pk_i_id', 'fk_i_region_id', 's_name', 's_slug', 'fk_c_country_code', 'b_active', 'i_source_id', 'd_coord_lat', 'd_coord_long'],
         't_city_area'            => ['pk_i_id', 'fk_i_city_id', 's_name'],
+        't_preference'           => ['s_section', 's_name', 's_value', 'e_type'],
+        't_key_value'            => ['s_group', 's_key', 's_value', 's_state', 'dt_created', 'dt_updated', 'dt_expires'],
     ];
 
     /** Columns left out of the hash. */
@@ -83,5 +85,30 @@ final class RowHashQuery extends Model
         return $lock
             ? array_merge(...array_map(static fn (string $sql): array => $db->select($sql . ' FOR UPDATE', [$key]), $selects))
             : $db->select(implode(' UNION ALL ', $selects), array_fill(0, count($selects), $key));
+    }
+
+    /**
+     * Hashes of one table's rows named by a compound key each, e.g. a preference by section and name.
+     *
+     * @param array<int,array<string,string>> $keys column => value, one map per row; every map has the same columns
+     * @param bool                            $lock lock the rows, and the gaps where a missing one would go
+     *
+     * @return string[] one hash per row found, sorted
+     * @throws \mindstellar\database\DbException
+     */
+    public static function keyedHashes(string $table, array $keys, bool $lock): array
+    {
+        if ($keys === []) {
+            return [];
+        }
+        $match = '(' . implode(' AND ', array_map(static fn (string $c): string => $c . ' = ?', array_keys($keys[0]))) . ')';
+        $sql   = 'SELECT SHA2(CONCAT_WS(\',\', '
+            . implode(', ', array_map(static fn (string $c): string => 'QUOTE(CAST(' . $c . ' AS BINARY))', self::COLUMNS[$table]))
+            . '), 256) AS r FROM ' . DB_TABLE_PREFIX . $table . ' WHERE ' . implode(' OR ', array_fill(0, count($keys), $match))
+            . ($lock ? ' FOR UPDATE' : '');
+        $hashes = array_map(static fn (array $row): string => (string) $row['r'], Connection::getInstance()->select($sql, array_merge(...array_map('array_values', $keys))));
+        sort($hashes);
+
+        return $hashes;
     }
 }

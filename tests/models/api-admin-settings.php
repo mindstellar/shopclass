@@ -21,7 +21,9 @@ if (api_admin_isolated(__FILE__)) {
 }
 
 use mindstellar\admin\ExposedSettings;
+use mindstellar\api\http\RowVersions;
 use mindstellar\api\Response;
+use mindstellar\apiaccess\Credential;
 use mindstellar\settings\SettingsPageRegistry;
 
 $admin = api_admin_boot('osc_models_api_admin_settings');
@@ -97,6 +99,29 @@ pin('a refused settings request saves nothing', ['Our shop', 'en_US'], [$pref('p
 $r = $call('PATCH', 'admin/settings', ['site_title' => 'Saved first', 'api_cors_origins' => 'not an origin'], $boss);
 pin('a refusal in a later form is 422', 422, $r->status());
 pin('a refusal in a later form rolls back the form saved before it', 'Our shop', $pref('pageTitle'));
+
+harness_section('settings: If-Match');
+$etag = (string) $call('GET', 'admin/settings', null, $boss)->header('ETag');
+$r    = $call('PATCH', 'admin/settings', ['site_title' => 'Matched'], $boss, ['If-Match' => $etag]);
+pin('a current If-Match writes, and the answer carries the new version', [200, 'Matched', true], [$r->status(), $pref('pageTitle'), $r->header('ETag') !== null && $r->header('ETag') !== $etag]);
+$fresh = (string) $r->header('ETag');
+pin('the version is the one a GET then answers', $fresh, $call('GET', 'admin/settings', null, $boss)->header('ETag'));
+$admin->query("UPDATE {$p}t_preference SET s_value = 'Changed elsewhere' WHERE s_section = 'osclass' AND s_name = 'pageTitle'");
+$r = $call('PATCH', 'admin/settings', ['site_title' => 'Lost update'], $boss, ['If-Match' => $fresh]);
+pin('a write saved meanwhile makes that If-Match stale: 412, nothing saved', ['412 precondition_failed', 'Changed elsewhere'], [api_admin_code($r), $pref('pageTitle')]);
+$versions = new RowVersions();
+$held     = $versions->atomically(static function () use ($versions, $admin, $p): array {
+    $version = $versions->version('admin/settings', [], Credential::anonymous(), true);
+    $admin->query('SET SESSION innodb_lock_wait_timeout = 1');
+    try {
+        $blocked = $admin->query("UPDATE {$p}t_preference SET s_value = 'Racing' WHERE s_section = 'osclass' AND s_name = 'pageTitle'") === false && $admin->errno === 1205;
+    } catch (mysqli_sql_exception $e) {
+        $blocked = $e->getCode() === 1205;
+    }
+
+    return [strlen((string) $version), $blocked];
+});
+pin('the check locks the settings rows until the write commits', [24, true], $held);
 
 harness_section('keys');
 $r = $call('GET', 'admin/keys', null, $boss);

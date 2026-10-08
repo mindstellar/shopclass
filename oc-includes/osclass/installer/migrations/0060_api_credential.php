@@ -35,6 +35,9 @@ return new class () implements MigrationInterface {
         'api_listing_rate'           => 'INTEGER',
         'api_webhooks_allow_private' => 'BOOLEAN',
         'api_password_grant'         => 'BOOLEAN',
+        'api_signups_per_hour'       => 'INTEGER',
+        'api_photo_fetches_per_hour' => 'INTEGER',
+        'api_refresh_days'           => 'INTEGER',
     );
 
     /**

@@ -99,7 +99,7 @@ final class Kernel
                 ? self::fromSite()->handle($request, $requestId)
                 : self::disabled($settings, $request, $requestId);
         } catch (\Throwable $e) {
-            error_log('api: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine() . ' (request ' . $requestId . ')');
+            self::logFailure($e, $requestId);
             $response = self::withInstance(Problem::make('server_error'), $requestId)->withHeader(RequestId::HEADER, $requestId);
         }
         $response->send($request);
@@ -179,7 +179,7 @@ final class Kernel
             $response = Problem::fromRefusal($e);
         } catch (\Throwable $e) {
             // Still finished below, so a 500 carries the CORS, Vary and rate-limit headers.
-            error_log('api: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine() . ' (request ' . $requestId . ')');
+            self::logFailure($e, $requestId);
             $response = Problem::make('server_error');
         }
 
@@ -519,5 +519,10 @@ final class Kernel
         }
 
         return $response->withBodyMember('instance', 'urn:request:' . $requestId);
+    }
+
+    private static function logFailure(\Throwable $e, string $requestId): void
+    {
+        error_log('api: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine() . ' (request ' . $requestId . ')');
     }
 }

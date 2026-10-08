@@ -17,7 +17,6 @@ use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\CommentSerializer;
-use mindstellar\api\serializer\ViewContext;
 use mindstellar\comment\CommentService;
 
 /**
@@ -40,7 +39,7 @@ final class CommentsController
         $saved    = $comments->post($call->intArg(), [
             'title' => (string) ($input['title'] ?? ''),
             'body'  => (string) ($input['body'] ?? ''),
-        ], $call->credential()->actor($request->ip(), ViewContext::LISTINGS_SCOPE));
+        ], $call->listingActor());
 
         $row      = $comments->find($saved->id());
         $warnings = $saved->isLive() ? [] : ['warnings' => [['code' => 'comment_pending', 'message' => 'The comment shows once it is approved.']]];
@@ -54,7 +53,7 @@ final class CommentsController
      */
     public function show(ApiCall $call): Response
     {
-        $actor   = $call->credential()->actor($call->request()->ip(), ViewContext::LISTINGS_SCOPE);
+        $actor   = $call->listingActor();
         $comment = ProblemException::found((new CommentService())->visible($call->intArg(), $actor), 'comment');
 
         return Response::ok((new CommentSerializer())->one($comment));

@@ -610,6 +610,17 @@ harness_section('/admin/webhooks: changes');
 $r = $call('PATCH', 'admin/webhooks/' . $hookId, ['events' => ['comment.created'], 'description' => 'Comments'], $boss);
 pin('PATCH changes only what is sent', [200, ['comment.created'], 'Comments', 'https://93.184.216.34/hook'], [$r->status(), $r->body()['data']['events'] ?? null, $r->body()['data']['description'] ?? null, $r->body()['data']['url'] ?? null]);
 pin('switched off', 'disabled', $call('PATCH', 'admin/webhooks/' . $hookId, ['enabled' => false], $boss)->body()['data']['status'] ?? null);
+$etag = (string) $call('GET', 'admin/webhooks/' . $hookId, null, $boss)->header('ETag');
+$r    = $call('PATCH', 'admin/webhooks/' . $hookId, ['description' => 'Matched'], $boss, ['If-Match' => $etag]);
+pin('a current If-Match writes and answers the new version', [200, 'Matched', true], [$r->status(), $r->body()['data']['description'] ?? null, $r->header('ETag') !== $etag]);
+$etag = (string) $r->header('ETag');
+$admin->query("UPDATE {$p}t_key_value SET dt_updated = NOW() + INTERVAL 1 DAY WHERE s_group = 'api_webhook' AND s_key = '$hookId'");
+pin('a change saved meanwhile makes it stale: 412 on PATCH and DELETE, nothing written', ['412 precondition_failed', '412 precondition_failed', 'Matched'], [
+    api_admin_code($call('PATCH', 'admin/webhooks/' . $hookId, ['description' => 'Lost update'], $boss, ['If-Match' => $etag])),
+    api_admin_code($call('DELETE', 'admin/webhooks/' . $hookId, null, $boss, ['If-Match' => $etag])),
+    $store->find($hookId)?->description(),
+]);
+pin('a missing endpoint is 404 with If-Match, not a write', 404, $call('PATCH', 'admin/webhooks/ep_00000000000000ff', ['description' => 'x'], $boss, ['If-Match' => '*'])->status());
 $r = $call('POST', 'admin/webhooks/' . $hookId . '/rotate-secret', null, $boss);
 $fresh = (string) ($r->body()['data']['secret'] ?? '');
 pin('rotate: a new secret, shown once, the old one valid for 24 hours', [200, true, true], [

@@ -92,11 +92,22 @@ pin('the web form is blocked for the account too: one budget', LoginThrottle::BL
 $reset();
 for ($i = 0; $i < 20 && SignIn::attempt('uma', 'wrong')->status() !== SignIn::BLOCKED; $i++) {
 }
-pin('failures by username use up the e-mail\'s budget too', [LoginThrottle::BLOCKED, SignIn::BLOCKED], [
-    LoginThrottle::evaluate('web', 'uma@example.test')['status'], SignIn::attempt('UMA@example.test', 'right-password')->status(),
+$max = $i;
+pin('failures by username lock the account out by e-mail too, answered as a wrong password', [SignIn::WRONG, SignIn::WRONG], [
+    SignIn::attempt('UMA@example.test', 'right-password')->status(), SignIn::attempt('UMA@example.test', 'wrong')->status(),
 ]);
-$admin->query("DELETE FROM {$p}t_login_attempt WHERE s_account = 'uma'");
-pin('so with the username\'s own counter cleared, the e-mail\'s still blocks it', SignIn::BLOCKED, SignIn::attempt('uma', 'right-password')->status());
+pin('so a locked username does not tell its e-mail from any other', [LoginThrottle::OK, SignIn::WRONG], [
+    LoginThrottle::evaluate('web', 'uma@example.test')['status'], SignIn::attempt('nobody@example.test', 'wrong')->status(),
+]);
+pin('the name that was typed wrong answers blocked', SignIn::BLOCKED, SignIn::attempt('uma', 'right-password')->status());
+$reset();
+for ($i = 0; $i < $max; $i++) {
+    SignIn::attempt($i % 2 === 0 ? 'uma' : 'uma@example.test', 'wrong');
+}
+pin('failures split over both names share one budget', [SignIn::WRONG, SignIn::WRONG], [
+    SignIn::attempt('uma', 'right-password')->status(), SignIn::attempt('uma@example.test', 'right-password')->status(),
+]);
+pin('and a solved captcha lifts the account budget, as before', SignIn::OK, SignIn::attempt('uma', 'right-password', true)->status());
 $reset();
 SignIn::attempt('uma', 'wrong');
 pin('a failure by username counts the address once', 1, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_login_attempt WHERE s_ip = '203.0.113.79'")->fetch_row()[0]);

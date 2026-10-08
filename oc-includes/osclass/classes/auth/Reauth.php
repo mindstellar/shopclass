@@ -43,6 +43,10 @@ final class Reauth
     {
         $account  = (string)($user['s_email'] ?? '');
         $throttle = LoginThrottle::evaluate(self::CONTEXT, $account);
+        if ($throttle['status'] !== LoginThrottle::BLOCKED) {
+            // Sign-in failures by username count toward the same budget.
+            $throttle = LoginThrottle::evaluateAccount(self::CONTEXT, [$account, (string)($user['s_username'] ?? '')]);
+        }
         if ($throttle['status'] === LoginThrottle::BLOCKED) {
             return max(1, (int)$throttle['retry_after']);
         }

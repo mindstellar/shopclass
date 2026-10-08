@@ -175,7 +175,7 @@ $exactOf = static function (array $buckets): array {
 pin(
     'sign-up, new listing and photo fetch caps are exact',
     ['api_register' => true, 'api_register_site' => true, 'api_listing_post' => true, 'api_listing_ip' => true, 'api_photo_fetch' => true],
-    $exactOf(array_merge($policy->signUp('1.2.3.4'), $policy->newListing(1, '1.2.3.4'), [$policy->photoFetch(1)]))
+    $exactOf(array_merge([$policy->signUp('1.2.3.4'), $policy->signUpSite()], $policy->newListing(1, '1.2.3.4'), [$policy->photoFetch(1)]))
 );
 
 harness_section('sampled counting without APCu');

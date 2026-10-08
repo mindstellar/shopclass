@@ -21,10 +21,8 @@ use mindstellar\api\read\Pager;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\CommentSerializer;
 use mindstellar\api\serializer\ListingSerializer;
-use mindstellar\api\serializer\ViewContext;
 use mindstellar\comment\CommentQuery;
 use mindstellar\database\Db;
-use mindstellar\listing\ListingPolicy;
 use mindstellar\listing\ListingQuery;
 use mindstellar\listing\PhotoStore;
 
@@ -53,7 +51,7 @@ final class ListingsController
         $context = $this->api->context($request, $credential, 'listing', ListingSerializer::MEMBERS, ListingSerializer::INCLUDES);
         $reader  = $this->api->listingReader();
         $item    = $reader->row($call->intArg());
-        if ($item === null || !ListingPolicy::canView($item, $credential->actor($request->ip(), ViewContext::LISTINGS_SCOPE))) {
+        if ($item === null || !$call->canViewListing($item)) {
             throw ProblemException::notFound('No such listing.');
         }
 
@@ -131,7 +129,7 @@ final class ListingsController
     private function visibleRow(ApiCall $call, int $id): array
     {
         $row = (new ListingQuery($this->api->clock()))->statusRow($id);
-        if ($row === null || !ListingPolicy::canView($row, $call->credential()->actor($call->request()->ip(), ViewContext::LISTINGS_SCOPE))) {
+        if ($row === null || !$call->canViewListing($row)) {
             throw ProblemException::notFound('No such listing.');
         }
 

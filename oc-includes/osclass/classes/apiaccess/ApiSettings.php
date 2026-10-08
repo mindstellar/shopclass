@@ -42,6 +42,9 @@ final class ApiSettings
     /** The same while the listing form asks for a captcha, which the API cannot show. */
     public const LISTINGS_PER_HOUR_CAPTCHA = 10;
 
+    /** Sign-ups one address may make through the API in an hour. */
+    public const SIGN_UPS_PER_ADDRESS = 5;
+
     /** preference => default */
     public const DEFAULTS = [
         'api_enabled'            => false,
@@ -58,6 +61,9 @@ final class ApiSettings
         'api_listing_rate'       => 0,
         'api_webhooks_allow_private' => false,
         'api_password_grant'     => true,
+        'api_signups_per_hour'   => 100,
+        'api_photo_fetches_per_hour' => 30,
+        'api_refresh_days'       => 30,
     ];
 
     public function __construct(
@@ -75,7 +81,10 @@ final class ApiSettings
         private int $listingRate = self::DEFAULTS['api_listing_rate'],
         private bool $listingCaptcha = false,
         private bool $webhooksAllowPrivate = self::DEFAULTS['api_webhooks_allow_private'],
-        private bool $passwordGrant = self::DEFAULTS['api_password_grant']
+        private bool $passwordGrant = self::DEFAULTS['api_password_grant'],
+        private int $signUpsPerHour = self::DEFAULTS['api_signups_per_hour'],
+        private int $photoFetchesPerHour = self::DEFAULTS['api_photo_fetches_per_hour'],
+        private int $refreshDays = self::DEFAULTS['api_refresh_days']
     ) {
     }
 
@@ -105,7 +114,10 @@ final class ApiSettings
             (int) $value('api_listing_rate'),
             function_exists('osc_recaptcha_items_enabled') && (bool) osc_recaptcha_items_enabled(),
             $value('api_webhooks_allow_private') === '1',
-            $value('api_password_grant') === '1'
+            $value('api_password_grant') === '1',
+            (int) $value('api_signups_per_hour'),
+            (int) $value('api_photo_fetches_per_hour'),
+            (int) $value('api_refresh_days')
         );
     }
 
@@ -216,5 +228,29 @@ final class ApiSettings
     public function passwordGrant(): bool
     {
         return $this->passwordGrant;
+    }
+
+    /**
+     * Sign-ups the whole site takes through the API in an hour.
+     */
+    public function signUpsPerHour(): int
+    {
+        return max(1, $this->signUpsPerHour);
+    }
+
+    /**
+     * Photos one user may have fetched by URL in an hour.
+     */
+    public function photoFetchesPerHour(): int
+    {
+        return max(1, $this->photoFetchesPerHour);
+    }
+
+    /**
+     * Days an app's refresh token lives unused.
+     */
+    public function refreshDays(): int
+    {
+        return max(1, $this->refreshDays);
     }
 }

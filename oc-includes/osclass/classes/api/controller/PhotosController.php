@@ -44,7 +44,7 @@ final class PhotosController
 
     public function stage(ApiCall $call): Response
     {
-        $staged = $this->photos->stage((int) $call->credential()->userId(), $this->photos->upload($call->request()));
+        $staged = $this->photos->stage($call->userId(), $this->photos->upload($call->request()));
 
         return Response::ok(['token' => $staged->token(), 'expires_at' => Format::timestamp($staged->expiresAt())]);
     }
@@ -56,10 +56,14 @@ final class PhotosController
 
         $listing = $this->owned->own($call->intArg(), $credential);
         $id      = $listing->id();
-        $cap     = $this->room->cap($listing->userId());
-        if ($this->room->room($id, $listing->userId()) === 0) {
-            throw ProblemException::field('/photo', 'limit', 'cannot be added: the listing already has ' . $cap . ' photos, as many as it may hold');
-        }
+        // Checked again when the save fails: another upload may have taken the last place meanwhile.
+        $refuseWhenFull = function () use ($id, $listing): void {
+            if ($this->room->room($id, $listing->userId()) === 0) {
+                throw ProblemException::field('/photo', 'limit', 'cannot be added: the listing already has '
+                    . $this->room->cap($listing->userId()) . ' photos, as many as it may hold');
+            }
+        };
+        $refuseWhenFull();
 
         $photo = $this->photos->upload($request);
         $new   = (new PhotoService())->add($id, [
@@ -71,6 +75,7 @@ final class PhotosController
         ], $credential->actor($request->ip()));
         if ($new === []) {
             $photo->discard();
+            $refuseWhenFull();
 
             throw ProblemException::of('server_error', 'The photo could not be saved.');
         }

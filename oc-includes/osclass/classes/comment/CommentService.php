@@ -178,8 +178,8 @@ final class CommentService
      * @param int $itemId the listing the request named, for the first hook when the comment is gone
      *
      * @throws ForbiddenException for a guest, or a comment someone else wrote
-     * @throws NotFoundException  for no such comment
-     * @throws ConflictException  for a comment that is not live
+     * @throws NotFoundException  for no such comment, or someone else's this user may not read
+     * @throws ConflictException  for the author's own comment that is not live
      */
     public function delete(int $commentId, Actor $actor, int $itemId = 0): void
     {
@@ -194,11 +194,15 @@ final class CommentService
         if (!$found) {
             throw new NotFoundException(_m("The comment doesn't exist"));
         }
+        if (!CommentPolicy::isAuthor($comment, $actor)) {
+            // A comment this user may not read is not there for them, as when reading it.
+            if (!CommentPolicy::canView($comment, $item, $actor)) {
+                throw new NotFoundException(_m("The comment doesn't exist"));
+            }
+            throw new ForbiddenException(_m('The comment was not added by you, you cannot delete it'), ForbiddenException::NOT_OWNER);
+        }
         if ((int) $comment['b_active'] !== 1) {
             throw new ConflictException(_m('The comment is not active, you cannot delete it'));
-        }
-        if (!CommentPolicy::isAuthor($comment, $actor)) {
-            throw new ForbiddenException(_m('The comment was not added by you, you cannot delete it'), ForbiddenException::NOT_OWNER);
         }
 
         DeferredMail::transaction(function () use ($commentId): void {

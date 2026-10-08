@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\moderation;
 
+use mindstellar\auth\Actor;
 use mindstellar\database\Db;
 use mindstellar\listing\ListingService;
 use mindstellar\listing\ListingStore;
@@ -19,6 +20,7 @@ use mindstellar\utility\Clock;
 use mindstellar\utility\DeferredMail;
 use mindstellar\utility\SystemClock;
 use mindstellar\validation\ConflictException;
+use mindstellar\validation\InvalidException;
 use mindstellar\validation\NotFoundException;
 
 /**
@@ -129,6 +131,42 @@ final class ListingModeration
         }
 
         return $plan;
+    }
+
+    /**
+     * An admin's edit and status flags, all or none: the edit saves first, then the flags change
+     * as applyFlags() changes them.
+     *
+     * @param array<string,mixed>|null $data  listing data as ListingInput makes it; null for no edit
+     * @param array<string,bool>       $flags keys of FLAG_ACTIONS
+     *
+     * @return bool false when the edit's write failed; nothing is kept then
+     * @throws InvalidException with the edit's errors
+     * @throws NotFoundException for no such listing
+     * @throws ConflictException when activating a listing that stays blocked
+     * @throws \RuntimeException when a status change fails
+     */
+    public function edit(int $id, ?array $data, Actor $actor, array $flags, int $adminId, string $note, ?ListingService $listings = null): bool
+    {
+        $failed = false;
+        try {
+            DeferredMail::transaction(function () use ($id, $data, $actor, $flags, $adminId, $note, $listings, &$failed): void {
+                if ($data !== null && ($listings ?? new ListingService())->update($data, $actor, false, false)->rows() === false) {
+                    $failed = true;
+
+                    throw new \RuntimeException('The listing could not be saved.');
+                }
+                if ($flags !== []) {
+                    $this->applyFlags($id, $flags, $adminId, $note);
+                }
+            });
+        } catch (\RuntimeException $e) {
+            if (!$failed) {
+                throw $e;
+            }
+        }
+
+        return !$failed;
     }
 
     /**

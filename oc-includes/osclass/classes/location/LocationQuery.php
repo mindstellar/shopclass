@@ -92,6 +92,31 @@ final class LocationQuery
     }
 
     /**
+     * In one read: whether the country exists, the region's country and the city's region and
+     * country. A member is null when its place is not stored.
+     *
+     * @return array{country:?bool,regionCountry:?string,cityRegion:?int,cityCountry:?string}
+     */
+    public function lineage(string $countryCode, int $regionId, int $cityId): array
+    {
+        $city = self::tableName(self::CITY);
+        $row  = Db::selectOne(
+            'SELECT (SELECT 1 FROM ' . self::tableName(self::COUNTRY) . ' WHERE pk_c_code = ?) AS country,'
+            . ' (SELECT fk_c_country_code FROM ' . self::tableName(self::REGION) . ' WHERE pk_i_id = ?) AS region_country,'
+            . ' (SELECT fk_i_region_id FROM ' . $city . ' WHERE pk_i_id = ?) AS city_region,'
+            . " (SELECT IFNULL(fk_c_country_code, '') FROM " . $city . ' WHERE pk_i_id = ?) AS city_country',
+            [$countryCode, $regionId, $cityId, $cityId]
+        ) ?? [];
+
+        return [
+            'country'       => isset($row['country']) ? true : null,
+            'regionCountry' => isset($row['region_country']) ? (string) $row['region_country'] : null,
+            'cityRegion'    => isset($row['city_region']) ? (int) $row['city_region'] : null,
+            'cityCountry'   => isset($row['city_country']) ? (string) $row['city_country'] : null,
+        ];
+    }
+
+    /**
      * Names by id.
      *
      * @param string $level one of the level constants

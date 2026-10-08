@@ -29,14 +29,14 @@ final class RatePolicy
     /** One address may post this many times a user's listing cap, for offices and carriers that share one. */
     public const ADDRESS_FACTOR = 3;
 
-    /** Photos one user may have fetched by URL in an hour, posting or editing listings. */
-    public const PHOTO_FETCHES_PER_HOUR = 30;
+    /** The default of the photos-by-URL setting. */
+    public const PHOTO_FETCHES_PER_HOUR = ApiSettings::DEFAULTS['api_photo_fetches_per_hour'];
 
     /** Sign-ups allowed per address in an hour. */
-    public const SIGN_UPS_PER_ADDRESS = 5;
+    public const SIGN_UPS_PER_ADDRESS = ApiSettings::SIGN_UPS_PER_ADDRESS;
 
-    /** Sign-ups allowed across the whole site in an hour. */
-    public const SIGN_UPS_PER_SITE = 100;
+    /** The default of the site-wide sign-up setting. */
+    public const SIGN_UPS_PER_SITE = ApiSettings::DEFAULTS['api_signups_per_hour'];
 
     private const HOUR = 3600;
 
@@ -92,19 +92,22 @@ final class RatePolicy
      */
     public function photoFetch(int $userId): RateBucket
     {
-        return new RateBucket('api_photo_fetch', (string) $userId, self::PHOTO_FETCHES_PER_HOUR, self::HOUR, true);
+        return new RateBucket('api_photo_fetch', (string) $userId, $this->settings->photoFetchesPerHour(), self::HOUR, true);
     }
 
     /**
-     * A sign-up, counted per address and for the whole site.
-     *
-     * @return RateBucket[]
+     * A sign-up from one address, counted before the request is read.
      */
-    public function signUp(string $ip): array
+    public function signUp(string $ip): RateBucket
     {
-        return [
-            new RateBucket('api_register', AddressBucket::of($ip), self::SIGN_UPS_PER_ADDRESS, self::HOUR, true),
-            new RateBucket('api_register_site', 'all', self::SIGN_UPS_PER_SITE, self::HOUR, true),
-        ];
+        return new RateBucket('api_register', AddressBucket::of($ip), self::SIGN_UPS_PER_ADDRESS, self::HOUR, true);
+    }
+
+    /**
+     * A sign-up for the whole site, counted only once the request passed its checks.
+     */
+    public function signUpSite(): RateBucket
+    {
+        return new RateBucket('api_register_site', 'all', $this->settings->signUpsPerHour(), self::HOUR, true);
     }
 }

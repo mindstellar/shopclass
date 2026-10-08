@@ -21,7 +21,6 @@ use mindstellar\api\Response;
 use mindstellar\api\serializer\CategorySerializer;
 use mindstellar\category\CategoryQuery;
 use mindstellar\category\CategoryService;
-use mindstellar\utility\DeferredMail;
 
 /**
  * `/admin/categories`: every category with each language's texts, and the categories screen's
@@ -84,24 +83,22 @@ final class AdminCategoriesController
         $id    = $call->intArg();
         $row   = ProblemException::found($this->query->rows($id)[0] ?? null, 'category');
         $input = $call->input();
-        $editor = $this->categories;
-        DeferredMail::transaction(function () use ($editor, $id, $row, $input): void {
-            if (array_intersect_key($input, ['translations' => 1, 'expiration_days' => 1, 'price_enabled' => 1, 'apply_to_subcategories' => 1]) !== []) {
-                // Expiry is rewritten into every listing of the category, so only when it was sent.
-                $fields = ['b_price_enabled' => array_key_exists('price_enabled', $input) ? ($input['price_enabled'] ? 1 : 0) : (int) $row['b_price_enabled']];
-                if (array_key_exists('expiration_days', $input)) {
-                    $fields['i_expiration_days'] = (int) $input['expiration_days'];
-                }
-                if (!$editor->update($id, $fields, $this->descriptions($id, (array) ($input['translations'] ?? [])), (bool) ($input['apply_to_subcategories'] ?? false))) {
-                    throw ProblemException::of('server_error', 'The category could not be saved.');
-                }
+        $edit  = null;
+        if (array_intersect_key($input, ['translations' => 1, 'expiration_days' => 1, 'price_enabled' => 1, 'apply_to_subcategories' => 1]) !== []) {
+            // Expiry is rewritten into every listing of the category, so only when it was sent.
+            $fields = ['b_price_enabled' => array_key_exists('price_enabled', $input) ? ($input['price_enabled'] ? 1 : 0) : (int) $row['b_price_enabled']];
+            if (array_key_exists('expiration_days', $input)) {
+                $fields['i_expiration_days'] = (int) $input['expiration_days'];
             }
-            if (array_key_exists('enabled', $input) && (bool) $input['enabled'] !== ((int) $row['b_enabled'] === 1)
-                && $editor->setEnabled($id, (bool) $input['enabled'], $row) === null
-            ) {
-                throw ProblemException::of('conflict', 'The parent category is disabled. Enable it first.');
-            }
-        });
+            $edit = ['fields' => $fields, 'descriptions' => $this->descriptions($id, (array) ($input['translations'] ?? [])), 'toSubcategories' => (bool) ($input['apply_to_subcategories'] ?? false)];
+        }
+        $outcome = $this->categories->adminEdit($id, $row, $edit, array_key_exists('enabled', $input) ? (bool) $input['enabled'] : null);
+        if ($outcome === 'failed') {
+            throw ProblemException::of('server_error', 'The category could not be saved.');
+        }
+        if ($outcome === 'parent_off') {
+            throw ProblemException::of('conflict', 'The parent category is disabled. Enable it first.');
+        }
 
         return Response::ok($this->categoryData($id));
     }

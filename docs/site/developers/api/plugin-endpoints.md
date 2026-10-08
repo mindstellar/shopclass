@@ -80,7 +80,7 @@ Call `osc_api_register_route()` when your plugin loads. The route is then
 | `body` | A JSON Schema for the JSON body. Checked before your handler runs. |
 | `responses` | `status => schema`, for the OpenAPI document. |
 | `deprecated`, `sunset` | `YYYY-MM-DD` dates. They add `Deprecation` and `Sunset` headers. |
-| `where` | `placeholder => regex` for one path segment, e.g. `array('external_id' => '[A-Za-z0-9_-]+')`. Without it `{id}` and `{photo}` match digits and any other `{name}` one segment. |
+| `where` | `placeholder => regex` tested on that one path segment, e.g. `array('external_id' => '[A-Za-z0-9_-]+')`. Without it `{id}` and `{photo}` match digits and any other `{name}` one segment. A pattern that does not compile on its own, has a capturing group (use `(?:...)`), uses a `(*VERB)` or can match `/` drops the route. |
 | `versions` | The API versions the route serves, e.g. `array('v1', 'v2')`. Default: `v1` only. |
 | `plugin` | The plugin's folder name, used in log lines. Default: the folder of the plugin file that registered the route. |
 

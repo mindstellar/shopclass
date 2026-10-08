@@ -140,7 +140,7 @@ The answer has the same shape as a sign-in, with a **new** refresh token.
 | Rule | Detail |
 |---|---|
 | Single use | Each refresh token works once. Store the new one and drop the old. |
-| Life | 30 days by default, counted from the last use. `refresh_expires_in` says. |
+| Life | 30 days by default (the site's **App sign-in lasts** setting), counted from the last use. `refresh_expires_in` says. |
 | Retry | The same token sent again within 30 seconds, before its new token is used, gets that same new token. A client that lost the answer keeps its sign-in. |
 | Reuse | Any other second use ends the whole sign-in: `400 invalid_grant`, and every token of that sign-in stops. Sign in again. |
 | Password change | Ends every sign-in. The one that changed the password gets a new one. |
@@ -183,6 +183,10 @@ Wrong passwords share the web sign-in's counter. An unknown account and a wrong 
 answer the same, and take as long. So does an account that is not activated yet, so sign-in cannot
 tell which e-mails [sign-up](/docs/developers/api/writes/#sign-up) hid as taken; the activation
 e-mail tells its owner.
+
+`login_blocked` counts the name as typed. Failures by an account's username and by its e-mail
+share one budget; once it is spent, the other name answers `invalid_grant` like a wrong password,
+so a locked username does not give away its e-mail.
 
 ### Signing out
 

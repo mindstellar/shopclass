@@ -170,6 +170,28 @@ final class CommentModeration
     }
 
     /**
+     * An admin's edit and status flags, all or none: the edit first, then the flags as
+     * applyFlags() sets them.
+     *
+     * @param array{title:string,body:string,author_name:string,author_email:string}|null $fields null for no edit
+     * @param array<string,bool>                                                           $flags  keys of FLAG_ACTIONS
+     *
+     * @throws InvalidException for an empty body or an author e-mail that is not an address
+     * @throws NotFoundException for no such comment
+     */
+    public function adminEdit(int $id, ?array $fields, array $flags): void
+    {
+        DeferredMail::transaction(function () use ($id, $fields, $flags): void {
+            if ($fields !== null) {
+                $this->edit($id, $fields);
+            }
+            if ($flags !== []) {
+                $this->applyFlags($id, $flags);
+            }
+        });
+    }
+
+    /**
      * @return bool whether a row was deleted
      */
     public function delete(int $id): bool

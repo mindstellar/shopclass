@@ -20,7 +20,6 @@ use mindstellar\api\Response;
 use mindstellar\api\serializer\LocationSerializer;
 use mindstellar\location\LocationQuery;
 use mindstellar\location\LocationService;
-use mindstellar\utility\DeferredMail;
 
 /**
  * Regions, cities and city areas, written through the LocationService Settings -> Locations
@@ -28,6 +27,9 @@ use mindstellar\utility\DeferredMail;
  */
 final class AdminLocationsController
 {
+    /** Each level's path under the API. */
+    private const PATHS = [LocationQuery::REGION => 'admin/regions', LocationQuery::CITY => 'admin/cities', LocationQuery::AREA => 'admin/areas'];
+
     private LocationSerializer $serializer;
 
     private LocationService $locations;
@@ -40,104 +42,120 @@ final class AdminLocationsController
 
     public function createRegion(ApiCall $call): Response
     {
-        $input = $call->input();
-        $code  = strtoupper((string) $input['country']);
-        $id    = (int) $this->write(fn () => $this->locations->addRegion($code, AdminText::clean($input['name'])));
-
-        return Response::created($this->serializer->region($this->row(LocationQuery::REGION, $id)), $this->api->links()->api('admin/regions/' . $id, $call->request()->version()));
+        return $this->create($call, LocationQuery::REGION);
     }
 
     public function showRegion(ApiCall $call): Response
     {
-        return Response::ok($this->serializer->region($this->row(LocationQuery::REGION, $call->intArg())));
+        return $this->show($call, LocationQuery::REGION);
     }
 
     public function updateRegion(ApiCall $call): Response
     {
-        $row   = $this->row(LocationQuery::REGION, $call->intArg());
-        $input = $call->input();
-        $this->write(fn () => $this->locations->editRegion((int) $row['pk_i_id'], (array_key_exists('name', $input) ? AdminText::clean($input['name']) : (string) $row['s_name']), self::slug($input, $row)));
-
-        return Response::ok($this->serializer->region($this->row(LocationQuery::REGION, (int) $row['pk_i_id'])));
+        return $this->update($call, LocationQuery::REGION);
     }
 
     public function deleteRegion(ApiCall $call): Response
     {
-        $this->locations->delete('region', $call->intArg());
-
-        return Response::noContent();
+        return $this->delete($call, LocationQuery::REGION);
     }
 
     public function createCity(ApiCall $call): Response
     {
-        $input  = $call->input();
-        $region = (int) $input['region_id'];
-        $id     = (int) $this->write(fn () => $this->locations->addCity($region, AdminText::clean($input['name'])));
-
-        return Response::created($this->serializer->city($this->row(LocationQuery::CITY, $id)), $this->api->links()->api('admin/cities/' . $id, $call->request()->version()));
+        return $this->create($call, LocationQuery::CITY);
     }
 
     public function showCity(ApiCall $call): Response
     {
-        return Response::ok($this->serializer->city($this->row(LocationQuery::CITY, $call->intArg())));
+        return $this->show($call, LocationQuery::CITY);
     }
 
     public function updateCity(ApiCall $call): Response
     {
-        $row   = $this->row(LocationQuery::CITY, $call->intArg());
-        $input = $call->input();
-        $this->write(fn () => $this->locations->editCity((int) $row['pk_i_id'], (array_key_exists('name', $input) ? AdminText::clean($input['name']) : (string) $row['s_name']), self::slug($input, $row)));
-
-        return Response::ok($this->serializer->city($this->row(LocationQuery::CITY, (int) $row['pk_i_id'])));
+        return $this->update($call, LocationQuery::CITY);
     }
 
     public function deleteCity(ApiCall $call): Response
     {
-        $this->locations->delete('city', $call->intArg());
-
-        return Response::noContent();
+        return $this->delete($call, LocationQuery::CITY);
     }
 
     public function createArea(ApiCall $call): Response
     {
-        $input = $call->input();
-        $city  = (int) $input['city_id'];
-        $id    = (int) $this->write(fn () => $this->locations->addArea($city, AdminText::clean($input['name'])));
-
-        return Response::created($this->serializer->area($this->row(LocationQuery::AREA, $id)), $this->api->links()->api('admin/areas/' . $id, $call->request()->version()));
+        return $this->create($call, LocationQuery::AREA);
     }
 
     public function showArea(ApiCall $call): Response
     {
-        return Response::ok($this->serializer->area($this->row(LocationQuery::AREA, $call->intArg())));
+        return $this->show($call, LocationQuery::AREA);
     }
 
     public function updateArea(ApiCall $call): Response
     {
-        $row   = $this->row(LocationQuery::AREA, $call->intArg());
-        $input = $call->input();
-        $this->write(fn () => $this->locations->editArea((int) $row['pk_i_id'], AdminText::clean($input['name'])));
-
-        return Response::ok($this->serializer->area($this->row(LocationQuery::AREA, (int) $row['pk_i_id'])));
+        return $this->update($call, LocationQuery::AREA);
     }
 
     public function deleteArea(ApiCall $call): Response
     {
-        $this->locations->delete('area', $call->intArg());
+        return $this->delete($call, LocationQuery::AREA);
+    }
+
+    private function create(ApiCall $call, string $level): Response
+    {
+        $input = $call->input();
+        $name  = AdminText::clean($input['name']);
+        $id    = match ($level) {
+            LocationQuery::REGION => $this->locations->addRegion(strtoupper((string) $input['country']), $name),
+            LocationQuery::CITY   => $this->locations->addCity((int) $input['region_id'], $name),
+            default               => $this->locations->addArea((int) $input['city_id'], $name),
+        };
+
+        return Response::created($this->serialize($level, $this->row($level, $id)), $this->api->links()->api(self::PATHS[$level] . '/' . $id, $call->request()->version()));
+    }
+
+    private function show(ApiCall $call, string $level): Response
+    {
+        return Response::ok($this->serialize($level, $this->row($level, $call->intArg())));
+    }
+
+    /**
+     * Members not sent keep their stored values.
+     */
+    private function update(ApiCall $call, string $level): Response
+    {
+        $row   = $this->row($level, $call->intArg());
+        $id    = (int) $row['pk_i_id'];
+        $input = $call->input();
+        if ($level === LocationQuery::AREA) {
+            $this->locations->editArea($id, AdminText::clean($input['name']));
+        } else {
+            $name = array_key_exists('name', $input) ? AdminText::clean($input['name']) : (string) $row['s_name'];
+            $slug = array_key_exists('slug', $input) ? trim((string) $input['slug']) : (string) ($row['s_slug'] ?? '');
+            $level === LocationQuery::REGION ? $this->locations->editRegion($id, $name, $slug) : $this->locations->editCity($id, $name, $slug);
+        }
+
+        return Response::ok($this->serialize($level, $this->row($level, $id)));
+    }
+
+    private function delete(ApiCall $call, string $level): Response
+    {
+        $this->locations->delete($level, $call->intArg());
 
         return Response::noContent();
     }
 
     /**
-     * Run a write in one transaction; a refusal answers 404 or 422.
+     * @param array<string,mixed> $row
      *
-     * @param callable(): mixed $write
-     *
-     * @throws ProblemException
+     * @return array<string,mixed>
      */
-    private function write(callable $write): mixed
+    private function serialize(string $level, array $row): array
     {
-        return DeferredMail::transaction($write);
+        return match ($level) {
+            LocationQuery::REGION => $this->serializer->region($row),
+            LocationQuery::CITY   => $this->serializer->city($row),
+            default               => $this->serializer->area($row),
+        };
     }
 
     /**
@@ -147,16 +165,5 @@ final class AdminLocationsController
     private function row(string $level, int $id): array
     {
         return (new LocationQuery())->find($level, $id) ?? throw ProblemException::notFound('No such location.');
-    }
-
-    /**
-     * The slug to keep or set: the one sent, else the stored one.
-     *
-     * @param array<string,mixed> $input
-     * @param array<string,mixed> $row
-     */
-    private static function slug(array $input, array $row): string
-    {
-        return array_key_exists('slug', $input) ? trim((string) $input['slug']) : (string) ($row['s_slug'] ?? '');
     }
 }

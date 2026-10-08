@@ -27,7 +27,6 @@ use mindstellar\apiaccess\Credential;
 use mindstellar\moderation\ListingModeration;
 use mindstellar\search\query\CategoryFilter;
 use mindstellar\utility\DateInput;
-use mindstellar\utility\DeferredMail;
 
 /**
  * `/admin/listings`: every listing whatever its status, the admin's edit (status included),
@@ -102,15 +101,8 @@ final class AdminListingsController
         foreach ($status as $member => $value) {
             $flags[self::STATUS_MEMBERS[$member]] = (bool) $value;
         }
-        // The edit and the status changes land together or not at all.
-        DeferredMail::transaction(function () use ($listing, $edit, $flags, $request, $credential): void {
-            if ($edit !== []) {
-                $this->writer->adminUpdate($listing, $this->writer->editForm($listing, $edit, $request, $credential) + self::adminMembers($listing, $edit), $credential->actor($request->ip(), 'admin:listings'));
-            }
-            if ($flags !== []) {
-                $this->moderation->applyFlags($listing->id(), $flags, (int) $credential->adminId(), self::note($credential));
-            }
-        });
+        $form = $edit === [] ? null : $this->writer->editForm($listing, $edit, $request, $credential) + self::adminMembers($listing, $edit);
+        $this->writer->adminUpdate($listing, $form, $flags, $credential->actor($request->ip(), 'admin:listings'), $this->moderation, (int) $credential->adminId(), self::note($credential));
 
         return Response::ok($this->view($call, $listing->id()));
     }

@@ -9,8 +9,8 @@
  */
 
 /**
- * The API's plugin contract: every `@api` method and constant under mindstellar\api, byte-compared
- * with a fixture, and the field error codes, against the errors page.
+ * The API's plugin contract: every `@api` method, constant and helper function, byte-compared with
+ * a fixture, and the field error codes, against the errors page.
  * DB-free. Usage: php tests/api-contract.php [--write]
  */
 
@@ -21,11 +21,14 @@ use mindstellar\api\RouteSpec;
 use mindstellar\api\routing\Router;
 
 const API_SURFACE_FIXTURE = __DIR__ . '/fixtures/api-surface.txt';
+const API_HELPERS         = 'oc-includes/osclass/helpers/hApi.php';
+
+require_once ABS_PATH . API_HELPERS;
 
 /**
- * `public static name(type $a = default): type`, as harness_method_signature() writes it for a class.
+ * `public static name(type $a = default): type` for a method, `function name(...)` for a function.
  */
-function api_signature(ReflectionMethod $r): string
+function api_signature(ReflectionFunctionAbstract $r): string
 {
     $parts = [];
     foreach ($r->getParameters() as $p) {
@@ -37,21 +40,26 @@ function api_signature(ReflectionMethod $r): string
         $parts[] = $s;
     }
 
-    return 'public' . ($r->isStatic() ? ' static' : '') . ' ' . $r->getName() . '(' . implode(', ', $parts) . ')' . ($r->hasReturnType() ? ': ' . (string) $r->getReturnType() : '');
+    $prefix = $r instanceof ReflectionMethod ? 'public' . ($r->isStatic() ? ' static' : '') : 'function';
+
+    return $prefix . ' ' . $r->getName() . '(' . implode(', ', $parts) . ')' . ($r->hasReturnType() ? ': ' . (string) $r->getReturnType() : '');
 }
 
 /**
- * One line per `@api` method or constant, sorted.
+ * One line per `@api` method or constant of a core class, and per `@api` API helper, sorted.
  *
  * @return string[]
  */
 function api_surface(): array
 {
-    $root  = ABS_PATH . 'oc-includes/osclass/classes/api/';
+    $root  = ABS_PATH . 'oc-includes/osclass/classes/';
     $lines = [];
     $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS));
     foreach ($files as $file) {
         $source = (string) file_get_contents((string) $file);
+        if (!str_contains($source, '@api')) {
+            continue;
+        }
         if (preg_match('/^namespace ([^;]+);/m', $source, $ns) !== 1
             || preg_match('/^(?:final |abstract )*(?:class|interface|trait|enum) (\w+)/m', $source, $name) !== 1) {
             continue;
@@ -67,6 +75,12 @@ function api_surface(): array
             if ($c->getDeclaringClass()->getName() === $class && preg_match('/@api\b/', (string) $c->getDocComment()) === 1) {
                 $lines[] = $class . '::' . $c->getName() . ' = ' . json_encode($c->getValue(), JSON_UNESCAPED_SLASHES);
             }
+        }
+    }
+    foreach (get_defined_functions()['user'] as $function) {
+        $r = new ReflectionFunction($function);
+        if ($r->getFileName() === realpath(ABS_PATH . API_HELPERS) && preg_match('/@api\b/', (string) $r->getDocComment()) === 1) {
+            $lines[] = api_signature($r);
         }
     }
     sort($lines);
@@ -88,6 +102,10 @@ check('the @api surface matches tests/fixtures/api-surface.txt; a change is a pl
 check('ViewContext is built by core, not by plugins', !str_contains($surface, 'ViewContext::public __construct'));
 foreach (['RouteSpec::public key()', 'RouteSpec::public path()', 'RouteSpec::public method()', 'Response::public status()', 'Response::public body()', 'Response::public withBodyMember('] as $handed) {
     check('hooks hand plugins ' . $handed . ', so it is @api', str_contains($surface, $handed));
+}
+check('Credential, which every handler reads, is pinned', str_contains($surface, 'mindstellar\\apiaccess\\Credential::public has(string $scope): bool'));
+foreach (['osc_api_register_route', 'osc_api_register_schema', 'osc_api_register_field', 'osc_api_url', 'osc_webhook_emit'] as $helper) {
+    check($helper . '() is pinned with its signature', str_contains($surface, 'function ' . $helper . '('));
 }
 check('the unchecked ListingReader::one() is not @api; ApiKit::listing() is', !str_contains($surface, 'ListingReader::public one(') && str_contains($surface, 'ApiKit::public listing('));
 

@@ -15,7 +15,6 @@ namespace mindstellar\api;
 use mindstellar\api\read\ListingReader;
 use mindstellar\api\serializer\Links;
 use mindstellar\api\serializer\ViewContext;
-use mindstellar\listing\ListingPolicy;
 
 /**
  * What a plugin handler may use of core's API services, through ApiCall::kit(): listings,
@@ -55,7 +54,7 @@ final class ApiKit
     {
         $reader = $this->services->listingReader();
         $item   = $reader->row($id);
-        if ($item === null || !ListingPolicy::canView($item, $call->credential()->actor($call->request()->ip(), ViewContext::LISTINGS_SCOPE))) {
+        if ($item === null || !$call->canViewListing($item)) {
             return null;
         }
 

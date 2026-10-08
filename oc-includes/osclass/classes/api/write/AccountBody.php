@@ -12,9 +12,11 @@ declare(strict_types=1);
 
 namespace mindstellar\api\write;
 
+use mindstellar\api\Problem;
 use mindstellar\api\ProblemException;
-use mindstellar\location\LocationQuery;
+use mindstellar\location\LocationService;
 use mindstellar\user\AccountInput;
+use mindstellar\validation\InvalidException;
 
 /**
  * An account body read as the profile form, for AccountService::update(): the stored values
@@ -45,7 +47,7 @@ final class AccountBody
      * @param array<mixed>        $patch
      *
      * @return array<string,mixed>
-     * @throws ProblemException 422 for a country, region or city that does not exist
+     * @throws ProblemException 422 for a country, region or city that does not exist or has another parent
      */
     public static function profile(array $user, array $patch): array
     {
@@ -59,7 +61,7 @@ final class AccountBody
      * @param array<mixed>        $patch
      *
      * @return array<string,mixed>
-     * @throws ProblemException 422 for a country, region or city that does not exist
+     * @throws ProblemException 422 for a country, region or city that does not exist or has another parent
      */
     public static function admin(array $user, array $patch): array
     {
@@ -73,7 +75,7 @@ final class AccountBody
      * @param array<mixed>        $patch
      *
      * @return array<string,string>
-     * @throws ProblemException 422 for a country, region or city that does not exist
+     * @throws ProblemException 422 for a country, region or city that does not exist or has another parent
      */
     private static function params(array $user, array $patch): array
     {
@@ -101,25 +103,23 @@ final class AccountBody
         if (array_key_exists('is_company', $patch)) {
             $params['b_company'] = $patch['is_company'] === true ? '1' : '0';
         }
-        $places = new LocationQuery();
         if (array_key_exists('country', $patch)) {
-            $code = strtoupper((string) ($patch['country'] ?? ''));
-            if ($code !== '' && !$places->exists(LocationQuery::COUNTRY, $code)) {
-                throw ProblemException::field('/country', 'unknown', 'is not a country of this site');
-            }
-            $params['countryId'] = $code;
+            $params['countryId'] = strtoupper((string) ($patch['country'] ?? ''));
             $params['country']   = '';
         }
-        foreach (['region_id' => ['regionId', 'region', LocationQuery::REGION], 'city_id' => ['cityId', 'city', LocationQuery::CITY]] as $member => [$idField, $nameField, $level]) {
-            if (!array_key_exists($member, $patch)) {
-                continue;
+        foreach (['region_id' => ['regionId', 'region'], 'city_id' => ['cityId', 'city']] as $member => [$idField, $nameField]) {
+            if (array_key_exists($member, $patch)) {
+                $id                 = (int) ($patch[$member] ?? 0);
+                $params[$idField]   = $id > 0 ? (string) $id : '';
+                $params[$nameField] = '';
             }
-            $id = (int) ($patch[$member] ?? 0);
-            if ($id > 0 && !$places->exists($level, $id)) {
-                throw ProblemException::field('/' . $member, 'unknown', 'does not exist');
+        }
+        if (array_intersect_key($patch, ['country' => true, 'region_id' => true, 'city_id' => true]) !== []) {
+            try {
+                LocationService::checkPlaces($params['countryId'], $params['regionId'], $params['cityId']);
+            } catch (InvalidException $e) {
+                throw ProblemException::from(Problem::fromRefusal($e));
             }
-            $params[$idField]   = $id > 0 ? (string) $id : '';
-            $params[$nameField] = '';
         }
         foreach (['lat' => 'd_coord_lat', 'lng' => 'd_coord_long'] as $member => $field) {
             if (array_key_exists($member, $patch)) {
@@ -139,7 +139,7 @@ final class AccountBody
      * @param array<mixed>        $patch
      *
      * @return array<string,string>
-     * @throws ProblemException 422 for a country, region or city that does not exist
+     * @throws ProblemException 422 for a country, region or city that does not exist or has another parent
      */
     private static function adminParams(array $user, array $patch): array
     {

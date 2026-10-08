@@ -503,6 +503,28 @@ harness_section('plugin route rules');
 $photo = new RouteSpec('GET', 'x/{photo}', $none);
 $named = new RouteSpec('GET', 'x/{name}', $none + ['where' => ['name' => '[a-z]+']]);
 check('{photo} is digits when overlaps are checked, as when matching', !$photo->overlaps($named) && !$named->overlaps($photo));
+$whereRefusal = static function (string $pattern) use ($none): string {
+    try {
+        new RouteSpec('GET', 'ext/acme/cars/{kind}/{id}', $none + ['where' => ['kind' => $pattern]]);
+    } catch (\InvalidArgumentException $e) {
+        return $e->getMessage();
+    }
+
+    return '';
+};
+pin('a where pattern with a capturing group is refused', 'GET ext/acme/cars/{kind}/{id}: where: kind has a capturing group; use (?:...).', $whereRefusal('(new|used)'));
+check('a named group is refused too', str_contains($whereRefusal('(?<k>new)'), 'capturing group'));
+check('a pattern that breaks out of its group is refused', str_contains($whereRefusal('x)|(.*'), 'not a valid pattern') && str_contains($whereRefusal('x)|(?:.*'), 'not a valid pattern'));
+check('a pattern that matches a / is refused', str_contains($whereRefusal('.+'), 'matches a /') && str_contains($whereRefusal('[a-z/]+'), 'matches a /'));
+check('a verb, a bad regex and an empty pattern are refused', str_contains($whereRefusal('a(*ACCEPT)'), 'not a valid pattern')
+    && str_contains($whereRefusal('[a-'), 'not a valid pattern') && str_contains($whereRefusal(''), 'not a valid pattern'));
+$kinds = new RouteSpec('GET', 'ext/acme/cars/{kind}/{id}', $none + ['where' => ['kind' => '(?:new|used)']]);
+pin('a normal pattern still works, and {id} keeps its own capture', [['kind' => 'new', 'id' => '7'], null, null, null], [
+    $kinds->match('ext/acme/cars/new/7'), $kinds->match('ext/acme/cars/old/7'), $kinds->match('ext/acme/cars/new/x'), $kinds->match('ext/acme/cars/new/used/7'),
+]);
+$logged = [];
+check('a bad where pattern drops the plugin route and logs why', !(new Router($validator, $core, $log))->addPlugin('GET', 'ext/acme/x/{a}', $none + ['where' => ['a' => '(a)']])
+    && str_contains($logged[0] ?? '', 'capturing group'));
 $extValidator = new Validator(['Thing' => ['type' => 'object'], 'Problem' => ['type' => 'object'], 'ExtAcmeThing' => ['type' => 'object']]);
 $logged       = [];
 $rules        = new Router($extValidator, $core, $log);
@@ -611,5 +633,20 @@ pin('a core refusal reason maps to its API code', ['feature_disabled', 'wrong_cr
     \mindstellar\api\Problem::fromRefusal(new \mindstellar\validation\ForbiddenException('Sign in.', \mindstellar\validation\ForbiddenException::SIGN_IN))->body()['code'],
     \mindstellar\api\Problem::fromRefusal(new \mindstellar\validation\ForbiddenException('No.', 'something_else'))->body()['code'],
 ]);
+
+harness_section('If-Match');
+$coreGets  = [];
+$unchecked = [];
+foreach (array_keys(RouteTable::core()) as $key) {
+    [$method, $path] = explode(' ', (string) preg_replace('/^v\d+ /', '', $key), 2);
+    $coreGets[$path] = ($coreGets[$path] ?? false) || $method === 'GET';
+}
+foreach (array_keys(RouteTable::core()) as $key) {
+    [$method, $path] = explode(' ', (string) preg_replace('/^v\d+ /', '', $key), 2);
+    if (in_array($method, ['PUT', 'PATCH', 'DELETE'], true) && ($coreGets[$path] ?? false) && !(new \mindstellar\api\http\RowVersions())->supports($path)) {
+        $unchecked[] = $key;
+    }
+}
+pin('every core write with If-Match checks a stored version under a row lock', [], $unchecked);
 
 exit(harness_result());

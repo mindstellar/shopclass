@@ -81,7 +81,7 @@ final class ListingWritesController
         }
         $listing = $this->owned->own($call->intArg(), $call->credential());
 
-        return $this->fetch($input, (int) $call->credential()->userId(), $this->room->room($listing->id(), $listing->userId()));
+        return $this->fetch($input, $call->userId(), $this->room->room($listing->id(), $listing->userId()));
     }
 
     public function create(ApiCall $call): Response

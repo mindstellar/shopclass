@@ -102,12 +102,14 @@ final class AccountService
      *                                           a new account's e-mails then go through the job queue.
      *                                           Only while activation is on: without it, signing in
      *                                           with the new password would tell it anyway
+     * @param (callable():void)|null $accepted called once the form passed every check, before anything is made;
+     *                                           it may throw to refuse, for a taken e-mail too
      *
      * @return array{id:int,active:bool} active is false while the activation link waits
      * @throws InvalidException with the form's messages, one per line
      * @throws ForbiddenException DISABLED when sign-ups are off, BANNED for a ban rule
      */
-    public function register(array $form, Actor $actor, bool $captchaPassed = true, bool $hideTaken = false): array
+    public function register(array $form, Actor $actor, bool $captchaPassed = true, bool $hideTaken = false, ?callable $accepted = null): array
     {
         $admin  = $actor->isAdmin();
         $hidden = $hideTaken && !$admin && osc_user_validation_enabled();
@@ -176,6 +178,9 @@ final class AccountService
             osc_run_hook('user_register_failed', $codes);
 
             throw self::refusal($flash);
+        }
+        if ($accepted !== null) {
+            $accepted();
         }
         if ($taken) {
             if ($username !== '') {
@@ -380,6 +385,51 @@ final class AccountService
             }
 
             return 1;
+        });
+    }
+
+    /**
+     * The account's own edit: the profile form and a new e-mail, in one transaction, so an
+     * e-mail change over its hourly cap leaves the profile as it was.
+     *
+     * @param array<string,mixed>|null $form     the profile form; null for no profile edit
+     * @param string                   $newEmail '' for no e-mail change
+     *
+     * @throws InvalidException with the form's messages
+     * @throws BlockedException past EMAIL_CHANGES in an hour
+     */
+    public function editOwn(int $userId, ?array $form, string $newEmail, Actor $actor): void
+    {
+        DeferredMail::transaction(function () use ($userId, $form, $newEmail, $actor): void {
+            if ($form !== null) {
+                $this->update($userId, $form, $actor);
+            }
+            if ($newEmail !== '') {
+                $this->requestEmailChange($userId, $newEmail, $actor);
+            }
+        });
+    }
+
+    /**
+     * An admin's edit and status flags, all or none: the edit form first, then the flags as
+     * applyFlags() sets them.
+     *
+     * @param array<string,mixed>|null $form  the admin's edit form; null for no edit
+     * @param array<string,bool>       $flags `blocked` and `active`
+     *
+     * @throws InvalidException with the form's messages
+     * @throws NotFoundException for no such user
+     * @throws \RuntimeException when a change fails
+     */
+    public function adminEdit(int $userId, ?array $form, array $flags, Actor $actor): void
+    {
+        DeferredMail::transaction(function () use ($userId, $form, $flags, $actor): void {
+            if ($form !== null) {
+                $this->update($userId, $form, $actor);
+            }
+            if ($flags !== []) {
+                $this->applyFlags($userId, $flags, $actor);
+            }
         });
     }
 

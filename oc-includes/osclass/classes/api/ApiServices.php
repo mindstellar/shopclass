@@ -371,7 +371,7 @@ final class ApiServices
     {
         return $this->once(
             __FUNCTION__,
-            fn (): RefreshTokens => new RefreshTokens($this->store, $this->scopes, $this->users, RefreshTokens::TTL_DAYS, $this->clock, new RefreshRetries())
+            fn (): RefreshTokens => new RefreshTokens($this->store, $this->scopes, $this->users, $this->settings->refreshDays(), $this->clock, new RefreshRetries())
         );
     }
 

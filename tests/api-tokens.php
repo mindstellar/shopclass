@@ -399,6 +399,14 @@ $strict = api_test_limiter(static fn () => null);
 check('a limit fails open by default when the counter is unreachable', $strict->hit(new \mindstellar\api\ratelimit\RateBucket('x', 'k', 5))->allowed());
 check('a limit fails closed when asked to when the counter is unreachable', !$strict->hit(new \mindstellar\api\ratelimit\RateBucket('x', 'k', 5), false)->allowed());
 pin('an access token lives 15 minutes, a refresh token 30 days unused', [900, 900, 30], [\mindstellar\api\auth\AccessTokens::TTL, (api_test_access_tokens($scopes, $accounts()))->ttl(), \mindstellar\api\auth\RefreshTokens::TTL_DAYS]);
+$tuned   = new ApiSettings(true, signUpsPerHour: 7, photoFetchesPerHour: 3, refreshDays: 9);
+$policy  = new \mindstellar\api\ratelimit\RatePolicy($tuned);
+$refresh = (new \mindstellar\api\ApiServices($tuned, $scopes, $store, $accounts(), new SystemClock(), api_test_limiter()))->refreshTokens();
+pin('the site sign-up cap, photo fetches and refresh-token days are settings', [7, 3, 9], [
+    $policy->signUpSite()->max(), $policy->photoFetch(1)->max(), (new ReflectionProperty($refresh, 'ttlDays'))->getValue($refresh),
+]);
+$plain = new \mindstellar\api\ratelimit\RatePolicy(new ApiSettings());
+pin('...whose defaults are the old fixed numbers', [100, 30, 30, 5], [$plain->signUpSite()->max(), $plain->photoFetch(1)->max(), (new ApiSettings())->refreshDays(), $plain->signUp('1.2.3.4')->max()]);
 
 harness_section('the identity core code sees');
 final class WhoAmI

@@ -130,8 +130,10 @@ Posting has its own hourly cap, set below.
 | Setting | Default | Counted per |
 |---|---|---|
 | **New listings, per user** | `0` | user, an hour. `0` uses 30, or 10 while your listing form asks for a captcha. One address may post three times that. |
+| **Photos fetched by address, per user** | 30 | user, an hour |
+| **Sign-ups, whole site** | 100 | the site, an hour. Only sign-ups that pass every check count. Each address also gets 5. |
 
-Comments (20 an hour per user) and photo downloads by address (30 an hour) have fixed caps.
+Comments (20 an hour per user) have a fixed cap.
 
 Over the limit, the API answers `429` with a `Retry-After` header. An address that keeps
 sending wrong keys is also shut out for 15 minutes.
@@ -154,7 +156,8 @@ access token and a longer refresh token. Admins never sign in this way: they use
 | Setting | What it does |
 |---|---|
 | **Let users make personal API keys** | Off by default. Lets a user make a key for their own scripts. Each key must expire within a year, holds only some of the user's rights, and stops working when the password changes. Making one asks for the password again. |
-| **Allow sign-up through the API** | Off by default. Lets an app create accounts. It needs your site's registration on too. The new user gets the same activation e-mail as the sign-up form sends. Limited to 5 sign-ups an hour per address and 100 an hour for the site. |
+| **Allow sign-up through the API** | Off by default. Lets an app create accounts. It needs your site's registration on too. The new user gets the same activation e-mail as the sign-up form sends. Limited to 5 sign-ups an hour per address and **Sign-ups, whole site** for the site. |
+| **App sign-in lasts** | 30 days. An app not used for this long must sign in again. |
 
 The API shows no captcha, so sign-up and posting have the hourly limits above instead.
 Posting still follows your rules: moderation, the listing limit, bans and spam checks.
@@ -164,9 +167,9 @@ Posting still follows your rules: moderation, the listing limit, bans and spam c
 | Token | Lives |
 |---|---|
 | Access token | 15 minutes |
-| Refresh token | 30 days since last use |
+| Refresh token | **App sign-in lasts**, 30 days by default, since last use |
 
-These are fixed.
+The access token's 15 minutes is fixed.
 
 ### What users see
 

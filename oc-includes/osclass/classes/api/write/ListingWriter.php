@@ -21,6 +21,8 @@ use mindstellar\auth\Actor;
 use mindstellar\database\Db;
 use mindstellar\listing\ListingInput;
 use mindstellar\listing\ListingService;
+use mindstellar\location\LocationService;
+use mindstellar\moderation\ListingModeration;
 use mindstellar\validation\InvalidException;
 
 /**
@@ -40,13 +42,15 @@ final class ListingWriter
      * @param array<string,mixed> $input the request body
      *
      * @return array<string,mixed>
-     * @throws ProblemException 422 for a language the site does not have
+     * @throws ProblemException 422 for a language the site does not have, or a place that does not exist or has another parent
      */
     public function newForm(array $input, Request $request, Credential $credential): array
     {
         $this->checkLocales($input);
+        $form = $this->checked($this->form()->create($input), $request, $credential);
+        self::checkPlaces($form);
 
-        return $this->checked($this->form()->create($input), $request, $credential);
+        return $form;
     }
 
     /**
@@ -56,14 +60,18 @@ final class ListingWriter
      * @param array<string,mixed> $input   the request body
      *
      * @return array<string,mixed>
-     * @throws ProblemException 422 for a language the site does not have
+     * @throws ProblemException 422 for a language the site does not have, or a sent place that does not exist or has another parent
      */
     public function editForm(OwnedListing $listing, array $input, Request $request, Credential $credential): array
     {
         $this->checkLocales($input);
-        $form = $this->form();
+        $body = $this->form();
+        $form = $this->checked($body->patch($body->stored($listing, self::metaRows($listing->id())), $input), $request, $credential);
+        if (array_intersect_key($input, ['country' => true, 'region_id' => true, 'city_id' => true]) !== []) {
+            self::checkPlaces($form);
+        }
 
-        return $this->checked($form->patch($form->stored($listing, self::metaRows($listing->id())), $input), $request, $credential);
+        return $form;
     }
 
     /**
@@ -77,7 +85,7 @@ final class ListingWriter
      */
     public function create(array $form, array $photos, Actor $actor): int
     {
-        $data = self::data(['photos' => $photos] + $form, $form, $actor, true);
+        $data = ListingInput::fromArray(['photos' => $photos] + $form, $actor, true);
         try {
             return $this->listings->create($data, $actor)->id();
         } catch (InvalidException $e) {
@@ -95,19 +103,29 @@ final class ListingWriter
      */
     public function update(OwnedListing $listing, array $form, array $photos, Actor $actor): void
     {
-        $this->edit(['id' => $listing->id(), 'secret' => $listing->secret(), 'photos' => $photos] + $form, $form, $actor, false);
+        $this->edit(['id' => $listing->id(), 'secret' => $listing->secret(), 'photos' => $photos] + $form, $actor);
     }
 
     /**
-     * Edit any listing as an admin, the owner and expiry included.
+     * Edit any listing as an admin, the owner and expiry included, and set its status flags,
+     * all or none.
      *
-     * @param array<string,mixed> $form
+     * @param array<string,mixed>|null $form  null for no edit
+     * @param array<string,bool>       $flags ListingModeration's flags
      *
-     * @throws ProblemException 422 with the form's messages
+     * @throws ProblemException 422 with the form's messages, 500 when the edit was not saved
      */
-    public function adminUpdate(OwnedListing $listing, array $form, Actor $actor): void
+    public function adminUpdate(OwnedListing $listing, ?array $form, array $flags, Actor $actor, ListingModeration $moderation, int $adminId, string $note): void
     {
-        $this->edit(['id' => $listing->id(), 'secret' => $listing->secret()] + $form, $form, $actor, true);
+        $data = $form === null ? null : ListingInput::fromArray(['id' => $listing->id(), 'secret' => $listing->secret()] + $form, $actor, false);
+        try {
+            $saved = $moderation->edit($listing->id(), $data, $actor, $flags, $adminId, $note, $this->listings);
+        } catch (InvalidException $e) {
+            throw self::refusal($e);
+        }
+        if (!$saved) {
+            throw ProblemException::of('server_error', 'The listing could not be saved.');
+        }
     }
 
     /**
@@ -124,35 +142,17 @@ final class ListingWriter
 
     /**
      * @param array<string,mixed> $input what ListingInput::fromArray() reads
-     * @param array<string,mixed> $form  the form's fields, for the place check
      */
-    private function edit(array $input, array $form, Actor $actor, bool $admin): void
+    private function edit(array $input, Actor $actor): void
     {
         try {
-            $saved = $this->listings->update(self::data($input, $form, $actor, false), $actor, false, !$admin);
+            $saved = $this->listings->update(ListingInput::fromArray($input, $actor, false), $actor, false, true);
         } catch (InvalidException $e) {
             throw self::refusal($e);
         }
         if ($saved->rows() === false) {
             throw ProblemException::of('server_error', 'The listing could not be saved.');
         }
-    }
-
-    /**
-     * The body as the listing data the item form builds.
-     *
-     * @param array<string,mixed> $input what ListingInput::fromArray() reads
-     * @param array<string,mixed> $form  the form's fields, for the place check
-     *
-     * @return array<string,mixed>
-     * @throws ProblemException 422 for a place that does not match its parent
-     */
-    private static function data(array $input, array $form, Actor $actor, bool $isAdd): array
-    {
-        $data = ListingInput::fromArray($input, $actor, $isAdd);
-        self::checkPlaces($form, $data);
-
-        return $data;
     }
 
     /**
@@ -171,20 +171,18 @@ final class ListingWriter
     }
 
     /**
-     * A country, region or city that was asked for must be one ListingInput found. It looks
-     * them up itself, so they are checked against what it found rather than read twice.
+     * A country, region or city that was asked for must exist and sit under the one above it.
      *
      * @param array<string,mixed> $form what was asked
-     * @param array<string,mixed> $data what ListingInput made of it
      *
-     * @throws ProblemException 422 for a place that does not exist
+     * @throws ProblemException 422 for a place that does not exist or has another parent
      */
-    private static function checkPlaces(array $form, array $data): void
+    private static function checkPlaces(array $form): void
     {
-        foreach ([['countryId', '/country', 'is not a country of this site'], ['regionId', '/region_id', 'does not exist'], ['cityId', '/city_id', 'does not exist']] as [$field, $pointer, $message]) {
-            if ((string) ($form[$field] ?? '') !== '' && (string) ($data[$field] ?? '') === '') {
-                throw ProblemException::field($pointer, 'invalid', $message);
-            }
+        try {
+            LocationService::checkPlaces((string) ($form['countryId'] ?? ''), (string) ($form['regionId'] ?? ''), (string) ($form['cityId'] ?? ''));
+        } catch (InvalidException $e) {
+            throw ProblemException::from(Problem::fromRefusal($e));
         }
     }
 

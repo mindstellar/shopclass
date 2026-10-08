@@ -53,7 +53,8 @@ The settings are in **Settings → Spam and bots → Sign-in protection**:
 | Keep records for | 7 days |
 
 The per-account limit is the one that matters against a targeted attack; the
-per-IP limit catches broad scanning.
+per-IP limit catches broad scanning. A user's username and e-mail share one account
+budget. Once it is spent, signing in by the other name answers as a wrong password.
 
 **Failed sign-ins right now**, under **Tools → System info → Security**, lists every
 address and account with recent failures and says which are blocked. **Unblock** lets one of them try again at

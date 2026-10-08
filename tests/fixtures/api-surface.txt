@@ -1,10 +1,23 @@
+function osc_api_enabled(): bool
+function osc_api_public_reads(): bool
+function osc_api_register_field(string $object, string $slug, string $name, array $schema, array $views = ["public"]): void
+function osc_api_register_route(string $method, string $path, array $spec): void
+function osc_api_register_schema(string $slug, string $name, array $schema): array
+function osc_api_session_meta(): string
+function osc_api_session_token(): string
+function osc_api_url(string $path = '', ?string $version = NULL): string
+function osc_is_api_request(): bool
+function osc_webhook_emit(string $type, array $data, array $options = []): ?string
 mindstellar\api\ApiCall::public arg(string $name): ?string
 mindstellar\api\ApiCall::public args(): array
+mindstellar\api\ApiCall::public canViewListing(?array $row): bool
 mindstellar\api\ApiCall::public credential(): mindstellar\apiaccess\Credential
 mindstellar\api\ApiCall::public input(): array
 mindstellar\api\ApiCall::public intArg(string $name = 'id'): int
 mindstellar\api\ApiCall::public kit(): mindstellar\api\ApiKit
+mindstellar\api\ApiCall::public listingActor(): mindstellar\auth\Actor
 mindstellar\api\ApiCall::public request(): mindstellar\api\Request
+mindstellar\api\ApiCall::public userId(): int
 mindstellar\api\ApiKit::public context(mindstellar\api\ApiCall $call, string $object, array $members, array $includes = []): mindstellar\api\serializer\ViewContext
 mindstellar\api\ApiKit::public links(): mindstellar\api\serializer\Links
 mindstellar\api\ApiKit::public listing(mindstellar\api\ApiCall $call, int $id, mindstellar\api\serializer\ViewContext $context): ?array
@@ -79,3 +92,13 @@ mindstellar\api\serializer\ViewContext::public version(): string
 mindstellar\api\serializer\ViewContext::public view(): string
 mindstellar\api\serializer\ViewContext::public viewer(): mindstellar\apiaccess\Credential
 mindstellar\api\serializer\ViewContext::public wants(string $member): bool
+mindstellar\apiaccess\Credential::public adminId(): ?int
+mindstellar\apiaccess\Credential::public has(string $scope): bool
+mindstellar\apiaccess\Credential::public isAdmin(): bool
+mindstellar\apiaccess\Credential::public isAnonymous(): bool
+mindstellar\apiaccess\Credential::public isModerator(): bool
+mindstellar\apiaccess\Credential::public isSession(): bool
+mindstellar\apiaccess\Credential::public isUser(): bool
+mindstellar\apiaccess\Credential::public kind(): string
+mindstellar\apiaccess\Credential::public scopes(): array
+mindstellar\apiaccess\Credential::public userId(): ?int

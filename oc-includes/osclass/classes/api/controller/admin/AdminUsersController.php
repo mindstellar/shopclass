@@ -28,7 +28,6 @@ use mindstellar\apiaccess\AccessEntry;
 use mindstellar\model\Resource;
 use mindstellar\user\AccountService;
 use mindstellar\user\UserQuery;
-use mindstellar\utility\DeferredMail;
 
 /**
  * `/admin/users`: every user in full, the users screen's edit, actions and delete through
@@ -99,15 +98,8 @@ final class AdminUsersController
         foreach (array_intersect_key($input, self::STATUS_MEMBERS) as $member => $value) {
             $flags[self::STATUS_MEMBERS[$member]] = (bool) $value;
         }
-        // The edit and the status changes land together or not at all.
-        DeferredMail::transaction(static function () use ($accounts, $user, $userId, $input, $actor, $flags): void {
-            if (array_diff_key($input, self::STATUS_MEMBERS) !== []) {
-                $accounts->update($userId, AccountBody::admin($user, array_diff_key($input, self::STATUS_MEMBERS)), $actor);
-            }
-            if ($flags !== []) {
-                $accounts->applyFlags($userId, $flags, $actor);
-            }
-        });
+        $edit = array_diff_key($input, self::STATUS_MEMBERS);
+        $accounts->adminEdit($userId, $edit === [] ? null : AccountBody::admin($user, $edit), $flags, $actor);
 
         return $this->fresh($call, $userId);
     }

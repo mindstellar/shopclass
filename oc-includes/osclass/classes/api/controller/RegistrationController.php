@@ -46,7 +46,8 @@ final class RegistrationController
             throw ProblemException::of('feature_disabled', 'This site does not take sign-ups through the API.');
         }
         // Both limits stand in for a captcha, so they fail closed: no counter, no sign-up.
-        $this->limiter->enforceAll($this->api->ratePolicy()->signUp($request->ip()), 'Too many sign-ups right now. Try again later.', false);
+        $busy = 'Too many sign-ups right now. Try again later.';
+        $this->limiter->enforce($this->api->ratePolicy()->signUp($request->ip()), $busy, false);
 
         $input    = $request->input();
         $password = (string) ($input['password'] ?? '');
@@ -59,7 +60,9 @@ final class RegistrationController
             's_phone_land'   => (string) ($input['phone_land'] ?? ''),
             's_phone_mobile' => (string) ($input['phone_mobile'] ?? ''),
         ]);
-        $account = (new AccountService())->register($form, Actor::guest($request->ip()), true, true);
+        // The site-wide cap counts only sign-ups that passed every check, so bad requests cannot use it up.
+        $site    = fn () => $this->limiter->enforce($this->api->ratePolicy()->signUpSite(), $busy, false);
+        $account = (new AccountService())->register($form, Actor::guest($request->ip()), true, true, $site);
 
         // No id and no Location: a taken e-mail must answer the same, and until the activation
         // link is opened the account's profile is not shown.

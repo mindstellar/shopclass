@@ -296,6 +296,8 @@ $r = $call('POST', 'auth/token', http_build_query(array('grant_type' => 'passwor
 pin('a form-encoded token request works too (RFC 6749)', array(200, 'listings:read', true, false), array($r->status(), $r->body()['scope'] ?? null, isset($r->body()['access_token']), isset($r->body()['data'])));
 $r = $call('POST', 'auth/token', 'grant_type=password&username=uma', null, array('Content-Type' => 'application/x-www-form-urlencoded'));
 pin('a form-encoded token refusal is an OAuth error and never cached', array('400 invalid_request', 'invalid_request', 'no-store'), array($code($r), $r->body()['error'] ?? null, $r->header('Cache-Control')));
+$r = $call('POST', 'auth/token', 'grant_type=password&username=%FF&password=x', null, array('Content-Type' => 'application/x-www-form-urlencoded'));
+pin('a form-encoded token request that is not UTF-8 is 400 invalid_request', array('400 invalid_request', 'invalid_request'), array($code($r), $r->body()['error'] ?? null));
 pin('a body that is not JSON is invalid_request', '400 invalid_request', $code($call('POST', 'auth/token', '{nope', null, array('Content-Type' => 'application/json'))));
 
 harness_section('the throttle');
@@ -360,6 +362,24 @@ pin('acting as the token\'s user', $uma, $seen['edit_as'] ?? null);
 pin('a member not sent keeps its value', '5550100', $userRow($uma)['s_phone_mobile']);
 pin('the country is stored', array('US', 'United States'), array($userRow($uma)['fk_c_country_code'], $userRow($uma)['s_country']));
 pin('an unknown country is 422', '422 validation_failed', $code($call('PATCH', 'account', array('country' => 'ZZ'), $phone['access_token'])));
+$placeError   = static fn (Response $r): array => array($r->status(), $r->body()['errors'][0]['pointer'] ?? null, $r->body()['errors'][0]['code'] ?? null);
+$homeRegion   = seed_region($admin, $country, 'Alpha');
+$homeCity     = seed_city($admin, $homeRegion, 'Aville', $country);
+$otherCountry = seed_country($admin, 'CA', 'Canada');
+$otherRegion  = seed_region($admin, $otherCountry, 'Gamma');
+$otherCity    = seed_city($admin, $otherRegion, 'Gtown', $otherCountry);
+pin('an unknown place answers unknown', array(array(422, '/country', 'unknown'), array(422, '/region_id', 'unknown'), array(422, '/city_id', 'unknown')), array(
+    $placeError($call('PATCH', 'account', array('country' => 'ZZ'), $phone['access_token'])),
+    $placeError($call('PATCH', 'account', array('region_id' => 99999), $phone['access_token'])),
+    $placeError($call('PATCH', 'account', array('city_id' => 99999), $phone['access_token'])),
+));
+pin('a region of another country is refused, against the stored country too', array(array(422, '/region_id', 'mismatch'), array(422, '/region_id', 'mismatch')), array(
+    $placeError($call('PATCH', 'account', array('country' => 'US', 'region_id' => $otherRegion), $phone['access_token'])),
+    $placeError($call('PATCH', 'account', array('region_id' => $otherRegion), $phone['access_token'])),
+));
+pin('a city of another region is refused', array(422, '/city_id', 'mismatch'), $placeError($call('PATCH', 'account', array('region_id' => $homeRegion, 'city_id' => $otherCity), $phone['access_token'])));
+$r = $call('PATCH', 'account', array('region_id' => $homeRegion, 'city_id' => $homeCity), $phone['access_token']);
+pin('a matching region and city are stored', array(200, (string) $homeRegion, (string) $homeCity), array($r->status(), $userRow($uma)['fk_i_region_id'], $userRow($uma)['fk_i_city_id']));
 $call('PATCH', 'account', array('website' => 'https://uma.example.test'), $phone['access_token']);
 $r = $call('PATCH', 'account', array('website' => null), $phone['access_token']);
 pin('null clears an optional member of the account', array(200, null), array($r->status(), $r->body()['data']['website'] ?? null));
@@ -578,11 +598,27 @@ $admin->query("DELETE FROM {$p}t_ban_rule");
 \mindstellar\security\BanRuleStore::forget();
 pin('each address gets a few tries an hour, then 429', '429 rate_limited', $code($last));
 $GLOBALS['aa_limiter'] = api_test_limiter(static fn (string $bucket) => $bucket === 'api_register_site' ? \mindstellar\api\ratelimit\RatePolicy::SIGN_UPS_PER_SITE + 1 : 1);
-pin('the whole site has a cap too', '429 rate_limited', $code($call('POST', 'users', array('email' => 'cap@example.test') + $signup, null, array(), '203.0.113.99')));
+pin('the whole site has a cap too', '429 rate_limited', $code($call('POST', 'users', array('email' => 'cap@example.test', 'username' => '') + $signup, null, array(), '203.0.113.99')));
+$counted = array();
+$GLOBALS['aa_limiter'] = api_test_limiter(static function (string $bucket) use (&$counted): int {
+    $counted[] = $bucket;
+
+    return 1;
+});
+$bad = $call('POST', 'users', array('email' => 'bad@example.test') + $signup, null, array(), '203.0.113.97');
+pin('a sign-up refused by its checks counts only for its address, not the site', array(422, array('api_register')), array($bad->status(), $counted));
+$counted = array();
+$call('POST', 'users', array('email' => 'neo@example.test', 'username' => '') + $signup, null, array(), '203.0.113.96');
+pin('one that passed counts for the site too, with a taken e-mail as with a new one', array('api_register', 'api_register_site'), $counted);
+$GLOBALS['aa_limiter'] = api_test_limiter(static fn (string $bucket) => $bucket === 'api_register_site' ? 101 : 1);
+pin('so a full site answers a taken e-mail as it answers a new one', array('429 rate_limited', '429 rate_limited'), array(
+    $code($call('POST', 'users', array('email' => 'neo@example.test', 'username' => '') + $signup, null, array(), '203.0.113.95')),
+    $code($call('POST', 'users', array('email' => 'fresh@example.test', 'username' => '') + $signup, null, array(), '203.0.113.94')),
+));
 $GLOBALS['aa_limiter'] = api_test_limiter(static fn () => null);
 pin('sign-up fails closed when the counter cannot be reached', '429 rate_limited', $code($call('POST', 'users', array('email' => 'closed@example.test') + $signup, null, array(), '203.0.113.98')));
 unset($GLOBALS['aa_limiter']);
-pin('no account was made by either', 0, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_user WHERE s_email IN ('cap@example.test', 'closed@example.test')")->fetch_row()[0]);
+pin('no account was made by any', 0, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_user WHERE s_email IN ('cap@example.test', 'closed@example.test', 'bad@example.test', 'fresh@example.test')")->fetch_row()[0]);
 $settings = new ApiSettings(true, userKeys: true);
 
 harness_section('signing out of all devices');

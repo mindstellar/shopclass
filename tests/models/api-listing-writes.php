@@ -313,6 +313,7 @@ $call = static function (string $method, string $path, ?array $body = null, ?str
     }
     Params::init();
     WebIdentity::forget();
+    $GLOBALS['lw_services'] = $services;
 
     return $kernel->handle(new Request($method, 'v1/' . $path, array(), $headers, '192.0.2.60', $content, $files, $reader));
 };
@@ -366,6 +367,19 @@ pin('a missing title is 422 from the schema', array(422, '/title'), array(
 ));
 pin('an unknown member is 422', '422 validation_failed', $code($call('POST', 'listings', $listing(array('owner' => 1)), $sueToken)));
 pin('an unknown city is 422', array(422, '/city_id'), (static fn (Response $r): array => array($r->status(), $r->body()['errors'][0]['pointer'] ?? null))($call('POST', 'listings', $listing(array('city_id' => 99999)), $sueToken)));
+$placeError   = static fn (Response $r): array => array($r->status(), $r->body()['errors'][0]['pointer'] ?? null, $r->body()['errors'][0]['code'] ?? null);
+$otherCountry = seed_country($admin, 'CA', 'Canada');
+$otherRegion  = seed_region($admin, $otherCountry, 'Gamma');
+$otherCity    = seed_city($admin, $otherRegion, 'Gtown', $otherCountry);
+pin('an unknown place answers unknown', array(array(422, '/country', 'unknown'), array(422, '/region_id', 'unknown'), array(422, '/city_id', 'unknown')), array(
+    $placeError($call('POST', 'listings', $listing(array('country' => 'ZZ')), $sueToken)),
+    $placeError($call('POST', 'listings', $listing(array('region_id' => 99999)), $sueToken)),
+    $placeError($call('POST', 'listings', $listing(array('city_id' => 99999)), $sueToken)),
+));
+pin('a region of another country or a city of another region answers mismatch', array(array(422, '/region_id', 'mismatch'), array(422, '/city_id', 'mismatch')), array(
+    $placeError($call('POST', 'listings', $listing(array('region_id' => $otherRegion)), $sueToken)),
+    $placeError($call('POST', 'listings', $listing(array('city_id' => $otherCity)), $sueToken)),
+));
 pin('ItemActions\' own refusal is 422 with its message', array(422, 'Description too short (en_US).'), (static fn (Response $r): array => array($r->status(), $r->body()['errors'][0]['message'] ?? null))($call('POST', 'listings', $listing(array('description' => 'ab')), $sueToken)));
 pin('a refusal carries the member and code of each error', array('validation_failed', '/description', 'minLength'), (static fn (Response $r): array => array($r->body()['code'] ?? null, $r->body()['errors'][0]['pointer'] ?? null, $r->body()['errors'][0]['code'] ?? null))($call('POST', 'listings', $listing(array('description' => 'ab')), $sueToken)));
 pin('a language the site does not have is 422', array(422, '/translations/fr_FR'), (static fn (Response $r): array => array($r->status(), $r->body()['errors'][0]['pointer'] ?? null))($call('POST', 'listings', $listing(array('translations' => array('fr_FR' => array('title' => 'Voiture')))), $sueToken)));
@@ -436,6 +450,7 @@ pin('another seller\'s live listing is 403 not_owner', '403 not_owner', $code($c
 pin('another seller\'s pending listing is 404', 404, $call('PATCH', 'listings/' . $pendingId, array('price' => '1'), $tomToken)->status());
 pin('an unknown listing is 404', 404, $call('PATCH', 'listings/999999', array('price' => '1'), $sueToken)->status());
 pin('an edit is refused as the form refuses it', 422, $call('PATCH', 'listings/' . $made, array('title' => ''), $sueToken)->status());
+pin('an edit checks a sent region against the stored country', array(422, '/region_id', 'mismatch'), $placeError($call('PATCH', 'listings/' . $made, array('region_id' => $otherRegion), $sueToken)));
 $r = $call('PATCH', 'listings/' . $made, array('contact_phone' => null, 'address' => null), $sueToken);
 $before = $call('GET', 'listings/' . $made, null, $sueToken)->body()['data']['title'] ?? null;
 $r      = $call('PATCH', 'listings/' . $made, array('translations' => array('en_US' => null)), $sueToken);
@@ -479,6 +494,25 @@ pin('a multipart photo too, up to the cap of 3', 201, $third->status());
 $over = $call('POST', 'listings/' . $withPhoto . '/photos', null, $sueToken, array(), $photoFile($jpeg));
 pin('a photo over the cap is refused', array(422, 'limit'), array($over->status(), $over->body()['errors'][0]['code'] ?? null));
 pin('the listing holds 3', 3, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item_resource WHERE fk_i_item_id = $withPhoto")->fetch_row()[0]);
+$racyRoom = new class () extends \mindstellar\listing\PhotoRoom {
+    private int $calls = 0;
+
+    public function room(int $itemId, ?int $ownerId): ?int
+    {
+        return $this->calls++ === 0 ? 1 : parent::room($itemId, $ownerId);
+    }
+};
+$raced = null;
+try {
+    (new \mindstellar\api\controller\PhotosController($GLOBALS['lw_services'], $racyRoom))->add(new \mindstellar\api\ApiCall(
+        new Request('POST', 'v1/listings/' . $withPhoto . '/photos', array(), array(), '192.0.2.60', '', $photoFile($jpeg)),
+        new \mindstellar\apiaccess\Credential(\mindstellar\apiaccess\CredentialKind::USER, array('listings:write'), (int) $itemRow($withPhoto)['fk_i_user_id']),
+        array('id' => (string) $withPhoto)
+    ));
+} catch (\mindstellar\api\ProblemException $e) {
+    $raced = array($e->response()->status(), $e->response()->body()['errors'][0]['code'] ?? null);
+}
+pin('a photo that loses the race for the last place is 422 limit, not 500', array(422, 'limit'), $raced);
 pin('a bad image on a listing is refused', 422, $call('POST', 'listings/' . $made . '/photos', null, $sueToken, array(), $photoFile($fake))->status());
 pin('another seller cannot add one', '403 not_owner', $code($call('POST', 'listings/' . $withPhoto . '/photos', null, $tomToken, array(), $photoFile($jpeg))));
 $photoId = (int) $third->body()['data']['id'];
@@ -718,7 +752,7 @@ $qPost = harness_query_count(static function () use ($call, $listing, $sueToken,
 });
 $qPatch = harness_query_count(static fn () => $call('PATCH', 'listings/' . $qMade, array('price' => '999'), $sueToken));
 echo "  POST /listings: $qPost queries, PATCH: $qPatch\n";
-pin('POST /listings, no photos: 30 queries (one checks the sign-in is live; ban rules come from the cache)', 30, $qPost);
+pin('POST /listings, no photos: 31 queries (one checks the sign-in is live, one the places; ban rules come from the cache)', 31, $qPost);
 pin('PATCH /listings/{id}, no photos: 25 queries (an unchanged location and custom field are not rewritten)', 25, $qPatch);
 
 $writes = static function (): array {

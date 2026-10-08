@@ -123,6 +123,51 @@ class LoginThrottle
     }
 
     /**
+     * Check one account's budget across all its names (username, e-mail) at once.
+     * The address is not checked here; evaluate() on the name as typed does that.
+     *
+     * @param string        $context
+     * @param array<string> $names         every name the account goes by
+     * @param bool          $captchaSolved as for evaluate()
+     *
+     * @return array{status:string,retry_after:int}
+     */
+    public static function evaluateAccount($context, array $names, $captchaSolved = false)
+    {
+        $pass  = array('status' => self::OK, 'retry_after' => 0);
+        $names = array_values(array_unique(array_filter(array_map(array(self::class, 'normalise'), $names), static fn (string $n): bool => $n !== '')));
+        if ($captchaSolved || $names === array() || !osc_login_throttle_enabled()) {
+            return $pass;
+        }
+
+        $window = self::windowSeconds();
+        $since  = self::since($window);
+        try {
+            $model = LoginAttempt::getInstance();
+            $total = 0;
+            foreach ($names as $name) {
+                $total += $model->countByAccount($context, $name, $since);
+            }
+            if ($total < osc_login_throttle_max_account()) {
+                return $pass;
+            }
+            $oldest = null;
+            foreach ($names as $name) {
+                $at = $model->oldestByAccount($context, $name, $since);
+                if ($at !== null && ($oldest === null || $at < $oldest)) {
+                    $oldest = $at;
+                }
+            }
+
+            return array('status' => self::BLOCKED, 'retry_after' => self::retryAfter($oldest, $window));
+        } catch (\Throwable $e) {
+            self::unavailable($e);
+        }
+
+        return $pass;
+    }
+
+    /**
      * Record one rejected attempt.
      *
      * @param string $context

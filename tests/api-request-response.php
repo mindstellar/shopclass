@@ -47,6 +47,7 @@ pin('withQuery returns a changed copy', [['limit' => '5'], ['x' => 1]], [$r->que
 pin('a body over the cap is 413', 'too_large 413', $thrown(static fn () => (new Request('POST', 'v1', [], ['Content-Type' => 'application/json'], '', null))->input()));
 pin('a non-JSON content type is 415', 'unsupported_media_type 415', $thrown(static fn () => (new Request('POST', 'v1', [], ['Content-Type' => 'text/plain'], '', '{}'))->input()));
 pin('broken JSON is 400', 'invalid_json 400', $thrown(static fn () => (new Request('POST', 'v1', [], ['Content-Type' => 'application/json'], '', '{"a":'))->input()));
+pin('a form body that is not UTF-8 is 400, not a 500', 'invalid_json 400', $thrown(static fn () => (new Request('POST', 'v1', [], ['Content-Type' => 'application/x-www-form-urlencoded'], '', "username=%FF&password=x"))->withFormAsJson()));
 pin('a JSON scalar is 400', 'invalid_json 400', $thrown(static fn () => (new Request('POST', 'v1', [], ['Content-Type' => 'application/json'], '', '"x"'))->input()));
 $deep = str_repeat('[', 40) . str_repeat(']', 40);
 pin('JSON nested past the limit is 400', 'invalid_json 400', $thrown(static fn () => (new Request('POST', 'v1', [], ['Content-Type' => 'application/json'], '', $deep))->input()));

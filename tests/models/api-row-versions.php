@@ -45,7 +45,9 @@ $admin->query("UPDATE {$p}t_item_description SET s_title = 'Edited' WHERE fk_i_i
 $v2 = $listing();
 check('editing its description changes it', $v2 !== $v1);
 pin('a missing listing has none', null, $versions->version('listings/{id}', ['id' => '999999'], $nobody));
-pin('a path with no stored version is not supported', [false, true], [$versions->supports('admin/settings'), $versions->supports('listings/{id}')]);
+pin('a path with no stored version is not supported', [false, true, true, true], [
+    $versions->supports('admin/jobs'), $versions->supports('listings/{id}'), $versions->supports('admin/settings'), $versions->supports('admin/webhooks/{webhook}'),
+]);
 
 $account = $versions->version('account', [], $owner);
 $admin->query("UPDATE {$p}t_user SET dt_access_date = NOW() + INTERVAL 1 DAY, s_access_ip = '192.0.2.9' WHERE pk_i_id = $user");
@@ -147,6 +149,16 @@ try {
 } catch (RuntimeException $e) {
 }
 pin('a throw rolls the transaction back', 'Edited', $admin->query("SELECT s_title FROM {$p}t_item_description WHERE fk_i_item_id = $item")->fetch_row()[0]);
+
+harness_section('webhooks');
+$webhook = static fn (string $id, bool $lock = false): ?string => $versions->version('admin/webhooks/{webhook}', ['webhook' => $id], $nobody, $lock);
+$hook    = 'ep_00000000000000aa';
+pin('a missing or malformed webhook has none', [null, null], [$webhook($hook), $webhook('nope')]);
+$admin->query("INSERT INTO {$p}t_key_value (s_group, s_key, s_value, dt_created) VALUES ('api_webhook', '$hook', '{}', NOW())");
+$w1 = $webhook($hook);
+$admin->query("UPDATE {$p}t_key_value SET s_value = '{\"x\":1}' WHERE s_group = 'api_webhook' AND s_key = '$hook'");
+check('a webhook has one, and an edit changes it', strlen((string) $w1) === 24 && $webhook($hook) !== $w1);
+pin('the webhook is one query', 1, harness_query_count(static fn () => $webhook($hook)));
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

@@ -29,7 +29,6 @@ use mindstellar\apiaccess\AccessEntries;
 use mindstellar\apiaccess\AccessEntry;
 use mindstellar\apiaccess\Credential;
 use mindstellar\user\AccountService;
-use mindstellar\utility\DeferredMail;
 
 /**
  * The signed-in user's own account, listings, sign-ins and keys. Edits go through AccountService as
@@ -87,16 +86,7 @@ final class AccountController
         }
 
         $profile  = array_diff_key($input, ['email' => true]);
-        $accounts = $this->accounts;
-        // One transaction, so an e-mail change over its hourly cap leaves the profile as it was.
-        DeferredMail::transaction(static function () use ($accounts, $actor, $user, $userId, $profile, $newEmail): void {
-            if ($profile !== []) {
-                $accounts->update($userId, AccountBody::profile($user, $profile), $actor);
-            }
-            if ($newEmail !== '') {
-                $accounts->requestEmailChange($userId, $newEmail, $actor);
-            }
-        });
+        $this->accounts->editOwn($userId, $profile === [] ? null : AccountBody::profile($user, $profile), $newEmail, $actor);
         if ($profile !== []) {
             $this->users->forget($userId);
         }
@@ -166,7 +156,7 @@ final class AccountController
 
     public function endSession(ApiCall $call): Response
     {
-        if (!$this->sessions->endSignIn((int) $call->credential()->userId(), $call->arg('session') ?? '')) {
+        if (!$this->sessions->endSignIn($call->userId(), $call->arg('session') ?? '')) {
             throw ProblemException::notFound('No such sign-in.');
         }
 

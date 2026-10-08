@@ -18,6 +18,7 @@ use Item;
 use mindstellar\database\Db;
 use mindstellar\job\CategoryJobs;
 use mindstellar\routing\ReservedSlugs;
+use mindstellar\utility\DeferredMail;
 use mindstellar\validation\ConflictException;
 use mindstellar\validation\InvalidException;
 use mindstellar\validation\NotFoundException;
@@ -115,6 +116,43 @@ final class CategoryService
         $this->edited($id, $saved ? $outcome : 2);
 
         return $saved;
+    }
+
+    /**
+     * An admin's edit and on/off switch, all or none: the edit first, then the switch when it
+     * changes the category.
+     *
+     * @param array<string,mixed>      $category the category's row
+     * @param array{fields:array{i_expiration_days?:int|string,b_price_enabled:int},descriptions:array<string,array<string,mixed>>,toSubcategories:bool}|null $edit null for no edit
+     * @param bool|null                $enabled  null to leave it
+     *
+     * @return string 'ok', 'failed' when the edit's write failed, or 'parent_off' when the parent is off; nothing is kept unless 'ok'
+     * @throws InvalidException for a slug the site's API has reserved
+     */
+    public function adminEdit(int $id, array $category, ?array $edit, ?bool $enabled): string
+    {
+        $outcome = 'ok';
+        try {
+            DeferredMail::transaction(function () use ($id, $category, $edit, $enabled, &$outcome): void {
+                if ($edit !== null && !$this->update($id, $edit['fields'], $edit['descriptions'], $edit['toSubcategories'])) {
+                    $outcome = 'failed';
+                }
+                if ($outcome === 'ok' && $enabled !== null && $enabled !== ((int) $category['b_enabled'] === 1)
+                    && $this->setEnabled($id, $enabled, $category) === null
+                ) {
+                    $outcome = 'parent_off';
+                }
+                if ($outcome !== 'ok') {
+                    throw new \RuntimeException('The category edit was not kept.');
+                }
+            });
+        } catch (\RuntimeException $e) {
+            if ($outcome === 'ok') {
+                throw $e;
+            }
+        }
+
+        return $outcome;
     }
 
     /**

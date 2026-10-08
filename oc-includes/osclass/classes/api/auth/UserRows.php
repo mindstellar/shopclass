@@ -19,34 +19,8 @@ use mindstellar\user\UserStore;
  * User rows as the API reads them, each loaded once per request: checking an access token,
  * taking on the user's identity and the account endpoints share the same row.
  */
-final class UserRows
+final class UserRows extends MemoisedRows
 {
-    /** @var array<int,array<string,mixed>|null> */
-    private array $rows = [];
-
-    /** @var \Closure(int): ?array<string,mixed> */
-    private \Closure $load;
-
-    /**
-     * @param callable|null $load (user id) => the t_user row, or null; the table by default
-     */
-    public function __construct(?callable $load = null)
-    {
-        $this->load = \Closure::fromCallable($load ?? [self::class, 'fromTable']);
-    }
-
-    /**
-     * @return array<string,mixed>|null
-     */
-    public function find(int $id): ?array
-    {
-        if (!array_key_exists($id, $this->rows)) {
-            $this->rows[$id] = $id > 0 ? ($this->load)($id) : null;
-        }
-
-        return $this->rows[$id];
-    }
-
     /**
      * The row, and whether the refresh family has a live token, in one query. Null row for no user.
      *
@@ -79,7 +53,7 @@ final class UserRows
      * @return array<string,mixed>|null
      * @throws \mindstellar\database\DbException
      */
-    private static function fromTable(int $id): ?array
+    protected static function fromTable(int $id): ?array
     {
         $row = \mindstellar\user\UserStore::find($id);
 
