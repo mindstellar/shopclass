@@ -88,6 +88,9 @@ pin('an unknown country is not found', 'This location no longer exists.', $missi
 harness_section('delete');
 $region = seed_region($admin, 'FR', 'Bretagne');
 seed_city($admin, $region, 'Rennes', 'FR');
+$itemId = seed_item($admin, seed_category($admin), null, 'Velo', 10.0, 1, 1, seed_locale($admin), 'FR');
+$userId = seed_user($admin, 'pierre', 'pierre@example.test');
+$admin->query("UPDATE {$p}t_user SET fk_c_country_code = 'FR', s_country = 'France' WHERE pk_i_id = $userId");
 $fired = array();
 osc_add_hook('before_delete_country', static function ($code) use (&$fired): void {
     $fired[] = 'before ' . $code;
@@ -95,12 +98,24 @@ osc_add_hook('before_delete_country', static function ($code) use (&$fired): voi
 osc_add_hook('after_delete_country', static function ($code) use (&$fired): void {
     $fired[] = 'after ' . $code;
 });
-$service->delete('country', 'fr');
+$deleteError = null;
+try {
+    $service->delete('country', 'fr');
+} catch (RuntimeException $e) {
+    $deleteError = $e->getMessage();
+}
+pin('the delete succeeds', null, $deleteError);
 pin('the country is gone', null, $country('FR'));
 pin('its regions and cities go with it', [0, 0], [
     (int) $admin->query("SELECT COUNT(*) FROM {$p}t_region WHERE fk_c_country_code = 'FR'")->fetch_row()[0],
     (int) $admin->query("SELECT COUNT(*) FROM {$p}t_city WHERE fk_c_country_code = 'FR'")->fetch_row()[0],
 ]);
+pin('its items are deleted', 0, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_item WHERE pk_i_id = $itemId")->fetch_row()[0]);
+pin(
+    'its users are kept with the country cleared',
+    ['fk_c_country_code' => null, 's_country' => ''],
+    $admin->query("SELECT fk_c_country_code, s_country FROM {$p}t_user WHERE pk_i_id = $userId")->fetch_assoc()
+);
 pin('the delete hooks fire', ['before FR', 'after FR'], $fired);
 pin('another country is kept', 'BE', $country('BE')['pk_c_code']);
 $gone = static function (string $code) use ($service): bool {

@@ -913,8 +913,9 @@ check(
     'the store owns the write, through osc_db_table()'
 );
 check(
-    'scan: while the delete path, which is not part of the declared form, goes through BanRuleStore',
-    strpos($controller, 'BanRuleStore::delete(') !== false,
+    'scan: while the delete path, which is not part of the declared form, goes through BanRuleStore, not BanRule',
+    strpos($controller, 'BanRuleStore::delete(') !== false
+        && !str_contains($controller, 'BanRule::getInstance()->deleteByPrimaryKey('),
     'the scan above would pass just as well on a controller with no ban rules in it at all'
 );
 
