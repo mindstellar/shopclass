@@ -12,6 +12,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\security\Demo;
 use mindstellar\utility\Utils;
 
 /**
@@ -73,11 +74,11 @@ abstract class BaseModel
      */
     protected function refuseOnDemo($redirectUrl = null)
     {
-        if (!defined('DEMO')) {
+        if (!Demo::active()) {
             return false;
         }
 
-        osc_add_flash_warning_message(_m('This action cannot be done because it is a demo site'), 'admin');
+        osc_add_flash_warning_message(Demo::message(), 'admin');
         $this->redirectTo($redirectUrl ?? osc_admin_base_url(true));
 
         return true;

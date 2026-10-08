@@ -2968,12 +2968,7 @@ msgstr ""
 msgid "There were some problems editing the country"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
-msgid "This action can't be done because it's a demo site"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
-#: oc-includes/osclass/classes/controller/base/abstract/BaseModel.php
+#: oc-includes/osclass/classes/security/Demo.php
 msgid "This action cannot be done because it is a demo site"
 msgstr ""
 

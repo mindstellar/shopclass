@@ -96,4 +96,29 @@ pin('page 4 at 10 a page', 30, ListPaging::start(4, 10));
 pin('an offset can never go negative', 0, ListPaging::start(0, 25));
 pin('...however wrong the page', 0, ListPaging::start(-7, 25));
 
+harness_section('Past the end');
+
+if (!function_exists('osc_admin_base_url')) {
+    function osc_admin_base_url($index = false)
+    {
+        return 'https://example.test/oc-admin/' . ($index ? 'index.php' : '');
+    }
+}
+/** The redirect for an empty page, given the request's query string. */
+$pastEnd = static function (string $query, int $rows, int $total, int $length, int $page): ?string {
+    $_SERVER['QUERY_STRING'] = $query;
+    Params::init();
+
+    return ListPaging::pastEndUrl($rows, $total, $length, $page);
+};
+$base = 'https://example.test/oc-admin/index.php?';
+
+pin('a page with rows stays', null, $pastEnd('page=items&iPage=9', 3, 30, 10, 9));
+pin('page 1 stays, even empty', null, $pastEnd('page=items&iPage=1', 0, 0, 10, 1));
+pin('an empty page past the end goes to the last page', $base . 'page=items&iPage=3', $pastEnd('page=items&iPage=9', 0, 30, 10, 9));
+pin('...or to page 1 when nothing is left', $base . 'page=items&iPage=1', $pastEnd('page=items&iPage=4', 0, 0, 10, 4));
+pin('iPage as the first parameter is rewritten too', $base . 'iPage=2&page=items', $pastEnd('iPage=7&page=items', 0, 11, 10, 7));
+pin('a missing iPage is added', $base . 'page=items&iPage=2', $pastEnd('page=items', 0, 11, 10, 5));
+pin('the last page itself never redirects to itself', null, $pastEnd('page=items&iPage=3', 0, 30, 10, 3));
+
 exit(harness_result());

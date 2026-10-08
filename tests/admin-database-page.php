@@ -56,7 +56,7 @@ pin('Repair refused: only extra items', false, DatabaseTools::repairAllowed(arra
 pin('Repair refused: an update is waiting', false, DatabaseTools::repairAllowed(array($finding(SchemaDoctor::MISSING_INDEX)), array('0099_x.php')));
 check('the server checks repairAllowed() before running Repair', (static function (string $c): bool {
     $refuse = strpos($c, '!DatabaseTools::repairAllowed($findings, $pending)');
-    $run    = strpos($c, 'SchemaReconciler($conn))->repair()');
+    $run    = strpos($c, 'DatabaseTools::repair()');
 
     return $refuse !== false && $run !== false && $refuse < $run;
 })($controller));

@@ -12,8 +12,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\database\Connection;
-use mindstellar\migration\MigrationRunner;
 use mindstellar\utility\AjaxResponse;
 use mindstellar\utility\Utils;
 
@@ -77,18 +75,7 @@ class AdminSecBaseModel extends SecBaseModel
      */
     private function autoUpgradeVersion($configVersion)
     {
-        try {
-            $runner = new MigrationRunner(
-                Connection::getInstance(),
-                \mindstellar\admin\DatabaseTools::migrationsDir()
-            );
-            $runner->ensureLedger();
-            if ($runner->pending() !== array()) {
-                return false;
-            }
-        } catch (Throwable $e) {
-            // An unreadable ledger or migrations directory is not something to decide
-            // silently -- send them to the screen, which reports what went wrong.
+        if (!\mindstellar\admin\DatabaseTools::upToDate()) {
             return false;
         }
 

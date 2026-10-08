@@ -99,8 +99,8 @@ final class CurrencyService
      */
     public function create(string $code, string $name, string $symbol): string
     {
-        $code = strtoupper(trim($code));
-        if (preg_match('/^[A-Z]{3}$/D', $code) !== 1) {
+        $code = CurrencyCode::normalize($code);
+        if ($code === null) {
             throw new InvalidException('/code', 'pattern', _m('The currency code is not in the correct format'));
         }
         if ($this->find($code) !== null) {

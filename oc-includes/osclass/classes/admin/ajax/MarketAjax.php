@@ -22,6 +22,7 @@ use mindstellar\market\Catalog;
 use mindstellar\market\Compatibility;
 use mindstellar\market\Installer;
 use mindstellar\market\PackageIndex;
+use mindstellar\security\Demo;
 use mindstellar\utility\AjaxResponse;
 use mindstellar\utility\FileSystem;
 use Params;
@@ -178,8 +179,8 @@ final class MarketAjax extends AjaxHandler
             return self::refreshRefusal(__('Invalid package type.'));
         }
 
-        if (defined('DEMO')) {
-            return self::refreshRefusal(__("This action can't be done because it's a demo site"));
+        if (Demo::active()) {
+            return self::refreshRefusal(Demo::message());
         }
         if (osc_package_installs_disabled()) {
             return self::refreshRefusal(__('Catalog refresh is disabled on this deployment.'));
@@ -238,8 +239,8 @@ final class MarketAjax extends AjaxHandler
             return self::installRefusal(__('No version was specified.'), $slug);
         }
 
-        if (defined('DEMO')) {
-            return self::installRefusal(__("This action can't be done because it's a demo site"), $slug);
+        if (Demo::active()) {
+            return self::installRefusal(Demo::message(), $slug);
         }
         if (osc_package_installs_disabled()) {
             return self::installRefusal(__('Package installs are disabled on this deployment.'), $slug);

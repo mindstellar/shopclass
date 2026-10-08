@@ -13,6 +13,7 @@ namespace mindstellar\admin\form;
 
 use mindstellar\billing\Billing;
 use mindstellar\billing\Receipts;
+use mindstellar\currency\CurrencyCode;
 
 /**
  * The billing settings screen, which is six independent forms: the switch that turns
@@ -146,7 +147,7 @@ final class BillingSettingsScreen
                 ->required()
                 ->sanitize(static fn ($value) => strtoupper((string)$value))
                 ->validate(static function ($value) {
-                    return preg_match('/^[A-Z]{3}$/', (string)$value)
+                    return CurrencyCode::valid((string)$value)
                         ? null
                         : _m('Currency must be a 3-letter code, e.g. USD.');
                 })

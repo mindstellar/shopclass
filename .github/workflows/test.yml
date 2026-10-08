@@ -265,6 +265,8 @@ jobs:
       # Paging params come straight from a URL; a bad one used to 500 the screen.
       - name: Admin list paging
         run: php tests/admin-list-paging.php
+      - name: Currency and country codes
+        run: php tests/iso-codes.php
       # One loop behind 21 bulk actions; the counts it reports used to be wrong three ways.
       - name: Admin bulk actions
         run: php tests/admin-bulk-apply.php

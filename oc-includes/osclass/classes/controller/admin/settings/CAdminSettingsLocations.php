@@ -16,12 +16,14 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\location\CountryCode;
 use mindstellar\location\LocationAdminQuery;
 use mindstellar\location\LocationAdminView;
 use mindstellar\location\LocationCatalog;
 use mindstellar\location\LocationImporter;
 use mindstellar\location\LocationQuery;
 use mindstellar\location\LocationService;
+use mindstellar\security\Demo;
 use mindstellar\utility\AjaxResponse;
 use mindstellar\validation\NotFoundException;
 use mindstellar\validation\RefusedException;
@@ -325,8 +327,8 @@ class CAdminSettingsLocations extends AdminSecBaseModel
      */
     private function guard(): void
     {
-        if (defined('DEMO')) {
-            $this->respond('warning', _m("This action can't be done because it's a demo site"), $this->backUrl());
+        if (Demo::active()) {
+            $this->respond('warning', Demo::message(), $this->backUrl());
         }
         // A fetch() caller reads the CSRF refusal as JSON rather than following a redirect.
         if ($this->isXhr() && !defined('IS_AJAX')) {
@@ -374,7 +376,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
         if (!osc_validate_min($countryName, 1)) {
             $this->respond('error', _m('Country name cannot be blank'), $this->listUrl());
         }
-        if (preg_match('/^[A-Z]{2}$/', $countryCode) !== 1) {
+        if (!CountryCode::valid($countryCode)) {
             $this->respond('error', _m('The country code must be two letters, like IN or DE'), $this->listUrl());
         }
 
@@ -543,7 +545,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
         foreach ($posted as $id) {
             if ($level === 'country') {
                 $code = strtoupper($id);
-                $row  = preg_match('/^[A-Z]{2}$/', $code) === 1 ? $model->findByCode($code) : array();
+                $row  = CountryCode::valid($code) ? $model->findByCode($code) : array();
                 if (isset($row['pk_c_code'])) {
                     $rows[$code] = $row;
                 }

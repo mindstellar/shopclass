@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\fields;
 
 use mindstellar\database\Db;
+use mindstellar\database\QueryBuilder;
 
 /**
  * Custom field reads: one field's row, the fields of a category, and the values listings
@@ -149,13 +150,16 @@ final class FieldQuery
     }
 
     /**
-     * Up to ten distinct values of a field on live listings that match a LIKE pattern.
+     * Up to ten distinct values of a field on live listings that start with $prefix, which is
+     * matched literally.
      *
      * @return array<int,array<string,mixed>> rows with value
      * @throws \mindstellar\database\DbException
      */
-    public static function suggest(int $fieldId, string $like): array
+    public static function suggest(int $fieldId, string $prefix): array
     {
+        $like = QueryBuilder::escapeLike($prefix) . '%';
+
         return Db::select(
             'SELECT DISTINCT m.s_value AS value FROM ' . DB_TABLE_PREFIX . 't_item_meta m'
             . ' JOIN ' . DB_TABLE_PREFIX . 't_item i ON i.pk_i_id = m.fk_i_item_id'

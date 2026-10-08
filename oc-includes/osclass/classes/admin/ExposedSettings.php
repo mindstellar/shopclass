@@ -15,6 +15,7 @@ namespace mindstellar\admin;
 use mindstellar\admin\form\ApiSettingsScreen;
 use mindstellar\admin\form\CommentSettingsScreen;
 use mindstellar\admin\form\MainSettingsScreen;
+use mindstellar\currency\CurrencyCode;
 use mindstellar\database\Db;
 use mindstellar\settings\SettingsPageRegistry;
 use mindstellar\validation\InvalidException;
@@ -37,7 +38,7 @@ final class ExposedSettings
         'site_description'             => [MainSettingsScreen::class, 'pageDesc', ['type' => 'string', 'maxLength' => 1000]],
         'contact_email'                => [MainSettingsScreen::class, 'contactEmail', ['type' => 'string', 'format' => 'email', 'maxLength' => 100]],
         'language'                     => [MainSettingsScreen::class, 'language', ['type' => 'string', 'pattern' => '^[A-Za-z]{2,3}_[A-Za-z]{2}$', 'description' => 'One of the site\'s languages.']],
-        'currency'                     => [MainSettingsScreen::class, 'currency', ['type' => 'string', 'pattern' => '^[A-Z]{3}$', 'description' => 'One of the site\'s currencies.']],
+        'currency'                     => [MainSettingsScreen::class, 'currency', ['type' => 'string', 'pattern' => CurrencyCode::PATTERN, 'description' => 'One of the site\'s currencies.']],
         'timezone'                     => [MainSettingsScreen::class, 'timezone', ['type' => 'string', 'maxLength' => 64]],
         'week_start'                   => [MainSettingsScreen::class, 'weekStart', ['type' => 'integer', 'minimum' => 0, 'maximum' => 6, 'description' => '0 is Sunday.']],
         'date_format'                  => [MainSettingsScreen::class, 'dateFormat', ['type' => 'string', 'maxLength' => 50, 'description' => 'A PHP date() format.']],

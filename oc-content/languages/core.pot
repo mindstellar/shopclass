@@ -11502,17 +11502,9 @@ msgstr ""
 msgid "This action can not be undone."
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/ajax/MarketAjax.php
-msgid "This action can't be done because it's a demo site"
-msgstr ""
-
 #: oc-includes/osclass/classes/admin/ui/PhotoGrid.php
 #: oc-includes/osclass/classes/form/ItemForm.php
 msgid "This action can't be undone. Are you sure you want to continue?"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/ajax/UpdateAjax.php
-msgid "This action cannot be done because it is a demo site"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/database.php

@@ -13,10 +13,10 @@ declare(strict_types=1);
 namespace mindstellar\api\schema;
 
 use mindstellar\admin\ExposedSettings;
-
 use mindstellar\api\serializer\CustomFieldSerializer;
 use mindstellar\apiaccess\ApiKeyService;
 use mindstellar\comment\CommentStatus;
+use mindstellar\currency\CurrencyCode;
 use mindstellar\webhook\Endpoint;
 use mindstellar\webhook\Events;
 use mindstellar\webhook\WebhookService;
@@ -164,7 +164,7 @@ final class AdminSchema
             'CityAreaPatch'         => $input(['name' => $name], ['name']),
             'CityAreaDocument'      => $doc('CityArea'),
             'CurrencyInput'         => $input([
-                'code'   => ['type' => 'string', 'pattern' => '^[A-Z]{3}$'],
+                'code'   => ['type' => 'string', 'pattern' => CurrencyCode::PATTERN],
                 'name'   => $text(40, 1),
                 'symbol' => $text(80),
             ], ['code', 'name']),

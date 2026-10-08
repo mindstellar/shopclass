@@ -13,6 +13,7 @@ namespace mindstellar\billing;
 
 use InvalidArgumentException;
 use mindstellar\base\Registry;
+use mindstellar\currency\CurrencyCode;
 
 /**
  * Registry of payment gateways.
@@ -47,7 +48,7 @@ final class PaymentGatewayRegistry extends Registry
         }
 
         foreach ($gateway->getSupportedCurrencies() as $currency) {
-            if (!is_string($currency) || !preg_match('/^[A-Z]{3}$/', $currency)) {
+            if (!is_string($currency) || !CurrencyCode::valid($currency)) {
                 throw new InvalidArgumentException(
                     'PaymentGatewayRegistry: gateway "' . $id . '" lists a non-ISO-4217 currency'
                 );

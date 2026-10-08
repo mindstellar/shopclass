@@ -114,17 +114,19 @@ foreach (array("Params::getParam('upgrade')", "Params::getParam('repair')") as $
 check('posts are read only on the Database tab', strpos($body('systemInfoPage'), "\$tab === 'database' && Params::getServerParam('REQUEST_METHOD') === 'POST'") !== false);
 check('Repair is refused while an update waits', (static function (string $c): bool {
     $wait = strpos($c, 'if ($pending !== array())');
-    $run  = strpos($c, 'SchemaReconciler($conn))->repair()');
+    $run  = strpos($c, 'DatabaseTools::repair()');
 
     return $wait !== false && $run !== false && $wait < $run;
 })($post));
 check('Repair is refused when nothing is fixable', (static function (string $c): bool {
     $refuse = strpos($c, '!DatabaseTools::repairAllowed($findings, $pending)');
-    $run    = strpos($c, 'SchemaReconciler($conn))->repair()');
+    $run    = strpos($c, 'DatabaseTools::repair()');
 
     return $refuse !== false && $run !== false && $refuse < $run;
 })($post));
-check('Repair waits for a running upgrade', strpos($post, 'DatabaseTools::upgradeLock($conn)') !== false && strpos($post, '$release();') !== false);
+$repair = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/admin/DatabaseTools.php');
+check('Repair waits for a running upgrade', strpos($post, 'if ($repair === null)') !== false
+    && strpos($repair, 'self::upgradeLock($conn)') !== false && strpos($repair, '$release();') !== false);
 check('the update dialog posts to the Database tab', (bool) preg_match("/'id'\\s*=> 'db-update-dialog',.*?'url'\\s*=> SystemChecks::url\\(\\\$env, 'database', 'db-update'\\)/s", $shell));
 check('the Repair dialog posts to the Database tab', strpos($database, "\$self       = SystemChecks::url(\$env, 'database');") !== false);
 check('the Repair dialog renders only when Repair may run', (bool) preg_match(

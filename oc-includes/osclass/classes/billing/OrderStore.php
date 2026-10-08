@@ -13,6 +13,7 @@ namespace mindstellar\billing;
 
 use InvalidArgumentException;
 use mindstellar\base\Model;
+use mindstellar\currency\CurrencyCode;
 use mindstellar\database\Db;
 use mindstellar\database\DbException;
 use mindstellar\database\QueryBuilder;
@@ -60,7 +61,7 @@ final class OrderStore extends Model
         if ($amount < 0) {
             throw new InvalidArgumentException('Orders: amount cannot be negative');
         }
-        if (!preg_match('/^[A-Z]{3}$/', $currency)) {
+        if (!CurrencyCode::valid($currency)) {
             throw new InvalidArgumentException('Orders: currency must be an ISO 4217 code');
         }
 

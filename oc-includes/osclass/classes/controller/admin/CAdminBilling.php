@@ -469,7 +469,7 @@ class CAdminBilling extends AdminSecBaseModel
             $this->redirectTo($back);
         }
 
-        if (!preg_match('/^[A-Z]{3}$/', $currency)) {
+        if (!\mindstellar\currency\CurrencyCode::valid($currency)) {
             osc_add_flash_error_message(_m('Currency must be a 3-letter code, e.g. USD'), 'admin');
             $this->redirectTo($back);
         }

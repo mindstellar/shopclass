@@ -27,6 +27,7 @@ use mindstellar\backup\BackupJobs;
 use mindstellar\backup\BackupService;
 use mindstellar\backup\BackupStore;
 use mindstellar\security\AdminReauth;
+use mindstellar\security\Demo;
 use mindstellar\upgrade\BuildInfo;
 use mindstellar\utility\AjaxResponse;
 
@@ -89,12 +90,12 @@ class CAdminTools extends AdminSecBaseModel
                     define('IS_AJAX', true);
                 }
                 osc_csrf_check();
-                if (defined('DEMO')) {
+                if (Demo::active()) {
                     if ($isXhr) {
-                        AjaxResponse::json(array('error' => _m('This action cannot be done because it is a demo site')));
+                        AjaxResponse::json(array('error' => Demo::message()));
                         exit;
                     }
-                    osc_add_flash_warning_message(_m('This action cannot be done because it is a demo site'), 'admin');
+                    osc_add_flash_warning_message(Demo::message(), 'admin');
                     $this->redirectTo($back);
                 }
 
@@ -259,8 +260,8 @@ class CAdminTools extends AdminSecBaseModel
                 $this->redirectTo(self::backupUrl());
                 break;
             case ('maintenance'):
-                if (defined('DEMO')) {
-                    osc_add_flash_warning_message(_m('This action cannot be done because it is a demo site'), 'admin');
+                if (Demo::active()) {
+                    osc_add_flash_warning_message(Demo::message(), 'admin');
                     $this->doView('tools/maintenance.php');
                     break;
                 }
@@ -438,17 +439,9 @@ class CAdminTools extends AdminSecBaseModel
                 $logsDataTable->table(Params::getParamsAsArray());
                 $aData = $logsDataTable->getData();
 
-                if (count($aData['aRows']) == 0 && $page != 1) {
-                    $total   = (int) $aData['iTotalDisplayRecords'];
-                    $maxPage = (int) ceil($total / (int) $aData['iDisplayLength']);
-
-                    $url = osc_admin_base_url(true) . '?' . Params::getServerParam('QUERY_STRING', false, false);
-                    if ($maxPage == 0) {
-                        $this->redirectTo(preg_replace('/&iPage=(\d)+/', '&iPage=1', $url));
-                    }
-                    if ($page > 1) {
-                        $this->redirectTo(preg_replace('/&iPage=(\d)+/', '&iPage=' . $maxPage, $url));
-                    }
+                $pastEnd = ListPaging::pastEndUrl(count($aData['aRows']), (int) $aData['iTotalDisplayRecords'], (int) $aData['iDisplayLength'], (int) $page);
+                if ($pastEnd !== null) {
+                    $this->redirectTo($pastEnd);
                 }
 
                 $this->_exportVariableToView('aData', $aData);
@@ -912,8 +905,6 @@ class CAdminTools extends AdminSecBaseModel
     private function databasePost(array &$env): bool
     {
         $self = self::databaseUrl();
-        $conn = \mindstellar\database\Connection::getInstance();
-        $dir  = DatabaseTools::migrationsDir();
 
         if (Params::getParam('upgrade') !== '') {
             if ($this->refuseOnDemo($self)) {
@@ -922,9 +913,9 @@ class CAdminTools extends AdminSecBaseModel
             osc_csrf_check();
             $this->_exportVariableToView('db_upgrade', DatabaseTools::upgrade());
             osc_reset_preferences();
-            $env['pending']    = DatabaseTools::pending($conn, $dir);
+            $env['pending']    = DatabaseTools::pending();
             $env['db_version'] = (string) osc_version();
-            list($env['findings'], $env['findings_error']) = $this->schemaFindings();
+            list($env['findings'], $env['findings_error']) = DatabaseTools::findings();
         }
 
         if (Params::getParam('repair') !== '') {
@@ -949,27 +940,16 @@ class CAdminTools extends AdminSecBaseModel
 
                 return false;
             }
-            try {
-                $release = DatabaseTools::upgradeLock($conn);
-            } catch (\mindstellar\database\DbException $e) {
-                $release = null;
-            }
-            if ($release === null) {
+            $repair = DatabaseTools::repair();
+            if ($repair === null) {
                 osc_add_flash_error_message(_m('An upgrade is running. Try again when it has finished.'), 'admin');
                 $this->redirectTo($self);
 
                 return false;
             }
-            try {
-                $repair = (new \mindstellar\database\SchemaReconciler($conn))->repair();
-            } catch (Throwable $e) {
-                $repair = array('ran' => array(), 'failed' => array($e->getMessage()));
-            } finally {
-                $release();
-            }
             $this->_exportVariableToView('db_repair', $repair);
-            list($env['findings'], $env['findings_error']) = $this->schemaFindings();
-            $env['db_size'] = DatabaseTools::size($conn, DB_TABLE_PREFIX);
+            list($env['findings'], $env['findings_error']) = DatabaseTools::findings();
+            $env['db_size'] = DatabaseTools::size();
         }
 
         return true;
@@ -985,12 +965,7 @@ class CAdminTools extends AdminSecBaseModel
      */
     private function systemEnvironment(bool $withDatabase): array
     {
-        $conn = \mindstellar\database\Connection::getInstance();
-        try {
-            $server = $conn->serverInfo();
-        } catch (Throwable $e) {
-            $server = '';
-        }
+        $server = DatabaseTools::serverInfo();
         $cacheDriver = defined('OSC_CACHE') ? (string) OSC_CACHE : 'default';
         $maintenance = '';
         if (file_exists(ABS_PATH . '.maintenance')) {
@@ -1113,9 +1088,9 @@ class CAdminTools extends AdminSecBaseModel
             'db_size'          => null,
         );
         if ($withDatabase) {
-            $env['pending'] = DatabaseTools::pending($conn, DatabaseTools::migrationsDir());
-            list($env['findings'], $env['findings_error']) = $this->schemaFindings();
-            $env['db_size'] = DatabaseTools::size($conn, DB_TABLE_PREFIX);
+            $env['pending'] = DatabaseTools::pending();
+            list($env['findings'], $env['findings_error']) = DatabaseTools::findings();
+            $env['db_size'] = DatabaseTools::size();
         }
 
         return $env;
@@ -1158,23 +1133,6 @@ class CAdminTools extends AdminSecBaseModel
         }
 
         return $found !== false && $read === $value;
-    }
-
-    /**
-     * The SchemaDoctor findings, and the error that stopped them ('' when none).
-     *
-     * @return array{0:array<int,array<string,string>>,1:string}
-     */
-    private function schemaFindings(): array
-    {
-        try {
-            return array(
-                (new \mindstellar\database\SchemaDoctor(\mindstellar\database\Connection::getInstance()))->diagnose(),
-                '',
-            );
-        } catch (Throwable $e) {
-            return array(array(), $e->getMessage());
-        }
     }
 
     /**

@@ -69,21 +69,9 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
                 $keywordBlocksDataTable->table($params);
                 $aData = $keywordBlocksDataTable->getData();
 
-                if (count($aData['aRows']) == 0 && $page != 1) {
-                    $total   = (int) $aData['iTotalDisplayRecords'];
-                    $maxPage = ceil($total / (int) $aData['iDisplayLength']);
-
-                    $url = osc_admin_base_url(true) . '?' . Params::getServerParam('QUERY_STRING', false, false);
-
-                    if ($maxPage == 0) {
-                        $url = preg_replace('/&iPage=(\d)+/', '&iPage=1', $url);
-                        $this->redirectTo($url);
-                    }
-
-                    if ($page > 1) {
-                        $url = preg_replace('/&iPage=(\d)+/', '&iPage=' . $maxPage, $url);
-                        $this->redirectTo($url);
-                    }
+                $pastEnd = ListPaging::pastEndUrl(count($aData['aRows']), (int) $aData['iTotalDisplayRecords'], (int) $aData['iDisplayLength'], (int) $page);
+                if ($pastEnd !== null) {
+                    $this->redirectTo($pastEnd);
                 }
 
                 $this->_exportVariableToView('aData', $aData);

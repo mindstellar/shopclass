@@ -13,7 +13,9 @@ namespace mindstellar\admin;
 use Closure;
 use mindstellar\admin\form\MediaSettingsScreen;
 use mindstellar\database\Connection;
+use mindstellar\database\DbException;
 use mindstellar\database\SchemaDoctor;
+use mindstellar\database\SchemaReconciler;
 use mindstellar\database\SqlStream;
 use mindstellar\database\TablePrefix;
 use mindstellar\migration\MigrationRunner;
@@ -113,20 +115,36 @@ final class DatabaseTools
      * Migrations not applied yet, in run order. Empty when there are none, or when the
      * ledger cannot be read: SchemaDoctor then reports the real error.
      *
-     * @param Connection $conn
-     * @param string     $dir the migrations directory
+     * @param Connection|null $conn this site's connection by default
+     * @param string|null     $dir  the migrations directory; core's by default
      *
      * @return string[]
      */
-    public static function pending(Connection $conn, string $dir): array
+    public static function pending(?Connection $conn = null, ?string $dir = null): array
     {
         try {
-            $runner = new MigrationRunner($conn, $dir);
+            $runner = new MigrationRunner($conn ?? Connection::getInstance(), $dir ?? self::migrationsDir());
             $runner->ensureLedger();
 
             return $runner->pending();
         } catch (Throwable $e) {
             return array();
+        }
+    }
+
+    /**
+     * Whether every core migration has run. False also when the ledger or the migrations
+     * directory cannot be read, so the caller sends the admin to the screen that says why.
+     */
+    public static function upToDate(): bool
+    {
+        try {
+            $runner = new MigrationRunner(Connection::getInstance(), self::migrationsDir());
+            $runner->ensureLedger();
+
+            return $runner->pending() === array();
+        } catch (Throwable $e) {
+            return false;
         }
     }
 
@@ -385,15 +403,16 @@ final class DatabaseTools
      * Table count and total size of this install's tables, or null when the server
      * does not say.
      *
-     * @param Connection $conn
-     * @param string     $prefix the table prefix
+     * @param Connection|null $conn   this site's connection by default
+     * @param string|null     $prefix the table prefix; this site's by default
      *
      * @return array{tables:int,bytes:int}|null
      */
-    public static function size(Connection $conn, string $prefix): ?array
+    public static function size(?Connection $conn = null, ?string $prefix = null): ?array
     {
+        $prefix ??= DB_TABLE_PREFIX;
         try {
-            $row = $conn->selectOne(
+            $row = ($conn ?? Connection::getInstance())->selectOne(
                 'SELECT COUNT(*) AS n, COALESCE(SUM(data_length + index_length), 0) AS bytes'
                 . ' FROM information_schema.TABLES WHERE table_schema = DATABASE() AND table_name LIKE ? ESCAPE \'!\'',
                 array(TablePrefix::like($prefix))
@@ -406,5 +425,57 @@ final class DatabaseTools
         }
 
         return array('tables' => (int) $row['n'], 'bytes' => (int) $row['bytes']);
+    }
+
+    /**
+     * Repair the schema drift the reconciler can fix, under the upgrade lock. Null when an
+     * upgrade holds the lock.
+     *
+     * @return array{ran:array<int,string>,failed:array<int,string>}|null
+     */
+    public static function repair(): ?array
+    {
+        $conn = Connection::getInstance();
+        try {
+            $release = self::upgradeLock($conn);
+        } catch (DbException $e) {
+            $release = null;
+        }
+        if ($release === null) {
+            return null;
+        }
+        try {
+            return (new SchemaReconciler($conn))->repair();
+        } catch (Throwable $e) {
+            return array('ran' => array(), 'failed' => array($e->getMessage()));
+        } finally {
+            $release();
+        }
+    }
+
+    /**
+     * The SchemaDoctor findings, and the error that stopped them ('' when none).
+     *
+     * @return array{0:array<int,array<string,mixed>>,1:string}
+     */
+    public static function findings(): array
+    {
+        try {
+            return array((new SchemaDoctor(Connection::getInstance()))->diagnose(), '');
+        } catch (Throwable $e) {
+            return array(array(), $e->getMessage());
+        }
+    }
+
+    /**
+     * The database server's version string, or '' when it cannot be read.
+     */
+    public static function serverInfo(): string
+    {
+        try {
+            return Connection::getInstance()->serverInfo();
+        } catch (Throwable $e) {
+            return '';
+        }
     }
 }

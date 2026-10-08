@@ -24,6 +24,7 @@ error_reporting(E_ALL & ~E_DEPRECATED);
 define('ABS_PATH', dirname(__DIR__) . '/');
 
 require_once __DIR__ . '/lib/harness.php';
+require_once ABS_PATH . 'oc-includes/osclass/classes/location/CountryCode.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/location/LocationAdminView.php';
 
 use mindstellar\location\LocationAdminView;

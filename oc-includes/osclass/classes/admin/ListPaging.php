@@ -133,4 +133,26 @@ final class ListPaging
     {
         return max(0, ($page - 1) * $length);
     }
+
+    /**
+     * Where to send a list page that came back empty because $page ran past the end: this
+     * screen's URL on its last page, or page 1 when nothing is left. Null when there is no need.
+     *
+     * @param int $rows   rows on this page
+     * @param int $total  rows in the whole list
+     * @param int $length rows per page
+     */
+    public static function pastEndUrl(int $rows, int $total, int $length, int $page): ?string
+    {
+        $last = max(1, (int) ceil($total / max(1, $length)));
+        if ($rows > 0 || $page <= 1 || $page === $last) {
+            return null;
+        }
+        $query = (string) Params::getServerParam('QUERY_STRING', false, false);
+        $query = preg_match('/(^|&)iPage=\d*/', $query) === 1
+            ? preg_replace('/(^|&)iPage=\d*/', '${1}iPage=' . $last, $query)
+            : ltrim($query . '&iPage=' . $last, '&');
+
+        return osc_admin_base_url(true) . '?' . $query;
+    }
 }

@@ -13,11 +13,11 @@ declare(strict_types=1);
 namespace mindstellar\api\schema;
 
 use mindstellar\api\Problem;
-
 use mindstellar\api\serializer\CustomFieldSerializer;
-
 use mindstellar\api\serializer\ExtensionMembers;
+use mindstellar\currency\CurrencyCode;
 use mindstellar\listing\ListingStatus;
+use mindstellar\location\CountryCode;
 use mindstellar\user\UserStatus;
 use mindstellar\utility\DateInput;
 
@@ -151,7 +151,7 @@ final class Schema
                 'options'    => ['type' => ['array', 'null'], 'items' => ['type' => 'string']],
             ], ['id', 'slug', 'name', 'type', 'required', 'searchable', 'options']),
             'Country'      => self::object([
-                'code' => ['type' => 'string', 'pattern' => '^[A-Z]{2}$'],
+                'code' => ['type' => 'string', 'pattern' => CountryCode::PATTERN],
                 'name' => ['type' => 'string'],
                 'slug' => self::nullable('string'),
             ], ['code', 'name', 'slug']),
@@ -178,7 +178,7 @@ final class Schema
                 'name'    => ['type' => 'string'],
             ], ['id', 'city_id', 'name']),
             'Currency'     => self::object([
-                'code'   => ['type' => 'string', 'pattern' => '^[A-Z]{3}$'],
+                'code'   => ['type' => 'string', 'pattern' => CurrencyCode::PATTERN],
                 'name'   => ['type' => 'string'],
                 'symbol' => self::nullable('string'),
             ], ['code', 'name', 'symbol']),
@@ -626,7 +626,7 @@ final class Schema
                 'minimum'     => 0,
                 'description' => 'A decimal such as "12.50"; null for no price.',
             ],
-            'currency'      => ['type' => 'string', 'pattern' => '^[A-Z]{3}$'],
+            'currency'      => ['type' => 'string', 'pattern' => CurrencyCode::PATTERN],
             'country'       => ['type' => ['string', 'null'], 'pattern' => '^([A-Za-z]{2})?$', 'description' => 'Country code; null or "" clears it.'],
             'region_id'     => ['type' => ['integer', 'null'], 'minimum' => 1],
             'region'        => ['description' => 'A region name, when it has no id; null or "" clears it.'] + $optional(100),

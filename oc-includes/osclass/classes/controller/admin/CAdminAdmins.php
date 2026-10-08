@@ -198,21 +198,9 @@ class CAdminAdmins extends AdminSecBaseModel
                 $array['aaData']               = $aData;
 
                 $page = Params::getParamInt('iPage');
-                if (count($array['aaData']) == 0 && $page != 1) {
-                    $total   = $array['iTotalDisplayRecords'];
-                    $maxPage = ceil($total / (int)$array['iDisplayLength']);
-
-                    $url = osc_admin_base_url(true) . '?' . Params::getServerParam('QUERY_STRING', false, false);
-
-                    if ($maxPage == 0) {
-                        $url = preg_replace('/&iPage=(\d)+/', '&iPage=1', $url);
-                        $this->redirectTo($url);
-                    }
-
-                    if ($page > 1) {
-                        $url = preg_replace('/&iPage=(\d)+/', '&iPage=' . $maxPage, $url);
-                        $this->redirectTo($url);
-                    }
+                $pastEnd = ListPaging::pastEndUrl(count($array['aaData']), (int) $array['iTotalDisplayRecords'], (int) $array['iDisplayLength'], (int) $page);
+                if ($pastEnd !== null) {
+                    $this->redirectTo($pastEnd);
                 }
 
                 $bulk_options = array(

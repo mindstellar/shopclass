@@ -20,6 +20,7 @@ use mindstellar\api\read\Pager;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\LocationSerializer;
+use mindstellar\location\CountryCode;
 use mindstellar\location\LocationQuery;
 
 /**
@@ -48,8 +49,8 @@ final class LocationsController
 
     public function regions(ApiCall $call): Response
     {
-        $code = strtoupper((string) ($call->arg('code') ?? ''));
-        if (preg_match('/^[A-Z]{2}$/D', $code) !== 1) {
+        $code = CountryCode::normalize((string) ($call->arg('code') ?? ''));
+        if ($code === null) {
             throw ProblemException::notFound('No such country.');
         }
 

@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace mindstellar\admin\ajax;
 
 use Exception;
+use mindstellar\security\Demo;
 use mindstellar\upgrade\BuildInfo;
 use mindstellar\upgrade\Osclass;
 use mindstellar\upgrade\Upgrade;
@@ -151,8 +152,8 @@ final class UpdateAjax extends AjaxHandler
     {
         if (osc_self_update_disabled()) {
             $msg = __('In-app updates are disabled on this installation. Update by deploying a newer container image; the database is migrated automatically on start.');
-        } elseif (defined('DEMO')) {
-            $msg = __('This action cannot be done because it is a demo site');
+        } elseif (Demo::active()) {
+            $msg = Demo::message();
         } else {
             return null;
         }

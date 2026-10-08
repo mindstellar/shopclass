@@ -13,6 +13,7 @@ namespace mindstellar\billing;
 
 use InvalidArgumentException;
 use mindstellar\base\Model;
+use mindstellar\currency\CurrencyCode;
 
 /**
  * Persistence for t_billing_package -- the price list an admin sells credits from.
@@ -137,7 +138,7 @@ final class PackageStore extends Model
         }
 
         $currency = strtoupper((string) ($data['s_currency'] ?? ''));
-        if (!preg_match('/^[A-Z]{3}$/', $currency)) {
+        if (!CurrencyCode::valid($currency)) {
             throw new InvalidArgumentException('Packages: currency must be an ISO 4217 code');
         }
 

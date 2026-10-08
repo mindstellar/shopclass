@@ -16,6 +16,7 @@ use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\LocationSerializer;
+use mindstellar\currency\CurrencyCode;
 use mindstellar\currency\CurrencyService;
 use mindstellar\validation\NotFoundException;
 
@@ -84,8 +85,8 @@ final class AdminCurrenciesController
      */
     private static function code(array $args): string
     {
-        $code = strtoupper((string) ($args['code'] ?? ''));
-        if (preg_match('/^[A-Z]{3}$/D', $code) !== 1) {
+        $code = CurrencyCode::normalize((string) ($args['code'] ?? ''));
+        if ($code === null) {
             throw new NotFoundException(_m('No such currency.'));
         }
 
