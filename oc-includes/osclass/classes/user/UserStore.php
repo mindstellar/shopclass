@@ -185,6 +185,25 @@ final class UserStore extends Model
     }
 
     /**
+     * Record a visit when the last one is at least $every seconds old.
+     *
+     * @return bool whether the visit was written
+     * @throws \mindstellar\database\DbException
+     */
+    public static function touchAccess(int $userId, string $date, string $ip, int $every): bool
+    {
+        $written = self::table()
+            ->where('pk_i_id', $userId)
+            ->where('dt_access_date', '<=', date('Y-m-d H:i:s', time() - $every))
+            ->update(['dt_access_date' => $date, 's_access_ip' => $ip]) > 0;
+        if ($written && function_exists('osc_invalidate_user_cache')) {
+            osc_invalidate_user_cache($userId);
+        }
+
+        return $written;
+    }
+
+    /**
      * Drop pending e-mail changes made before $before.
      *
      * @throws \mindstellar\database\DbException

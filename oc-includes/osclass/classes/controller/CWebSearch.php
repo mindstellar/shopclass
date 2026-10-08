@@ -180,10 +180,11 @@ class CWebSearch extends BaseModel
             $p_sPattern  = $criteria->pattern();
             $savePattern = osc_apply_filter('save_latest_searches_pattern', $p_sPattern);
             if ($savePattern != '') {
-                LatestSearches::getInstance()->insert(array(
-                    's_search' => $savePattern,
-                    'd_date'   => date('Y-m-d H:i:s')
-                ));
+                try {
+                    \mindstellar\search\LatestSearchStore::record((string)$savePattern, date('Y-m-d H:i:s'));
+                } catch (\mindstellar\database\DbException $e) {
+                    // A search that was not recorded still shows its results.
+                }
             }
         }
     }

@@ -22,6 +22,9 @@ use mindstellar\admin\form\CoreSettings;
 use mindstellar\admin\form\UserSettingsScreen;
 use mindstellar\admin\ListPaging;
 use mindstellar\auth\Actor;
+use mindstellar\database\DbException;
+use mindstellar\search\UserAlerts;
+use mindstellar\security\BanRuleStore;
 use mindstellar\user\AccountInput;
 use mindstellar\user\AccountService;
 use mindstellar\validation\InvalidException;
@@ -299,13 +302,13 @@ class CAdminUsers extends AdminSecBaseModel
                     }
                 }
 
-                $mAlerts = new Alerts();
+                $userAlerts = new UserAlerts();
                 BulkAction::apply(
-                    static function ($id) use ($mAlerts) {
+                    static function ($id) use ($userAlerts) {
                         Log::getInstance()
                             ->insertLog('user', 'delete_alerts', $id, $id, 'admin', osc_logged_admin_id());
 
-                        return (bool)$mAlerts->delete(array('pk_i_id' => $id));
+                        return $userAlerts->delete((int)$id);
                     },
                     'One alert has been deleted',
                     '%s alerts have been deleted',
@@ -334,7 +337,7 @@ class CAdminUsers extends AdminSecBaseModel
                     }
                 }
 
-                $mAlerts   = new Alerts();
+                $userAlerts = new UserAlerts();
                 $activating = $status == 1;
                 if ($activating && is_array($alertId)
                     && \mindstellar\search\AlertStore::heldIds($alertId) !== array()
@@ -345,7 +348,7 @@ class CAdminUsers extends AdminSecBaseModel
                     );
                 }
                 BulkAction::apply(
-                    static fn ($id) => (bool)($activating ? $mAlerts->activate($id) : $mAlerts->deactivate($id)),
+                    static fn ($id) => $userAlerts->setActive((int)$id, $activating),
                     $activating ? 'One alert has been activated' : 'One alert has been deactivated',
                     $activating ? '%s alerts have been activated' : '%s alerts have been deactivated',
                     $activating ? _m('No alerts have been activated') : _m('No alerts have been deactivated'),
@@ -492,9 +495,14 @@ class CAdminUsers extends AdminSecBaseModel
                     $this->redirectTo(osc_admin_base_url(true) . '?page=users&action=ban');
                 }
 
-                $ruleMgr = BanRule::getInstance();
                 BulkAction::apply(
-                    static fn ($id) => (bool)$ruleMgr->deleteByPrimaryKey($id),
+                    static function ($id) {
+                        try {
+                            return BanRuleStore::delete((int)$id) > 0;
+                        } catch (DbException $e) {
+                            return false;
+                        }
+                    },
                     'One ban rule has been deleted',
                     '%s ban rules have been deleted',
                     _m('No rules have been deleted')
@@ -618,7 +626,7 @@ class CAdminUsers extends AdminSecBaseModel
     private function saveBanRule($id)
     {
         $result = osc_settings_save(BanRuleForm::register(), $id);
-        \mindstellar\security\BanRuleStore::forget();
+        BanRuleStore::forget();
 
         if ($result['errors'] !== array()) {
             foreach ($result['errors'] as $error) {

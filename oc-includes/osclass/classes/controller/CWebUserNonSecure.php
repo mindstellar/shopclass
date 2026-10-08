@@ -13,6 +13,7 @@
  */
 
 use mindstellar\admin\ListPaging;
+use mindstellar\search\UserAlerts;
 
 /**
  * Class CWebUserNonSecure
@@ -80,33 +81,14 @@ class CWebUserNonSecure extends BaseModel
                 }
                 break;
             case 'activate_alert':
-                $email  = Params::getParam('email');
-                $secret = Params::getParam('secret');
-                $id     = Params::getParam('id');
-
-                $alert  = Alerts::getInstance()->findByPrimaryKey($id);
-                $result = 0;
-                // A held alert has no search left to send, so its link no longer works.
-                if (!empty($alert)
-                    && \mindstellar\search\AlertEnvelope::heldReason((string)$alert['s_search']) !== null
-                ) {
+                $result = (new UserAlerts())->activateByLink(
+                    Params::getParamInt('id'),
+                    Params::getParamString('email'),
+                    Params::getParamString('secret')
+                );
+                if ($result === UserAlerts::HELD) {
                     osc_add_flash_error_message(_m('Sorry, the link is not valid'));
-                    $this->redirectTo(osc_base_url());
-                }
-                if (!empty($alert) && hash_equals((string)$alert['s_email'], (string)$email)
-                    && hash_equals((string)$alert['s_secret'], (string)$secret)
-                ) {
-                    $user = User::getInstance()->findByEmail($alert['s_email']);
-                    if (isset($user['pk_i_id'])) {
-                        Alerts::getInstance()->update(
-                            array('fk_i_user_id' => $user['pk_i_id']),
-                            array('pk_i_id' => $id)
-                        );
-                    }
-                    $result = Alerts::getInstance()->activate((int) $id);
-                }
-
-                if ($result == 1) {
+                } elseif ($result === UserAlerts::ACTIVATED) {
                     osc_add_flash_ok_message(_m('Alert activated'));
                 } else {
                     osc_add_flash_error_message(_m('Oops! There was a problem trying to activate your alert. Please contact an administrator'));
@@ -115,19 +97,12 @@ class CWebUserNonSecure extends BaseModel
                 $this->redirectTo(osc_base_url());
                 break;
             case 'unsub_alert':
-                $email  = Params::getParam('email');
-                $secret = Params::getParam('secret');
-                $id     = Params::getParam('id');
-
-                $alert  = Alerts::getInstance()->findByPrimaryKey($id);
-                $result = 0;
-                if (!empty($alert) && hash_equals((string)$alert['s_email'], (string)$email)
-                    && hash_equals((string)$alert['s_secret'], (string)$secret)
-                ) {
-                    $result = Alerts::getInstance()->unsub((int) $id);
-                }
-
-                if ($result == 1) {
+                $unsubscribed = (new UserAlerts())->unsubscribeByLink(
+                    Params::getParamInt('id'),
+                    Params::getParamString('email'),
+                    Params::getParamString('secret')
+                );
+                if ($unsubscribed) {
                     osc_add_flash_ok_message(_m('Unsubscribed correctly'));
                 } else {
                     osc_add_flash_error_message(_m('Oops! There was a problem trying to unsubscribe you. Please contact an administrator'));

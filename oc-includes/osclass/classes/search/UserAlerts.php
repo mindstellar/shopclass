@@ -22,6 +22,8 @@ final class UserAlerts
     public const REFUSED  = 'refused';
     public const FAILED   = 'failed';
     public const LIMIT    = 'limit';
+    public const ACTIVATED = 'activated';
+    public const HELD      = 'held';
 
     /** Live saved searches a user may keep when the site has set no number. */
     public const DEFAULT_MAX_PER_USER = 20;
@@ -122,5 +124,65 @@ final class UserAlerts
     public function unsubscribe(int $id): bool
     {
         return (bool) $this->alerts->unsub($id);
+    }
+
+    /**
+     * Switch on an alert from the e-mailed link, first giving it to the account with that e-mail.
+     *
+     * @return string ACTIVATED, HELD for a held alert (its link no longer works), or FAILED
+     */
+    public function activateByLink(int $id, string $email, string $secret): string
+    {
+        $alert = $this->alerts->findByPrimaryKey($id);
+        if (!is_array($alert) || $alert === []) {
+            return self::FAILED;
+        }
+        if (AlertEnvelope::heldReason((string) $alert['s_search']) !== null) {
+            return self::HELD;
+        }
+        if (!$this->linkMatches($alert, $email, $secret)) {
+            return self::FAILED;
+        }
+        $user = \User::getInstance()->findByEmail($alert['s_email']);
+        if (isset($user['pk_i_id'])) {
+            $this->alerts->update(['fk_i_user_id' => $user['pk_i_id']], ['pk_i_id' => $id]);
+        }
+
+        return $this->alerts->activate($id) === 1 ? self::ACTIVATED : self::FAILED;
+    }
+
+    /**
+     * Unsubscribe an alert from the e-mailed link.
+     */
+    public function unsubscribeByLink(int $id, string $email, string $secret): bool
+    {
+        $alert = $this->alerts->findByPrimaryKey($id);
+
+        return is_array($alert) && $alert !== [] && $this->linkMatches($alert, $email, $secret)
+            && $this->alerts->unsub($id) === 1;
+    }
+
+    /**
+     * Admin: delete an alert.
+     */
+    public function delete(int $id): bool
+    {
+        return (bool) $this->alerts->deleteByPrimaryKey($id);
+    }
+
+    /**
+     * Admin: switch an alert on or off. A held alert is never switched on.
+     */
+    public function setActive(int $id, bool $active): bool
+    {
+        return (bool) ($active ? $this->alerts->activate($id) : $this->alerts->deactivate($id));
+    }
+
+    /**
+     * @param array<string,mixed> $alert
+     */
+    private function linkMatches(array $alert, string $email, string $secret): bool
+    {
+        return hash_equals((string) $alert['s_email'], $email) && hash_equals((string) $alert['s_secret'], $secret);
     }
 }

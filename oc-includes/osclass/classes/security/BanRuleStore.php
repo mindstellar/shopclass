@@ -94,6 +94,18 @@ final class BanRuleStore extends Model
     }
 
     /**
+     * @return int rules deleted
+     * @throws \mindstellar\database\DbException
+     */
+    public static function delete(int $id): int
+    {
+        $deleted = Db::execute('DELETE FROM ' . self::tableName() . ' WHERE pk_i_id = ?', array($id));
+        self::forget();
+
+        return $deleted;
+    }
+
+    /**
      * Delete rules that ended by $now.
      *
      * @throws \mindstellar\database\DbException

@@ -16,10 +16,11 @@ declare(strict_types=1);
 namespace mindstellar\routing;
 
 use Cookie;
+use mindstellar\database\DbException;
+use mindstellar\user\UserStore;
 use Params;
 use Session;
 use Sitemap;
-use User;
 use WebThemes;
 
 /**
@@ -183,12 +184,16 @@ final class FrontController
         }
 
         if (osc_is_web_user_logged_in()) {
-            User::getInstance()->lastAccess(
-                osc_logged_user_id(),
-                date('Y-m-d H:i:s'),
-                Params::getServerParam('REMOTE_ADDR'),
-                3600
-            );
+            try {
+                UserStore::touchAccess(
+                    (int) osc_logged_user_id(),
+                    date('Y-m-d H:i:s'),
+                    (string) Params::getServerParam('REMOTE_ADDR'),
+                    3600
+                );
+            } catch (DbException $e) {
+                // A missed visit stamp is not worth failing the page for.
+            }
         }
     }
 }
