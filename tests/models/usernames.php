@@ -88,6 +88,10 @@ pin('the fallback suffix still works under the key', $fourth . '_2', $assignDefa
 $admin->query("ALTER TABLE {$prefix}t_user DROP KEY uk_test_username");
 
 harness_section('claimUsername fails closed when the lock is held elsewhere');
+// A refused claim would wait 5 s for the lock each time; the refusal is the same at 0.
+if (!defined('OSC_LOCK_WAIT')) {
+    define('OSC_LOCK_WAIT', 0);
+}
 
 // The admin connection is its own session, so it can hold the lock the model connection waits on.
 $lockName = 'osc_username_' . md5((defined('DB_NAME') ? DB_NAME : '') . $prefix . 't_user');

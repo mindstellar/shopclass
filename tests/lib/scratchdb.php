@@ -30,6 +30,11 @@
  * the seeded dev harness on 3307.
  */
 
+// Password hashes at the live cost take about 0.2 s each; tests only need them valid.
+if (!defined('BCRYPT_COST')) {
+    define('BCRYPT_COST', 4);
+}
+
 if (!function_exists('scratchdb_bootstrap')) {
     /**
      * Define the constants the DB classes need, load the autoloader and the
@@ -134,8 +139,9 @@ if (!function_exists('scratchdb_bootstrap')) {
         if ($admin->connect_errno) {
             fwrite(STDERR, 'admin connect failed: ' . $admin->connect_error . "\n");
             fwrite(STDERR, "Is the throwaway container up?\n");
-            fwrite(STDERR, "  docker run -d --name shopclass-scratch -p 33061:3306 "
-                . "-e MYSQL_ROOT_PASSWORD=root mysql:8.0\n");
+            fwrite(STDERR, "  docker run -d --name shopclass-scratch -p 33061:3306 --tmpfs /var/lib/mysql "
+                . "-e MYSQL_ROOT_PASSWORD=root mysql:8.0 --skip-log-bin --innodb-flush-log-at-trx-commit=0 "
+                . "--innodb-doublewrite=0\n");
             exit(2);
         }
 

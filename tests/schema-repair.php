@@ -120,6 +120,10 @@ check('upgradeDB() leaves the dropped index missing', !$hasIndex('oc_t_country',
 check('upgradeDB() no longer reports repairs', is_array($result) && !array_key_exists('repairs', $result));
 
 harness_section('MigrationRunner: one run at a time');
+// A refused run would wait 5 s for the lock each time; the refusal is the same at 0.
+if (!defined('OSC_LOCK_WAIT')) {
+    define('OSC_LOCK_WAIT', 0);
+}
 
 $tmpDir = sys_get_temp_dir() . '/osc_runner_lock_' . getmypid();
 @mkdir($tmpDir);

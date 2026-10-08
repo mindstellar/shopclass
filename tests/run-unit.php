@@ -11,7 +11,7 @@
 /**
  * Runs every tests/*.php in its own PHP process and fails if any fails.
  *
- * Usage:  php tests/run-unit.php [-j N] [name ...]   run all (or the named) tests
+ * Usage:  php tests/run-unit.php [-j N] [name ...]   run all (or the named) tests, 4 at a time
  *         php tests/run-unit.php --check             fail if a test file is not run by
  *                                                    CI or by the runner (no tests run)
  * Needs the database settings of tests/lib/scratchdb.php for the DB tests.
@@ -20,6 +20,7 @@
 // Files in tests/ that are not tests run on their own. Every entry needs a reason.
 const RUNNER_EXCLUDE = array(
     'schema-drift' => 'needs a baseline file argument; run by schema-drift.yml',
+    'run-models'   => 'its own runner; run it with php tests/run-models.php',
 );
 
 $dir = __DIR__;
@@ -33,7 +34,7 @@ foreach (glob($dir . '/*.php') ?: array() as $f) {
 sort($all);
 
 $args  = array_slice($argv, 1);
-$jobs  = 1;
+$jobs  = 4;
 $names = array();
 $check = false;
 for ($i = 0; $i < count($args); $i++) {

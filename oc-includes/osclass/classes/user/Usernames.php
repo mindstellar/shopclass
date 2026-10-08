@@ -88,7 +88,7 @@ final class Usernames
     {
         $lock = UserStore::usernameLock();
         try {
-            $locked = (int) Db::scalar('SELECT GET_LOCK(?, 5)', [$lock]) === 1;
+            $locked = (int) Db::scalar('SELECT GET_LOCK(?, ?)', [$lock, \defined('OSC_LOCK_WAIT') ? (int) \constant('OSC_LOCK_WAIT') : 5]) === 1;
         } catch (\mindstellar\database\DbException $e) {
             $locked = false;
         }

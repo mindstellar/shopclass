@@ -81,6 +81,7 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
+          --tmpfs /var/lib/mysql
     env:
       DRIFT_DB_HOST: 127.0.0.1
       DRIFT_DB_PORT: 3306
@@ -94,6 +95,9 @@ jobs:
         with:
           php-version: '8.3'
           extensions: mysqli
+      # Scratch data needs no crash safety; without disk syncs the suite runs several times faster.
+      - name: Fast scratch database
+        run: php -r '$db = new mysqli("127.0.0.1", "root", "root", "", 3306); $db->query("SET GLOBAL innodb_flush_log_at_trx_commit = 0"); $db->query("SET GLOBAL sync_binlog = 0");'
       # oc-includes/vendor/ is committed (releases are cut with git archive and
       # run no build step), so the autoloader is present straight from checkout.
       - name: Params typed accessors

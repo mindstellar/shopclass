@@ -31,7 +31,7 @@ use Throwable;
  */
 class MigrationRunner
 {
-    /** Seconds to wait for another run to finish before giving up. */
+    /** Seconds to wait for another run to finish before giving up. Tests set OSC_LOCK_WAIT to 0. */
     private const LOCK_WAIT = 5;
 
     private Connection $conn;
@@ -118,7 +118,7 @@ class MigrationRunner
     public function run(): array
     {
         $lock = $this->lockName();
-        if ((int) $this->conn->scalar('SELECT GET_LOCK(?, ?)', array($lock, self::LOCK_WAIT)) !== 1) {
+        if ((int) $this->conn->scalar('SELECT GET_LOCK(?, ?)', array($lock, \defined('OSC_LOCK_WAIT') ? (int) \constant('OSC_LOCK_WAIT') : self::LOCK_WAIT)) !== 1) {
             return array(
                 'ok'      => false,
                 'applied' => array(),
