@@ -67,19 +67,23 @@ final class ListPaging
      *
      * @param int    $default
      * @param string $name
+     * @param int    $max
      *
      * @return int
      */
-    public static function length(int $default = self::DEFAULT_LENGTH, string $name = 'iDisplayLength'): int
-    {
-        $default = $default >= 1 ? min($default, self::MAX_LENGTH) : self::DEFAULT_LENGTH;
+    public static function length(
+        int $default = self::DEFAULT_LENGTH,
+        string $name = 'iDisplayLength',
+        int $max = self::MAX_LENGTH
+    ): int {
+        $default = $default >= 1 ? min($default, $max) : self::DEFAULT_LENGTH;
         $raw     = Params::getParam($name);
 
         if (!is_numeric($raw) || (int) $raw < 1) {
             return $default;
         }
 
-        return min((int) $raw, self::MAX_LENGTH);
+        return min((int) $raw, $max);
     }
 
     /**

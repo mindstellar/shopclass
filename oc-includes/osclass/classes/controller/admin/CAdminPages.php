@@ -19,6 +19,7 @@ if (!defined('ABS_PATH')) {
 /**
  * Class CAdminPages
  */
+use mindstellar\admin\BulkAction;
 use mindstellar\admin\form\StaticPageForm;
 use mindstellar\admin\ListPaging;
 
@@ -192,18 +193,15 @@ class CAdminPages extends AdminSecBaseModel
                 $this->_exportVariableToView('aData', $aData);
                 $this->_exportVariableToView('aRawRows', $pagesDataTable->rawRows());
 
-                $bulk_options = array(
-                    array('value' => '', 'data-dialog-content' => '', 'label' => __('Bulk actions')),
-                    array(
-                        'value'               => 'delete',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected pages?'),
-                            strtolower(__('Delete'))
+                $bulk_options = osc_apply_filter(
+                    'page_bulk_filter',
+                    BulkAction::options(
+                        array(
+                            'delete' => __('Delete')
                         ),
-                        'label'               => __('Delete')
+                        __('Are you sure you want to %s the selected pages?')
                     )
                 );
-                $bulk_options = osc_apply_filter('page_bulk_filter', $bulk_options);
                 $this->_exportVariableToView('bulk_options', $bulk_options);
 
                 $this->doView('pages/index.php');

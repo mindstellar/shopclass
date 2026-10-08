@@ -490,82 +490,23 @@ class CAdminItems extends AdminSecBaseModel
                 $this->_exportVariableToView('withFilters', $itemsDataTable->withFilters());
                 $this->_exportVariableToView('aRawRows', $itemsDataTable->rawRows());
 
-                $bulk_options = array(
-                    array('value' => '', 'data-dialog-content' => '', 'label' => __('Bulk actions')),
-                    array(
-                        'value'               => 'delete_all',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected listings?'),
-                            strtolower(__('Delete'))
+                $bulk_options = osc_apply_filter(
+                    'item_bulk_filter',
+                    BulkAction::options(
+                        array(
+                            'delete_all' => __('Delete'),
+                            'activate_all' => __('Activate'),
+                            'deactivate_all' => __('Deactivate'),
+                            'disable_all' => __('Block'),
+                            'enable_all' => __('Unblock'),
+                            'premium_all' => __('Mark as premium'),
+                            'depremium_all' => __('Unmark as premium'),
+                            'spam_all' => __('Mark as spam'),
+                            'despam_all' => __('Unmark as spam')
                         ),
-                        'label'               => __('Delete')
-                    ),
-                    array(
-                        'value'               => 'activate_all',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected listings?'),
-                            strtolower(__('Activate'))
-                        ),
-                        'label'               => __('Activate')
-                    ),
-                    array(
-                        'value'               => 'deactivate_all',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected listings?'),
-                            strtolower(__('Deactivate'))
-                        ),
-                        'label'               => __('Deactivate')
-                    ),
-                    array(
-                        'value'               => 'disable_all',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected listings?'),
-                            strtolower(__('Block'))
-                        ),
-                        'label'               => __('Block')
-                    ),
-                    array(
-                        'value'               => 'enable_all',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected listings?'),
-                            strtolower(__('Unblock'))
-                        ),
-                        'label'               => __('Unblock')
-                    ),
-                    array(
-                        'value'               => 'premium_all',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected listings?'),
-                            strtolower(__('Mark as premium'))
-                        ),
-                        'label'               => __('Mark as premium')
-                    ),
-                    array(
-                        'value'               => 'depremium_all',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected listings?'),
-                            strtolower(__('Unmark as premium'))
-                        ),
-                        'label'               => __('Unmark as premium')
-                    ),
-                    array(
-                        'value'               => 'spam_all',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected listings?'),
-                            strtolower(__('Mark as spam'))
-                        ),
-                        'label'               => __('Mark as spam')
-                    ),
-                    array(
-                        'value'               => 'despam_all',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected listings?'),
-                            strtolower(__('Unmark as spam'))
-                        ),
-                        'label'               => __('Unmark as spam')
+                        __('Are you sure you want to %s the selected listings?')
                     )
                 );
-                $bulk_options = osc_apply_filter('item_bulk_filter', $bulk_options);
                 $this->_exportVariableToView('bulk_options', $bulk_options);
 
                 //calling the view...

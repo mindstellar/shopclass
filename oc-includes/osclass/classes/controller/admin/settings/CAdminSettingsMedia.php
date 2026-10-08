@@ -145,18 +145,6 @@ class CAdminSettingsMedia extends AdminSecBaseModel
         $this->_exportVariableToView('media_form', MediaSettingsScreen::formVars($values));
         $this->doView('settings/media.php');
     }
-
-    /**
-     * Converts a php.ini-style byte size ("8M", "1G") to kilobytes.
-     *
-     * @param string $sSize
-     *
-     * @return int
-     */
-    public function _sizeToKB($sSize)
-    {
-        return MediaSettingsScreen::sizeToKb((string)$sSize);
-    }
 }
 
 // EOF: ./oc-admin/controller/settings/CAdminSettingsMedia.php

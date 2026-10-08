@@ -141,14 +141,14 @@ class CAdminSettingsStorage extends AdminSecBaseModel
 
                         $cdnPath = osc_get_preference('s3_cdn_path', 'betters3');
 
-                        osc_set_preference('storage_s3_endpoint', $this->_httpUrlOrEmpty('https://' . $endpoint));
+                        osc_set_preference('storage_s3_endpoint', StorageSettingsScreen::httpUrlOrEmpty('https://' . $endpoint));
                         osc_set_preference('storage_s3_bucket', $bucket);
                         osc_set_preference('storage_s3_access_key', $accessKey);
                         osc_set_preference('storage_s3_secret_key', $secretKey);
                         osc_set_preference('storage_s3_region', 'auto');
                         osc_set_preference('storage_s3_provider', 'r2');
                         osc_set_preference('storage_s3_path_style', true);
-                        osc_set_preference('storage_s3_public_url', $cdnPath ? $this->_httpUrlOrEmpty('https://' . $cdnPath) : '');
+                        osc_set_preference('storage_s3_public_url', $cdnPath ? StorageSettingsScreen::httpUrlOrEmpty('https://' . $cdnPath) : '');
                         osc_set_preference('storage_active', 's3');
 
                         // Adoption relies on the frozen storage-key scheme (path + id + variant
@@ -256,19 +256,6 @@ class CAdminSettingsStorage extends AdminSecBaseModel
             'signed_urls' => osc_get_bool_preference('storage_s3_signed_urls', 'osclass'),
             'signed_ttl' => (int) (osc_get_preference('storage_s3_signed_ttl', 'osclass') ?: 900),
         );
-    }
-
-    /**
-     * Sanitize a URL and require an http/https scheme; anything else (empty,
-     * javascript:, data:, ...) becomes an empty string.
-     *
-     * @param string $value
-     *
-     * @return string
-     */
-    private function _httpUrlOrEmpty($value)
-    {
-        return StorageSettingsScreen::httpUrlOrEmpty((string) $value);
     }
 }
 

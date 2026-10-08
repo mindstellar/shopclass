@@ -441,19 +441,15 @@ class CAdminUsers extends AdminSecBaseModel
                 $this->_exportVariableToView('aData', $aData);
                 $this->_exportVariableToView('aRawRows', $banRulesDataTable->rawRows());
 
-                $bulk_options = array(
-                    array('value' => '', 'data-dialog-content' => '', 'label' => __('Bulk actions')),
-                    array(
-                        'value'               => 'delete_ban_rule',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected ban rules?'),
-                            strtolower(__('Delete'))
+                $bulk_options = osc_apply_filter(
+                    'ban_rule_bulk_filter',
+                    BulkAction::options(
+                        array(
+                            'delete_ban_rule' => __('Delete')
                         ),
-                        'label'               => __('Delete')
+                        __('Are you sure you want to %s the selected ban rules?')
                     )
                 );
-
-                $bulk_options = osc_apply_filter('ban_rule_bulk_filter', $bulk_options);
                 $this->_exportVariableToView('bulk_options', $bulk_options);
 
                 //calling the view...
@@ -558,61 +554,26 @@ class CAdminUsers extends AdminSecBaseModel
                 $this->_exportVariableToView('withFilters', $usersDataTable->withFilters());
                 $this->_exportVariableToView('aRawRows', $usersDataTable->rawRows());
 
-                $bulk_options = array(
-                    array('value' => '', 'data-dialog-content' => '', 'label' => __('Bulk actions')),
-                    array(
-                        'value'               => 'activate',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected users?'),
-                            strtolower(__('Activate'))
-                        ),
-                        'label'               => __('Activate')
-                    ),
-                    array(
-                        'value'               => 'deactivate',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected users?'),
-                            strtolower(__('Deactivate'))
-                        ),
-                        'label'               => __('Deactivate')
-                    ),
-                    array(
-                        'value'               => 'enable',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected users?'),
-                            strtolower(__('Unblock'))
-                        ),
-                        'label'               => __('Unblock')
-                    ),
-                    array(
-                        'value'               => 'disable',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected users?'),
-                            strtolower(__('Block'))
-                        ),
-                        'label'               => __('Block')
-                    ),
-                    array(
-                        'value'               => 'delete',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected users?'),
-                            strtolower(__('Delete'))
-                        ),
-                        'label'               => __('Delete')
-                    )
+                $bulk_actions = array(
+                    'activate' => __('Activate'),
+                    'deactivate' => __('Deactivate'),
+                    'enable' => __('Unblock'),
+                    'disable' => __('Block'),
+                    'delete' => __('Delete')
                 );
                 if (osc_user_validation_enabled()) {
-                    $bulk_options[] = array(
-                        'value'               => 'resend_activation',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected users?'),
-                            strtolower(__('Resend the activation to'))
-                        ),
-                        'label'               => __('Resend activation')
+                    $bulk_actions['resend_activation'] = array(
+                        __('Resend activation'),
+                        __('Resend the activation to')
                     );
                 }
-
-                $bulk_options = osc_apply_filter('user_bulk_filter', $bulk_options);
+                $bulk_options = osc_apply_filter(
+                    'user_bulk_filter',
+                    BulkAction::options(
+                        $bulk_actions,
+                        __('Are you sure you want to %s the selected users?')
+                    )
+                );
                 $this->_exportVariableToView('bulk_options', $bulk_options);
 
                 //calling the view...

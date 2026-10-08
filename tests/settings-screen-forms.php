@@ -1573,7 +1573,6 @@ pin('megabytes', 8192, MediaSettingsScreen::sizeToKb('8M'));
 pin('a lower-case suffix', 8192, MediaSettingsScreen::sizeToKb('8m'));
 pin('kilobytes as they are', 512, MediaSettingsScreen::sizeToKb('512K'));
 pin('a bare number is bytes, as php.ini reads it', 1024, MediaSettingsScreen::sizeToKb('1048576'));
-pin('and the controller\'s own converter answers the same', 1048576, (new CAdminSettingsMedia())->_sizeToKB('1G'));
 $memory = (string)ini_get('memory_limit');
 ini_set('memory_limit', '-1');
 check('an unlimited memory_limit is no limit, not a limit of -1', MediaSettingsScreen::uploadLimitKb() > 0);
@@ -1768,20 +1767,7 @@ check('the form reads nothing out of the request', strpos((string)file_get_conte
 pin('the corrections, called directly: provider', array('r2', 'custom', 'custom'), array(StorageSettingsScreen::provider('r2'), StorageSettingsScreen::provider('nope'), StorageSettingsScreen::provider(null)));
 pin('region', array('auto', '', 'x'), array(StorageSettingsScreen::region('', 'r2'), StorageSettingsScreen::region('', 'custom'), StorageSettingsScreen::region('x', 'r2')));
 pin('lifetime', array(60, 604800, 900, 900), array(StorageSettingsScreen::ttl('59'), StorageSettingsScreen::ttl('604801'), StorageSettingsScreen::ttl('0'), StorageSettingsScreen::ttl(array())));
-
-// The Better S3 adoption writes the endpoint through the controller's own guard, which has to
-// answer exactly as the declared one does.
-$guard = new ReflectionMethod('CAdminSettingsStorage', '_httpUrlOrEmpty');
-if (PHP_VERSION_ID < 80100) {
-    $guard->setAccessible(true);
-}
-foreach (array('https://a.example.test', 'javascript:alert(1)', 'data:text/plain,x', 'https://' . 'x y.test', '') as $url) {
-    pin(
-        'the adoption guard and the declared one agree on "' . $url . '"',
-        StorageSettingsScreen::httpUrlOrEmpty($url),
-        $guard->invoke(new CAdminSettingsStorage(), $url)
-    );
-}
+pin('url: http(s) kept, javascript: and data: blanked', array('https://a.example.test', '', ''), array(StorageSettingsScreen::httpUrlOrEmpty('https://a.example.test'), StorageSettingsScreen::httpUrlOrEmpty('javascript:alert(1)'), StorageSettingsScreen::httpUrlOrEmpty('data:text/plain,x')));
 
 $run = drive('CAdminSettingsStorage', 'storage_migrate_post', array('op' => 'adopt_better_s3'));
 pin('adoption is still its own CSRF-checked action', array('storage_migrate_post'), $run['csrf']);

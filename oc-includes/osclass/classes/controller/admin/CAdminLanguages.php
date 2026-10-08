@@ -19,6 +19,7 @@ if (!defined('ABS_PATH')) {
 /**
  * Class CAdminLanguages
  */
+use mindstellar\admin\BulkAction;
 use mindstellar\admin\ListPaging;
 
 class CAdminLanguages extends AdminSecBaseModel
@@ -598,50 +599,19 @@ class CAdminLanguages extends AdminSecBaseModel
 
                 $this->_exportVariableToView('aLanguages', $array);
 
-                $bulk_options = array(
-                    array('value' => '', 'data-dialog-content' => '', 'label' => __('Bulk actions')),
-                    array(
-                        'value'               => 'enable_selected',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected languages?'),
-                            strtolower(__('Enable (Website)'))
+                $bulk_options = osc_apply_filter(
+                    'language_bulk_filter',
+                    BulkAction::options(
+                        array(
+                            'enable_selected' => __('Enable (Website)'),
+                            'disable_selected' => __('Disable (Website)'),
+                            'enable_bo_selected' => __('Enable (oc-admin)'),
+                            'disable_bo_selected' => __('Disable (oc-admin)'),
+                            'delete' => __('Delete')
                         ),
-                        'label'               => __('Enable (Website)')
-                    ),
-                    array(
-                        'value'               => 'disable_selected',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected languages?'),
-                            strtolower(__('Disable (Website)'))
-                        ),
-                        'label'               => __('Disable (Website)')
-                    ),
-                    array(
-                        'value'               => 'enable_bo_selected',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected languages?'),
-                            strtolower(__('Enable (oc-admin)'))
-                        ),
-                        'label'               => __('Enable (oc-admin)')
-                    ),
-                    array(
-                        'value'               => 'disable_bo_selected',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected languages?'),
-                            strtolower(__('Disable (oc-admin)'))
-                        ),
-                        'label'               => __('Disable (oc-admin)')
-                    ),
-                    array(
-                        'value'               => 'delete',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected languages?'),
-                            strtolower(__('Delete'))
-                        ),
-                        'label'               => __('Delete')
+                        __('Are you sure you want to %s the selected languages?')
                     )
                 );
-                $bulk_options = osc_apply_filter('language_bulk_filter', $bulk_options);
                 $this->_exportVariableToView('bulk_options', $bulk_options);
 
                 $this->doView('languages/index.php');

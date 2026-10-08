@@ -82,19 +82,15 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
                 $this->_exportVariableToView('moderation_prefs', $this->moderationPrefs());
                 $this->_exportVariableToView('moderation_form', KeywordBlockSettingsScreen::formVars());
 
-                $bulk_options = array(
-                    array('value' => '', 'data-dialog-content' => '', 'label' => __('Bulk actions')),
-                    array(
-                        'value'               => 'keyword_block_delete',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected keywords?'),
-                            strtolower(__('Delete'))
+                $bulk_options = osc_apply_filter(
+                    'keyword_block_bulk_filter',
+                    BulkAction::options(
+                        array(
+                            'keyword_block_delete' => __('Delete')
                         ),
-                        'label'               => __('Delete')
+                        __('Are you sure you want to %s the selected keywords?')
                     )
                 );
-
-                $bulk_options = osc_apply_filter('keyword_block_bulk_filter', $bulk_options);
                 $this->_exportVariableToView('bulk_options', $bulk_options);
 
                 $this->doView('settings/keywordBlock.php');

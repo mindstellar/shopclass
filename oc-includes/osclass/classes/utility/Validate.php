@@ -39,6 +39,21 @@ class Validate
     }
 
     /**
+     * Whether $url is a valid URL with an http or https scheme. FILTER_VALIDATE_URL alone
+     * also passes javascript: and data: URLs.
+     *
+     * @param mixed $url
+     *
+     * @return bool
+     */
+    public static function httpUrl($url): bool
+    {
+        return is_string($url)
+            && filter_var($url, FILTER_VALIDATE_URL) !== false
+            && preg_match('#^https?://#i', $url) === 1;
+    }
+
+    /**
      * Validate using filter_var
      * common method to validate value
      * Validate before using these values, this will only sanitize the requested param

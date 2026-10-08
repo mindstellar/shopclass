@@ -10,6 +10,7 @@
  */
 
 use mindstellar\database\Db;
+use mindstellar\utility\Validate;
 
 /**
  * Hookable XML sitemap generator.
@@ -878,13 +879,8 @@ class Sitemap extends DAO
             $type
         );
 
-        if (!isset($entry['loc']) || !filter_var($entry['loc'], FILTER_VALIDATE_URL)) {
-            return;
-        }
-        // Only http(s) locs. FILTER_VALIDATE_URL also passes javascript:/data:
-        // URIs, which the bundled XSL viewer renders as a clickable link.
-        $scheme = strtolower((string) parse_url($entry['loc'], PHP_URL_SCHEME));
-        if ($scheme !== 'http' && $scheme !== 'https') {
+        // Only http(s) locs: the bundled XSL viewer renders a javascript:/data: loc as a link.
+        if (!isset($entry['loc']) || !Validate::httpUrl($entry['loc'])) {
             return;
         }
 
@@ -935,11 +931,7 @@ class Sitemap extends DAO
      */
     private function addSitemap($loc, $lastmod)
     {
-        if (!filter_var($loc, FILTER_VALIDATE_URL)) {
-            return;
-        }
-        $scheme = strtolower((string) parse_url($loc, PHP_URL_SCHEME));
-        if ($scheme !== 'http' && $scheme !== 'https') {
+        if (!Validate::httpUrl($loc)) {
             return;
         }
 

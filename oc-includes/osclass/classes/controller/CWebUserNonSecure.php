@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\admin\ListPaging;
+
 /**
  * Class CWebUserNonSecure
  */
@@ -157,12 +159,7 @@ class CWebUserNonSecure extends BaseModel
                     $this->redirectTo(osc_base_url());
                 }
 
-                $itemsPerPage = Params::getParam('itemsPerPage');
-                if (is_numeric($itemsPerPage) && (int)$itemsPerPage > 0) {
-                    $itemsPerPage = min((int)$itemsPerPage, 100);
-                } else {
-                    $itemsPerPage = 10;
-                }
+                $itemsPerPage = ListPaging::length(10, 'itemsPerPage', 100);
 
                 $page = Params::getParam('iPage');
                 if (is_numeric($page) && (int)$page > 0) {
@@ -174,20 +171,14 @@ class CWebUserNonSecure extends BaseModel
                 $total_items =
                     Item::getInstance()->countItemTypesByUserID($user['pk_i_id'], 'active');
 
-                if ($itemsPerPage === 'all') {
-                    $total_pages = 1;
-                    $items       = Item::getInstance()
-                        ->findItemTypesByUserID($user['pk_i_id'], 0, null, 'active');
-                } else {
-                    $total_pages = ceil($total_items / $itemsPerPage);
-                    $items       = Item::getInstance()
-                        ->findItemTypesByUserID(
-                            $user['pk_i_id'],
-                            $page * $itemsPerPage,
-                            $itemsPerPage,
-                            'active'
-                        );
-                }
+                $total_pages = ceil($total_items / $itemsPerPage);
+                $items       = Item::getInstance()
+                    ->findItemTypesByUserID(
+                        $user['pk_i_id'],
+                        $page * $itemsPerPage,
+                        $itemsPerPage,
+                        'active'
+                    );
 
                 View::getInstance()->_exportVariableToView('user', $user);
                 osc_prime_item_upgrades($items);

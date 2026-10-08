@@ -15,6 +15,7 @@ if (!defined('ABS_PATH')) {
 
 use mindstellar\admin\form\CoreSettings;
 use mindstellar\admin\form\SitemapSettingsScreen;
+use mindstellar\utility\Validate;
 
 /**
  * Admin screen for the core XML sitemap generator. The settings and robots.txt forms are
@@ -82,7 +83,7 @@ class CAdminSettingsSitemap extends AdminSecBaseModel
                     $lastmod = date('Y-m-d');
                 }
 
-                if ($url === '' || !$this->_isHttpUrl($url)) {
+                if ($url === '' || !Validate::httpUrl($url)) {
                     osc_add_flash_error_message(_m('Enter a valid URL, including the scheme (e.g. https://example.com/page)'), 'admin');
                 } else {
                     $list   = $this->_customUrls();
@@ -192,21 +193,6 @@ class CAdminSettingsSitemap extends AdminSecBaseModel
     {
         osc_set_preference('custom_urls', json_encode($list), Sitemap::PREF_GROUP, 'STRING');
         osc_sitemap_clear_cache();
-    }
-
-    /**
-     * FILTER_VALIDATE_URL alone accepts any scheme with an authority component
-     * (e.g. `javascript://…`), so a custom sitemap URL is only accepted once it
-     * is both filter-valid AND explicitly http/https.
-     *
-     * @param string $url
-     *
-     * @return bool
-     */
-    private function _isHttpUrl($url)
-    {
-        return filter_var($url, FILTER_VALIDATE_URL) !== false
-            && preg_match('#^https?://#i', $url) === 1;
     }
 }
 

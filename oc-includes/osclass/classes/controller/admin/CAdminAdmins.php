@@ -16,6 +16,7 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\admin\BulkAction;
 use mindstellar\admin\form\AdminAccountForm;
 use mindstellar\admin\ListPaging;
 
@@ -203,18 +204,15 @@ class CAdminAdmins extends AdminSecBaseModel
                     $this->redirectTo($pastEnd);
                 }
 
-                $bulk_options = array(
-                    array('value' => '', 'data-dialog-content' => '', 'label' => __('Bulk actions')),
-                    array(
-                        'value'               => 'delete',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected admins?'),
-                            strtolower(__('Delete'))
+                $bulk_options = osc_apply_filter(
+                    'admin_bulk_filter',
+                    BulkAction::options(
+                        array(
+                            'delete' => __('Delete')
                         ),
-                        'label'               => __('Delete')
+                        __('Are you sure you want to %s the selected admins?')
                     )
                 );
-                $bulk_options = osc_apply_filter('admin_bulk_filter', $bulk_options);
                 $this->_exportVariableToView('bulk_options', $bulk_options);
 
                 $this->_exportVariableToView('aAdmins', $array);

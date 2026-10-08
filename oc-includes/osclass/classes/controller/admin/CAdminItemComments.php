@@ -196,50 +196,19 @@ class CAdminItemComments extends AdminSecBaseModel
                 $this->_exportVariableToView('withFilters', $commentsDataTable->withFilters);
                 $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
 
-                $bulk_options = array(
-                    array('value' => '', 'data-dialog-content' => '', 'label' => __('Bulk actions')),
-                    array(
-                        'value'               => 'delete_all',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected comments?'),
-                            strtolower(__('Delete'))
+                $bulk_options = osc_apply_filter(
+                    'comment_bulk_filter',
+                    BulkAction::options(
+                        array(
+                            'delete_all' => __('Delete'),
+                            'activate_all' => __('Activate'),
+                            'deactivate_all' => __('Deactivate'),
+                            'disable_all' => __('Block'),
+                            'enable_all' => __('Unblock')
                         ),
-                        'label'               => __('Delete')
-                    ),
-                    array(
-                        'value'               => 'activate_all',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected comments?'),
-                            strtolower(__('Activate'))
-                        ),
-                        'label'               => __('Activate')
-                    ),
-                    array(
-                        'value'               => 'deactivate_all',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected comments?'),
-                            strtolower(__('Deactivate'))
-                        ),
-                        'label'               => __('Deactivate')
-                    ),
-                    array(
-                        'value'               => 'disable_all',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected comments?'),
-                            strtolower(__('Block'))
-                        ),
-                        'label'               => __('Block')
-                    ),
-                    array(
-                        'value'               => 'enable_all',
-                        'data-dialog-content' => sprintf(
-                            __('Are you sure you want to %s the selected comments?'),
-                            strtolower(__('Unblock'))
-                        ),
-                        'label'               => __('Unblock')
+                        __('Are you sure you want to %s the selected comments?')
                     )
                 );
-                $bulk_options = osc_apply_filter('comment_bulk_filter', $bulk_options);
                 $this->_exportVariableToView('bulk_options', $bulk_options);
 
                 $this->doView('comments/index.php');
