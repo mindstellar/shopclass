@@ -493,50 +493,12 @@ class UserForm extends Form
      */
     public static function js_validation($enqueue = false)
     {
-        // Self-contained vanilla validation (no jQuery). Renders on the public register
-        // form and the admin add-user form, so it depends on no external helper.
         if ($enqueue) {
             ob_start();
         }
         ?>
         <script type="text/javascript">
-            (function () {
-                var form = document.querySelector('form[name="register"]');
-                if (!form) { return; }
-                var emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                form.addEventListener('submit', function (e) {
-                    var errors = [];
-                    form.querySelectorAll('.is-invalid').forEach(function (el) { el.classList.remove('is-invalid'); });
-                    function val(name) { var el = form.querySelector('[name="' + name + '"]'); return el ? el.value.trim() : ''; }
-                    function flag(name, msg) {
-                        var el = form.querySelector('[name="' + name + '"]');
-                        errors.push({el: el, msg: msg});
-                        if (el) { el.classList.add('is-invalid'); }
-                    }
-                    if (val('s_name') === '') { flag('s_name', "<?php echo osc_esc_js(__('Name: this field is required')); ?>."); }
-                    var em = val('s_email');
-                    if (em === '') { flag('s_email', "<?php echo osc_esc_js(__('Email: this field is required')); ?>."); }
-                    else if (!emailRe.test(em)) { flag('s_email', "<?php echo osc_esc_js(__('Invalid email address')); ?>."); }
-                    var p1 = val('s_password'), p2 = val('s_password2');
-                    if (p1 === '') { flag('s_password', "<?php echo osc_esc_js(__('Password: this field is required')); ?>."); }
-                    else if (p1.length < 5) { flag('s_password', "<?php echo osc_esc_js(__('Password: enter at least 5 characters')); ?>."); }
-                    if (p2 === '') { flag('s_password2', "<?php echo osc_esc_js(__('Second password: this field is required')); ?>."); }
-                    else if (p2.length < 5) { flag('s_password2', "<?php echo osc_esc_js(__('Second password: enter at least 5 characters')); ?>."); }
-                    else if (p1 !== p2) { flag('s_password2', "<?php echo osc_esc_js(__("Passwords don't match")); ?>."); }
-                    var container = document.querySelector('#error_list');
-                    if (container) {
-                        container.innerHTML = '';
-                        errors.forEach(function (er) { var li = document.createElement('li'); li.textContent = er.msg; container.appendChild(li); });
-                    }
-                    if (errors.length) {
-                        e.preventDefault();
-                        window.scrollTo({top: 0, behavior: 'smooth'});
-                        if (errors[0].el && errors[0].el.focus) { errors[0].el.focus(); }
-                    } else {
-                        form.querySelectorAll('button[type=submit], input[type=submit]').forEach(function (b) { b.disabled = true; });
-                    }
-                });
-            })();
+            <?php echo self::registerValidationJs(false); ?>
         </script>
         <?php
         if ($enqueue) {
@@ -554,53 +516,51 @@ class UserForm extends Form
      */
     public static function js_validation_edit($enqueue = false)
     {
-        // Self-contained vanilla validation (no jQuery). Editing a user: the password
-        // fields are optional, but if filled they must be >= 5 chars and match.
         if ($enqueue) {
             ob_start();
         }
         ?>
         <script>
-            (function () {
-                var form = document.querySelector('form[name="register"]');
-                if (!form) { return; }
-                var emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                form.addEventListener('submit', function (e) {
-                    var errors = [];
-                    form.querySelectorAll('.is-invalid').forEach(function (el) { el.classList.remove('is-invalid'); });
-                    function val(name) { var el = form.querySelector('[name="' + name + '"]'); return el ? el.value.trim() : ''; }
-                    function flag(name, msg) {
-                        var el = form.querySelector('[name="' + name + '"]');
-                        errors.push({el: el, msg: msg});
-                        if (el) { el.classList.add('is-invalid'); }
-                    }
-                    if (val('s_name') === '') { flag('s_name', "<?php echo osc_esc_js(__('Name: this field is required')); ?>."); }
-                    var em = val('s_email');
-                    if (em === '') { flag('s_email', "<?php echo osc_esc_js(__('Email: this field is required')); ?>."); }
-                    else if (!emailRe.test(em)) { flag('s_email', "<?php echo osc_esc_js(__('Invalid email address')); ?>."); }
-                    var p1 = val('s_password'), p2 = val('s_password2');
-                    if (p1 !== '' && p1.length < 5) { flag('s_password', "<?php echo osc_esc_js(__('Password: enter at least 5 characters')); ?>."); }
-                    if (p2 !== '' && p2.length < 5) { flag('s_password2', "<?php echo osc_esc_js(__('Second password: enter at least 5 characters')); ?>."); }
-                    else if (p1 !== p2) { flag('s_password2', "<?php echo osc_esc_js(__("Passwords don't match")); ?>."); }
-                    var container = document.querySelector('#error_list');
-                    if (container) {
-                        container.innerHTML = '';
-                        errors.forEach(function (er) { var li = document.createElement('li'); li.textContent = er.msg; container.appendChild(li); });
-                    }
-                    if (errors.length) {
-                        e.preventDefault();
-                        window.scrollTo({top: 0, behavior: 'smooth'});
-                        if (errors[0].el && errors[0].el.focus) { errors[0].el.focus(); }
-                    } else {
-                        form.querySelectorAll('button[type=submit], input[type=submit]').forEach(function (b) { b.disabled = true; });
-                    }
-                });
-            })();
+            <?php echo self::registerValidationJs(true); ?>
         </script>
         <?php
         if ($enqueue) {
             Scripts::enqueueScriptCode((string) ob_get_clean(), null, false, 'user_edit_form_js');
         }
+    }
+
+    /**
+     * Validation script for the register form; on edit the passwords are optional.
+     *
+     * @param bool $edit
+     *
+     * @return string
+     */
+    private static function registerValidationJs(bool $edit): string
+    {
+        $password = $edit ? ['minlength' => 5] : ['required' => true, 'minlength' => 5];
+
+        return self::validationJs('register', [
+            's_name'      => ['required' => true],
+            's_email'     => ['required' => true, 'email' => true],
+            's_password'  => $password,
+            's_password2' => $password + ['equalTo' => 's_password'],
+        ], [
+            's_name'      => __('Name: this field is required') . '.',
+            's_email'     => [
+                'required' => __('Email: this field is required') . '.',
+                'email'    => __('Invalid email address') . '.',
+            ],
+            's_password'  => [
+                'required'  => __('Password: this field is required') . '.',
+                'minlength' => __('Password: enter at least 5 characters') . '.',
+            ],
+            's_password2' => [
+                'required'  => __('Second password: this field is required') . '.',
+                'minlength' => __('Second password: enter at least 5 characters') . '.',
+                'equalTo'   => __("Passwords don't match") . '.',
+            ],
+        ]);
     }
 
     /**

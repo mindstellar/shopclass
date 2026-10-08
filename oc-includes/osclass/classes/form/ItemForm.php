@@ -1121,49 +1121,7 @@ class ItemForm extends Form
                         <?php osc_run_hook('item_form_new_validation_messages'); ?>
                     };
 
-                    var form = document.querySelector('form[name="item"]');
-                    if (!form) { return; }
-                    var emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                    var msgFor = function (field, rule) {
-                        var m = messages[field];
-                        if (m == null) { return ''; }
-                        return (typeof m === 'string') ? m : (m[rule] || '');
-                    };
-                    var fieldError = function (name, spec) {
-                        var el = form.querySelector('[name="' + name + '"]');
-                        if (!el) { return null; }
-                        if (typeof spec === 'string') { spec = (spec === 'required') ? {required: true} : {}; }
-                        var v = (el.value == null ? '' : String(el.value)).trim();
-                        if (spec.required && v === '') { return {el: el, msg: msgFor(name, 'required')}; }
-                        if (v === '') { return null; }
-                        if (spec.minlength && v.length < spec.minlength) { return {el: el, msg: msgFor(name, 'minlength')}; }
-                        if (spec.maxlength && v.length > spec.maxlength) { return {el: el, msg: msgFor(name, 'maxlength')}; }
-                        if (spec.email && !emailRe.test(v)) { return {el: el, msg: msgFor(name, 'email')}; }
-                        if (spec.digits && !/^\d+$/.test(v)) { return {el: el, msg: msgFor(name, 'digits')}; }
-                        return null;
-                    };
-                    form.addEventListener('submit', function (e) {
-                        var errors = [];
-                        form.querySelectorAll('.is-invalid').forEach(function (el) { el.classList.remove('is-invalid'); });
-                        Object.keys(rules).forEach(function (name) {
-                            var err = fieldError(name, rules[name]);
-                            if (err) { errors.push(err); if (err.el) { err.el.classList.add('is-invalid'); } }
-                        });
-                        var container = document.querySelector('#error_list');
-                        if (container) {
-                            container.innerHTML = '';
-                            errors.forEach(function (er) { var li = document.createElement('li'); li.textContent = er.msg; container.appendChild(li); });
-                        }
-                        if (errors.length) {
-                            e.preventDefault();
-                            window.scrollTo({top: 0, behavior: 'smooth'});
-                            if (errors[0].el && errors[0].el.focus) { errors[0].el.focus(); }
-                        } else {
-                            var btns = form.querySelectorAll('button[type=submit], input[type=submit]');
-                            btns.forEach(function (b) { b.disabled = true; });
-                            setTimeout(function () { btns.forEach(function (b) { b.disabled = false; }); }, 5000);
-                        }
-                    });
+                    <?php echo self::validationJs('item', 'rules', 'messages', ['reenableAfter' => 5000]); ?>
                 }
 
                 function boot() {
@@ -1353,50 +1311,7 @@ class ItemForm extends Form
                     <?php osc_run_hook('item_form_validation_messages'); ?>
                 };
 
-                var form = document.querySelector('form[name="item"]');
-                if (form) {
-                    var emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                    var msgFor = function (field, rule) {
-                        var m = messages[field];
-                        if (m == null) { return ''; }
-                        return (typeof m === 'string') ? m : (m[rule] || '');
-                    };
-                    var fieldError = function (name, spec) {
-                        var el = form.querySelector('[name="' + name + '"]');
-                        if (!el) { return null; }
-                        if (typeof spec === 'string') { spec = (spec === 'required') ? {required: true} : {}; }
-                        var v = (el.value == null ? '' : String(el.value)).trim();
-                        if (spec.required && v === '') { return {el: el, msg: msgFor(name, 'required')}; }
-                        if (v === '') { return null; }
-                        if (spec.minlength && v.length < spec.minlength) { return {el: el, msg: msgFor(name, 'minlength')}; }
-                        if (spec.maxlength && v.length > spec.maxlength) { return {el: el, msg: msgFor(name, 'maxlength')}; }
-                        if (spec.email && !emailRe.test(v)) { return {el: el, msg: msgFor(name, 'email')}; }
-                        if (spec.digits && !/^\d+$/.test(v)) { return {el: el, msg: msgFor(name, 'digits')}; }
-                        return null;
-                    };
-                    form.addEventListener('submit', function (e) {
-                        var errors = [];
-                        form.querySelectorAll('.is-invalid').forEach(function (el) { el.classList.remove('is-invalid'); });
-                        Object.keys(rules).forEach(function (name) {
-                            var err = fieldError(name, rules[name]);
-                            if (err) { errors.push(err); if (err.el) { err.el.classList.add('is-invalid'); } }
-                        });
-                        var container = document.querySelector('#error_list');
-                        if (container) {
-                            container.innerHTML = '';
-                            errors.forEach(function (er) { var li = document.createElement('li'); li.textContent = er.msg; container.appendChild(li); });
-                        }
-                        if (errors.length) {
-                            e.preventDefault();
-                            window.scrollTo({top: 0, behavior: 'smooth'});
-                            if (errors[0].el && errors[0].el.focus) { errors[0].el.focus(); }
-                        } else {
-                            var btns = form.querySelectorAll('button[type=submit], input[type=submit]');
-                            btns.forEach(function (b) { b.disabled = true; });
-                            setTimeout(function () { btns.forEach(function (b) { b.disabled = false; }); }, 5000);
-                        }
-                    });
-                }
+                <?php echo self::validationJs('item', 'rules', 'messages', ['reenableAfter' => 5000]); ?>
             })();
 
             // Strip HTML tags to count visible characters. Kept global: markup and plugins call it.

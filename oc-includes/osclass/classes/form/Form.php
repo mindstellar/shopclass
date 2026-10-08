@@ -159,4 +159,85 @@ class Form extends FormInputs
         $attributes['id'] = preg_replace('|([^_a-zA-Z0-9-]+)|', '', $name);
         echo (new self())->textarea($name, $value, $attributes);
     }
+
+    /**
+     * Build the vanilla submit-validation script for one form.
+     * Rules and messages follow the jquery-validate shape and may be JS expressions or PHP arrays.
+     *
+     * @param string                          $formName The form's name attribute
+     * @param string|array<string,mixed>      $rules    {field: {required, email, minlength, maxlength, digits, equalTo}}
+     * @param string|array<string,mixed>      $messages {field: msg | {rule: msg}}
+     * @param array{errorList?:string,scrollToList?:bool,reenableAfter?:int} $options
+     *
+     * @return string
+     */
+    protected static function validationJs(string $formName, $rules, $messages, array $options = []): string
+    {
+        $flags     = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE;
+        $rules     = is_array($rules) ? (string) json_encode($rules, $flags) : $rules;
+        $messages  = is_array($messages) ? (string) json_encode($messages, $flags) : $messages;
+        $form      = (string) json_encode('form[name="' . $formName . '"]', $flags);
+        $list      = (string) json_encode($options['errorList'] ?? '#error_list', $flags);
+        $scroll    = !empty($options['scrollToList'])
+            ? "if (container && container.scrollIntoView) { container.scrollIntoView({behavior: 'smooth', block: 'nearest'}); }"
+            : "window.scrollTo({top: 0, behavior: 'smooth'});";
+        $reenable  = (int) ($options['reenableAfter'] ?? 0);
+        $reenable  = $reenable > 0
+            ? 'setTimeout(function () { btns.forEach(function (b) { b.disabled = false; }); }, ' . $reenable . ');'
+            : '';
+
+        return <<<JS
+(function (rules, messages) {
+    var form = document.querySelector($form);
+    if (!form) { return; }
+    var emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    var valueOf = function (name) {
+        var el = form.querySelector('[name="' + name + '"]');
+        return el ? (el.value == null ? '' : String(el.value)).trim() : '';
+    };
+    var msgFor = function (field, rule) {
+        var m = messages[field];
+        if (m == null) { return ''; }
+        return (typeof m === 'string') ? m : (m[rule] || '');
+    };
+    var fieldError = function (name, spec) {
+        var el = form.querySelector('[name="' + name + '"]');
+        if (!el) { return null; }
+        if (typeof spec === 'string') { spec = (spec === 'required') ? {required: true} : {}; }
+        var v = valueOf(name);
+        var mismatch = spec.equalTo && v !== valueOf(spec.equalTo);
+        if (spec.required && v === '') { return {el: el, msg: msgFor(name, 'required')}; }
+        if (v === '') { return mismatch ? {el: el, msg: msgFor(name, 'equalTo')} : null; }
+        if (spec.minlength && v.length < spec.minlength) { return {el: el, msg: msgFor(name, 'minlength')}; }
+        if (spec.maxlength && v.length > spec.maxlength) { return {el: el, msg: msgFor(name, 'maxlength')}; }
+        if (spec.email && !emailRe.test(v)) { return {el: el, msg: msgFor(name, 'email')}; }
+        if (spec.digits && !/^\d+$/.test(v)) { return {el: el, msg: msgFor(name, 'digits')}; }
+        if (mismatch) { return {el: el, msg: msgFor(name, 'equalTo')}; }
+        return null;
+    };
+    form.addEventListener('submit', function (e) {
+        var errors = [];
+        form.querySelectorAll('.is-invalid').forEach(function (el) { el.classList.remove('is-invalid'); });
+        Object.keys(rules).forEach(function (name) {
+            var err = fieldError(name, rules[name]);
+            if (err) { errors.push(err); err.el.classList.add('is-invalid'); }
+        });
+        var container = document.querySelector($list);
+        if (container) {
+            container.innerHTML = '';
+            errors.forEach(function (er) { var li = document.createElement('li'); li.textContent = er.msg; container.appendChild(li); });
+        }
+        if (errors.length) {
+            e.preventDefault();
+            $scroll
+            if (errors[0].el.focus) { errors[0].el.focus(); }
+        } else {
+            var btns = form.querySelectorAll('button[type=submit], input[type=submit]');
+            btns.forEach(function (b) { b.disabled = true; });
+            $reenable
+        }
+    });
+})($rules, $messages);
+JS;
+    }
 }

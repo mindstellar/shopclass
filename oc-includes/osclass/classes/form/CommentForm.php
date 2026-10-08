@@ -124,54 +124,21 @@ class CommentForm extends Form
      */
     public static function js_validation($admin = false, $enqueue = false)
     {
-        // Self-contained vanilla validation (no jQuery / jquery-validate). This form
-        // renders on both the admin (comment edit) and the public theme, so it depends
-        // on neither jQuery nor the admin's ui-osc.js helper.
-        $errorContainer = $admin ? '#error_list' : '#comment_error_list';
         if ($enqueue) {
             ob_start();
         }
         ?>
         <script>
-            (function () {
-                var form = document.querySelector('form[name="comment_form"]');
-                if (!form) { return; }
-                var emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                form.addEventListener('submit', function (e) {
-                    var errors = [];
-                    var body = form.querySelector('[name="body"]');
-                    var email = form.querySelector('[name="authorEmail"]');
-                    [body, email].forEach(function (el) { if (el) { el.classList.remove('is-invalid'); } });
-                    if (body && body.value.trim() === '') {
-                        errors.push({el: body, msg: "<?php echo osc_esc_js(__('Comment: this field is required')); ?>."});
-                    }
-                    if (email) {
-                        var ev = email.value.trim();
-                        if (ev === '') {
-                            errors.push({el: email, msg: "<?php echo osc_esc_js(__('Email: this field is required')); ?>."});
-                        } else if (!emailRe.test(ev)) {
-                            errors.push({el: email, msg: "<?php echo osc_esc_js(__('Invalid email address')); ?>."});
-                        }
-                    }
-                    var container = document.querySelector('<?php echo $errorContainer; ?>');
-                    if (container) {
-                        container.innerHTML = '';
-                        errors.forEach(function (er) {
-                            var li = document.createElement('li');
-                            li.textContent = er.msg;
-                            container.appendChild(li);
-                            if (er.el) { er.el.classList.add('is-invalid'); }
-                        });
-                    }
-                    if (errors.length) {
-                        e.preventDefault();
-                        if (container && container.scrollIntoView) { container.scrollIntoView({behavior: 'smooth', block: 'nearest'}); }
-                        if (errors[0].el && errors[0].el.focus) { errors[0].el.focus(); }
-                    } else {
-                        form.querySelectorAll('button[type=submit], input[type=submit]').forEach(function (b) { b.disabled = true; });
-                    }
-                });
-            })();
+            <?php echo self::validationJs('comment_form', [
+                'body'        => ['required' => true],
+                'authorEmail' => ['required' => true, 'email' => true],
+            ], [
+                'body'        => __('Comment: this field is required') . '.',
+                'authorEmail' => [
+                    'required' => __('Email: this field is required') . '.',
+                    'email'    => __('Invalid email address') . '.',
+                ],
+            ], ['errorList' => $admin ? '#error_list' : '#comment_error_list', 'scrollToList' => true]); ?>
         </script>
         <?php
         if ($enqueue) {
