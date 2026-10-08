@@ -187,6 +187,7 @@ $blocks = case_blocks($controller);
 // miss is a stale list.
 $writes = array(
     '->update(',
+    'LocaleStore::update(',
     '->insert(',
     '->delete(',
     'insertLocaleInfo(',
