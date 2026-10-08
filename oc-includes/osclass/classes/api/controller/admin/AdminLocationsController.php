@@ -110,7 +110,7 @@ final class AdminLocationsController
             default               => $this->locations->addArea((int) $input['city_id'], $name),
         };
 
-        return Response::created($this->serialize($level, $this->row($level, $id)), $this->api->links()->api(self::PATHS[$level] . '/' . $id, $call->request()->version()));
+        return $this->api->created($call, $this->serialize($level, $this->row($level, $id)), self::PATHS[$level] . '/' . $id);
     }
 
     private function show(ApiCall $call, string $level): Response

@@ -288,6 +288,17 @@ final class ApiServices
     }
 
     /**
+     * A 201 answer whose Location is $path, below /api/{version}/, in the call's version.
+     *
+     * @param array<mixed>        $data
+     * @param array<string,mixed> $extra
+     */
+    public function created(ApiCall $call, array $data, string $path, array $extra = []): Response
+    {
+        return Response::created($data, $this->links()->api($path, $call->request()->version()), $extra);
+    }
+
+    /**
      * Plugin fields as the serializers add them.
      */
     public function extensions(): Extensions

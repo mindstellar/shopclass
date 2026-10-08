@@ -62,7 +62,7 @@ final class AdminWebhooksController
             $call->credential()->adminId()
         );
 
-        return Response::created($endpoint->toArray($this->clock->now(), $secret), $this->links->api('admin/webhooks/' . $endpoint->id(), $call->request()->version()));
+        return $this->api->created($call, $endpoint->toArray($this->clock->now(), $secret), 'admin/webhooks/' . $endpoint->id());
     }
 
     public function update(ApiCall $call): Response

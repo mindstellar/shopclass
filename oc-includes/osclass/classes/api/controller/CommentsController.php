@@ -44,7 +44,7 @@ final class CommentsController
         $row      = $comments->find($saved->id());
         $warnings = $saved->isLive() ? [] : ['warnings' => [['code' => 'comment_pending', 'message' => 'The comment shows once it is approved.']]];
 
-        return Response::created((new CommentSerializer())->one($row ?? []), $this->api->links()->api('comments/' . $saved->id(), $call->request()->version()), $warnings);
+        return $this->api->created($call, (new CommentSerializer())->one($row ?? []), 'comments/' . $saved->id(), $warnings);
     }
 
     /**

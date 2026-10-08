@@ -56,7 +56,7 @@ final class AdminUsersController
         $request = $call->request();
 
         $context = $this->api->context($request, $call->credential(), 'user', UserSerializer::MEMBERS);
-        $pager   = Pager::fromRequest($request, $this->api->cursor(), ListSpec::byId(), ['list' => 'admin/users'] + $request->query());
+        $pager   = Pager::fromRequest($request, $this->api->cursor(), ListSpec::byId(), 'admin/users');
         $flag    = static fn (string $name): ?bool => array_key_exists($name, $request->query()) ? $request->queryBool($name) : null;
         $blocked = $flag('blocked');
         [$active, $enabled, $q] = [$flag('confirmed'), $blocked === null ? null : !$blocked, trim($request->queryString('q'))];
@@ -72,10 +72,7 @@ final class AdminUsersController
 
                 return array_map(static fn (array $user): array => $serializer->one($user, $context), $page);
             },
-            $this->api->links(),
-            'admin/users',
-            $request->query(),
-            $request->version()
+            $this->api->links()
         );
     }
 

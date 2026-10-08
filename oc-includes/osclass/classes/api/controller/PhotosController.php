@@ -87,7 +87,7 @@ final class PhotosController
             throw ProblemException::of('server_error', 'The photo could not be read back.');
         }
 
-        return Response::created($data, $this->api->links()->api('listings/' . $id . '/photos/' . $new[0], $call->request()->version()));
+        return $this->api->created($call, $data, 'listings/' . $id . '/photos/' . $new[0]);
     }
 
     public function remove(ApiCall $call): Response

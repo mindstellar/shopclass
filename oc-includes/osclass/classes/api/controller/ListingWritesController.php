@@ -191,6 +191,6 @@ final class ListingWritesController
         }
         $extra = $warnings === [] ? [] : ['warnings' => $warnings];
 
-        return $created ? Response::created($data, $this->api->links()->api('listings/' . $id, $call->request()->version()), $extra) : Response::ok($data, 200, $extra);
+        return $created ? $this->api->created($call, $data, 'listings/' . $id, $extra) : Response::ok($data, 200, $extra);
     }
 }

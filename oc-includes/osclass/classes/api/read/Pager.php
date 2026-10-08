@@ -25,17 +25,19 @@ use mindstellar\api\serializer\Links;
  */
 final class Pager
 {
-    private function __construct(private ListSpec $spec, private Cursor $cursor, private int $limit, private string $hash, private ?CursorState $state, private bool $count)
+    private function __construct(private ListSpec $spec, private Cursor $cursor, private int $limit, private string $hash, private ?CursorState $state, private Request $request, private string $path)
     {
     }
 
     /**
-     * @param array<string,mixed> $filters what the list is filtered by; a cursor works only for these
+     * @param string                   $path    the endpoint, below /api/{version}/, for the page links
+     * @param array<string,mixed>|null $filters what the list is filtered by; a cursor works only for these. Null means the path and the query.
      *
      * @throws ProblemException 422 for a limit out of range, 400 for a cursor this request cannot use
      */
-    public static function fromRequest(Request $request, Cursor $cursor, ListSpec $spec, array $filters): self
+    public static function fromRequest(Request $request, Cursor $cursor, ListSpec $spec, string $path, ?array $filters = null): self
     {
+        $filters ??= ['list' => $path] + $request->query();
         $limit = $request->queryInt('limit', $spec->defaultLimit());
         if ($limit < 1 || $limit > $spec->maxLimit()) {
             throw ProblemException::from(Problem::validation([
@@ -55,7 +57,7 @@ final class Pager
             }
         }
 
-        return new self($spec, $cursor, $limit, $hash, $state, $request->queryBool('count'));
+        return new self($spec, $cursor, $limit, $hash, $state, $request, $path);
     }
 
     public function limit(): int
@@ -79,14 +81,13 @@ final class Pager
      * @param callable(): array<int,array<string,mixed>>          $fetch reads up to limit() + 1 rows from where the cursor left off
      * @param (callable(): ?int)|null                             $total counts every match; called only when counts(), after $fetch
      * @param callable(array<int,array<string,mixed>>): array<int,mixed> $shape this page's rows as the answer's data
-     * @param array<string,mixed>                                 $query the request's query, for the links
      */
-    public function respond(callable $fetch, ?callable $total, callable $shape, Links $links, string $path, array $query, ?string $version = null): Response
+    public function respond(callable $fetch, ?callable $total, callable $shape, Links $links): Response
     {
         $rows  = $fetch();
         $count = $total !== null && $this->counts() ? $total() : null;
 
-        return (new Page($shape($this->page($rows)), $count, $this->limit, $this->next($rows), $this->truncated($rows)))->response($links, $path, $query, $version);
+        return (new Page($shape($this->page($rows)), $count, $this->limit, $this->next($rows), $this->truncated($rows)))->response($links, $this->path, $this->request->query(), $this->request->version());
     }
 
     public function offset(): int
@@ -110,7 +111,7 @@ final class Pager
      */
     public function counts(): bool
     {
-        return $this->count && $this->after() === null;
+        return $this->request->queryBool('count') && $this->after() === null;
     }
 
     /**

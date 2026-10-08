@@ -71,7 +71,7 @@ final class AdminCategoriesController
             array_key_exists('enabled', $input) ? (bool) $input['enabled'] : null
         );
 
-        return Response::created($this->categoryData($id), $this->api->links()->api('admin/categories/' . $id, $call->request()->version()));
+        return $this->api->created($call, $this->categoryData($id), 'admin/categories/' . $id);
     }
 
     /**

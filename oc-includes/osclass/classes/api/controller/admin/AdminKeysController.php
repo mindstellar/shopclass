@@ -73,7 +73,7 @@ final class AdminKeysController
             $this->keys->expiresAt((int) $credential->id())
         );
 
-        return Response::created($this->serializer->admin($this->key($issued->id()), $issued->token()), $this->links->api('admin/keys/' . $issued->id(), $call->request()->version()));
+        return $this->api->created($call, $this->serializer->admin($this->key($issued->id()), $issued->token()), 'admin/keys/' . $issued->id());
     }
 
     public function revoke(ApiCall $call): Response
@@ -99,7 +99,7 @@ final class AdminKeysController
         $credential->checkGrant($old['scopes']);
         $issued = $this->keys->rotate((int) $old['id'], (int) $credential->adminId(), $this->keys->expiresAt((int) $credential->id()));
 
-        return Response::created($this->serializer->admin($this->key($issued->id()), $issued->token()), $this->links->api('admin/keys/' . $issued->id(), $call->request()->version()));
+        return $this->api->created($call, $this->serializer->admin($this->key($issued->id()), $issued->token()), 'admin/keys/' . $issued->id());
     }
 
     /**

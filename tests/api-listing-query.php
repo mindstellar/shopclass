@@ -40,6 +40,7 @@ $pager   = static fn (array $q, string $sort = 'created', string $order = 'desc'
     $request($q),
     $cursor,
     ListingSort::of($sort, $order)->spec(12, 50),
+    'listings',
     $q
 );
 $problem = static function (callable $fn): ?string {

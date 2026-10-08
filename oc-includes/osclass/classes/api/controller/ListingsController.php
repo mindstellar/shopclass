@@ -90,7 +90,7 @@ final class ListingsController
         }
         $id    = (int) $this->visibleRow($call, $call->intArg())['pk_i_id'];
         $facts = $this->api->facts();
-        $pager = Pager::fromRequest($request, $this->api->cursor(), ListSpec::byId('asc', $facts->commentsPerPage(), $facts->maxLimit()), ['listing' => $id] + $request->query());
+        $pager = Pager::fromRequest($request, $this->api->cursor(), ListSpec::byId('asc', $facts->commentsPerPage(), $facts->maxLimit()), 'listings/' . $id . '/comments', ['listing' => $id] + $request->query());
 
         $comments = new CommentQuery();
 
@@ -98,10 +98,7 @@ final class ListingsController
             fn (): array => $comments->approved($id, $pager->afterId() ?? 0, $pager->limit() + 1),
             fn (): int => $comments->countApproved($id),
             static fn (array $page): array => array_map([new CommentSerializer(), 'one'], $page),
-            $this->api->links(),
-            'listings/' . $id . '/comments',
-            $request->query(),
-            $request->version()
+            $this->api->links()
         );
     }
 

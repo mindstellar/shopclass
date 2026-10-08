@@ -68,7 +68,7 @@ final class AlertsController
 
         return match ($saved['status']) {
             UserAlerts::EXISTS  => Response::ok($this->serializer->one((array) $saved['alert'])),
-            UserAlerts::CREATED => Response::created($this->serializer->one((array) $saved['alert']), $this->api->links()->api('account/alerts/' . (int) ($saved['alert']['pk_i_id'] ?? 0), $call->request()->version())),
+            UserAlerts::CREATED => $this->api->created($call, $this->serializer->one((array) $saved['alert']), 'account/alerts/' . (int) ($saved['alert']['pk_i_id'] ?? 0)),
             UserAlerts::REFUSED => throw ProblemException::of('forbidden', 'This account cannot save alerts.'),
             UserAlerts::LIMIT   => throw ProblemException::field('/', 'maxItems', sprintf('the account already keeps the most saved searches allowed (%d); delete one first', UserAlerts::maxPerUser())),
             default             => throw ProblemException::of('server_error', 'The alert could not be saved.'),

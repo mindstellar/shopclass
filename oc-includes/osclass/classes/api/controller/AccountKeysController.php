@@ -78,7 +78,7 @@ final class AccountKeysController
             throw ProblemException::of('server_error', 'The key was not stored.');
         }
 
-        return Response::created($this->serializer->personal($key, $this->clock->now(), $issued->token()), $this->links->api('account/keys/' . $key->id(), $call->request()->version()));
+        return $this->api->created($call, $this->serializer->personal($key, $this->clock->now(), $issued->token()), 'account/keys/' . $key->id());
     }
 
     public function show(ApiCall $call): Response

@@ -81,7 +81,7 @@ final class LocationsController
      */
     private function page(Request $request, string $path, string $shape, ?array $parent, callable $read): Response
     {
-        $pager = Pager::fromRequest($request, $this->api->cursor(), new ListSpec(['name'], 'name', 'asc', self::DEFAULT_LIMIT, self::MAX_LIMIT, maxOffset: 100000), ['list' => $path] + $request->query());
+        $pager = Pager::fromRequest($request, $this->api->cursor(), new ListSpec(['name'], 'name', 'asc', self::DEFAULT_LIMIT, self::MAX_LIMIT, maxOffset: 100000), $path);
 
         return $pager->respond(
             function () use ($request, $pager, $parent, $read): array {
@@ -94,10 +94,7 @@ final class LocationsController
             },
             null,
             fn (array $page): array => array_map([$this->serializer, $shape], $page),
-            $this->api->links(),
-            $path,
-            $request->query(),
-            $request->version()
+            $this->api->links()
         );
     }
 }

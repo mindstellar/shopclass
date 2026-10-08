@@ -50,16 +50,13 @@ final class ListingSearch
     {
         $listings = new ListingQuery($this->api->clock());
         $context  = $this->api->context($request, $credential, 'listing', ListingSerializer::MEMBERS, ListingSerializer::INCLUDES);
-        $pager    = Pager::fromRequest($request, $this->api->cursor(), ListSpec::byId(), ['list' => $path] + $request->query());
+        $pager    = Pager::fromRequest($request, $this->api->cursor(), ListSpec::byId(), $path);
 
         return $pager->respond(
             fn (): array => $listings->newest($statuses, $userIds, $categoryIds, $title, $pager->afterId(), $pager->limit() + 1),
             fn (): int => $listings->count($statuses, $userIds, $categoryIds, $title),
             fn (array $items): array => $this->reader->many($this->reader->extend($items, $context), $context),
-            $this->api->links(),
-            $path,
-            $request->query(),
-            $request->version()
+            $this->api->links()
         );
     }
 
@@ -76,7 +73,7 @@ final class ListingSearch
         if ($userId !== null) {
             $filters['user'] = (string) $userId;
         }
-        $pager = Pager::fromRequest($request, $this->api->cursor(), $sort->spec($facts->defaultLimit(), $facts->maxLimit()), $filters);
+        $pager = Pager::fromRequest($request, $this->api->cursor(), $sort->spec($facts->defaultLimit(), $facts->maxLimit()), $path, $filters);
 
         $params = self::params($request, $this->reader->categories(), $context->locale(), $userId) + [
             'sOrder'     => $sort->searchOrder(),
@@ -97,10 +94,7 @@ final class ListingSearch
             static fn (): array => $result->items(),
             static fn (): ?int => $result->total(),
             fn (array $page): array => $this->reader->many($page, $context),
-            $this->api->links(),
-            $path,
-            $request->query(),
-            $request->version()
+            $this->api->links()
         );
     }
 
