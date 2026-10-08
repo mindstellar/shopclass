@@ -431,10 +431,10 @@ final class FormSpec
     /**
      * Add a select field.
      *
-     * @param string               $name
-     * @param string               $label
-     * @param array<string,string> $options value => label
-     * @param string               $help
+     * @param string                  $name
+     * @param string                  $label
+     * @param array<array-key,string> $options value => label; PHP keeps a key like '0' as an int
+     * @param string                  $help
      *
      * @return self
      */

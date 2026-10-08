@@ -343,6 +343,7 @@ foreach (array(
 
 use mindstellar\admin\form\AdvancedSettingsScreen;
 use mindstellar\admin\form\CommentSettingsScreen;
+use mindstellar\admin\form\ItemSettingsScreen;
 use mindstellar\admin\form\KeywordBlockSettingsScreen;
 use mindstellar\admin\form\LatestSearchSettingsScreen;
 use mindstellar\admin\form\MailServerSettingsScreen;
@@ -353,6 +354,7 @@ use mindstellar\admin\form\SitemapSettingsScreen;
 use mindstellar\admin\form\SpamSettingsScreen;
 use mindstellar\admin\form\StorageSettingsScreen;
 use mindstellar\admin\form\store\PreferenceStore;
+use mindstellar\admin\form\UserSettingsScreen;
 use mindstellar\settings\SettingsPageRegistry;
 
 $GLOBALS['flashes']   = array();
@@ -519,6 +521,48 @@ pin(
     ),
     keymap(CommentSettingsScreen::register())
 );
+pin(
+    'the listing settings screen keeps the field names and preferences it always had',
+    array(
+        'reg_user_post'               => 'osclass/reg_user_post',
+        'items_wait_time'             => 'osclass/items_wait_time',
+        'moderate_admin_post'         => 'osclass/moderate_admin_post',
+        'moderate_admin_edit'         => 'osclass/moderate_admin_edit',
+        'moderate_items'              => 'osclass/moderate_items',
+        'num_moderate_items'          => '(not stored)',
+        'logged_user_item_validation' => 'osclass/logged_user_item_validation',
+        'enabled_recaptcha_items'     => 'osclass/enabled_recaptcha_items',
+        'reg_user_can_contact'        => 'osclass/reg_user_can_contact',
+        'item_attachment'             => 'osclass/item_attachment',
+        'enable_send_friend'          => 'osclass/enable_send_friend',
+        'reg_user_can_send_friend'    => 'osclass/reg_user_can_send_friend',
+        'notify_new_item'             => 'osclass/notify_new_item',
+        'notify_contact_item'         => 'osclass/notify_contact_item',
+        'notify_contact_friends'      => 'osclass/notify_contact_friends',
+        'warn_expiration'             => 'osclass/warn_expiration',
+        'max_chars_per_title'         => 'osclass/title_character_length',
+        'max_chars_per_description'   => 'osclass/description_character_length',
+        'tinymce'                     => 'osclass/tinymce_frontend',
+        'enableField#f_price@items'   => 'osclass/enableField#f_price@items',
+        'enableField#images@items'    => 'osclass/enableField#images@items',
+        'numImages@items'             => 'osclass/numImages@items',
+        'map_type'                    => 'osclass/map_type',
+    ),
+    keymap(ItemSettingsScreen::register())
+);
+pin(
+    'the user settings screen keeps the field names and preferences it always had',
+    array(
+        'enabled_users'             => 'osclass/enabled_users',
+        'enabled_user_registration' => 'osclass/enabled_user_registration',
+        'enabled_user_validation'   => 'osclass/enabled_user_validation',
+        'notify_new_user'           => 'osclass/notify_new_user',
+        'username_blacklist'        => 'osclass/username_blacklist',
+    ),
+    keymap(UserSettingsScreen::register())
+);
+pin('the listing settings post to the listings controller', array('page' => 'items', 'action' => 'settings_post'), ItemSettingsScreen::formVars()['route']);
+pin('the user settings post to the users controller', array('page' => 'users', 'action' => 'settings_post'), UserSettingsScreen::formVars()['route']);
 pin(
     'the latest-searches screen, where the presets pick and the hidden field carries',
     array(

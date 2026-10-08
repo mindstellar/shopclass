@@ -20,6 +20,8 @@ if (!defined('ABS_PATH')) {
  * Class CAdminItems
  */
 use mindstellar\admin\BulkAction;
+use mindstellar\admin\form\CoreSettings;
+use mindstellar\admin\form\ItemSettingsScreen;
 use mindstellar\admin\ListPaging;
 use mindstellar\auth\Actor;
 use mindstellar\listing\ListingInput;
@@ -410,101 +412,16 @@ class CAdminItems extends AdminSecBaseModel
                 }
                 break;
             case ('settings'):          // calling the items settings view
-                $this->doView('items/settings.php');
+                $this->drawSettings();
                 break;
             case ('settings_post'):     // update item settings
                 osc_csrf_check();
-                $iUpdated                 = 0;
-                $enabledRecaptchaItems    = Params::getParam('enabled_recaptcha_items');
-                $enabledRecaptchaItems    = (($enabledRecaptchaItems == '1') ? true : false);
-                $moderateItems            = Params::getParam('moderate_items');
-                $moderateItems            = (($moderateItems != '') ? true : false);
-                $numModerateItems         = Params::getParam('num_moderate_items');
-                $itemsWaitTime            = Params::getParam('items_wait_time');
-                $loggedUserItemValidation = Params::getParam('logged_user_item_validation');
-                $loggedUserItemValidation = (($loggedUserItemValidation != '') ? true : false);
-                $regUserPost              = Params::getParam('reg_user_post');
-                $regUserPost              = (($regUserPost != '') ? true : false);
-                $notifyNewItem            = Params::getParam('notify_new_item');
-                $notifyNewItem            = (($notifyNewItem != '') ? true : false);
-                $notifyContactItem        = Params::getParam('notify_contact_item');
-                $notifyContactItem        = (($notifyContactItem != '') ? true : false);
-                $notifyContactFriends     = Params::getParam('notify_contact_friends');
-                $notifyContactFriends     = (($notifyContactFriends != '') ? true : false);
-                $enabledFieldPriceItems   = Params::getParam('enableField#f_price@items');
-                $enabledFieldPriceItems   = (($enabledFieldPriceItems != '') ? true : false);
-                $enabledFieldImagesItems  = Params::getParam('enableField#images@items');
-                $enabledFieldImagesItems  = (($enabledFieldImagesItems != '') ? true : false);
-                $numImagesItems           = Params::getParam('numImages@items');
-                if ($numImagesItems == '') {
-                    $numImagesItems = 0;
+                $result = CoreSettings::attempt(ItemSettingsScreen::register());
+                if ($result['errors'] !== array()) {
+                    $this->drawSettings($result['values']);
+                    break;
                 }
-                $regUserCanContact     = Params::getParam('reg_user_can_contact');
-                $regUserCanContact     = (($regUserCanContact != '') ? true : false);
-                $contactItemAttachment = Params::getParam('item_attachment');
-                $contactItemAttachment = (($contactItemAttachment != '') ? true : false);
-                // Stored as explicit '1'/'0' (not a PHP bool, which persists as '')
-                // so the send-friend helpers can tell "off" apart from "unset".
-                $enableSendFriend      = (Params::getParam('enable_send_friend') != '') ? '1' : '0';
-                $regUserCanSendFriend  = (Params::getParam('reg_user_can_send_friend') != '') ? '1' : '0';
-                $warnExpiration        = Params::getParam('warn_expiration');
-                $warnExpiration        = (int)$warnExpiration;
-                $titleLength           = Params::getParamString('max_chars_per_title');
-                $descriptionLength     = Params::getParamString('max_chars_per_description');
-                $moderatePost          = Params::getParam('moderate_admin_post');
-                $moderateEdit          = Params::getParam('moderate_admin_edit');
-                $tinymce               = Params::getParam('tinymce');
-                $mapType               = Params::getParam('map_type');
-
-                $msg = '';
-                if (!osc_validate_int(Params::getParam('items_wait_time'))) {
-                    $msg .= _m('Wait time must only contain numeric characters') . '<br/>';
-                }
-                if (Params::getParam('num_moderate_items') != ''
-                    && !osc_validate_int(Params::getParam('num_moderate_items'))
-                ) {
-                    $msg .= _m('Number of moderated listings must only contain numeric characters') . '<br/>';
-                }
-                if (!osc_validate_int($numImagesItems)) {
-                    $msg .= _m('Images per listing must only contain numeric characters') . '<br/>';
-                }
-                if (!osc_validate_int((string) $warnExpiration)) {
-                    $msg .= _m('Number of expiration days has to be a numeric value') . '<br/>';
-                }
-                $msg .= str_replace(PHP_EOL, '<br/>', ItemActions::lengthSettingErrors($titleLength, $descriptionLength));
-                if ($msg != '') {
-                    osc_add_flash_error_message($msg, 'admin');
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=items&action=settings');
-                }
-
-                $iUpdated += osc_set_preference('enabled_recaptcha_items', $enabledRecaptchaItems);
-                if ($moderateItems) {
-                    $iUpdated += osc_set_preference('moderate_items', $numModerateItems);
-                } else {
-                    $iUpdated += osc_set_preference('moderate_items', '-1');
-                }
-                $iUpdated += osc_set_preference('logged_user_item_validation', $loggedUserItemValidation);
-                $iUpdated += osc_set_preference('reg_user_post', $regUserPost);
-                $iUpdated += osc_set_preference('notify_new_item', $notifyNewItem);
-                $iUpdated += osc_set_preference('notify_contact_item', $notifyContactItem);
-                $iUpdated += osc_set_preference('notify_contact_friends', $notifyContactFriends);
-                $iUpdated += osc_set_preference('enableField#f_price@items', $enabledFieldPriceItems);
-                $iUpdated += osc_set_preference('enableField#images@items', $enabledFieldImagesItems);
-                $iUpdated += osc_set_preference('items_wait_time', $itemsWaitTime);
-                $iUpdated += osc_set_preference('numImages@items', $numImagesItems);
-                $iUpdated += osc_set_preference('reg_user_can_contact', $regUserCanContact);
-                $iUpdated += osc_set_preference('item_attachment', $contactItemAttachment);
-                $iUpdated += osc_set_preference('enable_send_friend', $enableSendFriend, 'osclass', 'BOOLEAN');
-                $iUpdated += osc_set_preference('reg_user_can_send_friend', $regUserCanSendFriend, 'osclass', 'BOOLEAN');
-                $iUpdated += osc_set_preference('warn_expiration', $warnExpiration);
-                $iUpdated += osc_set_preference('title_character_length', $titleLength);
-                $iUpdated += osc_set_preference('description_character_length', $descriptionLength);
-                $iUpdated += osc_set_preference('moderate_admin_post', $moderatePost);
-                $iUpdated += osc_set_preference('moderate_admin_edit', $moderateEdit);
-                $iUpdated += osc_set_preference('tinymce_frontend', $tinymce);
-                $iUpdated += osc_set_preference('map_type', $mapType);
-
-                if ($iUpdated > 0) {
+                if ($result['updated'] > 0) {
                     osc_add_flash_ok_message(_m("Listings' settings have been updated"), 'admin');
                 }
                 $this->redirectTo(osc_admin_base_url(true) . '?page=items&action=settings');
@@ -841,6 +758,17 @@ class CAdminItems extends AdminSecBaseModel
         );
 
         return array('routine' => $routine, 'danger' => $danger);
+    }
+
+    /**
+     * Draw the listing settings form.
+     *
+     * @param array|null $values values a rejected save is handing back
+     */
+    private function drawSettings(?array $values = null): void
+    {
+        $this->_exportVariableToView('item_form', ItemSettingsScreen::formVars($values));
+        $this->doView('items/settings.php');
     }
 
     /**

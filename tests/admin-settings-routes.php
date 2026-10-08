@@ -69,6 +69,10 @@ foreach (glob($formDir . '/*.php') as $form) {
         // that controller, not to ?page=settings, so its actions are not this router's.
         continue;
     }
+    if (preg_match("/'route'\\]\\s*=\\s*array\\(\\s*'page'\\s*=>\\s*'(?!settings')/", $src)) {
+        // A screen routed to its own controller (Listings, Users settings) is not this router's either.
+        continue;
+    }
     if (preg_match_all("/CoreSettings::vars\(\s*[^,]+,\s*'([a-z_]+)'/", $src, $m)) {
         foreach ($m[1] as $action) {
             $posted[$action] = basename($form);

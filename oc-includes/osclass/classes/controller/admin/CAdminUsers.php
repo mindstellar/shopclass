@@ -18,6 +18,8 @@ if (!defined('ABS_PATH')) {
 
 use mindstellar\admin\BulkAction;
 use mindstellar\admin\form\BanRuleForm;
+use mindstellar\admin\form\CoreSettings;
+use mindstellar\admin\form\UserSettingsScreen;
 use mindstellar\admin\ListPaging;
 use mindstellar\auth\Actor;
 use mindstellar\user\AccountInput;
@@ -357,32 +359,16 @@ class CAdminUsers extends AdminSecBaseModel
                 }
                 break;
             case ('settings'):       // calling the users settings view
-                $this->doView('users/settings.php');
+                $this->drawSettings();
                 break;
             case ('settings_post'):  // updating users
                 osc_csrf_check();
-                $enabledUserValidation   = Params::getParam('enabled_user_validation');
-                $enabledUserValidation   = (($enabledUserValidation != '') ? true : false);
-                $enabledUserRegistration = Params::getParam('enabled_user_registration');
-                $enabledUserRegistration = (($enabledUserRegistration != '') ? true : false);
-                $enabledUsers            = Params::getParam('enabled_users');
-                $enabledUsers            = (($enabledUsers != '') ? true : false);
-                $notifyNewUser           = Params::getParam('notify_new_user');
-                $notifyNewUser           = (($notifyNewUser != '') ? true : false);
-                $usernameBlacklistTmp    = explode(',', Params::getParam('username_blacklist'));
-                foreach ($usernameBlacklistTmp as $k => $v) {
-                    $usernameBlacklistTmp[$k] = strtolower(trim($v));
+                $result = CoreSettings::attempt(UserSettingsScreen::register());
+                if ($result['errors'] !== array()) {
+                    $this->drawSettings($result['values']);
+                    break;
                 }
-                $usernameBlacklist = implode(',', $usernameBlacklistTmp);
-
-                $iUpdated = 0;
-                $iUpdated += osc_set_preference('enabled_user_validation', $enabledUserValidation);
-                $iUpdated += osc_set_preference('enabled_user_registration', $enabledUserRegistration);
-                $iUpdated += osc_set_preference('enabled_users', $enabledUsers);
-                $iUpdated += osc_set_preference('notify_new_user', $notifyNewUser);
-                $iUpdated += osc_set_preference('username_blacklist', $usernameBlacklist);
-
-                if ($iUpdated > 0) {
+                if ($result['updated'] > 0) {
                     osc_add_flash_ok_message(_m('User settings have been updated'), 'admin');
                 }
                 $this->redirectTo(osc_admin_base_url(true) . '?page=users&action=settings');
@@ -698,11 +684,22 @@ class CAdminUsers extends AdminSecBaseModel
     }
 
     /**
+     * Draw the user settings form.
+     *
+     * @param array|null $values values a rejected save is handing back
+     */
+    private function drawSettings(?array $values = null): void
+    {
+        $this->_exportVariableToView('user_form', UserSettingsScreen::formVars($values));
+        $this->doView('users/settings.php');
+    }
+
+    /**
      * The signed-in admin as core services take them.
      */
     private function actor(): Actor
     {
-        return Actor::admin((int) osc_logged_admin_id(), (string) Params::getServerParam('REMOTE_ADDR'));
+        return Actor::fromSession(true);
     }
 
     /**

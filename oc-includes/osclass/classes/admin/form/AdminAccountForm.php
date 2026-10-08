@@ -103,7 +103,6 @@ final class AdminAccountForm
 
         if ($canSetType) {
             $form
-                // @phpstan-ignore argument.type (int-like keys are cast to strings by PHP)
                 ->select('b_moderator', __('Admin type'), array(
                     '0' => __('Administrator'),
                     '1' => __('Moderator'),
