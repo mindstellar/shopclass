@@ -2201,13 +2201,7 @@ msgstr ""
 #: oc-admin/themes/modern/settings/currencies.php
 #: oc-admin/themes/modern/settings/locations/list.php
 #: oc-admin/themes/modern/users/alerts.php
-#: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
-#: oc-includes/osclass/classes/controller/admin/CAdminItemComments.php
-#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
-#: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
-#: oc-includes/osclass/classes/controller/admin/CAdminPages.php
-#: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsKeywordBlock.php
+#: oc-includes/osclass/classes/admin/BulkAction.php
 msgid "Bulk actions"
 msgstr ""
 

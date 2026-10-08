@@ -196,19 +196,17 @@ class CAdminItemComments extends AdminSecBaseModel
                 $this->_exportVariableToView('withFilters', $commentsDataTable->withFilters);
                 $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
 
-                $bulk_options = osc_apply_filter(
-                    'comment_bulk_filter',
-                    BulkAction::options(
-                        array(
-                            'delete_all' => __('Delete'),
-                            'activate_all' => __('Activate'),
-                            'deactivate_all' => __('Deactivate'),
-                            'disable_all' => __('Block'),
-                            'enable_all' => __('Unblock')
-                        ),
-                        __('Are you sure you want to %s the selected comments?')
-                    )
+                $bulk_options = BulkAction::options(
+                    array(
+                        'delete_all' => __('Delete'),
+                        'activate_all' => __('Activate'),
+                        'deactivate_all' => __('Deactivate'),
+                        'disable_all' => __('Block'),
+                        'enable_all' => __('Unblock')
+                    ),
+                    __('Are you sure you want to %s the selected comments?')
                 );
+                $bulk_options = osc_apply_filter('comment_bulk_filter', $bulk_options);
                 $this->_exportVariableToView('bulk_options', $bulk_options);
 
                 $this->doView('comments/index.php');

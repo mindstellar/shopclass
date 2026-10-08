@@ -204,15 +204,13 @@ class CAdminAdmins extends AdminSecBaseModel
                     $this->redirectTo($pastEnd);
                 }
 
-                $bulk_options = osc_apply_filter(
-                    'admin_bulk_filter',
-                    BulkAction::options(
-                        array(
-                            'delete' => __('Delete')
-                        ),
-                        __('Are you sure you want to %s the selected admins?')
-                    )
+                $bulk_options = BulkAction::options(
+                    array(
+                        'delete' => __('Delete')
+                    ),
+                    __('Are you sure you want to %s the selected admins?')
                 );
+                $bulk_options = osc_apply_filter('admin_bulk_filter', $bulk_options);
                 $this->_exportVariableToView('bulk_options', $bulk_options);
 
                 $this->_exportVariableToView('aAdmins', $array);

@@ -599,19 +599,17 @@ class CAdminLanguages extends AdminSecBaseModel
 
                 $this->_exportVariableToView('aLanguages', $array);
 
-                $bulk_options = osc_apply_filter(
-                    'language_bulk_filter',
-                    BulkAction::options(
-                        array(
-                            'enable_selected' => __('Enable (Website)'),
-                            'disable_selected' => __('Disable (Website)'),
-                            'enable_bo_selected' => __('Enable (oc-admin)'),
-                            'disable_bo_selected' => __('Disable (oc-admin)'),
-                            'delete' => __('Delete')
-                        ),
-                        __('Are you sure you want to %s the selected languages?')
-                    )
+                $bulk_options = BulkAction::options(
+                    array(
+                        'enable_selected' => __('Enable (Website)'),
+                        'disable_selected' => __('Disable (Website)'),
+                        'enable_bo_selected' => __('Enable (oc-admin)'),
+                        'disable_bo_selected' => __('Disable (oc-admin)'),
+                        'delete' => __('Delete')
+                    ),
+                    __('Are you sure you want to %s the selected languages?')
                 );
+                $bulk_options = osc_apply_filter('language_bulk_filter', $bulk_options);
                 $this->_exportVariableToView('bulk_options', $bulk_options);
 
                 $this->doView('languages/index.php');

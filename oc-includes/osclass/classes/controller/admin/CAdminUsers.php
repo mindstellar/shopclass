@@ -441,15 +441,13 @@ class CAdminUsers extends AdminSecBaseModel
                 $this->_exportVariableToView('aData', $aData);
                 $this->_exportVariableToView('aRawRows', $banRulesDataTable->rawRows());
 
-                $bulk_options = osc_apply_filter(
-                    'ban_rule_bulk_filter',
-                    BulkAction::options(
-                        array(
-                            'delete_ban_rule' => __('Delete')
-                        ),
-                        __('Are you sure you want to %s the selected ban rules?')
-                    )
+                $bulk_options = BulkAction::options(
+                    array(
+                        'delete_ban_rule' => __('Delete')
+                    ),
+                    __('Are you sure you want to %s the selected ban rules?')
                 );
+                $bulk_options = osc_apply_filter('ban_rule_bulk_filter', $bulk_options);
                 $this->_exportVariableToView('bulk_options', $bulk_options);
 
                 //calling the view...
@@ -567,13 +565,11 @@ class CAdminUsers extends AdminSecBaseModel
                         __('Resend the activation to')
                     );
                 }
-                $bulk_options = osc_apply_filter(
-                    'user_bulk_filter',
-                    BulkAction::options(
-                        $bulk_actions,
-                        __('Are you sure you want to %s the selected users?')
-                    )
+                $bulk_options = BulkAction::options(
+                    $bulk_actions,
+                    __('Are you sure you want to %s the selected users?')
                 );
+                $bulk_options = osc_apply_filter('user_bulk_filter', $bulk_options);
                 $this->_exportVariableToView('bulk_options', $bulk_options);
 
                 //calling the view...
