@@ -22,6 +22,7 @@ if (!defined('ABS_PATH')) {
 use mindstellar\admin\BulkAction;
 use mindstellar\admin\form\StaticPageForm;
 use mindstellar\admin\ListPaging;
+use mindstellar\pages\PageService;
 
 class CAdminPages extends AdminSecBaseModel
 {
@@ -105,8 +106,9 @@ class CAdminPages extends AdminSecBaseModel
                     $id = array($id);
                 }
 
+                $pageService = PageService::make();
                 foreach ($id as $_id) {
-                    $result = (int)$this->pageManager->deleteByPrimaryKey($_id);
+                    $result = (int)$pageService->delete((int)$_id);
                     switch ($result) {
                         case -1:
                             $page_indelible++;
@@ -116,14 +118,6 @@ class CAdminPages extends AdminSecBaseModel
                             break;
                         case 1:
                             $page_deleted_correcty++;
-                            // Remove any page-builder blocks placed on this page.
-                            Widget::getInstance()->delete(
-                                array('s_location' => 'page.' . (int)$_id)
-                            );
-                            // Remove page-owned images (editor uploads) — files and
-                            // rows — so they don't wait for the daily orphan sweep.
-                            (new \mindstellar\storage\ResourceUploader())
-                                ->deleteByOwner(\mindstellar\model\Resource::OWNER_PAGE, (int)$_id);
                     }
                 }
 

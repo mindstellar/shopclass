@@ -21,6 +21,7 @@ if (!defined('ABS_PATH')) {
  */
 use mindstellar\security\PluginAjaxFile;
 use mindstellar\utility\AjaxResponse;
+use mindstellar\widgets\WidgetStore;
 
 class CAdminAppearance extends AdminSecBaseModel
 {
@@ -144,9 +145,11 @@ class CAdminAppearance extends AdminSecBaseModel
                 $this->doView('appearance/add_widget.php');
                 break;
             case ('edit_widget'):
-                $id = Params::getParam('id');
-
-                $widget = Widget::getInstance()->findByPrimaryKey($id);
+                try {
+                    $widget = WidgetStore::find(Params::getParamInt('id')) ?? false;
+                } catch (Throwable $e) {
+                    $widget = false;
+                }
                 $this->_exportVariableToView('widget', $widget);
 
                 $this->doView('appearance/add_widget.php');
@@ -155,9 +158,11 @@ class CAdminAppearance extends AdminSecBaseModel
                 osc_csrf_check();
                 $widgetId = Params::getParamInt('id');
                 osc_run_hook('before_delete_widget', $widgetId);
-                Widget::getInstance()->delete(
-                    array('pk_i_id' => $widgetId)
-                );
+                try {
+                    WidgetStore::delete($widgetId);
+                } catch (Throwable $e) {
+                    // A failed delete still flashes success, as the legacy model did.
+                }
                 osc_run_hook('after_delete_widget', $widgetId);
                 osc_add_flash_ok_message(_m('Widget removed correctly'), 'admin');
                 $this->redirectTo($this->widgetReturnUrl());
@@ -172,29 +177,27 @@ class CAdminAppearance extends AdminSecBaseModel
                 $type = $this->resolveWidgetType(Params::getParam('s_type'));
 
                 if ($type !== null) {
-                    $res = Widget::getInstance()->update(
-                        array(
-                            's_description' => Params::getParam('description'),
-                            's_content'     => '',
-                            's_type'        => $type['id'],
-                            's_config'      => json_encode($this->buildWidgetConfig($type))
-                        ),
-                        array('pk_i_id' => Params::getParam('id'))
+                    $values = array(
+                        's_description' => Params::getParam('description'),
+                        's_content'     => '',
+                        's_type'        => $type['id'],
+                        's_config'      => json_encode($this->buildWidgetConfig($type))
                     );
                 } else {
-                    $res = Widget::getInstance()->update(
-                        array(
-                            's_description' => Params::getParam('description'),
-                            's_content'     => Params::getParam('content', false, false)
-                        ),
-                        array('pk_i_id' => Params::getParam('id'))
+                    $values = array(
+                        's_description' => Params::getParam('description'),
+                        's_content'     => Params::getParam('content', false, false)
                     );
                 }
 
-                // update() returns affectedRows(), and false only on a query error.
-                // Saving a widget without changing any value affects 0 rows, which is
-                // success with nothing to do — not a failure.
-                if ($res !== false) {
+                // Saving without changing any value affects 0 rows, which is still success.
+                try {
+                    WidgetStore::update(Params::getParamInt('id'), $values);
+                    $res = true;
+                } catch (Throwable $e) {
+                    $res = false;
+                }
+                if ($res) {
                     osc_purge_page_cache('widget');
                     osc_add_flash_ok_message(_m('Widget updated correctly'), 'admin');
                 } else {
@@ -212,28 +215,22 @@ class CAdminAppearance extends AdminSecBaseModel
                 $location = Params::getParam('location');
                 $type     = $this->resolveWidgetType(Params::getParam('s_type'));
 
+                $row = array(
+                    's_location'    => $location,
+                    'e_kind'        => 'html',
+                    's_description' => Params::getParam('description'),
+                    's_content'     => Params::getParam('content', false, false),
+                );
                 if ($type !== null) {
-                    Widget::getInstance()->insert(
-                        array(
-                            's_location'    => $location,
-                            'e_kind'        => 'html',
-                            's_description' => Params::getParam('description'),
-                            's_content'     => '',
-                            's_type'        => $type['id'],
-                            's_config'      => json_encode($this->buildWidgetConfig($type)),
-                            'i_order'       => Widget::getInstance()->getNextOrder($location)
-                        )
-                    );
-                } else {
-                    Widget::getInstance()->insert(
-                        array(
-                            's_location'    => $location,
-                            'e_kind'        => 'html',
-                            's_description' => Params::getParam('description'),
-                            's_content'     => Params::getParam('content', false, false),
-                            'i_order'       => Widget::getInstance()->getNextOrder($location)
-                        )
-                    );
+                    $row['s_content'] = '';
+                    $row['s_type']    = $type['id'];
+                    $row['s_config']  = json_encode($this->buildWidgetConfig($type));
+                }
+                try {
+                    $row['i_order'] = WidgetStore::nextOrder((string)$location);
+                    WidgetStore::add($row);
+                } catch (Throwable $e) {
+                    // A failed insert still flashes success, as the legacy model did.
                 }
                 osc_purge_page_cache('widget');
                 osc_add_flash_ok_message(_m('Widget added correctly'), 'admin');
@@ -258,22 +255,18 @@ class CAdminAppearance extends AdminSecBaseModel
                     'e_kind'        => 'html',
                     's_description' => $label,
                     's_content'     => '',
-                    'i_order'       => Widget::getInstance()->getNextOrder($location)
                 );
                 if ($type !== null) {
                     $row['s_type']   = $type['id'];
                     $row['s_config'] = json_encode($this->buildWidgetConfig($type));
                 }
-                // New code goes through the query builder, which returns the new
-                // AUTO_INCREMENT id directly. (The legacy DAO's insert() reports only
-                // success, and returning that handed the builder id "1" — a dragged-in
-                // widget then adopted widget 1's row and could overwrite it.)
+                // add() returns the new id; the builder needs it to open the editor.
                 try {
-                    $newId = \mindstellar\widgets\WidgetStore::add($row);
+                    $row['i_order'] = WidgetStore::nextOrder((string)$location);
+                    $newId          = WidgetStore::add($row);
                 } catch (Throwable $e) {
                     $newId = 0;
                 }
-                \mindstellar\cache\CacheGroup::invalidate('widget');
                 if ($newId > 0) {
                     osc_purge_page_cache('widget');
                 }
@@ -306,22 +299,22 @@ class CAdminAppearance extends AdminSecBaseModel
                 // The section must be one the active theme actually offers, so a
                 // forged post cannot invent a location.
                 $locations = osc_widget_locations();
-                $widgetRow = $moved > 0 ? Widget::getInstance()->findByPrimaryKey($moved) : null;
                 $ok        = false;
 
-                if ($widgetRow !== null && is_string($location) && isset($locations[$location])) {
-                    \mindstellar\widgets\WidgetStore::moveTo($moved, $location);
-                    \mindstellar\cache\CacheGroup::invalidate('widget');
-                    // Only ids that live in the target section after the move.
-                    $validIds = array();
-                    foreach (Widget::getInstance()->findByLocation($location) as $widget) {
-                        $validIds[(int)$widget['pk_i_id']] = true;
+                try {
+                    $widgetRow = $moved > 0 ? WidgetStore::find($moved) : null;
+                    if ($widgetRow !== null && is_string($location) && isset($locations[$location])) {
+                        WidgetStore::moveTo($moved, $location);
+                        // Only ids that live in the target section after the move.
+                        $validIds = array_flip(WidgetStore::idsAt($location));
+                        $ids = array_values(array_filter($ids, static function ($id) use ($validIds) {
+                            return isset($validIds[$id]);
+                        }));
+                        $ok = WidgetStore::reorder($ids);
+                        osc_purge_page_cache('widget');
                     }
-                    $ids = array_values(array_filter($ids, static function ($id) use ($validIds) {
-                        return isset($validIds[$id]);
-                    }));
-                    $ok = Widget::getInstance()->reorder($ids);
-                    osc_purge_page_cache('widget');
+                } catch (Throwable $e) {
+                    $ok = false;
                 }
 
                 AjaxResponse::json(array('error' => $ok ? 0 : 1));
@@ -341,15 +334,16 @@ class CAdminAppearance extends AdminSecBaseModel
 
                 // Defence in depth: only reorder ids that currently belong to this
                 // location, so a forged post cannot move widgets from elsewhere.
-                $validIds = array();
-                foreach (Widget::getInstance()->findByLocation($location) as $widget) {
-                    $validIds[(int) $widget['pk_i_id']] = true;
+                try {
+                    $validIds = array_flip(WidgetStore::idsAt((string)$location));
+                } catch (Throwable $e) {
+                    $validIds = array();
                 }
                 $ids = array_values(array_filter($ids, static function ($id) use ($validIds) {
                     return isset($validIds[$id]);
                 }));
 
-                $ok = Widget::getInstance()->reorder($ids);
+                $ok = WidgetStore::reorder($ids);
                 if ($ok) {
                     osc_purge_page_cache('widget');
                 }
