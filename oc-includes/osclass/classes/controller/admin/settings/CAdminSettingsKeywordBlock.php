@@ -17,6 +17,8 @@ use mindstellar\admin\BulkAction;
 use mindstellar\admin\form\CoreSettings;
 use mindstellar\admin\form\KeywordBlockSettingsScreen;
 use mindstellar\admin\ListPaging;
+use mindstellar\database\DbException;
+use mindstellar\moderation\KeywordBlockStore;
 
 /**
  * Admin screens for the keyword blocklist (t_keyword_block, KeywordBlock,
@@ -123,9 +125,8 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
                     $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=keyword_block');
                 }
 
-                $model = KeywordBlock::getInstance();
                 BulkAction::apply(
-                    static fn ($id) => (bool)$model->deleteByPrimaryKey($id),
+                    static fn (int $id) => KeywordBlockStore::delete($id),
                     'One keyword has been deleted',
                     '%s keywords have been deleted',
                     _m('No keywords have been deleted')
@@ -176,7 +177,7 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
         $keyword   = trim((string) Params::getParam('s_keyword'));
         $bare      = trim(str_replace('*', '', $keyword));
         $scope     = (string) Params::getParam('s_scope');
-        $substring = Params::getParam('b_substring') != '' ? 1 : 0;
+        $substring = Params::getParam('b_substring') != '';
 
         if (!in_array($scope, self::$validScopes, true)) {
             $scope = 'all';
@@ -191,29 +192,10 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
                 . ($id ? 'keyword_block_edit&id=' . $id : 'keyword_block_add'));
         }
 
-        $values = array(
-            's_keyword'   => $bare,
-            's_scope'     => $scope,
-            'b_substring' => $substring,
-            'dt_date'     => date('Y-m-d H:i:s'),
-        );
-
-        $model = KeywordBlock::getInstance();
-        if ($id) {
-            $ok = $model->update($values, array('pk_i_id' => $id));
-            $msgOk = _m('Keyword updated correctly');
-        } else {
-            $ok = $model->insert($values);
-            $msgOk = _m('Keyword saved correctly');
-        }
-
-        // update() returns the affected-row count and false only on a query error,
-        // so re-saving a keyword unchanged affects 0 rows — nothing to do, not a
-        // failure. Testing truthiness reported "An error has occurred" for a save
-        // that was perfectly fine.
-        if ($ok !== false) {
-            osc_add_flash_ok_message($msgOk, 'admin');
-        } else {
+        try {
+            KeywordBlockStore::save($id ?: null, $bare, $scope, $substring);
+            osc_add_flash_ok_message($id ? _m('Keyword updated correctly') : _m('Keyword saved correctly'), 'admin');
+        } catch (DbException $e) {
             osc_add_flash_error_message(_m('An error has occurred'), 'admin');
         }
 

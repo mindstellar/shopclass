@@ -329,7 +329,8 @@ check('...nor one that was refused', !osc_page_cache_purge_pending());
 // Controllers need the whole app to run, so their calls are pinned by source.
 $direct = array(
     'controller/admin/CAdminTools.php'                        => array('maintenance', 3),
-    'controller/admin/CAdminLanguages.php'                    => array('language', 4),
+    'controller/admin/CAdminLanguages.php'                    => array('language', 3),
+    'language/LanguageService.php'                             => array('language', 1),
     'currency/CurrencyService.php'                             => array('currency', 3),
     'controller/admin/CAdminAppearance.php'                   => array('widget', 5),
     'category/CategoryService.php'                             => array('category', 1),

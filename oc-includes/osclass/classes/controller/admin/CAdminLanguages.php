@@ -21,21 +21,24 @@ if (!defined('ABS_PATH')) {
  */
 use mindstellar\admin\BulkAction;
 use mindstellar\admin\ListPaging;
+use mindstellar\language\LanguageService;
+use mindstellar\validation\ConflictException;
 
 class CAdminLanguages extends AdminSecBaseModel
 {
-    //specific for this class
     private OSCLocale $localeManager;
 
+    private LanguageService $languages;
+
     /**
-     * Take the locale manager for this request.
+     * Take the locale manager and the language service for this request.
      */
     public function __construct()
     {
         parent::__construct();
 
-        //specific things for this class
         $this->localeManager = OSCLocale::getInstance();
+        $this->languages     = LanguageService::make();
         osc_run_hook('init_admin_languages');
     }
 
@@ -149,11 +152,12 @@ class CAdminLanguages extends AdminSecBaseModel
                         }
                     }
                     if (isset($importedLocale)) {
-                        OSCLocale::getInstance()->insertLocaleInfo($importedLocale, $languageToImport);
                         // inserting e-mail translations get mail.json from github
                         $mailJSON =
                             osc_file_get_contents(osc_get_i18n_repository_url('src/translations/' . $languageToImport . '/mail.json'));
-                        $this->importEmailJson($mailJSON);
+                        if (!$this->languages->install($importedLocale, $languageToImport, $mailJSON)) {
+                            osc_add_flash_error_message(_m('There was a problem importing email templates'), 'admin');
+                        }
                         // Get themes.po,themes.mo, core.po, core.mo, messages.po, messages.mo from github and save to local
                         $uploadDir = osc_translations_path() . $languageToImport;
                         $uploadDir .= '/';
@@ -319,7 +323,7 @@ class CAdminLanguages extends AdminSecBaseModel
                     's_stop_words'      => $languageStopWords
                 );
 
-                $iUpdated = $this->localeManager->update($array, array('pk_c_code' => $languageCode));
+                $iUpdated = $this->languages->update($languageCode, $array);
                 osc_invalidate_locale_cache();
                 if ($iUpdated > 0) {
                     osc_purge_page_cache('language');
@@ -331,7 +335,6 @@ class CAdminLanguages extends AdminSecBaseModel
                 osc_csrf_check();
                 $msg      = _m('Selected languages have been enabled for the website');
                 $iUpdated = 0;
-                $aValues  = array('b_enabled' => 1);
 
                 $id = Params::getParam('id');
 
@@ -341,8 +344,7 @@ class CAdminLanguages extends AdminSecBaseModel
                 }
 
                 foreach ($id as $i) {
-                    osc_translate_categories($i);
-                    $iUpdated += $this->localeManager->update($aValues, array('pk_c_code' => $i));
+                    $iUpdated += $this->languages->enable((string) $i);
                 }
                 osc_invalidate_locale_cache();
 
@@ -358,7 +360,6 @@ class CAdminLanguages extends AdminSecBaseModel
                 $msg         = _m('Selected languages have been disabled for the website');
                 $msg_warning = '';
                 $iUpdated    = 0;
-                $aValues     = array('b_enabled' => 0);
 
                 $id = Params::getParam('id');
 
@@ -368,12 +369,11 @@ class CAdminLanguages extends AdminSecBaseModel
                 }
 
                 foreach ($id as $i) {
-                    if (osc_language() == $i) {
-                        $msg_warning =
-                            sprintf(_m("%s can't be disabled because it's the default language"), osc_language());
-                        continue;
+                    try {
+                        $iUpdated += $this->languages->disable((string) $i);
+                    } catch (ConflictException $e) {
+                        $msg_warning = $e->getMessage();
                     }
-                    $iUpdated += $this->localeManager->update($aValues, array('pk_c_code' => $i));
                 }
                 osc_invalidate_locale_cache();
                 if ($iUpdated > 0) {
@@ -396,7 +396,6 @@ class CAdminLanguages extends AdminSecBaseModel
                 osc_csrf_check();
                 $msg      = _m('Selected languages have been enabled for the backoffice (oc-admin)');
                 $iUpdated = 0;
-                $aValues  = array('b_enabled_bo' => 1);
 
                 $id = Params::getParam('id');
 
@@ -406,8 +405,7 @@ class CAdminLanguages extends AdminSecBaseModel
                 }
 
                 foreach ($id as $i) {
-                    osc_translate_categories($i);
-                    $iUpdated += $this->localeManager->update($aValues, array('pk_c_code' => $i));
+                    $iUpdated += $this->languages->enable((string) $i, true);
                 }
                 osc_invalidate_locale_cache();
 
@@ -422,7 +420,6 @@ class CAdminLanguages extends AdminSecBaseModel
                 $msg         = _m('Selected languages have been disabled for the backoffice (oc-admin)');
                 $msg_warning = '';
                 $iUpdated    = 0;
-                $aValues     = array('b_enabled_bo' => 0);
 
                 $id = Params::getParam('id');
 
@@ -432,12 +429,11 @@ class CAdminLanguages extends AdminSecBaseModel
                 }
 
                 foreach ($id as $i) {
-                    if (osc_language() == $i) {
-                        $msg_warning =
-                            sprintf(_m("%s can't be disabled because it's the default language"), osc_language());
-                        continue;
+                    try {
+                        $iUpdated += $this->languages->disable((string) $i, true);
+                    } catch (ConflictException $e) {
+                        $msg_warning = $e->getMessage();
                     }
-                    $iUpdated += $this->localeManager->update($aValues, array('pk_c_code' => $i));
                 }
                 osc_invalidate_locale_cache();
 
@@ -456,17 +452,17 @@ class CAdminLanguages extends AdminSecBaseModel
             case ('delete'):
                 osc_csrf_check();
                 if (is_array(Params::getParam('id'))) {
-                    $default_lang = osc_language();
+                    $adminLocale = (string) osc_current_admin_locale();
                     foreach (Params::getParam('id') as $code) {
-                        $isDefaultLanguage = ($default_lang === $code);
-                        $isCurrentLanguage = (osc_current_admin_locale() === $code);
-                        if ($isDefaultLanguage || $isCurrentLanguage) {
-                            if ($isCurrentLanguage) {
+                        $code = (string) $code;
+                        switch ($this->languages->delete($code, $adminLocale)) {
+                            case LanguageService::IS_CURRENT:
                                 osc_add_flash_warning_message(
                                     _m('The current language can\'t be deleted. Please logout and login again with another language.'),
                                     'admin'
                                 );
-                            } else {
+                                break;
+                            case LanguageService::IS_DEFAULT:
                                 osc_add_flash_error_message(
                                     sprintf(
                                         _m(
@@ -477,25 +473,24 @@ class CAdminLanguages extends AdminSecBaseModel
                                     ),
                                     'admin'
                                 );
-                            }
-                        } elseif ($this->localeManager->deleteLocale($code)) {
-                            osc_purge_page_cache('language');
-                            if (!osc_deleteDir(osc_translations_path() . $code)) {
+                                break;
+                            case LanguageService::DIR_KEPT:
                                 osc_add_flash_error_message(sprintf(
                                     _m("Directory '%s' couldn't be removed"),
                                     $code
                                 ), 'admin');
-                            } else {
+                                break;
+                            case LanguageService::DELETED:
                                 osc_add_flash_ok_message(
                                     sprintf(_m('Directory "%s" has been successfully removed'), $code),
                                     'admin'
                                 );
-                            }
-                        } else {
-                            osc_add_flash_error_message(
-                                sprintf(_m("Directory '%s' couldn't be removed;)"), $code),
-                                'admin'
-                            );
+                                break;
+                            default:
+                                osc_add_flash_error_message(
+                                    sprintf(_m("Directory '%s' couldn't be removed;)"), $code),
+                                    'admin'
+                                );
                         }
                     }
                 }
@@ -617,24 +612,6 @@ class CAdminLanguages extends AdminSecBaseModel
         }
 
         return null;
-    }
-
-    /**
-     * Load the email templates that came with a downloaded language, flashing an error
-     * when they cannot be read.
-     *
-     * @param string|false $mailJSON Raw mail.json, or false when the download failed
-     *
-     * @return void
-     */
-    private function importEmailJson($mailJSON)
-    {
-        if ($mailJSON) {
-            $mailImported = Page::getInstance()->importEmailJsonTemplates($mailJSON);
-            if (!$mailImported) {
-                osc_add_flash_error_message(_m('There was a problem importing email templates'), 'admin');
-            }
-        }
     }
 }
 

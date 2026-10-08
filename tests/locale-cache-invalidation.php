@@ -181,15 +181,19 @@ $blocks = case_blocks($controller);
 
 // Derived from the source, not listed: an action added later that writes a locale is held
 // to the same rule instead of being exempt for having been written after this test. The
-// markers cover the inherited DAO writes, the two methods the model owns and the raw
-// paths -- a case naming the table at all counts as writing, because the cost of a false
-// positive is one extra call to the flush and the cost of a miss is a stale list.
+// markers cover the inherited DAO writes, the two methods the model owns, the language
+// service's writes and the raw paths -- a case naming the table at all counts as writing,
+// because the cost of a false positive is one extra call to the flush and the cost of a
+// miss is a stale list.
 $writes = array(
     '->update(',
     '->insert(',
     '->delete(',
     'insertLocaleInfo(',
     'deleteLocale(',
+    '->enable(',
+    '->disable(',
+    '->install(',
     'osc_checkLocales(',
     'osc_db_query(',
     't_locale',
