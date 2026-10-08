@@ -274,18 +274,10 @@ if (!empty($numItemsPerCategory)) { ?>
                 <div class="widget-box-content">
                     <?php
                     $freeDisk = function_exists('disk_free_space') ? @disk_free_space(osc_uploads_path()) : false;
-$fmtBytes = static function ($bytes) {
-    if (!is_numeric($bytes) || $bytes <= 0) {
-        return '—';
-    }
-    $units = array('B', 'KB', 'MB', 'GB', 'TB');
-    $i     = (int) min(floor(log($bytes, 1024)), count($units) - 1);
-    return round($bytes / (1024 ** $i), 1) . ' ' . $units[$i];
-};
 $rows = array(
     array('bi-box-seam', __('Shopclass version'), OSCLASS_VERSION),
     array('bi-filetype-php', __('PHP version'), PHP_VERSION),
-    array('bi-hdd', __('Free disk space'), $fmtBytes($freeDisk)),
+    array('bi-hdd', __('Free disk space'), is_numeric($freeDisk) && $freeDisk > 0 ? \mindstellar\utility\Formatting::bytes((int) $freeDisk) : '—'),
     array('bi-cloud-arrow-up', __('Max upload size'), ini_get('upload_max_filesize') ?: '—'),
     array('bi-database', __('Memory limit'), ini_get('memory_limit') ?: '—'),
 );
