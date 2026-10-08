@@ -37,65 +37,53 @@ Plugin authors should read the Breaking section before upgrading.
 ### Security
 
 - Webhooks go only to ports 80 and 443, and only to public addresses unless you allow a private network. The site connects to the address it checked.
-- A webhook for a listing or comment that is not live carries only its id and url.
 - API keys and refresh tokens are stored hashed, and a cookie alone never signs in to the API.
 - Signing out also deletes the session cookie, on the site and in the admin.
 - A new password (changed, reset or set by an admin) signs the user out of every device, API sign-ins and keys included.
 - API sign-ins and the web sign-in form share one limit on wrong passwords.
-- API sign-up answers a taken e-mail as it answers a new one, refuses a taken username the same way for both, and sends its e-mails from the job queue.
-- Account, admin and session reads through the API are not kept in the browser cache.
-- Photo URLs in one API write share a 30-second download limit.
 - A user keeps at most 20 saved searches, set under **Settings → Spam and bots → Search alerts**.
-- A queued activation e-mail holds only the user id; the link is made when it is sent.
-- An API sign-up with a taken e-mail holds the username it asked for, as a new account would.
 
 ### Performance
 
-- The API counts requests in APCu when it is available, and runs fewer queries per request. Write and hourly caps still count in the database.
+- The API counts requests in APCu when it is available. Write and hourly caps count in the database.
 - The market catalogue cache moved out of the site preferences, which every page loads (about 140 KB on a site that has browsed the market).
 
 ### Changed
 
-- For API sign-ups, `hook_email_user_validation` fires from the queued activation job, not during the request.
 - Shared core classes are reached with `getInstance()`. `newInstance()` and `instance()` still work but are deprecated.
 - Listing counts per country, region and city are recounted once a week as background jobs, instead of a slow hourly pass; the `t_locations_tmp` table is removed.
 - The search page is split into a URI resolver and a search runner the API reuses. Its hooks and filters are unchanged.
 - Unblocking one comment e-mails its author when it goes live.
 - Enabling a category refreshes the caches that list it.
 - A subcategory under a disabled parent can be disabled.
-- Mail for a listing posted or edited through the API is sent after the change is saved.
 - Category and custom field labels are escaped in core forms.
 - Comment hooks receive the comment id as an int.
 - Upgrading refreshes an `.htaccess` Shopclass wrote so Apache passes the `Authorization` header to the API; a hand-edited one is left alone.
 - Web sign-in checks bans against the account's e-mail.
 - Web sign-up refuses a banned address as well as a banned e-mail.
 - `before_validating_login` fires after the empty-field and captcha checks.
-- Editing a user's status in the admin runs the same actions as the API, so their hooks and log fire and the user's listings follow.
-- An admin API change that fails part-way sends no e-mail.
+- Editing a user's status in the admin fires its hooks and log, and the user's listings follow.
 - A failed sign-in no longer uses up the saved return address.
 - Changing a password (user or admin) signs out every device.
 - New actions `user_signout_all_after` and `admin_signout_all_after`.
 - Posting, editing and deleting a listing on the site runs in one transaction, and its e-mails go out once it is saved.
 - A user may post 20 comments an hour (a guest, 20 per address; an IPv6 /64 counts as one address), on the site and through the API together.
-- Currency codes must be three letters; a currency change through the API clears the page cache.
+- Currency codes must be three letters.
 - Sign-up on the site, through the API and on the Users screen runs in one transaction, so a failed sign-up leaves no account behind.
 - `ItemActions::add()` refuses a banned e-mail or address, as the post form does.
-- The API answers an expired listing with status `expired` instead of 404, as its page shows it.
-- Adding a photo through the API fires `edited_item`.
 - Every photo delete is logged the same way, as `item` / `deleteResource`.
 - Listing writes and sign-in move to `mindstellar\listing` and `mindstellar\auth`; `ItemAccess`, `UserReauth` are deprecated. See [Architecture](https://shopclass.org/docs/developers/architecture/).
 - Accounts, comments, categories, currencies and custom fields move to their own `mindstellar\` modules, shared by the site and the API.
 - A signed-in user comments under their account's name and e-mail, and a listing that is not live takes comments only from its owner.
 - Asking to change your e-mail to an address another account holds no longer says it is taken; no link is sent.
-- A user may ask for 5 e-mail changes an hour on the site, as through the API.
+- A user may ask for 5 e-mail changes an hour.
 - Deleting your account asks for your password under the same wrong-password limit as other password checks.
 - `before_user_delete` fires for an admin's delete too, and every account delete is logged.
-- Admin listing status changes (activate, block, spam, premium) are logged, as through the API.
-- Deleting your own comment through the API fires `delete_comment` and, as on the site, works only on an approved comment.
+- Admin listing status changes (activate, block, spam, premium) are logged.
 - An admin comment edit needs a valid author e-mail and a body, on the screen and through the API.
-- API paging cursors work for a day.
 - `mindstellar\Csrf` is now `mindstellar\security\Csrf`; the old name still works.
 - `BackupManager` is now `BackupService`, and `BackupFailure` is now `BackupException`.
+- **Listings → Settings** and **Users → Settings** check their numbers: a negative or blank number saves as 0.
 
 ### Fixed
 
