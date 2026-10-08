@@ -56,7 +56,7 @@ final class EventData
      */
     public function user(int $id): ?array
     {
-        $user = (new UserQuery())->row($id);
+        $user = (new UserQuery())->bareRow($id);
 
         return $user === null ? null : $this->api->userSerializer()->one($user, $this->context());
     }

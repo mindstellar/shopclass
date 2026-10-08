@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\api\read;
 
+use mindstellar\api\serializer\ListingSerializer;
 use mindstellar\listing\ListingQuery;
 
 /**
@@ -67,7 +68,7 @@ final class ListingRows
             if (isset($texts[$id])) {
                 $row['locale'] = $texts[$id];
             }
-            [, $row['s_title'], $row['s_description']] = self::text($row['locale'] ?? [], $locale);
+            [, $row['s_title'], $row['s_description']] = ListingSerializer::localeText($row['locale'] ?? [], $locale);
             $out[] = $row + ($more[$id] ?? []);
         }
 
@@ -113,27 +114,5 @@ final class ListingRows
         }
 
         return $out;
-    }
-
-    /**
-     * The language a listing's text is in, its title and its description: the asked language's
-     * when it has a title there, else the first language that has one.
-     *
-     * @param array<string,array<string,string>> $texts locale => s_title, s_description
-     *
-     * @return array{0:?string,1:string,2:string} a null locale when no language has a title
-     */
-    public static function text(array $texts, string $locale): array
-    {
-        if (($texts[$locale]['s_title'] ?? '') !== '') {
-            return [$locale, (string) $texts[$locale]['s_title'], (string) ($texts[$locale]['s_description'] ?? '')];
-        }
-        foreach ($texts as $code => $text) {
-            if (($text['s_title'] ?? '') !== '') {
-                return [(string) $code, (string) $text['s_title'], (string) ($text['s_description'] ?? '')];
-            }
-        }
-
-        return [null, '', ''];
     }
 }

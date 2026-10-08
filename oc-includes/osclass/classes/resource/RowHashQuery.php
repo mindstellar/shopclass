@@ -14,7 +14,6 @@ namespace mindstellar\resource;
 
 use mindstellar\base\Model;
 use mindstellar\database\Connection;
-use mindstellar\webhook\WebhookEndpointStore;
 
 /**
  * One SHA-256 per row of a resource's tables, read in a single query. The hash covers the
@@ -111,18 +110,5 @@ final class RowHashQuery extends Model
         sort($hashes);
 
         return $hashes;
-    }
-
-    /**
-     * Hashes of a webhook endpoint's stored row; empty for an id that cannot name one.
-     *
-     * @return string[]
-     * @throws \mindstellar\database\DbException
-     */
-    public static function webhookHashes(string $id, bool $lock): array
-    {
-        return WebhookEndpointStore::validId($id)
-            ? self::keyedHashes('t_key_value', [['s_group' => WebhookEndpointStore::GROUP, 's_key' => $id]], $lock)
-            : [];
     }
 }

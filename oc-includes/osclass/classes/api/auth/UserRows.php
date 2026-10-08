@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\api\auth;
 
 use mindstellar\database\Db;
+use mindstellar\user\UserQuery;
 use mindstellar\user\UserStore;
 
 /**
@@ -26,7 +27,7 @@ final class UserRows extends MemoisedRows
      */
     public function __construct(?callable $load = null)
     {
-        parent::__construct($load ?? static fn (int $id): ?array => self::fromTable($id));
+        parent::__construct($load ?? [new UserQuery(), 'bareRow']);
     }
 
     /**
@@ -55,16 +56,5 @@ final class UserRows extends MemoisedRows
     public function forget(int $id): void
     {
         unset($this->rows[$id]);
-    }
-
-    /**
-     * @return array<string,mixed>|null
-     * @throws \mindstellar\database\DbException
-     */
-    private static function fromTable(int $id): ?array
-    {
-        $row = \mindstellar\user\UserStore::find($id);
-
-        return $row === null ? null : Db::stringifyRow($row);
     }
 }

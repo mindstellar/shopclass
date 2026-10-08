@@ -297,7 +297,15 @@ function oa_breaks(array $old, array $new): array
 
 $current = oa_shape(OpenApi::core('v1')->build());
 if (in_array('--write', $argv, true)) {
-    file_put_contents(OPENAPI_BASELINE, json_encode($current, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR) . "\n");
+    // One entry per line, so a diff shows only the operations, webhooks and schemas that changed.
+    $flags = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR;
+    $parts = [];
+    foreach ($current as $group => $entries) {
+        ksort($entries);
+        $lines   = array_map(static fn (string $key, $entry): string => '    ' . json_encode($key, $flags) . ': ' . json_encode($entry, $flags), array_keys($entries), $entries);
+        $parts[] = '  ' . json_encode($group, $flags) . ": {\n" . implode(",\n", $lines) . "\n  }";
+    }
+    file_put_contents(OPENAPI_BASELINE, "{\n" . implode(",\n", $parts) . "\n}\n");
     echo 'Wrote ' . OPENAPI_BASELINE . "\n";
     exit(0);
 }

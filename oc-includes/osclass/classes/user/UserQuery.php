@@ -44,7 +44,7 @@ final class UserQuery
      *
      * @return array<string,mixed>|null
      */
-    public function row(int $id): ?array
+    public function bareRow(int $id): ?array
     {
         $row = UserStore::find($id);
 

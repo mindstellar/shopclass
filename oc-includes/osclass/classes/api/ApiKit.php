@@ -53,7 +53,7 @@ final class ApiKit
     public function listing(ApiCall $call, int $id, ViewContext $context): ?array
     {
         $reader = $this->services->listingReader();
-        $item   = $reader->row($id, static fn (array $row): ?array => $call->visibleListing($row));
+        $item   = $reader->row($id, [$call, 'visibleListing']);
 
         return $item === null ? null : $reader->view($item, $context);
     }

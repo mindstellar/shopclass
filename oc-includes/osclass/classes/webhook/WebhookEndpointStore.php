@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\webhook;
 
 use mindstellar\model\KeyValue;
+use mindstellar\resource\RowHashQuery;
 
 /**
  * Webhook endpoints in the shared t_key_value store, group `api_webhook`, one key per endpoint id.
@@ -195,6 +196,17 @@ final class WebhookEndpointStore
     public static function validId(string $id): bool
     {
         return preg_match('/^ep_[0-9a-f]{16}$/D', $id) === 1;
+    }
+
+    /**
+     * Hashes of an endpoint's stored row; empty for an id that cannot name one.
+     *
+     * @return string[]
+     * @throws \mindstellar\database\DbException
+     */
+    public static function rowHashes(string $id, bool $lock): array
+    {
+        return self::validId($id) ? RowHashQuery::keyedHashes('t_key_value', [['s_group' => self::GROUP, 's_key' => $id]], $lock) : [];
     }
 
     private static function encode(Endpoint $endpoint): string

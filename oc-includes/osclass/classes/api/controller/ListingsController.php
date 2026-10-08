@@ -45,7 +45,7 @@ final class ListingsController
     {
         $context = $this->api->context($call->request(), $call->credential(), 'listing', ListingSerializer::MEMBERS, ListingSerializer::INCLUDES);
         $reader  = $this->api->listingReader();
-        $item    = ProblemException::found($reader->row($call->intArg(), static fn (array $row): ?array => $call->visibleListing($row)), 'listing');
+        $item    = ProblemException::found($reader->row($call->intArg(), [$call, 'visibleListing']), 'listing');
 
         return Response::ok($reader->view($item, $context));
     }

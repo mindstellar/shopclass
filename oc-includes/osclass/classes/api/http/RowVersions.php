@@ -19,6 +19,7 @@ use mindstellar\database\Db;
 use mindstellar\resource\RowHashQuery;
 use mindstellar\security\SigningKey;
 use mindstellar\settings\SettingsPageRegistry;
+use mindstellar\webhook\WebhookEndpointStore;
 
 /**
  * Versions read from the stored rows: a keyed hash of the resource's row and its own child
@@ -83,7 +84,7 @@ final class RowVersions implements ResourceVersions
             return self::sign([RowHashQuery::keyedHashes('t_preference', self::settingKeys(), $lock)]);
         }
         if ($path === 'admin/webhooks/{webhook}') {
-            $rows = RowHashQuery::webhookHashes((string) ($args['webhook'] ?? ''), $lock);
+            $rows = WebhookEndpointStore::rowHashes((string) ($args['webhook'] ?? ''), $lock);
 
             return $rows === [] ? null : self::sign([$rows]);
         }

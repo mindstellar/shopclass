@@ -597,4 +597,14 @@ $coldCount = $cold();
 echo "  a 20-listing page, cold: $coldCount queries\n";
 pin('a cold 20-listing page adds the category rows (one read for the catalog and search), the category parent map and the currencies: 10 queries', 10, $coldCount);
 
+harness_section('text language');
+// A title only in French and a description only in English: both come from French, the language with the title.
+seed_locale($admin, 'fr_FR', 'French');
+$admin->query("UPDATE {$p}t_item_description SET s_title = '', s_description = 'English only' WHERE fk_i_item_id = $bike");
+seed_exec($admin, "INSERT INTO {$p}t_item_description (fk_i_item_id, fk_c_locale_code, s_title, s_description) VALUES (?, 'fr_FR', 'Velo', '')", 'i', array($bike));
+scratchdb_forget_cache();
+$text = static fn (array $l): array => array($l['locale'] ?? null, $l['title'] ?? null, $l['description'] ?? null);
+pin('one listing asked in en_US: title and description both from fr_FR', array('fr_FR', 'Velo', ''), $text((array) ($get('listings/' . $bike, array(), $publicKey)->body()['data'] ?? array())));
+pin('a search page asked in en_US: the same', array('fr_FR', 'Velo', ''), $text((array) ($get('listings', array('category' => 'bikes'), $publicKey)->body()['data'][0] ?? array())));
+
 exit(harness_result());

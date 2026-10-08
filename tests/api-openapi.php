@@ -302,7 +302,7 @@ pin('GET /api/v1/openapi.json answers with no credential when public reads are o
 pin('and asks for one when they are off', 401, api_test_kernel($router, api_test_authenticator(new ApiKeys($store, new Scopes(), new SystemClock())), new ApiSettings(true), validator: $full)
     ->handle(new Request('GET', 'v1/openapi.json', [], [], '127.0.0.1'))->status());
 pin('with the document revision and its own URL', ['1.0', 'https://shop.test/api/v1'], [$r->body()['info']['version'], $r->body()['servers'][0]['url']]);
-pin('the OpenAPI document may be cached publicly and gets an ETag', ['public, max-age=60, stale-while-revalidate=60', true], [$r->header('Cache-Control'), isset($r->prepare('GET')['headers']['ETag'])]);
+pin('the OpenAPI document stays out of shared caches, as turning public reads off must take effect, and gets an ETag', ['private, no-cache', true], [$r->header('Cache-Control'), isset($r->prepare('GET')['headers']['ETag'])]);
 pin('the live document is sound', [], openapi_problems($r->body()));
 $r = $kernel->handle(new Request('GET', 'v1/old', [], [], '127.0.0.1'));
 pin('a deprecated route answers with Deprecation, Sunset and a changelog link', [
@@ -327,5 +327,42 @@ $table     = (string) substr($writesDoc, (int) strpos($writesDoc, "\n## Warnings
 preg_match_all('/^\| `([a-z_]+)` \|/m', $table, $documented);
 pin('every warning code is in the warnings table of writes.md, in its order', Warning::CODES, $documented[1]);
 pin('the Warning schema lists the same codes', Warning::CODES, $core['components']['schemas']['Warning']['properties']['code']['enum'] ?? null);
+
+/**
+ * Warning codes the core controllers and writers emit: every array key and `$warnings[...]` index
+ * in a statement that names `$warnings` or Warning::member(), as written in the source.
+ *
+ * @return string[] `Warning::NAME` or a quoted literal
+ */
+function api_emitted_warning_codes(string $code): array
+{
+    $found = [];
+    foreach (preg_split('/;/', $code) ?: [] as $statement) {
+        if (!preg_match('/\$warnings\b|Warning::member\(/', $statement)) {
+            continue;
+        }
+        preg_match_all('/(Warning::[A-Z_]+|\'[^\']*\'|"[^"]*")\s*=>|\$warnings\[\s*(Warning::[A-Z_]+|\'[^\']*\'|"[^"]*")\s*\]/', $statement, $m);
+        array_push($found, ...array_filter(array_merge($m[1], $m[2])));
+    }
+
+    return $found;
+}
+
+$emitted = [];
+foreach (['controller', 'write'] as $dir) {
+    $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(ABS_PATH . 'oc-includes/osclass/classes/api/' . $dir, FilesystemIterator::SKIP_DOTS));
+    foreach ($files as $file) {
+        array_push($emitted, ...api_emitted_warning_codes((string) file_get_contents((string) $file)));
+    }
+}
+$named = static fn (string $code): bool => str_starts_with($code, 'Warning::') && defined(Warning::class . substr($code, 7))
+    && in_array(constant(Warning::class . substr($code, 7)), Warning::CODES, true);
+pin('the scan finds every warning the core emits', ['Warning::COMMENT_PENDING', 'Warning::EMAIL_CONFIRMATION_SENT', 'Warning::LISTING_PENDING', 'Warning::PHOTO_SKIPPED'], (static function (array $codes): array {
+    sort($codes);
+
+    return array_values(array_unique($codes));
+})($emitted));
+pin('every warning a controller or writer emits is a Warning constant listed in Warning::CODES', [], array_values(array_filter(array_unique($emitted), static fn (string $c): bool => !$named($c))));
+pin('a literal code is caught', ["'comment_waiting'"], api_emitted_warning_codes("\$warnings = Warning::member(\$live ? [] : ['comment_waiting' => 'Soon.']);"));
 
 exit(harness_result());

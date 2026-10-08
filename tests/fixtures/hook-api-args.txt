@@ -16,3 +16,6 @@ filter api_theme_functions_enabled 1
 filter api_user 3
 filter api_webhook_events 1
 filter api_webhook_payload 3
+replay api_category 3
+replay api_listing 3
+replay api_user 3

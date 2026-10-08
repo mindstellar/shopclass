@@ -128,6 +128,67 @@ function hook_arg_count(string $src, int $offset): int
 }
 
 /**
+ * The top-level arguments of a call, read from just after its opening paren, as source text.
+ *
+ * @return string[]
+ */
+function hook_call_args(string $src, int $offset): array
+{
+    $args  = array();
+    $start = $offset;
+    $depth = 0;
+    $quote = null;
+    for ($i = $offset, $n = strlen($src); $i < $n; $i++) {
+        $c = $src[$i];
+        if ($quote !== null) {
+            if ($c === '\\') {
+                $i++;
+            } elseif ($c === $quote) {
+                $quote = null;
+            }
+            continue;
+        }
+        if ($c === '\'' || $c === '"') {
+            $quote = $c;
+        } elseif ($c === '(' || $c === '[' || $c === '{') {
+            $depth++;
+        } elseif (($c === ')' || $c === ']' || $c === '}') && $depth > 0) {
+            $depth--;
+        } elseif (($c === ',' || $c === ')') && $depth === 0) {
+            $args[] = trim(substr($src, $start, $i - $start));
+            if ($c === ')') {
+                break;
+            }
+            $start = $i + 1;
+        }
+    }
+
+    return $args;
+}
+
+/**
+ * Filters fired through a wrapper that takes the hook name: Extensions::finish() replays
+ * `api_*` serializer filters with the data plus its $args array (6th argument).
+ *
+ * @return string[] "replay name count"
+ */
+function hook_replay_args(string $src): array
+{
+    $lines = array();
+    preg_match_all('/->finish\s*\(\s*([\'"])(api_[a-z0-9_]+)\1/', $src, $m, PREG_SET_ORDER | PREG_OFFSET_CAPTURE);
+    foreach ($m as $call) {
+        $args   = hook_call_args($src, strpos($src, '(', $call[0][1]) + 1);
+        $replay = $args[5] ?? '';
+        $count  = preg_match('/^\[(.*)\]$/s', $replay, $inner) === 1
+            ? (trim($inner[1]) === '' ? 0 : count(hook_call_args($inner[1] . ')', 0)))
+            : -1;
+        $lines[] = 'replay ' . $call[2][0] . ' ' . ($count < 0 ? 'unknown' : $count + 1);
+    }
+
+    return $lines;
+}
+
+/**
  * "kind name count" for every call site of an `api_*` hook, sorted and unique.
  *
  * @return string[]
@@ -147,6 +208,7 @@ function hook_api_args(): array
                 $kind    = str_contains($call[1][0], 'ilter') ? 'filter' : 'action';
                 $lines[] = $kind . ' ' . $call[3][0] . ' ' . hook_arg_count($src, $call[0][1] + strlen($call[0][0]));
             }
+            array_push($lines, ...hook_replay_args($src));
         }
     }
     $lines = array_values(array_unique($lines));
@@ -213,11 +275,13 @@ harness_section('API hook arguments');
 check('the arg counter reads nesting and strings', hook_arg_count(", \$a, f(\$b, \$c), ['x' => ','], \$d);", 0) === 4);
 $pinnedArgs = is_file(HOOK_ARGS_FIXTURE) ? array_values(array_filter(explode("\n", (string) file_get_contents(HOOK_ARGS_FIXTURE)))) : array();
 pin('each api_* hook passes the pinned argument count (php tests/hook-contract.php --write)', $pinnedArgs, $apiArgs);
+check('the replay reader counts the data and the array', hook_replay_args("\$x->finish('api_user', 'user', M, \$d, \$f, [\$user, f(\$a, \$b)], \$c);") === array('replay api_user 3'));
 $byName = array();
 foreach ($apiArgs as $line) {
-    $byName[explode(' ', $line)[1]][] = $line;
+    [, $name, $count] = explode(' ', $line);
+    $byName[$name][$count] = true;
 }
-pin('every call site of an api_* hook passes the same arguments', array(), array_keys(array_filter($byName, static fn (array $l): bool => count($l) > 1)));
+pin('every call site and replay of an api_* hook passes the same arguments', array(), array_keys(array_filter($byName, static fn (array $l): bool => count($l) > 1)));
 
 harness_section('Action and filter do not collide');
 
