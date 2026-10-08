@@ -884,49 +884,15 @@ class Item extends DAO
      * @param int    $id
      * @param string $stat
      *
-     * @return int|false|null int if updated correctly, false when error occurs, null for an unknown stat
+     * @return int|null rows changed (0 on a failed query); null for an unknown stat
      */
     public function clearStat($id, $stat)
     {
-        switch ($stat) {
-            case 'spam':
-                $array_set = array('i_num_spam' => 0);
-                break;
-            case 'duplicated':
-                $array_set = array('i_num_repeated' => 0);
-                break;
-            case 'bad':
-                $array_set = array('i_num_bad_classified' => 0);
-                break;
-            case 'offensive':
-                $array_set = array('i_num_offensive' => 0);
-                break;
-            case 'expired':
-                $array_set = array('i_num_expired' => 0);
-                break;
-            case 'all':
-                $array_set = array(
-                    'i_num_spam'           => 0,
-                    'i_num_repeated'       => 0,
-                    'i_num_bad_classified' => 0,
-                    'i_num_offensive'      => 0,
-                    'i_num_expired'        => 0
-                );
-                break;
-            default:
-                break;
-        }
-        if (isset($array_set)) {
-            try {
-                return Db::table(DB_TABLE_PREFIX . 't_item_stats')
-                    ->where('fk_i_item_id', $id)
-                    ->update($array_set);
-            } catch (\mindstellar\database\DbException $e) {
-                return false;
-            }
+        if (!is_string($stat) || !isset(\mindstellar\listing\ListingCounters::REPORTS[$stat])) {
+            return null;
         }
 
-        return null;
+        return \mindstellar\listing\ListingCounters::clearReport((int) $id, $stat);
     }
 
     /**

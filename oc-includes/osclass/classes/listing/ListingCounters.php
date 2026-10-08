@@ -24,7 +24,7 @@ final class ListingCounters extends Model
     protected const TABLE = 't_item_stats';
 
     /** Report name => the counter it resets. */
-    private const REPORTS = array(
+    public const REPORTS = array(
         'spam'       => array('i_num_spam'),
         'duplicated' => array('i_num_repeated'),
         'bad'        => array('i_num_bad_classified'),
