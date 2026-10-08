@@ -29,14 +29,15 @@ final class ListingInput
     /**
      * Read the posted listing form.
      *
-     * @param bool $admin an admin posts: the owner comes from ownerId or the contact e-mail,
-     *                    a new listing is active, and the expiry has no ceiling
+     * @param bool       $admin an admin posts: the owner comes from ownerId or the contact e-mail,
+     *                          a new listing is active, and the expiry has no ceiling
+     * @param Actor|null $actor who posts; the request's signed-in admin or user when null
      *
      * @return array<string,mixed>
      */
-    public static function read(bool $admin, bool $isAdd): array
+    public static function read(bool $admin, bool $isAdd, ?Actor $actor = null): array
     {
-        $actor = self::sessionActor($admin);
+        $actor ??= self::sessionActor($admin);
         $data  = self::build(Params::getParamsAsArray('', false), $actor, $isAdd, Params::getFiles('photos'));
         if (($data['userId'] ?? null) !== null) {
             Params::setParam('contactName', $data['contactName']);
@@ -98,15 +99,15 @@ final class ListingInput
     }
 
     /**
-     * read() from plain values, for the signed-in user or admin of this request.
+     * read() from plain values, for $actor or else the signed-in user or admin of this request.
      *
      * @param array<string,mixed> $input
      *
      * @return array<string,mixed>
      */
-    public static function fromValues(array $input, bool $admin, bool $isAdd): array
+    public static function fromValues(array $input, bool $admin, bool $isAdd, ?Actor $actor = null): array
     {
-        return self::fromArray($input, self::sessionActor($admin), $isAdd);
+        return self::fromArray($input, $actor ?? self::sessionActor($admin), $isAdd);
     }
 
     private static function sessionActor(bool $admin): Actor

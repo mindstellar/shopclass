@@ -33,6 +33,8 @@ These need a new version, v2:
 - making an optional parameter required
 - changing how authentication works
 
+Core's tests compare the v1 OpenAPI document with a saved copy and fail on any of these.
+
 If v2 ships, it runs beside v1 for at least 12 months. A core endpoint that does not change
 serves both; one that does keeps its v1 form under `/api/v1`. These stay on v1 until they
 opt in:
@@ -157,7 +159,7 @@ Read-only endpoints, authenticated with keys.
 | Endpoint | Returns |
 |---|---|
 | `GET /` | The site, its locales and links |
-| `GET /openapi.json` | The OpenAPI 3.1 document, with the site's plugin endpoints. No key needed. |
+| `GET /openapi.json` | The OpenAPI 3.1 document, with the site's plugin endpoints. Any key, or none when the site allows anonymous reads. |
 | `GET /listings`, `GET /listings/{id}` | Search, and one listing |
 | `GET /listings/{id}/photos`, `GET /listings/{id}/comments` | A listing's photos and approved comments |
 | `GET /categories`, `GET /categories/{category}`, `GET /custom-fields` | Categories (flat or tree) and custom fields |

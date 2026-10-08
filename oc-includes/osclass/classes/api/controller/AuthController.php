@@ -41,16 +41,15 @@ final class AuthController
 
     public function __construct(private ApiServices $api)
     {
-        $this->users = $api->users();
-        $this->tokens = $api->tokenIssuer();
+        $this->users   = $api->users();
+        $this->tokens  = $api->tokenIssuer();
         $this->refresh = $api->refreshTokens();
     }
 
     public function token(ApiCall $call): Response
     {
         $request = $call->request();
-
-        $input = $request->input();
+        $input   = $call->input();
         if (!osc_users_enabled()) {
             throw ProblemException::of('feature_disabled', 'This site has no user accounts.');
         }
@@ -78,8 +77,7 @@ final class AuthController
     public function signOut(ApiCall $call): Response
     {
         $credential = $call->credential();
-
-        $family = $credential->isAccessToken() ? $credential->family() : null;
+        $family     = $credential->isAccessToken() ? $credential->family() : null;
         if ($family === null) {
             throw ProblemException::of('wrong_credential', 'Signing out needs an access token. Revoke a key at /account/keys.');
         }
@@ -173,9 +171,7 @@ final class AuthController
      */
     public function pageToken(ApiCall $call): Response
     {
-        $credential = $call->credential();
-
-        $user = $credential->isSession() ? $this->users->find($call->userId()) : null;
+        $user = $call->credential()->isSession() ? $this->users->find($call->userId()) : null;
         if ($user === null) {
             throw ProblemException::of('wrong_credential', 'Only a same-site session call can renew its page token.');
         }

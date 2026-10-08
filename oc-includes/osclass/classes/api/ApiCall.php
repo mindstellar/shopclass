@@ -82,8 +82,6 @@ final class ApiCall
     /**
      * Whether the caller may see this listing row; false for a missing row.
      *
-     * @api
-     *
      * @param array<string,mixed>|null $row
      */
     public function canViewListing(?array $row): bool
@@ -93,8 +91,6 @@ final class ApiCall
 
     /**
      * $row when the caller may see it, else null.
-     *
-     * @api
      *
      * @param array<string,mixed>|null $row
      *

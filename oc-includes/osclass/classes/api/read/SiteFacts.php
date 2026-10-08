@@ -34,7 +34,6 @@ final class SiteFacts
         private int $maxLimit = 50,
         private bool $keepOriginal = false,
         private bool $hidePhone = false,
-        private bool $publicReads = false,
         private bool $contactNeedsSignIn = false
     ) {
     }
@@ -60,7 +59,6 @@ final class SiteFacts
             $max,
             (bool) osc_keep_original_image(),
             $settings->hidePhone(),
-            $settings->publicReads(),
             (bool) osc_reg_user_can_contact()
         );
     }
@@ -130,11 +128,6 @@ final class SiteFacts
     public function hidePhone(): bool
     {
         return $this->hidePhone;
-    }
-
-    public function publicReads(): bool
-    {
-        return $this->publicReads;
     }
 
     /**

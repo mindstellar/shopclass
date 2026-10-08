@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\api\serializer;
 
+use mindstellar\user\UserQuery;
 use mindstellar\user\UserStatus;
 
 /**
@@ -33,6 +34,22 @@ final class UserSerializer
 
     public function __construct(private Links $links, private Extensions $extensions)
     {
+    }
+
+    /**
+     * A page of users. Their avatars are read in one query, not one per user.
+     *
+     * @param array<int,array<string,mixed>> $users t_user rows
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function many(array $users, ViewContext $context): array
+    {
+        if ($users !== [] && $context->wants('avatar')) {
+            (new UserQuery())->primeAvatars(array_map(static fn (array $user): int => Format::int($user['pk_i_id'] ?? 0), $users));
+        }
+
+        return array_map(fn (array $user): array => $this->one($user, $context), array_values($users));
     }
 
     /**

@@ -20,7 +20,7 @@ use mindstellar\comment\CommentQuery;
 use mindstellar\comment\CommentStatus;
 use mindstellar\database\Db;
 use mindstellar\listing\ListingStatus;
-use mindstellar\user\UserStore;
+use mindstellar\user\UserQuery;
 use mindstellar\utility\Clock;
 use mindstellar\webhook\WebhookServices;
 
@@ -56,12 +56,9 @@ final class EventData
      */
     public function user(int $id): ?array
     {
-        $user = UserStore::find($id);
-        if ($user === null) {
-            return null;
-        }
+        $user = (new UserQuery())->row($id);
 
-        return (new UserSerializer($this->api->links(), $this->api->extensions()))->one($user, $this->context());
+        return $user === null ? null : $this->api->userSerializer()->one($user, $this->context());
     }
 
     /**

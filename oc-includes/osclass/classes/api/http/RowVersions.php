@@ -19,7 +19,6 @@ use mindstellar\database\Db;
 use mindstellar\resource\RowHashQuery;
 use mindstellar\security\SigningKey;
 use mindstellar\settings\SettingsPageRegistry;
-use mindstellar\webhook\WebhookEndpointStore;
 
 /**
  * Versions read from the stored rows: a keyed hash of the resource's row and its own child
@@ -84,10 +83,7 @@ final class RowVersions implements ResourceVersions
             return self::sign([RowHashQuery::keyedHashes('t_preference', self::settingKeys(), $lock)]);
         }
         if ($path === 'admin/webhooks/{webhook}') {
-            $id   = (string) ($args['webhook'] ?? '');
-            $rows = WebhookEndpointStore::validId($id)
-                ? RowHashQuery::keyedHashes('t_key_value', [['s_group' => WebhookEndpointStore::GROUP, 's_key' => $id]], $lock)
-                : [];
+            $rows = RowHashQuery::webhookHashes((string) ($args['webhook'] ?? ''), $lock);
 
             return $rows === [] ? null : self::sign([$rows]);
         }
@@ -99,12 +95,10 @@ final class RowVersions implements ResourceVersions
         if ($key === null || $key === '') {
             return null;
         }
-        $owner   = $resource['owner'] ?? null;
+        $owner = $resource['owner'] ?? null;
         $found = RowHashQuery::hashes($resource['tables'], $key, $owner, $lock);
-        $count = count($resource['tables']);
-
-        $rows = array_fill(0, $count, []);
-        $head = null;
+        $rows  = array_fill(0, count($resource['tables']), []);
+        $head  = null;
         foreach ($found as $row) {
             $rows[(int) $row['t']][] = (string) $row['r'];
             if ((int) $row['t'] === 0) {

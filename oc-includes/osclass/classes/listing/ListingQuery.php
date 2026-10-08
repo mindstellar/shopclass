@@ -181,6 +181,27 @@ final class ListingQuery
     }
 
     /**
+     * The bare t_item rows of some listings, keyed by id; missing ids are left out.
+     *
+     * @param int[] $ids
+     *
+     * @return array<int,array<string,mixed>>
+     * @throws \mindstellar\database\DbException
+     */
+    public function findMany(array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+        $rows = [];
+        foreach ($this->table()->whereIn('pk_i_id', $ids)->get() as $row) {
+            $rows[(int) $row['pk_i_id']] = Db::stringifyRow($row);
+        }
+
+        return $rows;
+    }
+
+    /**
      * Title and description rows of some listings, in one query.
      *
      * @param int[]       $ids
@@ -227,6 +248,19 @@ final class ListingQuery
             . ' WHERE s.fk_i_item_id IN (' . implode(', ', array_fill(0, count($ids), '?')) . ')',
             array_values($ids)
         ));
+    }
+
+    /**
+     * Photos of some listings, in upload order, in one query.
+     *
+     * @param int[] $ids
+     *
+     * @return array<int,array<string,mixed>> t_item_resource rows
+     * @throws \mindstellar\database\DbException
+     */
+    public function photos(array $ids): array
+    {
+        return $ids === [] ? [] : Db::stringifyRows(PhotoStore::ofItems($ids));
     }
 
     /**

@@ -17,8 +17,9 @@ whichever theme is active, and a theme change would change the API.
 
 Only what is marked `@api` in core's source is the plugin contract: the `osc_api_*` helpers,
 `ApiCall`, `ApiKit`, the spec keys listed below, the `ProblemException` and `Problem`
-factories, the `Response` factories, `ViewContext`'s getters and the documented `Request` and
-`Credential` methods. Everything else under `mindstellar\api` is internal and may change in
+factories, the `Response` factories, `ViewContext`'s getters, the documented `Request`,
+`Credential` and `Actor` methods, the `CredentialKind` values, and each error code's status
+(not its title). Everything else under `mindstellar\api` is internal and may change in
 any release, including core's component schema names.
 
 ## Add an endpoint
@@ -59,9 +60,6 @@ Call `osc_api_register_route()` when your plugin loads. The route is then
   is dropped.
 - A path that does not, or that would replace a core route, is dropped and logged. The
   rest of your routes still load.
-- One exception: a route with both `deprecated` and `sunset` may keep an old path outside
-  `ext/` until its sunset day, so a plugin can redirect it after moving. It cannot use a
-  path any core route could answer.
 - Registering the same method and path twice keeps the first and logs the second. Two
   routes that can match the same path are logged; the one registered first answers.
 - `{id}` and `{photo}` match digits. Any other `{name}` matches one path segment. Read a value with `$call->arg('name')`.
@@ -83,8 +81,9 @@ Call `osc_api_register_route()` when your plugin loads. The route is then
 | `where` | `placeholder => regex` tested on that one path segment, e.g. `array('external_id' => '[A-Za-z0-9_-]+')`. Without it `{id}` and `{photo}` match digits and any other `{name}` one segment. A pattern that does not compile on its own, has a capturing group (use `(?:...)`), uses a `(*VERB)` or can match `/` drops the route. |
 | `versions` | The API versions the route serves, e.g. `array('v1', 'v2')`. Default: `v1` only. |
 | `plugin` | The plugin's folder name, used in log lines. Default: the folder of the plugin file that registered the route. |
+| `replayable` | Default `true`: a write sent with an `Idempotency-Key` has its answer stored for 24 hours and replayed on a retry. Set `false` when the answer holds a secret. |
 
-Core-only keys (`replayable`, `upload`, `oauth`, `prepare`) drop the route, and so does any key not listed above, so a typo such as `scopes` cannot leave a route open.
+Core-only keys (`upload`, `oauth`, `prepare`) drop the route, and so does any key not listed above, so a typo such as `scopes` cannot leave a route open.
 
 The schemas understand `type`, `properties`, `items`, `required`, `enum`, `minimum`,
 `maximum`, `minLength`, `maxLength`, `pattern`, `format`, `minItems`, `maxItems`,
@@ -117,7 +116,7 @@ refused and logged.
 | `none` | Anyone, no key. Use for health or docs endpoints only. |
 | `public` | Any key, or nobody when the owner allowed anonymous reads. **`GET` only.** |
 | `user` | A user's key or token. |
-| `admin` | An admin key. A moderator's key is refused unless the route names a `scope` moderators may hold. |
+| `admin` | An admin key. The `scope` must start with `admin:` or `ext:`, or the route is dropped and logged: every admin key holds `listings:read`. A moderator's key is refused unless the route names a `scope` moderators may hold. |
 
 **A write can never be `public`.** `POST`, `PUT`, `PATCH` and `DELETE` with `auth => public`
 are dropped. Use `user` or `admin`.
@@ -135,10 +134,10 @@ A handler that needs nothing from the call may take no argument.
 
 | Class | Use |
 |---|---|
-| `ApiCall` | `request()`, `credential()`, `args()` (the path values), `arg($name)` (one value, or `null`), `intArg($name)`, `input()` (the decoded JSON body, `array()` when none was sent), `kit()`, `userId()` (0 when the caller is not a user), `actor($scope)` (the caller for core services), `listingActor()`, `canViewListing($row)` (`false` for a missing row), `visibleListing($row)` (the row, or `null` when the caller may not see it) |
-| `ApiKit` | `context($call, $object, $members, $includes)` (a `ViewContext` for this caller), `listing($call, $id, $context)` (one listing, or `null` when it does not exist or the caller may not see it), `listings()` (core's listing reader for rows you found yourself; it does not check visibility), `links()` |
+| `ApiCall` | `request()`, `credential()`, `args()` (the path values), `arg($name)` (one value, or `null`), `intArg($name)`, `input()` (the decoded JSON body, `array()` when none was sent), `kit()`, `userId()` (0 when the caller is not a user), `actor($scope)` (the caller for core services, an `Actor` with `userId()`, `adminId()`, `isAdmin()`, `isGuest()` and `ip()`), `listingActor()` |
+| `ApiKit` | `context($call, $object, $members, $includes)` (a `ViewContext` for this caller), `listing($call, $id, $context)` (one listing, or `null` when it does not exist or the caller may not see it), `listingsById($call, $ids, $context)` (listings in the order given; missing ones and those the caller may not see are left out), `links()` |
 | `Request` | `method()`, `path()`, `version()`, `routePath()`, `query()`, `queryString($name)`, `queryInt($name)`, `queryBool($name)`, `queryList($name)`, `queryIds($name)`, `header($name)`, `input()`, `ip()` |
-| `Credential` | `kind()`, `scopes()`, `has($scope)`, `userId()`, `adminId()`, `isAdmin()`, `isModerator()`, `isUser()`, `isSession()`, `isAnonymous()` |
+| `Credential` | `kind()` (a `CredentialKind` constant: `ANONYMOUS`, `PUBLIC`, `KEY`, `USER` or `SESSION`), `scopes()`, `has($scope)`, `userId()`, `adminId()`, `isAdmin()`, `isModerator()`, `isUser()`, `isSession()`, `isAnonymous()` |
 | `Response` | `Response::ok($data, $status = 200)`, `Response::created($data, $location)`, `Response::collection($items, $meta, $links)`, `Response::noContent()`, `->withHeader($name, $value)`, and in hooks `->status()`, `->body()`, `->withBodyMember($name, $value)` |
 | `RouteSpec` | In hooks: `key()` (`GET ext/acme/x`), `method()`, `path()` |
 | `read\Page` | `Page::whole($items, $call->kit()->links(), $call)`: a full list in the standard list envelope |
@@ -339,8 +338,10 @@ API requests do not load the active theme's `functions.php`, so hooks a theme ad
 `api_response` does not run when an `ProblemException` was thrown. A PUT, PATCH or DELETE that sends `If-Match`, on a path whose GET keeps no stored version, also runs it once for that GET, to compare ETags; check `$request->method()` if that matters to you. Plugin routes keep no stored version.
 
 ```php
+use mindstellar\apiaccess\CredentialKind;
+
 osc_add_hook('api_request_before', function ($request, $route, $credential) {
-    if ($credential->kind() === 'public' && $request->queryString('q') === 'scrape') {
+    if ($credential->kind() === CredentialKind::PUBLIC && $request->queryString('q') === 'scrape') {
         throw ProblemException::of('forbidden', 'This search is not allowed.');
     }
 });

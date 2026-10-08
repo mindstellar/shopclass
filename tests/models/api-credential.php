@@ -143,6 +143,9 @@ pin('a wrong secret for a stored key is a 401 that sets the marker in the prefer
 osc_reset_preferences();
 check('a request loading the preferences after it sees the marker', (int) osc_get_preference(FailureCounter::MARKER, ApiSettings::SECTION) > time());
 pin('after the marker clears, the failure check runs again: 3 queries', 3, $keyed());
+$bucket   = new RateBucket('api_key', 'sampled-' . $made->id(), 120);
+$sampled  = static fn (bool $writes): int => harness_query_count(static fn () => RateLimiter::sampled(new SystemClock(), static fn (): bool => $writes)->hit($bucket));
+pin('without APCu a bucket costs one query per request: the sampled write, or the read between writes', [1, 1], [$sampled(true), $sampled(false)]);
 
 $keys->revoke($made->id());
 pin('a revoked key fails', null, $keys->check($made->token())->credential());

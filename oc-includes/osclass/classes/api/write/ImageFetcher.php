@@ -15,25 +15,28 @@ namespace mindstellar\api\write;
 use mindstellar\security\AddressGuard;
 
 /**
- * Downloads a photo a listing names by URL. Only public http(s) addresses on their usual
+ * Downloads the photos a listing names by URL, all at once. Only public http(s) addresses on their usual
  * ports are fetched, the connection is pinned to the checked IP and never goes through a
  * proxy, redirects are not followed, and the body stops at the site's photo size.
  */
 final class ImageFetcher
 {
-    /** Seconds for the whole download. */
+    /** Seconds for each download; they run side by side. */
     public const TIMEOUT = 15;
 
     /** A download slower than LOW_SPEED bytes a second for LOW_SPEED_TIME seconds is dropped. */
     public const LOW_SPEED = 1024;
     public const LOW_SPEED_TIME = 5;
 
-    /** @var \Closure(string, string, string, int, int): ?string */
+    /** Why a download failed, whatever the cause, so the answer says nothing about the far server. */
+    public const FAILED = 'The photo could not be downloaded.';
+
+    /** @var \Closure(array<int,array{url:string,ip:string,file:string}>, int, int): array<int,?string> */
     private \Closure $transport;
 
     /**
-     * @param callable|null $transport (url, pinned ip, file, max bytes, seconds) => an error, or null
-     *                                 once the file is written; cURL by default
+     * @param callable|null $transport (downloads, max bytes, seconds) => an error or null per download, once the
+     *                                 files are written; each download is {url, pinned ip, file}. cURL by default
      */
     public function __construct(private AddressGuard $guard, ?callable $transport = null)
     {
@@ -46,42 +49,81 @@ final class ImageFetcher
     }
 
     /**
-     * Download $url into $file within $timeout seconds.
+     * Download each URL into its file, all at the same time. Every address is checked first, and
+     * none is downloaded when one is refused.
      *
-     * @return string|null why it was not fetched, or null on success
+     * @param array<int,string> $urls  key => URL
+     * @param array<int,string> $files key => the file to write, for each URL
+     *
+     * @return array<int,string|null> key => why it was not fetched, or null on success; only the
+     *                                refused keys when an address is refused
      */
-    public function fetch(string $url, string $file, int $maxBytes, int $timeout = self::TIMEOUT): ?string
+    public function fetchAll(array $urls, array $files, int $maxBytes): array
     {
-        $check = $this->guard->check($url);
-        if (!$check['ok']) {
-            return (string) ($check['error'] ?? 'The address is not fetched.');
+        $errors = [];
+        $jobs   = [];
+        foreach ($urls as $key => $url) {
+            $check = $this->guard->check($url);
+            if ($check['ok']) {
+                $jobs[$key] = ['url' => $url, 'ip' => (string) $check['ip'], 'file' => $files[$key]];
+            } else {
+                $errors[$key] = (string) ($check['error'] ?? 'The address is not fetched.');
+            }
         }
+        if ($errors === [] && $jobs !== []) {
+            $errors = ($this->transport)($jobs, $maxBytes, self::TIMEOUT);
+        }
+        ksort($errors);
 
-        return ($this->transport)($url, (string) $check['ip'], $file, $maxBytes, max(1, min(self::TIMEOUT, $timeout)));
+        return $errors;
     }
 
     /**
-     * An HTTP GET with cURL, connecting only to $ip.
+     * HTTP GETs with cURL, run side by side, each connecting only to its pinned IP.
+     *
+     * @param array<int,array{url:string,ip:string,file:string}> $jobs
+     *
+     * @return array<int,string|null>
      */
-    public static function curl(string $url, string $ip, string $file, int $maxBytes, int $timeout = self::TIMEOUT): ?string
+    public static function curl(array $jobs, int $maxBytes, int $timeout = self::TIMEOUT): array
     {
-        if (!function_exists('curl_init')) {
-            return 'This server cannot download files.';
+        $errors  = [];
+        $handles = [];
+        $outs    = [];
+        $multi   = curl_multi_init();
+        foreach ($jobs as $key => $job) {
+            $out = @fopen($job['file'], 'wb');
+            if ($out === false) {
+                $errors[$key] = 'The temp folder is not writable.';
+                continue;
+            }
+            $curl = curl_init($job['url']);
+            curl_setopt_array($curl, self::curlOptions($job['url'], $job['ip'], $maxBytes, $timeout) + [CURLOPT_FILE => $out]);
+            curl_multi_add_handle($multi, $curl);
+            $handles[$key] = $curl;
+            $outs[$key]    = $out;
         }
-        $out = @fopen($file, 'wb');
-        if ($out === false) {
-            return 'The temp folder is not writable.';
-        }
-        $curl = curl_init($url);
-        curl_setopt_array($curl, self::curlOptions($url, $ip, $maxBytes, $timeout) + [CURLOPT_FILE => $out]);
-        $ok     = curl_exec($curl);
-        $status = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
-        fclose($out);
-        if ($ok === false) {
-            return 'The photo could not be downloaded.';
-        }
+        do {
+            $status = curl_multi_exec($multi, $running);
+            if ($running > 0 && curl_multi_select($multi, 1.0) === -1) {
+                usleep(10000);
+            }
+        } while ($running > 0 && $status === CURLM_OK);
 
-        return $status >= 200 && $status < 300 ? null : 'The address answered HTTP ' . $status . '.';
+        $results = [];
+        while (($info = curl_multi_info_read($multi)) !== false) {
+            $results[spl_object_id($info['handle'])] = $info['result'];
+        }
+        foreach ($handles as $key => $curl) {
+            $code = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
+            $ok   = ($results[spl_object_id($curl)] ?? null) === CURLE_OK && $code >= 200 && $code < 300;
+            curl_multi_remove_handle($multi, $curl);
+            fclose($outs[$key]);
+            $errors[$key] = $ok ? null : self::FAILED;
+        }
+        curl_multi_close($multi);
+
+        return $errors;
     }
 
     /**

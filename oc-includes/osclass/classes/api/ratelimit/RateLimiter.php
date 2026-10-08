@@ -46,26 +46,47 @@ final class RateLimiter
      */
     public static function fromSite(Clock $clock): self
     {
-        $db    = static fn (string $context, string $key, int $window, int $limit = 0): ?int => RateLimit::increment($context, $key, $window);
-        $add   = static fn (string $context, string $key, int $by, int $window): ?int => RateLimit::add($context, $key, $by, $window);
-        $count = static fn (string $context, string $key, int $window): ?int => RateLimit::count($context, $key, $window);
         if (!ApcuStore::available()) {
-            return new self([new SampledCounter($add, $count), 'increment'], $clock, $db);
+            return self::sampled($clock);
         }
-        $counter = new ApcuCounter(new ApcuStore(), $clock, $add, $db, self::installPrefix(), $count);
+        [$db, $add, $count] = self::counters();
+        $counter = new ApcuCounter(new ApcuStore(), $clock, $add, $db, self::installPrefix(DB_TABLE_PREFIX, DB_NAME, (string) osc_base_url()), $count);
 
         return new self([$counter, 'increment'], $clock, $db);
     }
 
     /**
+     * The limiter of a server without APCu: exact buckets with RateLimit, the others in samples.
+     *
+     * @param callable|null $draw (every) => whether this request writes; random when null
+     */
+    public static function sampled(Clock $clock, ?callable $draw = null): self
+    {
+        [$db, $add, $count] = self::counters();
+
+        return new self([new SampledCounter($add, $count, $draw), 'increment'], $clock, $db);
+    }
+
+    /**
      * A short value unique to this install, so sites sharing one APCu never share a counter.
      */
-    public static function installPrefix(): string
+    public static function installPrefix(string $tablePrefix, string $database, string $baseUrl): string
     {
-        $site = (defined('DB_TABLE_PREFIX') ? DB_TABLE_PREFIX : '') . '|' . (defined('DB_NAME') ? DB_NAME : '') . '|'
-            . (function_exists('osc_base_url') ? osc_base_url() : '');
+        return substr(sha1($tablePrefix . '|' . $database . '|' . $baseUrl), 0, 12);
+    }
 
-        return substr(sha1($site), 0, 12);
+    /**
+     * RateLimit's increment, add and count.
+     *
+     * @return array{0:\Closure,1:\Closure,2:\Closure}
+     */
+    private static function counters(): array
+    {
+        return [
+            static fn (string $context, string $key, int $window, int $limit = 0): ?int => RateLimit::increment($context, $key, $window),
+            static fn (string $context, string $key, int $by, int $window): ?int => RateLimit::add($context, $key, $by, $window),
+            static fn (string $context, string $key, int $window): ?int => RateLimit::count($context, $key, $window),
+        ];
     }
 
     /**

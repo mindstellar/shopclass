@@ -53,11 +53,9 @@ final class AlertsController
 
     public function create(ApiCall $call): Response
     {
-        $request = $call->request();
-
         $userId  = $call->userId();
-        $filters = (array) ($request->input()['filters'] ?? []);
-        $search  = $request->withQuery(array_map(static fn ($v) => is_bool($v) ? ($v ? '1' : '0') : $v, $filters));
+        $filters = (array) ($call->input()['filters'] ?? []);
+        $search  = $call->request()->withQuery(array_map(static fn ($v) => is_bool($v) ? ($v ? '1' : '0') : $v, $filters));
         $values  = ListingSearch::params($search, $this->categories, $this->api->locale($search));
         $alert   = AlertEnvelope::fromValues($values, $values);
         if ($alert === '' || !AlertEnvelope::validate($alert)) {

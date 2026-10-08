@@ -15,6 +15,7 @@ namespace mindstellar\api\schema;
 use mindstellar\api\Problem;
 use mindstellar\api\serializer\CustomFieldSerializer;
 use mindstellar\api\serializer\ExtensionMembers;
+use mindstellar\api\Warning;
 use mindstellar\currency\CurrencyCode;
 use mindstellar\listing\ListingStatus;
 use mindstellar\location\CountryCode;
@@ -446,7 +447,7 @@ final class Schema
         $input  = static fn (array $properties, array $required = []): array => self::object($properties, $required) + ['additionalProperties' => false];
 
         return [
-            'Warning'            => self::object(['code' => ['type' => 'string'], 'message' => ['type' => 'string']], ['code', 'message']),
+            'Warning'            => self::object(['code' => ['type' => 'string', 'enum' => Warning::CODES], 'message' => ['type' => 'string']], ['code', 'message']),
             // An OAuth 2 token answer (RFC 6749 §5.1): the members at the top level, no `data`.
             'TokenDocument'      => self::object([
                 'access_token'       => ['type' => 'string', 'description' => '`sca_...`, sent as `Authorization: Bearer <token>`.'],
@@ -469,7 +470,9 @@ final class Schema
                 'header'     => ['type' => 'string', 'enum' => ['X-Shopclass-Token']],
                 'expires_at' => self::time(),
             ], ['token', 'header', 'expires_at']),
-            'AccountInput'       => $input(self::profileMembers()),
+            'AccountInput'       => $input(self::profileMembers() + [
+                'current_password' => $text(4096, 1) + ['description' => 'The account\'s password, asked again when `email` changes.'],
+            ]),
             'AccountDocument'    => self::object([
                 'data'     => self::ref('User'),
                 'warnings' => ['type' => 'array', 'items' => self::ref('Warning')],

@@ -245,7 +245,7 @@ $otherKey  = $keys->create(CredentialKind::KEY, 'other', array('listings:read'),
 $adminKey  = $keys->create(CredentialKind::KEY, 'admin', array('admin:listings', 'admin:users'), KeyOwner::admin($adminId))->token();
 $narrowKey = $keys->create(CredentialKind::KEY, 'reader', array('listings:read'), KeyOwner::admin($adminId))->token();
 
-$facts = new SiteFacts('en_US', array('en_US' => array('name' => 'English', 'direction' => 'ltr')), true, true, 10, 12, 50, false, false);
+$facts = new SiteFacts('en_US', array('en_US' => array('name' => 'English', 'direction' => 'ltr')));
 $validator = new Validator(Schema::components());
 // Core handlers are built over test services, as the site's are.
 $makeKernel = static function (ApiSettings $settings, ?Validator $with = null, ?SiteFacts $siteFacts = null) use ($keys, $validator, $facts): Kernel {
@@ -473,8 +473,8 @@ pin('an expired listing shows no contact e-mail or phone', array(null, null), ar
     $get('listings/' . $expired, array(), $publicKey)->body()['data']['contact'],
     array('email' => 0, 'phone' => 0)
 )));
-$gated = $makeKernel(new ApiSettings(true, userKeys: true), null, new SiteFacts('en_US', array('en_US' => array('name' => 'English', 'direction' => 'ltr')), true, true, 10, 12, 50, false, false, false, true));
-$noComments = $makeKernel(new ApiSettings(true, userKeys: true), null, new SiteFacts('en_US', array('en_US' => array('name' => 'English', 'direction' => 'ltr')), true, false));
+$gated = $makeKernel(new ApiSettings(true, userKeys: true), null, new SiteFacts('en_US', array('en_US' => array('name' => 'English', 'direction' => 'ltr')), contactNeedsSignIn: true));
+$noComments = $makeKernel(new ApiSettings(true, userKeys: true), null, new SiteFacts('en_US', array('en_US' => array('name' => 'English', 'direction' => 'ltr')), commentsEnabled: false));
 pin('with comments off, reading them is 403 feature_disabled, as posting one is', 403, $get('listings/' . $live[0] . '/comments', array(), $publicKey, $noComments)->status());
 $admin->query("UPDATE {$p}t_item SET b_show_email = 1 WHERE pk_i_id = {$live[0]}");
 pin('when only signed-in users may contact, a public key sees no e-mail or phone', array(null, null), array_values(array_intersect_key(
@@ -564,6 +564,9 @@ $twenty = $count(array('category' => 'cars', 'limit' => 20));
 echo "  a 20-listing page, warm: $twenty queries\n";
 pin('a 20-listing page costs the same queries as a 5-listing page', $five, $twenty);
 pin('a warm 20-listing page costs 7 queries: key, searchable fields, search, texts in the asked language, stats and locations, photos, sellers', 7, $twenty);
+$get('listings/' . $live[0], array(), $publicKey);
+pin('GET /listings/{id} with a public key: 6 queries (key, t_item, texts, stats and location, photos, seller)', 6, harness_query_count(static fn () => $get('listings/' . $live[0], array(), $publicKey)));
+pin('a listing it may not see: 2 queries (key, t_item), its texts are not read', 2, harness_query_count(static fn () => $get('listings/' . $spam, array(), $publicKey)));
 pin('count=true adds the count query', $twenty + 1, $count(array('category' => 'cars', 'limit' => 20, 'count' => 'true')));
 pin('include=custom_fields adds one query, whatever the page size', array($twenty + 1, $twenty + 1), array(
     $count(array('category' => 'cars', 'limit' => 5, 'include' => 'custom_fields')), $count(array('category' => 'cars', 'limit' => 20, 'include' => 'custom_fields')),

@@ -459,7 +459,7 @@ final class PublicRoutes
                 tag: 'Meta',
                 summary: 'This API described in OpenAPI 3.1, with the site\'s plugin endpoints',
                 response: 'OpenApiDocument',
-                auth: RouteSpec::AUTH_NONE,
+                auth: RouteSpec::AUTH_PUBLIC,
                 scope: null
             ),
         ];

@@ -120,7 +120,7 @@ $b->increment('api', 'k', 60);
 pin('every memory key carries the install prefix', [], array_values(array_filter(array_keys($a->data), static fn (string $k): bool => !str_starts_with($k, 'osc_rl:siteA:'))));
 $c = new ApcuCounter($a, $clock, static fn (): ?int => null, static fn (): int => 0, 'siteB');
 pin('another install sharing the store counts from 1', 1, $c->increment('api', 'k', 60));
-pin('the install prefix is 12 characters', 12, strlen(RateLimiter::installPrefix()));
+pin('the install prefix is 12 characters, and differs per database', [12, false], [strlen(RateLimiter::installPrefix('oc_', 'a', 'https://a.test/')), RateLimiter::installPrefix('oc_', 'a', 'https://a.test/') === RateLimiter::installPrefix('oc_', 'b', 'https://a.test/')]);
 
 harness_section('seeding from the database');
 $fresh   = new ArrayStore();

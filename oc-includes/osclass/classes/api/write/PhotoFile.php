@@ -82,7 +82,7 @@ final class PhotoFile
             }
             $path = $stage->tempPath('upload');
             if (!@copy($upload['tmp_name'], $path)) {
-                throw ProblemException::of('server_error', 'The photo could not be stored.');
+                throw self::notStored();
             }
         } elseif (str_starts_with($request->contentType(), 'image/')) {
             $body = $request->body();
@@ -94,7 +94,7 @@ final class PhotoFile
             }
             $path = $stage->tempPath('upload');
             if (@file_put_contents($path, $body) === false) {
-                throw ProblemException::of('server_error', 'The photo could not be stored.');
+                throw self::notStored();
             }
         } else {
             throw ProblemException::of('unsupported_media_type', 'Send the photo as multipart/form-data in a field named photo, or as the image itself.');
@@ -128,10 +128,18 @@ final class PhotoFile
         $extension = self::EXTENSIONS[UploadMimes::detect($path)] ?? 'jpg';
         $final     = (string) preg_replace('/\.[A-Za-z0-9]+$/D', '', $path) . '.' . $extension;
         if ($final !== $path && !@rename($path, $final)) {
-            throw ProblemException::of('server_error', 'The photo could not be stored.');
+            throw self::notStored();
         }
 
         return new self($final, $extension);
+    }
+
+    /**
+     * 500 for a photo the server could not write.
+     */
+    public static function notStored(): ProblemException
+    {
+        return ProblemException::of('server_error', 'The photo could not be stored.');
     }
 
     private static function tooLarge(int $maxBytes): ProblemException

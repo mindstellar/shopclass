@@ -25,7 +25,6 @@ use mindstellar\api\serializer\UserSerializer;
 use mindstellar\api\write\AccountBody;
 use mindstellar\apiaccess\AccessEntries;
 use mindstellar\apiaccess\AccessEntry;
-use mindstellar\model\Resource;
 use mindstellar\moderation\StatusFlags;
 use mindstellar\user\AccountService;
 use mindstellar\user\UserQuery;
@@ -54,24 +53,16 @@ final class AdminUsersController
     public function index(ApiCall $call): Response
     {
         $request = $call->request();
-
         $context = $this->api->context($request, $call->credential(), 'user', UserSerializer::MEMBERS);
         $pager   = Pager::fromRequest($request, $this->api->cursor(), ListSpec::byId(), 'admin/users');
         $flag    = static fn (string $name): ?bool => array_key_exists($name, $request->query()) ? $request->queryBool($name) : null;
         $blocked = $flag('blocked');
         [$active, $enabled, $q] = [$flag('confirmed'), $blocked === null ? null : !$blocked, trim($request->queryString('q'))];
-        $serializer = $this->serializer();
 
         return $pager->respond(
             fn (): array => $this->query->newest($active, $enabled, $q, $pager->afterId(), $pager->limit() + 1),
             fn (): int => $this->query->count($active, $enabled, $q),
-            static function (array $page) use ($serializer, $context): array {
-                if ($page !== [] && $context->wants('avatar')) {
-                    (new Resource())->primeOwnerCache(Resource::OWNER_USER, array_column($page, 'pk_i_id'));
-                }
-
-                return array_map(static fn (array $user): array => $serializer->one($user, $context), $page);
-            },
+            fn (array $page): array => $this->api->userSerializer()->many($page, $context),
             $this->api->links()
         );
     }
@@ -159,7 +150,7 @@ final class AdminUsersController
     {
         $context = $this->api->context($call->request(), $call->credential(), 'user', UserSerializer::MEMBERS);
 
-        return Response::ok($this->serializer()->one($this->user($id), $context));
+        return Response::ok($this->api->userSerializer()->one($this->user($id), $context));
     }
 
     /**
@@ -169,10 +160,5 @@ final class AdminUsersController
     private function user(int $id): array
     {
         return ProblemException::found($this->users->find($id), 'user');
-    }
-
-    private function serializer(): UserSerializer
-    {
-        return new UserSerializer($this->api->links(), $this->api->extensions());
     }
 }

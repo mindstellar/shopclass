@@ -174,11 +174,6 @@ final class ArraySessions implements SignInStore
         return false;
     }
 
-    public function familyIsLive(string $family): bool
-    {
-        return $this->live($family) > 0;
-    }
-
     /** Live rows of a family. */
     public function live(string $family): int
     {

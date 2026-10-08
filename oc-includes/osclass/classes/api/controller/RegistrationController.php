@@ -41,7 +41,6 @@ final class RegistrationController
     public function register(ApiCall $call): Response
     {
         $request = $call->request();
-
         if (!$this->settings->registration()) {
             throw ProblemException::of('feature_disabled', 'This site does not take sign-ups through the API.');
         }
@@ -49,7 +48,7 @@ final class RegistrationController
         $busy = 'Too many sign-ups right now. Try again later.';
         $this->limiter->enforce($this->api->ratePolicy()->signUp($request->ip()), $busy, false);
 
-        $input    = $request->input();
+        $input    = $call->input();
         $password = (string) ($input['password'] ?? '');
         $form     = AccountInput::signUpFromArray([
             's_name'         => (string) ($input['name'] ?? ''),

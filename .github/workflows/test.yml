@@ -124,6 +124,8 @@ jobs:
         run: php tests/api-cors.php
       - name: API OpenAPI document
         run: php tests/api-openapi.php
+      - name: API breaking-change gate
+        run: php tests/api-openapi-compat.php
       - name: API OpenAPI cache
         run: php tests/api-openapi-cache.php
       - name: API query parameters

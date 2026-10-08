@@ -18,15 +18,15 @@ namespace mindstellar\apiaccess;
  */
 final class CredentialKind
 {
-    /** No credential. */
+    /** @api No credential. */
     public const ANONYMOUS = 'anonymous';
-    /** A public key, `scp_`: reads public data only. */
+    /** @api A public key, `scp_`: reads public data only. */
     public const PUBLIC = 'public';
-    /** An admin's or a user's API key, `sck_`. */
+    /** @api An admin's or a user's API key, `sck_`. */
     public const KEY = 'key';
-    /** A signed-in user's access token, `sca_`. */
+    /** @api A signed-in user's access token, `sca_`. */
     public const USER = 'user';
-    /** A signed-in web user calling from the site's own pages: cookie plus page token, `scs_`. */
+    /** @api A signed-in web user calling from the site's own pages: cookie plus page token, `scs_`. */
     public const SESSION = 'session';
     /** A refresh token; never authenticates a call itself. */
     public const REFRESH = 'refresh';

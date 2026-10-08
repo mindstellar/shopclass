@@ -54,9 +54,7 @@ final class AdminListingsController
     {
         $request = $call->request();
 
-        $users = $request->queryIds('user');
-
-        return $this->api->listingSearch()->newest($request, $call->credential(), 'admin/listings', $request->queryList('status'), $users, $this->categories($request), trim($request->queryString('q')));
+        return $this->api->listingSearch()->newest($request, $call->credential(), 'admin/listings', $request->queryList('status'), $request->queryIds('user'), $this->categories($request), trim($request->queryString('q')));
     }
 
     /**
@@ -88,9 +86,8 @@ final class AdminListingsController
      */
     public function update(ApiCall $call): Response
     {
-        $request = $call->request();
+        $request    = $call->request();
         $credential = $call->credential();
-
         $listing = $this->owned->load($call->intArg(), true);
         $input   = $request->input();
         [$flags, $edit] = StatusFlags::split($input, self::STATUS_MEMBERS);

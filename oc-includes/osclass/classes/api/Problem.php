@@ -26,10 +26,10 @@ use mindstellar\validation\RefusedException;
  */
 final class Problem
 {
-    /** Where the `type` URLs point. */
+    /** @api Where the `type` URLs point. */
     public const TYPE_BASE = 'https://mindstellar.com/docs/developers/api/errors/#';
 
-    /** A plugin's code: `ext_<slug>_<name>`, the slug's `-` written `_`. */
+    /** @api A plugin's code: `ext_<slug>_<name>`, the slug's `-` written `_`. */
     public const PLUGIN_CODE = '/^ext_[a-z0-9]+(?:_[a-z0-9]+)+$/D';
 
     /** ForbiddenException reason => code. */
@@ -40,7 +40,7 @@ final class Problem
         ForbiddenException::NOT_OWNER => 'not_owner',
     ];
 
-    /** @api code => [status, title] */
+    /** code => [status, title]. Only code => status is the contract; titles may change. */
     public const CATALOGUE = [
         'invalid_json'           => [400, 'The request body is not valid JSON.'],
         'invalid_cursor'         => [400, 'The cursor is not valid for this request.'],

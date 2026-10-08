@@ -244,7 +244,7 @@ pin(
 );
 pin('clearStat signature is unchanged', 'public clearStat($id, $stat)', harness_method_signature('Item', 'clearStat'));
 pin('enableByCategory signature is unchanged', 'public enableByCategory($enable, $aIds)', harness_method_signature('Item', 'enableByCategory'));
-pin('deleteByPrimaryKey signature is unchanged', 'public deleteByPrimaryKey($id)', harness_method_signature('Item', 'deleteByPrimaryKey'));
+pin('deleteByPrimaryKey signature is unchanged', 'public deleteByPrimaryKey($id, ?mindstellar\\auth\\Actor $actor = NULL)', harness_method_signature('Item', 'deleteByPrimaryKey'));
 pin('metaFields signature is unchanged', 'public metaFields($id)', harness_method_signature('Item', 'metaFields'));
 pin('liveConditions signature is unchanged', 'public static liveConditions($alias = \'\')', harness_method_signature('Item', 'liveConditions'));
 

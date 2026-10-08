@@ -154,8 +154,8 @@ final class Kernel
 
                 return $this->finish($response, $request, $cors, $requestId);
             }
-            $match      = $this->match($request);
-            $route      = $match->route();
+            $match = $this->match($request);
+            $route = $match->route();
             if ($route->upload()) {
                 $request = $request->forUpload();
             }
@@ -388,7 +388,7 @@ final class Kernel
     {
         $methods = $this->router->methodsFor($this->routePath($request), $request->version());
         if ($methods === []) {
-            throw ProblemException::notFound('No such endpoint.');
+            throw self::noEndpoint();
         }
 
         return $methods;
@@ -407,8 +407,13 @@ final class Kernel
         $allowed = $this->router->methodsFor($path, $request->version());
 
         throw $allowed === []
-            ? ProblemException::notFound('No such endpoint.')
+            ? self::noEndpoint()
             : ProblemException::from(Problem::methodNotAllowed($allowed));
+    }
+
+    private static function noEndpoint(): ProblemException
+    {
+        return ProblemException::notFound('No such endpoint.');
     }
 
     /**
@@ -422,7 +427,7 @@ final class Kernel
             throw ProblemException::of('api_disabled', 'Ask the site owner to switch the API on.');
         }
         if ($request->path() === null) {
-            throw ProblemException::notFound('No such endpoint.');
+            throw self::noEndpoint();
         }
         if (!$this->router->serves($request->version())) {
             throw ProblemException::notFound('No such API version.');

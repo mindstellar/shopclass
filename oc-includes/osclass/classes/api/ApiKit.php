@@ -12,9 +12,9 @@ declare(strict_types=1);
 
 namespace mindstellar\api;
 
-use mindstellar\api\read\ListingReader;
 use mindstellar\api\serializer\Links;
 use mindstellar\api\serializer\ViewContext;
+use mindstellar\listing\ListingQuery;
 
 /**
  * What a plugin handler may use of core's API services, through ApiCall::kit(): listings,
@@ -53,20 +53,37 @@ final class ApiKit
     public function listing(ApiCall $call, int $id, ViewContext $context): ?array
     {
         $reader = $this->services->listingReader();
-        $item   = $call->visibleListing($reader->row($id));
+        $item   = $reader->row($id, static fn (array $row): ?array => $call->visibleListing($row));
 
         return $item === null ? null : $reader->view($item, $context);
     }
 
     /**
-     * Core's listing reader, for rows the plugin found itself. It does not check who may see
-     * a listing: use listing() for one by id.
+     * Listings by id in the context's view, in the order given. Missing ones and those the
+     * caller may not see are left out.
      *
      * @api
+     *
+     * @param int[] $ids
+     *
+     * @return array<int,array<string,mixed>>
      */
-    public function listings(): ListingReader
+    public function listingsById(ApiCall $call, array $ids, ViewContext $context): array
     {
-        return $this->services->listingReader();
+        $ids   = array_unique(array_filter(array_map('intval', $ids), static fn (int $id): bool => $id > 0));
+        $found = (new ListingQuery())->findMany($ids);
+        $rows  = [];
+        foreach ($ids as $id) {
+            if ($call->canViewListing($found[$id] ?? null)) {
+                $rows[] = $found[$id];
+            }
+        }
+        if ($rows === []) {
+            return [];
+        }
+        $reader = $this->services->listingReader();
+
+        return $reader->many($reader->extend($rows, $context), $context);
     }
 
     /** @api */

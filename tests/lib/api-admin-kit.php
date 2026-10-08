@@ -166,7 +166,7 @@ function api_admin_key(int $adminId, bool $moderator = false, ?array $scopes = n
  */
 function api_admin_caller(?Closure $settings = null): Closure
 {
-    $facts     = new SiteFacts('en_US', ['en_US' => ['name' => 'English', 'direction' => 'ltr']], true, true, 10, 12, 50, false, false);
+    $facts     = new SiteFacts('en_US', ['en_US' => ['name' => 'English', 'direction' => 'ltr']]);
     $settings ??= static fn (): ApiSettings => new ApiSettings(true, userKeys: true);
     $links     = new class () implements Links {
         public function listing(array $item): string

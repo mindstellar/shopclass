@@ -452,10 +452,12 @@ final class PhotoService
      * @param bool                                $is_admin
      * @param array<int,array<string,mixed>>|null $resources Rows the caller read before the
      *                                                       delete; looked up when null
+     * @param Actor|null                          $actor     who deletes, for the log; the signed-in
+     *                                                       admin or user when null
      *
      * @return void
      */
-    public static function deleteFilesFromDisk($itemId, $is_admin = false, $resources = null)
+    public static function deleteFilesFromDisk($itemId, $is_admin = false, $resources = null, ?Actor $actor = null)
     {
         // $resources lets the caller supply rows it read earlier. The item delete reads
         // them before its transaction and calls this after the commit, when the rows are
@@ -463,14 +465,15 @@ final class PhotoService
         if (!is_array($resources)) {
             $resources = \ItemResource::getInstance()->getAllResourcesFromItem($itemId);
         }
+        $actor ??= Actor::fromSession((bool) $is_admin);
         \Log::getInstance()
             ->insertLog(
                 'itemActions',
                 'deleteResourcesFromHD',
                 $itemId,
                 (string) $itemId,
-                $is_admin ? 'admin' : 'user',
-                $is_admin ? osc_logged_admin_id() : osc_logged_user_id()
+                $actor->logRole(),
+                $actor->logId()
             );
         $log_ids = '';
         foreach ($resources as $resource) {
@@ -482,8 +485,8 @@ final class PhotoService
             'deleteResourcesFromHD',
             $itemId,
             substr($log_ids, 0, 250),
-            $is_admin ? 'admin' : 'user',
-            $is_admin ? osc_logged_admin_id() : osc_logged_user_id()
+            $actor->logRole(),
+            $actor->logId()
         );
     }
 

@@ -19,12 +19,13 @@ use mindstellar\api\ProblemException;
 use mindstellar\api\read\ListingReader;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\ListingSerializer;
+use mindstellar\api\Warning;
 use mindstellar\api\write\FetchedPhotos;
+use mindstellar\api\write\ListingOutcome;
 use mindstellar\api\write\ListingWriter;
 use mindstellar\api\write\OwnedListings;
 use mindstellar\api\write\PhotoBatch;
 use mindstellar\api\write\PhotoIntake;
-use mindstellar\listing\ListingStatus;
 use mindstellar\listing\PhotoRoom;
 
 /**
@@ -42,12 +43,12 @@ final class ListingWritesController
 
     public function __construct(private ApiServices $api, ?PhotoRoom $room = null, ?OwnedListings $owned = null)
     {
-        $this->room = $room ?? new PhotoRoom();
-        $this->owned = $owned ?? new OwnedListings();
+        $this->room   = $room ?? new PhotoRoom();
+        $this->owned  = $owned ?? new OwnedListings();
         $this->reader = $api->listingReader();
         $this->writer = $api->listingWriter();
         $this->photos = $api->photoIntake();
-        $this->users = $api->users();
+        $this->users  = $api->users();
     }
 
     /**
@@ -84,45 +85,31 @@ final class ListingWritesController
 
     public function create(ApiCall $call): Response
     {
-        $request = $call->request();
-        $credential = $call->credential();
+        $userId  = $call->userId();
+        $input   = $call->input();
+        $form    = $this->writer->newForm($input, $call->request(), $call->credential());
+        $batch   = $this->batch($call, $input, $userId, $this->room->cap($userId));
+        $outcome = $this->withPhotos($batch, $userId, fn (): ListingOutcome => $this->writer->create($form, $batch, $call->actor()));
 
-        $userId = $call->userId();
-        $input  = $request->input();
-        $form   = $this->writer->newForm($input, $request, $credential);
-        $batch  = $this->batch($call, $input, $userId, $this->room->cap($userId));
-        $id     = (int) $this->withPhotos($batch, $userId, fn (): int => $this->writer->create($form, $batch->paths(), $call->actor()));
-
-        return $this->saved($call, $id, true, $batch, 0);
+        return $this->saved($call, $outcome, true);
     }
 
     public function update(ApiCall $call): Response
     {
-        $request = $call->request();
-        $credential = $call->credential();
-
         $userId  = $call->userId();
-        $listing = $this->owned->own($call->intArg(), $credential, true);
-        $id      = $listing->id();
-        $input   = $request->input();
-        $form    = $this->writer->editForm($listing, $input, $request, $credential);
-        $before  = 0;
-        $room    = null;
-        if (!empty($input['photo_tokens']) || !empty($input['photo_urls'])) {
-            $before = $this->room->count($id);
-            $room   = $this->room->room($id, $listing->userId());
-        }
-        $batch = $this->batch($call, $input, $userId, $room);
-        $this->withPhotos($batch, $userId, fn () => $this->writer->update($listing, $form, $batch->paths(), $call->actor()));
+        $listing = $this->owned->own($call->intArg(), $call->credential(), true);
+        $input   = $call->input();
+        $form    = $this->writer->editForm($listing, $input, $call->request(), $call->credential());
+        $room    = empty($input['photo_tokens']) && empty($input['photo_urls']) ? null : $this->room->room($listing->id(), $listing->userId());
+        $batch   = $this->batch($call, $input, $userId, $room);
+        $outcome = $this->withPhotos($batch, $userId, fn (): ListingOutcome => $this->writer->update($listing, $form, $batch, $call->actor()));
 
-        return $this->saved($call, $id, false, $batch, $before);
+        return $this->saved($call, $outcome, false);
     }
 
     public function delete(ApiCall $call): Response
     {
-        $credential = $call->credential();
-
-        $this->writer->delete($this->owned->own($call->intArg(), $credential), $call->actor());
+        $this->writer->delete($this->owned->own($call->intArg(), $call->credential()), $call->actor());
 
         return Response::noContent();
     }
@@ -151,11 +138,9 @@ final class ListingWritesController
      * Run a save, then forget the photo tokens it used and remove the temp files either way.
      * A rolled-back save has already removed the files of photos it stored.
      *
-     * @param callable(): mixed $save
-     *
-     * @return mixed what $save returns
+     * @param callable(): ListingOutcome $save
      */
-    private function withPhotos(PhotoBatch $batch, int $userId, callable $save): mixed
+    private function withPhotos(PhotoBatch $batch, int $userId, callable $save): ListingOutcome
     {
         $saved = false;
         try {
@@ -171,8 +156,9 @@ final class ListingWritesController
     /**
      * The saved listing in the owner's view, with warnings for what did not go as asked.
      */
-    private function saved(ApiCall $call, int $id, bool $created, PhotoBatch $batch, int $photosBefore): Response
+    private function saved(ApiCall $call, ListingOutcome $outcome, bool $created): Response
     {
+        $id      = $outcome->id();
         $context = $this->api->context($call->request(), $call->credential(), 'listing', ListingSerializer::MEMBERS, ListingSerializer::INCLUDES);
         $data    = $this->reader->one($id, $context);
         if ($data === null) {
@@ -180,16 +166,13 @@ final class ListingWritesController
         }
 
         $warnings = [];
-        if (($data['status'] ?? '') === ListingStatus::PENDING) {
-            $warnings[] = ['code' => 'listing_pending', 'message' => 'The listing goes live once it is activated or approved.'];
+        if ($outcome->pending()) {
+            $warnings[Warning::LISTING_PENDING] = 'The listing goes live once it is activated or approved.';
         }
-        if (!$batch->isEmpty()) {
-            $added = $this->room->count($id) - $photosBefore;
-            if ($added < $batch->sent()) {
-                $warnings[] = ['code' => 'photo_skipped', 'message' => ($batch->sent() - $added) . ' photo(s) were not added: the listing has as many as it may hold.'];
-            }
+        if ($outcome->photosSkipped() > 0) {
+            $warnings[Warning::PHOTO_SKIPPED] = $outcome->photosSkipped() . ' photo(s) were not added: the listing has as many as it may hold.';
         }
-        $extra = $warnings === [] ? [] : ['warnings' => $warnings];
+        $extra = Warning::member($warnings);
 
         return $created ? $this->api->created($call, $data, 'listings/' . $id, $extra) : Response::ok($data, 200, $extra);
     }

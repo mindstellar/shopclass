@@ -9,8 +9,8 @@
  */
 
 /**
- * The API's plugin contract: every `@api` method, constant and helper function, byte-compared with
- * a fixture, and the field error codes, against the errors page.
+ * The API's plugin contract: every `@api` method, constant and helper function and each error
+ * code's status, byte-compared with a fixture, and the error codes, against the errors page.
  * DB-free. Usage: php tests/api-contract.php [--write]
  */
 
@@ -46,7 +46,8 @@ function api_signature(ReflectionFunctionAbstract $r): string
 }
 
 /**
- * One line per `@api` method or constant of a core class, and per `@api` API helper, sorted.
+ * One line per `@api` method or constant of a core class, per `@api` API helper and per error
+ * code with its status, sorted. Titles are left out: they may change.
  *
  * @return string[]
  */
@@ -83,6 +84,9 @@ function api_surface(): array
             $lines[] = api_signature($r);
         }
     }
+    foreach (Problem::CATALOGUE as $code => [$status]) {
+        $lines[] = Problem::class . ' code ' . $code . ' = ' . $status;
+    }
     sort($lines);
 
     return $lines;
@@ -108,9 +112,14 @@ foreach (['osc_api_register_route', 'osc_api_register_schema', 'osc_api_register
     check($helper . '() is pinned with its signature', str_contains($surface, 'function ' . $helper . '('));
 }
 check('the unchecked ListingReader::one() is not @api; ApiKit::listing() is', !str_contains($surface, 'ListingReader::public one(') && str_contains($surface, 'ApiKit::public listing('));
+check('no @api method takes or hands out a raw listing row', !str_contains($surface, 'ApiCall::public canViewListing(') && !str_contains($surface, 'ApiCall::public visibleListing(') && !str_contains($surface, 'ApiKit::public listings('));
+check('error titles are not pinned', !str_contains($surface, 'Problem::CATALOGUE'));
 
-harness_section('field error codes');
+harness_section('error codes');
 $errorsPage = (string) file_get_contents(ABS_PATH . 'docs/site/developers/api/errors.md');
+preg_match_all('/<a id="([a-z_]+)"><\/a>|^### `([a-z_]+)`$/m', $errorsPage, $anchors);
+pin('every error code has its anchor or heading on errors.md, for its type link', [], array_values(array_diff(array_keys(Problem::CATALOGUE), $anchors[1], $anchors[2])));
+
 preg_match('/^### Field codes\n(.*?)(?=^#)/ms', $errorsPage, $section);
 preg_match_all('/^\| `([A-Za-z_]+)` \|/m', $section[1] ?? '', $documented);
 pin('errors.md lists exactly Problem::FIELD_CODES, in order', Problem::FIELD_CODES, $documented[1]);

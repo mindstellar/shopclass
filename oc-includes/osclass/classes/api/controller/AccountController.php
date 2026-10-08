@@ -15,7 +15,6 @@ namespace mindstellar\api\controller;
 use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\auth\RefreshTokens;
-
 use mindstellar\api\auth\TokenIssuer;
 use mindstellar\api\auth\UserRows;
 use mindstellar\api\ProblemException;
@@ -23,15 +22,18 @@ use mindstellar\api\read\Page;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\KeySerializer;
 use mindstellar\api\serializer\UserSerializer;
+use mindstellar\api\Warning;
 use mindstellar\api\write\AccountBody;
 use mindstellar\apiaccess\AccessEntries;
 use mindstellar\apiaccess\AccessEntry;
 use mindstellar\apiaccess\Credential;
+use mindstellar\auth\Reauth;
 use mindstellar\user\AccountService;
 
 /**
  * The signed-in user's own account, listings, sign-ins and keys. Edits go through AccountService as
- * the profile form's do, and a new e-mail address gets the same confirmation link the web sends.
+ * the profile form's do. A new e-mail address needs the current password, then gets the same
+ * confirmation link the web sends.
  */
 final class AccountController
 {
@@ -43,9 +45,9 @@ final class AccountController
 
     public function __construct(private ApiServices $api)
     {
-        $this->users = $api->users();
-        $this->tokens = $api->tokenIssuer();
-        $this->refresh = $api->refreshTokens();
+        $this->users    = $api->users();
+        $this->tokens   = $api->tokenIssuer();
+        $this->refresh  = $api->refreshTokens();
         $this->sessions = $api->access()->accessEntries();
         $this->accounts = new AccountService();
     }
@@ -57,10 +59,9 @@ final class AccountController
     public function listings(ApiCall $call): Response
     {
         $request = $call->request();
-        $credential = $call->credential();
 
         return $this->api->listingSearch()
-            ->newest($request, $credential, 'account/listings', $request->queryList('status'), [$call->userId()]);
+            ->newest($request, $call->credential(), 'account/listings', $request->queryList('status'), [$call->userId()]);
     }
 
     public function show(ApiCall $call): Response
@@ -70,43 +71,38 @@ final class AccountController
 
     public function update(ApiCall $call): Response
     {
-        $request = $call->request();
-        $credential = $call->credential();
-
-        $input    = $request->input();
-        $user     = $this->user($credential);
+        $input    = $call->input();
+        $user     = $this->user($call->credential());
         $userId   = (int) $user['pk_i_id'];
-        $warnings = [];
-
-        $actor    = $call->actor();
         $newEmail = isset($input['email']) ? trim((string) $input['email']) : '';
         if (strcasecmp($newEmail, (string) $user['s_email']) === 0) {
             $newEmail = '';
         }
+        // A stolen access token alone must not move the account to another address.
+        if ($newEmail !== '') {
+            if (($input['current_password'] ?? '') === '') {
+                throw ProblemException::field('/current_password', 'required', 'is required to change the e-mail');
+            }
+            Reauth::check($user, (string) $input['current_password']);
+        }
 
-        $profile  = array_diff_key($input, ['email' => true]);
-        $this->accounts->editOwn($userId, $profile === [] ? null : AccountBody::profile($user, $profile), $newEmail, $actor);
+        $profile = array_diff_key($input, ['email' => true, 'current_password' => true]);
+        $this->accounts->editOwn($userId, $profile === [] ? null : AccountBody::profile($user, $profile), $newEmail, $call->actor());
         if ($profile !== []) {
             $this->users->forget($userId);
         }
-        if ($newEmail !== '') {
-            $warnings[] = ['code' => 'email_confirmation_sent', 'message' => 'A confirmation link went to the new address. The e-mail changes once it is opened.'];
-        }
+        $warnings = $newEmail === '' ? [] : [Warning::EMAIL_CONFIRMATION_SENT => 'A confirmation link went to the new address. The e-mail changes once it is opened.'];
 
-        $data = $this->serialize($call, $this->user($credential));
-
-        return Response::ok($data, 200, $warnings === [] ? [] : ['warnings' => $warnings]);
+        return Response::ok($this->serialize($call, $this->user($call->credential())), 200, Warning::member($warnings));
     }
 
     public function password(ApiCall $call): Response
     {
-        $request = $call->request();
         $credential = $call->credential();
-
-        $input  = $request->input();
-        $user   = $this->user($credential);
-        $userId = (int) $user['pk_i_id'];
-        $family = $credential->family();
+        $input      = $call->input();
+        $user       = $this->user($credential);
+        $userId     = (int) $user['pk_i_id'];
+        $family     = $credential->family();
         if ($family === null) {
             throw ProblemException::of('wrong_credential', 'Changing the password needs an access token.');
         }
@@ -122,7 +118,7 @@ final class AccountController
         $this->accounts->changePassword($user, (string) ($input['current_password'] ?? ''), (string) $input['new_password']);
         $this->users->forget($userId);
         $user  = $this->user($credential);
-        $grant = $this->refresh->start($user, $credential->scopes(), $label, $request->ip());
+        $grant = $this->refresh->start($user, $credential->scopes(), $label, $call->request()->ip());
 
         return $this->tokens->answer($user, $grant->scopes(), $grant->family(), $grant);
     }
@@ -130,7 +126,6 @@ final class AccountController
     public function signOutEverywhere(ApiCall $call): Response
     {
         $credential = $call->credential();
-
         if ($credential->family() === null) {
             throw ProblemException::of('wrong_credential', 'Signing out of all devices needs an access token.');
         }
@@ -144,7 +139,6 @@ final class AccountController
     public function sessions(ApiCall $call): Response
     {
         $credential = $call->credential();
-
         $serializer = new KeySerializer();
 
         return Page::whole(array_map(
@@ -180,6 +174,6 @@ final class AccountController
     {
         $context = $this->api->context($call->request(), $call->credential(), 'user', UserSerializer::MEMBERS);
 
-        return (new UserSerializer($this->api->links(), $this->api->extensions()))->one($user, $context);
+        return $this->api->userSerializer()->one($user, $context);
     }
 }

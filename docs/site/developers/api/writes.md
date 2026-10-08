@@ -273,9 +273,9 @@ The site downloads each address itself:
 - Only public `http` and `https` addresses on their usual ports. Private and local addresses are refused.
 - Redirects are not followed. A download stops after 15 seconds, when it stays below 1 KB a second
   for 5 seconds, and at the site's largest photo size.
-- All downloads of one request share 30 seconds. An address reached after that is a `422` with code
-  `timeout` on `/photo_urls/<n>`.
-- One bad address fails the whole request with a `422` on `/photo_urls/<n>`. Nothing is saved.
+- The downloads of one request run at the same time, so together they also take at most 15 seconds.
+- One bad address fails the whole request with a `422` on `/photo_urls/<n>`. Nothing is saved. A
+  download that fails says only that the photo could not be downloaded.
 - Downloads happen before an `If-Match` check, so a `412` can still cost a download. A write that
   is refused after the downloads keeps none of them.
 - Each download counts toward 30 an hour per user on `PATCH`. See [Limits](#limits).
@@ -436,15 +436,16 @@ Each `429` has `Retry-After`. The site owner sets the listing number: [Set up th
 | Endpoint | Scope | Does |
 |---|---|---|
 | `GET /account` | `account:read` | Your profile, in the owner's view. |
-| `PATCH /account` | `account:write` | Edit the profile: `name`, `website`, `phone_land`, `phone_mobile`, `country`, `region_id`, `city_id`, `city_area`, `address`, `zip`, `lat`, `lng`, `is_company`, `email`. |
+| `PATCH /account` | `account:write` | Edit the profile: `name`, `website`, `phone_land`, `phone_mobile`, `country`, `region_id`, `city_id`, `city_area`, `address`, `zip`, `lat`, `lng`, `is_company`, `email` (with `current_password`). |
 | `GET /account/listings` | `account:read` | Your listings in any status, newest first, as your listings page shows them. Filters: `status` (`active`, `pending`, `disabled`, `expired`, `spam`), `limit`, `cursor`, `count`. |
 | `POST /account/password` | `account:write` | Change the password. |
 | `GET /account/sessions` | `account:read` | Your live sign-ins. Keys are at `/account/keys`. |
 | `DELETE /account/sessions/{id}` | `account:write` | End one sign-in. `204`. |
 | `GET`, `POST`, `DELETE /account/keys` | `account:write` | [Personal keys](/docs/developers/api/authentication/#personal-keys). |
 
-A new `email` is not applied at once. A confirmation link goes to the new address, and the
-answer carries the warning `email_confirmation_sent`. The e-mail changes when the link is opened.
+A new `email` needs `current_password` in the same body, or the answer is a `422` on
+`/current_password`. It is not applied at once. A confirmation link goes to the new address, and
+the answer carries the warning `email_confirmation_sent`. The e-mail changes when the link is opened.
 
 ## Warnings
 

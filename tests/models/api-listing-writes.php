@@ -267,14 +267,18 @@ osc_add_hook('posted_item', static function ($item) use (&$postedBy): void {
  * The kernel, wired as ApiServices wires the site's, one per request.
  * ------------------------------------------------------------------------- */
 $validator = new Validator(Schema::components());
-$facts     = new SiteFacts('en_US', array('en_US' => array('name' => 'English', 'direction' => 'ltr')), true, true, 10, 12, 50, false, false);
+$facts     = new SiteFacts('en_US', array('en_US' => array('name' => 'English', 'direction' => 'ltr')));
 $settings  = new ApiSettings(true, userKeys: true);
 $fetches   = 0;
-$transport = static function (string $url, string $ip, string $file, int $max) use ($jpeg, &$fetches): ?string {
-    $fetches++;
-    $GLOBALS['lw_fetch_in_transaction'][] = \mindstellar\database\Db::inTransaction();
+$transport = static function (array $jobs, int $max) use ($jpeg, &$fetches): array {
+    $out = array();
+    foreach ($jobs as $key => $job) {
+        $fetches++;
+        $GLOBALS['lw_fetch_in_transaction'][] = \mindstellar\database\Db::inTransaction();
+        $out[$key] = copy($jpeg, $job['file']) ? null : 'copy failed';
+    }
 
-    return copy($jpeg, $file) ? null : 'copy failed';
+    return $out;
 };
 $call = static function (string $method, string $path, ?array $body = null, ?string $token = null, array $headers = array(), array $files = array(), ?string $raw = null, ?Closure $reader = null) use ($validator, $facts, &$settings, $lwRoot, $transport): Response {
     $users    = new UserRows();
@@ -717,32 +721,39 @@ pin('the legacy ItemTmpUpload model answers as before', array(true, false, false
 $fetcher = ImageFetcher::curlOptions('https://photos.example.com/car.jpg', '93.184.216.34', 1024);
 pin('a download never goes through a proxy, so it reaches the checked address', array('', '*'), array($fetcher[CURLOPT_PROXY] ?? null, $fetcher[CURLOPT_NOPROXY] ?? null));
 pin('a download that crawls is dropped', array(ImageFetcher::LOW_SPEED, ImageFetcher::LOW_SPEED_TIME), array($fetcher[CURLOPT_LOW_SPEED_LIMIT] ?? null, $fetcher[CURLOPT_LOW_SPEED_TIME] ?? null));
-$clockNow  = 1000.0;
-$timeouts  = array();
-$slowFetch = static function (string $url, string $ip, string $file, int $max, int $timeout) use ($jpeg, &$clockNow, &$timeouts): ?string {
-    $timeouts[] = $timeout;
-    $clockNow  += 20;
+$batches   = array();
+$sideFetch = static function (array $jobs, int $max, int $timeout) use ($jpeg, &$batches): array {
+    $batches[] = array(array_column($jobs, 'ip'), $timeout);
+    $out       = array();
+    foreach ($jobs as $key => $job) {
+        $out[$key] = $key === 1 ? ImageFetcher::FAILED : (copy($jpeg, $job['file']) ? null : 'copy failed');
+    }
 
-    return copy($jpeg, $file) ? null : 'copy failed';
+    return $out;
 };
-$slowIntake = new \mindstellar\api\write\PhotoIntake(
+$sideIntake = new \mindstellar\api\write\PhotoIntake(
     new PhotoStage($lwRoot . 'stage/', new SystemClock()),
-    new ImageFetcher(new AddressGuard(static fn (): array => array('93.184.216.34')), $slowFetch),
+    new ImageFetcher(new AddressGuard(static fn (string $host): array => $host === 'intranet.example.com' ? array('10.0.0.5') : array('93.184.216.34')), $sideFetch),
     api_test_limiter(static fn () => 1),
     new RatePolicy(new ApiSettings(true, photoUrls: true)),
     true,
-    2048 * 1024,
-    static function () use (&$clockNow): float {
-        return $clockNow;
-    }
+    2048 * 1024
 );
-try {
-    $slowIntake->batch(array('photo_urls' => array('https://photos.example.com/a.jpg', 'https://photos.example.com/b.jpg', 'https://photos.example.com/c.jpg')), $sue, null);
-    $budget = null;
-} catch (\mindstellar\api\ProblemException $e) {
-    $budget = array($e->response()->status(), $e->response()->body()['errors'][0]['pointer'] ?? null);
-}
-pin('URL downloads share one time budget: each gets what is left, and one past it is 422 at its pointer', array(array(15, 10), array(422, '/photo_urls/2')), array($timeouts, $budget));
+$problem = static function (callable $fn): ?array {
+    try {
+        $fn();
+    } catch (\mindstellar\api\ProblemException $e) {
+        return array($e->response()->status(), $e->response()->body()['errors'][0]['pointer'] ?? null, $e->response()->body()['errors'][0]['message'] ?? null);
+    }
+
+    return null;
+};
+$failed = $problem(static fn () => $sideIntake->batch(array('photo_urls' => array('https://photos.example.com/a.jpg', 'https://photos.example.com/b.jpg', 'https://photos.example.com/c.jpg')), $sue, null));
+pin('URL downloads run in one batch, each pinned to its checked address, within one timeout', array(array(array('93.184.216.34', '93.184.216.34', '93.184.216.34'), ImageFetcher::TIMEOUT)), $batches);
+pin('a failed download is 422 at its pointer and says only that it failed', array(422, '/photo_urls/1', 'the photo could not be downloaded'), $failed);
+$batches = array();
+$refused = $problem(static fn () => $sideIntake->batch(array('photo_urls' => array('https://photos.example.com/a.jpg', 'https://intranet.example.com/b.jpg')), $sue, null));
+pin('every address is checked before any download starts', array(array(422, '/photo_urls/1'), array()), array(array_slice((array) $refused, 0, 2), $batches));
 
 harness_section('queries');
 $qMade = 0;
@@ -753,6 +764,12 @@ $qPatch = harness_query_count(static fn () => $call('PATCH', 'listings/' . $qMad
 echo "  POST /listings: $qPost queries, PATCH: $qPatch\n";
 pin('POST /listings, no photos: 31 queries (one checks the sign-in is live, one the places; ban rules come from the cache)', 31, $qPost);
 pin('PATCH /listings/{id}, no photos: 25 queries (an unchanged location and custom field are not rewritten)', 25, $qPatch);
+$qGet     = harness_query_count(static fn () => $call('GET', 'listings/' . $qMade, null, $sueToken));
+$qEtag    = (string) $call('GET', 'listings/' . $qMade, null, $sueToken)->header('ETag');
+$qMatched = harness_query_count(static fn () => $call('PATCH', 'listings/' . $qMade, array('price' => '998'), $sueToken, array('If-Match' => $qEtag)));
+echo "  GET /listings/{id} as its owner: $qGet queries, PATCH with If-Match: $qMatched\n";
+pin('GET /listings/{id} as its owner: 7 queries (sign-in, row version for the ETag, t_item, texts, stats and location, photos, seller)', 7, $qGet);
+pin('PATCH with If-Match: 32 queries, the 25 plus 4 locked row hashes, the new version and the outer transaction', 32, $qMatched);
 
 $writes = static function (): array {
     $db  = DBConnectionClass::newInstance()->getOsclassDb();

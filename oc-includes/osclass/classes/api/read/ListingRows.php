@@ -28,11 +28,16 @@ final class ListingRows
     /**
      * One listing with every language's text, or null when there is no such listing.
      *
+     * @param (callable(array<string,mixed>): ?array<string,mixed>)|null $keep checks the bare row first; null drops it before its texts are read
+     *
      * @return array<string,mixed>|null
      */
-    public function find(int $id, string $locale): ?array
+    public function find(int $id, string $locale, ?callable $keep = null): ?array
     {
         $row = $this->listings->find($id);
+        if ($row !== null && $keep !== null) {
+            $row = $keep($row);
+        }
 
         return $row === null ? null : $this->extend([$row], $locale, true)[0];
     }
@@ -62,7 +67,7 @@ final class ListingRows
             if (isset($texts[$id])) {
                 $row['locale'] = $texts[$id];
             }
-            [$row['s_title'], $row['s_description']] = self::defaults($row['locale'] ?? [], $locale);
+            [, $row['s_title'], $row['s_description']] = self::text($row['locale'] ?? [], $locale);
             $out[] = $row + ($more[$id] ?? []);
         }
 
@@ -111,28 +116,24 @@ final class ListingRows
     }
 
     /**
-     * The row's own title and description: the asked language's, else the first language
-     * that has one.
+     * The language a listing's text is in, its title and its description: the asked language's
+     * when it has a title there, else the first language that has one.
      *
-     * @param array<string,array<string,string>> $texts
+     * @param array<string,array<string,string>> $texts locale => s_title, s_description
      *
-     * @return array{0:string,1:string}
+     * @return array{0:?string,1:string,2:string} a null locale when no language has a title
      */
-    private static function defaults(array $texts, string $locale): array
+    public static function text(array $texts, string $locale): array
     {
-        $pick = static function (string $key) use ($texts, $locale): string {
-            if (isset($texts[$locale][$key])) {
-                return $texts[$locale][$key];
+        if (($texts[$locale]['s_title'] ?? '') !== '') {
+            return [$locale, (string) $texts[$locale]['s_title'], (string) ($texts[$locale]['s_description'] ?? '')];
+        }
+        foreach ($texts as $code => $text) {
+            if (($text['s_title'] ?? '') !== '') {
+                return [(string) $code, (string) $text['s_title'], (string) ($text['s_description'] ?? '')];
             }
-            foreach ($texts as $text) {
-                if (($text[$key] ?? '') !== '') {
-                    return $text[$key];
-                }
-            }
+        }
 
-            return '';
-        };
-
-        return [$pick('s_title'), $pick('s_description')];
+        return [null, '', ''];
     }
 }

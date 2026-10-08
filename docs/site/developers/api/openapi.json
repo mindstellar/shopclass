@@ -34672,6 +34672,21 @@
                             },
                             "ETag": {
                                 "$ref": "#/components/headers/ETag"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
                             }
                         },
                         "content": {
@@ -34690,6 +34705,81 @@
                             },
                             "ETag": {
                                 "$ref": "#/components/headers/ETag"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No valid credential",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
+                            }
+                        },
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not allowed for this credential",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
+                            }
+                        },
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
                             }
                         }
                     },
@@ -34698,6 +34788,21 @@
                         "headers": {
                             "Request-Id": {
                                 "$ref": "#/components/headers/Request-Id"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
                             }
                         },
                         "content": {
@@ -34746,6 +34851,21 @@
                         "headers": {
                             "Request-Id": {
                                 "$ref": "#/components/headers/Request-Id"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
                             }
                         },
                         "content": {
@@ -34762,6 +34882,21 @@
                             "Request-Id": {
                                 "$ref": "#/components/headers/Request-Id"
                             },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
+                            },
                             "Retry-After": {
                                 "$ref": "#/components/headers/Retry-After"
                             }
@@ -34775,8 +34910,19 @@
                         }
                     }
                 },
-                "security": [],
-                "x-auth": "none",
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "pageSession": []
+                    },
+                    {
+                        "publicKey": []
+                    },
+                    {}
+                ],
+                "x-auth": "public",
                 "x-scope": null
             }
         },
@@ -38665,7 +38811,13 @@
                 "type": "object",
                 "properties": {
                     "code": {
-                        "type": "string"
+                        "type": "string",
+                        "enum": [
+                            "listing_pending",
+                            "photo_skipped",
+                            "comment_pending",
+                            "email_confirmation_sent"
+                        ]
                     },
                     "message": {
                         "type": "string"
@@ -38887,6 +39039,12 @@
                     },
                     "is_company": {
                         "type": "boolean"
+                    },
+                    "current_password": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 4096,
+                        "description": "The account's password, asked again when `email` changes."
                     }
                 },
                 "additionalProperties": false

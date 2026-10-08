@@ -56,10 +56,9 @@ final class AdminKeysController
     public function create(ApiCall $call): Response
     {
         $credential = $call->credential();
-
-        $input  = $call->input();
-        $kind   = ($input['kind'] ?? 'admin') === 'public' ? CredentialKind::PUBLIC : CredentialKind::KEY;
-        $scopes = array_values(array_map('strval', (array) ($input['scopes'] ?? [])));
+        $input      = $call->input();
+        $kind       = ($input['kind'] ?? 'admin') === 'public' ? CredentialKind::PUBLIC : CredentialKind::KEY;
+        $scopes     = array_values(array_map('strval', (array) ($input['scopes'] ?? [])));
         if ($scopes === [] && $kind === CredentialKind::PUBLIC) {
             $scopes = [Scopes::PUBLIC_READ];
         }
@@ -91,8 +90,7 @@ final class AdminKeysController
     public function rotate(ApiCall $call): Response
     {
         $credential = $call->credential();
-
-        $old = $this->key($call->intArg());
+        $old        = $this->key($call->intArg());
         if ($old['kind'] !== 'public' && $old['owner_admin'] !== $credential->adminId()) {
             throw ProblemException::of('not_owner', 'Only your own keys and public keys can be rotated. Revoke this one and make a new key instead.');
         }

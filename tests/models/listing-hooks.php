@@ -247,7 +247,7 @@ file_put_contents($fake, "<?php echo 'not an image';");
  * The kernel, wired as ApiServices wires the site's, one per request.
  * ------------------------------------------------------------------------- */
 $validator = new Validator(Schema::components());
-$facts     = new SiteFacts('en_US', array('en_US' => array('name' => 'English', 'direction' => 'ltr')), true, true, 10, 12, 50, false, false);
+$facts     = new SiteFacts('en_US', array('en_US' => array('name' => 'English', 'direction' => 'ltr')));
 $settings  = new ApiSettings(true, userKeys: true);
 $fetches   = 0;
 $transport = static function (string $url, string $ip, string $file, int $max) use ($jpeg, &$fetches): ?string {

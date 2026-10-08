@@ -16,7 +16,9 @@ use mindstellar\api\serializer\ListingSerializer;
 use mindstellar\api\serializer\ViewContext;
 use mindstellar\currency\CurrencyService;
 use mindstellar\database\Db;
+use mindstellar\fields\FieldQuery;
 use mindstellar\listing\ListingQuery;
+use mindstellar\user\UserQuery;
 
 /**
  * Listings as the API answers with them, serialized in the caller's view. A page costs a fixed
@@ -24,13 +26,16 @@ use mindstellar\listing\ListingQuery;
  */
 final class ListingReader
 {
+    private ListingQuery $listings;
+
     private ListingRows $rows;
 
     private ?CurrencyService $currencies;
 
     public function __construct(private CategoryCatalog $categories, private ListingSerializer $serializer, ?ListingQuery $listings = null, ?CurrencyService $currencies = null)
     {
-        $this->rows       = new ListingRows($listings ?? new ListingQuery());
+        $this->listings   = $listings ?? new ListingQuery();
+        $this->rows       = new ListingRows($this->listings);
         $this->currencies = $currencies;
     }
 
@@ -50,18 +55,18 @@ final class ListingReader
     /**
      * The listing's row with its texts in every language, its counters and its location, or null.
      *
+     * @param (callable(array<string,mixed>): ?array<string,mixed>)|null $keep checks the bare row first; null drops it before its texts are read
+     *
      * @return array<string,mixed>|null
      */
-    public function row(int $id): ?array
+    public function row(int $id, ?callable $keep = null): ?array
     {
-        return $this->rows->find($id, OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale());
+        return $this->rows->find($id, OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale(), $keep);
     }
 
     /**
      * Listing rows made ready for many(). Only the context's language is read, unless the
      * response carries `translations`.
-     *
-     * @api
      *
      * @param array<int,array<string,mixed>> $items t_item rows
      *
@@ -85,8 +90,6 @@ final class ListingReader
     /**
      * Listing rows from extend(), each in the context's view.
      *
-     * @api
-     *
      * @param array<int,array<string,mixed>> $items extended listing rows
      *
      * @return array<int,array<string,mixed>>
@@ -97,8 +100,8 @@ final class ListingReader
     }
 
     /**
-     * A listing's photos, oldest first. It does not check who may see the listing, so it is
-     * not plugin API: ApiKit::listing() answers with the photos.
+     * A listing's photos, oldest first. It reads no category, and does not check who may see
+     * the listing, so it is not plugin API: ApiKit::listing() answers with the photos.
      *
      * @return array<int,array<string,mixed>>
      */
@@ -160,13 +163,7 @@ final class ListingReader
      */
     private function photoRows(array $ids): array
     {
-        $rows = Db::stringifyRows(\mindstellar\listing\PhotoStore::ofItems($ids));
-        $out = [];
-        foreach ($rows as $row) {
-            $out[(int) $row['fk_i_item_id']][] = $row;
-        }
-
-        return $out;
+        return self::byItem($this->listings->photos($ids));
     }
 
     /**
@@ -178,12 +175,7 @@ final class ListingReader
      */
     private function users(array $ids): array
     {
-        if ($ids === []) {
-            return [];
-        }
-        $rows = \mindstellar\user\UserStore::byIds($ids, ['pk_i_id', 's_name', 's_username'], true);
-
-        return array_column(Db::stringifyRows($rows), null, 'pk_i_id');
+        return (new UserQuery())->byIds($ids, ['pk_i_id', 's_name', 's_username'], true);
     }
 
     /**
@@ -195,7 +187,16 @@ final class ListingReader
      */
     private function fieldValues(array $ids): array
     {
-        $rows = Db::stringifyRows(\mindstellar\fields\FieldQuery::valuesOf($ids));
+        return self::byItem(Db::stringifyRows(FieldQuery::valuesOf($ids)));
+    }
+
+    /**
+     * @param array<int,array<string,mixed>> $rows rows with fk_i_item_id
+     *
+     * @return array<int,array<int,array<string,mixed>>> item id => its rows, in order
+     */
+    private static function byItem(array $rows): array
+    {
         $out = [];
         foreach ($rows as $row) {
             $out[(int) $row['fk_i_item_id']][] = $row;

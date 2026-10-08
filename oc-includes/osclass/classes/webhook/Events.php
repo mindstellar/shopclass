@@ -38,7 +38,8 @@ final class Events
         self::PING            => ['A test event, sent by "Send test".', 'WebhookPing'],
     ];
 
-    private const PLUGIN_TYPE = '/^ext\.[a-z0-9][a-z0-9_-]{0,39}\.[a-z0-9][a-z0-9_.]{0,59}$/D';
+    /** @api A plugin event type: `ext.<slug>.<name>`. */
+    public const PLUGIN_TYPE = '/^ext\.[a-z0-9][a-z0-9_-]{0,39}\.[a-z0-9][a-z0-9_.]{0,59}$/D';
 
     /**
      * @param array<string,array{description:string,schema:string}> $events

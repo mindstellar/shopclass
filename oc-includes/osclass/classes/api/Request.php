@@ -387,7 +387,7 @@ final class Request
     {
         $body = $this->body();
         if ($body === null) {
-            throw ProblemException::of('too_large', 'The body is larger than 1 MB.');
+            throw self::tooLarge();
         }
         $type = $this->contentType();
         if ($type !== 'application/json' && !($type === self::MERGE_PATCH && $this->method === 'PATCH')) {
@@ -410,6 +410,11 @@ final class Request
         return $data;
     }
 
+    private static function tooLarge(): ProblemException
+    {
+        return ProblemException::of('too_large', 'The body is larger than ' . intdiv(self::MAX_BODY, 1048576) . ' MB.');
+    }
+
     /**
      * A copy whose application/x-www-form-urlencoded body reads as JSON, as an OAuth token
      * request sends it (RFC 6749 §4.3). Any other body is left as it is.
@@ -423,7 +428,7 @@ final class Request
         }
         $body = $this->body();
         if ($body === null) {
-            throw ProblemException::of('too_large', 'The body is larger than 1 MB.');
+            throw self::tooLarge();
         }
         parse_str($body, $fields);
         try {

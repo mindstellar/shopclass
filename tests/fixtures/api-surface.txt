@@ -11,7 +11,6 @@ function osc_webhook_emit(string $type, array $data, array $options = []): ?stri
 mindstellar\api\ApiCall::public actor(string $scope = ''): mindstellar\auth\Actor
 mindstellar\api\ApiCall::public arg(string $name): ?string
 mindstellar\api\ApiCall::public args(): array
-mindstellar\api\ApiCall::public canViewListing(?array $row): bool
 mindstellar\api\ApiCall::public credential(): mindstellar\apiaccess\Credential
 mindstellar\api\ApiCall::public input(): array
 mindstellar\api\ApiCall::public intArg(string $name = 'id'): int
@@ -19,13 +18,46 @@ mindstellar\api\ApiCall::public kit(): mindstellar\api\ApiKit
 mindstellar\api\ApiCall::public listingActor(): mindstellar\auth\Actor
 mindstellar\api\ApiCall::public request(): mindstellar\api\Request
 mindstellar\api\ApiCall::public userId(): int
-mindstellar\api\ApiCall::public visibleListing(?array $row): ?array
 mindstellar\api\ApiKit::public context(mindstellar\api\ApiCall $call, string $object, array $members, array $includes = []): mindstellar\api\serializer\ViewContext
 mindstellar\api\ApiKit::public links(): mindstellar\api\serializer\Links
 mindstellar\api\ApiKit::public listing(mindstellar\api\ApiCall $call, int $id, mindstellar\api\serializer\ViewContext $context): ?array
-mindstellar\api\ApiKit::public listings(): mindstellar\api\read\ListingReader
-mindstellar\api\Problem::CATALOGUE = {"invalid_json":[400,"The request body is not valid JSON."],"invalid_cursor":[400,"The cursor is not valid for this request."],"invalid_header":[400,"A request header is not valid."],"unsupported_grant_type":[400,"The grant type is not supported."],"invalid_request":[400,"The token request is not valid."],"invalid_grant":[400,"The credentials or refresh token are not valid."],"invalid_scope":[400,"A requested scope is not valid."],"unauthorized":[401,"A valid credential is required."],"token_expired":[401,"The access token has expired."],"session_required":[401,"A signed-in session and a valid page token are required."],"forbidden":[403,"This credential may not use this endpoint."],"wrong_credential":[403,"This endpoint needs another kind of credential."],"banned":[403,"This account or address is banned."],"feature_disabled":[403,"The site has this feature switched off."],"insufficient_scope":[403,"This credential lacks the scope this endpoint needs."],"not_owner":[403,"Only the owner may change this resource."],"api_disabled":[403,"The API is switched off on this site."],"cross_origin":[403,"Session calls must come from the site's own pages."],"not_found":[404,"Not found."],"method_not_allowed":[405,"This method is not allowed here."],"conflict":[409,"The request conflicts with the current state."],"idempotency_in_flight":[409,"A request with this Idempotency-Key is still running."],"precondition_failed":[412,"The resource has changed."],"too_large":[413,"The request body is too large."],"unsupported_media_type":[415,"The request body has an unsupported content type."],"validation_failed":[422,"The request is not valid."],"idempotency_key_reused":[422,"This Idempotency-Key was used for a different request."],"listing_limit":[422,"The listing limit is reached."],"rate_limited":[429,"Too many requests."],"login_blocked":[429,"Too many failed sign-ins."],"too_many_failures":[429,"Too many failed attempts from this address."],"server_error":[500,"The request could not be handled."],"maintenance":[503,"The site is down for maintenance."]}
+mindstellar\api\ApiKit::public listingsById(mindstellar\api\ApiCall $call, array $ids, mindstellar\api\serializer\ViewContext $context): array
+mindstellar\api\Problem code api_disabled = 403
+mindstellar\api\Problem code banned = 403
+mindstellar\api\Problem code conflict = 409
+mindstellar\api\Problem code cross_origin = 403
+mindstellar\api\Problem code feature_disabled = 403
+mindstellar\api\Problem code forbidden = 403
+mindstellar\api\Problem code idempotency_in_flight = 409
+mindstellar\api\Problem code idempotency_key_reused = 422
+mindstellar\api\Problem code insufficient_scope = 403
+mindstellar\api\Problem code invalid_cursor = 400
+mindstellar\api\Problem code invalid_grant = 400
+mindstellar\api\Problem code invalid_header = 400
+mindstellar\api\Problem code invalid_json = 400
+mindstellar\api\Problem code invalid_request = 400
+mindstellar\api\Problem code invalid_scope = 400
+mindstellar\api\Problem code listing_limit = 422
+mindstellar\api\Problem code login_blocked = 429
+mindstellar\api\Problem code maintenance = 503
+mindstellar\api\Problem code method_not_allowed = 405
+mindstellar\api\Problem code not_found = 404
+mindstellar\api\Problem code not_owner = 403
+mindstellar\api\Problem code precondition_failed = 412
+mindstellar\api\Problem code rate_limited = 429
+mindstellar\api\Problem code server_error = 500
+mindstellar\api\Problem code session_required = 401
+mindstellar\api\Problem code token_expired = 401
+mindstellar\api\Problem code too_large = 413
+mindstellar\api\Problem code too_many_failures = 429
+mindstellar\api\Problem code unauthorized = 401
+mindstellar\api\Problem code unsupported_grant_type = 400
+mindstellar\api\Problem code unsupported_media_type = 415
+mindstellar\api\Problem code validation_failed = 422
+mindstellar\api\Problem code wrong_credential = 403
 mindstellar\api\Problem::FIELD_CODES = ["type","enum","minimum","maximum","minLength","maxLength","pattern","format","minItems","maxItems","minProperties","required","additionalProperties","invalid","unknown","taken","mismatch","limit","rejected"]
+mindstellar\api\Problem::PLUGIN_CODE = "/^ext_[a-z0-9]+(?:_[a-z0-9]+)+$/D"
+mindstellar\api\Problem::TYPE_BASE = "https://mindstellar.com/docs/developers/api/errors/#"
 mindstellar\api\Problem::public static make(string $code, string $detail = '', array $extra = []): mindstellar\api\Response
 mindstellar\api\Problem::public static validation(array $errors): mindstellar\api\Response
 mindstellar\api\ProblemException::public response(): mindstellar\api\Response
@@ -62,13 +94,20 @@ mindstellar\api\RouteSpec::AUTH_NONE = "none"
 mindstellar\api\RouteSpec::AUTH_PUBLIC = "public"
 mindstellar\api\RouteSpec::AUTH_USER = "user"
 mindstellar\api\RouteSpec::NUMERIC_ARGS = ["id","photo"]
-mindstellar\api\RouteSpec::PLUGIN_KEYS = ["handler","auth","scope","summary","description","tags","query","body","responses","deprecated","sunset","where","versions","plugin"]
+mindstellar\api\RouteSpec::PLUGIN_KEYS = ["handler","auth","scope","summary","description","tags","query","body","responses","deprecated","sunset","where","versions","plugin","replayable"]
 mindstellar\api\RouteSpec::public key(): string
 mindstellar\api\RouteSpec::public method(): string
 mindstellar\api\RouteSpec::public path(): string
-mindstellar\api\read\ListingReader::public extend(array $items, mindstellar\api\serializer\ViewContext $context): array
-mindstellar\api\read\ListingReader::public many(array $items, mindstellar\api\serializer\ViewContext $context): array
+mindstellar\api\Warning::CODES = ["listing_pending","photo_skipped","comment_pending","email_confirmation_sent"]
+mindstellar\api\Warning::COMMENT_PENDING = "comment_pending"
+mindstellar\api\Warning::EMAIL_CONFIRMATION_SENT = "email_confirmation_sent"
+mindstellar\api\Warning::LISTING_PENDING = "listing_pending"
+mindstellar\api\Warning::PHOTO_SKIPPED = "photo_skipped"
+mindstellar\api\Warning::public static member(array $warnings): array
 mindstellar\api\read\Page::public static whole(array $items, mindstellar\api\serializer\Links $links, mindstellar\api\ApiCall $call): mindstellar\api\Response
+mindstellar\api\routing\Router::PLUGIN_PATH = "#^ext/([a-z0-9-]+)/.+#D"
+mindstellar\api\routing\Router::SHARED_COMPONENTS = ["Problem","Listing","ListingPage","Photo","PageMeta","PageLinks"]
+mindstellar\api\schema\ExtensionSchemas::NAME = "/^Ext[A-Z][A-Za-z0-9]*$/D"
 mindstellar\api\schema\Schema::public static dateInput(string $description, bool $days = false, bool $nullable = false): array
 mindstellar\api\schema\Schema::public static listOf(array $values): array
 mindstellar\api\schema\Schema::public static nullable(string $type, string $description = ''): array
@@ -76,6 +115,9 @@ mindstellar\api\schema\Schema::public static object(array $properties, array $re
 mindstellar\api\schema\Schema::public static ref(string $name): array
 mindstellar\api\schema\Schema::public static time(string $description = ''): array
 mindstellar\api\schema\Schema::public static wholeList(string $item): array
+mindstellar\api\serializer\ExtensionMembers::NAME = "/^[a-z0-9_]+$/D"
+mindstellar\api\serializer\ExtensionMembers::OBJECTS = ["listing","user","category"]
+mindstellar\api\serializer\ExtensionMembers::SLUG = "/^[a-z0-9-]+$/D"
 mindstellar\api\serializer\Links::public api(string $path, ?string $version = NULL): string
 mindstellar\api\serializer\Links::public avatar(int $userId): string
 mindstellar\api\serializer\Links::public listing(array $item): string
@@ -104,3 +146,14 @@ mindstellar\apiaccess\Credential::public isUser(): bool
 mindstellar\apiaccess\Credential::public kind(): string
 mindstellar\apiaccess\Credential::public scopes(): array
 mindstellar\apiaccess\Credential::public userId(): ?int
+mindstellar\apiaccess\CredentialKind::ANONYMOUS = "anonymous"
+mindstellar\apiaccess\CredentialKind::KEY = "key"
+mindstellar\apiaccess\CredentialKind::PUBLIC = "public"
+mindstellar\apiaccess\CredentialKind::SESSION = "session"
+mindstellar\apiaccess\CredentialKind::USER = "user"
+mindstellar\auth\Actor::public adminId(): ?int
+mindstellar\auth\Actor::public ip(): string
+mindstellar\auth\Actor::public isAdmin(): bool
+mindstellar\auth\Actor::public isGuest(): bool
+mindstellar\auth\Actor::public userId(): ?int
+mindstellar\webhook\Events::PLUGIN_TYPE = "/^ext\\.[a-z0-9][a-z0-9_-]{0,39}\\.[a-z0-9][a-z0-9_.]{0,59}$/D"

@@ -51,10 +51,7 @@ final class PhotosController
 
     public function add(ApiCall $call): Response
     {
-        $request = $call->request();
-        $credential = $call->credential();
-
-        $listing = $this->owned->own($call->intArg(), $credential);
+        $listing = $this->owned->own($call->intArg(), $call->credential());
         $id      = $listing->id();
         // Checked again when the save fails: another upload may have taken the last place meanwhile.
         $refuseWhenFull = function () use ($id, $listing): void {
@@ -65,7 +62,7 @@ final class PhotosController
         };
         $refuseWhenFull();
 
-        $photo = $this->photos->upload($request);
+        $photo = $this->photos->upload($call->request());
         $new   = (new PhotoService())->add($id, [
             'name'     => [basename($photo->path())],
             'type'     => ['image/*'],
@@ -92,8 +89,7 @@ final class PhotosController
 
     public function remove(ApiCall $call): Response
     {
-        $credential = $call->credential();
-        $id      = $this->owned->own($call->intArg(), $credential)->id();
+        $id      = $this->owned->own($call->intArg(), $call->credential())->id();
         $photoId = $call->intArg('photo');
         if (!(new PhotoService())->delete($photoId, $id, $call->actor())) {
             throw ProblemException::notFound('No such photo on this listing.');

@@ -37,7 +37,6 @@ final class CategoriesController
     public function index(ApiCall $call): Response
     {
         $request = $call->request();
-
         $context = $this->api->context($request, $call->credential(), 'category', CategorySerializer::MEMBERS);
         $catalog = CategoryCatalog::fromSite();
 
@@ -50,7 +49,7 @@ final class CategoriesController
     {
         $context  = $this->api->context($call->request(), $call->credential(), 'category', CategorySerializer::MEMBERS);
         $category = ProblemException::found(CategoryCatalog::fromSite()->lookup((string) ($call->arg('category') ?? ''), $context->locale()), 'category');
-        $fields = $this->api->fieldService()->forCategory((int) $category['pk_i_id']);
+        $fields   = $this->api->fieldService()->forCategory((int) $category['pk_i_id']);
 
         return Response::ok($this->serializer->one($category, $context, $fields));
     }
@@ -58,7 +57,6 @@ final class CategoriesController
     public function fields(ApiCall $call): Response
     {
         $request = $call->request();
-
         $locale = $this->api->locale($request);
         $asked  = $request->queryString('category');
         if ($asked === '') {

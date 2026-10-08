@@ -92,26 +92,31 @@ final class Actor
         return $copy;
     }
 
+    /** @api */
     public function userId(): ?int
     {
         return $this->userId;
     }
 
+    /** @api */
     public function adminId(): ?int
     {
         return $this->adminId;
     }
 
+    /** @api */
     public function isAdmin(): bool
     {
         return $this->adminId !== null;
     }
 
+    /** @api */
     public function isGuest(): bool
     {
         return $this->userId === null && $this->adminId === null;
     }
 
+    /** @api */
     public function ip(): string
     {
         return $this->ip;

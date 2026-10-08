@@ -22,9 +22,7 @@ use mindstellar\api\Response;
 use mindstellar\api\serializer\CommentSerializer;
 use mindstellar\api\serializer\ListingSerializer;
 use mindstellar\comment\CommentQuery;
-use mindstellar\database\Db;
 use mindstellar\listing\ListingQuery;
-use mindstellar\listing\PhotoStore;
 
 /**
  * Listings: search, one listing, its photos and its comments. Search leaves out listings that
@@ -45,12 +43,9 @@ final class ListingsController
 
     public function show(ApiCall $call): Response
     {
-        $request = $call->request();
-        $credential = $call->credential();
-
-        $context = $this->api->context($request, $credential, 'listing', ListingSerializer::MEMBERS, ListingSerializer::INCLUDES);
+        $context = $this->api->context($call->request(), $call->credential(), 'listing', ListingSerializer::MEMBERS, ListingSerializer::INCLUDES);
         $reader  = $this->api->listingReader();
-        $item    = ProblemException::found($call->visibleListing($reader->row($call->intArg())), 'listing');
+        $item    = ProblemException::found($reader->row($call->intArg(), static fn (array $row): ?array => $call->visibleListing($row)), 'listing');
 
         return Response::ok($reader->view($item, $context));
     }
@@ -59,7 +54,7 @@ final class ListingsController
     {
         $id = (int) $this->visibleRow($call, $call->intArg())['pk_i_id'];
 
-        return Page::whole($this->photoList($id), $this->api->links(), $call);
+        return Page::whole($this->api->listingReader()->photos($id), $this->api->links(), $call);
     }
 
     /**
@@ -69,7 +64,7 @@ final class ListingsController
     {
         $id      = (int) $this->visibleRow($call, $call->intArg())['pk_i_id'];
         $photoId = $call->intArg('photo');
-        foreach ($this->photoList($id) as $photo) {
+        foreach ($this->api->listingReader()->photos($id) as $photo) {
             if ($photo['id'] === $photoId) {
                 return Response::ok($photo);
             }
@@ -84,7 +79,6 @@ final class ListingsController
     public function comments(ApiCall $call): Response
     {
         $request = $call->request();
-
         if (!$this->api->facts()->commentsEnabled()) {
             throw ProblemException::of('feature_disabled', 'Comments are switched off on this site.');
         }
@@ -100,18 +94,6 @@ final class ListingsController
             static fn (array $page): array => array_map([new CommentSerializer(), 'one'], $page),
             $this->api->links()
         );
-    }
-
-    /**
-     * A listing's photos, oldest first, without loading the category catalog a reader carries.
-     *
-     * @return array<int,array<string,mixed>>
-     */
-    private function photoList(int $id): array
-    {
-        $rows = Db::stringifyRows(PhotoStore::ofItems([$id]));
-
-        return $this->api->listingSerializer()->photos($rows);
     }
 
     /**

@@ -307,7 +307,7 @@ $asUser(null);
 harness_section('asking to change the e-mail');
 $webEmail = $record(static fn () => $web['email']($sue, 'susan@example.test'));
 $asUser(null);
-$apiEmail = $record(static fn () => $call('PATCH', 'account', ['email' => 'tommy@example.test'], $tomToken));
+$apiEmail = $record(static fn () => $call('PATCH', 'account', ['email' => 'tommy@example.test', 'current_password' => 'open sesame'], $tomToken));
 pin('the web request fires these', ['hook_email_new_email'], $webEmail);
 pin('the API request fires the same', $webEmail, $apiEmail);
 pin('both wait for the link, the address unchanged', [['susan@example.test', 'sue@example.test'], ['tommy@example.test', 'tom@example.test']], [
@@ -316,8 +316,8 @@ pin('both wait for the link, the address unchanged', [['susan@example.test', 'su
 ]);
 pin('an address another account holds: neither side sends a link or says it is taken', [false, 200, []], [
     $web['email']($sue, 'tom@example.test'),
-    $call('PATCH', 'account', ['email' => 'sue@example.test'], $tomToken)->status(),
-    $record(static fn () => $call('PATCH', 'account', ['email' => 'sue@example.test'], $tomToken)),
+    $call('PATCH', 'account', ['email' => 'sue@example.test', 'current_password' => 'open sesame'], $tomToken)->status(),
+    $record(static fn () => $call('PATCH', 'account', ['email' => 'sue@example.test', 'current_password' => 'open sesame'], $tomToken)),
 ]);
 $asUser(null);
 

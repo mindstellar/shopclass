@@ -220,7 +220,7 @@ osc_add_hook('user_edit_completed', static function ($userId) use (&$seen): void
  * as production builds one per request.
  * ------------------------------------------------------------------------- */
 $validator = new Validator(Schema::components());
-$facts     = new SiteFacts('en_US', array('en_US' => array('name' => 'English', 'direction' => 'ltr')), true, true, 10, 12, 50, false, false);
+$facts     = new SiteFacts('en_US', array('en_US' => array('name' => 'English', 'direction' => 'ltr')));
 $settings  = new ApiSettings(true, userKeys: true);
 $call      = static function (string $method, string $path, array|string|null $body = null, ?string $token = null, array $headers = array(), string $ip = '192.0.2.50') use ($validator, $facts, &$settings): Response {
     $users    = new UserRows();
@@ -385,8 +385,12 @@ pin('null clears an optional member of the account', array(200, null), array($r-
 pin('UserActions\' own refusal is 422 with its message', array(422, 'The name cannot be empty'), (static function (Response $r): array {
     return array($r->status(), $r->body()['errors'][0]['message'] ?? null);
 })($call('PATCH', 'account', array('name' => '<b></b>'), $phone['access_token'])));
+$emailError = static fn (Response $r): array => array($r->status(), $r->body()['errors'][0]['pointer'] ?? null, $r->body()['errors'][0]['code'] ?? null);
+pin('a new e-mail needs the current password, so a stolen token cannot move the account', array(422, '/current_password', 'required'), $emailError($call('PATCH', 'account', array('email' => 'uma.new@example.test'), $phone['access_token'])));
+pin('a wrong current password is refused on current_password', array(422, '/current_password', 'mismatch'), $emailError($call('PATCH', 'account', array('email' => 'uma.new@example.test', 'current_password' => 'nope'), $phone['access_token'])));
+pin('the unchanged e-mail needs no password', 200, $call('PATCH', 'account', array('email' => 'uma@example.test'), $phone['access_token'])->status());
 $fired = array();
-$r     = $call('PATCH', 'account', array('email' => 'uma.new@example.test'), $phone['access_token']);
+$r     = $call('PATCH', 'account', array('email' => 'uma.new@example.test', 'current_password' => 'correct horse'), $phone['access_token']);
 pin('a new e-mail is not applied yet', array(200, 'uma@example.test', 'uma@example.test'), array($r->status(), $r->body()['data']['email'], $userRow($uma)['s_email']));
 pin('a warning says a link went out', 'email_confirmation_sent', $r->body()['warnings'][0]['code'] ?? null);
 pin('through the web\'s confirmation e-mail hook', array('hook_email_new_email'), $fired);
@@ -394,13 +398,13 @@ pin('matches the schema', array(), $schemaErrors('AccountDocument', $r));
 $confirm = UserActions::confirmEmailChange($uma, (string) ($GLOBALS['aa_confirm_code'] ?? ''));
 pin('the link applies it as on the web', array('ok', 'uma.new@example.test'), array($confirm['status'], $userRow($uma)['s_email']));
 $fired = array();
-$r     = $call('PATCH', 'account', array('email' => 'sam@example.test'), $phone['access_token']);
+$r     = $call('PATCH', 'account', array('email' => 'sam@example.test', 'current_password' => 'correct horse'), $phone['access_token']);
 pin('an e-mail another account holds answers the same, so nobody learns it is taken', array(200, 'email_confirmation_sent'), array($r->status(), $r->body()['warnings'][0]['code'] ?? null));
 pin('a sign-up with a taken e-mail sends no link', array(), $fired);
 for ($i = 0; $i < \mindstellar\user\AccountService::EMAIL_CHANGES - 2; $i++) {
-    $call('PATCH', 'account', array('email' => 'try' . $i . '@example.test'), $phone['access_token']);
+    $call('PATCH', 'account', array('email' => 'try' . $i . '@example.test', 'current_password' => 'correct horse'), $phone['access_token']);
 }
-pin('a user gets a few e-mail changes an hour, then 429', '429 rate_limited', $code($call('PATCH', 'account', array('email' => 'one-more@example.test'), $phone['access_token'])));
+pin('a user gets a few e-mail changes an hour, then 429', '429 rate_limited', $code($call('PATCH', 'account', array('email' => 'one-more@example.test', 'current_password' => 'correct horse'), $phone['access_token'])));
 $userKey = (new ApiKeys(new ApiCredential(), new Scopes(), new SystemClock()))->create('key', 'script', array('listings:read', 'account:read'), \mindstellar\apiaccess\KeyOwner::user($uma))->token();
 pin('a key can read the account', 200, $call('GET', 'account', null, $userKey)->status());
 pin('a personal key cannot edit the account: account:write is access-token only', '403 insufficient_scope', $code($call('PATCH', 'account', array('name' => 'X'), $userKey)));

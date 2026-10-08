@@ -14,6 +14,7 @@ namespace mindstellar\user;
 
 use mindstellar\database\Db;
 use mindstellar\database\QueryBuilder;
+use mindstellar\model\Resource;
 
 /**
  * User reads: whether a user exists, their status columns, and every user newest first with
@@ -36,6 +37,42 @@ final class UserQuery
         $user = \User::getInstance()->findByPrimaryKey($id);
 
         return is_array($user) && $user !== [] ? $user : null;
+    }
+
+    /**
+     * The bare t_user row, or null.
+     *
+     * @return array<string,mixed>|null
+     */
+    public function row(int $id): ?array
+    {
+        $row = UserStore::find($id);
+
+        return $row === null ? null : Db::stringifyRow($row);
+    }
+
+    /**
+     * Bare rows of these users, keyed by id.
+     *
+     * @param int[]    $ids
+     * @param string[] $columns must include pk_i_id
+     * @param bool     $liveOnly only enabled, confirmed accounts
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function byIds(array $ids, array $columns, bool $liveOnly = false): array
+    {
+        return $ids === [] ? [] : array_column(Db::stringifyRows(UserStore::byIds($ids, $columns, $liveOnly)), null, 'pk_i_id');
+    }
+
+    /**
+     * Load these users' avatars in one query, so each osc_user_avatar_url() after it reads the cache.
+     *
+     * @param int[] $ids
+     */
+    public function primeAvatars(array $ids): void
+    {
+        (new Resource())->primeOwnerCache(Resource::OWNER_USER, $ids);
     }
 
     /**

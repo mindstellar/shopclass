@@ -11,7 +11,7 @@
 /**
  * Core never names a mindstellar\api class: the REST API builds on core, not the other way
  * round. Core reaches the API only through mindstellar\apiaccess\ApiAccess, which the API's
- * boot.php connects. Old API names kept as aliases in compatibility.php are allowed.
+ * boot.php connects.
  *
  * DB-free.  Usage: php tests/core-no-api-import.php
  */
@@ -24,9 +24,6 @@ require_once __DIR__ . '/lib/harness.php';
 
 /** A reference to the API namespace, as code (one backslash) or in a string (two). */
 const API_NAME = '/mindstellar\\\\{1,2}api\b/';
-
-/** An alias line in OSC_RENAMED_CLASSES: an old API name mapped to a core one. */
-const ALIAS_LINE = '/^\s*\'mindstellar\\\\\\\\api\\\\\\\\[^\']+\' => \'mindstellar\\\\\\\\(?!api\\\\\\\\)[^\']+\',$/m';
 
 /**
  * Lines outside the API that name it, as "path:line: text".
@@ -52,9 +49,6 @@ function core_api_references(): array
     $found = array();
     foreach ($files as $path) {
         $src = (string) file_get_contents($path);
-        if (str_ends_with($path, '/oc-includes/osclass/compatibility.php')) {
-            $src = (string) preg_replace(ALIAS_LINE, '', $src);
-        }
         foreach (explode("\n", $src) as $i => $line) {
             if (preg_match(API_NAME, $line) === 1) {
                 $found[] = substr($path, strlen(ABS_PATH)) . ':' . ($i + 1) . ': ' . trim($line);
@@ -72,8 +66,6 @@ check('catches a use line', preg_match(API_NAME, 'use mindstellar\api\Kernel;') 
 check('catches a fully qualified call', preg_match(API_NAME, '\mindstellar\api\ApiServices::site()') === 1);
 check('catches a class name in a string', preg_match(API_NAME, "'mindstellar\\\\api\\\\Kernel'") === 1);
 check('lets the core apiaccess module through', preg_match(API_NAME, 'use mindstellar\apiaccess\ApiAccess;') === 0);
-check('an alias of an old API name is allowed', preg_replace(ALIAS_LINE, '', "    'mindstellar\\\\api\\\\auth\\\\Scopes' => 'mindstellar\\\\apiaccess\\\\Scopes',") === '');
-check('an alias onto an API class is not', preg_replace(ALIAS_LINE, '', "    'mindstellar\\\\Old' => 'mindstellar\\\\api\\\\Kernel',") !== '');
 
 harness_section('Core files');
 

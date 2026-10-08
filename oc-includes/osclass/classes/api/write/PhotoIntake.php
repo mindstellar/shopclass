@@ -23,16 +23,9 @@ use mindstellar\api\Request;
  */
 final class PhotoIntake
 {
-    /** Seconds all of one request's URL downloads may take together. */
-    public const FETCH_BUDGET = 30;
-
-    /** @var \Closure(): float */
-    private \Closure $now;
-
     /**
-     * @param bool          $urls     whether the site downloads photos named by URL
-     * @param int           $maxBytes the largest photo the site takes
-     * @param callable|null $now      the time in seconds; microtime(true) by default
+     * @param bool $urls     whether the site downloads photos named by URL
+     * @param int  $maxBytes the largest photo the site takes
      */
     public function __construct(
         private PhotoStage $stage,
@@ -40,10 +33,8 @@ final class PhotoIntake
         private RateLimiter $limiter,
         private RatePolicy $limits,
         private bool $urls,
-        private int $maxBytes,
-        ?callable $now = null
+        private int $maxBytes
     ) {
-        $this->now = \Closure::fromCallable($now ?? static fn (): float => microtime(true));
     }
 
     /**
@@ -68,7 +59,7 @@ final class PhotoIntake
         } catch (\OverflowException $e) {
             throw ProblemException::field('/photo', 'limit', 'cannot be kept: ' . PhotoStage::MAX_PENDING . ' photos are already waiting for a listing');
         } catch (\RuntimeException $e) {
-            throw ProblemException::of('server_error', 'The photo could not be stored.');
+            throw PhotoFile::notStored();
         } finally {
             $photo->discard();
         }
@@ -76,14 +67,13 @@ final class PhotoIntake
 
     /**
      * The photos a listing body names in `photo_tokens` and `photo_urls`. URLs are fetched only
-     * while the listing has room, within the user's hourly fetch limit and FETCH_BUDGET seconds.
+     * while the listing has room and within the user's hourly fetch limit, all at the same time.
      *
      * @param array<mixed> $input the listing body
      * @param int|null     $room  photos the listing can still take; null for no limit
      *
-     * @throws ProblemException 422 for an unknown token, a URL when the site does not fetch them,
-     *                    one past the time budget or a bad photo; 429 past the fetch limit; 500 when a staged photo
-     *                    cannot be copied
+     * @throws ProblemException 422 for an unknown token, a URL when the site does not fetch them or
+     *                          a bad photo; 429 past the fetch limit; 500 when a staged photo cannot be copied
      */
     public function batch(array $input, int $userId, ?int $room): PhotoBatch
     {
@@ -98,21 +88,20 @@ final class PhotoIntake
         if ($urls !== [] && !$this->urls) {
             throw ProblemException::field('/photo_urls', 'invalid', 'is switched off on this site; upload to /photos and send photo_tokens');
         }
-        $staged  = array_values($staged);
-        $left    = $room === null ? count($urls) : max(0, min(count($urls), $room - count($staged)));
-        $copies  = [];
-        $fetched = [];
-        $until   = ($this->now)() + self::FETCH_BUDGET;
+        $staged = array_values($staged);
+        $left   = $room === null ? count($urls) : max(0, min(count($urls), $room - count($staged)));
+        $wanted = array_slice($urls, 0, $left);
+        $copies = [];
         try {
             foreach ($staged as $photo) {
                 $copies[] = $this->copy($photo);
             }
-            foreach (array_slice($urls, 0, $left) as $i => $url) {
+            foreach ($wanted as $url) {
                 $this->limiter->enforce($this->limits->photoFetch($userId), 'Too many photos fetched by URL in an hour. Try again later.');
-                $fetched[] = $this->fetch($url, '/photo_urls/' . $i, $until);
             }
+            $fetched = $wanted === [] ? [] : $this->fetch($wanted);
         } catch (ProblemException $e) {
-            (new PhotoBatch([], $fetched, 0, $copies))->discard(false);
+            (new PhotoBatch([], [], 0, $copies))->discard(false);
 
             throw $e;
         }
@@ -150,29 +139,37 @@ final class PhotoIntake
     }
 
     /**
-     * @param float $until when the batch's time budget runs out
+     * Download the URLs side by side and check each as a photo.
      *
-     * @throws ProblemException 422 when the address is refused, the budget is spent or the file is not a usable photo
+     * @param string[] $urls
+     *
+     * @return PhotoFile[]
+     * @throws ProblemException 422 at the first URL that is refused or failed, else at the first that is not a usable photo
      */
-    private function fetch(string $url, string $pointer, float $until): PhotoFile
+    private function fetch(array $urls): array
     {
-        $left = (int) floor($until - ($this->now)());
-        if ($left < 1) {
-            throw ProblemException::field($pointer, 'timeout', 'was not fetched: the photo URLs took longer than ' . self::FETCH_BUDGET . ' seconds together');
-        }
-        $file  = $this->stage->tempPath('fetch');
-        $error = $this->fetcher->fetch($url, $file, $this->maxBytes, $left);
-        if ($error !== null) {
-            @unlink($file);
-
-            throw ProblemException::field($pointer, 'invalid', rtrim(lcfirst($error), '.'));
-        }
+        $files  = array_map(fn (): string => $this->stage->tempPath('fetch'), $urls);
+        $errors = $this->fetcher->fetchAll($urls, $files, $this->maxBytes);
+        $photos = [];
         try {
-            return PhotoFile::checked($file, $this->maxBytes, $pointer);
+            $failed = array_key_first(array_filter($errors));
+            if ($failed !== null) {
+                throw ProblemException::field('/photo_urls/' . $failed, 'invalid', rtrim(lcfirst((string) $errors[$failed]), '.'));
+            }
+            foreach ($files as $i => $file) {
+                $photos[] = PhotoFile::checked($file, $this->maxBytes, '/photo_urls/' . $i);
+            }
         } catch (ProblemException $e) {
-            @unlink($file);
+            foreach ($photos as $photo) {
+                $photo->discard();
+            }
+            foreach ($files as $file) {
+                @unlink($file);
+            }
 
             throw $e;
         }
+
+        return $photos;
     }
 }

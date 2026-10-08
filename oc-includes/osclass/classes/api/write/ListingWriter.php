@@ -21,6 +21,8 @@ use mindstellar\auth\Actor;
 use mindstellar\database\Db;
 use mindstellar\listing\ListingInput;
 use mindstellar\listing\ListingService;
+use mindstellar\listing\ListingStatus;
+use mindstellar\listing\PhotoRoom;
 use mindstellar\moderation\ListingModeration;
 use mindstellar\validation\InvalidException;
 
@@ -31,8 +33,11 @@ use mindstellar\validation\InvalidException;
  */
 final class ListingWriter
 {
-    public function __construct(private CustomFieldValues $fields, private SiteFacts $facts, private ListingService $listings)
+    private PhotoRoom $room;
+
+    public function __construct(private CustomFieldValues $fields, private SiteFacts $facts, private ListingService $listings, ?PhotoRoom $room = null)
     {
+        $this->room = $room ?? new PhotoRoom();
     }
 
     /**
@@ -76,33 +81,44 @@ final class ListingWriter
     /**
      * Post a listing as its owner.
      *
-     * @param array<string,mixed> $form   the form's fields, from newForm()
-     * @param string[]            $photos files for the listing to take
+     * @param array<string,mixed> $form the form's fields, from newForm()
      *
-     * @return int the new listing's id
      * @throws ProblemException 422 with the form's messages, or `listing_limit`
      */
-    public function create(array $form, array $photos, Actor $actor): int
+    public function create(array $form, PhotoBatch $photos, Actor $actor): ListingOutcome
     {
-        $data = ListingInput::fromArray(['photos' => $photos] + $form, $actor, true);
+        $data = ListingInput::fromArray(['photos' => $photos->paths()] + $form, $actor, true);
         try {
-            return $this->listings->create($data, $actor)->id();
+            $saved = $this->listings->create($data, $actor);
         } catch (InvalidException $e) {
             throw self::refusal($e);
         }
+
+        return new ListingOutcome($saved->id(), $saved->needsValidation(), $this->skipped($saved->id(), $photos, 0));
     }
 
     /**
-     * Edit a listing as its owner, adding $photos.
+     * Edit a listing as its owner, adding $photos. A listing waiting for activation still waits.
      *
      * @param array<string,mixed> $form
-     * @param string[]            $photos
      *
      * @throws ProblemException 422 with the form's messages
      */
-    public function update(OwnedListing $listing, array $form, array $photos, Actor $actor): void
+    public function update(OwnedListing $listing, array $form, PhotoBatch $photos, Actor $actor): ListingOutcome
     {
-        $this->edit(['id' => $listing->id(), 'secret' => $listing->secret(), 'photos' => $photos] + $form, $actor);
+        $id     = $listing->id();
+        $before = $photos->isEmpty() ? 0 : $this->room->count($id);
+        $this->edit(['id' => $id, 'secret' => $listing->secret(), 'photos' => $photos->paths()] + $form, $actor);
+
+        return new ListingOutcome($id, ListingStatus::of($listing->row()) === ListingStatus::PENDING, $this->skipped($id, $photos, $before));
+    }
+
+    /**
+     * Photos sent that the listing had no room for.
+     */
+    private function skipped(int $id, PhotoBatch $photos, int $before): int
+    {
+        return $photos->isEmpty() ? 0 : max(0, $photos->sent() - ($this->room->count($id) - $before));
     }
 
     /**
@@ -212,7 +228,7 @@ final class ListingWriter
      */
     private function form(): ListingBody
     {
-        return new ListingBody(function_exists('osc_locale_dec_point') ? (string) osc_locale_dec_point() : '.', $this->facts->defaultLocale());
+        return new ListingBody((string) osc_locale_dec_point(), $this->facts->defaultLocale());
     }
 
     /**

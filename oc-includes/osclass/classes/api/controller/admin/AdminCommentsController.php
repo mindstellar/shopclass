@@ -49,7 +49,6 @@ final class AdminCommentsController
     public function index(ApiCall $call): Response
     {
         $request = $call->request();
-
         $pager = Pager::fromRequest($request, $this->api->cursor(), ListSpec::byId(), 'admin/comments');
         [$statuses, $listings, $users] = [$request->queryList('status'), $request->queryIds('listing'), $request->queryIds('user')];
 

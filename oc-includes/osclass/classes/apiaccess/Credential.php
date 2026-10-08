@@ -52,7 +52,11 @@ final class Credential
         return new self(CredentialKind::ANONYMOUS, $scopes);
     }
 
-    /** @api */
+    /**
+     * A CredentialKind value.
+     *
+     * @api
+     */
     public function kind(): string
     {
         return $this->kind;

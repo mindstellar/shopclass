@@ -40,6 +40,7 @@ use mindstellar\api\schema\OpenApi;
 use mindstellar\api\schema\Schema;
 use mindstellar\api\schema\Validator;
 use mindstellar\api\serializer\ExtensionMembers;
+use mindstellar\api\Warning;
 use mindstellar\apiaccess\ApiKeys;
 use mindstellar\apiaccess\ApiSettings;
 use mindstellar\apiaccess\CredentialStore;
@@ -186,7 +187,7 @@ sort($documented);
 sort($served);
 pin('every core route is documented, and only those', $served, $documented);
 check('GET /openapi.json itself is documented', isset($core['paths']['/openapi.json']['get']));
-pin('GET /openapi.json needs no credential', [[], 'none'], [$core['paths']['/openapi.json']['get']['security'], $core['paths']['/openapi.json']['get']['x-auth']]);
+pin('GET /openapi.json takes any credential, or none when public reads are on', ['public', true], [$core['paths']['/openapi.json']['get']['x-auth'], in_array((object) [], $core['paths']['/openapi.json']['get']['security'])]);
 $show = $core['paths']['/listings/{id}']['get'];
 pin('a public read names its scope, both ways to send a key, a page token, and none at all', [['bearer' => ['listings:read']], ['pageSession' => ['listings:read']], ['publicKey' => ['listings:read']], []], array_map(static fn ($r): array => (array) $r, $show['security']));
 pin('a GET takes If-None-Match and can answer 304 with its ETag', [true, true, '#/components/headers/ETag'], [
@@ -287,7 +288,7 @@ $store = new class () implements CredentialStore {
 };
 $definitions = Schema::definitions();
 $full        = new Validator($definitions);
-$settings    = new ApiSettings(true);
+$settings    = new ApiSettings(true, true);
 $router      = null;
 $router      = new Router($full, Router::core() + ['GET old' => [
     'handler' => static fn (): Response => Response::ok([]), 'auth' => RouteSpec::AUTH_NONE,
@@ -297,7 +298,9 @@ $router      = new Router($full, Router::core() + ['GET old' => [
 });
 $kernel   = api_test_kernel($router, api_test_authenticator(new ApiKeys($store, new Scopes(), new SystemClock())), $settings, validator: $full);
 $r = $kernel->handle(new Request('GET', 'v1/openapi.json', [], [], '127.0.0.1'));
-pin('GET /api/v1/openapi.json answers with no credential', [200, '3.1.0'], [$r->status(), $r->body()['openapi'] ?? null]);
+pin('GET /api/v1/openapi.json answers with no credential when public reads are on', [200, '3.1.0'], [$r->status(), $r->body()['openapi'] ?? null]);
+pin('and asks for one when they are off', 401, api_test_kernel($router, api_test_authenticator(new ApiKeys($store, new Scopes(), new SystemClock())), new ApiSettings(true), validator: $full)
+    ->handle(new Request('GET', 'v1/openapi.json', [], [], '127.0.0.1'))->status());
 pin('with the document revision and its own URL', ['1.0', 'https://shop.test/api/v1'], [$r->body()['info']['version'], $r->body()['servers'][0]['url']]);
 pin('the OpenAPI document may be cached publicly and gets an ETag', ['public, max-age=60, stale-while-revalidate=60', true], [$r->header('Cache-Control'), isset($r->prepare('GET')['headers']['ETag'])]);
 pin('the live document is sound', [], openapi_problems($r->body()));
@@ -317,5 +320,12 @@ exec(PHP_BINARY . ' ' . escapeshellarg(ABS_PATH . 'tools/gen-api-doc.php') . ' -
 pin('docs/site/developers/api/reference.md is current', 0, $code2);
 $committed = json_decode((string) file_get_contents(ABS_PATH . 'docs/site/developers/api/openapi.json'), true);
 pin('the committed file is the core document', json_decode((string) json_encode($core), true), $committed);
+
+harness_section('warnings');
+$writesDoc = (string) file_get_contents(ABS_PATH . 'docs/site/developers/api/writes.md');
+$table     = (string) substr($writesDoc, (int) strpos($writesDoc, "\n## Warnings\n"));
+preg_match_all('/^\| `([a-z_]+)` \|/m', $table, $documented);
+pin('every warning code is in the warnings table of writes.md, in its order', Warning::CODES, $documented[1]);
+pin('the Warning schema lists the same codes', Warning::CODES, $core['components']['schemas']['Warning']['properties']['code']['enum'] ?? null);
 
 exit(harness_result());

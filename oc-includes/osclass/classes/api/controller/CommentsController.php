@@ -17,6 +17,7 @@ use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\CommentSerializer;
+use mindstellar\api\Warning;
 use mindstellar\comment\CommentService;
 
 /**
@@ -32,9 +33,7 @@ final class CommentsController
 
     public function create(ApiCall $call): Response
     {
-        $request = $call->request();
-
-        $input = $request->input();
+        $input    = $call->input();
         $comments = new CommentService();
         $saved    = $comments->post($call->intArg(), [
             'title' => (string) ($input['title'] ?? ''),
@@ -42,7 +41,7 @@ final class CommentsController
         ], $call->listingActor());
 
         $row      = $comments->find($saved->id());
-        $warnings = $saved->isLive() ? [] : ['warnings' => [['code' => 'comment_pending', 'message' => 'The comment shows once it is approved.']]];
+        $warnings = Warning::member($saved->isLive() ? [] : [Warning::COMMENT_PENDING => 'The comment shows once it is approved.']);
 
         return $this->api->created($call, (new CommentSerializer())->one($row ?? []), 'comments/' . $saved->id(), $warnings);
     }

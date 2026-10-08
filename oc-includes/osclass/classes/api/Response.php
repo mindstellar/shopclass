@@ -293,9 +293,6 @@ final class Response
      */
     private static function tickAutoCron(): void
     {
-        if (!function_exists('osc_auto_cron_dispatch')) {
-            return;
-        }
         try {
             // Scheduled tasks run as nobody, not as the caller the request signed in.
             WebIdentity::forget();

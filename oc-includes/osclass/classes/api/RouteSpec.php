@@ -29,11 +29,11 @@ final class RouteSpec
     /** @api The spec keys a plugin route may use. */
     public const PLUGIN_KEYS = [
         'handler', 'auth', 'scope', 'summary', 'description', 'tags', 'query', 'body', 'responses',
-        'deprecated', 'sunset', 'where', 'versions', 'plugin',
+        'deprecated', 'sunset', 'where', 'versions', 'plugin', 'replayable',
     ];
 
     /** Spec keys only core routes may use. */
-    public const CORE_KEYS = ['replayable', 'upload', 'oauth', 'prepare'];
+    public const CORE_KEYS = ['upload', 'oauth', 'prepare'];
 
     public const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 

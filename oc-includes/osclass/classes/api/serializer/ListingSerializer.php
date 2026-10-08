@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\api\serializer;
 
 use mindstellar\api\read\ListingRelations;
+use mindstellar\api\read\ListingRows;
 use mindstellar\listing\ListingStatus;
 use mindstellar\utility\Clock;
 use mindstellar\utility\SystemClock;
@@ -73,7 +74,7 @@ final class ListingSerializer
     }
 
     /**
-     * @param array<string,mixed> $item an extended listing row (Item::extendData())
+     * @param array<string,mixed> $item an extended listing row (ListingRows::extend())
      * @param int|null            $now  the time status is judged at; now when null
      *
      * @return array<string,mixed>
@@ -139,8 +140,8 @@ final class ListingSerializer
     }
 
     /**
-     * The locale the text is in, the title and the description: the asked locale's when the
-     * listing has it, else the first one it has.
+     * The locale the text is in, the title and the description; the row's own title and
+     * description when no language has a title.
      *
      * @param array<string,mixed> $item
      *
@@ -148,17 +149,9 @@ final class ListingSerializer
      */
     private static function text(array $item, string $locale): array
     {
-        $texts = is_array($item['locale'] ?? null) ? $item['locale'] : [];
-        if (($texts[$locale]['s_title'] ?? '') !== '') {
-            return [$locale, (string) $texts[$locale]['s_title'], (string) ($texts[$locale]['s_description'] ?? '')];
-        }
-        foreach ($texts as $code => $text) {
-            if (($text['s_title'] ?? '') !== '') {
-                return [(string) $code, (string) $text['s_title'], (string) ($text['s_description'] ?? '')];
-            }
-        }
+        $text = ListingRows::text(is_array($item['locale'] ?? null) ? $item['locale'] : [], $locale);
 
-        return [null, (string) ($item['s_title'] ?? ''), (string) ($item['s_description'] ?? '')];
+        return $text[0] !== null ? $text : [null, (string) ($item['s_title'] ?? ''), (string) ($item['s_description'] ?? '')];
     }
 
     /**
@@ -222,10 +215,10 @@ final class ListingSerializer
     }
 
     /**
-     * @param array<string,mixed> $item
-     *
      * The public view hides the e-mail and phone as the listing page does: on an expired
      * listing, and from guests when only signed-in users may contact sellers.
+     *
+     * @param array<string,mixed> $item
      *
      * @return array{name:?string,email:?string,phone:?string}
      */

@@ -307,7 +307,7 @@ $kit    = new ApiServices(
     new UserRows(),
     new SystemClock(),
     RateLimiter::fromSite(new SystemClock()),
-    new SiteFacts('en_US', ['en_US' => ['name' => 'English', 'direction' => 'ltr']], true, true, 10, 12, 50, false, false),
+    new SiteFacts('en_US', ['en_US' => ['name' => 'English', 'direction' => 'ltr']]),
     new class () implements mindstellar\api\serializer\Links {
         public function listing(array $item): string
         {

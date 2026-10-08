@@ -1203,11 +1203,12 @@ class Item extends DAO
     /**
      * Delete by primary key, delete dependencies too
      *
-     * @param int $id Item id
+     * @param int                          $id    Item id
+     * @param \mindstellar\auth\Actor|null $actor who deletes, for the log; the session when null
      *
      * @return int|false Rows removed from t_item, or false when the transaction failed
      */
-    public function deleteByPrimaryKey($id)
+    public function deleteByPrimaryKey($id, ?\mindstellar\auth\Actor $actor = null)
     {
         $item = $this->findByPrimaryKey($id);
 
@@ -1262,7 +1263,7 @@ class Item extends DAO
         }
 
         // The files go once the outermost transaction commits, and stay if it rolls back.
-        \mindstellar\listing\PhotoService::deleteFilesFromDisk($id, $isAdmin, $resources);
+        \mindstellar\listing\PhotoService::deleteFilesFromDisk($id, $isAdmin, $resources, $actor);
 
         // Counters are decremented only once the row is really gone. Doing it first
         // meant a delete that failed still took the listing out of every total, and

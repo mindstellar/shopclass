@@ -173,7 +173,7 @@ final class ListingService
                         $actor->logRole(),
                         $actor->logId()
                     );
-                $result = $this->items->deleteByPrimaryKey($itemId);
+                $result = $this->items->deleteByPrimaryKey($itemId, $actor);
                 if ($result !== false) {
                     osc_run_hook('after_delete_item', $itemId, $item);
                 }

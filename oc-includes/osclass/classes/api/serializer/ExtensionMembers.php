@@ -20,9 +20,12 @@ use mindstellar\api\schema\Validator;
  */
 final class ExtensionMembers
 {
+    /** @api The objects a plugin field may go on. */
     public const OBJECTS = ['listing', 'user', 'category'];
 
+    /** @api A plugin slug. */
     public const SLUG = '/^[a-z0-9-]+$/D';
+    /** @api A plugin field name. */
     public const NAME = '/^[a-z0-9_]+$/D';
 
     /** @var array<string,array<string,ExtensionMember>> object => 'slug.name' => field */

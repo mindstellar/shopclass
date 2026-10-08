@@ -45,6 +45,7 @@ use mindstellar\api\serializer\Links;
 use mindstellar\api\serializer\ListingSerializer;
 use mindstellar\api\serializer\SiteLinks;
 use mindstellar\api\serializer\SparseFieldset;
+use mindstellar\api\serializer\UserSerializer;
 use mindstellar\api\serializer\ViewContext;
 use mindstellar\api\write\CustomFieldValues;
 use mindstellar\api\write\ImageFetcher;
@@ -143,11 +144,6 @@ final class ApiServices
         return $this->settings;
     }
 
-    public function scopes(): Scopes
-    {
-        return $this->scopes;
-    }
-
     public function store(): SignInStore
     {
         return $this->store;
@@ -186,7 +182,7 @@ final class ApiServices
     /**
      * Core routes and the plugins' routes.
      */
-    public function router(): Router
+    private function router(): Router
     {
         return $this->once(__FUNCTION__, fn (): Router => Router::build(
             $this->validator(),
@@ -218,7 +214,7 @@ final class ApiServices
     /**
      * Plugin fields, read once from the `api_fields` filter.
      */
-    public function fields(): ExtensionMembers
+    private function fields(): ExtensionMembers
     {
         return $this->once(__FUNCTION__, static fn (): ExtensionMembers => ExtensionMembers::fromHooks(new Validator()));
     }
@@ -226,7 +222,7 @@ final class ApiServices
     /**
      * Core's component schemas and the plugins' `Ext*` ones, built only when a `$ref` needs them.
      */
-    public function definitions(): Definitions
+    private function definitions(): Definitions
     {
         return $this->once(__FUNCTION__, function (): Definitions {
             $ext = ExtensionSchemas::fromHooks();
@@ -235,7 +231,7 @@ final class ApiServices
         });
     }
 
-    public function validator(): Validator
+    private function validator(): Validator
     {
         return $this->once(__FUNCTION__, fn (): Validator => new Validator($this->definitions()));
     }
@@ -318,6 +314,14 @@ final class ApiServices
             $this->facts()->contactNeedsSignIn(),
             $this->clock
         ));
+    }
+
+    /**
+     * The user serializer every user answer shares.
+     */
+    public function userSerializer(): UserSerializer
+    {
+        return $this->once(__FUNCTION__, fn (): UserSerializer => new UserSerializer($this->links(), $this->extensions()));
     }
 
     /**

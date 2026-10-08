@@ -21,6 +21,7 @@ use mindstellar\api\routing\Router;
  */
 final class ExtensionSchemas
 {
+    /** @api A plugin component's name. */
     public const NAME = '/^Ext[A-Z][A-Za-z0-9]*$/D';
 
     private function __construct()

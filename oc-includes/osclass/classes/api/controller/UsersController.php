@@ -37,18 +37,16 @@ final class UsersController
     public function show(ApiCall $call): Response
     {
         $credential = $call->credential();
-
         $context = $this->api->context($call->request(), $credential, 'user', UserSerializer::MEMBERS);
         $id      = $call->intArg();
         $user    = self::visible($this->api->facts()->usersEnabled() ? (new UserQuery())->find($id) : null, $credential);
 
-        return Response::ok((new UserSerializer($this->api->links(), $this->api->extensions()))->one($user, $context));
+        return Response::ok($this->api->userSerializer()->one($user, $context));
     }
 
     public function listings(ApiCall $call): Response
     {
         $credential = $call->credential();
-
         $id = $call->intArg();
         self::visible($this->api->facts()->usersEnabled() ? (new UserQuery())->statusRow($id) : null, $credential);
 

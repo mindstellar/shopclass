@@ -206,7 +206,7 @@ pin('the core table needs no database; every route names its auth and scope', [
     'GET listings/{id}/comments'        => 'public listings:read',
     'GET listings/{id}/photos'          => 'public listings:read',
     'GET listings/{id}/photos/{photo}'  => 'public listings:read',
-    'GET openapi.json'                  => 'none -',
+    'GET openapi.json'                  => 'public -',
     'GET regions/{id}/cities'           => 'public listings:read',
     'GET users/{id}'                    => 'public listings:read',
     'GET users/{id}/listings'           => 'public listings:read',
@@ -294,7 +294,6 @@ try {
     $threwPublic = true;
 }
 check('a public write is refused', $threwPublic);
-pin('the OpenAPI document needs no credential', RouteSpec::AUTH_NONE, $coreTable->match('GET', 'openapi.json')->route()->auth());
 
 harness_section('plugin routes');
 $old    = $none + ['deprecated' => '2026-10-04', 'sunset' => '2027-04-01'];
@@ -307,36 +306,14 @@ $built  = api_with_filter('api_routes', static fn (array $routes): array => $rou
     'GET listings'             => $none,
     'GET runs/{id}'            => $old,
     'GET listings/{id}'        => $old,
-], static fn () => Router::build($validator, $core, $log, null, '2026-10-04'));
+], static fn () => Router::build($validator, $core, $log));
 pin('an ext/<slug>/ route is added', ['id' => '5'], $built->match('GET', 'ext/acme/offers/5')->args());
 pin('a path outside ext/ is dropped', null, $built->match('GET', 'offers'));
 pin('a slug in capitals is dropped', null, $built->match('GET', 'ext/Acme/x'));
-pin('a deprecated route with a sunset may keep an old path outside ext/', ['id' => '7'], $built->match('GET', 'runs/7')?->args());
-check('a deprecated route cannot replace a core route either', (bool) array_filter($logged, static fn (string $m): bool => str_contains($m, 'GET listings/{id} refused: it would replace a core route')));
-check('each refusal is logged once, naming the rule', count($logged) === 5 && str_contains($logged[0], 'ext/<plugin-slug>/'));
+pin('a deprecated route with a sunset is dropped outside ext/ too', null, $built->match('GET', 'runs/7'));
+check('each refusal is logged once, naming the rule', count($logged) === 6 && str_contains($logged[0], 'ext/<plugin-slug>/'));
 check('a core route cannot be replaced', $built->match('GET', 'listings') !== null
     && (bool) array_filter($logged, static fn (string $m): bool => str_contains($m, 'GET listings refused: plugin paths')));
-$logged = [];
-$built  = api_with_filter('api_routes', static fn (array $routes): array => $routes + [
-    'GET archive/{id}'                => $none + ['deprecated' => '2026-10-04'],
-    'GET gone/{id}'                   => $none + ['deprecated' => '2026-01-01', 'sunset' => '2026-10-04'],
-    'PUT listings/{id}'               => $old,
-    'POST listings/{slug}'            => $old,
-    'PATCH categories/{x}'            => $old,
-    'PUT listings/{external_id}'      => $old + ['where' => ['external_id' => '(?![0-9]+(?:/|$))[^/]+']],
-    'POST listings:batch'             => $old,
-], static fn () => Router::build($validator, $core, $log, null, '2026-10-04'));
-$refusedFor = static fn (string $key): string => (string) (array_values(array_filter($logged, static fn (string $m): bool => str_contains($m, $key . ' refused')))[0] ?? '');
-check('a deprecated old path needs a sunset date', str_contains($refusedFor('GET archive/{id}'), 'deprecated with a sunset date'));
-check('a deprecated path is refused from its sunset day', str_contains($refusedFor('GET gone/{id}'), 'sunset date has passed') && $built->match('GET', 'gone/1') === null);
-check('an old path cannot add a method on a core resource path', str_contains($refusedFor('PUT listings/{id}'), 'core route GET listings/{id} answers that path')
-    && $built->match('PUT', 'listings/7') === null);
-check('nor a pattern that takes a core id too', $refusedFor('POST listings/{slug}') !== '' && $refusedFor('PATCH categories/{x}') !== '');
-pin('a pattern that refuses digits keeps clear of the core ids', [['external_id' => 'abc'], null, []], [
-    $built->match('PUT', 'listings/abc')?->args(), $built->match('PUT', 'listings/7'), $refusedFor('PUT listings/{external_id}') === '' ? [] : [$refusedFor('PUT listings/{external_id}')],
-]);
-pin('a path no core route has is kept', 'POST listings:batch', $built->match('POST', 'listings:batch')?->route()->key());
-pin('those five refusals and nothing else', 5, count($logged));
 $router2 = new Router($validator, ['GET ext/core/thing' => $none], $log);
 $logged  = [];
 check('a plugin cannot replace even an ext/ core route', !$router2->addPlugin('GET', 'ext/core/thing', $none) && str_contains($logged[0], 'replace a core route'));
@@ -393,6 +370,10 @@ $r = $call('GET', 'v1/listings/4');
 pin('a match runs the handler with its args', [200, ['args' => ['id' => '4']]], [$r->status(), $r->body()['data']]);
 pin('the version root runs', 200, $call('GET', 'v1')->status());
 $off = $kernel(new ApiSettings(false));
+$docSpec = ['handler' => $handler] + Router::core()['GET openapi.json'];
+$docs    = static fn (ApiSettings $settings): int => api_test_kernel(new Router($validator, ['GET openapi.json' => $docSpec]), api_test_authenticator(new ApiKeys($store, new Scopes(), new SystemClock())), $settings, validator: $validator)
+    ->handle(new Request('GET', 'v1/openapi.json', [], [], '127.0.0.1'))->status();
+pin('the OpenAPI document needs a credential unless public reads are on', [401, 200], [$docs(new ApiSettings(true)), $docs(new ApiSettings(true, true))]);
 pin('a switched-off API answers 403 api_disabled', [403, 'api_disabled'], [$call('GET', 'v1/listings', $off)->status(), $call('GET', 'v1/listings', $off)->body()['code']]);
 
 harness_section('core refusals');
@@ -553,6 +534,14 @@ check('a plugin route with user or admin auth and no scope is refused, a read to
     && !$rules->addPlugin('GET', 'ext/acme/r0', ['handler' => $handler, 'auth' => RouteSpec::AUTH_USER])
     && !$rules->addPlugin('GET', 'ext/acme/r00', ['handler' => $handler, 'auth' => RouteSpec::AUTH_ADMIN])
     && count($logged) === 4 && str_contains($logged[2], 'must name a scope'));
+$logged = [];
+check('an admin route naming a non-admin scope is refused, so a key holding only listings:read cannot run as an admin', !$rules->addPlugin('GET', 'ext/acme/a1', ['handler' => $handler, 'auth' => RouteSpec::AUTH_ADMIN, 'scope' => 'listings:read'])
+    && !$rules->addPlugin('POST', 'ext/acme/a2', ['handler' => $handler, 'scope' => 'account:write'])
+    && count($logged) === 2 && str_contains($logged[0], 'admin: or ext: scope'));
+check('an admin route naming an admin: or ext: scope is kept', $rules->addPlugin('GET', 'ext/acme/a3', ['handler' => $handler, 'auth' => RouteSpec::AUTH_ADMIN, 'scope' => 'admin:listings'])
+    && $rules->addPlugin('GET', 'ext/acme/a4', ['handler' => $handler, 'auth' => RouteSpec::AUTH_ADMIN, 'scope' => 'ext:acme:read']));
+check('a plugin route may opt out of Idempotency-Key replay', $rules->addPlugin('POST', 'ext/acme/secret', ['handler' => $handler, 'scope' => 'ext:acme:write', 'replayable' => false])
+    && !$rules->match('POST', 'ext/acme/secret')->route()->replayable());
 check('with a scope, or with auth none or public, it is kept', $rules->addPlugin('POST', 'ext/acme/w3', ['handler' => $handler, 'scope' => 'ext:acme:write'])
     && $rules->addPlugin('POST', 'ext/acme/w4', ['handler' => $handler, 'auth' => RouteSpec::AUTH_NONE])
     && $rules->addPlugin('GET', 'ext/acme/r1', ['handler' => $handler, 'auth' => RouteSpec::AUTH_USER, 'scope' => 'ext:acme:read'])

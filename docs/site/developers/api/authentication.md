@@ -45,7 +45,7 @@ How a call is accepted:
 | Query string | `?api_key=scp_…` works for **public keys on `GET` and `HEAD` only**. Other keys and tokens are never accepted there. See the warning below. |
 | Cookies | Never used alone. Only a [same-site session](#same-site-session-theme-javascript) reads the sign-in cookie, and only with a page token in its header. The API sets no cookie. |
 | No credential | `401`, unless the site owner allowed anonymous reads. Then reads work with the public scope and a lower per-address limit. |
-| `GET /openapi.json` | Needs no credential. |
+| `GET /openapi.json` | Any credential, or none when the site allows anonymous reads. |
 
 :::caution[`?api_key=` is written to logs]
 A key in the address lands in web server and CDN access logs, browser history and `Referer`
@@ -223,6 +223,12 @@ key that admin made. Other admins' keys keep working.
 with `account:write`. Like the web form, it signs the user out everywhere: every sign-in and
 personal key ends. The answer is a new sign-in for this client, with the same label: an access
 token and a refresh token. Store both. Wrong passwords count toward the same limit as sign-in.
+
+### Changing the e-mail
+
+`PATCH /account` with a new `email` must also send `current_password`, checked the same way.
+A missing one is a `422` with code `required` on `/current_password`, a wrong one a `422` on
+`/current_password`. A stolen access token alone cannot move the account to another address.
 
 ## Personal keys
 
