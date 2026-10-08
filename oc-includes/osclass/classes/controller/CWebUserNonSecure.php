@@ -232,8 +232,8 @@ class CWebUserNonSecure extends BaseModel
                     $this->redirectTo($back);
                 };
 
-                if (osc_captcha_enabled() && !osc_check_captcha()) {
-                    $fail(_m('Please complete the security check.'));
+                if (!\mindstellar\security\Captcha::passes()) {
+                    $fail(\mindstellar\security\Captcha::failMessage());
 
                     return null;
                 }

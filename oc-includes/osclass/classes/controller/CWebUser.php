@@ -102,7 +102,7 @@ class CWebUser extends WebSecBaseModel
                 osc_csrf_check();
                 $userId = (int) osc_logged_user_id();
                 try {
-                    (new AccountService())->update($userId, AccountInput::read(false), $this->actor());
+                    (new AccountService())->update($userId, AccountInput::read(false), Actor::fromSession(false));
                     UserActions::refreshIdentity($userId);
                     $saved = true;
                 } catch (InvalidException $e) {
@@ -145,7 +145,7 @@ class CWebUser extends WebSecBaseModel
             case ('change_email_post'):      //change email post
                 osc_csrf_check();
                 try {
-                    (new AccountService())->requestEmailChange((int) osc_logged_user_id(), Params::getParamString('new_email'), $this->actor());
+                    (new AccountService())->requestEmailChange((int) osc_logged_user_id(), Params::getParamString('new_email'), Actor::fromSession(false));
                 } catch (RefusedException $e) {
                     osc_add_flash_error_message($e->getMessage());
                     $this->redirectTo(osc_change_user_email_url());
@@ -350,7 +350,7 @@ class CWebUser extends WebSecBaseModel
                 osc_csrf_check();
                 $userId = (int) osc_logged_user_id();
                 try {
-                    (new AccountService())->delete($userId, $this->actor(), Params::getParamString('password', false, false));
+                    (new AccountService())->delete($userId, Actor::fromSession(false), Params::getParamString('password', false, false));
                 } catch (BlockedException $e) {
                     osc_add_flash_error_message(osc_login_throttle_message($e->retryAfter()));
                     $this->redirectTo(osc_user_delete_url());
@@ -390,14 +390,6 @@ class CWebUser extends WebSecBaseModel
                 $this->redirectTo(osc_base_url());
                 break;
         }
-    }
-
-    /**
-     * The signed-in user as core services take them, from this address.
-     */
-    private function actor(): Actor
-    {
-        return Actor::fromSession(false);
     }
 
     /**

@@ -113,8 +113,6 @@ class CWebAjax extends BaseModel
                     return;
                 }
 
-                $userId = osc_is_web_user_logged_in() ? osc_logged_user_id() : null;
-
                 // Check for required fields
                 if (!(is_numeric($id) && is_numeric($item)
                     && preg_match('/^([a-z0-9]+)$/i', $code))
@@ -138,12 +136,7 @@ class CWebAjax extends BaseModel
                     return;
                 }
 
-                $actor = new Actor(
-                    (int) $userId,
-                    osc_is_admin_user_logged_in() ? (int) osc_logged_admin_id() : null,
-                    (string) Params::getServerParam('REMOTE_ADDR'),
-                    $secret
-                );
+                $actor = Actor::fromRequest(true, $secret);
                 if (!ListingPolicy::canManage($aItem, $actor)) {
                     $json['success'] = false;
                     $json['msg']     = _m("The listing doesn't belong to you");
@@ -195,12 +188,7 @@ class CWebAjax extends BaseModel
                         $catId  = Params::getParam('catId');
                         $itemId = Params::getParamInt('itemId');
                         // Stored values go only to someone who may edit the listing.
-                        if ($itemId > 0 && ListingPolicy::manageable($itemId, new Actor(
-                            osc_is_web_user_logged_in() ? (int) osc_logged_user_id() : null,
-                            osc_is_admin_user_logged_in() ? (int) osc_logged_admin_id() : null,
-                            (string) Params::getServerParam('REMOTE_ADDR'),
-                            Params::getParamString('secret')
-                        )) === null) {
+                        if ($itemId > 0 && ListingPolicy::manageable($itemId, Actor::fromRequest(true, Params::getParamString('secret'))) === null) {
                             $itemId = 0;
                         }
                         osc_run_hook('item_edit', $catId, $itemId);
@@ -340,7 +328,7 @@ class CWebAjax extends BaseModel
         if (osc_is_admin_user_logged_in() || osc_is_web_user_logged_in()) {
             return '';
         }
-        if (ListingPolicy::requiresSignIn(Actor::guest((string) Params::getServerParam('REMOTE_ADDR')))) {
+        if (ListingPolicy::requiresSignIn(Actor::fromRequest(false))) {
             return _m('Only registered users are allowed to post listings');
         }
         if (\mindstellar\security\ActionThrottle::exceededFor('ajax_upload')) {

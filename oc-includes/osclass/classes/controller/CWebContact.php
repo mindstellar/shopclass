@@ -52,8 +52,8 @@ class CWebContact extends BaseModel
                     $this->redirectTo(osc_contact_url());
                 };
 
-                if (osc_captcha_enabled() && !osc_check_captcha()) {
-                    $fail(_m('Please complete the security check.'));
+                if (!\mindstellar\security\Captcha::passes()) {
+                    $fail(\mindstellar\security\Captcha::failMessage());
 
                     return false;
                 }

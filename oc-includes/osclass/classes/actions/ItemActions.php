@@ -151,7 +151,7 @@ class ItemActions
     public function add()
     {
         $this->lastItemId = 0;
-        $result           = (new ListingService())->saveForm(ListingInput::withMeta((array) $this->data), $this->actor(), true, $this->import);
+        $result           = (new ListingService())->saveForm(ListingInput::withMeta((array) $this->data), Actor::fromSession((bool) $this->is_admin), true, $this->import);
         if ($result instanceof SavedListing) {
             $this->lastItemId = $result->id();
             // Older plugins read the new id back from the request.
@@ -235,7 +235,7 @@ class ItemActions
      */
     public function sendEmails($aItem)
     {
-        (new ListingService())->notifyNew($aItem['item'], (string) $aItem['active'], new Actor((int) Session::getInstance()->_get('userId'), null));
+        (new ListingService())->notifyNew($aItem['item'], (string) $aItem['active'], Actor::fromSession(false));
     }
 
     /**
@@ -277,7 +277,7 @@ class ItemActions
      */
     public function edit()
     {
-        $result = (new ListingService())->saveForm(ListingInput::withMeta((array) $this->data), $this->actor(), false, $this->import, !($this->is_admin && $this->fromData));
+        $result = (new ListingService())->saveForm(ListingInput::withMeta((array) $this->data), Actor::fromSession((bool) $this->is_admin), false, $this->import, !($this->is_admin && $this->fromData));
 
         return ListingService::legacyResult($result, false);
     }
@@ -369,7 +369,7 @@ class ItemActions
      */
     public function delete($secret, $itemId)
     {
-        return (new ListingService())->delete((int) $itemId, (string) $secret, $this->actor());
+        return (new ListingService())->delete((int) $itemId, (string) $secret, Actor::fromSession((bool) $this->is_admin));
     }
 
     /**
@@ -473,7 +473,7 @@ class ItemActions
             'title'        => Params::getParamString('title'),
             'body'         => Params::getParamString('body'),
         );
-        $actor = new Actor((int) osc_logged_user_id(), null, (string) Params::getServerParam('REMOTE_ADDR'));
+        $actor = Actor::fromSession(false);
         try {
             $saved = (new CommentService())->post(Params::getParamInt('id'), $input, $actor);
         } catch (InvalidException $e) {
@@ -508,15 +508,6 @@ class ItemActions
     {
         $this->data     = ListingInput::fromValues($input, (bool) $this->is_admin, $isAdd);
         $this->fromData = true;
-    }
-
-    /**
-     * The acting user as this class has always taken it: admin rights in admin mode,
-     * otherwise the signed-in user, from this request's address.
-     */
-    private function actor(): Actor
-    {
-        return Actor::fromSession((bool) $this->is_admin);
     }
 
     /**

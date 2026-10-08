@@ -64,8 +64,8 @@ class CAdminLogin extends AdminBaseModel
                     $this->redirectTo(osc_admin_base_url(true) . '?page=login');
                 }
 
-                if (osc_captcha_enabled() && !osc_check_captcha()) {
-                    osc_add_flash_error_message(_m('Please complete the security check.'), 'admin');
+                if (!\mindstellar\security\Captcha::passes()) {
+                    osc_add_flash_error_message(\mindstellar\security\Captcha::failMessage(), 'admin');
                     $this->redirectTo(osc_admin_base_url(true) . '?page=login');
                 }
 
@@ -172,8 +172,8 @@ class CAdminLogin extends AdminBaseModel
                 // The security check runs before the account is looked up. Inside the
                 // branch below it would only ever fail for names that exist, which
                 // would hand back the answer the shared message is meant to withhold.
-                if (osc_captcha_enabled() && !osc_check_captcha()) {
-                    osc_add_flash_error_message(_m('Please complete the security check.'), 'admin');
+                if (!\mindstellar\security\Captcha::passes()) {
+                    osc_add_flash_error_message(\mindstellar\security\Captcha::failMessage(), 'admin');
                     $this->redirectTo(osc_admin_base_url(true) . '?page=login&action=recover');
 
                     return false; // BREAK THE PROCESS, THE CAPTCHA IS WRONG

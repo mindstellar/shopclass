@@ -58,7 +58,7 @@ check(
 );
 check(
     'delete_post deletes through AccountService with the password',
-    isset($post[1]) && strpos($post[1], "(new AccountService())->delete(\$userId, \$this->actor(), Params::getParamString('password', false, false))") !== false
+    isset($post[1]) && strpos($post[1], "(new AccountService())->delete(\$userId, Actor::fromSession(false), Params::getParamString('password', false, false))") !== false
 );
 $service = (string) file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/user/AccountService.php');
 preg_match('/public function delete\(int \$userId.*?\n    }\n/s', $service, $delete);

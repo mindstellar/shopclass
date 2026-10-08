@@ -64,8 +64,8 @@ class CWebLogin extends BaseModel
                     $this->redirectTo(osc_user_login_url());
                 }
 
-                if (osc_captcha_enabled() && !osc_check_captcha()) {
-                    osc_add_flash_error_message(_m('Please complete the security check.'));
+                if (!\mindstellar\security\Captcha::passes()) {
+                    osc_add_flash_error_message(\mindstellar\security\Captcha::failMessage());
                     $this->redirectTo(osc_user_login_url());
                 }
 
@@ -197,8 +197,8 @@ class CWebLogin extends BaseModel
                 // shared message below withholds. It also has to precede the
                 // throttle, which relaxes its per-account limit on the strength
                 // of a solved captcha.
-                if (osc_captcha_enabled() && !osc_check_captcha()) {
-                    osc_add_flash_error_message(_m('Please complete the security check.'));
+                if (!\mindstellar\security\Captcha::passes()) {
+                    osc_add_flash_error_message(\mindstellar\security\Captcha::failMessage());
                     $this->redirectTo(osc_recover_user_password_url());
                 }
 

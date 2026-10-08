@@ -56,6 +56,20 @@ final class Actor
     }
 
     /**
+     * The visitor on a public page: the signed-in user, if any, from this request's address.
+     * With $withAdmin also a signed-in admin, who may see and manage any listing.
+     */
+    public static function fromRequest(bool $withAdmin, string $secret = ''): self
+    {
+        return new self(
+            osc_is_web_user_logged_in() ? (int) osc_logged_user_id() : null,
+            $withAdmin && osc_is_admin_user_logged_in() ? (int) osc_logged_admin_id() : null,
+            (string) \Params::getServerParam('REMOTE_ADDR'),
+            $secret
+        );
+    }
+
+    /**
      * The same actor, sending a guest listing's edit secret.
      */
     public function withSecret(string $secret): self

@@ -13,6 +13,7 @@
  */
 
 use mindstellar\auth\Actor;
+use mindstellar\security\Captcha;
 use mindstellar\user\AccountInput;
 use mindstellar\user\AccountService;
 use mindstellar\user\Usernames;
@@ -56,10 +57,10 @@ class UserActions
      */
     public function add()
     {
-        $captcha = $this->is_admin || !osc_captcha_enabled() || osc_check_captcha();
+        $captcha = $this->is_admin || Captcha::passes();
         $form    = AccountInput::signUp();
         try {
-            $account = (new AccountService())->register($form, $this->actor(), $captcha);
+            $account = (new AccountService())->register($form, Actor::fromSession((bool) $this->is_admin), $captcha);
         } catch (InvalidException $e) {
             $session = Session::getInstance();
             $session->_setForm('user_s_name', $this->Sanitize->string((string) $form['s_name']));
@@ -120,7 +121,7 @@ class UserActions
     public function edit($userId)
     {
         try {
-            $result = (new AccountService())->update((int) $userId, AccountInput::read((bool) $this->is_admin), $this->actor());
+            $result = (new AccountService())->update((int) $userId, AccountInput::read((bool) $this->is_admin), Actor::fromSession((bool) $this->is_admin));
         } catch (InvalidException $e) {
             return implode(PHP_EOL, array_column($e->errors(), 'message')) . PHP_EOL;
         }
@@ -129,15 +130,6 @@ class UserActions
         }
 
         return $result;
-    }
-
-    /**
-     * The acting user as this class has always taken it: the signed-in admin in admin mode,
-     * otherwise the signed-in user.
-     */
-    private function actor(): Actor
-    {
-        return Actor::fromSession((bool) $this->is_admin);
     }
 
     /**
@@ -174,7 +166,7 @@ class UserActions
      */
     public function activate($user_id)
     {
-        return (new AccountService())->activate((int) $user_id, $this->actor());
+        return (new AccountService())->activate((int) $user_id, Actor::fromSession((bool) $this->is_admin));
     }
 
     /**
@@ -186,7 +178,7 @@ class UserActions
      */
     public function deactivate($user_id)
     {
-        return (new AccountService())->deactivate((int) $user_id, $this->actor());
+        return (new AccountService())->deactivate((int) $user_id, Actor::fromSession((bool) $this->is_admin));
     }
 
     /**
@@ -198,7 +190,7 @@ class UserActions
      */
     public function enable($user_id)
     {
-        return (new AccountService())->enable((int) $user_id, $this->actor());
+        return (new AccountService())->enable((int) $user_id, Actor::fromSession((bool) $this->is_admin));
     }
 
     /**
@@ -210,7 +202,7 @@ class UserActions
      */
     public function disable($user_id)
     {
-        return (new AccountService())->disable((int) $user_id, $this->actor());
+        return (new AccountService())->disable((int) $user_id, Actor::fromSession((bool) $this->is_admin));
     }
 
     /**
