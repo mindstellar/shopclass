@@ -83,8 +83,7 @@ here: decide the listing id yourself, and only pass photo files your plugin down
 ## An import API
 
 The Listing Import plugin does this for you. From 0.3 it serves under `/api/v1/ext/listing-import/`
-and signs callers in with core's [API keys](/docs/configure/api/). Its old paths redirect there
-for now: see the [API changelog](/docs/developers/api/changelog/#current-deprecations).
+and signs callers in with core's [API keys](/docs/configure/api/). Its 0.2 paths are gone.
 
 Two classes in `mindstellar\security` cover what an API that receives listings needs.
 

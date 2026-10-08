@@ -33,7 +33,7 @@ These need a new version, v2:
 - making an optional parameter required
 - changing how authentication works
 
-Core's tests compare the v1 OpenAPI document with a saved copy and fail on any of these.
+Core's tests compare the v1 OpenAPI document with a saved copy and fail when an endpoint, member, enum value or success status is removed, a type or auth rule changes, or a request member becomes required.
 
 If v2 ships, it runs beside v1 for at least 12 months. A core endpoint that does not change
 serves both; one that does keeps its v1 form under `/api/v1`. These stay on v1 until they
@@ -71,12 +71,7 @@ To catch a deprecation early, log any answer that has a `Deprecation` header.
 
 ## Current deprecations
 
-| What | Since | Use instead |
-|---|---|---|
-| Listing Import's old paths: `POST /listings`, `POST /listings:batch`, `PUT /listings/{external_id}`, `DELETE /listings/{external_id}`, `GET /runs/{id}` | 2026-10-04 | The same paths under `/api/v1/ext/listing-import/` |
-
-These answer only while the Listing Import plugin is active. They redirect (`301` for `GET`,
-`308` for the rest, so the method and body are kept) to the new path. They are removed in 7.1.
+None.
 
 ## Changes
 

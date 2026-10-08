@@ -18,8 +18,10 @@ whichever theme is active, and a theme change would change the API.
 Only what is marked `@api` in core's source is the plugin contract: the `osc_api_*` helpers,
 `ApiCall`, `ApiKit`, the spec keys listed below, the `ProblemException` and `Problem`
 factories, the `Response` factories, `ViewContext`'s getters, the documented `Request`,
-`Credential` and `Actor` methods, the `CredentialKind` values, and each error code's status
-(not its title). Everything else under `mindstellar\api` is internal and may change in
+`Credential` and `Actor` methods, the `CredentialKind` values, the `Warning` codes and
+`Warning::member()`, the naming rules (`Router::PLUGIN_PATH`, `Problem::PLUGIN_CODE`,
+`ExtensionSchemas::NAME`, `ExtensionMembers::NAME` and `SLUG`), `Router::SHARED_COMPONENTS`,
+`Problem::TYPE_BASE`, and each error code's status (not its title). Everything else under `mindstellar\api` is internal and may change in
 any release, including core's component schema names.
 
 ## Add an endpoint
