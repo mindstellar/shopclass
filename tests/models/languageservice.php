@@ -78,9 +78,9 @@ $service = LanguageService::make();
 
 harness_section('Edit');
 
-pin('an edit changes one row', 1, $service->update('bb_BB', array('s_name' => 'Bee', 'b_enabled' => false)));
+pin('an edit changes one row', 1, LocaleStore::update('bb_BB', array('s_name' => 'Bee', 'b_enabled' => false)));
 pin('...to the posted values', array('Bee', '0'), array($row('bb_BB')['s_name'], (string) $row('bb_BB')['b_enabled']));
-pin('an unchanged edit changes nothing', 0, $service->update('bb_BB', array('s_name' => 'Bee')));
+pin('an unchanged edit changes nothing', 0, LocaleStore::update('bb_BB', array('s_name' => 'Bee')));
 pin('the key and unknown columns are ignored', 0, LocaleStore::update('bb_BB', array('pk_c_code' => 'zz_ZZ', 'x' => 1)));
 pin('...so the row keeps its code', 'Bee', $row('bb_BB')['s_name']);
 

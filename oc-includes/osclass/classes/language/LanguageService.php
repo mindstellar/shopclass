@@ -39,16 +39,6 @@ final class LanguageService
     }
 
     /**
-     * @param array<string,mixed> $values columns of t_locale
-     *
-     * @return int rows changed
-     */
-    public function update(string $code, array $values): int
-    {
-        return LocaleStore::update($code, $values);
-    }
-
-    /**
      * Turn a language on for the website, or for oc-admin. Its category names are filled in first.
      *
      * @return int rows changed

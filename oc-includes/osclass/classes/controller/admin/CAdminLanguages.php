@@ -22,6 +22,7 @@ if (!defined('ABS_PATH')) {
 use mindstellar\admin\BulkAction;
 use mindstellar\admin\ListPaging;
 use mindstellar\language\LanguageService;
+use mindstellar\language\LocaleStore;
 use mindstellar\validation\ConflictException;
 
 class CAdminLanguages extends AdminSecBaseModel
@@ -323,7 +324,7 @@ class CAdminLanguages extends AdminSecBaseModel
                     's_stop_words'      => $languageStopWords
                 );
 
-                $iUpdated = $this->languages->update($languageCode, $array);
+                $iUpdated = LocaleStore::update($languageCode, $array);
                 osc_invalidate_locale_cache();
                 if ($iUpdated > 0) {
                     osc_purge_page_cache('language');
