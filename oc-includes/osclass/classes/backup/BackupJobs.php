@@ -16,6 +16,7 @@ use mindstellar\database\DbException;
 use mindstellar\job\Job;
 use mindstellar\job\JobRegistry;
 use mindstellar\job\JobWorker;
+use mindstellar\utility\Formatting;
 use RuntimeException;
 
 /**
@@ -574,7 +575,7 @@ final class BackupJobs
             __('Backup saved: %1$s, %2$s, %3$s, %4$s'),
             self::when(date('c', (int) $p['started'])),
             self::whatWord((string) $p['what']),
-            DatabaseTools::bytes((int) ($p['size'] ?? 0)),
+            Formatting::bytes((int) ($p['size'] ?? 0)),
             $where
         );
         JobWorker::log('backup', 0, $line);

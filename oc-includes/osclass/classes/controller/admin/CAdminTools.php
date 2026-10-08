@@ -26,13 +26,24 @@ use mindstellar\backup\BackupBucket;
 use mindstellar\backup\BackupJobs;
 use mindstellar\backup\BackupService;
 use mindstellar\backup\BackupStore;
+use mindstellar\backup\RestoreUpload;
+use mindstellar\logger\LogQuery;
 use mindstellar\security\AdminReauth;
 use mindstellar\security\Demo;
 use mindstellar\upgrade\BuildInfo;
 use mindstellar\utility\AjaxResponse;
+use mindstellar\utility\Formatting;
 
 class CAdminTools extends AdminSecBaseModel
 {
+    /** Old Tools actions whose screen is now a part of another page, with where they land. */
+    public const MOVED = array(
+        'import'   => 'backup#restore',
+        'database' => 'system-info&tab=database',
+        'jobs'     => 'system-info&tab=jobs',
+        'cache'    => 'system-info&tab=cache',
+    );
+
     /**
      * Let plugins hook the tools section before anything is dispatched.
      */
@@ -57,7 +68,7 @@ class CAdminTools extends AdminSecBaseModel
         switch ($this->action) {
             case ('import'):
                 // Restoring a backup is now a part of Tools > Backup and restore; old links land there.
-                $this->redirectTo(osc_admin_base_url(true) . DatabaseTools::movedTo('import'));
+                $this->redirectTo(osc_admin_base_url(true) . self::movedTo('import'));
                 break;
             case ('import_post'):
             case ('backup_upload'):
@@ -158,7 +169,7 @@ class CAdminTools extends AdminSecBaseModel
             case ('cache'):
             case 'jobs':
                 // These pages are now tabs of System info.
-                $this->redirectTo(osc_admin_base_url(true) . DatabaseTools::movedTo($this->action));
+                $this->redirectTo(osc_admin_base_url(true) . self::movedTo($this->action));
                 break;
             case ('cache_clear'):
                 if ($this->refuseOnDemo(self::cacheUrl())) {
@@ -474,7 +485,7 @@ class CAdminTools extends AdminSecBaseModel
                     break;
                 }
                 osc_csrf_check();
-                $removed = Log::getInstance()->clearAll();
+                $removed = LogQuery::clearAll();
                 osc_add_flash_ok_message(
                     sprintf(_mn('%d log entry has been removed', '%d log entries have been removed', $removed), $removed),
                     'admin'
@@ -531,7 +542,7 @@ class CAdminTools extends AdminSecBaseModel
                     __('Backup saved: %1$s, %2$s, %3$s.'),
                     BackupJobs::when(date('c', (int) $state['started'])),
                     BackupJobs::whatWord((string) $state['what']),
-                    DatabaseTools::bytes((int) $state['size'])
+                    Formatting::bytes((int) $state['size'])
                 )));
         } elseif ($status === 'cancelled') {
             $notice = array('tone' => 'info', 'lines' => array(__('Backup cancelled. Nothing was saved.')));
@@ -735,15 +746,15 @@ class CAdminTools extends AdminSecBaseModel
         $file = Params::getFiles($field);
         // Over post_max_size PHP drops the whole body, token included, so say why first.
         if ($file === array() && Params::getServerParam('REQUEST_METHOD') === 'POST'
-            && (int) Params::getServerParam('CONTENT_LENGTH') > DatabaseTools::uploadLimit()
+            && (int) Params::getServerParam('CONTENT_LENGTH') > RestoreUpload::limit()
         ) {
-            osc_add_flash_error_message(DatabaseTools::tooLargeMessage(), 'admin');
+            osc_add_flash_error_message(RestoreUpload::tooLargeMessage(), 'admin');
             $this->redirectTo($back);
 
             return;
         }
         osc_csrf_check();
-        $error = DatabaseTools::uploadError($file);
+        $error = RestoreUpload::error($file);
         if ($error === '' && !is_uploaded_file($file['tmp_name'])) {
             $error = _m('No file was uploaded');
         }
@@ -828,13 +839,31 @@ class CAdminTools extends AdminSecBaseModel
     }
 
     /**
+     * Where an old Tools URL now points, as a query string for the admin index, or null
+     * when the action still has its own screen.
+     *
+     * @param string $action
+     *
+     * @return string|null
+     */
+    public static function movedTo(string $action): ?string
+    {
+        if (!isset(self::MOVED[$action])) {
+            return null;
+        }
+        list($target, $fragment) = explode('#', self::MOVED[$action]) + array(1 => '');
+
+        return '?page=tools&action=' . $target . ($fragment !== '' ? '#' . $fragment : '');
+    }
+
+    /**
      * System info > Jobs.
      *
      * @return string
      */
     private static function jobsUrl(): string
     {
-        return osc_admin_base_url(true) . DatabaseTools::movedTo('jobs');
+        return osc_admin_base_url(true) . self::movedTo('jobs');
     }
 
     /**
@@ -844,7 +873,7 @@ class CAdminTools extends AdminSecBaseModel
      */
     private static function cacheUrl(): string
     {
-        return osc_admin_base_url(true) . DatabaseTools::movedTo('cache');
+        return osc_admin_base_url(true) . self::movedTo('cache');
     }
 
     /**
@@ -854,7 +883,7 @@ class CAdminTools extends AdminSecBaseModel
      */
     private static function databaseUrl(): string
     {
-        return osc_admin_base_url(true) . DatabaseTools::movedTo('database');
+        return osc_admin_base_url(true) . self::movedTo('database');
     }
 
     /**

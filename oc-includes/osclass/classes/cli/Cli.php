@@ -504,10 +504,7 @@ class Cli
         }
 
         try {
-            $runner = new \mindstellar\migration\MigrationRunner(
-                Connection::getInstance(),
-                DatabaseTools::migrationsDir()
-            );
+            $runner = \mindstellar\migration\MigrationRunner::forCore();
             $runner->ensureLedger();
             $pending = $runner->pending();
         } catch (\Throwable $e) {

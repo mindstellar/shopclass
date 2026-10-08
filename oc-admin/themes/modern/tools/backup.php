@@ -10,12 +10,13 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\admin\DatabaseTools;
 use mindstellar\backup\BackupBucket;
 use mindstellar\backup\BackupJobs;
 use mindstellar\backup\BackupService;
 use mindstellar\backup\BackupStore;
 use mindstellar\backup\Restorer;
+use mindstellar\backup\RestoreUpload;
+use mindstellar\utility\Formatting;
 
 $view    = View::getInstance();
 $state   = $view->_get('backup_state') ?: array();
@@ -35,7 +36,7 @@ $live    = BackupService::isLive($state);
 $locked  = $demo || $busy || $live;
 $offload = osc_get_preference('storage_active') === 's3';
 $keep    = BackupJobs::keepCount();
-$max     = DatabaseTools::uploadLimit();
+$max     = RestoreUpload::limit();
 $poll    = osc_admin_base_url(true) . '?page=ajax&action=backup_status&' . osc_csrf_token_url();
 $noWeb   = osc_web_restore_disabled();
 $offLine = __('Restore is turned off on this site. Use the command line.');
@@ -47,7 +48,7 @@ $describe = static function (array $row): array {
     return array(
         'when' => BackupJobs::when($row['created']),
         'what' => $row['kind'] === 'safety' ? __('Safety copy') : BackupJobs::whatWord($row['what']),
-        'size' => DatabaseTools::bytes($row['size']),
+        'size' => Formatting::bytes($row['size']),
     );
 };
 
@@ -227,7 +228,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         osc_esc_html(__('Your backup is ready: %1$s, %2$s, %3$s.')),
                         osc_esc_html(BackupJobs::when(date('c', (int) $state['started']))),
                         osc_esc_html(BackupJobs::whatWord((string) $state['what'])),
-                        osc_esc_html(DatabaseTools::bytes((int) $state['size']))
+                        osc_esc_html(Formatting::bytes((int) $state['size']))
                     ); ?></p>
                     <p class="backup-callout-note"><?php _e('It is removed after you download it, or after one hour.'); ?></p>
                     <?php if ($skipped !== '') { ?>
@@ -413,7 +414,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 'disabled' => $locked,
                 'attrs'    => array('accept' => '.zip,.sql'),
                 'help'     => $max < PHP_INT_MAX
-                    ? sprintf(__('This server accepts files up to %s.'), DatabaseTools::bytes($max))
+                    ? sprintf(__('This server accepts files up to %s.'), Formatting::bytes($max))
                     : '',
             )); ?>
         <?php osc_admin_form_close(array(
@@ -450,13 +451,13 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 . '<div class="backup-restore-parts" role="group" aria-label="' . osc_esc_html(__('Put back')) . '">'
                 . '<p class="mb-1">' . osc_esc_html(__('Put back:')) . '</p>'
                 . '<label><input type="checkbox" name="parts[]" value="database" checked /> '
-                . osc_esc_html(sprintf(__('Database (%s)'), DatabaseTools::bytes($dbBytes))) . '</label>'
+                . osc_esc_html(sprintf(__('Database (%s)'), Formatting::bytes($dbBytes))) . '</label>'
                 . '<label><input type="checkbox" name="parts[]" value="files" checked /> '
-                . osc_esc_html(sprintf(__('Files (%s)'), DatabaseTools::bytes($fBytes))) . '</label>'
+                . osc_esc_html(sprintf(__('Files (%s)'), Formatting::bytes($fBytes))) . '</label>'
                 . '</div>';
         }
         if ($confirm['from'] === 'bucket') {
-            $body .= '<p class="backup-restore-note">' . osc_esc_html(sprintf(__('It is downloaded from the bucket first (%s).'), DatabaseTools::bytes((int) $confirm['size']))) . '</p>';
+            $body .= '<p class="backup-restore-note">' . osc_esc_html(sprintf(__('It is downloaded from the bucket first (%s).'), Formatting::bytes((int) $confirm['size']))) . '</p>';
         }
         if ($confirm['note'] !== '') {
             $body .= '<p class="backup-restore-note">' . osc_esc_html($confirm['note']) . '</p>';

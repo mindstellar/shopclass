@@ -10,7 +10,7 @@
 
 namespace mindstellar\backup;
 
-use mindstellar\admin\DatabaseTools;
+use mindstellar\utility\Formatting;
 use RuntimeException;
 
 /**
@@ -174,8 +174,8 @@ final class Builder
         if ($free !== null && $free < $need) {
             throw new BackupException(sprintf(
                 __('Not enough space on the server: needs about %1$s, %2$s free. Nothing was saved.'),
-                DatabaseTools::bytes($need),
-                DatabaseTools::bytes($free)
+                Formatting::bytes($need),
+                Formatting::bytes($free)
             ), 'start');
         }
 

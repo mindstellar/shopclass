@@ -78,14 +78,14 @@ foreach ($routes as $action) {
     check("the controller routes action=$action", (bool) preg_match("/case \\(?'" . preg_quote($action, '/') . "'\\)?:/", $controller));
 }
 check('action=database redirects to the Database tab', (bool) preg_match("/case 'database':\\s*(?:\\/\\/[^\\n]*\\s*)?\\\$this->redirectTo\\(self::databaseUrl\\(\\)\\);/", $controller));
-check('...which is System info > Database', strpos($body('databaseUrl'), "DatabaseTools::movedTo('database')") !== false);
-pin('...at this address', '?page=tools&action=system-info&tab=database', \mindstellar\admin\DatabaseTools::movedTo('database'));
+check('...which is System info > Database', strpos($body('databaseUrl'), "self::movedTo('database')") !== false);
+pin('...at this address', '?page=tools&action=system-info&tab=database', CAdminTools::movedTo('database'));
 check('no action lands on System info', (bool) preg_match("/case 'system-info':\\s*default:\\s*\\\$this->systemInfoPage\\(\\);/", $controller));
 check('#backup and #restore on the old Database URL follow to Backup and restore', strpos($shell, "location.hash === '#backup' || location.hash === '#restore'") !== false);
 check('the old Database page file is gone', !is_file($theme . 'tools/database.php'));
-check('action=jobs and action=cache redirect through movedTo', (bool) preg_match("/case \\(?'cache'\\)?:\\s*case 'jobs':\\s*(?:\\/\\/[^\\n]*\\s*)?\\\$this->redirectTo\\(osc_admin_base_url\\(true\\) \\. DatabaseTools::movedTo\\(\\\$this->action\\)\\);/", $controller));
-pin('...to the Jobs tab', '?page=tools&action=system-info&tab=jobs', \mindstellar\admin\DatabaseTools::movedTo('jobs'));
-pin('...and the Cache tab', '?page=tools&action=system-info&tab=cache', \mindstellar\admin\DatabaseTools::movedTo('cache'));
+check('action=jobs and action=cache redirect through movedTo', (bool) preg_match("/case \\(?'cache'\\)?:\\s*case 'jobs':\\s*(?:\\/\\/[^\\n]*\\s*)?\\\$this->redirectTo\\(osc_admin_base_url\\(true\\) \\. self::movedTo\\(\\\$this->action\\)\\);/", $controller));
+pin('...to the Jobs tab', '?page=tools&action=system-info&tab=jobs', CAdminTools::movedTo('jobs'));
+pin('...and the Cache tab', '?page=tools&action=system-info&tab=cache', CAdminTools::movedTo('cache'));
 check('the old Background jobs and Cache page files are gone', !is_file($theme . 'tools/jobs.php') && !is_file($theme . 'tools/cache.php'));
 check('reopening after a restore lands on the Database tab', strpos($body('backup_reopen'), 'self::databaseUrl()') !== false);
 

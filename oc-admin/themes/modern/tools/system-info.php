@@ -12,8 +12,8 @@ if (!defined('OC_ADMIN')) {
     exit('Direct access is not allowed.');
 }
 
-use mindstellar\admin\DatabaseTools;
 use mindstellar\admin\SystemChecks;
+use mindstellar\utility\Formatting;
 
 // The checks live in SystemChecks. The oscsi_* helpers stay defined for plugins that call them.
 
@@ -48,7 +48,7 @@ if (!function_exists('oscsi_size')) {
             return '—';
         }
 
-        return DatabaseTools::bytes((int)$bytes);
+        return Formatting::bytes((int)$bytes);
     }
 }
 

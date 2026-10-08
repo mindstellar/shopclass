@@ -21,8 +21,6 @@
 
 namespace mindstellar\upgrade;
 
-use mindstellar\admin\DatabaseTools;
-use mindstellar\database\Connection;
 use mindstellar\migration\MigrationRunner;
 use mindstellar\routing\ServerRules;
 use mindstellar\utility\FileSystem;
@@ -87,7 +85,7 @@ class Osclass extends UpgradePackage
         // tab closed halfway through leaves the schema mid-migration for no reason.
         ignore_user_abort(true);
 
-        if (is_dir(DatabaseTools::migrationsDir())) {
+        if (is_dir(MigrationRunner::coreDir())) {
             // Legacy installs store the version as an MMN integer (3.9.0 => 390); modern ones
             // store a dotted string (5.3.0.dev). Only the former can predate 3.9.0, so restrict
             // the numeric comparison to numeric values — a dotted string is always newer.
@@ -102,7 +100,7 @@ class Osclass extends UpgradePackage
 
             osc_set_preference('admin_theme', 'modern');
 
-            $runner = new MigrationRunner(Connection::getInstance(), DatabaseTools::migrationsDir());
+            $runner = MigrationRunner::forCore();
             $runner->ensureLedger();
             $migrated = $runner->run();
             if (!$migrated['ok']) {

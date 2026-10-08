@@ -14,6 +14,7 @@ use mindstellar\admin\DatabaseTools;
 use mindstellar\database\Connection;
 use mindstellar\database\DbException;
 use mindstellar\job\JobWorker;
+use mindstellar\utility\Formatting;
 use Throwable;
 
 /**
@@ -243,8 +244,8 @@ final class BackupService
         if ($out['reason'] === '' && $free !== null && $free < $size + 200 * 1048576) {
             $out['reason'] = sprintf(
                 __('Not enough space on the server to download it: needs about %1$s, %2$s free.'),
-                DatabaseTools::bytes($size + 200 * 1048576),
-                DatabaseTools::bytes($free)
+                Formatting::bytes($size + 200 * 1048576),
+                Formatting::bytes($free)
             );
         }
 
@@ -388,8 +389,8 @@ final class BackupService
                     'line'    => (int) ($s['upload_total'] ?? 0) > 0
                         ? sprintf(
                             __('Uploading to the bucket: %1$s of %2$s'),
-                            DatabaseTools::bytes((int) $s['upload_done']),
-                            DatabaseTools::bytes((int) $s['upload_total'])
+                            Formatting::bytes((int) $s['upload_done']),
+                            Formatting::bytes((int) $s['upload_total'])
                         )
                         : __('Uploading to the bucket'),
                     'percent' => (int) min(99, 60 + floor(39 * (int) ($s['upload_done'] ?? 0) / $total)),
@@ -416,7 +417,7 @@ final class BackupService
                         __('Copying files: %1$s of %2$s (%3$s)'),
                         number_format((int) $s['files_done']),
                         number_format((int) $s['files_total']),
-                        DatabaseTools::bytes((int) $s['bytes_done'])
+                        Formatting::bytes((int) $s['bytes_done'])
                     ),
                     'percent' => (int) floor($scale * min(97, $dbShare + floor((97 - $dbShare) * (int) $s['files_done'] / $total))),
                 );
@@ -444,8 +445,8 @@ final class BackupService
                     'line'    => (int) ($s['fetch_total'] ?? 0) > 0
                         ? sprintf(
                             __('Downloading it from the bucket: %1$s of %2$s'),
-                            DatabaseTools::bytes((int) $s['fetch_done']),
-                            DatabaseTools::bytes((int) $s['fetch_total'])
+                            Formatting::bytes((int) $s['fetch_done']),
+                            Formatting::bytes((int) $s['fetch_total'])
                         )
                         : __('Downloading it from the bucket'),
                     'percent' => 0,

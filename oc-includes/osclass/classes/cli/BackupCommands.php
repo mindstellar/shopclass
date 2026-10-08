@@ -10,7 +10,6 @@
 
 namespace mindstellar\cli;
 
-use mindstellar\admin\DatabaseTools;
 use mindstellar\backup\BackupBucket;
 use mindstellar\backup\BackupJobs;
 use mindstellar\backup\BackupService;
@@ -18,6 +17,7 @@ use mindstellar\backup\BackupStore;
 use mindstellar\backup\Builder;
 use mindstellar\backup\Restorer;
 use mindstellar\job\Job;
+use mindstellar\utility\Formatting;
 
 /**
  * The backup:* commands. They run the same backup and restore jobs as the admin page,
@@ -155,7 +155,7 @@ final class BackupCommands
         $this->say(sprintf(
             "Saved %s (%s)\n  %s\n",
             $state['name'],
-            DatabaseTools::bytes((int) $state['size']),
+            Formatting::bytes((int) $state['size']),
             $where === 'bucket' ? 'in the bucket: ' . BackupBucket::label() . $state['name'] : $store->dir() . $state['name']
         ));
 
@@ -211,7 +211,7 @@ final class BackupCommands
                 $ts !== false ? date('Y-m-d H:i', $ts) : '',
                 $what,
                 $row['where'] === 'bucket' ? 's3' : ($to === 'server' ? 'server' : 'folder'),
-                DatabaseTools::bytes((int) $row['size']),
+                Formatting::bytes((int) $row['size']),
                 $row['name']
             ));
         }
@@ -408,7 +408,7 @@ final class BackupCommands
     {
         $manifest = (array) ($check['manifest'] ?? array());
         $when     = BackupJobs::when((string) ($manifest['created'] ?? ''));
-        $this->say(sprintf("Backup:    %s (%s)\n", $target, DatabaseTools::bytes((int) $check['size'])));
+        $this->say(sprintf("Backup:    %s (%s)\n", $target, Formatting::bytes((int) $check['size'])));
         if ($when !== '') {
             $this->say(sprintf("Made:      %s, Shopclass %s\n", $when, (string) ($manifest['shopclass_version'] ?? '?')));
         }

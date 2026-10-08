@@ -50,6 +50,26 @@ class MigrationRunner
     }
 
     /**
+     * A runner for core's migrations on this site's connection.
+     *
+     * @return self
+     */
+    public static function forCore(): self
+    {
+        return new self(Connection::getInstance(), self::coreDir());
+    }
+
+    /**
+     * The core migrations directory.
+     *
+     * @return string
+     */
+    public static function coreDir(): string
+    {
+        return dirname(__DIR__, 2) . '/installer/migrations';
+    }
+
+    /**
      * Create the ledger table if it does not exist. Lets installs upgrading from a
      * pre-migration version self-bootstrap on their first run.
      *

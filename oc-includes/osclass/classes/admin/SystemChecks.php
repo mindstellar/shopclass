@@ -14,6 +14,7 @@ use mindstellar\backup\BackupJobs;
 use mindstellar\backup\BackupStore;
 use mindstellar\database\StrictModeReadiness;
 use mindstellar\routing\ServerRules;
+use mindstellar\utility\Formatting;
 
 /**
  * The checks behind Tools > System info. Each tab gets the issues to act on and the
@@ -741,7 +742,7 @@ final class SystemChecks
         if (is_array($size)) {
             $rows[] = array(
                 'label' => __('Size'),
-                'value' => sprintf(_n('%d table', '%d tables', (int) $size['tables']), (int) $size['tables']) . ' · ' . DatabaseTools::bytes((int) $size['bytes']),
+                'value' => sprintf(_n('%d table', '%d tables', (int) $size['tables']), (int) $size['tables']) . ' · ' . Formatting::bytes((int) $size['bytes']),
             );
         }
         $rows[] = array('label' => __('Table prefix'), 'value' => (string) ($env['prefix'] ?? ''), 'mono' => true);
@@ -939,7 +940,7 @@ final class SystemChecks
             array('label' => __('Preferences'), 'value' => sprintf(
                 __('%1$d entries, %2$s'),
                 (int) ($env['prefs_count'] ?? 0),
-                DatabaseTools::bytes((int) ($env['prefs_bytes'] ?? 0))
+                Formatting::bytes((int) ($env['prefs_bytes'] ?? 0))
             )),
         );
 
@@ -1089,9 +1090,9 @@ final class SystemChecks
         $hits   = $stats['hits'] ?? null;
         $misses = $stats['misses'] ?? null;
         $total  = (int) $hits + (int) $misses;
-        $memory = isset($stats['memory_used']) ? DatabaseTools::bytes((int) $stats['memory_used']) : null;
+        $memory = isset($stats['memory_used']) ? Formatting::bytes((int) $stats['memory_used']) : null;
         if ($memory !== null && isset($stats['memory_total'])) {
-            $memory = sprintf(__('%1$s of %2$s'), $memory, DatabaseTools::bytes((int) $stats['memory_total']));
+            $memory = sprintf(__('%1$s of %2$s'), $memory, Formatting::bytes((int) $stats['memory_total']));
         }
         $cells = array(
             __('Hit rate')  => $hits !== null && $misses !== null && $total > 0
@@ -1236,7 +1237,7 @@ final class SystemChecks
             return __('unlimited');
         }
 
-        return $bytes > 0 ? DatabaseTools::bytes($bytes) : '—';
+        return $bytes > 0 ? Formatting::bytes($bytes) : '—';
     }
 
     /**

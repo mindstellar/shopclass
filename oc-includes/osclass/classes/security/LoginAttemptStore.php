@@ -98,4 +98,15 @@ final class LoginAttemptStore extends Model
             ->whereIn('s_context', $contexts)
             ->delete();
     }
+
+    /**
+     * Forget every attempt at or before $before.
+     *
+     * @return int rows removed
+     * @throws \mindstellar\database\DbException
+     */
+    public static function pruneBefore(string $before): int
+    {
+        return self::table()->where('dt_date', '<=', $before)->delete();
+    }
 }

@@ -13,9 +13,11 @@ declare(strict_types=1);
 namespace mindstellar\logger;
 
 use mindstellar\database\Db;
+use mindstellar\database\DbException;
 
 /**
- * Activity log reads. The legacy Log model keeps the writes.
+ * Activity log reads, and clearing the whole log. The legacy Log model keeps the
+ * per-entry writes.
  */
 final class LogQuery
 {
@@ -37,5 +39,23 @@ final class LogQuery
         }
 
         return $query->orderBy('dt_date', 'DESC')->limit($limit)->get();
+    }
+
+    /**
+     * Empty the activity log.
+     *
+     * @return int entries removed; 0 when the table cannot be reached
+     */
+    public static function clearAll(): int
+    {
+        $table = DB_TABLE_PREFIX . 't_log';
+        try {
+            $n = (int) Db::scalar('SELECT COUNT(*) FROM ' . $table);
+            Db::execute('DELETE FROM ' . $table);
+
+            return $n;
+        } catch (DbException $e) {
+            return 0;
+        }
     }
 }

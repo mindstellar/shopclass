@@ -13,6 +13,7 @@
 use mindstellar\admin\DatabaseTools;
 use mindstellar\admin\SystemChecks;
 use mindstellar\database\SchemaDoctor;
+use mindstellar\migration\MigrationRunner;
 
 // System info > Database, below the verdict and the facts: waiting updates and check and repair.
 /** @var array<string, mixed> $env */
@@ -92,7 +93,7 @@ $groups = array(
                     <tbody>
                     <?php foreach ($pending as $migration) { ?>
                         <tr>
-                            <td><?php echo osc_esc_html(DatabaseTools::title(DatabaseTools::migrationsDir(), (string) $migration)); ?></td>
+                            <td><?php echo osc_esc_html(DatabaseTools::title(MigrationRunner::coreDir(), (string) $migration)); ?></td>
                             <td class="text-muted"><code><?php echo osc_esc_html((string) $migration); ?></code></td>
                         </tr>
                     <?php } ?>

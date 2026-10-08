@@ -10,7 +10,7 @@
 
 namespace mindstellar\backup;
 
-use mindstellar\admin\DatabaseTools;
+use mindstellar\utility\Formatting;
 use RuntimeException;
 use Throwable;
 
@@ -175,8 +175,8 @@ final class Restorer
         if ($content !== null && $free !== null && $sizes['need'] > $free) {
             return Manifest::refuse(sprintf(
                 __('There is not enough free space to put back the files: %1$s needed, %2$s free.'),
-                DatabaseTools::bytes($sizes['need']),
-                DatabaseTools::bytes($free)
+                Formatting::bytes($sizes['need']),
+                Formatting::bytes($free)
             )) + $out;
         }
 

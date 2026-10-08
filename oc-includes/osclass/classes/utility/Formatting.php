@@ -545,4 +545,19 @@ class Formatting
 
         return $value;
     }
+
+    /**
+     * A byte count in words: "63.9 MB".
+     *
+     * @param int $bytes
+     *
+     * @return string
+     */
+    public static function bytes(int $bytes): string
+    {
+        $units = array('B', 'KB', 'MB', 'GB', 'TB');
+        $i     = $bytes > 0 ? (int) min(floor(log($bytes, 1024)), count($units) - 1) : 0;
+
+        return round($bytes / (1024 ** $i), 1) . ' ' . $units[$i];
+    }
 }

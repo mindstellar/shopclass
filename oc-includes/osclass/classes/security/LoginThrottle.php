@@ -367,14 +367,23 @@ class LoginThrottle
         }
 
         try {
-            return LoginAttempt::getInstance()->pruneBefore(
-                date('Y-m-d H:i:s', time() - ($days * 86400))
-            );
+            return LoginAttemptStore::pruneBefore(date('Y-m-d H:i:s', time() - ($days * 86400)));
         } catch (\Throwable $e) {
             self::unavailable($e);
 
             return 0;
         }
+    }
+
+    /**
+     * Forget every recorded attempt, so anyone locked out can sign in again.
+     *
+     * @return int rows removed
+     * @throws \mindstellar\database\DbException
+     */
+    public static function clearAll()
+    {
+        return LoginAttemptStore::pruneBefore(date('Y-m-d H:i:s'));
     }
 
     /**

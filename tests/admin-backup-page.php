@@ -27,7 +27,6 @@ require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/lib/stubs.php';
 require_once ABS_PATH . 'oc-includes/vendor/autoload.php';
 
-use mindstellar\admin\DatabaseTools;
 use mindstellar\backup\BackupStore;
 
 $controller = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php');
@@ -55,9 +54,9 @@ foreach (array('backup', 'backup_post', 'backup-sql', 'backup-sql_file', 'backup
     'backup_start', 'backup_cancel', 'backup_download', 'backup_delete', 'backup_restore', 'backup_upload', 'backup_dismiss', 'backup_reopen') as $action) {
     check("the controller routes action=$action", (bool) preg_match("/case \\('" . preg_quote($action, '/') . "'\\):/", $controller));
 }
-pin('import lands on the restore part of the new page', '?page=tools&action=backup#restore', DatabaseTools::movedTo('import'));
-pin('backup has its own page again', null, DatabaseTools::movedTo('backup'));
-pin('backup_post too', null, DatabaseTools::movedTo('backup_post'));
+pin('import lands on the restore part of the new page', '?page=tools&action=backup#restore', CAdminTools::movedTo('import'));
+pin('backup has its own page again', null, CAdminTools::movedTo('backup'));
+pin('backup_post too', null, CAdminTools::movedTo('backup_post'));
 check('the old backup actions run the new engine', (bool) preg_match(
     "/'backup-sql'\\s*=> array\\('database', 'server'\\),\\s*'backup-sql_file' => array\\('database', 'download'\\),\\s*"
     . "'backup-zip'\\s*=> array\\('files', 'server'\\),\\s*'backup-zip_file' => array\\('files', 'download'\\)/",

@@ -24,7 +24,9 @@ require_once __DIR__ . '/lib/stubs.php';
 require_once ABS_PATH . 'oc-includes/vendor/autoload.php';
 
 use mindstellar\admin\DatabaseTools;
+use mindstellar\backup\RestoreUpload;
 use mindstellar\database\SchemaDoctor;
+use mindstellar\utility\Formatting;
 
 $finding = static function (string $kind, string $name = 'idx_x'): array {
     return array('table' => 'oc_t_x', 'kind' => $kind, 'name' => $name, 'declared' => '', 'found' => '');
@@ -69,9 +71,9 @@ check('the Repair button sits in the "Repair can fix these" group only', substr_
 
 harness_section('Old URLs');
 
-pin('import lands on the Backup and restore page', '?page=tools&action=backup#restore', DatabaseTools::movedTo('import'));
-pin('upgrade keeps its own screen', null, DatabaseTools::movedTo('upgrade'));
-pin('database lands on the System info Database tab', '?page=tools&action=system-info&tab=database', DatabaseTools::movedTo('database'));
+pin('import lands on the Backup and restore page', '?page=tools&action=backup#restore', CAdminTools::movedTo('import'));
+pin('upgrade keeps its own screen', null, CAdminTools::movedTo('upgrade'));
+pin('database lands on the System info Database tab', '?page=tools&action=system-info&tab=database', CAdminTools::movedTo('database'));
 
 foreach (array('upgrade', 'database', 'backup', 'backup_post', 'backup-sql', 'backup-sql_file', 'backup-zip', 'backup-zip_file', 'import', 'import_post') as $action) {
     check("the controller still routes action=$action", (bool) preg_match("/case \\(?'" . preg_quote($action, '/') . "'\\)?:/", $controller));
@@ -87,16 +89,16 @@ check('the Database tab does not back up or restore', strpos($view, "'import_pos
 
 harness_section('Restore upload');
 
-pin('no file field', 'No file was uploaded', DatabaseTools::uploadError(array()));
-pin('an array-shaped sql[] field is refused, not a TypeError', 'No file was uploaded', DatabaseTools::uploadError(array(
+pin('no file field', 'No file was uploaded', RestoreUpload::error(array()));
+pin('an array-shaped sql[] field is refused, not a TypeError', 'No file was uploaded', RestoreUpload::error(array(
     'name' => array('a.sql'), 'type' => array(''), 'tmp_name' => array('/tmp/x'), 'error' => array(0), 'size' => array(10),
 )));
-pin('no file chosen', 'No file was uploaded', DatabaseTools::uploadError(array('tmp_name' => '', 'error' => UPLOAD_ERR_NO_FILE, 'size' => 0)));
+pin('no file chosen', 'No file was uploaded', RestoreUpload::error(array('tmp_name' => '', 'error' => UPLOAD_ERR_NO_FILE, 'size' => 0)));
 foreach (array(UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE) as $code) {
-    check("error $code says the file is too large", strpos(DatabaseTools::uploadError(array('tmp_name' => '', 'error' => $code, 'size' => 0)), 'larger than this server accepts') !== false);
+    check("error $code says the file is too large", strpos(RestoreUpload::error(array('tmp_name' => '', 'error' => $code, 'size' => 0)), 'larger than this server accepts') !== false);
 }
-pin('a partial upload fails plainly', 'The upload failed. Try again.', DatabaseTools::uploadError(array('tmp_name' => '/tmp/x', 'error' => UPLOAD_ERR_PARTIAL, 'size' => 5)));
-pin('a good upload passes', '', DatabaseTools::uploadError(array('tmp_name' => '/tmp/x', 'error' => UPLOAD_ERR_OK, 'size' => 5)));
+pin('a partial upload fails plainly', 'The upload failed. Try again.', RestoreUpload::error(array('tmp_name' => '/tmp/x', 'error' => UPLOAD_ERR_PARTIAL, 'size' => 5)));
+pin('a good upload passes', '', RestoreUpload::error(array('tmp_name' => '/tmp/x', 'error' => UPLOAD_ERR_OK, 'size' => 5)));
 
 harness_section('Waiting updates in plain words');
 
@@ -130,7 +132,7 @@ pin('MySQL is named', array('label' => 'MySQL 8.0.36', 'supported' => true), Dat
 pin('below the MySQL floor', false, DatabaseTools::server('5.7.4')['supported']);
 pin('below the MariaDB floor', false, DatabaseTools::server('10.1.48-MariaDB')['supported']);
 pin('an empty server string says nothing', array('label' => '', 'supported' => true), DatabaseTools::server(''));
-pin('sizes read in words', array('0 B', '1.5 KB', '63.9 MB'), array(DatabaseTools::bytes(0), DatabaseTools::bytes(1536), DatabaseTools::bytes(67003187)));
+pin('sizes read in words', array('0 B', '1.5 KB', '63.9 MB'), array(Formatting::bytes(0), Formatting::bytes(1536), Formatting::bytes(67003187)));
 
 exit(harness_result());
 

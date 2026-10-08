@@ -11,7 +11,6 @@
 namespace mindstellar\admin;
 
 use Closure;
-use mindstellar\admin\form\MediaSettingsScreen;
 use mindstellar\database\Connection;
 use mindstellar\database\DbException;
 use mindstellar\database\SchemaDoctor;
@@ -48,14 +47,6 @@ final class DatabaseTools
         SchemaDoctor::NULLABILITY,
     );
 
-    /** Old Tools actions whose screen is now a part of another page, with where they land. */
-    public const MOVED = array(
-        'import'   => 'backup#restore',
-        'database' => 'system-info&tab=database',
-        'jobs'     => 'system-info&tab=jobs',
-        'cache'    => 'system-info&tab=cache',
-    );
-
     /**
      * The findings Repair can fix.
      *
@@ -84,46 +75,15 @@ final class DatabaseTools
     }
 
     /**
-     * Where an old Tools URL now points, as a query string for the admin index, or null
-     * when the action still has its own screen.
-     *
-     * @param string $action
-     *
-     * @return string|null
-     */
-    public static function movedTo(string $action): ?string
-    {
-        if (!isset(self::MOVED[$action])) {
-            return null;
-        }
-        list($target, $fragment) = explode('#', self::MOVED[$action]) + array(1 => '');
-
-        return '?page=tools&action=' . $target . ($fragment !== '' ? '#' . $fragment : '');
-    }
-
-    /**
-     * The core migrations directory.
-     *
-     * @return string
-     */
-    public static function migrationsDir(): string
-    {
-        return dirname(__DIR__, 2) . '/installer/migrations';
-    }
-
-    /**
      * Migrations not applied yet, in run order. Empty when there are none, or when the
      * ledger cannot be read: SchemaDoctor then reports the real error.
      *
-     * @param Connection|null $conn this site's connection by default
-     * @param string|null     $dir  the migrations directory; core's by default
-     *
      * @return string[]
      */
-    public static function pending(?Connection $conn = null, ?string $dir = null): array
+    public static function pending(): array
     {
         try {
-            $runner = new MigrationRunner($conn ?? Connection::getInstance(), $dir ?? self::migrationsDir());
+            $runner = MigrationRunner::forCore();
             $runner->ensureLedger();
 
             return $runner->pending();
@@ -139,7 +99,7 @@ final class DatabaseTools
     public static function upToDate(): bool
     {
         try {
-            $runner = new MigrationRunner(Connection::getInstance(), self::migrationsDir());
+            $runner = MigrationRunner::forCore();
             $runner->ensureLedger();
 
             return $runner->pending() === array();
@@ -276,7 +236,7 @@ final class DatabaseTools
      */
     public static function upgradeLock(Connection $conn): ?Closure
     {
-        $lock = (new MigrationRunner($conn, self::migrationsDir()))->lockName();
+        $lock = (new MigrationRunner($conn, MigrationRunner::coreDir()))->lockName();
         if ((int) $conn->scalar('SELECT IS_USED_LOCK(?) = CONNECTION_ID()', array($lock)) === 1) {
             // Taking it again would release it early on MySQL before 5.7.5.
             return static function (): void {
@@ -293,66 +253,6 @@ final class DatabaseTools
                 // The server drops the lock with the session anyway.
             }
         };
-    }
-
-    /**
-     * The largest upload PHP accepts here, in bytes: the smaller of upload_max_filesize
-     * and post_max_size. PHP_INT_MAX when neither sets a limit.
-     *
-     * @return int
-     */
-    public static function uploadLimit(): int
-    {
-        $limits = array();
-        foreach (array('upload_max_filesize', 'post_max_size') as $setting) {
-            $kb = MediaSettingsScreen::sizeToKb((string) ini_get($setting));
-            if ($kb > 0) {
-                $limits[] = $kb * 1024;
-            }
-        }
-
-        return $limits === array() ? PHP_INT_MAX : min($limits);
-    }
-
-    /**
-     * Why an uploaded restore file cannot be used, or '' when it can. A file field sent
-     * as an array (sql[]) is refused like a missing file.
-     *
-     * @param mixed $file the \$_FILES entry
-     *
-     * @return string
-     */
-    public static function uploadError($file): string
-    {
-        if (!is_array($file) || !isset($file['error'], $file['tmp_name'], $file['size'])
-            || !is_int($file['error']) || !is_string($file['tmp_name'])
-        ) {
-            return __('No file was uploaded');
-        }
-        if ($file['error'] === UPLOAD_ERR_INI_SIZE || $file['error'] === UPLOAD_ERR_FORM_SIZE) {
-            return self::tooLargeMessage();
-        }
-        if ($file['error'] === UPLOAD_ERR_NO_FILE || (int) $file['size'] === 0) {
-            return __('No file was uploaded');
-        }
-        if ($file['error'] !== UPLOAD_ERR_OK) {
-            return __('The upload failed. Try again.');
-        }
-
-        return '';
-    }
-
-    /**
-     * The message for a file over PHP's upload limit.
-     *
-     * @return string
-     */
-    public static function tooLargeMessage(): string
-    {
-        return sprintf(
-            __('The file is larger than this server accepts (%s). Raise upload_max_filesize and post_max_size, or restore from the command line.'),
-            self::bytes(self::uploadLimit())
-        );
     }
 
     /** Oldest servers Shopclass supports. */
@@ -382,21 +282,6 @@ final class DatabaseTools
             'label'     => $product . ' ' . $m[0],
             'supported' => version_compare($m[0], self::SERVER_FLOOR[$product], '>='),
         );
-    }
-
-    /**
-     * A byte count in words: "63.9 MB".
-     *
-     * @param int $bytes
-     *
-     * @return string
-     */
-    public static function bytes(int $bytes): string
-    {
-        $units = array('B', 'KB', 'MB', 'GB', 'TB');
-        $i     = $bytes > 0 ? (int) min(floor(log($bytes, 1024)), count($units) - 1) : 0;
-
-        return round($bytes / (1024 ** $i), 1) . ' ' . $units[$i];
     }
 
     /**
