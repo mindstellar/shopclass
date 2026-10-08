@@ -18,7 +18,6 @@
 require_once __DIR__ . '/lib/api-boot.php';
 
 use mindstellar\api\routing\Router;
-use mindstellar\api\routing\RouteTable;
 use mindstellar\api\schema\Definitions;
 use mindstellar\api\schema\Schema;
 use mindstellar\api\schema\Validator;
@@ -151,7 +150,7 @@ $core   = Definitions::lazy(Schema::names(), static function () use (&$builds): 
 
     return Schema::components();
 });
-$routes = (new Router(new Validator($core), RouteTable::core()))->all();
+$routes = (new Router(new Validator($core), Router::core()))->all();
 check('building the core routes does not build the component set', $builds === 0);
 $broken = [];
 foreach ($routes as $key => $route) {

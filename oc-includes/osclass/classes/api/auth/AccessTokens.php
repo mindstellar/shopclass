@@ -79,16 +79,8 @@ final class AccessTokens
     }
 
     /**
-     * The credential a token stands for, or null for any refusal: forged, expired, a user who
-     * is gone, cannot sign in or was signed out since, or a revoked sign-in.
-     */
-    public function verify(string $token): ?Credential
-    {
-        return $this->check($token)->credential();
-    }
-
-    /**
-     * verify(), telling a forged token from a genuine one that expired or went stale.
+     * The credential a token stands for, or a refusal (forged, expired, a user who is gone, cannot
+     * sign in or was signed out since, or a revoked sign-in) telling a forged token from a stale one.
      */
     public function check(string $token): KeyCheck
     {

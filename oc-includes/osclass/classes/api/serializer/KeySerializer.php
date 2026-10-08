@@ -12,13 +12,15 @@ declare(strict_types=1);
 
 namespace mindstellar\api\serializer;
 
+use mindstellar\apiaccess\AccessEntry;
 use mindstellar\apiaccess\ApiKeys;
 use mindstellar\apiaccess\ApiKeyService;
+use mindstellar\apiaccess\Credential;
 use mindstellar\apiaccess\StoredKey;
 
 /**
- * An API key as the admin's and the user's key lists show it. Never the secret or its hash;
- * the token only in the answer that makes the key.
+ * An API key as the admin's and the user's key lists show it, and a sign-in as the session
+ * lists show it. Never the secret or its hash; the token only in the answer that makes the key.
  */
 final class KeySerializer
 {
@@ -94,5 +96,27 @@ final class KeySerializer
         }
 
         return $out;
+    }
+
+    /**
+     * A sign-in or key as `GET /account/sessions` lists it.
+     *
+     * @param Credential $credential the caller, to mark the session making the request
+     *
+     * @return array<string,mixed>
+     */
+    public function session(AccessEntry $session, Credential $credential): array
+    {
+        $row = $session->row();
+
+        return [
+            'id'           => $session->id(),
+            'name'         => $row->name(),
+            'scopes'       => $row->scopes(),
+            'last_used_at' => Format::timestamp($row->lastUsedAt() ?? $row->createdAt()),
+            'last_ip'      => $row->lastIp() === '' ? null : $row->lastIp(),
+            'expires_at'   => Format::timestamp($row->expiresAt()),
+            'current'      => $session->isCurrent($credential),
+        ];
     }
 }

@@ -113,7 +113,6 @@ use mindstellar\api\read\SiteFacts;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\routing\Router;
-use mindstellar\api\routing\RouteTable;
 use mindstellar\api\schema\Definitions;
 use mindstellar\api\schema\Schema;
 use mindstellar\api\schema\Validator;
@@ -254,7 +253,7 @@ $makeKernel = static function (ApiSettings $settings, ?Validator $with = null, ?
     $facts = $siteFacts ?? $facts;
 
     return api_test_kernel(
-        new Router($with, RouteTable::core(), handlers: static function (string $class) use ($facts, $settings): object {
+        new Router($with, Router::core(), handlers: static function (string $class) use ($facts, $settings): object {
             $services = new ApiServices($settings, new Scopes(), new ApiCredential(), new UserRows(), new SystemClock(), api_test_limiter(), $facts, new TestLinks());
 
             return ($services->handlers())($class);

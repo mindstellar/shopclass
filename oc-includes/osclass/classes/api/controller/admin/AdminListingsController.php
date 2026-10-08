@@ -15,7 +15,6 @@ namespace mindstellar\api\controller\admin;
 use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
-use mindstellar\api\read\ListingList;
 use mindstellar\api\read\ListingReader;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
@@ -40,7 +39,6 @@ final class AdminListingsController
     private ListingReader $reader;
     private ListingWriter $writer;
     private ListingModeration $moderation;
-    private ListingList $list;
     private OwnedListings $owned;
 
     public function __construct(private ApiServices $api, ?OwnedListings $owned = null)
@@ -49,7 +47,6 @@ final class AdminListingsController
         $this->reader = $api->listingReader();
         $this->writer = $api->listingWriter();
         $this->moderation = $api->listingModeration();
-        $this->list = new ListingList($api, $this->reader);
     }
 
     public function index(ApiCall $call): Response
@@ -58,7 +55,7 @@ final class AdminListingsController
 
         $users = $request->queryIds('user');
 
-        return $this->list->run($request, $call->credential(), 'admin/listings', $request->queryList('status'), $users, $this->categories($request), trim($request->queryString('q')));
+        return $this->api->listingSearch()->newest($request, $call->credential(), 'admin/listings', $request->queryList('status'), $users, $this->categories($request), trim($request->queryString('q')));
     }
 
     /**

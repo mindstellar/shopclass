@@ -48,6 +48,16 @@ final class Router
     private array $live;
 
     /**
+     * Core's v1 route table, 'METHOD path' => spec: the public routes, then the admin ones.
+     *
+     * @return array<string,array<string,mixed>>
+     */
+    public static function core(): array
+    {
+        return PublicRoutes::all() + AdminRoutes::all();
+    }
+
+    /**
      * @param array<string,array<string,mixed>> $coreRoutes 'METHOD path' => spec
      * @param callable|null                     $log        receives each refusal; error_log() by default
      * @param \Closure|null                     $handlers   fn(class-string): object for core handlers; plugin

@@ -21,7 +21,6 @@ use mindstellar\api\controller\CommentsController;
 use mindstellar\api\controller\ListingsController;
 use mindstellar\api\controller\ListingWritesController;
 use mindstellar\api\controller\LocationsController;
-use mindstellar\api\controller\PageTokenController;
 use mindstellar\api\controller\PhotosController;
 use mindstellar\api\controller\RegistrationController;
 use mindstellar\api\controller\SiteController;
@@ -295,7 +294,7 @@ final class PublicRoutes
                 status: 204
             ),
             'GET auth/session' => RouteSpec::read(
-                handler: [PageTokenController::class, 'show'],
+                handler: [AuthController::class, 'pageToken'],
                 tag: 'Auth',
                 summary: 'A fresh page token, for theme JavaScript on a page open longer than its token lives',
                 response: 'SessionTokenDocument',

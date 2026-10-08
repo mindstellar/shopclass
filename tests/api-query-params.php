@@ -22,7 +22,6 @@ use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\RouteSpec;
 use mindstellar\api\routing\Router;
-use mindstellar\api\routing\RouteTable;
 use mindstellar\api\schema\Validator;
 use mindstellar\apiaccess\ApiKeys;
 use mindstellar\apiaccess\Scopes;
@@ -65,7 +64,7 @@ pin('api_key passes though no route declares it', 200, $call(['api_key' => 'scp_
 pin('a declared one beside an unknown one is still 422', 422, $call(['limit' => '5', 'bogus' => '1'])->status());
 
 harness_section('core routes');
-$reads = array_filter(RouteTable::core(), static fn (string $k): bool => str_starts_with($k, 'GET '), ARRAY_FILTER_USE_KEY);
+$reads = array_filter(Router::core(), static fn (string $k): bool => str_starts_with($k, 'GET '), ARRAY_FILTER_USE_KEY);
 pin('every core read refuses unknown parameters', [], array_keys(array_filter($reads, static fn (array $s): bool => ($s['query']['additionalProperties'] ?? true) !== false)));
 $declared = static fn (string $key): array => array_keys($reads[$key]['query']['properties']);
 $paging   = ['limit', 'cursor'];

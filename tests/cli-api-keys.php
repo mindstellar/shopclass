@@ -89,7 +89,7 @@ $token = printed_token($out);
 pin('an admin key is made', 0, $code);
 check('...and printed', str_starts_with($token, 'sck_'));
 check('...with a note that it is shown once', str_contains($out, 'not shown again'));
-pin('it verifies with the scopes asked for', array('listings:read', 'admin:users'), $keys->verify($token)?->scopes());
+pin('it verifies with the scopes asked for', array('listings:read', 'admin:users'), $keys->check($token)->credential()?->scopes());
 $stored = (new ApiCredential())->findByTokenId(substr($token, 4, 16));
 check('the expiry is about 30 days out', $stored !== null && abs($stored->expiresAt() - (time() + 30 * 86400)) < 60);
 
@@ -110,12 +110,12 @@ $before = $count();
 pin("a moderator's key cannot hold admin:users", array(1, $before), array($code, $count()));
 check('...and the reason is printed', str_contains($err, 'admin:users'));
 [$code, $out] = api_cli('create', array('admin' => 'mod', 'name' => 'Bot', 'scopes' => 'admin:listings'));
-pin('a moderator key with moderator scopes is made', array('admin:listings'), $keys->verify(printed_token($out))?->scopes());
+pin('a moderator key with moderator scopes is made', array('admin:listings'), $keys->check(printed_token($out))->credential()?->scopes());
 
 [$code, $out] = api_cli('create', array('admin' => 'full', 'name' => 'App', 'kind' => 'public'));
 $public = printed_token($out);
 check('a public key starts with scp_', str_starts_with($public, 'scp_'));
-pin('...and only reads public data', array(Scopes::PUBLIC_READ), $keys->verify($public)?->scopes());
+pin('...and only reads public data', array(Scopes::PUBLIC_READ), $keys->check($public)->credential()?->scopes());
 [$code] = api_cli('create', array('admin' => 'full', 'name' => 'App', 'kind' => 'public', 'scopes' => 'listings:write'));
 pin('a public key asking to write is refused', 1, $code);
 [$code] = api_cli('create', array('admin' => 'full', 'name' => 'Old', 'scopes' => 'admin:users', 'expires' => '2001-01-01'));
@@ -138,7 +138,7 @@ $id = (int) $admin->query("SELECT pk_i_id FROM $table WHERE s_name = 'CI'")->fet
 pin('no id is a usage error', 2, $code);
 [$code, $out] = api_cli('revoke', array('_' => array((string) $id)));
 pin('revokes', array(0, "Key $id revoked.\n"), array($code, $out));
-pin('a revoked key no longer verifies', null, $keys->verify($token));
+pin('a revoked key no longer verifies', null, $keys->check($token)->credential());
 [$code] = api_cli('revoke', array('_' => array((string) $id)));
 pin('revoking twice is an error', 1, $code);
 [, $out] = api_cli('list', array());

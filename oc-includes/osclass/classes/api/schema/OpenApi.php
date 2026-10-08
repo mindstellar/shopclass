@@ -18,7 +18,6 @@ use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\RouteSpec;
 use mindstellar\api\routing\Router;
-use mindstellar\api\routing\RouteTable;
 use mindstellar\apiaccess\ApiSettings;
 use mindstellar\apiaccess\CredentialKind;
 use mindstellar\apiaccess\KeyOwner;
@@ -116,7 +115,7 @@ final class OpenApi
     {
         $definitions = Schema::definitions();
 
-        return new self(new Router(new Validator($definitions), RouteTable::core()), $definitions, new Scopes(), $version, self::relativeServers($version));
+        return new self(new Router(new Validator($definitions), Router::core()), $definitions, new Scopes(), $version, self::relativeServers($version));
     }
 
     /**

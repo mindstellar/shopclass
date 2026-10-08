@@ -21,7 +21,7 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hUsers.php';
 
 use mindstellar\api\ApiCall;
 use mindstellar\api\auth\PageTokenAuth;
-use mindstellar\api\controller\PageTokenController;
+use mindstellar\api\controller\AuthController;
 use mindstellar\api\http\Cors;
 use mindstellar\api\http\SiteOrigin;
 use mindstellar\api\identity\SignInCookie;
@@ -107,7 +107,7 @@ $routes = [
     'POST secret'  => ['handler' => static fn (): Response => Response::ok(['done' => true]), 'auth' => 'user', 'scope' => 'account:write'],
     'GET admin/x'  => ['handler' => static fn (): Response => Response::ok(['admin' => true]), 'auth' => 'admin', 'scope' => 'admin:users'],
     'GET auth/session' => [
-        'handler' => static fn (ApiCall $call): Response => (new PageTokenController(new \mindstellar\api\ApiServices(new ApiSettings(true), $scopes, new \mindstellar\model\ApiCredential(), $accounts(), new SystemClock(), api_test_limiter())))->show($call),
+        'handler' => static fn (ApiCall $call): Response => (new AuthController(new \mindstellar\api\ApiServices(new ApiSettings(true), $scopes, new \mindstellar\model\ApiCredential(), $accounts(), new SystemClock(), api_test_limiter())))->pageToken($call),
         'auth'    => 'user',
         'scope'   => 'account:read',
     ],

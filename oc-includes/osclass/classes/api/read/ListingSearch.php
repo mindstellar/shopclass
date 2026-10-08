@@ -25,8 +25,8 @@ use mindstellar\search\SearchCriteria;
 use mindstellar\search\SearchRunner;
 
 /**
- * A page of listings through the search page's own runner, so its filters, hooks, result
- * cache and any search backend apply. Behind `GET /listings` and `GET /users/{id}/listings`.
+ * A page of listings. run() goes through the search page's own runner, so its filters, hooks,
+ * result cache and any search backend apply; newest() lists any status by id.
  */
 final class ListingSearch
 {
@@ -35,6 +35,32 @@ final class ListingSearch
 
     public function __construct(private ApiServices $api, private ListingReader $reader)
     {
+    }
+
+    /**
+     * A page of listings in any status, newest first and paged by id, read through ListingQuery
+     * rather than search. Behind `GET /admin/listings` and `GET /account/listings`.
+     *
+     * @param string   $path        the endpoint, below /api/v1/, for the page links and the cursor
+     * @param string[] $statuses    names from ListingStatus::ALL; all when empty
+     * @param int[]    $userIds     only these sellers; any when empty
+     * @param int[]    $categoryIds only these categories; any when empty
+     */
+    public function newest(Request $request, Credential $credential, string $path, array $statuses, array $userIds, array $categoryIds = [], string $title = ''): Response
+    {
+        $listings = new ListingQuery($this->api->clock());
+        $context  = $this->api->context($request, $credential, 'listing', ListingSerializer::MEMBERS, ListingSerializer::INCLUDES);
+        $pager    = Pager::fromRequest($request, $this->api->cursor(), ListSpec::byId(), ['list' => $path] + $request->query());
+
+        return $pager->respond(
+            fn (): array => $listings->newest($statuses, $userIds, $categoryIds, $title, $pager->afterId(), $pager->limit() + 1),
+            fn (): int => $listings->count($statuses, $userIds, $categoryIds, $title),
+            fn (array $items): array => $this->reader->many($this->reader->extend($items, $context), $context),
+            $this->api->links(),
+            $path,
+            $request->query(),
+            $request->version()
+        );
     }
 
     /**

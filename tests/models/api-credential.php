@@ -112,16 +112,16 @@ pin('a disabled user owns nothing', null, $model->find($model->insert($newKey('U
 harness_section('ApiKeys over the table');
 $keys = new ApiKeys($model, new Scopes(), new SystemClock());
 $made = $keys->create(CredentialKind::KEY, 'Deploy', ['admin:listings', 'admin:users'], KeyOwner::admin($adminId));
-$cred = $keys->verify($made->token(), '192.0.2.1');
+$cred = $keys->check($made->token(), '192.0.2.1')->credential();
 pin('a key made in the table verifies', [CredentialKind::KEY, $adminId, ['admin:listings', 'admin:users']], [$cred->kind(), $cred->adminId(), $cred->scopes()]);
 pin('its use is stored', '192.0.2.1', $admin->query('SELECT s_last_ip FROM ' . $table . ' WHERE pk_i_id = ' . $made->id())->fetch_row()[0]);
 $fresh = $keys->create(CredentialKind::KEY, 'Q', ['admin:listings'], KeyOwner::admin($adminId));
-pin('a first use is two queries: the key with its owner, and the touch', 2, harness_query_count(static fn () => $keys->verify($fresh->token(), '192.0.2.1')));
-pin('a use within five minutes is one', 1, harness_query_count(static fn () => $keys->verify($fresh->token(), '192.0.2.1')));
+pin('a first use is two queries: the key with its owner, and the touch', 2, harness_query_count(static fn () => $keys->check($fresh->token(), '192.0.2.1')->credential()));
+pin('a use within five minutes is one', 1, harness_query_count(static fn () => $keys->check($fresh->token(), '192.0.2.1')->credential()));
 $modKey = $keys->create(CredentialKind::KEY, 'Mod', ['admin:listings', 'admin:users'], KeyOwner::admin($modId, true));
-pin('a moderator key keeps the moderator set', ['admin:listings'], $keys->verify($modKey->token())->scopes());
+pin('a moderator key keeps the moderator set', ['admin:listings'], $keys->check($modKey->token())->credential()->scopes());
 $userKey = $keys->create(CredentialKind::KEY, 'Phone', ['listings:write'], KeyOwner::user($userId));
-pin('a user key acts for its user', $userId, $keys->verify($userKey->token())->userId());
+pin('a user key acts for its user', $userId, $keys->check($userKey->token())->credential()->userId());
 
 harness_section('queries per keyed request');
 $auth    = api_test_authenticator($keys, new FailureCounter());
@@ -145,7 +145,7 @@ check('a request loading the preferences after it sees the marker', (int) osc_ge
 pin('after the marker clears, the failure check runs again: 3 queries', 3, $keyed());
 
 $keys->revoke($made->id());
-pin('a revoked key fails', null, $keys->verify($made->token()));
+pin('a revoked key fails', null, $keys->check($made->token())->credential());
 
 harness_section('refresh families');
 $refreshRow = static fn (string $tokenId, string $family) => new StoredKey(0, CredentialKind::REFRESH, $tokenId, str_repeat('b', 64), 'Phone', ['account:read'], KeyOwner::user($userId), null, true, time() + 3600, null, null, $family);
@@ -205,7 +205,7 @@ pin('a key and a refresh token store the owner\'s stamp when issued', ['0', '0']
 $legacy = $keys->create(CredentialKind::KEY, 'Old', ['listings:write'], KeyOwner::user($userId));
 $admin->query("UPDATE $table SET i_auth_stamp = NULL WHERE pk_i_id = " . $legacy->id());
 $raise('t_user', $userId);
-pin('once the user\'s stamp goes up their key is refused', null, $keys->verify($stampKey->token()));
+pin('once the user\'s stamp goes up their key is refused', null, $keys->check($stampKey->token())->credential());
 $rotated = 'swapped';
 try {
     $refresh->rotate($grant->token(), '192.0.2.1');
@@ -213,18 +213,18 @@ try {
     $rotated = 'refused';
 }
 pin('a rotated refresh token cannot be swapped after the stamp goes up', 'refused', $rotated);
-pin('a row from before stamps still works', $userId, $keys->verify($legacy->token())?->userId());
+pin('a row from before stamps still works', $userId, $keys->check($legacy->token())->credential()?->userId());
 $newGrant = $refresh->start($userRow(), ['account:read'], 'Phone', '192.0.2.1');
 pin('a key or sign-in made after works', [$userId, true], [
-    $keys->verify($keys->create(CredentialKind::KEY, 'New', ['listings:write'], KeyOwner::user($userId))->token())?->userId(),
+    $keys->check($keys->create(CredentialKind::KEY, 'New', ['listings:write'], KeyOwner::user($userId))->token())->credential()?->userId(),
     $refresh->rotate($newGrant->token(), '192.0.2.1')->family() === $newGrant->family(),
 ]);
 pin('an admin\'s key works until the admin\'s stamp goes up', [$adminId, null], [
-    $keys->verify($adminKey->token())?->adminId(),
+    $keys->check($adminKey->token())->credential()?->adminId(),
     (static function () use ($raise, $adminId, $keys, $adminKey) {
         $raise('t_admin', $adminId);
 
-        return $keys->verify($adminKey->token());
+        return $keys->check($adminKey->token())->credential();
     })(),
 ]);
 
@@ -235,7 +235,7 @@ $admin->query('DELETE FROM ' . DB_TABLE_PREFIX . 't_user WHERE pk_i_id = ' . (in
 pin('deleting a user removes their credentials', 0, (int) $admin->query("SELECT COUNT(*) FROM $table WHERE fk_i_user_id = " . (int) $userId)->fetch_row()[0]);
 $admin->query('DELETE FROM ' . DB_TABLE_PREFIX . 't_admin WHERE pk_i_id = ' . (int) $modId);
 pin('deleting an admin removes their keys', 0, (int) $admin->query("SELECT COUNT(*) FROM $table WHERE fk_i_admin_id = " . (int) $modId)->fetch_row()[0]);
-pin('a deleted admin key no longer verifies', null, $keys->verify($modKey->token()));
+pin('a deleted admin key no longer verifies', null, $keys->check($modKey->token())->credential());
 $admin->query('SET FOREIGN_KEY_CHECKS = 0');
 pin('delete removes a row', 1, $model->delete($lower));
 

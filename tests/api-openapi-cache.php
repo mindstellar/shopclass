@@ -93,7 +93,6 @@ use mindstellar\api\ApiCall;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\routing\Router;
-use mindstellar\api\routing\RouteTable;
 use mindstellar\api\schema\OpenApi;
 use mindstellar\api\schema\Schema;
 use mindstellar\api\schema\Validator;
@@ -102,7 +101,7 @@ use mindstellar\apiaccess\Scopes;
 
 $definitions = Schema::definitions();
 $validator   = new Validator($definitions);
-$make        = static fn (array $extra = []): OpenApi => OpenApi::forSite(new Router($validator, RouteTable::core() + $extra), $definitions, new Scopes());
+$make        = static fn (array $extra = []): OpenApi => OpenApi::forSite(new Router($validator, Router::core() + $extra), $definitions, new Scopes());
 $show        = static fn (OpenApi $api): Response => $api->show(new ApiCall(new Request('GET', 'v1/openapi.json', [], [], '127.0.0.1'), Credential::anonymous()));
 
 harness_section('the cache');

@@ -16,9 +16,9 @@
 require_once dirname(__DIR__, 2) . '/oc-includes/vendor/autoload.php';
 
 use mindstellar\api\auth\AccessTokens;
-use mindstellar\api\auth\AdminRows;
 use mindstellar\api\auth\Authenticator;
 use mindstellar\api\auth\FailureCounter;
+use mindstellar\api\auth\MemoisedRows;
 use mindstellar\api\auth\PageTokenAuth;
 use mindstellar\api\auth\UserRows;
 use mindstellar\api\idempotency\Idempotency;
@@ -127,7 +127,7 @@ function api_test_kernel(
     ?Validator $validator = null,
     ?UserRows $users = null,
     ?Idempotency $idempotency = null,
-    ?AdminRows $admins = null
+    ?MemoisedRows $admins = null
 ): Kernel {
     return new Kernel(
         $router,
@@ -136,7 +136,7 @@ function api_test_kernel(
         $validator ?? new Validator(),
         $settings ?? new ApiSettings(true, userKeys: true),
         $users ?? api_test_users(),
-        $admins ?? new AdminRows(static fn (): ?array => null),
+        $admins ?? new MemoisedRows(static fn (): ?array => null),
         $idempotency ?? new Idempotency(new MemoryIdempotencyStore(), new SystemClock())
     );
 }

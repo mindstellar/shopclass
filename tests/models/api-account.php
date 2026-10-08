@@ -96,7 +96,6 @@ use mindstellar\api\read\SiteFacts;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\routing\Router;
-use mindstellar\api\routing\RouteTable;
 use mindstellar\api\schema\Schema;
 use mindstellar\api\schema\Validator;
 use mindstellar\api\serializer\Links;
@@ -227,7 +226,7 @@ $call      = static function (string $method, string $path, array|string|null $b
     $users    = new UserRows();
     $services = new ApiServices($settings, new Scopes(), new ApiCredential(), $users, new SystemClock(), $GLOBALS['aa_limiter'] ?? RateLimiter::fromSite(new SystemClock()), $facts, new AccountLinks());
     $kernel   = new Kernel(
-        new Router($validator, RouteTable::core(), handlers: $services->handlers()),
+        new Router($validator, Router::core(), handlers: $services->handlers()),
         $services->authenticator(),
         api_test_limiter(),
         $validator,

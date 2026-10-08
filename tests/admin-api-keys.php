@@ -233,18 +233,18 @@ check('the next page shows the key', str_starts_with($token, 'sck_'));
 pin('the page after that does not', '', $shown($second['drawn']));
 check('the secret is nowhere in the table', !str_contains((string) $admin->query("SELECT CONCAT_WS('|', s_token_id, s_secret_hash, s_name, s_scopes) FROM $table")->fetch_row()[0], substr($token, 21)));
 check('the list shows its name and prefix', strpos($second['drawn'], 'Stock sync') !== false && strpos($second['drawn'], substr($token, 0, 20)) !== false);
-$credential = $keys()->verify($token);
+$credential = $keys()->check($token)->credential();
 pin('the key verifies with the scopes asked for', array('listings:read', 'admin:listings'), $credential?->scopes());
 
 harness_section('revoking');
 
 $id = (int) $admin->query("SELECT pk_i_id FROM $table WHERE s_name = 'Stock sync'")->fetch_row()[0];
 $wrongRevoke = drive('api_key_revoke', array('id' => $id, 'password' => 'wrong'));
-check('a wrong password revokes nothing', $keys()->verify($token) !== null);
+check('a wrong password revokes nothing', $keys()->check($token)->credential() !== null);
 check('...and says why', in_array('error:That password is not right. Nothing was started.', $wrongRevoke['flashes'], true));
 $revoked = drive('api_key_revoke', array('id' => $id, 'password' => 'right-password'));
 pin('revoke checks the CSRF token', array('api_key_revoke'), $revoked['csrf']);
-pin('a revoked key no longer verifies (the API answers 401)', null, $keys()->verify($token));
+pin('a revoked key no longer verifies (the API answers 401)', null, $keys()->check($token)->credential());
 check('revoking it again says so', in_array('error:That key is already revoked.', drive('api_key_revoke', array('id' => $id, 'password' => 'right-password'))['flashes'], true));
 check('a refresh token id is not a key to revoke here', in_array('error:That key is not in the list any more.', drive('api_key_revoke', array('id' => 999, 'password' => 'right-password'))['flashes'], true));
 
@@ -272,7 +272,7 @@ try {
 }
 pin('a moderator cannot hold an admin scope, and is told which', 'This key cannot hold: admin:users', $refusal);
 $modToken = $manager->create($modOwner, 'Moderation bot', CredentialKind::KEY, array('admin:listings'))->token();
-pin('a moderator key with the moderator scopes is made', array('admin:listings'), $keys()->verify($modToken)?->scopes());
+pin('a moderator key with the moderator scopes is made', array('admin:listings'), $keys()->check($modToken)->credential()?->scopes());
 
 harness_section('the key waits five minutes at most');
 
@@ -288,7 +288,7 @@ harness_section('a public key');
 drive('api_key_create', array('key_name' => 'Mobile app', 'key_kind' => 'public', 'key_scopes' => array('admin:users', 'listings:write'), 'password' => 'right-password'));
 $public = $shown(drive('api')['drawn']);
 check('starts with scp_', str_starts_with($public, 'scp_'));
-pin('only gets the public read scope, whatever was ticked', array(Scopes::PUBLIC_READ), $keys()->verify($public)?->scopes());
+pin('only gets the public read scope, whatever was ticked', array(Scopes::PUBLIC_READ), $keys()->check($public)->credential()?->scopes());
 
 try {
     \mindstellar\api\ApiServices::site()->keyService()->create(\mindstellar\apiaccess\KeyOwner::admin(1), 'Odd', 'key', array('<b>x</b>'));
@@ -312,8 +312,8 @@ $new = $shown($rotPage);
 check('the banner names the stored key, not what was posted', str_contains($rotPage, 'Your new key &quot;CI&quot;') && !str_contains($rotPage, 'Posted'));
 pin('rotate checks the CSRF token', array('api_key_rotate'), $rot['csrf']);
 check('rotating shows a new key once', $new !== '' && $new !== $old);
-pin('...with the same scopes', array('admin:taxonomy'), $keys()->verify($new)?->scopes());
-check('...while the old one still works until revoked', $keys()->verify($old) !== null);
+pin('...with the same scopes', array('admin:taxonomy'), $keys()->check($new)->credential()?->scopes());
+check('...while the old one still works until revoked', $keys()->check($old)->credential() !== null);
 pin('...and the same expiry', strtotime('2999-01-01 23:59:59'), (new ApiCredential())->findByTokenId(substr($new, 4, 16))?->expiresAt());
 
 $modKey = (int) $admin->query("SELECT pk_i_id FROM $table WHERE s_name = 'Moderation bot'")->fetch_row()[0];
@@ -338,7 +338,7 @@ foreach (array(
 }
 $GLOBALS['csrfRefuse'] = false;
 pin('...and no key was made, rotated or revoked', $before, $count());
-check('...the CI key still works', $keys()->verify($old) !== null);
+check('...the CI key still works', $keys()->check($old)->credential() !== null);
 pin('...and no setting changed', $stored, $admin->query("SELECT s_value FROM " . DB_TABLE_PREFIX . "t_preference WHERE s_section = 'api' AND s_name = 'api_rate_limit_default'")->fetch_row());
 
 harness_section('settings');

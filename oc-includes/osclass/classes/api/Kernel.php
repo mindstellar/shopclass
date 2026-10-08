@@ -12,9 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\api;
 
-use mindstellar\api\auth\AdminRows;
 use mindstellar\api\auth\Authenticator;
-use mindstellar\api\auth\Authorizer;
+use mindstellar\api\auth\MemoisedRows;
 use mindstellar\api\auth\OAuthError;
 use mindstellar\api\auth\PageTokenAuth;
 use mindstellar\api\auth\UserRows;
@@ -50,8 +49,6 @@ final class Kernel
     /** The writes that honour If-Match. */
     private const CHECKED_WRITES = ['PUT', 'PATCH', 'DELETE'];
 
-    private Authorizer $authorizer;
-
     private RatePolicy $ratePolicy;
 
     private CachePolicy $cachePolicy;
@@ -65,17 +62,41 @@ final class Kernel
         private Validator $validator,
         private ApiSettings $settings,
         private UserRows $users,
-        private AdminRows $admins,
+        private MemoisedRows $admins,
         private Idempotency $idempotency,
         ?ResourceVersions $versions = null,
-        ?Authorizer $authorizer = null,
         ?RatePolicy $ratePolicy = null,
         ?CachePolicy $cachePolicy = null
     ) {
         $this->versions    = $versions ?? new RowVersions();
-        $this->authorizer  = $authorizer ?? new Authorizer();
         $this->ratePolicy  = $ratePolicy ?? new RatePolicy($settings);
         $this->cachePolicy = $cachePolicy ?? new CachePolicy($settings->cacheMaxAge());
+    }
+
+    /**
+     * Whether a credential may call a route: its auth level, then its scope.
+     *
+     * @throws ProblemException 403 when it may not
+     */
+    private static function authorize(RouteSpec $route, Credential $credential): void
+    {
+        if ($route->auth() === RouteSpec::AUTH_NONE) {
+            return;
+        }
+        if ($route->auth() === RouteSpec::AUTH_USER && !$credential->isUser()) {
+            throw ProblemException::of('wrong_credential', 'This endpoint needs a user\'s token or key.');
+        }
+        $scope = $route->scope();
+        if ($route->auth() === RouteSpec::AUTH_ADMIN && !$credential->isAdmin()) {
+            throw ProblemException::of('wrong_credential', 'This endpoint needs an admin key.');
+        }
+        // A moderator holds only the moderator scopes, so an admin route naming no scope is full admins' only.
+        if ($route->auth() === RouteSpec::AUTH_ADMIN && $scope === null && $credential->isModerator()) {
+            throw ProblemException::of('wrong_credential', 'This endpoint needs a full admin\'s key.');
+        }
+        if ($scope !== null && !$credential->has($scope)) {
+            throw ProblemException::from(Problem::insufficientScope($scope));
+        }
     }
 
     /**
@@ -142,7 +163,7 @@ final class Kernel
                 $request = $request->withFormAsJson();
             }
             $credential = $this->credentialFor($request, $route);
-            $this->authorizer->check($route, $credential);
+            self::authorize($route, $credential);
             $rateHeaders = $this->countRequest($request, $route, $credential);
             $this->assumeIdentity($credential, $route);
             osc_run_hook('api_request_before', $request, $route, $credential);
@@ -218,7 +239,7 @@ final class Kernel
             return $route->call($request, $credential, $args, $prepared);
         }
         try {
-            $this->authorizer->check($read->route(), $credential);
+            self::authorize($read->route(), $credential);
         } catch (ProblemException $e) {
             throw ProblemException::of('precondition_failed', 'This credential cannot read the resource, so If-Match cannot be checked. Send the write without it.');
         }
@@ -286,7 +307,7 @@ final class Kernel
                 continue;
             }
             try {
-                $this->authorizer->check($write->route(), $credential);
+                self::authorize($write->route(), $credential);
 
                 return true;
             } catch (ProblemException $e) {

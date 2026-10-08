@@ -14,9 +14,9 @@ namespace mindstellar\api;
 
 use mindstellar\admin\ExposedSettings;
 use mindstellar\api\auth\AccessTokens;
-use mindstellar\api\auth\AdminRows;
 use mindstellar\api\auth\Authenticator;
 use mindstellar\api\auth\FailureCounter;
+use mindstellar\api\auth\MemoisedRows;
 use mindstellar\api\auth\PageTokenAuth;
 use mindstellar\api\auth\RefreshRetries;
 use mindstellar\api\auth\RefreshTokens;
@@ -33,7 +33,6 @@ use mindstellar\api\read\ListingReader;
 use mindstellar\api\read\ListingSearch;
 use mindstellar\api\read\SiteFacts;
 use mindstellar\api\routing\Router;
-use mindstellar\api\routing\RouteTable;
 use mindstellar\api\schema\Definitions;
 use mindstellar\api\schema\ExtensionSchemas;
 use mindstellar\api\schema\OpenApi;
@@ -64,8 +63,10 @@ use mindstellar\apiaccess\PageTokens;
 use mindstellar\apiaccess\PersonalKeys;
 use mindstellar\apiaccess\Scopes;
 use mindstellar\apiaccess\SignInStore;
+use mindstellar\auth\AdminStore;
 use mindstellar\category\CategoryService;
 use mindstellar\currency\CurrencyService;
+use mindstellar\database\Db;
 use mindstellar\fields\FieldService;
 use mindstellar\listing\ListingService;
 use mindstellar\location\LocationService;
@@ -199,7 +200,7 @@ final class ApiServices
     {
         return $this->once(__FUNCTION__, fn (): Router => Router::build(
             $this->validator(),
-            RouteTable::core(),
+            Router::core(),
             handlers: $this->handlers(),
             kit: fn (): ApiKit => $this->once(ApiKit::class, fn (): ApiKit => new ApiKit($this))
         ));
@@ -398,9 +399,17 @@ final class ApiServices
         return $this->access()->accountAccess();
     }
 
-    public function admins(): AdminRows
+    /**
+     * Admin rows, each loaded once per request: the admin an admin key acts for, so core code
+     * and its activity log see who made the change.
+     */
+    public function admins(): MemoisedRows
     {
-        return $this->once(__FUNCTION__, static fn (): AdminRows => new AdminRows());
+        return $this->once(__FUNCTION__, static fn (): MemoisedRows => new MemoisedRows(static function (int $id): ?array {
+            $row = AdminStore::find($id, ['pk_i_id', 's_name', 's_username', 's_email', 'b_moderator']);
+
+            return $row === null ? null : Db::stringifyRow($row);
+        }));
     }
 
     /**

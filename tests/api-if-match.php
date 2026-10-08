@@ -16,7 +16,7 @@
 require_once __DIR__ . '/lib/api-boot.php';
 
 use mindstellar\api\ApiCall;
-use mindstellar\api\auth\AdminRows;
+use mindstellar\api\auth\MemoisedRows;
 use mindstellar\api\http\ResourceVersions;
 use mindstellar\api\idempotency\Idempotency;
 use mindstellar\api\Kernel;
@@ -243,7 +243,7 @@ $vkernel  = new Kernel(
     new Validator(),
     new ApiSettings(true, userKeys: true),
     api_test_users(),
-    new AdminRows(static fn (): ?array => null),
+    new MemoisedRows(static fn (): ?array => null),
     new Idempotency(new MemoryIdempotencyStore(), new SystemClock()),
     $versions
 );

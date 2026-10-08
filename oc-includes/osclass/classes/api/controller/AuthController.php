@@ -23,10 +23,12 @@ use mindstellar\api\Problem;
 use mindstellar\api\ProblemException;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
+use mindstellar\api\serializer\Format;
+use mindstellar\apiaccess\PageTokens;
 use mindstellar\auth\SignIn;
 
 /**
- * Password sign-in, refresh and sign-out, using the web login's rules (SignIn) without a captcha.
+ * Password sign-in, refresh, sign-out and page-token renewal, using the web login's rules (SignIn) without a captcha.
  * The token endpoint speaks OAuth 2 (RFC 6749), and Kernel shapes its refusals through OAuthError.
  */
 final class AuthController
@@ -163,5 +165,26 @@ final class AuthController
     private static function refusedGrant(string $detail): ProblemException
     {
         return ProblemException::from(Problem::make('invalid_grant', $detail, ['error' => 'invalid_grant']));
+    }
+
+    /**
+     * `GET /auth/session`: a fresh page token for a page open longer than its token lives. Only a
+     * same-site session call (cookie plus a page token that still works) gets one.
+     */
+    public function pageToken(ApiCall $call): Response
+    {
+        $credential = $call->credential();
+
+        $user = $credential->isSession() ? $this->users->find((int) $credential->userId()) : null;
+        if ($user === null) {
+            throw ProblemException::of('wrong_credential', 'Only a same-site session call can renew its page token.');
+        }
+        $token = $this->api->pageTokens()->issue($user);
+
+        return Response::ok([
+            'token'      => $token->token(),
+            'header'     => PageTokens::HEADER,
+            'expires_at' => Format::timestamp($token->expiresAt()),
+        ]);
     }
 }

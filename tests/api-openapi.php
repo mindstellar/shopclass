@@ -35,7 +35,6 @@ use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\RouteSpec;
 use mindstellar\api\routing\Router;
-use mindstellar\api\routing\RouteTable;
 use mindstellar\api\schema\Definitions;
 use mindstellar\api\schema\OpenApi;
 use mindstellar\api\schema\Schema;
@@ -182,7 +181,7 @@ foreach ($core['paths'] as $path => $item) {
         $documented[] = strtoupper($method) . ' ' . ltrim($path, '/');
     }
 }
-$served = array_keys((new Router(new Validator(Schema::components()), RouteTable::core()))->all());
+$served = array_keys((new Router(new Validator(Schema::components()), Router::core()))->all());
 sort($documented);
 sort($served);
 pin('every core route is documented, and only those', $served, $documented);
@@ -222,7 +221,7 @@ $ext       = ExtensionMembers::fromDeclarations([
     ['listing', 'acme', 'offer_count', ['type' => 'integer'], ['public']],
 ], $validator);
 $components = Schema::components($ext);
-$router     = new Router(new Validator($components), RouteTable::core());
+$router     = new Router(new Validator($components), Router::core());
 $router->addPlugin('POST', 'ext/acme/offers', [
     'handler' => static fn (): Response => Response::ok([]),
     'auth'    => RouteSpec::AUTH_USER,
@@ -290,7 +289,7 @@ $definitions = Schema::definitions();
 $full        = new Validator($definitions);
 $settings    = new ApiSettings(true);
 $router      = null;
-$router      = new Router($full, RouteTable::core() + ['GET old' => [
+$router      = new Router($full, Router::core() + ['GET old' => [
     'handler' => static fn (): Response => Response::ok([]), 'auth' => RouteSpec::AUTH_NONE,
     'deprecated' => '2026-10-01', 'sunset' => '2027-06-01', 'responses' => [200 => ['type' => 'object']],
 ]], handlers: static function (string $class) use (&$router, $definitions): object {

@@ -13,9 +13,9 @@ declare(strict_types=1);
 namespace mindstellar\api\auth;
 
 /**
- * Rows by id, each loaded once per request through a loader that tests can replace.
+ * Rows by id, each loaded once per request through the loader it is given.
  */
-abstract class MemoisedRows
+class MemoisedRows
 {
     /** @var array<int,array<string,mixed>|null> */
     protected array $rows = [];
@@ -24,11 +24,11 @@ abstract class MemoisedRows
     private \Closure $load;
 
     /**
-     * @param callable|null $load (id) => the row, or null; the table by default
+     * @param callable $load (id) => the row, or null
      */
-    public function __construct(?callable $load = null)
+    public function __construct(callable $load)
     {
-        $this->load = \Closure::fromCallable($load ?? [static::class, 'fromTable']);
+        $this->load = \Closure::fromCallable($load);
     }
 
     /**

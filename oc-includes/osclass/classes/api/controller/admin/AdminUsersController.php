@@ -20,7 +20,7 @@ use mindstellar\api\read\ListSpec;
 use mindstellar\api\read\Page;
 use mindstellar\api\read\Pager;
 use mindstellar\api\Response;
-use mindstellar\api\serializer\AccessEntrySerializer;
+use mindstellar\api\serializer\KeySerializer;
 use mindstellar\api\serializer\UserSerializer;
 use mindstellar\api\write\AccountBody;
 use mindstellar\apiaccess\AccessEntries;
@@ -133,10 +133,10 @@ final class AdminUsersController
     public function sessions(ApiCall $call): Response
     {
         $id         = (int) $this->user($call->intArg())['pk_i_id'];
-        $serializer = new AccessEntrySerializer();
+        $serializer = new KeySerializer();
 
         return Page::whole(array_map(
-            static fn (AccessEntry $session): array => $serializer->one($session, $call->credential()),
+            static fn (AccessEntry $session): array => $serializer->session($session, $call->credential()),
             $this->sessions->signIns($id)
         ), $this->api->links(), $call);
     }

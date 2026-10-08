@@ -168,7 +168,7 @@ pin('a user only user ones', ['ext:acme:offers:read'], $keys->create(CredentialK
 pin('an undeclared audience defaults to admin only', [], array_values(array_intersect(['ext:acme:settings'], $plugin->allowedFor(CredentialKind::KEY, $mod2))));
 $withExt = $keys->create(CredentialKind::KEY, 'Ext', ['ext:acme:settings', 'admin:listings'], KeyOwner::admin(3));
 $store->admins[3] = true;
-pin('demoting the admin takes the admin-only plugin scope away at once', ['admin:listings'], $keys->verify($withExt->token())->scopes());
+pin('demoting the admin takes the admin-only plugin scope away at once', ['admin:listings'], $keys->check($withExt->token())->credential()->scopes());
 check('Scopes::fromHooks reads api_scopes', (bool) api_with_filter('api_scopes', static fn (array $s): array => $s + ['ext:hook:x' => 'From a hook.'], static fn () => isset(Scopes::fromHooks()->all()['ext:hook:x'])));
 check('implies: write reads, any admin scope reads public data, nothing else', Scopes::implies(['listings:write'], 'listings:read')
     && Scopes::implies(['admin:keys'], 'listings:read') && !Scopes::implies(['listings:read'], 'listings:write')
@@ -186,43 +186,43 @@ pin('Scopes::fromHooks reads moderator_access', ['admin:listings'], api_with_fil
 ));
 
 harness_section('verifying keys');
-$c = $keys->verify($admin->token(), '10.0.0.9');
+$c = $keys->check($admin->token(), '10.0.0.9')->credential();
 pin('a good admin key gives an admin key credential', [CredentialKind::KEY, 1, null, ['admin:listings', 'admin:users']], [$c->kind(), $c->adminId(), $c->userId(), $c->scopes()]);
 check('an admin key reads public data', $c->has('listings:read'));
 pin('its last use is written', ['10.0.0.9', $now], [$store->rows[$admin->id()]['ip'], $store->rows[$admin->id()]['lastUsed']]);
 $touches = $store->touches;
-$keys->verify($admin->token(), '10.0.0.9');
+$keys->check($admin->token(), '10.0.0.9')->credential();
 pin('a key used again within five minutes is not touched again', $touches, $store->touches);
 $now += 301;
-$keys->verify($admin->token(), '10.0.0.9');
+$keys->check($admin->token(), '10.0.0.9')->credential();
 pin('a key used after five minutes is touched again', $touches + 1, $store->touches);
 
-$pc = $keys->verify($public->token());
+$pc = $keys->check($public->token())->credential();
 pin('a public key gives a public credential, never an admin one', [CredentialKind::PUBLIC, ['listings:read'], false], [$pc->kind(), $pc->scopes(), $pc->isAdmin()]);
-$uc = $keys->verify($user->token());
+$uc = $keys->check($user->token())->credential();
 pin('a user key acts for its user', [CredentialKind::KEY, 10, null, true], [$uc->kind(), $uc->userId(), $uc->adminId(), $uc->isUser()]);
 
 [$id, $sec] = explode('.', substr($admin->token(), 4));
-pin('a wrong secret is refused', null, $keys->verify('sck_' . $id . '.' . str_repeat('0', 64)));
-pin('an unknown key id is refused', null, $keys->verify('sck_' . str_repeat('A', 16) . '.' . $sec));
-pin('the public prefix on an admin key is refused', null, $keys->verify('scp_' . $id . '.' . $sec));
-pin('a malformed token is refused', null, $keys->verify('sck_' . $id . '.' . strtoupper($sec)));
-pin('a trailing newline is refused', null, $keys->verify($admin->token() . "\n"));
+pin('a wrong secret is refused', null, $keys->check('sck_' . $id . '.' . str_repeat('0', 64))->credential());
+pin('an unknown key id is refused', null, $keys->check('sck_' . str_repeat('A', 16) . '.' . $sec)->credential());
+pin('the public prefix on an admin key is refused', null, $keys->check('scp_' . $id . '.' . $sec)->credential());
+pin('a malformed token is refused', null, $keys->check('sck_' . $id . '.' . strtoupper($sec))->credential());
+pin('a trailing newline is refused', null, $keys->check($admin->token() . "\n")->credential());
 
 $exp = $keys->create(CredentialKind::KEY, 'Short', ['admin:listings'], $admin1, $now + 60);
-check('a key works until it expires', $keys->verify($exp->token()) !== null);
+check('a key works until it expires', $keys->check($exp->token())->credential() !== null);
 $now += 61;
-pin('a key is refused after it expires', null, $keys->verify($exp->token()));
+pin('a key is refused after it expires', null, $keys->check($exp->token())->credential());
 
 $store->admins[2] = false;
-pin('a moderator promoted to admin keeps the scopes the key was made with', ['admin:listings'], $keys->verify($mod->token())->scopes());
+pin('a moderator promoted to admin keeps the scopes the key was made with', ['admin:listings'], $keys->check($mod->token())->credential()->scopes());
 $demote = $keys->create(CredentialKind::KEY, 'Full', ['admin:listings', 'admin:users'], KeyOwner::admin(2));
 $store->admins[2] = true;
-pin('an admin demoted to moderator loses the rest at once', ['admin:listings'], $keys->verify($demote->token())->scopes());
+pin('an admin demoted to moderator loses the rest at once', ['admin:listings'], $keys->check($demote->token())->credential()->scopes());
 unset($store->admins[2]);
-pin('a deleted admin\'s key is dead', null, $keys->verify($demote->token()));
+pin('a deleted admin\'s key is dead', null, $keys->check($demote->token())->credential());
 $store->users[10] = false;
-pin('a disabled user\'s key is dead', null, $keys->verify($user->token()));
+pin('a disabled user\'s key is dead', null, $keys->check($user->token())->credential());
 $store->users[10] = true;
 $store->admins[2] = true;
 
@@ -230,20 +230,20 @@ harness_section('rotate and revoke');
 $new = $keys->rotate($admin->id());
 check('rotation makes a new token', $new !== null && $new->token() !== $admin->token());
 pin('with the same name and scopes', ['CI', ['admin:listings', 'admin:users']], [$store->rows[$new->id()]['name'], $store->rows[$new->id()]['scopes']]);
-check('the old key still works until revoked', $keys->verify($admin->token()) !== null && $keys->verify($new->token()) !== null);
+check('the old key still works until revoked', $keys->check($admin->token())->credential() !== null && $keys->check($new->token())->credential() !== null);
 check('revoking a live key reports a change', $keys->revoke($admin->id()));
 check('revoking an already revoked key reports no change', !$keys->revoke($admin->id()));
-pin('a revoked key is refused', null, $keys->verify($admin->token()));
+pin('a revoked key is refused', null, $keys->check($admin->token())->credential());
 pin('a revoked key cannot be rotated', null, $keys->rotate($admin->id()));
 pin('nor can an expired one', null, $keys->rotate($exp->id()));
 $store->rows[$withExt->id()]['enabled'] = false;
 pin('nor a disabled one', null, $keys->rotate($withExt->id()));
-pin('a disabled key is refused', null, $keys->verify($withExt->token()));
+pin('a disabled key is refused', null, $keys->check($withExt->token())->credential());
 unset($store->admins[2]);
 pin('nor one whose owner is gone', null, $keys->rotate($mod->id()));
 $store->admins[2] = true;
 pin('rotating a missing key gives null', null, $keys->rotate(999));
-check('the new one still works', $keys->verify($new->token()) !== null);
+check('the new one still works', $keys->check($new->token())->credential() !== null);
 
 harness_section('the Authenticator');
 $fails    = [];

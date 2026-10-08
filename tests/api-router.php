@@ -36,7 +36,6 @@ use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\RouteSpec;
 use mindstellar\api\routing\Router;
-use mindstellar\api\routing\RouteTable;
 use mindstellar\api\schema\Validator;
 use mindstellar\apiaccess\ApiKeys;
 use mindstellar\apiaccess\ApiSettings;
@@ -165,7 +164,7 @@ pin('HEAD is answered by the GET route', 'GET listings/{id}', $router->match('HE
 pin('a method the path lacks does not match', null, $router->match('POST', 'listings/7'));
 pin('methodsFor lists GET, DELETE and HEAD', ['GET', 'DELETE', 'HEAD'], $router->methodsFor('listings/7'));
 pin('an unknown path has no methods', [], $router->methodsFor('nothing'));
-$coreTable = new Router(new Validator(\mindstellar\api\schema\Schema::components()), RouteTable::core());
+$coreTable = new Router(new Validator(\mindstellar\api\schema\Schema::components()), Router::core());
 $routeTable = [];
 $adminTable = [];
 foreach ($coreTable->all() as $key => $route) {
@@ -443,7 +442,7 @@ pin('a class that is not a core controller is refused', 'LogicException', (stati
 
     return 'built';
 })());
-$table   = RouteTable::core();
+$table   = Router::core();
 $classes = [];
 foreach ($table as $spec) {
     if (is_array($spec['handler']) && is_string($spec['handler'][0])) {
@@ -637,11 +636,11 @@ pin('a core refusal reason maps to its API code', ['feature_disabled', 'wrong_cr
 harness_section('If-Match');
 $coreGets  = [];
 $unchecked = [];
-foreach (array_keys(RouteTable::core()) as $key) {
+foreach (array_keys(Router::core()) as $key) {
     [$method, $path] = explode(' ', (string) preg_replace('/^v\d+ /', '', $key), 2);
     $coreGets[$path] = ($coreGets[$path] ?? false) || $method === 'GET';
 }
-foreach (array_keys(RouteTable::core()) as $key) {
+foreach (array_keys(Router::core()) as $key) {
     [$method, $path] = explode(' ', (string) preg_replace('/^v\d+ /', '', $key), 2);
     if (in_array($method, ['PUT', 'PATCH', 'DELETE'], true) && ($coreGets[$path] ?? false) && !(new \mindstellar\api\http\RowVersions())->supports($path)) {
         $unchecked[] = $key;

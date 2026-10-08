@@ -19,10 +19,9 @@ use mindstellar\api\auth\RefreshTokens;
 use mindstellar\api\auth\TokenIssuer;
 use mindstellar\api\auth\UserRows;
 use mindstellar\api\ProblemException;
-use mindstellar\api\read\ListingList;
 use mindstellar\api\read\Page;
 use mindstellar\api\Response;
-use mindstellar\api\serializer\AccessEntrySerializer;
+use mindstellar\api\serializer\KeySerializer;
 use mindstellar\api\serializer\UserSerializer;
 use mindstellar\api\write\AccountBody;
 use mindstellar\apiaccess\AccessEntries;
@@ -60,8 +59,8 @@ final class AccountController
         $request = $call->request();
         $credential = $call->credential();
 
-        return (new ListingList($this->api, $this->api->listingReader()))
-            ->run($request, $credential, 'account/listings', $request->queryList('status'), [(int) $credential->userId()]);
+        return $this->api->listingSearch()
+            ->newest($request, $credential, 'account/listings', $request->queryList('status'), [(int) $credential->userId()]);
     }
 
     public function show(ApiCall $call): Response
@@ -146,10 +145,10 @@ final class AccountController
     {
         $credential = $call->credential();
 
-        $serializer = new AccessEntrySerializer();
+        $serializer = new KeySerializer();
 
         return Page::whole(array_map(
-            static fn (AccessEntry $session): array => $serializer->one($session, $credential),
+            static fn (AccessEntry $session): array => $serializer->session($session, $credential),
             $this->sessions->signIns((int) $credential->userId())
         ), $this->api->links(), $call);
     }

@@ -22,6 +22,14 @@ use mindstellar\user\UserStore;
 final class UserRows extends MemoisedRows
 {
     /**
+     * @param callable|null $load (id) => the row, or null; the table by default
+     */
+    public function __construct(?callable $load = null)
+    {
+        parent::__construct($load ?? static fn (int $id): ?array => self::fromTable($id));
+    }
+
+    /**
      * The row, and whether the refresh family has a live token, in one query. Null row for no user.
      *
      * @return array{0: array<string,mixed>|null, 1: bool}
@@ -53,7 +61,7 @@ final class UserRows extends MemoisedRows
      * @return array<string,mixed>|null
      * @throws \mindstellar\database\DbException
      */
-    protected static function fromTable(int $id): ?array
+    private static function fromTable(int $id): ?array
     {
         $row = \mindstellar\user\UserStore::find($id);
 

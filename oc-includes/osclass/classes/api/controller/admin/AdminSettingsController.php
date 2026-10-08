@@ -16,7 +16,7 @@ use mindstellar\admin\ExposedSettings;
 use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\Response;
-use mindstellar\api\serializer\JobSerializer;
+use mindstellar\api\serializer\Format;
 
 /**
  * `/admin/settings`, the settings ExposedSettings lets the API read and change, and
@@ -50,11 +50,29 @@ final class AdminSettingsController
 
     public function jobs(ApiCall $call): Response
     {
-        $serializer = new JobSerializer();
-
         return Response::ok([
             'counts'       => array_map('intval', osc_job_summary()),
-            'dead_letters' => array_map([$serializer, 'one'], osc_job_dead_letters($call->request()->queryInt('limit', self::DEAD_LETTERS))),
+            'dead_letters' => array_map([self::class, 'job'], osc_job_dead_letters($call->request()->queryInt('limit', self::DEAD_LETTERS))),
         ]);
+    }
+
+    /**
+     * A job as `/admin/jobs` shows it. Never its payload, which can carry anything a plugin queued.
+     *
+     * @param array<string,mixed> $row a t_job_queue row
+     *
+     * @return array<string,mixed>
+     */
+    private static function job(array $row): array
+    {
+        return [
+            'id'          => Format::int($row['pk_i_id'] ?? 0),
+            'type'        => (string) ($row['s_type'] ?? ''),
+            'status'      => (string) ($row['s_status'] ?? ''),
+            'attempts'    => Format::int($row['i_attempts'] ?? 0),
+            'last_error'  => Format::text($row['s_last_error'] ?? null),
+            'created_at'  => Format::time($row['dt_created'] ?? null),
+            'next_run_at' => Format::time($row['dt_next_run'] ?? null),
+        ];
     }
 }

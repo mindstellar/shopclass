@@ -125,18 +125,6 @@ final class ApiKeys
     }
 
     /**
-     * The credential a token stands for, or null for any refusal: malformed, unknown, wrong
-     * secret, disabled, revoked, expired, or an owner that is gone or blocked.
-     *
-     * @param string $token without the `Bearer ` prefix
-     * @param string $ip    stored as the key's last user
-     */
-    public function verify(string $token, string $ip = ''): ?Credential
-    {
-        return $this->check($token, $ip)->credential();
-    }
-
-    /**
      * The public key id inside a well-formed token, or null.
      */
     public static function tokenId(string $token): ?string
@@ -145,7 +133,11 @@ final class ApiKeys
     }
 
     /**
-     * verify(), saying on a refusal whether the token named a stored key.
+     * The credential a token stands for, or a refusal (malformed, unknown, wrong secret,
+     * disabled, revoked, expired, or an owner that is gone or blocked) saying whether it named a stored key.
+     *
+     * @param string $token without the `Bearer ` prefix
+     * @param string $ip    stored as the key's last user
      */
     public function check(string $token, string $ip = ''): KeyCheck
     {
