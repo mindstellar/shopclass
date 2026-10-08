@@ -914,6 +914,53 @@ pin(
 );
 pin('and the -1 lands', array('-1', 'STRING'), pref($admin, 'moderate_comments'));
 
+harness_section('listing settings');
+
+if (!function_exists('osc_is_moderator')) {
+    function osc_is_moderator()
+    {
+        return false;
+    }
+}
+
+$items = array(
+    'items_wait_time'           => '30',
+    'moderate_items'            => '1',
+    'num_moderate_items'        => '4',
+    'max_chars_per_title'       => '80',
+    'max_chars_per_description' => '4000',
+    'map_type'                  => '0',
+);
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . "t_preference WHERE s_section = 'osclass' AND s_name = 'reg_user_can_send_friend'");
+osc_reset_preferences();
+check(
+    'sharing is registered-only when never saved',
+    (bool)osc_settings_values(ItemSettingsScreen::register())['reg_user_can_send_friend']
+);
+
+$run = drive('CAdminItems', 'settings_post', $items);
+pin('the save is accepted', array("ok:Listings' settings have been updated"), flashed($run));
+pin('moderation on stores the count', array('4', 'STRING'), pref($admin, 'moderate_items'));
+pin('the wait time lands', '30', pref($admin, 'items_wait_time')[0] ?? null);
+
+drive('CAdminItems', 'settings_post', array('moderate_items' => '') + $items);
+pin('moderation off stores -1', '-1', pref($admin, 'moderate_items')[0] ?? null);
+
+drive('CAdminItems', 'settings_post', array('items_wait_time' => '-5') + $items);
+pin('a negative wait time is saved as 0', '0', pref($admin, 'items_wait_time')[0] ?? null);
+
+$run = drive('CAdminItems', 'settings_post', array('max_chars_per_title' => '101', 'items_wait_time' => '9') + $items);
+pin('a title length past the column is refused with its message', array('warning:Titles can be 1 to 100 characters.'), flashed($run));
+pin('and nothing was written', '0', pref($admin, 'items_wait_time')[0] ?? null);
+$run = drive('CAdminItems', 'settings_post', array('max_chars_per_title' => '0') + $items);
+pin('so is a zero title length', array('warning:Titles can be 1 to 100 characters.'), flashed($run));
+
+harness_section('user settings');
+
+$run = drive('CAdminUsers', 'settings_post', array('username_blacklist' => ' Admin , ROOT,mod '));
+pin('the save is accepted', array('ok:User settings have been updated'), flashed($run));
+pin('the username blacklist is trimmed and lower-cased', 'admin,root,mod', pref($admin, 'username_blacklist')[0] ?? null);
+
 harness_section('latest searches');
 
 $run = drive('CAdminSettingsLatestSearches', 'latestsearches_post', array(

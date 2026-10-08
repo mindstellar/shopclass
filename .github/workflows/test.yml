@@ -193,6 +193,14 @@ jobs:
         run: php tests/theme-head.php
       - name: Captcha posted token
         run: php tests/captcha-posted-token.php
+      - name: Captcha passes
+        run: php tests/captcha-passes.php
+      - name: Actor visitor
+        run: php tests/actor-visitor.php
+      - name: Bulk action options
+        run: php tests/bulk-action-options.php
+      - name: API created and pager links
+        run: php tests/api-created-pager.php
       # PHPMailer's default wait is 300s; a dead SMTP host then pins a php-fpm worker
       # for five minutes per send. The cap is a filter with a 1–60 clamp.
       - name: PHPMailer SMTP timeout
