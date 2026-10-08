@@ -190,7 +190,7 @@ final class RateLimit extends Model
     public static function prune(int $batch = 5000, int $maxRounds = 100): int
     {
         $batch   = max(1, $batch);
-        $sql     = 'DELETE FROM ' . self::tableName() . ' WHERE i_expires < ? LIMIT ' . $batch;
+        $sql     = 'DELETE FROM ' . self::tableName() . ' WHERE i_expires < ? ORDER BY i_expires LIMIT ' . $batch;
         $removed = 0;
         try {
             for ($round = 0; $round < $maxRounds; $round++) {

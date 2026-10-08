@@ -24,15 +24,22 @@ final class ListingStore extends Model
     protected const TABLE = 't_item';
 
     /**
-     * One listing's columns, or null.
+     * One listing's columns, or null. With $lock the row is held (FOR UPDATE) until the
+     * transaction ends.
      *
-     * @param string[] $columns
+     * @param string[] $columns column names from code, never from input
      *
      * @return array<string,mixed>|null
      * @throws \mindstellar\database\DbException
      */
-    public static function find(int $id, array $columns): ?array
+    public static function find(int $id, array $columns, bool $lock = false): ?array
     {
+        if ($lock) {
+            $list = implode(', ', array_map(static fn (string $c): string => '`' . str_replace('`', '', $c) . '`', $columns));
+
+            return Db::selectOne('SELECT ' . $list . ' FROM ' . self::tableName() . ' WHERE pk_i_id = ? FOR UPDATE', [$id]);
+        }
+
         return self::table()->select(...$columns)->where('pk_i_id', $id)->first();
     }
 

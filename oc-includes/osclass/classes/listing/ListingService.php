@@ -824,8 +824,9 @@ final class ListingService
         $aItem['cityArea'] = self::place($aItem['cityArea']);
         $aItem['address']  = self::place($aItem['address']);
 
-        // Only the columns the stats and expiry below compare; read before anything is written.
-        $old_item = ListingStore::find($aItem['idItem'], array('fk_i_user_id', 'fk_i_category_id', 'b_enabled', 'b_active', 'b_spam', 'b_premium', 'dt_expiration'));
+        // Only the columns the stats and expiry below compare, read before anything is written.
+        // Locking the listing row first keeps the lock order of an If-Match edit, so the two cannot deadlock.
+        $old_item = ListingStore::find($aItem['idItem'], array('fk_i_user_id', 'fk_i_category_id', 'b_enabled', 'b_active', 'b_spam', 'b_premium', 'dt_expiration'), true);
         $old_item = $old_item === null ? array() : Db::stringifyRow($old_item);
 
         // Validate
@@ -862,12 +863,13 @@ final class ListingService
 
         // A rejected update leaves the previous location in place and every hook
         // below still fires, so the only trace it left was the unread return value.
-        if (!self::sameLocation($location, $old_item_location)
-            && $locationManager->update($location, array('fk_i_item_id' => $aItem['idItem'])) === false
-        ) {
-            trigger_error('Item location update wrote no row for item ' . $aItem['idItem'] . '.', E_USER_WARNING);
-        } elseif (ListingGeocode::wanted($location)) {
-            ListingGeocode::queueAfterCommit($aItem['idItem']);
+        if (!self::sameLocation($location, $old_item_location)) {
+            if ($locationManager->update($location, array('fk_i_item_id' => $aItem['idItem'])) === false) {
+                trigger_error('Item location update wrote no row for item ' . $aItem['idItem'] . '.', E_USER_WARNING);
+            } elseif (ListingGeocode::wanted($location)) {
+                // Only a changed address is looked up again, so a failed lookup is not retried on every edit.
+                ListingGeocode::queueAfterCommit($aItem['idItem']);
+            }
         }
 
         if ($aItem['userId']) {

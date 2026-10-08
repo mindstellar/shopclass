@@ -280,7 +280,7 @@ final class KeyValue extends Model
      */
     public function prune(?int $now = null, int $batch = 1000, int $maxRounds = 100): int
     {
-        $sql = 'DELETE FROM ' . DB_TABLE_PREFIX . self::TABLE . ' WHERE dt_expires <= ? LIMIT ' . max(1, $batch);
+        $sql = 'DELETE FROM ' . DB_TABLE_PREFIX . self::TABLE . ' WHERE dt_expires <= ? ORDER BY dt_expires LIMIT ' . max(1, $batch);
         $now = self::datetime($now ?? time());
         $removed = 0;
         for ($round = 0; $round < $maxRounds; $round++) {

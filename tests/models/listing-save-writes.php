@@ -124,6 +124,15 @@ Preference::getInstance()->set('map_type', 'google');
 scratchdb_forget_cache();
 osc_reset_preferences();
 
+harness_section('an edit looks the address up again only when it changed');
+$noCoords = $service->create(ListingInput::fromArray($form(['ownerId' => '0']), $actor, true), $actor)->id();
+$admin->query("DELETE FROM {$p}t_job_queue");
+$service->update(ListingInput::fromArray($form(['id' => (string) $noCoords, 'ownerId' => '0', 'price' => '1600']), $actor, false), $actor, false, false);
+pin('a price edit on a listing with no coordinates queues no lookup', [], $jobs());
+$service->update(ListingInput::fromArray($form(['id' => (string) $noCoords, 'ownerId' => '0', 'address' => '2 Main Street']), $actor, false), $actor, false, false);
+pin('a new address queues one', [['s_payload' => json_encode(['item' => $noCoords])]], $jobs());
+$admin->query("DELETE FROM {$p}t_job_queue");
+
 harness_section('an edit rewrites only the languages that changed');
 $written = [];
 osc_add_hook('item_content_updated', static function (int $item, string $locale) use (&$written): void {

@@ -151,6 +151,9 @@ curl -X PATCH $API/listings/412 \
 
 Send `application/merge-patch+json` or `application/json`. The answer repeats `Accept-Patch`.
 
+The patch applies to the write shape above, the same members `POST` takes, not to the
+nested shape a `GET` answers with. Send `"price": "75.00"`, not `"price": {"amount": "75.00"}`.
+
 | In the body | Effect |
 |---|---|
 | A member | Replaces that value. |

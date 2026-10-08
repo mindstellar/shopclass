@@ -50,14 +50,14 @@ final class ProblemException extends \RuntimeException
      *
      * @template T
      *
-     * @param T|null $value
+     * @param T|null|false $value
      *
      * @return T
      * @throws self 404
      */
     public static function found(mixed $value, string $what): mixed
     {
-        return $value ?? throw self::notFound('No such ' . $what . '.');
+        return $value !== null && $value !== false ? $value : throw self::notFound('No such ' . $what . '.');
     }
 
     /**

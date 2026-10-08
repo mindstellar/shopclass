@@ -140,7 +140,7 @@ final class ApiCredential extends Model implements SignInStore
         foreach (['dt_revoked', 'dt_expires'] as $column) {
             do {
                 $n = Db::execute(
-                    'DELETE FROM ' . DB_TABLE_PREFIX . self::TABLE . " WHERE e_kind = 'refresh' AND " . $column . ' < ? LIMIT ' . max(1, $batch),
+                    'DELETE FROM ' . DB_TABLE_PREFIX . self::TABLE . " WHERE e_kind = 'refresh' AND " . $column . ' < ? ORDER BY ' . $column . ' LIMIT ' . max(1, $batch),
                     [$at]
                 );
                 $removed += $n;
