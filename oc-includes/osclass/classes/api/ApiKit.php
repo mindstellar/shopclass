@@ -53,12 +53,9 @@ final class ApiKit
     public function listing(ApiCall $call, int $id, ViewContext $context): ?array
     {
         $reader = $this->services->listingReader();
-        $item   = $reader->row($id);
-        if ($item === null || !$call->canViewListing($item)) {
-            return null;
-        }
+        $item   = $call->visibleListing($reader->row($id));
 
-        return $reader->view($item, $context);
+        return $item === null ? null : $reader->view($item, $context);
     }
 
     /**

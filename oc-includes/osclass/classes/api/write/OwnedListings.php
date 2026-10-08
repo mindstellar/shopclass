@@ -65,10 +65,7 @@ class OwnedListings
         } catch (DbException $e) {
             throw ProblemException::of('server_error', 'The listing could not be read.');
         }
-        if ($rows === []) {
-            throw ProblemException::notFound('No such listing.');
-        }
-        $row   = $rows[0];
+        $row   = ProblemException::found($rows[0] ?? null, 'listing');
         $texts = [];
         foreach ($withTexts ? $rows : [] as $text) {
             if (($text['fk_c_locale_code'] ?? null) !== null) {

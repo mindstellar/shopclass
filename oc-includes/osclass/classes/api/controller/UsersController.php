@@ -40,10 +40,7 @@ final class UsersController
 
         $context = $this->api->context($call->request(), $credential, 'user', UserSerializer::MEMBERS);
         $id      = $call->intArg();
-        $user    = $this->api->facts()->usersEnabled() ? (new UserQuery())->find($id) : null;
-        if ($user === null || !self::visible($user, $credential)) {
-            throw ProblemException::notFound('No such user.');
-        }
+        $user    = self::visible($this->api->facts()->usersEnabled() ? (new UserQuery())->find($id) : null, $credential);
 
         return Response::ok((new UserSerializer($this->api->links(), $this->api->extensions()))->one($user, $context));
     }
@@ -52,24 +49,25 @@ final class UsersController
     {
         $credential = $call->credential();
 
-        $id   = $call->intArg();
-        $user = null;
-        if ($this->api->facts()->usersEnabled()) {
-            $user = (new UserQuery())->statusRow($id);
-        }
-        if ($user === null || !self::visible($user, $credential)) {
-            throw ProblemException::notFound('No such user.');
-        }
+        $id = $call->intArg();
+        self::visible($this->api->facts()->usersEnabled() ? (new UserQuery())->statusRow($id) : null, $credential);
 
         return $this->api->listingSearch()->run($call->request(), $credential, $id, 'users/' . $id . '/listings');
     }
 
     /**
-     * @param array<string,mixed> $user a t_user row with pk_i_id, b_enabled and b_active
+     * The user when the caller may see them: a live account, or one the caller may view in full.
+     *
+     * @param array<string,mixed>|null $user a t_user row with pk_i_id, b_enabled and b_active
+     *
+     * @return array<string,mixed>
+     * @throws ProblemException 404
      */
-    private static function visible(array $user, Credential $credential): bool
+    private static function visible(?array $user, Credential $credential): array
     {
-        return UserStore::isLive($user)
-            || ViewContext::viewOf($credential, Format::int($user['pk_i_id'] ?? 0), ViewContext::USERS_SCOPE) !== ViewContext::PUBLIC;
+        $seen = $user !== null && (UserStore::isLive($user)
+            || ViewContext::viewOf($credential, Format::int($user['pk_i_id'] ?? 0), ViewContext::USERS_SCOPE) !== ViewContext::PUBLIC);
+
+        return ProblemException::found($seen ? $user : null, 'user');
     }
 }

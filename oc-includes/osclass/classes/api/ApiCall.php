@@ -92,6 +92,18 @@ final class ApiCall
     }
 
     /**
+     * $row when the caller may see it, else null.
+     *
+     * @param array<string,mixed>|null $row
+     *
+     * @return array<string,mixed>|null
+     */
+    public function visibleListing(?array $row): ?array
+    {
+        return $this->canViewListing($row) ? $row : null;
+    }
+
+    /**
      * @api
      *
      * @return array<string,string>

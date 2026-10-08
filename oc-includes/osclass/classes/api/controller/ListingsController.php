@@ -50,10 +50,7 @@ final class ListingsController
 
         $context = $this->api->context($request, $credential, 'listing', ListingSerializer::MEMBERS, ListingSerializer::INCLUDES);
         $reader  = $this->api->listingReader();
-        $item    = $reader->row($call->intArg());
-        if ($item === null || !$call->canViewListing($item)) {
-            throw ProblemException::notFound('No such listing.');
-        }
+        $item    = ProblemException::found($call->visibleListing($reader->row($call->intArg())), 'listing');
 
         return Response::ok($reader->view($item, $context));
     }
@@ -128,11 +125,6 @@ final class ListingsController
      */
     private function visibleRow(ApiCall $call, int $id): array
     {
-        $row = (new ListingQuery($this->api->clock()))->statusRow($id);
-        if ($row === null || !$call->canViewListing($row)) {
-            throw ProblemException::notFound('No such listing.');
-        }
-
-        return $row;
+        return ProblemException::found($call->visibleListing((new ListingQuery($this->api->clock()))->statusRow($id)), 'listing');
     }
 }

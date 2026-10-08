@@ -22,6 +22,7 @@ use mindstellar\api\serializer\ListingSerializer;
 use mindstellar\api\write\ListingWriter;
 use mindstellar\api\write\OwnedListing;
 use mindstellar\api\write\OwnedListings;
+use mindstellar\api\write\StatusMembers;
 use mindstellar\apiaccess\Credential;
 use mindstellar\moderation\ListingModeration;
 use mindstellar\search\query\CategoryFilter;
@@ -92,12 +93,7 @@ final class AdminListingsController
 
         $listing = $this->owned->load($call->intArg(), true);
         $input   = $request->input();
-        $status  = array_intersect_key($input, self::STATUS_MEMBERS);
-        $edit    = array_diff_key($input, self::STATUS_MEMBERS);
-        $flags = [];
-        foreach ($status as $member => $value) {
-            $flags[self::STATUS_MEMBERS[$member]] = (bool) $value;
-        }
+        [$flags, $edit] = StatusMembers::split($input, self::STATUS_MEMBERS);
         $form = $edit === [] ? null : $this->writer->editForm($listing, $edit, $request, $credential) + self::adminMembers($listing, $edit);
         $this->writer->adminUpdate($listing, $form, $flags, $call->actor('admin:listings'), $this->moderation, (int) $credential->adminId(), self::note($credential));
 

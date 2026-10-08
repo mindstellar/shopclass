@@ -21,7 +21,6 @@ use mindstellar\auth\Actor;
 use mindstellar\database\Db;
 use mindstellar\listing\ListingInput;
 use mindstellar\listing\ListingService;
-use mindstellar\location\LocationService;
 use mindstellar\moderation\ListingModeration;
 use mindstellar\validation\InvalidException;
 
@@ -48,7 +47,7 @@ final class ListingWriter
     {
         $this->checkLocales($input);
         $form = $this->checked($this->form()->create($input), $request, $credential);
-        self::checkPlaces($form);
+        PlaceBody::check($form);
 
         return $form;
     }
@@ -68,7 +67,7 @@ final class ListingWriter
         $body = $this->form();
         $form = $this->checked($body->patch($body->stored($listing, self::metaRows($listing->id())), $input), $request, $credential);
         if (array_intersect_key($input, ['country' => true, 'region_id' => true, 'city_id' => true]) !== []) {
-            self::checkPlaces($form);
+            PlaceBody::check($form);
         }
 
         return $form;
@@ -168,22 +167,6 @@ final class ListingWriter
         }
 
         return ProblemException::from(Problem::refused($e->errors()));
-    }
-
-    /**
-     * A country, region or city that was asked for must exist and sit under the one above it.
-     *
-     * @param array<string,mixed> $form what was asked
-     *
-     * @throws ProblemException 422 for a place that does not exist or has another parent
-     */
-    private static function checkPlaces(array $form): void
-    {
-        try {
-            LocationService::checkPlaces((string) ($form['countryId'] ?? ''), (string) ($form['regionId'] ?? ''), (string) ($form['cityId'] ?? ''));
-        } catch (InvalidException $e) {
-            throw ProblemException::from(Problem::fromRefusal($e));
-        }
     }
 
     /**

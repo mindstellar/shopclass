@@ -159,25 +159,7 @@ final class ListingBody
                 $form[$field] = (string) ($body[$member] ?? '');
             }
         }
-        if (array_key_exists('country', $body)) {
-            $form['countryId'] = strtoupper((string) ($body['country'] ?? ''));
-            $form['country']   = '';
-        }
-        foreach (['region_id' => ['regionId', 'region'], 'city_id' => ['cityId', 'city']] as $member => [$idField, $nameField]) {
-            if (!array_key_exists($member, $body)) {
-                continue;
-            }
-            $id             = (int) ($body[$member] ?? 0);
-            $form[$idField] = $id > 0 ? (string) $id : '';
-            if ($id > 0 || !array_key_exists($nameField, $body)) {
-                $form[$nameField] = '';
-            }
-        }
-        foreach (['lat' => 'd_coord_lat', 'lng' => 'd_coord_long'] as $member => $field) {
-            if (array_key_exists($member, $body)) {
-                $form[$field] = $body[$member] === null ? '' : (string) $body[$member];
-            }
-        }
+        $form = PlaceBody::apply($form, $body);
         if (array_key_exists('show_email', $body)) {
             $form['showEmail'] = $body['show_email'] === true ? '1' : '0';
         }

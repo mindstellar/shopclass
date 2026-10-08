@@ -12,11 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\api\write;
 
-use mindstellar\api\Problem;
 use mindstellar\api\ProblemException;
-use mindstellar\location\LocationService;
 use mindstellar\user\AccountInput;
-use mindstellar\validation\InvalidException;
 
 /**
  * An account body read as the profile form, for AccountService::update(): the stored values
@@ -103,28 +100,9 @@ final class AccountBody
         if (array_key_exists('is_company', $patch)) {
             $params['b_company'] = $patch['is_company'] === true ? '1' : '0';
         }
-        if (array_key_exists('country', $patch)) {
-            $params['countryId'] = strtoupper((string) ($patch['country'] ?? ''));
-            $params['country']   = '';
-        }
-        foreach (['region_id' => ['regionId', 'region'], 'city_id' => ['cityId', 'city']] as $member => [$idField, $nameField]) {
-            if (array_key_exists($member, $patch)) {
-                $id                 = (int) ($patch[$member] ?? 0);
-                $params[$idField]   = $id > 0 ? (string) $id : '';
-                $params[$nameField] = '';
-            }
-        }
+        $params = PlaceBody::apply($params, $patch);
         if (array_intersect_key($patch, ['country' => true, 'region_id' => true, 'city_id' => true]) !== []) {
-            try {
-                LocationService::checkPlaces($params['countryId'], $params['regionId'], $params['cityId']);
-            } catch (InvalidException $e) {
-                throw ProblemException::from(Problem::fromRefusal($e));
-            }
-        }
-        foreach (['lat' => 'd_coord_lat', 'lng' => 'd_coord_long'] as $member => $field) {
-            if (array_key_exists($member, $patch)) {
-                $params[$field] = $patch[$member] === null ? '' : (string) $patch[$member];
-            }
+            PlaceBody::check($params);
         }
 
         return $params;

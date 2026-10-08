@@ -164,6 +164,6 @@ final class AdminLocationsController
      */
     private function row(string $level, int $id): array
     {
-        return (new LocationQuery())->find($level, $id) ?? throw ProblemException::notFound('No such location.');
+        return ProblemException::found((new LocationQuery())->find($level, $id), 'location');
     }
 }

@@ -19,6 +19,7 @@ use mindstellar\api\read\ListSpec;
 use mindstellar\api\read\Pager;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\CommentSerializer;
+use mindstellar\api\write\StatusMembers;
 use mindstellar\comment\CommentQuery;
 use mindstellar\moderation\CommentModeration;
 
@@ -77,11 +78,8 @@ final class AdminCommentsController
         $comment = $this->comment($call->intArg());
         $id      = (int) $comment['pk_i_id'];
         $input   = $call->input();
-        $flags   = [];
-        foreach (array_intersect_key($input, self::STATUS_MEMBERS) as $member => $value) {
-            $flags[self::STATUS_MEMBERS[$member]] = (bool) $value;
-        }
-        $this->moderation->adminEdit($id, array_diff_key($input, self::STATUS_MEMBERS) === [] ? null : [
+        [$flags, $edit] = StatusMembers::split($input, self::STATUS_MEMBERS);
+        $this->moderation->adminEdit($id, $edit === [] ? null : [
             'title'        => (string) ($input['title'] ?? $comment['s_title']),
             'body'         => (string) ($input['body'] ?? $comment['s_body']),
             'author_name'  => (string) ($input['author_name'] ?? $comment['s_author_name']),

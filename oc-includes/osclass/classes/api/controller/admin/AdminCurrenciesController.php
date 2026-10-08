@@ -14,11 +14,11 @@ namespace mindstellar\api\controller\admin;
 
 use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
+use mindstellar\api\ProblemException;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\LocationSerializer;
 use mindstellar\currency\CurrencyCode;
 use mindstellar\currency\CurrencyService;
-use mindstellar\validation\NotFoundException;
 
 /**
  * `/admin/currencies`: the currency screen's writes, through CurrencyService.
@@ -43,9 +43,7 @@ final class AdminCurrenciesController
     public function show(ApiCall $call): Response
     {
         $code = self::code($call->args());
-        if ($this->currencies->find($code) === null) {
-            throw new NotFoundException(_m('No such currency.'));
-        }
+        ProblemException::found($this->currencies->find($code), 'currency');
 
         return Response::ok($this->currency($code));
     }
@@ -81,15 +79,10 @@ final class AdminCurrenciesController
     /**
      * @param array<string,string> $args
      *
-     * @throws NotFoundException for anything but a three-letter code
+     * @throws ProblemException 404 for anything but a three-letter code
      */
     private static function code(array $args): string
     {
-        $code = CurrencyCode::normalize((string) ($args['code'] ?? ''));
-        if ($code === null) {
-            throw new NotFoundException(_m('No such currency.'));
-        }
-
-        return $code;
+        return ProblemException::found(CurrencyCode::normalize((string) ($args['code'] ?? '')), 'currency');
     }
 }

@@ -23,6 +23,7 @@ use mindstellar\api\Response;
 use mindstellar\api\serializer\KeySerializer;
 use mindstellar\api\serializer\UserSerializer;
 use mindstellar\api\write\AccountBody;
+use mindstellar\api\write\StatusMembers;
 use mindstellar\apiaccess\AccessEntries;
 use mindstellar\apiaccess\AccessEntry;
 use mindstellar\model\Resource;
@@ -94,11 +95,7 @@ final class AdminUsersController
         $input    = $call->input();
         $accounts = new AccountService();
         $actor    = $call->actor('admin:users');
-        $flags    = [];
-        foreach (array_intersect_key($input, self::STATUS_MEMBERS) as $member => $value) {
-            $flags[self::STATUS_MEMBERS[$member]] = (bool) $value;
-        }
-        $edit = array_diff_key($input, self::STATUS_MEMBERS);
+        [$flags, $edit] = StatusMembers::split($input, self::STATUS_MEMBERS);
         $accounts->adminEdit($userId, $edit === [] ? null : AccountBody::admin($user, $edit), $flags, $actor);
 
         return $this->fresh($call, $userId);
