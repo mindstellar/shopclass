@@ -229,10 +229,7 @@ class LoginAttempt extends DAO
      */
     public function pruneBefore($before)
     {
-        return Db::execute(
-            'DELETE FROM ' . $this->getTableName() . ' WHERE dt_date <= ?',
-            array($before)
-        );
+        return \mindstellar\security\LoginAttemptStore::pruneBefore((string) $before);
     }
 
     /**

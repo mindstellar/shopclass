@@ -240,21 +240,7 @@ class Admin extends DAO
      */
     public function deleteBatch($id)
     {
-        $ids = is_array($id) ? array_values($id) : array($id);
-
-        // Deleting with an empty id list reports false, not 0. QueryBuilder's
-        // whereIn() turns an empty array into a harmless `1 = 0` and would run a
-        // no-op delete returning int 0; callers test this result loosely, so
-        // return the false they expect rather than a value that differs in kind.
-        if ($ids === array()) {
-            return false;
-        }
-
-        try {
-            return Db::table($this->getTableName())->whereIn('pk_i_id', $ids)->delete();
-        } catch (\mindstellar\database\DbException $e) {
-            return false;
-        }
+        return \mindstellar\auth\AdminStore::delete(is_array($id) ? $id : array($id));
     }
 }
 

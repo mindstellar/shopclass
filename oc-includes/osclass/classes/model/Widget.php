@@ -125,26 +125,7 @@ class Widget extends DAO
      */
     public function reorder(array $orderedIds)
     {
-        try {
-            $table = DB_TABLE_PREFIX . 't_widget';
-            try {
-                Db::transaction(static function () use ($orderedIds, $table) {
-                    $position = 0;
-                    foreach ($orderedIds as $id) {
-                        Db::table($table)
-                            ->where('pk_i_id', (int) $id)
-                            ->update(array('i_order' => $position));
-                        $position++;
-                    }
-                });
-            } catch (Throwable $e) {
-                return false;
-            }
-
-            return true;
-        } finally {
-            $this->cacheChanged();
-        }
+        return \mindstellar\widgets\WidgetStore::reorder($orderedIds);
     }
 
     /**
@@ -158,12 +139,7 @@ class Widget extends DAO
      */
     public function getNextOrder($location)
     {
-        $max = Db::scalar(
-            'SELECT MAX(i_order) FROM ' . DB_TABLE_PREFIX . 't_widget WHERE s_location = ?',
-            array($location)
-        );
-
-        return $max === null ? 0 : (int) $max + 1;
+        return \mindstellar\widgets\WidgetStore::nextOrder((string) $location);
     }
 
     /**

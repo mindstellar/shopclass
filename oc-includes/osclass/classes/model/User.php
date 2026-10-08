@@ -770,15 +770,8 @@ class User extends DAO
     {
         if ($time != null) {
             try {
-                $row = Db::table(DB_TABLE_PREFIX . 't_user')
-                    ->select('dt_access_date', 's_access_ip')
-                    ->where('pk_i_id', $userId)
-                    ->where('dt_access_date', '<=', date('Y-m-d H:i:s', time() - $time))
-                    ->first();
+                return \mindstellar\user\UserStore::touchAccess((int) $userId, (string) $date, (string) $ip, (int) $time) ? 1 : false;
             } catch (\mindstellar\database\DbException $e) {
-                return false;
-            }
-            if ($row === null) {
                 return false;
             }
         }

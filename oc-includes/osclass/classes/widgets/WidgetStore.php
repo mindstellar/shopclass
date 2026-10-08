@@ -144,6 +144,24 @@ final class WidgetStore extends Model
     }
 
     /**
+     * Reorder the widgets of one location; ids that do not live there are dropped, so a
+     * forged post cannot move widgets from elsewhere.
+     *
+     * @param array<mixed> $ids
+     */
+    public static function reorderWithin(string $location, array $ids): bool
+    {
+        try {
+            $valid = array_flip(self::idsAt($location));
+        } catch (\mindstellar\database\DbException $e) {
+            return false;
+        }
+        $ids = array_map('intval', array_filter($ids, 'is_numeric'));
+
+        return self::reorder(array_values(array_filter($ids, static fn (int $id): bool => isset($valid[$id]))));
+    }
+
+    /**
      * MAX(i_order) + 1 for a location, or 0 when it holds no widgets.
      *
      * @throws \mindstellar\database\DbException

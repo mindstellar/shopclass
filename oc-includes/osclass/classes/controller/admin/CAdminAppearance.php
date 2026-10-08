@@ -294,7 +294,6 @@ class CAdminAppearance extends AdminSecBaseModel
                 $location = Params::getParam('location');
                 $moved    = Params::getParamInt('id');
                 $ids      = Params::getParamArray('ids');
-                $ids = array_values(array_map('intval', array_filter($ids, 'is_numeric')));
 
                 // The section must be one the active theme actually offers, so a
                 // forged post cannot invent a location.
@@ -305,12 +304,7 @@ class CAdminAppearance extends AdminSecBaseModel
                     $widgetRow = $moved > 0 ? WidgetStore::find($moved) : null;
                     if ($widgetRow !== null && is_string($location) && isset($locations[$location])) {
                         WidgetStore::moveTo($moved, $location);
-                        // Only ids that live in the target section after the move.
-                        $validIds = array_flip(WidgetStore::idsAt($location));
-                        $ids = array_values(array_filter($ids, static function ($id) use ($validIds) {
-                            return isset($validIds[$id]);
-                        }));
-                        $ok = WidgetStore::reorder($ids);
+                        $ok = WidgetStore::reorderWithin($location, $ids);
                         osc_purge_page_cache('widget');
                     }
                 } catch (Throwable $e) {
@@ -329,21 +323,8 @@ class CAdminAppearance extends AdminSecBaseModel
 
                 $location = Params::getParam('location');
                 $ids      = Params::getParamArray('ids');
-                // Integer-validate the id list, dropping any non-numeric value.
-                $ids = array_values(array_map('intval', array_filter($ids, 'is_numeric')));
 
-                // Defence in depth: only reorder ids that currently belong to this
-                // location, so a forged post cannot move widgets from elsewhere.
-                try {
-                    $validIds = array_flip(WidgetStore::idsAt((string)$location));
-                } catch (Throwable $e) {
-                    $validIds = array();
-                }
-                $ids = array_values(array_filter($ids, static function ($id) use ($validIds) {
-                    return isset($validIds[$id]);
-                }));
-
-                $ok = WidgetStore::reorder($ids);
+                $ok = WidgetStore::reorderWithin((string) $location, $ids);
                 if ($ok) {
                     osc_purge_page_cache('widget');
                 }
