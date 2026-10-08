@@ -486,22 +486,22 @@ final class ListingService
     public function writeLocales(string $type, array $title, array $description, int|string $itemId): bool
     {
         $stored = $type === 'EDIT' ? $this->storedLocales((int) $itemId) : array();
-        foreach ($title as $k => $_data) {
+        foreach ($title as $locale => $_data) {
             $_title       = $_data;
-            $_description = $description[$k];
+            $_description = $description[$locale];
             $written      = true;
-            if ($type === 'EDIT' && self::sameText($stored[$k] ?? null, (string) $_title, (string) $_description)) {
+            if ($type === 'EDIT' && self::sameText($stored[$locale] ?? null, (string) $_title, (string) $_description)) {
                 // The write is skipped, but plugins still hear of every locale an edit saved, as before.
-                osc_run_hook('item_content_updated', (int) $itemId, $k);
+                osc_run_hook('item_content_updated', (int) $itemId, $locale);
                 continue;
             }
             if ($type === 'ADD') {
-                $written = $this->items->insertLocale($itemId, $k, $_title, $_description);
+                $written = $this->items->insertLocale($itemId, $locale, $_title, $_description);
             } elseif ($type === 'EDIT') {
-                $written = $this->items->updateLocaleForce($itemId, $k, $_title, $_description);
+                $written = $this->items->updateLocaleForce($itemId, $locale, $_title, $_description);
             }
             if (!$written) {
-                trigger_error('Item locale ' . $k . ' was not written for item ' . $itemId . '.', E_USER_WARNING);
+                trigger_error('Item locale ' . $locale . ' was not written for item ' . $itemId . '.', E_USER_WARNING);
 
                 return false;
             }

@@ -70,7 +70,7 @@ $form    = static fn (array $extra = []): array => $extra + [
     'contactEmail' => 'office@example.test',
     'contactPhone' => '5550199',
 ];
-$jobs   = static fn (): array => $admin->query("SELECT s_payload FROM {$p}t_job_queue WHERE s_type = '" . ListingGeocode::JOB . "'")->fetch_all(MYSQLI_ASSOC);
+$jobs   = static fn (): array => DBConnectionClass::newInstance()->getOsclassDb()->query("SELECT s_payload FROM {$p}t_job_queue WHERE s_type = '" . ListingGeocode::JOB . "'")->fetch_all(MYSQLI_ASSOC);
 $coords = static fn (int $id): array => array_values((array) $admin->query("SELECT d_coord_lat, d_coord_long FROM {$p}t_item_location WHERE fk_i_item_id = $id")->fetch_assoc());
 
 harness_section('coordinates are looked up after the save commits');
@@ -132,6 +132,16 @@ pin('a price edit on a listing with no coordinates queues no lookup', [], $jobs(
 $service->update(ListingInput::fromArray($form(['id' => (string) $noCoords, 'ownerId' => '0', 'address' => '2 Main Street']), $actor, false), $actor, false, false);
 pin('a new address queues one', [['s_payload' => json_encode(['item' => $noCoords])]], $jobs());
 $admin->query("DELETE FROM {$p}t_job_queue");
+$service->update(ListingInput::fromArray($form(['id' => (string) $given, 'ownerId' => '0', 'address' => '3 Main Street', 'd_coord_lat' => '10.5', 'd_coord_long' => '20.5']), $actor, false), $actor, false, false);
+pin('a new address on a listing that keeps its coordinates queues none', [[], ['10.5', '20.5']], [$jobs(), array_map(static fn ($v): string => (string) (float) $v, $coords($given))]);
+Preference::getInstance()->set('map_type', 'none');
+scratchdb_forget_cache();
+osc_reset_preferences();
+$service->update(ListingInput::fromArray($form(['id' => (string) $noCoords, 'ownerId' => '0', 'address' => '4 Main Street']), $actor, false), $actor, false, false);
+pin('a new address on a site with no map queues none', [], $jobs());
+Preference::getInstance()->set('map_type', 'google');
+scratchdb_forget_cache();
+osc_reset_preferences();
 
 harness_section('an edit rewrites only the languages that changed');
 $written = [];

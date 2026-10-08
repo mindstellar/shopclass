@@ -673,6 +673,14 @@ try {
 pin('one photo past the cap is taken back out, even when it raced the count', array(true, PhotoStage::MAX_PENDING), array($overflow, $stageRows($tom)));
 pin('the API answers 422 limit for a photo past the cap', array(422, 'limit'), (static fn (Response $r): array => array($r->status(), $r->body()['errors'][0]['code'] ?? null))($call('POST', 'photos', null, $tomToken, array(), $photoFile($jpeg))));
 $admin->query("DELETE FROM {$p}t_item_upload_tmp WHERE s_token = 'api:$tom'");
+$legacy = ItemTmpUpload::getInstance();
+$legacy->add('web-form', 'u1', 'a.jpg');
+$legacy->add('web-form', 'u2', 'b.jpg');
+pin('the legacy ItemTmpUpload model answers as before', array(true, false, false, 0, 1, 0, 1), array(
+    $legacy->belongsToToken('web-form', 'a.jpg'), $legacy->belongsToToken('other', 'a.jpg'), $legacy->belongsToToken('', ''),
+    $legacy->deleteByTokenFile('other', 'a.jpg'), $legacy->deleteByTokenFile('web-form', 'a.jpg'),
+    $legacy->pruneBefore('2000-01-01 00:00:00'), $legacy->deleteByToken('web-form'),
+));
 $fetcher = ImageFetcher::curlOptions('https://photos.example.com/car.jpg', '93.184.216.34', 1024);
 pin('a download never goes through a proxy, so it reaches the checked address', array('', '*'), array($fetcher[CURLOPT_PROXY] ?? null, $fetcher[CURLOPT_NOPROXY] ?? null));
 pin('a download that crawls is dropped', array(ImageFetcher::LOW_SPEED, ImageFetcher::LOW_SPEED_TIME), array($fetcher[CURLOPT_LOW_SPEED_LIMIT] ?? null, $fetcher[CURLOPT_LOW_SPEED_TIME] ?? null));

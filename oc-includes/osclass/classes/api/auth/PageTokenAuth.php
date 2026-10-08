@@ -128,6 +128,10 @@ final class PageTokenAuth
      */
     public static function bannedOnSite(array $user, string $ip): bool
     {
-        return function_exists('osc_is_banned') && osc_is_banned((string) ($user['s_email'] ?? ''), $ip) !== 0;
+        if (!function_exists('osc_is_banned')) {
+            require_once osc_lib_path() . 'osclass/helpers/hSecurity.php';
+        }
+
+        return osc_is_banned((string) ($user['s_email'] ?? ''), $ip) !== 0;
     }
 }

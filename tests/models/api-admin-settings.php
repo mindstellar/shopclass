@@ -134,6 +134,10 @@ pin('nor rotate a longer key into one that outlives it', [201, true], [$r->statu
 $r     = $call('POST', 'admin/keys/' . $made . '/rotate', null, $boss);
 $fresh = (string) ($r->body()['data']['token'] ?? '');
 pin('rotate: 201, a new token with the same scopes', [201, true, ['admin:listings', 'admin:comments']], [$r->status(), $fresh !== '' && $fresh !== $token, $r->body()['data']['scopes'] ?? null]);
+$count = static fn (): int => (int) $admin->query("SELECT COUNT(*) FROM {$p}t_api_credential")->fetch_row()[0];
+$had   = $count();
+pin('a key cannot rotate a key whose scopes it lacks, and none is made', ['403 forbidden', $had], [api_admin_code($call('POST', 'admin/keys/' . $made . '/rotate', null, $keyMaker)), $count()]);
+pin('nor make a key with them, beside one it holds', ['403 forbidden', $had], [api_admin_code($call('POST', 'admin/keys', ['name' => 'Mixed', 'scopes' => ['admin:keys', 'admin:listings']], $keyMaker)), $count()]);
 pin('both keys work until the old one is revoked', [200, 200], [$call('GET', 'admin/listings', null, $token)->status(), $call('GET', 'admin/listings', null, $fresh)->status()]);
 $others = api_admin_key($otherId);
 $theirs = (int) $admin->query("SELECT MAX(pk_i_id) FROM {$p}t_api_credential WHERE fk_i_admin_id = $otherId")->fetch_row()[0];

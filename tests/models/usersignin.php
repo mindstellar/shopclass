@@ -115,7 +115,16 @@ $reset();
 $admin->query("UPDATE {$p}t_user SET b_active = 0 WHERE pk_i_id = $uma");
 scratchdb_forget_cache();
 $fired = [];
-pin('an unconfirmed account is refused after before_login', [SignIn::INACTIVE, ['before_login']], [SignIn::attempt('uma', 'right-password')->status(), $fired]);
+pin('an unconfirmed account is refused before before_login', [SignIn::INACTIVE, []], [SignIn::attempt('uma', 'right-password')->status(), $fired]);
+$reset();
+for ($i = 0; $i < 20 && SignIn::attempt('uma@example.test', 'right-password')->status() !== SignIn::BLOCKED; $i++) {
+}
+$inactiveTries = $i;
+$reset();
+for ($i = 0; $i < 20 && SignIn::attempt('uma@example.test', 'wrong')->status() !== SignIn::BLOCKED; $i++) {
+}
+pin('the right password of an unconfirmed account locks it out like a wrong one, after as many tries', [true, $i], [$inactiveTries < 20, $inactiveTries]);
+$reset();
 $admin->query("UPDATE {$p}t_user SET b_active = 1, b_enabled = 0 WHERE pk_i_id = $uma");
 scratchdb_forget_cache();
 pin('so is a suspended one', SignIn::DISABLED, SignIn::attempt('uma', 'right-password')->status());

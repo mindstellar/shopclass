@@ -377,7 +377,7 @@ Core fires 555 names. Generated from the source; do not edit by hand.
 | `item_comments_after` | action | none | `oc-includes/osclass/gui/item-comments-content.php` |
 | `item_comments_before` | action | none | `oc-includes/osclass/gui/item-comments-content.php` |
 | `item_contact_form` | action | none | `oc-includes/osclass/gui/item-contact-content.php` |
-| `item_content_updated` | action | `(int)$id, $locale` | `oc-includes/osclass/classes/model/Item.php` |
+| `item_content_updated` | action | `(int) $itemId, $locale` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `item_decrease_stat` | action | `$item` | `oc-includes/osclass/classes/listing/ListingStats.php` |
 | `item_description` | filter | `$v['s_description']` | `oc-includes/osclass/classes/controller/CWebItem.php` |
 | `item_edit` | action | `$catId, $itemId` | `oc-includes/osclass/classes/admin/ajax/PluginAjax.php` |

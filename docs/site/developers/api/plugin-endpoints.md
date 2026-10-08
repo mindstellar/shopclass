@@ -82,6 +82,7 @@ Call `osc_api_register_route()` when your plugin loads. The route is then
 | `deprecated`, `sunset` | `YYYY-MM-DD` dates. They add `Deprecation` and `Sunset` headers. |
 | `where` | `placeholder => regex` for one path segment, e.g. `array('external_id' => '[A-Za-z0-9_-]+')`. Without it `{id}` and `{photo}` match digits and any other `{name}` one segment. |
 | `versions` | The API versions the route serves, e.g. `array('v1', 'v2')`. Default: `v1` only. |
+| `plugin` | The plugin's folder name, used in log lines. Default: the folder of the plugin file that registered the route. |
 
 Core-only keys (`replayable`, `upload`, `oauth`, `prepare`) drop the route, and so does any key not listed above, so a typo such as `scopes` cannot leave a route open.
 

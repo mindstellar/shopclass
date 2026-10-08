@@ -142,11 +142,6 @@ final class AdminWebhooksController
      */
     private function endpoint(string $id): Endpoint
     {
-        $endpoint = $this->webhooks->find($id);
-        if ($endpoint === null) {
-            throw ProblemException::notFound('No such webhook endpoint.');
-        }
-
-        return $endpoint;
+        return ProblemException::found($this->webhooks->find($id), 'webhook endpoint');
     }
 }

@@ -18,9 +18,9 @@ use mindstellar\security\LoginThrottle;
  * The one decision on a user's sign-in with a password, for the web form and the API alike.
  *
  * In order: the `before_validating_login` action, the sign-in limit (before any lookup or hashing), the account by e-mail or
- * username, the limit again under the account's e-mail, the password (an unknown account takes as long as a wrong password), a rehash
- * at the current cost, the ban rules, the `before_login` action, then whether the account is
- * confirmed and enabled. Once the caller has signed the user in, complete() fires `after_login`.
+ * username, the limit again under the account's e-mail, the password (an unknown account takes as long as a wrong password), whether
+ * the account is confirmed (an unconfirmed one counts as a failure), a rehash at the current cost, the ban rules, the `before_login`
+ * action, then whether the account is enabled. Once the caller has signed the user in, complete() fires `after_login`.
  */
 final class SignIn
 {
@@ -73,14 +73,16 @@ final class SignIn
         $ok = $user === null
             ? osc_dummy_password_verify($password)
             : osc_verify_password($password, (string) ($user['s_password'] ?? ''));
-        if (!$ok || $user === null) {
+        // An unconfirmed account counts like a wrong password, so its lockout cannot tell a taken e-mail apart.
+        $inactive = $ok && $user !== null && (int) $user['b_active'] !== 1;
+        if (!$ok || $user === null || $inactive) {
             // Counted against the name as typed, so one nobody holds counts like a real one.
             LoginThrottle::recordFailure(Reauth::CONTEXT, $account);
             if ($email !== '') {
                 LoginThrottle::recordFailure(Reauth::CONTEXT, $email, false);
             }
 
-            return new self(self::WRONG);
+            return $inactive ? new self(self::INACTIVE, $user) : new self(self::WRONG);
         }
         // The account's counters only: the address may have been guessing at other accounts.
         LoginThrottle::clear(Reauth::CONTEXT, $account, false);
@@ -95,9 +97,6 @@ final class SignIn
         }
 
         osc_run_hook('before_login');
-        if ((int) $user['b_active'] !== 1) {
-            return new self(self::INACTIVE, $user);
-        }
         if ((int) $user['b_enabled'] !== 1) {
             return new self(self::DISABLED, $user);
         }
@@ -127,7 +126,7 @@ final class SignIn
     }
 
     /**
-     * The account, from BANNED on; null for BLOCKED and WRONG.
+     * The account, for INACTIVE and from BANNED on; null for BLOCKED and WRONG.
      *
      * @return array<string,mixed>|null
      */

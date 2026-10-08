@@ -17,6 +17,8 @@
 require_once __DIR__ . '/lib/api-boot.php';
 
 use mindstellar\api\Problem;
+use mindstellar\api\RouteSpec;
+use mindstellar\api\routing\Router;
 
 const API_SURFACE_FIXTURE = __DIR__ . '/fixtures/api-surface.txt';
 
@@ -94,6 +96,23 @@ $errorsPage = (string) file_get_contents(ABS_PATH . 'docs/site/developers/api/er
 preg_match('/^### Field codes\n(.*?)(?=^#)/ms', $errorsPage, $section);
 preg_match_all('/^\| `([A-Za-z_]+)` \|/m', $section[1] ?? '', $documented);
 pin('errors.md lists exactly Problem::FIELD_CODES, in order', Problem::FIELD_CODES, $documented[1]);
+
+harness_section('plugin route keys and shared components');
+$pluginPage = (string) file_get_contents(ABS_PATH . 'docs/site/developers/api/plugin-endpoints.md');
+preg_match('/^### The spec\n(.*?)(?=^#)/ms', $pluginPage, $section);
+preg_match_all('/^\| ([^|]+) \|/m', $section[1] ?? '', $cells);
+$keys = [];
+foreach (array_slice($cells[1], 1) as $cell) {
+    preg_match_all('/`([a-z_]+)`/', $cell, $named);
+    $keys = array_merge($keys, $named[1]);
+}
+$expected = RouteSpec::PLUGIN_KEYS;
+sort($keys);
+sort($expected);
+pin('plugin-endpoints.md lists exactly RouteSpec::PLUGIN_KEYS', $expected, $keys);
+preg_match('/^### Your own components\n(.*?)\. Other core component names/ms', $pluginPage, $section);
+preg_match_all('/`([A-Za-z]+)`/', $section[1] ?? '', $named);
+pin('plugin-endpoints.md lists exactly Router::SHARED_COMPONENTS, in order', Router::SHARED_COMPONENTS, array_values(array_diff($named[1], ['ApiKit'])));
 
 $log    = ini_get('error_log');
 $tmp    = tempnam(sys_get_temp_dir(), 'apilog');

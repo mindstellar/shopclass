@@ -63,7 +63,7 @@ final class OpenApi
 
     /** The response headers, described once under components.headers. */
     private const HEADERS = [
-        'ETag'             => ['description' => 'The answer\'s version. Send it back in If-None-Match for a 304, or in If-Match on a PATCH or DELETE. A PATCH sent with If-Match answers with the new one.', 'schema' => ['type' => 'string']],
+        'ETag'             => ['description' => 'The answer\'s version. Send it back in If-None-Match for a 304, or in If-Match on a PUT, PATCH or DELETE. A PATCH sent with If-Match answers with the new one.', 'schema' => ['type' => 'string']],
         'RateLimit'        => ['description' => 'The tightest limit this call counted against: its name, requests left (r) and seconds to reset (t).', 'schema' => ['type' => 'string']],
         'RateLimit-Policy' => ['description' => 'Every limit this call counted against.', 'schema' => ['type' => 'string']],
         'X-RateLimit-Limit'     => ['description' => 'The same tightest limit, for clients that read the older headers: requests allowed in its window.', 'schema' => ['type' => 'integer']],
@@ -376,11 +376,11 @@ final class OpenApi
     }
 
     /**
-     * Whether a PATCH or DELETE has a GET of the same path to take its If-Match ETag from.
+     * Whether a PUT, PATCH or DELETE has a GET of the same path to take its If-Match ETag from.
      */
     private function hasRead(RouteSpec $route): bool
     {
-        return in_array($route->method(), ['PATCH', 'DELETE'], true) && isset($this->router->all($this->version)['GET ' . $route->path()]);
+        return in_array($route->method(), ['PUT', 'PATCH', 'DELETE'], true) && isset($this->router->all($this->version)['GET ' . $route->path()]);
     }
 
     /**

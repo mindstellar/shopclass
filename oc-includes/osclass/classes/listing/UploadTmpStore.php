@@ -16,7 +16,7 @@ use mindstellar\base\Model;
 
 /**
  * Reads and writes of t_item_upload_tmp: photos uploaded before their listing exists, each
- * row tying a temp file to an owner token. The legacy ItemTmpUpload model keeps its own methods.
+ * row tying a temp file to an owner token.
  */
 final class UploadTmpStore extends Model
 {
@@ -62,5 +62,43 @@ final class UploadTmpStore extends Model
     public static function remove(string $owner, array $uuids): void
     {
         self::table()->where('s_token', $owner)->whereIn('s_uuid', $uuids)->delete();
+    }
+
+    /**
+     * Whether the owner staged this file.
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public static function owns(string $owner, string $file): bool
+    {
+        return $owner !== '' && $file !== '' && self::table()->select('pk_i_id')->where('s_token', $owner)->where('s_file', $file)->first() !== null;
+    }
+
+    /**
+     * Delete one file's row when the owner staged it; a count of 0 means it did not.
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public static function removeFile(string $owner, string $file): int
+    {
+        return self::table()->where('s_token', $owner)->where('s_file', $file)->delete();
+    }
+
+    /**
+     * @throws \mindstellar\database\DbException
+     */
+    public static function removeOwner(string $owner): int
+    {
+        return self::table()->where('s_token', $owner)->delete();
+    }
+
+    /**
+     * Drop rows dated at or before $before ('Y-m-d H:i:s').
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public static function pruneBefore(string $before): int
+    {
+        return self::table()->where('dt_date', '<=', $before)->delete();
     }
 }

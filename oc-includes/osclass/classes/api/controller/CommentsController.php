@@ -54,10 +54,8 @@ final class CommentsController
      */
     public function show(ApiCall $call): Response
     {
-        $comment = (new CommentService())->visible($call->intArg(), $call->credential()->actor($call->request()->ip(), ViewContext::LISTINGS_SCOPE));
-        if ($comment === null) {
-            throw ProblemException::notFound('No such comment.');
-        }
+        $actor   = $call->credential()->actor($call->request()->ip(), ViewContext::LISTINGS_SCOPE);
+        $comment = ProblemException::found((new CommentService())->visible($call->intArg(), $actor), 'comment');
 
         return Response::ok((new CommentSerializer())->one($comment));
     }

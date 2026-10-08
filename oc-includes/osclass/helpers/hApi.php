@@ -74,7 +74,7 @@ if (!function_exists('osc_api_register_route')) {
      * @param string              $method GET, POST, PUT, PATCH or DELETE
      * @param string              $path   e.g. 'ext/acme/offers/{id}'
      * @param array<string,mixed> $spec   handler, auth, scope, summary, description, tags, query,
-     *                                    body, responses, deprecated, sunset, where, versions
+     *                                    body, responses, deprecated, sunset, where, versions, plugin
      *
      * @return void
      */

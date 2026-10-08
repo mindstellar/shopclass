@@ -376,7 +376,7 @@ site an hour**. If the site cannot count, it refuses.
 ## Editing safely with If-Match
 
 To avoid overwriting a change made meanwhile, send the `ETag` of your last `GET` in
-`If-Match` on a `PATCH` or `DELETE`. If the resource changed you get `412 precondition_failed`.
+`If-Match` on a `PUT`, `PATCH` or `DELETE`. If the resource changed you get `412 precondition_failed`.
 
 - `If-Match: *` only checks that the resource exists. If it is gone, the write answers as its
   `GET` does (`404`) and runs nothing.

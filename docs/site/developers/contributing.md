@@ -33,6 +33,26 @@ under the new version number. Run `composer update <package>` and commit
 `vendor/` alongside the manifest: CI fails the build otherwise.
 :::
 
+## Running the tests
+
+```bash
+php tests/run-unit.php           # the unit tests, 4 at a time (-j N to change)
+php tests/run-models.php         # the database tests
+php tests/models/<name>.php      # one database test file
+```
+
+`run-unit.php` does not run the database tests. Those need a throwaway MySQL on
+port 33061. This one keeps its data in memory and skips disk syncs, so it is fast:
+
+```bash
+docker run -d --name shopclass-scratch -p 33061:3306 --tmpfs /var/lib/mysql \
+  -e MYSQL_ROOT_PASSWORD=root mysql:8.0 --skip-log-bin \
+  --innodb-flush-log-at-trx-commit=0 --innodb-doublewrite=0
+```
+
+Another server works too: set `DRIFT_DB_HOST`, `DRIFT_DB_PORT`, `DRIFT_DB_USER`
+and `DRIFT_DB_PASS`.
+
 ## Documentation
 
 These pages live in the ShopClass repository under

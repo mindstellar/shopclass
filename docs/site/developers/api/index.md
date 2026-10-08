@@ -194,7 +194,7 @@ The site owner sets the number of seconds. Reads with any other key are `private
 Reads of `account*`, `admin/*` and `*/sessions` are `private, no-store`, and so is every write.
 
 To avoid overwriting a change made meanwhile, send the `ETag` of your last `GET` in `If-Match` on a
-`PATCH` or `DELETE`: see [Writes](/docs/developers/api/writes/#editing-safely-with-if-match).
+`PUT`, `PATCH` or `DELETE`: see [Writes](/docs/developers/api/writes/#editing-safely-with-if-match).
 
 ## Quick start: writing
 

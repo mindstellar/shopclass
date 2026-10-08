@@ -42240,7 +42240,7 @@
         },
         "headers": {
             "ETag": {
-                "description": "The answer's version. Send it back in If-None-Match for a 304, or in If-Match on a PATCH or DELETE. A PATCH sent with If-Match answers with the new one.",
+                "description": "The answer's version. Send it back in If-None-Match for a 304, or in If-Match on a PUT, PATCH or DELETE. A PATCH sent with If-Match answers with the new one.",
                 "schema": {
                     "type": "string"
                 }
