@@ -84,6 +84,7 @@ Plugin authors should read the Breaking section before upgrading.
 - `mindstellar\Csrf` is now `mindstellar\security\Csrf`; the old name still works.
 - `BackupManager` is now `BackupService`, and `BackupFailure` is now `BackupException`.
 - **Listings → Settings** and **Users → Settings** check their numbers: a negative or blank number saves as 0.
+- Adding, renaming or deleting a country runs in one transaction, so a failure leaves nothing half done.
 
 ### Fixed
 
