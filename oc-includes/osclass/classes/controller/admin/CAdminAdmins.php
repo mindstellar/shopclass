@@ -127,7 +127,7 @@ class CAdminAdmins extends AdminSecBaseModel
                 }
 
                 // Verification to avoid an administrator trying to remove to itself
-                if (in_array(Session::getInstance()->_get('adminId'), $adminId)) {
+                if (in_array((int) Session::getInstance()->_get('adminId'), array_map(static fn ($id): int => is_scalar($id) ? (int) $id : 0, $adminId), true)) {
                     osc_add_flash_error_message(
                         _m("The operation hasn't been completed. You're trying to remove yourself!"),
                         'admin'

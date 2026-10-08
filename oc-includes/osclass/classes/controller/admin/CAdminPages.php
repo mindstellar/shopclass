@@ -108,7 +108,8 @@ class CAdminPages extends AdminSecBaseModel
 
                 $pageService = PageService::make();
                 foreach ($id as $_id) {
-                    $result = (int)$pageService->delete((int)$_id);
+                    // A malformed id (an array, or not a number) is an error, not page (int) 1.
+                    $result = is_scalar($_id) && ctype_digit((string) $_id) ? (int) $pageService->delete((int) $_id) : 0;
                     switch ($result) {
                         case -1:
                             $page_indelible++;
