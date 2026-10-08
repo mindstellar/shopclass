@@ -19,6 +19,7 @@ mindstellar\api\ApiCall::public kit(): mindstellar\api\ApiKit
 mindstellar\api\ApiCall::public listingActor(): mindstellar\auth\Actor
 mindstellar\api\ApiCall::public request(): mindstellar\api\Request
 mindstellar\api\ApiCall::public userId(): int
+mindstellar\api\ApiCall::public visibleListing(?array $row): ?array
 mindstellar\api\ApiKit::public context(mindstellar\api\ApiCall $call, string $object, array $members, array $includes = []): mindstellar\api\serializer\ViewContext
 mindstellar\api\ApiKit::public links(): mindstellar\api\serializer\Links
 mindstellar\api\ApiKit::public listing(mindstellar\api\ApiCall $call, int $id, mindstellar\api\serializer\ViewContext $context): ?array

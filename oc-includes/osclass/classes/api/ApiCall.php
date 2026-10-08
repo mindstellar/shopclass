@@ -94,6 +94,8 @@ final class ApiCall
     /**
      * $row when the caller may see it, else null.
      *
+     * @api
+     *
      * @param array<string,mixed>|null $row
      *
      * @return array<string,mixed>|null
