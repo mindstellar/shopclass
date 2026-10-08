@@ -19,7 +19,7 @@ use mindstellar\apiaccess\PageTokens;
 
 /**
  * Caching headers for a successful answer. Public answers may sit in a shared cache, key answers
- * are private and revalidated, and writes and session answers are never stored.
+ * and the OpenAPI document are private and revalidated, and writes and session answers are never stored.
  */
 final class CachePolicy
 {
@@ -30,9 +30,13 @@ final class CachePolicy
     {
     }
 
+    /** Paths whose answer changes with admin switches, so a shared cache must not keep them. */
+    public const PRIVATE_PATHS = ['openapi.json'];
+
     public function isPublic(Request $request, Credential $credential): bool
     {
         return $request->isRead()
+            && !in_array($request->routePath(), self::PRIVATE_PATHS, true)
             && ($credential->isAnonymous() || $credential->kind() === CredentialKind::PUBLIC);
     }
 

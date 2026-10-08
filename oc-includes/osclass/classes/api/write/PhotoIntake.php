@@ -67,7 +67,7 @@ final class PhotoIntake
 
     /**
      * The photos a listing body names in `photo_tokens` and `photo_urls`. URLs are fetched only
-     * while the listing has room and within the user's hourly fetch limit, all at the same time.
+     * while the listing has room and within the user's hourly fetch limit, a few at a time.
      *
      * @param array<mixed> $input the listing body
      * @param int|null     $room  photos the listing can still take; null for no limit

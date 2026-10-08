@@ -158,6 +158,8 @@ jobs:
         run: php tests/item-access.php
       - name: API webhooks
         run: php tests/api-webhooks.php
+      - name: API photo URL downloads
+        run: php tests/api-image-fetcher.php
       - name: API request id and password-grant switch
         run: php tests/api-request-id.php
       - name: API skips the theme

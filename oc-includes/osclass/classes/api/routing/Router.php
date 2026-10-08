@@ -15,6 +15,7 @@ namespace mindstellar\api\routing;
 use mindstellar\api\RouteSpec;
 use mindstellar\api\schema\Validator;
 use mindstellar\apiaccess\ApiSettings;
+use mindstellar\apiaccess\Scopes;
 
 /**
  * The route table and its matcher, per API version: the core routes, then plugin routes from
@@ -61,6 +62,8 @@ final class Router
      *                                                      handler classes are always built with no arguments
      * @param \Closure|null                     $kit        fn(): ApiKit, for ApiCall::kit()
      * @param string[]|null                     $versions   the versions the site answers; ApiSettings::VERSIONS by default
+     * @param Scopes|null                       $scopes     the declared scopes admin plugin routes are checked against;
+     *                                                      Scopes::fromHooks() when null
      *
      * @throws \InvalidArgumentException when a core route cannot be served
      */
@@ -70,7 +73,8 @@ final class Router
         ?callable $log = null,
         ?\Closure $handlers = null,
         private ?\Closure $kit = null,
-        ?array $versions = null
+        ?array $versions = null,
+        private ?Scopes $scopes = null
     ) {
         $this->log   = \Closure::fromCallable($log ?? 'error_log');
         $this->live  = $versions ?? array_keys(ApiSettings::VERSIONS);
@@ -156,6 +160,19 @@ final class Router
         $scope = (string) $route->scope();
         if ($route->auth() === RouteSpec::AUTH_ADMIN && !str_starts_with($scope, 'admin:') && !str_starts_with($scope, 'ext:')) {
             return $this->refuse($label, 'an admin route must name an admin: or ext: scope, so a key holding only listings:read cannot run it as an admin');
+        }
+        if ($route->auth() === RouteSpec::AUTH_ADMIN && str_starts_with($scope, 'ext:')) {
+            if (!str_starts_with($scope, 'ext:' . $m[1] . ':')) {
+                return $this->refuse($label, 'an admin route may only name its own plugin\'s scope, ext:' . $m[1] . ':...');
+            }
+            $this->scopes ??= Scopes::fromHooks();
+            $audience       = $this->scopes->pluginAudience($scope);
+            if ($audience === null) {
+                return $this->refuse($label, 'scope ' . $scope . ' is not declared on api_scopes');
+            }
+            if (!in_array($audience, [Scopes::AUDIENCE_ADMIN, Scopes::AUDIENCE_MODERATOR], true)) {
+                return $this->refuse($label, 'an admin route\'s scope ' . $scope . ' must have the admin or moderator audience, so a user key cannot hold it');
+            }
         }
         $foreign = array_filter($route->refs(), static fn (string $name): bool => !str_starts_with($name, 'Ext') && !in_array($name, self::SHARED_COMPONENTS, true));
         if ($foreign !== []) {

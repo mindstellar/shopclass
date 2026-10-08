@@ -118,7 +118,7 @@ refused and logged.
 | `none` | Anyone, no key. Use for health or docs endpoints only. |
 | `public` | Any key, or nobody when the owner allowed anonymous reads. **`GET` only.** |
 | `user` | A user's key or token. |
-| `admin` | An admin key. The `scope` must start with `admin:` or `ext:`, or the route is dropped and logged: every admin key holds `listings:read`. A moderator's key is refused unless the route names a `scope` moderators may hold. |
+| `admin` | An admin key. The `scope` must be an `admin:` scope, or your own `ext:<slug>:` scope declared on `api_scopes` with the `admin` or `moderator` audience. Otherwise the route is dropped and logged: every admin key holds `listings:read`. A moderator's key is refused unless the route names a `scope` moderators may hold. |
 
 **A write can never be `public`.** `POST`, `PUT`, `PATCH` and `DELETE` with `auth => public`
 are dropped. Use `user` or `admin`.

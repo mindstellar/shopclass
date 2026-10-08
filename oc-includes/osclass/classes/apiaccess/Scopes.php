@@ -130,6 +130,14 @@ final class Scopes
     }
 
     /**
+     * The audience of a declared plugin scope, or null when no plugin declared it.
+     */
+    public function pluginAudience(string $scope): ?string
+    {
+        return $this->plugin[$scope]['audience'] ?? null;
+    }
+
+    /**
      * The scopes a credential of this kind and owner may hold.
      *
      * @return string[]

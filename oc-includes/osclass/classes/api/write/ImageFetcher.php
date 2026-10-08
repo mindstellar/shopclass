@@ -15,14 +15,20 @@ namespace mindstellar\api\write;
 use mindstellar\security\AddressGuard;
 
 /**
- * Downloads the photos a listing names by URL, all at once. Only public http(s) addresses on their usual
+ * Downloads the photos a listing names by URL, a few at a time. Only public http(s) addresses on their usual
  * ports are fetched, the connection is pinned to the checked IP and never goes through a
  * proxy, redirects are not followed, and the body stops at the site's photo size.
  */
 final class ImageFetcher
 {
-    /** Seconds for each download; they run side by side. */
+    /** Seconds for each download. */
     public const TIMEOUT = 15;
+
+    /** Downloads open at the same time; the next starts as one finishes. */
+    public const CONCURRENT = 4;
+
+    /** Why no download ran when the server has no cURL. */
+    public const NO_CURL = 'This server cannot download files.';
 
     /** A download slower than LOW_SPEED bytes a second for LOW_SPEED_TIME seconds is dropped. */
     public const LOW_SPEED = 1024;
@@ -49,7 +55,7 @@ final class ImageFetcher
     }
 
     /**
-     * Download each URL into its file, all at the same time. Every address is checked first, and
+     * Download each URL into its file, a few at a time. Every address is checked first, and
      * none is downloaded when one is refused.
      *
      * @param array<int,string> $urls  key => URL
@@ -73,13 +79,14 @@ final class ImageFetcher
         if ($errors === [] && $jobs !== []) {
             $errors = ($this->transport)($jobs, $maxBytes, self::TIMEOUT);
         }
+        // The transport answers in finishing order; callers report errors in request order.
         ksort($errors);
 
         return $errors;
     }
 
     /**
-     * HTTP GETs with cURL, run side by side, each connecting only to its pinned IP.
+     * HTTP GETs with cURL, CONCURRENT at a time, each connecting only to its pinned IP.
      *
      * @param array<int,array{url:string,ip:string,file:string}> $jobs
      *
@@ -87,43 +94,67 @@ final class ImageFetcher
      */
     public static function curl(array $jobs, int $maxBytes, int $timeout = self::TIMEOUT): array
     {
-        $errors  = [];
-        $handles = [];
-        $outs    = [];
-        $multi   = curl_multi_init();
-        foreach ($jobs as $key => $job) {
-            $out = @fopen($job['file'], 'wb');
-            if ($out === false) {
-                $errors[$key] = 'The temp folder is not writable.';
-                continue;
-            }
-            $curl = curl_init($job['url']);
-            curl_setopt_array($curl, self::curlOptions($job['url'], $job['ip'], $maxBytes, $timeout) + [CURLOPT_FILE => $out]);
-            curl_multi_add_handle($multi, $curl);
-            $handles[$key] = $curl;
-            $outs[$key]    = $out;
+        if (!function_exists('curl_multi_init')) {
+            return array_fill_keys(array_keys($jobs), self::NO_CURL);
         }
+        $errors = [];
+        $open   = [];
+        $queue  = $jobs;
+        $multi  = curl_multi_init();
         do {
+            while (count($open) < self::CONCURRENT && $queue !== []) {
+                $key = array_key_first($queue);
+                $job = $queue[$key];
+                unset($queue[$key]);
+                $out = @fopen($job['file'], 'wb');
+                if ($out === false) {
+                    $errors[$key] = 'The temp folder is not writable.';
+                    continue;
+                }
+                $curl = curl_init();
+                curl_setopt_array($curl, self::jobOptions($job, $out, $maxBytes, $timeout));
+                curl_multi_add_handle($multi, $curl);
+                $open[spl_object_id($curl)] = [$key, $curl, $out];
+            }
             $status = curl_multi_exec($multi, $running);
+            while (($info = curl_multi_info_read($multi)) !== false) {
+                [$key, $curl, $out] = $open[spl_object_id($info['handle'])];
+                unset($open[spl_object_id($curl)]);
+                $code = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
+                $ok   = $info['result'] === CURLE_OK && $code >= 200 && $code < 300;
+                curl_multi_remove_handle($multi, $curl);
+                fclose($out);
+                $errors[$key] = $ok ? null : self::FAILED;
+            }
             if ($running > 0 && curl_multi_select($multi, 1.0) === -1) {
                 usleep(10000);
             }
-        } while ($running > 0 && $status === CURLM_OK);
+        } while ($status === CURLM_OK && ($open !== [] || $queue !== []));
 
-        $results = [];
-        while (($info = curl_multi_info_read($multi)) !== false) {
-            $results[spl_object_id($info['handle'])] = $info['result'];
-        }
-        foreach ($handles as $key => $curl) {
-            $code = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
-            $ok   = ($results[spl_object_id($curl)] ?? null) === CURLE_OK && $code >= 200 && $code < 300;
+        foreach ($open as [$key, $curl, $out]) {
             curl_multi_remove_handle($multi, $curl);
-            fclose($outs[$key]);
-            $errors[$key] = $ok ? null : self::FAILED;
+            fclose($out);
+            $errors[$key] = self::FAILED;
+        }
+        foreach (array_keys($queue) as $key) {
+            $errors[$key] = self::FAILED;
         }
         curl_multi_close($multi);
 
         return $errors;
+    }
+
+    /**
+     * Every cURL option one download's handle gets.
+     *
+     * @param array{url:string,ip:string,file:string} $job
+     * @param resource                                $out the open file it writes to
+     *
+     * @return array<int,mixed>
+     */
+    public static function jobOptions(array $job, $out, int $maxBytes, int $timeout = self::TIMEOUT): array
+    {
+        return [CURLOPT_URL => $job['url'], CURLOPT_FILE => $out] + self::curlOptions($job['url'], $job['ip'], $maxBytes, $timeout);
     }
 
     /**

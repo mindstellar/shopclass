@@ -190,7 +190,7 @@ curl -i -H "Authorization: Bearer $KEY" -H 'If-None-Match: "9a04037fc4f6b5e68d56
 
 Answers for public keys and anonymous calls also carry
 `Cache-Control: public, max-age=60, stale-while-revalidate=60`, so a CDN may keep them.
-The site owner sets the number of seconds. Reads with any other key are `private, no-cache`.
+The site owner sets the number of seconds. Reads with any other key, and `openapi.json`, are `private, no-cache`.
 Reads of `account*`, `admin/*` and `*/sessions` are `private, no-store`, and so is every write.
 
 To avoid overwriting a change made meanwhile, send the `ETag` of your last `GET` in `If-Match` on a

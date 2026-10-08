@@ -749,7 +749,7 @@ $problem = static function (callable $fn): ?array {
     return null;
 };
 $failed = $problem(static fn () => $sideIntake->batch(array('photo_urls' => array('https://photos.example.com/a.jpg', 'https://photos.example.com/b.jpg', 'https://photos.example.com/c.jpg')), $sue, null));
-pin('URL downloads run in one batch, each pinned to its checked address, within one timeout', array(array(array('93.184.216.34', '93.184.216.34', '93.184.216.34'), ImageFetcher::TIMEOUT)), $batches);
+pin('URL downloads go to the fetcher in one batch, each pinned to its checked address, with one timeout each', array(array(array('93.184.216.34', '93.184.216.34', '93.184.216.34'), ImageFetcher::TIMEOUT)), $batches);
 pin('a failed download is 422 at its pointer and says only that it failed', array(422, '/photo_urls/1', 'the photo could not be downloaded'), $failed);
 $batches = array();
 $refused = $problem(static fn () => $sideIntake->batch(array('photo_urls' => array('https://photos.example.com/a.jpg', 'https://intranet.example.com/b.jpg')), $sue, null));

@@ -507,7 +507,11 @@ check('a bad where pattern drops the plugin route and logs why', !(new Router($v
     && str_contains($logged[0] ?? '', 'capturing group'));
 $extValidator = new Validator(['Thing' => ['type' => 'object'], 'Problem' => ['type' => 'object'], 'ExtAcmeThing' => ['type' => 'object']]);
 $logged       = [];
-$rules        = new Router($extValidator, $core, $log);
+$extScopes    = new Scopes([
+    'ext:acme:read' => ['description' => 'Read', 'audience' => Scopes::AUDIENCE_MODERATOR], 'ext:acme:write' => 'Write',
+    'ext:acme:mine' => ['description' => 'Own', 'audience' => Scopes::AUDIENCE_USER], 'ext:other:write' => 'Other',
+]);
+$rules        = new Router($extValidator, $core, $log, scopes: $extScopes);
 check('a core-only key is refused on a plugin route', !$rules->addPlugin('POST', 'ext/acme/up', ['handler' => $handler, 'upload' => true])
     && str_contains($logged[0] ?? '', 'only core routes may set upload'));
 $logged = [];
@@ -540,6 +544,17 @@ check('an admin route naming a non-admin scope is refused, so a key holding only
     && count($logged) === 2 && str_contains($logged[0], 'admin: or ext: scope'));
 check('an admin route naming an admin: or ext: scope is kept', $rules->addPlugin('GET', 'ext/acme/a3', ['handler' => $handler, 'auth' => RouteSpec::AUTH_ADMIN, 'scope' => 'admin:listings'])
     && $rules->addPlugin('GET', 'ext/acme/a4', ['handler' => $handler, 'auth' => RouteSpec::AUTH_ADMIN, 'scope' => 'ext:acme:read']));
+$logged = [];
+check('an admin route naming another plugin\'s, an undeclared or a user-audience ext: scope is refused', !$rules->addPlugin('POST', 'ext/acme/x1', ['handler' => $handler, 'scope' => 'ext:other:write'])
+    && !$rules->addPlugin('POST', 'ext/acme/x2', ['handler' => $handler, 'scope' => 'ext:acme:nope'])
+    && !$rules->addPlugin('POST', 'ext/acme/x3', ['handler' => $handler, 'scope' => 'ext:acme:mine'])
+    && !$rules->addPlugin('POST', 'ext/acme/x4', ['handler' => $handler, 'scope' => 'ext:acmex:write'])
+    && count($logged) === 4 && str_contains($logged[0], 'only name its own plugin') && str_contains($logged[1], 'not declared')
+    && str_contains($logged[2], 'admin or moderator audience') && str_contains($logged[3], 'only name its own plugin'));
+check('a user route may still name a user-audience ext: scope', $rules->addPlugin('GET', 'ext/acme/x5', ['handler' => $handler, 'auth' => RouteSpec::AUTH_USER, 'scope' => 'ext:acme:mine']));
+osc_add_filter('api_scopes', static fn (array $s): array => $s + ['ext:hooked:run' => 'Run']);
+check('with no Scopes given, the api_scopes hook decides', (new Router($extValidator, [], $log))->addPlugin('POST', 'ext/hooked/run', ['handler' => $handler, 'scope' => 'ext:hooked:run'])
+    && !(new Router($extValidator, [], $log))->addPlugin('POST', 'ext/hooked/run', ['handler' => $handler, 'scope' => 'ext:hooked:other']));
 check('a plugin route may opt out of Idempotency-Key replay', $rules->addPlugin('POST', 'ext/acme/secret', ['handler' => $handler, 'scope' => 'ext:acme:write', 'replayable' => false])
     && !$rules->match('POST', 'ext/acme/secret')->route()->replayable());
 check('with a scope, or with auth none or public, it is kept', $rules->addPlugin('POST', 'ext/acme/w3', ['handler' => $handler, 'scope' => 'ext:acme:write'])
