@@ -26,7 +26,6 @@ use mindstellar\api\write\OwnedListings;
 use mindstellar\apiaccess\Credential;
 use mindstellar\moderation\ListingModeration;
 use mindstellar\search\query\CategoryFilter;
-use mindstellar\user\UserQuery;
 use mindstellar\utility\DateInput;
 use mindstellar\utility\DeferredMail;
 
@@ -102,10 +101,6 @@ final class AdminListingsController
         $input   = $request->input();
         $status  = array_intersect_key($input, self::STATUS_MEMBERS);
         $edit    = array_diff_key($input, self::STATUS_MEMBERS);
-        $owner   = (int) ($edit['owner_id'] ?? 0);
-        if ($owner > 0 && !(new UserQuery())->exists($owner)) {
-            throw ProblemException::field('/owner_id', 'unknown', 'is not a user');
-        }
         $flags = [];
         foreach ($status as $member => $value) {
             $flags[self::STATUS_MEMBERS[$member]] = (bool) $value;

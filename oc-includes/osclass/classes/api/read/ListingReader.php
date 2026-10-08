@@ -38,9 +38,8 @@ final class ListingReader
     }
 
     /**
-     * One listing in the context's view, or null when there is no such listing.
-     *
-     * @api
+     * One listing in the context's view, or null when there is no such listing. Hidden
+     * listings are answered too; plugins use ApiKit::listing(), which checks who may see it.
      *
      * @return array<string,mixed>|null
      */
@@ -101,9 +100,8 @@ final class ListingReader
     }
 
     /**
-     * A listing's photos, oldest first.
-     *
-     * @api
+     * A listing's photos, oldest first. It does not check who may see the listing, so it is
+     * not plugin API: ApiKit::listing() answers with the photos.
      *
      * @return array<int,array<string,mixed>>
      */

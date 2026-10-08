@@ -109,7 +109,8 @@ if (!function_exists('osc_api_register_schema')) {
     /**
      * Add a component schema for a plugin's routes, through the `api_schemas` filter. It is
      * named `Ext<Slug><Name>` (`acme-ratings`, `Rating`: `ExtAcmeRatingsRating`), so it never
-     * clashes with core's components, which are not part of the plugin contract.
+     * clashes with core's components, which are not part of the plugin contract. A second,
+     * different schema under the same name is refused and logged; the first one stays.
      *
      * @api
      *
@@ -123,7 +124,14 @@ if (!function_exists('osc_api_register_schema')) {
     {
         $component = 'Ext' . str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', strtolower($slug)))) . $name;
         osc_add_filter('api_schemas', static function ($schemas) use ($component, $schema) {
-            $schemas             = is_array($schemas) ? $schemas : [];
+            $schemas = is_array($schemas) ? $schemas : [];
+            if (isset($schemas[$component])) {
+                if ($schemas[$component] !== $schema) {
+                    error_log('API schema ' . $component . ' refused: it is already registered.');
+                }
+
+                return $schemas;
+            }
             $schemas[$component] = $schema;
 
             return $schemas;

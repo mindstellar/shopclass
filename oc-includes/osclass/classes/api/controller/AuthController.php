@@ -14,6 +14,7 @@ namespace mindstellar\api\controller;
 
 use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
+use mindstellar\api\auth\PageTokenAuth;
 use mindstellar\api\auth\RefreshTokens;
 use mindstellar\api\auth\TokenIssuer;
 use mindstellar\api\auth\UserRows;
@@ -32,6 +33,8 @@ use mindstellar\auth\SignIn;
  */
 final class AuthController
 {
+    private const WRONG_PASSWORD = 'The e-mail, username or password is wrong.';
+
     private UserRows $users;
     private TokenIssuer $tokens;
     private RefreshTokens $refresh;
@@ -109,13 +112,14 @@ final class AuthController
         if ($user !== null) {
             $this->users->forget((int) $user['pk_i_id']);
         }
+        // An unconfirmed account answers like a wrong password, so sign-in cannot tell which
+        // e-mails sign-up hid as taken; the activation e-mail tells the real owner.
         match ($signIn->status()) {
-            SignIn::OK       => null,
-            SignIn::BLOCKED  => throw ProblemException::tooMany('Too many failed sign-ins. Try again later.', $signIn->retryAfter(), 'login_blocked'),
-            SignIn::WRONG    => throw self::refusedGrant('The e-mail, username or password is wrong.'),
-            SignIn::BANNED   => throw self::refusedGrant('This account or address may not sign in.'),
-            SignIn::INACTIVE => throw self::refusedGrant('This account is not confirmed yet. Open the link in the activation e-mail.'),
-            default              => throw self::refusedGrant('This account is suspended.'),
+            SignIn::OK                      => null,
+            SignIn::BLOCKED                 => throw ProblemException::tooMany('Too many failed sign-ins. Try again later.', $signIn->retryAfter(), 'login_blocked'),
+            SignIn::WRONG, SignIn::INACTIVE => throw self::refusedGrant(self::WRONG_PASSWORD),
+            SignIn::BANNED                  => throw self::refusedGrant('This account or address may not sign in.'),
+            default                         => throw self::refusedGrant('This account is suspended.'),
         };
 
         try {
@@ -146,7 +150,7 @@ final class AuthController
         if ($user === null) {
             throw ProblemException::from(Problem::make('invalid_grant', 'The refresh token is not valid. Sign in again.', ['error' => 'invalid_grant']));
         }
-        if (osc_is_banned((string) $user['s_email'], $request->ip()) !== 0) {
+        if (PageTokenAuth::bannedOnSite($user, $request->ip())) {
             $this->refresh->end($grant->userId(), $grant->family());
 
             throw self::refusedGrant('This account or address may not sign in.');

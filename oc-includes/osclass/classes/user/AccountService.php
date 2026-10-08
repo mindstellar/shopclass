@@ -99,7 +99,9 @@ final class AccountService
      * @param bool                $captchaPassed false when the form's captcha was not solved
      * @param bool                $hideTaken     answer a taken e-mail as a new one, with id 0 and
      *                                           nothing made, so the answer does not tell it is taken;
-     *                                           a new account's e-mails then go through the job queue
+     *                                           a new account's e-mails then go through the job queue.
+     *                                           Only while activation is on: without it, signing in
+     *                                           with the new password would tell it anyway
      *
      * @return array{id:int,active:bool} active is false while the activation link waits
      * @throws InvalidException with the form's messages, one per line
@@ -108,6 +110,7 @@ final class AccountService
     public function register(array $form, Actor $actor, bool $captchaPassed = true, bool $hideTaken = false): array
     {
         $admin  = $actor->isAdmin();
+        $hidden = $hideTaken && !$admin && osc_user_validation_enabled();
         if (!$admin) {
             self::signUpGate((string) ($form['s_email'] ?? ''), $actor->ip());
         }
@@ -149,7 +152,7 @@ final class AccountService
         $taken = false;
         if ($this->users->findByEmail($input['s_email']) != false) {
             osc_run_hook('register_email_taken', $input['s_email']);
-            if ($hideTaken && !$admin) {
+            if ($hidden) {
                 $taken = true;
             } else {
                 $refuse(_m('The specified e-mail is already in use'), 3);
@@ -195,8 +198,7 @@ final class AccountService
         $failed = 12;
         try {
             // A hidden sign-up sends from the queue, so a new e-mail answers as fast as a taken one.
-            $hidden = $hideTaken && !$admin;
-            $send   = $hidden ? [SignUpMail::class, 'queue'] : null;
+            $send = $hidden ? [SignUpMail::class, 'queue'] : null;
 
             return DeferredMail::transaction(function () use ($input, $info, $username, $activation, $admin, $actor, $hidden, &$failed): array {
                 $userId = (int) $this->users->insertGetId($input);

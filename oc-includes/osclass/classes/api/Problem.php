@@ -79,6 +79,26 @@ final class Problem
         'maintenance'            => [503, 'The site is down for maintenance.'],
     ];
 
+    /**
+     * @api The codes an `errors[]` entry may carry. A plugin may add `ext_<slug>_<name>` codes;
+     * any other is answered as `invalid` and logged.
+     */
+    public const FIELD_CODES = [
+        'type', 'enum', 'minimum', 'maximum', 'minLength', 'maxLength', 'pattern', 'format',
+        'minItems', 'maxItems', 'minProperties', 'required', 'additionalProperties',
+        'invalid', 'unknown', 'taken', 'mismatch', 'limit', 'rejected',
+    ];
+
+    /** Core service reasons that answer as another field code. */
+    private const FIELD_REASONS = [
+        'too_long'      => 'maxLength',
+        'too_short'     => 'minLength',
+        'too_large'     => 'invalid',
+        'too_fast'      => 'rejected',
+        'refused'       => 'rejected',
+        'listing_limit' => 'limit',
+    ];
+
     private function __construct()
     {
     }
@@ -136,7 +156,7 @@ final class Problem
      */
     public static function validation(array $errors): Response
     {
-        $errors = array_map(static fn (array $error): array => $error + ['in' => 'body'], $errors);
+        $errors = array_map(static fn (array $error): array => array_replace($error, ['code' => self::fieldCode($error['code'])]) + ['in' => 'body'], $errors);
         $detail = '';
         if ($errors !== []) {
             $field  = ltrim(str_replace('/', '.', $errors[0]['pointer']), '.');
@@ -144,6 +164,23 @@ final class Problem
         }
 
         return self::make('validation_failed', $detail, ['errors' => array_values($errors)]);
+    }
+
+    /**
+     * A field error code from FIELD_CODES or a plugin's `ext_` code. Any other is logged and
+     * answered as `invalid`.
+     */
+    public static function fieldCode(string $code): string
+    {
+        if (in_array($code, self::FIELD_CODES, true) || preg_match(self::PLUGIN_CODE, $code) === 1) {
+            return $code;
+        }
+        if (isset(self::FIELD_REASONS[$code])) {
+            return self::FIELD_REASONS[$code];
+        }
+        error_log('api: unknown field error code ' . $code . '; answered as invalid.');
+
+        return 'invalid';
     }
 
     /**

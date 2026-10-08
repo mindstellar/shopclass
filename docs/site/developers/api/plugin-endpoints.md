@@ -74,7 +74,7 @@ Call `osc_api_register_route()` when your plugin loads. The route is then
 |---|---|
 | `handler` | Required. A callable, or `array(Class::class, 'method')`. A non-static method gets a new instance of the class, built with no arguments. To build it with services, register a closure that builds it, or use `$call->kit()`. |
 | `auth` | Who may call: `none`, `public`, `user` or `admin`. Default: `public` for `GET`, `admin` for everything else. |
-| `scope` | The scope the caller needs. Required on a non-`GET` route with `user` or `admin` auth, or the route is dropped and logged: a key limited to other scopes could call it. |
+| `scope` | The scope the caller needs. Required on every route with `user` or `admin` auth, `GET` too, or the route is dropped and logged: a key limited to other scopes could call it. |
 | `summary`, `description`, `tags` | For the OpenAPI document and the reference. |
 | `query` | A JSON Schema object for the query string. Values are typed, then checked. |
 | `body` | A JSON Schema for the JSON body. Checked before your handler runs. |
@@ -83,7 +83,7 @@ Call `osc_api_register_route()` when your plugin loads. The route is then
 | `where` | `placeholder => regex` for one path segment, e.g. `array('external_id' => '[A-Za-z0-9_-]+')`. Without it `{id}` and `{photo}` match digits and any other `{name}` one segment. |
 | `versions` | The API versions the route serves, e.g. `array('v1', 'v2')`. Default: `v1` only. |
 
-Core-only keys (`replayable`, `upload`, `oauth`, `prepare`) drop the route.
+Core-only keys (`replayable`, `upload`, `oauth`, `prepare`) drop the route, and so does any key not listed above, so a typo such as `scopes` cannot leave a route open.
 
 The schemas understand `type`, `properties`, `items`, `required`, `enum`, `minimum`,
 `maximum`, `minLength`, `maxLength`, `pattern`, `format`, `minItems`, `maxItems`,
@@ -91,8 +91,9 @@ The schemas understand `type`, `properties`, `items`, `required`, `enum`, `minim
 
 ### Your own components
 
-A `$ref` may point at `Problem` or at your own components, never at another core
-component: their names are not part of the contract. Register yours with
+A `$ref` may point at your own components and at these core ones: `Problem`, `Listing`,
+`ListingPage`, `Photo`, `PageMeta` and `PageLinks`, the shapes `ApiKit` and `Page::whole()`
+answer with. Other core component names are not part of the contract. Register yours with
 `osc_api_register_schema()`, which returns the `$ref`:
 
 ```php
@@ -104,7 +105,9 @@ $rating = osc_api_register_schema('acme-ratings', 'Rating', array(
 ```
 
 The component is named `Ext<Slug><Name>`. It may refer to your other components and to
-`Problem` only.
+the core components above only.
+The first schema registered under a name wins; a different one under the same name is
+refused and logged.
 
 ### Auth rules
 
@@ -132,10 +135,11 @@ A handler that needs nothing from the call may take no argument.
 | Class | Use |
 |---|---|
 | `ApiCall` | `request()`, `credential()`, `args()` (the path values), `arg($name)` (one value, or `null`), `intArg($name)`, `input()` (the decoded JSON body, `array()` when none was sent), `kit()` |
-| `ApiKit` | `context($call, $object, $members, $includes)` (a `ViewContext` for this caller), `listings()` (core's listing reader; it does not check visibility), `links()` |
+| `ApiKit` | `context($call, $object, $members, $includes)` (a `ViewContext` for this caller), `listing($call, $id, $context)` (one listing, or `null` when it does not exist or the caller may not see it), `listings()` (core's listing reader for rows you found yourself; it does not check visibility), `links()` |
 | `Request` | `method()`, `path()`, `version()`, `routePath()`, `query()`, `queryString($name)`, `queryInt($name)`, `queryBool($name)`, `queryList($name)`, `queryIds($name)`, `header($name)`, `input()`, `ip()` |
 | `Credential` | `kind()`, `scopes()`, `has($scope)`, `userId()`, `adminId()`, `isAdmin()`, `isModerator()`, `isUser()`, `isSession()`, `isAnonymous()` |
-| `Response` | `Response::ok($data, $status = 200)`, `Response::created($data, $location)`, `Response::collection($items, $meta, $links)`, `Response::noContent()`, `->withHeader($name, $value)` |
+| `Response` | `Response::ok($data, $status = 200)`, `Response::created($data, $location)`, `Response::collection($items, $meta, $links)`, `Response::noContent()`, `->withHeader($name, $value)`, and in hooks `->status()`, `->body()`, `->withBodyMember($name, $value)` |
+| `RouteSpec` | In hooks: `key()` (`GET ext/acme/x`), `method()`, `path()` |
 | `read\Page` | `Page::whole($items, $call->kit()->links(), $call)`: a full list in the standard list envelope |
 | `ProblemException` | `of($code, $detail)`, `notFound($detail)`, `field($pointer, $code, $message)`, `tooMany($message, $retryAfter)`, `from($response)` |
 
@@ -331,7 +335,7 @@ if ($fields !== null && !$fields->wants('ext')) {
 
 API requests do not load the active theme's `functions.php`, so hooks a theme adds there (validation, spam checks, routes) do not apply to the API. Put them in a plugin, or return `true` from the `api_theme_functions_enabled` filter.
 
-`api_response` does not run when an `ProblemException` was thrown. A PATCH or DELETE that sends `If-Match`, on a path whose GET keeps no stored version, also runs it once for that GET, to compare ETags; check `$request->method()` if that matters to you. Plugin routes keep no stored version.
+`api_response` does not run when an `ProblemException` was thrown. A PUT, PATCH or DELETE that sends `If-Match`, on a path whose GET keeps no stored version, also runs it once for that GET, to compare ETags; check `$request->method()` if that matters to you. Plugin routes keep no stored version.
 
 ```php
 osc_add_hook('api_request_before', function ($request, $route, $credential) {
@@ -369,7 +373,9 @@ An unknown code is a `500` and is logged. For a field error:
 throw ProblemException::field('/stars', 'maximum', 'must be at most 5');
 ```
 
-It is about the body unless you pass `'query'` as the fourth argument.
+It is about the body unless you pass `'query'` as the fourth argument. Use a
+[field code](/docs/developers/api/errors/#field-codes) or your own `ext_<slug>_<name>` one; any
+other is answered as `invalid` and logged.
 
 Any other exception becomes `server_error` and is written to the error log.
 

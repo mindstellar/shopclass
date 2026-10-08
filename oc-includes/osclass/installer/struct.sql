@@ -755,6 +755,8 @@ CREATE TABLE /*TABLE_PREFIX*/t_api_credential (
         INDEX idx_user (fk_i_user_id),
         INDEX idx_admin (fk_i_admin_id),
         INDEX idx_family (s_family),
+        INDEX idx_kind_expires (e_kind, dt_expires),
+        INDEX idx_kind_revoked (e_kind, dt_revoked),
         FOREIGN KEY (fk_i_user_id) REFERENCES /*TABLE_PREFIX*/t_user (pk_i_id) ON DELETE CASCADE,
         FOREIGN KEY (fk_i_admin_id) REFERENCES /*TABLE_PREFIX*/t_admin (pk_i_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';

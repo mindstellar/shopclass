@@ -15,10 +15,11 @@ namespace mindstellar\api;
 use mindstellar\api\read\ListingReader;
 use mindstellar\api\serializer\Links;
 use mindstellar\api\serializer\ViewContext;
+use mindstellar\listing\ListingPolicy;
 
 /**
- * What a plugin handler may use of core's API services, through ApiCall::kit(): the
- * listing reader, the site's links and the caller's view context.
+ * What a plugin handler may use of core's API services, through ApiCall::kit(): listings,
+ * the site's links and the caller's view context.
  */
 final class ApiKit
 {
@@ -43,8 +44,27 @@ final class ApiKit
     }
 
     /**
-     * Core's listing reader. It does not check who may see a listing: apply the site's
-     * visibility rules before answering with one.
+     * One listing in the context's view, or null when there is none or the caller may not see
+     * it. A hidden one (pending, disabled, spam) is seen only by its owner and by admin keys with `admin:listings`.
+     *
+     * @api
+     *
+     * @return array<string,mixed>|null
+     */
+    public function listing(ApiCall $call, int $id, ViewContext $context): ?array
+    {
+        $reader = $this->services->listingReader();
+        $item   = $reader->row($id);
+        if ($item === null || !ListingPolicy::canView($item, $call->credential()->actor($call->request()->ip(), ViewContext::LISTINGS_SCOPE))) {
+            return null;
+        }
+
+        return $reader->view($item, $context);
+    }
+
+    /**
+     * Core's listing reader, for rows the plugin found itself. It does not check who may see
+     * a listing: use listing() for one by id.
      *
      * @api
      */

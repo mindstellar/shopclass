@@ -406,8 +406,8 @@ $refusals = api_test_kernel(new Router($validator, [
     'GET r/forbidden' => $refusing(new \mindstellar\validation\ForbiddenException('Not on this site.')),
     'GET r/blocked'   => $refusing(new \mindstellar\validation\BlockedException('Wait.', 30)),
     'GET r/invalid'   => $refusing(\mindstellar\validation\InvalidException::all([
-        ['pointer' => '/a', 'code' => 'x', 'message' => 'is bad'],
-        ['pointer' => '/b', 'code' => 'y', 'message' => 'is worse'],
+        ['pointer' => '/a', 'code' => 'invalid', 'message' => 'is bad'],
+        ['pointer' => '/b', 'code' => 'taken', 'message' => 'is worse'],
     ])),
     'GET r/refused'   => $refusing(new \mindstellar\validation\RefusedException('Not now.')),
 ]), api_test_authenticator(new ApiKeys($store, new Scopes(), new SystemClock())), new ApiSettings(true), validator: $validator);
@@ -491,6 +491,11 @@ pin('an unknown version is refused', 'GET x: unknown API version v9.', (static f
 
     return 'accepted';
 })());
+$v2Kernel = api_test_kernel(new Router($validator, ['v2 GET hello' => $none], $log, versions: ['v1', 'v2']), api_test_authenticator(new ApiKeys($store, new Scopes(), new SystemClock())), new ApiSettings(true), validator: $validator);
+pin('the kernel answers the versions its router serves', [200, 404], [
+    $v2Kernel->handle(new Request('GET', 'v2/hello', [], [], '127.0.0.1'))->status(),
+    $v2Kernel->handle(new Request('GET', 'v3/hello', [], [], '127.0.0.1'))->status(),
+]);
 $versioned = new Router($validator, ['v1 GET only-v1' => $none]);
 pin('a table key may name its version', [['v1'], null], [$versioned->match('GET', 'only-v1')?->route()->versions(), $versioned->match('GET', 'only-v1', 'v9')]);
 
@@ -522,12 +527,23 @@ $logged = [];
 check('the same method and path twice is refused', !$rules->addPlugin('GET', 'ext/acme/a', $none + ['plugin' => 'acme'])
     && str_contains($logged[0] ?? '', 'same method and path'));
 $logged = [];
-check('a plugin write with user or admin auth and no scope is refused', !$rules->addPlugin('POST', 'ext/acme/w1', ['handler' => $handler])
+check('a plugin route with user or admin auth and no scope is refused, a read too', !$rules->addPlugin('POST', 'ext/acme/w1', ['handler' => $handler])
     && !$rules->addPlugin('PATCH', 'ext/acme/w2', ['handler' => $handler, 'auth' => RouteSpec::AUTH_USER])
-    && count($logged) === 2 && str_contains($logged[0], 'must name a scope'));
-check('with a scope, or with auth none, it is kept', $rules->addPlugin('POST', 'ext/acme/w3', ['handler' => $handler, 'scope' => 'ext:acme:write'])
+    && !$rules->addPlugin('GET', 'ext/acme/r0', ['handler' => $handler, 'auth' => RouteSpec::AUTH_USER])
+    && !$rules->addPlugin('GET', 'ext/acme/r00', ['handler' => $handler, 'auth' => RouteSpec::AUTH_ADMIN])
+    && count($logged) === 4 && str_contains($logged[2], 'must name a scope'));
+check('with a scope, or with auth none or public, it is kept', $rules->addPlugin('POST', 'ext/acme/w3', ['handler' => $handler, 'scope' => 'ext:acme:write'])
     && $rules->addPlugin('POST', 'ext/acme/w4', ['handler' => $handler, 'auth' => RouteSpec::AUTH_NONE])
-    && $rules->addPlugin('GET', 'ext/acme/r1', ['handler' => $handler, 'auth' => RouteSpec::AUTH_USER]));
+    && $rules->addPlugin('GET', 'ext/acme/r1', ['handler' => $handler, 'auth' => RouteSpec::AUTH_USER, 'scope' => 'ext:acme:read'])
+    && $rules->addPlugin('GET', 'ext/acme/r2', ['handler' => $handler]));
+$logged = [];
+check('an unknown spec key is refused, so a typo cannot drop a rule', !$rules->addPlugin('GET', 'ext/acme/typo', ['handler' => $handler, 'auth' => RouteSpec::AUTH_USER, 'scopes' => 'ext:acme:read'])
+    && str_contains($logged[0] ?? '', 'unknown spec key scopes'));
+$logged = [];
+check('Listing, ListingPage, Photo, PageMeta and PageLinks may be $ref-ed', (new Router(new Validator(['Listing' => [], 'ListingPage' => [], 'Photo' => [], 'PageMeta' => [], 'PageLinks' => []]), [], $log))->addPlugin('GET', 'ext/acme/page', $none + ['responses' => [
+    200 => ['type' => 'object', 'properties' => ['data' => ['type' => 'array', 'items' => ['$ref' => '#/components/schemas/Listing']], 'meta' => ['$ref' => '#/components/schemas/PageMeta'], 'links' => ['$ref' => '#/components/schemas/PageLinks']]],
+    201 => ['$ref' => '#/components/schemas/ListingPage'], 202 => ['$ref' => '#/components/schemas/Photo'],
+]]), implode("\n", $logged));
 osc_api_register_route('GET', 'ext/dup/x', $none + ['summary' => 'first']);
 osc_api_register_route('GET', 'ext/dup/x', $none + ['summary' => 'second']);
 pin('osc_api_register_route() keeps the first of two registrations', 'first', Router::build($validator, $core, $log)->match('GET', 'ext/dup/x')?->route()->summary());
@@ -566,13 +582,13 @@ $schemaLog = [];
 $checked   = \mindstellar\api\schema\ExtensionSchemas::check([
     'ExtAcmeRating' => ['type' => 'object', 'properties' => ['by' => ['$ref' => '#/components/schemas/ExtAcmeUser'], 'err' => ['$ref' => '#/components/schemas/Problem']]],
     'ExtAcmeUser'   => ['type' => 'object'],
-    'ExtAcmeLeak'   => ['$ref' => '#/components/schemas/Listing'],
+    'ExtAcmeLeak'   => ['$ref' => '#/components/schemas/User'],
     'Listing'       => ['type' => 'object'],
 ], static function (string $m) use (&$schemaLog): void {
     $schemaLog[] = $m;
 });
 pin('Ext components that refer to each other and to Problem are kept', ['ExtAcmeRating', 'ExtAcmeUser'], array_keys($checked));
-check('a core name, or a $ref to a core component, is refused', count($schemaLog) === 2 && str_contains(implode("\n", $schemaLog), 'core component Listing'));
+check('a core name, or a $ref to a core component, is refused', count($schemaLog) === 2 && str_contains(implode("\n", $schemaLog), 'core component User'));
 pin('osc_api_register_schema() names the component and returns its $ref', ['$ref' => '#/components/schemas/ExtAcmeRatingsRating'], osc_api_register_schema('acme-ratings', 'Rating', ['type' => 'object']));
 
 harness_section('problems');
@@ -583,11 +599,11 @@ pin('a plugin code from api_problem_codes', [409, 'ext_acme_taken', 'Already tak
 ));
 pin('an unknown code is a 500', [500, 'server_error'], [\mindstellar\api\Problem::make('ext_acme_nope')->status(), \mindstellar\api\Problem::make('ext_acme_nope')->body()['code']]);
 pin('a field error is about the body unless it says otherwise', ['body', 'query'], [
-    \mindstellar\api\ProblemException::field('/a', 'x', 'bad')->response()->body()['errors'][0]['in'],
-    \mindstellar\api\ProblemException::field('/a', 'x', 'bad', 'query')->response()->body()['errors'][0]['in'],
+    \mindstellar\api\ProblemException::field('/a', 'invalid', 'bad')->response()->body()['errors'][0]['in'],
+    \mindstellar\api\ProblemException::field('/a', 'invalid', 'bad', 'query')->response()->body()['errors'][0]['in'],
 ]);
 pin('refused and rejected errors are about the body', ['body', 'body'], [
-    \mindstellar\api\Problem::refused([['pointer' => '/a', 'code' => 'x', 'message' => 'bad']])->body()['errors'][0]['in'],
+    \mindstellar\api\Problem::refused([['pointer' => '/a', 'code' => 'invalid', 'message' => 'bad']])->body()['errors'][0]['in'],
     \mindstellar\api\Problem::rejected('No.')->body()['errors'][0]['in'],
 ]);
 pin('a core refusal reason maps to its API code', ['feature_disabled', 'wrong_credential', 'forbidden'], [

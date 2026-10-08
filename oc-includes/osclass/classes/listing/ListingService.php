@@ -14,6 +14,8 @@
 namespace mindstellar\listing;
 
 use mindstellar\auth\Actor;
+use mindstellar\database\Db;
+use mindstellar\user\UserQuery;
 use mindstellar\utility\DeferredMail;
 use mindstellar\utility\Sanitize;
 use mindstellar\utility\ViewScope;
@@ -470,7 +472,8 @@ final class ListingService
     }
 
     /**
-     * Write one title and description per locale.
+     * Write one title and description per locale. An edit skips a locale whose text has not
+     * changed, and an empty one that has no row yet.
      *
      * @param string               $type        'ADD' or 'EDIT'
      * @param array<string,string> $title       Title per locale
@@ -481,10 +484,16 @@ final class ListingService
      */
     public function writeLocales(string $type, array $title, array $description, int|string $itemId): bool
     {
+        $stored = $type === 'EDIT' ? $this->storedLocales((int) $itemId) : array();
         foreach ($title as $k => $_data) {
             $_title       = $_data;
             $_description = $description[$k];
             $written      = true;
+            if ($type === 'EDIT' && self::sameText($stored[$k] ?? null, (string) $_title, (string) $_description)) {
+                // The write is skipped, but plugins still hear of every locale an edit saved, as before.
+                osc_run_hook('item_content_updated', (int) $itemId, $k);
+                continue;
+            }
             if ($type === 'ADD') {
                 $written = $this->items->insertLocale($itemId, $k, $_title, $_description);
             } elseif ($type === 'EDIT') {
@@ -498,6 +507,35 @@ final class ListingService
         }
 
         return true;
+    }
+
+    /**
+     * The listing's stored title and description per locale.
+     *
+     * @return array<string,array{0:string,1:string}>
+     */
+    private function storedLocales(int $itemId): array
+    {
+        $stored = array();
+        foreach ((new ListingQuery())->descriptions(array($itemId)) as $row) {
+            $stored[(string) $row['fk_c_locale_code']] = array((string) $row['s_title'], (string) $row['s_description']);
+        }
+
+        return $stored;
+    }
+
+    /**
+     * Whether a locale's text matches what is stored, or is empty with nothing stored.
+     *
+     * @param array{0:string,1:string}|null $stored
+     */
+    private static function sameText(?array $stored, string $title, string $description): bool
+    {
+        if ($stored === null) {
+            return $title === '' && $description === '';
+        }
+
+        return $stored[0] === mb_substr($title, 0, \Item::TITLE_WIDTH, 'UTF-8') && $stored[1] === $description;
     }
 
     /**
@@ -581,7 +619,6 @@ final class ListingService
         $is_spam = 0;
         $enabled = 1;
         $code    = osc_genRandomPassword();
-        $errors  = array();
 
         // Check status
         $active = $aItem['active'];
@@ -596,6 +633,7 @@ final class ListingService
         $aItem['contactName'] = osc_validate_text($aItem['contactName'], 3) ? $aItem['contactName'] : __('Anonymous');
 
         // Validate
+        $errors = self::ownerErrors($aItem, $actor);
         if (!osc_validate_max($aItem['contactName'], 35)) {
             $errors[] = ListingValidator::entry('/contact_name', 'too_long', _m('Name too long.'));
         }
@@ -726,6 +764,8 @@ final class ListingService
         // rejection instead; what is left is a filtered or plugin-supplied value.
         if (!$locationManager->insert($location)) {
             trigger_error('Item location insert wrote no row for item ' . $itemId . '.', E_USER_WARNING);
+        } elseif (ListingGeocode::wanted($location)) {
+            ListingGeocode::queueAfterCommit((int) $itemId);
         }
 
         $this->photos->store($aItem['photos'], $itemId);
@@ -783,8 +823,15 @@ final class ListingService
         $aItem['cityArea'] = self::place($aItem['cityArea']);
         $aItem['address']  = self::place($aItem['address']);
 
+        // Only the columns the stats and expiry below compare; read before anything is written.
+        $old_item = ListingStore::find($aItem['idItem'], array('fk_i_user_id', 'fk_i_category_id', 'b_enabled', 'b_active', 'b_spam', 'b_premium', 'dt_expiration'));
+        $old_item = $old_item === null ? array() : Db::stringifyRow($old_item);
+
         // Validate
-        $errors = $this->validator->common($aItem, $notices);
+        $errors = array_merge(
+            self::ownerErrors($aItem, $actor, (int) ($old_item['fk_i_user_id'] ?? 0)),
+            $this->validator->common($aItem, $notices)
+        );
         // Only an admin editing a listing with no owner writes the contact name and e-mail.
         if ($actor->isAdmin() && !$aItem['userId']) {
             $errors = array_merge($errors, $this->validator->contactWidths($aItem));
@@ -815,9 +862,9 @@ final class ListingService
         // below still fires, so the only trace it left was the unread return value.
         if ($locationManager->update($location, array('fk_i_item_id' => $aItem['idItem'])) === false) {
             trigger_error('Item location update wrote no row for item ' . $aItem['idItem'] . '.', E_USER_WARNING);
+        } elseif (ListingGeocode::wanted($location)) {
+            ListingGeocode::queueAfterCommit($aItem['idItem']);
         }
-
-        $old_item = $this->items->findByPrimaryKey($aItem['idItem']);
 
         if ($aItem['userId']) {
             $user                  = \User::getInstance()->findByPrimaryKey($aItem['userId']);
@@ -904,6 +951,24 @@ final class ListingService
     }
 
     /**
+     * Refuse an owner an admin named that is not an account. The current owner is not
+     * checked again.
+     *
+     * @param array<string,mixed> $aItem
+     *
+     * @return array<int,array{pointer:string,code:string,message:string}>
+     */
+    private static function ownerErrors(array $aItem, Actor $actor, int $current = 0): array
+    {
+        $asked = (int) ($aItem['ownerId'] ?? $aItem['userId'] ?? 0);
+        if (!$actor->isAdmin() || $asked <= 0 || $asked === $current || (new UserQuery())->exists($asked)) {
+            return array();
+        }
+
+        return array(ListingValidator::entry('/owner_id', 'unknown', _m('There is no user with that ID.')));
+    }
+
+    /**
      * The sanitising a new listing and an edit share: titles, price and phone.
      *
      * @param array<string,mixed> $aItem
@@ -929,7 +994,8 @@ final class ListingService
     }
 
     /**
-     * The t_item_location row, with the item id first when it is a new listing.
+     * The t_item_location row, with the item id first when it is a new listing. Missing
+     * coordinates are looked up by a job once the save commits (see ListingGeocode).
      *
      * @param array<string,mixed> $aItem
      *
@@ -954,7 +1020,7 @@ final class ListingService
             $location = array('fk_i_item_id' => $itemId) + $location;
         }
 
-        return array_merge($location, $this->coordinates($location));
+        return $location;
     }
 
     /**
@@ -1037,42 +1103,5 @@ final class ListingService
     private static function refuse(array $errors): InvalidException
     {
         return InvalidException::all($errors, self::errorText($errors));
-    }
-
-    /**
-     * The location with coordinates looked up when the site shows a map and none were sent.
-     *
-     * @param array<string,mixed> $location
-     *
-     * @return array<string,mixed>
-     */
-    private function coordinates(array $location): array
-    {
-        if ($location['d_coord_lat'] && $location['d_coord_long']) {
-            return array();
-        }
-        if (!function_exists('osc_item_map_type') || !in_array(osc_item_map_type(), ['google', 'openstreet'])) {
-            return array();
-        }
-        $mapType = osc_item_map_type();
-        $address = sprintf('%s, %s, %s, %s', $location['s_address'], $location['s_city'], $location['s_region'], $location['s_country']);
-
-        if ($mapType === 'google') {
-            $res = json_decode(osc_file_get_contents(osc_google_maps_geocode_url($address)));
-            if (isset($res->results[0]->geometry->location) && count($res->results[0]->geometry->location)) {
-                $coords                   = $res->results[0]->geometry->location;
-                $location['d_coord_lat']  = $coords->lat;
-                $location['d_coord_long'] = $coords->lng;
-            }
-        } elseif ($mapType === 'openstreet') {
-            $res = json_decode(osc_file_get_contents(osc_openstreet_geocode_url($address)));
-            if (isset($res->results[0]->locations[0]->latLng) && count($res->results[0]->locations[0]->latLng)) {
-                $coords                   = $res->results[0]->locations[0]->latLng;
-                $location['d_coord_lat']  = $coords->lat;
-                $location['d_coord_long'] = $coords->lng;
-            }
-        }
-
-        return $location;
     }
 }

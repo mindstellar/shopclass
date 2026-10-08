@@ -27,7 +27,7 @@ use mindstellar\utility\Clock;
 /**
  * `/account/keys`: personal API keys a user makes for their own scripts, when the site allows
  * them (PersonalKeys has the rules). Managing keys needs a signed-in access token, so a key
- * cannot make more keys.
+ * cannot make more keys, and a new key cannot hold a scope the token lacks.
  */
 final class AccountKeysController
 {
@@ -66,12 +66,14 @@ final class AccountKeysController
         if ($user === null) {
             throw ProblemException::notFound('No such user.');
         }
-        $input = $call->input();
+        $input  = $call->input();
+        $scopes = (array) ($input['scopes'] ?? []);
+        $call->credential()->checkGrant($scopes);
         $issued = $this->keys->create(
             $user,
             (string) ($input['current_password'] ?? ''),
             (string) ($input['name'] ?? ''),
-            (array) ($input['scopes'] ?? []),
+            $scopes,
             (string) ($input['expires_at'] ?? '')
         );
         $key = $this->keys->find($userId, $issued->id());

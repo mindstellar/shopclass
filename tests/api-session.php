@@ -279,6 +279,15 @@ $bucket = (new RatePolicy(new ApiSettings(true)))->bucketsFor(
     new Credential(CredentialKind::SESSION, [], 10)
 )[0];
 pin('a session counts in the user\'s bucket, shared with their tokens', ['api_user', '10'], [$bucket->name(), $bucket->key()]);
+$keyBucket = static fn (Credential $c): array => (static fn ($b): array => [$b->name(), $b->key()])((new RatePolicy(new ApiSettings(true)))->bucketsFor(
+    $session(),
+    new RouteSpec('GET', 'me', $routes['GET me']),
+    $c
+)[0]);
+pin('every personal key of a user counts in that user\'s bucket, not one bucket per key', [['api_user', '10'], ['api_user', '10']], [
+    $keyBucket(new Credential(CredentialKind::KEY, [], 10, null, 55)), $keyBucket(new Credential(CredentialKind::KEY, [], 10, null, 56)),
+]);
+pin('an admin key still counts per key', ['api_key', '57'], $keyBucket(new Credential(CredentialKind::KEY, [], null, 1, 57)));
 $writeBuckets = (new RatePolicy(new ApiSettings(true)))->bucketsFor(
     $session($ok(10), $cookie(10), 'POST', 'v1/notes'),
     new RouteSpec('GET', 'me', $routes['GET me']),

@@ -110,6 +110,8 @@ jobs:
         run: php tests/api-validator.php
       - name: API router
         run: php tests/api-router.php
+      - name: API plugin contract and field codes
+        run: php tests/api-contract.php
       - name: API authentication
         run: php tests/api-auth.php
       - name: API ignores browser identity

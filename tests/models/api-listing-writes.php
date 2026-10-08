@@ -367,7 +367,7 @@ pin('a missing title is 422 from the schema', array(422, '/title'), array(
 pin('an unknown member is 422', '422 validation_failed', $code($call('POST', 'listings', $listing(array('owner' => 1)), $sueToken)));
 pin('an unknown city is 422', array(422, '/city_id'), (static fn (Response $r): array => array($r->status(), $r->body()['errors'][0]['pointer'] ?? null))($call('POST', 'listings', $listing(array('city_id' => 99999)), $sueToken)));
 pin('ItemActions\' own refusal is 422 with its message', array(422, 'Description too short (en_US).'), (static fn (Response $r): array => array($r->status(), $r->body()['errors'][0]['message'] ?? null))($call('POST', 'listings', $listing(array('description' => 'ab')), $sueToken)));
-pin('a refusal carries the member and code of each error', array('validation_failed', '/description', 'too_short'), (static fn (Response $r): array => array($r->body()['code'] ?? null, $r->body()['errors'][0]['pointer'] ?? null, $r->body()['errors'][0]['code'] ?? null))($call('POST', 'listings', $listing(array('description' => 'ab')), $sueToken)));
+pin('a refusal carries the member and code of each error', array('validation_failed', '/description', 'minLength'), (static fn (Response $r): array => array($r->body()['code'] ?? null, $r->body()['errors'][0]['pointer'] ?? null, $r->body()['errors'][0]['code'] ?? null))($call('POST', 'listings', $listing(array('description' => 'ab')), $sueToken)));
 pin('a language the site does not have is 422', array(422, '/translations/fr_FR'), (static fn (Response $r): array => array($r->status(), $r->body()['errors'][0]['pointer'] ?? null))($call('POST', 'listings', $listing(array('translations' => array('fr_FR' => array('title' => 'Voiture')))), $sueToken)));
 pin('a required custom field left out is refused as on the form', 422, $call('POST', 'listings', $listing(array('custom_fields' => array())), $sueToken)->status());
 pin('without a credential it is 401', 401, $call('POST', 'listings', $listing())->status());
@@ -711,7 +711,7 @@ $qPost = harness_query_count(static function () use ($call, $listing, $sueToken,
 $qPatch = harness_query_count(static fn () => $call('PATCH', 'listings/' . $qMade, array('price' => '999'), $sueToken));
 echo "  POST /listings: $qPost queries, PATCH: $qPatch\n";
 pin('POST /listings, no photos: 30 queries (one checks the sign-in is live; ban rules come from the cache)', 30, $qPost);
-pin('PATCH /listings/{id}, no photos: 29 queries', 29, $qPatch);
+pin('PATCH /listings/{id}, no photos: 26 queries', 26, $qPatch);
 
 harness_section('deleting a listing');
 pin('another seller cannot delete it', '403 not_owner', $code($call('DELETE', 'listings/' . $made, null, $tomToken)));

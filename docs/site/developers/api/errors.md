@@ -57,9 +57,35 @@ A `422 validation_failed` lists every problem at once in `errors`:
 | Member | Meaning |
 |---|---|
 | `pointer` | The field, as a [JSON Pointer](https://www.rfc-editor.org/rfc/rfc6901): `/limit`, or `/price/amount` for a nested body field. Empty means the whole input. |
-| `code` | `type`, `enum`, `minimum`, `maximum`, `minLength`, `maxLength`, `pattern`, `format`, `minItems`, `maxItems`, `required` or `additionalProperties`. Writes add `invalid`, `unknown`, `limit`, `mismatch`, `minProperties` and `rejected` (the web form's own message). |
+| `code` | One of the [field codes](#field-codes) below. |
 | `message` | What is wrong with it. |
 | `in` | `query` or `body`: where the field was. Always present. |
+
+### Field codes
+
+| Code | Meaning |
+|---|---|
+| `type` | The value has the wrong JSON type. |
+| `enum` | The value is not one of the allowed values. |
+| `minimum` | The number is too small. |
+| `maximum` | The number is too large. |
+| `minLength` | The text is too short or blank. |
+| `maxLength` | The text is too long. |
+| `pattern` | The text does not have the expected form. |
+| `format` | The value is not a valid date, e-mail, URL or id. |
+| `minItems` | The list has too few items. |
+| `maxItems` | The list has too many items, or an account holds as many as it may. |
+| `minProperties` | The object needs at least one member. |
+| `required` | A required field is missing. |
+| `additionalProperties` | The field is not one the endpoint takes. |
+| `invalid` | The value is not accepted, for a reason `message` gives. |
+| `unknown` | The value names something that does not exist, such as a category or country. |
+| `taken` | Another resource already uses the value. |
+| `mismatch` | The value does not match, such as a wrong current password. |
+| `limit` | A limit is reached, such as the photos a listing may hold. |
+| `rejected` | The web form refused the input; `message` is its text. |
+
+Plugin endpoints may add `ext_<slug>_<name>` codes. Treat an unknown code as `invalid`.
 
 ## Codes
 

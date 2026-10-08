@@ -686,7 +686,7 @@ final class Schema
             'code'     => ['type' => 'string', 'description' => 'A stable machine-readable code. New codes may be added, so treat an unknown one as its HTTP status.', 'examples' => array_keys(Problem::CATALOGUE)],
             'errors'   => ['type' => 'array', 'items' => self::object([
                 'pointer' => ['type' => 'string'],
-                'code'    => ['type' => 'string'],
+                'code'    => ['type' => 'string', 'description' => 'A field error code. New codes may be added, so treat an unknown one as invalid.', 'examples' => Problem::FIELD_CODES],
                 'message' => ['type' => 'string'],
                 'in'      => ['type' => 'string', 'enum' => ['query', 'body']],
             ], ['pointer', 'code', 'message'])],

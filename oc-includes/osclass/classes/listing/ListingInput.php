@@ -136,9 +136,10 @@ final class ListingInput
         $int   = static fn (string $key): ?int => isset($form[$key]) ? (is_scalar($form[$key]) ? (int) $form[$key] : 0) : null;
         $aItem = array();
 
-        $owner = ListingPolicy::owner(
+        $ownerId = $admin ? $int('ownerId') : null;
+        $owner   = ListingPolicy::owner(
             $actor,
-            $int('ownerId'),
+            $ownerId,
             (string) $get('contactEmail')
         );
         $userId = $owner['pk_i_id'] ?? null;
@@ -150,7 +151,9 @@ final class ListingInput
             $aItem['contactName']  = $get('contactName');
             $aItem['contactEmail'] = $get('contactEmail');
         }
-        $aItem['userId'] = $userId;
+        $aItem['userId']  = $userId;
+        // The owner the admin asked for, which ListingService checks still exists.
+        $aItem['ownerId'] = $ownerId;
 
         if ($isAdd) {
             $aItem['active'] = ListingPolicy::newListingStatus($actor);

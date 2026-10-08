@@ -48,6 +48,9 @@ final class Kernel
     /** Where deprecations are announced. */
     public const CHANGELOG = 'https://mindstellar.com/docs/developers/api/changelog/';
 
+    /** The writes that honour If-Match. */
+    private const CHECKED_WRITES = ['PUT', 'PATCH', 'DELETE'];
+
     private Authorizer $authorizer;
 
     private RatePolicy $ratePolicy;
@@ -198,7 +201,7 @@ final class Kernel
     }
 
     /**
-     * Run the handler, honouring If-Match on a PATCH or DELETE (`*`: any existing resource).
+     * Run the handler, honouring If-Match on a PUT, PATCH or DELETE (`*`: any existing resource).
      * A stored GET version is read with its rows locked and the write runs in that transaction;
      * otherwise the GET's ETag is compared. A 412 never tells a caller more than the GET would.
      *
@@ -209,7 +212,7 @@ final class Kernel
     private function callChecked(Request $request, RouteSpec $route, Credential $credential, array $args, mixed $prepared): Response
     {
         $header = trim($request->ifMatch());
-        $read   = $header !== '' && in_array($route->method(), ['PATCH', 'DELETE'], true)
+        $read   = $header !== '' && in_array($route->method(), self::CHECKED_WRITES, true)
             ? $this->router->match('GET', $this->routePath($request), $request->version())
             : null;
         if ($read === null) {
@@ -235,8 +238,8 @@ final class Kernel
                 throw $current->status() < 300 ? self::preconditionFailed() : ProblemException::from($current);
             }
             $response = $route->call($request, $credential, $args, $prepared);
-            // Only a PATCH answer with a body carries the new version; a DELETE leaves none to read.
-            if ($route->method() !== 'PATCH' || $response->status() !== 200 || $response->body() === null) {
+            // Only a PATCH or PUT answer with a body carries the new version; a DELETE leaves none to read.
+            if ($route->method() === 'DELETE' || $response->status() !== 200 || $response->body() === null) {
                 return $response;
             }
             $version = $this->versions->version($path, $read->args(), $credential);
@@ -270,7 +273,7 @@ final class Kernel
     }
 
     /**
-     * Whether the credential may PATCH or DELETE the path it reads. Only such a caller can send
+     * Whether the credential may PUT, PATCH or DELETE the path it reads. Only such a caller can send
      * If-Match, so only its ETag needs the stored version; others get the plain body hash.
      */
     private function mayWrite(Request $request, Credential $credential): bool
@@ -278,7 +281,7 @@ final class Kernel
         if ($credential->isAnonymous() || $credential->kind() === CredentialKind::PUBLIC) {
             return false;
         }
-        foreach (['PATCH', 'DELETE'] as $method) {
+        foreach (self::CHECKED_WRITES as $method) {
             $write = $this->router->match($method, $request->routePath(), $request->version());
             if ($write === null) {
                 continue;
@@ -401,7 +404,7 @@ final class Kernel
         if ($request->path() === null) {
             throw ProblemException::notFound('No such endpoint.');
         }
-        if (!isset(ApiSettings::VERSIONS[$request->version()])) {
+        if (!$this->router->serves($request->version())) {
             throw ProblemException::notFound('No such API version.');
         }
 

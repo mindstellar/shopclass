@@ -128,16 +128,26 @@ final class ApiCredential extends Model implements SignInStore
      * Drop refresh tokens that can no longer be used: revoked or expired before $before.
      * A superseded token is kept until then, so presenting it still revokes its family.
      *
+     * @param int $batch rows per DELETE
+     *
      * @return int rows removed
      */
-    public function pruneRefresh(int $before): int
+    public function pruneRefresh(int $before, int $batch = 1000): int
     {
-        $at = self::datetime($before);
+        $at      = self::datetime($before);
+        $removed = 0;
+        // One column per statement, so each uses its (e_kind, column) index; small batches keep locks short.
+        foreach (['dt_revoked', 'dt_expires'] as $column) {
+            do {
+                $n = Db::execute(
+                    'DELETE FROM ' . DB_TABLE_PREFIX . self::TABLE . " WHERE e_kind = 'refresh' AND " . $column . ' < ? LIMIT ' . max(1, $batch),
+                    [$at]
+                );
+                $removed += $n;
+            } while ($n >= $batch);
+        }
 
-        return Db::execute(
-            'DELETE FROM ' . DB_TABLE_PREFIX . self::TABLE . " WHERE e_kind = 'refresh' AND (dt_revoked < ? OR dt_expires < ?)",
-            [$at, $at]
-        );
+        return $removed;
     }
 
     /**

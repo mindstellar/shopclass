@@ -20,7 +20,6 @@ use mindstellar\api\Response;
 use mindstellar\api\serializer\KeySerializer;
 use mindstellar\api\serializer\Links;
 use mindstellar\apiaccess\ApiKeyService;
-use mindstellar\apiaccess\Credential;
 use mindstellar\apiaccess\CredentialKind;
 use mindstellar\apiaccess\KeyOwner;
 use mindstellar\apiaccess\Scopes;
@@ -67,7 +66,7 @@ final class AdminKeysController
         if ($scopes === [] && $kind === CredentialKind::PUBLIC) {
             $scopes = [Scopes::PUBLIC_READ];
         }
-        self::checkGrant($credential, $scopes);
+        $credential->checkGrant($scopes);
         $issued = $this->keys->create(
             KeyOwner::admin((int) $credential->adminId(), $credential->isModerator()),
             (string) $input['name'],
@@ -103,25 +102,10 @@ final class AdminKeysController
         if ($old['kind'] !== 'public' && $old['owner_admin'] !== $credential->adminId()) {
             throw ProblemException::of('not_owner', 'Only your own keys and public keys can be rotated. Revoke this one and make a new key instead.');
         }
-        self::checkGrant($credential, $old['scopes']);
+        $credential->checkGrant($old['scopes']);
         $issued = $this->keys->rotate((int) $old['id'], (int) $credential->adminId(), $this->keys->expiresAt((int) $credential->id()));
 
         return Response::created($this->serializer->admin($this->key($issued->id()), $issued->token()), $this->links->api('admin/keys/' . $issued->id(), $call->request()->version()));
-    }
-
-    /**
-     * A key may only pass on scopes the calling key holds.
-     *
-     * @param string[] $scopes
-     *
-     * @throws ProblemException 403
-     */
-    private static function checkGrant(Credential $credential, array $scopes): void
-    {
-        $refused = array_values(array_filter($scopes, static fn (string $scope): bool => !$credential->has($scope)));
-        if ($refused !== []) {
-            throw ProblemException::of('forbidden', 'This key cannot grant scopes it does not hold: ' . implode(', ', $refused) . '.');
-        }
     }
 
     /**

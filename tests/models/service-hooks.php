@@ -442,8 +442,8 @@ $webTaken = $record(static fn () => $webRegister($form('Dee', 'dee@example.test'
 $apiTaken = $record(static fn () => $apiRegister($body('Eve', 'eve@example.test')));
 pin('a taken e-mail fires these, in order', ['before_user_register', 'register_email_taken', 'user_add_flash_error', 'user_register_failed'], $webTaken);
 pin('the API fires the same, in the same order', $webTaken, $apiTaken);
-pin('a taken e-mail: the message on the form; the API answers as for a new one', ['The specified e-mail is already in use' . PHP_EOL, 201, ['confirmed' => true]], [
-    $webRegister($form('Dee', 'dee@example.test')), $apiRegister($body('Eve', 'eve@example.test'))->status(), $apiRegister($body('Eve', 'eve@example.test'))->body()['data'] ?? null,
+pin('with activation off, a taken e-mail is refused on both sides', ['The specified e-mail is already in use' . PHP_EOL, 422], [
+    $webRegister($form('Dee', 'dee@example.test')), $apiRegister($body('Eve', 'eve@example.test'))->status(),
 ]);
 $webRegister($form('Hal', 'hal@example.test', 'hal'));
 pin('a taken username is refused on both sides', ['Username is already taken' . PHP_EOL, 422, 0], [
@@ -471,6 +471,9 @@ pin('the API fires the same, but its activation e-mail waits for the job', array
 $leeId = (int) $admin->query("SELECT pk_i_id FROM {$p}t_user WHERE s_email = 'lee@example.test'")->fetch_row()[0];
 pin('...which fires it when it runs', ['hook_email_user_validation'], $record(static fn () => \mindstellar\user\SignUpMail::sendActivation($leeId, static fn (array $mail): bool => true)));
 pin('both wait for the link', [['Kim', '0', '1'], ['Lee', '0', '1']], [array_values($joined('kim@example.test')), array_values($joined('lee@example.test'))]);
+pin('with activation on, the API answers a taken e-mail as for a new one', [201, ['confirmed' => false]], [
+    $apiRegister($body('Eve', 'eve@example.test'))->status(), $apiRegister($body('Eve', 'eve@example.test'))->body()['data'] ?? null,
+]);
 pin('the old add() answers 1, the API says not confirmed', [1, false], [$webRegister($form('Max', 'max@example.test')), $apiRegister($body('Ned', 'ned@example.test'))->body()['data']['confirmed'] ?? null]);
 Preference::getInstance()->set('enabled_user_validation', '0');
 osc_reset_preferences();

@@ -6044,6 +6044,10 @@ msgstr ""
 msgid "Listing"
 msgstr ""
 
+#: oc-includes/osclass/classes/listing/ListingGeocode.php
+msgid "Listing #%d"
+msgstr ""
+
 #: oc-admin/themes/modern/items/settings.php
 msgid "Listing Settings"
 msgstr ""
@@ -6106,6 +6110,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/EmailVariables.php
 msgid "Listing list"
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingGeocode.php
+msgid "Listing map position"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/PermalinkSettingsScreen.php

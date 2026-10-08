@@ -21,7 +21,7 @@ use mindstellar\security\AddressBucket;
 
 /**
  * Every rate limit the API counts, in one place: per client address when anonymous, per key
- * (and address for a public key), per user for a token or session, plus a write bucket.
+ * (and address for a public key), per user for a token, session or personal key, plus a write bucket.
  * Hourly caps on new listings, photos fetched by URL and sign-ups stand in for a captcha.
  * Those caps and the write bucket are exact: counted in the database, never in APCu.
  */
@@ -51,12 +51,15 @@ final class RatePolicy
     public function bucketsFor(Request $request, RouteSpec $route, Credential $credential): array
     {
         $address = AddressBucket::of($request->ip());
-        [$name, $key, $max] = match ($credential->kind()) {
-            CredentialKind::ANONYMOUS => ['api_anon', $address, $this->settings->rateAnon()],
-            CredentialKind::PUBLIC    => ['api_key', $credential->id() . '@' . $address, $credential->rateLimit() ?? $this->settings->rateDefault()],
-            CredentialKind::USER,
-            CredentialKind::SESSION   => ['api_user', (string) $credential->userId(), $credential->rateLimit() ?? $this->settings->rateDefault()],
-            default                   => ['api_key', (string) $credential->id(), $credential->rateLimit() ?? $this->settings->rateDefault()],
+        $max     = $credential->rateLimit() ?? $this->settings->rateDefault();
+        // A user's own keys count with their tokens, so more keys do not mean a higher limit.
+        [$name, $key, $max] = match (true) {
+            $credential->kind() === CredentialKind::ANONYMOUS => ['api_anon', $address, $this->settings->rateAnon()],
+            $credential->kind() === CredentialKind::PUBLIC    => ['api_key', $credential->id() . '@' . $address, $max],
+            $credential->isUser(),
+            $credential->kind() === CredentialKind::USER,
+            $credential->kind() === CredentialKind::SESSION   => ['api_user', (string) $credential->userId(), $max],
+            default                                           => ['api_key', (string) $credential->id(), $max],
         };
 
         $limit   = ['max' => $max, 'window' => 60];

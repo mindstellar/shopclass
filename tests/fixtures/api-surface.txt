@@ -1,0 +1,81 @@
+mindstellar\api\ApiCall::public arg(string $name): ?string
+mindstellar\api\ApiCall::public args(): array
+mindstellar\api\ApiCall::public credential(): mindstellar\apiaccess\Credential
+mindstellar\api\ApiCall::public input(): array
+mindstellar\api\ApiCall::public intArg(string $name = 'id'): int
+mindstellar\api\ApiCall::public kit(): mindstellar\api\ApiKit
+mindstellar\api\ApiCall::public request(): mindstellar\api\Request
+mindstellar\api\ApiKit::public context(mindstellar\api\ApiCall $call, string $object, array $members, array $includes = []): mindstellar\api\serializer\ViewContext
+mindstellar\api\ApiKit::public links(): mindstellar\api\serializer\Links
+mindstellar\api\ApiKit::public listing(mindstellar\api\ApiCall $call, int $id, mindstellar\api\serializer\ViewContext $context): ?array
+mindstellar\api\ApiKit::public listings(): mindstellar\api\read\ListingReader
+mindstellar\api\Problem::CATALOGUE = {"invalid_json":[400,"The request body is not valid JSON."],"invalid_cursor":[400,"The cursor is not valid for this request."],"invalid_header":[400,"A request header is not valid."],"unsupported_grant_type":[400,"The grant type is not supported."],"invalid_request":[400,"The token request is not valid."],"invalid_grant":[400,"The credentials or refresh token are not valid."],"invalid_scope":[400,"A requested scope is not valid."],"unauthorized":[401,"A valid credential is required."],"token_expired":[401,"The access token has expired."],"session_required":[401,"A signed-in session and a valid page token are required."],"forbidden":[403,"This credential may not use this endpoint."],"wrong_credential":[403,"This endpoint needs another kind of credential."],"banned":[403,"This account or address is banned."],"feature_disabled":[403,"The site has this feature switched off."],"insufficient_scope":[403,"This credential lacks the scope this endpoint needs."],"not_owner":[403,"Only the owner may change this resource."],"api_disabled":[403,"The API is switched off on this site."],"cross_origin":[403,"Session calls must come from the site's own pages."],"not_found":[404,"Not found."],"method_not_allowed":[405,"This method is not allowed here."],"conflict":[409,"The request conflicts with the current state."],"idempotency_in_flight":[409,"A request with this Idempotency-Key is still running."],"precondition_failed":[412,"The resource has changed."],"too_large":[413,"The request body is too large."],"unsupported_media_type":[415,"The request body has an unsupported content type."],"validation_failed":[422,"The request is not valid."],"idempotency_key_reused":[422,"This Idempotency-Key was used for a different request."],"listing_limit":[422,"The listing limit is reached."],"rate_limited":[429,"Too many requests."],"login_blocked":[429,"Too many failed sign-ins."],"too_many_failures":[429,"Too many failed attempts from this address."],"server_error":[500,"The request could not be handled."],"maintenance":[503,"The site is down for maintenance."]}
+mindstellar\api\Problem::FIELD_CODES = ["type","enum","minimum","maximum","minLength","maxLength","pattern","format","minItems","maxItems","minProperties","required","additionalProperties","invalid","unknown","taken","mismatch","limit","rejected"]
+mindstellar\api\Problem::public static make(string $code, string $detail = '', array $extra = []): mindstellar\api\Response
+mindstellar\api\Problem::public static validation(array $errors): mindstellar\api\Response
+mindstellar\api\ProblemException::public response(): mindstellar\api\Response
+mindstellar\api\ProblemException::public static field(string $pointer, string $code, string $message, string $in = 'body'): self
+mindstellar\api\ProblemException::public static from(mindstellar\api\Response $response): self
+mindstellar\api\ProblemException::public static notFound(string $detail): self
+mindstellar\api\ProblemException::public static of(string $code, string $detail = '', array $extra = []): self
+mindstellar\api\ProblemException::public static tooMany(string $message, int $retryAfter, string $code = 'rate_limited'): self
+mindstellar\api\Request::public header(string $name): string
+mindstellar\api\Request::public input(): array
+mindstellar\api\Request::public ip(): string
+mindstellar\api\Request::public isRead(): bool
+mindstellar\api\Request::public isWrite(): bool
+mindstellar\api\Request::public method(): string
+mindstellar\api\Request::public path(): ?string
+mindstellar\api\Request::public query(): array
+mindstellar\api\Request::public queryBool(string $name, bool $default = false): bool
+mindstellar\api\Request::public queryIds(string $name): array
+mindstellar\api\Request::public queryInt(string $name, int $default = 0): int
+mindstellar\api\Request::public queryList(string $name): array
+mindstellar\api\Request::public queryString(string $name, string $default = ''): string
+mindstellar\api\Request::public routePath(): string
+mindstellar\api\Request::public version(): string
+mindstellar\api\Response::public body(): ?array
+mindstellar\api\Response::public static collection(array $items, array $meta = [], array $links = {"next":null}): self
+mindstellar\api\Response::public static created(array $data, string $location, array $extra = []): self
+mindstellar\api\Response::public static noContent(): self
+mindstellar\api\Response::public static ok(array $data, int $status = 200, array $extra = []): self
+mindstellar\api\Response::public status(): int
+mindstellar\api\Response::public withBodyMember(string $name, mixed $value): self
+mindstellar\api\Response::public withHeader(string $name, string $value): self
+mindstellar\api\RouteSpec::AUTH_ADMIN = "admin"
+mindstellar\api\RouteSpec::AUTH_NONE = "none"
+mindstellar\api\RouteSpec::AUTH_PUBLIC = "public"
+mindstellar\api\RouteSpec::AUTH_USER = "user"
+mindstellar\api\RouteSpec::NUMERIC_ARGS = ["id","photo"]
+mindstellar\api\RouteSpec::PLUGIN_KEYS = ["handler","auth","scope","summary","description","tags","query","body","responses","deprecated","sunset","where","versions","plugin"]
+mindstellar\api\RouteSpec::public key(): string
+mindstellar\api\RouteSpec::public method(): string
+mindstellar\api\RouteSpec::public path(): string
+mindstellar\api\read\ListingReader::public extend(array $items, mindstellar\api\serializer\ViewContext $context): array
+mindstellar\api\read\ListingReader::public many(array $items, mindstellar\api\serializer\ViewContext $context): array
+mindstellar\api\read\Page::public static whole(array $items, mindstellar\api\serializer\Links $links, mindstellar\api\ApiCall $call): mindstellar\api\Response
+mindstellar\api\schema\Schema::public static dateInput(string $description, bool $days = false, bool $nullable = false): array
+mindstellar\api\schema\Schema::public static listOf(array $values): array
+mindstellar\api\schema\Schema::public static nullable(string $type, string $description = ''): array
+mindstellar\api\schema\Schema::public static object(array $properties, array $required = []): array
+mindstellar\api\schema\Schema::public static ref(string $name): array
+mindstellar\api\schema\Schema::public static time(string $description = ''): array
+mindstellar\api\schema\Schema::public static wholeList(string $item): array
+mindstellar\api\serializer\Links::public api(string $path, ?string $version = NULL): string
+mindstellar\api\serializer\Links::public avatar(int $userId): string
+mindstellar\api\serializer\Links::public listing(array $item): string
+mindstellar\api\serializer\Links::public photo(array $resource, string $variant): string
+mindstellar\api\serializer\Links::public price(?int $micros, string $symbol): string
+mindstellar\api\serializer\Links::public user(int $id, string $username): string
+mindstellar\api\serializer\SparseFieldset::public wants(string $member): bool
+mindstellar\api\serializer\ViewContext::ADMIN = "admin"
+mindstellar\api\serializer\ViewContext::OWNER = "owner"
+mindstellar\api\serializer\ViewContext::PUBLIC = "public"
+mindstellar\api\serializer\ViewContext::public fields(): ?mindstellar\api\serializer\SparseFieldset
+mindstellar\api\serializer\ViewContext::public include(): array
+mindstellar\api\serializer\ViewContext::public includes(string $name): bool
+mindstellar\api\serializer\ViewContext::public locale(): string
+mindstellar\api\serializer\ViewContext::public version(): string
+mindstellar\api\serializer\ViewContext::public view(): string
+mindstellar\api\serializer\ViewContext::public viewer(): mindstellar\apiaccess\Credential
+mindstellar\api\serializer\ViewContext::public wants(string $member): bool

@@ -385,6 +385,7 @@ final class PublicRoutes
                 body: 'PersonalKeyInput',
                 response: 'PersonalKeyDocument',
                 status: 201,
+                errors: [403],
                 replayable: false
             ),
             'GET account/keys/{id}' => RouteSpec::read(

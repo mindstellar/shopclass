@@ -126,6 +126,32 @@ final class ListingStore extends Model
     }
 
     /**
+     * The listing's t_item_location row, or null.
+     *
+     * @return array<string,mixed>|null
+     * @throws \mindstellar\database\DbException
+     */
+    public static function location(int $id): ?array
+    {
+        return Db::table(DB_TABLE_PREFIX . 't_item_location')->where('fk_i_item_id', $id)->first();
+    }
+
+    /**
+     * Store looked-up coordinates, unless the listing got its own in the meantime.
+     *
+     * @return int rows changed
+     * @throws \mindstellar\database\DbException
+     */
+    public static function setCoordinates(int $id, float $lat, float $lng): int
+    {
+        return Db::execute(
+            'UPDATE ' . DB_TABLE_PREFIX . 't_item_location SET d_coord_lat = ?, d_coord_long = ? WHERE fk_i_item_id = ?'
+            . ' AND (d_coord_lat IS NULL OR d_coord_lat = 0 OR d_coord_long IS NULL OR d_coord_long = 0)',
+            array($lat, $lng, $id)
+        );
+    }
+
+    /**
      * Whether any listing is priced in this currency.
      *
      * @throws \mindstellar\database\DbException

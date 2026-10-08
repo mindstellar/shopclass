@@ -99,12 +99,15 @@ final class Response
         return new self(204);
     }
 
+    /** @api */
     public function status(): int
     {
         return $this->status;
     }
 
     /**
+     * @api
+     *
      * @return array<string,mixed>|null
      */
     public function body(): ?array
@@ -162,6 +165,8 @@ final class Response
 
     /**
      * A copy with one top-level body member set.
+     *
+     * @api
      */
     public function withBodyMember(string $name, mixed $value): self
     {

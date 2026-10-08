@@ -39,6 +39,8 @@ final class ViewContext
     public const TAXONOMY_SCOPE = 'admin:taxonomy';
 
     /**
+     * Plugins get one from ApiKit::context(); the constructor is not part of their API.
+     *
      * @param string[] $include
      */
     public function __construct(

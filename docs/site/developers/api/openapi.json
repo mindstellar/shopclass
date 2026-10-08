@@ -37418,7 +37418,29 @@
                                     "type": "string"
                                 },
                                 "code": {
-                                    "type": "string"
+                                    "type": "string",
+                                    "description": "A field error code. New codes may be added, so treat an unknown one as invalid.",
+                                    "examples": [
+                                        "type",
+                                        "enum",
+                                        "minimum",
+                                        "maximum",
+                                        "minLength",
+                                        "maxLength",
+                                        "pattern",
+                                        "format",
+                                        "minItems",
+                                        "maxItems",
+                                        "minProperties",
+                                        "required",
+                                        "additionalProperties",
+                                        "invalid",
+                                        "unknown",
+                                        "taken",
+                                        "mismatch",
+                                        "limit",
+                                        "rejected"
+                                    ]
                                 },
                                 "message": {
                                     "type": "string"

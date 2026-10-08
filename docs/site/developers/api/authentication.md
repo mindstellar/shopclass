@@ -172,14 +172,17 @@ members are there too: `code` is the same as `error`, and `detail` as `error_des
 | Case | Status and `error` |
 |---|---|
 | Wrong password, unknown account, bad or reused refresh token | `400 invalid_grant` |
-| Banned, not activated or suspended account | `400 invalid_grant` |
+| Account not activated yet | `400 invalid_grant`, the same answer as a wrong password |
+| Banned or suspended account | `400 invalid_grant` |
 | Missing or unknown members, or a body that cannot be read | `400 invalid_request` |
 | A `scope` naming no scope a user can hold | `400 invalid_scope` |
 | Unknown `grant_type` | `400 unsupported_grant_type` |
 | Too many wrong passwords | `429 login_blocked`, with `Retry-After`; no `error` |
 
 Wrong passwords share the web sign-in's counter. An unknown account and a wrong password
-answer the same, and take as long.
+answer the same, and take as long. So does an account that is not activated yet, so sign-in cannot
+tell which e-mails [sign-up](/docs/developers/api/writes/#sign-up) hid as taken; the activation
+e-mail tells its owner.
 
 ### Signing out
 
@@ -250,7 +253,7 @@ curl -X POST $API/account/keys \
 
 | Rule | Detail |
 |---|---|
-| Who calls | An access token with `account:write`. A key cannot make or list keys. |
+| Who calls | An access token with `account:write`. A key cannot make or list keys. The new key cannot hold a scope the token lacks: `403` with the scopes named. |
 | Password | `current_password` is checked again, and counts toward the sign-in limit. A wrong one is a `422` on `/current_password`. |
 | `name` | 1 to 100 characters. |
 | `scopes` | At least one of: `listings:read`, `listings:write`, `listings:delete`, `comments:write`, `alerts:read`, `alerts:write`, `account:read`, plus any plugin scope users may hold. Never `account:write`. |
@@ -259,7 +262,8 @@ curl -X POST $API/account/keys \
 | Ends also | When revoked, expired, or the user is disabled or deleted. |
 | Manage | `GET /account/keys`, `GET /account/keys/{id}`, `DELETE /account/keys/{id}`, or the account's **API access** page. |
 
-Calls with a personal key count against the key's own rate limit, like an admin key.
+Calls with a personal key count in the user's `api_user` bucket, shared with their access tokens,
+so more keys do not raise the limit.
 
 ## Same-site session (theme JavaScript)
 
@@ -425,9 +429,9 @@ Limits count requests in a fixed 60-second window. The site owner sets the numbe
 | Bucket | Counted per | Default |
 |---|---|---|
 | `api_anon` | IP address, no key | 60 a minute |
-| `api_key` | admin key or personal key | 120 a minute |
+| `api_key` | admin key | 120 a minute |
 | `api_key` | public key and IP address together | 120 a minute |
-| `api_user` | signed-in user (access token or same-site session) | 120 a minute |
+| `api_user` | user (access token, personal key or same-site session) | 120 a minute |
 | `api_write` | an extra bucket for `POST`, `PUT`, `PATCH`, `DELETE` | 30 a minute |
 
 Posting has its own hourly limits on top: see [Writes](/docs/developers/api/writes/#limits).

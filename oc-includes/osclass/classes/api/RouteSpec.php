@@ -331,6 +331,8 @@ final class RouteSpec
 
     /**
      * `GET listings/{id}`
+     *
+     * @api
      */
     public function key(): string
     {
@@ -473,11 +475,17 @@ final class RouteSpec
         return array_values(array_unique($m[1]));
     }
 
+    /** @api */
     public function method(): string
     {
         return $this->method;
     }
 
+    /**
+     * Below the version, e.g. `listings/{id}`.
+     *
+     * @api
+     */
     public function path(): string
     {
         return $this->path;

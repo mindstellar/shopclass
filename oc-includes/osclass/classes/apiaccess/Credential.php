@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\apiaccess;
 
 use mindstellar\auth\Actor;
+use mindstellar\validation\ForbiddenException;
 
 /**
  * Who is calling: nobody, a public key, an API key (an admin's or a user's), a signed-in
@@ -156,6 +157,21 @@ final class Credential
     public function has(string $scope): bool
     {
         return Scopes::implies($this->scopes, $scope);
+    }
+
+    /**
+     * Refuse to pass on a scope this credential does not hold, as when it makes a key.
+     *
+     * @param array<mixed> $scopes
+     *
+     * @throws ForbiddenException
+     */
+    public function checkGrant(array $scopes): void
+    {
+        $refused = array_values(array_filter($scopes, fn ($scope): bool => is_string($scope) && !$this->has($scope)));
+        if ($refused !== []) {
+            throw new ForbiddenException('This credential cannot grant scopes it does not hold: ' . implode(', ', $refused) . '.');
+        }
     }
 
     /**

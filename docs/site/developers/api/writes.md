@@ -351,8 +351,9 @@ curl -i -X POST $API/users -H "Content-Type: application/json" \
 ```
 
 `confirmed` is `false` until the link in the activation e-mail is opened. The user cannot sign in
-before that. An e-mail that already has an account gets the same `201` and body, and no account
-is made, so sign-up does not tell which addresses are taken. A `username` sent with a taken
+before that: the sign-in answers as for a wrong password. An e-mail that already has an account
+gets the same `201` and body, and no account is made, so sign-up does not tell which addresses
+are taken. A `username` sent with a taken
 e-mail is held as a new account would hold it, so a later sign-up meets it taken either way.
 Optional: `username`, `phone_land`, `phone_mobile`. A site that is off answers
 `403 feature_disabled`. A banned e-mail or address answers `403 banned`.
@@ -362,8 +363,9 @@ cron next runs. This keeps a new address from answering slower than a taken one.
 only the account id for the activation e-mail; its link is made when the job runs.
 
 The hiding needs the activation e-mail. If the site switches off **Users need to validate their
-account**, a new account can sign in at once and a taken e-mail cannot, so a caller can tell them
-apart.
+account**, a new account could sign in at once and a taken e-mail could not, so the hiding is off:
+a taken e-mail is `422` with "The specified e-mail is already in use", and the new account's
+e-mails go out at once.
 
 There is no captcha to show, so sign-up is limited: **5 per address and 100 for the whole
 site an hour**. If the site cannot count, it refuses.

@@ -27,7 +27,7 @@ final class Router
     public const PLUGIN_PATH = '#^ext/([a-z0-9-]+)/.+#D';
 
     /** The core components a plugin schema may `$ref`; its own are named `Ext...`. */
-    public const SHARED_COMPONENTS = ['Problem'];
+    public const SHARED_COMPONENTS = ['Problem', 'Listing', 'ListingPage', 'Photo', 'PageMeta', 'PageLinks'];
 
     /** @var array<string,array<string,array<string,RouteSpec>>> version => method => 'METHOD path' => route */
     private array $byVersion = [];
@@ -134,6 +134,10 @@ final class Router
         if ($coreOnly !== []) {
             return $this->refuse($label, 'only core routes may set ' . implode(', ', $coreOnly));
         }
+        $unknown = array_diff(array_keys($spec), RouteSpec::PLUGIN_KEYS);
+        if ($unknown !== []) {
+            return $this->refuse($label, 'unknown spec key ' . implode(', ', $unknown));
+        }
         if (!$outside && $plugin !== null && isset($this->slugs[$m[1]]) && $this->slugs[$m[1]] !== $plugin) {
             return $this->refuse($label, 'ext/' . $m[1] . '/ belongs to plugin ' . $this->slugs[$m[1]]);
         }
@@ -144,8 +148,8 @@ final class Router
         } catch (\InvalidArgumentException $e) {
             return $this->refuse($label, $e->getMessage());
         }
-        if ($route->method() !== 'GET' && in_array($route->auth(), [RouteSpec::AUTH_USER, RouteSpec::AUTH_ADMIN], true) && $route->scope() === null) {
-            return $this->refuse($label, 'a write with user or admin auth must name a scope, so a key limited to other scopes cannot call it');
+        if (in_array($route->auth(), [RouteSpec::AUTH_USER, RouteSpec::AUTH_ADMIN], true) && $route->scope() === null) {
+            return $this->refuse($label, 'a route with user or admin auth must name a scope, so a key limited to other scopes cannot call it');
         }
         $foreign = array_filter($route->refs(), static fn (string $name): bool => !str_starts_with($name, 'Ext') && !in_array($name, self::SHARED_COMPONENTS, true));
         if ($foreign !== []) {
@@ -218,6 +222,14 @@ final class Router
     public function all(string $version = ApiSettings::VERSION): array
     {
         return array_merge([], ...array_values($this->byVersion[$version] ?? []));
+    }
+
+    /**
+     * Whether the site answers this API version.
+     */
+    public function serves(string $version): bool
+    {
+        return in_array($version, $this->live, true);
     }
 
     public function isCore(string $key): bool

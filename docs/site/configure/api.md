@@ -122,7 +122,8 @@ Limits count requests per minute.
 | **Writes, per key or user** | 30 | key |
 
 A public key is counted per key **and** address, so one busy visitor cannot use up the
-limit for everyone using your app.
+limit for everyone using your app. A user's personal keys and sign-ins share one count, so
+more keys do not raise a user's limit.
 
 Posting has its own hourly cap, set below.
 

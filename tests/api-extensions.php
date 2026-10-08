@@ -270,4 +270,16 @@ pin('no PHP warning is raised', [], $raised);
 check('the callback is named in the error log', str_contains((string) file_get_contents($logFile), 'acme_bad_listing_filter (rating)'));
 unlink($logFile);
 
+harness_section('plugin schema names');
+$logFile = tempnam(sys_get_temp_dir(), 'apiext');
+$oldLog  = ini_set('error_log', $logFile);
+osc_api_register_schema('acme-dup', 'Thing', ['type' => 'object']);
+osc_api_register_schema('acme-dup', 'Thing', ['type' => 'object']);
+osc_api_register_schema('acme-dup', 'Thing', ['type' => 'string']);
+$dupSchemas = osc_apply_filter('api_schemas', []);
+ini_set('error_log', (string) $oldLog);
+pin('a second schema under a taken name is refused: the first stays', ['type' => 'object'], $dupSchemas['ExtAcmeDupThing'] ?? null);
+pin('only the different one is logged', 1, substr_count((string) file_get_contents($logFile), 'API schema ExtAcmeDupThing refused'));
+unlink($logFile);
+
 exit(harness_result());

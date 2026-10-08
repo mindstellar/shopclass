@@ -272,8 +272,8 @@ $refresh1 = (string) $t['refresh_token'];
 pin('the username works too, with fewer scopes', array(200, 'listings:read account:read'), array($login('uma', 'correct horse', array('scope' => 'listings:read account:read admin:users'))->status(), $login('uma', 'correct horse', array('scope' => 'listings:read account:read admin:users'))->body()['scope']));
 pin('a scope no user can hold is 400 invalid_scope', '400 invalid_scope', $code($login('uma', 'correct horse', array('scope' => 'admin:users'))));
 pin('a wrong password is 400 invalid_grant', '400 invalid_grant', $code($login('uma@example.test', 'wrong')));
-$sameAnswer = static function (string $account) use ($login): array {
-    $body = $login($account, 'wrong')->body();
+$sameAnswer = static function (string $account, string $password = 'wrong') use ($login): array {
+    $body = $login($account, $password)->body();
     unset($body['instance']);
 
     return $body;
@@ -285,6 +285,7 @@ $login('uma', 'correct horse', array(), '198.51.100.77');
 pin('a sign-in clears the account\'s failures but keeps the address\'s', 1, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_login_attempt WHERE s_ip = '198.51.100.77'")->fetch_row()[0]);
 pin('a suspended account is 400 invalid_grant', '400 invalid_grant', $code($login('sam')));
 pin('an unconfirmed one too', '400 invalid_grant', $code($login('una')));
+pin('an unconfirmed account with the right password answers exactly as a wrong password', $sameAnswer('uma@example.test'), $sameAnswer('una@example.test', 'correct horse'));
 pin('a password grant without a password is 400 invalid_request', '400 invalid_request', $code($call('POST', 'auth/token', array('grant_type' => 'password', 'username' => 'uma'))));
 $r = $call('POST', 'auth/token', array('grant_type' => 'client_credentials'));
 pin('an unknown grant is 400 unsupported_grant_type, as OAuth names it', array('400 unsupported_grant_type', 'unsupported_grant_type'), array($code($r), $r->body()['error'] ?? null));
@@ -454,6 +455,9 @@ pin('the current password must be right', array(422, '/current_password'), (stat
 pin('a personal key takes a number of days too, as an admin key does', 201, $call('POST', 'account/keys', array('expires_at' => '30d', 'name' => 'Days') + $keyBody, $s['access_token'])->status());
 pin('an expiry past a year is refused', '422 validation_failed', $code($call('POST', 'account/keys', array('expires_at' => date('Y-m-d', time() + 400 * 86400)) + $keyBody, $s['access_token'])));
 pin('a key cannot make keys', '403 insufficient_scope', $code($call('POST', 'account/keys', $keyBody, $userKey)));
+$narrow = (string) ($login('uma', 'battery staple', array('scope' => 'account:read account:write'))->body()['access_token'] ?? '');
+pin('a token cannot make a key with a scope it does not hold', '403 forbidden', $code($call('POST', 'account/keys', $keyBody, $narrow)));
+pin('but can with the scopes it holds', 201, $call('POST', 'account/keys', array('scopes' => array('account:read')) + $keyBody, $narrow)->status());
 $list = $call('GET', 'account/keys', null, $s['access_token']);
 check('the list shows the key with its prefix and no secret', in_array('Backup script', array_column($list->body()['data'], 'name'), true) && !str_contains((string) json_encode($list->body()), (string) $r->body()['data']['token']));
 $one = $call('GET', substr((string) $r->header('Location'), strlen('http://localhost/api/v1/')), null, $s['access_token']);
@@ -497,6 +501,13 @@ $neo = (int) $admin->query("SELECT pk_i_id FROM {$p}t_user WHERE s_email = 'neo@
 pin('without the captcha the form would ask for', array('0', 'neo'), array($userRow($neo)['b_active'], $userRow($neo)['s_username']));
 $taken = $call('POST', 'users', array('username' => '') + $signup, null, array(), '203.0.113.7');
 pin('an e-mail in use answers as a new one: 201, the same body, no Location', array(201, array('confirmed' => false), null), array($taken->status(), $taken->body()['data'] ?? null, $taken->header('Location')));
+pin('signing in to the new, unconfirmed account answers as a wrong password does for a taken one', $sameAnswer('uma@example.test'), $sameAnswer('neo@example.test', 'red pill'));
+Preference::getInstance()->set('enabled_user_validation', '0');
+osc_reset_preferences();
+$open = $call('POST', 'users', array('username' => '') + $signup, null, array(), '203.0.113.8');
+pin('without activation a taken e-mail cannot be hidden, so it is refused', array(422, 'The specified e-mail is already in use'), array($open->status(), $open->body()['errors'][0]['message'] ?? null));
+Preference::getInstance()->set('enabled_user_validation', '1');
+osc_reset_preferences();
 pin('a sign-up with a taken e-mail makes no second account', 1, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_user WHERE s_email = 'neo@example.test'")->fetch_row()[0]);
 $queued = $admin->query("SELECT s_type, s_payload FROM {$p}t_job_queue WHERE s_type LIKE 'user.%'")->fetch_all();
 pin('the activation e-mail waits on the job queue, which holds only the user id', array(array(array('user.activation_mail', array('user' => $neo))), array(), array()), array(

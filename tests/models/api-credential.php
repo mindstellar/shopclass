@@ -160,6 +160,15 @@ $admin->query("UPDATE $table SET dt_revoked = '2020-01-01 00:00:00' WHERE s_toke
 $keptKeys = (int) $admin->query("SELECT COUNT(*) FROM $table WHERE e_kind <> 'refresh'")->fetch_row()[0];
 pin('pruning drops refresh rows revoked before the cutoff', 1, $model->pruneRefresh(strtotime('2021-01-01')));
 pin('pruning leaves keys alone', $keptKeys, (int) $admin->query("SELECT COUNT(*) FROM $table WHERE e_kind <> 'refresh'")->fetch_row()[0]);
+for ($i = 1; $i <= 5; $i++) {
+    $model->insert($refreshRow(sprintf('PR%014d', $i), sprintf('FAMP%012d', $i)));
+}
+$admin->query("UPDATE $table SET dt_expires = '2020-01-01 00:00:00' WHERE s_token_id LIKE 'PR%'");
+$admin->query("UPDATE $table SET dt_revoked = '2020-01-01 00:00:00' WHERE s_token_id = 'PR00000000000001'");
+pin('pruning in small batches removes every old row once, revoked or expired', [5, 0], [
+    $model->pruneRefresh(strtotime('2021-01-01'), 2), (int) $admin->query("SELECT COUNT(*) FROM $table WHERE s_token_id LIKE 'PR%'")->fetch_row()[0],
+]);
+pin('a live refresh token is kept', null, $model->find($f1)->revokedAt());
 
 harness_section('transactions');
 $fa = $model->insert($refreshRow('TX00000000000001', 'FAMT000000000001'));

@@ -177,6 +177,7 @@ $kernel = api_test_kernel(
     new Router(new Validator(), [
         'GET things/{id}'      => ['handler' => [Things::class, 'show'], 'auth' => 'user', 'scope' => 'listings:read'],
         'PATCH things/{id}'    => ['handler' => [Things::class, 'update'], 'body' => ['type' => 'object']] + $write,
+        'PUT things/{id}'      => ['handler' => [Things::class, 'update'], 'body' => ['type' => 'object']] + $write,
         'DELETE things/{id}'   => ['handler' => [Things::class, 'delete']] + $write,
         'DELETE lonely/{id}'   => ['handler' => [Things::class, 'delete']] + $write,
     ]),
@@ -206,6 +207,12 @@ $r = $call('PATCH', 'things/5', '', ['title' => 'five']);
 pin('no If-Match is never refused', [200, 'five'], [$r->status(), Things::$title]);
 $r = $call('PATCH', 'things/5', '"nope", ' . $call('GET', 'things/5')->prepare('GET')['headers']['ETag'], ['title' => 'six']);
 pin('a list matches when any tag does', [200, 'six'], [$r->status(), Things::$title]);
+
+harness_section('PUT');
+$r = $call('PUT', 'things/5', '"stale"', ['title' => 'put']);
+pin('a PUT with a stale ETag is 412 too', [412, 'six'], [$r->status(), Things::$title]);
+$r = $call('PUT', 'things/5', $call('GET', 'things/5')->prepare('GET')['headers']['ETag'], ['title' => 'put']);
+pin('and with the current one goes through', [200, 'put'], [$r->status(), Things::$title]);
 
 harness_section('DELETE');
 $writes = Things::$writes;

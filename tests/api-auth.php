@@ -513,7 +513,7 @@ pin('anonymous calls stop at the anonymous limit', 429, $call('GET', 'site', '',
 
 $counts = [];
 $r      = $call('POST', 'mine', $user->token(), [], '{"title":"a"}', $small);
-pin('a write is counted in the write bucket too', '"api_key";q=3;w=60, "api_write";q=1;w=60', $r->header('RateLimit-Policy'));
+pin('a write is counted in the write bucket too', '"api_user";q=3;w=60, "api_write";q=1;w=60', $r->header('RateLimit-Policy'));
 pin('the tighter bucket is the one reported', '"api_write";r=0;t=' . $reset, $r->header('RateLimit'));
 pin('past the write limit: 429', 429, $call('POST', 'mine', $user->token(), [], '{"title":"a"}', $small)->status());
 

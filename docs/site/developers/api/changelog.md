@@ -21,7 +21,9 @@ Inside v1, a change only **adds**:
 - a new optional parameter
 - a new value in a list of allowed values
 
-Clients must ignore members they do not know.
+Clients must ignore members they do not know, and must accept values they do not know in
+any list of allowed values: a new listing `status`, `warnings` code, field error code or
+webhook event can arrive inside v1. Treat an unknown error `code` by its status.
 
 These need a new version, v2:
 
