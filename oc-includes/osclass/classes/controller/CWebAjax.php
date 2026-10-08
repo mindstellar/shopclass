@@ -20,6 +20,7 @@ define('IS_AJAX', true);
 use mindstellar\auth\Actor;
 use mindstellar\listing\ListingPolicy;
 use mindstellar\listing\PhotoService;
+use mindstellar\listing\UploadTmpStore;
 use mindstellar\utility\AjaxResponse;
 
 class CWebAjax extends BaseModel
@@ -95,11 +96,11 @@ class CWebAjax extends BaseModel
                 if ($ajax_photo != '') {
                     $success = false;
 
-                    // deleteByTokenFile is the authorisation: a positive count means this
+                    // removeFile() is the authorisation: a positive count means this
                     // browser's upload token really staged that file, so it may be removed.
                     // Anything else (a forged or foreign filename) matches no row and is left
                     // untouched, which also keeps the unlink below to real staged basenames.
-                    if (ItemTmpUpload::getInstance()->deleteByTokenFile(osc_upload_token(), $ajax_photo) > 0) {
+                    if (UploadTmpStore::removeFile((string) osc_upload_token(), (string) $ajax_photo) > 0) {
                         $success = @unlink(osc_content_path() . 'uploads/temp/' . $ajax_photo);
                     }
 
@@ -302,10 +303,11 @@ class CWebAjax extends BaseModel
                 // Stage the file against the form's upload token (a cookie, not the session).
                 // Record the name the client attaches and deletes by (uploadName), so the
                 // "remove photo" action authorises against — and unlinks — the right file.
-                ItemTmpUpload::getInstance()->add(
-                    osc_upload_token(),
-                    Params::getParam('qquuid'),
-                    $result['uploadName']
+                UploadTmpStore::add(
+                    (string) osc_upload_token(),
+                    (string) Params::getParam('qquuid'),
+                    (string) $result['uploadName'],
+                    date('Y-m-d H:i:s')
                 );
                 if (!osc_is_web_user_logged_in() && !osc_is_admin_user_logged_in()) {
                     \mindstellar\security\ActionThrottle::record('ajax_upload');

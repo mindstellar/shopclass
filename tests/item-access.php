@@ -67,7 +67,7 @@ $after = $gate === false ? '' : substr($view, $gate, 200);
 check('the view was parsed', $view !== '');
 check('it gates on canView', $gate !== false);
 check('a refused visitor gets the 404', strpos($after, '$this->do404()') !== false);
-check('the gate runs before the view is counted', $gate !== false && $gate < (int)strpos($view, 'ItemStats'));
+check('the gate runs before the view is counted', $gate !== false && $gate < (int)strpos($view, 'ListingCounters::addView('));
 
 harness_section('contact and send-to-friend use it');
 preg_match('/private function notFoundIfHidden.*?\n    }/s', $webSrc, $h);

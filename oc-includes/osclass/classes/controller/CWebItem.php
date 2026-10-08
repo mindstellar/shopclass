@@ -15,12 +15,14 @@
 use mindstellar\auth\Actor;
 use mindstellar\comment\CommentService;
 use mindstellar\comment\SavedComment;
+use mindstellar\listing\ListingCounters;
 use mindstellar\listing\ListingInput;
 use mindstellar\listing\ListingMailService;
 use mindstellar\listing\ListingNotices;
 use mindstellar\listing\ListingPolicy;
 use mindstellar\listing\ListingService;
 use mindstellar\listing\PhotoService;
+use mindstellar\listing\UploadTmpStore;
 use mindstellar\security\Captcha;
 use mindstellar\utility\Validate;
 use mindstellar\validation\ConflictException;
@@ -124,7 +126,7 @@ class CWebItem extends BaseModel
                     // Fresh post form (no submitted data to restore): drop any temp
                     // uploads a previous, abandoned posting left in the session so they
                     // can't silently attach to this new listing.
-                    ItemTmpUpload::getInstance()->deleteByToken(osc_upload_token());
+                    UploadTmpStore::removeOwner((string) osc_upload_token());
                 }
 
                 if (Session::getInstance()->_getForm('countryId') != '') {
@@ -202,7 +204,7 @@ class CWebItem extends BaseModel
                 Session::getInstance()->_clearVariables();
                 // Uploads were consumed by the successful post; drop the session
                 // mapping so it can't bleed into the next listing.
-                ItemTmpUpload::getInstance()->deleteByToken(osc_upload_token());
+                UploadTmpStore::removeOwner((string) osc_upload_token());
                 if ($saved->needsValidation()) {
                     osc_add_flash_ok_message(_m('Check your inbox to validate your listing'));
                 } elseif (osc_moderate_admin_post()) {
@@ -233,7 +235,7 @@ class CWebItem extends BaseModel
                     if ($form == 0) {
                         // Fresh edit form: drop temp uploads left by an earlier,
                         // abandoned posting so they can't attach to this item.
-                        ItemTmpUpload::getInstance()->deleteByToken(osc_upload_token());
+                        UploadTmpStore::removeOwner((string) osc_upload_token());
                     }
 
                     $this->_exportVariableToView('item', $item);
@@ -311,7 +313,7 @@ class CWebItem extends BaseModel
                         Session::getInstance()->_clearVariables();
                         // Uploads were consumed by the successful edit; drop the session
                         // mapping so it can't bleed into a later listing.
-                        ItemTmpUpload::getInstance()->deleteByToken(osc_upload_token());
+                        UploadTmpStore::removeOwner((string) osc_upload_token());
                         if (osc_moderate_admin_edit()) {
                             osc_add_flash_ok_message(_m('Your listing will be published after an admin approves the changes.'));
                         } else {
@@ -760,7 +762,7 @@ class CWebItem extends BaseModel
                         && $item['fk_i_user_id'] == osc_logged_user_id())
                     && osc_apply_filter('count_view_on_render', osc_request_counts_as_view(), $item)
                 ) {
-                    ItemStats::getInstance()->increase('i_num_views', $item['pk_i_id']);
+                    ListingCounters::addView((int) $item['pk_i_id']);
                 }
 
                 // When the client beacon owns counting (default), remember this listing id so the
@@ -867,7 +869,7 @@ class CWebItem extends BaseModel
                 && !osc_is_admin_user_logged_in()
                 && !($item['fk_i_user_id'] != '' && $item['fk_i_user_id'] == osc_logged_user_id())
             ) {
-                ItemStats::getInstance()->increase('i_num_views', $id);
+                ListingCounters::addView($id);
             }
         }
 

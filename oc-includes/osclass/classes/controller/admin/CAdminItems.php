@@ -24,6 +24,7 @@ use mindstellar\admin\form\CoreSettings;
 use mindstellar\admin\form\ItemSettingsScreen;
 use mindstellar\admin\ListPaging;
 use mindstellar\auth\Actor;
+use mindstellar\listing\ListingCounters;
 use mindstellar\listing\ListingInput;
 use mindstellar\listing\ListingService;
 use mindstellar\listing\PhotoService;
@@ -70,7 +71,6 @@ class CAdminItems extends AdminSecBaseModel
         switch ($this->action) {
             case 'bulk_actions':
                 osc_csrf_check();
-                $mItems = new ItemActions(true);
                 $moderate = static function (string $action) {
                     $moderation = ListingModeration::make();
                     $adminId    = (int) osc_logged_admin_id();
@@ -111,10 +111,10 @@ class CAdminItems extends AdminSecBaseModel
                     case 'delete_all':
                         $manager = $this->itemManager;
                         BulkAction::apply(
-                            static function ($id) use ($mItems, $manager) {
+                            static function ($id) use ($manager) {
                                 $item = $manager->findByPrimaryKey($id);
 
-                                return $item && $mItems->delete($item['s_secret'], $item['pk_i_id']);
+                                return $item && (new ListingService())->delete((int) $item['pk_i_id'], (string) $item['s_secret'], Actor::fromSession(true));
                             },
                             '%d listing has been deleted',
                             '%d listings have been deleted'
@@ -148,8 +148,7 @@ class CAdminItems extends AdminSecBaseModel
                                 if (!$manager->findByPrimaryKey($id)) {
                                     return false;
                                 }
-                                $manager->clearStat($id, 'all');
-                                ItemReport::getInstance()->clear((int)$id);
+                                ListingCounters::clearAllReports((int) $id);
 
                                 return true;
                             },
@@ -173,8 +172,7 @@ class CAdminItems extends AdminSecBaseModel
                 foreach ($id as $i) {
                     if ($i) {
                         $aItem   = $this->itemManager->findByPrimaryKey($i);
-                        $mItems  = new ItemActions(true);
-                        $success = $mItems->delete($aItem['s_secret'], $aItem['pk_i_id']);
+                        $success = (new ListingService())->delete((int) $aItem['pk_i_id'], (string) $aItem['s_secret'], Actor::fromSession(true));
                     }
                 }
 
@@ -227,8 +225,7 @@ class CAdminItems extends AdminSecBaseModel
                     return false;
                 }
 
-                $this->itemManager->clearStat($id, 'all');
-                ItemReport::getInstance()->clear($id);
+                ListingCounters::clearAllReports($id);
 
                 osc_add_flash_ok_message(_m('Reports have been cleared for this listing'), 'admin');
                 $this->redirectTo(Params::getServerParam('HTTP_REFERER', false, false));
@@ -248,7 +245,7 @@ class CAdminItems extends AdminSecBaseModel
 
                 $id = (int)$id;
 
-                $success = $this->itemManager->clearStat($id, $stat);
+                $success = is_string($stat) && ListingCounters::clearReport($id, $stat) > 0;
 
                 if ($success) {
                     osc_add_flash_ok_message(_m('The listing has been unmarked as') . " $stat", 'admin');
@@ -814,7 +811,7 @@ class CAdminItems extends AdminSecBaseModel
      * Clear one moderation counter on the selected listings.
      *
      * Six bulk actions differ only in which counter they reset and what they say afterwards.
-     * A listing that no longer exists is not counted: `clearStat()` reports nothing, so the
+     * A listing that no longer exists is not counted: `clearReport()` reports nothing, so the
      * row has to be looked up for the number to mean what it says.
      *
      * @param string $stat
@@ -832,7 +829,7 @@ class CAdminItems extends AdminSecBaseModel
                 if (!$manager->findByPrimaryKey($id)) {
                     return false;
                 }
-                $manager->clearStat($id, $stat);
+                ListingCounters::clearReport((int) $id, $stat);
 
                 return true;
             },
