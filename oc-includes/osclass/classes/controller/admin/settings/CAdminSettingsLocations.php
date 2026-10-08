@@ -16,6 +16,7 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\database\DbException;
 use mindstellar\location\CountryCode;
 use mindstellar\location\LocationAdminQuery;
 use mindstellar\location\LocationAdminView;
@@ -342,7 +343,6 @@ class CAdminSettingsLocations extends AdminSecBaseModel
      */
     private function addCountry(): void
     {
-        $mCountries  = new Country();
         $countryCode = strtoupper(trim(Params::getParamString('c_country')));
         $countryName = trim(Params::getParamString('country'));
 
@@ -373,24 +373,11 @@ class CAdminSettingsLocations extends AdminSecBaseModel
             $this->runImport($countryCode, $this->listUrl());
         }
 
-        if (!osc_validate_min($countryName, 1)) {
-            $this->respond('error', _m('Country name cannot be blank'), $this->listUrl());
-        }
-        if (!CountryCode::valid($countryCode)) {
-            $this->respond('error', _m('The country code must be two letters, like IN or DE'), $this->listUrl());
-        }
-
-        $exists = $mCountries->findByCode($countryCode);
-        if (isset($exists['s_name'])) {
-            $this->respond('error', sprintf(_m('%s already was in the database'), $countryName), $this->listUrl());
-        }
-
-        if ($mCountries->insert(array('pk_c_code' => $countryCode, 's_name' => $countryName)) === false) {
-            $this->respond('error', _m('There were some problems adding the country'), $this->listUrl());
-        }
-        osc_calculate_location_slug('country');
-        osc_calculate_location_slug('region');
-        osc_calculate_location_slug('city');
+        $this->write(
+            static fn (LocationService $editor) => $editor->addCountry($countryCode, $countryName),
+            $this->listUrl(),
+            _m('There were some problems adding the country')
+        );
         $this->respond('ok', sprintf(_m('%s has been added as a new country'), $countryName), $this->listUrl());
     }
 
@@ -399,26 +386,18 @@ class CAdminSettingsLocations extends AdminSecBaseModel
      */
     private function editCountry(): void
     {
-        $mCountries = new Country();
-        $code       = Params::getParamString('country_code');
-        $name       = Params::getParamString('e_country');
-        $back       = $this->listUrl($this->keep());
+        $code    = Params::getParamString('country_code');
+        $name    = Params::getParamString('e_country');
+        $slug    = Params::getParamString('e_country_slug');
+        $back    = $this->listUrl($this->keep());
+        $problem = _m('There were some problems editing the country');
 
-        if (!osc_validate_min($name, 1)) {
-            $this->respond('error', _m('Country name cannot be blank'), $back);
-        }
-        if (!isset($mCountries->findByCode($code)['pk_c_code'])) {
-            $this->respond('error', _m('There were some problems editing the country'), $back);
-        }
-
-        // @phpstan-ignore argument.type (the slug rule also serves countries, keyed by code)
-        $slug = LocationService::uniqueSlug($mCountries, $code, $name, Params::getParamString('e_country_slug'), 'pk_c_code');
-        $ok   = $mCountries->update(array('s_name' => $name, 's_slug' => $slug), array('pk_c_code' => $code));
-
-        // Affected rows, false only on error: re-saving a country with the
-        // same name changes nothing and must not read as a failure.
-        if ($ok === false) {
-            $this->respond('error', _m('There were some problems editing the country'), $back);
+        try {
+            (new LocationService())->editCountry($code, $name, $slug);
+        } catch (NotFoundException | DbException $e) {
+            $this->respond('error', $problem, $back);
+        } catch (RefusedException $e) {
+            $this->respond('error', $e->getMessage(), $back);
         }
         $this->respond('ok', _m('Country has been edited'), $back);
     }
@@ -495,15 +474,21 @@ class CAdminSettingsLocations extends AdminSecBaseModel
 
     /**
      * Run one location write; a refusal is answered with its reason.
+     * With $failed, a database error is answered with it too.
      *
      * @param callable(LocationService): mixed $write
      */
-    private function write(callable $write, string $back): void
+    private function write(callable $write, string $back, ?string $failed = null): void
     {
         try {
             $write(new LocationService());
         } catch (RefusedException $e) {
             $this->respond('error', $e->getMessage(), $e instanceof NotFoundException ? $this->listUrl() : $back);
+        } catch (DbException $e) {
+            if ($failed === null) {
+                throw $e;
+            }
+            $this->respond('error', $failed, $back);
         }
     }
 
@@ -527,7 +512,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
 
         switch ($level) {
             case 'country':
-                $model = new Country();
+                $model = Country::getInstance();
                 $none  = _m('No country was selected');
                 break;
             case 'region':
@@ -583,13 +568,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
         $editor  = new LocationService();
         foreach (array_keys($rows) as $id) {
             try {
-                if ($level === 'country') {
-                    if ($model->deleteByPrimaryKey($id) !== 0) {
-                        throw new RuntimeException('The country could not be deleted.');
-                    }
-                } else {
-                    $editor->delete($level, (int) $id);
-                }
+                $editor->delete($level, $id);
                 $deleted++;
             } catch (RefusedException | RuntimeException $e) {
                 $failed++;

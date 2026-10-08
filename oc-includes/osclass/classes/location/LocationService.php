@@ -25,7 +25,7 @@ use Region;
 use RegionStats;
 
 /**
- * Adding, renaming and deleting regions, cities and city areas, as Settings -> Locations and
+ * Adding, renaming and deleting countries, regions, cities and city areas, as Settings -> Locations and
  * the API do it, each write in one transaction. A rename keeps listings' stored names in step;
  * a delete takes what lives under the location with it, as the models do.
  */
@@ -128,6 +128,52 @@ final class LocationService
         }
 
         return [null, $name];
+    }
+
+    /**
+     * Add a country by its two-letter code; its slug is made from the name.
+     *
+     * @return string the stored code
+     * @throws RefusedException
+     * @throws \mindstellar\database\DbException when the row could not be written
+     */
+    public function addCountry(string $code, string $name): string
+    {
+        return (string) DeferredMail::transaction(function () use ($code, $name): string {
+            $this->checkName($name, _m('Country name cannot be blank'));
+            $code = CountryCode::normalize($code);
+            if ($code === null) {
+                throw new InvalidException('/code', 'invalid', _m('The country code must be two letters, like IN or DE'));
+            }
+            if (LocationStore::country($code) !== null) {
+                throw new InvalidException('/code', 'taken', sprintf(_m('%s already was in the database'), $name));
+            }
+            LocationStore::addCountry($code, $name, '');
+            osc_calculate_location_slug('country');
+            osc_calculate_location_slug('region');
+            osc_calculate_location_slug('city');
+
+            return $code;
+        });
+    }
+
+    /**
+     * Rename a country. A slug another country holds, or none, is made from the name.
+     *
+     * @throws RefusedException
+     * @throws \mindstellar\database\DbException when the row could not be written
+     */
+    public function editCountry(string $code, string $name, string $slug = ''): void
+    {
+        DeferredMail::transaction(function () use ($code, $name, $slug): void {
+            $this->checkName($name, _m('Country name cannot be blank'));
+            $country = $code === '' ? null : LocationStore::country($code);
+            if ($country === null) {
+                throw new NotFoundException(_m('This location no longer exists.'));
+            }
+            $code = (string) $country['pk_c_code'];
+            LocationStore::renameCountry($code, $name, self::uniqueSlug(\Country::getInstance(), $code, $name, $slug, 'pk_c_code'));
+        });
     }
 
     /**
@@ -274,22 +320,29 @@ final class LocationService
     }
 
     /**
-     * Delete a region, city or city area and what lives under it, all or none.
+     * Delete a country, region, city or city area and what lives under it, all or none.
      *
-     * @param string $level 'region', 'city' or 'area'
+     * @param string     $level 'country', 'region', 'city' or 'area'
+     * @param int|string $id    the country code, or the place's id
      *
      * @throws NotFoundException
      * @throws \RuntimeException when part of it could not be deleted
      */
-    public function delete(string $level, int $id): void
+    public function delete(string $level, int|string $id): void
     {
+        if ($level === 'country') {
+            $id = CountryCode::normalize((string) $id) ?? '';
+        } else {
+            $id = is_int($id) || ctype_digit($id) ? (int) $id : 0;
+        }
         $model = match ($level) {
-            'region' => Region::getInstance(),
-            'city'   => City::getInstance(),
-            'area'   => CityArea::getInstance(),
-            default  => throw new \InvalidArgumentException('Unknown location level'),
+            'country' => \Country::getInstance(),
+            'region'  => Region::getInstance(),
+            'city'    => City::getInstance(),
+            'area'    => CityArea::getInstance(),
+            default   => throw new \InvalidArgumentException('Unknown location level'),
         };
-        if ($id <= 0 || !(new LocationQuery())->exists($level, $id)) {
+        if ($id === '' || $id === 0 || !(new LocationQuery())->exists($level, $id)) {
             throw new NotFoundException(_m('This location no longer exists.'));
         }
         DeferredMail::transaction(static function () use ($model, $id): void {
@@ -301,10 +354,10 @@ final class LocationService
     }
 
     /**
-     * A slug for a renamed region or city: the typed one when no other row holds it, else
+     * A slug for a renamed country, region or city: the typed one when no other row holds it, else
      * one made from the name, with `-1`, `-2`... added while it is taken.
      *
-     * @param Region|City $model
+     * @param \Country|Region|City $model
      */
     public static function uniqueSlug($model, int|string $self, string $name, string $wanted, string $key = 'pk_i_id'): string
     {
