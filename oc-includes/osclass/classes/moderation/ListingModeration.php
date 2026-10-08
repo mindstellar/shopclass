@@ -121,16 +121,7 @@ final class ListingModeration
         if ($row === null) {
             throw new NotFoundException(_m('No such listing.'));
         }
-        $plan = StatusFlags::plan($flags, Db::stringifyRow($row), self::FLAG_ACTIONS);
-        if ($plan !== []) {
-            DeferredMail::transaction(function () use ($plan, $id, $adminId, $note): void {
-                foreach ($plan as $action) {
-                    $this->apply($action, $id, $adminId, $note);
-                }
-            });
-        }
-
-        return $plan;
+        return StatusFlags::run($flags, Db::stringifyRow($row), self::FLAG_ACTIONS, fn (string $action) => $this->apply($action, $id, $adminId, $note));
     }
 
     /**

@@ -758,18 +758,11 @@ final class AccountService
         if (!is_array($user) || empty($user['pk_i_id'])) {
             throw new NotFoundException(_m('No such user.'));
         }
-        $plan = StatusFlags::plan($flags, $user, self::FLAG_ACTIONS);
-        if ($plan !== []) {
-            DeferredMail::transaction(function () use ($plan, $userId, $actor): void {
-                foreach ($plan as $action) {
-                    if (!$this->{$action}($userId, $actor)) {
-                        throw new \RuntimeException('The user could not be changed.');
-                    }
-                }
-            });
-        }
-
-        return $plan;
+        return StatusFlags::run($flags, $user, self::FLAG_ACTIONS, function (string $action) use ($userId, $actor): void {
+            if (!$this->{$action}($userId, $actor)) {
+                throw new \RuntimeException('The user could not be changed.');
+            }
+        });
     }
 
     /**

@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\moderation;
 
+use mindstellar\utility\DeferredMail;
+
 /**
  * The one rule for changing several status flags of a listing, comment or user at once:
  * which actions run and in what order.
@@ -66,5 +68,31 @@ final class StatusFlags
         }
 
         return array_merge($plan, $last);
+    }
+
+    /**
+     * Plan the actions as plan() does and pass each to $apply, all in one transaction with
+     * e-mails held until it commits. Nothing runs, and no transaction opens, for an empty plan.
+     *
+     * @param array<string,bool>                     $flags
+     * @param array<string,mixed>                    $row
+     * @param array<string,array{0:string,1:string}> $actions
+     * @param callable(string): mixed                $apply runs one action
+     *
+     * @return string[] the actions that ran
+     * @throws \LogicException for a flag $actions does not name
+     */
+    public static function run(array $flags, array $row, array $actions, callable $apply): array
+    {
+        $plan = self::plan($flags, $row, $actions);
+        if ($plan !== []) {
+            DeferredMail::transaction(static function () use ($plan, $apply): void {
+                foreach ($plan as $action) {
+                    $apply($action);
+                }
+            });
+        }
+
+        return $plan;
     }
 }

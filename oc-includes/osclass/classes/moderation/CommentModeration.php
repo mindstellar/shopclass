@@ -126,16 +126,7 @@ final class CommentModeration
         if (!is_array($row) || $row === []) {
             throw new NotFoundException(_m('No such comment.'));
         }
-        $plan = StatusFlags::plan($flags, $row, self::FLAG_ACTIONS);
-        if ($plan !== []) {
-            DeferredMail::transaction(function () use ($plan, $id): void {
-                foreach ($plan as $action) {
-                    $this->{$action}($id);
-                }
-            });
-        }
-
-        return $plan;
+        return StatusFlags::run($flags, $row, self::FLAG_ACTIONS, fn (string $action) => $this->{$action}($id));
     }
 
     /**
