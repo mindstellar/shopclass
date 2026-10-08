@@ -173,6 +173,7 @@ final class PluginClauses
      * The extra select fields, filtered, as the comma list the statement splits.
      *
      * @return string
+     * @phpstan-impure it fires a filter
      */
     public function fieldList(): string
     {
@@ -187,6 +188,7 @@ final class PluginClauses
      * The plugin conditions, filtered and AND-joined.
      *
      * @return string
+     * @phpstan-impure it fires a filter
      */
     public function conditionsSql(): string
     {
