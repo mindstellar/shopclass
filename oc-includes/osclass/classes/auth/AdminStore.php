@@ -78,6 +78,27 @@ final class AdminStore extends Model
     }
 
     /**
+     * Delete admins by id. No hooks or cascades run here; the API key rows go by foreign key.
+     *
+     * @param array<int|string> $ids
+     *
+     * @return int|false rows deleted, or false for an empty or malformed list or a failed query
+     */
+    public static function delete(array $ids): int|false
+    {
+        if ($ids === [] || array_filter($ids, static fn ($id): bool => !is_int($id) && !is_string($id)) !== []) {
+            return false;
+        }
+        $ids = array_map('intval', array_values($ids));
+
+        try {
+            return self::table()->whereIn('pk_i_id', $ids)->delete();
+        } catch (\mindstellar\database\DbException) {
+            return false;
+        }
+    }
+
+    /**
      * The sign-out stamp column of one admin, or null for no such admin.
      *
      * @return array<string,mixed>|null

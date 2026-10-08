@@ -135,7 +135,7 @@ class CAdminAdmins extends AdminSecBaseModel
                     $this->redirectTo(osc_admin_base_url(true) . '?page=admins');
                 }
 
-                $isDeleted = $this->adminManager->deleteBatch($adminId);
+                $isDeleted = \mindstellar\auth\AdminStore::delete($adminId);
 
                 if ($isDeleted) {
                     osc_add_flash_ok_message(_m('The admin has been deleted correctly'), 'admin');

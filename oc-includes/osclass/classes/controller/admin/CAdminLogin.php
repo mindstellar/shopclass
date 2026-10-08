@@ -104,11 +104,7 @@ class CAdminLogin extends AdminBaseModel
                     if ($needs_rehash) {
                         // Mirror the rehash into the in-memory row so the remember-me token below
                         // binds to the hash actually persisted, not the stale one.
-                        $admin['s_password'] = osc_hash_password($password);
-                        Admin::getInstance()->update(
-                            array('s_password' => $admin['s_password']),
-                            array('pk_i_id' => $admin['pk_i_id'])
-                        );
+                        $admin['s_password'] = \mindstellar\auth\AdminPassword::rehash((int) $admin['pk_i_id'], $password);
                     }
                 }
 
@@ -199,14 +195,8 @@ class CAdminLogin extends AdminBaseModel
                     $admin = Admin::getInstance()->findByUsername(Params::getParam('email'));
                 }
                 if (isset($admin['pk_i_id'])) {
-                    require_once osc_lib_path() . 'osclass/helpers/hSecurity.php';
-                    $newPassword = osc_genRandomPassword(40);
-
-                    // Persist only a fingerprint; the plaintext code lives solely in the emailed link.
-                    Admin::getInstance()->update(
-                        array('s_secret' => \mindstellar\security\ActionToken::hash($newPassword)),
-                        array('pk_i_id' => $admin['pk_i_id'])
-                    );
+                    // Only a fingerprint is stored; the plaintext code lives solely in the emailed link.
+                    $newPassword  = \mindstellar\auth\AdminPassword::issueReset((int) $admin['pk_i_id']);
                     $password_url = osc_forgot_admin_password_confirm_url((int) $admin['pk_i_id'], $newPassword);
 
                     osc_run_hook('hook_email_user_forgot_password', $admin, $password_url);

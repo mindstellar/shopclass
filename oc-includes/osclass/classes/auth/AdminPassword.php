@@ -44,6 +44,39 @@ final class AdminPassword
     }
 
     /**
+     * Store a fresh hash of the password the admin just signed in with. Unlike set(), other
+     * sessions stay signed in; a failed write is ignored so the sign-in still goes ahead.
+     *
+     * @return string the new hash
+     */
+    public static function rehash(int $adminId, string $password): string
+    {
+        $hash = osc_hash_password($password);
+        try {
+            AdminStore::update($adminId, ['s_password' => $hash]);
+        } catch (\mindstellar\database\DbException) {
+        }
+
+        return $hash;
+    }
+
+    /**
+     * Start a password reset: store a fingerprint of a new random code and return the code
+     * for the e-mailed link. A failed write is ignored, so the reply never shows whether the account exists.
+     */
+    public static function issueReset(int $adminId): string
+    {
+        require_once dirname(__DIR__, 2) . '/helpers/hSecurity.php';
+        $code = osc_genRandomPassword(40);
+        try {
+            AdminStore::update($adminId, ['s_secret' => \mindstellar\security\ActionToken::hash($code)]);
+        } catch (\mindstellar\database\DbException) {
+        }
+
+        return $code;
+    }
+
+    /**
      * The admin's current sign-out stamp, for the screen that keeps its own session signed in
      * after the admin changes their own password.
      *

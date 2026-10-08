@@ -1313,8 +1313,8 @@ check(
     'the store owns the write, through osc_db_table()'
 );
 check(
-    'scan: while the delete path, which is not part of the declared form, still uses the model',
-    strpos($controller, 'deleteBatch') !== false,
+    'scan: while the delete path, which is not part of the declared form, goes through AdminStore',
+    strpos($controller, 'AdminStore::delete(') !== false,
     'the scan above would pass just as well on a controller with no accounts in it at all'
 );
 // The declaration is where the hashing lives now, and it is the core helper rather than a
