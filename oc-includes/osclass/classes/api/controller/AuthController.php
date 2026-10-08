@@ -26,10 +26,8 @@ use mindstellar\api\Response;
 use mindstellar\auth\SignIn;
 
 /**
- * `POST /auth/token` and `POST /auth/sign-out`: password sign-in, refresh and sign-out.
- *
- * Sign-in uses the web login's rules (SignIn), without a captcha; admins use keys. The token
- * endpoint speaks OAuth 2 (RFC 6749), and Kernel shapes its refusals through OAuthError.
+ * Password sign-in, refresh and sign-out, using the web login's rules (SignIn) without a captcha.
+ * The token endpoint speaks OAuth 2 (RFC 6749), and Kernel shapes its refusals through OAuthError.
  */
 final class AuthController
 {

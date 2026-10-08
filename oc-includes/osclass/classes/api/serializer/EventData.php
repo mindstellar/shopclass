@@ -25,11 +25,9 @@ use mindstellar\utility\Clock;
 use mindstellar\webhook\WebhookServices;
 
 /**
- * The `data` of a core event: the resource in the shape an anonymous GET of it has, in the
- * site's default language. So an event never carries what the public view leaves out, such
- * as a user's e-mail or a listing's IP; a receiver that needs more reads it from the API.
- * A listing or comment that is not live is sent as `{id, url, live: false}` only. The shape is
- * always ApiSettings::PINNED_VERSION's, whatever versions the site answers.
+ * The `data` of a core event: the resource as an anonymous GET shows it, in the site's default
+ * language and ApiSettings::PINNED_VERSION's shape. A listing or comment that is not live is sent
+ * as `{id, url, live: false}` only.
  */
 final class EventData
 {

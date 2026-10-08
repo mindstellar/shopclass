@@ -73,9 +73,7 @@ final class ApiCall
      */
     public function intArg(string $name = 'id'): int
     {
-        $value = $this->args[$name] ?? '';
-
-        return ctype_digit($value) ? (int) $value : 0;
+        return RowId::parse($this->args[$name] ?? '') ?? 0;
     }
 
     /**

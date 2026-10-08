@@ -42,9 +42,6 @@ final class PhotosController
         $this->photos = $api->photoIntake();
     }
 
-    /**
-     * POST /photos
-     */
     public function stage(ApiCall $call): Response
     {
         $staged = $this->photos->stage((int) $call->credential()->userId(), $this->photos->upload($call->request()));
@@ -52,9 +49,6 @@ final class PhotosController
         return Response::ok(['token' => $staged->token(), 'expires_at' => Format::timestamp($staged->expiresAt())]);
     }
 
-    /**
-     * POST /listings/{id}/photos
-     */
     public function add(ApiCall $call): Response
     {
         $request = $call->request();
@@ -91,9 +85,6 @@ final class PhotosController
         return Response::created($data, $this->api->links()->api('listings/' . $id . '/photos/' . $new[0], $call->request()->version()));
     }
 
-    /**
-     * DELETE /listings/{id}/photos/{photo}
-     */
     public function remove(ApiCall $call): Response
     {
         $credential = $call->credential();

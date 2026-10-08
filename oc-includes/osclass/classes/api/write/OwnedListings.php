@@ -20,9 +20,8 @@ use mindstellar\listing\ListingPolicy;
 use mindstellar\listing\ListingQuery;
 
 /**
- * Reads the listing a write is about. own() reads the caller's own listing or refuses: 404
- * when they cannot see it, 403 `not_owner` when it is someone else's live listing. Admin
- * writes read any listing with load().
+ * Reads the listing a write is about. own() reads the caller's own listing (404 if they cannot see
+ * it, 403 `not_owner` for someone else's live one), and admin writes use load().
  */
 class OwnedListings
 {

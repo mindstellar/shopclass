@@ -24,11 +24,9 @@ use mindstellar\listing\ListingService;
 use mindstellar\validation\InvalidException;
 
 /**
- * The API's side of a listing write. A body becomes the listing form ListingInput reads:
- * languages checked, the stored values kept on an edit, plugins' `api_listing_input` applied,
- * and only the category's own custom fields, cleaned as the form's are. The form is saved
- * through ListingService and a refusal turned into a problem. The seller's writes and the
- * admin's edit share it.
+ * The API's side of a listing write, shared by the seller's writes and the admin's edit. It turns a
+ * body into the listing form ListingInput reads, saves it through ListingService and turns a
+ * refusal into a problem.
  */
 final class ListingWriter
 {

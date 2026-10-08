@@ -28,7 +28,6 @@ final class ProblemException extends \RuntimeException
      * @api
      *
      * @param string              $code   a Problem::CATALOGUE code or a plugin's `ext_<slug>_<name>` code
-     * @param string              $detail
      * @param array<string,mixed> $extra
      */
     public static function of(string $code, string $detail = '', array $extra = []): self
@@ -44,6 +43,21 @@ final class ProblemException extends \RuntimeException
     public static function notFound(string $detail): self
     {
         return self::of('not_found', $detail);
+    }
+
+    /**
+     * $value when a lookup found something, else a 404 saying `No such <what>.`
+     *
+     * @template T
+     *
+     * @param T|null $value
+     *
+     * @return T
+     * @throws self 404
+     */
+    public static function found(mixed $value, string $what): mixed
+    {
+        return $value ?? throw self::notFound('No such ' . $what . '.');
     }
 
     /**

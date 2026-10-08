@@ -15,9 +15,9 @@ namespace mindstellar\api\idempotency;
 use mindstellar\model\KeyValue;
 
 /**
- * Idempotency-Keys in t_key_value, group `api_idempotency`, keyed by the key's hash. The value is
- * JSON holding the request's fingerprint and, while the first request runs, its lock token; then
- * its HTTP status and answer. The state is `locked` while the first request runs, then `done`.
+ * Idempotency-Keys in t_key_value, group `api_idempotency`, keyed by the key's hash. The JSON value
+ * holds the request's fingerprint and state, `locked` with a lock token while the first request
+ * runs, then `done` with its status and answer.
  */
 final class KvIdempotencyStore implements IdempotencyStore
 {

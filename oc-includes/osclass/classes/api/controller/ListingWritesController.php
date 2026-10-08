@@ -84,9 +84,6 @@ final class ListingWritesController
         return $this->fetch($input, (int) $call->credential()->userId(), $this->room->room($listing->id(), $listing->userId()));
     }
 
-    /**
-     * POST /listings. prepareCreate() has checked the caller may post.
-     */
     public function create(ApiCall $call): Response
     {
         $request = $call->request();
@@ -101,9 +98,6 @@ final class ListingWritesController
         return $this->saved($call, $id, true, $batch, 0);
     }
 
-    /**
-     * PATCH /listings/{id}. Members not sent keep their stored values.
-     */
     public function update(ApiCall $call): Response
     {
         $request = $call->request();
@@ -126,9 +120,6 @@ final class ListingWritesController
         return $this->saved($call, $id, false, $batch, $before);
     }
 
-    /**
-     * DELETE /listings/{id}
-     */
     public function delete(ApiCall $call): Response
     {
         $credential = $call->credential();

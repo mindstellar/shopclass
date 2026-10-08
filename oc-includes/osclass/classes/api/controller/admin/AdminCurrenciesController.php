@@ -31,9 +31,6 @@ final class AdminCurrenciesController
         $this->currencies = $api->currencyService();
     }
 
-    /**
-     * POST /admin/currencies
-     */
     public function create(ApiCall $call): Response
     {
         $input = $call->input();
@@ -42,9 +39,6 @@ final class AdminCurrenciesController
         return Response::created($this->currency($code), $this->api->links()->api('admin/currencies/' . $code, $call->request()->version()));
     }
 
-    /**
-     * GET /admin/currencies/{code}
-     */
     public function show(ApiCall $call): Response
     {
         $code = self::code($call->args());
@@ -55,9 +49,6 @@ final class AdminCurrenciesController
         return Response::ok($this->currency($code));
     }
 
-    /**
-     * PATCH /admin/currencies/{code}
-     */
     public function update(ApiCall $call): Response
     {
         $code  = self::code($call->args());
@@ -71,9 +62,6 @@ final class AdminCurrenciesController
         return Response::ok($this->currency($code));
     }
 
-    /**
-     * DELETE /admin/currencies/{code}: not the site's default, nor one a listing is priced in.
-     */
     public function delete(ApiCall $call): Response
     {
         $this->currencies->delete(self::code($call->args()));

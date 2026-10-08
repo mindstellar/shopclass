@@ -30,9 +30,6 @@ final class AdminFieldsController
         $this->fields = $api->fieldService();
     }
 
-    /**
-     * POST /admin/custom-fields
-     */
     public function create(ApiCall $call): Response
     {
         $id = $this->fields->create($call->input());
@@ -40,9 +37,6 @@ final class AdminFieldsController
         return Response::created($this->field($id), $this->api->links()->api('admin/custom-fields/' . $id, $call->request()->version()));
     }
 
-    /**
-     * GET /admin/custom-fields/{id}
-     */
     public function show(ApiCall $call): Response
     {
         $this->fields->find($call->intArg());
@@ -51,7 +45,7 @@ final class AdminFieldsController
     }
 
     /**
-     * PATCH /admin/custom-fields/{id}. Members not sent keep their values; `categories` replaces
+     * Members not sent keep their values; `categories` replaces
      * the list.
      */
     public function update(ApiCall $call): Response
@@ -61,9 +55,6 @@ final class AdminFieldsController
         return Response::ok($this->field($call->intArg()));
     }
 
-    /**
-     * DELETE /admin/custom-fields/{id}
-     */
     public function delete(ApiCall $call): Response
     {
         $this->fields->delete($call->intArg());

@@ -121,7 +121,7 @@ final class ListingSort
     }
 
     /**
-     * The condition for rows after a keyset, with `?` for each value: for created desc,
+     * The condition for rows after a keyset, with `?` for each value. For created desc it is
      * `(t.dt_pub_date < ? OR (t.dt_pub_date = ? AND t.pk_i_id < ?))`.
      *
      * @param string                $table the qualified t_item table name

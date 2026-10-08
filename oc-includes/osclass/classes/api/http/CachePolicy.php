@@ -18,9 +18,8 @@ use mindstellar\apiaccess\CredentialKind;
 use mindstellar\apiaccess\PageTokens;
 
 /**
- * Caching headers for a successful answer. Public answers may sit in a shared cache; an answer
- * for a key is private and revalidated, except account, admin and session reads; a write or
- * session answer is never stored. Reads vary on Authorization and the page token header.
+ * Caching headers for a successful answer. Public answers may sit in a shared cache, key answers
+ * are private and revalidated, and writes and session answers are never stored.
  */
 final class CachePolicy
 {

@@ -57,8 +57,6 @@ final class TokenIssuer
      *
      * @param array<string,mixed> $user   the t_user row
      * @param string[]            $scopes
-     *
-     * @return Response
      */
     public function answer(array $user, array $scopes, string $family, ?IssuedToken $grant = null): Response
     {

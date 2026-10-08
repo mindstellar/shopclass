@@ -60,9 +60,8 @@ final class PhotoBatch
     }
 
     /**
-     * Remove the downloaded files and the copies, and with $saved the staged photos too.
-     * A file the listing took was already moved, so only the ones it did not take are left
-     * to remove. Unsaved, the staged photos stay so their tokens can be sent again.
+     * Remove the downloaded files and the copies, and with $saved the staged photos too. Unsaved,
+     * the staged photos stay so their tokens can be sent again.
      */
     public function discard(bool $saved): void
     {

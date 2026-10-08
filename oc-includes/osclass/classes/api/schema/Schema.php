@@ -265,18 +265,6 @@ final class Schema
     }
 
     /**
-     * The top-level members of an object schema, for the serializer contract test.
-     *
-     * @param array<string,mixed> $schema
-     *
-     * @return string[]
-     */
-    public static function members(array $schema): array
-    {
-        return array_keys((array) ($schema['properties'] ?? []));
-    }
-
-    /**
      * @return array<string,mixed>
      */
     private static function listing(ExtensionMembers $ext): array

@@ -145,9 +145,14 @@ pin('schemas that are not the ones named are refused', 'LogicException', (static
     return 'built';
 })());
 pin('Schema::names() lists every component, in order', array_keys(Schema::components()), Schema::names());
-$core   = Schema::definitions();
+$builds = 0;
+$core   = Definitions::lazy(Schema::names(), static function () use (&$builds): array {
+    $builds++;
+
+    return Schema::components();
+});
 $routes = (new Router(new Validator($core), RouteTable::core()))->all();
-check('building the core routes does not build the component set', !($core->isBuilt()));
+check('building the core routes does not build the component set', $builds === 0);
 $broken = [];
 foreach ($routes as $key => $route) {
     try {

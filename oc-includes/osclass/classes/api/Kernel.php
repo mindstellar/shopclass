@@ -38,10 +38,9 @@ use mindstellar\apiaccess\Scopes;
 use mindstellar\validation\RefusedException;
 
 /**
- * Answers one API request as an ordered pipeline: switched on, route match, authentication,
- * authorization, rate limits, taking on the token user's identity, `api_request_before`,
- * Idempotency-Key, validation, handler, `api_response`, caching. Any step refuses by throwing
- * ProblemException. handle() builds the Response; serve() is the only place that sends one.
+ * Answers one API request as an ordered pipeline from the on/off switch to caching, where any step
+ * refuses by throwing ProblemException. handle() builds the Response; serve() is the only place
+ * that sends one.
  */
 final class Kernel
 {
@@ -201,9 +200,9 @@ final class Kernel
     }
 
     /**
-     * Run the handler, honouring If-Match on a PUT, PATCH or DELETE (`*`: any existing resource).
-     * A stored GET version is read with its rows locked and the write runs in that transaction;
-     * otherwise the GET's ETag is compared. A 412 never tells a caller more than the GET would.
+     * Run the handler, honouring If-Match on a PUT, PATCH or DELETE (`*`: any existing resource). A
+     * stored GET version is read with its rows locked and the write runs in that transaction;
+     * otherwise the GET's ETag is compared.
      *
      * @param array<string,string> $args
      * @param mixed                $prepared what the route's prepare step returned
@@ -435,10 +434,8 @@ final class Kernel
     }
 
     /**
-     * Let core code act for the user or admin a token or key stands for, for this request
-     * only. The browser's identity was already forgotten (WebIdentity::forget() in index.php).
-     * An admin is taken on for admin routes only, so a public route an admin key calls runs
-     * as nobody.
+     * Let core code act for the user or admin a token or key stands for, for this request only. An
+     * admin is taken on for admin routes only, so a public route an admin key calls runs as nobody.
      */
     private function assumeIdentity(Credential $credential, RouteSpec $route): void
     {

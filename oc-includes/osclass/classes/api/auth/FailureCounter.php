@@ -17,10 +17,9 @@ use mindstellar\security\AddressBucket;
 use mindstellar\security\RateLimit;
 
 /**
- * Failed token checks, counted per address and key id (MAX) and per address with no known key
- * id (ADDRESS_MAX), so guessing is slow without locking out a shared address. Both fail open
- * when the counter cannot be read. A site-wide marker, written before the first failure of a
- * known key id in each window, lets keyBlocked() skip the counter while no such failure exists.
+ * Failed token checks, counted per address and key id (MAX) and per address with no known key id
+ * (ADDRESS_MAX), failing open when the counter cannot be read. A site-wide marker lets keyBlocked()
+ * skip the counter while no such failure exists.
  */
 final class FailureCounter
 {

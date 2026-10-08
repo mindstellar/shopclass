@@ -20,11 +20,9 @@ use mindstellar\apiaccess\Credential;
 use mindstellar\apiaccess\KeyCheck;
 
 /**
- * Turns a request's token into a Credential: an API key (`sck_`, `scp_`) or a signed-in
- * user's access token (`sca_`). Only an `Authorization: Bearer` header is a token (or, for a
- * public key on a GET, `?api_key=`). With no token, a page token in X-Shopclass-Token asks
- * for the same-site session mode (PageTokenAuth); a cookie alone never authenticates a call.
- * A user's key or access token is refused while a ban rule matches the user or the address.
+ * Turns a request's token into a Credential: an API key (`sck_`, `scp_`) or a user's access token
+ * (`sca_`), from an `Authorization: Bearer` header or `?api_key=` on a public-key GET. With no
+ * token, a page token asks for the same-site session mode; a cookie alone never authenticates.
  */
 final class Authenticator
 {

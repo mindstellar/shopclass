@@ -711,7 +711,29 @@ $qPost = harness_query_count(static function () use ($call, $listing, $sueToken,
 $qPatch = harness_query_count(static fn () => $call('PATCH', 'listings/' . $qMade, array('price' => '999'), $sueToken));
 echo "  POST /listings: $qPost queries, PATCH: $qPatch\n";
 pin('POST /listings, no photos: 30 queries (one checks the sign-in is live; ban rules come from the cache)', 30, $qPost);
-pin('PATCH /listings/{id}, no photos: 26 queries', 26, $qPatch);
+pin('PATCH /listings/{id}, no photos: 25 queries (an unchanged location and custom field are not rewritten)', 25, $qPatch);
+
+$writes = static function (): array {
+    $db  = DBConnectionClass::newInstance()->getOsclassDb();
+    $out = array();
+    foreach (array('Com_update', 'Com_replace') as $name) {
+        $out[$name] = (int) ($db->query("SHOW SESSION STATUS LIKE '$name'")->fetch_assoc()['Value'] ?? -1);
+    }
+
+    return $out;
+};
+$delta = static function (array $before) use ($writes): array {
+    $after = $writes();
+
+    return array($after['Com_update'] - $before['Com_update'], $after['Com_replace'] - $before['Com_replace']);
+};
+$before = $writes();
+$call('PATCH', 'listings/' . $qMade, array('price' => '997'), $sueToken);
+pin('a price edit updates t_item only: the unchanged location and custom field are not rewritten', array(1, 0), $delta($before));
+$before = $writes();
+$r = $call('PATCH', 'listings/' . $qMade, array('address' => '9 New Road', 'custom_fields' => array((string) $colour => 'blue')), $sueToken);
+pin('a changed address and custom field are written', array(2, 1, '9 New Road'), array_merge($delta($before), array($r->body()['data']['location']['address'] ?? null)));
+pin('and stored', 'blue', $admin->query("SELECT s_value FROM {$p}t_item_meta WHERE fk_i_item_id = $qMade AND fk_i_field_id = $colour")->fetch_assoc()['s_value'] ?? null);
 
 harness_section('deleting a listing');
 pin('another seller cannot delete it', '403 not_owner', $code($call('DELETE', 'listings/' . $made, null, $tomToken)));

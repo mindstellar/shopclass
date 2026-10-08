@@ -15,12 +15,8 @@ namespace mindstellar\api;
 use mindstellar\api\identity\WebIdentity;
 
 /**
- * One API answer: a status, a JSON body and headers. Immutable; the with*() methods return
- * a changed copy.
- *
- * Built as a value and sent separately, so a test can read what the API would say without
- * a web server. An API answer never sets a cookie: a Set-Cookie header is refused, and send()
- * removes any PHP queued elsewhere and flushes, so nothing can add one later.
+ * One API answer: a status, a JSON body and headers. Immutable, built as a value and sent
+ * separately; it never sets a cookie, and send() removes any Set-Cookie queued elsewhere.
  */
 final class Response
 {

@@ -38,9 +38,6 @@ final class AdminLocationsController
         $this->serializer = new LocationSerializer();
     }
 
-    /**
-     * POST /admin/regions
-     */
     public function createRegion(ApiCall $call): Response
     {
         $input = $call->input();
@@ -50,17 +47,11 @@ final class AdminLocationsController
         return Response::created($this->serializer->region($this->row(LocationQuery::REGION, $id)), $this->api->links()->api('admin/regions/' . $id, $call->request()->version()));
     }
 
-    /**
-     * GET /admin/regions/{id}
-     */
     public function showRegion(ApiCall $call): Response
     {
         return Response::ok($this->serializer->region($this->row(LocationQuery::REGION, $call->intArg())));
     }
 
-    /**
-     * PATCH /admin/regions/{id}. A slug not sent is kept.
-     */
     public function updateRegion(ApiCall $call): Response
     {
         $row   = $this->row(LocationQuery::REGION, $call->intArg());
@@ -70,9 +61,6 @@ final class AdminLocationsController
         return Response::ok($this->serializer->region($this->row(LocationQuery::REGION, (int) $row['pk_i_id'])));
     }
 
-    /**
-     * DELETE /admin/regions/{id}
-     */
     public function deleteRegion(ApiCall $call): Response
     {
         $this->locations->delete('region', $call->intArg());
@@ -80,9 +68,6 @@ final class AdminLocationsController
         return Response::noContent();
     }
 
-    /**
-     * POST /admin/cities
-     */
     public function createCity(ApiCall $call): Response
     {
         $input  = $call->input();
@@ -92,17 +77,11 @@ final class AdminLocationsController
         return Response::created($this->serializer->city($this->row(LocationQuery::CITY, $id)), $this->api->links()->api('admin/cities/' . $id, $call->request()->version()));
     }
 
-    /**
-     * GET /admin/cities/{id}
-     */
     public function showCity(ApiCall $call): Response
     {
         return Response::ok($this->serializer->city($this->row(LocationQuery::CITY, $call->intArg())));
     }
 
-    /**
-     * PATCH /admin/cities/{id}. A slug not sent is kept.
-     */
     public function updateCity(ApiCall $call): Response
     {
         $row   = $this->row(LocationQuery::CITY, $call->intArg());
@@ -112,9 +91,6 @@ final class AdminLocationsController
         return Response::ok($this->serializer->city($this->row(LocationQuery::CITY, (int) $row['pk_i_id'])));
     }
 
-    /**
-     * DELETE /admin/cities/{id}
-     */
     public function deleteCity(ApiCall $call): Response
     {
         $this->locations->delete('city', $call->intArg());
@@ -122,9 +98,6 @@ final class AdminLocationsController
         return Response::noContent();
     }
 
-    /**
-     * POST /admin/areas
-     */
     public function createArea(ApiCall $call): Response
     {
         $input = $call->input();
@@ -134,17 +107,11 @@ final class AdminLocationsController
         return Response::created($this->serializer->area($this->row(LocationQuery::AREA, $id)), $this->api->links()->api('admin/areas/' . $id, $call->request()->version()));
     }
 
-    /**
-     * GET /admin/areas/{id}
-     */
     public function showArea(ApiCall $call): Response
     {
         return Response::ok($this->serializer->area($this->row(LocationQuery::AREA, $call->intArg())));
     }
 
-    /**
-     * PATCH /admin/areas/{id}
-     */
     public function updateArea(ApiCall $call): Response
     {
         $row   = $this->row(LocationQuery::AREA, $call->intArg());
@@ -154,9 +121,6 @@ final class AdminLocationsController
         return Response::ok($this->serializer->area($this->row(LocationQuery::AREA, (int) $row['pk_i_id'])));
     }
 
-    /**
-     * DELETE /admin/areas/{id}
-     */
     public function deleteArea(ApiCall $call): Response
     {
         $this->locations->delete('area', $call->intArg());

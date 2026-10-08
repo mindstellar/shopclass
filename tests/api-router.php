@@ -315,7 +315,7 @@ pin('a slug in capitals is dropped', null, $built->match('GET', 'ext/Acme/x'));
 pin('a deprecated route with a sunset may keep an old path outside ext/', ['id' => '7'], $built->match('GET', 'runs/7')?->args());
 check('a deprecated route cannot replace a core route either', (bool) array_filter($logged, static fn (string $m): bool => str_contains($m, 'GET listings/{id} refused: it would replace a core route')));
 check('each refusal is logged once, naming the rule', count($logged) === 5 && str_contains($logged[0], 'ext/<plugin-slug>/'));
-check('a core route cannot be replaced', $built->isCore('GET listings')
+check('a core route cannot be replaced', $built->match('GET', 'listings') !== null
     && (bool) array_filter($logged, static fn (string $m): bool => str_contains($m, 'GET listings refused: plugin paths')));
 $logged = [];
 $built  = api_with_filter('api_routes', static fn (array $routes): array => $routes + [

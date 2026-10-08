@@ -44,9 +44,6 @@ final class AlertsController
         $this->alerts     = new UserAlerts();
     }
 
-    /**
-     * GET /account/alerts
-     */
     public function index(ApiCall $call): Response
     {
         $rows = $this->alerts->live((int) $call->credential()->userId());
@@ -54,9 +51,6 @@ final class AlertsController
         return Page::whole(array_map([$this->serializer, 'one'], $rows), $this->api->links(), $call);
     }
 
-    /**
-     * POST /account/alerts
-     */
     public function create(ApiCall $call): Response
     {
         $request = $call->request();
@@ -81,17 +75,11 @@ final class AlertsController
         };
     }
 
-    /**
-     * GET /account/alerts/{id}
-     */
     public function show(ApiCall $call): Response
     {
         return Response::ok($this->serializer->one($this->own($call->credential(), $call->intArg())));
     }
 
-    /**
-     * DELETE /account/alerts/{id}
-     */
     public function delete(ApiCall $call): Response
     {
         $this->alerts->unsubscribe((int) $this->own($call->credential(), $call->intArg())['pk_i_id']);
@@ -107,11 +95,6 @@ final class AlertsController
      */
     private function own(Credential $credential, int $id): array
     {
-        $alert = $this->alerts->own($id, (int) $credential->userId());
-        if ($alert === null) {
-            throw ProblemException::notFound('No such alert.');
-        }
-
-        return $alert;
+        return ProblemException::found($this->alerts->own($id, (int) $credential->userId()), 'alert');
     }
 }

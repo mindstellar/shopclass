@@ -26,9 +26,9 @@ use mindstellar\user\UserStore;
 use mindstellar\utility\Clock;
 
 /**
- * Refresh tokens: `scr_<token id>.<secret>`, one t_api_credential row each, the secret kept
- * only as a sha256 hash. Each use swaps the token for a new one in the same family.
- * A swapped token coming back revokes the family, except within RefreshRetries::WINDOW.
+ * Refresh tokens: `scr_<token id>.<secret>`, one t_api_credential row each, the secret kept only as
+ * a sha256 hash. Each use swaps the token for a new one in the same family, and a swapped token
+ * coming back revokes it except within RefreshRetries::WINDOW.
  */
 final class RefreshTokens
 {

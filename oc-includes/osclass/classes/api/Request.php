@@ -17,11 +17,8 @@ use mindstellar\api\identity\WebIdentity;
 use Params;
 
 /**
- * One API request: method, path below /api/, query, headers, caller's address and body.
- * Immutable; withQuery() returns a changed copy.
- *
- * Built from the server globals in production and by hand in tests. No cookie is read but
- * the web user's sign-in cookie, which only the same-site session mode looks at.
+ * One API request: method, path below /api/, query, headers, caller's address and body. Immutable;
+ * withQuery() returns a changed copy.
  */
 final class Request
 {
@@ -534,6 +531,6 @@ final class Request
      */
     public function queryIds(string $name): array
     {
-        return array_map('intval', array_values(array_filter($this->queryList($name), 'ctype_digit')));
+        return array_values(array_filter(array_map([RowId::class, 'parse'], $this->queryList($name)), static fn (?int $id): bool => $id !== null));
     }
 }

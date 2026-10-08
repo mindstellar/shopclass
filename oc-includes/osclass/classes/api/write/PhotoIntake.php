@@ -76,8 +76,7 @@ final class PhotoIntake
 
     /**
      * The photos a listing body names in `photo_tokens` and `photo_urls`. URLs are fetched only
-     * while the listing has room, count in the user's hourly fetch limit and share FETCH_BUDGET
-     * seconds. The listing gets copies of staged photos, so a rolled-back save keeps them.
+     * while the listing has room, within the user's hourly fetch limit and FETCH_BUDGET seconds.
      *
      * @param array<mixed> $input the listing body
      * @param int|null     $room  photos the listing can still take; null for no limit

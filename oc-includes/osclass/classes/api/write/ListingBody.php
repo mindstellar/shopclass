@@ -12,13 +12,12 @@ declare(strict_types=1);
 
 namespace mindstellar\api\write;
 
+use mindstellar\api\RowId;
 use mindstellar\api\serializer\Format;
 
 /**
- * A listing body as the listing form posts it, for ListingInput::fromArray().
- *
- * An edit needs the whole form, or every field left out would be saved empty. So patch()
- * starts from the stored listing (stored()) and lays the sent members over it.
+ * A listing body as the listing form posts it, for ListingInput::fromArray(). An edit needs the
+ * whole form, so patch() starts from the stored listing and lays the sent members over it.
  */
 final class ListingBody
 {
@@ -183,7 +182,7 @@ final class ListingBody
             $form['showEmail'] = $body['show_email'] === true ? '1' : '0';
         }
         foreach ((array) ($body['custom_fields'] ?? []) as $field => $value) {
-            if (!ctype_digit((string) $field)) {
+            if (RowId::parse($field) === null) {
                 continue;
             }
             if ($value === null) {

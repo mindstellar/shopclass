@@ -86,15 +86,11 @@ check('an API call under maintenance gets problem+json', str_contains($index, "i
 check('an API call never records last access nor touches the user cookies', str_contains($run, "if (!\$api) {\n            self::userUpkeep();"));
 check('user upkeep runs before the page', $at('self::userUpkeep();') < $at('PageDispatcher::web()->dispatch('));
 
-harness_section('intercept()');
-$seen = [];
-WebIdentity::intercept(static function (string $action, array $row) use (&$seen): void {
-    $seen[] = [$action, $row['pk_i_id'] ?? null];
-});
-WebIdentity::forget();
-WebIdentity::assume(['pk_i_id' => 7]);
-WebIdentity::assumeAdmin(['pk_i_id' => 2]);
-WebIdentity::intercept(null);
-pin('a test can take the session, cookie and view out of the way', [['forget', null], ['assume', 7], ['assumeAdmin', 2]], $seen);
+harness_section('assume()');
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hUsers.php';
+WebIdentity::assume(['pk_i_id' => 7, 's_name' => 'N', 's_email' => 'n@x.test', 's_phone_mobile' => '', 's_phone_land' => '1']);
+WebIdentity::assumeAdmin(['pk_i_id' => 2, 's_username' => 'boss']);
+pin('assume() and assumeAdmin() set the ids for this request', ['7', '2', 'boss', ['pk_i_id' => 7]], [(string) $session->_get('userId'), (string) $session->_get('adminId'), $session->_get('adminUserName'), array_intersect_key(View::getInstance()->_get('_loggedUser'), ['pk_i_id' => 1])]);
+check('assume() stores no cookie', !isset($_COOKIE['oc_userId']));
 
 exit(harness_result());

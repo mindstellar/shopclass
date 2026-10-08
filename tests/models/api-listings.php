@@ -114,6 +114,7 @@ use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\routing\Router;
 use mindstellar\api\routing\RouteTable;
+use mindstellar\api\schema\Definitions;
 use mindstellar\api\schema\Schema;
 use mindstellar\api\schema\Validator;
 use mindstellar\api\serializer\Links;
@@ -304,10 +305,15 @@ osc_reset_preferences();
 pin('links to the collections', 'http://localhost/api/v1/listings', $r->body()['data']['links']['listings']);
 pin('api_version is the version the request asked for', 'v1', $r->body()['data']['api_version']);
 pin('matches the schema', array(), $schemaErrors('SiteDocument', $r));
-$lazy = Schema::definitions();
+$lazyBuilds = 0;
+$lazy       = Definitions::lazy(Schema::names(), static function () use (&$lazyBuilds): array {
+    $lazyBuilds++;
+
+    return Schema::components();
+});
 $r    = $get('currencies', array(), $publicKey, $makeKernel(new ApiSettings(true, userKeys: true), new Validator($lazy)));
 pin('the currency list matches the stored currencies', array(array('code' => 'USD', 'name' => 'US Dollar', 'symbol' => 'US Dollar')), $r->body()['data']);
-check('a request whose route follows no $ref never builds the component schemas', !($lazy->isBuilt()));
+check('a request whose route follows no $ref never builds the component schemas', $lazyBuilds === 0);
 Preference::getInstance()->set('pageTitle', 'Renamed site');
 pin('the site root follows a settings change at once', 'Renamed site', $get('', array(), $publicKey)->body()['data']['name']);
 Preference::getInstance()->set('pageTitle', 'Test site');

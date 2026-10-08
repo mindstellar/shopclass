@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\api\write;
 
 use mindstellar\api\ProblemException;
+use mindstellar\api\RowId;
 use mindstellar\fields\FieldQuery;
 use mindstellar\utility\DateInput;
 use Params;
@@ -52,7 +53,7 @@ final class CustomFieldValues
         $out = [];
         foreach ($meta as $id => $value) {
             $type = $types[(int) $id] ?? null;
-            if ($type === null || !ctype_digit((string) $id)) {
+            if ($type === null || RowId::parse($id) === null) {
                 continue;
             }
             $value = self::shaped($type, $value, '/custom_fields/' . $id);

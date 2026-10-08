@@ -17,9 +17,9 @@ use mindstellar\api\Response;
 use mindstellar\api\serializer\Links;
 
 /**
- * One page of a list as the API sends it: the rows, `meta` (total, limit, and truncated when
- * offset paging stops before the end) and `links` (self, next). The links never carry an `api_key`.
- * Every list answer has this shape, a list that is not paged included.
+ * One page of a list as the API sends it: the rows, `meta` (total, limit, and truncated when offset
+ * paging stops early) and `links` (self, next). Every list answer has this shape, and the links
+ * never carry an `api_key`.
  */
 final class Page
 {

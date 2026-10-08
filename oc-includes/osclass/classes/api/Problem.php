@@ -20,11 +20,9 @@ use mindstellar\validation\NotFoundException;
 use mindstellar\validation\RefusedException;
 
 /**
- * RFC 9457 problem answers and the error catalogue.
- *
- * `code` is the stable machine name a client branches on; `title` is the same for every
- * occurrence of a code and `detail` says what went wrong this time, as human text that may be
- * in the site's language. Plugins add `ext_<slug>_<name>` codes on `api_problem_codes`.
+ * RFC 9457 problem answers and the error catalogue. `code` is the stable name a client branches on,
+ * `detail` says what went wrong this time, and plugins add `ext_<slug>_<name>` codes on
+ * `api_problem_codes`.
  */
 final class Problem
 {

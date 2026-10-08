@@ -31,9 +31,6 @@ final class CommentsController
     {
     }
 
-    /**
-     * POST /listings/{id}/comments
-     */
     public function create(ApiCall $call): Response
     {
         $request = $call->request();
@@ -52,7 +49,7 @@ final class CommentsController
     }
 
     /**
-     * GET /comments/{id}: an approved comment on a listing the caller can see, or the
+     * An approved comment on a listing the caller can see, or the
      * caller's own whatever its state. Anything else is 404, as if it did not exist.
      */
     public function show(ApiCall $call): Response
@@ -65,9 +62,6 @@ final class CommentsController
         return Response::ok((new CommentSerializer())->one($comment));
     }
 
-    /**
-     * DELETE /comments/{id}: the author's own live comment.
-     */
     public function delete(ApiCall $call): Response
     {
         (new CommentService())->delete($call->intArg(), $call->credential()->actor($call->request()->ip()));

@@ -13,13 +13,9 @@ declare(strict_types=1);
 namespace mindstellar\api\serializer;
 
 /**
- * The last step of every serializer: keep what the `api_listing`, `api_user` and
- * `api_category` filters returned inside the rules, then apply the sparse fieldset. A filter
- * may change a core member's value but not its JSON type, may not remove one and may not add
- * one. Only top-level members and their JSON types are guarded: a filter can still change
- * values or add keys inside an object member.
- * Plugin data lives under `ext.<slug>`; a declared field reaches only its views and an
- * undeclared one only the admin view.
+ * The last step of every serializer: keep what the `api_listing`, `api_user` and `api_category`
+ * filters returned inside the rules, then apply the sparse fieldset. A filter may change a core
+ * member's value but not its type, remove one or add one, and plugin data lives under `ext.<slug>`.
  */
 final class Extensions
 {

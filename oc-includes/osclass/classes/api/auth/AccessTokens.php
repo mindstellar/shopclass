@@ -22,12 +22,9 @@ use mindstellar\security\SignedPayload;
 use mindstellar\user\UserStore;
 
 /**
- * Access tokens: `sca_<SignedPayload>`, signed with the install's key and stored nowhere.
- *
- * The payload names the user, the scopes, the sign-in (refresh family) it came from and the
- * fingerprint of the user's sign-out stamp. Every use reads the user row and the family, so a
- * deleted, suspended or unconfirmed user, a changed password, signing out and a revoked family
- * end the token at once.
+ * Access tokens: `sca_<SignedPayload>`, signed with the install's key and stored nowhere. Every use
+ * reads the user row and the sign-in family, so a deleted or suspended user, a changed password,
+ * signing out or a revoked family ends the token at once.
  */
 final class AccessTokens
 {

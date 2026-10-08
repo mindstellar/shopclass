@@ -253,9 +253,9 @@ $sorted  = static function (array $v): array {
 
     return $v;
 };
-pin('Listing members', $sorted(ListingSerializer::MEMBERS), $sorted(Schema::members($schemas['Listing'])));
-pin('User members', $sorted(UserSerializer::MEMBERS), $sorted(Schema::members($schemas['User'])));
-pin('Category members', $sorted(CategorySerializer::MEMBERS), $sorted(Schema::members($schemas['Category'])));
+pin('Listing members', $sorted(ListingSerializer::MEMBERS), $sorted(array_keys($schemas['Listing']['properties'])));
+pin('User members', $sorted(UserSerializer::MEMBERS), $sorted(array_keys($schemas['User']['properties'])));
+pin('Category members', $sorted(CategorySerializer::MEMBERS), $sorted(array_keys($schemas['Category']['properties'])));
 $broken = [];
 foreach ($schemas as $name => $schema) {
     if ($validator->schemaProblems($schema) !== []) {

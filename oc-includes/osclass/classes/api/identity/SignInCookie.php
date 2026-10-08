@@ -12,10 +12,11 @@ declare(strict_types=1);
 
 namespace mindstellar\api\identity;
 
+use mindstellar\api\RowId;
+
 /**
- * The web user's signed sign-in cookie as the browser sent it: the user id and the
- * RememberMe token. Unchecked; only the same-site session mode reads it, and verifies it
- * first. Immutable.
+ * The web user's signed sign-in cookie as the browser sent it: the user id and the RememberMe
+ * token. Unchecked; only the same-site session mode reads it, and verifies it first.
  */
 final class SignInCookie
 {
@@ -32,7 +33,7 @@ final class SignInCookie
     {
         $id     = $values['oc_userId'] ?? '';
         $secret = $values['oc_userSecret'] ?? '';
-        if (!is_string($id) || !is_string($secret) || !ctype_digit($id) || $secret === '') {
+        if (!is_string($id) || !is_string($secret) || RowId::parse($id) === null || $secret === '') {
             return null;
         }
 

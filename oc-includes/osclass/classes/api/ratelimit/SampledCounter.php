@@ -14,10 +14,7 @@ namespace mindstellar\api\ratelimit;
 
 /**
  * Counts requests in the database without writing on each one, for servers with no APCu. One
- * request in 2 (a limit under 300) or 4 (above), picked at random, adds that many to the stored
- * count; the others only read it. The count is right on average but off by about
- * the square root of (n x (n-1) x limit) per window, for n = 2 or 4: ±11 at a limit of 60, ±60 at
- * 300, so this is for plain buckets only, never exact ones.
+ * request in 2 or 4 adds that many to the stored count, so it is right on average but never exact.
  */
 final class SampledCounter
 {

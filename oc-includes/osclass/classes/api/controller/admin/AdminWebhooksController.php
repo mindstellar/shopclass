@@ -51,9 +51,6 @@ final class AdminWebhooksController
         return Response::ok($this->endpoint($call->arg('webhook'))->toArray($this->clock->now()));
     }
 
-    /**
-     * POST /admin/webhooks
-     */
     public function create(ApiCall $call): Response
     {
         $input = $call->input();
@@ -68,9 +65,6 @@ final class AdminWebhooksController
         return Response::created($endpoint->toArray($this->clock->now(), $secret), $this->links->api('admin/webhooks/' . $endpoint->id(), $call->request()->version()));
     }
 
-    /**
-     * PATCH /admin/webhooks/{webhook}
-     */
     public function update(ApiCall $call): Response
     {
         $id    = $this->endpoint($call->arg('webhook'))->id();
@@ -86,9 +80,6 @@ final class AdminWebhooksController
         return Response::ok($endpoint->toArray($this->clock->now()));
     }
 
-    /**
-     * DELETE /admin/webhooks/{webhook}
-     */
     public function delete(ApiCall $call): Response
     {
         $this->webhooks->delete($this->endpoint($call->arg('webhook'))->id());
@@ -97,7 +88,7 @@ final class AdminWebhooksController
     }
 
     /**
-     * POST /admin/webhooks/{webhook}/rotate-secret: a new secret; the old one keeps signing
+     * A new secret; the old one keeps signing
      * for a day, as a second signature.
      */
     public function rotate(ApiCall $call): Response
@@ -107,9 +98,6 @@ final class AdminWebhooksController
         return Response::ok($endpoint->toArray($this->clock->now(), $secret));
     }
 
-    /**
-     * POST /admin/webhooks/{webhook}/test: queue a `ping`.
-     */
     public function test(ApiCall $call): Response
     {
         $msgId = $this->webhooks->test($this->endpoint($call->arg('webhook'))->id());
@@ -117,9 +105,6 @@ final class AdminWebhooksController
         return Response::ok(['message_id' => $msgId, 'type' => 'ping'], 202);
     }
 
-    /**
-     * GET /admin/webhooks/{webhook}/deliveries
-     */
     public function deliveries(ApiCall $call): Response
     {
         $endpoint = $this->endpoint($call->arg('webhook'));
@@ -142,9 +127,6 @@ final class AdminWebhooksController
         ]);
     }
 
-    /**
-     * GET /admin/webhook-events
-     */
     public function events(ApiCall $call): Response
     {
         $out = [];

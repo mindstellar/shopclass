@@ -80,9 +80,8 @@ final class Format
         $local = date_default_timezone_get();
         $zones[$local] ??= new \DateTimeZone($local);
         $zones['UTC']  ??= new \DateTimeZone('UTC');
-        try {
-            $date = new \DateTimeImmutable($value, $zones[$local]);
-        } catch (\Exception $e) {
+        $date = date_create_immutable($value, $zones[$local]);
+        if ($date === false) {
             return null;
         }
 

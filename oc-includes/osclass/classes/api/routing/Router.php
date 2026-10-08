@@ -232,11 +232,6 @@ final class Router
         return in_array($version, $this->live, true);
     }
 
-    public function isCore(string $key): bool
-    {
-        return isset($this->core[$key]);
-    }
-
     private function add(RouteSpec $route): void
     {
         foreach ($route->versions() as $version) {

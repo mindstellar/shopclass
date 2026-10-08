@@ -15,6 +15,7 @@ namespace mindstellar\listing;
 
 use mindstellar\auth\Actor;
 use mindstellar\database\Db;
+use mindstellar\fields\FieldQuery;
 use mindstellar\user\UserQuery;
 use mindstellar\utility\DeferredMail;
 use mindstellar\utility\Sanitize;
@@ -856,11 +857,14 @@ final class ListingService
         $location = $this->locationRow($aItem);
 
         $locationManager   = \ItemLocation::getInstance();
-        $old_item_location = $locationManager->findByPrimaryKey($aItem['idItem']);
+        $old_item_location = ListingStore::location($aItem['idItem'], true);
+        $old_item_location = $old_item_location === null ? false : Db::stringifyRow($old_item_location);
 
         // A rejected update leaves the previous location in place and every hook
         // below still fires, so the only trace it left was the unread return value.
-        if ($locationManager->update($location, array('fk_i_item_id' => $aItem['idItem'])) === false) {
+        if (!self::sameLocation($location, $old_item_location)
+            && $locationManager->update($location, array('fk_i_item_id' => $aItem['idItem'])) === false
+        ) {
             trigger_error('Item location update wrote no row for item ' . $aItem['idItem'] . '.', E_USER_WARNING);
         } elseif (ListingGeocode::wanted($location)) {
             ListingGeocode::queueAfterCommit($aItem['idItem']);
@@ -915,7 +919,7 @@ final class ListingService
             $actor->logId()
         );
 
-        $this->writeMeta($meta, $aItem['idItem']);
+        $this->writeMeta($meta, $aItem['idItem'], $meta ? FieldQuery::lockedListingValues($aItem['idItem']) : array());
 
         // Premium keeps an expired listing counted, as the recount does.
         $oldIsExpired  = empty($old_item['b_premium']) && osc_isExpired($old_item['dt_expiration']);
@@ -1041,21 +1045,70 @@ final class ListingService
     }
 
     /**
-     * @param mixed $meta custom field values by field id
+     * @param mixed                          $meta   custom field values by field id
+     * @param array<int,array<string,mixed>> $stored the listing's t_item_meta rows; a value they already hold is not written
      */
-    private function writeMeta(mixed $meta, int|string $itemId): void
+    private function writeMeta(mixed $meta, int|string $itemId, array $stored = array()): void
     {
         if (!$meta || count($meta) === 0) {
             return;
         }
+        $held = array();
+        foreach ($stored as $row) {
+            $held[(int) $row['fk_i_field_id']][(string) $row['s_multi']] = $row['s_value'] === null ? null : (string) $row['s_value'];
+        }
         $mField = \Field::getInstance();
         foreach ($meta as $k => $v) {
-            // if dateinterval
-            if (is_array($v) && !isset($v['from']) && !isset($v['to'])) {
-                $v = implode(',', $v);
+            // A date interval keeps its from and to rows; any other list is one value.
+            if (is_array($v) && (isset($v['from']) || isset($v['to']))) {
+                $rows = $v;
+            } else {
+                $v    = is_array($v) ? implode(',', $v) : $v;
+                $rows = array('' => $v);
             }
-            $mField->replace($itemId, $k, $v);
+            $same = true;
+            foreach ($rows as $multi => $value) {
+                $have = $held[(int) $k] ?? array();
+                if (!array_key_exists((string) $multi, $have) || $have[(string) $multi] !== ($value === null ? null : (string) $value)) {
+                    $same = false;
+                }
+            }
+            if (!$same) {
+                $mField->replace($itemId, $k, $v);
+            }
         }
+    }
+
+    /**
+     * Whether the location row holds these values already. Coordinates compare as numbers.
+     *
+     * @param array<string,mixed>       $location
+     * @param array<string,mixed>|false $stored
+     */
+    private static function sameLocation(array $location, array|false $stored): bool
+    {
+        if (!is_array($stored)) {
+            return false;
+        }
+        foreach ($location as $column => $value) {
+            if (!array_key_exists($column, $stored)) {
+                return false;
+            }
+            $have = $stored[$column];
+            if ($value === null || $have === null) {
+                if ($value !== $have) {
+                    return false;
+                }
+            } elseif (in_array($column, array('d_coord_lat', 'd_coord_long'), true) && is_numeric($value) && is_numeric($have)) {
+                if ((float) $value !== (float) $have) {
+                    return false;
+                }
+            } elseif ((string) $value !== (string) $have) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

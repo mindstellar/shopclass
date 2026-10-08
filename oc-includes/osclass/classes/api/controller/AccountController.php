@@ -32,12 +32,8 @@ use mindstellar\user\AccountService;
 use mindstellar\utility\DeferredMail;
 
 /**
- * The signed-in user's own account: `GET` and `PATCH /account`, `POST /account/password`,
- * their listings at `/account/listings`, and the sign-ins and keys that act for them at
- * `/account/sessions`.
- *
- * Edits go through AccountService as the profile form's do, so its checks and hooks run. A
- * new e-mail address is not applied here: it gets the same confirmation link the web sends.
+ * The signed-in user's own account, listings, sign-ins and keys. Edits go through AccountService as
+ * the profile form's do, and a new e-mail address gets the same confirmation link the web sends.
  */
 final class AccountController
 {
@@ -57,7 +53,7 @@ final class AccountController
     }
 
     /**
-     * GET /account/listings: the user's own listings in any status, as their listings page
+     * The user's own listings in any status, as their listings page
      * lists them, newest first.
      */
     public function listings(ApiCall $call): Response
@@ -142,9 +138,6 @@ final class AccountController
         return $this->tokens->answer($user, $grant->scopes(), $grant->family(), $grant);
     }
 
-    /**
-     * POST /account/sign-out-everywhere: every sign-in of the user ends, this one too.
-     */
     public function signOutEverywhere(ApiCall $call): Response
     {
         $credential = $call->credential();
@@ -186,12 +179,7 @@ final class AccountController
      */
     private function user(Credential $credential): array
     {
-        $user = $this->users->find((int) $credential->userId());
-        if ($user === null) {
-            throw ProblemException::notFound('No such user.');
-        }
-
-        return $user;
+        return ProblemException::found($this->users->find((int) $credential->userId()), 'user');
     }
 
     /**

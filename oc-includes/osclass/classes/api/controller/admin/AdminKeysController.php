@@ -53,9 +53,6 @@ final class AdminKeysController
         return Response::ok($this->serializer->admin($this->key($call->intArg())));
     }
 
-    /**
-     * POST /admin/keys
-     */
     public function create(ApiCall $call): Response
     {
         $credential = $call->credential();
@@ -79,9 +76,6 @@ final class AdminKeysController
         return Response::created($this->serializer->admin($this->key($issued->id()), $issued->token()), $this->links->api('admin/keys/' . $issued->id(), $call->request()->version()));
     }
 
-    /**
-     * DELETE /admin/keys/{id}
-     */
     public function revoke(ApiCall $call): Response
     {
         $id = (int) $this->key($call->intArg())['id'];
@@ -91,7 +85,7 @@ final class AdminKeysController
     }
 
     /**
-     * POST /admin/keys/{id}/rotate: a new key with the old one's name, scopes and expiry, but
+     * A new key with the old one's name, scopes and expiry, but
      * never outliving the calling key. The old key works until it is revoked.
      */
     public function rotate(ApiCall $call): Response
@@ -114,11 +108,6 @@ final class AdminKeysController
      */
     private function key(int $id): array
     {
-        $row = $this->keys->row($id);
-        if ($row === null) {
-            throw ProblemException::notFound('No such key.');
-        }
-
-        return $row;
+        return ProblemException::found($this->keys->row($id), 'key');
     }
 }

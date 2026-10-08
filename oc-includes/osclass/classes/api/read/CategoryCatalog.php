@@ -14,6 +14,7 @@ namespace mindstellar\api\read;
 
 use mindstellar\api\Problem;
 use mindstellar\api\ProblemException;
+use mindstellar\api\RowId;
 use mindstellar\category\CategoryQuery;
 
 /**
@@ -96,8 +97,9 @@ final class CategoryCatalog
     public function lookup(string $idOrSlug, string $locale): ?array
     {
         $this->load();
-        if (ctype_digit($idOrSlug)) {
-            return $this->find((int) $idOrSlug);
+        $id = RowId::parse($idOrSlug);
+        if ($id !== null) {
+            return $this->find($id);
         }
         $parts    = explode('/', trim($idOrSlug, '/'));
         $idOrSlug = end($parts);
@@ -154,7 +156,7 @@ final class CategoryCatalog
     {
         $ids = [];
         foreach ($values as $value) {
-            $row = $anyId && ctype_digit($value) && (int) $value > 0 ? ['pk_i_id' => $value] : $this->lookup($value, $locale);
+            $row = $anyId && (RowId::parse($value) ?? 0) > 0 ? ['pk_i_id' => $value] : $this->lookup($value, $locale);
             if ($row === null) {
                 throw ProblemException::from(Problem::validation([
                     ['pointer' => '/category', 'code' => 'enum', 'message' => 'is not a known category: ' . $value, 'in' => 'query'],

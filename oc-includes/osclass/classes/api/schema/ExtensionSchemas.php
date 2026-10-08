@@ -15,9 +15,9 @@ namespace mindstellar\api\schema;
 use mindstellar\api\routing\Router;
 
 /**
- * Plugin component schemas from the `api_schemas` filter (which osc_api_register_schema()
- * feeds): name => schema. A name must be `Ext<StudlyCaps>`, and a schema may `$ref` only
- * other plugin components and Router::SHARED_COMPONENTS. Anything else is dropped and logged.
+ * Plugin component schemas from the `api_schemas` filter, name => schema. A name must be
+ * `Ext<StudlyCaps>` and a schema may `$ref` only plugin components and Router::SHARED_COMPONENTS;
+ * anything else is dropped and logged.
  */
 final class ExtensionSchemas
 {
@@ -39,7 +39,6 @@ final class ExtensionSchemas
 
     /**
      * @param array<mixed,mixed> $schemas
-     * @param callable|null      $log
      *
      * @return array<string,array<string,mixed>>
      */

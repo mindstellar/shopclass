@@ -53,9 +53,6 @@ final class AdminListingsController
         $this->list = new ListingList($api, $this->reader);
     }
 
-    /**
-     * GET /admin/listings: newest first, paged by id.
-     */
     public function index(ApiCall $call): Response
     {
         $request = $call->request();
@@ -88,7 +85,7 @@ final class AdminListingsController
     }
 
     /**
-     * PATCH /admin/listings/{id}. Members not sent keep their stored values, the owner and
+     * Members not sent keep their stored values, the owner and
      * the expiry date included. `approved`, `blocked`, `spam` and `premium` change the
      * status as the screen's actions do.
      */
@@ -118,9 +115,6 @@ final class AdminListingsController
         return Response::ok($this->view($call, $listing->id()));
     }
 
-    /**
-     * DELETE /admin/listings/{id}
-     */
     public function delete(ApiCall $call): Response
     {
         $this->writer->delete($this->owned->load($call->intArg()), $call->credential()->actor($call->request()->ip(), 'admin:listings'));
@@ -128,9 +122,6 @@ final class AdminListingsController
         return Response::noContent();
     }
 
-    /**
-     * POST /admin/listings/{id}/bump
-     */
     public function bump(ApiCall $call): Response
     {
         $this->moderation->apply('bump', $call->intArg(), (int) $call->credential()->adminId(), self::note($call->credential()));
@@ -156,7 +147,7 @@ final class AdminListingsController
     {
         $context = $this->api->context($call->request(), $call->credential(), 'listing', ListingSerializer::MEMBERS, ListingSerializer::INCLUDES);
 
-        return $this->reader->one($id, $context) ?? throw ProblemException::notFound('No such listing.');
+        return ProblemException::found($this->reader->one($id, $context), 'listing');
     }
 
     /**

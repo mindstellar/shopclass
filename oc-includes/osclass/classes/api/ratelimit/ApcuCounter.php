@@ -15,10 +15,9 @@ namespace mindstellar\api\ratelimit;
 use mindstellar\utility\Clock;
 
 /**
- * Counts requests in shared memory and writes the new ones to the database counter at most
- * every few seconds per key, so a request costs no query. The limit is judged on the memory
- * count; the database count lags by up to FLUSH_EVERY seconds. A fresh memory count starts
- * from the database one, so a restart or an evicted key does not reset the window.
+ * Counts requests in shared memory and writes the new ones to the database counter every few
+ * seconds per key, so a request costs no query. The limit is judged on the memory count, which
+ * starts from the database one so a restart does not reset the window.
  */
 final class ApcuCounter
 {

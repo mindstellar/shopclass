@@ -20,10 +20,9 @@ use mindstellar\apiaccess\CredentialKind;
 use mindstellar\security\AddressBucket;
 
 /**
- * Every rate limit the API counts, in one place: per client address when anonymous, per key
- * (and address for a public key), per user for a token, session or personal key, plus a write bucket.
- * Hourly caps on new listings, photos fetched by URL and sign-ups stand in for a captcha.
- * Those caps and the write bucket are exact: counted in the database, never in APCu.
+ * Every rate limit the API counts, in one place: per address, key or user, plus a write bucket.
+ * Hourly caps on new listings, URL photo fetches and sign-ups are exact, counted in the database
+ * and never in APCu.
  */
 final class RatePolicy
 {

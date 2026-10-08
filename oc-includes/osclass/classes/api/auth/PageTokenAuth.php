@@ -28,10 +28,9 @@ use mindstellar\user\UserStore;
 
 /**
  * The same-site session mode: theme JavaScript on the site's own pages calls the API as the
- * signed-in web user. It applies only to a request with no API token that carries a page
- * token in X-Shopclass-Token, and is refused, not run as anonymous, unless the request comes
- * from this site, the sign-in cookie is valid and the page token matches that user.
- * The credential never holds account:write or admin.
+ * signed-in web user, with a page token in X-Shopclass-Token. It is refused unless the request
+ * comes from this site, the sign-in cookie is valid and the token matches that user; the credential
+ * never holds account:write or admin.
  */
 final class PageTokenAuth
 {

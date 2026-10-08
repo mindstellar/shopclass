@@ -17,13 +17,12 @@ use mindstellar\api\schema\Validator;
 use mindstellar\apiaccess\ApiSettings;
 use mindstellar\apiaccess\Credential;
 use mindstellar\apiaccess\Scopes;
+use mindstellar\utility\DateInput;
 
 /**
- * One endpoint: method, path, handler, who may call it and what it accepts. The kernel
- * enforces these fields and the OpenAPI document is built from them; immutable.
- *
- * The spec keys in PLUGIN_KEYS and the AUTH_* values are the plugin contract; CORE_KEYS are
- * refused on a plugin route.
+ * One endpoint: method, path, handler, who may call it and what it accepts. The kernel enforces
+ * these fields and the OpenAPI document is built from them; PLUGIN_KEYS and the AUTH_* values are
+ * the plugin contract.
  */
 final class RouteSpec
 {
@@ -340,9 +339,8 @@ final class RouteSpec
     }
 
     /**
-     * The path's arguments for a request path, or null when it does not match. `{id}` and
-     * `{photo}` match digits, any other `{name}` one path segment. The request path is already
-     * decoded, so the values are used as they are.
+     * The path's arguments for a request path, or null when it does not match. `{id}` and `{photo}`
+     * match digits and any other `{name}` one path segment.
      *
      * @return array<string,string>|null
      */
@@ -610,7 +608,7 @@ final class RouteSpec
             return null;
         }
         $value = (string) $value;
-        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/D', $value, $m) !== 1 || !checkdate((int) $m[2], (int) $m[3], (int) $m[1])) {
+        if (DateInput::parse($value)?->format('Y-m-d') !== $value) {
             throw new \InvalidArgumentException($key . ': ' . $field . ' must be a date, Y-m-d.');
         }
 

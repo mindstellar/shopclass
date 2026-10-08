@@ -17,6 +17,7 @@ use mindstellar\api\Problem;
 use mindstellar\api\ProblemException;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
+use mindstellar\api\RowId;
 use mindstellar\api\serializer\ListingSerializer;
 use mindstellar\apiaccess\Credential;
 use mindstellar\listing\ListingQuery;
@@ -117,7 +118,7 @@ final class ListingSearch
         }
         $users = $userId !== null ? [(string) $userId] : $request->queryList('user');
         foreach ($users as $user) {
-            if (!ctype_digit($user)) {
+            if (RowId::parse($user) === null) {
                 throw ProblemException::from(Problem::validation([
                     ['pointer' => '/user', 'code' => 'format', 'message' => 'must be a user id: ' . $user, 'in' => 'query'],
                 ]));

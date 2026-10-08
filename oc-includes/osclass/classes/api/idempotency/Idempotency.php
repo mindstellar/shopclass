@@ -21,12 +21,9 @@ use mindstellar\utility\Clock;
 use mindstellar\validation\RefusedException;
 
 /**
- * `Idempotency-Key` on POST, PUT, PATCH and DELETE: a write sent again with the same key gets
- * the first answer back instead of running twice.
- *
- * Keys belong to the credential that sent them and are kept for a day. The same key while
- * the first request runs answers 409; with a different method, path, query, If-Match or body,
- * 422. A 5xx or 429 answer is not kept.
+ * `Idempotency-Key` on POST, PUT, PATCH and DELETE: a write sent again with the same key gets the
+ * first answer back instead of running twice. Keys belong to the credential and are kept a day; a
+ * clash is 409 or 422, and a 5xx or 429 answer is not kept.
  */
 final class Idempotency
 {

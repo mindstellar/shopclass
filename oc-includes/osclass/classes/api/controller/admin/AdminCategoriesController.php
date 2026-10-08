@@ -39,9 +39,6 @@ final class AdminCategoriesController
         $this->query      = new CategoryQuery();
     }
 
-    /**
-     * GET /admin/categories: every category, enabled or not.
-     */
     public function index(ApiCall $call): Response
     {
         $rows  = $this->query->rows(null);
@@ -50,17 +47,11 @@ final class AdminCategoriesController
         return Page::whole(array_map(static fn (array $row): array => CategorySerializer::admin($row, $texts[(int) $row['pk_i_id']] ?? []), $rows), $this->api->links(), $call);
     }
 
-    /**
-     * GET /admin/categories/{id}
-     */
     public function show(ApiCall $call): Response
     {
         return Response::ok($this->categoryData($call->intArg()));
     }
 
-    /**
-     * POST /admin/categories: added last among its siblings; slugs are made from the names.
-     */
     public function create(ApiCall $call): Response
     {
         $input        = $call->input();
@@ -85,17 +76,14 @@ final class AdminCategoriesController
     }
 
     /**
-     * PATCH /admin/categories/{id}. Texts not sent keep their values, slugs included; a
+     * Texts not sent keep their values, slugs included; a
      * changed slug keeps the old one redirecting.
      */
     public function update(ApiCall $call): Response
     {
         $id    = $call->intArg();
-        $row   = $this->query->rows($id)[0] ?? null;
+        $row   = ProblemException::found($this->query->rows($id)[0] ?? null, 'category');
         $input = $call->input();
-        if ($row === null) {
-            throw ProblemException::notFound('No such category.');
-        }
         $editor = $this->categories;
         DeferredMail::transaction(function () use ($editor, $id, $row, $input): void {
             if (array_intersect_key($input, ['translations' => 1, 'expiration_days' => 1, 'price_enabled' => 1, 'apply_to_subcategories' => 1]) !== []) {
@@ -119,7 +107,7 @@ final class AdminCategoriesController
     }
 
     /**
-     * DELETE /admin/categories/{id}: 204 when it is gone, 202 when it is too large and is
+     * 204 when it is gone, 202 when it is too large and is
      * hidden now and emptied in the background.
      */
     public function delete(ApiCall $call): Response
@@ -133,10 +121,7 @@ final class AdminCategoriesController
      */
     private function categoryData(int $id): array
     {
-        $row = $this->query->rows($id)[0] ?? null;
-        if ($row === null) {
-            throw ProblemException::notFound('No such category.');
-        }
+        $row = ProblemException::found($this->query->rows($id)[0] ?? null, 'category');
 
         return CategorySerializer::admin($row, $this->query->texts([$id])[$id] ?? []);
     }

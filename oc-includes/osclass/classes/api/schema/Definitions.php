@@ -90,9 +90,4 @@ final class Definitions
 
         return $this->schemas;
     }
-
-    public function isBuilt(): bool
-    {
-        return $this->schemas !== null;
-    }
 }

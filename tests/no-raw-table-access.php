@@ -32,7 +32,6 @@ const ALLOWED = array(
     'oc-includes/osclass/classes/job/JobQueue.php'               => array(21, 'is the t_job_queue store; the class name is public API'),
     'oc-includes/osclass/classes/cli/Cli.php'                    => array(3, 'CLI installer: the first admin and site preferences, as install-functions.php'),
     'oc-includes/osclass/classes/privacy/PersonalData.php'       => array(1, 'reads a fixed map of account tables for the data export'),
-    'oc-includes/osclass/classes/api/http/RowVersions.php'       => array(1, 'hashes the rows of a fixed table map into a resource version'),
     'oc-includes/osclass/classes/search/'                        => array(55, 'the search compiler builds listing SQL that plugins extend with raw fragments'),
 );
 

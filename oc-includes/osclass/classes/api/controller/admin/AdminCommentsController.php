@@ -46,9 +46,6 @@ final class AdminCommentsController
         $this->comments   = new CommentQuery();
     }
 
-    /**
-     * GET /admin/comments: newest first, paged by id.
-     */
     public function index(ApiCall $call): Response
     {
         $request = $call->request();
@@ -73,7 +70,7 @@ final class AdminCommentsController
     }
 
     /**
-     * PATCH /admin/comments/{id}. Members not sent keep their values; `blocked` and `approved`
+     * Members not sent keep their values; `blocked` and `approved`
      * change the status as the screen's actions do.
      */
     public function update(ApiCall $call): Response
@@ -118,6 +115,6 @@ final class AdminCommentsController
      */
     private function comment(int $id): array
     {
-        return $this->comments->find($id) ?? throw ProblemException::notFound('No such comment.');
+        return ProblemException::found($this->comments->find($id), 'comment');
     }
 }

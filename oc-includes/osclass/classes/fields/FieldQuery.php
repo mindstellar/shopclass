@@ -45,6 +45,20 @@ final class FieldQuery
     }
 
     /**
+     * One listing's t_item_meta rows, locked (FOR UPDATE) until the transaction ends.
+     *
+     * @return array<int,array<string,mixed>>
+     * @throws \mindstellar\database\DbException
+     */
+    public static function lockedListingValues(int $itemId): array
+    {
+        return Db::select(
+            'SELECT fk_i_field_id, s_multi, s_value FROM ' . DB_TABLE_PREFIX . 't_item_meta WHERE fk_i_item_id = ? FOR UPDATE',
+            [$itemId]
+        );
+    }
+
+    /**
      * The values of several listings joined to their field, in form order.
      *
      * @param int[] $itemIds

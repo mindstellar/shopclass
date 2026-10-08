@@ -87,10 +87,7 @@ final class AccountKeysController
     public function show(ApiCall $call): Response
     {
         $this->allowed();
-        $key = $this->keys->find((int) $call->credential()->userId(), $call->intArg());
-        if ($key === null) {
-            throw ProblemException::notFound('No such key.');
-        }
+        $key = ProblemException::found($this->keys->find((int) $call->credential()->userId(), $call->intArg()), 'key');
 
         return Response::ok($this->serializer->personal($key, $this->clock->now()));
     }
@@ -99,7 +96,7 @@ final class AccountKeysController
     {
         $this->allowed();
         $userId = (int) $call->credential()->userId();
-        $key    = $this->keys->find($userId, $call->intArg()) ?? throw ProblemException::notFound('No such key.');
+        $key    = ProblemException::found($this->keys->find($userId, $call->intArg()), 'key');
         if ($key->revokedAt() !== null) {
             throw ProblemException::of('conflict', 'That key is already revoked.');
         }

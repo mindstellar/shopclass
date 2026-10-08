@@ -23,11 +23,9 @@ use mindstellar\user\AccountInput;
 use mindstellar\user\AccountService;
 
 /**
- * `POST /users`: sign up, when the site switches it on. AccountService::register() makes the
- * account as it does for the sign-up form, with the same checks, hooks and activation e-mail.
- * There is no captcha to show, so each address gets a few tries an hour and the site a cap,
- * both refusing when they cannot count. A taken e-mail gets the answer a new one gets, so
- * sign-up does not tell which addresses have an account.
+ * Sign-up, when the site switches it on, through AccountService::register() with the same checks,
+ * hooks and activation e-mail as the form. Each address gets a few tries an hour and the site a
+ * cap, and a taken e-mail gets the answer a new one gets.
  */
 final class RegistrationController
 {

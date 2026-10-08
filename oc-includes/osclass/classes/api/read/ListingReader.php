@@ -19,11 +19,8 @@ use mindstellar\database\Db;
 use mindstellar\listing\ListingQuery;
 
 /**
- * Listings as the API answers with them: the rows read, what they link to looked up once
- * per page, and each serialized in the caller's view. A page costs a fixed number of
- * queries, whatever its size: one each for photos, sellers and custom field values, each
- * only when the response includes it. A database error is not caught: it reaches the kernel
- * as a 500, never a 404 or a partial answer a cache could keep.
+ * Listings as the API answers with them, serialized in the caller's view. A page costs a fixed
+ * number of queries whatever its size, and a database error reaches the kernel as a 500.
  */
 final class ListingReader
 {

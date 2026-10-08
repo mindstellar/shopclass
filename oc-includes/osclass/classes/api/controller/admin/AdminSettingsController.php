@@ -38,9 +38,6 @@ final class AdminSettingsController
         return Response::ok($this->settings->read());
     }
 
-    /**
-     * PATCH /admin/settings: all or none.
-     */
     public function update(ApiCall $call): Response
     {
         $input = $call->input();
@@ -51,9 +48,6 @@ final class AdminSettingsController
         return $this->show();
     }
 
-    /**
-     * GET /admin/jobs
-     */
     public function jobs(ApiCall $call): Response
     {
         $serializer = new JobSerializer();

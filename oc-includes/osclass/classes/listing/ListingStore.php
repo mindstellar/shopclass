@@ -126,13 +126,17 @@ final class ListingStore extends Model
     }
 
     /**
-     * The listing's t_item_location row, or null.
+     * The listing's t_item_location row, or null. $lock locks it (FOR UPDATE) until the transaction ends.
      *
      * @return array<string,mixed>|null
      * @throws \mindstellar\database\DbException
      */
-    public static function location(int $id): ?array
+    public static function location(int $id, bool $lock = false): ?array
     {
+        if ($lock) {
+            return Db::selectOne('SELECT * FROM ' . DB_TABLE_PREFIX . 't_item_location WHERE fk_i_item_id = ? FOR UPDATE', [$id]);
+        }
+
         return Db::table(DB_TABLE_PREFIX . 't_item_location')->where('fk_i_item_id', $id)->first();
     }
 

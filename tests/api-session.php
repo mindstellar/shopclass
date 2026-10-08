@@ -216,7 +216,7 @@ pin('a GET that shows nothing is refused', [403, 'cross_origin'], $call([]));
 pin('a write with only a Referer is refused', [403, 'cross_origin'], $call(['Referer' => 'https://shop.example.test/sub/'], 'POST'));
 pin('a write from the site is accepted', [201, null], $call(['Origin' => $site, 'Content-Type' => 'application/json'], 'POST'));
 pin('the site origin drops the subdirectory and default port', ['https://shop.example.test', 'http://a.test:8080', null], [
-    (new SiteOrigin('https://shop.example.test:443/sub/'))->origin(), SiteOrigin::of('http://A.test:8080/x'), SiteOrigin::of('ftp://a.test'),
+    SiteOrigin::of('https://shop.example.test:443/sub/'), SiteOrigin::of('http://A.test:8080/x'), SiteOrigin::of('ftp://a.test'),
 ]);
 check('a site with no usable base URL accepts nobody', !(new SiteOrigin(''))->matches($session(['Origin' => ''])));
 

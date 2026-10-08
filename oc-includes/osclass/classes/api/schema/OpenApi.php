@@ -27,11 +27,9 @@ use mindstellar\apiaccess\Scopes;
 use mindstellar\webhook\Events;
 
 /**
- * One API version described in OpenAPI 3.1, built from that version's routes and the
- * component schemas, so the document cannot promise what the kernel does not serve. Served
- * live at GET /api/<version>/openapi.json (with the site's plugins) and written for core
- * alone to docs/site/developers/api/openapi.json by tools/gen-openapi.php. `info.version` is
- * the version's document revision (ApiSettings::VERSIONS), not the CMS's.
+ * One API version described in OpenAPI 3.1, built from its routes and component schemas so it
+ * cannot promise what the kernel does not serve. It is served live at `/api/<version>/openapi.json`
+ * and written for core alone by tools/gen-openapi.php.
  */
 final class OpenApi
 {

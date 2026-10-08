@@ -51,9 +51,6 @@ final class AdminUsersController
         $this->query = new UserQuery();
     }
 
-    /**
-     * GET /admin/users: newest first, paged by id.
-     */
     public function index(ApiCall $call): Response
     {
         $request = $call->request();
@@ -88,7 +85,7 @@ final class AdminUsersController
     }
 
     /**
-     * PATCH /admin/users/{id}. Members not sent keep their values; `blocked` and `confirmed`
+     * Members not sent keep their values; `blocked` and `confirmed`
      * change the account's status as the screen's actions do.
      */
     public function update(ApiCall $call): Response
@@ -116,7 +113,7 @@ final class AdminUsersController
     }
 
     /**
-     * DELETE /admin/users/{id}: the user, their listings and comments, profile texts, saved
+     * The user, their listings and comments, profile texts, saved
      * searches, avatar, sign-ins and keys, all or none.
      */
     public function delete(ApiCall $call): Response
@@ -129,7 +126,7 @@ final class AdminUsersController
     }
 
     /**
-     * POST /admin/users/{id}/sign-out-everywhere: every web sign-in, API token and personal key
+     * Every web sign-in, API token and personal key
      * of the user stops working.
      */
     public function signOutEverywhere(ApiCall $call): Response
@@ -141,9 +138,6 @@ final class AdminUsersController
         return Response::noContent();
     }
 
-    /**
-     * GET /admin/users/{id}/sessions
-     */
     public function sessions(ApiCall $call): Response
     {
         $id         = (int) $this->user($call->intArg())['pk_i_id'];
@@ -155,9 +149,6 @@ final class AdminUsersController
         ), $this->api->links(), $call);
     }
 
-    /**
-     * DELETE /admin/users/{id}/sessions/{session}
-     */
     public function endSession(ApiCall $call): Response
     {
         $id = (int) $this->user($call->intArg())['pk_i_id'];
@@ -191,12 +182,7 @@ final class AdminUsersController
      */
     private function user(int $id): array
     {
-        $user = $this->users->find($id);
-        if ($user === null) {
-            throw ProblemException::notFound('No such user.');
-        }
-
-        return $user;
+        return ProblemException::found($this->users->find($id), 'user');
     }
 
     private function serializer(): UserSerializer

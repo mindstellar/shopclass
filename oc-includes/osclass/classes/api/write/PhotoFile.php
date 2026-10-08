@@ -17,9 +17,9 @@ use mindstellar\api\Request;
 use mindstellar\storage\UploadMimes;
 
 /**
- * A photo file in the temp folder. fromRequest() and checked() make one that passed the
- * listing form's checks: a type the site accepts, an image that decodes, within the pixel
- * limit and within the site's file size. A staged photo also has a token and an expiry.
+ * A photo file in the temp folder that passed the listing form's checks: an accepted type, an image
+ * that decodes, within the pixel and file size limits. A staged photo also has a token and an
+ * expiry.
  */
 final class PhotoFile
 {

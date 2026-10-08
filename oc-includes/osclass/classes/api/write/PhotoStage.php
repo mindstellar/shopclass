@@ -12,8 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\api\write;
 
-use mindstellar\base\Model;
-use mindstellar\database\Db;
+use mindstellar\listing\UploadTmpStore;
 use mindstellar\utility\Clock;
 
 /**
@@ -22,10 +21,8 @@ use mindstellar\utility\Clock;
  * photo token only works for the user who uploaded it. The hourly cron removes both after
  * two hours, as it does for the form's uploads.
  */
-final class PhotoStage extends Model
+final class PhotoStage
 {
-    protected const TABLE = 't_item_upload_tmp';
-
     /** Seconds a staged photo is kept. */
     public const TTL = 7200;
 
@@ -65,11 +62,8 @@ final class PhotoStage extends Model
         }
         $now   = $this->clock->now();
         $owner = self::owner($userId);
-        Db::execute(
-            'INSERT INTO ' . self::tableName() . ' (s_token, s_uuid, s_file, dt_date) VALUES (?, ?, ?, ?)',
-            [$owner, $token, $file, date('Y-m-d H:i:s', $now)]
-        );
-        $pending = (int) Db::scalar('SELECT COUNT(*) FROM ' . self::tableName() . ' WHERE s_token = ? AND dt_date > ?', [$owner, $this->cutoff()]);
+        UploadTmpStore::add($owner, $token, $file, date('Y-m-d H:i:s', $now));
+        $pending = UploadTmpStore::countSince($owner, $this->cutoff());
         if ($pending > self::MAX_PENDING) {
             $this->forget($userId, [$token]);
             @unlink($this->dir . $file);
@@ -94,11 +88,7 @@ final class PhotoStage extends Model
         if ($tokens === []) {
             return [];
         }
-        $rows = Db::select(
-            'SELECT s_uuid, s_file, dt_date FROM ' . self::tableName() . ' WHERE s_token = ? AND dt_date > ? AND s_uuid IN ('
-            . implode(', ', array_fill(0, count($tokens), '?')) . ')',
-            array_merge([self::owner($userId), $this->cutoff()], $tokens)
-        );
+        $rows = UploadTmpStore::find(self::owner($userId), $this->cutoff(), $tokens);
         $out = [];
         foreach ($rows as $row) {
             $file = (string) $row['s_file'];
@@ -121,10 +111,7 @@ final class PhotoStage extends Model
         if ($tokens === []) {
             return;
         }
-        Db::execute(
-            'DELETE FROM ' . self::tableName() . ' WHERE s_token = ? AND s_uuid IN (' . implode(', ', array_fill(0, count($tokens), '?')) . ')',
-            array_merge([self::owner($userId)], $tokens)
-        );
+        UploadTmpStore::remove(self::owner($userId), $tokens);
     }
 
     /**

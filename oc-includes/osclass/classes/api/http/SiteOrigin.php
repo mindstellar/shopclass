@@ -15,12 +15,9 @@ namespace mindstellar\api\http;
 use mindstellar\api\Request;
 
 /**
- * The site's own origin (scheme, host and port of its base URL; a subdirectory is not part of
- * it), and whether a request came from one of the site's own pages.
- *
- * A browser sets Origin and Sec-Fetch-Site itself and no page can forge them. A same-origin
- * GET may carry no Origin, so a read may also show where it came from with Sec-Fetch-Site or,
- * from an older browser, Referer. A request that shows nothing is not from the site.
+ * The site's own origin (scheme, host and port of its base URL), and whether a request came from
+ * one of the site's own pages. A browser sets Origin and Sec-Fetch-Site itself, so a read may also
+ * show it with Sec-Fetch-Site or Referer; a request that shows nothing is not from the site.
  */
 final class SiteOrigin
 {
@@ -60,11 +57,6 @@ final class SiteOrigin
         }
 
         return $scheme . '://' . $host . ($port === null ? '' : ':' . $port);
-    }
-
-    public function origin(): string
-    {
-        return $this->origin;
     }
 
     /**

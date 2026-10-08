@@ -49,10 +49,7 @@ final class CategoriesController
     public function show(ApiCall $call): Response
     {
         $context  = $this->api->context($call->request(), $call->credential(), 'category', CategorySerializer::MEMBERS);
-        $category = CategoryCatalog::fromSite()->lookup((string) ($call->arg('category') ?? ''), $context->locale());
-        if ($category === null) {
-            throw ProblemException::notFound('No such category.');
-        }
+        $category = ProblemException::found(CategoryCatalog::fromSite()->lookup((string) ($call->arg('category') ?? ''), $context->locale()), 'category');
         $fields = $this->api->fieldService()->forCategory((int) $category['pk_i_id']);
 
         return Response::ok($this->serializer->one($category, $context, $fields));

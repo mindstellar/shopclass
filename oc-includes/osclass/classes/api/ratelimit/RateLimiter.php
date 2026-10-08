@@ -18,8 +18,8 @@ use mindstellar\utility\Clock;
 
 /**
  * Counts requests in their buckets over core's RateLimit, in APCu when the server has it and in
- * database samples when it does not, and builds the rate limit headers. An exact bucket is
- * counted in the database on every request. Fails open like RateLimit.
+ * database samples when it does not, and builds the rate limit headers. An exact bucket is counted
+ * in the database on every request, and it fails open like RateLimit.
  */
 final class RateLimiter
 {
