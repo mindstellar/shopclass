@@ -14,6 +14,7 @@
 namespace mindstellar\listing;
 
 use mindstellar\auth\Actor;
+use mindstellar\security\Demo;
 use mindstellar\storage\ResourceUploader;
 use mindstellar\utility\DeferredMail;
 
@@ -370,7 +371,7 @@ final class PhotoService
      */
     public function removeFiles(array $resource, Actor $actor): bool
     {
-        if (defined('DEMO')) {
+        if (Demo::active()) {
             return false;
         }
         \Log::getInstance()->insertLog('item', 'delete resource', $resource['pk_i_id'], $resource['pk_i_id'], $actor->logRole(), $actor->logId());

@@ -59,7 +59,7 @@ function osc_item_is_counted(array $item): bool
  */
 function osc_deleteResource($id, $admin, $resource = null)
 {
-    if (defined('DEMO')) {
+    if (\mindstellar\security\Demo::active()) {
         return false;
     }
     if (is_array($id)) {
@@ -271,7 +271,7 @@ function osc_mail_upload_attachment($field)
 function osc_sendMail($params)
 {
     // DO NOT send mail if it's a demo
-    if (defined('DEMO')) {
+    if (\mindstellar\security\Demo::active()) {
         return false;
     }
     // Held while a database write is open; sent once it commits.
@@ -1188,7 +1188,7 @@ function osc_package_installs_disabled()
  */
 function osc_market_changes_blocked()
 {
-    return defined('DEMO') || osc_package_installs_disabled();
+    return \mindstellar\security\Demo::active() || osc_package_installs_disabled();
 }
 
 /**

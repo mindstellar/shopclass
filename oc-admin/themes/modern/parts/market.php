@@ -322,7 +322,7 @@ function osc_market_render_meta_notices($meta, $type)
     if (!empty($meta['disabled'])) {
         ?>
         <div class="callout-warning callout-block">
-            <?php echo osc_esc_html(defined('DEMO')
+            <?php echo osc_esc_html(\mindstellar\security\Demo::active()
                 ? __('This is a demo site, so nothing can be installed or updated here.')
                 : __('In-app updates are disabled on this deployment. Install and update by deploying a new image or file set; this screen is read-only.')); ?>
         </div>

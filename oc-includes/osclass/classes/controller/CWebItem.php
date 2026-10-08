@@ -34,7 +34,6 @@ class CWebItem extends BaseModel
 {
     private $itemManager;
     private $user;
-    private $userId;
 
     /**
      * Boots the base controller, opens the Item model, loads the signed-in user (if any)
@@ -45,14 +44,7 @@ class CWebItem extends BaseModel
         parent::__construct();
         $this->itemManager = Item::getInstance();
 
-        // here allways userId == ''
-        if (osc_is_web_user_logged_in()) {
-            $this->userId = osc_logged_user_id();
-            $this->user   = User::getInstance()->findByPrimaryKey($this->userId);
-        } else {
-            $this->userId = null;
-            $this->user   = null;
-        }
+        $this->user = osc_is_web_user_logged_in() ? User::getInstance()->findByPrimaryKey(osc_logged_user_id()) : null;
         osc_run_hook('init_item');
     }
 
@@ -82,7 +74,7 @@ class CWebItem extends BaseModel
 
         switch ($this->action) {
             case 'item_add': // post
-                if (ListingPolicy::requiresSignIn(Actor::fromRequest(false))) {
+                if (ListingPolicy::requiresSignIn(Actor::visitor())) {
                     osc_add_flash_warning_message(_m('Only registered users are allowed to post listings'));
                     // Remember to bring them back to the post form after login — in a signed
                     // cookie, not the session, so this bounce never starts a session.
@@ -169,7 +161,7 @@ class CWebItem extends BaseModel
 
                 osc_csrf_check();
 
-                if (ListingPolicy::requiresSignIn(Actor::fromRequest(false))) {
+                if (ListingPolicy::requiresSignIn(Actor::visitor())) {
                     osc_add_flash_warning_message(_m('Only registered users are allowed to post listings'));
                     $this->redirectTo(osc_base_url(true));
                 }
@@ -181,7 +173,7 @@ class CWebItem extends BaseModel
                     return false; // BREAK THE PROCESS, THE CAPTCHA IS WRONG
                 }
 
-                if (ListingPolicy::usesAccountEmail(Actor::fromRequest(false), (string) $formData['contactEmail'])) {
+                if (ListingPolicy::usesAccountEmail(Actor::visitor(), (string) $formData['contactEmail'])) {
                     foreach ($formData as $key => $value) {
                         Session::getInstance()->_keepForm($key);
                     }
@@ -192,7 +184,7 @@ class CWebItem extends BaseModel
                 // Bans, the posting wait and the form's own checks are the service's.
                 $listings = new ListingService();
                 try {
-                    $saved = $listings->create($this->listingData($formData), Actor::fromRequest(false));
+                    $saved = $listings->create($this->listingData($formData), Actor::visitor());
                 } catch (RefusedException $e) {
                     ListingNotices::flash($e->notices(), false);
                     osc_add_flash_error_message($e->getMessage());
@@ -302,7 +294,7 @@ class CWebItem extends BaseModel
                     // Save to the listing that passed the owner check, never a second reading of the id.
                     $data['idItem'] = (int) $item['pk_i_id'];
                     try {
-                        $saved   = $listings->update($data, Actor::fromRequest(false));
+                        $saved   = $listings->update($data, Actor::visitor());
                         $success = $saved->rows();
                         ListingNotices::flash($saved->notices(), false);
                     } catch (RefusedException $e) {
@@ -340,7 +332,7 @@ class CWebItem extends BaseModel
                 $secret = Params::getParamString('secret');
                 $id     = Params::getParamInt('id');
                 $row    = $id > 0 ? $this->itemManager->findByPrimaryKey($id) : null;
-                $actor  = Actor::fromRequest(false, $secret);
+                $actor  = Actor::visitor($secret);
                 $item   = array();
                 if (is_array($row) && isset($row['pk_i_id'])
                     && (ListingPolicy::isOwner($row, $actor) || ListingPolicy::holdsSecret($row, $actor))
@@ -363,7 +355,7 @@ class CWebItem extends BaseModel
                         osc_add_flash_ok_message(_m('The listing has been validated'));
                         // The item page hides a listing from a guest, so send them home with
                         // the reason. The owner's item page already explains it.
-                        if (!ListingPolicy::canView(array('b_active' => 1) + $item[0], Actor::fromRequest(false))) {
+                        if (!ListingPolicy::canView(array('b_active' => 1) + $item[0], Actor::visitor())) {
                             osc_add_flash_warning_message(
                                 _m('The listing will be public once the admin has approved it')
                             );
@@ -379,7 +371,7 @@ class CWebItem extends BaseModel
                 $this->redirectTo(osc_item_url());
                 break;
             case 'item_delete':
-                $actor    = Actor::fromRequest(false, Params::getParamString('secret'));
+                $actor    = Actor::visitor(Params::getParamString('secret'));
                 $item     = $this->itemManager->findByPrimaryKey(Params::getParamInt('id'));
                 $item     = is_array($item) && isset($item['pk_i_id']) ? $item : null;
                 $bySecret = $item !== null && ListingPolicy::holdsSecret($item, $actor);
@@ -424,7 +416,7 @@ class CWebItem extends BaseModel
                     $this->redirectTo(osc_item_edit_url($secret, $item));
                 }
 
-                $actor = Actor::fromRequest(true, $secret);
+                $actor = Actor::visitorOrAdmin($secret);
                 if (!ListingPolicy::canManage($aItem, $actor)) {
                     osc_add_flash_error_message(_m("The listing doesn't belong to you"));
                     $this->redirectTo(osc_item_edit_url($secret, $item));
@@ -670,7 +662,7 @@ class CWebItem extends BaseModel
                     'body'         => Params::getParamString('body'),
                 );
                 try {
-                    $saved = (new CommentService())->post($itemId, $input, Actor::fromRequest(false));
+                    $saved = (new CommentService())->post($itemId, $input, Actor::visitor());
                     match ($saved->status()) {
                         SavedComment::LIVE    => osc_add_flash_ok_message(_m('Your comment has been approved')),
                         SavedComment::PENDING => osc_add_flash_info_message(_m('Your comment is awaiting moderation')),
@@ -701,7 +693,7 @@ class CWebItem extends BaseModel
                 View::getInstance()->_exportVariableToView('item', $item);
 
                 try {
-                    (new CommentService())->delete($commentId, Actor::fromRequest(false), $itemId);
+                    (new CommentService())->delete($commentId, Actor::visitor(), $itemId);
                     osc_add_flash_ok_message(_m('The comment has been deleted'));
                 } catch (RefusedException $e) {
                     osc_add_flash_error_message($e->getMessage());
@@ -734,7 +726,7 @@ class CWebItem extends BaseModel
 
                 // Not validated, disabled or spam: only the owner and admins see it. A 404, not
                 // 400 or 410, as the listing may still be published later.
-                if (!ListingPolicy::canView($item, Actor::fromRequest(true))) {
+                if (!ListingPolicy::canView($item, Actor::visitorOrAdmin())) {
                     $this->do404();
 
                     return null;
@@ -922,7 +914,7 @@ class CWebItem extends BaseModel
      */
     private function editable(int $id, string $secret): ?array
     {
-        return ListingPolicy::manageable($id, Actor::fromRequest(false, $secret));
+        return ListingPolicy::manageable($id, Actor::visitor($secret));
     }
 
     /**
@@ -946,7 +938,7 @@ class CWebItem extends BaseModel
     private function notFoundIfHidden($item)
     {
         if (is_array($item) && $item !== array()
-            && !ListingPolicy::canView($item, Actor::fromRequest(true))
+            && !ListingPolicy::canView($item, Actor::visitorOrAdmin())
         ) {
             $this->do404();
         }

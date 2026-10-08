@@ -21,6 +21,7 @@ use mindstellar\market\Compatibility;
 use mindstellar\market\Installer;
 use mindstellar\market\PackageIndex;
 use mindstellar\market\PackageReconciler;
+use mindstellar\security\Demo;
 use mindstellar\upgrade\BuildInfo;
 use mindstellar\upgrade\Osclass;
 use mindstellar\upgrade\Upgrade;
@@ -446,7 +447,7 @@ class Cli
      */
     private function cmdCoreUpdate(array $args): int
     {
-        if (defined('DEMO')) {
+        if (Demo::active()) {
             $this->err("Disabled in demo mode.\n");
 
             return 1;
@@ -1334,7 +1335,7 @@ class Cli
      */
     private function marketWriteGuard(): int
     {
-        if (defined('DEMO')) {
+        if (Demo::active()) {
             $this->err("Disabled in demo mode.\n");
 
             return 1;

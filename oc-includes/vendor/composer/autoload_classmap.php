@@ -984,7 +984,6 @@ return array(
     'mindstellar\\api\\write\\PhotoIntake' => $baseDir . '/oc-includes/osclass/classes/api/write/PhotoIntake.php',
     'mindstellar\\api\\write\\PhotoStage' => $baseDir . '/oc-includes/osclass/classes/api/write/PhotoStage.php',
     'mindstellar\\api\\write\\PlaceBody' => $baseDir . '/oc-includes/osclass/classes/api/write/PlaceBody.php',
-    'mindstellar\\api\\write\\StatusMembers' => $baseDir . '/oc-includes/osclass/classes/api/write/StatusMembers.php',
     'mindstellar\\apiaccess\\AccessEntries' => $baseDir . '/oc-includes/osclass/classes/apiaccess/AccessEntries.php',
     'mindstellar\\apiaccess\\AccessEntry' => $baseDir . '/oc-includes/osclass/classes/apiaccess/AccessEntry.php',
     'mindstellar\\apiaccess\\AccountAccess' => $baseDir . '/oc-includes/osclass/classes/apiaccess/AccountAccess.php',

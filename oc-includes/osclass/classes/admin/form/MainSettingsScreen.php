@@ -12,6 +12,7 @@
 namespace mindstellar\admin\form;
 
 use mindstellar\base\SettingsScreen;
+use mindstellar\security\Demo;
 use mindstellar\utility\Utils;
 
 /**
@@ -68,7 +69,7 @@ final class MainSettingsScreen extends SettingsScreen
             ->email('contactEmail', __('Contact e-mail'))
                 ->required();
 
-        if (defined('DEMO')) {
+        if (Demo::active()) {
             // A demo install shows the address and refuses to change it, which is what the
             // hand-written controller did by stepping over one write.
             $form->persist(false);

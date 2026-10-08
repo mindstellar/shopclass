@@ -143,7 +143,7 @@ $openEdit = static function (string $id, string $secret): int {
     View::getInstance()->_erase('item');
     $GLOBALS['editView'] = null;
     $web = (new ReflectionClass('TestWebItem'))->newInstanceWithoutConstructor();
-    foreach (array('action' => 'item_edit', 'itemManager' => Item::getInstance(), 'userId' => null, 'user' => null) as $name => $value) {
+    foreach (array('action' => 'item_edit', 'itemManager' => Item::getInstance(), 'user' => null) as $name => $value) {
         $prop = new ReflectionProperty('CWebItem', $name);
         $prop->setAccessible(true);
         $prop->setValue($web, $value);

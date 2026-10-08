@@ -83,7 +83,7 @@ class CAdminSettingsSitemap extends AdminSecBaseModel
                     $lastmod = date('Y-m-d');
                 }
 
-                if ($url === '' || !Validate::httpUrl($url)) {
+                if (!Validate::httpUrl($url)) {
                     osc_add_flash_error_message(_m('Enter a valid URL, including the scheme (e.g. https://example.com/page)'), 'admin');
                 } else {
                     $list   = $this->_customUrls();

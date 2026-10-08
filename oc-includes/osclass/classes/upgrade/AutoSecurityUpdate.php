@@ -11,6 +11,7 @@
 namespace mindstellar\upgrade;
 
 use mindstellar\admin\DatabaseTools;
+use mindstellar\security\Demo;
 use Throwable;
 
 /**
@@ -62,7 +63,7 @@ final class AutoSecurityUpdate
      */
     public static function run(): void
     {
-        if (!osc_get_bool_preference('auto_security_updates') || defined('DEMO') || osc_self_update_disabled()) {
+        if (!osc_get_bool_preference('auto_security_updates') || Demo::active() || osc_self_update_disabled()) {
             return;
         }
         $info = Osclass::getPackageInfo(true, $fresh);

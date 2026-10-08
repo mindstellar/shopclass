@@ -57,9 +57,21 @@ final class Actor
 
     /**
      * The visitor on a public page: the signed-in user, if any, from this request's address.
-     * With $withAdmin also a signed-in admin, who may see and manage any listing.
      */
-    public static function fromRequest(bool $withAdmin, string $secret = ''): self
+    public static function visitor(string $secret = ''): self
+    {
+        return self::onPage(false, $secret);
+    }
+
+    /**
+     * The visitor, or a signed-in admin, who may see and manage any listing.
+     */
+    public static function visitorOrAdmin(string $secret = ''): self
+    {
+        return self::onPage(true, $secret);
+    }
+
+    private static function onPage(bool $withAdmin, string $secret): self
     {
         return new self(
             osc_is_web_user_logged_in() ? (int) osc_logged_user_id() : null,

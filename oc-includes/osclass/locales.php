@@ -54,7 +54,7 @@ function osc_checkLocales()
 
     foreach ($locales as $locale) {
         // if it's a demo, we don't import any data
-        if (defined('DEMO')) {
+        if (\mindstellar\security\Demo::active()) {
             return true;
         }
 
@@ -64,11 +64,6 @@ function osc_checkLocales()
 
             if ($result === false) {
                 return false;
-            }
-
-            // if it's a demo, we don't import any sql
-            if (defined('DEMO')) {
-                return true;
             }
 
             // inserting e-mail translations

@@ -95,4 +95,22 @@ final class StatusFlags
 
         return $plan;
     }
+
+    /**
+     * A PATCH body split into the status members it names, as flags, and the other members.
+     *
+     * @param array<mixed>         $input   the body
+     * @param array<string,string> $members member => flag name
+     *
+     * @return array{0: array<string,bool>, 1: array<mixed>} the flags and the other members
+     */
+    public static function split(array $input, array $members): array
+    {
+        $flags = [];
+        foreach (array_intersect_key($input, $members) as $member => $value) {
+            $flags[$members[$member]] = (bool) $value;
+        }
+
+        return [$flags, array_diff_key($input, $members)];
+    }
 }

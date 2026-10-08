@@ -19,9 +19,9 @@ use mindstellar\api\read\ListSpec;
 use mindstellar\api\read\Pager;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\CommentSerializer;
-use mindstellar\api\write\StatusMembers;
 use mindstellar\comment\CommentQuery;
 use mindstellar\moderation\CommentModeration;
+use mindstellar\moderation\StatusFlags;
 
 /**
  * `/admin/comments`: every comment whatever its status, and what the comments screen does to
@@ -75,7 +75,7 @@ final class AdminCommentsController
         $comment = $this->comment($call->intArg());
         $id      = (int) $comment['pk_i_id'];
         $input   = $call->input();
-        [$flags, $edit] = StatusMembers::split($input, self::STATUS_MEMBERS);
+        [$flags, $edit] = StatusFlags::split($input, self::STATUS_MEMBERS);
         $this->moderation->adminEdit($id, $edit === [] ? null : [
             'title'        => (string) ($input['title'] ?? $comment['s_title']),
             'body'         => (string) ($input['body'] ?? $comment['s_body']),

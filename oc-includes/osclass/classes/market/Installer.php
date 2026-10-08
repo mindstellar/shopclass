@@ -12,6 +12,7 @@
 namespace mindstellar\market;
 
 use mindstellar\backup\BackupStore;
+use mindstellar\security\Demo;
 use mindstellar\utility\FileSystem;
 use mindstellar\utility\Zip;
 use RuntimeException;
@@ -149,7 +150,7 @@ final class Installer
      */
     private function execute(string $slug, array $versionEntry): array
     {
-        if (defined('DEMO')) {
+        if (Demo::active()) {
             return $this->result(false, __('Package installs are disabled in demo mode.'), $slug, null, false);
         }
 

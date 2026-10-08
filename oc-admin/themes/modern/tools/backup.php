@@ -29,7 +29,7 @@ $bucket  = is_array($view->_get('backup_bucket')) ? $view->_get('backup_bucket')
 $address = (string) $view->_get('backup_bucket_address');
 $plain   = $bucket !== null && BackupBucket::insecure();
 $open    = $bucket !== null && BackupBucket::flaggedPublic();
-$demo    = defined('DEMO');
+$demo    = \mindstellar\security\Demo::active();
 $status  = (string) ($state['status'] ?? '');
 $live    = BackupService::isLive($state);
 $locked  = $demo || $busy || $live;

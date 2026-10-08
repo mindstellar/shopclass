@@ -23,10 +23,10 @@ use mindstellar\api\Response;
 use mindstellar\api\serializer\KeySerializer;
 use mindstellar\api\serializer\UserSerializer;
 use mindstellar\api\write\AccountBody;
-use mindstellar\api\write\StatusMembers;
 use mindstellar\apiaccess\AccessEntries;
 use mindstellar\apiaccess\AccessEntry;
 use mindstellar\model\Resource;
+use mindstellar\moderation\StatusFlags;
 use mindstellar\user\AccountService;
 use mindstellar\user\UserQuery;
 
@@ -92,7 +92,7 @@ final class AdminUsersController
         $input    = $call->input();
         $accounts = new AccountService();
         $actor    = $call->actor('admin:users');
-        [$flags, $edit] = StatusMembers::split($input, self::STATUS_MEMBERS);
+        [$flags, $edit] = StatusFlags::split($input, self::STATUS_MEMBERS);
         $accounts->adminEdit($userId, $edit === [] ? null : AccountBody::admin($user, $edit), $flags, $actor);
 
         return $this->fresh($call, $userId);

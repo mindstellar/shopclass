@@ -1101,7 +1101,6 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\api\\write\\PhotoIntake' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/api/write/PhotoIntake.php',
         'mindstellar\\api\\write\\PhotoStage' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/api/write/PhotoStage.php',
         'mindstellar\\api\\write\\PlaceBody' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/api/write/PlaceBody.php',
-        'mindstellar\\api\\write\\StatusMembers' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/api/write/StatusMembers.php',
         'mindstellar\\apiaccess\\AccessEntries' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/apiaccess/AccessEntries.php',
         'mindstellar\\apiaccess\\AccessEntry' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/apiaccess/AccessEntry.php',
         'mindstellar\\apiaccess\\AccountAccess' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/apiaccess/AccountAccess.php',

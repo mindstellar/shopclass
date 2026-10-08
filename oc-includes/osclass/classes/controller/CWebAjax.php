@@ -136,7 +136,7 @@ class CWebAjax extends BaseModel
                     return;
                 }
 
-                $actor = Actor::fromRequest(true, $secret);
+                $actor = Actor::visitorOrAdmin($secret);
                 if (!ListingPolicy::canManage($aItem, $actor)) {
                     $json['success'] = false;
                     $json['msg']     = _m("The listing doesn't belong to you");
@@ -188,7 +188,7 @@ class CWebAjax extends BaseModel
                         $catId  = Params::getParam('catId');
                         $itemId = Params::getParamInt('itemId');
                         // Stored values go only to someone who may edit the listing.
-                        if ($itemId > 0 && ListingPolicy::manageable($itemId, Actor::fromRequest(true, Params::getParamString('secret'))) === null) {
+                        if ($itemId > 0 && ListingPolicy::manageable($itemId, Actor::visitorOrAdmin(Params::getParamString('secret'))) === null) {
                             $itemId = 0;
                         }
                         osc_run_hook('item_edit', $catId, $itemId);
@@ -328,7 +328,7 @@ class CWebAjax extends BaseModel
         if (osc_is_admin_user_logged_in() || osc_is_web_user_logged_in()) {
             return '';
         }
-        if (ListingPolicy::requiresSignIn(Actor::fromRequest(false))) {
+        if (ListingPolicy::requiresSignIn(Actor::visitor())) {
             return _m('Only registered users are allowed to post listings');
         }
         if (\mindstellar\security\ActionThrottle::exceededFor('ajax_upload')) {

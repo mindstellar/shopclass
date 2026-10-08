@@ -31,7 +31,7 @@ $shared     = in_array($driver, array('memcached', 'memcache'), true);
                 'label' => __('Clear cache'),
                 'icon'  => 'bi-arrow-counterclockwise',
                 'type'  => 'submit',
-                'attrs' => $persistent && !defined('DEMO') ? array() : array('disabled' => 'disabled'),
+                'attrs' => $persistent && !\mindstellar\security\Demo::active() ? array() : array('disabled' => 'disabled'),
             )); ?>
         <?php osc_admin_form_close(null, array('horizontal' => false)); ?>
     </section>

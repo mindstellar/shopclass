@@ -101,7 +101,7 @@ preg_match("/case 'activate':(.*?)\n            case 'item_delete':/s", $control
 $body = $m[1] ?? '';
 check('the case was parsed', $body !== '');
 check('a guest is sent home when the page would be hidden', preg_match(
-    '/if \(!ListingPolicy::canView\(array\(\'b_active\' => 1\) \+ \$item\[0\], Actor::fromRequest\(false\)\)\) \{[^}]*redirectTo\(osc_base_url\(\)\)/',
+    '/if \(!ListingPolicy::canView\(array\(\'b_active\' => 1\) \+ \$item\[0\], Actor::visitor\(\)\)\) \{[^}]*redirectTo\(osc_base_url\(\)\)/',
     $body
 ) === 1);
 
