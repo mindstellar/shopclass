@@ -12,7 +12,6 @@ declare(strict_types=1);
 
 namespace mindstellar\api;
 
-use mindstellar\admin\ExposedSettings;
 use mindstellar\api\auth\AccessTokens;
 use mindstellar\api\auth\Authenticator;
 use mindstellar\api\auth\FailureCounter;
@@ -52,25 +51,16 @@ use mindstellar\api\write\ImageFetcher;
 use mindstellar\api\write\ListingWriter;
 use mindstellar\api\write\PhotoIntake;
 use mindstellar\api\write\PhotoStage;
-use mindstellar\apiaccess\AccessEntries;
-use mindstellar\apiaccess\AccountAccess;
 use mindstellar\apiaccess\ApiAccess;
-use mindstellar\apiaccess\ApiKeys;
-use mindstellar\apiaccess\ApiKeyService;
 use mindstellar\apiaccess\ApiSettings;
 use mindstellar\apiaccess\Credential;
 use mindstellar\apiaccess\PageTokens;
-use mindstellar\apiaccess\PersonalKeys;
 use mindstellar\apiaccess\Scopes;
 use mindstellar\apiaccess\SignInStore;
 use mindstellar\auth\AdminStore;
-use mindstellar\category\CategoryService;
-use mindstellar\currency\CurrencyService;
 use mindstellar\database\Db;
 use mindstellar\fields\FieldService;
 use mindstellar\listing\ListingService;
-use mindstellar\location\LocationService;
-use mindstellar\moderation\CommentModeration;
 use mindstellar\moderation\ListingModeration;
 use mindstellar\utility\Clock;
 use mindstellar\webhook\WebhookServices;
@@ -258,7 +248,7 @@ final class ApiServices
     public function authenticator(): Authenticator
     {
         return $this->once(__FUNCTION__, fn (): Authenticator => new Authenticator(
-            $this->keys(),
+            $this->access()->keys(),
             new FailureCounter(),
             $this->accessTokens(),
             new PageTokenAuth($this->pageTokens(), $this->users, $this->scopes, SiteOrigin::fromSite()),
@@ -369,11 +359,6 @@ final class ApiServices
         );
     }
 
-    public function keys(): ApiKeys
-    {
-        return $this->access()->keys();
-    }
-
     private function accessTokens(): AccessTokens
     {
         return $this->once(__FUNCTION__, fn (): AccessTokens => new AccessTokens($this->scopes, $this->users));
@@ -392,24 +377,6 @@ final class ApiServices
         return $this->once(__FUNCTION__, fn (): TokenIssuer => new TokenIssuer($this->accessTokens(), $this->scopes, $this->clock));
     }
 
-    public function accessEntries(): AccessEntries
-    {
-        return $this->access()->accessEntries();
-    }
-
-    public function personalKeys(): PersonalKeys
-    {
-        return $this->access()->personalKeys();
-    }
-
-    /**
-     * The account's "API access" page.
-     */
-    public function accountAccess(): AccountAccess
-    {
-        return $this->access()->accountAccess();
-    }
-
     /**
      * Admin rows, each loaded once per request: the admin an admin key acts for, so core code
      * and its activity log see who made the change.
@@ -421,14 +388,6 @@ final class ApiServices
 
             return $row === null ? null : Db::stringifyRow($row);
         }));
-    }
-
-    /**
-     * The key rules of Settings -> API, for personal keys and `/admin/keys`.
-     */
-    public function keyService(): ApiKeyService
-    {
-        return $this->access()->keyService();
     }
 
     public function listingSearch(): ListingSearch
@@ -479,34 +438,9 @@ final class ApiServices
         return $this->once(__FUNCTION__, fn (): ListingModeration => new ListingModeration($this->clock));
     }
 
-    public function commentModeration(): CommentModeration
-    {
-        return $this->once(__FUNCTION__, static fn (): CommentModeration => CommentModeration::make());
-    }
-
-    public function categoryService(): CategoryService
-    {
-        return $this->once(__FUNCTION__, static fn (): CategoryService => CategoryService::make());
-    }
-
-    public function currencyService(): CurrencyService
-    {
-        return $this->once(__FUNCTION__, static fn (): CurrencyService => CurrencyService::make());
-    }
-
     public function fieldService(): FieldService
     {
         return $this->once(__FUNCTION__, fn (): FieldService => FieldService::make($this->facts()->defaultLocale()));
-    }
-
-    public function locationService(): LocationService
-    {
-        return $this->once(__FUNCTION__, static fn (): LocationService => new LocationService());
-    }
-
-    public function exposedSettings(): ExposedSettings
-    {
-        return $this->once(__FUNCTION__, static fn (): ExposedSettings => new ExposedSettings());
     }
 
     /**

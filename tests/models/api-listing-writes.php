@@ -860,7 +860,7 @@ pin('0 means no limit', 201, $saveAlert('five')->status());
 harness_section('the account\'s API access page');
 $pageFor = static function (ApiSettings $settings) use ($facts): AccountAccess {
 
-    return (new ApiServices($settings, new Scopes(), new ApiCredential(), new UserRows(), new SystemClock(), RateLimiter::fromSite(new SystemClock()), $facts, new WriteLinks()))->accountAccess();
+    return (new ApiServices($settings, new Scopes(), new ApiCredential(), new UserRows(), new SystemClock(), RateLimiter::fromSite(new SystemClock()), $facts, new WriteLinks()))->access()->accountAccess();
 };
 $page     = $pageFor($settings);
 $sessions = $page->sessions($sue);

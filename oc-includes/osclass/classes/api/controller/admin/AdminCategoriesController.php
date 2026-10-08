@@ -34,7 +34,7 @@ final class AdminCategoriesController
 
     public function __construct(private ApiServices $api)
     {
-        $this->categories = $api->categoryService();
+        $this->categories = CategoryService::make();
         $this->query      = new CategoryQuery();
     }
 

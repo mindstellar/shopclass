@@ -19,6 +19,7 @@ use mindstellar\api\Response;
 use mindstellar\api\serializer\Format;
 use mindstellar\api\serializer\LocationSerializer;
 use mindstellar\apiaccess\ApiSettings;
+use mindstellar\currency\CurrencyService;
 
 /**
  * `GET /`: what the site is, what the API allows on it and where its collections are.
@@ -76,7 +77,7 @@ final class SiteController
 
     public function currencies(ApiCall $call): Response
     {
-        $rows = $this->api->currencyService()->enabled();
+        $rows = CurrencyService::make()->enabled();
         $serializer = new LocationSerializer();
 
         return Page::whole(array_map([$serializer, 'currency'], $rows), $this->api->links(), $call);

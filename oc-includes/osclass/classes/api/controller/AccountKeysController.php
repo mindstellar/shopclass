@@ -40,7 +40,7 @@ final class AccountKeysController
 
     public function __construct(private ApiServices $api)
     {
-        $this->keys = $api->personalKeys();
+        $this->keys = $api->access()->personalKeys();
         $this->users = $api->users();
         $this->links = $api->links();
         $this->clock = $api->clock();

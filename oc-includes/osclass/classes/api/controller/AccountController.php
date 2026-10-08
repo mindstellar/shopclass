@@ -46,7 +46,7 @@ final class AccountController
         $this->users = $api->users();
         $this->tokens = $api->tokenIssuer();
         $this->refresh = $api->refreshTokens();
-        $this->sessions = $api->accessEntries();
+        $this->sessions = $api->access()->accessEntries();
         $this->accounts = new AccountService();
     }
 

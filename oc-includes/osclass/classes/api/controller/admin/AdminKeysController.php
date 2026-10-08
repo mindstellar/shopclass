@@ -38,7 +38,7 @@ final class AdminKeysController
 
     public function __construct(private ApiServices $api)
     {
-        $this->keys = $api->keyService();
+        $this->keys = $api->access()->keyService();
         $this->links = $api->links();
         $this->serializer = new KeySerializer();
     }

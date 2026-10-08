@@ -41,7 +41,7 @@ final class AdminCommentsController
 
     public function __construct(private ApiServices $api)
     {
-        $this->moderation = $api->commentModeration();
+        $this->moderation = CommentModeration::make();
         $this->serializer = new CommentSerializer();
         $this->comments   = new CommentQuery();
     }

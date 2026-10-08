@@ -29,7 +29,7 @@ final class AdminCurrenciesController
 
     public function __construct(private ApiServices $api)
     {
-        $this->currencies = $api->currencyService();
+        $this->currencies = CurrencyService::make();
     }
 
     public function create(ApiCall $call): Response

@@ -429,9 +429,9 @@ $services = new ApiServices(
     new SystemClock(),
     api_test_limiter()
 );
-check('each service is built once and shared', $services->keys() === $services->keys()
+check('each service is built once and shared', $services->access()->keys() === $services->access()->keys()
     && $services->authenticator() === $services->authenticator()
-    && $services->keyService() === $services->keyService());
+    && $services->access()->keyService() === $services->access()->keyService());
 check('one clock for every service', $services->clock() === $services->clock());
 pin('a class that is not a core controller is refused', 'LogicException', (static function () use ($services): string {
     try {

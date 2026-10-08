@@ -261,7 +261,7 @@ foreach (array('api', 'api_key_create', 'api_post') as $action) {
 pin('...and makes no key', $before, $count());
 $GLOBALS['adminId'] = $fullId;
 
-$manager = \mindstellar\api\ApiServices::site()->keyService();
+$manager = \mindstellar\api\ApiServices::site()->access()->keyService();
 $modOwner = KeyOwner::admin($modId, true);
 check("a moderator's key is not offered admin:users", !array_key_exists('admin:users', $manager->grantable(CredentialKind::KEY, $modOwner)));
 $refusal = '';
@@ -291,7 +291,7 @@ check('starts with scp_', str_starts_with($public, 'scp_'));
 pin('only gets the public read scope, whatever was ticked', array(Scopes::PUBLIC_READ), $keys()->check($public)->credential()?->scopes());
 
 try {
-    \mindstellar\api\ApiServices::site()->keyService()->create(\mindstellar\apiaccess\KeyOwner::admin(1), 'Odd', 'key', array('<b>x</b>'));
+    \mindstellar\api\ApiServices::site()->access()->keyService()->create(\mindstellar\apiaccess\KeyOwner::admin(1), 'Odd', 'key', array('<b>x</b>'));
     $refusal = null;
 } catch (\mindstellar\validation\RefusedException $e) {
     $refusal = $e->getMessage();

@@ -14,7 +14,6 @@ namespace mindstellar\api\controller\admin;
 
 use mindstellar\admin\ExposedSettings;
 use mindstellar\api\ApiCall;
-use mindstellar\api\ApiServices;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\Format;
 
@@ -28,9 +27,9 @@ final class AdminSettingsController
 
     private ExposedSettings $settings;
 
-    public function __construct(private ApiServices $api)
+    public function __construct()
     {
-        $this->settings = $api->exposedSettings();
+        $this->settings = new ExposedSettings();
     }
 
     public function show(): Response

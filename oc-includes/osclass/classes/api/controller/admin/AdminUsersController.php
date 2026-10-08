@@ -47,7 +47,7 @@ final class AdminUsersController
     public function __construct(private ApiServices $api)
     {
         $this->users = $api->users();
-        $this->sessions = $api->accessEntries();
+        $this->sessions = $api->access()->accessEntries();
         $this->query = new UserQuery();
     }
 

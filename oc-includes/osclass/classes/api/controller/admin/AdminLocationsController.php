@@ -36,7 +36,7 @@ final class AdminLocationsController
 
     public function __construct(private ApiServices $api)
     {
-        $this->locations = $api->locationService();
+        $this->locations = new LocationService();
         $this->serializer = new LocationSerializer();
     }
 
