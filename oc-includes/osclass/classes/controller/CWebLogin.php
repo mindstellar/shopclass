@@ -157,8 +157,13 @@ class CWebLogin extends BaseModel
             }
         }
 
-        // SignIn::attempt() has checked the account is active and enabled; "remember me" makes the cookie last.
-        osc_web_user_login($user, Params::getParam('remember') == 1);
+        // Read again: a before_login listener may have blocked the account since SignIn read it.
+        $fresh = User::getInstance()->findByPrimaryKey((int) $user['pk_i_id']);
+        if (!$fresh || !$fresh['b_active'] || !$fresh['b_enabled']) {
+            osc_add_flash_error_message(_m("The user doesn't exist"));
+            $this->redirectTo(osc_user_login_url());
+        }
+        osc_web_user_login($fresh, Params::getParam('remember') == 1);
 
         if ($url_redirect == '') {
             $url_redirect = osc_user_dashboard_url();

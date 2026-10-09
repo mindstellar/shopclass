@@ -116,13 +116,20 @@ $upload     = static function (string $body) use ($restoreDir): array {
 };
 $store = new mindstellar\backup\BackupStore($restoreDir . 'backups');
 $moved = static fn (string $from, string $to): bool => rename($from, $to);
+/** store() past its is_uploaded_file() check, which no CLI file passes, with the move given. */
+$save = static function ($file, callable $move) use ($store): array {
+    $save = new ReflectionMethod(RestoreUpload::class, 'save');
+    $save->setAccessible(true);
+
+    return $save->invoke(null, $file, RestoreUpload::error($file), $store, $move);
+};
 pin('a file that was not uploaded through the form is refused first', array('name' => '', 'error' => 'No file was uploaded'), RestoreUpload::store($upload('SELECT 1;'), $store));
-pin('a file that is neither zip nor sql is refused', 'Choose a .zip or .sql backup file.', RestoreUpload::store($upload("\0\1binary"), $store, $moved)['error']);
-pin('a move that fails is reported', 'The upload failed. Try again.', RestoreUpload::store($upload('SELECT 1;'), $store, static fn (): bool => false)['error']);
-$kept = RestoreUpload::store($upload('SELECT 1;'), $store, $moved);
+pin('a file that is neither zip nor sql is refused', 'Choose a .zip or .sql backup file.', $save($upload("\0\1binary"), $moved)['error']);
+pin('a move that fails is reported', 'The upload failed. Try again.', $save($upload('SELECT 1;'), static fn (): bool => false)['error']);
+$kept = $save($upload('SELECT 1;'), $moved);
 check('a file that passes is kept under the name it is given', $kept['error'] === '' && is_file($restoreDir . 'backups/' . $kept['name']));
 @unlink($restoreDir . 'backups/' . $kept['name']);
-$refused = RestoreUpload::store($upload("PK\x03\x04not an archive"), $store, $moved);
+$refused = $save($upload("PK\x03\x04not an archive"), $moved);
 pin('a file that fails the restore check is refused with its reason', array('name' => '', 'error' => 'This file is not a Shopclass backup.'), $refused);
 pin('...and removed from the backup folder', array(), glob($restoreDir . 'backups/upload-*') ?: array());
 pin('the type is read from the first bytes', array('zip', 'sql', ''), array(

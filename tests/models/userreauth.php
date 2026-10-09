@@ -83,6 +83,8 @@ $cases  = [
 ];
 $change = $cases['change_password_post'];
 foreach ($cases as $case => $code) {
+    check("$case checks the CSRF token first", str_contains($code, 'osc_csrf_check();')
+        && strpos($code, 'osc_csrf_check();') < strpos($code, "Params::getParamString('password', false, false)"));
     check("$case reads the passwords as strings", str_contains($code, "Params::getParamString('password', false, false)")
         && !preg_match("/Params::getParam\\('(password|new_password2?)'/", $code));
     check("$case checks the password through Reauth", (str_contains($code, 'Reauth::verify(') || str_contains($code, '(new AccountService())->changePassword('))

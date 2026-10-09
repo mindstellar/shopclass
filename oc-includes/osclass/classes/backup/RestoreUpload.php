@@ -70,24 +70,35 @@ final class RestoreUpload
      * Save an uploaded restore file into the backup folder and check it can be restored. A file
      * that fails the check is removed again.
      *
-     * @param mixed                                $file  the \$_FILES entry
-     * @param BackupStore|null                     $store the site's backup folder by default
-     * @param (callable(string, string): bool)|null $move  moves the upload; move_uploaded_file() by default
+     * @param mixed            $file  the \$_FILES entry
+     * @param BackupStore|null $store the site's backup folder by default
      *
      * @return array{name:string,error:string} the saved file's name, or why it was refused
      */
-    public static function store($file, ?BackupStore $store = null, ?callable $move = null): array
+    public static function store($file, ?BackupStore $store = null): array
     {
         $error = self::error($file);
-        if ($error === '' && $move === null && !is_uploaded_file($file['tmp_name'])) {
+        if ($error === '' && !is_uploaded_file($file['tmp_name'])) {
             $error = __('No file was uploaded');
         }
-        $move ??= 'move_uploaded_file';
-        $ext    = $error === '' ? self::type($file['tmp_name']) : '';
+
+        return self::save($file, $error, $store ?? BackupStore::site(), 'move_uploaded_file');
+    }
+
+    /**
+     * store() after the upload checks, with the move it makes. Tests move a plain file.
+     *
+     * @param mixed                          $file
+     * @param callable(string, string): bool $move
+     *
+     * @return array{name:string,error:string}
+     */
+    private static function save($file, string $error, BackupStore $store, callable $move): array
+    {
+        $ext = $error === '' ? self::type($file['tmp_name']) : '';
         if ($error === '' && $ext === '') {
             $error = __('Choose a .zip or .sql backup file.');
         }
-        $store ??= BackupStore::site();
         if ($error === '' && !$store->protect()) {
             $error = BackupStore::unwritable();
         }

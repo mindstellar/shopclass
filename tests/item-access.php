@@ -118,6 +118,11 @@ check('the secret is held for any listing, as delete links carry it', ListingPol
 check('but it does not manage a registered listing', !ListingPolicy::canManage($registered, Actor::guest('', 'regsecret')));
 check('admin rights with no admin signed in still count', ListingPolicy::canView($spam, Actor::admin(0)));
 
+harness_section('deleting a listing');
+$deleteItem = harness_method_source(__DIR__ . '/../oc-includes/osclass/classes/controller/CWebItem.php', 'deleteItem');
+check('the owner\'s delete link checks the CSRF token before it deletes', str_contains($deleteItem, 'osc_csrf_check();')
+    && strpos($deleteItem, 'osc_csrf_check();') < strpos($deleteItem, '(new ListingService())->delete('));
+
 harness_section('both delete paths use it');
 $root = __DIR__ . '/../oc-includes/osclass/classes/controller/';
 $w = array(1 => harness_method_source($root . 'CWebItem.php', 'deleteResources'));

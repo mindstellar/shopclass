@@ -172,6 +172,22 @@ $store->saveState(array('status' => 'running'));
 pin('the state file is private', '600', substr(sprintf('%o', fileperms($store->dir() . '.state.json')), -3));
 exec('rm -rf ' . escapeshellarg($store->dir()));
 
+harness_section('Every write on the Tools screen checks the token');
+$toolsFile = ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php';
+foreach (array(
+    'logs_clear', 'logs_settings_post', 'cleanup_post', 'cleanup_run', 'jobs_run', 'jobs_retry', 'jobs_forget', 'cache_clear',
+    'category_post', 'locations_post', 'backup_cancel', 'backup_delete', 'backup_restore', 'backup_dismiss', 'backup_reopen',
+) as $action) {
+    check("$action checks the CSRF token", str_contains(harness_action_source($toolsFile, $action), 'osc_csrf_check();'));
+}
+foreach (array('backup_start' => 'backupStart', 'backup_upload' => 'backupUpload', 'import_post' => 'backupUpload') as $action => $method) {
+    check("$action checks the CSRF token in $method()", str_contains(harness_action_source($toolsFile, $action), '$this->' . $method . '(')
+        && str_contains($body($method), 'osc_csrf_check();'));
+}
+$uploadBody = $body('backupUpload');
+check('an upload checks the token, then stores through RestoreUpload::store(), which checks the file came from the form', str_contains($uploadBody, 'osc_csrf_check();')
+    && strpos($uploadBody, 'osc_csrf_check();') < strpos($uploadBody, 'RestoreUpload::store($file)'));
+
 harness_section('A restore asks for the password again');
 
 $restore = $body('backup_restore');

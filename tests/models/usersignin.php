@@ -163,6 +163,8 @@ pin('attempt() fires before_validating_login once, complete() after_login with t
 
 $web = harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebLogin.php', 'loginPost');
 $api = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/api/controller/AuthController.php');
+check('the web form reads the account again, and refuses a blocked one, before it signs in', str_contains($web, "findByPrimaryKey((int) \$user['pk_i_id'])")
+    && str_contains($web, "!\$fresh['b_enabled']") && strpos($web, 'findByPrimaryKey(') < strpos($web, 'osc_web_user_login('));
 foreach (['the web form' => $web, 'the API' => $api] as $who => $code) {
     check("$who leaves before_validating_login and after_login to SignIn, completing after the attempt", !str_contains($code, "osc_run_hook('before_validating_login'")
         && !str_contains($code, "osc_run_hook('after_login'") && (int) strpos($code, 'SignIn::attempt(') > 0 && (int) strpos($code, 'SignIn::attempt(') < (int) strpos($code, 'SignIn::complete('));
