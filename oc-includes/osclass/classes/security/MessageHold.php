@@ -113,7 +113,10 @@ final class MessageHold
     public static function attachmentError(string $email, $attachment): ?string
     {
         if ($attachment === false) {
-            return _m('That type of file cannot be attached.');
+            return sprintf(
+                _m('That file cannot be attached. Attach a picture, PDF, text or office document of up to %d MB.'),
+                \mindstellar\storage\UploadMimes::attachmentMaxMb()
+            );
         }
         if (is_array($attachment) && !self::verified($email)) {
             return _m('Send one message without a file first and confirm your e-mail. After that you can attach files.');

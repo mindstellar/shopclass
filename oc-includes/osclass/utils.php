@@ -231,7 +231,8 @@ function osc_phpmailer_limit_smtp_wait($mail)
 /**
  * A visitor's uploaded file, ready to attach to a mail straight from PHP's temporary upload.
  *
- * The file is never copied under the web root. Script types are refused.
+ * The file is never copied under the web root. Only pictures, PDF, text and office documents
+ * up to the size set in Settings → General are taken.
  *
  * @param string $field upload field name
  *
@@ -247,15 +248,10 @@ function osc_mail_upload_attachment($field)
         || !is_uploaded_file($file['tmp_name'])) {
         return false;
     }
-    $refused = array(
-        'text/php', 'text/x-php', 'application/php', 'application/x-php', 'application/x-httpd-php',
-        'application/x-httpd-php-source', 'application/x-javascript', 'text/javascript',
-        'application/javascript', 'text/html', 'application/x-sh', 'text/x-shellscript',
-    );
-    if (in_array(\mindstellar\storage\UploadMimes::detect($file['tmp_name']), $refused, true)) {
+    $name = trim(preg_replace('/[\x00-\x1F\x7F"\\\\\/]+/', '', basename((string) ($file['name'] ?? ''))));
+    if (!\mindstellar\storage\UploadMimes::isAllowedAttachment($file['tmp_name'], $name)) {
         return false;
     }
-    $name = trim(preg_replace('/[\x00-\x1F\x7F"\\\\\/]+/', '', basename((string) ($file['name'] ?? ''))));
 
     return array('path' => $file['tmp_name'], 'name' => $name !== '' ? $name : 'attachment');
 }

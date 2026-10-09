@@ -58,6 +58,7 @@ Plugin authors should read the Breaking section before upgrading.
 - A file written with a private mode, such as a backup's SQL dump, is private from the moment it is created.
 - Installing a language refuses a code that is not a locale code such as `en` or `en_US`.
 - A listing post refused for coming too soon, or an edit with the wrong secret, resizes no photo, and a save resizes no more photos than the listing may hold.
+- A file attached to the contact form or the contact publisher form must be a picture, PDF, text or office document whose name matches its content, up to 5 MB, set in **Settings → General**.
 
 ### Performance
 

@@ -501,6 +501,7 @@ pin(
         'default_results_per_page'     => 'osclass/defaultResultsPerPage@search',
         'selectable_parent_categories' => 'osclass/selectable_parent_categories',
         'enabled_attachment'           => 'osclass/contact_attachment',
+        'attachment_max_mb'            => 'osclass/attachment_max_mb',
         'auto_cron'                    => 'osclass/auto_cron',
         'googlemaps_api_key'           => 'osclass/googlemaps_api_key',
         'openstreet_api_key'           => 'osclass/openstreet_api_key',

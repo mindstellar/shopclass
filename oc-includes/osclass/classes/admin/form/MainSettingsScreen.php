@@ -130,6 +130,14 @@ final class MainSettingsScreen extends SettingsScreen
             ->checkbox('enabled_attachment', __('Allow people to attach a file to the contact form'))
                 ->column('contact_attachment')
                 ->rowLabel(__('Attachments'))
+            ->number(
+                'attachment_max_mb',
+                __('Largest attached file'),
+                __('For the contact form and the contact publisher form. Pictures, PDF, text and office documents only.')
+            )
+                ->clampMin(1)
+                ->suffix(__('MB'))
+                ->default(\mindstellar\storage\UploadMimes::DEFAULT_ATTACHMENT_MAX_MB)
             ->group(__('Cron Settings'))
             ->checkbox('auto_cron')
                 ->rowLabel(__('Automatic cron process'))
