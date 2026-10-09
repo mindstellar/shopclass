@@ -258,7 +258,11 @@ class Log extends DAO
      */
     public function clearAll()
     {
-        return \mindstellar\logger\LogQuery::clearAll();
+        try {
+            return \mindstellar\logger\LogStore::clearAll();
+        } catch (\mindstellar\database\DbException $e) {
+            return 0;
+        }
     }
 }
 

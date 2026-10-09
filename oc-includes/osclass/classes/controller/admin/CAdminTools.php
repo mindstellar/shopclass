@@ -31,7 +31,7 @@ use mindstellar\backup\BackupJobs;
 use mindstellar\backup\BackupService;
 use mindstellar\backup\BackupStore;
 use mindstellar\backup\RestoreUpload;
-use mindstellar\logger\LogQuery;
+use mindstellar\logger\LogStore;
 use mindstellar\security\AdminReauth;
 use mindstellar\security\Demo;
 use mindstellar\upgrade\BuildInfo;
@@ -622,11 +622,15 @@ class CAdminTools extends AdminSecBaseModel
             return;
         }
         osc_csrf_check();
-        $removed = LogQuery::clearAll();
-        osc_add_flash_ok_message(
-            sprintf(_mn('%d log entry has been removed', '%d log entries have been removed', $removed), $removed),
-            'admin'
-        );
+        try {
+            $removed = LogStore::clearAll();
+            osc_add_flash_ok_message(
+                sprintf(_mn('%d log entry has been removed', '%d log entries have been removed', $removed), $removed),
+                'admin'
+            );
+        } catch (\mindstellar\database\DbException $e) {
+            osc_add_flash_error_message(_m('The log could not be cleared'), 'admin');
+        }
         $this->redirectTo(osc_admin_base_url(true) . '?page=tools&action=logs');
     }
 

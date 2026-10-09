@@ -44,16 +44,14 @@ final class LogQuery
     /**
      * Empty the activity log.
      *
+     * @deprecated 7.0.0 Use LogStore::clearAll(), which reports a failure.
+     *
      * @return int entries removed; 0 when the table cannot be reached
      */
     public static function clearAll(): int
     {
-        $table = DB_TABLE_PREFIX . 't_log';
         try {
-            $n = (int) Db::scalar('SELECT COUNT(*) FROM ' . $table);
-            Db::execute('DELETE FROM ' . $table);
-
-            return $n;
+            return LogStore::clearAll();
         } catch (DbException $e) {
             return 0;
         }

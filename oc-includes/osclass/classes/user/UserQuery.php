@@ -28,7 +28,8 @@ final class UserQuery
     }
 
     /**
-     * The user's row with its descriptions under `locale`, as the User model reads it.
+     * The user's row with its descriptions under `locale`, as the User model reads and caches it. It
+     * reads through the model on purpose: the row shape and its cache are the model's.
      *
      * @return array<string,mixed>|null
      */
