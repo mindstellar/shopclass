@@ -259,6 +259,9 @@ now a thin call into its service, and its docblock names it
 `AccountService::update()`. Your existing
 calls keep working; switch when you next touch that code.
 
+Themes and simple plugins can keep using the `osc_*` helpers; see
+[Helper functions](/docs/developers/helpers/) for the full list.
+
 Classes that moved keep their old name for a release, marked `@deprecated`:
 
 | Old | New |

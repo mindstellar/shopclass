@@ -22,6 +22,8 @@ const DOC   = ROOT . 'docs/site/developers/helpers.md';
 const BEGIN = '<!-- generated:helpers -->';
 const END   = '<!-- /generated:helpers -->';
 
+require __DIR__ . '/lib/docgen.php';
+
 // The installer, config loader and fallback page files are left out: they only load in
 // their own context, so a plugin cannot rely on them.
 const FILES = array(
@@ -39,7 +41,7 @@ function helpers_summary(string $doc): string
 {
     $lines = array();
     foreach (preg_split('/\R/', $doc) as $line) {
-        $line = trim(preg_replace('#^\s*(/\*\*|\*/|\*)#', '', $line));
+        $line = trim(preg_replace(array('#^\s*(/\*\*|\*/|\*)#', '#\*/\s*$#'), '', $line));
         if (strpos($line, '@') === 0) {
             break;
         }
@@ -52,7 +54,7 @@ function helpers_summary(string $doc): string
         $lines[] = $line;
     }
 
-    return implode(' ', $lines);
+    return preg_replace('/\{@(?:see|link) ([^}]+)\}/', '$1', implode(' ', $lines));
 }
 
 /**
@@ -83,8 +85,31 @@ function helpers_scan_file(string $source): array
     $count  = count($tokens);
     $found  = array();
     $doc    = '';
+    $depth  = 0;
+    $inside = PHP_INT_MAX; // brace depth of the class body being skipped
+    $kinds  = array(T_CLASS, T_TRAIT, T_INTERFACE);
+    $prev   = null;
     for ($i = 0; $i < $count; $i++) {
         $t = $tokens[$i];
+        $text = is_array($t) ? $t[1] : $t;
+        if ($text === '{' || (is_array($t) && in_array($t[0], array(T_CURLY_OPEN, T_DOLLAR_OPEN_CURLY_BRACES), true))) {
+            $depth++;
+            if ($inside === -1) {
+                $inside = $depth;
+            }
+        } elseif ($text === '}' && --$depth < $inside && $inside !== -1) {
+            $inside = PHP_INT_MAX;
+        }
+        // A method named osc_* is not a helper; `Foo::class` is not a class body.
+        if (is_array($t) && in_array($t[0], $kinds, true) && $prev !== T_DOUBLE_COLON && $inside === PHP_INT_MAX) {
+            $inside = -1;
+        }
+        if (!is_array($t) || !in_array($t[0], array(T_WHITESPACE, T_COMMENT, T_DOC_COMMENT), true)) {
+            $prev = is_array($t) ? $t[0] : $t;
+        }
+        if ($inside !== PHP_INT_MAX) {
+            continue;
+        }
         if (is_array($t) && $t[0] === T_DOC_COMMENT) {
             $doc = $t[1];
             continue;
@@ -200,23 +225,4 @@ foreach ($groups as $path => $found) {
 $out[] = END;
 $block = implode("\n", $out);
 
-$doc = file_get_contents(DOC);
-$a   = strpos($doc, BEGIN);
-$b   = strpos($doc, END);
-if ($a === false || $b === false) {
-    fwrite(STDERR, "Markers missing in " . DOC . "\n");
-    exit(1);
-}
-$updated = substr($doc, 0, $a) . $block . substr($doc, $b + strlen(END));
-
-if (in_array('--check', $argv, true)) {
-    if ($updated !== $doc) {
-        fwrite(STDERR, "docs/site/developers/helpers.md is stale. Run: php tools/gen-helpers-doc.php\n");
-        exit(1);
-    }
-    echo "helpers.md matches the source.\n";
-    exit(0);
-}
-
-file_put_contents(DOC, $updated);
-echo 'Wrote ' . $total . " helpers to docs/site/developers/helpers.md\n";
+exit(docgen_splice(DOC, BEGIN, END, $block, 'tools/gen-helpers-doc.php', $argv, 'Wrote ' . $total . ' helpers to docs/site/developers/helpers.md'));

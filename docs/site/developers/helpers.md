@@ -1097,9 +1097,9 @@ Core defines 1153 helpers, 20 of them deprecated. Generated from the source; do 
 | `osc_search_alert()` | Gets alert of current search |
 | `osc_search_alert_subscribed()` | Gets current search page |
 | `osc_search_category()` | Gets current search category |
-| `osc_search_category_description($locale = '')` | Description of the category the current search is filtered to. Takes the first of a multi-category search, so it always agrees with {@see osc_search_category_name()}. |
+| `osc_search_category_description($locale = '')` | Description of the category the current search is filtered to. Takes the first of a multi-category search, so it always agrees with osc_search_category_name(). |
 | `osc_search_category_id()` | Gets current search category id |
-| `osc_search_category_name($locale = '')` | Name of the category the current search is filtered to. Takes the first of a multi-category search, so it always agrees with {@see osc_search_category_description()}. |
+| `osc_search_category_name($locale = '')` | Name of the category the current search is filtered to. Takes the first of a multi-category search, so it always agrees with osc_search_category_description(). |
 | `osc_search_city()` | Gets current search city |
 | `osc_search_country()` | Gets current search country |
 | `osc_search_end()` | Gets current search end item record |
@@ -1145,7 +1145,7 @@ Core defines 1153 helpers, 20 of them deprecated. Generated from the source; do 
 | `osc_is_email_banned($email, $rules = null)` | Check if email is banned |
 | `osc_is_ip_banned($ip, $rules = null)` | Check if IP is banned |
 | `osc_is_username_blacklisted($username)` | Check if username is blacklisted |
-| `osc_login_throttle_message($seconds)` | Wording for a sign-in refused by {@see \mindstellar\security\LoginThrottle}. |
+| `osc_login_throttle_message($seconds)` | Wording for a sign-in refused by \mindstellar\security\LoginThrottle. |
 | `osc_proxy_ip_mismatch()` | Whether the current request's REMOTE_ADDR looks like a proxy's address instead of the visitor's — a forwarding header disagrees with it. Detection only; core still reads the visitor IP from REMOTE_ADDR alone, see osc_is_banned() and osc_validate_spam_delay(). |
 | `osc_random_string($length)` | A random string of $length characters from A-Z, a-z, 0-9, "." and "/". |
 | `osc_set_alert_private_key()` | Mint the install's persistent alert private key if it has none yet. |
@@ -1382,7 +1382,7 @@ Core defines 1153 helpers, 20 of them deprecated. Generated from the source; do 
 | `osc_signed_redirect_verify($value)` | Verify a signed-redirect cookie value and return its same-site URL, or '' if the value is absent, tampered, expired or off-site. Does not touch the cookie. |
 | `osc_tinymce_config($preset = 'basic', array $overrides = array())` | The TinyMCE config every editor in the product starts from, as the JSON object literal tinymce.init() takes. |
 | `osc_turnstile_configured()` | Whether both Cloudflare Turnstile keys are configured. |
-| `osc_upload_token()` | The unguessable token that ties temp photo uploads on a listing form to the browser that made them, without a session. Read from (or minted into) the `oc_upload` cookie once per request; it is the capability {@see ItemTmpUpload} checks so a visitor can only delete the photos they uploaded. |
+| `osc_upload_token()` | The unguessable token that ties temp photo uploads on a listing form to the browser that made them, without a session. Read from (or minted into) the `oc_upload` cookie once per request; it is the capability ItemTmpUpload checks so a visitor can only delete the photos they uploaded. |
 | `osc_write_signed_redirect_cookie($cookieName, $value, $expiry)` | Write (or, with a past expiry, delete) a standalone signed-redirect cookie. Standalone — not the session container — so it never starts a session. |
 
 ### hValidate (15)
@@ -1474,7 +1474,7 @@ Core defines 1153 helpers, 20 of them deprecated. Generated from the source; do 
 | `osc_market_changes_blocked()` | Whether the admin may change plugins and themes from the market at all: not on a demo site, and not where package installs are disabled. |
 | `osc_mkdir($dir, $mode = 0755, $recursive = true)` | Create a directory, warning instead of throwing when it cannot be created. |
 | `osc_package_installs_disabled()` | Whether installing/updating market packages (plugins/themes) is disabled for this installation. Distinct from osc_self_update_disabled(): that flag stops core from overwriting itself on an immutable deployment. Packages are not core — on a deployment where oc-content is a persistent volume, a package write survives a redeploy just fine, so this defaults to enabled and is only set where the site owner has no persistent oc-content to write into. |
-| `osc_phpmailer_limit_smtp_wait($mail)` | Apply {@see osc_phpmailer_smtp_timeout_seconds()} to a PHPMailer instance and to the SMTP object it will use on send(). |
+| `osc_phpmailer_limit_smtp_wait($mail)` | Apply osc_phpmailer_smtp_timeout_seconds() to a PHPMailer instance and to the SMTP object it will use on send(). |
 | `osc_phpmailer_smtp_timeout_seconds()` | Seconds PHPMailer may wait on one SMTP connect or command. |
 | `osc_prepare_price($price)` | Format a stored integer price for display. |
 | `osc_prune_array(&$input)` | Drop null and empty elements from an array in place, recursively. |

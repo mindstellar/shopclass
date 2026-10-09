@@ -24,6 +24,8 @@ const BEGIN  = '<!-- generated:hooks -->';
 const END    = '<!-- /generated:hooks -->';
 const ROOTS  = array('oc-includes/osclass', 'oc-admin');
 
+require __DIR__ . '/lib/docgen.php';
+
 /**
  * Text between the parentheses of a call starting at $open, brackets balanced.
  */
@@ -155,23 +157,4 @@ foreach ($families as $family => $names) {
 $out[] = END;
 $block = implode("\n", $out);
 
-$doc = file_get_contents(DOC);
-$a   = strpos($doc, BEGIN);
-$b   = strpos($doc, END);
-if ($a === false || $b === false) {
-    fwrite(STDERR, "Markers missing in " . DOC . "\n");
-    exit(1);
-}
-$updated = substr($doc, 0, $a) . $block . substr($doc, $b + strlen(END));
-
-if (in_array('--check', $argv, true)) {
-    if ($updated !== $doc) {
-        fwrite(STDERR, "docs/site/developers/hooks.md is stale. Run: php tools/gen-hooks-doc.php\n");
-        exit(1);
-    }
-    echo "hooks.md matches the source.\n";
-    exit(0);
-}
-
-file_put_contents(DOC, $updated);
-echo 'Wrote ' . count($hooks) . " hooks to docs/site/developers/hooks.md\n";
+exit(docgen_splice(DOC, BEGIN, END, $block, 'tools/gen-hooks-doc.php', $argv, 'Wrote ' . count($hooks) . ' hooks to docs/site/developers/hooks.md'));

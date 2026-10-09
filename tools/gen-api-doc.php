@@ -21,6 +21,7 @@ declare(strict_types=1);
 define('ABS_PATH', dirname(__DIR__) . '/');
 
 require ABS_PATH . 'oc-includes/vendor/autoload.php';
+require __DIR__ . '/lib/docgen.php';
 
 const REFERENCE = ABS_PATH . 'docs/site/developers/api/reference.md';
 const BEGIN     = '<!-- generated:api -->';
@@ -113,23 +114,4 @@ if (!is_file(REFERENCE)) {
         . "endpoints, at `/api/v1/openapi.json`.\n\n" . BEGIN . "\n" . END . "\n");
 }
 
-$current = (string) file_get_contents(REFERENCE);
-$a       = strpos($current, BEGIN);
-$b       = strpos($current, END);
-if ($a === false || $b === false) {
-    fwrite(STDERR, 'Markers missing in ' . REFERENCE . "\n");
-    exit(1);
-}
-$updated = substr($current, 0, $a) . $block . substr($current, $b + strlen(END));
-
-if (in_array('--check', $argv, true)) {
-    if ($updated !== $current) {
-        fwrite(STDERR, "docs/site/developers/api/reference.md is stale. Run: php tools/gen-api-doc.php\n");
-        exit(1);
-    }
-    echo "reference.md matches the route table.\n";
-    exit(0);
-}
-
-file_put_contents(REFERENCE, $updated);
-echo "Wrote docs/site/developers/api/reference.md\n";
+exit(docgen_splice(REFERENCE, BEGIN, END, $block, 'tools/gen-api-doc.php', $argv, 'Wrote docs/site/developers/api/reference.md'));
