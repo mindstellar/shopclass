@@ -282,7 +282,7 @@ final class Kernel
             throw ProblemException::from($current);
         }
         $etag = $current->etag();
-        if ($etag !== null && !Response::etagMatches($header, $etag)) {
+        if ($etag !== null && !osc_etag_matches($header, $etag)) {
             throw self::preconditionFailed();
         }
     }

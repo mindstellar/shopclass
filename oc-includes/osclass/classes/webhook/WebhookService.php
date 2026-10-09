@@ -16,6 +16,7 @@ use mindstellar\database\DbException;
 use mindstellar\job\JobQueue;
 use mindstellar\security\AddressGuard;
 use mindstellar\utility\Clock;
+use mindstellar\utility\Validate;
 use mindstellar\validation\NotFoundException;
 use mindstellar\validation\RefusedException;
 
@@ -237,7 +238,7 @@ final class WebhookService
     private function url(string $url): string
     {
         $url = trim($url);
-        if ($url === '' || strlen($url) > self::MAX_URL || filter_var($url, FILTER_VALIDATE_URL) === false) {
+        if ($url === '' || strlen($url) > self::MAX_URL || !Validate::httpUrl($url)) {
             throw new RefusedException(_m('Enter the full web address of the endpoint, such as https://example.com/webhooks.'));
         }
         $check = $this->guard->check($url);

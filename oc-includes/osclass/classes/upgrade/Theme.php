@@ -22,6 +22,7 @@
 namespace mindstellar\upgrade;
 
 use mindstellar\utility\FileSystem;
+use mindstellar\utility\Validate;
 use RuntimeException;
 use WebThemes;
 
@@ -89,7 +90,7 @@ class Theme extends UpgradePackage
         $package_info['s_requires_php']      = $theme_info['requires_php'] ?? '';
 
         $json_url = $theme_info['theme_update_uri'];
-        if (!filter_var($json_url, FILTER_VALIDATE_URL)) {
+        if (!Validate::httpUrl($json_url)) {
             throw new RuntimeException($theme_short_name . ':' . __('Invalid theme update uri'));
         }
 

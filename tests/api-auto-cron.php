@@ -27,7 +27,7 @@ $index    = (string) file_get_contents(__DIR__ . '/../oc-includes/osclass/classe
 harness_section('API path ticks auto-cron after sending');
 
 $send = substr($response, (int) strpos($response, 'public function send('));
-$send = substr($send, 0, (int) strpos($send, 'public static function etagMatches'));
+$send = substr($send, 0, (int) strpos($send, 'private function setHeader'));
 $echo = strpos($send, "echo \$out['body']");
 $flush = strpos($send, 'flush();');
 $tick = strpos($send, 'self::tickAutoCron()');

@@ -1501,7 +1501,7 @@
                 form.querySelector('#loc-q').focus();
                 return;
             }
-            const nav = event.target.closest('a[data-loc-nav], #loc-list .osc-pager a');
+            const nav = event.target.closest('a[data-loc-nav], #loc-list .has-pagination a');
             if (nav && region.contains(nav)) {
                 event.preventDefault();
                 const inAz = !!nav.closest('.loc-az');

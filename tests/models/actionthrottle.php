@@ -74,7 +74,7 @@ pin(
 );
 pin(
     'record signature',
-    'public static record($context)',
+    'public static record($context, ?int $window = NULL)',
     harness_method_signature('mindstellar\security\ActionThrottle', 'record')
 );
 
@@ -241,6 +241,18 @@ $truncate();
 $seed('item_post', '198.51.100.9', 60 + \mindstellar\security\RateLimit::SLICE + 1);
 check('one past the wait (and a slice) is allowed', ActionThrottle::exceeded('item_post', 1, 60) === false);
 
+harness_section('ActionThrottle::record — rows outlive a long window');
+
+$expiry = static function () use ($admin, $table): int {
+    return (int) $admin->query("SELECT MAX(i_expires) FROM $table")->fetch_row()[0];
+};
+$truncate();
+$setIp('198.51.100.20');
+ActionThrottle::record('send_friend', 3 * 86400);
+check('a 3-day window keeps the row for 3 days', $expiry() >= time() + 3 * 86400);
+$truncate();
+ActionThrottle::record('send_friend', 60);
+check('a short window still keeps the row for a day', $expiry() >= time() + 86400 && $expiry() < time() + 2 * 86400);
 $truncate();
 
 if (!defined('MODELS_RUNNER')) {

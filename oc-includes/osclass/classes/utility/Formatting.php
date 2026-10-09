@@ -501,9 +501,7 @@ class Formatting
     }
 
     /**
-     * Format name.
-     * Capitalize first letter of each name.
-     * If all-caps, remove all-caps.
+     * Format a name by the one rule in Sanitize::name().
      *
      * @param string $value value to sanitize
      *
@@ -511,17 +509,7 @@ class Formatting
      */
     public function name($value)
     {
-        $value = trim($value);
-        // remove all special characters with space except . and space
-        $value = preg_replace('/[^a-zA-Z0-9\s\.]/', ' ', $value);
-        // remove double spaces and trim after that
-        $value = preg_replace('/\s\s+/', ' ', $value);
-        $value = trim($value);
-        // capitalize first letter of each word
-        // and remove all-caps
-        $value = ucwords(strtolower($value));
-
-        return $value;
+        return (new Sanitize())->name($value);
     }
 
     /**

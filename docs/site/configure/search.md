@@ -27,6 +27,14 @@ ShopClass reads the server's InnoDB minimum. When every word in a search is
 shorter than it, or is a stopword, ShopClass matches the words anywhere in the
 title or description instead, which is slower but finds them.
 
+ShopClass remembers the server's minimum and stopword list for a day when a
+[persistent cache](/docs/configure/cache/) is on. After you change them on the
+server, press **Clear cache** in **Tools → System info → Cache**, or run
+`php oc-cli.php cache:flush`. Without a persistent cache it reads them fresh.
+
+In a search with both kinds of word, such as `about town`, the short and stop
+words are not required. Only `town` has to match.
+
 If your categories are full of short model names or two-letter abbreviations,
 lower the minimum.
 
@@ -69,7 +77,8 @@ Replace `oc_` with your table prefix.
 MySQL also skips very common words, from a built-in list of **stopwords**. That
 list is English. On an English site it usually helps. On a site in another
 language, it does nothing useful and can hide real search words. Give MySQL your
-own list with `innodb_ft_server_stopword_table`, or empty the list.
+own list with `innodb_ft_server_stopword_table`, or empty the list. ShopClass
+reads a custom stopword table, so its words are treated like the built-in ones.
 
 ## Keeping search fast as the site grows
 

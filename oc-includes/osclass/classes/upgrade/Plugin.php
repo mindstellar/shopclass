@@ -22,6 +22,7 @@
 namespace mindstellar\upgrade;
 
 use mindstellar\utility\FileSystem;
+use mindstellar\utility\Validate;
 use Plugins;
 use RuntimeException;
 
@@ -88,7 +89,7 @@ class Plugin extends UpgradePackage
         $package_info['s_requires_php']      = $plugin_info['requires_php'] ?? '';
 
         $json_url = $plugin_info['plugin_update_uri'];
-        if (!filter_var($json_url, FILTER_VALIDATE_URL)) {
+        if (!Validate::httpUrl($json_url)) {
             throw new RuntimeException($plugin_short_name . ':' . __('Invalid plugin update uri'));
         }
 

@@ -20,7 +20,7 @@ namespace mindstellar\security;
  */
 class ActionThrottle
 {
-    /** Seconds an event is kept, so the longest window counted is a day. */
+    /** Least number of seconds an event is kept; a longer window keeps it that long. */
     private const KEEP = 86400;
 
     /** Hourly limit per address for each public action; the admin can change them under Spam and bots. */
@@ -100,16 +100,26 @@ class ActionThrottle
      * Record one event for the current source, so it counts toward the window.
      * Call after the action has been accepted.
      *
-     * @param string $context matching the one passed to exceeded()
+     * @param string   $context matching the one passed to exceeded()
+     * @param int|null $window  the window it will be counted over; the context's limit window when null
      *
      * @return void
      */
-    public static function record($context)
+    public static function record($context, ?int $window = null)
     {
         $ip = AddressBucket::ofRequest();
         if ($ip !== '') {
-            RateLimit::addRolling((string) $context, $ip, self::KEEP);
+            RateLimit::addRolling((string) $context, $ip, self::keepFor($window ?? self::limitFor((string) $context)[1]));
         }
     }
 
+    /**
+     * Seconds to keep an event counted over $window: a day at least, or the window if longer.
+     *
+     * @internal
+     */
+    public static function keepFor(int $window): int
+    {
+        return max(self::KEEP, $window);
+    }
 }

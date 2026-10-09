@@ -165,7 +165,7 @@ final class PatternFilter
     }
 
     /**
-     * The InnoDB minimum token size and default stopwords, cached for a day. A failed read
+     * The InnoDB minimum token size and stopwords (default or custom table), cached for a day. A failed read
      * keeps the old rule: 3 characters and no stopwords.
      *
      * @return array{min:int,stop:array<string,bool>}
@@ -185,9 +185,18 @@ final class PatternFilter
                     return null;
                 }
                 $stop = array();
-                // A custom stopword table is not read: its words stay on the FULLTEXT path as before.
-                if ((int)$vars['e'] === 1 && (string)$vars['s'] === '' && (string)$vars['u'] === '') {
-                    foreach (explode(' ', strtolower((string)$vars['w'])) as $word) {
+                if ((int)$vars['e'] === 1) {
+                    $words = (string)$vars['w'];
+                    $table = self::stopwordTable((string)$vars['u'] !== '' ? (string)$vars['u'] : (string)$vars['s']);
+                    if ($table !== null) {
+                        try {
+                            $rows  = Db::select('SELECT value FROM ' . $table);
+                            $words = implode(' ', array_column($rows, 'value'));
+                        } catch (\Throwable $e) {
+                            // Keep the default list.
+                        }
+                    }
+                    foreach (explode(' ', strtolower($words)) as $word) {
                         if ($word !== '') {
                             $stop[$word] = true;
                         }
@@ -200,6 +209,20 @@ final class PatternFilter
         }
 
         return self::$server;
+    }
+
+    /**
+     * The quoted `db`.`table` for an InnoDB stopword table setting, or null when it is empty or odd.
+     *
+     * @internal
+     */
+    public static function stopwordTable(string $setting): ?string
+    {
+        if (!preg_match('/^([A-Za-z0-9_$]+)\/([A-Za-z0-9_$]+)$/', $setting, $m)) {
+            return null;
+        }
+
+        return '`' . $m[1] . '`.`' . $m[2] . '`';
     }
 
     /**

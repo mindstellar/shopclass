@@ -22,6 +22,7 @@
 namespace mindstellar\upgrade;
 
 use mindstellar\market\Compatibility;
+use mindstellar\utility\Validate;
 use RuntimeException;
 
 /**
@@ -127,7 +128,7 @@ abstract class UpgradePackage
             $this->s_title = $package_info['s_title'];
 
             if (isset($package_info['s_source_url'])
-                && filter_var($package_info['s_source_url'], FILTER_VALIDATE_URL)
+                && Validate::httpUrl($package_info['s_source_url'])
             ) {
                 $this->s_source_url = $package_info['s_source_url'];
             } else {

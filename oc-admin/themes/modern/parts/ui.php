@@ -525,7 +525,7 @@ if (!function_exists('osc_admin_toolbar_close')) {
 
 if (!function_exists('osc_admin_pager')) {
     /**
-     * Page through a list given its numbers; draws the same pager as osc_admin_pagination().
+     * Page through a list given its numbers; draws the same pager as osc_admin_pagination(), and nothing for a single page.
      *
      * @param array<string,mixed> $opts 'total', 'per_page', 'page' (1-based), 'base_url', 'params'
      *
@@ -537,6 +537,10 @@ if (!function_exists('osc_admin_pager')) {
         $perPage = max(1, (int) ($opts['per_page'] ?? 25));
         $page    = max(1, (int) ($opts['page'] ?? 1));
         $params  = $opts['params'] ?? array();
+
+        if ($total <= $perPage) {
+            return;
+        }
 
         osc_admin_pagination(array(
             'iTotalDisplayRecords' => $total,

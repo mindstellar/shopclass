@@ -49,6 +49,13 @@ pin('an excluded real word does not count', false, $usable('the -sedan'));
 pin('a quoted phrase still uses FULLTEXT', true, $usable('"the"'));
 pin('an empty pattern still uses FULLTEXT', true, $usable(''));
 
+harness_section('PatternFilter: custom stopword table name');
+pin('db/table is quoted', '`test`.`my_stop`', PatternFilter::stopwordTable('test/my_stop'));
+pin('an empty setting is no table', null, PatternFilter::stopwordTable(''));
+pin('a name with a quote is refused', null, PatternFilter::stopwordTable('test/a`b'));
+pin('a name with a space is refused', null, PatternFilter::stopwordTable('test/a b'));
+pin('a name without a database is refused', null, PatternFilter::stopwordTable('my_stop'));
+
 harness_section('PatternFilter: the BOOLEAN MODE query');
 $query = static function (string $pattern) {
     $f = new PatternFilter();

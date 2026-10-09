@@ -988,7 +988,7 @@ class FileSystem
         bool $verify_ssl = true,
         ?string $expectedSha256 = null
     ) {
-        if (!filter_var($sourceURL, FILTER_VALIDATE_URL)) {
+        if (!Validate::httpUrl($sourceURL)) {
             throw new InvalidArgumentException(sprintf('Invalid source url "%s". ', $sourceURL));
         }
         if ($expectedSha256 !== null && !preg_match('/^[a-f0-9]{64}$/i', $expectedSha256)) {

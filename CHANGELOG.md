@@ -34,6 +34,9 @@ Plugin authors should read the Breaking section before upgrading.
 - Plugin API routes live only under `/api/v1/ext/<plugin>/`, and the route's `plugin` must be that slug. An admin plugin route needs an `admin:` scope, or the plugin's own declared `ext:` scope for admins or moderators.
 - A record Listing Import cannot import is a `422 validation_failed`.
 - `osc_count_premium_comments()` and `osc_has_premium_comments()` are removed. They called a method that never existed, so any call ended in a fatal error.
+- `osc_sanitize_phone()` keeps a leading `+` and separators and no longer reformats; saved numbers keep their spaces and dashes.
+- `osc_sanitize_username()` keeps dots, and `Sanitize::username()` turns spaces into `_`.
+- `osc_sanitize_int()` returns an int: "1.5" is 1, not "15".
 - The `/api/` path is reserved; a page or category with the slug `api` must be renamed. System info and `doctor` list any.
 
 ### Security
@@ -112,14 +115,11 @@ Plugin authors should read the Breaking section before upgrading.
 - `cron.php` matches the CLI `cron-type` in any case.
 - A custom field's slug avoids the reserved `api`, as a field group's already did. `LocationService::uniqueSlug()` is private.
 - Search-alert tokens are sealed with `SecretBox`; tokens from 6.x still open. `alert_public_key` is no longer created.
-- `ActionThrottle` counts in `t_rate_counter` through `RateLimit::addRolling()`; `t_login_attempt` holds sign-in failures only.
-- `SignedPayload` and `RateLimit` take an optional `$now`; `FailureCounter`, `PageTokens` and `AccessTokens` take a `Clock`.
+- `ActionThrottle` counts in `t_rate_counter`.
+- `SignedPayload`, `RateLimit` and the token classes accept a clock for tests.
 - Every `osc_sanitize_*()` helper forwards to `mindstellar\utility\Sanitize`; new `Sanitize::name()`, `slug()`, `text()` and `richHtml()`.
-- `osc_sanitize_phone()` and `Sanitize::phone()` keep a leading `+`, digits and separators, with no US formatting; saved phone numbers keep their spaces and dashes.
-- `osc_sanitize_username()` keeps dots, as sign-up does, and `Sanitize::username()` turns spaces into `_`.
 - `osc_sanitize_allcaps()` and `osc_sanitize_name()` handle accented letters; `Sanitize::allcaps()` no longer lower-cases mixed-case text or escapes it.
-- `osc_sanitize_int()` and `Sanitize::int()` return an int: "1.5" is 1, not "15".
-- Update-check results, the backup-folder probe and the location catalog check time live in the key-value store, not in preferences; `osc_update_check_state()` reads them and the old readers still work.
+- Update-check state moved to the key-value store; `osc_update_check_state()` reads it.
 - `osc_admin_pager()` and `osc_admin_pagination()` draw one pager; admin lists page with `iPage`, and old `pageNum` links still work.
 - The Cleanup, Maintenance and Activity log settings are declared settings forms, with the same preferences and defaults.
 - `mindstellar\upgrade\Plugin` and `Theme` are deprecated. The core updater and the market installer share download and unzip.
@@ -134,6 +134,9 @@ Plugin authors should read the Breaking section before upgrading.
 - An unknown place id in a listing no longer causes a server error.
 - The ban rules are read once per request, not once per address checked.
 - The search result cache key includes the locale, so a language filter no longer shows another language's cached results.
+- The locations pager reloads the list in place again.
+- A stopword table set on the database server is read for search.
+- A posting wait or throttle window longer than a day is no longer cut to a day.
 - A category translated to a new language can no longer take the reserved `api` slug.
 - The category tree no longer breaks on a cache driver that answers a miss with null.
 - Public pages answer 304 to an `If-None-Match` list or a weak `W/` tag, as the API does.

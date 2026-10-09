@@ -22,6 +22,7 @@
 namespace mindstellar\upgrade;
 
 use mindstellar\utility\FileSystem;
+use mindstellar\utility\Validate;
 use mindstellar\utility\Zip;
 use RuntimeException;
 
@@ -70,7 +71,7 @@ class Upgrade
     {
         $this->packageInfoValid = false;
         if (is_array($this->objPackage->getFilteredFiles())
-            && filter_var($this->objPackage->getSourceUrl(), FILTER_VALIDATE_URL)
+            && Validate::httpUrl($this->objPackage->getSourceUrl())
         ) {
             $this->packageInfoValid = true;
         }

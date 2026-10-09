@@ -842,6 +842,7 @@ if (!function_exists('http_chunked_decode')) {
      * @param string $chunk the encoded message
      *
      * @return string the decoded message.  If $chunk wasn't encoded properly it will be returned unmodified.
+     * @deprecated since 7.0.0 no longer used by core
      */
     function http_chunked_decode($chunk)
     {
@@ -898,6 +899,7 @@ function is_hex($hex)
  *
  * @return array{headers?:string,body?:string} Empty when the response has no header block
  * @since 3.0
+ * @deprecated since 7.0.0 no longer used by core
  */
 function processResponse($content)
 {

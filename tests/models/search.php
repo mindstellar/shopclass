@@ -730,6 +730,27 @@ $s = new Search();
 $s->addPattern('about lamp');
 pin('a stopword next to a real word does not empty the search', array($lamp), $sorted($ids($s->doSearch())));
 
+/* A custom stopword table replaces the default list. */
+$stopDb = (string)$admin->query('SELECT DATABASE()')->fetch_row()[0];
+$admin->query('DROP TABLE IF EXISTS ft_custom_stop');
+$admin->query('CREATE TABLE ft_custom_stop (value VARCHAR(18) NOT NULL) ENGINE=InnoDB');
+$admin->query("INSERT INTO ft_custom_stop (value) VALUES ('zebra')");
+$ftServer->setValue(null, null);
+Object_Cache_Factory::getInstance()->flush();
+try {
+    $admin->query("SET GLOBAL innodb_ft_server_stopword_table = '" . $stopDb . "/ft_custom_stop'");
+    $s = new Search();
+    $s->addPattern('Mountain');
+    $s->doSearch();
+    $ftCustom = $ftServer->getValue();
+} finally {
+    $admin->query('SET GLOBAL innodb_ft_server_stopword_table = NULL');
+    $admin->query('DROP TABLE ft_custom_stop');
+    $ftServer->setValue(null, null);
+    Object_Cache_Factory::getInstance()->flush();
+}
+check('a custom stopword table is read', isset($ftCustom['stop']['zebra']) && !isset($ftCustom['stop']['with']));
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }

@@ -178,6 +178,13 @@ This is what answers "who disabled that category" and "when did this setting
 change" on a site with more than one admin. It can be filtered, and cleared
 entirely.
 
+Two settings on that page control it:
+
+- **Record admin and listing activity** is on by default. Turn it off to stop
+  recording new entries.
+- **Keep entries for** is a number of days, 90 by default. The daily task deletes
+  older entries. Set it to 0 to keep them forever.
+
 Behind a reverse proxy (a server such as a CDN or load balancer sitting in
 front of yours), the logged IP is only meaningful if the real client IP is
 being passed through. See the

@@ -247,7 +247,7 @@ final class Response
         if (($method === 'GET' || $method === 'HEAD') && $status === 200 && $this->body !== null) {
             $etag            = $this->etag();
             $headers['ETag'] = $etag;
-            if (self::etagMatches($ifNoneMatch, $etag)) {
+            if (osc_etag_matches($ifNoneMatch, $etag)) {
                 $status = 304;
                 $body   = '';
                 unset($headers['Content-Type']);
@@ -297,14 +297,6 @@ final class Response
         } catch (\Throwable $e) {
             error_log('api: auto-cron tick failed: ' . $e->getMessage());
         }
-    }
-
-    /**
-     * @param string $header `*` or a list of tags, weak or strong
-     */
-    public static function etagMatches(string $header, string $etag): bool
-    {
-        return osc_etag_matches($header, $etag);
     }
 
     private function setHeader(string $name, string $value): void
