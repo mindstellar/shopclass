@@ -906,64 +906,14 @@ class CAdminTools extends AdminSecBaseModel
             return;
         }
         osc_csrf_check();
-        $error = RestoreUpload::error($file);
-        if ($error === '' && !is_uploaded_file($file['tmp_name'])) {
-            $error = _m('No file was uploaded');
-        }
-        $ext = $error === '' ? self::backupType($file['tmp_name']) : '';
-        if ($error === '' && $ext === '') {
-            $error = _m('Choose a .zip or .sql backup file.');
-        }
-        $store = BackupStore::site();
-        if ($error === '' && !$store->protect()) {
-            $error = BackupStore::unwritable();
-        }
-        $name = BackupStore::uploadName($ext);
-        if ($error === '' && !move_uploaded_file($file['tmp_name'], $store->dir() . $name)) {
-            $error = _m('The upload failed. Try again.');
-        }
+        ['name' => $name, 'error' => $error] = RestoreUpload::store($file);
         if ($error !== '') {
             osc_add_flash_error_message(osc_esc_html($error), 'admin');
             $this->redirectTo($back);
 
             return;
         }
-        @chmod($store->dir() . $name, 0600);
-        $check = BackupService::check($name);
-        if ($check['reason'] !== '') {
-            @unlink($store->dir() . $name);
-            osc_add_flash_error_message(osc_esc_html($check['reason']), 'admin');
-            $this->redirectTo($back);
-
-            return;
-        }
         $this->redirectTo(self::backupUrl() . '&confirm=' . rawurlencode($name));
-    }
-
-    /**
-     * zip or sql, read from the file's first bytes; '' for anything else.
-     *
-     * @param string $file
-     *
-     * @return string
-     */
-    private static function backupType(string $file): string
-    {
-        $head = (string) @file_get_contents($file, false, null, 0, 8192);
-        if (strncmp($head, "PK\x03\x04", 4) === 0) {
-            return 'zip';
-        }
-        if ($head === '' || strpos($head, "\0") !== false) {
-            return '';
-        }
-        if (function_exists('finfo_open')) {
-            $mime = (string) finfo_buffer(finfo_open(FILEINFO_MIME_TYPE), $head);
-            if (strpos($mime, 'text/') !== 0 && $mime !== 'application/sql') {
-                return '';
-            }
-        }
-
-        return 'sql';
     }
 
     /**

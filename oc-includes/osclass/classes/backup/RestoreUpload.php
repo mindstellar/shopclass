@@ -67,6 +67,69 @@ final class RestoreUpload
     }
 
     /**
+     * Save an uploaded restore file into the backup folder and check it can be restored. A file
+     * that fails the check is removed again.
+     *
+     * @param mixed                                $file  the \$_FILES entry
+     * @param BackupStore|null                     $store the site's backup folder by default
+     * @param (callable(string, string): bool)|null $move  moves the upload; move_uploaded_file() by default
+     *
+     * @return array{name:string,error:string} the saved file's name, or why it was refused
+     */
+    public static function store($file, ?BackupStore $store = null, ?callable $move = null): array
+    {
+        $error = self::error($file);
+        if ($error === '' && $move === null && !is_uploaded_file($file['tmp_name'])) {
+            $error = __('No file was uploaded');
+        }
+        $move ??= 'move_uploaded_file';
+        $ext    = $error === '' ? self::type($file['tmp_name']) : '';
+        if ($error === '' && $ext === '') {
+            $error = __('Choose a .zip or .sql backup file.');
+        }
+        $store ??= BackupStore::site();
+        if ($error === '' && !$store->protect()) {
+            $error = BackupStore::unwritable();
+        }
+        $name = BackupStore::uploadName($ext);
+        $path = $store->dir() . $name;
+        if ($error === '' && !$move($file['tmp_name'], $path)) {
+            $error = __('The upload failed. Try again.');
+        }
+        if ($error === '') {
+            @chmod($path, 0600);
+            $error = BackupService::checkFile($path)['reason'];
+            if ($error !== '') {
+                @unlink($path);
+            }
+        }
+
+        return array('name' => $error === '' ? $name : '', 'error' => $error);
+    }
+
+    /**
+     * 'zip' or 'sql' for a file that looks like one, else ''.
+     */
+    public static function type(string $file): string
+    {
+        $head = (string) @file_get_contents($file, false, null, 0, 8192);
+        if (strncmp($head, "PK\x03\x04", 4) === 0) {
+            return 'zip';
+        }
+        if ($head === '' || strpos($head, "\0") !== false) {
+            return '';
+        }
+        if (function_exists('finfo_open')) {
+            $mime = (string) finfo_buffer(finfo_open(FILEINFO_MIME_TYPE), $head);
+            if (strpos($mime, 'text/') !== 0 && $mime !== 'application/sql') {
+                return '';
+            }
+        }
+
+        return 'sql';
+    }
+
+    /**
      * The message for a file over PHP's upload limit.
      *
      * @return string

@@ -100,6 +100,39 @@ foreach (array(UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE) as $code) {
 pin('a partial upload fails plainly', 'The upload failed. Try again.', RestoreUpload::error(array('tmp_name' => '/tmp/x', 'error' => UPLOAD_ERR_PARTIAL, 'size' => 5)));
 pin('a good upload passes', '', RestoreUpload::error(array('tmp_name' => '/tmp/x', 'error' => UPLOAD_ERR_OK, 'size' => 5)));
 
+if (!defined('OSCLASS_VERSION')) {
+    define('OSCLASS_VERSION', '7.0.0');
+}
+if (!defined('DB_TABLE_PREFIX')) {
+    define('DB_TABLE_PREFIX', 'oc_');
+}
+$restoreDir = sys_get_temp_dir() . '/osc_restore_upload_' . getmypid() . '/';
+$upload     = static function (string $body) use ($restoreDir): array {
+    @mkdir($restoreDir . 'in', 0700, true);
+    $tmp = $restoreDir . 'in/' . bin2hex(random_bytes(4));
+    file_put_contents($tmp, $body);
+
+    return array('tmp_name' => $tmp, 'error' => UPLOAD_ERR_OK, 'size' => strlen($body));
+};
+$store = new mindstellar\backup\BackupStore($restoreDir . 'backups');
+$moved = static fn (string $from, string $to): bool => rename($from, $to);
+pin('a file that was not uploaded through the form is refused first', array('name' => '', 'error' => 'No file was uploaded'), RestoreUpload::store($upload('SELECT 1;'), $store));
+pin('a file that is neither zip nor sql is refused', 'Choose a .zip or .sql backup file.', RestoreUpload::store($upload("\0\1binary"), $store, $moved)['error']);
+pin('a move that fails is reported', 'The upload failed. Try again.', RestoreUpload::store($upload('SELECT 1;'), $store, static fn (): bool => false)['error']);
+$kept = RestoreUpload::store($upload('SELECT 1;'), $store, $moved);
+check('a file that passes is kept under the name it is given', $kept['error'] === '' && is_file($restoreDir . 'backups/' . $kept['name']));
+@unlink($restoreDir . 'backups/' . $kept['name']);
+$refused = RestoreUpload::store($upload("PK\x03\x04not an archive"), $store, $moved);
+pin('a file that fails the restore check is refused with its reason', array('name' => '', 'error' => 'This file is not a Shopclass backup.'), $refused);
+pin('...and removed from the backup folder', array(), glob($restoreDir . 'backups/upload-*') ?: array());
+pin('the type is read from the first bytes', array('zip', 'sql', ''), array(
+    RestoreUpload::type($upload("PK\x03\x04rest")['tmp_name']), RestoreUpload::type($upload('CREATE TABLE t (id int);')['tmp_name']), RestoreUpload::type($upload("a\0b")['tmp_name']),
+));
+array_map('unlink', array_merge(glob($restoreDir . 'in/*') ?: array(), glob($restoreDir . 'backups/{,.}[!.]*', GLOB_BRACE) ?: array()));
+@rmdir($restoreDir . 'in');
+@rmdir($restoreDir . 'backups');
+@rmdir($restoreDir);
+
 harness_section('Waiting updates in plain words');
 
 pin('number and extension dropped', 'Job queue', DatabaseTools::label('0042_job_queue.php'));
