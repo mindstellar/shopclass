@@ -1575,13 +1575,14 @@ pin('a watermark type the screen never offered is refused', array('warning:Water
 foreach (array(
     array('200', 'warning:Thumbnail size is not in the expected format', 'a bare number is refused'),
     array('10x10px', 'warning:Thumbnail size is not in the expected format', 'and so is a size with anything after it'),
+    array(' 0x200', 'warning:Thumbnail size is not in the expected format', 'and a size with a zero side'),
     array('', 'warning:Thumbnail size cannot be left empty', 'and a blank one'),
 ) as $case) {
     $run = drive('CAdminSettingsMedia', 'media_post', array('dimThumbnail' => $case[0], 'jpeg_quality' => '33') + $media);
     pin($case[2], array($case[1]), flashed($run));
 }
 pin('none of them writes anything', array('70', 'INTEGER'), pref($admin, 'jpeg_quality'));
-check('and the box carries the shape the browser checks', strpos($run['drawn'], 'name="dimThumbnail" class="input-text field-num" value="" pattern="[0-9]+[xX][0-9]+" required') !== false);
+check('and the box carries the shape the browser checks', strpos($run['drawn'], 'name="dimThumbnail" class="input-text field-num" value="" pattern="[1-9][0-9]*[xX][1-9][0-9]*" required') !== false);
 
 // Corrected rather than refused, as getParamInt() and the clamp did.
 foreach (array(

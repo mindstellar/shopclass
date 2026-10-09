@@ -39,7 +39,7 @@ final class MediaSettingsScreen extends SettingsScreen
     public const DEFAULT_JPEG_QUALITY = 82;
 
     /** Width x height, lower-cased, as every image-size reader parses it. */
-    private const DIMENSION = '/^[0-9]+x[0-9]+$/';
+    private const DIMENSION = '/^[1-9][0-9]*x[1-9][0-9]*$/';
 
     /** The text options JSON, each with what a missing or zero entry reads as. */
     private const TEXT_OPTIONS = array(
@@ -369,7 +369,7 @@ final class MediaSettingsScreen extends SettingsScreen
         $form->text($name, $label)
             ->width('num')
             ->required()
-            ->set('attrs', array('pattern' => '[0-9]+[xX][0-9]+'))
+            ->set('attrs', array('pattern' => '[1-9][0-9]*[xX][1-9][0-9]*'))
             ->set('pattern', self::DIMENSION)
             ->sanitize(static function ($value) {
                 return strtolower(trim(strip_tags((string)$value)));

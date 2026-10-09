@@ -48,12 +48,12 @@ final class BrowserResize
      */
     public static function resolve(bool $enabled, bool $keepOriginal, string $normal): ?array
     {
-        if (!$enabled || !preg_match('/^([0-9]+)x([0-9]+)$/i', trim($normal), $m)) {
+        if (!$enabled) {
             return null;
         }
-        $width  = (int)$m[1];
-        $height = (int)$m[2];
-        if ($width < 1 || $height < 1) {
+        try {
+            [$width, $height] = \ImageProcessing::parseSize($normal);
+        } catch (\InvalidArgumentException $e) {
             return null;
         }
 

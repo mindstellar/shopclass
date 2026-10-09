@@ -122,6 +122,21 @@ class ImageProcessing
     }
 
     /**
+     * The width and height in a "WIDTHxHEIGHT" size, such as the "640x480" image size settings.
+     *
+     * @return array{0:int,1:int}
+     * @throws InvalidArgumentException when it is not two whole numbers above 0
+     */
+    public static function parseSize(string $size): array
+    {
+        if (!preg_match('/^([0-9]+)x([0-9]+)$/i', trim($size), $m) || (int)$m[1] < 1 || (int)$m[2] < 1) {
+            throw new InvalidArgumentException(sprintf('Image size "%s" is not WIDTHxHEIGHT.', $size));
+        }
+
+        return [(int)$m[1], (int)$m[2]];
+    }
+
+    /**
      * The most pixels an image may have before it is opened. The image_max_pixels filter
      * changes it.
      *

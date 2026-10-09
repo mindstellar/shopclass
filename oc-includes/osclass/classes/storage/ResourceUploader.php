@@ -104,8 +104,8 @@ final class ResourceUploader
 
         try {
             $baseDims = (string) ($variants['normal'] ?? reset($variants));
-            $size     = explode('x', $baseDims);
-            $img      = $imgres->autoRotate()->resizeTo((int) ($size[0] ?? 0), (int) ($size[1] ?? 0), $fit ? true : null, !$fit);
+            [$width, $height] = ImageProcessing::parseSize($baseDims);
+            $img = $imgres->autoRotate()->resizeTo($width, $height, $fit ? true : null, !$fit);
             if ($watermark) {
                 if (osc_is_watermark_text()) {
                     $img->doWatermarkText(osc_watermark_text(), osc_watermark_text_color());
@@ -121,9 +121,9 @@ final class ResourceUploader
                 }
                 $suffix = '_' . $name;
                 $vtmp   = $tmpFile . $suffix;
-                $s      = explode('x', (string) $dims);
+                [$width, $height] = ImageProcessing::parseSize((string) $dims);
                 ImageProcessing::fromFile($normalTmp)
-                    ->resizeTo((int) ($s[0] ?? 0), (int) ($s[1] ?? 0), $fit ? true : null, !$fit)
+                    ->resizeTo($width, $height, $fit ? true : null, !$fit)
                     ->saveToFile($vtmp, $extension);
                 $secondary[$suffix] = $vtmp;
             }

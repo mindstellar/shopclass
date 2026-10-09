@@ -262,8 +262,8 @@ final class PhotoService
         $mime      = osc_apply_filter('upload_image_mime', $imgres->getMime());
         $files     = array('' => $tmpName . '_normal', '_preview' => $tmpName . '_preview', '_thumbnail' => $tmpName . '_thumbnail');
 
-        $size = explode('x', osc_normal_dimensions());
-        $img  = $imgres->autoRotate()->resizeTo((int) $size[0], (int) $size[1]);
+        [$width, $height] = \ImageProcessing::parseSize(osc_normal_dimensions());
+        $img = $imgres->autoRotate()->resizeTo($width, $height);
         if (osc_is_watermark_text()) {
             $img->doWatermarkText(osc_watermark_text(), osc_watermark_text_color());
         } elseif (osc_is_watermark_image()) {
@@ -271,8 +271,8 @@ final class PhotoService
         }
         $img->saveToFile($files[''], $extension);
         foreach (array('_preview' => osc_preview_dimensions(), '_thumbnail' => osc_thumbnail_dimensions()) as $variant => $dimensions) {
-            $size = explode('x', $dimensions);
-            \ImageProcessing::fromFile($files[''])->resizeTo((int) $size[0], (int) $size[1])->saveToFile($files[$variant], $extension);
+            [$width, $height] = \ImageProcessing::parseSize($dimensions);
+            \ImageProcessing::fromFile($files[''])->resizeTo($width, $height)->saveToFile($files[$variant], $extension);
         }
         if (osc_keep_original_image()) {
             ResourceUploader::saveOriginal($tmpName, $tmpName . '_original', $extension);
@@ -598,8 +598,8 @@ final class PhotoService
         $path        = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '.'
             . $resource['s_extension'];
         $path_normal = $path;
-        $size        = explode('x', osc_normal_dimensions());
-        $img         = \ImageProcessing::fromFile($image_tmp)->resizeTo((int) $size[0], (int) $size[1]);
+        [$width, $height] = \ImageProcessing::parseSize(osc_normal_dimensions());
+        $img = \ImageProcessing::fromFile($image_tmp)->resizeTo($width, $height);
         if ($use_original) {
             if (osc_is_watermark_text()) {
                 $img->doWatermarkText(osc_watermark_text(), osc_watermark_text_color());
@@ -612,14 +612,14 @@ final class PhotoService
         // Create preview
         $path = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '_preview.'
             . $resource['s_extension'];
-        $size = explode('x', osc_preview_dimensions());
-        \ImageProcessing::fromFile($path_normal)->resizeTo((int) $size[0], (int) $size[1])->saveToFile($path);
+        [$width, $height] = \ImageProcessing::parseSize(osc_preview_dimensions());
+        \ImageProcessing::fromFile($path_normal)->resizeTo($width, $height)->saveToFile($path);
 
         // Create thumbnail
         $path = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'] . '_thumbnail.'
             . $resource['s_extension'];
-        $size = explode('x', osc_thumbnail_dimensions());
-        \ImageProcessing::fromFile($path_normal)->resizeTo((int) $size[0], (int) $size[1])->saveToFile($path);
+        [$width, $height] = \ImageProcessing::parseSize(osc_thumbnail_dimensions());
+        \ImageProcessing::fromFile($path_normal)->resizeTo($width, $height)->saveToFile($path);
 
         osc_run_hook(
             'regenerated_image',
