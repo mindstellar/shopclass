@@ -175,7 +175,7 @@ class Utils
     public static function preparePrice($price)
     {
         return number_format(
-            $price / 1000000,
+            $price / \mindstellar\currency\Money::MICROS,
             osc_locale_num_dec(),
             osc_locale_dec_point(),
             osc_locale_thousands_sep()

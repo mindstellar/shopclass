@@ -360,7 +360,7 @@ final class LocationService
      *
      * @param \Country|Region|City $model
      */
-    public static function uniqueSlug($model, int|string $self, string $name, string $wanted, string $key = 'pk_i_id'): string
+    private static function uniqueSlug($model, int|string $self, string $name, string $wanted, string $key = 'pk_i_id'): string
     {
         $takenByOther = static function (string $slug) use ($model, $key, $self): bool {
             $row = $model->findBySlug($slug);

@@ -82,7 +82,7 @@ function osc_apply_filter($tag, $value, ...$args)
 }
 function osc_mailserver_pop()
 {
-    return false;
+    return $GLOBALS['__pop'] ?? false;
 }
 function osc_mailserver_auth()
 {
@@ -452,5 +452,42 @@ pin('a password alone keeps the stored ssl', array('tls', 'site', 'given'), arra
 osc_sendMail($base + array('ssl' => 'ssl', 'username' => 'u', 'host' => 'mx.example.org', 'port' => '465'));
 pin('each key overrides its own setting', array('ssl', 'u', 'stored', 'mx.example.org', '465'), array_values(array_slice(RecordingMailer::$last, 3)));
 unset($GLOBALS['__server']);
+
+harness_section('an empty mail server setting leaves the mailer default');
+
+$GLOBALS['__server'] = array('ssl' => '', 'username' => '', 'password' => '', 'host' => '', 'port' => '');
+$defaults = new RecordingMailer(true);
+osc_sendMail($base);
+pin('empty host and port keep PHPMailer\'s own', array($defaults->Host, $defaults->Port), array(RecordingMailer::$last['Host'], RecordingMailer::$last['Port']));
+unset($GLOBALS['__server']);
+
+harness_section('POP-before-SMTP signs in with the same settings');
+
+// A one-connection POP3 server in a child process; it prints its port, then what it was sent.
+$pop = proc_open(
+    array(PHP_BINARY, '-r', '
+        $s = stream_socket_server("tcp://127.0.0.1:0");
+        echo substr(strrchr(stream_socket_get_name($s, false), ":"), 1), "\n";
+        $c = @stream_socket_accept($s, 10);
+        if ($c === false) { exit(1); }
+        stream_set_timeout($c, 5);
+        fwrite($c, "+OK ready\r\n");
+        while (($line = fgets($c)) !== false) {
+            echo trim($line), "\n";
+            fwrite($c, "+OK\r\n");
+            if (trim($line) === "QUIT") { break; }
+        }
+    '),
+    array(1 => array('pipe', 'w')),
+    $popPipes
+);
+$popPort = (int) fgets($popPipes[1]);
+$GLOBALS['__pop']    = true;
+$GLOBALS['__server'] = array('ssl' => '', 'username' => 'stored-user', 'password' => 'stored-pass', 'host' => '127.0.0.1', 'port' => '1');
+osc_sendMail($base + array('host' => '127.0.0.1', 'port' => (string) $popPort, 'username' => 'given-user', 'password' => 'given-pass'));
+$popSaw = trim((string) stream_get_contents($popPipes[1]));
+proc_close($pop);
+pin('it signs in to the given host and port, with the given account', "USER given-user\nPASS given-pass\nQUIT", $popSaw);
+unset($GLOBALS['__server'], $GLOBALS['__pop']);
 
 exit(harness_result());

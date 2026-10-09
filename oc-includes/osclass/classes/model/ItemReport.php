@@ -79,7 +79,7 @@ class ItemReport extends DAO
         }
 
         // An IPv6 host holds a whole /64, so rotating addresses inside it gives no extra votes.
-        return 'ip:' . substr(\mindstellar\security\AddressBucket::of((string)Params::getServerParam('REMOTE_ADDR')), 0, 64);
+        return 'ip:' . substr(\mindstellar\security\AddressBucket::ofRequest(), 0, 64);
     }
 
     /**

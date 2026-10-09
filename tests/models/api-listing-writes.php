@@ -757,6 +757,22 @@ pin('a staged file is discarded only by its owner, row and file together', array
 ));
 \mindstellar\listing\UploadTmpStore::removeOwner('web-form');
 @unlink($stageDir . 'old.jpg');
+copy($jpeg, $stageDir . '../outside.jpg');
+\mindstellar\listing\UploadTmpStore::add('web-form', 'u4', '../outside.jpg', date('Y-m-d H:i:s', $now));
+pin('a file name that climbs out of the stage folder is neither listed nor deleted', array(array(), false, true), array(
+    \mindstellar\listing\UploadTmpStore::staged('web-form', array('u4'), $now, $stageDir),
+    \mindstellar\listing\UploadTmpStore::discard('web-form', '../outside.jpg', $stageDir),
+    is_file($stageDir . '../outside.jpg'),
+));
+\mindstellar\listing\UploadTmpStore::removeOwner('web-form');
+@unlink($stageDir . '../outside.jpg');
+pin('stage counts each owner\'s files on their own', array(1, 1, 2), array(
+    \mindstellar\listing\UploadTmpStore::stage('owner-a', 'a1', 'a1.jpg', $now),
+    \mindstellar\listing\UploadTmpStore::stage('owner-b', 'b1', 'b1.jpg', $now),
+    \mindstellar\listing\UploadTmpStore::stage('owner-a', 'a2', 'a2.jpg', $now),
+));
+\mindstellar\listing\UploadTmpStore::removeOwner('owner-a');
+\mindstellar\listing\UploadTmpStore::removeOwner('owner-b');
 $fetcher = ImageFetcher::curlOptions('https://photos.example.com/car.jpg', '93.184.216.34', 1024, fopen('php://memory', 'w'));
 pin('a download never goes through a proxy, so it reaches the checked address', array('', '*'), array($fetcher[CURLOPT_PROXY] ?? null, $fetcher[CURLOPT_NOPROXY] ?? null));
 pin('a download that crawls is dropped', array(ImageFetcher::LOW_SPEED, ImageFetcher::LOW_SPEED_TIME), array($fetcher[CURLOPT_LOW_SPEED_LIMIT] ?? null, $fetcher[CURLOPT_LOW_SPEED_TIME] ?? null));

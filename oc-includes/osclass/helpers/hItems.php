@@ -1519,7 +1519,7 @@ function osc_format_price($price, $symbol = null)
         $symbol = osc_item_currency_symbol();
     }
 
-    $price /= 1000000;
+    $price /= \mindstellar\currency\Money::MICROS;
 
     // Drop the fractional part when the price is whole at the locale's precision,
     // so 1234.00 renders as "1,234" while 1234.50 keeps its decimals.

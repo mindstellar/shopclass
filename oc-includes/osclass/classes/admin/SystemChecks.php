@@ -682,24 +682,7 @@ final class SystemChecks
      */
     public static function iniBytes(string $value): int
     {
-        $value = trim($value);
-        if ($value === '') {
-            return 0;
-        }
-        if ((int) $value === -1) {
-            return -1;
-        }
-        $number = (int) $value;
-        switch (strtolower(substr($value, -1))) {
-            case 'g':
-                return $number * 1024 * 1024 * 1024;
-            case 'm':
-                return $number * 1024 * 1024;
-            case 'k':
-                return $number * 1024;
-            default:
-                return $number;
-        }
+        return \mindstellar\utility\Formatting::iniBytes($value);
     }
 
     /**

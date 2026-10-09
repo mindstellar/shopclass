@@ -99,7 +99,7 @@ class BanRulesDataTable extends DataTable
 
         $this->order_by = $this->resolveOrder($_get, $this->sortable, 'pk_i_id');
         // set start and limit using iPage param
-        $this->limit = ListPaging::length((int)($_get['iDisplayLength'] ?? ListPaging::DEFAULT_LENGTH));
+        $this->limit = ListPaging::length();
         $this->start = ListPaging::start($this->iPage, $this->limit);
     }
 

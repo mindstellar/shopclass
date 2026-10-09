@@ -13,6 +13,7 @@ if (!defined('ABS_PATH')) {
  */
 
 use mindstellar\billing\Order;
+use mindstellar\currency\Money;
 use mindstellar\testgateway\TestGateway;
 
 /*
@@ -24,8 +25,7 @@ if (!$order instanceof Order) {
     return;
 }
 
-$money = number_format($order->getAmount() / 1000000, 2, osc_locale_dec_point(), osc_locale_thousands_sep())
-    . ' ' . $order->getCurrency();
+$money    = Money::format($order->getAmount(), $order->getCurrency());
 $status   = $order->getStatus();
 $payUrl   = osc_route_url('test-gateway-pay');
 $statuses = array(

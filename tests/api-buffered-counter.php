@@ -64,6 +64,8 @@ final class MemoryCacheDriver implements iObject_Cache
 {
     public array $data = [];
     public bool $down = false;
+    /** A miss that still hands back a value, as a driver returning a stale or default one does. */
+    public mixed $missValue = false;
 
     public function __construct(private string $name = 'memcached')
     {
@@ -95,7 +97,7 @@ final class MemoryCacheDriver implements iObject_Cache
     {
         $found = !$this->down && isset($this->data[$key]);
 
-        return $found ? $this->data[$key] : false;
+        return $found ? $this->data[$key] : $this->missValue;
     }
 
     public function increment($key, $by = 1, $initial = 0, $expire = 0)
@@ -211,6 +213,12 @@ $downCounter  = new BufferedCounter(CacheStore::of($shared), $clock, $noDb, stat
     return ++$fellBack;
 });
 pin('a cache server that is down falls back to the database counter', [1, 1], [$downCounter->increment('api', 'k', 60), $fellBack]);
+$plain = new MemoryCacheDriver('memcached');
+$store = CacheStore::of($plain);
+$store->set('rate:k', 9, 60);
+pin('the cache store writes a set count to the driver', [9, 9], [$plain->data['rate:k'] ?? null, $store->get('rate:k')]);
+$plain->missValue = 5;
+pin('a miss is no count, whatever value the driver hands back', null, $store->get('rate:gone'));
 
 harness_section('seeding from the database');
 $fresh   = new ArrayStore();

@@ -147,10 +147,18 @@ pin('an unreadable list is null', null, LanguageService::published(static fn () 
 
 $asked = array();
 pin('one file that will not download is counted', 1, LanguageService::downloadFiles('ff_FF', $fetch));
-pin('...each of the six files is asked for', count(LanguageService::FILES), count($asked));
+pin('...each of the six files is asked for, under the code', array_map(static fn (string $f): string => 'src/translations/ff_FF/' . $f, array('theme.po', 'core.po', 'messages.po', 'theme.mo', 'core.mo', 'messages.mo')), array_map(static fn (string $u): string => substr($u, (int) strpos($u, 'src/translations/')), $asked));
 pin('...and the others are written into the language folder', 'body of core.po', file_get_contents(osc_translations_path() . 'ff_FF/core.po'));
 check('...the missing one is not', !is_file(osc_translations_path() . 'ff_FF/core.mo'));
 osc_deleteDir(osc_translations_path() . 'ff_FF');
+$asked = array();
+pin('a code that is not a locale code is refused before any folder or fetch', array(null, null, null, array(), false), array(
+    LanguageService::downloadFiles('../ff_FF', $fetch), LanguageService::downloadFiles('ff_FF/x', $fetch), LanguageService::downloadFiles("ff_FF\n", $fetch),
+    $asked, is_dir(osc_translations_path() . '../ff_FF'),
+));
+touch(osc_translations_path() . 'gg_GG');
+pin('a folder that cannot be made is null, with nothing fetched', array(null, array()), array(LanguageService::downloadFiles('gg_GG', $fetch), $asked));
+@unlink(osc_translations_path() . 'gg_GG');
 @rmdir(osc_translations_path());
 
 if (!defined('MODELS_RUNNER')) {

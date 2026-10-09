@@ -243,7 +243,7 @@ class CWebUser extends WebSecBaseModel
                 break;
             case 'items':                   // view items user
                 $itemsPerPage = ListPaging::length(10, 'itemsPerPage', 100);
-                $page         = Params::getParamInt('iPage') > 0 ? Params::getParamInt('iPage') - 1 : 0;
+                $page         = ListPaging::page() - 1;
                 // The owner sees every listing they hold unless a status tab narrows it.
                 $itemType     = Params::getParamString('itemType') ?: 'all';
                 $total_items  =

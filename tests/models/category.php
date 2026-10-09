@@ -803,6 +803,30 @@ $esCount = (static function () use ($admin, $descTable, $upTarget) {
 })();
 pin('the es_ES description now exists', 1, $esCount);
 
+harness_section('Category::updateByPrimaryKey — a reserved or taken slug gets the next free one');
+
+$slugAfterUpdate = static function (string $wanted) use ($admin, $descTable, $upTarget, $locale, $freshCategory): ?string {
+    $freshCategory()->updateByPrimaryKey(
+        array('fields' => array('i_expiration_days' => 0), 'aFieldsDescription' => array($locale => array('s_name' => 'UpTarget Edited', 's_slug' => $wanted))),
+        $upTarget
+    );
+    $stmt = $admin->prepare("SELECT s_slug FROM $descTable WHERE fk_i_category_id = ? AND fk_c_locale_code = ?");
+    $stmt->bind_param('is', $upTarget, $locale);
+    $stmt->execute();
+    $v = $stmt->get_result()->fetch_assoc()['s_slug'] ?? null;
+    $stmt->close();
+
+    return $v;
+};
+pin('the reserved "api" becomes api_1', 'api_1', $slugAfterUpdate('api'));
+$kayaks = seed_category($admin, 'Kayaks', null, $locale, 1, 0);
+pin('a slug another category holds takes the next free suffix', 'kayaks_1', $slugAfterUpdate('kayaks'));
+pin('the category\'s own slug is kept', 'kayaks_1', $slugAfterUpdate('kayaks_1'));
+seed_exec($admin, "DELETE FROM $descTable WHERE fk_i_category_id = ?", 'i', array($kayaks));
+seed_exec($admin, "DELETE FROM $catTable WHERE pk_i_id = ?", 'i', array($kayaks));
+pin('a free slug is taken as given', 'uptarget-edited', $slugAfterUpdate('uptarget-edited'));
+$freshCategory();
+
 /* ----------------------------------------------------------------------------
  * deleteByPrimaryKey — the full cascade, a survivor subtree, and cache staleness.
  * Destructive, so it runs last on a freshly rebuilt fixture. No items are seeded:

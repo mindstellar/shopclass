@@ -180,7 +180,7 @@ class CAdminPages extends AdminSecBaseModel
                 $pagesDataTable->table($params);
                 $aData = $pagesDataTable->getData();
 
-                $pastEnd = ListPaging::pastEndUrl(count($aData['aRows']), (int) $aData['iTotalDisplayRecords'], (int) $aData['iDisplayLength'], (int) $page);
+                $pastEnd = ListPaging::pastEnd($aData, (int) $page);
                 if ($pastEnd !== null) {
                     $this->redirectTo($pastEnd);
                 }

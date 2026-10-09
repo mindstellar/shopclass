@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\search\query;
 
+use mindstellar\currency\Money;
+
 /**
  * Everything one Search has been asked for. The filters and the plugin clauses are
  * their own objects; the simple switches live here.
@@ -103,8 +105,8 @@ final class SearchParts
      */
     public function priceRange($min, $max): void
     {
-        $this->priceMin = 1000000 * ((int)$min);
-        $this->priceMax = 1000000 * ((int)$max);
+        $this->priceMin = Money::MICROS * ((int)$min);
+        $this->priceMax = Money::MICROS * ((int)$max);
     }
 
     /**

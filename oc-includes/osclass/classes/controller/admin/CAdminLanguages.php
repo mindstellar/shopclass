@@ -448,15 +448,15 @@ class CAdminLanguages extends AdminSecBaseModel
                 }
 
                 // -----
-                Params::setParam('iDisplayLength', ListPaging::length());
-                $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
+                $limit = ListPaging::length();
+                Params::setParam('iDisplayLength', $limit);
+                $this->_exportVariableToView('iDisplayLength', $limit);
 
                 $p_iPage = ListPaging::page();
 
                 $aLanguages = OSCLocale::getInstance()->listAll();
 
                 // pagination
-                $limit = ListPaging::length();
                 $start = ListPaging::start($p_iPage, $limit);
                 $count = count($aLanguages);
 
@@ -527,8 +527,7 @@ class CAdminLanguages extends AdminSecBaseModel
                 $array['iDisplayLength']       = $limit;
                 $array['aaData']               = $aData;
 
-                $page = Params::getParamInt('iPage');
-                $pastEnd = ListPaging::pastEndUrl(count($array['aaData']), (int) $array['iTotalDisplayRecords'], (int) $array['iDisplayLength'], (int) $page);
+                $pastEnd = ListPaging::pastEnd($array, $p_iPage);
                 if ($pastEnd !== null) {
                     $this->redirectTo($pastEnd);
                 }

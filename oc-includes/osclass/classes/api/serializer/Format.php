@@ -128,6 +128,7 @@ final class Format
         $micros   = (int) $micros;
         $sign     = $micros < 0 ? '-' : '';
         $micros   = abs($micros);
+        // Not Money::fromMicros(): that rounds to 2 decimals, and the API keeps all 6.
         $fraction = rtrim(str_pad((string) ($micros % 1000000), 6, '0', STR_PAD_LEFT), '0');
 
         return $sign . intdiv($micros, 1000000) . '.' . str_pad($fraction, 2, '0');

@@ -85,6 +85,21 @@ try {
 }
 pin('an unknown country is not found', 'This location no longer exists.', $missing);
 
+harness_section('a region or city slug that is taken or reserved gets the next free one');
+$slugOf = static fn (string $table, int $id): string => (string) $admin->query("SELECT s_slug FROM {$p}$table WHERE pk_i_id = $id")->fetch_row()[0];
+$flanders = seed_region($admin, 'FR', 'Flanders');
+$wallonia = seed_region($admin, 'BE', 'Wallonia');
+$service->editRegion($wallonia, 'Flanders', '');
+pin('a name whose slug another region holds takes the next suffix', 'flanders-1', $slugOf('t_region', $wallonia));
+$service->editRegion($wallonia, 'Wallonia', 'api');
+pin('a reserved typed slug is not stored as typed', 'api-1', $slugOf('t_region', $wallonia));
+$service->editRegion($flanders, 'Flanders', 'flanders');
+pin('a region keeps its own slug', 'flanders', $slugOf('t_region', $flanders));
+seed_city($admin, $flanders, 'Ghent', 'FR');
+$bruges = seed_city($admin, $wallonia, 'Bruges', 'BE');
+$service->editCity($bruges, 'Ghent', '');
+pin('a name whose slug another city holds takes the next suffix', 'ghent-1', $slugOf('t_city', $bruges));
+
 harness_section('delete');
 $region = seed_region($admin, 'FR', 'Bretagne');
 seed_city($admin, $region, 'Rennes', 'FR');

@@ -385,7 +385,7 @@ $walk = static function (array $query) use ($get, $publicKey, $ids): array {
         $pages++;
         $seen = array_merge($seen, $ids($r));
         $next = $r->body()['links']['next'] ?? null;
-        if ($next === null || $pages > 10) {
+        if ($next === null || $pages > 20) {
             break;
         }
         parse_str((string) parse_url($next, PHP_URL_QUERY), $nextQuery);
@@ -405,16 +405,17 @@ $byId = $expectedOrder;
 sort($byId);
 pin('sort=id pages by keyset too', array(3, $byId), array($pages, $seen));
 // Three cars without a price; the rest share seven prices, so the id breaks most ties.
+// Two a page puts a page boundary inside the NULL group in both directions.
 $unpriced = "{$live[2]}, {$live[5]}, {$live[17]}";
 $prices   = $admin->query("SELECT pk_i_id, i_price FROM {$p}t_item WHERE pk_i_id IN ($unpriced)")->fetch_all(MYSQLI_ASSOC);
 $admin->query("UPDATE {$p}t_item SET i_price = NULL WHERE pk_i_id IN ($unpriced)");
 foreach (array('asc', 'desc') as $order) {
     $byPrice = array_map('intval', array_column($admin->query("SELECT pk_i_id FROM {$p}t_item WHERE pk_i_id IN (" . implode(',', $live) . ") ORDER BY i_price $order, pk_i_id $order")->fetch_all(MYSQLI_ASSOC), 'pk_i_id'));
-    [$pages, $seen] = $walk(array('category' => 'cars', 'limit' => 4, 'sort' => 'price', 'order' => $order));
-    pin("sort=price $order pages by keyset through ties and NULL prices, each listing once, in order", array(7, $byPrice), array($pages, $seen));
-    $r = $get('listings', array('category' => 'cars', 'limit' => 4, 'sort' => 'price', 'order' => $order), $publicKey);
+    [$pages, $seen] = $walk(array('category' => 'cars', 'limit' => 2, 'sort' => 'price', 'order' => $order));
+    pin("sort=price $order pages by keyset through ties and NULL prices, each listing once, in order", array((int) ceil(count($byPrice) / 2), $byPrice), array($pages, $seen));
+    $r = $get('listings', array('category' => 'cars', 'limit' => 2, 'sort' => 'price', 'order' => $order), $publicKey);
     parse_str((string) parse_url((string) $r->body()['links']['next'], PHP_URL_QUERY), $nextQuery);
-    pin("page 2 of sort=price $order by cursor is the offset page 2", array_slice($byPrice, 4, 4), $ids($get('listings', $nextQuery, $publicKey)));
+    pin("page 2 of sort=price $order by cursor is the offset page 2", array_slice($byPrice, 2, 2), $ids($get('listings', $nextQuery, $publicKey)));
 }
 foreach ($prices as $row) {
     $admin->query("UPDATE {$p}t_item SET i_price = " . (int) $row['i_price'] . ' WHERE pk_i_id = ' . (int) $row['pk_i_id']);

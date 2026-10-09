@@ -81,11 +81,7 @@ class ItemsDataTable extends DataTable
         }
 
         Rewrite::getInstance()->init();
-        $page = Params::getParamInt('iPage');
-        if ($page == 0) {
-            $page = 1;
-        }
-        Params::setParam('iPage', $page);
+        ListPaging::page();
         $url_base = preg_replace(
             '|&direction=([^&]*)|',
             '',
@@ -120,19 +116,7 @@ class ItemsDataTable extends DataTable
     private function getDBParams($_get)
     {
 
-        if (!isset($_get['iDisplayStart'])) {
-            $_get['iDisplayStart'] = 0;
-        }
-        if (!isset($_get['iDisplayLength'])) {
-            $_get['iDisplayLength'] = 10;
-        }
-
-        if (!is_numeric($_get['iPage']) || $_get['iPage'] < 1) {
-            Params::setParam('iPage', 1);
-            $this->iPage = 1;
-        } else {
-            $this->iPage = $_get['iPage'];
-        }
+        $this->iPage = ListPaging::page();
 
         $withUserId    = false;
         $no_user_email = '';
@@ -210,7 +194,7 @@ class ItemsDataTable extends DataTable
         }
 
         // set start and limit using iPage param
-        $this->limit = ListPaging::length((int)($_get['iDisplayLength'] ?? ListPaging::DEFAULT_LENGTH));
+        $this->limit = ListPaging::length();
         $this->start = ListPaging::start($this->iPage, $this->limit);
         $this->mSearch->limit($this->start, $this->limit);
 
@@ -591,11 +575,7 @@ class ItemsDataTable extends DataTable
     {
 
         Rewrite::getInstance()->init();
-        $page = Params::getParamInt('iPage');
-        if ($page == 0) {
-            $page = 1;
-        }
-        Params::setParam('iPage', $page);
+        ListPaging::page();
         $url_base       = preg_replace(
             '|&direction=([^&]*)|',
             '',

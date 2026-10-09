@@ -325,6 +325,7 @@ class Session
             if (!headers_sent()) {
                 $this->configureCookieParams();
                 $params = session_get_cookie_params();
+                // Not Cookie::write(): the clear must match PHP's own session cookie path, domain and secure flag.
                 setcookie('osclass', '', array(
                     'expires'  => time() - 3600,
                     'path'     => $params['path'],

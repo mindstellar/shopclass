@@ -307,18 +307,15 @@ class CAdminPlugins extends AdminSecBaseModel
                     osc_admin_toolbar_update_plugins(true);
                 }
 
-                if (Params::getParam('iDisplayLength') == '') {
-                    Params::setParam('iDisplayLength', 25);
-                }
-
-                $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
+                $limit = ListPaging::length(25);
+                Params::setParam('iDisplayLength', $limit);
+                $this->_exportVariableToView('iDisplayLength', $limit);
 
                 $p_iPage        = ListPaging::page();
                 $aPlugin        = Plugins::listAll();
                 $active_plugins = osc_get_plugins();
 
                 // pagination
-                $limit = ListPaging::length();
                 $start = ListPaging::start($p_iPage, $limit);
                 $count = count($aPlugin);
 
@@ -486,8 +483,7 @@ class CAdminPlugins extends AdminSecBaseModel
                 $array['aaInfo']               = $aInfo;
 
                 // --------------------------------------------------------
-                $page = Params::getParamInt('iPage');
-                $pastEnd = ListPaging::pastEndUrl(count($array['aaData']), (int) $array['iTotalDisplayRecords'], (int) $array['iDisplayLength'], (int) $page);
+                $pastEnd = ListPaging::pastEnd($array, $p_iPage);
                 if ($pastEnd !== null) {
                     $this->redirectTo($pastEnd);
                 }

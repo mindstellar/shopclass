@@ -298,14 +298,7 @@ final class MediaSettingsScreen extends SettingsScreen
      */
     public static function sizeToKb(string $size): int
     {
-        $size   = trim($size);
-        $suffix = strtoupper(substr($size, -1));
-        $powers = array('K' => 0, 'M' => 1, 'G' => 2, 'T' => 3, 'P' => 4);
-        if (!isset($powers[$suffix])) {
-            return intdiv((int)$size, 1024);
-        }
-
-        return (int)((int)substr($size, 0, -1) * (1024 ** $powers[$suffix]));
+        return intdiv(\mindstellar\utility\Formatting::iniBytes($size), 1024);
     }
 
     /**

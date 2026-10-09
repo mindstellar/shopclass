@@ -71,13 +71,18 @@ final class LanguageService
      *
      * @param (callable(string): (string|false))|null $fetch reads a URL; osc_file_get_contents() when null
      *
-     * @return int|null files that could not be downloaded, or null when the folder could not be made
+     * @return int|null files that could not be downloaded, or null when the code is not a locale code
+     *                  or the folder could not be made
      */
     public static function downloadFiles(string $code, ?callable $fetch = null): ?int
     {
+        // The code names a folder, so only a locale code such as "en" or "en_US" is taken.
+        if (!preg_match('/^[a-z]{2,3}(_[A-Z]{2})?$/D', $code)) {
+            return null;
+        }
         $fetch ??= 'osc_file_get_contents';
         $dir     = osc_translations_path() . $code . '/';
-        if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
+        if (!is_dir($dir) && !@mkdir($dir, 0755, true) && !is_dir($dir)) {
             return null;
         }
         $failed = 0;

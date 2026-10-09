@@ -267,6 +267,7 @@ final class SitemapSettingsScreen
      */
     private static function writeRobots(string $content): void
     {
+        // A direct write: the site root may not be writable, only robots.txt itself.
         self::$robotsWritten = file_put_contents(self::robotsPath(), $content, LOCK_EX) !== false;
 
         if (self::$robotsWritten) {

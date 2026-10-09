@@ -38,6 +38,7 @@ Plugin authors should read the Breaking section before upgrading.
 
 ### Security
 
+- A listing edit with the wrong secret no longer attaches the photos it carried.
 - Webhooks go only to ports 80 and 443, and only to public addresses unless you allow a private network. The site connects to the address it checked.
 - API keys and refresh tokens are stored hashed, and a cookie alone never signs in to the API.
 - Signing out also deletes the session cookie, on the site and in the admin.
@@ -50,6 +51,9 @@ Plugin authors should read the Breaking section before upgrading.
 - Saving a search through the API or while signed in counts toward the hourly alert limit, as guests already did.
 - Flash, form and sign-in redirect cookies are signed for their one use and expire with the cookie.
 - A custom URL field takes only `http` and `https` addresses.
+- A file written with a private mode, such as a backup's SQL dump, is private from the moment it is created.
+- Installing a language refuses a code that is not a locale code such as `en` or `en_US`.
+- A listing post refused for coming too soon, or an edit with the wrong secret, resizes no photo, and a save resizes no more photos than the listing may hold.
 
 ### Performance
 
@@ -102,6 +106,10 @@ Plugin authors should read the Breaking section before upgrading.
 - **Listings → Settings** and **Users → Settings** check their numbers: a negative or blank number saves as 0.
 - Adding, renaming or deleting a country runs in one transaction, so a failure leaves nothing half done.
 - New `Db::withNamedLock()`, `Db::retryOnce()`, `FileSystem::writeAtomic()`, `FileSystem::head()` and `ImageProcessing::usesImagick()` replace the copies core kept of each. A failed query inside a transaction is no longer retried.
+- `Formatting::iniBytes()` is the one php.ini size parser; `SystemChecks::iniBytes()` and `MediaSettingsScreen::sizeToKb()` forward to it.
+- The market's `.last-backup` pointer is written whole through `FileSystem::writeAtomic()`.
+- `cron.php` matches the CLI `cron-type` in any case.
+- A custom field's slug avoids the reserved `api`, as a field group's already did. `LocationService::uniqueSlug()` is private.
 
 ### Fixed
 

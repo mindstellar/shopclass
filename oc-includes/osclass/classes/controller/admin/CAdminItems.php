@@ -445,7 +445,7 @@ class CAdminItems extends AdminSecBaseModel
                 $itemsDataTable->tableReported($params);
                 $aData = $itemsDataTable->getData();
 
-                $pastEnd = ListPaging::pastEndUrl(count($aData['aRows']), (int) $aData['iTotalDisplayRecords'], (int) $aData['iDisplayLength'], (int) $page);
+                $pastEnd = ListPaging::pastEnd($aData, (int) $page);
                 if ($pastEnd !== null) {
                     $this->redirectTo($pastEnd);
                 }
@@ -477,7 +477,7 @@ class CAdminItems extends AdminSecBaseModel
                 $itemsDataTable = new ItemsDataTable();
                 $aData          = $itemsDataTable->table($params);
 
-                $pastEnd = ListPaging::pastEndUrl(count($aData['aRows']), (int) $aData['iTotalDisplayRecords'], (int) $aData['iDisplayLength'], (int) $page);
+                $pastEnd = ListPaging::pastEnd($aData, (int) $page);
                 if ($pastEnd !== null) {
                     $this->redirectTo($pastEnd);
                 }

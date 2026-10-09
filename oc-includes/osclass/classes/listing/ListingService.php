@@ -74,8 +74,15 @@ final class ListingService
     public function create(array $data, Actor $actor, bool $import = false): SavedListing
     {
         $this->mayPost($actor, (string) ($data['contactEmail'] ?? ''));
+        // A post refused for coming too soon resizes no photo.
+        $tooSoon = ListingPolicy::postingTooSoon($actor);
+        $files   = $tooSoon || empty($data['photos']['error']) ? null : $data['photos'];
 
-        return $this->write(fn (array &$notices): SavedListing => $this->insert($data, $actor, $import, $notices), $data);
+        return $this->write(
+            fn (array &$notices): SavedListing => $this->insert($data, $actor, $import, $tooSoon, $notices),
+            $files,
+            $files === null ? null : PhotoService::cap(isset($data['userId']) ? (int) $data['userId'] : null)
+        );
     }
 
     /**
@@ -110,7 +117,19 @@ final class ListingService
      */
     public function update(array $data, Actor $actor, bool $import = false, bool $matchSecret = true): SavedListing
     {
-        return $this->write(fn (array &$notices): SavedListing => $this->change($data, $actor, $import, $matchSecret, $notices), $data);
+        // An edit whose secret does not match resizes no photo.
+        $files = empty($data['photos']['error']) ? null : $data['photos'];
+        $id    = (int) ($data['idItem'] ?? 0);
+        $row   = $files === null ? null : ListingStore::find($id, array('s_secret', 'fk_i_user_id'));
+        if ($row === null || ($matchSecret && !hash_equals((string) $row['s_secret'], (string) ($data['secret'] ?? '')))) {
+            $files = null;
+        }
+
+        return $this->write(
+            fn (array &$notices): SavedListing => $this->change($data, $actor, $import, $matchSecret, $notices),
+            $files,
+            $row === null ? null : PhotoService::room($id, (int) $row['fk_i_user_id'])
+        );
     }
 
     /**
@@ -597,17 +616,18 @@ final class ListingService
      * transaction opens, so it holds its locks only while rows are written.
      *
      * @param callable(string[]&): SavedListing $fn
-     * @param array<string,mixed>               $data the listing form, with its photos
+     * @param mixed                             $files the photos to resize first; null for none
+     * @param int|null                          $cap   how many of them the listing may take; null for no cap
      */
-    private function write(callable $fn, array $data): SavedListing
+    private function write(callable $fn, mixed $files, ?int $cap): SavedListing
     {
         $notices = array();
         $photos  = $this->photos;
         try {
             $saved = PhotoService::cleanUpOnFailure(
                 $photos,
-                static function () use ($fn, &$notices, $photos, $data): SavedListing {
-                    $photos->prepare($data['photos'] ?? null);
+                static function () use ($fn, &$notices, $photos, $files, $cap): SavedListing {
+                    $photos->prepare($files, $cap);
 
                     return DeferredMail::transaction(static function () use ($fn, &$notices): SavedListing {
                         return $fn($notices);
@@ -625,7 +645,7 @@ final class ListingService
      * @param array<string,mixed> $data
      * @param string[]            $notices
      */
-    private function insert(array $data, Actor $actor, bool $import, array &$notices): SavedListing
+    private function insert(array $data, Actor $actor, bool $import, bool $tooSoon, array &$notices): SavedListing
     {
         $aItem   = osc_apply_filter('item_add_prepare_data', $data);
         $is_spam = 0;
@@ -661,7 +681,7 @@ final class ListingService
 
         // The wait is the global preference unless the posting user holds a
         // listing.no_wait entitlement; a guest always waits the global one.
-        if (ListingPolicy::postingTooSoon($actor)) {
+        if ($tooSoon) {
             $errors[] = ListingValidator::entry('', 'too_fast', _m('Too fast. You should wait a little to publish your ad.'));
         }
 
@@ -914,7 +934,10 @@ final class ListingService
             $where['s_secret'] = $aItem['secret'];
         }
         $result = $this->items->update($aUpdate, $where);
-        $this->photos->store($aItem['photos'], $aItem['idItem']);
+        // A wrong secret changes no row, so it must not attach photos either.
+        if (!$matchSecret || hash_equals((string) ($old_item['s_secret'] ?? ''), (string) $aItem['secret'])) {
+            $this->photos->store($aItem['photos'], $aItem['idItem']);
+        }
 
         \Log::getInstance()->insertLog(
             'item',

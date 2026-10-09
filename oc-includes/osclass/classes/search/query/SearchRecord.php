@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace mindstellar\search\query;
 
+use mindstellar\currency\Money;
 use mindstellar\search\AlertEnvelope;
 use mindstellar\search\AlertReplay;
 
@@ -34,8 +35,8 @@ final class SearchRecord
      */
     public static function encode(SearchParts $parts): string
     {
-        $data['price_min']   = $parts->priceMin / 1000000;
-        $data['price_max']   = $parts->priceMax / 1000000;
+        $data['price_min']   = $parts->priceMin / Money::MICROS;
+        $data['price_max']   = $parts->priceMax / Money::MICROS;
         $data['aCategories'] = $parts->categories->ids();
         foreach (LocationFilter::LEVELS as $level) {
             $data[$level] = $parts->locations->recorded($level);

@@ -677,7 +677,7 @@ class FileSystem
      *
      * @param string          $path
      * @param string|callable $data the content, or a call given the open temp handle that returns false to abort
-     * @param int|null        $mode set on the temp file before anything is written
+     * @param int|null        $mode the temp file is created with it, so it is never more open than asked
      *
      * @return bool
      */
@@ -688,11 +688,19 @@ class FileSystem
         } catch (Exception $e) {
             return false;
         }
-        $out = @fopen($tmp, 'xb');
+        $umask = $mode === null ? null : umask(0777 & ~$mode);
+        try {
+            $out = @fopen($tmp, 'xb');
+        } finally {
+            if ($umask !== null) {
+                umask($umask);
+            }
+        }
         if ($out === false) {
             return false;
         }
-        $ok = $mode === null || @chmod($tmp, $mode);
+        // A new file cannot be made with execute or special bits, so only those need a chmod.
+        $ok = $mode === null || ($mode & ~0666) === 0 || @chmod($tmp, $mode);
         if ($ok) {
             $ok = is_string($data) ? @fwrite($out, $data) === strlen($data) : $data($out) !== false;
         }
@@ -996,31 +1004,13 @@ class FileSystem
             set_time_limit(0);
             $fp = fopen($filename, 'wb+');
             if ($fp) {
-                $ch = curl_init($sourceURL);
-                curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
-                curl_setopt($ch, CURLOPT_TIMEOUT, self::DOWNLOAD_TIMEOUT_SECONDS);
-                curl_setopt(
-                    $ch,
-                    CURLOPT_USERAGENT,
-                    Params::getServerParam('HTTP_USER_AGENT') . ' Shopclass (v.' . OSCLASS_VERSION . ')'
-                );
+                $ch = $this->curlHandle($sourceURL, $verify_ssl, self::DOWNLOAD_TIMEOUT_SECONDS, array());
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
                 curl_setopt($ch, CURLOPT_FILE, $fp);
                 // Decompressed in flight, so the file on disk is the real thing and the
-                // checksum below still matches — it just travels in a fraction of the
-                // bytes. The largest country in the location catalog is 76 MB raw and
-                // 5.7 MB gzipped.
+                // checksum below still matches.
                 @curl_setopt($ch, CURLOPT_ENCODING, '');
                 curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-                curl_setopt($ch, CURLOPT_MAXREDIRS, 5);
-                // A redirect must stay on HTTP(S), as in getContents().
-                curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
-                curl_setopt($ch, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
-                curl_setopt($ch, CURLOPT_REFERER, osc_base_url());
-
-                if (stripos($sourceURL, 'https') !== false) {
-                    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $verify_ssl);
-                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-                }
                 if ($post_data !== null) {
                     curl_setopt($ch, CURLOPT_POST, true);
                     curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post_data));

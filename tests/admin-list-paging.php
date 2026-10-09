@@ -121,4 +121,18 @@ pin('iPage as the first parameter is rewritten too', $base . 'iPage=2&page=items
 pin('a missing iPage is added', $base . 'page=items&iPage=2', $pastEnd('page=items', 0, 11, 10, 5));
 pin('the last page itself never redirects to itself', null, $pastEnd('page=items&iPage=3', 0, 30, 10, 3));
 
+harness_section('Past the end, from a DataTable result');
+
+$_SERVER['QUERY_STRING'] = 'page=items&iPage=9';
+Params::init();
+$table = static fn (string $key, int $rows): array => array(
+    $key                   => array_fill(0, $rows, array()),
+    'iTotalDisplayRecords' => '30',
+    'iDisplayLength'       => '10',
+);
+pin('aRows past the end goes to the last page', $base . 'page=items&iPage=3', ListPaging::pastEnd($table('aRows', 0), 9));
+pin('aaData is read the same way', $base . 'page=items&iPage=3', ListPaging::pastEnd($table('aaData', 0), 9));
+pin('a page with rows stays', null, ListPaging::pastEnd($table('aaData', 2), 9));
+pin('missing counts mean page 1', $base . 'page=items&iPage=1', ListPaging::pastEnd(array(), 9));
+
 exit(harness_result());

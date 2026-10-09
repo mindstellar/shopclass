@@ -210,12 +210,13 @@ final class PhotoService
 
     /**
      * Resize the uploaded images ahead of a save, so its transaction only copies files and
-     * writes rows. Only files that pass checkTypes() and checkSizes() are prepared; store()
-     * handles the rest as before.
+     * writes rows. Only files that pass checkTypes() and checkSizes() are prepared, and no more
+     * than $cap of them; store() handles the rest as before.
      *
      * @param array<string,array<int,mixed>>|mixed $aResources A $_FILES entry
+     * @param int|null                             $cap        null for no cap
      */
-    public function prepare($aResources): void
+    public function prepare($aResources, ?int $cap = null): void
     {
         if (!is_array($aResources) || empty($aResources['error'])) {
             return;
@@ -224,6 +225,9 @@ final class PhotoService
             $tmpName = (string) ($aResources['tmp_name'][$key] ?? '');
             $one     = array('error' => array(UPLOAD_ERR_OK), 'tmp_name' => array($tmpName), 'size' => array($aResources['size'][$key] ?? 0));
             if ($error == UPLOAD_ERR_OK && $tmpName !== '' && !isset($this->prepared[$tmpName]) && self::checkTypes($one) && self::checkSizes($one)) {
+                if ($cap !== null && $cap-- <= 0) {
+                    return;
+                }
                 try {
                     $this->prepared[$tmpName] = self::process($tmpName);
                 } catch (\Throwable $e) {
@@ -365,7 +369,7 @@ final class PhotoService
     public function add(int $itemId, array $files, Actor $actor): array
     {
         return self::cleanUpOnFailure($this, function () use ($itemId, $files, $actor): array {
-            $this->prepare($files);
+            $this->prepare($files, self::room($itemId, ListingStore::ownerId($itemId)));
 
             return DeferredMail::transaction(function () use ($itemId, $files, $actor): array {
                 $this->store($files, $itemId);

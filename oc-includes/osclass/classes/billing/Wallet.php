@@ -255,6 +255,7 @@ final class Wallet extends Model
 
     /**
      * Move the balance by $delta (signed) and append the matching ledger row, atomically.
+     * It retries a deadlock itself, not through Db::retryOnce(): only a deadlock is retried, and a duplicate key means settled.
      *
      * @param int         $userId
      * @param int  $delta         positive to credit, negative to debit

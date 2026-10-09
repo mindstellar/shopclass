@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace mindstellar\admin\ajax;
 
+use mindstellar\admin\ListPaging;
 use mindstellar\model\Resource;
 use mindstellar\storage\ResourceUploader;
 use mindstellar\utility\AjaxResponse;
@@ -33,7 +34,7 @@ final class MediaAjax extends AjaxHandler
         if (!in_array($type, array_merge(array('all', 'item'), osc_media_owner_types()), true)) {
             $type = 'all';
         }
-        $iPage   = max(1, Params::getParamInt('iPage'));
+        $iPage   = ListPaging::page();
         $perPage = 30;
         $data    = osc_media_library_query($type, $iPage, $perPage);
 

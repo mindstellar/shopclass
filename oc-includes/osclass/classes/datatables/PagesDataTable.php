@@ -38,7 +38,7 @@ class PagesDataTable extends DataTable
 
         $this->addTableHeader();
 
-        $this->limit = ListPaging::length((int)($params['iDisplayLength'] ?? ListPaging::DEFAULT_LENGTH));
+        $this->limit = ListPaging::length();
         $this->start = ListPaging::start(ListPaging::page(), $this->limit);
 
         $pages = Page::getInstance()->listAll(0, null, null, $this->start, $this->limit);

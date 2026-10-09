@@ -80,11 +80,7 @@ class MediaDataTable extends DataTable
         }
 
         Rewrite::getInstance()->init();
-        $page = Params::getParamInt('iPage');
-        if ($page == 0) {
-            $page = 1;
-        }
-        Params::setParam('iPage', $page);
+        ListPaging::page();
         $url_base = preg_replace(
             '|&direction=([^&]*)|',
             '',
@@ -118,12 +114,6 @@ class MediaDataTable extends DataTable
             if (($k === 'resourceId') && !empty($v)) {
                 $this->resourceID = (int)$v;
             }
-            if ($k === 'iDisplayStart') {
-                $this->start = (int)$v;
-            }
-            if ($k === 'iDisplayLength') {
-                $this->limit = (int)$v;
-            }
         }
 
         $direction              = isset($_get['direction']) && !is_array($_get['direction'])
@@ -146,7 +136,7 @@ class MediaDataTable extends DataTable
         }
 
         // set start and limit using iPage param
-        $this->limit = ListPaging::length((int)($_get['iDisplayLength'] ?? ListPaging::DEFAULT_LENGTH));
+        $this->limit = ListPaging::length();
         $this->start = ListPaging::start(ListPaging::page(), $this->limit);
     }
 

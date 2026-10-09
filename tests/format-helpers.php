@@ -60,6 +60,9 @@ pin('format with a comma decimal point', '1.234,50 USD', Money::format(123450000
 harness_section('byte sizes');
 
 pin('Formatting::bytes', '63.9 MB', Formatting::bytes(67003596));
+pin('bytes at the unit edges, past TB staying in TB', array('0 B', '1023 B', '1 KB', '1 TB', '1024 TB'), array_map(array(Formatting::class, 'bytes'), array(0, 1023, 1024, 1024 ** 4, 1024 ** 5)));
+pin('one php.ini size parser: -1, a bare number, lower case, T', array(-1, 900, 512 * 1024, 2 * 1024 ** 4), array_map(array(Formatting::class, 'iniBytes'), array('-1', '900', '512k', '2T')));
+pin('SystemChecks and the media screen forward to it', array(Formatting::iniBytes('8M'), intdiv(Formatting::iniBytes('8M'), 1024)), array(\mindstellar\admin\SystemChecks::iniBytes('8M'), \mindstellar\admin\form\MediaSettingsScreen::sizeToKb('8M')));
 pin('osc_market_format_size forwards', Formatting::bytes(1300000), osc_market_format_size(1300000));
 pin('osc_market_format_size is empty for nothing', '', osc_market_format_size(0));
 

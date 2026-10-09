@@ -136,12 +136,7 @@ class CWebUserNonSecure extends BaseModel
 
                 $itemsPerPage = ListPaging::length(10, 'itemsPerPage', 100);
 
-                $page = Params::getParam('iPage');
-                if (is_numeric($page) && (int)$page > 0) {
-                    $page = (int)$page - 1;
-                } else {
-                    $page = 0;
-                }
+                $page = ListPaging::page() - 1;
 
                 $total_items =
                     Item::getInstance()->countItemTypesByUserID($user['pk_i_id'], 'active');

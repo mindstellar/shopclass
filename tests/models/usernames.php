@@ -123,6 +123,65 @@ check('the test holds the username lock again', $holdLock());
 pin('a lock another session holds answers the busy callback', 'busy', $conn->withNamedLock($lockName, 0, static fn (): string => 'ran', static fn (?\mindstellar\database\DbException $e): string => $e === null ? 'busy' : 'error'));
 $dropLock();
 
+harness_section('The re-entry guard and lock errors, on a scripted connection');
+
+/** A Connection whose lock queries answer from a script and are recorded, with no server behind it. */
+class ScriptedLockConnection extends \mindstellar\database\Connection
+{
+    /** @var array<int,string> */
+    public array $asked = array();
+
+    /** @var array<string,mixed> SQL prefix => answer, or a Throwable to throw */
+    public array $answers = array();
+
+    public function scalar(string $sql, array $params = array())
+    {
+        $this->asked[] = $sql;
+        foreach ($this->answers as $prefix => $answer) {
+            if (str_starts_with($sql, $prefix)) {
+                if ($answer instanceof \Throwable) {
+                    throw $answer;
+                }
+
+                return $answer;
+            }
+        }
+
+        return null;
+    }
+}
+$scripted = static function (array $answers): ScriptedLockConnection {
+    $c          = (new ReflectionClass(ScriptedLockConnection::class))->newInstanceWithoutConstructor();
+    $c->answers = $answers;
+
+    return $c;
+};
+
+// MySQL 8 re-locks natively, so only a scripted IS_USED_LOCK can show the guard at work.
+$own     = $scripted(array('SELECT IS_USED_LOCK' => 1, 'SELECT GET_LOCK' => 1));
+$release = $own->namedLock('osc_test_lock', 0);
+check('guard (scripted, not MySQL): a lock this session holds is re-entered', $release !== null);
+pin('guard (scripted, not MySQL): GET_LOCK is not asked again', 0, count(array_filter($own->asked, static fn (string $q): bool => str_starts_with($q, 'SELECT GET_LOCK'))));
+$release();
+pin('guard (scripted, not MySQL): the inner release does not release the outer hold', 0, count(array_filter($own->asked, static fn (string $q): bool => str_starts_with($q, 'SELECT RELEASE_LOCK'))));
+
+$failure = new \mindstellar\database\DbException('lock query failed');
+$broken  = $scripted(array('SELECT IS_USED_LOCK' => $failure));
+$given   = 'not called';
+$broken->withNamedLock('osc_test_lock', 0, static fn (): string => 'ran', static function (?\mindstellar\database\DbException $e) use (&$given): string {
+    $given = $e;
+
+    return 'busy';
+});
+check('a failing lock query hands its DbException to the busy callback', $given === $failure);
+$thrown = null;
+try {
+    $broken->withNamedLock('osc_test_lock', 0, static fn (): string => 'ran');
+} catch (\mindstellar\database\DbException $e) {
+    $thrown = $e;
+}
+check('...and with no busy callback it is thrown', $thrown === $failure);
+
 harness_section('Registration with a chosen username claims it under the lock');
 
 require_once __DIR__ . '/../lib/action-standins.php';

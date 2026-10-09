@@ -12,7 +12,6 @@ declare(strict_types=1);
 
 namespace mindstellar\backup;
 
-use mindstellar\admin\form\MediaSettingsScreen;
 use mindstellar\utility\Formatting;
 
 /**
@@ -30,9 +29,9 @@ final class RestoreUpload
     {
         $limits = array();
         foreach (array('upload_max_filesize', 'post_max_size') as $setting) {
-            $kb = MediaSettingsScreen::sizeToKb((string) ini_get($setting));
-            if ($kb > 0) {
-                $limits[] = $kb * 1024;
+            $bytes = Formatting::iniBytes((string) ini_get($setting));
+            if ($bytes > 0) {
+                $limits[] = $bytes;
             }
         }
 

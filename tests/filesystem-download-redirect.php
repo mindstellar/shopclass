@@ -80,6 +80,15 @@ pin('...and no temp file', array(), $leftovers());
 check('a full write returns true', \mindstellar\utility\FileSystem::writeAtomic($file, 'new', 0600));
 pin('...replaces the content, with the mode asked for', array('new', 0600), array(file_get_contents($file), fileperms($file) & 0777));
 pin('...and leaves no temp file', array(), $leftovers());
+$oldUmask = umask(0);
+$seen     = null;
+\mindstellar\utility\FileSystem::writeAtomic($file, static function ($out) use (&$seen): bool {
+    $seen = fstat($out)['mode'] & 0777;
+
+    return fwrite($out, 'secret') !== false;
+}, 0600);
+pin('a private write is never readable by others, even before its first byte', array(0600, 0, 0600), array($seen, umask(), fileperms($file) & 0777));
+umask($oldUmask);
 check('a folder that does not exist is refused', !\mindstellar\utility\FileSystem::writeAtomic($dir . 'missing/x.txt', 'x'));
 
 exit(harness_result());

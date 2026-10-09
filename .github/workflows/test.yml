@@ -604,6 +604,8 @@ jobs:
         run: php tests/custom-field-validation.php
       - name: Format helpers
         run: php tests/format-helpers.php
+      - name: Cron schedules
+        run: php tests/cron-schedule.php
       # The username availability check stripped dots that registration keeps.
       - name: Sanitize drift
         run: php tests/sanitize-drift.php
@@ -650,6 +652,10 @@ jobs:
       # stored under a URL whose cache key has no such component.
       - name: Cache cookie contract
         run: php tests/cache-cookie-contract.php
+      - name: Cookie options and lifetimes
+        run: php tests/cookie-options.php
+      - name: Cache group
+        run: php tests/cache-group.php
       - name: DAO contract
         run: php tests/dao-contract.php
       - name: API session

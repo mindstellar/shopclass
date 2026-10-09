@@ -149,13 +149,13 @@ class CAdminAdmins extends AdminSecBaseModel
                     osc_run_hook('admin_bulk_' . Params::getParam('action'), Params::getParam('id'));
                 }
 
-                Params::setParam('iDisplayLength', ListPaging::length());
+                $limit = ListPaging::length();
+                Params::setParam('iDisplayLength', $limit);
                 $p_iPage = ListPaging::page();
 
                 $admins = $this->adminManager->listAll();
 
                 // pagination
-                $limit = ListPaging::length();
                 $start = ListPaging::start($p_iPage, $limit);
                 $count = count($admins);
 
@@ -198,8 +198,7 @@ class CAdminAdmins extends AdminSecBaseModel
                 $array['iDisplayLength']       = $limit;
                 $array['aaData']               = $aData;
 
-                $page = Params::getParamInt('iPage');
-                $pastEnd = ListPaging::pastEndUrl(count($array['aaData']), (int) $array['iTotalDisplayRecords'], (int) $array['iDisplayLength'], (int) $page);
+                $pastEnd = ListPaging::pastEnd($array, $p_iPage);
                 if ($pastEnd !== null) {
                     $this->redirectTo($pastEnd);
                 }

@@ -89,6 +89,12 @@ pin('another address in the same /64 is blocked', LoginThrottle::BLOCKED, LoginT
 pin('the list shows the /64', '2001:db8:1:2::/64', LoginThrottle::activity()[0]['ip'] ?? null);
 LoginThrottle::unblockIp('2001:db8:1:2::/64');
 pin('unblocking the /64 frees it', LoginThrottle::OK, LoginThrottle::evaluate('web', 'e@example.invalid')['status']);
+for ($i = 0; $i < osc_login_throttle_max_ip(); $i++) {
+    LoginThrottle::recordFailure('web', 'f' . $i . '@example.invalid');
+}
+pin('the /64 is blocked again', LoginThrottle::BLOCKED, LoginThrottle::evaluate('web', 'e@example.invalid')['status']);
+LoginThrottle::unblockIp('2001:db8:1:2:9::9');
+pin('unblocking a bare address in the /64 frees it', LoginThrottle::OK, LoginThrottle::evaluate('web', 'e@example.invalid')['status']);
 $_SERVER['REMOTE_ADDR'] = '203.0.113.50';
 Params::init();
 

@@ -560,4 +560,18 @@ class Formatting
 
         return round($bytes / (1024 ** $i), 1) . ' ' . $units[$i];
     }
+
+    /**
+     * A php.ini size ("128M", "1G", "512K") in bytes. A bare number is bytes, and -1 (no limit) stays -1.
+     */
+    public static function iniBytes(string $value): int
+    {
+        $value = trim($value);
+        if ($value === '' || (int) $value === -1) {
+            return (int) $value;
+        }
+        $power = strpos('KMGTP', strtoupper(substr($value, -1)));
+
+        return $power === false ? (int) $value : (int) $value * (1024 ** ($power + 1));
+    }
 }

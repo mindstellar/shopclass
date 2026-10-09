@@ -87,14 +87,14 @@ class CAdminEmails extends AdminSecBaseModel
                 break;
             default:
                 //-
-                Params::setParam('iDisplayLength', ListPaging::length());
+                $limit = ListPaging::length();
+                Params::setParam('iDisplayLength', $limit);
                 $p_iPage = ListPaging::page();
 
                 $prefLocale = osc_current_admin_locale();
                 $emails     = $this->emailManager->listAll(1);
 
                 // pagination
-                $limit = ListPaging::length();
                 $start = ListPaging::start($p_iPage, $limit);
                 $count = count($emails);
 
@@ -137,8 +137,7 @@ class CAdminEmails extends AdminSecBaseModel
                 $array['iDisplayLength']       = $limit;
                 $array['aaData']               = $aData;
 
-                $page = Params::getParamInt('iPage');
-                $pastEnd = ListPaging::pastEndUrl(count($array['aaData']), (int) $array['iTotalDisplayRecords'], (int) $array['iDisplayLength'], (int) $page);
+                $pastEnd = ListPaging::pastEnd($array, $p_iPage);
                 if ($pastEnd !== null) {
                     $this->redirectTo($pastEnd);
                 }

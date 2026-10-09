@@ -515,6 +515,48 @@ foreach (array('lh_fail_pre' => 'Photo post refused early', 'lh_fail_posted' => 
     pin($title . ': the prepared variants and stored files are gone', array(false, array(false), 0, array(), array()), array($ok, $resizedIn, $titled($title), glob($failed . '_*'), array_values(array_diff(glob(UPLOADS_PATH . '*/*'), $before))));
 }
 
+harness_section('photo work only for a post that may go ahead, up to the cap');
+Preference::getInstance()->set('items_wait_time', 3600);
+osc_reset_preferences();
+\mindstellar\security\ActionThrottle::record('item_post');
+$resizedIn = array();
+$tooSoon   = $photoCopy();
+$photoPost('Photo post too soon', $tooSoon);
+pin('a post refused for coming too soon resizes no photo', array(0, array(), array()), array($titled('Photo post too soon'), $resizedIn, glob($tooSoon . '_*')));
+Preference::getInstance()->set('items_wait_time', 0);
+osc_reset_preferences();
+$three = array_map(static fn (): string => $photoCopy(), array(1, 2, 3));
+$files = array('tmp_name' => $three, 'error' => array(UPLOAD_ERR_OK, UPLOAD_ERR_OK, UPLOAD_ERR_OK), 'size' => array_map('filesize', $three));
+$resizedIn = array();
+$capped    = new PhotoService();
+$capped->prepare($files, 2);
+pin('prepare resizes no more photos than the cap', 2, count($resizedIn));
+$capped->discardPrepared();
+$resizedIn = array();
+$capped->prepare(array('tmp_name' => array($fake), 'error' => array(UPLOAD_ERR_OK), 'size' => array(filesize($fake))));
+Preference::getInstance()->set('maxSizeKb', 1);
+osc_reset_preferences();
+$capped->prepare(array('tmp_name' => array($three[0]), 'error' => array(UPLOAD_ERR_OK), 'size' => array(4096)));
+Preference::getInstance()->set('maxSizeKb', '2048');
+osc_reset_preferences();
+pin('prepare refuses a file that is not an image, or is over the size limit', array(), $resizedIn);
+$capped->discardPrepared();
+
+harness_section('a web edit attaches photos only with the right secret');
+$editTarget = (int) ($call('POST', 'listings', $listing(array('title' => 'Secret edit target')), $sueToken)->body()['data']['id'] ?? 0);
+$photoEdit  = static function (string $secret) use ($asUser, $sue, $webForm, $editTarget, $photoCopy): void {
+    $asUser($sue);
+    $actions = new ItemActions(false);
+    $actions->prepareDataFrom($webForm(array('id' => (string) $editTarget, 'secret' => $secret, 'photos' => array($photoCopy()))), false);
+    $actions->edit();
+    $asUser(null);
+};
+$before = glob(UPLOADS_PATH . '*/*');
+$photoEdit('wrong-secret');
+pin('a wrong secret attaches no photo and stores no file', array(array(), array()), array($photoIds($editTarget), array_values(array_diff(glob(UPLOADS_PATH . '*/*'), $before))));
+$photoEdit($secretOf($editTarget));
+pin('the right secret attaches the photo', 1, count($photoIds($editTarget)));
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }

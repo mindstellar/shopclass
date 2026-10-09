@@ -71,7 +71,7 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
                 $keywordBlocksDataTable->table($params);
                 $aData = $keywordBlocksDataTable->getData();
 
-                $pastEnd = ListPaging::pastEndUrl(count($aData['aRows']), (int) $aData['iTotalDisplayRecords'], (int) $aData['iDisplayLength'], (int) $page);
+                $pastEnd = ListPaging::pastEnd($aData, (int) $page);
                 if ($pastEnd !== null) {
                     $this->redirectTo($pastEnd);
                 }

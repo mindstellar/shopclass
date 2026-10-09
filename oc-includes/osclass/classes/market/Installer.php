@@ -450,7 +450,7 @@ final class Installer
 
         // Exact-match pointer (never a glob) so slugs sharing a hyphenated prefix
         // (e.g. "sample" and "sample-forms") can never resolve each other's backup.
-        if (@file_put_contents($this->backupsPath . $slug . '.last-backup', $backupFilename, LOCK_EX) === false) {
+        if (!FileSystem::writeAtomic($this->backupsPath . $slug . '.last-backup', $backupFilename)) {
             return null;
         }
 

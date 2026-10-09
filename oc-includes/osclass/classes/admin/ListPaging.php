@@ -159,4 +159,22 @@ final class ListPaging
 
         return osc_admin_base_url(true) . '?' . $query;
     }
+
+    /**
+     * pastEndUrl() for a DataTable result: rows from aRows or aaData, with its
+     * iTotalDisplayRecords and iDisplayLength.
+     *
+     * @param array<string,mixed> $data
+     */
+    public static function pastEnd(array $data, int $page): ?string
+    {
+        $rows = $data['aRows'] ?? $data['aaData'] ?? array();
+
+        return self::pastEndUrl(
+            is_array($rows) ? count($rows) : 0,
+            (int) ($data['iTotalDisplayRecords'] ?? 0),
+            (int) ($data['iDisplayLength'] ?? 0),
+            $page
+        );
+    }
 }

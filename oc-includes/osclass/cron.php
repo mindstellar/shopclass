@@ -25,14 +25,11 @@ if (!defined('CLI')) {
 }
 
 // Each schedule runs its jobs only in the request that moves it on, so two at once cannot both run.
+// Each one sends its alerts, then purges latest searches when that setting names its period.
 $schedules = array(
-    'HOURLY' => array(3600, static function (array $cron): void {
-        osc_runAlert('HOURLY', $cron['d_last_exec']);
-
+    'HOURLY' => array(3600, 'hour', static function (array $cron): void {
         $purge = osc_purge_latest_searches();
-        if ($purge === 'hour') {
-            LatestSearches::getInstance()->purgeDate(date('Y-m-d H:i:s', time() - 3600));
-        } elseif (!in_array($purge, array('forever', 'day', 'week'))) {
+        if (!in_array($purge, array('forever', 'hour', 'day', 'week'))) {
             LatestSearches::getInstance()->purgeNumber((int) $purge);
         }
 
@@ -64,13 +61,7 @@ $schedules = array(
 
         osc_run_hook('cron_hourly');
     }),
-    'DAILY'  => array(24 * 3600, static function (array $cron): void {
-        osc_runAlert('DAILY', $cron['d_last_exec']);
-
-        $purge = osc_purge_latest_searches();
-        if ($purge === 'day') {
-            LatestSearches::getInstance()->purgeDate(date('Y-m-d H:i:s', time() - (24 * 3600)));
-        }
+    'DAILY'  => array(24 * 3600, 'day', static function (array $cron): void {
         osc_update_cat_stats();
         \mindstellar\security\MessageGuard::purgeExpired();
 
@@ -132,27 +123,25 @@ $schedules = array(
 
         osc_run_hook('cron_daily');
     }),
-    'WEEKLY' => array(7 * 24 * 3600, static function (array $cron): void {
-        osc_runAlert('WEEKLY', $cron['d_last_exec']);
+    'WEEKLY' => array(7 * 24 * 3600, 'week', static function (array $cron): void {
         // Correct drift in the listing counts of every country, region and city.
         osc_update_location_stats(true);
-
-        $purge = osc_purge_latest_searches();
-        if ($purge === 'week') {
-            LatestSearches::getInstance()->purgeDate(date('Y-m-d H:i:s', time() - (7 * 24 * 3600)));
-        }
         osc_run_hook('cron_weekly');
     }),
 );
-foreach ($schedules as $type => [$period, $jobs]) {
+foreach ($schedules as $type => [$period, $purgeKey, $jobs]) {
     $cron = Cron::getInstance()->getCronByType($type);
     if (!is_array($cron)) {
         continue;
     }
     $due = CLI
-        ? Params::getParam('cron-type') === strtolower($type)
+        ? strtolower((string) Params::getParam('cron-type')) === strtolower($type)
         : ($i_now - strtotime($cron['d_next_exec']) + $shift_seconds) >= 0;
     if ($due && Cron::getInstance()->claim($type, (string) $cron['d_next_exec'], $d_now, date('Y-m-d H:i:s', $i_now_truncated + $period))) {
+        osc_runAlert($type, $cron['d_last_exec']);
+        if (osc_purge_latest_searches() === $purgeKey) {
+            LatestSearches::getInstance()->purgeDate(date('Y-m-d H:i:s', time() - $period));
+        }
         $jobs($cron);
     }
 }

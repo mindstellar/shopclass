@@ -186,7 +186,7 @@ class CAdminItemComments extends AdminSecBaseModel
                 $commentsDataTable->table($params);
                 $aData = $commentsDataTable->getData();
 
-                $pastEnd = ListPaging::pastEndUrl(count($aData['aRows']), (int) $aData['iTotalDisplayRecords'], (int) $aData['iDisplayLength'], (int) $page);
+                $pastEnd = ListPaging::pastEnd($aData, (int) $page);
                 if ($pastEnd !== null) {
                     $this->redirectTo($pastEnd);
                 }

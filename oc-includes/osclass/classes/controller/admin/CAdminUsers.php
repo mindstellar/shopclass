@@ -399,7 +399,7 @@ class CAdminUsers extends AdminSecBaseModel
                 $alertsDataTable->table($params);
                 $aData = $alertsDataTable->getData();
 
-                $pastEnd = ListPaging::pastEndUrl(count($aData['aRows']), (int) $aData['iTotalDisplayRecords'], (int) $aData['iDisplayLength'], (int) $page);
+                $pastEnd = ListPaging::pastEnd($aData, (int) $page);
                 if ($pastEnd !== null) {
                     $this->redirectTo($pastEnd);
                 }
@@ -436,7 +436,7 @@ class CAdminUsers extends AdminSecBaseModel
                 $banRulesDataTable->table($params);
                 $aData = $banRulesDataTable->getData();
 
-                $pastEnd = ListPaging::pastEndUrl(count($aData['aRows']), (int) $aData['iTotalDisplayRecords'], (int) $aData['iDisplayLength'], (int) $page);
+                $pastEnd = ListPaging::pastEnd($aData, (int) $page);
                 if ($pastEnd !== null) {
                     $this->redirectTo($pastEnd);
                 }
@@ -551,7 +551,7 @@ class CAdminUsers extends AdminSecBaseModel
                 $aData = $usersDataTable->getData();
                 $this->_exportVariableToView('countries', Country::getInstance()->listAll());
 
-                $pastEnd = ListPaging::pastEndUrl(count($aData['aRows']), (int) $aData['iTotalDisplayRecords'], (int) $aData['iDisplayLength'], (int) $page);
+                $pastEnd = ListPaging::pastEnd($aData, (int) $page);
                 if ($pastEnd !== null) {
                     $this->redirectTo($pastEnd);
                 }

@@ -980,7 +980,7 @@ if (!function_exists('osc_admin_pagination')) {
     function osc_admin_pagination(array $aData)
     {
         $perPage  = (int) ($aData['iDisplayLength'] ?? 0);
-        $page     = max(1, (int) (Params::getParam('iPage') ?: 1));
+        $page     = \mindstellar\admin\ListPaging::page();
         $shown    = count($aData['aRows'] ?? $aData['aaData'] ?? array());
         $filtered = (int) ($aData['iTotalDisplayRecords'] ?? 0);
         // Only widens the sentence when it is genuinely larger than the filtered count.
