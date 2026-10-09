@@ -846,6 +846,21 @@ $qMatched = harness_query_count(static fn () => $call('PATCH', 'listings/' . $qM
 echo "  GET /listings/{id} as its owner: $qGet queries, PATCH with If-Match: $qMatched\n";
 pin('GET /listings/{id} as its owner: 6 queries (sign-in, row version for the ETag, t_item, texts, stats and location, photos; the seller is the signed-in user)', 6, $qGet);
 pin('PATCH with If-Match: 28 queries, the 19 plus the owner check, 5 locked row hashes (photos too), the new version and the outer transaction', 28, $qMatched);
+$sellerOf = static function (?\mindstellar\api\auth\MemoisedRows $known) use ($qMade): mixed {
+    $reader = new \mindstellar\api\read\ListingReader(\mindstellar\api\read\CategoryCatalog::fromSite(), $GLOBALS['lw_services']->listingSerializer(), $known);
+
+    return $reader->one($qMade, new \mindstellar\api\serializer\ViewContext(\mindstellar\apiaccess\Credential::anonymous(), 'en_US'))['seller'] ?? null;
+};
+$heldAs = static function (int $id, string $enabled) use ($sue): \mindstellar\api\auth\MemoisedRows {
+    $rows = new \mindstellar\api\auth\MemoisedRows(static fn (int $id): array => array('pk_i_id' => (string) $id, 's_name' => 'Held name', 's_username' => 'held', 'b_enabled' => $enabled, 'b_active' => '1'));
+    $rows->find($id);
+
+    return $rows;
+};
+$readSeller = $sellerOf(null);
+pin('a held live seller is not read again', array('Held name', 'held'), array($sellerOf($heldAs($sue, '1'))['name'] ?? null, $sellerOf($heldAs($sue, '1'))['username'] ?? null));
+pin('a held seller who is blocked is left out, as the read leaves a blocked seller out', null, $sellerOf($heldAs($sue, '0')));
+pin('a seller not held is read', $readSeller, $sellerOf($heldAs($tom, '1')));
 
 $writes = static function (): array {
     $db  = DBConnectionClass::newInstance()->getOsclassDb();

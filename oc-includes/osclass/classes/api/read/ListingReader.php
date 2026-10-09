@@ -187,7 +187,7 @@ final class ListingReader
             if ($row === null) {
                 $rest[] = $id;
             } elseif (UserStore::isLive($row)) {
-                $users[$id] = array_map(static fn (string $column): string => (string) $row[$column], array_combine($columns, $columns));
+                $users[$id] = array_combine($columns, array_map(static fn (string $column): mixed => $row[$column] ?? null, $columns));
             }
         }
 
