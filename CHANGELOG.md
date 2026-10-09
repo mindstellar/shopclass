@@ -22,7 +22,7 @@ Plugin authors should read the Breaking section before upgrading.
 - `POST /api/v1/account/sign-out-everywhere` and `POST /api/v1/admin/users/{id}/sign-out-everywhere` sign a user out of every device.
 - Theme JavaScript can call the API as the signed-in user with `osc_api_session_meta()`. See [Authentication](https://shopclass.org/docs/developers/api/authentication/).
 - Plugins can add API routes, scopes, listing fields and webhook events. See [Plugin endpoints](https://shopclass.org/docs/developers/api/plugin-endpoints/).
-- API routes carry a version. Plugins get `ApiKit`, `osc_api_register_schema()` and the `api_problem_codes` and `api_schemas` filters.
+- API routes carry a version. Plugins get `ApiKit` (with `listingContext()` and `listingsById()`), `osc_api_register_schema()` and the `api_problem_codes` and `api_schemas` filters.
 - A shared key-value store, `t_key_value`, with the `osc_kv_*()` helpers. See [Key-value store](https://shopclass.org/docs/developers/kv-store/).
 
 ### Breaking

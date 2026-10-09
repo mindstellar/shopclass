@@ -166,6 +166,8 @@ nested shape a `GET` answers with. Send `"price": "75.00"`, not `"price": {"amou
 
 The answer is the saved listing, with `200`. If the site holds edited listings for review,
 the status becomes `disabled` until an admin approves it and `warnings` says `listing_pending`.
+An edit to a listing still waiting for its activation link stays `pending` and also says
+`listing_pending`.
 
 ### Write members and where they read back
 

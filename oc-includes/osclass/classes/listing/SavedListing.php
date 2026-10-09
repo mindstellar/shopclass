@@ -54,7 +54,7 @@ final class SavedListing
     }
 
     /**
-     * A new listing that waits for its owner to open the activation link.
+     * The listing waits: a new one for its owner's activation link, an edit for an admin or for that same link.
      */
     public function needsValidation(): bool
     {
