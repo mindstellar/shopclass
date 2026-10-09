@@ -103,14 +103,10 @@ class Item extends DAO
         // builder's identifier allowlist. There are no caller values: the join
         // conditions and column names are compile-time literals and $limit is
         // (int)-cast into a bound LIMIT placeholder. Location comes back from
-        // extendData() below, so this no longer joins it.
+        // extendData() below.
         //
-        // The stats row holds the running total, so ordering on it is exact.
-        // Previously this grouped by listing without aggregating and ordered on
-        // whichever day's row the server happened to pick — a total only by
-        // accident, and only because ONLY_FULL_GROUP_BY is stripped from the
-        // session. It also listed hidden and expired listings; the visibility
-        // filters below are the same ones the public listing queries apply.
+        // The stats row holds the running total, so ordering on it is exact. The
+        // visibility filters below are the same ones the public listing queries apply.
         $sql = 'SELECT i.*, s.i_num_views FROM ' . $this->getTableName() . ' i'
             . ' INNER JOIN ' . DB_TABLE_PREFIX . 't_item_stats s ON s.fk_i_item_id = i.pk_i_id'
             . ' WHERE i.b_enabled = 1 AND i.b_active = 1 AND i.b_spam = 0'
@@ -276,7 +272,7 @@ class Item extends DAO
                 // placeholder, so the caller's values are bound rather than
                 // escaped-and-concatenated. %d keeps its integer semantics by
                 // casting the value it binds; %s binds the value verbatim as a
-                // string (dropping the legacy numeric coercion, amendment T).
+                // string, with no numeric coercion.
                 $i     = 0;
                 $where = preg_replace_callback('/%[ds]/', static function ($m) use (&$i, &$args) {
                     if ($m[0] === '%d' && array_key_exists($i, $args)) {

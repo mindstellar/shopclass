@@ -133,10 +133,8 @@ class Field extends DAO
      */
     public function deleteByPrimaryKey($id)
     {
-        // A null id used to build a comparison with no right-hand side, so the
-        // delete failed and the method reported false. A bound null is valid SQL
-        // that matches nothing and would report 0 instead — callers tell the two
-        // apart, so the failure value is reproduced explicitly.
+        // A null id reports false, the failure value; callers tell it apart from 0
+        // rows deleted.
         if ($id === null) {
             return false;
         }
@@ -667,9 +665,8 @@ class Field extends DAO
      */
     public function cleanCategoriesFromField($id)
     {
-        // A null id used to fail the query and report false, where a bound null
-        // matches nothing and would report 0. Callers distinguish the two, so the
-        // failure value is reproduced explicitly.
+        // A null id reports false, the failure value; callers tell it apart from 0
+        // rows removed.
         if ($id === null) {
             return false;
         }
