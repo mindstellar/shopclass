@@ -59,6 +59,13 @@ $controllers = array(
         'custom_field_autocomplete', 'delete_image', 'location', 'location_cities', 'location_countries',
         'location_regions', 'regions', 'runhook',
     ), 'noAction'),
+    'CWebLogin' => array('CWebLogin.php', array('forgot', 'forgot_post', 'login_post', 'recover', 'recover_post', 'resend'), 'loginForm'),
+    'CAdminLogin' => array('admin/CAdminLogin.php', array(
+        '2fa', '2fa_post', 'forgot', 'forgot_post', 'login_post', 'recover', 'recover_post',
+    ), 'loginForm'),
+    'CWebUserNonSecure' => array('CWebUserNonSecure.php', array(
+        'activate_alert', 'change_email_confirm', 'contact_post', 'pub_profile', 'unsub_alert',
+    ), 'toSignIn'),
 );
 
 foreach ($controllers as $class => [$file, $expected, $fallback]) {

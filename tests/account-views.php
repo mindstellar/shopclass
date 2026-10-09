@@ -225,8 +225,7 @@ foreach (array($guiDir . 'contact-content.php', $guiDir . 'item-contact-content.
     check(basename($file) . ' uses the shared contact form', strpos($src, "parts/contact-form.php'") !== false
         && strpos($src, 'name="yourName"') === false);
 }
-$nonSecure = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebUserNonSecure.php');
-preg_match("/case 'contact_post':.*?break;/s", $nonSecure, $contactCase);
+$contactCase = array(harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebUserNonSecure.php', 'contactPost'));
 check('user contact_post checks the CSRF token', isset($contactCase[0]) && strpos($contactCase[0], 'osc_csrf_check()') !== false);
 check('user contact_post is throttled', isset($contactCase[0]) && strpos($contactCase[0], "ActionThrottle::exceededFor('user_contact'") !== false);
 

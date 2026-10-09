@@ -161,9 +161,8 @@ SignIn::attempt('nobody@example.test', 'wrong');
 SignIn::complete(['s_username' => 'uma'], '/dashboard');
 pin('attempt() fires before_validating_login once, complete() after_login with the user and where they go', ['before_validating_login', 'after_login uma /dashboard'], $hooked);
 
-$web = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebLogin.php');
+$web = harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebLogin.php', 'loginPost');
 $api = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/api/controller/AuthController.php');
-$web = substr($web, (int) strpos($web, "case ('login_post'):"), (int) strpos($web, "case ('resend'):") - (int) strpos($web, "case ('login_post'):"));
 foreach (['the web form' => $web, 'the API' => $api] as $who => $code) {
     check("$who leaves before_validating_login and after_login to SignIn, completing after the attempt", !str_contains($code, "osc_run_hook('before_validating_login'")
         && !str_contains($code, "osc_run_hook('after_login'") && (int) strpos($code, 'SignIn::attempt(') > 0 && (int) strpos($code, 'SignIn::attempt(') < (int) strpos($code, 'SignIn::complete('));
@@ -241,8 +240,7 @@ osc_remove_hook(SignOut::USER_HOOK, $failing);
 pin('a failing sign-out rolls the reset back: old password, code still valid', [true, false, true], [
     osc_verify_password('reset-password', $row()['s_password']), osc_verify_password('kept-out', $row()['s_password']), $row()['s_pass_code'] !== null,
 ]);
-$login = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebLogin.php');
-$login = substr($login, (int) strpos($login, "case ('forgot_post'):"), 2500);
+$login = harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebLogin.php', 'forgotPost');
 check('the reset form stores the password through AccountService::setPassword() with the code', str_contains($login, 'AccountService::setPassword(')
     && !str_contains($login, 'osc_hash_password(') && !str_contains($login, 'SignOut::'));
 
@@ -326,8 +324,7 @@ try {
 }
 osc_remove_hook(SignOut::ADMIN_HOOK, $failing);
 pin('a failing sign-out rolls the password back with it', [true, $stamp + 1], [osc_verify_password('admin-new', $adminRow()['s_password']), AuthStamp::of($adminRow())]);
-$recover = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminLogin.php');
-$recover = substr($recover, (int) strpos($recover, "case ('forgot_post'):"), 2000);
+$recover = harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminLogin.php', 'forgotPost');
 $cli     = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/cli/Cli.php');
 $cli     = substr($cli, (int) strpos($cli, 'private function cmdUserResetPassword('), 1800);
 foreach (['the recovery link' => $recover, 'the CLI user:reset-password' => $cli] as $who => $code) {
