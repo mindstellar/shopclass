@@ -37,6 +37,49 @@ The direction is one way: controllers → services → policies and models. A se
 calls a controller, and core never imports `mindstellar\api`. The API is one more set of
 controllers.
 
+Tests hold these rules: `tests/core-no-api-import.php` (core never imports the API),
+`tests/no-raw-table-access.php` (table SQL stays in models and stores),
+`tests/strict-types.php`, `tests/hook-contract.php` (hook names and arguments) and
+`tests/api-contract.php` (the API surface plugins use).
+
+## A request, start to finish
+
+A page on the site:
+
+1. `index.php` loads `oc-load.php`. There, `Rewrite::init()` turns a friendly URL into the
+   `page` and `action` request values, using the `CoreRoutes` table and the routes plugins add.
+2. `mindstellar\routing\FrontController::run()` checks maintenance mode, then asks
+   `PageDispatcher::web()` for the controller of `page`.
+3. `PageRoutes::web()` maps each `page` to a controller, such as `item` → `CWebItem`.
+   Plugins add pages with the `page_routes` filter.
+4. The controller's `doModel()` picks the code for `action`, reads the request into the data
+   a service takes (`ListingInput::read()`), and calls the service
+   (`ListingService::create()`).
+5. The service checks the rules, writes in one transaction and fires the hooks. The
+   controller then renders a page or redirects.
+
+Admin pages take the same path from `oc-admin/index.php`, with `PageDispatcher::admin()` and
+`PageRoutes::admin()`. Admin ajax calls go to one handler class per area in
+`mindstellar\admin\ajax`, listed in `AjaxRegistry`.
+
+A REST API request:
+
+1. The `api` page goes to `CWebApi`, which hands the request to
+   `mindstellar\apiaccess\ApiAccess::serve()`.
+2. `mindstellar\api\Kernel::handle()` finds the route, checks the key, scope, rate limit and
+   body, then calls the route's controller, such as `ListingWritesController::create()`.
+3. The controller turns the body into the same data (`ListingWriter` → `ListingInput::fromArray()`)
+   and calls the same service as the web page.
+
+So a listing posted on the web and one posted through the API share everything from the
+service down.
+
+Only two kinds of class read the request, the session or the visitor's address: the
+`…Input` classes and `mindstellar\auth\Actor`. A service gets what it needs from them. Two
+bridges exist for hooks that still read global state: `Params::withRequest()` runs code with
+other request values, and `ViewScope::withItem()` runs a hook with the listing the
+`osc_item_*()` helpers read.
+
 ## Modules
 
 Each module lives under `mindstellar\` in `oc-includes/osclass/classes/<module>/`.
@@ -63,14 +106,50 @@ A class's last word says what kind it is, in every module:
 |---|---|
 | `…Service` | Holds the rules for one area and does its writes. |
 | `…Policy` | Yes/no answers. |
-| `…Store` | Saves and reads rows. |
+| `…Store` | Saves rows of one table, and reads them by id. Static methods. |
+| `…Query` | Reads for one screen or the API, across tables. Never writes. |
 | `…Registry` | Plugins and themes register entries in it. |
 | `…Exception` | Thrown. |
 | `…Input`, `…Body` | A web request or an API body, read into the data a service takes. |
 | `…Controller`, `…Serializer` | API request handling and output. |
 | `…Manager` | Holds a shared resource and hands it out, such as `StorageManager` and `ConnectionManager`. |
+| `…Ajax` | One area's admin ajax actions, listed in `AjaxRegistry`. |
 
 Use one of these before making up a new ending.
+
+Some older names stay, because plugins and site settings use them: the `CWeb*` and
+`CAdmin*` controllers, the `Object_Cache_*` cache drivers, and the `Item`, `User`,
+`Category`… table classes in `classes/model/` (the legacy DAOs). `Item` is the table and its
+legacy class; new code about listings is named `Listing…`. A few interfaces also end in
+`Store` without being a table: the settings form stores, and the API's idempotency and
+rate-limit stores.
+
+### Where new code goes
+
+| You are adding | Put it in |
+|---|---|
+| A page or an action on a page | A method on its `CWeb*` or `CAdmin*` controller in `classes/controller/` |
+| An admin ajax action | The area's `…Ajax` class in `classes/admin/ajax/` |
+| An API endpoint | `classes/api/controller/` |
+| A rule, or a write | The module's `…Service` |
+| A yes/no question | The module's `…Policy` |
+| A table one module owns | The module's `…Store` |
+| A table several modules use | `classes/model/` (`mindstellar\model\`) |
+| A read for one screen or the API | The module's `…Query` |
+| An admin settings page | A `…SettingsScreen` in `classes/admin/form/` |
+| A helper for themes and plugins | The matching `helpers/h*.php`, as a thin call into a class |
+
+Never add a method to a legacy DAO in `classes/model/` or to `ItemActions` or `UserActions`.
+They are kept for plugins.
+
+### Reading rows
+
+- A `…Store` or `…Query` returns `null` when there is no row, and lets a `DbException`
+  through. A legacy DAO method keeps what it returns today (`false` or an empty array).
+- A `…Store` returns the database's own types. Use `Db::stringifyRow()` only for a row that
+  goes to a theme or a hook, where code compares strings such as `'1'`.
+- Core's new code reads tables through Stores and Queries with `mindstellar\database\Db`.
+  The `osc_db_*` helpers are for plugins.
 
 ### Rules for new code
 
@@ -85,6 +164,10 @@ Use one of these before making up a new ending.
   deprecated wrappers: a plugin that also supports 6.x keeps calling `newInstance()`.
 - **Strict types.** Every file in a `mindstellar\` namespace starts with
   `declare(strict_types=1);`. `tests/strict-types.php` fails on a new file without it.
+- **Class loading.** A class in a `mindstellar\` namespace loads by its path. A class with no
+  namespace loads only from Composer's class map: run `composer dump-autoload` and commit
+  `oc-includes/vendor/composer/`.
+- **Code style.** Use `[]` for arrays in new code. Do not reformat lines you are not changing.
 - **Renames keep the old name.** A released class that moves or is renamed is added to
   `OSC_RENAMED_CLASSES` in `compatibility.php`, which makes the alias only when code asks for
   the old name. An exception gets a direct `class_alias`, because `catch` does not autoload.

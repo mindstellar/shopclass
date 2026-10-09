@@ -65,6 +65,10 @@ $user  = User::getInstance()->findByPrimaryKey($userId);
 
 `getInstance()` needs Shopclass 7.0. A plugin that also supports 6.x calls `newInstance()`, which still works on 7.0.
 
+These DAO classes stay as they are for plugins. Core's own new code reads and writes
+through each module's `…Store` and `…Query` classes instead; see
+[where new code goes](/docs/developers/architecture/#where-new-code-goes).
+
 For your own queries, use the query builder. It binds every value and checks
 every table and column name:
 
