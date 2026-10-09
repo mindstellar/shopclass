@@ -345,7 +345,7 @@ $data = $eventData($kit)->listing($item);
 pin('a listing event carries the public listing', [$item, 'Red bike', 'http://localhost/item/' . $item], [$data['id'] ?? null, $data['title'] ?? null, $data['url'] ?? null]);
 check('a listing event never carries the IP or the seller e-mail', !array_key_exists('ip', (array) $data) && !str_contains((string) json_encode($data), '@'));
 $eventVersion = null;
-api_with_filter('api_listing', static function (array $d, $row, $context) use (&$eventVersion): array {
+api_with_filter('api_listing', static function (array $d, $context) use (&$eventVersion): array {
     $eventVersion = $context->version();
 
     return $d;

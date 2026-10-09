@@ -147,6 +147,9 @@ check('plugin-endpoints.md documents api_scopes entries with description and aud
 $scopes = api_with_filter('api_scopes', static fn ($s) => ['ext:acme:x' => ['description' => 'Do x.', 'audience' => Scopes::AUDIENCE_USER]] + (array) $s, static fn () => Scopes::fromHooks());
 pin('an api_scopes entry is read as description and audience', ['Do x.', 'user'], [$scopes->all()['ext:acme:x'] ?? null, $scopes->pluginAudience('ext:acme:x')]);
 
+preg_match_all('/^\| `(api_listing|api_user|api_category)` \| (.+) \|$/m', $pluginPage, $rows);
+pin('plugin-endpoints.md documents the object filters as data and context, never a database row', array_fill_keys(['api_listing', 'api_user', 'api_category'], '`$data, $context`'), array_combine($rows[1], $rows[2]));
+
 harness_section('error codes');
 $errorsPage = (string) file_get_contents(ABS_PATH . 'docs/site/developers/api/errors.md');
 preg_match_all('/<a id="([a-z_]+)"><\/a>|^### `([a-z_]+)`$/m', $errorsPage, $anchors);

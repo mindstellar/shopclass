@@ -16,7 +16,8 @@ use mindstellar\api\Request;
 
 /**
  * How a listing search is ordered: the sort and its direction, the t_item columns that make
- * the order total (the id breaks ties), and the keyset a cursor resumes from.
+ * the order total (the id breaks ties), and the keyset a cursor resumes from. Relevance has no
+ * keyset: its score is a computed float, not a column, so it pages by offset.
  */
 final class ListingSort
 {
@@ -27,6 +28,9 @@ final class ListingSort
 
     /** sort => t_item columns, most significant first; relevance keeps the search's own order. */
     private const COLUMNS = ['created' => ['dt_pub_date', 'pk_i_id'], 'id' => ['pk_i_id'], 'price' => ['i_price', 'pk_i_id'], 'relevance' => []];
+
+    /** Columns that may hold NULL. MySQL sorts NULL first ascending and last descending. */
+    private const NULLABLE = ['i_price'];
 
     private const DATETIME = '/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/D';
 
@@ -95,15 +99,16 @@ final class ListingSort
 
     /**
      * Whether a keyset cursor's values fit this sort: `[datetime, id]` for created, `[id]`
-     * for id. Only a plain datetime and ints ever reach the SQL.
+     * for id, `[price or null, id]` for price. Only a plain datetime and ints reach the SQL.
      *
-     * @param array<int,int|string> $after
+     * @param array<int,int|string|null> $after
      */
     public function keysetFits(array $after): bool
     {
         return match ($this->name) {
             'created' => count($after) === 2 && is_string($after[0]) && preg_match(self::DATETIME, $after[0]) === 1 && is_int($after[1]),
             'id'      => count($after) === 1 && is_int($after[0]),
+            'price'   => count($after) === 2 && ($after[0] === null || is_int($after[0])) && is_int($after[1]),
             default   => false,
         };
     }
@@ -113,33 +118,45 @@ final class ListingSort
      *
      * @param array<string,mixed> $row
      *
-     * @return array<int,int|string>
+     * @return array<int,int|string|null>
      */
     public function keyset(array $row): array
     {
-        return $this->name === 'created' ? [(string) $row['dt_pub_date'], (int) $row['pk_i_id']] : [(int) $row['pk_i_id']];
+        return match ($this->name) {
+            'created' => [(string) $row['dt_pub_date'], (int) $row['pk_i_id']],
+            'price'   => [$row['i_price'] === null ? null : (int) $row['i_price'], (int) $row['pk_i_id']],
+            default   => [(int) $row['pk_i_id']],
+        };
     }
 
     /**
      * The condition for rows after a keyset, with `?` for each value. For created desc it is
-     * `(t.dt_pub_date < ? OR (t.dt_pub_date = ? AND t.pk_i_id < ?))`.
+     * `(t.dt_pub_date < ? OR (t.dt_pub_date = ? AND t.pk_i_id < ?))`; a nullable column also
+     * places NULL where MySQL sorts it.
      *
-     * @param string                $table the qualified t_item table name
-     * @param array<int,int|string> $after values that passed keysetFits()
+     * @param string                     $table the qualified t_item table name
+     * @param array<int,int|string|null> $after values that passed keysetFits()
      *
      * @return array{0:string,1:array<int,int|string>} the SQL and its values
      */
     public function after(string $table, array $after): array
     {
-        $op      = $this->direction === 'asc' ? '>' : '<';
+        $asc     = $this->direction === 'asc';
+        $op      = $asc ? '>' : '<';
         $columns = self::COLUMNS[$this->name];
         $last    = count($columns) - 1;
         $sql     = $table . '.' . $columns[$last] . ' ' . $op . ' ?';
         $params  = [$after[$last]];
         for ($i = $last - 1; $i >= 0; $i--) {
             $column = $table . '.' . $columns[$i];
-            $sql    = '(' . $column . ' ' . $op . ' ? OR (' . $column . ' = ? AND ' . $sql . '))';
-            $params = [$after[$i], $after[$i], ...$params];
+            $value  = $after[$i];
+            if ($value === null) {
+                $sql = $asc ? '(' . $column . ' IS NOT NULL OR (' . $column . ' IS NULL AND ' . $sql . '))' : '(' . $column . ' IS NULL AND ' . $sql . ')';
+                continue;
+            }
+            $nulls  = !$asc && in_array($columns[$i], self::NULLABLE, true) ? ' OR ' . $column . ' IS NULL' : '';
+            $sql    = '(' . $column . ' ' . $op . ' ?' . $nulls . ' OR (' . $column . ' = ? AND ' . $sql . '))';
+            $params = [$value, $value, ...$params];
         }
 
         return [$sql, $params];

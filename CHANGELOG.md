@@ -23,6 +23,7 @@ Plugin authors should read the Breaking section before upgrading.
 - Theme JavaScript can call the API as the signed-in user with `osc_api_session_meta()`. See [Authentication](https://shopclass.org/docs/developers/api/authentication/).
 - Plugins can add API routes, scopes, listing fields and webhook events. See [Plugin endpoints](https://shopclass.org/docs/developers/api/plugin-endpoints/).
 - API routes carry a version. Plugins get `ApiKit` (with `listingContext()` and `listingsById()`), `osc_api_register_schema()` and the `api_problem_codes` and `api_schemas` filters.
+- The `api_listing`, `api_user` and `api_category` filters get `$data, $context`, not the database row.
 - A shared key-value store, `t_key_value`, with the `osc_kv_*()` helpers. See [Key-value store](https://shopclass.org/docs/developers/kv-store/).
 
 ### Breaking
@@ -52,12 +53,14 @@ Plugin authors should read the Breaking section before upgrading.
 - The market catalogue cache moved out of the site preferences, which every page loads (about 140 KB on a site that has browsed the market).
 - Photo URLs in an API listing write download at the same time, not one after another, within 30 seconds in all.
 - Saving a listing whose expiry did not change no longer rewrites it.
+- API listings sorted by `price` page by cursor, not offset, and cursors last a week.
 
 ### Changed
 
 - Shared core classes are reached with `getInstance()`. `newInstance()` and `instance()` still work but are deprecated.
 - Listing counts per country, region and city are recounted once a week as background jobs, instead of a slow hourly pass; the `t_locations_tmp` table is removed.
 - The search page is split into a URI resolver and a search runner the API reuses. Its hooks and filters are unchanged.
+- A listing's API `ETag` and `If-Match` version change when its photos change.
 - Unblocking one comment e-mails its author when it goes live.
 - Enabling a category refreshes the caches that list it.
 - A subcategory under a disabled parent can be disabled.

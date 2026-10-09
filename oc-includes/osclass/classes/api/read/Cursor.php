@@ -16,7 +16,7 @@ use mindstellar\security\SignedPayload;
 
 /**
  * Opaque paging cursors: a SignedPayload, versioned, tied to the filters they were made for
- * and good for a day. Clients only follow `links.next`, so the paging kind
+ * and good for a week. Clients only follow `links.next`, so the paging kind
  * behind a cursor can change later without a client change.
  */
 final class Cursor
@@ -24,10 +24,10 @@ final class Cursor
     public const VERSION = 1;
 
     /** Sorts that page by keyset; every other sort pages by offset. */
-    private const KEYSET_SORTS = ['created', 'id'];
+    private const KEYSET_SORTS = ['created', 'id', 'price'];
 
     /** Seconds a cursor stays good. */
-    public const TTL = 86400;
+    public const TTL = 604800;
 
     /** The expiry is rounded up to this many seconds, so a page links to the same cursor for an hour. */
     private const ROUND = 3600;
@@ -97,7 +97,7 @@ final class Cursor
             return null;
         }
         foreach ($after as $value) {
-            if (!is_int($value) && !is_string($value)) {
+            if (!is_int($value) && !is_string($value) && $value !== null) {
                 return null;
             }
         }

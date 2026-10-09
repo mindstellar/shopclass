@@ -94,7 +94,7 @@ Each code's `type` link points at its anchor here.
 | Code | Status | Meaning |
 |---|---|---|
 | <a id="invalid_json"></a>`invalid_json` | 400 | The body is not valid JSON, or not a JSON object. |
-| <a id="invalid_cursor"></a>`invalid_cursor` | 400 | The `cursor` is forged, over a day old, or made for other filters, sort or order. Start again and follow `links.next`. |
+| <a id="invalid_cursor"></a>`invalid_cursor` | 400 | The `cursor` is forged, over a week old, or made for other filters, sort or order. Start again and follow `links.next`. |
 | <a id="invalid_header"></a>`invalid_header` | 400 | A malformed header: an `Idempotency-Key` that is empty, over 255 characters, or not plain visible ASCII. |
 | <a id="banned"></a>`banned` | 403 | A ban rule matches the account, its e-mail or the address. Covers every call with a user's token, key or session, sign-up, and posting. |
 | <a id="feature_disabled"></a>`feature_disabled` | 403 | The site has user accounts, API sign-up, personal keys or comments switched off. |

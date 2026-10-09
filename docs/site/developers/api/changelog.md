@@ -106,6 +106,8 @@ Also added:
   `osc_webhook_emit()`.
 - For plugins: `ApiKit::listingContext()`, `Scopes::PLUGIN_SCOPE` and the `Scopes::AUDIENCE_*`
   constants, `RouteSpec::auth()`, `scope()` and `plugin()`, and `osc_user_api_access_url()`.
+- The `api_listing`, `api_user` and `api_category` filters get `$data, $context`; the database row
+  is no longer passed.
 - Settings: **Allow webhook addresses on a private network**.
 - No new error codes. Admin actions the state refuses answer `409 conflict`.
 

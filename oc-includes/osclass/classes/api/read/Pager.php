@@ -95,7 +95,7 @@ final class Pager
     /**
      * Where a keyset cursor left off, or null on the first page and for offset paging.
      *
-     * @return array<int,int|string>|null
+     * @return array<int,int|string|null>|null
      */
     public function after(): ?array
     {

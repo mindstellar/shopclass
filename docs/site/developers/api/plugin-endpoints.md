@@ -236,12 +236,12 @@ Three filters, one per object. Each takes the data and **must return it**.
 
 | Filter | Arguments |
 |---|---|
-| `api_listing` | `$data, $item, $context` (`$item` is the listing row) |
-| `api_user` | `$data, $user, $context` (`$user` is the user row) |
-| `api_category` | `$data, $category, $context` (`$category` is the category row) |
+| `api_listing` | `$data, $context` |
+| `api_user` | `$data, $context` |
+| `api_category` | `$data, $context` |
 
-The row is the database row and is **not** part of the contract: its columns may change in any
-release. Read what you need from `$data` where you can.
+`$data` always has the object's `id`, whatever `?fields=` asks for. Load anything else you
+need by that id.
 
 A filter may change the value of a member `$data` already has, and add under `ext`. Anything
 else is undone and logged:
@@ -299,7 +299,7 @@ osc_add_hook('api_listings_prefetch', function (array $ids, $context) {
     acme_ratings_load($ids);
 });
 
-osc_add_filter('api_listing', function (array $data, $item, $context) {
+osc_add_filter('api_listing', function (array $data, $context) {
     $id = (int) $data['id'];
     if (!array_key_exists($id, acme_ratings_cache())) {
         acme_ratings_load(array($id));

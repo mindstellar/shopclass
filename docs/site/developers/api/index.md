@@ -150,7 +150,7 @@ An expired listing answers with `status: "expired"`, as its page shows it; searc
 
 ### Paging
 
-Follow `links.next` until it is `null`. Do not build cursors yourself; each one works for a day.
+Follow `links.next` until it is `null`. Do not build cursors yourself; each one works for a week.
 Every list has `meta` and `links.self` and `links.next`, including short ones answered whole, such
 as categories or your keys: there `meta.total` and `meta.limit` are the item count and `next` is
 `null` today. A later version may page them.
@@ -167,13 +167,15 @@ done
 - A cursor is signed and only works with the filters, sort and order it was made for. Any
   other use is a `400` `invalid_cursor`.
 - `meta.total` is `null` unless you send `count=true`, which counts all matches on the first
-  page (it costs a query). Later pages of a `created` or `id` sort leave it `null`.
-- A cursor is good for a day and its expiry is rounded up to the hour, so a page's
+  page (it costs a query). Later pages of a `created`, `id` or `price` sort leave it `null`.
+- A cursor is good for a week and its expiry is rounded up to the hour, so a page's
   `links.next` and `ETag` stay the same within the hour.
 - `limit` defaults to the site's results per page. Locations default to 500, max 1000,
   and send `total: null`.
-- Only `created` and `id` page by position. `price` and `relevance` page by offset and stop
-  after 10,000 results. The last page then has `meta.truncated: true` and no `links.next`.
+- `created`, `id` and `price` page by position, so a new listing never shifts a page. Listings
+  without a price come last when highest first, and first when lowest first.
+- `relevance` pages by offset, since its score is not stored, and stops after 10,000 results.
+  The last page then has `meta.truncated: true` and no `links.next`.
 
 ### Saving bandwidth with ETags
 

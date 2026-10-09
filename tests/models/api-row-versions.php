@@ -86,6 +86,7 @@ harness_section('every member change');
 $admin->query('SET FOREIGN_KEY_CHECKS = 0');
 $admin->query("INSERT INTO {$p}t_item_meta (fk_i_item_id, fk_i_field_id, s_value, s_multi) VALUES ($item, 1, 'red', '')");
 $admin->query("INSERT INTO {$p}t_user_description (fk_i_user_id, fk_c_locale_code, s_info) VALUES ($user, 'en_US', 'About me')");
+$admin->query("INSERT INTO {$p}t_item_resource (fk_i_item_id, s_name, s_extension, s_content_type, s_path) VALUES ($item, 'a', 'jpg', 'image/jpeg', 'oc-content/uploads/0/')");
 $sweep = static function (string $table, string $where, string $join, callable $read) use ($admin, $p): array {
     $missed = [];
     $types  = [];
@@ -126,6 +127,7 @@ pin('every t_item column changes a listing\'s version', [], $sweep('t_item', "pk
 pin('every t_item_description column does', [], $sweep('t_item_description', "fk_i_item_id = $item", 'fk_i_item_id', $listingVersion));
 pin('every t_item_location column does', [], $sweep('t_item_location', "fk_i_item_id = $item", 'fk_i_item_id', $listingVersion));
 pin('every t_item_meta column does', [], $sweep('t_item_meta', "fk_i_item_id = $item", 'fk_i_item_id', $listingVersion));
+pin('every t_item_resource column does', [], $sweep('t_item_resource', "fk_i_item_id = $item", 'fk_i_item_id', $listingVersion));
 pin('every hashed t_user column changes the account\'s version', [], $sweep('t_user', "pk_i_id = $user", 'pk_i_id', $accountVersion));
 pin('every t_user_description column does', [], $sweep('t_user_description', "fk_i_user_id = $user", 'fk_i_user_id', $accountVersion));
 $before = $listingVersion();
@@ -133,6 +135,11 @@ $admin->query("INSERT INTO {$p}t_item_meta (fk_i_item_id, fk_i_field_id, s_value
 $added = $listingVersion();
 $admin->query("DELETE FROM {$p}t_item_meta WHERE fk_i_item_id = $item AND fk_i_field_id = 2");
 pin('adding a child row changes it, removing it changes it back', [true, $before], [$added !== $before, $listingVersion()]);
+$admin->query("INSERT INTO {$p}t_item_resource (fk_i_item_id, s_name, s_extension, s_content_type, s_path) VALUES ($item, 'b', 'jpg', 'image/jpeg', 'oc-content/uploads/0/')");
+$photo = (int) $admin->insert_id;
+$added = $listingVersion();
+$admin->query("DELETE FROM {$p}t_item_resource WHERE pk_i_id = $photo");
+pin('so does adding a photo, and deleting it changes it back', [true, $before], [$added !== $before, $listingVersion()]);
 $admin->query('SET FOREIGN_KEY_CHECKS = 1');
 $v2 = $listingVersion();
 

@@ -93,8 +93,8 @@ final class UserSerializer
                 'last_access_ip' => Format::text($user['s_access_ip'] ?? null),
             ];
         }
-        $filtered = osc_apply_filter('api_user', $data, $user, $context);
+        $filtered = osc_apply_filter('api_user', $data, $context);
 
-        return $this->extensions->finish('api_user', 'user', self::MEMBERS, $data, $filtered, [$user, $context], $context);
+        return $this->extensions->finish('api_user', 'user', self::MEMBERS, $data, $filtered, [$context], $context);
     }
 }

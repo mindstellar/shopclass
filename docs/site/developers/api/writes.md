@@ -390,7 +390,8 @@ To avoid overwriting a change made meanwhile, send the `ETag` of your last `GET`
 - A caller who can `PATCH` or `DELETE` a listing, comment, photo, the account, a user, key, saved
   search, category, field, currency, location, webhook or the settings gets an `ETag` that holds the stored version
   (`"<version>.<hash>"`). Any `GET` of the path works, whatever its `fields`, `include` or
-  `locale`. For a listing or comment that means its owner, or an admin key.
+  `locale`. For a listing or comment that means its owner, or an admin key. A listing's version
+  covers its texts, location, custom fields and photos.
 - Other callers get a plain hash of the body. Use the tag of the plain `GET`, with no `fields`
   or `include`.
 - The check and the write run as one, so no other write can land between them.

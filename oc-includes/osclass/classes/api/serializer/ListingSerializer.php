@@ -120,9 +120,9 @@ final class ListingSerializer
                 $data[$member] = $make();
             }
         }
-        $filtered = osc_apply_filter('api_listing', $data, $item, $context);
+        $filtered = osc_apply_filter('api_listing', $data, $context);
 
-        return $this->extensions->finish('api_listing', 'listing', self::MEMBERS, $data, $filtered, [$item, $context], $context);
+        return $this->extensions->finish('api_listing', 'listing', self::MEMBERS, $data, $filtered, [$context], $context);
     }
 
     /**

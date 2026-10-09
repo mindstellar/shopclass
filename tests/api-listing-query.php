@@ -86,6 +86,23 @@ pin('the keyset condition for newest first', [
     '(t.dt_pub_date < ? OR (t.dt_pub_date = ? AND t.pk_i_id < ?))', ['2026-10-01 10:00:00', '2026-10-01 10:00:00', 5],
 ], ListingSort::of('created')->after('t', ['2026-10-01 10:00:00', 5]));
 pin('the keyset condition for ids, oldest first', ['t.pk_i_id > ?', [5]], ListingSort::of('id', 'asc')->after('t', [5]));
+pin('the keyset condition for price, highest first: NULL prices come last', [
+    '(t.i_price < ? OR t.i_price IS NULL OR (t.i_price = ? AND t.pk_i_id < ?))', [900, 900, 5],
+], ListingSort::of('price')->after('t', [900, 5]));
+pin('after a NULL price, highest first, only NULL prices with a lower id follow', ['(t.i_price IS NULL AND t.pk_i_id < ?)', [5]], ListingSort::of('price')->after('t', [null, 5]));
+pin('the keyset condition for price, lowest first', [
+    '(t.i_price > ? OR (t.i_price = ? AND t.pk_i_id > ?))', [900, 900, 5],
+], ListingSort::of('price', 'asc')->after('t', [900, 5]));
+pin('after a NULL price, lowest first, every priced row follows', [
+    '(t.i_price IS NOT NULL OR (t.i_price IS NULL AND t.pk_i_id > ?))', [5],
+], ListingSort::of('price', 'asc')->after('t', [null, 5]));
+pin('a price keyset is a price or null, then an id', [true, true, false, false, false], [
+    ListingSort::of('price')->keysetFits([900, 5]), ListingSort::of('price')->keysetFits([null, 5]),
+    ListingSort::of('price')->keysetFits(['900', 5]), ListingSort::of('price')->keysetFits([900]), ListingSort::of('relevance')->keysetFits([5]),
+]);
+pin('a row keeps a NULL price in its keyset', [[null, 7], [1500, 8]], [
+    ListingSort::of('price')->keyset(['pk_i_id' => '7', 'i_price' => null]), ListingSort::of('price')->keyset(['pk_i_id' => '8', 'i_price' => '1500']),
+]);
 pin('/users/{id}/listings fixes the seller, whatever user= says', ['3'], $params(['user' => '7'], 3)['sUser']);
 pin('an unknown category is refused, not ignored', '422 validation_failed /category', $problem(static fn () => $params(['category' => 'boats'])));
 pin('a user that is not an id is refused, not ignored', '422 validation_failed /user', $problem(static fn () => $params(['user' => '7,x'])));
@@ -116,15 +133,19 @@ pin('a tampered cursor is refused', '400 invalid_cursor', $problem(static fn () 
 $hash  = Cursor::filterHash(['category' => 'cars', 'sort' => 'created', 'order' => 'desc']);
 $badAt = $cursor->encode(CursorState::keyset('created', 'desc', $hash, ["2026-10-01' OR '1'='1", 5]));
 pin('a keyset value that is not a plain datetime is refused, even signed', '400 invalid_cursor', $problem(static fn () => $pager(['category' => 'cars', 'cursor' => $badAt])));
-$byPrice = $pager(['sort' => 'price', 'limit' => 3], 'price');
-$offset  = $byPrice->next($rows);
-$later   = $pager(['sort' => 'price', 'limit' => 3, 'count' => '1', 'cursor' => $offset], 'price');
-pin('price pages by offset, and offset pages keep their total when asked', [3, null, true], [$later->offset(), $later->after(), $later->counts()]);
-check('a page with a next one is not truncated', !($byPrice->truncated($rows)));
-$deep     = $cursor->encode(CursorState::offset('price', 'desc', Cursor::filterHash(['sort' => 'price', 'order' => 'desc']), 9998));
-$deepPage = $pager(['sort' => 'price', 'limit' => 3, 'cursor' => $deep], 'price');
+$byScore = $pager(['sort' => 'relevance', 'limit' => 3], 'relevance');
+$offset  = $byScore->next($rows);
+$later   = $pager(['sort' => 'relevance', 'limit' => 3, 'count' => '1', 'cursor' => $offset], 'relevance');
+pin('relevance pages by offset, and offset pages keep their total when asked', [3, null, true], [$later->offset(), $later->after(), $later->counts()]);
+check('a page with a next one is not truncated', !($byScore->truncated($rows)));
+$deep     = $cursor->encode(CursorState::offset('relevance', 'desc', Cursor::filterHash(['sort' => 'relevance', 'order' => 'desc']), 9998));
+$deepPage = $pager(['sort' => 'relevance', 'limit' => 3, 'cursor' => $deep], 'relevance');
 pin('past the deepest offset: no next cursor, and truncated', [null, true], [$deepPage->next($rows), $deepPage->truncated($rows)]);
 check('the real end of the list is not truncated', !($deepPage->truncated(array_slice($rows, 0, 3))));
+$priced    = [['pk_i_id' => '9', 'i_price' => '500'], ['pk_i_id' => '7', 'i_price' => null], ['pk_i_id' => '4', 'i_price' => null]];
+$byPrice   = $pager(['sort' => 'price', 'limit' => 2], 'price');
+$afterNull = $pager(['sort' => 'price', 'limit' => 2, 'count' => '1', 'cursor' => (string) $byPrice->next($priced)], 'price');
+pin('price pages by keyset, through a NULL price, and skips the count', [[null, 7], 0, false], [$afterNull->after(), $afterNull->offset(), $afterNull->counts()]);
 
 harness_section('page links');
 $links = new class () implements Links {

@@ -22,10 +22,10 @@ final class ListSpec
     public const DEFAULT_LIMIT = 20;
     public const MAX_LIMIT     = 100;
 
-    /** @var \Closure(array<int,int|string>): bool */
+    /** @var \Closure(array<int,int|string|null>): bool */
     private \Closure $keysetFits;
 
-    /** @var \Closure(array<string,mixed>): array<int,int|string> */
+    /** @var \Closure(array<string,mixed>): array<int,int|string|null> */
     private \Closure $keyset;
 
     /**
@@ -98,7 +98,7 @@ final class ListSpec
     }
 
     /**
-     * @param array<int,int|string> $after
+     * @param array<int,int|string|null> $after
      */
     public function keysetFits(array $after): bool
     {
@@ -108,7 +108,7 @@ final class ListSpec
     /**
      * @param array<string,mixed> $row
      *
-     * @return array<int,int|string>
+     * @return array<int,int|string|null>
      */
     public function keyset(array $row): array
     {

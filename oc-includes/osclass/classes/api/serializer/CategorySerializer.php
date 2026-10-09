@@ -43,7 +43,7 @@ final class CategorySerializer
             $data['custom_fields'] = array_map(fn (array $f): array => $this->fields->definition($f, $context->locale()), $fields);
         }
 
-        return $this->finish($data, $category, $context);
+        return $this->finish($data, $context);
     }
 
     /**
@@ -55,7 +55,7 @@ final class CategorySerializer
     {
         $context = self::viewed($context);
 
-        return array_map(fn (array $c): array => $this->finish($this->shape($c, $context), $c, $context), $catalog->all());
+        return array_map(fn (array $c): array => $this->finish($this->shape($c, $context), $context), $catalog->all());
     }
 
     /**
@@ -71,7 +71,7 @@ final class CategorySerializer
             $category         = (array) $catalog->find($id);
             $data             = $this->shape($category, $context);
             $data['children'] = $this->tree($catalog, $context, $id);
-            $out[]            = $this->finish($data, $category, $context);
+            $out[]            = $this->finish($data, $context);
         }
 
         return $out;
@@ -121,15 +121,14 @@ final class CategorySerializer
 
     /**
      * @param array<string,mixed> $data
-     * @param array<string,mixed> $category
      *
      * @return array<string,mixed>
      */
-    private function finish(array $data, array $category, ViewContext $context): array
+    private function finish(array $data, ViewContext $context): array
     {
-        $filtered = osc_apply_filter('api_category', $data, $category, $context);
+        $filtered = osc_apply_filter('api_category', $data, $context);
 
-        return $this->extensions->finish('api_category', 'category', self::MEMBERS, $data, $filtered, [$category, $context], $context);
+        return $this->extensions->finish('api_category', 'category', self::MEMBERS, $data, $filtered, [$context], $context);
     }
 
     /**

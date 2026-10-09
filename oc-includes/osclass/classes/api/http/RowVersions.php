@@ -23,13 +23,16 @@ use mindstellar\webhook\WebhookEndpointStore;
 
 /**
  * Versions read from the stored rows: a keyed hash of the resource's row and its own child
- * rows (a listing's descriptions, location and field values, say), read in one query. Columns
+ * rows (a listing's descriptions, location, field values and photos, say), read in one query. Columns
  * that change without anyone editing the resource, such as a user's last access, are left out.
+ * A modified stamp alone would not do: dt_mod_date moves in whole seconds, and status, premium
+ * and expiry writes leave it alone.
  */
 final class RowVersions implements ResourceVersions
 {
     private const LISTING = ['arg' => 'id', 'owner' => 'fk_i_user_id', 'tables' => [
         ['t_item', 'pk_i_id'], ['t_item_description', 'fk_i_item_id'], ['t_item_location', 'fk_i_item_id'], ['t_item_meta', 'fk_i_item_id'],
+        ['t_item_resource', 'fk_i_item_id'],
     ]];
 
     private const COMMENT = ['arg' => 'id', 'owner' => 'fk_i_user_id', 'tables' => [['t_item_comment', 'pk_i_id']]];

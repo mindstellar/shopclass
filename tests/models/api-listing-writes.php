@@ -801,7 +801,7 @@ $qEtag    = (string) $call('GET', 'listings/' . $qMade, null, $sueToken)->header
 $qMatched = harness_query_count(static fn () => $call('PATCH', 'listings/' . $qMade, array('price' => '998'), $sueToken, array('If-Match' => $qEtag)));
 echo "  GET /listings/{id} as its owner: $qGet queries, PATCH with If-Match: $qMatched\n";
 pin('GET /listings/{id} as its owner: 7 queries (sign-in, row version for the ETag, t_item, texts, stats and location, photos, seller)', 7, $qGet);
-pin('PATCH with If-Match: 33 queries, the 25 plus the owner check, 4 locked row hashes, the new version and the outer transaction', 33, $qMatched);
+pin('PATCH with If-Match: 34 queries, the 25 plus the owner check, 5 locked row hashes (photos too), the new version and the outer transaction', 34, $qMatched);
 
 $writes = static function (): array {
     $db  = DBConnectionClass::newInstance()->getOsclassDb();

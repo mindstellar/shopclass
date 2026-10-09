@@ -404,10 +404,21 @@ pin('three keyset pages cover every listing once, in order, across a tie', array
 $byId = $expectedOrder;
 sort($byId);
 pin('sort=id pages by keyset too', array(3, $byId), array($pages, $seen));
-[$pages, $seen] = $walk(array('category' => 'cars', 'limit' => 10, 'sort' => 'price', 'order' => 'asc'));
-$sortedSeen = $seen;
-sort($sortedSeen);
-pin('sort=price pages by offset and never repeats or skips', array(3, 25, $byId), array($pages, count(array_unique($seen)), $sortedSeen));
+// Three cars without a price; the rest share seven prices, so the id breaks most ties.
+$unpriced = "{$live[2]}, {$live[5]}, {$live[17]}";
+$prices   = $admin->query("SELECT pk_i_id, i_price FROM {$p}t_item WHERE pk_i_id IN ($unpriced)")->fetch_all(MYSQLI_ASSOC);
+$admin->query("UPDATE {$p}t_item SET i_price = NULL WHERE pk_i_id IN ($unpriced)");
+foreach (array('asc', 'desc') as $order) {
+    $byPrice = array_map('intval', array_column($admin->query("SELECT pk_i_id FROM {$p}t_item WHERE pk_i_id IN (" . implode(',', $live) . ") ORDER BY i_price $order, pk_i_id $order")->fetch_all(MYSQLI_ASSOC), 'pk_i_id'));
+    [$pages, $seen] = $walk(array('category' => 'cars', 'limit' => 4, 'sort' => 'price', 'order' => $order));
+    pin("sort=price $order pages by keyset through ties and NULL prices, each listing once, in order", array(7, $byPrice), array($pages, $seen));
+    $r = $get('listings', array('category' => 'cars', 'limit' => 4, 'sort' => 'price', 'order' => $order), $publicKey);
+    parse_str((string) parse_url((string) $r->body()['links']['next'], PHP_URL_QUERY), $nextQuery);
+    pin("page 2 of sort=price $order by cursor is the offset page 2", array_slice($byPrice, 4, 4), $ids($get('listings', $nextQuery, $publicKey)));
+}
+foreach ($prices as $row) {
+    $admin->query("UPDATE {$p}t_item SET i_price = " . (int) $row['i_price'] . ' WHERE pk_i_id = ' . (int) $row['pk_i_id']);
+}
 $r    = $get('listings', array('category' => 'cars', 'limit' => 10), $publicKey);
 $next = (string) $r->body()['links']['next'];
 parse_str((string) parse_url($next, PHP_URL_QUERY), $nextQuery);
@@ -575,6 +586,9 @@ pin('fields=id,title skips photos and sellers', $twenty - 2, $count(array('categ
 $r = $get('listings', array('category' => 'cars', 'limit' => 20), $publicKey);
 parse_str((string) parse_url((string) $r->body()['links']['next'], PHP_URL_QUERY), $nextQuery);
 pin('a keyset page after the first skips the count, even when asked', $twenty, $count($nextQuery + array('count' => 'true')));
+$r = $get('listings', array('category' => 'cars', 'limit' => 20, 'sort' => 'price'), $publicKey);
+parse_str((string) parse_url((string) $r->body()['links']['next'], PHP_URL_QUERY), $nextQuery);
+pin('a later sort=price page costs what the first does, with no count', array($twenty, null), array($count($nextQuery + array('count' => 'true')), $get('listings', $nextQuery + array('count' => 'true'), $publicKey)->body()['meta']['total']));
 
 // Cold: a new kernel and kit, an empty object cache and no category or currency in memory,
 // as on the first request of a process.

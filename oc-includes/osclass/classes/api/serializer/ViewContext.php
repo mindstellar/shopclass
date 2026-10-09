@@ -18,7 +18,7 @@ use mindstellar\apiaccess\Credential;
 /**
  * Who a resource is shaped for and how: the caller, the view it gets (public, owner or
  * admin), the API version, the locale, the sparse fieldset and the includes. The
- * `api_listing`, `api_user` and `api_category` filters receive it as their third argument.
+ * `api_listing`, `api_user` and `api_category` filters receive it after the data.
  */
 final class ViewContext
 {

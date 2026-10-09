@@ -29,7 +29,7 @@ $sorts  = ['created', 'id', 'price', 'relevance'];
 harness_section('kind per sort');
 pin('created pages by keyset', CursorState::KEYSET, Cursor::modeFor('created'));
 pin('id pages by keyset', CursorState::KEYSET, Cursor::modeFor('id'));
-pin('price pages by offset', CursorState::OFFSET, Cursor::modeFor('price'));
+pin('price pages by keyset', CursorState::KEYSET, Cursor::modeFor('price'));
 pin('relevance pages by offset', CursorState::OFFSET, Cursor::modeFor('relevance'));
 
 harness_section('round trip');
@@ -38,20 +38,23 @@ $key  = $cursor->encode(CursorState::keyset('created', 'desc', $hash, ['2026-10-
 check('a cursor is base64url with a signature', preg_match('/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/D', $key) === 1);
 $state = $cursor->decode($key, $hash, $sorts, 1000);
 pin('a keyset cursor round trips', ['keyset', 'created', 'desc', ['2026-10-03 12:00:00', 42]], [$state->kind(), $state->sort(), $state->direction(), $state->after()]);
-$off   = $cursor->encode(CursorState::offset('price', 'asc', $hash, 40));
+$off   = $cursor->encode(CursorState::offset('relevance', 'asc', $hash, 40));
 $state = $cursor->decode($off, $hash, $sorts, 1000);
-pin('an offset cursor round trips', ['offset', 'price', 40], [$state->kind(), $state->sort(), $state->offsetValue()]);
+$nul   = $cursor->decode($cursor->encode(CursorState::keyset('price', 'desc', $hash, [null, 7])), $hash, $sorts, 1000);
+pin('a keyset with a NULL price round trips', ['keyset', 'price', [null, 7]], [$nul->kind(), $nul->sort(), $nul->after()]);
+pin('an offset cursor round trips', ['offset', 'relevance', 40], [$state->kind(), $state->sort(), $state->offsetValue()]);
 
 harness_section('expiry window');
 $expiry = static fn (string $token): int => (int) (json_decode((string) base64_decode(strtr(explode('.', $token)[0], '-_', '+/')), true)['x'] ?? 0);
 $state  = CursorState::keyset('created', 'desc', $hash, ['2026-10-03 12:00:00', 42]);
 $x      = $expiry($cursor->encode($state));
 pin('the expiry is on an hour boundary', 0, $x % 3600);
-check('the expiry is at least a day ahead', $x >= time() + Cursor::TTL);
+pin('a cursor is good for a week', 604800, Cursor::TTL);
+check('the expiry is at least a week ahead', $x >= time() + Cursor::TTL);
 // Encoded twice inside one hour; a retry covers the rare run that crosses the boundary.
 $same = $cursor->encode($state) === $cursor->encode($state) || $cursor->encode($state) === $cursor->encode($state);
 check('the same page gives the same cursor within an hour', $same);
-check('the expiry is at most a day and an hour ahead', $x <= time() + Cursor::TTL + 3600);
+check('the expiry is at most a week and an hour ahead', $x <= time() + Cursor::TTL + 3600);
 
 harness_section('filter hash');
 pin('the hash ignores key order', $hash, Cursor::filterHash(['q' => 'bike', 'category' => '3']));
@@ -64,7 +67,7 @@ pin('a token signed for another purpose is refused', null, $cursor->decode(Signe
 pin('an expired cursor is refused', null, $cursor->decode(SignedPayload::pack('api-cursor', ['v' => 1, 'k' => 'keyset', 's' => 'id', 'd' => 'asc', 'h' => $hash, 'a' => [1]], -1), $hash, $sorts, 1000));
 pin('the same, unexpired, is taken', [1], $cursor->decode(SignedPayload::pack('api-cursor', ['v' => 1, 'k' => 'keyset', 's' => 'id', 'd' => 'asc', 'h' => $hash, 'a' => [1]], 60), $hash, $sorts, 1000)?->after());
 [$payload, $sig] = explode('.', $off);
-$forged = rtrim(strtr(base64_encode((string) json_encode(['v' => 1, 'k' => 'offset', 's' => 'price', 'd' => 'asc', 'h' => $hash, 'o' => 999999])), '+/', '-_'), '=');
+$forged = rtrim(strtr(base64_encode((string) json_encode(['v' => 1, 'k' => 'offset', 's' => 'relevance', 'd' => 'asc', 'h' => $hash, 'o' => 999999])), '+/', '-_'), '=');
 pin('a changed payload with the old signature is refused', null, $cursor->decode($forged . '.' . $sig, $hash, $sorts, PHP_INT_MAX));
 pin('a sort this list does not allow is refused', null, $cursor->decode($off, $hash, ['created'], 1000));
 pin('an offset past the cap is refused', null, $cursor->decode($off, $hash, $sorts, 39));
@@ -73,11 +76,11 @@ pin('empty is refused', null, $cursor->decode('', $hash, $sorts, 1000));
 pin('an unsigned payload is refused', null, $cursor->decode($payload, $hash, $sorts, 1000));
 
 $sign = static fn (array $state): string => SignedPayload::pack('api-cursor', $state, 60);
-pin('another version is refused, even signed', null, $cursor->decode($sign(['v' => 2, 'k' => 'offset', 's' => 'price', 'd' => 'asc', 'h' => $hash, 'o' => 1]), $hash, $sorts, 1000));
+pin('another version is refused, even signed', null, $cursor->decode($sign(['v' => 2, 'k' => 'offset', 's' => 'relevance', 'd' => 'asc', 'h' => $hash, 'o' => 1]), $hash, $sorts, 1000));
 pin('a kind that does not fit the sort is refused', null, $cursor->decode($sign(['v' => 1, 'k' => 'offset', 's' => 'created', 'd' => 'asc', 'h' => $hash, 'o' => 1]), $hash, $sorts, 1000));
-pin('a bad direction is refused', null, $cursor->decode($sign(['v' => 1, 'k' => 'offset', 's' => 'price', 'd' => 'up', 'h' => $hash, 'o' => 1]), $hash, $sorts, 1000));
-pin('a negative offset is refused', null, $cursor->decode($sign(['v' => 1, 'k' => 'offset', 's' => 'price', 'd' => 'asc', 'h' => $hash, 'o' => -5]), $hash, $sorts, 1000));
-pin('a string offset is refused', null, $cursor->decode($sign(['v' => 1, 'k' => 'offset', 's' => 'price', 'd' => 'asc', 'h' => $hash, 'o' => '5 OR 1']), $hash, $sorts, 1000));
+pin('a bad direction is refused', null, $cursor->decode($sign(['v' => 1, 'k' => 'offset', 's' => 'relevance', 'd' => 'up', 'h' => $hash, 'o' => 1]), $hash, $sorts, 1000));
+pin('a negative offset is refused', null, $cursor->decode($sign(['v' => 1, 'k' => 'offset', 's' => 'relevance', 'd' => 'asc', 'h' => $hash, 'o' => -5]), $hash, $sorts, 1000));
+pin('a string offset is refused', null, $cursor->decode($sign(['v' => 1, 'k' => 'offset', 's' => 'relevance', 'd' => 'asc', 'h' => $hash, 'o' => '5 OR 1']), $hash, $sorts, 1000));
 pin('a keyset value that is not a scalar is refused', null, $cursor->decode($sign(['v' => 1, 'k' => 'keyset', 's' => 'id', 'd' => 'asc', 'h' => $hash, 'a' => [[1]]]), $hash, $sorts, 1000));
 pin('an empty keyset is refused', null, $cursor->decode($sign(['v' => 1, 'k' => 'keyset', 's' => 'id', 'd' => 'asc', 'h' => $hash, 'a' => []]), $hash, $sorts, 1000));
 

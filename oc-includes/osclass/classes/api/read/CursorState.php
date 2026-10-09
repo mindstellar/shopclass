@@ -22,7 +22,7 @@ final class CursorState
     public const OFFSET = 'offset';
 
     /**
-     * @param array<int,int|string> $after
+     * @param array<int,int|string|null> $after
      */
     private function __construct(
         private string $kind,
@@ -35,7 +35,7 @@ final class CursorState
     }
 
     /**
-     * @param array<int,int|string> $after the last row's sort values
+     * @param array<int,int|string|null> $after the last row's sort values
      */
     public static function keyset(string $sort, string $direction, string $filterHash, array $after): self
     {
@@ -68,7 +68,7 @@ final class CursorState
     }
 
     /**
-     * @return array<int,int|string>
+     * @return array<int,int|string|null>
      */
     public function after(): array
     {

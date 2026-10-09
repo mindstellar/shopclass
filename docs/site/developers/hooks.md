@@ -234,7 +234,7 @@ Core fires 555 names. Generated from the source; do not edit by hand.
 |---|---|---|---|
 | `add_category` | action | `$id` | `oc-includes/osclass/classes/category/CategoryService.php` |
 | `after_delete_category` | action | `$pkInt` | `oc-includes/osclass/classes/model/Category.php` |
-| `api_category` | filter | `$data, $category, $context` | `oc-includes/osclass/classes/api/serializer/CategorySerializer.php` |
+| `api_category` | filter | `$data, $context` | `oc-includes/osclass/classes/api/serializer/CategorySerializer.php` |
 | `delete_category` | action | `$pkInt` | `oc-includes/osclass/classes/model/Category.php` |
 | `edited_category` | action | `$id, $outcome` | `oc-includes/osclass/classes/category/CategoryService.php` |
 | `edited_category_order` | action | `$error` | `oc-includes/osclass/classes/admin/ajax/CategoryAjax.php` |
@@ -475,7 +475,7 @@ Core fires 555 names. Generated from the source; do not edit by hand.
 | `alerts_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/AlertsDataTable.php` |
 | `api_cors_origins` | filter | `$origins, $request` | `oc-includes/osclass/classes/api/http/Cors.php` |
 | `api_fields` | filter | `[]` | `oc-includes/osclass/classes/api/serializer/ExtensionMembers.php` |
-| `api_listing` | filter | `$data, $item, $context` | `oc-includes/osclass/classes/api/serializer/ListingSerializer.php` |
+| `api_listing` | filter | `$data, $context` | `oc-includes/osclass/classes/api/serializer/ListingSerializer.php` |
 | `api_listing_input` | filter | `$input, $request, $credential` | `oc-includes/osclass/classes/api/write/ListingWriter.php` |
 | `api_listings_prefetch` | action | `$ids, $context` | `oc-includes/osclass/classes/api/serializer/ListingSerializer.php` |
 | `api_problem_codes` | filter | `[]` | `oc-includes/osclass/classes/api/Problem.php` |
@@ -708,7 +708,7 @@ Core fires 555 names. Generated from the source; do not edit by hand.
 | `activate_user` | action | `$user` | `oc-includes/osclass/classes/user/AccountService.php` |
 | `after_delete_user` | action | `$id` | `oc-includes/osclass/classes/model/User.php` |
 | `after_username_change` | action | `Session::getInstance()->_get('userId'), Params::getParam('s_username')` | `oc-includes/osclass/classes/controller/CWebUser.php` |
-| `api_user` | filter | `$data, $user, $context` | `oc-includes/osclass/classes/api/serializer/UserSerializer.php` |
+| `api_user` | filter | `$data, $context` | `oc-includes/osclass/classes/api/serializer/UserSerializer.php` |
 | `before_user_delete` | action | `$user` | `oc-includes/osclass/classes/user/AccountService.php` |
 | `before_user_recover` | action | none | `oc-includes/osclass/classes/controller/CWebLogin.php` |
 | `before_user_register` | action | none | `oc-includes/osclass/classes/user/AccountService.php` |

@@ -146,8 +146,8 @@ $anonymous = Credential::anonymous(['listings:read']);
 $admin     = new Credential(CredentialKind::KEY, ['admin:listings', 'admin:taxonomy'], null, 1);
 
 $seen   = [];
-$filter = static function (array $data, array $item, ViewContext $context) use (&$seen): array {
-    $seen[]                       = [$context->view(), $item['pk_i_id']];
+$filter = static function (array $data, ViewContext $context) use (&$seen): array {
+    $seen[]                       = [$context->view(), $data['id'], func_num_args()];
     $data['ext']['acme']          = ['rating' => 4, 'cost_price' => '9.00', 'note' => 'undeclared'];
     $data['ext']['Not A Slug']    = ['x' => 1];
 
@@ -156,7 +156,7 @@ $filter = static function (array $data, array $item, ViewContext $context) use (
 $out = api_with_filter('api_listing', $filter, static fn () => $listings->one($row(1), $relations, new ViewContext($anonymous, 'en_US')));
 pin('in the public view only the declared public field is sent: admin-only and undeclared data stay out', ['rating' => 4], $out['ext']['acme']);
 check('a key in ext that is not a slug is dropped with a warning', !isset($out['ext']['Not A Slug']) && str_contains(implode("\n", $warnings), 'ext.Not A Slug'));
-pin('the filter gets the raw row and the view context', [['public', '1']], $seen);
+pin('the filter gets the data, with its id, and the view context, nothing else', [['public', 1, 2]], $seen);
 $adminOut = api_with_filter('api_listing', $filter, static fn () => $listings->one($row(1), $relations, new ViewContext($admin, 'en_US')));
 pin('admins get the admin-only field and the undeclared one', ['9.00', 'undeclared'], [$adminOut['ext']['acme']['cost_price'], $adminOut['ext']['acme']['note']]);
 $readOnlyAdmin = new Credential(CredentialKind::KEY, ['listings:read'], null, 1);
@@ -252,6 +252,15 @@ $adminFlat = api_with_filter('api_category', static function (array $data): arra
     return $data;
 }, static fn () => $categories->flat($catalog, new ViewContext($admin, 'en_US')));
 pin('an admin key with admin:taxonomy gets it', 'car', $adminFlat[0]['ext']['acme-icons']['icon']);
+$args = [];
+$spy  = static function (array $data, ViewContext $context) use (&$args): array {
+    $args[] = [$data['id'], func_num_args()];
+
+    return $data;
+};
+api_with_filter('api_user', $spy, static fn () => $users->one($user, new ViewContext($anonymous, 'en_US', SparseFieldset::parse('name', UserSerializer::MEMBERS, $declared, 'user'))));
+api_with_filter('api_category', $spy, static fn () => $categories->flat($catalog, new ViewContext($anonymous, 'en_US', SparseFieldset::parse('name', CategorySerializer::MEMBERS, $declared, 'category'))));
+pin('api_user and api_category get the data, with its id under any ?fields=, and the context', [[7, 2], [1, 2]], $args);
 
 harness_section('messages go to the error log, not the page');
 $logFile = tempnam(sys_get_temp_dir(), 'apiext');
