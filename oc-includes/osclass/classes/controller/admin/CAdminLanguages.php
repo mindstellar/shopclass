@@ -113,90 +113,30 @@ class CAdminLanguages extends AdminSecBaseModel
                         break;
                     }
 
-                    $url  = osc_get_i18n_repository_url();
-                    $json = json_decode((string) osc_file_get_contents($url), true);
+                    $published = LanguageService::published();
                     // Without this the button looked broken wherever the server cannot reach
                     // the translation repository: the page just came back unchanged.
-                    if (!is_array($json)) {
+                    if ($published === null) {
                         osc_add_flash_error_message(
                             sprintf(
                                 _m('Could not read the list of translations at %s. This server has to be able to reach it.'),
-                                $url
+                                osc_get_i18n_repository_url()
                             ),
                             'admin'
                         );
                         $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
                     }
 
-                    /* example json
-                        [ {
-                        "locale_code": "en_US",
-                        "name": "English (US)",
-                        "short_name": "English",
-                        "description": "American english translation",
-                        "direction": "ltr",
-                        "version": "1.0.0",
-                        "author_name": "navjottomer",
-                        "author_url": "https://github.com/navjottomer",
-                        "currency_format": "{NUMBER} {CURRENCY}",
-                        "date_format": "m/d/Y",
-                        "stop_words": "i,a,about,an,are,as,at,be,by,com,for,from,how,in,is,it,of,on,or,that,the,this,to,was,what,when,where,who,will,with,the",
-                        "mail_json": "en_US/mail.json"
-                        },  {
-                            ... more locales
-                        }]
-                    */
-                    foreach ($json as $l) {
-                        if (isset($l['locale_code']) && $l['locale_code'] === $languageToImport) {
-                            $importedLocale = $l;
-                            break;
-                        }
-                    }
-                    if (isset($importedLocale)) {
-                        // inserting e-mail translations get mail.json from github
+                    if (isset($published[$languageToImport])) {
                         $mailJSON =
                             osc_file_get_contents(osc_get_i18n_repository_url('src/translations/' . $languageToImport . '/mail.json'));
-                        if (!$this->languages->install($importedLocale, $languageToImport, $mailJSON)) {
+                        if (!$this->languages->install($published[$languageToImport], $languageToImport, $mailJSON)) {
                             osc_add_flash_error_message(_m('There was a problem importing email templates'), 'admin');
                         }
-                        // Get themes.po,themes.mo, core.po, core.mo, messages.po, messages.mo from github and save to local
-                        $uploadDir = osc_translations_path() . $languageToImport;
-                        $uploadDir .= '/';
-                        // check if the folder exists and create it if not
-                        if (!file_exists($uploadDir) && !mkdir($uploadDir, 0755, true) && !is_dir($uploadDir)) {
-                            osc_add_flash_error_message(sprintf(_m('Directory "%s" was not created'), $uploadDir));
+                        $failed = LanguageService::downloadFiles($languageToImport);
+                        if ($failed === null) {
+                            osc_add_flash_error_message(sprintf(_m('Directory "%s" was not created'), osc_translations_path() . $languageToImport . '/'), 'admin');
                             $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
-                        }
-                        $poFiles = array(
-                            'theme.po',
-                            'core.po',
-                            'messages.po'
-                        );
-                        $moFiles = array(
-                            'theme.mo',
-                            'core.mo',
-                            'messages.mo'
-                        );
-                        $failed = 0;
-                        foreach ($poFiles as $poFile) {
-                            $poFileFrom = osc_get_i18n_repository_url('src/translations/' . $languageToImport . '/' . $poFile);
-                            $poFileTo   = $uploadDir . $poFile;
-                            $poFile     = osc_file_get_contents($poFileFrom);
-                            if ($poFile) {
-                                file_put_contents($poFileTo, $poFile);
-                            } else {
-                                $failed++;
-                            }
-                        }
-                        foreach ($moFiles as $moFile) {
-                            $moFileFrom = osc_get_i18n_repository_url('src/translations/' . $languageToImport . '/' . $moFile);
-                            $moFileTo   = $uploadDir . $moFile;
-                            $moFile     = osc_file_get_contents($moFileFrom);
-                            if ($moFile) {
-                                file_put_contents($moFileTo, $moFile);
-                            } else {
-                                $failed++;
-                            }
                         }
                         // Clear this code from the pending-update list so the row's
                         // "Update" action disappears until the next version check.

@@ -29,6 +29,9 @@ final class LanguageService
     public const IS_DEFAULT = 'default';
     public const IS_CURRENT = 'current';
 
+    /** Translation files a language is installed with, fetched from the i18n repository. */
+    public const FILES = array('theme.po', 'core.po', 'messages.po', 'theme.mo', 'core.mo', 'messages.mo');
+
     public function __construct(private OSCLocale $locales, private Page $pages)
     {
     }
@@ -36,6 +39,57 @@ final class LanguageService
     public static function make(): self
     {
         return new self(OSCLocale::getInstance(), Page::getInstance());
+    }
+
+    /**
+     * The languages the i18n repository publishes, keyed by locale code. Static, as the
+     * installer calls it before there is a database.
+     *
+     * @param (callable(string): (string|false))|null $fetch reads a URL; osc_file_get_contents() when null
+     *
+     * @return array<string,array<string,mixed>>|null null when the list could not be read
+     */
+    public static function published(?callable $fetch = null): ?array
+    {
+        $list = json_decode((string) ($fetch ?? 'osc_file_get_contents')(osc_get_i18n_repository_url()), true);
+        if (!is_array($list)) {
+            return null;
+        }
+        $published = array();
+        foreach ($list as $entry) {
+            if (is_array($entry) && isset($entry['locale_code'])) {
+                $published[(string) $entry['locale_code']] = $entry;
+            }
+        }
+
+        return $published;
+    }
+
+    /**
+     * Download a language's translation files into its folder. Static, as the installer
+     * calls it before there is a database.
+     *
+     * @param (callable(string): (string|false))|null $fetch reads a URL; osc_file_get_contents() when null
+     *
+     * @return int|null files that could not be downloaded, or null when the folder could not be made
+     */
+    public static function downloadFiles(string $code, ?callable $fetch = null): ?int
+    {
+        $fetch ??= 'osc_file_get_contents';
+        $dir     = osc_translations_path() . $code . '/';
+        if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
+            return null;
+        }
+        $failed = 0;
+        foreach (self::FILES as $file) {
+            $body = $fetch(osc_get_i18n_repository_url('src/translations/' . $code . '/' . $file));
+            if ($body && file_put_contents($dir . $file, $body) !== false) {
+                continue;
+            }
+            $failed++;
+        }
+
+        return $failed;
     }
 
     /**

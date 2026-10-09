@@ -131,6 +131,28 @@ check(
     && !str_contains($controller, 'insertLocaleInfo(') && !str_contains($controller, 'importEmailJsonTemplates(')
 );
 
+harness_section('Translation repository');
+
+$asked = array();
+$fetch = static function (string $url) use (&$asked) {
+    $asked[] = $url;
+    if (str_ends_with($url, 'locale_list.json') || !str_contains($url, '/src/translations/')) {
+        return '[{"locale_code":"ff_FF","version":"1.2"},{"name":"no code"},"junk"]';
+    }
+
+    return str_ends_with($url, 'core.mo') ? false : 'body of ' . basename($url);
+};
+pin('the published list is keyed by code, entries without one dropped', array('ff_FF'), array_keys(LanguageService::published($fetch)));
+pin('an unreadable list is null', null, LanguageService::published(static fn () => false));
+
+$asked = array();
+pin('one file that will not download is counted', 1, LanguageService::downloadFiles('ff_FF', $fetch));
+pin('...each of the six files is asked for', count(LanguageService::FILES), count($asked));
+pin('...and the others are written into the language folder', 'body of core.po', file_get_contents(osc_translations_path() . 'ff_FF/core.po'));
+check('...the missing one is not', !is_file(osc_translations_path() . 'ff_FF/core.mo'));
+osc_deleteDir(osc_translations_path() . 'ff_FF');
+@rmdir(osc_translations_path());
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }

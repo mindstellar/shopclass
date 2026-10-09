@@ -16,6 +16,8 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\admin\ListPaging;
+
 /**
  * Class CAdminCFields
  */
@@ -164,13 +166,8 @@ class CAdminCFields extends AdminSecBaseModel
             $status = null;
         }
 
-        // Paged like every other list screen: a flat fetch stops showing entries past its
-        // limit with nothing on screen to say so.
-        $perPage = Params::getParamInt('iDisplayLength');
-        if (!in_array($perPage, self::PER_PAGE_OPTIONS, true)) {
-            $perPage = 25;
-        }
-        $page = max(1, Params::getParamInt('iPage'));
+        $perPage = ListPaging::length(25);
+        $page    = ListPaging::page();
 
         $submissions  = array();
         $statusCounts = array();
@@ -178,11 +175,11 @@ class CAdminCFields extends AdminSecBaseModel
         $total        = 0;
         if ($formId > 0) {
             $total = $submissionModel->countByForm($formId, $status);
-            $maxPage = max(1, (int) ceil($total / $perPage));
-            if ($page > $maxPage) {
-                $page = $maxPage;
+            $submissions  = $submissionModel->listByForm($formId, $status, $perPage, ListPaging::start($page, $perPage));
+            $pastEnd      = ListPaging::pastEndUrl(count($submissions), $total, $perPage, $page);
+            if ($pastEnd !== null) {
+                $this->redirectTo($pastEnd);
             }
-            $submissions  = $submissionModel->listByForm($formId, $status, $perPage, ($page - 1) * $perPage);
             $statusCounts = $submissionModel->statusCounts($formId);
             $formFields   = Field::getInstance()->findByGroup($formId);
             // attach each submission's values

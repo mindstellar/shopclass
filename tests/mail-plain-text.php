@@ -43,7 +43,16 @@ class RecordingMailer extends PHPMailer
 
     public function send()
     {
-        self::$last = array('Body' => $this->Body, 'AltBody' => $this->AltBody, 'Subject' => $this->Subject);
+        self::$last = array(
+            'Body'       => $this->Body,
+            'AltBody'    => $this->AltBody,
+            'Subject'    => $this->Subject,
+            'SMTPSecure' => $this->SMTPSecure,
+            'Username'   => $this->Username,
+            'Password'   => $this->Password,
+            'Host'       => $this->Host,
+            'Port'       => $this->Port,
+        );
 
         return true;
     }
@@ -81,23 +90,23 @@ function osc_mailserver_auth()
 }
 function osc_mailserver_ssl()
 {
-    return '';
+    return $GLOBALS['__server']['ssl'] ?? '';
 }
 function osc_mailserver_username()
 {
-    return '';
+    return $GLOBALS['__server']['username'] ?? '';
 }
 function osc_mailserver_password()
 {
-    return '';
+    return $GLOBALS['__server']['password'] ?? '';
 }
 function osc_mailserver_host()
 {
-    return '';
+    return $GLOBALS['__server']['host'] ?? '';
 }
 function osc_mailserver_port()
 {
-    return '';
+    return $GLOBALS['__server']['port'] ?? '';
 }
 function osc_mailserver_mail_from()
 {
@@ -428,5 +437,20 @@ $accentFor = static function (string $accent) use ($html): bool {
 };
 check('a six-digit accent is used', $accentFor('#c2410c'));
 check('a five-digit one is not', !$accentFor('#c2410'));
+
+harness_section('mail server settings a caller overrides');
+
+$GLOBALS['__server'] = array('ssl' => 'tls', 'username' => 'site', 'password' => 'stored', 'host' => 'smtp.example.com', 'port' => '587');
+$base = array('to' => 'jo@example.com', 'subject' => 'Hi', 'body' => '<p>Hi</p>', 'layout' => false);
+
+osc_sendMail($base);
+pin('stored settings are used', array('tls', 'site', 'stored', 'smtp.example.com', '587'), array_values(array_slice(RecordingMailer::$last, 3)));
+
+osc_sendMail($base + array('password' => 'given'));
+pin('a password alone keeps the stored ssl', array('tls', 'site', 'given'), array_values(array_slice(RecordingMailer::$last, 3, 3)));
+
+osc_sendMail($base + array('ssl' => 'ssl', 'username' => 'u', 'host' => 'mx.example.org', 'port' => '465'));
+pin('each key overrides its own setting', array('ssl', 'u', 'stored', 'mx.example.org', '465'), array_values(array_slice(RecordingMailer::$last, 3)));
+unset($GLOBALS['__server']);
 
 exit(harness_result());

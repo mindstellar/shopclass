@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\webhook;
 
+use mindstellar\apiaccess\ApiSettings;
 use mindstellar\security\AddressGuard;
 use mindstellar\utility\Clock;
 use mindstellar\utility\SystemClock;
@@ -36,7 +37,7 @@ final class WebhookServices
 
     public static function site(): self
     {
-        return self::$site ??= new self(new SystemClock(), (string) osc_get_preference('api_webhooks_allow_private', WebhookEndpointStore::SECTION) === '1');
+        return self::$site ??= new self(new SystemClock(), ApiSettings::fromPreferences()->webhooksAllowPrivate());
     }
 
     /**

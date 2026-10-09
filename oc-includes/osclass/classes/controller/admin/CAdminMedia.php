@@ -16,6 +16,7 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\admin\ListPaging;
 use mindstellar\auth\Actor;
 use mindstellar\listing\PhotoService;
 
@@ -59,19 +60,13 @@ class CAdminMedia extends AdminSecBaseModel
                 break;
             default:
                 $type = $this->resolveType(Params::getParam('type'));
-                // Same ladder every other list screen offers, so the control means the
-                // same thing here as it does on listings or users.
-                $perPage = Params::getParamInt('iDisplayLength');
-                if (!in_array($perPage, self::PER_PAGE_OPTIONS, true)) {
-                    $perPage = 25;
-                }
-                $iPage = max(1, Params::getParamInt('iPage'));
+                $perPage = ListPaging::length(25);
+                $iPage   = ListPaging::page();
                 $data    = osc_media_library_query($type, $iPage, $perPage);
 
-                // Snap a too-high page back to the last one with results.
-                $maxPage = max(1, (int) ceil($data['total'] / $perPage));
-                if ($iPage > $maxPage) {
-                    $this->redirectTo($this->libraryUrl($type) . '&iPage=' . $maxPage);
+                $pastEnd = ListPaging::pastEndUrl(count($data['rows']), (int) $data['total'], $perPage, $iPage);
+                if ($pastEnd !== null) {
+                    $this->redirectTo($pastEnd);
                 }
 
                 $this->_exportVariableToView('mediaType', $type);

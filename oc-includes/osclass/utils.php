@@ -291,30 +291,21 @@ function osc_sendMail($params)
     /** @var \PHPMailer\PHPMailer\PHPMailer $mail */
     $mail = osc_apply_filter('init_send_mail', $mail, $params);
 
+    // A key in $params overrides the stored mail server setting.
+    $server = array();
+    foreach (array(
+        'host'     => 'osc_mailserver_host',
+        'port'     => 'osc_mailserver_port',
+        'username' => 'osc_mailserver_username',
+        'password' => 'osc_mailserver_password',
+        'ssl'      => 'osc_mailserver_ssl',
+    ) as $key => $getter) {
+        $server[$key] = array_key_exists($key, $params) ? $params[$key] : $getter();
+    }
+
     if (osc_mailserver_pop()) {
         $pop = new POP3();
-
-        $pop3_host = osc_mailserver_host();
-        if (array_key_exists('host', $params)) {
-            $pop3_host = $params['host'];
-        }
-
-        $pop3_port = osc_mailserver_port();
-        if (array_key_exists('port', $params)) {
-            $pop3_port = $params['port'];
-        }
-
-        $pop3_username = osc_mailserver_username();
-        if (array_key_exists('username', $params)) {
-            $pop3_username = $params['username'];
-        }
-
-        $pop3_password = osc_mailserver_password();
-        if (array_key_exists('password', $params)) {
-            $pop3_password = $params['password'];
-        }
-
-        $pop->authorise($pop3_host, $pop3_port, osc_phpmailer_smtp_timeout_seconds(), $pop3_username, $pop3_password);
+        $pop->authorise($server['host'], $server['port'], osc_phpmailer_smtp_timeout_seconds(), $server['username'], $server['password']);
     }
 
     if (osc_mailserver_auth()) {
@@ -324,44 +315,10 @@ function osc_sendMail($params)
         $mail->isSMTP();
     }
 
-    $smtpSecure = osc_mailserver_ssl();
-    if (array_key_exists('password', $params)) {
-        $smtpSecure = $params['ssl'];
-    }
-    if ($smtpSecure != '') {
-        $mail->SMTPSecure = $smtpSecure;
-    }
-
-    $stmpUsername = osc_mailserver_username();
-    if (array_key_exists('username', $params)) {
-        $stmpUsername = $params['username'];
-    }
-    if ($stmpUsername != '') {
-        $mail->Username = $stmpUsername;
-    }
-
-    $smtpPassword = osc_mailserver_password();
-    if (array_key_exists('password', $params)) {
-        $smtpPassword = $params['password'];
-    }
-    if ($smtpPassword != '') {
-        $mail->Password = $smtpPassword;
-    }
-
-    $smtpHost = osc_mailserver_host();
-    if (array_key_exists('host', $params)) {
-        $smtpHost = $params['host'];
-    }
-    if ($smtpHost != '') {
-        $mail->Host = $smtpHost;
-    }
-
-    $smtpPort = osc_mailserver_port();
-    if (array_key_exists('port', $params)) {
-        $smtpPort = $params['port'];
-    }
-    if ($smtpPort != '') {
-        $mail->Port = $smtpPort;
+    foreach (array('ssl' => 'SMTPSecure', 'username' => 'Username', 'password' => 'Password', 'host' => 'Host', 'port' => 'Port') as $key => $property) {
+        if ($server[$key] != '') {
+            $mail->$property = $server[$key];
+        }
     }
 
     $from = osc_mailserver_mail_from();
@@ -1615,13 +1572,9 @@ function osc_check_language_update($update_uri, $version = null, $disable = fals
 
     if ($published === null) {
         $published = array();
-        $json      = @osc_file_get_contents(osc_get_i18n_repository_url());
-        $list      = json_decode((string) $json, true);
-        if (is_array($list)) {
-            foreach ($list as $locale) {
-                if (is_array($locale) && isset($locale['locale_code'], $locale['version'])) {
-                    $published[(string) $locale['locale_code']] = (string) $locale['version'];
-                }
+        foreach (\mindstellar\language\LanguageService::published(static fn ($url) => @osc_file_get_contents($url)) ?? array() as $code => $locale) {
+            if (isset($locale['version'])) {
+                $published[$code] = (string) $locale['version'];
             }
         }
     }

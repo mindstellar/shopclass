@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\webhook;
 
+use mindstellar\apiaccess\ApiSettings;
 use mindstellar\model\KeyValue;
 use mindstellar\resource\RowHashQuery;
 
@@ -35,7 +36,7 @@ final class WebhookEndpointStore
     public const FLAG = 'api_webhooks_on';
 
     /** The preference section the flag is kept in. */
-    public const SECTION = 'api';
+    public const SECTION = ApiSettings::SECTION;
 
     /** Endpoints a site may have. */
     public const MAX = 50;
