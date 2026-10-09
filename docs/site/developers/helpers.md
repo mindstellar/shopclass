@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1153 helpers, 20 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1154 helpers, 20 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -829,7 +829,7 @@ Core defines 1153 helpers, 20 of them deprecated. Generated from the source; do 
 | `osc_remove_hook($hook, $function)` | Remove a hook's function |
 | `osc_run_hook($hook, ...$args)` | Run a hook |
 
-### hPreference (130)
+### hPreference (131)
 
 `oc-includes/osclass/helpers/hPreference.php`
 
@@ -863,6 +863,7 @@ Core defines 1153 helpers, 20 of them deprecated. Generated from the source; do 
 | `osc_force_aspect_image()` | Force image aspect |
 | `osc_force_jpeg()` | Force uploaded images to be JPEG |
 | `osc_get_bool_preference($key, $section = 'osclass')` | generic function to retrieve preferences as bool |
+| `osc_get_int_preference($key, int $default, int $min = PHP_INT_MIN, $section = 'osclass')` | A number preference: $default while it is unset, and never below $min. |
 | `osc_get_preference($key, $section = 'osclass')` | generic function to retrieve preferences |
 | `osc_get_preference_section($section = 'osclass')` | generic function to retrieve preferences |
 | `osc_image_format()` | How new photos are saved: original, jpeg or webp. |

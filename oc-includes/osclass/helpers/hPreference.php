@@ -1239,6 +1239,23 @@ function osc_max_latest_items_at_home()
 }
 
 /**
+ * A number preference: $default while it is unset, and never below $min.
+ *
+ * @param string $key
+ * @param int    $default
+ * @param int    $min
+ * @param string $section
+ *
+ * @return int
+ */
+function osc_get_int_preference($key, int $default, int $min = PHP_INT_MIN, $section = 'osclass'): int
+{
+    $value = getPreference($key, $section);
+
+    return $value === '' || $value === null ? $default : max($min, (int) $value);
+}
+
+/**
  * generic function to retrieve preferences
  *
  * @param string $key

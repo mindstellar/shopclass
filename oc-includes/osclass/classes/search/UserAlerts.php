@@ -43,9 +43,7 @@ final class UserAlerts
      */
     public static function maxPerUser(): int
     {
-        $v = osc_get_preference('alerts_max_per_user');
-
-        return $v === '' || $v === null ? self::DEFAULT_MAX_PER_USER : max(0, (int) $v);
+        return osc_get_int_preference('alerts_max_per_user', self::DEFAULT_MAX_PER_USER, 0);
     }
 
     /**

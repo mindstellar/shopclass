@@ -44,9 +44,7 @@ final class MessageGuard
      */
     public static function maxLinks(): int
     {
-        $v = osc_get_preference('message_max_links');
-
-        return $v === '' || $v === null ? self::DEFAULT_MAX_LINKS : max(0, (int) $v);
+        return osc_get_int_preference('message_max_links', self::DEFAULT_MAX_LINKS, 0);
     }
 
     /**
@@ -56,9 +54,7 @@ final class MessageGuard
      */
     public static function maxLength(): int
     {
-        $v = osc_get_preference('message_max_length');
-
-        return $v === '' || $v === null ? self::DEFAULT_MAX_LENGTH : max(0, (int) $v);
+        return osc_get_int_preference('message_max_length', self::DEFAULT_MAX_LENGTH, 0);
     }
 
     /**

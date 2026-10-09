@@ -173,9 +173,7 @@ final class UploadMimes
      */
     public static function attachmentMaxMb(): int
     {
-        $v = osc_get_preference('attachment_max_mb');
-
-        return $v === '' || $v === null ? self::DEFAULT_ATTACHMENT_MAX_MB : max(1, (int) $v);
+        return osc_get_int_preference('attachment_max_mb', self::DEFAULT_ATTACHMENT_MAX_MB, 1);
     }
 
     /**

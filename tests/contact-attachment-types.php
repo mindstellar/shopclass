@@ -20,10 +20,20 @@ require_once __DIR__ . '/lib/harness.php';
 use mindstellar\storage\UploadMimes;
 
 $GLOBALS['prefs'] = array();
-function osc_get_preference($key, $section = 'osclass')
+// Stands in for the preference table, so the real osc_get_int_preference() reads it.
+class Preference
 {
-    return $GLOBALS['prefs'][$key] ?? '';
+    public static function getInstance(): self
+    {
+        return new self();
+    }
+
+    public function get($key, $section = 'osclass')
+    {
+        return $GLOBALS['prefs'][$key] ?? '';
+    }
 }
+require_once __DIR__ . '/../oc-includes/osclass/helpers/hPreference.php';
 
 $dir = sys_get_temp_dir() . '/osc-contact-attachment-' . getmypid();
 @mkdir($dir);
@@ -64,7 +74,11 @@ check('a file over the limit is refused', !UploadMimes::isAllowedAttachment($big
 $GLOBALS['prefs']['attachment_max_mb'] = '2';
 check('and taken once the limit is raised', UploadMimes::isAllowedAttachment($big, 'big.txt'));
 
-pin('the form offers the same extensions', true, in_array('docx', UploadMimes::attachmentExtensions(), true) && !in_array('exe', UploadMimes::attachmentExtensions(), true));
+pin(
+    'the form offers exactly these extensions',
+    'jpg jpeg png gif webp pdf txt csv doc xls ppt docx xlsx pptx odt ods odp',
+    implode(' ', UploadMimes::attachmentExtensions())
+);
 
 array_map('unlink', glob($dir . '/*'));
 @rmdir($dir);

@@ -64,9 +64,7 @@ function osc_billing_features(): array
  */
 function osc_billing_free_live_listings(): int
 {
-    $v = osc_get_preference('billing_free_live_listings', 'osclass');
-
-    return $v === '' || $v === null ? 0 : (int) $v;
+    return osc_get_int_preference('billing_free_live_listings', 0);
 }
 
 /**
@@ -86,9 +84,7 @@ function osc_billing_slot_enabled(): bool
  */
 function osc_billing_slot_credits(): int
 {
-    $v = osc_get_preference('billing_slot_credits', 'osclass');
-
-    return $v === '' || $v === null ? 0 : (int) $v;
+    return osc_get_int_preference('billing_slot_credits', 0);
 }
 
 /**
@@ -98,9 +94,7 @@ function osc_billing_slot_credits(): int
  */
 function osc_billing_slot_quantity(): int
 {
-    $v = osc_get_preference('billing_slot_quantity', 'osclass');
-
-    return $v === '' || $v === null ? 1 : max(1, (int) $v);
+    return osc_get_int_preference('billing_slot_quantity', 1, 1);
 }
 
 /**
@@ -120,9 +114,7 @@ function osc_billing_premium_enabled(): bool
  */
 function osc_billing_premium_credits(): int
 {
-    $v = osc_get_preference('billing_premium_credits', 'osclass');
-
-    return $v === '' || $v === null ? 0 : (int) $v;
+    return osc_get_int_preference('billing_premium_credits', 0);
 }
 
 /**
@@ -132,9 +124,7 @@ function osc_billing_premium_credits(): int
  */
 function osc_billing_premium_days(): int
 {
-    $v = osc_get_preference('billing_premium_days', 'osclass');
-
-    return $v === '' || $v === null ? 30 : max(1, (int) $v);
+    return osc_get_int_preference('billing_premium_days', 30, 1);
 }
 
 /**
@@ -209,9 +199,7 @@ function osc_billing_bump_enabled(): bool
  */
 function osc_billing_bump_credits(): int
 {
-    $v = osc_get_preference('billing_bump_credits', 'osclass');
-
-    return $v === '' || $v === null ? 0 : (int) $v;
+    return osc_get_int_preference('billing_bump_credits', 0);
 }
 
 /**
@@ -221,9 +209,7 @@ function osc_billing_bump_credits(): int
  */
 function osc_billing_bump_cooldown_hours(): int
 {
-    $v = osc_get_preference('billing_bump_cooldown_hours', 'osclass');
-
-    return $v === '' || $v === null ? 24 : max(1, (int) $v);
+    return osc_get_int_preference('billing_bump_cooldown_hours', 24, 1);
 }
 
 /**
@@ -243,9 +229,7 @@ function osc_billing_highlight_enabled(): bool
  */
 function osc_billing_highlight_credits(): int
 {
-    $v = osc_get_preference('billing_highlight_credits', 'osclass');
-
-    return $v === '' || $v === null ? 0 : (int) $v;
+    return osc_get_int_preference('billing_highlight_credits', 0);
 }
 
 /**
@@ -255,9 +239,7 @@ function osc_billing_highlight_credits(): int
  */
 function osc_billing_highlight_days(): int
 {
-    $v = osc_get_preference('billing_highlight_days', 'osclass');
-
-    return $v === '' || $v === null ? 30 : max(1, (int) $v);
+    return osc_get_int_preference('billing_highlight_days', 30, 1);
 }
 
 /**
@@ -277,9 +259,7 @@ function osc_billing_urgent_enabled(): bool
  */
 function osc_billing_urgent_credits(): int
 {
-    $v = osc_get_preference('billing_urgent_credits', 'osclass');
-
-    return $v === '' || $v === null ? 0 : (int) $v;
+    return osc_get_int_preference('billing_urgent_credits', 0);
 }
 
 /**
@@ -289,9 +269,7 @@ function osc_billing_urgent_credits(): int
  */
 function osc_billing_urgent_days(): int
 {
-    $v = osc_get_preference('billing_urgent_days', 'osclass');
-
-    return $v === '' || $v === null ? 7 : max(1, (int) $v);
+    return osc_get_int_preference('billing_urgent_days', 7, 1);
 }
 
 /*
@@ -319,9 +297,7 @@ function osc_billing_photos_enabled(): bool
  */
 function osc_billing_photos_credits(): int
 {
-    $v = osc_get_preference('billing_photos_credits', 'osclass');
-
-    return $v === '' || $v === null ? 0 : (int) $v;
+    return osc_get_int_preference('billing_photos_credits', 0);
 }
 
 /**
@@ -331,9 +307,7 @@ function osc_billing_photos_credits(): int
  */
 function osc_billing_photos_quantity(): int
 {
-    $v = osc_get_preference('billing_photos_quantity', 'osclass');
-
-    return $v === '' || $v === null ? 10 : max(1, (int) $v);
+    return osc_get_int_preference('billing_photos_quantity', 10, 1);
 }
 
 /**
@@ -353,9 +327,7 @@ function osc_billing_no_wait_enabled(): bool
  */
 function osc_billing_no_wait_credits(): int
 {
-    $v = osc_get_preference('billing_no_wait_credits', 'osclass');
-
-    return $v === '' || $v === null ? 0 : (int) $v;
+    return osc_get_int_preference('billing_no_wait_credits', 0);
 }
 
 /**
@@ -365,9 +337,7 @@ function osc_billing_no_wait_credits(): int
  */
 function osc_billing_no_wait_days(): int
 {
-    $v = osc_get_preference('billing_no_wait_days', 'osclass');
-
-    return $v === '' || $v === null ? 30 : max(1, (int) $v);
+    return osc_get_int_preference('billing_no_wait_days', 30, 1);
 }
 
 /**
@@ -387,9 +357,7 @@ function osc_billing_runtime_enabled(): bool
  */
 function osc_billing_runtime_credits(): int
 {
-    $v = osc_get_preference('billing_runtime_credits', 'osclass');
-
-    return $v === '' || $v === null ? 0 : (int) $v;
+    return osc_get_int_preference('billing_runtime_credits', 0);
 }
 
 /**
@@ -399,9 +367,7 @@ function osc_billing_runtime_credits(): int
  */
 function osc_billing_runtime_days(): int
 {
-    $v = osc_get_preference('billing_runtime_days', 'osclass');
-
-    return $v === '' || $v === null ? 30 : max(1, (int) $v);
+    return osc_get_int_preference('billing_runtime_days', 30, 1);
 }
 
 /*
