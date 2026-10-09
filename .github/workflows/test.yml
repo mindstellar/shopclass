@@ -613,6 +613,8 @@ jobs:
       # The username availability check stripped dots that registration keeps.
       - name: Sanitize drift
         run: php tests/sanitize-drift.php
+      - name: URL check address pin
+        run: php tests/validate-url-pin.php
       - name: Typed-row parity
         run: php tests/db-typed-rows.php
       - name: Secret-comparison regression
