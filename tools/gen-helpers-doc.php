@@ -86,30 +86,35 @@ function helpers_scan_file(string $source): array
     $found  = array();
     $doc    = '';
     $depth  = 0;
-    $inside = PHP_INT_MAX; // brace depth of the class body being skipped
-    $kinds  = array(T_CLASS, T_TRAIT, T_INTERFACE);
-    $prev   = null;
+    // Methods are skipped: from `class`, `trait` or `interface` to the brace that closes it.
+    $classOpening = false;
+    $classDepth   = null;
+    $prev         = null;
     for ($i = 0; $i < $count; $i++) {
-        $t = $tokens[$i];
+        $t    = $tokens[$i];
         $text = is_array($t) ? $t[1] : $t;
-        if ($text === '{' || (is_array($t) && in_array($t[0], array(T_CURLY_OPEN, T_DOLLAR_OPEN_CURLY_BRACES), true))) {
+        $type = is_array($t) ? $t[0] : null;
+
+        if ($text === '{' || in_array($type, array(T_CURLY_OPEN, T_DOLLAR_OPEN_CURLY_BRACES), true)) {
             $depth++;
-            if ($inside === -1) {
-                $inside = $depth;
+            if ($classOpening) {
+                $classOpening = false;
+                $classDepth   = $depth;
             }
-        } elseif ($text === '}' && --$depth < $inside && $inside !== -1) {
-            $inside = PHP_INT_MAX;
+        } elseif ($text === '}') {
+            if ($depth-- === $classDepth) {
+                $classDepth = null;
+            }
+        } elseif (in_array($type, array(T_CLASS, T_TRAIT, T_INTERFACE), true) && $prev !== T_DOUBLE_COLON && $classDepth === null) {
+            $classOpening = true; // `Foo::class` names a class, it does not open one
         }
-        // A method named osc_* is not a helper; `Foo::class` is not a class body.
-        if (is_array($t) && in_array($t[0], $kinds, true) && $prev !== T_DOUBLE_COLON && $inside === PHP_INT_MAX) {
-            $inside = -1;
+        if (!in_array($type, array(T_WHITESPACE, T_COMMENT, T_DOC_COMMENT), true)) {
+            $prev = $type ?? $text;
         }
-        if (!is_array($t) || !in_array($t[0], array(T_WHITESPACE, T_COMMENT, T_DOC_COMMENT), true)) {
-            $prev = is_array($t) ? $t[0] : $t;
-        }
-        if ($inside !== PHP_INT_MAX) {
+        if ($classOpening || $classDepth !== null) {
             continue;
         }
+
         if (is_array($t) && $t[0] === T_DOC_COMMENT) {
             $doc = $t[1];
             continue;
