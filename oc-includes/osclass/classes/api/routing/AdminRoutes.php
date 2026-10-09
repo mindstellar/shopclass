@@ -68,60 +68,21 @@ final class AdminRoutes
      */
     private static function listings(): array
     {
-        $tag   = 'Admin listings';
-        $scope = 'admin:listings';
-        $c     = AdminListingsController::class;
+        [$read, $write] = self::group('Admin listings', 'admin:listings');
+        $c              = AdminListingsController::class;
 
         return [
-            'GET admin/listings' => self::read(
-                handler: [$c, 'index'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Every listing, whatever its status, newest first',
-                response: 'ListingPage',
-                query: [
-                    'status'   => Schema::listOf(ListingStatus::ALL),
-                    'user'     => self::IDS + ['description' => 'User ids: one, a comma list, or repeated.'],
-                    'category' => self::IDS + ['description' => 'Category ids or slugs: one, a comma list, or repeated. Subcategories are included.'],
-                    'q'        => ['type' => 'string', 'maxLength' => 100, 'description' => 'Titles containing this.'],
-                    'include'  => self::INCLUDE,
-                ] + self::PAGING + self::COUNT + self::VIEW,
-                errors: [400, 422]
-            ),
-            'GET admin/listings/{id}' => self::read(
-                handler: [$c, 'show'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'One listing in the admin view',
-                response: 'ListingDocument',
-                query: self::VIEW + ['include' => self::INCLUDE],
-                errors: [404]
-            ),
-            'PATCH admin/listings/{id}' => self::write(
-                handler: [$c, 'update'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Edit any listing, its owner, expiry and status included; members not sent keep their values',
-                body: 'AdminListingPatch',
-                response: 'ListingDocument',
-                errors: [404, 409]
-            ),
-            'DELETE admin/listings/{id}' => self::write(
-                handler: [$c, 'delete'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Delete a listing',
-                status: 204,
-                errors: [404]
-            ),
-            'POST admin/listings/{id}/bump' => self::write(
-                handler: [$c, 'bump'],
-                tag: $tag,
-                scope: $scope,
-                summary: ListingModeration::ACTIONS['bump'],
-                response: 'ListingDocument',
-                errors: [404]
-            ),
+            'GET admin/listings' => $read([$c, 'index'], 'Every listing, whatever its status, newest first', 'ListingPage', query: [
+                'status'   => Schema::listOf(ListingStatus::ALL),
+                'user'     => self::IDS + ['description' => 'User ids: one, a comma list, or repeated.'],
+                'category' => self::IDS + ['description' => 'Category ids or slugs: one, a comma list, or repeated. Subcategories are included.'],
+                'q'        => ['type' => 'string', 'maxLength' => 100, 'description' => 'Titles containing this.'],
+                'include'  => self::INCLUDE,
+            ] + self::PAGING + self::COUNT + self::VIEW, errors: [400, 422]),
+            'GET admin/listings/{id}'       => $read([$c, 'show'], 'One listing in the admin view', 'ListingDocument', query: self::VIEW + ['include' => self::INCLUDE], errors: [404]),
+            'PATCH admin/listings/{id}'     => $write([$c, 'update'], 'Edit any listing, its owner, expiry and status included; members not sent keep their values', body: 'AdminListingPatch', response: 'ListingDocument', errors: [404, 409]),
+            'DELETE admin/listings/{id}'    => $write([$c, 'delete'], 'Delete a listing', status: 204, errors: [404]),
+            'POST admin/listings/{id}/bump' => $write([$c, 'bump'], ListingModeration::ACTIONS['bump'], response: 'ListingDocument', errors: [404]),
         ];
     }
 
@@ -130,49 +91,18 @@ final class AdminRoutes
      */
     private static function comments(): array
     {
-        $tag   = 'Admin comments';
-        $scope = 'admin:comments';
-        $c     = AdminCommentsController::class;
+        [$read, $write] = self::group('Admin comments', 'admin:comments');
+        $c              = AdminCommentsController::class;
 
         return [
-            'GET admin/comments' => self::read(
-                handler: [$c, 'index'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Every comment, whatever its status, newest first',
-                response: 'AdminCommentPage',
-                query: [
-                    'status'  => Schema::listOf(CommentStatus::ALL),
-                    'listing' => self::IDS + ['description' => 'Listing ids: one, a comma list, or repeated.'],
-                    'user'    => self::IDS + ['description' => 'Author user ids: one, a comma list, or repeated.'],
-                ] + self::PAGING + self::COUNT,
-                errors: [400, 422]
-            ),
-            'GET admin/comments/{id}' => self::read(
-                handler: [$c, 'show'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'One comment',
-                response: 'AdminCommentDocument',
-                errors: [404]
-            ),
-            'PATCH admin/comments/{id}' => self::write(
-                handler: [$c, 'update'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Edit a comment\'s text or author, or approve or block it',
-                body: 'AdminCommentPatch',
-                response: 'AdminCommentDocument',
-                errors: [404]
-            ),
-            'DELETE admin/comments/{id}' => self::write(
-                handler: [$c, 'delete'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Delete a comment',
-                status: 204,
-                errors: [404]
-            ),
+            'GET admin/comments' => $read([$c, 'index'], 'Every comment, whatever its status, newest first', 'AdminCommentPage', query: [
+                'status'  => Schema::listOf(CommentStatus::ALL),
+                'listing' => self::IDS + ['description' => 'Listing ids: one, a comma list, or repeated.'],
+                'user'    => self::IDS + ['description' => 'Author user ids: one, a comma list, or repeated.'],
+            ] + self::PAGING + self::COUNT, errors: [400, 422]),
+            'GET admin/comments/{id}'    => $read([$c, 'show'], 'One comment', 'AdminCommentDocument', errors: [404]),
+            'PATCH admin/comments/{id}'  => $write([$c, 'update'], 'Edit a comment\'s text or author, or approve or block it', body: 'AdminCommentPatch', response: 'AdminCommentDocument', errors: [404]),
+            'DELETE admin/comments/{id}' => $write([$c, 'delete'], 'Delete a comment', status: 204, errors: [404]),
         ];
     }
 
@@ -181,74 +111,21 @@ final class AdminRoutes
      */
     private static function users(): array
     {
-        $tag   = 'Admin users';
-        $scope = 'admin:users';
-        $c     = AdminUsersController::class;
+        [$read, $write] = self::group('Admin users', 'admin:users');
+        $c              = AdminUsersController::class;
 
         return [
-            'GET admin/users' => self::read(
-                handler: [$c, 'index'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Every user, newest first',
-                response: 'UserPage',
-                query: [
-                    'q'         => ['type' => 'string', 'maxLength' => 100, 'description' => 'E-mail, username or name starting with this.'],
-                    'confirmed' => ['type' => 'boolean'],
-                    'blocked'   => ['type' => 'boolean'],
-                ] + self::PAGING + self::COUNT + self::VIEW,
-                errors: [400, 422]
-            ),
-            'GET admin/users/{id}' => self::read(
-                handler: [$c, 'show'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'One user, every member',
-                response: 'UserDocument',
-                query: self::VIEW,
-                errors: [404]
-            ),
-            'PATCH admin/users/{id}' => self::write(
-                handler: [$c, 'update'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Edit a user\'s profile, e-mail, username or password, or confirm or block them',
-                body: 'AdminUserPatch',
-                response: 'UserDocument',
-                errors: [404]
-            ),
-            'DELETE admin/users/{id}' => self::write(
-                handler: [$c, 'delete'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Delete a user with their listings, comments and saved searches',
-                status: 204,
-                errors: [404]
-            ),
-            'POST admin/users/{id}/sign-out-everywhere' => self::write(
-                handler: [$c, 'signOutEverywhere'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Sign a user out of every device: web sign-ins, API tokens and personal keys',
-                status: 204,
-                errors: [404]
-            ),
-            'GET admin/users/{id}/sessions' => self::read(
-                handler: [$c, 'sessions'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'A user\'s live sign-ins; their keys are at /admin/keys',
-                response: 'SessionList',
-                errors: [404]
-            ),
-            'DELETE admin/users/{id}/sessions/{session}' => self::write(
-                handler: [$c, 'endSession'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'End one of a user\'s sign-ins',
-                status: 204,
-                errors: [404]
-            ),
+            'GET admin/users' => $read([$c, 'index'], 'Every user, newest first', 'UserPage', query: [
+                'q'         => ['type' => 'string', 'maxLength' => 100, 'description' => 'E-mail, username or name starting with this.'],
+                'confirmed' => ['type' => 'boolean'],
+                'blocked'   => ['type' => 'boolean'],
+            ] + self::PAGING + self::COUNT + self::VIEW, errors: [400, 422]),
+            'GET admin/users/{id}'                       => $read([$c, 'show'], 'One user, every member', 'UserDocument', query: self::VIEW, errors: [404]),
+            'PATCH admin/users/{id}'                     => $write([$c, 'update'], 'Edit a user\'s profile, e-mail, username or password, or confirm or block them', body: 'AdminUserPatch', response: 'UserDocument', errors: [404]),
+            'DELETE admin/users/{id}'                    => $write([$c, 'delete'], 'Delete a user with their listings, comments and saved searches', status: 204, errors: [404]),
+            'POST admin/users/{id}/sign-out-everywhere'  => $write([$c, 'signOutEverywhere'], 'Sign a user out of every device: web sign-ins, API tokens and personal keys', status: 204, errors: [404]),
+            'GET admin/users/{id}/sessions'              => $read([$c, 'sessions'], 'A user\'s live sign-ins; their keys are at /admin/keys', 'SessionList', errors: [404]),
+            'DELETE admin/users/{id}/sessions/{session}' => $write([$c, 'endSession'], 'End one of a user\'s sign-ins', status: 204, errors: [404]),
         ];
     }
 
@@ -257,125 +134,27 @@ final class AdminRoutes
      */
     private static function taxonomy(): array
     {
-        $tag    = 'Admin taxonomy';
-        $scope  = 'admin:taxonomy';
-        $c      = AdminCategoriesController::class;
-        $m      = AdminCurrenciesController::class;
-        $f      = AdminFieldsController::class;
-        $delete = self::write(
-            handler: [$c, 'delete'],
-            tag: $tag,
-            scope: $scope,
-            summary: 'Delete a category, its subcategories and their listings; a large one is emptied in the background (202)',
-            status: 204,
-            errors: [404]
-        );
+        [$read, $write] = self::group('Admin taxonomy', 'admin:taxonomy');
+        $c              = AdminCategoriesController::class;
+        $m              = AdminCurrenciesController::class;
+        $f              = AdminFieldsController::class;
+        $delete         = $write([$c, 'delete'], 'Delete a category, its subcategories and their listings; a large one is emptied in the background (202)', status: 204, errors: [404]);
         $delete['responses'][202] = ['type' => 'null'];
 
         return [
-            'GET admin/categories' => self::read(
-                handler: [$c, 'index'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Every category, enabled or not, with each language\'s texts',
-                response: 'AdminCategoryList'
-            ),
-            'GET admin/categories/{id}' => self::read(
-                handler: [$c, 'show'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'One category with each language\'s texts',
-                response: 'AdminCategoryDocument',
-                errors: [404]
-            ),
-            'POST admin/categories' => self::write(
-                handler: [$c, 'create'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Add a category',
-                body: 'AdminCategoryInput',
-                response: 'AdminCategoryDocument',
-                status: 201
-            ),
-            'PATCH admin/categories/{id}' => self::write(
-                handler: [$c, 'update'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Edit a category; a new slug keeps the old one redirecting',
-                body: 'AdminCategoryPatch',
-                response: 'AdminCategoryDocument',
-                errors: [404, 409]
-            ),
-            'DELETE admin/categories/{id}' => $delete,
-            'GET admin/currencies/{code}' => self::read(
-                handler: [$m, 'show'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'One currency',
-                response: 'CurrencyDocument',
-                errors: [404]
-            ),
-            'POST admin/currencies' => self::write(
-                handler: [$m, 'create'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Add a currency',
-                body: 'CurrencyInput',
-                response: 'CurrencyDocument',
-                status: 201,
-                errors: [409]
-            ),
-            'PATCH admin/currencies/{code}' => self::write(
-                handler: [$m, 'update'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Rename a currency or change its symbol',
-                body: 'CurrencyPatch',
-                response: 'CurrencyDocument',
-                errors: [404]
-            ),
-            'DELETE admin/currencies/{code}' => self::write(
-                handler: [$m, 'delete'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Delete a currency no listing uses and the site does not default to',
-                status: 204,
-                errors: [404, 409]
-            ),
-            'GET admin/custom-fields/{id}' => self::read(
-                handler: [$f, 'show'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'One custom field',
-                response: 'AdminCustomFieldDocument',
-                errors: [404]
-            ),
-            'POST admin/custom-fields' => self::write(
-                handler: [$f, 'create'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Add a custom field',
-                body: 'AdminCustomFieldInput',
-                response: 'AdminCustomFieldDocument',
-                status: 201
-            ),
-            'PATCH admin/custom-fields/{id}' => self::write(
-                handler: [$f, 'update'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Edit a custom field',
-                body: 'AdminCustomFieldPatch',
-                response: 'AdminCustomFieldDocument',
-                errors: [404]
-            ),
-            'DELETE admin/custom-fields/{id}' => self::write(
-                handler: [$f, 'delete'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Delete a custom field and its values',
-                status: 204,
-                errors: [404]
-            ),
+            'GET admin/categories'            => $read([$c, 'index'], 'Every category, enabled or not, with each language\'s texts', 'AdminCategoryList'),
+            'GET admin/categories/{id}'       => $read([$c, 'show'], 'One category with each language\'s texts', 'AdminCategoryDocument', errors: [404]),
+            'POST admin/categories'           => $write([$c, 'create'], 'Add a category', body: 'AdminCategoryInput', response: 'AdminCategoryDocument', status: 201),
+            'PATCH admin/categories/{id}'     => $write([$c, 'update'], 'Edit a category; a new slug keeps the old one redirecting', body: 'AdminCategoryPatch', response: 'AdminCategoryDocument', errors: [404, 409]),
+            'DELETE admin/categories/{id}'    => $delete,
+            'GET admin/currencies/{code}'     => $read([$m, 'show'], 'One currency', 'CurrencyDocument', errors: [404]),
+            'POST admin/currencies'           => $write([$m, 'create'], 'Add a currency', body: 'CurrencyInput', response: 'CurrencyDocument', status: 201, errors: [409]),
+            'PATCH admin/currencies/{code}'   => $write([$m, 'update'], 'Rename a currency or change its symbol', body: 'CurrencyPatch', response: 'CurrencyDocument', errors: [404]),
+            'DELETE admin/currencies/{code}'  => $write([$m, 'delete'], 'Delete a currency no listing uses and the site does not default to', status: 204, errors: [404, 409]),
+            'GET admin/custom-fields/{id}'    => $read([$f, 'show'], 'One custom field', 'AdminCustomFieldDocument', errors: [404]),
+            'POST admin/custom-fields'        => $write([$f, 'create'], 'Add a custom field', body: 'AdminCustomFieldInput', response: 'AdminCustomFieldDocument', status: 201),
+            'PATCH admin/custom-fields/{id}'  => $write([$f, 'update'], 'Edit a custom field', body: 'AdminCustomFieldPatch', response: 'AdminCustomFieldDocument', errors: [404]),
+            'DELETE admin/custom-fields/{id}' => $write([$f, 'delete'], 'Delete a custom field and its values', status: 204, errors: [404]),
         ];
     }
 
@@ -384,117 +163,23 @@ final class AdminRoutes
      */
     private static function locations(): array
     {
-        $tag   = 'Admin taxonomy';
-        $scope = 'admin:taxonomy';
-        $c     = AdminLocationsController::class;
-        $gone  = ' and the listings in it';
+        [$read, $write] = self::group('Admin taxonomy', 'admin:taxonomy');
+        $c              = AdminLocationsController::class;
+        $gone           = ' and the listings in it';
 
         return [
-            'GET admin/regions/{id}' => self::read(
-                handler: [$c, 'showRegion'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'One region',
-                response: 'RegionDocument',
-                errors: [404]
-            ),
-            'POST admin/regions' => self::write(
-                handler: [$c, 'createRegion'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Add a region to a country',
-                body: 'RegionInput',
-                response: 'RegionDocument',
-                status: 201,
-                errors: [404]
-            ),
-            'PATCH admin/regions/{id}' => self::write(
-                handler: [$c, 'updateRegion'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Rename a region',
-                body: 'RegionPatch',
-                response: 'RegionDocument',
-                errors: [404]
-            ),
-            'DELETE admin/regions/{id}' => self::write(
-                handler: [$c, 'deleteRegion'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Delete a region, its cities' . $gone,
-                status: 204,
-                errors: [404]
-            ),
-            'GET admin/cities/{id}' => self::read(
-                handler: [$c, 'showCity'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'One city',
-                response: 'CityDocument',
-                errors: [404]
-            ),
-            'POST admin/cities' => self::write(
-                handler: [$c, 'createCity'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Add a city to a region',
-                body: 'CityInput',
-                response: 'CityDocument',
-                status: 201,
-                errors: [404]
-            ),
-            'PATCH admin/cities/{id}' => self::write(
-                handler: [$c, 'updateCity'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Rename a city',
-                body: 'CityPatch',
-                response: 'CityDocument',
-                errors: [404]
-            ),
-            'DELETE admin/cities/{id}' => self::write(
-                handler: [$c, 'deleteCity'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Delete a city, its areas' . $gone,
-                status: 204,
-                errors: [404]
-            ),
-            'GET admin/areas/{id}' => self::read(
-                handler: [$c, 'showArea'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'One city area',
-                response: 'CityAreaDocument',
-                errors: [404]
-            ),
-            'POST admin/areas' => self::write(
-                handler: [$c, 'createArea'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Add an area to a city',
-                body: 'CityAreaInput',
-                response: 'CityAreaDocument',
-                status: 201,
-                errors: [404]
-            ),
-            'PATCH admin/areas/{id}' => self::write(
-                handler: [$c, 'updateArea'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Rename a city area',
-                body: 'CityAreaPatch',
-                response: 'CityAreaDocument',
-                errors: [404]
-            ),
-            'DELETE admin/areas/{id}' => self::write(
-                handler: [$c, 'deleteArea'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Delete a city area' . $gone,
-                status: 204,
-                errors: [404]
-            ),
+            'GET admin/regions/{id}'    => $read([$c, 'showRegion'], 'One region', 'RegionDocument', errors: [404]),
+            'POST admin/regions'        => $write([$c, 'createRegion'], 'Add a region to a country', body: 'RegionInput', response: 'RegionDocument', status: 201, errors: [404]),
+            'PATCH admin/regions/{id}'  => $write([$c, 'updateRegion'], 'Rename a region', body: 'RegionPatch', response: 'RegionDocument', errors: [404]),
+            'DELETE admin/regions/{id}' => $write([$c, 'deleteRegion'], 'Delete a region, its cities' . $gone, status: 204, errors: [404]),
+            'GET admin/cities/{id}'     => $read([$c, 'showCity'], 'One city', 'CityDocument', errors: [404]),
+            'POST admin/cities'         => $write([$c, 'createCity'], 'Add a city to a region', body: 'CityInput', response: 'CityDocument', status: 201, errors: [404]),
+            'PATCH admin/cities/{id}'   => $write([$c, 'updateCity'], 'Rename a city', body: 'CityPatch', response: 'CityDocument', errors: [404]),
+            'DELETE admin/cities/{id}'  => $write([$c, 'deleteCity'], 'Delete a city, its areas' . $gone, status: 204, errors: [404]),
+            'GET admin/areas/{id}'      => $read([$c, 'showArea'], 'One city area', 'CityAreaDocument', errors: [404]),
+            'POST admin/areas'          => $write([$c, 'createArea'], 'Add an area to a city', body: 'CityAreaInput', response: 'CityAreaDocument', status: 201, errors: [404]),
+            'PATCH admin/areas/{id}'    => $write([$c, 'updateArea'], 'Rename a city area', body: 'CityAreaPatch', response: 'CityAreaDocument', errors: [404]),
+            'DELETE admin/areas/{id}'   => $write([$c, 'deleteArea'], 'Delete a city area' . $gone, status: 204, errors: [404]),
         ];
     }
 
@@ -503,80 +188,22 @@ final class AdminRoutes
      */
     private static function settings(): array
     {
-        $tag = 'Admin settings';
-        $s   = AdminSettingsController::class;
-        $k   = AdminKeysController::class;
+        [$read, $write]       = self::group('Admin settings', 'admin:settings');
+        [$keyRead, $keyWrite] = self::group('Admin settings', 'admin:keys');
+        $s                    = AdminSettingsController::class;
+        $k                    = AdminKeysController::class;
 
         return [
-            'GET admin/settings' => self::read(
-                handler: [$s, 'show'],
-                tag: $tag,
-                scope: 'admin:settings',
-                summary: 'The settings the API can change',
-                response: 'SettingsDocument'
-            ),
-            'PATCH admin/settings' => self::write(
-                handler: [$s, 'update'],
-                tag: $tag,
-                scope: 'admin:settings',
-                summary: 'Change some settings, all or none, checked as on the settings screens',
-                body: 'SettingsPatch',
-                response: 'SettingsDocument'
-            ),
-            'GET admin/jobs' => self::read(
-                handler: [$s, 'jobs'],
-                tag: $tag,
-                scope: 'admin:settings',
-                summary: 'The background job queue: jobs per status and those that stopped retrying',
-                response: 'JobsDocument',
-                query: [
-                    'limit' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 200],
-                ]
-            ),
-            'GET admin/keys' => self::read(
-                handler: [$k, 'index'],
-                tag: $tag,
-                scope: 'admin:keys',
-                summary: 'Every API key, newest first; never a secret',
-                response: 'ApiKeyList'
-            ),
-            'GET admin/keys/{id}' => self::read(
-                handler: [$k, 'show'],
-                tag: $tag,
-                scope: 'admin:keys',
-                summary: 'One API key; never its secret',
-                response: 'ApiKeyDocument',
-                errors: [404]
-            ),
-            'POST admin/keys' => self::write(
-                handler: [$k, 'create'],
-                tag: $tag,
-                scope: 'admin:keys',
-                summary: 'Make an admin or public key; its token is shown once',
-                body: 'ApiKeyInput',
-                response: 'ApiKeyDocument',
-                status: 201,
-                errors: [403],
-                replayable: false
-            ),
-            'DELETE admin/keys/{id}' => self::write(
-                handler: [$k, 'revoke'],
-                tag: $tag,
-                scope: 'admin:keys',
-                summary: 'Revoke a key; never another admin\'s own key',
-                status: 204,
-                errors: [403, 404, 409]
-            ),
-            'POST admin/keys/{id}/rotate' => self::write(
-                handler: [$k, 'rotate'],
-                tag: $tag,
-                scope: 'admin:keys',
-                summary: 'Make a new key in place of one of yours or a public key; the old one works until revoked',
-                response: 'ApiKeyDocument',
-                status: 201,
-                errors: [403, 404, 409],
-                replayable: false
-            ),
+            'GET admin/settings'   => $read([$s, 'show'], 'The settings the API can change', 'SettingsDocument'),
+            'PATCH admin/settings' => $write([$s, 'update'], 'Change some settings, all or none, checked as on the settings screens', body: 'SettingsPatch', response: 'SettingsDocument'),
+            'GET admin/jobs'       => $read([$s, 'jobs'], 'The background job queue: jobs per status and those that stopped retrying', 'JobsDocument', query: [
+                'limit' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 200],
+            ]),
+            'GET admin/keys'              => $keyRead([$k, 'index'], 'Every API key, newest first; never a secret', 'ApiKeyList'),
+            'GET admin/keys/{id}'         => $keyRead([$k, 'show'], 'One API key; never its secret', 'ApiKeyDocument', errors: [404]),
+            'POST admin/keys'             => $keyWrite([$k, 'create'], 'Make an admin or public key; its token is shown once', body: 'ApiKeyInput', response: 'ApiKeyDocument', status: 201, errors: [403], replayable: false),
+            'DELETE admin/keys/{id}'      => $keyWrite([$k, 'revoke'], 'Revoke a key; never another admin\'s own key', status: 204, errors: [403, 404, 409]),
+            'POST admin/keys/{id}/rotate' => $keyWrite([$k, 'rotate'], 'Make a new key in place of one of yours or a public key; the old one works until revoked', response: 'ApiKeyDocument', status: 201, errors: [403, 404, 409], replayable: false),
         ];
     }
 
@@ -585,146 +212,71 @@ final class AdminRoutes
      */
     private static function webhooks(): array
     {
-        $tag   = 'Admin webhooks';
-        $scope = 'admin:webhooks';
-        $c     = AdminWebhooksController::class;
-        $test  = self::write(
-            handler: [$c, 'test'],
-            tag: $tag,
-            scope: $scope,
-            summary: 'Queue a ping to the endpoint, sent once even while it is off',
-            response: 'WebhookTestDocument',
-            status: 202,
-            errors: [404]
-        );
+        [$read, $write] = self::group('Admin webhooks', 'admin:webhooks');
+        $c              = AdminWebhooksController::class;
 
         return [
-            'GET admin/webhooks' => self::read(
-                handler: [$c, 'index'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Every webhook endpoint, newest first; never a secret',
-                response: 'WebhookList'
-            ),
-            'POST admin/webhooks' => self::write(
-                handler: [$c, 'create'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Add an endpoint; its signing secret is shown once',
-                body: 'WebhookInput',
-                response: 'WebhookDocument',
-                status: 201,
-                replayable: false
-            ),
-            'GET admin/webhooks/{webhook}' => self::read(
-                handler: [$c, 'show'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'One endpoint; never its secret',
-                response: 'WebhookDocument',
-                errors: [404]
-            ),
-            'PATCH admin/webhooks/{webhook}' => self::write(
-                handler: [$c, 'update'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Change an endpoint; switching it on clears a pause',
-                body: 'WebhookPatch',
-                response: 'WebhookDocument',
-                errors: [404]
-            ),
-            'DELETE admin/webhooks/{webhook}' => self::write(
-                handler: [$c, 'delete'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'Delete an endpoint and its waiting deliveries',
-                status: 204,
-                errors: [404]
-            ),
-            'POST admin/webhooks/{webhook}/rotate-secret' => self::write(
-                handler: [$c, 'rotate'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'A new signing secret, shown once; the old one also signs for 24 hours',
-                response: 'WebhookDocument',
-                errors: [404],
-                replayable: false
-            ),
-            'POST admin/webhooks/{webhook}/test' => $test,
-            'GET admin/webhooks/{webhook}/deliveries' => self::read(
-                handler: [$c, 'deliveries'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'The endpoint\'s state and its deliveries still on the job queue',
-                response: 'WebhookDeliveriesDocument',
-                query: [
-                    'limit' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 100],
-                ],
-                errors: [404]
-            ),
-            'GET admin/webhook-events' => self::read(
-                handler: [$c, 'events'],
-                tag: $tag,
-                scope: $scope,
-                summary: 'The events an endpoint can subscribe to, plugin events included',
-                response: 'WebhookEventList'
-            ),
+            'GET admin/webhooks'                          => $read([$c, 'index'], 'Every webhook endpoint, newest first; never a secret', 'WebhookList'),
+            'POST admin/webhooks'                         => $write([$c, 'create'], 'Add an endpoint; its signing secret is shown once', body: 'WebhookInput', response: 'WebhookDocument', status: 201, replayable: false),
+            'GET admin/webhooks/{webhook}'                => $read([$c, 'show'], 'One endpoint; never its secret', 'WebhookDocument', errors: [404]),
+            'PATCH admin/webhooks/{webhook}'              => $write([$c, 'update'], 'Change an endpoint; switching it on clears a pause', body: 'WebhookPatch', response: 'WebhookDocument', errors: [404]),
+            'DELETE admin/webhooks/{webhook}'             => $write([$c, 'delete'], 'Delete an endpoint and its waiting deliveries', status: 204, errors: [404]),
+            'POST admin/webhooks/{webhook}/rotate-secret' => $write([$c, 'rotate'], 'A new signing secret, shown once; the old one also signs for 24 hours', response: 'WebhookDocument', errors: [404], replayable: false),
+            'POST admin/webhooks/{webhook}/test'          => $write([$c, 'test'], 'Queue a ping to the endpoint, sent once even while it is off', response: 'WebhookTestDocument', status: 202, errors: [404]),
+            'GET admin/webhooks/{webhook}/deliveries'     => $read([$c, 'deliveries'], 'The endpoint\'s state and its deliveries still on the job queue', 'WebhookDeliveriesDocument', query: [
+                'limit' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 100],
+            ], errors: [404]),
+            'GET admin/webhook-events' => $read([$c, 'events'], 'The events an endpoint can subscribe to, plugin events included', 'WebhookEventList'),
         ];
     }
 
     /**
-     * An admin read.
+     * A read and a write builder for one group of admin routes, sharing its tag and scope.
      *
-     * @param array{class-string,string}         $handler
-     * @param array<string,array<string,mixed>> $query
-     * @param int[]                             $errors
-     *
-     * @return array<string,mixed>
+     * @return array{\Closure, \Closure}
      */
-    private static function read(array $handler, string $tag, string $scope, string $summary, string $response, array $query = [], array $errors = []): array
+    private static function group(string $tag, string $scope): array
     {
-        return RouteSpec::read(
-            handler: $handler,
-            tag: $tag,
-            summary: $summary,
-            response: $response,
-            query: $query,
-            errors: $errors,
-            auth: RouteSpec::AUTH_ADMIN,
-            scope: $scope
-        );
-    }
-
-    /**
-     * An admin write.
-     *
-     * @param array{class-string,string} $handler
-     * @param int[]                      $errors
-     *
-     * @return array<string,mixed>
-     */
-    private static function write(
-        array $handler,
-        string $tag,
-        string $scope,
-        string $summary,
-        ?string $body = null,
-        ?string $response = null,
-        int $status = 200,
-        array $errors = [],
-        bool $replayable = true
-    ): array {
-        return RouteSpec::write(
-            handler: $handler,
-            tag: $tag,
-            summary: $summary,
-            auth: RouteSpec::AUTH_ADMIN,
-            scope: $scope,
-            body: $body,
-            response: $response,
-            status: $status,
-            errors: $errors,
-            replayable: $replayable
-        );
+        return [
+            /**
+             * @param array{class-string,string}         $handler
+             * @param array<string,array<string,mixed>> $query
+             * @param int[]                             $errors
+             */
+            static fn (array $handler, string $summary, string $response, array $query = [], array $errors = []): array => RouteSpec::read(
+                handler: $handler,
+                tag: $tag,
+                summary: $summary,
+                response: $response,
+                query: $query,
+                errors: $errors,
+                auth: RouteSpec::AUTH_ADMIN,
+                scope: $scope
+            ),
+            /**
+             * @param array{class-string,string} $handler
+             * @param int[]                      $errors
+             */
+            static fn (
+                array $handler,
+                string $summary,
+                ?string $body = null,
+                ?string $response = null,
+                int $status = 200,
+                array $errors = [],
+                bool $replayable = true
+            ): array => RouteSpec::write(
+                handler: $handler,
+                tag: $tag,
+                summary: $summary,
+                auth: RouteSpec::AUTH_ADMIN,
+                scope: $scope,
+                body: $body,
+                response: $response,
+                status: $status,
+                errors: $errors,
+                replayable: $replayable
+            ),
+        ];
     }
 }

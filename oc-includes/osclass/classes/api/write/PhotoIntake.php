@@ -97,7 +97,7 @@ final class PhotoIntake
                 $copies[] = $this->copy($photo);
             }
             if ($wanted !== []) {
-                $this->limiter->enforceN($this->limits->photoFetch($userId), count($wanted), 'Too many photos fetched by URL in an hour. Try again later.');
+                $this->limiter->enforce($this->limits->photoFetch($userId), 'Too many photos fetched by URL in an hour. Try again later.', n: count($wanted));
             }
             $fetched = $wanted === [] ? [] : $this->fetch($wanted);
         } catch (ProblemException $e) {

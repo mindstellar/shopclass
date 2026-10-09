@@ -124,8 +124,10 @@ $other  = seed_user($admin, 'cg_other', 'cg_other@example.test');
 $admin->query('INSERT INTO ' . DB_TABLE_PREFIX . "t_item_comment (fk_i_item_id, dt_pub_date, s_title, s_author_name, s_author_email, s_body, b_enabled, b_active, b_spam, fk_i_user_id) VALUES ($live, NOW(), 'Hi', 'Author', 'cg_author@example.test', 'Mine', 1, 1, 0, $author)");
 $mine     = (int) $admin->insert_id;
 $preHooks = 0;
-osc_add_hook('pre_item_delete_comment_post', static function () use (&$preHooks): void {
+$preArgs  = array();
+osc_add_hook('pre_item_delete_comment_post', static function ($item, $commentId) use (&$preHooks, &$preArgs): void {
     $preHooks++;
+    $preArgs = array((int) ($item['pk_i_id'] ?? 0), $commentId);
 });
 $refusal = static function (Actor $actor) use ($mine): string {
     try {
@@ -143,6 +145,7 @@ pin('the author deletes it, and the hook fires once', array('deleted', 1, 0), ar
     $refusal(Actor::user($author)), $preHooks,
     (int) $admin->query('SELECT COUNT(*) FROM ' . DB_TABLE_PREFIX . "t_item_comment WHERE pk_i_id = $mine")->fetch_row()[0],
 ));
+pin('the hook gets the comment\'s listing row and the comment id', array($live, $mine), $preArgs);
 
 View::getInstance()->_erase('item');
 

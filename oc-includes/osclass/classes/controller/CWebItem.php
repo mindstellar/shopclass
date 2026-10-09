@@ -695,7 +695,7 @@ class CWebItem extends BaseModel
                 View::getInstance()->_exportVariableToView('item', $item);
 
                 try {
-                    (new CommentService())->delete($commentId, Actor::visitor(), $itemId);
+                    (new CommentService())->delete($commentId, Actor::visitor());
                     osc_add_flash_ok_message(_m('The comment has been deleted'));
                 } catch (RefusedException $e) {
                     osc_add_flash_error_message($e->getMessage());

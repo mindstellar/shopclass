@@ -175,13 +175,11 @@ final class CommentService
      * The author deletes their own live comment. Fires `pre_item_delete_comment_post` once the
      * author is confirmed, then on success `delete_comment`.
      *
-     * @param int $itemId the listing the request named; no longer read
-     *
      * @throws ForbiddenException for a guest, or a comment someone else wrote
      * @throws NotFoundException  for no such comment, or someone else's this user may not read
      * @throws ConflictException  for the author's own comment that is not live
      */
-    public function delete(int $commentId, Actor $actor, int $itemId = 0): void
+    public function delete(int $commentId, Actor $actor): void
     {
         if ($actor->userId() === null) {
             throw new ForbiddenException(_m('You must be logged in to delete a comment'), ForbiddenException::SIGN_IN);

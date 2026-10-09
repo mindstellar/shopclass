@@ -702,7 +702,7 @@ class FileSystem
         $data            = null;
         $responseHeaders = [];
         $responseInfo    = ['status' => 0, 'headers' => []];
-        if ($this->testCurl()) {
+        if (Curl::available()) {
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_URL, $url);
             @curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
@@ -784,16 +784,6 @@ class FileSystem
         }
 
         return $data;
-    }
-
-    /**
-     * Returns true if there is curl on system environment
-     *
-     * @return bool
-     */
-    private function testCurl(): bool
-    {
-        return (function_exists('curl_init') || function_exists('curl_exec'));
     }
 
     /**
@@ -923,7 +913,7 @@ class FileSystem
         if ($this->exists($file_path)) {
             $this->remove($file_path);
         }
-        if ($this->testCurl()) {
+        if (Curl::available()) {
             set_time_limit(0);
             $fp = fopen($filename, 'wb+');
             if ($fp) {

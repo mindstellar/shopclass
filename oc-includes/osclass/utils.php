@@ -855,7 +855,7 @@ function osc_dbdump($path, $file)
  */
 function testCurl()
 {
-    return !(!function_exists('curl_init') || !function_exists('curl_exec'));
+    return \mindstellar\utility\Curl::available();
 }
 
 /**

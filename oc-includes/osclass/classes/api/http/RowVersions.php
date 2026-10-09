@@ -97,7 +97,7 @@ final class RowVersions implements ResourceVersions
             return null;
         }
         $owner = $resource['owner'] ?? null;
-        $found = RowHashQuery::hashes($resource['tables'], $key, $owner, $lock);
+        $found = RowHashQuery::hashes($resource['tables'], $key, $owner, $lock, $credential->isAdmin() ? null : (int) $credential->userId());
         $rows  = array_fill(0, count($resource['tables']), []);
         $head  = null;
         foreach ($found as $row) {

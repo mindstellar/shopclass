@@ -17,10 +17,11 @@
 require_once __DIR__ . '/lib/api-boot.php';
 
 use mindstellar\api\write\ImageFetcher;
+use mindstellar\utility\Curl;
 
 harness_section('the options of one download');
 $out  = fopen('php://memory', 'wb');
-$opts = ImageFetcher::curlOptions('https://photos.test:8443/a.jpg', '93.184.216.34', 1000, 15, $out);
+$opts = ImageFetcher::curlOptions('https://photos.test:8443/a.jpg', '93.184.216.34', 1000, $out, 15);
 $keys = array_keys($opts);
 sort($keys);
 $want = [
@@ -40,8 +41,7 @@ pin('each option holds the checked IP, no proxy, http(s) only, no redirects, the
     $opts[CURLOPT_LOW_SPEED_LIMIT], $opts[CURLOPT_LOW_SPEED_TIME], $opts[CURLOPT_MAXFILESIZE], $opts[CURLOPT_NOPROGRESS],
     [$xfer(null, 0, 1000, 0, 0), $xfer(null, 0, 1001, 0, 0)], str_starts_with((string) $opts[CURLOPT_USERAGENT], 'Shopclass/'),
 ]);
-pin('a short timeout caps the connect time too', [3, 3], (static fn (array $o): array => [$o[CURLOPT_CONNECTTIMEOUT], $o[CURLOPT_TIMEOUT]])(ImageFetcher::curlOptions('http://a.test/', '1.2.3.4', 10, 3)));
-check('without a file it writes nowhere', !isset(ImageFetcher::curlOptions('http://a.test/', '1.2.3.4', 10)[CURLOPT_FILE]));
+pin('a short timeout caps the connect time too', [3, 3], (static fn (array $o): array => [$o[CURLOPT_CONNECTTIMEOUT], $o[CURLOPT_TIMEOUT]])(ImageFetcher::curlOptions('http://a.test/', '1.2.3.4', 10, $out, 3)));
 
 harness_section('no cURL');
 $noCurl = [];
@@ -50,6 +50,14 @@ exec(escapeshellarg(PHP_BINARY) . ' -d disable_functions=curl_multi_init,curl_in
     . ' echo json_encode(mindstellar\api\write\ImageFetcher::curl([3 => ["url" => "http://a.test/", "ip" => "1.2.3.4", "file" => "/dev/null"], 1 => ["url" => "http://b.test/", "ip" => "1.2.3.4", "file" => "/dev/null"]], 10));'
 ) . ' 2>&1', $noCurl);
 pin('every URL is refused cleanly when the server has no cURL', '{"3":"' . ImageFetcher::NO_CURL . '","1":"' . ImageFetcher::NO_CURL . '"}', implode("\n", $noCurl));
+$multiOff = [];
+exec(escapeshellarg(PHP_BINARY) . ' -d disable_functions=curl_multi_init -r ' . escapeshellarg(
+    'require ' . var_export(dirname(__DIR__) . '/oc-includes/vendor/autoload.php', true) . ';'
+    . ' echo json_encode([mindstellar\utility\Curl::available(true), mindstellar\utility\Curl::available()]);'
+) . ' 2>&1', $multiOff);
+pin('without curl_multi_init only plain cURL is available', '[false,true]', implode("\n", $multiOff));
+pin('with it both are', [true, true], [Curl::available(true), Curl::available()]);
+pin('four downloads run at once, and a batch has 30 seconds', [4, 30], [ImageFetcher::CONCURRENT, ImageFetcher::BUDGET]);
 
 harness_section('real downloads from a local server');
 $dir = sys_get_temp_dir() . '/osc-image-fetcher-' . getmypid() . '/';
@@ -171,6 +179,6 @@ $got = ImageFetcher::curl($slow, 1000);
 ksort($got);
 $peak = (int) @file_get_contents($dir . 'peak');
 pin('eight downloads all finish', array_fill_keys(array_keys($slow), null), $got);
-check('at most ' . ImageFetcher::CONCURRENT . ' open at once, and more than one (peak ' . $peak . ')', $peak <= ImageFetcher::CONCURRENT && $peak >= 2);
+check('at most 4 open at once, and more than one (peak ' . $peak . ')', $peak <= 4 && $peak >= 2);
 
 exit(harness_result());

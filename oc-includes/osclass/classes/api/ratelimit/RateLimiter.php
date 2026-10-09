@@ -133,25 +133,13 @@ final class RateLimiter
     }
 
     /**
-     * Count one request in a bucket and refuse it past the limit.
-     *
-     * @param bool $failOpen false refuses the request when the counter cannot be reached
-     *
-     * @throws ProblemException 429 past the limit
-     */
-    public function enforce(RateBucket $bucket, string $message, bool $failOpen = true): void
-    {
-        $this->enforceN($bucket, 1, $message, $failOpen);
-    }
-
-    /**
      * Count $n requests in a bucket at once and refuse them all past the limit.
      *
      * @param bool $failOpen false refuses the request when the counter cannot be reached
      *
      * @throws ProblemException 429 past the limit
      */
-    public function enforceN(RateBucket $bucket, int $n, string $message, bool $failOpen = true): void
+    public function enforce(RateBucket $bucket, string $message, bool $failOpen = true, int $n = 1): void
     {
         $result = $this->hit($bucket, $failOpen, $n);
         if (!$result->allowed()) {

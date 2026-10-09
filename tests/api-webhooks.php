@@ -148,7 +148,7 @@ pin('a host name resolving to IPv6 is pinned with the address bracketed', ['v6.t
 pin('an IPv6 literal host needs no pin', [], AddressGuard::curlOptions('http://[2606:2800:220:1::1]/hook', '2606:2800:220:1::1')[CURLOPT_RESOLVE]);
 pin('nor does an IPv4 literal', [], AddressGuard::curlOptions('http://93.184.216.34/hook', '93.184.216.34')[CURLOPT_RESOLVE]);
 pin('the webhook transport uses them', AddressGuard::curlOptions('https://[::1]/hook', '::1'), array_intersect_key(CurlTransport::options('https://[::1]/hook', '::1'), AddressGuard::curlOptions('https://[::1]/hook', '::1')));
-pin('the photo download uses the same address guard options', AddressGuard::curlOptions('http://public.test/a.jpg', '93.184.216.34'), array_intersect_key(ImageFetcher::curlOptions('http://public.test/a.jpg', '93.184.216.34', 10), AddressGuard::curlOptions('http://public.test/a.jpg', '93.184.216.34')));
+pin('the photo download uses the same address guard options', AddressGuard::curlOptions('http://public.test/a.jpg', '93.184.216.34'), array_intersect_key(ImageFetcher::curlOptions('http://public.test/a.jpg', '93.184.216.34', 10, fopen('php://memory', 'w')), AddressGuard::curlOptions('http://public.test/a.jpg', '93.184.216.34')));
 
 harness_section('transport status');
 pin('a timeout is "Timed out"', 'Timed out', CurlTransport::failure(28));

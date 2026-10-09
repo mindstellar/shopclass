@@ -66,12 +66,10 @@ $alert = (int) $admin->insert_id;
 $admin->query("INSERT INTO {$p}t_api_credential (e_kind, s_token_id, s_secret_hash, s_name, s_scopes, fk_i_user_id, dt_created) VALUES ('key', 'rowversionstest1', '" . str_repeat('a', 64) . "', 'Row versions', 'account:write', $user, NOW())");
 $apiKey   = (int) $admin->insert_id;
 $stranger = new Credential(CredentialKind::KEY, ['account:write'], $user + 1);
-pin('another user\'s alert and key give no version, read or locked', [null, null, null, null], [
-    $versions->version('account/alerts/{id}', ['id' => (string) $alert], $stranger, false, true),
-    $versions->version('account/keys/{id}', ['id' => (string) $apiKey], $stranger, false, true),
-    $versions->atomically(static fn () => $versions->version('account/alerts/{id}', ['id' => (string) $alert], $stranger, true)),
-    $versions->atomically(static fn () => $versions->version('account/keys/{id}', ['id' => (string) $apiKey], $stranger, true)),
-]);
+pin('another user\'s alert gives no version on read', null, $versions->version('account/alerts/{id}', ['id' => (string) $alert], $stranger, false, true));
+pin('another user\'s key gives no version on read', null, $versions->version('account/keys/{id}', ['id' => (string) $apiKey], $stranger, false, true));
+pin('another user\'s alert gives no version when locked', null, $versions->atomically(static fn () => $versions->version('account/alerts/{id}', ['id' => (string) $alert], $stranger, true)));
+pin('another user\'s key gives no version when locked', null, $versions->atomically(static fn () => $versions->version('account/keys/{id}', ['id' => (string) $apiKey], $stranger, true)));
 check('their owner gets both', $versions->version('account/alerts/{id}', ['id' => (string) $alert], $owner, false, true) !== null
     && $versions->version('account/keys/{id}', ['id' => (string) $apiKey], $owner, false, true) !== null);
 
@@ -151,6 +149,8 @@ $inside = $versions->atomically(static function () use ($versions, $item, $owner
     return [$versions->version('listings/{id}', ['id' => (string) $item], $owner, true), $blocked()];
 });
 pin('a locked read holds the row against another writer until commit', [$v2, true], $inside);
+$foreign = $versions->atomically(static fn (): array => [$versions->version('listings/{id}', ['id' => (string) $item], $stranger, true), $blocked()]);
+pin('another user\'s locked read gets no version and leaves the row unlocked', [null, false], $foreign);
 check('after which the row can be written again', !$blocked());
 
 try {

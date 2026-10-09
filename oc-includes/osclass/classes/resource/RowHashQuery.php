@@ -64,14 +64,15 @@ final class RowHashQuery extends Model
     /**
      * Hashes of the rows matching a key, one select per table.
      *
-     * @param array<int,array{0:string,1:string}> $tables table (no prefix) and the column holding the key; index 0 is the head
-     * @param string|null                         $owner  column of the first table to return as "o"
-     * @param bool                                $lock   lock the rows (FOR UPDATE), one table at a time
+     * @param array<int,array{0:string,1:string}> $tables    table (no prefix) and the column holding the key; index 0 is the head
+     * @param string|null                         $owner     column of the first table to return as "o"
+     * @param bool                                $lock      lock the rows (FOR UPDATE), one table at a time
+     * @param int|null                            $lockOwner with $lock, read and lock only a row $owner holds for this user
      *
      * @return array<int,array{t:mixed,r:mixed,o:mixed}> t is the index in $tables, r the hash
      * @throws \mindstellar\database\DbException
      */
-    public static function hashes(array $tables, int|string $key, ?string $owner, bool $lock): array
+    public static function hashes(array $tables, int|string $key, ?string $owner, bool $lock, ?int $lockOwner = null): array
     {
         $selects = [];
         foreach ($tables as $i => [$table, $column]) {
@@ -81,10 +82,22 @@ final class RowHashQuery extends Model
                 . ' WHERE ' . $column . ' = ?';
         }
         $db = Connection::getInstance();
+        if (!$lock) {
+            return $db->select(implode(' UNION ALL ', $selects), array_fill(0, count($selects), $key));
+        }
+        $params = array_fill(0, count($selects), [$key]);
+        if ($lockOwner !== null && $owner !== null) {
+            // A plain read first, so another user's row, or the gap where a missing one would go, is never locked.
+            $mine = ' AND IFNULL(' . $owner . ', 0) = ?';
+            if ($db->select('SELECT 1 FROM ' . DB_TABLE_PREFIX . $tables[0][0] . ' WHERE ' . $tables[0][1] . ' = ?' . $mine, [$key, $lockOwner]) === []) {
+                return [];
+            }
+            $selects[0] .= $mine;
+            $params[0][] = $lockOwner;
+        }
+
         // Locking reads run one table at a time: a lock inside UNION is not portable across MySQL and MariaDB.
-        return $lock
-            ? array_merge(...array_map(static fn (string $sql): array => $db->select($sql . ' FOR UPDATE', [$key]), $selects))
-            : $db->select(implode(' UNION ALL ', $selects), array_fill(0, count($selects), $key));
+        return array_merge(...array_map(static fn (string $sql, array $p): array => $db->select($sql . ' FOR UPDATE', $p), $selects, $params));
     }
 
     /**

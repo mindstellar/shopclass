@@ -160,7 +160,7 @@ final class ImageFetcher
             return null;
         }
         $curl = curl_init();
-        curl_setopt_array($curl, self::curlOptions($job['url'], $job['ip'], $maxBytes, $timeout, $out));
+        curl_setopt_array($curl, self::curlOptions($job['url'], $job['ip'], $maxBytes, $out, $timeout));
         curl_multi_add_handle($multi, $curl);
 
         return [$curl, $out];
@@ -185,13 +185,13 @@ final class ImageFetcher
     /**
      * Every cURL option of a download's handle.
      *
-     * @param resource|null $out the open file it writes to
+     * @param resource $out the open file it writes to
      *
      * @return array<int,mixed>
      */
-    public static function curlOptions(string $url, string $ip, int $maxBytes, int $timeout = self::TIMEOUT, $out = null): array
+    public static function curlOptions(string $url, string $ip, int $maxBytes, $out, int $timeout = self::TIMEOUT): array
     {
-        return [CURLOPT_URL => $url] + ($out === null ? [] : [CURLOPT_FILE => $out]) + AddressGuard::curlOptions($url, $ip) + [
+        return [CURLOPT_URL => $url, CURLOPT_FILE => $out] + AddressGuard::curlOptions($url, $ip) + [
             CURLOPT_CONNECTTIMEOUT   => min(5, $timeout),
             CURLOPT_TIMEOUT          => $timeout,
             CURLOPT_LOW_SPEED_LIMIT  => self::LOW_SPEED,

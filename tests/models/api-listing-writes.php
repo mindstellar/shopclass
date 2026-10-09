@@ -729,7 +729,7 @@ pin('the legacy ItemTmpUpload model answers as before', array(true, false, false
     $legacy->deleteByTokenFile('other', 'a.jpg'), $legacy->deleteByTokenFile('web-form', 'a.jpg'),
     $legacy->pruneBefore('2000-01-01 00:00:00'), $legacy->deleteByToken('web-form'),
 ));
-$fetcher = ImageFetcher::curlOptions('https://photos.example.com/car.jpg', '93.184.216.34', 1024);
+$fetcher = ImageFetcher::curlOptions('https://photos.example.com/car.jpg', '93.184.216.34', 1024, fopen('php://memory', 'w'));
 pin('a download never goes through a proxy, so it reaches the checked address', array('', '*'), array($fetcher[CURLOPT_PROXY] ?? null, $fetcher[CURLOPT_NOPROXY] ?? null));
 pin('a download that crawls is dropped', array(ImageFetcher::LOW_SPEED, ImageFetcher::LOW_SPEED_TIME), array($fetcher[CURLOPT_LOW_SPEED_LIMIT] ?? null, $fetcher[CURLOPT_LOW_SPEED_TIME] ?? null));
 $batches   = array();
@@ -801,7 +801,7 @@ $qEtag    = (string) $call('GET', 'listings/' . $qMade, null, $sueToken)->header
 $qMatched = harness_query_count(static fn () => $call('PATCH', 'listings/' . $qMade, array('price' => '998'), $sueToken, array('If-Match' => $qEtag)));
 echo "  GET /listings/{id} as its owner: $qGet queries, PATCH with If-Match: $qMatched\n";
 pin('GET /listings/{id} as its owner: 7 queries (sign-in, row version for the ETag, t_item, texts, stats and location, photos, seller)', 7, $qGet);
-pin('PATCH with If-Match: 32 queries, the 25 plus 4 locked row hashes, the new version and the outer transaction', 32, $qMatched);
+pin('PATCH with If-Match: 33 queries, the 25 plus the owner check, 4 locked row hashes, the new version and the outer transaction', 33, $qMatched);
 
 $writes = static function (): array {
     $db  = DBConnectionClass::newInstance()->getOsclassDb();

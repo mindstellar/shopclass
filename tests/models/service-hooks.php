@@ -125,7 +125,7 @@ $web = [
     'deleteComment' => static function (int $userId, int $itemId, int $commentId) use ($asUser): bool {
         $asUser($userId);
         try {
-            (new \mindstellar\comment\CommentService())->delete($commentId, new \mindstellar\auth\Actor($userId, null, '192.0.2.70'), $itemId);
+            (new \mindstellar\comment\CommentService())->delete($commentId, new \mindstellar\auth\Actor($userId, null, '192.0.2.70'));
         } catch (\mindstellar\validation\RefusedException $e) {
             return false;
         }
