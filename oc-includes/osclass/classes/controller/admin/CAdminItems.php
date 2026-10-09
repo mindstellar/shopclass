@@ -297,18 +297,8 @@ class CAdminItems extends AdminSecBaseModel
             case 'item_edit_post':
                 osc_csrf_check();
                 $formData = ListingInput::read(true, false);
-                // set all parameters into session
-                foreach ($formData as $key => $value) {
-                    Session::getInstance()->_setForm($key, $value);
-                }
-
-                $meta = Params::getParam('meta');
-                if (is_array($meta)) {
-                    foreach ($meta as $key => $value) {
-                        Session::getInstance()->_setForm('meta_' . $key, $value);
-                        Session::getInstance()->_keepForm('meta_' . $key);
-                    }
-                }
+                $meta     = Params::getParam('meta');
+                ListingInput::keep($formData, $meta);
 
                 $success = $this->saveListing($formData, false);
 
@@ -323,11 +313,7 @@ class CAdminItems extends AdminSecBaseModel
                         $url = Session::getInstance()->_get('osc_admin_referer');
                     }
                     Session::getInstance()->_clearVariables();
-                    if (is_array($meta)) {
-                        foreach ($meta as $key => $value) {
-                            Session::getInstance()->_dropKeepForm('meta_' . $key);
-                        }
-                    }
+                    ListingInput::dropKept($meta);
 
                     $this->redirectTo($url);
                 } else {
@@ -369,19 +355,8 @@ class CAdminItems extends AdminSecBaseModel
             case 'post_item':       //post item
                 osc_csrf_check();
                 $formData = ListingInput::read(true, true);
-                // set all parameters into session
-                foreach ($formData as $key => $value) {
-                    Session::getInstance()->_setForm($key, $value);
-                }
-
-                $meta = Params::getParam('meta');
-
-                if (is_array($meta)) {
-                    foreach ($meta as $key => $value) {
-                        Session::getInstance()->_setForm('meta_' . $key, $value);
-                        Session::getInstance()->_keepForm('meta_' . $key);
-                    }
-                }
+                $meta     = Params::getParam('meta');
+                ListingInput::keep($formData, $meta);
 
                 $success = $this->saveListing($formData, true);
 
@@ -393,11 +368,7 @@ class CAdminItems extends AdminSecBaseModel
                         Session::getInstance()->_drop('osc_admin_referer');
                     }
                     Session::getInstance()->_clearVariables();
-                    if (is_array($meta)) {
-                        foreach ($meta as $key => $value) {
-                            Session::getInstance()->_dropKeepForm('meta_' . $key);
-                        }
-                    }
+                    ListingInput::dropKept($meta);
                     osc_add_flash_ok_message(_m('A new listing has been added'), 'admin');
 
                     $this->redirectTo($url);

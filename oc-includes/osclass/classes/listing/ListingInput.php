@@ -65,6 +65,41 @@ final class ListingInput
     }
 
     /**
+     * Keep a posted listing form in the session, so it is filled in again after an error.
+     * Custom field values stay kept across a clear until dropKept().
+     *
+     * @param array<string,mixed> $form what read() gave
+     * @param mixed               $meta the posted custom field values, by field id
+     */
+    public static function keep(array $form, mixed $meta): void
+    {
+        $session = Session::getInstance();
+        foreach ($form as $key => $value) {
+            $session->_setForm($key, $value);
+        }
+        if (is_array($meta)) {
+            foreach ($meta as $key => $value) {
+                $session->_setForm('meta_' . $key, $value);
+                $session->_keepForm('meta_' . $key);
+            }
+        }
+    }
+
+    /**
+     * Stop keeping the custom field values keep() kept.
+     *
+     * @param mixed $meta the posted custom field values, by field id
+     */
+    public static function dropKept(mixed $meta): void
+    {
+        if (is_array($meta)) {
+            foreach ($meta as $key => $value) {
+                Session::getInstance()->_dropKeepForm('meta_' . $key);
+            }
+        }
+    }
+
+    /**
      * The listing data for a form given as plain values, for whoever $actor is. The names are
      * the ones the listing form posts, plus 'meta' (custom field values by id) and 'photos'
      * (local file paths, which are moved into the listing and deleted). For an edit, 'id'

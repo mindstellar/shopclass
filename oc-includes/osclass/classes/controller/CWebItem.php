@@ -149,17 +149,8 @@ class CWebItem extends BaseModel
             case 'item_add_post':
                 // SAVE form data before CSRF CHECK
                 $formData = ListingInput::read(false, true);
-                foreach ($formData as $key => $value) {
-                    Session::getInstance()->_setForm($key, $value);
-                }
-
-                $meta = Params::getParam('meta');
-                if (is_array($meta)) {
-                    foreach ($meta as $key => $value) {
-                        Session::getInstance()->_setForm('meta_' . $key, $value);
-                        Session::getInstance()->_keepForm('meta_' . $key);
-                    }
-                }
+                $meta     = Params::getParam('meta');
+                ListingInput::keep($formData, $meta);
 
                 osc_csrf_check();
 
@@ -196,11 +187,7 @@ class CWebItem extends BaseModel
                 }
                 ListingNotices::flash($saved->notices(), false);
 
-                if (is_array($meta)) {
-                    foreach ($meta as $key => $value) {
-                        Session::getInstance()->_dropKeepForm('meta_' . $key);
-                    }
-                }
+                ListingInput::dropKept($meta);
                 Session::getInstance()->_clearVariables();
                 // Uploads were consumed by the successful post; drop the session
                 // mapping so it can't bleed into the next listing.
@@ -262,18 +249,8 @@ class CWebItem extends BaseModel
             case 'item_edit_post':
                 // SAVE form data before CSRF CHECK
                 $formData = ListingInput::read(false, false);
-                // set all parameters into session
-                foreach ($formData as $key => $value) {
-                    Session::getInstance()->_setForm($key, $value);
-                }
-
-                $meta = Params::getParam('meta');
-                if (is_array($meta)) {
-                    foreach ($meta as $key => $value) {
-                        Session::getInstance()->_setForm('meta_' . $key, $value);
-                        Session::getInstance()->_keepForm('meta_' . $key);
-                    }
-                }
+                $meta     = Params::getParam('meta');
+                ListingInput::keep($formData, $meta);
 
                 osc_csrf_check();
 
@@ -305,11 +282,7 @@ class CWebItem extends BaseModel
                     }
 
                     if ($success === 1) {
-                        if (is_array($meta)) {
-                            foreach ($meta as $key => $value) {
-                                Session::getInstance()->_dropKeepForm('meta_' . $key);
-                            }
-                        }
+                        ListingInput::dropKept($meta);
                         Session::getInstance()->_clearVariables();
                         // Uploads were consumed by the successful edit; drop the session
                         // mapping so it can't bleed into a later listing.
