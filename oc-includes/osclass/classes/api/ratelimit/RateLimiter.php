@@ -17,8 +17,8 @@ use mindstellar\security\RateLimit;
 use mindstellar\utility\Clock;
 
 /**
- * Counts requests in their buckets over core's RateLimit, in APCu when the server has it and in
- * database samples when it does not, and builds the rate limit headers. An exact bucket is counted
+ * Counts requests in their buckets over core's RateLimit, in the object cache when the site has
+ * one and in database samples when it does not, and builds the rate limit headers. An exact bucket is counted
  * in the database on every request, and it fails open like RateLimit.
  */
 final class RateLimiter
@@ -47,22 +47,23 @@ final class RateLimiter
     }
 
     /**
-     * The site's limiter: exact buckets with RateLimit, the others in APCu, or in samples
-     * (SampledCounter) when the server has no APCu.
+     * The site's limiter: exact buckets with RateLimit, the others in the object cache, or in
+     * samples (SampledCounter) when the cache cannot hold counts.
      */
     public static function fromSite(Clock $clock): self
     {
-        if (!ApcuStore::available()) {
+        $store = CacheStore::of(\Object_Cache_Factory::getInstance());
+        if ($store === null) {
             return self::sampled($clock);
         }
         [$db, $add, $count] = self::counters();
-        $counter = new ApcuCounter(new ApcuStore(), $clock, $add, $db, self::installPrefix(DB_TABLE_PREFIX, DB_NAME, (string) osc_base_url()), $count);
+        $counter = new BufferedCounter($store, $clock, $add, $db, self::installPrefix(DB_TABLE_PREFIX, DB_NAME, (string) osc_base_url()), $count);
 
         return new self([$counter, 'increment'], $clock, $db, $add);
     }
 
     /**
-     * The limiter of a server without APCu: exact buckets with RateLimit, the others in samples.
+     * The limiter of a site without an object cache: exact buckets with RateLimit, the others in samples.
      *
      * @param callable|null $draw (every) => whether this request writes; random when null
      */
@@ -74,7 +75,7 @@ final class RateLimiter
     }
 
     /**
-     * A short value unique to this install, so sites sharing one APCu never share a counter.
+     * A short value unique to this install, so sites sharing one cache never share a counter.
      */
     public static function installPrefix(string $tablePrefix, string $database, string $baseUrl): string
     {

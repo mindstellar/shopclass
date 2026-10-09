@@ -27,7 +27,7 @@ final class ListingStore extends Model
      * One listing's columns, or null. With $lock the row is held (FOR UPDATE) until the
      * transaction ends.
      *
-     * @param string[] $columns column names from code, never from input
+     * @param string[] $columns column names from code, never from input; '*' for all
      *
      * @return array<string,mixed>|null
      * @throws \mindstellar\database\DbException
@@ -35,7 +35,7 @@ final class ListingStore extends Model
     public static function find(int $id, array $columns, bool $lock = false): ?array
     {
         if ($lock) {
-            $list = implode(', ', array_map(static fn (string $c): string => '`' . str_replace('`', '', $c) . '`', $columns));
+            $list = implode(', ', array_map(static fn (string $c): string => $c === '*' ? '*' : '`' . str_replace('`', '', $c) . '`', $columns));
 
             return Db::selectOne('SELECT ' . $list . ' FROM ' . self::tableName() . ' WHERE pk_i_id = ? FOR UPDATE', [$id]);
         }

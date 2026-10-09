@@ -52,6 +52,8 @@ $_cache_config = array(
 );
 ```
 
+The REST API's rate limits also count in memcached, so every web server shares one count.
+
 ## APCu (one server only)
 
 **APCu** keeps the cache inside PHP itself. It is simpler and faster, but each

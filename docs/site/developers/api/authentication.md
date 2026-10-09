@@ -446,8 +446,10 @@ Limits count requests in a fixed 60-second window. The site owner sets the numbe
 
 Posting has its own hourly limits on top: see [Writes](/docs/developers/api/writes/#limits).
 
-With APCu, the per-minute read buckets count on each web server, so a site behind several servers
-allows that many per server. `api_write` and the hourly caps always count in the database.
+The per-minute read buckets count in the site's [object cache](/docs/configure/cache/). With
+memcached all web servers share one count. With APCu each web server counts its own, so a site
+behind several servers allows that many per server. With no object cache they count in the
+database, in samples. `api_write` and the hourly caps always count in the database.
 
 IPv6 addresses count by their `/64`. An IPv4-mapped IPv6 address counts as that IPv4 client.
 

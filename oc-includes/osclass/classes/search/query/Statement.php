@@ -165,6 +165,29 @@ final class Statement
     }
 
     /**
+     * Whether each row is a different listing: one FROM table, joins only to the given
+     * one-row-per-listing tables, and no GROUP BY.
+     *
+     * @param string ...$oneToOne
+     *
+     * @return bool
+     */
+    public function onePerListing(string ...$oneToOne): bool
+    {
+        if (count($this->from) !== 1 || $this->groupBy !== array()) {
+            return false;
+        }
+        foreach ($this->join as $join) {
+            $table = (string)preg_replace('/^.*?JOIN (\S+) ON .*$/s', '$1', $join);
+            if (!in_array($table, $oneToOne, true)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Add GROUP BY columns; a string is split on commas.
      *
      * @param string|array<int,string> $by

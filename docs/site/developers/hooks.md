@@ -366,7 +366,7 @@ Core fires 555 names. Generated from the source; do not edit by hand.
 | `deactivate_item` | action | `$id` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `delete_item` | action | `$id` | `oc-includes/osclass/classes/model/Item.php` |
 | `disable_item` | action | `$id` | `oc-includes/osclass/classes/listing/ListingService.php` |
-| `edited_item` | action | `\Item::getInstance()->findByPrimaryKey($aItem['idItem'])` | `oc-includes/osclass/classes/listing/ListingService.php` |
+| `edited_item` | action | `$edited` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `enable_item` | action | `$id` | `oc-includes/osclass/classes/listing/ListingService.php` |
 | `filters_manage_item_search` | action | none | `oc-admin/themes/modern/items/index.php` |
 | `init_item` | action | none | `oc-includes/osclass/classes/controller/CWebItem.php` |

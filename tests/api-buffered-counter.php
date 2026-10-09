@@ -9,16 +9,17 @@
  */
 
 /**
- * The APCu rate counter: counts in memory, writes to the database at most every few seconds,
- * keeps the limit exact, and falls back to the database when the store fails. Without APCu,
- * plain buckets write in samples and exact ones on every request. DB-free.
- * Usage: php tests/api-apcu-counter.php
+ * The buffered rate counter: counts in the object cache, writes to the database at most every few
+ * seconds, keeps the limit exact, and falls back to the database when the store fails. Without an
+ * object cache, plain buckets write in samples and exact ones on every request. DB-free.
+ * Usage: php tests/api-buffered-counter.php
  */
 
 require_once __DIR__ . '/lib/api-boot.php';
 require_once __DIR__ . '/lib/test-clock.php';
 
-use mindstellar\api\ratelimit\ApcuCounter;
+use mindstellar\api\ratelimit\BufferedCounter;
+use mindstellar\api\ratelimit\CacheStore;
 use mindstellar\api\ratelimit\CounterStore;
 use mindstellar\api\ratelimit\RateBucket;
 use mindstellar\api\ratelimit\RateLimiter;
@@ -58,6 +59,85 @@ final class ArrayStore implements CounterStore
     }
 }
 
+/** An object cache driver held in memory, named like the driver it stands in for. */
+final class MemoryCacheDriver implements iObject_Cache
+{
+    public array $data = [];
+    public bool $down = false;
+
+    public function __construct(private string $name = 'memcached')
+    {
+    }
+
+    public static function is_supported()
+    {
+        return true;
+    }
+
+    public function add($key, $data, $expire = 0)
+    {
+        if ($this->down || isset($this->data[$key])) {
+            return false;
+        }
+        $this->data[$key] = $data;
+
+        return true;
+    }
+
+    public function set($key, $data, $expire = 0)
+    {
+        $this->data[$key] = $data;
+
+        return true;
+    }
+
+    public function get($key, &$found = null)
+    {
+        $found = !$this->down && isset($this->data[$key]);
+
+        return $found ? $this->data[$key] : false;
+    }
+
+    public function increment($key, $by = 1, $initial = 0, $expire = 0)
+    {
+        if ($this->down) {
+            return $initial;
+        }
+        if (!isset($this->data[$key])) {
+            return $this->data[$key] = $initial;
+        }
+
+        return $this->data[$key] += $by;
+    }
+
+    public function delete($key)
+    {
+        unset($this->data[$key]);
+
+        return true;
+    }
+
+    public function flush()
+    {
+        $this->data = [];
+
+        return true;
+    }
+
+    public function stats()
+    {
+    }
+
+    public function _get_cache()
+    {
+        return $this->name;
+    }
+
+    public function __destruct()
+    {
+    }
+}
+
 $store   = new ArrayStore();
 $now     = &$store->now;
 $clock   = new TestClock(static function () use (&$now): int {
@@ -65,7 +145,7 @@ $clock   = new TestClock(static function () use (&$now): int {
 });
 $writes  = [];
 $reads   = 0;
-$counter = new ApcuCounter(
+$counter = new BufferedCounter(
     $store,
     $clock,
     static function (string $c, string $k, int $by, int $w) use (&$writes): ?int {
@@ -115,19 +195,38 @@ pin('the 4th request is refused, remaining stops at 0', [[true, 2], [true, 1], [
 
 harness_section('install prefix');
 $a = new ArrayStore();
-$b = new ApcuCounter($a, $clock, static fn (): ?int => null, static fn (): int => 0, 'siteA');
+$b = new BufferedCounter($a, $clock, static fn (): ?int => null, static fn (): int => 0, 'siteA');
 $b->increment('api', 'k', 60);
 pin('every memory key carries the install prefix', [], array_values(array_filter(array_keys($a->data), static fn (string $k): bool => !str_starts_with($k, 'osc_rl:siteA:'))));
-$c = new ApcuCounter($a, $clock, static fn (): ?int => null, static fn (): int => 0, 'siteB');
+$c = new BufferedCounter($a, $clock, static fn (): ?int => null, static fn (): int => 0, 'siteB');
 pin('another install sharing the store counts from 1', 1, $c->increment('api', 'k', 60));
 pin('the install prefix is 12 characters, and differs per database', [12, false], [strlen(RateLimiter::installPrefix('oc_', 'a', 'https://a.test/')), RateLimiter::installPrefix('oc_', 'a', 'https://a.test/') === RateLimiter::installPrefix('oc_', 'b', 'https://a.test/')]);
+
+harness_section('the object cache as the store');
+$shared = new MemoryCacheDriver('memcached');
+$noDb   = static fn (): ?int => null;
+pin('memcached and apcu drivers hold counts; the per-request default does not', [true, true, null], [CacheStore::of($shared) !== null, CacheStore::of(new MemoryCacheDriver('apcu')) !== null, CacheStore::of(new MemoryCacheDriver('default'))]);
+$serverA = new RateLimiter([new BufferedCounter(CacheStore::of($shared), $clock, $noDb, $noDb, 'site'), 'increment'], $clock);
+$serverB = new RateLimiter([new BufferedCounter(CacheStore::of($shared), $clock, $noDb, $noDb, 'site'), 'increment'], $clock);
+$bucket  = new RateBucket('api_anon', '1.2.3.4', 4, 60);
+$left    = [];
+foreach ([$serverA, $serverB, $serverA, $serverB, $serverA] as $server) {
+    $left[] = $server->hit($bucket)->remaining();
+}
+pin('two servers share one count and the fifth request is refused', [[3, 2, 1, 0, 0], false], [$left, $serverB->hit($bucket)->allowed()]);
+$shared->down = true;
+$fellBack     = 0;
+$downCounter  = new BufferedCounter(CacheStore::of($shared), $clock, $noDb, static function () use (&$fellBack): int {
+    return ++$fellBack;
+}, 'site');
+pin('a cache server that is down falls back to the database counter', [1, 1], [$downCounter->increment('api', 'k', 60), $fellBack]);
 
 harness_section('seeding from the database');
 $fresh   = new ArrayStore();
 $fresh->now = $now;
 $seeds   = 0;
 $flushed = [];
-$seeded  = new ApcuCounter(
+$seeded  = new BufferedCounter(
     $fresh,
     $clock,
     static function (string $c, string $k, int $by) use (&$flushed): ?int {
@@ -178,7 +277,7 @@ pin(
     $exactOf(array_merge([$policy->signUp('1.2.3.4'), $policy->signUpSite()], $policy->newListing(1, '1.2.3.4'), [$policy->photoFetch(1)]))
 );
 
-harness_section('sampled counting without APCu');
+harness_section('sampled counting without an object cache');
 $stored  = 0;
 $adds    = 0;
 $sampled = new SampledCounter(

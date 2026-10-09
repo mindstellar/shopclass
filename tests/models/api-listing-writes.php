@@ -414,8 +414,23 @@ $r      = $call('PATCH', 'listings/' . $heldId, array('price' => '1300'), $sueTo
 pin('a live listing\'s edit has no warning', array(200, array()), array($r->status(), $r->body()['warnings'] ?? array()));
 Preference::getInstance()->set('moderate_admin_edit', '1');
 osc_reset_preferences();
+$heldArgs = array();
+foreach (array('item_decrease_stat', 'edited_item') as $hook) {
+    osc_add_hook($hook, static function ($item) use (&$heldArgs, $hook): void {
+        $heldArgs[$hook] = $item;
+    });
+}
 $r = $call('PATCH', 'listings/' . $heldId, array('price' => '1400'), $sueToken);
 pin('an edit held for the admin\'s approval disables the listing and warns that it is pending', array(200, 'disabled', 'listing_pending'), array($r->status(), $r->body()['data']['status'] ?? null, $r->body()['warnings'][0]['code'] ?? null));
+$heldRead = Item::newInstance()->findByPrimaryKey($heldId);
+pin('...and item_decrease_stat and edited_item get the disabled listing as a fresh read gives it', array($heldRead, $heldRead), array($heldArgs['item_decrease_stat'] ?? null, $heldArgs['edited_item'] ?? null));
+Preference::getInstance()->set('moderate_admin_edit', '0');
+Preference::getInstance()->set('moderate_admin_post', '1');
+osc_reset_preferences();
+$heldArgs = array();
+$heldPost = (int) ($call('POST', 'listings', $listing(array('title' => 'Held estate')), $sueToken)->body()['data']['id'] ?? 0);
+pin('a post held for the admin gives item_decrease_stat the disabled listing as a fresh read gives it', Item::newInstance()->findByPrimaryKey($heldPost), $heldArgs['item_decrease_stat'] ?? null);
+Preference::getInstance()->set('moderate_admin_post', '0');
 Preference::getInstance()->set('moderate_admin_edit', '0');
 osc_reset_preferences();
 $r = $call('PATCH', 'listings/' . $pendingId, array('price' => '950'), $sueToken);
@@ -442,7 +457,11 @@ pin('past the hourly cap it is 429, as there is no captcha', '429 rate_limited',
 unset($GLOBALS['lw_limiter']);
 
 harness_section('editing a listing');
-$fired = array();
+$fired     = array();
+$editedArg = null;
+osc_add_hook('edited_item', static function ($item) use (&$editedArg): void {
+    $editedArg = $item;
+});
 $r     = $call('PATCH', 'listings/' . $made, array('price' => '1200'), $sueToken);
 pin('PATCH answers the saved listing', array(200, '1200.00'), array($r->status(), $r->body()['data']['price']['amount'] ?? null));
 pin('members not sent keep their values', array('Red hatchback', 'A small red car, one owner, full service history.', '5550199', 'red', (string) $city, 'USD'), array(
@@ -454,12 +473,14 @@ pin('members not sent keep their values', array('Red hatchback', 'A small red ca
     $itemRow($made)['fk_c_currency_code'],
 ));
 pin('edited_item fires once', 1, $fired['edited_item'] ?? 0);
+pin('...with the listing as a fresh read gives it, built from the locked row', Item::newInstance()->findByPrimaryKey($made), $editedArg);
 pin('matches the schema', array(), $schemaErrors('SavedListing', $r));
 $r = $call('PATCH', 'listings/' . $made, array('title' => 'Red hatchback with new tyres', 'custom_fields' => array((string) $colour => 'crimson'), 'price' => null), $sueToken);
 pin('what is sent changes; a null price removes it', array('Red hatchback with new tyres', 'crimson', null, null), array(
     $r->body()['data']['title'] ?? null, $admin->query("SELECT s_value FROM {$p}t_item_meta WHERE fk_i_item_id = $made")->fetch_row()[0],
     array_key_exists('price', $r->body()['data'] ?? array()) ? $r->body()['data']['price'] : 'x', $itemRow($made)['i_price'],
 ));
+pin('...and edited_item has the new title and no price', Item::newInstance()->findByPrimaryKey($made), $editedArg);
 pin('another seller\'s live listing is 403 not_owner', '403 not_owner', $code($call('PATCH', 'listings/' . $made, array('price' => '1'), $tomToken)));
 pin('another seller\'s pending listing is 404', 404, $call('PATCH', 'listings/' . $pendingId, array('price' => '1'), $tomToken)->status());
 pin('an unknown listing is 404', 404, $call('PATCH', 'listings/999999', array('price' => '1'), $sueToken)->status());
@@ -795,13 +816,13 @@ $qPost = harness_query_count(static function () use ($call, $listing, $sueToken,
 $qPatch = harness_query_count(static fn () => $call('PATCH', 'listings/' . $qMade, array('price' => '999'), $sueToken));
 echo "  POST /listings: $qPost queries, PATCH: $qPatch\n";
 pin('POST /listings, no photos: 31 queries (one checks the sign-in is live, one the places; ban rules come from the cache)', 31, $qPost);
-pin('PATCH /listings/{id}, no photos: 25 queries (an unchanged location and custom field are not rewritten)', 25, $qPatch);
+pin('PATCH /listings/{id}, no photos: 24 queries (an unchanged location and custom field are not rewritten; edited_item reuses the locked row)', 24, $qPatch);
 $qGet     = harness_query_count(static fn () => $call('GET', 'listings/' . $qMade, null, $sueToken));
 $qEtag    = (string) $call('GET', 'listings/' . $qMade, null, $sueToken)->header('ETag');
 $qMatched = harness_query_count(static fn () => $call('PATCH', 'listings/' . $qMade, array('price' => '998'), $sueToken, array('If-Match' => $qEtag)));
 echo "  GET /listings/{id} as its owner: $qGet queries, PATCH with If-Match: $qMatched\n";
 pin('GET /listings/{id} as its owner: 7 queries (sign-in, row version for the ETag, t_item, texts, stats and location, photos, seller)', 7, $qGet);
-pin('PATCH with If-Match: 34 queries, the 25 plus the owner check, 5 locked row hashes (photos too), the new version and the outer transaction', 34, $qMatched);
+pin('PATCH with If-Match: 33 queries, the 24 plus the owner check, 5 locked row hashes (photos too), the new version and the outer transaction', 33, $qMatched);
 
 $writes = static function (): array {
     $db  = DBConnectionClass::newInstance()->getOsclassDb();

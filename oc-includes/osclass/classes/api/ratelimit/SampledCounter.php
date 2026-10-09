@@ -13,7 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\api\ratelimit;
 
 /**
- * Counts requests in the database without writing on each one, for servers with no APCu. One
+ * Counts requests in the database without writing on each one, for sites with no object cache. One
  * request in 2 or 4 adds that many to the stored count, so it is right on average but never exact.
  */
 final class SampledCounter

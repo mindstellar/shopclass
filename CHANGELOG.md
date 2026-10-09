@@ -49,11 +49,13 @@ Plugin authors should read the Breaking section before upgrading.
 
 ### Performance
 
-- The API counts requests in APCu when it is available. Write and hourly caps count in the database.
+- The API counts requests in the object cache set by `OSC_CACHE`; with memcached all web servers share one count. Write and hourly caps count in the database.
 - The market catalogue cache moved out of the site preferences, which every page loads (about 140 KB on a site that has browsed the market).
 - Photo URLs in an API listing write download at the same time, not one after another, within 30 seconds in all.
 - Saving a listing whose expiry did not change no longer rewrites it.
 - API listings sorted by `price` page by cursor, not offset, and cursors last a week.
+- A listing edit hands `edited_item` the row it locked with the edit on it, instead of reading the listing again.
+- The "with photos" search checks each listing's photos directly instead of joining every photo and grouping.
 
 ### Changed
 

@@ -145,7 +145,7 @@ jobs:
       - name: API listing form
         run: php tests/api-listing-body.php
       - name: API request counter
-        run: php tests/api-apcu-counter.php
+        run: php tests/api-buffered-counter.php
       - name: Account form input
         run: php tests/account-input.php
       - name: Status flag order

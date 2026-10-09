@@ -22,7 +22,7 @@ use mindstellar\security\AddressBucket;
 /**
  * Every rate limit the API counts, in one place: per address, key or user, plus a write bucket.
  * Hourly caps on new listings, URL photo fetches and sign-ups are exact, counted in the database
- * and never in APCu.
+ * and never in the object cache.
  */
 final class RatePolicy
 {

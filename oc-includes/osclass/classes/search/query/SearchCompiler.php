@@ -86,9 +86,9 @@ final class SearchCompiler
             $parts->locations->apply($s);
         }
         if ($parts->withPicture) {
-            $s->join($p . 't_item_resource', $p . 't_item_resource.fk_i_item_id = ' . $p . 't_item.pk_i_id', 'LEFT');
-            $s->where($p . "t_item_resource.s_content_type LIKE '%image%' ");
-            $s->groupBy($p . 't_item.pk_i_id');
+            // A per-listing lookup that stops at the first photo; EXISTS would be planned as a scan of every photo.
+            $s->where('(SELECT 1 FROM ' . $p . 't_item_resource WHERE ' . $p . 't_item_resource.fk_i_item_id = ' . $p
+                . "t_item.pk_i_id AND " . $p . "t_item_resource.s_content_type LIKE '%image%' LIMIT 1) IS NOT NULL");
         }
         if ($parts->onlyPremium) {
             $s->where($p . 't_item.b_premium = 1');
@@ -103,6 +103,10 @@ final class SearchCompiler
         }
         if ($dao !== null) {
             $s->mergeDao($dao, $count);
+        }
+        // Grouped as before whenever another join could repeat a listing.
+        if ($parts->withPicture && !$s->onePerListing($p . 't_item_location')) {
+            $s->groupBy($p . 't_item.pk_i_id');
         }
 
         return $s->compile();

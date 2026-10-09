@@ -188,9 +188,10 @@ final class ListingService
     /**
      * Take a listing off the site for moderation. Fires `disable_item`.
      *
-     * @param int|string $id
+     * @param int|string                $id
+     * @param array<string,mixed>|null $item the listing as Item::findByPrimaryKey() gives it, when the caller has it
      */
-    public function disable(int|string $id): bool
+    public function disable(int|string $id, ?array $item = null): bool
     {
         $result = $this->items->update(
             array('b_enabled' => 0),
@@ -200,7 +201,11 @@ final class ListingService
         // updated correctly
         if ($result == 1) {
             osc_run_hook('disable_item', $id);
-            $item = $this->items->findByPrimaryKey($id);
+            if ($item === null) {
+                $item = $this->items->findByPrimaryKey($id);
+            } else {
+                $item['b_enabled'] = '0';
+            }
             if (osc_item_is_counted(array('b_enabled' => 1) + $item)) {
                 ListingStats::decrease($item);
             }
@@ -802,7 +807,7 @@ final class ListingService
         }
 
         if ((!$actor->isAdmin() || $import) && osc_moderate_admin_post()) {
-            $this->disable($item['pk_i_id']);
+            $this->disable($item['pk_i_id'], $item);
         }
 
         // Listeners may read the new listing through osc_item_*().
@@ -824,9 +829,9 @@ final class ListingService
         $aItem['cityArea'] = self::place($aItem['cityArea']);
         $aItem['address']  = self::place($aItem['address']);
 
-        // Only the columns the stats and expiry below compare, read before anything is written.
+        // The whole row, read before anything is written; edited_item gets it back with the edit on it.
         // Locking the listing row first keeps the lock order of an If-Match edit, so the two cannot deadlock.
-        $old_item = ListingStore::find($aItem['idItem'], array('fk_i_user_id', 'fk_i_category_id', 'b_enabled', 'b_active', 'b_spam', 'b_premium', 'dt_pub_date', 'dt_expiration'), true);
+        $old_item = ListingStore::find($aItem['idItem'], array('*'), true);
         $old_item = $old_item === null ? array() : Db::stringifyRow($old_item);
 
         // Validate
@@ -872,11 +877,7 @@ final class ListingService
             }
         }
 
-        if ($aItem['userId']) {
-            $user                  = \User::getInstance()->findByPrimaryKey($aItem['userId']);
-            $aItem['contactName']  = $user['s_name'];
-            $aItem['contactEmail'] = $user['s_email'];
-        } else {
+        if (!$aItem['userId']) {
             $aItem['userId'] = null;
         }
 
@@ -895,6 +896,11 @@ final class ListingService
 
         // only can change the user if you're an admin
         if ($actor->isAdmin()) {
+            if ($aItem['userId']) {
+                $user                  = \User::getInstance()->findByPrimaryKey($aItem['userId']);
+                $aItem['contactName']  = $user['s_name'];
+                $aItem['contactEmail'] = $user['s_email'];
+            }
             $aUpdate['fk_i_user_id']    = $aItem['userId'];
             $aUpdate['s_contact_name']  = $aItem['contactName'];
             $aUpdate['s_contact_email'] = $aItem['contactEmail'];
@@ -943,17 +949,41 @@ final class ListingService
             $location
         );
 
+        // The locked row with the edit on it, when the update wrote exactly that row; else it is read again.
+        $edited = $result === 1 && $old_item !== array()
+            ? \Item::getInstance()->extendRows(array(self::editedRow($old_item, $aUpdate, $dt_expiration)))[0]
+            : \Item::getInstance()->findByPrimaryKey($aItem['idItem']);
+
         $held = (!$actor->isAdmin() || $import) && osc_moderate_admin_edit();
-        if ($held) {
-            $this->disable($aItem['idItem']);
+        if ($held && $this->disable($aItem['idItem'], $edited ?: null) && $edited) {
+            $edited['b_enabled'] = '0';
         }
 
-        osc_run_hook('edited_item', \Item::getInstance()->findByPrimaryKey($aItem['idItem']));
+        osc_run_hook('edited_item', $edited);
 
         // Pending as on a new listing: it still waits for activation, or the edit waits for the admin.
         $pending = $held || ($old_item !== array() && ListingStatus::of($old_item) === ListingStatus::PENDING);
 
         return new SavedListing((int) $aItem['idItem'], $pending, $result === false ? false : (int) $result);
+    }
+
+    /**
+     * The stored row with an update's values on it, as the columns hold them.
+     *
+     * @param array<string,string|null> $row
+     * @param array<string,mixed>       $update
+     *
+     * @return array<string,string|null>
+     */
+    private static function editedRow(array $row, array $update, ?string $expiration): array
+    {
+        foreach (array('fk_i_category_id', 'i_price') as $column) {
+            if (is_numeric($update[$column] ?? null)) {
+                $update[$column] = (int) round((float) $update[$column]);
+            }
+        }
+
+        return Db::stringifyRow(array_merge($row, $update, array('dt_expiration' => $expiration)));
     }
 
     /**
