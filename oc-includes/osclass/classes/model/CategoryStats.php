@@ -87,30 +87,28 @@ class CategoryStats extends DAO
         // text succeeds.
         $categoryId = (int)$categoryId;
 
+        // The category and every ancestor, counted in one statement.
+        $ids = array();
+        for ($id = $categoryId; $id > 0 && !in_array($id, $ids, true);) {
+            $ids[]  = $id;
+            $result = Category::getInstance()->findByPrimaryKey($id);
+            $id     = isset($result['fk_i_parent_id']) ? (int)$result['fk_i_parent_id'] : 0;
+        }
+        if ($ids === array()) {
+            return false;
+        }
+
         $sql = 'INSERT INTO ' . $this->getTableName()
-            . ' (fk_i_category_id, i_num_items) VALUES (?, 1)
-               ON DUPLICATE KEY UPDATE i_num_items = i_num_items + 1';
+            . ' (fk_i_category_id, i_num_items) VALUES ' . implode(', ', array_fill(0, count($ids), '(?, 1)'))
+            . ' ON DUPLICATE KEY UPDATE i_num_items = i_num_items + 1';
 
         try {
-            Db::execute($sql, array($categoryId));
-            $return = true;
+            Db::execute($sql, $ids);
         } catch (\mindstellar\database\DbException $e) {
-            $return = false;
+            return false;
         }
 
-        // Runs unconditionally, exactly as legacy did: the && below only
-        // short-circuits the recursive add, not this lookup.
-        $result = Category::getInstance()->findByPrimaryKey($categoryId);
-        if (($return !== false) && $result['fk_i_parent_id'] != null) {
-            $parent_res = $this->increaseNumItems($result['fk_i_parent_id']);
-            if ($parent_res !== false) {
-                $return += $parent_res;
-            } else {
-                $return = false;
-            }
-        }
-
-        return $return;
+        return count($ids) === 1 ? true : count($ids);
     }
 
     /**

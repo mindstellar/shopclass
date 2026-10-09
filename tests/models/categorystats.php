@@ -23,10 +23,8 @@
  *    root-only call returns bool true, but a call with n ancestors returns
  *    int (n + 1) on success — the "number of affected rows" the docblock
  *    claims is really a level count, not a row count.
- *  - increaseNumItems() calls Category::findByPrimaryKey($categoryId)
- *    UNCONDITIONALLY, even when its own write already failed — the `&&`
- *    short-circuit only skips the recursive *add*, not the lookup. A
- *    foreign-key rejection therefore still costs a second query.
+ *  - increaseNumItems() reads the parent chain first, then counts every level
+ *    in one INSERT. An unknown category costs its lookup and the failed insert.
  *  - increaseNumItems() truncates its category id through a raw `sprintf('%d',
  *    ...)` before ever building SQL, so a non-integer numeric string
  *    ("1.7") referencing a real category succeeds. Binding that same string
@@ -270,9 +268,8 @@ pin('a rejected category id costs no queries at all', 0, harness_query_count(sta
  * increaseNumItems() — a well-formed, numeric id that does not reference a
  * real category. t_category_stats carries a FOREIGN KEY on fk_i_category_id,
  * so the INSERT ... ON DUPLICATE KEY UPDATE fails at the database. The
- * Category::findByPrimaryKey() lookup still runs afterward (the && only
- * short-circuits the recursive add, not the lookup itself), so this costs
- * TWO queries even though it returns false.
+ * Category::findByPrimaryKey() lookup runs first, so this costs TWO queries
+ * even though it returns false.
  * ------------------------------------------------------------------------- */
 harness_section('increaseNumItems — well-formed, unknown category id');
 
@@ -287,7 +284,7 @@ $cost = harness_query_count(static function () use ($model) {
     $model->increaseNumItems(999999);
 });
 error_reporting($prevLevel);
-pin('the failed insert PLUS the unconditional Category lookup costs two queries', 2, $cost);
+pin('the Category lookup PLUS the failed insert costs two queries', 2, $cost);
 
 /* ----------------------------------------------------------------------------
  * increaseNumItems() — a root category (no parent): the recursion never
@@ -329,7 +326,7 @@ pin('the leaf is untouched by a call that never reaches it', '2', $rowFor($incLe
 
 harness_section('increaseNumItems — query cost of a three-level chain');
 
-pin('a three-level increase costs exactly three queries (one insert per level)', 3, harness_query_count(
+pin('a three-level increase costs one query (one insert for every level)', 1, harness_query_count(
     static function () use ($model, $incLeaf) {
         $model->increaseNumItems($incLeaf);
     }
