@@ -404,11 +404,12 @@ class Validate
      */
     private static function answers(string $url): bool
     {
-        if (!(new AddressGuard())->check($url)['ok']) {
+        $checked = (new AddressGuard())->check($url);
+        if (!$checked['ok']) {
             return false;
         }
 
-        return in_array((new FileSystem())->head($url, 3), array(200, 301, 302), true);
+        return in_array((new FileSystem())->head($url, 3, AddressGuard::curlOptions($url, $checked['ip'])), array(200, 301, 302), true);
     }
 
     /**

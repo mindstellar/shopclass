@@ -9,9 +9,9 @@
  */
 
 /**
- * Pins PatternFilter::fullTextUsable() against injected server settings: the minimum
- * token size and stopwords decide the FULLTEXT path, and OSC_FT_MIN_WORD_LEN overrides
- * the size. The real server read is pinned in tests/models/search.php.
+ * Pins PatternFilter::fullTextUsable() and booleanQuery() against injected server settings:
+ * the minimum token size and stopwords decide the FULLTEXT path and the required words,
+ * and OSC_FT_MIN_WORD_LEN overrides the size. The real server read is pinned in tests/models/search.php.
  *   php tests/search-fulltext.php
  */
 
@@ -48,6 +48,20 @@ pin('a stopword next to a real word uses FULLTEXT', true, $usable('the sedan'));
 pin('an excluded real word does not count', false, $usable('the -sedan'));
 pin('a quoted phrase still uses FULLTEXT', true, $usable('"the"'));
 pin('an empty pattern still uses FULLTEXT', true, $usable(''));
+
+harness_section('PatternFilter: the BOOLEAN MODE query');
+$query = static function (string $pattern) {
+    $f = new PatternFilter();
+    $f->set($pattern);
+
+    return $f->booleanQuery();
+};
+pin('a stopword next to a real word is not required', '+sedan*', $query('the sedan'));
+pin('a short word next to a real word is not required', '+sedan*', $query('sed sedan'));
+pin('a phrase keeps the short word out of the required list', '+"the sedan" +sedan*', $query('"the sedan" sed sedan'));
+pin('an exclusion is kept', '+sedan* -the', $query('sedan -the'));
+pin('a search without such words is unchanged', '+sedan* +coupe* -wagon', $query('sedan coupe -wagon'));
+pin('a stopword-only search keeps its words', '+the* +with*', $query('the with'));
 
 harness_section('PatternFilter: OSC_FT_MIN_WORD_LEN overrides the server');
 define('OSC_FT_MIN_WORD_LEN', 2);

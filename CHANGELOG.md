@@ -71,6 +71,7 @@ Plugin authors should read the Breaking section before upgrading.
 - Shared core classes are reached with `getInstance()`. `newInstance()` and `instance()` still work but are deprecated.
 - Listing counts per country, region and city are recounted once a week as background jobs, instead of a slow hourly pass; the `t_locations_tmp` table is removed.
 - The search page is split into a URI resolver and a search runner the API reuses. Its hooks and filters are unchanged.
+- The installer no longer pings Google and Bing with the sitemap; both endpoints are retired.
 - A listing's API `ETag` and `If-Match` version change when its photos change.
 - Unblocking one comment e-mails its author when it goes live.
 - Enabling a category refreshes the caches that list it.
@@ -126,6 +127,7 @@ Plugin authors should read the Breaking section before upgrading.
 ### Fixed
 
 - A search made only of stopwords, or of words below the server's FULLTEXT minimum, now matches by substring instead of finding nothing.
+- A search mixing a stopword or a too-short word with real words ("about town") no longer finds nothing.
 - Passing `password` to `osc_sendMail()` no longer changes the SMTP security setting; `ssl` does.
 - The installer saves a downloaded language's files into that language's folder.
 - `Formatting::formatSlug()` gives the same slug as `osc_sanitizeString()`; its pattern was broken.

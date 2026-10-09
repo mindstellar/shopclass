@@ -63,6 +63,8 @@ $contacted = @stream_socket_accept($ftp, 0.5) !== false;
 
 harness_section('FileSystem::head');
 pin('a HEAD answers the status without following the redirect', 302, (new \mindstellar\utility\FileSystem())->head('http://127.0.0.1:' . $port . '/'));
+$pinned = 'http://pinned.invalid:' . $port . '/';
+pin('a HEAD connects to the pinned IP, not the host name', 302, (new \mindstellar\utility\FileSystem())->head($pinned, 3, \mindstellar\security\AddressGuard::curlOptions($pinned, '127.0.0.1')));
 proc_terminate($proc);
 proc_close($proc);
 pin('no server answers 0', 0, (new \mindstellar\utility\FileSystem())->head('http://127.0.0.1:' . $port . '/', 1));

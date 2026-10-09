@@ -11,7 +11,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\utility\Utils;
 use PHPMailer\PHPMailer\PHPMailer;
 
 /**
@@ -1290,8 +1289,7 @@ function is_osclass_installed()
 }
 
 /**
- * Commit the install sentinel, ping the search engines if opted in, and return the
- * credentials for the finish screen.
+ * Commit the install sentinel and return the credentials for the finish screen.
  *
  * @param string $password Plain-text admin password, echoed back for display
  *
@@ -1301,8 +1299,7 @@ function finish_installation($password)
 {
     require_once LIB_PATH . 'osclass/helpers/hPlugins.php';
 
-    // Whether the owner opted in to search-engine pings on step 2 (short-lived
-    // cookie). Read before the finalize so the pref row records the choice.
+    // The ping_search_engines preference still records the old opt-in cookie.
     $pingEngines = isset($_COOKIE['osclass_ping_engines']) && (int)$_COOKIE['osclass_ping_engines'] === 1;
 
     // Finalize in one transaction. The osclass_installed sentinel is written
@@ -1315,12 +1312,6 @@ function finish_installation($password)
         \mindstellar\database\Db::execute($replace, array('ping_search_engines', $pingEngines ? '1' : '0', 'osclass', 'BOOLEAN'));
         \mindstellar\database\Db::execute($replace, array('osclass_installed', '1', 'osclass', 'BOOLEAN'));
     });
-
-    // Network I/O never belongs inside a transaction: ping only after the
-    // finalize has committed, and only if the owner opted in.
-    if ($pingEngines) {
-        install_ping_search_engines();
-    }
 
     // Admin account for the credentials shown on the finish screen.
     $admin = \mindstellar\database\Db::table(DB_TABLE_PREFIX . 't_admin')->where('pk_i_id', 1)->first();
@@ -1353,31 +1344,6 @@ function display_database_config($form_data = null, $error = null)
 function display_target()
 {
     include_once 'installer/gui/install-target.php';
-}
-
-/**
- * Notify the major search engines that the sitemap exists. Network I/O only —
- * the ping_search_engines preference is recorded by the finalize transaction in
- * finish_installation(). Best-effort: each request is isolated so a slow or dead
- * endpoint can never block the finish screen.
- *
- * @return void
- */
-function install_ping_search_engines()
-{
-    $sitemap = urlencode(osc_search_url(array('sFeed' => 'rss')));
-    $targets = array(
-        'http://www.google.com/webmasters/sitemaps/ping?sitemap=' . $sitemap,
-        'http://www.bing.com/webmaster/ping.aspx?siteMap=' . $sitemap,
-    );
-
-    foreach ($targets as $target) {
-        try {
-            Utils::doRequest($target, array());
-        } catch (\Throwable $e) {
-            error_log('Shopclass install: search-engine ping failed: ' . $e->getMessage());
-        }
-    }
 }
 
 /**

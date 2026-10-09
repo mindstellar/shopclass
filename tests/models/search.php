@@ -726,6 +726,9 @@ $lamp = $mkItem('Lamp with shade', $catCars, 40.0, 0, $regionA, $cityA, 'Alpha',
 $s = new Search();
 $s->addPattern('with');
 pin('a stopword-only search falls back and finds the listing', array($lamp), $sorted($ids($s->doSearch())));
+$s = new Search();
+$s->addPattern('about lamp');
+pin('a stopword next to a real word does not empty the search', array($lamp), $sorted($ids($s->doSearch())));
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

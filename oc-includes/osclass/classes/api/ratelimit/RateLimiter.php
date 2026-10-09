@@ -56,7 +56,7 @@ final class RateLimiter
         if ($store === null) {
             return self::sampled($clock);
         }
-        [$db, $add, $count] = self::counters();
+        [$db, $add, $count] = self::counters($clock);
         $counter = new BufferedCounter($store, $clock, $add, $db, seed: $count);
 
         return new self([$counter, 'increment'], $clock, $db, $add);
@@ -69,22 +69,22 @@ final class RateLimiter
      */
     public static function sampled(Clock $clock, ?callable $draw = null): self
     {
-        [$db, $add, $count] = self::counters();
+        [$db, $add, $count] = self::counters($clock);
 
         return new self([new SampledCounter($add, $count, $draw), 'increment'], $clock, $db, $add);
     }
 
     /**
-     * RateLimit's increment, add and count.
+     * RateLimit's increment, add and count, on the limiter's clock.
      *
      * @return array{0:\Closure,1:\Closure,2:\Closure}
      */
-    private static function counters(): array
+    private static function counters(Clock $clock): array
     {
         return [
-            static fn (string $context, string $key, int $window, int $limit = 0): ?int => RateLimit::increment($context, $key, $window),
-            static fn (string $context, string $key, int $by, int $window): ?int => RateLimit::add($context, $key, $by, $window),
-            static fn (string $context, string $key, int $window): ?int => RateLimit::count($context, $key, $window),
+            static fn (string $context, string $key, int $window, int $limit = 0): ?int => RateLimit::increment($context, $key, $window, true, $clock->now()),
+            static fn (string $context, string $key, int $by, int $window): ?int => RateLimit::add($context, $key, $by, $window, true, $clock->now()),
+            static fn (string $context, string $key, int $window): ?int => RateLimit::count($context, $key, $window, $clock->now()),
         ];
     }
 

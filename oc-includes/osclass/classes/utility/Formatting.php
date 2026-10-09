@@ -525,25 +525,15 @@ class Formatting
     }
 
     /**
-     * Format username.
-     * Remove all special characters except . and _ and replace spaces with _
+     * Format a username by the one rule in Sanitize::username().
      *
-     * @param string $value value to format
+     * @param mixed $value value to format
      *
      * @return string formatted
      */
     public function username($value)
     {
-        $value = trim($value);
-        // remove all special characters with space except . and space
-        $value = preg_replace('/[^a-zA-Z0-9\s\._]/', ' ', $value);
-        // remove double spaces and trim after that
-        $value = preg_replace('/\s\s+/', ' ', $value);
-        $value = trim($value);
-        // replace spaces with _
-        $value = str_replace(' ', '_', $value);
-
-        return $value;
+        return (new Sanitize())->username($value);
     }
 
     /**

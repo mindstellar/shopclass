@@ -255,7 +255,7 @@ final class ApiServices
     {
         return $this->once(__FUNCTION__, fn (): Authenticator => new Authenticator(
             $this->access()->keys(),
-            new FailureCounter(),
+            new FailureCounter(clock: $this->clock),
             $this->accessTokens(),
             new PageTokenAuth($this->pageTokens(), $this->users, $this->scopes, SiteOrigin::fromSite()),
             fn (int $id, string $ip): bool => ($user = $this->users->find($id)) !== null && PageTokenAuth::bannedOnSite($user, $ip)
@@ -373,7 +373,7 @@ final class ApiServices
 
     private function accessTokens(): AccessTokens
     {
-        return $this->once(__FUNCTION__, fn (): AccessTokens => new AccessTokens($this->scopes, $this->users));
+        return $this->once(__FUNCTION__, fn (): AccessTokens => new AccessTokens($this->scopes, $this->users, clock: $this->clock));
     }
 
     public function refreshTokens(): RefreshTokens

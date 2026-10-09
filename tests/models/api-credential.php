@@ -31,6 +31,8 @@ use mindstellar\apiaccess\KeyOwner;
 use mindstellar\apiaccess\Scopes;
 use mindstellar\apiaccess\StoredKey;
 use mindstellar\model\ApiCredential;
+use mindstellar\security\RateLimit;
+use mindstellar\utility\Clock;
 use mindstellar\utility\SystemClock;
 
 $admin = scratchdb_session('osc_models_api_credential');
@@ -146,6 +148,15 @@ pin('after the marker clears, the failure check runs again: 3 queries', 3, $keye
 $bucket   = new RateBucket('api_key', 'sampled-' . $made->id(), 120);
 $sampled  = static fn (bool $writes): int => harness_query_count(static fn () => RateLimiter::sampled(new SystemClock(), static fn (): bool => $writes)->hit($bucket));
 pin('without APCu a bucket costs one query per request: the sampled write, or the read between writes', [1, 1], [$sampled(true), $sampled(false)]);
+$past   = new class () implements Clock {
+    public function now(): int
+    {
+        return 1000000000;
+    }
+};
+$pastKey = 'clock-' . $made->id();
+RateLimiter::sampled($past)->hit(new RateBucket('api_key', $pastKey, 120, 120, true));
+pin('the limiter counts on its own clock', [1, 0], [RateLimit::count('api_key', $pastKey, 120, 1000000000), RateLimit::count('api_key', $pastKey, 120)]);
 
 $keys->revoke($made->id());
 pin('a revoked key fails', null, $keys->check($made->token())->credential());

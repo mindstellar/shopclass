@@ -37,6 +37,7 @@ use mindstellar\utility\Sanitize;
 harness_section('Sanitize::username() keeps dots');
 
 pin('a dotted username is kept as-is', 'john.doe', (new Sanitize())->username('john.doe'));
+pin('Formatting::username() forwards to it', (new Sanitize())->username(' Jo-hn  doe.x '), (new \mindstellar\utility\Formatting())->username(' Jo-hn  doe.x '));
 
 harness_section('front-end username controllers call Sanitize::username(), not osc_sanitize_username()');
 

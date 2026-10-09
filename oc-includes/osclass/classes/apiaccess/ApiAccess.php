@@ -151,7 +151,7 @@ final class ApiAccess
      */
     public function pageTokens(): PageTokens
     {
-        return $this->once(__FUNCTION__, static fn (): PageTokens => new PageTokens());
+        return $this->once(__FUNCTION__, fn (): PageTokens => new PageTokens(clock: $this->clock));
     }
 
     /**

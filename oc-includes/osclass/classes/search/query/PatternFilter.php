@@ -17,8 +17,8 @@ use mindstellar\database\Db;
 /**
  * The keyword filter and the description locales it searches.
  *
- * Every word becomes a required prefix term, a quoted phrase a required phrase and
- * -word an exclusion, in FULLTEXT BOOLEAN MODE. When no term can be indexed (each is
+ * Every indexable word becomes a required prefix term, a quoted phrase a required phrase
+ * and -word an exclusion, in FULLTEXT BOOLEAN MODE. When no term can be indexed (each is
  * shorter than the server's minimum token size or is an InnoDB stopword) it matches by
  * substring instead.
  */
@@ -139,16 +139,29 @@ final class PatternFilter
         if ($phrases !== array()) {
             return true;
         }
-        $server = self::serverSettings();
-        $min    = defined('OSC_FT_MIN_WORD_LEN') ? max(1, (int)OSC_FT_MIN_WORD_LEN) : $server['min'];
         foreach ($words as $w) {
-            $lower = function_exists('mb_strtolower') ? mb_strtolower($w['text'], 'UTF-8') : strtolower($w['text']);
-            if (!$w['neg'] && $this->length($w['text']) >= $min && !isset($server['stop'][$lower])) {
+            if (!$w['neg'] && $this->indexable($w['text'])) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * Whether the FULLTEXT index can hold the word: long enough and not a stopword.
+     *
+     * @param string $word
+     *
+     * @return bool
+     */
+    private function indexable(string $word): bool
+    {
+        $server = self::serverSettings();
+        $min    = defined('OSC_FT_MIN_WORD_LEN') ? max(1, (int)OSC_FT_MIN_WORD_LEN) : $server['min'];
+        $lower  = function_exists('mb_strtolower') ? mb_strtolower($word, 'UTF-8') : strtolower($word);
+
+        return $this->length($word) >= $min && !isset($server['stop'][$lower]);
     }
 
     /**
@@ -202,8 +215,14 @@ final class PatternFilter
         foreach ($phrases as $phrase) {
             $tokens[] = '+"' . $phrase . '"';
         }
+        // A required word the index cannot hold would match nothing, so it is left out unless nothing else is required.
+        $skip = $this->fullTextUsable();
         foreach ($words as $w) {
-            $tokens[] = $w['neg'] ? '-' . $w['text'] : '+' . $w['text'] . '*';
+            if ($w['neg']) {
+                $tokens[] = '-' . $w['text'];
+            } elseif (!$skip || $this->indexable($w['text'])) {
+                $tokens[] = '+' . $w['text'] . '*';
+            }
         }
         if ($tokens === array()) {
             return SqlValue::bind($this->given);

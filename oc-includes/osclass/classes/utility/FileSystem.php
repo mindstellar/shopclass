@@ -718,12 +718,13 @@ class FileSystem
      * The status code a HEAD request for $url answers, without following redirects; 0 when
      * there is no answer.
      *
-     * @param string $url
-     * @param int    $timeout seconds for the whole request
+     * @param string             $url
+     * @param int                $timeout seconds for the whole request
+     * @param array<int,mixed>   $curlOptions extra cURL options, such as AddressGuard::curlOptions() to pin the checked IP
      *
      * @return int
      */
-    public function head(string $url, int $timeout = 3): int
+    public function head(string $url, int $timeout = 3, array $curlOptions = array()): int
     {
         if (!Curl::available()) {
             return 0;
@@ -733,7 +734,7 @@ class FileSystem
             CURLOPT_NOBODY         => true,
             CURLOPT_FOLLOWLOCATION => false,
             CURLOPT_CONNECTTIMEOUT => min(5, $timeout),
-        ));
+        ) + $curlOptions);
         $ok     = curl_exec($ch) !== false;
         $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
         unset($ch);
