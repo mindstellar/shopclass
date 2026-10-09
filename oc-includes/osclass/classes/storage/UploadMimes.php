@@ -19,8 +19,21 @@ namespace mindstellar\storage;
  */
 final class UploadMimes
 {
+    /** The image types an upload may be, by extension. Uploads are always photos. */
+    private const IMAGE_MIMES = [
+        'bmp'  => ['image/bmp'],
+        'gif'  => ['image/gif'],
+        'jpeg' => ['image/jpeg', 'image/pjpeg'],
+        'jpg'  => ['image/jpeg', 'image/pjpeg'],
+        'jpe'  => ['image/jpeg', 'image/pjpeg'],
+        'png'  => ['image/png', 'image/x-png'],
+        'tiff' => ['image/tiff'],
+        'tif'  => ['image/tiff'],
+        'webp' => ['image/webp'],
+    ];
+
     /**
-     * Every mime the configured extensions map to.
+     * Every mime the configured extensions map to. An extension that is not an image adds none.
      *
      * @return string[]
      */
@@ -31,22 +44,11 @@ final class UploadMimes
             return $cached;
         }
 
-        // mimes.php sets $mimes; reading it back this way lets static analysis see it.
-        $mimes = (static function (): array {
-            require LIB_PATH . 'osclass/mimes.php';
-
-            return get_defined_vars()['mimes'] ?? array();
-        })();
-
         $out = array();
         foreach (explode(',', (string)osc_allowed_extension()) as $ext) {
             $ext = strtolower(trim($ext));
-            if ($ext === '' || !isset($mimes[$ext])) {
-                continue;
-            }
-            foreach ((array)$mimes[$ext] as $mime) {
-                $mime = (string)$mime;
-                if ($mime !== '' && !in_array($mime, $out, true)) {
+            foreach (self::IMAGE_MIMES[$ext] ?? [] as $mime) {
+                if (!in_array($mime, $out, true)) {
                     $out[] = $mime;
                 }
             }

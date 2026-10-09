@@ -28,7 +28,7 @@ require_once __DIR__ . '/lib/stubs.php';
 
 function osc_allowed_extension()
 {
-    return 'png, gif,jpg,jpeg,webp';
+    return 'png, gif,jpg,jpeg,webp,pdf';
 }
 
 function osc_plugins_path()
@@ -142,6 +142,7 @@ $allowed = UploadMimes::allowed();
 check('the allowed list is derived from the configured extensions', in_array('image/png', $allowed, true));
 check('...and carries every mime an extension maps to', in_array('image/jpeg', $allowed, true));
 check('a type no configured extension maps to is not on it', !in_array('application/x-php', $allowed, true));
+check('a configured extension that is not an image adds no type', !in_array('application/pdf', $allowed, true));
 
 pin('a real PNG is read as image/png from its bytes', 'image/png', UploadMimes::detect($png));
 pin('a file that is not there has no type', '', UploadMimes::detect('/no/such/file'));

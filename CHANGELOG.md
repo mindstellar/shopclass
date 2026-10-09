@@ -38,6 +38,7 @@ Plugin authors should read the Breaking section before upgrading.
 - `osc_sanitize_username()` keeps dots, and `Sanitize::username()` turns spaces into `_`.
 - `osc_sanitize_int()` returns an int: "1.5" is 1, not "15".
 - The `/api/` path is reserved; a page or category with the slug `api` must be renamed. System info and `doctor` list any.
+- `oc-includes/osclass/mimes.php` is removed. Uploads accept image types only, listed in `UploadMimes`.
 
 ### Security
 
@@ -128,6 +129,7 @@ Plugin authors should read the Breaking section before upgrading.
 ### Fixed
 
 - A search made only of stopwords, or of words below the server's FULLTEXT minimum, now matches by substring instead of finding nothing.
+- **Settings → Media** refuses an image size with a zero side, which made every photo upload fail.
 - A search mixing real words with stopwords drops the stopwords, and a too-short word ("sony tv") must still appear in the text.
 - Passing `password` to `osc_sendMail()` no longer changes the SMTP security setting; `ssl` does.
 - The installer saves a downloaded language's files into that language's folder.
