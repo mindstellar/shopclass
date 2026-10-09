@@ -170,6 +170,23 @@ $before = $replaces();
 $service->update($edit(['title' => ['en_US' => 'Blue hatchback', 'es_ES' => 'Coche azul']]), $actor, false, false);
 pin('a language with no row yet is written', [1, 'Coche azul'], [$replaces() - $before, $admin->query("SELECT s_title FROM {$p}t_item_description WHERE fk_i_item_id = $id AND fk_c_locale_code = 'es_ES'")->fetch_assoc()['s_title'] ?? null]);
 
+harness_section('the hooks get the texts as a fresh read gives them');
+$hooked = [];
+osc_add_hook('posted_item', static function ($item) use (&$hooked): void {
+    $hooked['posted_item'] = $item;
+});
+osc_add_hook('edited_item', static function ($item) use (&$hooked): void {
+    $hooked['edited_item'] = $item;
+});
+$long   = str_repeat('ñ', 100);
+$posted = $service->create(ListingInput::fromArray($form(['ownerId' => '0', 'title' => ['es_ES' => $long, 'en_US' => 'Red hatchback']]), $actor, true), $actor)->id();
+pin('posted_item: a full-width title, languages in stored order', Item::newInstance()->findByPrimaryKey($posted), $hooked['posted_item'] ?? null);
+// A new price each time, so the update writes the row and the hook is built from it, not read again.
+$service->update($edit(['price' => '1601', 'title' => ['es_ES' => 'Coche verde', 'en_US' => $long]]), $actor, false, false);
+pin('edited_item: changed and unchanged languages', Item::newInstance()->findByPrimaryKey($id), $hooked['edited_item'] ?? null);
+$service->update($edit(['price' => '1602', 'title' => ['es_ES' => '', 'en_US' => 'Blue hatchback'], 'description' => ['es_ES' => '', 'en_US' => 'Blue car.']]), $actor, false, false);
+pin('edited_item: a language emptied', Item::newInstance()->findByPrimaryKey($id), $hooked['edited_item'] ?? null);
+
 harness_section('an owner that is not an account');
 $refused = null;
 try {

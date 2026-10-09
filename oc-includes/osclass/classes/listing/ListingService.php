@@ -523,7 +523,18 @@ final class ListingService
      */
     public function writeLocales(string $type, array $title, array $description, int|string $itemId): bool
     {
-        $stored = $type === 'EDIT' ? $this->storedLocales((int) $itemId) : array();
+        return $this->writeTexts($type, $title, $description, $itemId, $type === 'EDIT' ? $this->storedLocales((int) $itemId) : array());
+    }
+
+    /**
+     * writeLocales() with the stored texts already read.
+     *
+     * @param array<string,string>                    $title
+     * @param array<string,string>                    $description
+     * @param array<string,array{0:string,1:string}> $stored
+     */
+    private function writeTexts(string $type, array $title, array $description, int|string $itemId, array $stored): bool
+    {
         foreach ($title as $locale => $_data) {
             $_title       = $_data;
             $_description = $description[$locale];
@@ -575,6 +586,31 @@ final class ListingService
         }
 
         return $stored[0] === mb_substr($title, 0, \Item::TITLE_WIDTH, 'UTF-8') && $stored[1] === $description;
+    }
+
+    /**
+     * The listing's t_item_description rows once writeTexts() saved these texts over $stored.
+     *
+     * @param array<string,array{0:string,1:string}> $stored
+     * @param array<string,string>                    $title
+     * @param array<string,string>                    $description
+     *
+     * @return array<int,array<string,string>>
+     */
+    private static function textRows(int $itemId, array $stored, array $title, array $description): array
+    {
+        foreach ($title as $locale => $text) {
+            if (!self::sameText($stored[$locale] ?? null, (string) $text, (string) $description[$locale])) {
+                $stored[$locale] = array(mb_substr((string) $text, 0, \Item::TITLE_WIDTH, 'UTF-8'), (string) $description[$locale]);
+            }
+        }
+        ksort($stored, SORT_STRING);
+        $rows = array();
+        foreach ($stored as $locale => [$text, $body]) {
+            $rows[] = array('fk_i_item_id' => (string) $itemId, 'fk_c_locale_code' => (string) $locale, 's_title' => $text, 's_description' => $body);
+        }
+
+        return $rows;
     }
 
     /**
@@ -774,7 +810,7 @@ final class ListingService
 
         // Written first so a refused title or description removes the new row again,
         // rather than leaving a live listing with no text.
-        if (!$this->writeLocales('ADD', $aItem['title'], $aItem['description'], $itemId)) {
+        if (!$this->writeTexts('ADD', $aItem['title'], $aItem['description'], $itemId, array())) {
             throw new InvalidException('', 'rejected', _m('Your listing could not be saved. Please try again.'));
         }
 
@@ -817,7 +853,7 @@ final class ListingService
         $mStats = new \ItemStats();
         $mStats->emptyRow($itemId);
 
-        $item          = $this->items->findByPrimaryKey($itemId);
+        $item          = $this->items->extendRows(array(Db::stringifyRow((array) ListingStore::find((int) $itemId, array('*')))), null, self::textRows((int) $itemId, array(), $aItem['title'], $aItem['description']))[0];
         $aItem['item'] = $item;
 
         if (!$actor->isAdmin()) {
@@ -888,7 +924,8 @@ final class ListingService
         }
 
         // Text first: when it is refused, nothing else about the listing has changed yet.
-        if (!$this->writeLocales('EDIT', $aItem['title'], $aItem['description'], $aItem['idItem'])) {
+        $texts = $this->storedLocales($aItem['idItem']);
+        if (!$this->writeTexts('EDIT', $aItem['title'], $aItem['description'], $aItem['idItem'], $texts)) {
             throw new InvalidException('', 'rejected', _m('Your listing could not be saved. Please try again.'));
         }
 
@@ -986,7 +1023,7 @@ final class ListingService
 
         // The locked row with the edit on it, when the update wrote exactly that row; else it is read again.
         $edited = $result === 1 && $old_item !== array()
-            ? \Item::getInstance()->extendRows(array(self::editedRow($old_item, $aUpdate, $dt_expiration)))[0]
+            ? \Item::getInstance()->extendRows(array(self::editedRow($old_item, $aUpdate, $dt_expiration)), null, self::textRows($aItem['idItem'], $texts, $aItem['title'], $aItem['description']))[0]
             : \Item::getInstance()->findByPrimaryKey($aItem['idItem']);
 
         $held = (!$actor->isAdmin() || $import) && osc_moderate_admin_edit();

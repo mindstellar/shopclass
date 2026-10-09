@@ -151,18 +151,19 @@ class Item extends DAO
     /**
      * extendData() without priming the photo cache, for a caller that loads photos itself.
      *
-     * @param array<int,array<string,mixed>> $items
-     * @param string|null                    $prefLocale Defaults to the current locale
+     * @param array<int,array<string,mixed>>       $items
+     * @param string|null                          $prefLocale   Defaults to the current locale
+     * @param array<int,array<string,mixed>>|null  $descriptions the items' t_item_description rows, when the caller holds them; null reads them
      *
      * @return array<int,array<string,mixed>>
      */
-    public function extendRows($items, $prefLocale = null)
+    public function extendRows($items, $prefLocale = null, ?array $descriptions = null)
     {
         if (!empty($items)) {
             if (null === $prefLocale) {
                 $prefLocale = OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale();
             }
-            $items = $this->extendItemDescription($items, $prefLocale);
+            $items = $this->extendItemDescription($items, $prefLocale, $descriptions);
             $items = $this->extendCategoryName($items, $prefLocale);
             try {
                 $itemStatsLocations = (new \mindstellar\listing\ListingQuery())->statsAndLocations(array_column($items, 'pk_i_id'));
@@ -1485,19 +1486,20 @@ class Item extends DAO
     /**
      * Extends the given array $items with description in available locales
      *
-     * @param array<int,array<string,mixed>> $items array with items
-     * @param string|null                    $prefLocale Defaults to the current locale
+     * @param array<int,array<string,mixed>>      $items        array with items
+     * @param string|null                         $prefLocale   Defaults to the current locale
+     * @param array<int,array<string,mixed>>|null $descriptions the rows to use; null reads them
      *
      * @return array<int,array<string,mixed>> $items with description
      */
-    private function extendItemDescription($items, $prefLocale = null)
+    private function extendItemDescription($items, $prefLocale = null, ?array $descriptions = null)
     {
         if (!empty($items)) {
             if (null === $prefLocale) {
                 $prefLocale = OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale();
             }
             try {
-                $descriptions = (new \mindstellar\listing\ListingQuery())->descriptions(array_column($items, 'pk_i_id'));
+                $descriptions ??= (new \mindstellar\listing\ListingQuery())->descriptions(array_column($items, 'pk_i_id'));
             } catch (\mindstellar\database\DbException $e) {
                 return $items;
             }
