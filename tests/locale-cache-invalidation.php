@@ -96,18 +96,18 @@ class OSCLocale
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSettings.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hCache.php';
 
-/** Every `case ('name'):` arm of the outer switch in $source, keyed by name. */
+/** Every action in the controller's ACTIONS map, keyed by name, with the body of its method. */
 function case_blocks(string $source): array
 {
-    if (!preg_match_all("/case \('([a-z_]+)'\):/", $source, $m, PREG_OFFSET_CAPTURE)) {
+    if (!preg_match('/const ACTIONS = array\((.*?)\);/s', $source, $map)
+        || !preg_match_all("/'([a-z_]+)'\s*=>\s*'(\w+)'/", $map[1], $m, PREG_SET_ORDER)
+    ) {
         return array();
     }
 
     $blocks = array();
-    foreach ($m[1] as $i => $match) {
-        $start          = $m[0][$i][1];
-        $end            = $m[0][$i + 1][1] ?? strlen($source);
-        $blocks[$match[0]] = substr($source, $start, $end - $start);
+    foreach ($m as [, $action, $method]) {
+        $blocks[$action] = method_body($source, $method);
     }
 
     return $blocks;
@@ -229,7 +229,7 @@ foreach ($mutating as $name) {
     check(
         "'" . $name . "' drops the memoised locale list",
         strpos($blocks[$name], 'osc_invalidate_locale_cache(') !== false,
-        'CAdminLanguages::doModel() case ' . $name . ' writes a locale and leaves the memo in place'
+        'CAdminLanguages action ' . $name . ' writes a locale and leaves the memo in place'
     );
 }
 

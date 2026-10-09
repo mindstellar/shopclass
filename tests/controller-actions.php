@@ -37,6 +37,10 @@ $controllers = array(
         'edit_post', 'enable', 'resend_activation', 'settings', 'settings_post', 'sign_out_all', 'status_alerts',
         'user_login',
     ), 'users'),
+    'CAdminLanguages' => array('admin/CAdminLanguages.php', array(
+        'add', 'add_post', 'delete', 'disable_bo_selected', 'disable_selected', 'edit', 'edit_post',
+        'enable_bo_selected', 'enable_selected', 'import_locations',
+    ), 'languages'),
 );
 
 foreach ($controllers as $class => [$file, $expected, $fallback]) {
