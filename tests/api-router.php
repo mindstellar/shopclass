@@ -142,7 +142,7 @@ $factory = static function (string $class) use (&$built): object {
 $route = new RouteSpec('GET', 'x', ['handler' => [KitController::class, 'show']], $factory);
 pin('a handler factory builds the instance', 'site kit', $route->call(new Request('GET', 'v1/x'), Credential::anonymous(), [])->body()['data']['kit']);
 $withKit = new Router($validator, ['GET kit' => ['handler' => [KitController::class, 'show'], 'auth' => RouteSpec::AUTH_NONE]], $log, $factory);
-$withKit->addPlugin('GET', 'ext/acme/thing', ['handler' => [InstanceController::class, 'show'], 'auth' => RouteSpec::AUTH_NONE]);
+$withKit->addPlugin('GET', 'ext/acme/thing', ['plugin' => 'acme'] + ['handler' => [InstanceController::class, 'show'], 'auth' => RouteSpec::AUTH_NONE]);
 $built = [];
 $withKit->match('GET', 'kit')->route()->call(new Request('GET', 'v1/kit'), Credential::anonymous(), []);
 $plugin = $withKit->match('GET', 'ext/acme/thing')->route()->call(new Request('GET', 'v1/ext/acme/thing'), Credential::anonymous(), []);
@@ -299,10 +299,10 @@ harness_section('plugin routes');
 $old    = $none + ['deprecated' => '2026-10-04', 'sunset' => '2027-04-01'];
 $logged = [];
 $built  = api_with_filter('api_routes', static fn (array $routes): array => $routes + [
-    'GET ext/acme/offers/{id}' => $none,
+    'GET ext/acme/offers/{id}' => $none + ['plugin' => 'acme'],
     'GET offers'               => $none,
     'GET ext/Acme/x'           => $none,
-    'GET ext/acme/broken'      => ['handler' => 'no_such_function'],
+    'GET ext/acme/broken'      => ['handler' => 'no_such_function', 'plugin' => 'acme'],
     'GET listings'             => $none,
     'GET runs/{id}'            => $old,
     'GET listings/{id}'        => $old,
@@ -316,9 +316,9 @@ check('a core route cannot be replaced', $built->match('GET', 'listings') !== nu
     && (bool) array_filter($logged, static fn (string $m): bool => str_contains($m, 'GET listings refused: plugin paths')));
 $router2 = new Router($validator, ['GET ext/core/thing' => $none], $log);
 $logged  = [];
-check('a plugin cannot replace even an ext/ core route', !$router2->addPlugin('GET', 'ext/core/thing', $none) && str_contains($logged[0], 'replace a core route'));
+check('a plugin cannot replace even an ext/ core route', !$router2->addPlugin('GET', 'ext/core/thing', ['plugin' => 'core'] + $none) && str_contains($logged[0], 'replace a core route'));
 
-osc_api_register_route('GET', '/ext/acme/hello/', $none);
+osc_api_register_route('GET', '/ext/acme/hello/', $none + ['plugin' => 'acme']);
 $logged = [];
 $built  = Router::build($validator, $core, $log);
 pin('osc_api_register_route() adds through the api_routes filter', 'GET ext/acme/hello', $built->match('GET', 'ext/acme/hello')->route()->key());
@@ -456,9 +456,9 @@ $v2        = new Router($validator, $core + ['v2 GET listings' => ['handler' => 
 pin('an unchanged core route answers in v1 and v2', ['GET listings/{id}', 'GET listings/{id}'], [$v2->match('GET', 'listings/3', 'v1')?->route()->key(), $v2->match('GET', 'listings/3', 'v2')?->route()->key()]);
 check('a route that names v2 replaces the shared one in v2 only', $v2->match('GET', 'listings', 'v2')?->route()->handler() === $v2Handler
     && $v2->match('GET', 'listings', 'v1')?->route()->handler() === $handler);
-check('a plugin route that names no version stays on v1', $v2->addPlugin('GET', 'ext/pinned/x', $none)
+check('a plugin route that names no version stays on v1', $v2->addPlugin('GET', 'ext/pinned/x', ['plugin' => 'pinned'] + $none)
     && $v2->match('GET', 'ext/pinned/x', 'v1') !== null && $v2->match('GET', 'ext/pinned/x', 'v2') === null);
-check('a plugin route may opt in to v2', $v2->addPlugin('GET', 'ext/pinned/both', $none + ['versions' => ['v1', 'v2']])
+check('a plugin route may opt in to v2', $v2->addPlugin('GET', 'ext/pinned/both', ['plugin' => 'pinned'] + $none + ['versions' => ['v1', 'v2']])
     && $v2->match('GET', 'ext/pinned/both', 'v2') !== null);
 pin('a context built without a request, as a webhook payload is, keeps the pinned version', 'v1', (new \mindstellar\api\serializer\ViewContext(Credential::anonymous(), 'en_US'))->version());
 pin('osc_api_url() points at the pinned version unless told otherwise', ['https://shop.test/api/v1/ext/a', 'https://shop.test/api/v2'], [osc_api_url('ext/a'), osc_api_url('', 'v2')]);
@@ -503,7 +503,7 @@ pin('a normal pattern still works, and {id} keeps its own capture', [['kind' => 
     $kinds->match('ext/acme/cars/new/7'), $kinds->match('ext/acme/cars/old/7'), $kinds->match('ext/acme/cars/new/x'), $kinds->match('ext/acme/cars/new/used/7'),
 ]);
 $logged = [];
-check('a bad where pattern drops the plugin route and logs why', !(new Router($validator, $core, $log))->addPlugin('GET', 'ext/acme/x/{a}', $none + ['where' => ['a' => '(a)']])
+check('a bad where pattern drops the plugin route and logs why', !(new Router($validator, $core, $log))->addPlugin('GET', 'ext/acme/x/{a}', ['plugin' => 'acme'] + $none + ['where' => ['a' => '(a)']])
     && str_contains($logged[0] ?? '', 'capturing group'));
 $extValidator = new Validator(['Thing' => ['type' => 'object'], 'Problem' => ['type' => 'object'], 'ExtAcmeThing' => ['type' => 'object']]);
 $logged       = [];
@@ -512,18 +512,20 @@ $extScopes    = new Scopes([
     'ext:acme:mine' => ['description' => 'Own', 'audience' => Scopes::AUDIENCE_USER], 'ext:other:write' => 'Other',
 ]);
 $rules        = new Router($extValidator, $core, $log, scopes: $extScopes);
-check('a core-only key is refused on a plugin route', !$rules->addPlugin('POST', 'ext/acme/up', ['handler' => $handler, 'upload' => true])
+check('a core-only key is refused on a plugin route', !$rules->addPlugin('POST', 'ext/acme/up', ['plugin' => 'acme'] + ['handler' => $handler, 'upload' => true])
     && str_contains($logged[0] ?? '', 'only core routes may set upload'));
 $logged = [];
-check('a $ref to a core component is refused', !$rules->addPlugin('GET', 'ext/acme/thing', $none + ['responses' => [200 => ['$ref' => '#/components/schemas/Thing']]])
+check('a $ref to a core component is refused', !$rules->addPlugin('GET', 'ext/acme/thing', ['plugin' => 'acme'] + $none + ['responses' => [200 => ['$ref' => '#/components/schemas/Thing']]])
     && str_contains($logged[0] ?? '', 'core component Thing'));
-check('its own Ext component and Problem are allowed', $rules->addPlugin('GET', 'ext/acme/own', $none + ['responses' => [
+check('its own Ext component and Problem are allowed', $rules->addPlugin('GET', 'ext/acme/own', ['plugin' => 'acme'] + $none + ['responses' => [
     200 => ['$ref' => '#/components/schemas/ExtAcmeThing'], 404 => ['$ref' => '#/components/schemas/Problem'],
 ]]));
 $logged = [];
-check('a slug belongs to the first plugin that uses it', $rules->addPlugin('GET', 'ext/acme/a', $none + ['plugin' => 'acme'])
+check('ext/<slug>/ is only for the plugin named <slug>: one that names no plugin or another is refused and logged', $rules->addPlugin('GET', 'ext/acme/a', $none + ['plugin' => 'acme'])
     && !$rules->addPlugin('GET', 'ext/acme/b', $none + ['plugin' => 'evil'])
-    && str_contains($logged[0] ?? '', 'belongs to plugin acme'));
+    && !$rules->addPlugin('GET', 'ext/acme/c', $none)
+    && count($logged) === 2 && str_contains($logged[0], 'GET ext/acme/b (plugin evil) refused: ext/acme/ belongs to plugin acme')
+    && str_contains($logged[1], 'GET ext/acme/c refused: ext/acme/ belongs to plugin acme'));
 $logged = [];
 $rules->addPlugin('GET', 'ext/acme/{any}', $none + ['plugin' => 'acme']);
 $rules->addPlugin('GET', 'ext/acme/fixed', $none + ['plugin' => 'acme']);
@@ -533,44 +535,44 @@ $logged = [];
 check('the same method and path twice is refused', !$rules->addPlugin('GET', 'ext/acme/a', $none + ['plugin' => 'acme'])
     && str_contains($logged[0] ?? '', 'same method and path'));
 $logged = [];
-check('a plugin route with user or admin auth and no scope is refused, a read too', !$rules->addPlugin('POST', 'ext/acme/w1', ['handler' => $handler])
-    && !$rules->addPlugin('PATCH', 'ext/acme/w2', ['handler' => $handler, 'auth' => RouteSpec::AUTH_USER])
-    && !$rules->addPlugin('GET', 'ext/acme/r0', ['handler' => $handler, 'auth' => RouteSpec::AUTH_USER])
-    && !$rules->addPlugin('GET', 'ext/acme/r00', ['handler' => $handler, 'auth' => RouteSpec::AUTH_ADMIN])
+check('a plugin route with user or admin auth and no scope is refused, a read too', !$rules->addPlugin('POST', 'ext/acme/w1', ['plugin' => 'acme'] + ['handler' => $handler])
+    && !$rules->addPlugin('PATCH', 'ext/acme/w2', ['plugin' => 'acme'] + ['handler' => $handler, 'auth' => RouteSpec::AUTH_USER])
+    && !$rules->addPlugin('GET', 'ext/acme/r0', ['plugin' => 'acme'] + ['handler' => $handler, 'auth' => RouteSpec::AUTH_USER])
+    && !$rules->addPlugin('GET', 'ext/acme/r00', ['plugin' => 'acme'] + ['handler' => $handler, 'auth' => RouteSpec::AUTH_ADMIN])
     && count($logged) === 4 && str_contains($logged[2], 'must name a scope'));
 $logged = [];
-check('an admin route naming a non-admin scope is refused, so a key holding only listings:read cannot run as an admin', !$rules->addPlugin('GET', 'ext/acme/a1', ['handler' => $handler, 'auth' => RouteSpec::AUTH_ADMIN, 'scope' => 'listings:read'])
-    && !$rules->addPlugin('POST', 'ext/acme/a2', ['handler' => $handler, 'scope' => 'account:write'])
+check('an admin route naming a non-admin scope is refused, so a key holding only listings:read cannot run as an admin', !$rules->addPlugin('GET', 'ext/acme/a1', ['plugin' => 'acme'] + ['handler' => $handler, 'auth' => RouteSpec::AUTH_ADMIN, 'scope' => 'listings:read'])
+    && !$rules->addPlugin('POST', 'ext/acme/a2', ['plugin' => 'acme'] + ['handler' => $handler, 'scope' => 'account:write'])
     && count($logged) === 2 && str_contains($logged[0], 'admin: or ext: scope'));
-check('an admin route naming an admin: or ext: scope is kept', $rules->addPlugin('GET', 'ext/acme/a3', ['handler' => $handler, 'auth' => RouteSpec::AUTH_ADMIN, 'scope' => 'admin:listings'])
-    && $rules->addPlugin('GET', 'ext/acme/a4', ['handler' => $handler, 'auth' => RouteSpec::AUTH_ADMIN, 'scope' => 'ext:acme:read']));
+check('an admin route naming an admin: or ext: scope is kept', $rules->addPlugin('GET', 'ext/acme/a3', ['plugin' => 'acme'] + ['handler' => $handler, 'auth' => RouteSpec::AUTH_ADMIN, 'scope' => 'admin:listings'])
+    && $rules->addPlugin('GET', 'ext/acme/a4', ['plugin' => 'acme'] + ['handler' => $handler, 'auth' => RouteSpec::AUTH_ADMIN, 'scope' => 'ext:acme:read']));
 $logged = [];
-check('an admin route naming another plugin\'s, an undeclared or a user-audience ext: scope is refused', !$rules->addPlugin('POST', 'ext/acme/x1', ['handler' => $handler, 'scope' => 'ext:other:write'])
-    && !$rules->addPlugin('POST', 'ext/acme/x2', ['handler' => $handler, 'scope' => 'ext:acme:nope'])
-    && !$rules->addPlugin('POST', 'ext/acme/x3', ['handler' => $handler, 'scope' => 'ext:acme:mine'])
-    && !$rules->addPlugin('POST', 'ext/acme/x4', ['handler' => $handler, 'scope' => 'ext:acmex:write'])
+check('an admin route naming another plugin\'s, an undeclared or a user-audience ext: scope is refused', !$rules->addPlugin('POST', 'ext/acme/x1', ['plugin' => 'acme'] + ['handler' => $handler, 'scope' => 'ext:other:write'])
+    && !$rules->addPlugin('POST', 'ext/acme/x2', ['plugin' => 'acme'] + ['handler' => $handler, 'scope' => 'ext:acme:nope'])
+    && !$rules->addPlugin('POST', 'ext/acme/x3', ['plugin' => 'acme'] + ['handler' => $handler, 'scope' => 'ext:acme:mine'])
+    && !$rules->addPlugin('POST', 'ext/acme/x4', ['plugin' => 'acme'] + ['handler' => $handler, 'scope' => 'ext:acmex:write'])
     && count($logged) === 4 && str_contains($logged[0], 'only name its own plugin') && str_contains($logged[1], 'not declared')
     && str_contains($logged[2], 'admin or moderator audience') && str_contains($logged[3], 'only name its own plugin'));
-check('a user route may still name a user-audience ext: scope', $rules->addPlugin('GET', 'ext/acme/x5', ['handler' => $handler, 'auth' => RouteSpec::AUTH_USER, 'scope' => 'ext:acme:mine']));
+check('a user route may still name a user-audience ext: scope', $rules->addPlugin('GET', 'ext/acme/x5', ['plugin' => 'acme'] + ['handler' => $handler, 'auth' => RouteSpec::AUTH_USER, 'scope' => 'ext:acme:mine']));
 osc_add_filter('api_scopes', static fn (array $s): array => $s + ['ext:hooked:run' => 'Run']);
-check('with no Scopes given, the api_scopes hook decides', (new Router($extValidator, [], $log))->addPlugin('POST', 'ext/hooked/run', ['handler' => $handler, 'scope' => 'ext:hooked:run'])
-    && !(new Router($extValidator, [], $log))->addPlugin('POST', 'ext/hooked/run', ['handler' => $handler, 'scope' => 'ext:hooked:other']));
-check('a plugin route may opt out of Idempotency-Key replay', $rules->addPlugin('POST', 'ext/acme/secret', ['handler' => $handler, 'scope' => 'ext:acme:write', 'replayable' => false])
+check('with no Scopes given, the api_scopes hook decides', (new Router($extValidator, [], $log))->addPlugin('POST', 'ext/hooked/run', ['plugin' => 'hooked'] + ['handler' => $handler, 'scope' => 'ext:hooked:run'])
+    && !(new Router($extValidator, [], $log))->addPlugin('POST', 'ext/hooked/run', ['plugin' => 'hooked'] + ['handler' => $handler, 'scope' => 'ext:hooked:other']));
+check('a plugin route may opt out of Idempotency-Key replay', $rules->addPlugin('POST', 'ext/acme/secret', ['plugin' => 'acme'] + ['handler' => $handler, 'scope' => 'ext:acme:write', 'replayable' => false])
     && !$rules->match('POST', 'ext/acme/secret')->route()->replayable());
-check('with a scope, or with auth none or public, it is kept', $rules->addPlugin('POST', 'ext/acme/w3', ['handler' => $handler, 'scope' => 'ext:acme:write'])
-    && $rules->addPlugin('POST', 'ext/acme/w4', ['handler' => $handler, 'auth' => RouteSpec::AUTH_NONE])
-    && $rules->addPlugin('GET', 'ext/acme/r1', ['handler' => $handler, 'auth' => RouteSpec::AUTH_USER, 'scope' => 'ext:acme:read'])
-    && $rules->addPlugin('GET', 'ext/acme/r2', ['handler' => $handler]));
+check('with a scope, or with auth none or public, it is kept', $rules->addPlugin('POST', 'ext/acme/w3', ['plugin' => 'acme'] + ['handler' => $handler, 'scope' => 'ext:acme:write'])
+    && $rules->addPlugin('POST', 'ext/acme/w4', ['plugin' => 'acme'] + ['handler' => $handler, 'auth' => RouteSpec::AUTH_NONE])
+    && $rules->addPlugin('GET', 'ext/acme/r1', ['plugin' => 'acme'] + ['handler' => $handler, 'auth' => RouteSpec::AUTH_USER, 'scope' => 'ext:acme:read'])
+    && $rules->addPlugin('GET', 'ext/acme/r2', ['plugin' => 'acme'] + ['handler' => $handler]));
 $logged = [];
-check('an unknown spec key is refused, so a typo cannot drop a rule', !$rules->addPlugin('GET', 'ext/acme/typo', ['handler' => $handler, 'auth' => RouteSpec::AUTH_USER, 'scopes' => 'ext:acme:read'])
+check('an unknown spec key is refused, so a typo cannot drop a rule', !$rules->addPlugin('GET', 'ext/acme/typo', ['plugin' => 'acme'] + ['handler' => $handler, 'auth' => RouteSpec::AUTH_USER, 'scopes' => 'ext:acme:read'])
     && str_contains($logged[0] ?? '', 'unknown spec key scopes'));
 $logged = [];
-check('Listing, ListingPage, Photo, PageMeta and PageLinks may be $ref-ed', (new Router(new Validator(['Listing' => [], 'ListingPage' => [], 'Photo' => [], 'PageMeta' => [], 'PageLinks' => []]), [], $log))->addPlugin('GET', 'ext/acme/page', $none + ['responses' => [
+check('Listing, ListingPage, Photo, PageMeta and PageLinks may be $ref-ed', (new Router(new Validator(['Listing' => [], 'ListingPage' => [], 'Photo' => [], 'PageMeta' => [], 'PageLinks' => []]), [], $log))->addPlugin('GET', 'ext/acme/page', ['plugin' => 'acme'] + $none + ['responses' => [
     200 => ['type' => 'object', 'properties' => ['data' => ['type' => 'array', 'items' => ['$ref' => '#/components/schemas/Listing']], 'meta' => ['$ref' => '#/components/schemas/PageMeta'], 'links' => ['$ref' => '#/components/schemas/PageLinks']]],
     201 => ['$ref' => '#/components/schemas/ListingPage'], 202 => ['$ref' => '#/components/schemas/Photo'],
 ]]), implode("\n", $logged));
-osc_api_register_route('GET', 'ext/dup/x', $none + ['summary' => 'first']);
-osc_api_register_route('GET', 'ext/dup/x', $none + ['summary' => 'second']);
+osc_api_register_route('GET', 'ext/dup/x', $none + ['summary' => 'first', 'plugin' => 'dup']);
+osc_api_register_route('GET', 'ext/dup/x', $none + ['summary' => 'second', 'plugin' => 'dup']);
 pin('osc_api_register_route() keeps the first of two registrations', 'first', Router::build($validator, $core, $log)->match('GET', 'ext/dup/x')?->route()->summary());
 
 harness_section('prepare and kit');

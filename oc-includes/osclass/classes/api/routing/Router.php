@@ -36,14 +36,14 @@ final class Router
     /** @var array<string,true> keys of core routes */
     private array $core = [];
 
-    /** @var array<string,string> plugin slug => the plugin that registered it first */
-    private array $slugs = [];
-
     /** @var \Closure(string): void */
     private \Closure $log;
 
     /** @var string[] the versions the site answers */
     private array $live;
+
+    /** The declared scopes admin plugin routes are checked against; read from the hooks when first needed. */
+    private ?Scopes $scopes;
 
     /**
      * Core's v1 route table, 'METHOD path' => spec: the public routes, then the admin ones.
@@ -74,11 +74,12 @@ final class Router
         ?\Closure $handlers = null,
         private ?\Closure $kit = null,
         ?array $versions = null,
-        private ?Scopes $scopes = null
+        ?Scopes $scopes = null
     ) {
-        $this->log   = \Closure::fromCallable($log ?? 'error_log');
-        $this->live  = $versions ?? array_keys(ApiSettings::VERSIONS);
-        $named       = [];
+        $this->log    = \Closure::fromCallable($log ?? 'error_log');
+        $this->live   = $versions ?? array_keys(ApiSettings::VERSIONS);
+        $this->scopes = $scopes;
+        $named        = [];
         foreach ($coreRoutes as $key => $spec) {
             [$method, $path, $spec] = self::split((string) $key, $spec);
             $route = new RouteSpec($method, $path, $spec, $handlers, $kit, $this->live);
@@ -109,8 +110,7 @@ final class Router
         ?\Closure $kit = null
     ): self {
         $router = new self($validator, $coreRoutes, $log, $handlers, $kit);
-        $routes = [];
-        $routes = osc_apply_filter('api_routes', $routes);
+        $routes = osc_apply_filter('api_routes', []);
         foreach ((array) $routes as $key => $spec) {
             [$method, $path, $spec] = self::split((string) $key, is_array($spec) ? $spec : []);
             $router->addPlugin($method, $path, $spec);
@@ -144,8 +144,8 @@ final class Router
         if ($unknown !== []) {
             return $this->refuse($label, 'unknown spec key ' . implode(', ', $unknown));
         }
-        if ($plugin !== null && isset($this->slugs[$m[1]]) && $this->slugs[$m[1]] !== $plugin) {
-            return $this->refuse($label, 'ext/' . $m[1] . '/ belongs to plugin ' . $this->slugs[$m[1]]);
+        if ($plugin !== $m[1]) {
+            return $this->refuse($label, 'ext/' . $m[1] . '/ belongs to plugin ' . $m[1] . ', and the route\'s plugin must name it');
         }
         $spec['versions'] ??= [ApiSettings::PINNED_VERSION];
         try {
@@ -165,8 +165,7 @@ final class Router
             if (!str_starts_with($scope, 'ext:' . $m[1] . ':')) {
                 return $this->refuse($label, 'an admin route may only name its own plugin\'s scope, ext:' . $m[1] . ':...');
             }
-            $this->scopes ??= Scopes::fromHooks();
-            $audience       = $this->scopes->pluginAudience($scope);
+            $audience = ($this->scopes ??= Scopes::fromHooks())->pluginAudience($scope);
             if ($audience === null) {
                 return $this->refuse($label, 'scope ' . $scope . ' is not declared on api_scopes');
             }
@@ -185,9 +184,6 @@ final class Router
         }
         if (($other = $this->pluginOverlap($route)) !== null) {
             ($this->log)('API route ' . $label . ' overlaps ' . $other->key() . ($other->plugin() === null ? '' : ' (plugin ' . $other->plugin() . ')') . ', which was registered first and answers first.');
-        }
-        if ($plugin !== null) {
-            $this->slugs[$m[1]] ??= $plugin;
         }
         $this->add($route);
 

@@ -21,8 +21,8 @@ use mindstellar\auth\Actor;
 use mindstellar\database\Db;
 use mindstellar\listing\ListingInput;
 use mindstellar\listing\ListingService;
-use mindstellar\listing\ListingStatus;
 use mindstellar\listing\PhotoRoom;
+use mindstellar\listing\SavedListing;
 use mindstellar\moderation\ListingModeration;
 use mindstellar\validation\InvalidException;
 
@@ -98,7 +98,8 @@ final class ListingWriter
     }
 
     /**
-     * Edit a listing as its owner, adding $photos. A listing waiting for activation still waits.
+     * Edit a listing as its owner, adding $photos. It is pending when it still waits for activation
+     * or the edit is held for the admin's approval.
      *
      * @param array<string,mixed> $form
      *
@@ -108,9 +109,9 @@ final class ListingWriter
     {
         $id     = $listing->id();
         $before = $photos->isEmpty() ? 0 : $this->room->count($id);
-        $this->edit(['id' => $id, 'secret' => $listing->secret(), 'photos' => $photos->paths()] + $form, $actor);
+        $saved  = $this->edit(['id' => $id, 'secret' => $listing->secret(), 'photos' => $photos->paths()] + $form, $actor);
 
-        return new ListingOutcome($id, ListingStatus::of($listing->row()) === ListingStatus::PENDING, $this->skipped($id, $photos, $before));
+        return new ListingOutcome($id, $saved->needsValidation(), $this->skipped($id, $photos, $before));
     }
 
     /**
@@ -158,7 +159,7 @@ final class ListingWriter
     /**
      * @param array<string,mixed> $input what ListingInput::fromArray() reads
      */
-    private function edit(array $input, Actor $actor): void
+    private function edit(array $input, Actor $actor): SavedListing
     {
         try {
             $saved = $this->listings->update(ListingInput::fromArray($input, $actor, false), $actor, false, true);
@@ -168,6 +169,8 @@ final class ListingWriter
         if ($saved->rows() === false) {
             throw ProblemException::of('server_error', 'The listing could not be saved.');
         }
+
+        return $saved;
     }
 
     /**

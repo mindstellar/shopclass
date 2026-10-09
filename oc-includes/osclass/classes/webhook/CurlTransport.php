@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\webhook;
 
 use mindstellar\security\AddressGuard;
+use mindstellar\utility\Curl;
 
 /**
  * The POST with cURL: pinned to the checked IP, never through a proxy, no redirects, short
@@ -29,7 +30,7 @@ final class CurlTransport implements Transport
 
     public function post(string $url, string $ip, array $headers, string $body): TransportResult
     {
-        if (!function_exists('curl_init')) {
+        if (!Curl::available()) {
             return TransportResult::failed('This server cannot make HTTP requests (no cURL).');
         }
         $lines = ['Expect:'];

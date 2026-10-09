@@ -482,7 +482,7 @@ Core fires 555 names. Generated from the source; do not edit by hand.
 | `api_rate_limit` | filter | `$limit, $credential, $route` | `oc-includes/osclass/classes/api/ratelimit/RatePolicy.php` |
 | `api_request_before` | action | `$request, $route, $credential` | `oc-includes/osclass/classes/api/Kernel.php` |
 | `api_response` | filter | `$response, $request, $route` | `oc-includes/osclass/classes/api/Kernel.php` |
-| `api_routes` | filter | `$routes` | `oc-includes/osclass/classes/api/routing/Router.php` |
+| `api_routes` | filter | `[]` | `oc-includes/osclass/classes/api/routing/Router.php` |
 | `api_schemas` | filter | `[]` | `oc-includes/osclass/classes/api/schema/ExtensionSchemas.php` |
 | `api_scopes` | filter | `[]` | `oc-includes/osclass/classes/apiaccess/Scopes.php` |
 | `api_webhook_delivered` | action | `$endpointData, $event, $httpStatus, $attempt` | `oc-includes/osclass/classes/webhook/Delivery.php` |

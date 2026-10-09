@@ -29,15 +29,21 @@ final class RateLimiter
     /** @var \Closure(string, string, int, int): ?int */
     private \Closure $exact;
 
+    /** @var \Closure(string, string, int, int): ?int|null */
+    private ?\Closure $add;
+
     /**
      * @param callable      $increment (bucket, key, window, limit) => count so far, or null when the counter
      *                                 cannot be reached
      * @param callable|null $exact     the same for exact buckets; $increment when null
+     * @param callable|null $add       (bucket, key, by, window) => count so far, to count several requests in an
+     *                                 exact bucket in one write; $exact once per request when null
      */
-    public function __construct(callable $increment, private Clock $clock, ?callable $exact = null)
+    public function __construct(callable $increment, private Clock $clock, ?callable $exact = null, ?callable $add = null)
     {
         $this->increment = \Closure::fromCallable($increment);
         $this->exact     = $exact !== null ? \Closure::fromCallable($exact) : $this->increment;
+        $this->add       = $add !== null ? \Closure::fromCallable($add) : null;
     }
 
     /**
@@ -52,7 +58,7 @@ final class RateLimiter
         [$db, $add, $count] = self::counters();
         $counter = new ApcuCounter(new ApcuStore(), $clock, $add, $db, self::installPrefix(DB_TABLE_PREFIX, DB_NAME, (string) osc_base_url()), $count);
 
-        return new self([$counter, 'increment'], $clock, $db);
+        return new self([$counter, 'increment'], $clock, $db, $add);
     }
 
     /**
@@ -64,7 +70,7 @@ final class RateLimiter
     {
         [$db, $add, $count] = self::counters();
 
-        return new self([new SampledCounter($add, $count, $draw), 'increment'], $clock, $db);
+        return new self([new SampledCounter($add, $count, $draw), 'increment'], $clock, $db, $add);
     }
 
     /**
@@ -90,23 +96,40 @@ final class RateLimiter
     }
 
     /**
-     * Count one request in a bucket.
+     * Count $n requests in a bucket, one by default.
      *
      * @param bool $failOpen false refuses the request when the counter cannot be reached
      */
-    public function hit(RateBucket $bucket, bool $failOpen = true): RateLimitResult
+    public function hit(RateBucket $bucket, bool $failOpen = true, int $n = 1): RateLimitResult
     {
         $window = $bucket->window();
         $reset  = $window - ($this->clock->now() % $window);
         if ($bucket->max() <= 0) {
             return new RateLimitResult($bucket, true, 0, $reset);
         }
-        $count = ($bucket->exact() ? $this->exact : $this->increment)($bucket->name(), $bucket->key(), $window, $bucket->max());
+        $count = $this->count($bucket, max(1, $n));
         if ($count === null) {
             return new RateLimitResult($bucket, $failOpen, $failOpen ? $bucket->max() : 0, $reset);
         }
 
         return new RateLimitResult($bucket, $count <= $bucket->max(), max(0, $bucket->max() - $count), $reset);
+    }
+
+    /**
+     * Count $n requests; an exact bucket takes them in one write when an $add counter was given.
+     */
+    private function count(RateBucket $bucket, int $n): ?int
+    {
+        if ($bucket->exact() && $n > 1 && $this->add !== null) {
+            return ($this->add)($bucket->name(), $bucket->key(), $n, $bucket->window());
+        }
+        $counter = $bucket->exact() ? $this->exact : $this->increment;
+        $count   = null;
+        for ($i = 0; $i < $n; $i++) {
+            $count = $counter($bucket->name(), $bucket->key(), $bucket->window(), $bucket->max());
+        }
+
+        return $count;
     }
 
     /**
@@ -118,7 +141,19 @@ final class RateLimiter
      */
     public function enforce(RateBucket $bucket, string $message, bool $failOpen = true): void
     {
-        $result = $this->hit($bucket, $failOpen);
+        $this->enforceN($bucket, 1, $message, $failOpen);
+    }
+
+    /**
+     * Count $n requests in a bucket at once and refuse them all past the limit.
+     *
+     * @param bool $failOpen false refuses the request when the counter cannot be reached
+     *
+     * @throws ProblemException 429 past the limit
+     */
+    public function enforceN(RateBucket $bucket, int $n, string $message, bool $failOpen = true): void
+    {
+        $result = $this->hit($bucket, $failOpen, $n);
         if (!$result->allowed()) {
             throw ProblemException::tooMany($message, $result->reset());
         }

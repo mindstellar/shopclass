@@ -225,6 +225,7 @@ $ext       = ExtensionMembers::fromDeclarations([
 $components = Schema::components($ext);
 $router     = new Router(new Validator($components), Router::core());
 $router->addPlugin('POST', 'ext/acme/offers', [
+    'plugin'  => 'acme',
     'handler' => static fn (): Response => Response::ok([]),
     'auth'    => RouteSpec::AUTH_USER,
     'scope'   => 'ext:acme:offers:write',

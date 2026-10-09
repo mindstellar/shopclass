@@ -118,6 +118,32 @@ osc_add_filter('action_throttle_limit', static function ($limit, $context) {
 });
 check('action_throttle_limit can raise it', in_array($post($live), array(1, 2), true));
 
+harness_section('deleting a comment');
+$author = seed_user($admin, 'cg_author', 'cg_author@example.test');
+$other  = seed_user($admin, 'cg_other', 'cg_other@example.test');
+$admin->query('INSERT INTO ' . DB_TABLE_PREFIX . "t_item_comment (fk_i_item_id, dt_pub_date, s_title, s_author_name, s_author_email, s_body, b_enabled, b_active, b_spam, fk_i_user_id) VALUES ($live, NOW(), 'Hi', 'Author', 'cg_author@example.test', 'Mine', 1, 1, 0, $author)");
+$mine     = (int) $admin->insert_id;
+$preHooks = 0;
+osc_add_hook('pre_item_delete_comment_post', static function () use (&$preHooks): void {
+    $preHooks++;
+});
+$refusal = static function (Actor $actor) use ($mine): string {
+    try {
+        (new \mindstellar\comment\CommentService())->delete($mine, $actor);
+    } catch (\mindstellar\validation\RefusedException $e) {
+        return get_class($e);
+    }
+
+    return 'deleted';
+};
+pin('a guest and another user are refused before pre_item_delete_comment_post fires', array(
+    \mindstellar\validation\ForbiddenException::class, \mindstellar\validation\ForbiddenException::class, 0,
+), array($refusal(Actor::visitor()), $refusal(Actor::user($other)), $preHooks));
+pin('the author deletes it, and the hook fires once', array('deleted', 1, 0), array(
+    $refusal(Actor::user($author)), $preHooks,
+    (int) $admin->query('SELECT COUNT(*) FROM ' . DB_TABLE_PREFIX . "t_item_comment WHERE pk_i_id = $mine")->fetch_row()[0],
+));
+
 View::getInstance()->_erase('item');
 
 if (!defined('MODELS_RUNNER')) {

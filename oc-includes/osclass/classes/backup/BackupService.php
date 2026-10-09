@@ -14,6 +14,7 @@ use mindstellar\admin\DatabaseTools;
 use mindstellar\database\Connection;
 use mindstellar\database\DbException;
 use mindstellar\job\JobWorker;
+use mindstellar\utility\Curl;
 use mindstellar\utility\Formatting;
 use Throwable;
 
@@ -578,7 +579,7 @@ final class BackupService
         if (is_array($cached) && time() - (int) ($cached['t'] ?? 0) < ($open === true ? 3600 : 86400)) {
             return $open;
         }
-        if (!is_file(BackupStore::site()->dir() . BackupStore::PROBE) || !function_exists('curl_init')) {
+        if (!is_file(BackupStore::site()->dir() . BackupStore::PROBE) || !Curl::available()) {
             return null;
         }
         $ch = curl_init(osc_base_url() . BackupStore::FOLDER . BackupStore::PROBE);

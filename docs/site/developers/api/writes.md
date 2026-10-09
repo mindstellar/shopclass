@@ -165,7 +165,7 @@ nested shape a `GET` answers with. Send `"price": "75.00"`, not `"price": {"amou
 | `photo_tokens`, `photo_urls` | **Adds** photos. It never replaces or removes any. |
 
 The answer is the saved listing, with `200`. If the site holds edited listings for review,
-the status goes back to `pending` and `warnings` says `listing_pending`.
+the status becomes `disabled` until an admin approves it and `warnings` says `listing_pending`.
 
 ### Write members and where they read back
 
@@ -273,10 +273,11 @@ The site downloads each address itself:
 - Only public `http` and `https` addresses on their usual ports. Private and local addresses are refused.
 - Redirects are not followed. A download stops after 15 seconds, when it stays below 1 KB a second
   for 5 seconds, and at the site's largest photo size.
-- Up to 4 downloads of one request run at the same time; the next starts as one finishes. A server
-  without PHP's cURL extension refuses every address.
+- Up to 4 downloads of one request run at the same time; the next starts as one finishes. All of
+  them must finish within 30 seconds. A server without PHP's cURL extension refuses every address.
 - One bad address fails the whole request with a `422` on `/photo_urls/<n>`. Nothing is saved. A
-  download that fails says only that the photo could not be downloaded.
+  download that fails says only that the photo could not be downloaded, and a refused address
+  only that the site does not download from it.
 - Downloads happen before an `If-Match` check, so a `412` can still cost a download. A write that
   is refused after the downloads keeps none of them.
 - Each download counts toward 30 an hour per user on `PATCH`. See [Limits](#limits).

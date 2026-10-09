@@ -369,7 +369,7 @@ class SystemInfo
         $this->php_post_max_size        = ini_get('post_max_size');
 
         //set php curl support
-        $this->php_curl_support = function_exists('curl_init');
+        $this->php_curl_support = Curl::available();
         //php gd support
         $this->php_gd_support = extension_loaded('gd');
         //php gd freetype support

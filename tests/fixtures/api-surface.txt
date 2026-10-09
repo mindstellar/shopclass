@@ -7,6 +7,7 @@ function osc_api_session_meta(): string
 function osc_api_session_token(): string
 function osc_api_url(string $path = '', ?string $version = NULL): string
 function osc_is_api_request(): bool
+function osc_user_api_access_url(): string
 function osc_webhook_emit(string $type, array $data, array $options = []): ?string
 mindstellar\api\ApiCall::public actor(string $scope = ''): mindstellar\auth\Actor
 mindstellar\api\ApiCall::public arg(string $name): ?string
@@ -21,6 +22,7 @@ mindstellar\api\ApiCall::public userId(): int
 mindstellar\api\ApiKit::public context(mindstellar\api\ApiCall $call, string $object, array $members, array $includes = []): mindstellar\api\serializer\ViewContext
 mindstellar\api\ApiKit::public links(): mindstellar\api\serializer\Links
 mindstellar\api\ApiKit::public listing(mindstellar\api\ApiCall $call, int $id, mindstellar\api\serializer\ViewContext $context): ?array
+mindstellar\api\ApiKit::public listingContext(mindstellar\api\ApiCall $call): mindstellar\api\serializer\ViewContext
 mindstellar\api\ApiKit::public listingsById(mindstellar\api\ApiCall $call, array $ids, mindstellar\api\serializer\ViewContext $context): array
 mindstellar\api\Problem code api_disabled = 403
 mindstellar\api\Problem code banned = 403
@@ -95,9 +97,12 @@ mindstellar\api\RouteSpec::AUTH_PUBLIC = "public"
 mindstellar\api\RouteSpec::AUTH_USER = "user"
 mindstellar\api\RouteSpec::NUMERIC_ARGS = ["id","photo"]
 mindstellar\api\RouteSpec::PLUGIN_KEYS = ["handler","auth","scope","summary","description","tags","query","body","responses","deprecated","sunset","where","versions","plugin","replayable"]
+mindstellar\api\RouteSpec::public auth(): string
 mindstellar\api\RouteSpec::public key(): string
 mindstellar\api\RouteSpec::public method(): string
 mindstellar\api\RouteSpec::public path(): string
+mindstellar\api\RouteSpec::public plugin(): ?string
+mindstellar\api\RouteSpec::public scope(): ?string
 mindstellar\api\Warning::CODES = ["listing_pending","photo_skipped","comment_pending","email_confirmation_sent"]
 mindstellar\api\Warning::COMMENT_PENDING = "comment_pending"
 mindstellar\api\Warning::EMAIL_CONFIRMATION_SENT = "email_confirmation_sent"
@@ -120,8 +125,6 @@ mindstellar\api\serializer\ExtensionMembers::OBJECTS = ["listing","user","catego
 mindstellar\api\serializer\ExtensionMembers::SLUG = "/^[a-z0-9-]+$/D"
 mindstellar\api\serializer\Links::public api(string $path, ?string $version = NULL): string
 mindstellar\api\serializer\Links::public avatar(int $userId): string
-mindstellar\api\serializer\Links::public listing(array $item): string
-mindstellar\api\serializer\Links::public photo(array $resource, string $variant): string
 mindstellar\api\serializer\Links::public price(?int $micros, string $symbol): string
 mindstellar\api\serializer\Links::public user(int $id, string $username): string
 mindstellar\api\serializer\SparseFieldset::public wants(string $member): bool
@@ -151,6 +154,11 @@ mindstellar\apiaccess\CredentialKind::KEY = "key"
 mindstellar\apiaccess\CredentialKind::PUBLIC = "public"
 mindstellar\apiaccess\CredentialKind::SESSION = "session"
 mindstellar\apiaccess\CredentialKind::USER = "user"
+mindstellar\apiaccess\Scopes::AUDIENCES = ["admin","moderator","user"]
+mindstellar\apiaccess\Scopes::AUDIENCE_ADMIN = "admin"
+mindstellar\apiaccess\Scopes::AUDIENCE_MODERATOR = "moderator"
+mindstellar\apiaccess\Scopes::AUDIENCE_USER = "user"
+mindstellar\apiaccess\Scopes::PLUGIN_SCOPE = "/^ext:[a-z0-9-]+:[a-z0-9:_-]+$/D"
 mindstellar\auth\Actor::public adminId(): ?int
 mindstellar\auth\Actor::public ip(): string
 mindstellar\auth\Actor::public isAdmin(): bool

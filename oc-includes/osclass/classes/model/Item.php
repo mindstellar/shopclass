@@ -962,10 +962,7 @@ class Item extends DAO
             $item = null;
         }
 
-        // Legacy entered this block whenever the read did not error, even for a
-        // zero-row (missing id) result — in which case the UPDATE below matched
-        // nothing and the method fell through to false. A missing id here yields a
-        // null row and converges on the same false, so it is guarded up front.
+        // A missing id reads no row and returns false.
         if ($item !== null) {
             $item        = Db::stringifyRow($item);
             $counted_old = osc_item_is_counted($item);

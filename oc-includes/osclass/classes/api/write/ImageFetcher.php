@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\api\write;
 
 use mindstellar\security\AddressGuard;
+use mindstellar\utility\Curl;
 
 /**
  * Downloads the photos a listing names by URL, a few at a time. Only public http(s) addresses on their usual
@@ -23,6 +24,9 @@ final class ImageFetcher
 {
     /** Seconds for each download. */
     public const TIMEOUT = 15;
+
+    /** Seconds for the whole batch. */
+    public const BUDGET = 30;
 
     /** Downloads open at the same time; the next starts as one finishes. */
     public const CONCURRENT = 4;
@@ -36,6 +40,9 @@ final class ImageFetcher
 
     /** Why a download failed, whatever the cause, so the answer says nothing about the far server. */
     public const FAILED = 'The photo could not be downloaded.';
+
+    /** Why an address was refused, whatever the reason, so the answer says nothing about how it resolves. */
+    public const REFUSED = 'The address is not one the site downloads from.';
 
     /** @var \Closure(array<int,array{url:string,ip:string,file:string}>, int, int): array<int,?string> */
     private \Closure $transport;
@@ -73,7 +80,7 @@ final class ImageFetcher
             if ($check['ok']) {
                 $jobs[$key] = ['url' => $url, 'ip' => (string) $check['ip'], 'file' => $files[$key]];
             } else {
-                $errors[$key] = (string) ($check['error'] ?? 'The address is not fetched.');
+                $errors[$key] = self::REFUSED;
             }
         }
         if ($errors === [] && $jobs !== []) {
@@ -86,54 +93,49 @@ final class ImageFetcher
     }
 
     /**
-     * HTTP GETs with cURL, CONCURRENT at a time, each connecting only to its pinned IP.
+     * HTTP GETs with cURL, CONCURRENT at a time, each connecting only to its pinned IP. What is
+     * still open or queued after $budget seconds fails.
      *
      * @param array<int,array{url:string,ip:string,file:string}> $jobs
      *
      * @return array<int,string|null>
      */
-    public static function curl(array $jobs, int $maxBytes, int $timeout = self::TIMEOUT): array
+    public static function curl(array $jobs, int $maxBytes, int $timeout = self::TIMEOUT, int $budget = self::BUDGET): array
     {
-        if (!function_exists('curl_multi_init')) {
+        if (!Curl::available(true)) {
             return array_fill_keys(array_keys($jobs), self::NO_CURL);
         }
-        $errors = [];
-        $open   = [];
-        $queue  = $jobs;
-        $multi  = curl_multi_init();
+        $deadline = microtime(true) + $budget;
+        $errors   = [];
+        $open     = [];
+        $queue    = $jobs;
+        $multi    = curl_multi_init();
         do {
-            while (count($open) < self::CONCURRENT && $queue !== []) {
-                $key = array_key_first($queue);
+            while (count($open) < self::CONCURRENT && $queue !== [] && microtime(true) < $deadline) {
+                $key = (int) array_key_first($queue);
                 $job = $queue[$key];
                 unset($queue[$key]);
-                $out = @fopen($job['file'], 'wb');
-                if ($out === false) {
+                $left    = (int) ceil($deadline - microtime(true));
+                $started = self::start($multi, $job, $maxBytes, max(1, min($timeout, $left)));
+                if ($started === null) {
                     $errors[$key] = 'The temp folder is not writable.';
-                    continue;
+                } else {
+                    $open[spl_object_id($started[0])] = [$key, ...$started];
                 }
-                $curl = curl_init();
-                curl_setopt_array($curl, self::jobOptions($job, $out, $maxBytes, $timeout));
-                curl_multi_add_handle($multi, $curl);
-                $open[spl_object_id($curl)] = [$key, $curl, $out];
             }
             $status = curl_multi_exec($multi, $running);
             while (($info = curl_multi_info_read($multi)) !== false) {
                 [$key, $curl, $out] = $open[spl_object_id($info['handle'])];
                 unset($open[spl_object_id($curl)]);
-                $code = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
-                $ok   = $info['result'] === CURLE_OK && $code >= 200 && $code < 300;
-                curl_multi_remove_handle($multi, $curl);
-                fclose($out);
-                $errors[$key] = $ok ? null : self::FAILED;
+                $errors[$key] = self::finish($multi, $curl, $out, $info['result'] === CURLE_OK) ? null : self::FAILED;
             }
             if ($running > 0 && curl_multi_select($multi, 1.0) === -1) {
                 usleep(10000);
             }
-        } while ($status === CURLM_OK && ($open !== [] || $queue !== []));
+        } while ($status === CURLM_OK && ($open !== [] || $queue !== []) && microtime(true) < $deadline);
 
         foreach ($open as [$key, $curl, $out]) {
-            curl_multi_remove_handle($multi, $curl);
-            fclose($out);
+            self::finish($multi, $curl, $out, false);
             $errors[$key] = self::FAILED;
         }
         foreach (array_keys($queue) as $key) {
@@ -145,26 +147,51 @@ final class ImageFetcher
     }
 
     /**
-     * Every cURL option one download's handle gets.
+     * Open the job's file and add its handle to $multi.
      *
      * @param array{url:string,ip:string,file:string} $job
-     * @param resource                                $out the open file it writes to
      *
-     * @return array<int,mixed>
+     * @return array{0:\CurlHandle,1:resource}|null null when the file cannot be opened
      */
-    public static function jobOptions(array $job, $out, int $maxBytes, int $timeout = self::TIMEOUT): array
+    private static function start(\CurlMultiHandle $multi, array $job, int $maxBytes, int $timeout): ?array
     {
-        return [CURLOPT_URL => $job['url'], CURLOPT_FILE => $out] + self::curlOptions($job['url'], $job['ip'], $maxBytes, $timeout);
+        $out = @fopen($job['file'], 'wb');
+        if ($out === false) {
+            return null;
+        }
+        $curl = curl_init();
+        curl_setopt_array($curl, self::curlOptions($job['url'], $job['ip'], $maxBytes, $timeout, $out));
+        curl_multi_add_handle($multi, $curl);
+
+        return [$curl, $out];
     }
 
     /**
-     * The cURL options of a download, but for the file it writes to.
+     * Take a handle off $multi and close its file.
+     *
+     * @param resource $out
+     *
+     * @return bool whether it downloaded with a 2xx answer
+     */
+    private static function finish(\CurlMultiHandle $multi, \CurlHandle $curl, $out, bool $done): bool
+    {
+        $code = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
+        curl_multi_remove_handle($multi, $curl);
+        fclose($out);
+
+        return $done && $code >= 200 && $code < 300;
+    }
+
+    /**
+     * Every cURL option of a download's handle.
+     *
+     * @param resource|null $out the open file it writes to
      *
      * @return array<int,mixed>
      */
-    public static function curlOptions(string $url, string $ip, int $maxBytes, int $timeout = self::TIMEOUT): array
+    public static function curlOptions(string $url, string $ip, int $maxBytes, int $timeout = self::TIMEOUT, $out = null): array
     {
-        return AddressGuard::curlOptions($url, $ip) + [
+        return [CURLOPT_URL => $url] + ($out === null ? [] : [CURLOPT_FILE => $out]) + AddressGuard::curlOptions($url, $ip) + [
             CURLOPT_CONNECTTIMEOUT   => min(5, $timeout),
             CURLOPT_TIMEOUT          => $timeout,
             CURLOPT_LOW_SPEED_LIMIT  => self::LOW_SPEED,

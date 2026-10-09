@@ -55,9 +55,7 @@ final class RatePolicy
         [$name, $key, $max] = match (true) {
             $credential->kind() === CredentialKind::ANONYMOUS => ['api_anon', $address, $this->settings->rateAnon()],
             $credential->kind() === CredentialKind::PUBLIC    => ['api_key', $credential->id() . '@' . $address, $max],
-            $credential->isUser(),
-            $credential->kind() === CredentialKind::USER,
-            $credential->kind() === CredentialKind::SESSION   => ['api_user', (string) $credential->userId(), $max],
+            $credential->isUser()                             => ['api_user', (string) $credential->userId(), $max],
             default                                           => ['api_key', (string) $credential->id(), $max],
         };
 

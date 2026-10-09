@@ -30,7 +30,7 @@ Plugin authors should read the Breaking section before upgrading.
 - `PluginCategory` no longer extends `DAO`, and the `t_plugin_category` table is removed; its public calls still work.
 - Listing Import 0.3 needs Shopclass 7.0. Its old plugin keys stop working: make new keys in **Settings → API**.
 - Listing Import's API lives under `/api/v1/ext/listing-import/`; its 0.2 paths are gone.
-- Plugin API routes live only under `/api/v1/ext/<plugin>/`. An admin plugin route needs an `admin:` scope, or the plugin's own declared `ext:` scope for admins or moderators.
+- Plugin API routes live only under `/api/v1/ext/<plugin>/`, and the route's `plugin` must be that slug. An admin plugin route needs an `admin:` scope, or the plugin's own declared `ext:` scope for admins or moderators.
 - A record Listing Import cannot import is a `422 validation_failed`.
 - `osc_count_premium_comments()` and `osc_has_premium_comments()` are removed. They called a method that never existed, so any call ended in a fatal error.
 - The `/api/` path is reserved; a page or category with the slug `api` must be renamed. System info and `doctor` list any.
@@ -44,13 +44,14 @@ Plugin authors should read the Breaking section before upgrading.
 - API sign-ins and the web sign-in form share one limit on wrong passwords.
 - A user keeps at most 20 saved searches, set under **Settings → Spam and bots → Search alerts**.
 - Changing the e-mail through the API asks for the current password.
-- A photo URL that fails to download no longer says what the far server answered.
+- A photo URL that is refused or fails to download no longer says why.
 
 ### Performance
 
 - The API counts requests in APCu when it is available. Write and hourly caps count in the database.
 - The market catalogue cache moved out of the site preferences, which every page loads (about 140 KB on a site that has browsed the market).
-- Photo URLs in an API listing write download at the same time, not one after another.
+- Photo URLs in an API listing write download at the same time, not one after another, within 30 seconds in all.
+- Saving a listing whose expiry did not change no longer rewrites it.
 
 ### Changed
 
@@ -62,6 +63,7 @@ Plugin authors should read the Breaking section before upgrading.
 - A subcategory under a disabled parent can be disabled.
 - Category and custom field labels are escaped in core forms.
 - Comment hooks receive the comment id as an int.
+- `pre_item_delete_comment_post` fires only once the comment's author is confirmed.
 - Upgrading refreshes an `.htaccess` Shopclass wrote so Apache passes the `Authorization` header to the API; a hand-edited one is left alone.
 - Web sign-in checks bans against the account's e-mail.
 - Web sign-up refuses a banned address as well as a banned e-mail.

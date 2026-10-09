@@ -172,10 +172,10 @@ final class CommentService
     }
 
     /**
-     * The author deletes their own live comment. Fires `pre_item_delete_comment_post`, then
-     * on success `delete_comment`.
+     * The author deletes their own live comment. Fires `pre_item_delete_comment_post` once the
+     * author is confirmed, then on success `delete_comment`.
      *
-     * @param int $itemId the listing the request named, for the first hook when the comment is gone
+     * @param int $itemId the listing the request named; no longer read
      *
      * @throws ForbiddenException for a guest, or a comment someone else wrote
      * @throws NotFoundException  for no such comment, or someone else's this user may not read
@@ -183,17 +183,14 @@ final class CommentService
      */
     public function delete(int $commentId, Actor $actor, int $itemId = 0): void
     {
-        $comment = $this->comments->findByPrimaryKey($commentId);
-        $found   = is_array($comment) && $comment !== [];
-        $item    = $this->items->findByPrimaryKey($found ? (int) $comment['fk_i_item_id'] : $itemId);
-        osc_run_hook('pre_item_delete_comment_post', $item, $commentId);
-
         if ($actor->userId() === null) {
             throw new ForbiddenException(_m('You must be logged in to delete a comment'), ForbiddenException::SIGN_IN);
         }
-        if (!$found) {
+        $comment = $this->comments->findByPrimaryKey($commentId);
+        if (!is_array($comment) || $comment === []) {
             throw new NotFoundException(_m("The comment doesn't exist"));
         }
+        $item = $this->items->findByPrimaryKey((int) $comment['fk_i_item_id']);
         if (!CommentPolicy::isAuthor($comment, $actor)) {
             // A comment this user may not read is not there for them, as when reading it.
             if (!CommentPolicy::canView($comment, $item, $actor)) {
@@ -201,6 +198,7 @@ final class CommentService
             }
             throw new ForbiddenException(_m('The comment was not added by you, you cannot delete it'), ForbiddenException::NOT_OWNER);
         }
+        osc_run_hook('pre_item_delete_comment_post', $item, $commentId);
         if ((int) $comment['b_active'] !== 1) {
             throw new ConflictException(_m('The comment is not active, you cannot delete it'));
         }

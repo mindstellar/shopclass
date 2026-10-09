@@ -57,10 +57,23 @@ check('a new name does', $versions->version('account', [], $owner) !== $account)
 pin('an anonymous credential has no account', null, $versions->version('account', [], $nobody));
 
 harness_section('one query');
-pin('a listing\'s version is one query, not one per table (was 4)', 1, harness_query_count(static fn () => $versions->version('listings/{id}', ['id' => (string) $item], $nobody)));
-pin('the account\'s too (was 2)', 1, harness_query_count(static fn () => $versions->version('account', [], $owner)));
+pin('a listing\'s version is one query, not one per table', 1, harness_query_count(static fn () => $versions->version('listings/{id}', ['id' => (string) $item], $nobody)));
+pin('the account\'s too', 1, harness_query_count(static fn () => $versions->version('account', [], $owner)));
 pin('an owner check still refuses another user\'s listing', null, $versions->version('listings/{id}', ['id' => (string) $item], new Credential(CredentialKind::KEY, [], $user + 1), false, true));
 check('an owner check lets the owner through', $versions->version('listings/{id}', ['id' => (string) $item], $owner, false, true) !== null);
+$admin->query("INSERT INTO {$p}t_alerts (s_email, fk_i_user_id, s_search, b_active, e_type, dt_date) VALUES ('tester@example.test', $user, 'x', 1, 'DAILY', NOW())");
+$alert = (int) $admin->insert_id;
+$admin->query("INSERT INTO {$p}t_api_credential (e_kind, s_token_id, s_secret_hash, s_name, s_scopes, fk_i_user_id, dt_created) VALUES ('key', 'rowversionstest1', '" . str_repeat('a', 64) . "', 'Row versions', 'account:write', $user, NOW())");
+$apiKey   = (int) $admin->insert_id;
+$stranger = new Credential(CredentialKind::KEY, ['account:write'], $user + 1);
+pin('another user\'s alert and key give no version, read or locked', [null, null, null, null], [
+    $versions->version('account/alerts/{id}', ['id' => (string) $alert], $stranger, false, true),
+    $versions->version('account/keys/{id}', ['id' => (string) $apiKey], $stranger, false, true),
+    $versions->atomically(static fn () => $versions->version('account/alerts/{id}', ['id' => (string) $alert], $stranger, true)),
+    $versions->atomically(static fn () => $versions->version('account/keys/{id}', ['id' => (string) $apiKey], $stranger, true)),
+]);
+check('their owner gets both', $versions->version('account/alerts/{id}', ['id' => (string) $alert], $owner, false, true) !== null
+    && $versions->version('account/keys/{id}', ['id' => (string) $apiKey], $owner, false, true) !== null);
 
 harness_section('columns');
 foreach (RowVersions::COLUMNS as $table => $columns) {
@@ -134,8 +147,8 @@ $blocked = static function () use ($admin, $p, $item): bool {
         return $e->getCode() === 1205;
     }
 };
-$inside = $versions->atomically(static function () use ($versions, $item, $nobody, $blocked): array {
-    return [$versions->version('listings/{id}', ['id' => (string) $item], $nobody, true), $blocked()];
+$inside = $versions->atomically(static function () use ($versions, $item, $owner, $blocked): array {
+    return [$versions->version('listings/{id}', ['id' => (string) $item], $owner, true), $blocked()];
 });
 pin('a locked read holds the row against another writer until commit', [$v2, true], $inside);
 check('after which the row can be written again', !$blocked());

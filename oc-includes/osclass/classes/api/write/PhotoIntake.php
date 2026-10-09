@@ -96,8 +96,8 @@ final class PhotoIntake
             foreach ($staged as $photo) {
                 $copies[] = $this->copy($photo);
             }
-            foreach ($wanted as $url) {
-                $this->limiter->enforce($this->limits->photoFetch($userId), 'Too many photos fetched by URL in an hour. Try again later.');
+            if ($wanted !== []) {
+                $this->limiter->enforceN($this->limits->photoFetch($userId), count($wanted), 'Too many photos fetched by URL in an hour. Try again later.');
             }
             $fetched = $wanted === [] ? [] : $this->fetch($wanted);
         } catch (ProblemException $e) {

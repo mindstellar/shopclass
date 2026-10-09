@@ -34,7 +34,7 @@ final class RowVersions implements ResourceVersions
 
     private const COMMENT = ['arg' => 'id', 'owner' => 'fk_i_user_id', 'tables' => [['t_item_comment', 'pk_i_id']]];
 
-    private const KEY = ['arg' => 'id', 'tables' => [['t_api_credential', 'pk_i_id']]];
+    private const KEY = ['arg' => 'id', 'owner' => 'fk_i_user_id', 'tables' => [['t_api_credential', 'pk_i_id']]];
 
     private const USER_TABLES = [['t_user', 'pk_i_id'], ['t_user_description', 'fk_i_user_id']];
 
@@ -50,7 +50,7 @@ final class RowVersions implements ResourceVersions
         'admin/comments/{id}'           => self::COMMENT,
         'account'                       => ['arg' => null, 'tables' => self::USER_TABLES],
         'admin/users/{id}'              => ['arg' => 'id', 'tables' => self::USER_TABLES],
-        'account/alerts/{id}'           => ['arg' => 'id', 'tables' => [['t_alerts', 'pk_i_id']]],
+        'account/alerts/{id}'           => ['arg' => 'id', 'owner' => 'fk_i_user_id', 'tables' => [['t_alerts', 'pk_i_id']]],
         'account/keys/{id}'             => self::KEY,
         'admin/keys/{id}'               => self::KEY,
         'admin/categories/{id}'         => ['arg' => 'id', 'tables' => [['t_category', 'pk_i_id'], ['t_category_description', 'fk_i_category_id']]],
@@ -109,7 +109,8 @@ final class RowVersions implements ResourceVersions
         if ($head === null) {
             return null;
         }
-        if ($ownerOnly && $owner !== null && !$credential->isAdmin() && (int) ($head['o'] ?? 0) !== (int) $credential->userId()) {
+        // A locked read is for a write, so another user's row never gives a version to match.
+        if (($ownerOnly || $lock) && $owner !== null && !$credential->isAdmin() && (int) ($head['o'] ?? 0) !== (int) $credential->userId()) {
             return null;
         }
         foreach ($rows as &$hashes) {

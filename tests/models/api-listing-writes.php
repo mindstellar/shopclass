@@ -409,6 +409,15 @@ pin('with moderation on the listing waits: pending, with a warning', array(201, 
 pin('a pending listing sends the activation e-mail as from the form', 1, $fired['hook_email_item_validation'] ?? 0);
 $pendingId = (int) $r->body()['data']['id'];
 Preference::getInstance()->set('moderate_items', '-1');
+$heldId = (int) ($call('POST', 'listings', $listing(array('title' => 'Held coupe')), $sueToken)->body()['data']['id'] ?? 0);
+$r      = $call('PATCH', 'listings/' . $heldId, array('price' => '1300'), $sueToken);
+pin('a live listing\'s edit has no warning', array(200, array()), array($r->status(), $r->body()['warnings'] ?? array()));
+Preference::getInstance()->set('moderate_admin_edit', '1');
+osc_reset_preferences();
+$r = $call('PATCH', 'listings/' . $heldId, array('price' => '1400'), $sueToken);
+pin('an edit held for the admin\'s approval disables the listing and warns that it is pending', array(200, 'disabled', 'listing_pending'), array($r->status(), $r->body()['data']['status'] ?? null, $r->body()['warnings'][0]['code'] ?? null));
+Preference::getInstance()->set('moderate_admin_edit', '0');
+osc_reset_preferences();
 
 osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');
 osc_set_preference('billing_free_live_listings', '1', 'osclass', 'INTEGER');
@@ -754,6 +763,15 @@ pin('a failed download is 422 at its pointer and says only that it failed', arra
 $batches = array();
 $refused = $problem(static fn () => $sideIntake->batch(array('photo_urls' => array('https://photos.example.com/a.jpg', 'https://intranet.example.com/b.jpg')), $sue, null));
 pin('every address is checked before any download starts', array(array(422, '/photo_urls/1'), array()), array(array_slice((array) $refused, 0, 2), $batches));
+$guarded = new ImageFetcher(new AddressGuard(static fn (string $host): array => $host === 'inside.example' ? array('10.0.0.5') : array()), static fn (): array => array());
+pin('a private address and one that does not resolve get the same answer', array(1 => ImageFetcher::REFUSED, 2 => ImageFetcher::REFUSED), $guarded->fetchAll(array(1 => 'https://inside.example/a.jpg', 2 => 'https://nowhere.example/a.jpg'), array(1 => '/unused', 2 => '/unused'), 10));
+pin('...and the API answers only that', 'the address is not one the site downloads from', $refused[2] ?? null);
+$admin->query("DELETE FROM {$p}t_rate_counter");
+$fetchBucket = (new RatePolicy(new ApiSettings(true, photoUrls: true)))->photoFetch($sue);
+$realLimiter = RateLimiter::sampled(new SystemClock());
+$qFetchCount = harness_query_count(static fn () => $realLimiter->enforceN($fetchBucket, 3, 'Too many.'));
+pin('three URLs are counted in the fetch limit with one write', array(1, 3), array($qFetchCount, \mindstellar\security\RateLimit::count('api_photo_fetch', (string) $sue, 3600)));
+$admin->query("DELETE FROM {$p}t_rate_counter");
 
 harness_section('queries');
 $qMade = 0;

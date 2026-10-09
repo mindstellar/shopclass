@@ -826,7 +826,7 @@ final class ListingService
 
         // Only the columns the stats and expiry below compare, read before anything is written.
         // Locking the listing row first keeps the lock order of an If-Match edit, so the two cannot deadlock.
-        $old_item = ListingStore::find($aItem['idItem'], array('fk_i_user_id', 'fk_i_category_id', 'b_enabled', 'b_active', 'b_spam', 'b_premium', 'dt_expiration'), true);
+        $old_item = ListingStore::find($aItem['idItem'], array('fk_i_user_id', 'fk_i_category_id', 'b_enabled', 'b_active', 'b_spam', 'b_premium', 'dt_pub_date', 'dt_expiration'), true);
         $old_item = $old_item === null ? array() : Db::stringifyRow($old_item);
 
         // Validate
@@ -909,7 +909,6 @@ final class ListingService
             $where['s_secret'] = $aItem['secret'];
         }
         $result = $this->items->update($aUpdate, $where);
-        // UPLOAD item resources
         $this->photos->store($aItem['photos'], $aItem['idItem']);
 
         \Log::getInstance()->insertLog(
@@ -925,15 +924,15 @@ final class ListingService
 
         // Premium keeps an expired listing counted, as the recount does.
         $oldIsExpired  = empty($old_item['b_premium']) && osc_isExpired($old_item['dt_expiration']);
-        $dt_expiration = \Item::getInstance()
-            ->updateExpirationDate($aItem['idItem'], $aItem['dt_expiration'], false);
+        $dt_expiration = self::sameExpiry($aItem['dt_expiration'], $old_item)
+            ? false
+            : \Item::getInstance()->updateExpirationDate($aItem['idItem'], $aItem['dt_expiration'], false);
         if ($dt_expiration === false) {
             $dt_expiration          = $old_item['dt_expiration'];
             $aItem['dt_expiration'] = $old_item['dt_expiration'];
         }
         $newIsExpired = empty($old_item['b_premium']) && osc_isExpired($dt_expiration);
 
-        // Recalculate stats related with items
         ListingStats::afterEdit(
             $result,
             $old_item,
@@ -944,16 +943,36 @@ final class ListingService
             $location
         );
 
-        unset($old_item);
-
-        if ((!$actor->isAdmin() || $import) && osc_moderate_admin_edit()) {
+        $held = (!$actor->isAdmin() || $import) && osc_moderate_admin_edit();
+        if ($held) {
             $this->disable($aItem['idItem']);
         }
 
-        // THIS HOOK IS FINE, YAY!
         osc_run_hook('edited_item', \Item::getInstance()->findByPrimaryKey($aItem['idItem']));
 
-        return new SavedListing((int) $aItem['idItem'], false, $result === false ? false : (int) $result);
+        // Pending as on a new listing: it still waits for activation, or the edit waits for the admin.
+        $pending = $held || ($old_item !== array() && ListingStatus::of($old_item) === ListingStatus::PENDING);
+
+        return new SavedListing((int) $aItem['idItem'], $pending, $result === false ? false : (int) $result);
+    }
+
+    /**
+     * Whether the expiry an edit asks for is the one stored, so it need not be written again.
+     *
+     * @param mixed                $asked a date, or days from the publish date, as ListingInput gives it
+     * @param array<string,string> $old   the stored row, with dt_pub_date and dt_expiration
+     */
+    private static function sameExpiry(mixed $asked, array $old): bool
+    {
+        if (!is_string($asked) || $asked === '' || !isset($old['dt_expiration'], $old['dt_pub_date'])) {
+            return false;
+        }
+        if (!ctype_digit($asked)) {
+            return $asked === $old['dt_expiration'];
+        }
+        $from = \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $old['dt_pub_date'], new \DateTimeZone('UTC'));
+
+        return $from !== false && $from->modify('+' . (int) $asked . ' days')->format('Y-m-d H:i:s') === $old['dt_expiration'];
     }
 
     /**
