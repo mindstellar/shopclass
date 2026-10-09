@@ -26,6 +26,15 @@ use mindstellar\pages\PageService;
 
 class CAdminPages extends AdminSecBaseModel
 {
+    /** Each action and the method that answers it; any other action goes to pages(). */
+    private const ACTIONS = array(
+        'edit'      => 'editForm',
+        'edit_post' => 'editPost',
+        'add'       => 'addForm',
+        'add_post'  => 'addPost',
+        'delete'    => 'deletePages',
+    );
+
     //specific for this class
     private $pageManager;
 
@@ -53,155 +62,182 @@ class CAdminPages extends AdminSecBaseModel
     {
         parent::doModel();
 
-        //specific things for this class
-        switch ($this->action) {
-            case 'edit':
-                if (Params::getParam('id') == '') {
-                    $this->redirectTo(osc_admin_base_url(true) . '?page=pages');
-                }
+        $method = is_string($this->action) ? (self::ACTIONS[$this->action] ?? 'pages') : 'pages';
 
-                $form     = count(Session::getInstance()->_getForm());
-                $keepForm = count(Session::getInstance()->_getKeepForm());
-                if ($form == 0 || $form == $keepForm) {
-                    Session::getInstance()->_dropKeepForm();
-                }
-
-                $templates = osc_apply_filter('page_templates', WebThemes::getInstance()->getAvailableTemplates());
-                $this->_exportVariableToView('templates', $templates);
-                $this->_exportVariableToView('registeredTemplates', osc_page_templates());
-                $this->_exportVariableToView('page', $this->pageManager->findByPrimaryKey(Params::getParam('id')));
-                $this->doView('pages/frm.php');
-                break;
-            case 'edit_post':
-                osc_csrf_check();
-                $this->savePage(Params::getParam('id'));
-
-                return;
-            case 'add':
-                $form     = count(Session::getInstance()->_getForm());
-                $keepForm = count(Session::getInstance()->_getKeepForm());
-                if ($form == 0 || $form == $keepForm) {
-                    Session::getInstance()->_dropKeepForm();
-                }
-
-                $templates = osc_apply_filter('page_templates', WebThemes::getInstance()->getAvailableTemplates());
-                $this->_exportVariableToView('templates', $templates);
-                $this->_exportVariableToView('registeredTemplates', osc_page_templates());
-                $this->_exportVariableToView('page', array());
-                $this->doView('pages/frm.php');
-                break;
-            case 'add_post':
-                osc_csrf_check();
-                $this->savePage(null);
-
-                return;
-            case 'delete':
-                osc_csrf_check();
-                $id                    = Params::getParam('id');
-                $page_deleted_correcty = 0;
-                $page_deleted_error    = 0;
-                $page_indelible        = 0;
-
-                if (!is_array($id)) {
-                    $id = array($id);
-                }
-
-                $pageService = PageService::make();
-                foreach ($id as $_id) {
-                    // A malformed id (an array, or not a number) is an error, not page (int) 1.
-                    $result = is_scalar($_id) && ctype_digit((string) $_id) ? (int) $pageService->delete((int) $_id) : 0;
-                    switch ($result) {
-                        case -1:
-                            $page_indelible++;
-                            break;
-                        case 0:
-                            $page_deleted_error++;
-                            break;
-                        case 1:
-                            $page_deleted_correcty++;
-                    }
-                }
-
-                if ($page_indelible > 0) {
-                    if ($page_indelible == 1) {
-                        osc_add_flash_error_message(_m("One page can't be deleted because it is indelible"), 'admin');
-                    } else {
-                        osc_add_flash_error_message(sprintf(
-                            _m("%s pages couldn't be deleted because they are indelible"),
-                            $page_indelible
-                        ), 'admin');
-                    }
-                }
-                if ($page_deleted_error > 0) {
-                    if ($page_deleted_error == 1) {
-                        osc_add_flash_error_message(_m("One page couldn't be deleted"), 'admin');
-                    } else {
-                        osc_add_flash_error_message(
-                            sprintf(_m("%s pages couldn't be deleted"), $page_deleted_error),
-                            'admin'
-                        );
-                    }
-                }
-                if ($page_deleted_correcty > 0) {
-                    if ($page_deleted_correcty == 1) {
-                        osc_add_flash_ok_message(_m('One page has been deleted correctly'), 'admin');
-                    } else {
-                        osc_add_flash_ok_message(sprintf(
-                            _m('%s pages have been deleted correctly'),
-                            $page_deleted_correcty
-                        ), 'admin');
-                    }
-                }
-                $this->redirectTo(osc_admin_base_url(true) . '?page=pages');
-                break;
-            default:
-                if (Params::getParam('action') != '') {
-                    osc_run_hook('page_bulk_' . Params::getParam('action'), Params::getParam('id'));
-                }
-
-                require_once osc_lib_path() . 'osclass/classes/datatables/PagesDataTable.php';
-
-                ListPaging::rememberedLength();
-                $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
-
-                // Table header order by related
-                if (Params::getParam('sort') == '') {
-                    Params::setParam('sort', 'date');
-                }
-                if (Params::getParam('direction') == '') {
-                    Params::setParam('direction', 'desc');
-                }
-
-                $page = ListPaging::page();
-
-                $params = Params::getParamsAsArray();
-
-                $pagesDataTable = new PagesDataTable();
-                $pagesDataTable->table($params);
-                $aData = $pagesDataTable->getData();
-
-                $pastEnd = ListPaging::pastEnd($aData, (int) $page);
-                if ($pastEnd !== null) {
-                    $this->redirectTo($pastEnd);
-                }
-
-                $this->_exportVariableToView('aData', $aData);
-                $this->_exportVariableToView('aRawRows', $pagesDataTable->rawRows());
-
-                $bulk_options = BulkAction::options(
-                    array(
-                        'delete' => __('Delete')
-                    ),
-                    __('Are you sure you want to %s the selected pages?')
-                );
-                $bulk_options = osc_apply_filter('page_bulk_filter', $bulk_options);
-                $this->_exportVariableToView('bulk_options', $bulk_options);
-
-                $this->doView('pages/index.php');
-                break;
-        }
+        $this->$method();
     }
 
+    /**
+     * The page editor.
+     */
+    private function editForm(): void
+    {
+        if (Params::getParam('id') == '') {
+            $this->redirectTo(osc_admin_base_url(true) . '?page=pages');
+        }
+
+        $form     = count(Session::getInstance()->_getForm());
+        $keepForm = count(Session::getInstance()->_getKeepForm());
+        if ($form == 0 || $form == $keepForm) {
+            Session::getInstance()->_dropKeepForm();
+        }
+
+        $templates = osc_apply_filter('page_templates', WebThemes::getInstance()->getAvailableTemplates());
+        $this->_exportVariableToView('templates', $templates);
+        $this->_exportVariableToView('registeredTemplates', osc_page_templates());
+        $this->_exportVariableToView('page', $this->pageManager->findByPrimaryKey(Params::getParam('id')));
+        $this->doView('pages/frm.php');
+    }
+
+    /**
+     * Save the page editor.
+     */
+    private function editPost(): void
+    {
+        osc_csrf_check();
+        $this->savePage(Params::getParam('id'));
+    }
+
+    /**
+     * The form for a new page.
+     */
+    private function addForm(): void
+    {
+        $form     = count(Session::getInstance()->_getForm());
+        $keepForm = count(Session::getInstance()->_getKeepForm());
+        if ($form == 0 || $form == $keepForm) {
+            Session::getInstance()->_dropKeepForm();
+        }
+
+        $templates = osc_apply_filter('page_templates', WebThemes::getInstance()->getAvailableTemplates());
+        $this->_exportVariableToView('templates', $templates);
+        $this->_exportVariableToView('registeredTemplates', osc_page_templates());
+        $this->_exportVariableToView('page', array());
+        $this->doView('pages/frm.php');
+    }
+
+    /**
+     * Create a page from the form.
+     */
+    private function addPost(): void
+    {
+        osc_csrf_check();
+        $this->savePage(null);
+    }
+
+    /**
+     * Delete the selected pages.
+     */
+    private function deletePages(): void
+    {
+        osc_csrf_check();
+        $id                    = Params::getParam('id');
+        $page_deleted_correcty = 0;
+        $page_deleted_error    = 0;
+        $page_indelible        = 0;
+
+        if (!is_array($id)) {
+            $id = array($id);
+        }
+
+        $pageService = PageService::make();
+        foreach ($id as $_id) {
+            // A malformed id (an array, or not a number) is an error, not page (int) 1.
+            $result = is_scalar($_id) && ctype_digit((string) $_id) ? (int) $pageService->delete((int) $_id) : 0;
+            switch ($result) {
+                case -1:
+                    $page_indelible++;
+                    break;
+                case 0:
+                    $page_deleted_error++;
+                    break;
+                case 1:
+                    $page_deleted_correcty++;
+            }
+        }
+
+        if ($page_indelible > 0) {
+            if ($page_indelible == 1) {
+                osc_add_flash_error_message(_m("One page can't be deleted because it is indelible"), 'admin');
+            } else {
+                osc_add_flash_error_message(sprintf(
+                    _m("%s pages couldn't be deleted because they are indelible"),
+                    $page_indelible
+                ), 'admin');
+            }
+        }
+        if ($page_deleted_error > 0) {
+            if ($page_deleted_error == 1) {
+                osc_add_flash_error_message(_m("One page couldn't be deleted"), 'admin');
+            } else {
+                osc_add_flash_error_message(
+                    sprintf(_m("%s pages couldn't be deleted"), $page_deleted_error),
+                    'admin'
+                );
+            }
+        }
+        if ($page_deleted_correcty > 0) {
+            if ($page_deleted_correcty == 1) {
+                osc_add_flash_ok_message(_m('One page has been deleted correctly'), 'admin');
+            } else {
+                osc_add_flash_ok_message(sprintf(
+                    _m('%s pages have been deleted correctly'),
+                    $page_deleted_correcty
+                ), 'admin');
+            }
+        }
+        $this->redirectTo(osc_admin_base_url(true) . '?page=pages');
+    }
+
+    /**
+     * The pages table.
+     */
+    private function pages(): void
+    {
+        if (Params::getParam('action') != '') {
+            osc_run_hook('page_bulk_' . Params::getParam('action'), Params::getParam('id'));
+        }
+
+        require_once osc_lib_path() . 'osclass/classes/datatables/PagesDataTable.php';
+
+        ListPaging::rememberedLength();
+        $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
+
+        // Table header order by related
+        if (Params::getParam('sort') == '') {
+            Params::setParam('sort', 'date');
+        }
+        if (Params::getParam('direction') == '') {
+            Params::setParam('direction', 'desc');
+        }
+
+        $page = ListPaging::page();
+
+        $params = Params::getParamsAsArray();
+
+        $pagesDataTable = new PagesDataTable();
+        $pagesDataTable->table($params);
+        $aData = $pagesDataTable->getData();
+
+        $pastEnd = ListPaging::pastEnd($aData, (int) $page);
+        if ($pastEnd !== null) {
+            $this->redirectTo($pastEnd);
+        }
+
+        $this->_exportVariableToView('aData', $aData);
+        $this->_exportVariableToView('aRawRows', $pagesDataTable->rawRows());
+
+        $bulk_options = BulkAction::options(
+            array(
+                'delete' => __('Delete')
+            ),
+            __('Are you sure you want to %s the selected pages?')
+        );
+        $bulk_options = osc_apply_filter('page_bulk_filter', $bulk_options);
+        $this->_exportVariableToView('bulk_options', $bulk_options);
+
+        $this->doView('pages/index.php');
+    }
     //hopefully generic...
 
     /**

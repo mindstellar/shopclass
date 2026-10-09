@@ -66,6 +66,14 @@ $controllers = array(
     'CWebUserNonSecure' => array('CWebUserNonSecure.php', array(
         'activate_alert', 'change_email_confirm', 'contact_post', 'pub_profile', 'unsub_alert',
     ), 'toSignIn'),
+    'CAdminItemComments' => array('admin/CAdminItemComments.php', array(
+        'bulk_actions', 'comment_edit', 'comment_edit_post', 'delete', 'status',
+    ), 'comments'),
+    'CAdminAdmins' => array('admin/CAdminAdmins.php', array(
+        '2fa_codes', '2fa_enable', '2fa_off', '2fa_setup', 'add', 'add_post', 'delete', 'edit', 'edit_post', 'sign_out_all',
+    ), 'admins'),
+    'CAdminPages' => array('admin/CAdminPages.php', array('add', 'add_post', 'delete', 'edit', 'edit_post'), 'pages'),
+    'CWebContact' => array('CWebContact.php', array('confirm', 'confirm_post', 'contact_post', 'report', 'report_post'), 'contactForm'),
 );
 
 foreach ($controllers as $class => [$file, $expected, $fallback]) {

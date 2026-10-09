@@ -230,7 +230,7 @@ $view = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/gui/account/u
 $form = substr($view, (int) strpos($view, 'id="sign-out-all"'), 1500);
 check('the account form asks for the password and is not exempt from the CSRF token', str_contains($form, 'name="password"') && !str_contains($form, 'nocsrf'));
 $admins = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminAdmins.php');
-$case   = substr($admins, (int) strpos($admins, "case ('sign_out_all'):"), 400);
+$case   = harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminAdmins.php', 'signOutAll');
 $method = substr($admins, (int) strpos($admins, 'private function signOutEverywhere()'), 900);
 check('the admin button checks the CSRF token, then the password and code', str_contains($case, 'osc_csrf_check();') && str_contains($method, 'AdminReauth::verify('));
 $users = harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminUsers.php', 'signOutAll');

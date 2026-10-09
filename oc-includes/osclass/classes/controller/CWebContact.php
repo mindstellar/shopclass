@@ -17,6 +17,15 @@
  */
 class CWebContact extends BaseModel
 {
+    /** Each action and the method that answers it; any other action goes to contactForm(). */
+    private const ACTIONS = array(
+        'contact_post' => 'contactPost',
+        'report'       => 'messageLink',
+        'confirm'      => 'messageLink',
+        'report_post'  => 'reportPost',
+        'confirm_post' => 'confirmPost',
+    );
+
     /**
      * Boots the base controller and fires the `init_contact` hook.
      */
@@ -36,65 +45,75 @@ class CWebContact extends BaseModel
      */
     public function doModel()
     {
-        switch ($this->action) {
-            case ('contact_post'):   //contact_post
-                osc_csrf_check();
-                $yourName  = Params::getParamString('yourName');
-                $yourEmail = Params::getParamString('yourEmail');
-                $subject   = Params::getParamString('subject');
-                $message   = Params::getParamString('message');
-                // A failed send keeps what was typed and the reason, so the form can show both.
-                $fail = function (string $error) use ($yourName, $yourEmail, $subject, $message) {
-                    osc_keep_form(array(
-                        'yourName' => $yourName, 'yourEmail' => $yourEmail,
-                        'subject'  => $subject, 'message_body' => $message,
-                    ), $error);
-                    $this->redirectTo(osc_contact_url());
-                };
+        $method = is_string($this->action) ? (self::ACTIONS[$this->action] ?? 'contactForm') : 'contactForm';
 
-                if (!\mindstellar\security\Captcha::passes()) {
-                    $fail(\mindstellar\security\Captcha::failMessage());
+        return $this->$method() === false ? false : null;
+    }
 
-                    return false;
-                }
-                // Themes label name and subject optional, so only the message is required.
-                if (trim($message) === '') {
-                    $fail(_m('Please enter a message.'));
+    /**
+     * Send the contact form to the site.
+     *
+     * @return false|null false when the captcha check failed and the form is shown again
+     */
+    private function contactPost(): ?bool
+    {
+        osc_csrf_check();
+        $yourName  = Params::getParamString('yourName');
+        $yourEmail = Params::getParamString('yourEmail');
+        $subject   = Params::getParamString('subject');
+        $message   = Params::getParamString('message');
+        // A failed send keeps what was typed and the reason, so the form can show both.
+        $fail = function (string $error) use ($yourName, $yourEmail, $subject, $message) {
+            osc_keep_form(array(
+                'yourName' => $yourName, 'yourEmail' => $yourEmail,
+                'subject'  => $subject, 'message_body' => $message,
+            ), $error);
+            $this->redirectTo(osc_contact_url());
+        };
 
-                    return false;
-                }
-                if (!osc_validate_email($yourEmail)) {
-                    $fail(_m('Please enter a correct email'));
+        if (!\mindstellar\security\Captcha::passes()) {
+            $fail(\mindstellar\security\Captcha::failMessage());
 
-                    return false;
-                }
+            return false;
+        }
+        // Themes label name and subject optional, so only the message is required.
+        if (trim($message) === '') {
+            $fail(_m('Please enter a message.'));
 
-                $refused = \mindstellar\security\MessageGuard::refusal($yourEmail, $message, array($yourName));
-                if ($refused !== null) {
-                    $fail($refused);
+            return false;
+        }
+        if (!osc_validate_email($yourEmail)) {
+            $fail(_m('Please enter a correct email'));
 
-                    return false;
-                }
-                if (\mindstellar\security\ActionThrottle::exceededFor('site_contact')) {
-                    $fail(_m("You've sent too many messages recently. Please try again later."));
+            return false;
+        }
 
-                    return false;
-                }
+        $refused = \mindstellar\security\MessageGuard::refusal($yourEmail, $message, array($yourName));
+        if ($refused !== null) {
+            $fail($refused);
 
-                $user = User::getInstance()->findByEmail($yourEmail);
-                if (isset($user['b_active']) && !\mindstellar\user\UserStore::isLive($user)) {
-                    $fail(_m('Your current email is not allowed'));
+            return false;
+        }
+        if (\mindstellar\security\ActionThrottle::exceededFor('site_contact')) {
+            $fail(_m("You've sent too many messages recently. Please try again later."));
 
-                    return false;
-                }
+            return false;
+        }
 
-                $message_name    = sprintf(__('Name: %s'), $yourName);
-                $message_email   = sprintf(__('Email: %s'), $yourEmail);
-                $message_subject = sprintf(__('Subject: %s'), $subject);
-                $message_body    = sprintf(__('Message: %s'), $message);
-                $message_date    = sprintf(__('Date: %s at %s'), date('l F d, Y'), date('g:i a'));
-                $message_IP      = sprintf(__('IP Address: %s'), get_ip());
-                $message         = <<<MESSAGE
+        $user = User::getInstance()->findByEmail($yourEmail);
+        if (isset($user['b_active']) && !\mindstellar\user\UserStore::isLive($user)) {
+            $fail(_m('Your current email is not allowed'));
+
+            return false;
+        }
+
+        $message_name    = sprintf(__('Name: %s'), $yourName);
+        $message_email   = sprintf(__('Email: %s'), $yourEmail);
+        $message_subject = sprintf(__('Subject: %s'), $subject);
+        $message_body    = sprintf(__('Message: %s'), $message);
+        $message_date    = sprintf(__('Date: %s at %s'), date('l F d, Y'), date('g:i a'));
+        $message_IP      = sprintf(__('IP Address: %s'), get_ip());
+        $message         = <<<MESSAGE
 {$message_name}
 {$message_email}
 {$message_subject}
@@ -104,77 +123,94 @@ class CWebContact extends BaseModel
 {$message_IP}
 MESSAGE;
 
-                $params = array(
-                    'from'     => _osc_from_email_aux(),
-                    'to'       => osc_contact_email(),
-                    'to_name'  => osc_page_title(),
-                    'reply_to' => $yourEmail,
-                    'subject'  => '[' . osc_page_title() . '] ' . __('Contact') . ' - ' . $subject,
-                    'body'     => nl2br(osc_esc_html($message))
-                        . \mindstellar\security\MessageGuard::reportFooter($yourEmail, osc_contact_email(), true),
-                );
+        $params = array(
+            'from'     => _osc_from_email_aux(),
+            'to'       => osc_contact_email(),
+            'to_name'  => osc_page_title(),
+            'reply_to' => $yourEmail,
+            'subject'  => '[' . osc_page_title() . '] ' . __('Contact') . ' - ' . $subject,
+            'body'     => nl2br(osc_esc_html($message))
+                . \mindstellar\security\MessageGuard::reportFooter($yourEmail, osc_contact_email(), true),
+        );
 
-                $attachment = osc_contact_attachment() ? osc_mail_upload_attachment('attachment') : null;
-                $refused    = \mindstellar\security\MessageHold::attachmentError($yourEmail, $attachment);
-                if ($refused !== null) {
-                    $fail($refused);
+        $attachment = osc_contact_attachment() ? osc_mail_upload_attachment('attachment') : null;
+        $refused    = \mindstellar\security\MessageHold::attachmentError($yourEmail, $attachment);
+        if ($refused !== null) {
+            $fail($refused);
 
-                    return false;
-                }
-                if (is_array($attachment)) {
-                    $params['attachment'] = $attachment;
-                }
-
-                osc_run_hook('pre_contact_post', $params);
-                $sent = \mindstellar\security\MessageHold::deliver(
-                    'site_contact',
-                    $yourEmail,
-                    array('params' => osc_apply_filter('contact_params', $params), 'message' => $message)
-                );
-                \mindstellar\security\ActionThrottle::record('site_contact');
-                if ($sent) {
-                    osc_add_flash_ok_message(_m('Your email has been sent properly. Thank you for contacting us!'));
-                }
-
-                $this->redirectTo(osc_contact_url());
-                break;
-            case ('report'):
-            case ('confirm'):
-                $this->messageView($this->action);
-                break;
-            case ('report_post'):
-                $this->linkPost('report', 10, static function (string $token): string {
-                    $status = \mindstellar\security\MessageGuard::report($token);
-                    if ($status === 'done') {
-                        $sender = (string) (\mindstellar\security\MessageGuard::readReport($token)['sender'] ?? '');
-                        Log::getInstance()->insertLog('ban', 'report', 0, $sender, 'user', 0);
-                    }
-
-                    return $status;
-                }, array(
-                    'used'    => _m('This message has already been reported.'),
-                    'invalid' => _m('This report link is not valid or has expired.'),
-                    'admin'   => _m('Only a site admin can ban a sender for good.'),
-                    'failed'  => _m('The report could not be saved. Please try again later.'),
-                ));
-                break;
-            case ('confirm_post'):
-                $discard = Params::getParamString('discard') === '1';
-                $this->linkPost('confirm', 20, static function (string $token) use ($discard): string {
-                    return \mindstellar\security\MessageHold::confirm($token, $discard);
-                }, array(
-                    'gone'    => _m('This message was already sent, or its link has expired.'),
-                    'invalid' => _m('This link is not valid.'),
-                    'failed'  => _m('The message could not be sent. The listing or member may no longer be available.'),
-                ), $discard ? 'deleted' : '1');
-                break;
-            default:                //contact
-                $this->doView(osc_locate_template(array('contact.php'), 'contact'));
+            return false;
         }
+        if (is_array($attachment)) {
+            $params['attachment'] = $attachment;
+        }
+
+        osc_run_hook('pre_contact_post', $params);
+        $sent = \mindstellar\security\MessageHold::deliver(
+            'site_contact',
+            $yourEmail,
+            array('params' => osc_apply_filter('contact_params', $params), 'message' => $message)
+        );
+        \mindstellar\security\ActionThrottle::record('site_contact');
+        if ($sent) {
+            osc_add_flash_ok_message(_m('Your email has been sent properly. Thank you for contacting us!'));
+        }
+
+        $this->redirectTo(osc_contact_url());
 
         return null;
     }
 
+    /**
+     * The page a report or confirm link opens.
+     */
+    private function messageLink(): void
+    {
+        $this->messageView($this->action);
+    }
+
+    /**
+     * Report a message as spam from its link.
+     */
+    private function reportPost(): void
+    {
+        $this->linkPost('report', 10, static function (string $token): string {
+            $status = \mindstellar\security\MessageGuard::report($token);
+            if ($status === 'done') {
+                $sender = (string) (\mindstellar\security\MessageGuard::readReport($token)['sender'] ?? '');
+                Log::getInstance()->insertLog('ban', 'report', 0, $sender, 'user', 0);
+            }
+
+            return $status;
+        }, array(
+            'used'    => _m('This message has already been reported.'),
+            'invalid' => _m('This report link is not valid or has expired.'),
+            'admin'   => _m('Only a site admin can ban a sender for good.'),
+            'failed'  => _m('The report could not be saved. Please try again later.'),
+        ));
+    }
+
+    /**
+     * Send or discard a held message from its link.
+     */
+    private function confirmPost(): void
+    {
+        $discard = Params::getParamString('discard') === '1';
+        $this->linkPost('confirm', 20, static function (string $token) use ($discard): string {
+            return \mindstellar\security\MessageHold::confirm($token, $discard);
+        }, array(
+            'gone'    => _m('This message was already sent, or its link has expired.'),
+            'invalid' => _m('This link is not valid.'),
+            'failed'  => _m('The message could not be sent. The listing or member may no longer be available.'),
+        ), $discard ? 'deleted' : '1');
+    }
+
+    /**
+     * The contact form.
+     */
+    private function contactForm(): void
+    {
+        $this->doView(osc_locate_template(array('contact.php'), 'contact'));
+    }
     /**
      * The button on a message-link page: check the form, spend one of this address's tries
      * for the hour, run $run on the link's token and come back with its outcome.
