@@ -64,6 +64,13 @@ $engine = Cleanup::getInstance();
 
 $dir = 'tests/tmp-cleanup-' . getmypid() . '/';
 @mkdir(ABS_PATH . $dir, 0777, true);
+// Removed at shutdown, so a failed or fatal run leaves no folder behind.
+register_shutdown_function(static function () use ($dir): void {
+    foreach (glob(ABS_PATH . $dir . '*') ?: array() as $file) {
+        @unlink($file);
+    }
+    @rmdir(ABS_PATH . $dir);
+});
 
 $seedResource = static function (string $type, int $owner, string $created) use ($admin, $prefix, $dir): int {
     $id = seed_exec(
@@ -112,11 +119,6 @@ check('their files are gone', !file_exists(ABS_PATH . $dir . $orphanA . '.jpg') 
 check('a live user\'s avatar is kept', $exists($ownedOld) && file_exists(ABS_PATH . $dir . $ownedOld . '.jpg'));
 check('an orphan younger than the rule\'s age is kept', $exists($orphanNew));
 check('another owner type is kept', $exists($pageOld));
-
-foreach (glob(ABS_PATH . $dir . '*') ?: array() as $file) {
-    @unlink($file);
-}
-@rmdir(ABS_PATH . $dir);
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
