@@ -31,7 +31,7 @@ require_once __DIR__ . '/../oc-includes/osclass/helpers/hHttpCache.php';
 $root     = dirname(__DIR__);
 $cookies  = osc_cache_relevant_cookies();
 
-// Cookie names PHP itself emits, so they are never found in a literal setcookie() call.
+// Cookie names PHP itself emits, so they are never found in a literal cookie write.
 $sessionNames = array('osclass', 'PHPSESSID', session_name());
 
 harness_section('every allowlisted name is a real wire cookie, not a container key');
@@ -46,17 +46,17 @@ foreach ($cookies as $name) {
         foreach ($it as $f) {
             if ($f->isFile() && substr($f->getFilename(), -4) === '.php') {
                 $src = file_get_contents($f->getPathname());
-                if (strpos($src, "setcookie('" . $name . "'") !== false) {
+                if (preg_match('/(?:setcookie|Cookie::write|self::write)\(\'' . preg_quote($name, '/') . '\'/', $src)) {
                     $found[] = $f->getFilename();
                 }
             }
         }
     }
     check(
-        "$name is written by a literal setcookie()",
+        "$name is written by a literal setcookie() or Cookie::write()",
         $found !== array(),
         $found === array()
-            ? 'no setcookie() writes this name — a proxy can never match it'
+            ? 'nothing writes this name — a proxy can never match it'
             : 'set in ' . implode(', ', array_unique($found))
     );
 }

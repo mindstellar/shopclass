@@ -347,4 +347,28 @@ $reset();
 $r = $kernel->handle($session(['Authorization' => 'Bearer ' . (api_test_access_tokens($scopes, $accounts()))->issue($rows[10], ['account:read'], 'fam')], null, 'GET', 'v1/auth/session'));
 pin('an access token cannot get one', [403, 'wrong_credential'], $code($r));
 
+harness_section('signed cookie stores and redirects');
+if (!function_exists('osc_base_url')) {
+    function osc_base_url()
+    {
+        return WEB_PATH;
+    }
+}
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hUtils.php';
+$store  = Session::getInstance();
+$encode = new ReflectionMethod($store, 'encodeSignedStore');
+$decode = new ReflectionMethod($store, 'decodeSignedStore');
+$encode->setAccessible(true);
+$decode->setAccessible(true);
+$flash = $encode->invoke($store, 'oc_flash', ['pubMessages' => ['ok']], 300);
+pin('a flash cookie reads back', ['pubMessages' => ['ok']], $decode->invoke($store, 'oc_flash', $flash));
+pin('but not as a form cookie', [], $decode->invoke($store, 'oc_form', $flash));
+$oldPayload = base64_encode((string) json_encode(['pubMessages' => ['ok']]));
+pin('an old unexpiring value is refused', [], $decode->invoke($store, 'oc_flash', $oldPayload . '.' . hash_hmac('sha256', $oldPayload, (string) mindstellar\security\SigningKey::get())));
+osc_set_signed_redirect('oc_ref', WEB_PATH . 'item/1');
+pin('a signed redirect reads back', WEB_PATH . 'item/1', osc_signed_redirect_verify($_COOKIE['oc_ref']));
+pin('a token signed for another purpose is no redirect', '', osc_signed_redirect_verify(mindstellar\security\SignedPayload::pack('report-sender', ['u' => WEB_PATH], 600)));
+pin('an expired one neither', '', osc_signed_redirect_verify(mindstellar\security\SignedPayload::pack('signed-redirect', ['u' => WEB_PATH], -1)));
+pin('cookies share one set of attributes', ['expires' => 5, 'path' => '/', 'httponly' => true, 'samesite' => 'Lax'], array_intersect_key(Cookie::options(5), ['expires' => 1, 'path' => 1, 'httponly' => 1, 'samesite' => 1]));
+
 exit(harness_result());

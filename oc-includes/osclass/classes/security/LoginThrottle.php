@@ -11,7 +11,6 @@
 namespace mindstellar\security;
 
 use LoginAttempt;
-use Params;
 
 /**
  * Rate limit for the sign-in and password-reset forms.
@@ -24,8 +23,8 @@ use Params;
  *
  * Two counters over one rolling window, both fed by {@see LoginAttempt}:
  *
- *   by address  every failure from one IP, whichever account it aimed at.
- *               Over the limit blocks that address outright.
+ *   by address  every failure from one IP (an IPv6 /64, see {@see AddressBucket}),
+ *               whichever account it aimed at. Over the limit blocks that address outright.
  *   by account  every failure against one submitted name, from wherever.
  *               Over the limit blocks, unless the caller solved a captcha.
  *
@@ -92,7 +91,7 @@ class LoginThrottle
 
         $window  = self::windowSeconds();
         $since   = self::since($window);
-        $ip      = self::ip();
+        $ip      = AddressBucket::ofRequest();
         $account = self::normalise($account);
 
         try {
@@ -187,7 +186,7 @@ class LoginThrottle
             LoginAttempt::getInstance()->record(
                 $context,
                 self::normalise($account),
-                $withAddress ? self::ip() : '',
+                $withAddress ? AddressBucket::ofRequest() : '',
                 date('Y-m-d H:i:s')
             );
         } catch (\Throwable $e) {
@@ -219,7 +218,7 @@ class LoginThrottle
             if ($account !== '') {
                 $model->clearAccount($context, $account);
             }
-            $ip = self::ip();
+            $ip = AddressBucket::ofRequest();
             if ($withAddress && $ip !== '') {
                 self::clearSignInIp($ip);
             }
@@ -274,14 +273,14 @@ class LoginThrottle
     /**
      * Let one address sign in again straight away.
      *
-     * @param string $ip
+     * @param string $ip an address or its bucket; an IPv6 address frees its whole /64
      *
      * @return void
      */
     public static function unblockIp($ip)
     {
         try {
-            self::clearSignInIp((string)$ip);
+            self::clearSignInIp(AddressBucket::of((string)$ip));
         } catch (\Throwable $e) {
             self::unavailable($e);
         }
@@ -468,20 +467,5 @@ class LoginThrottle
     private static function since($window)
     {
         return date('Y-m-d H:i:s', time() - $window);
-    }
-
-    /**
-     * The address the request came from.
-     *
-     * REMOTE_ADDR only. A forwarded-for header is written by the client, so
-     * trusting it here would let an attacker reset their own counter on every
-     * request by inventing a new one. An install behind a proxy needs the proxy
-     * to set REMOTE_ADDR, which is what the ban rules already assume.
-     *
-     * @return string
-     */
-    private static function ip()
-    {
-        return (string)Params::getServerParam('REMOTE_ADDR');
     }
 }

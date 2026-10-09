@@ -216,6 +216,15 @@ for ($i = 0; $i < 5; $i++) {
 }
 check("another address's events do not count against this one", ActionThrottle::exceeded('send_friend', 5, 3600) === false);
 
+$truncate();
+$setIp('2001:db8:5:6::1');
+ActionThrottle::record('send_friend');
+pin('an IPv6 source is stored as its /64', '2001:db8:5:6::/64', $rows()[0]['s_ip'] ?? null);
+$setIp('2001:db8:5:6:abcd::2');
+check('two addresses in one /64 share a count', ActionThrottle::exceeded('send_friend', 1, 3600) === true);
+$setIp('2001:db8:5:7::1');
+check('the next /64 has its own', ActionThrottle::exceeded('send_friend', 1, 3600) === false);
+
 harness_section('ActionThrottle::exceeded — with no source address');
 
 $truncate();

@@ -139,7 +139,8 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
                 $context = Params::getParamString('context');
                 // Raw: it must match the stored name exactly. It is bound in SQL and escaped below.
                 $account = trim(Params::getParamString('account', false, false, false));
-                if ($ip !== '' && filter_var($ip, FILTER_VALIDATE_IP)) {
+                // An IPv6 sign-in is listed and unblocked by its /64 bucket.
+                if ($ip !== '' && (filter_var($ip, FILTER_VALIDATE_IP) || (str_ends_with($ip, '::/64') && filter_var(substr($ip, 0, -3), FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)))) {
                     \mindstellar\security\LoginThrottle::unblockIp($ip);
                     osc_add_flash_ok_message(sprintf(_m('%s can sign in again.'), osc_esc_html($ip)), 'admin');
                 } elseif ($account !== '' && in_array($context, \mindstellar\security\LoginThrottle::CONTEXTS, true)) {

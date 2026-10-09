@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\listing;
 
 use mindstellar\auth\Actor;
+use mindstellar\security\ActionThrottle;
 
 /**
  * Who may see, change and post listings, for the web pages and the API alike.
@@ -170,8 +171,7 @@ final class ListingPolicy
         }
         $wait = (int) osc_items_wait_time_for_user($actor->userId());
 
-        return $wait > 0
-            && \LoginAttempt::getInstance()->countByIpContext('item_post', $actor->ip(), date('Y-m-d H:i:s', time() - $wait)) > 0;
+        return $wait > 0 && ActionThrottle::exceeded('item_post', 1, $wait);
     }
 
     /**

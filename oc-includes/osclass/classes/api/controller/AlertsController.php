@@ -69,6 +69,7 @@ final class AlertsController
             UserAlerts::CREATED => $this->api->created($call, $this->serializer->one((array) $saved['alert']), 'account/alerts/' . (int) ($saved['alert']['pk_i_id'] ?? 0)),
             UserAlerts::REFUSED => throw ProblemException::of('forbidden', 'This account cannot save alerts.'),
             UserAlerts::LIMIT   => throw ProblemException::field('/', 'maxItems', sprintf('the account already keeps the most saved searches allowed (%d); delete one first', UserAlerts::maxPerUser())),
+            UserAlerts::THROTTLED => throw ProblemException::tooMany('Too many saved searches in an hour. Try again later.', 3600),
             default             => throw ProblemException::of('server_error', 'The alert could not be saved.'),
         };
     }

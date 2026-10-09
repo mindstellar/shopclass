@@ -38,4 +38,15 @@ final class AddressBucket
 
         return (string) inet_ntop(substr($packed, 0, 8) . str_repeat("\0", 8)) . '/64';
     }
+
+    /**
+     * The bucket for this request's REMOTE_ADDR, '' when there is none. A forwarded-for header
+     * is written by the client, so a proxy must set REMOTE_ADDR instead.
+     */
+    public static function ofRequest(): string
+    {
+        $ip = (string) \Params::getServerParam('REMOTE_ADDR');
+
+        return $ip === '' ? '' : self::of($ip);
+    }
 }

@@ -75,6 +75,23 @@ LoginThrottle::unblockIp('203.0.113.50');
 pin('removes its sign-in failures', 0, $countContext('admin-recover'));
 pin('keeps its listing posts', 2, $countContext('item_post'));
 
+harness_section('An IPv6 client is one /64');
+
+$truncate();
+$_SERVER['REMOTE_ADDR'] = '2001:db8:1:2::a';
+Params::init();
+for ($i = 0; $i < osc_login_throttle_max_ip(); $i++) {
+    LoginThrottle::recordFailure('web', 'd' . $i . '@example.invalid');
+}
+$_SERVER['REMOTE_ADDR'] = '2001:db8:1:2:ffff::b';
+Params::init();
+pin('another address in the same /64 is blocked', LoginThrottle::BLOCKED, LoginThrottle::evaluate('web', 'e@example.invalid')['status']);
+pin('the list shows the /64', '2001:db8:1:2::/64', LoginThrottle::activity()[0]['ip'] ?? null);
+LoginThrottle::unblockIp('2001:db8:1:2::/64');
+pin('unblocking the /64 frees it', LoginThrottle::OK, LoginThrottle::evaluate('web', 'e@example.invalid')['status']);
+$_SERVER['REMOTE_ADDR'] = '203.0.113.50';
+Params::init();
+
 $truncate();
 
 if (!defined('MODELS_RUNNER')) {

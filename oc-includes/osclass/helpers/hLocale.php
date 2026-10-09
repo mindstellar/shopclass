@@ -331,21 +331,7 @@ function osc_set_current_user_locale($locale)
         return;
     }
 
-    $options = array(
-        'expires'  => time() + 86400,
-        'path'     => defined('REL_WEB_URL') ? REL_WEB_URL : '/',
-        'httponly' => true,
-        'samesite' => 'Lax',
-    );
-    if (osc_is_ssl()) {
-        $options['secure'] = true;
-    }
-    if (defined('COOKIE_DOMAIN') && COOKIE_DOMAIN !== '') {
-        $options['domain'] = COOKIE_DOMAIN;
-    }
-    if (!headers_sent()) {
-        setcookie('oc_userLocale', $locale, $options);
-    }
+    Cookie::write('oc_userLocale', $locale, time() + 86400);
     // Reflect the choice within the current request too — an item/page rendered right
     // after a ?lang= switch reads it back through osc_current_user_locale().
     $_COOKIE['oc_userLocale'] = $locale;

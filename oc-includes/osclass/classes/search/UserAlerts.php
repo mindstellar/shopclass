@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\search;
 
+use mindstellar\security\ActionThrottle;
+
 /**
  * A user's own saved searches: saving one, listing, finding and unsubscribing the live ones.
  */
@@ -22,6 +24,7 @@ final class UserAlerts
     public const REFUSED  = 'refused';
     public const FAILED   = 'failed';
     public const LIMIT    = 'limit';
+    public const THROTTLED = 'throttled';
     public const ACTIVATED = 'activated';
     public const HELD      = 'held';
 
@@ -83,7 +86,8 @@ final class UserAlerts
     /**
      * Save a stored search for a user. The same live search is not saved twice; the one there
      * is answered. An alert of an account that is not confirmed and enabled is kept but not
-     * switched on. A user who already keeps maxPerUser() live searches gets LIMIT.
+     * switched on. A user who already keeps maxPerUser() live searches, or whose address is over
+     * the alert_subscribe throttle, gets LIMIT.
      *
      * @param string $alert a stored search, as AlertEnvelope makes it
      *
@@ -108,10 +112,14 @@ final class UserAlerts
         if ($max > 0 && count($this->live($userId)) >= $max) {
             return ['status' => self::LIMIT, 'alert' => null];
         }
+        if (ActionThrottle::exceededFor('alert_subscribe')) {
+            return ['status' => self::THROTTLED, 'alert' => null];
+        }
         $id = $this->alerts->createAlert($userId, $email, $alert, osc_genRandomPassword());
         if (!$id) {
             return ['status' => self::FAILED, 'alert' => null];
         }
+        ActionThrottle::record('alert_subscribe');
         if ((int) $user['b_active'] !== 1 || (int) $user['b_enabled'] !== 1) {
             return ['status' => self::REFUSED, 'alert' => null];
         }

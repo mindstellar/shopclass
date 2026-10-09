@@ -23,14 +23,22 @@ final class SecretBox
 
     public static function seal(string $purpose, string $plain): string
     {
+        return self::sealWith(self::key($purpose), $plain);
+    }
+
+    /**
+     * Seal under a key the caller holds, for a value the install key must not open.
+     */
+    public static function sealWith(string $key, string $plain, string $prefix = self::PREFIX): string
+    {
         $iv     = random_bytes(12);
         $tag    = '';
-        $cipher = openssl_encrypt($plain, 'aes-256-gcm', self::key($purpose), OPENSSL_RAW_DATA, $iv, $tag, '', 16);
+        $cipher = openssl_encrypt($plain, 'aes-256-gcm', $key, OPENSSL_RAW_DATA, $iv, $tag, '', 16);
         if ($cipher === false) {
             throw new \RuntimeException('The secret could not be encrypted.');
         }
 
-        return self::PREFIX . base64_encode($iv . $tag . $cipher);
+        return $prefix . base64_encode($iv . $tag . $cipher);
     }
 
     /**
@@ -43,11 +51,25 @@ final class SecretBox
         if (!self::isSealed($stored)) {
             return $stored;
         }
-        $raw = base64_decode(substr($stored, strlen(self::PREFIX)), true);
+
+        return self::openWith(self::key($purpose), $stored);
+    }
+
+    /**
+     * Open a value sealed by sealWith() under the same key and prefix.
+     *
+     * @return string|null null when the value lacks the prefix, is damaged or the key is wrong
+     */
+    public static function openWith(string $key, string $stored, string $prefix = self::PREFIX): ?string
+    {
+        if (!str_starts_with($stored, $prefix)) {
+            return null;
+        }
+        $raw = base64_decode(substr($stored, strlen($prefix)), true);
         if ($raw === false || strlen($raw) <= 28) {
             return null;
         }
-        $plain = openssl_decrypt(substr($raw, 28), 'aes-256-gcm', self::key($purpose), OPENSSL_RAW_DATA, substr($raw, 0, 12), substr($raw, 12, 16));
+        $plain = openssl_decrypt(substr($raw, 28), 'aes-256-gcm', $key, OPENSSL_RAW_DATA, substr($raw, 0, 12), substr($raw, 12, 16));
 
         return $plain === false ? null : $plain;
     }

@@ -11,7 +11,6 @@
 namespace mindstellar\security;
 
 use LoginAttempt;
-use Params;
 
 /**
  * Per-address rate limit for public mail-sending forms (share a listing, contact
@@ -27,10 +26,10 @@ use Params;
  *
  * Two deliberate choices, both shared with {@see LoginThrottle}:
  *
- *   REMOTE_ADDR only. A forwarded-for header is written by the client, so trusting
- *   it would let an attacker reset the counter on every request by inventing a new
- *   address. An install behind a proxy must have the proxy set REMOTE_ADDR (the
- *   image's OSC_REAL_IP_HEADER does exactly this).
+ *   REMOTE_ADDR only, counted per {@see AddressBucket} so an IPv6 client is one /64.
+ *   A forwarded-for header is written by the client, so trusting it would let an
+ *   attacker reset the counter on every request. An install behind a proxy must have
+ *   the proxy set REMOTE_ADDR (the image's OSC_REAL_IP_HEADER does exactly this).
  *
  *   Fail open. The ledger arrives with an upgrade and the files are in place before
  *   the upgrade runs, so between the two the table may not exist; a missing or
@@ -106,7 +105,7 @@ class ActionThrottle
             return false;
         }
 
-        $ip = self::ip();
+        $ip = AddressBucket::ofRequest();
         if ($ip === '') {
             return false;
         }
@@ -132,7 +131,7 @@ class ActionThrottle
      */
     public static function record($context)
     {
-        $ip = self::ip();
+        $ip = AddressBucket::ofRequest();
         if ($ip === '') {
             return;
         }
@@ -143,16 +142,6 @@ class ActionThrottle
         } catch (\Throwable $e) {
             self::unavailable($e);
         }
-    }
-
-    /**
-     * The address the request came from. REMOTE_ADDR only; see the class comment.
-     *
-     * @return string
-     */
-    private static function ip()
-    {
-        return (string)Params::getServerParam('REMOTE_ADDR');
     }
 
     /**

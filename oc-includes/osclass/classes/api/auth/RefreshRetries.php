@@ -14,6 +14,7 @@ namespace mindstellar\api\auth;
 
 use mindstellar\apiaccess\IssuedToken;
 use mindstellar\model\KeyValue;
+use mindstellar\security\SecretBox;
 
 /**
  * The token a refresh swap just handed out, kept for WINDOW seconds, so a client that lost the
@@ -62,11 +63,10 @@ final class RefreshRetries
     public function remember(string $family, int $oldId, string $oldSecret, IssuedToken $new, int $now): void
     {
         $plain = (string) json_encode(['old' => $oldId, 'id' => $new->id(), 'token' => $new->token(), 'expires' => $new->expiresAt(), 'scopes' => $new->scopes(), 'user' => $new->userId()]);
-        $iv    = random_bytes(12);
-        $tag   = '';
-        $box   = openssl_encrypt($plain, 'aes-256-gcm', self::key($oldSecret), OPENSSL_RAW_DATA, $iv, $tag, '', 16);
-        if ($box !== false) {
-            ($this->write)($family, self::PREFIX . base64_encode($iv . $tag . $box), $now + self::WINDOW);
+        try {
+            ($this->write)($family, SecretBox::sealWith(self::key($oldSecret), $plain, self::PREFIX), $now + self::WINDOW);
+        } catch (\RuntimeException) {
+            // Without the kept copy a lost answer just means signing in again.
         }
     }
 
@@ -76,13 +76,8 @@ final class RefreshRetries
     public function recall(string $family, int $oldId, string $oldSecret): ?IssuedToken
     {
         $stored = ($this->read)($family);
-        if ($stored === null || !str_starts_with($stored, self::PREFIX)) {
-            return null;
-        }
-        $raw   = base64_decode(substr($stored, strlen(self::PREFIX)), true);
-        $plain = $raw === false || strlen($raw) <= 28 ? false
-            : openssl_decrypt(substr($raw, 28), 'aes-256-gcm', self::key($oldSecret), OPENSSL_RAW_DATA, substr($raw, 0, 12), substr($raw, 12, 16));
-        $data  = $plain === false ? null : json_decode($plain, true);
+        $plain  = $stored === null ? null : SecretBox::openWith(self::key($oldSecret), $stored, self::PREFIX);
+        $data   = $plain === null ? null : json_decode($plain, true);
         if (!is_array($data) || (int) ($data['old'] ?? 0) !== $oldId || !isset($data['id'], $data['token'])) {
             return null;
         }

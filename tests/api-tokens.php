@@ -334,6 +334,11 @@ pin('a user blocked in the window gets no token back', 'invalid_grant', $problem
 $store->users[10]['b_enabled'] = '1';
 $kept[$held->family()] = ['{"old":1,"id":1,"token":"scr_plain"}', $now + 60];
 pin('a value that is not sealed is never handed out', null, $retries->recall($held->family(), 1, 'x'));
+$oldIv  = random_bytes(12);
+$oldTag = '';
+$oldBox = openssl_encrypt('{"old":7,"id":8,"token":"scr_old.row"}', 'aes-256-gcm', hash_hmac('sha256', 'api-refresh-retry', 'old-secret', true), OPENSSL_RAW_DATA, $oldIv, $oldTag, '', 16);
+$kept[$held->family()] = ['rr1:' . base64_encode($oldIv . $oldTag . $oldBox), $now + 60];
+pin('a row kept before the move to SecretBox still opens', 'scr_old.row', $retries->recall($held->family(), 7, 'old-secret')?->token());
 
 $a = $fresh->start($store->users[10], ['listings:read'], 'A', '');
 $b = $fresh->start($store->users[10], ['listings:read'], 'B', '');

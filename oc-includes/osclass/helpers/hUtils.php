@@ -765,22 +765,8 @@ function osc_upload_token()
         $token = md5(uniqid('', true));
     }
 
-    if (!headers_sent()) {
-        $options = array(
-            // A posting session — long enough to fill out a listing, short enough to expire.
-            'expires'  => time() + (4 * 3600),
-            'path'     => defined('REL_WEB_URL') ? REL_WEB_URL : '/',
-            'httponly' => true,
-            'samesite' => 'Lax',
-        );
-        if (function_exists('osc_is_ssl') && osc_is_ssl()) {
-            $options['secure'] = true;
-        }
-        if (defined('COOKIE_DOMAIN') && COOKIE_DOMAIN !== '') {
-            $options['domain'] = COOKIE_DOMAIN;
-        }
-        setcookie('oc_upload', $token, $options);
-    }
+    // A posting session: long enough to fill out a listing, short enough to expire.
+    Cookie::write('oc_upload', $token, time() + (4 * 3600));
     $_COOKIE['oc_upload'] = $token;
 
     return $token;
@@ -870,9 +856,8 @@ function osc_set_signed_redirect($cookieName, $url, $keepExisting = false)
     }
 
     // 10 minutes: long enough to complete a login, short enough to expire promptly.
-    $expiry  = time() + 600;
-    $payload = $expiry . ':' . base64_encode($url);
-    $value   = $payload . '.' . hash_hmac('sha256', $payload, \mindstellar\security\SigningKey::get());
+    $expiry = time() + 600;
+    $value  = \mindstellar\security\SignedPayload::pack('signed-redirect', array('u' => $url), 600);
 
     osc_write_signed_redirect_cookie($cookieName, $value, $expiry);
     $_COOKIE[$cookieName] = $value;
@@ -906,21 +891,11 @@ function osc_pop_signed_redirect($cookieName)
  */
 function osc_signed_redirect_verify($value)
 {
-    if (!is_string($value) || $value === '' || strpos($value, '.') === false) {
+    if (!is_string($value) || $value === '') {
         return '';
     }
-    $dot     = strrpos($value, '.');
-    $payload = substr($value, 0, $dot);
-    $sig     = substr($value, $dot + 1);
-    if (!hash_equals(hash_hmac('sha256', $payload, \mindstellar\security\SigningKey::get()), $sig)) {
-        return '';
-    }
-    $parts = explode(':', $payload, 2);
-    if (count($parts) !== 2 || !ctype_digit($parts[0]) || (int)$parts[0] < time()) {
-        return '';
-    }
-    $url = base64_decode($parts[1], true);
-    if ($url === false || strpos($url, osc_base_url()) !== 0) {
+    $url = \mindstellar\security\SignedPayload::unpack('signed-redirect', $value)['u'] ?? null;
+    if (!is_string($url) || strpos($url, osc_base_url()) !== 0) {
         return '';
     }
 
@@ -939,22 +914,7 @@ function osc_signed_redirect_verify($value)
  */
 function osc_write_signed_redirect_cookie($cookieName, $value, $expiry)
 {
-    if (headers_sent()) {
-        return;
-    }
-    $options = array(
-        'expires'  => $expiry,
-        'path'     => defined('REL_WEB_URL') ? REL_WEB_URL : '/',
-        'httponly' => true,
-        'samesite' => 'Lax',
-    );
-    if (function_exists('osc_is_ssl') && osc_is_ssl()) {
-        $options['secure'] = true;
-    }
-    if (defined('COOKIE_DOMAIN') && COOKIE_DOMAIN !== '') {
-        $options['domain'] = COOKIE_DOMAIN;
-    }
-    setcookie($cookieName, $value, $options);
+    Cookie::write((string) $cookieName, (string) $value, (int) $expiry);
 }
 
 /**

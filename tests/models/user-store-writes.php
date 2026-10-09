@@ -26,6 +26,7 @@ use mindstellar\security\BanRuleStore;
 use mindstellar\user\UserStore;
 
 $admin  = scratchdb_session('osc_models_user_store_writes');
+require_once __DIR__ . '/../lib/action-standins.php';
 $prefix = DB_TABLE_PREFIX;
 
 $seedAlert = static function (string $email, ?int $userId, string $search, string $secret, int $active = 0) use ($admin, $prefix): int {
@@ -88,6 +89,18 @@ check('a held alert is not switched on', !$service->setActive($held, true));
 check('delete works', $service->delete($b));
 check('the row is gone', $alertRow($b) === null);
 check('deleting it again fails', !$service->delete($b));
+
+harness_section('UserAlerts::subscribe is throttled per address');
+
+$_SERVER['REMOTE_ADDR'] = '198.51.100.40';
+Params::init();
+osc_set_preference('throttle_alert_subscribe', '1');
+$first = $service->subscribe($owner, '{"v":2,"q":"first"}')['status'];
+pin('the first save passes, the next is throttled', [UserAlerts::CREATED, UserAlerts::THROTTLED], [$first, $service->subscribe($owner, '{"v":2,"q":"second"}')['status']]);
+pin('one already saved still answers EXISTS', UserAlerts::EXISTS, $service->subscribe($owner, '{"v":2,"q":"first"}')['status']);
+osc_delete_preference('throttle_alert_subscribe');
+unset($_SERVER['REMOTE_ADDR']);
+Params::init();
 
 harness_section('BanRuleStore::delete');
 

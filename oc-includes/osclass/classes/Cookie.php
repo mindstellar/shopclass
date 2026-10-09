@@ -130,14 +130,10 @@ class Cookie
             }
         }
 
-        $options = $this->cookieOptions();
-        if ($cookie_val === '') {
-            // No values left (e.g. logout pops every key): actively expire the cookie instead
-            // of leaving an empty long-lived one behind. A logged-out visitor then carries no
-            // auth cookie at all, so a reverse-proxy cache can serve them the anonymous page.
-            $options['expires'] = time() - 3600;
-        }
-        setcookie($this->name, $cookie_val, $options);
+        // No values left (e.g. logout pops every key): expire the cookie instead of leaving
+        // an empty one, so a reverse-proxy cache can serve the visitor the anonymous page.
+        $expires = $cookie_val === '' ? time() - 3600 : (int) $this->expires;
+        self::write($this->name, $cookie_val, $expires);
 
         // Companion cache-bypass flag with a fixed, domain-independent NAME. The identity
         // cookie above is named md5(WEB_PATH); a reverse proxy / CDN config cannot hardcode
@@ -147,22 +143,22 @@ class Cookie
         // locale value is present, expired in lockstep on logout — so the proxy contract
         // (osc_cache_relevant_cookies) can match one stable name. It carries no secret; its
         // presence alone means "do not serve this request a cached public page".
-        setcookie('oc_cache_bypass', $cookie_val === '' ? '' : '1', $options);
+        self::write('oc_cache_bypass', $cookie_val === '' ? '' : '1', $expires);
     }
 
     /**
-     * Attributes shared by every write. This container carries a long-lived "remember me"
-     * secret, so it is HttpOnly (out of reach of JS, hence XSS), Secure on HTTPS, and
-     * SameSite=Lax — still sent on top-level navigation, so following a link into the site
-     * keeps the visitor remembered while blocking the cookie on cross-site subrequests.
+     * The attributes every site cookie is written with: HttpOnly, SameSite=Lax, Secure on HTTPS,
+     * on the site's path and cookie domain.
+     *
+     * @param int $expires unix time; 0 for a browser-session cookie, a past time to delete
      *
      * @return array<string,mixed> setcookie() options array
      */
-    private function cookieOptions()
+    public static function options(int $expires): array
     {
         $options = array(
-            'expires'  => $this->expires,
-            'path'     => REL_WEB_URL,
+            'expires'  => $expires,
+            'path'     => defined('REL_WEB_URL') ? REL_WEB_URL : '/',
             'httponly' => true,
             'samesite' => 'Lax',
         );
@@ -174,6 +170,16 @@ class Cookie
         }
 
         return $options;
+    }
+
+    /**
+     * Write one cookie with options(); a past $expires deletes it.
+     *
+     * @return bool false when headers were already sent
+     */
+    public static function write(string $name, string $value, int $expires): bool
+    {
+        return !headers_sent() && setcookie($name, $value, self::options($expires));
     }
 
     /**

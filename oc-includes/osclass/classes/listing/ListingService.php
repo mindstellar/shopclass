@@ -16,6 +16,7 @@ namespace mindstellar\listing;
 use mindstellar\auth\Actor;
 use mindstellar\database\Db;
 use mindstellar\fields\FieldQuery;
+use mindstellar\security\ActionThrottle;
 use mindstellar\user\UserQuery;
 use mindstellar\utility\DeferredMail;
 use mindstellar\utility\Sanitize;
@@ -745,15 +746,8 @@ final class ListingService
         }
 
         if (!$actor->isAdmin()) {
-            // Record the publish so the flood wait is enforced server-side (see the
-            // countByIpContext check above): durable, correct across app servers, and
-            // not resettable by clearing cookies the way the old session/cookie was.
-            \LoginAttempt::getInstance()->record(
-                'item_post',
-                (string)$aItem['contactEmail'],
-                $actor->ip(),
-                date('Y-m-d H:i:s')
-            );
+            // Counts toward the posting wait in ListingPolicy::postingTooSoon().
+            ActionThrottle::record('item_post');
         }
 
         \Log::getInstance()->insertLog(

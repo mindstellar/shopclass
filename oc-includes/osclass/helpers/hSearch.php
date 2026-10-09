@@ -444,7 +444,8 @@ function osc_subscribe_alert(string $token, string $email): int
         return match ($saved['status']) {
             \mindstellar\search\UserAlerts::CREATED => 1,
             \mindstellar\search\UserAlerts::REFUSED => -1,
-            \mindstellar\search\UserAlerts::LIMIT   => -5,
+            \mindstellar\search\UserAlerts::LIMIT,
+            \mindstellar\search\UserAlerts::THROTTLED => -5,
             default                                  => 0,
         };
     }

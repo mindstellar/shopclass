@@ -445,10 +445,10 @@ class Session
         if ($value === '') {
             return;
         }
-        $this->writeSignedStore('oc_flash', '', time() - 3600);
+        \Cookie::write('oc_flash', '', time() - 3600);
         unset($_COOKIE['oc_flash']);
 
-        $messages = $this->decodeSignedStore($value);
+        $messages = $this->decodeSignedStore('oc_flash', $value);
         if (!empty($messages)) {
             $this->messages = $messages;
         }
@@ -467,81 +467,39 @@ class Session
         if (empty($this->messages)) {
             return;
         }
-        $this->writeSignedStore('oc_flash', $this->encodeSignedStore($this->messages), time() + 300);
+        \Cookie::write('oc_flash', $this->encodeSignedStore('oc_flash', $this->messages, 300), time() + 300);
     }
 
     /**
-     * Serialise + HMAC-sign a value for a standalone cookie store (flash, form repop). The
-     * signature is what lets these be client-side cookies safely: a tampered value verifies
-     * to nothing, so a visitor cannot forge flash HTML or form input.
+     * Sign a value for a standalone cookie store (flash, form repop), bound to the cookie's
+     * name, so a visitor cannot forge flash HTML or form input.
      *
-     * @param mixed $data
+     * @param string $name cookie name, which is the signing purpose
+     * @param array  $data
+     * @param int    $ttl  seconds
      *
      * @return string
      */
-    private function encodeSignedStore($data)
+    private function encodeSignedStore($name, array $data, $ttl)
     {
-        $payload = base64_encode(json_encode($data));
-
-        return $payload . '.' . hash_hmac('sha256', $payload, \mindstellar\security\SigningKey::get());
+        return \mindstellar\security\SignedPayload::pack('cookie-store:' . $name, $data, $ttl);
     }
 
     /**
-     * Verify and decode a signed cookie-store value. Returns an empty array unless the
-     * signature is valid.
+     * The data of a signed cookie-store value; empty unless it is genuine and unexpired.
      *
-     * @param string $value
+     * @param string $name
+     * @param mixed  $value
      *
      * @return array
      */
-    private function decodeSignedStore($value)
+    private function decodeSignedStore($name, $value)
     {
-        if (!is_string($value) || strpos($value, '.') === false) {
+        if (!is_string($value) || $value === '') {
             return array();
         }
-        $dot     = strrpos($value, '.');
-        $payload = substr($value, 0, $dot);
-        $sig     = substr($value, $dot + 1);
-        if (!hash_equals(hash_hmac('sha256', $payload, \mindstellar\security\SigningKey::get()), $sig)) {
-            return array();
-        }
-        $json = base64_decode($payload, true);
-        if ($json === false) {
-            return array();
-        }
-        $decoded = json_decode($json, true);
 
-        return is_array($decoded) ? $decoded : array();
-    }
-
-    /**
-     * Write (or, with a past expiry, delete) a standalone signed-store cookie. Standalone —
-     * not the session container — so it never starts a session.
-     *
-     * @param string $name
-     * @param string $value
-     * @param int    $expiry
-     *
-     * @return void
-     */
-    private function writeSignedStore($name, $value, $expiry)
-    {
-        if (headers_sent()) {
-            return;
-        }
-        $options = array(
-            'expires'  => $expiry,
-            'path'     => defined('REL_WEB_URL') ? REL_WEB_URL : '/',
-            'httponly' => true,
-            'samesite' => 'Lax',
-        );
-        if (function_exists('osc_is_ssl') && osc_is_ssl()) {
-            $options['secure'] = true;
-        }
-        if (defined('COOKIE_DOMAIN') && COOKIE_DOMAIN !== '') {
-            $options['domain'] = COOKIE_DOMAIN;
-        }
-        setcookie($name, $value, $options);
+        return \mindstellar\security\SignedPayload::unpack('cookie-store:' . $name, $value) ?? array();
     }
 
     /**
@@ -672,14 +630,15 @@ class Session
         if ($value === '') {
             return;
         }
-        $data           = $this->decodeSignedStore($value);
+        $data           = $this->decodeSignedStore('oc_form', $value);
         $this->form     = (isset($data['f']) && is_array($data['f'])) ? $data['f'] : array();
         $this->keepForm = (isset($data['k']) && is_array($data['k'])) ? $data['k'] : array();
 
         if (!empty($this->keepForm)) {
-            $this->writeSignedStore('oc_form', $value, time() + 1800);
+            $kept = $this->encodeSignedStore('oc_form', array('f' => $this->form, 'k' => $this->keepForm), 1800);
+            \Cookie::write('oc_form', $kept, time() + 1800);
         } else {
-            $this->writeSignedStore('oc_form', '', time() - 3600);
+            \Cookie::write('oc_form', '', time() - 3600);
             unset($_COOKIE['oc_form']);
         }
     }
@@ -696,16 +655,16 @@ class Session
     {
         if (empty($this->form) && empty($this->keepForm)) {
             if (isset($_COOKIE['oc_form'])) {
-                $this->writeSignedStore('oc_form', '', time() - 3600);
+                \Cookie::write('oc_form', '', time() - 3600);
             }
 
             return;
         }
-        $value = $this->encodeSignedStore(array('f' => $this->form, 'k' => $this->keepForm));
+        $value = $this->encodeSignedStore('oc_form', array('f' => $this->form, 'k' => $this->keepForm), 1800);
         if (strlen($value) > 3800) {
             return;
         }
-        $this->writeSignedStore('oc_form', $value, time() + 1800);
+        \Cookie::write('oc_form', $value, time() + 1800);
     }
 
     /**
