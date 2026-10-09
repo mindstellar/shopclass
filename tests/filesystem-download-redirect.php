@@ -11,6 +11,7 @@
 /**
  * FileSystem::downloadFile() does not follow a redirect to ftp:// or any other scheme
  * that is not HTTP(S). A listener stands in for the FTP server and notes any connection.
+ * Also covers FileSystem::head() and FileSystem::writeAtomic().
  *
  * No database.  Usage:  php tests/filesystem-download-redirect.php
  */
@@ -59,10 +60,26 @@ try {
     $ok = false;
 }
 $contacted = @stream_socket_accept($ftp, 0.5) !== false;
+
+harness_section('FileSystem::head');
+pin('a HEAD answers the status without following the redirect', 302, (new \mindstellar\utility\FileSystem())->head('http://127.0.0.1:' . $port . '/'));
 proc_terminate($proc);
 proc_close($proc);
+pin('no server answers 0', 0, (new \mindstellar\utility\FileSystem())->head('http://127.0.0.1:' . $port . '/', 1));
 
 check('the FTP address is never contacted', !$contacted);
 check('...and the download fails', !$ok);
+
+harness_section('FileSystem::writeAtomic');
+$file = $dir . 'atomic.txt';
+file_put_contents($file, 'old');
+$leftovers = static fn (): array => array_values(array_diff(scandir($dir), array('.', '..', 'router.php', 'atomic.txt')));
+check('a write that fails part way returns false', !\mindstellar\utility\FileSystem::writeAtomic($file, static fn ($out): bool => fwrite($out, 'partial') && false));
+pin('...leaves the old content', 'old', file_get_contents($file));
+pin('...and no temp file', array(), $leftovers());
+check('a full write returns true', \mindstellar\utility\FileSystem::writeAtomic($file, 'new', 0600));
+pin('...replaces the content, with the mode asked for', array('new', 0600), array(file_get_contents($file), fileperms($file) & 0777));
+pin('...and leaves no temp file', array(), $leftovers());
+check('a folder that does not exist is refused', !\mindstellar\utility\FileSystem::writeAtomic($dir . 'missing/x.txt', 'x'));
 
 exit(harness_result());

@@ -456,7 +456,6 @@ msgstr ""
 msgid "%s is corrupt or broken!"
 msgstr ""
 
-#: oc-includes/osclass/classes/form/builder/FieldValidator.php
 #: oc-includes/osclass/helpers/hFields.php
 msgid "%s is invalid."
 msgstr ""
@@ -488,10 +487,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/ImageProcessing.php
 msgid "%s is not readable!"
-msgstr ""
-
-#: oc-includes/osclass/classes/form/builder/FieldValidator.php
-msgid "%s is required."
 msgstr ""
 
 #: oc-includes/osclass/classes/settings/SettingsImage.php

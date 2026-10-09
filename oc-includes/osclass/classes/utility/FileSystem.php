@@ -672,6 +672,68 @@ class FileSystem
     }
 
     /**
+     * Replace $path whole: write a hidden temp file beside it, then rename it into place, so a
+     * reader never sees half a file. Nothing is left behind on failure.
+     *
+     * @param string          $path
+     * @param string|callable $data the content, or a call given the open temp handle that returns false to abort
+     * @param int|null        $mode set on the temp file before anything is written
+     *
+     * @return bool
+     */
+    public static function writeAtomic(string $path, $data, ?int $mode = null): bool
+    {
+        try {
+            $tmp = dirname($path) . DIRECTORY_SEPARATOR . '.' . basename($path) . '.' . bin2hex(random_bytes(6)) . '.tmp';
+        } catch (Exception $e) {
+            return false;
+        }
+        $out = @fopen($tmp, 'xb');
+        if ($out === false) {
+            return false;
+        }
+        $ok = $mode === null || @chmod($tmp, $mode);
+        if ($ok) {
+            $ok = is_string($data) ? @fwrite($out, $data) === strlen($data) : $data($out) !== false;
+        }
+        $ok = fclose($out) && $ok;
+        if (!$ok || !@rename($tmp, $path)) {
+            @unlink($tmp);
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * The status code a HEAD request for $url answers, without following redirects; 0 when
+     * there is no answer.
+     *
+     * @param string $url
+     * @param int    $timeout seconds for the whole request
+     *
+     * @return int
+     */
+    public function head(string $url, int $timeout = 3): int
+    {
+        if (!Curl::available()) {
+            return 0;
+        }
+        $ch = $this->curlHandle($url, true, $timeout, array());
+        curl_setopt_array($ch, array(
+            CURLOPT_NOBODY         => true,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_CONNECTTIMEOUT => min(5, $timeout),
+        ));
+        $ok     = curl_exec($ch) !== false;
+        $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+        unset($ch);
+
+        return $ok ? $status : 0;
+    }
+
+    /**
      * Get content implementation
      *
      * @param string       $url
@@ -703,53 +765,18 @@ class FileSystem
         $responseHeaders = [];
         $responseInfo    = ['status' => 0, 'headers' => []];
         if (Curl::available()) {
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $url);
-            @curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
-            if ($timeout > 0) {
-                @curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
-            }
-            // Abort a connection that stalls (under 1 byte/s for 30s) even when no
-            // overall timeout is set, so a slow peer cannot hold the request open
-            // indefinitely without capping a large-but-progressing download.
-            @curl_setopt($ch, CURLOPT_LOW_SPEED_LIMIT, 1);
-            @curl_setopt($ch, CURLOPT_LOW_SPEED_TIME, 30);
-            curl_setopt(
-                $ch,
-                CURLOPT_USERAGENT,
-                Params::getServerParam('HTTP_USER_AGENT') . ' Shopclass (v.' . OSCLASS_VERSION . ')'
-            );
-            if (!defined('CURLOPT_RETURNTRANSFER')) {
-                define('CURLOPT_RETURNTRANSFER', 1);
-            }
+            $ch = $this->curlHandle($url, $verify_ssl, $timeout, $headers);
             @curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-            // Bound the redirect chain and keep it on HTTP(S): a redirect must not be
-            // able to pivot to file://, gopher:// and friends (the classic SSRF jump).
-            @curl_setopt($ch, CURLOPT_MAXREDIRS, 5);
-            if (defined('CURLPROTO_HTTP') && defined('CURLPROTO_HTTPS')) {
-                @curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
-                @curl_setopt($ch, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
-            }
-            curl_setopt($ch, CURLOPT_REFERER, osc_base_url());
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
             // Advertise every encoding this curl can decode, and let it decompress
             // transparently. Without it curl sends no Accept-Encoding at all and servers
             // hand back the raw file: the largest country in the location dataset arrives
             // as 76 MB rather than 5.7. The bytes returned are identical either way, so
             // checksums over the result are unaffected.
             @curl_setopt($ch, CURLOPT_ENCODING, '');
-            if (stripos($url, 'https') !== false) {
-                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $verify_ssl);
-                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-            }
 
             if ($post_data !== null) {
                 curl_setopt($ch, CURLOPT_POST, true);
                 curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post_data));
-            }
-
-            if (!empty($headers)) {
-                curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
             }
 
             // A redirect starts a new header block; only the last one (the final
@@ -784,6 +811,58 @@ class FileSystem
         }
 
         return $data;
+    }
+
+    /**
+     * A curl handle with the options every request here shares: timeouts, user agent,
+     * HTTP(S) only, a bounded redirect chain and TLS checks.
+     *
+     * @param string            $url
+     * @param bool              $verifySsl
+     * @param int               $timeout 0 for no overall limit
+     * @param array<int,string> $headers extra request header lines
+     *
+     * @return \CurlHandle
+     */
+    private function curlHandle(string $url, bool $verifySsl, int $timeout, array $headers)
+    {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        @curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+        if ($timeout > 0) {
+            @curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
+        }
+        // Abort a connection that stalls (under 1 byte/s for 30s) even when no
+        // overall timeout is set, so a slow peer cannot hold the request open
+        // indefinitely without capping a large-but-progressing download.
+        @curl_setopt($ch, CURLOPT_LOW_SPEED_LIMIT, 1);
+        @curl_setopt($ch, CURLOPT_LOW_SPEED_TIME, 30);
+        curl_setopt(
+            $ch,
+            CURLOPT_USERAGENT,
+            Params::getServerParam('HTTP_USER_AGENT') . ' Shopclass (v.' . OSCLASS_VERSION . ')'
+        );
+        if (!defined('CURLOPT_RETURNTRANSFER')) {
+            define('CURLOPT_RETURNTRANSFER', 1);
+        }
+        // Bound the redirect chain and keep it on HTTP(S): a redirect must not be
+        // able to pivot to file://, gopher:// and friends (the classic SSRF jump).
+        @curl_setopt($ch, CURLOPT_MAXREDIRS, 5);
+        if (defined('CURLPROTO_HTTP') && defined('CURLPROTO_HTTPS')) {
+            @curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+            @curl_setopt($ch, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+        }
+        curl_setopt($ch, CURLOPT_REFERER, osc_base_url());
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        if (stripos($url, 'https') !== false) {
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $verifySsl);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+        }
+        if (!empty($headers)) {
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        }
+
+        return $ch;
     }
 
     /**

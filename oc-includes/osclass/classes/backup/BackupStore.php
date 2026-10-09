@@ -637,15 +637,7 @@ final class BackupStore
      */
     public function writePrivate(string $path, string $content): void
     {
-        $tmp   = $path . '.' . self::random(6) . '.tmp';
-        $umask = umask(0077);
-        $ok    = @file_put_contents($tmp, $content) !== false;
-        umask($umask);
-        if ($ok) {
-            @chmod($tmp, 0600);
-            @rename($tmp, $path);
-        }
-        @unlink($tmp);
+        FileSystem::writeAtomic($path, $content, 0600);
     }
 
     /**

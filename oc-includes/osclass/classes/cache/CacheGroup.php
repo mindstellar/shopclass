@@ -48,16 +48,17 @@ final class CacheGroup
     }
 
     /**
-     * The cached value, or what $load returns, stored for OSC_CACHE_TTL seconds. A null
-     * from $load (a failed query) is returned but not stored.
+     * The cached value, or what $load returns, stored for $ttl seconds (OSC_CACHE_TTL when
+     * null). A null from $load (a failed query) is returned but not stored.
      *
      * @param string   $group
      * @param string   $key   unique within the group
      * @param callable $load
+     * @param int|null $ttl
      *
      * @return mixed
      */
-    public static function remember(string $group, string $key, callable $load)
+    public static function remember(string $group, string $key, callable $load, ?int $ttl = null)
     {
         $cache = \Object_Cache_Factory::getInstance();
         $base  = defined('WEB_PATH') ? WEB_PATH : '';
@@ -69,7 +70,7 @@ final class CacheGroup
         }
         $value = $load();
         if ($value !== null) {
-            $cache->set($full, $value, defined('OSC_CACHE_TTL') ? OSC_CACHE_TTL : 60);
+            $cache->set($full, $value, $ttl ?? (defined('OSC_CACHE_TTL') ? OSC_CACHE_TTL : 60));
         }
 
         return $value;

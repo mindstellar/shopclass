@@ -137,18 +137,9 @@ class MigrationRunner
      */
     public function run(): array
     {
-        $lock = $this->lockName();
-        if ((int) $this->conn->scalar('SELECT GET_LOCK(?, ?)', array($lock, \defined('OSC_LOCK_WAIT') ? (int) \constant('OSC_LOCK_WAIT') : self::LOCK_WAIT)) !== 1) {
-            return array(
-                'ok'      => false,
-                'applied' => array(),
-                'failed'  => null,
-                'error'   => 'Another upgrade is already running.',
-                'busy'    => true,
-            );
-        }
+        $wait = \defined('OSC_LOCK_WAIT') ? (int) \constant('OSC_LOCK_WAIT') : self::LOCK_WAIT;
 
-        try {
+        $result = $this->conn->withNamedLock($this->lockName(), $wait, function (): array {
             $applied = array();
             foreach ($this->pending() as $name) {
                 try {
@@ -166,13 +157,15 @@ class MigrationRunner
             }
 
             return array('ok' => true, 'applied' => $applied, 'failed' => null, 'error' => null);
-        } finally {
-            try {
-                $this->conn->scalar('SELECT RELEASE_LOCK(?)', array($lock));
-            } catch (Throwable $e) {
-                // The server drops the lock with the session anyway.
-            }
-        }
+        });
+
+        return $result ?? array(
+            'ok'      => false,
+            'applied' => array(),
+            'failed'  => null,
+            'error'   => 'Another upgrade is already running.',
+            'busy'    => true,
+        );
     }
 
     /**

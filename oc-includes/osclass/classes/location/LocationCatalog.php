@@ -219,7 +219,6 @@ final class LocationCatalog
      * @param array<string,mixed> $manifest
      *
      * @return void
-     * @throws \Exception when no source of randomness is available for the temp file name
      */
     private function writeCache(array $manifest): void
     {
@@ -228,17 +227,7 @@ final class LocationCatalog
             return;
         }
 
-        // Written aside and moved into place, so a reader never sees half a manifest.
-        $tmp = $path . '.' . bin2hex(random_bytes(4));
-        if (@file_put_contents($tmp, json_encode($manifest)) === false) {
-            @unlink($tmp);
-
-            return;
-        }
-
-        if (!@rename($tmp, $path)) {
-            @unlink($tmp);
-        }
+        \mindstellar\utility\FileSystem::writeAtomic($path, (string) json_encode($manifest));
     }
 
     /**

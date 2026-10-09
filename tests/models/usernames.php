@@ -108,6 +108,21 @@ pin('and writes nothing', 'robert', $usernameOf($bob));
 $dropLock();
 pin('with the lock free the same claim goes through', 'ok', UserActions::claimUsername($bob, 'bobby'));
 
+harness_section('A named lock this connection already holds is re-entered, not released early');
+$conn    = \mindstellar\database\Connection::getInstance();
+$ownLock = static fn (): int => (int) $conn->scalar('SELECT IS_USED_LOCK(?) = CONNECTION_ID()', array($lockName));
+$release = $conn->namedLock($lockName, 0);
+check('the model connection takes the username lock', $release !== null);
+pin('a claim under the lock it already holds goes through', 'ok', \mindstellar\user\Usernames::claim($bob, 'bobbie'));
+pin('and the outer hold survives the claim', 1, $ownLock());
+pin('withNamedLock re-entered answers its callback', 'inner', $conn->withNamedLock($lockName, 0, static fn (): string => 'inner'));
+pin('and still leaves the outer hold in place', 1, $ownLock());
+$release();
+pin('the outer release frees it', 0, $ownLock());
+check('the test holds the username lock again', $holdLock());
+pin('a lock another session holds answers the busy callback', 'busy', $conn->withNamedLock($lockName, 0, static fn (): string => 'ran', static fn (?\mindstellar\database\DbException $e): string => $e === null ? 'busy' : 'error'));
+$dropLock();
+
 harness_section('Registration with a chosen username claims it under the lock');
 
 require_once __DIR__ . '/../lib/action-standins.php';

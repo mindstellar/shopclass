@@ -10,6 +10,8 @@
 
 namespace mindstellar\search;
 
+use mindstellar\cache\CacheGroup;
+
 /**
  * Runs a listing search: criteria onto the Search model, sort, page, the
  * `search_conditions` hook, then the results from a backend, the cache or MySQL.
@@ -61,17 +63,13 @@ class SearchRunner
             // The search-cache generation is bumped on every item lifecycle event, so a
             // deleted or disabled listing is never served from a stored result.
             // An uncounted result is cached apart, so a counting search never reads its null total.
-            $key   = md5(osc_cache_search_generation() . osc_base_url() . $search->toJson() . ($count ? '' : '|uncounted') . ($extend === null ? '' : '|bare'));
-            $found = false;
-            $cache = osc_cache_get($key, $found);
-            if ($cache) {
-                $aItems = $cache['aItems'];
-                $total = $cache['iTotalItems'];
-            } else {
-                $aItems = $search->doSearch($extend === null, $count);
-                $total = $count ? $search->count() : null;
-                osc_cache_set($key, array('aItems' => $aItems, 'iTotalItems' => $total), OSC_CACHE_TTL);
-            }
+            $key    = osc_current_user_locale() . '|' . $search->toJson() . ($count ? '' : '|uncounted') . ($extend === null ? '' : '|bare');
+            $cache  = CacheGroup::remember('search', $key, static fn (): array => array(
+                'aItems'      => $search->doSearch($extend === null, $count),
+                'iTotalItems' => $count ? $search->count() : null,
+            ));
+            $aItems = $cache['aItems'];
+            $total  = $cache['iTotalItems'];
         }
         if ($extend !== null && $aItems !== array()) {
             $aItems = $extend($aItems);

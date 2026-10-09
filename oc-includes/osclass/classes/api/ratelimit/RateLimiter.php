@@ -57,7 +57,7 @@ final class RateLimiter
             return self::sampled($clock);
         }
         [$db, $add, $count] = self::counters();
-        $counter = new BufferedCounter($store, $clock, $add, $db, self::installPrefix(DB_TABLE_PREFIX, DB_NAME, (string) osc_base_url()), $count);
+        $counter = new BufferedCounter($store, $clock, $add, $db, seed: $count);
 
         return new self([$counter, 'increment'], $clock, $db, $add);
     }
@@ -72,14 +72,6 @@ final class RateLimiter
         [$db, $add, $count] = self::counters();
 
         return new self([new SampledCounter($add, $count, $draw), 'increment'], $clock, $db, $add);
-    }
-
-    /**
-     * A short value unique to this install, so sites sharing one cache never share a counter.
-     */
-    public static function installPrefix(string $tablePrefix, string $database, string $baseUrl): string
-    {
-        return substr(sha1($tablePrefix . '|' . $database . '|' . $baseUrl), 0, 12);
     }
 
     /**

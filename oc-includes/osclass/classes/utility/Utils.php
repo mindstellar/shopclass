@@ -16,6 +16,7 @@ use DateTimeZone;
 use Item;
 use mindstellar\job\JobWorker;
 use mindstellar\location\LocationRecountJobs;
+use mindstellar\routing\ReservedSlugs;
 use Params;
 use Preference;
 use Region;
@@ -360,20 +361,10 @@ class Utils
                 $fieldsDescription['s_description']    = '';
                 $fieldsDescription['fk_i_category_id'] = $category['pk_i_id'];
                 $fieldsDescription['fk_c_locale_code'] = $locale;
-                $slug                                  = osc_sanitizeString(
-                    osc_apply_filter('slug', $fieldsDescription['s_name'])
+                $fieldsDescription['s_slug']           = ReservedSlugs::unique(
+                    osc_sanitizeString(osc_apply_filter('slug', $fieldsDescription['s_name'])),
+                    static fn (string $slug): bool => (bool) $catManager->findBySlug($slug)
                 );
-                $slug_tmp                              = $slug;
-                $slug_unique                           = 1;
-                while (true) {
-                    if (!$catManager->findBySlug($slug)) {
-                        break;
-                    }
-
-                    $slug = $slug_tmp . '_' . $slug_unique;
-                    $slug_unique++;
-                }
-                $fieldsDescription['s_slug'] = $slug;
                 $catManager->insertDescription($fieldsDescription);
             }
         }
@@ -467,17 +458,11 @@ class Utils
         $locations         = $manager->listByEmptySlug();
         $locations_changed = 0;
         foreach ($locations as $location) {
-            $slug_tmp    = $slug = osc_sanitizeString($location['s_name']);
-            $slug_unique = 1;
-            while (true) {
-                $location_slug = $manager->findBySlug($slug);
-                if (!isset($location_slug[$field])) {
-                    break;
-                }
-
-                $slug = $slug_tmp . '-' . $slug_unique;
-                $slug_unique++;
-            }
+            $slug = ReservedSlugs::unique(
+                osc_sanitizeString($location['s_name']),
+                static fn (string $slug): bool => isset($manager->findBySlug($slug)[$field]),
+                '-'
+            );
             $locations_changed += $manager->update(array('s_slug' => $slug), array($field => $location[$field]));
         }
 

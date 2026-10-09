@@ -209,16 +209,7 @@ class Translation
      */
     private function writeCache($cache, $translations)
     {
-        $payload = serialize(Gettext\Generators\PhpArray::generate($translations));
-
-        $tmp = $cache . '.' . getmypid() . '.tmp';
-        if (@file_put_contents($tmp, $payload, LOCK_EX) === false) {
-            return;
-        }
-
-        if (!@rename($tmp, $cache)) {
-            @unlink($tmp);
-        }
+        \mindstellar\utility\FileSystem::writeAtomic($cache, serialize(Gettext\Generators\PhpArray::generate($translations)));
     }
 
     /**

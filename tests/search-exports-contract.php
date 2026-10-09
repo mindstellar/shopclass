@@ -210,14 +210,14 @@ harness_section('SearchRunner::run() steps, in order');
 // Swapping apply() and order() changes nothing a listener can see today, so this pins the
 // order in the source: criteria, sort, page, then search_conditions, then the results.
 preg_match_all(
-    '/SearchBuilder::(apply|fireConditions)\b|\$search->(order|page|doSearch|count)\s*\(|\b(osc_cache_get|osc_cache_set|osc_prime_item_upgrades)\s*\(|osc_apply_filter\(\s*\'(search_results|pre_show_items)\'/',
+    '/SearchBuilder::(apply|fireConditions)\b|\$search->(order|page|doSearch|count)\s*\(|\b(CacheGroup::remember|osc_prime_item_upgrades)\s*\(|osc_apply_filter\(\s*\'(search_results|pre_show_items)\'/',
     $classes['SearchRunner']['run'] ?? '',
     $steps,
     PREG_SET_ORDER
 );
 pin('the step sequence', array(
-    'apply', 'order', 'page', 'page', 'fireConditions', 'search_results', 'osc_cache_get',
-    'doSearch', 'count', 'osc_cache_set', 'pre_show_items', 'osc_prime_item_upgrades',
+    'apply', 'order', 'page', 'page', 'fireConditions', 'search_results', 'CacheGroup::remember',
+    'doSearch', 'count', 'pre_show_items', 'osc_prime_item_upgrades',
 ), array_map(static fn ($hit) => end($hit), $steps));
 
 exit(harness_result());

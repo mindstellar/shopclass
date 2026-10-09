@@ -356,6 +356,69 @@ class Connection
     }
 
     /**
+     * Take a server-wide named lock, waiting up to $wait seconds. Returns the call that
+     * releases it, or null when another session holds it.
+     *
+     * @param string $name at most 64 characters
+     * @param int    $wait
+     *
+     * @return \Closure|null
+     * @throws DbException
+     */
+    public function namedLock(string $name, int $wait): ?\Closure
+    {
+        if ((int) $this->scalar('SELECT IS_USED_LOCK(?) = CONNECTION_ID()', array($name)) === 1) {
+            // Already ours: taking it again would release it early on MySQL before 5.7.5.
+            return static function (): void {
+            };
+        }
+        if ((int) $this->scalar('SELECT GET_LOCK(?, ?)', array($name, $wait)) !== 1) {
+            return null;
+        }
+
+        return function () use ($name): void {
+            try {
+                $this->scalar('SELECT RELEASE_LOCK(?)', array($name));
+            } catch (Throwable $e) {
+                // The server drops the lock with the session anyway.
+            }
+        };
+    }
+
+    /**
+     * Run $fn under a named lock, then release it. When the lock is not taken, $busy answers
+     * instead, given the DbException that stopped it or null when another session holds it.
+     *
+     * @param string        $name
+     * @param int           $wait seconds to wait for the lock
+     * @param callable      $fn
+     * @param callable|null $busy without it, a held lock answers null and an error is thrown
+     *
+     * @return mixed
+     * @throws DbException when the lock query fails and no $busy is given
+     */
+    public function withNamedLock(string $name, int $wait, callable $fn, ?callable $busy = null)
+    {
+        try {
+            $release = $this->namedLock($name, $wait);
+        } catch (DbException $e) {
+            if ($busy === null) {
+                throw $e;
+            }
+
+            return $busy($e);
+        }
+        if ($release === null) {
+            return $busy === null ? null : $busy(null);
+        }
+        try {
+            return $fn();
+        } finally {
+            $release();
+        }
+    }
+
+    /**
      * Prepare $sql, bind $params as positional parameters, execute, hand the
      * live statement to $consume, and always close the statement afterwards.
      *

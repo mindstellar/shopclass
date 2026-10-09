@@ -17,6 +17,7 @@ use City;
 use CityArea;
 use CityStats;
 use ItemLocation;
+use mindstellar\routing\ReservedSlugs;
 use mindstellar\utility\DeferredMail;
 use mindstellar\validation\InvalidException;
 use mindstellar\validation\NotFoundException;
@@ -367,13 +368,7 @@ final class LocationService
             return isset($row['s_slug']) && (string) $row[$key] !== (string) $self;
         };
 
-        $base = osc_sanitizeString($wanted === '' || $takenByOther($wanted) ? $name : $wanted);
-        $slug = $base;
-        for ($n = 1; $takenByOther($slug); $n++) {
-            $slug = $base . '-' . $n;
-        }
-
-        return $slug;
+        return ReservedSlugs::unique(osc_sanitizeString($wanted === '' || $takenByOther($wanted) ? $name : $wanted), $takenByOther, '-');
     }
 
     /**

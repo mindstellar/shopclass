@@ -60,9 +60,7 @@ class ImageProcessing
         if (!is_array($this->image_info)) {
             throw new RuntimeException(sprintf(__('%s is corrupt or broken!'), $imagePath));
         }
-        if (extension_loaded('imagick') && osc_use_imagick()) {
-            $this->use_imagick = true;
-        }
+        $this->use_imagick = self::usesImagick();
         if (self::pixelCount($imagePath) > self::maxPixels()) {
             throw new RuntimeException(sprintf(__('%s has too many pixels to process.'), $imagePath));
         }
@@ -149,7 +147,7 @@ class ImageProcessing
             return 0;
         }
         $pixels = $info[0] * $info[1];
-        if (extension_loaded('imagick') && osc_use_imagick()) {
+        if (self::usesImagick()) {
             try {
                 $ping = new Imagick();
                 $ping->pingImage(self::coder($info) . ':' . $imagePath . '[0]');
@@ -210,6 +208,16 @@ class ImageProcessing
         } catch (ImagickException $e) {
             // Colours stay as they were; the photo itself is still usable.
         }
+    }
+
+    /**
+     * Whether photos are made with ImageMagick: it is loaded and the admin chose it.
+     *
+     * @return bool
+     */
+    public static function usesImagick(): bool
+    {
+        return extension_loaded('imagick') && osc_use_imagick();
     }
 
     /**

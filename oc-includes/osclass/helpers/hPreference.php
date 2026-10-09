@@ -74,7 +74,7 @@ function osc_force_jpeg()
 function osc_save_webp()
 {
     return osc_image_format() === 'webp'
-           && ImageProcessing::canWriteWebp(extension_loaded('imagick') && osc_use_imagick());
+           && ImageProcessing::canWriteWebp(ImageProcessing::usesImagick());
 }
 
 /**

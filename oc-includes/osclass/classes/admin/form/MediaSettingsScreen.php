@@ -104,7 +104,7 @@ final class MediaSettingsScreen extends SettingsScreen
                 ->rowLabel(__('Browser resize'))
                 ->set('id', 'browser_resize')
             ->group(__('Restrictions'))
-            ->select('image_format', __('Photo format'), self::formats($imagick), __('How new photos are saved. '
+            ->select('image_format', __('Photo format'), self::formats(), __('How new photos are saved. '
                    . 'JPEG is small but has no transparent background. WebP is about a third smaller than JPEG and '
                    . 'keeps transparency. Photos already uploaded keep their format.'))
                 ->default('original')
@@ -257,7 +257,7 @@ final class MediaSettingsScreen extends SettingsScreen
 
         $quality = (int)$stored['jpeg_quality'];
         $stored['jpeg_quality'] = $quality < 1 || $quality > 100 ? self::DEFAULT_JPEG_QUALITY : $quality;
-        $stored['use_imagick']  = extension_loaded('imagick') && !empty($stored['use_imagick']);
+        $stored['use_imagick']  = \ImageProcessing::usesImagick();
 
         // A refused save posts no value for a block whose type was not chosen; the stored one
         // is what that block shows if the admin switches back to it.
@@ -349,14 +349,12 @@ final class MediaSettingsScreen extends SettingsScreen
     /**
      * The photo formats offered. WebP only where PHP can write it.
      *
-     * @param bool $imagick whether ImageMagick is loaded
-     *
      * @return array<string,string>
      */
-    private static function formats(bool $imagick): array
+    private static function formats(): array
     {
         $formats = array('original' => __('Keep the original format'), 'jpeg' => __('Save as JPEG'));
-        if (\ImageProcessing::canWriteWebp($imagick && osc_use_imagick())) {
+        if (\ImageProcessing::canWriteWebp(\ImageProcessing::usesImagick())) {
             $formats['webp'] = __('Save as WebP');
         }
 

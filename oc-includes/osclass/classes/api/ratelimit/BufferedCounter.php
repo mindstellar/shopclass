@@ -35,7 +35,6 @@ final class BufferedCounter
     /**
      * @param callable      $flush    (context, key, requests to add, window) => count, writes to the database
      * @param callable      $fallback (context, key, window) => count, used when the store fails
-     * @param string        $prefix   set per install, so sites sharing the store keep their own counts
      * @param callable|null $seed     (context, key, window) => the database count, read when a memory count starts
      */
     public function __construct(
@@ -43,7 +42,6 @@ final class BufferedCounter
         private Clock $clock,
         callable $flush,
         callable $fallback,
-        private string $prefix = '',
         ?callable $seed = null
     ) {
         $this->flush    = \Closure::fromCallable($flush);
@@ -58,7 +56,7 @@ final class BufferedCounter
     {
         $window = max(1, $window);
         $now    = $this->clock->now();
-        $name   = 'osc_rl:' . $this->prefix . ':' . sha1(substr($context, 0, 40) . ':' . $window . ':' . $key) . ':' . ($now - ($now % $window));
+        $name   = 'osc_rl:' . sha1(substr($context, 0, 40) . ':' . $window . ':' . $key) . ':' . ($now - ($now % $window));
         if ($this->store->get($name) === null) {
             $start = $this->seed !== null ? (int) (($this->seed)($context, $key, $window) ?? 0) : 0;
             if ($this->store->add($name, $start, $window + 1)) {

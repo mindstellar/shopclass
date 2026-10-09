@@ -40,6 +40,26 @@ final class ReservedSlugs
     }
 
     /**
+     * $base, or $base with $separator and 1, 2... added while $taken says the slug is in use or
+     * it is reserved.
+     *
+     * @param string   $base
+     * @param callable $taken (string $slug): bool
+     * @param string   $separator
+     *
+     * @return string
+     */
+    public static function unique(string $base, callable $taken, string $separator = '_'): string
+    {
+        $slug = $base;
+        for ($n = 1; self::taken($slug) || $taken($slug); $n++) {
+            $slug = $base . $separator . $n;
+        }
+
+        return $slug;
+    }
+
+    /**
      * The message a form shows for a reserved slug.
      */
     public static function message(): string

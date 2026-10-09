@@ -598,11 +598,9 @@ class Search extends DAO
      */
     public function getLatestItems($numItems = 10, $options = array(), $withPicture = false)
     {
-        $key         =
-            md5(osc_cache_search_generation() . osc_base_url() . (string)$numItems . json_encode($options) . (string)$withPicture);
-        $found       = false;
-        $latestItems = osc_cache_get($key, $found);
-        if ($latestItems === false) {
+        $key = 'latest:' . osc_current_user_locale() . '|' . $numItems . json_encode($options) . (int)$withPicture;
+
+        return \mindstellar\cache\CacheGroup::remember('search', $key, function () use ($numItems, $options, $withPicture): array {
             $this->set_rpp($numItems);
             if ($withPicture) {
                 $this->withPicture(true);
@@ -622,13 +620,9 @@ class Search extends DAO
             if (isset($options['sUser'])) {
                 $this->fromUser($options['sUser']);
             }
-            $return = $this->doSearch();
-            osc_cache_set($key, $return, OSC_CACHE_TTL);
 
-            return $return;
-        }
-
-        return $latestItems;
+            return $this->doSearch();
+        });
     }
 
     /**

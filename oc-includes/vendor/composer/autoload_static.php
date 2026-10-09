@@ -1179,6 +1179,7 @@ class ComposerStaticInitcacf2fb59ceafa0761df38efb16f9123
         'mindstellar\\currency\\CurrencyCode' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/currency/CurrencyCode.php',
         'mindstellar\\currency\\CurrencyService' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/currency/CurrencyService.php',
         'mindstellar\\currency\\CurrencyStore' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/currency/CurrencyStore.php',
+        'mindstellar\\currency\\Money' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/currency/Money.php',
         'mindstellar\\database\\Connection' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/database/Connection.php',
         'mindstellar\\database\\ConnectionManager' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/database/ConnectionManager.php',
         'mindstellar\\database\\Db' => __DIR__ . '/../../..' . '/oc-includes/osclass/classes/database/Db.php',

@@ -335,26 +335,15 @@ final class Billing
     public static function refundThroughGateway(Order $order, ?bool &$providerAccepted = null): CallbackResult
     {
         $providerAccepted = false;
-        $lock             = self::refundLockName($order->getId());
 
-        try {
-            $locked = (int) Db::scalar('SELECT GET_LOCK(?, 2)', array($lock)) === 1;
-        } catch (Throwable $e) {
-            $locked = false;
-        }
-        if (!$locked) {
-            return CallbackResult::ignored(__('A refund for this order is already running'));
-        }
-
-        try {
-            return self::refundLocked($order, $providerAccepted);
-        } finally {
-            try {
-                Db::scalar('SELECT RELEASE_LOCK(?)', array($lock));
-            } catch (Throwable $e) {
-                // The lock goes with the connection anyway.
-            }
-        }
+        return Db::withNamedLock(
+            self::refundLockName($order->getId()),
+            2,
+            static function () use ($order, &$providerAccepted): CallbackResult {
+                return self::refundLocked($order, $providerAccepted);
+            },
+            static fn (): CallbackResult => CallbackResult::ignored(__('A refund for this order is already running'))
+        );
     }
 
     /**

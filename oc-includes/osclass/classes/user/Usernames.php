@@ -86,35 +86,24 @@ final class Usernames
      */
     public static function claim(int $userId, string $username, bool $ignoreHolds = false): string
     {
-        $lock = UserStore::usernameLock();
-        try {
-            $locked = (int) Db::scalar('SELECT GET_LOCK(?, ?)', [$lock, \defined('OSC_LOCK_WAIT') ? (int) \constant('OSC_LOCK_WAIT') : 5]) === 1;
-        } catch (\mindstellar\database\DbException $e) {
-            $locked = false;
-        }
-        if (!$locked) {
-            return 'failed';
-        }
+        $wait = \defined('OSC_LOCK_WAIT') ? (int) \constant('OSC_LOCK_WAIT') : 5;
 
-        try {
-            if (UserStore::usernameTaken($username, $userId, $ignoreHolds)) {
-                return 'taken';
-            }
-            UserStore::setUsername($userId, $username);
-        } catch (\mindstellar\database\DbException $e) {
-            return (int) $e->getCode() === 1062 ? 'taken' : 'failed';
-        } finally {
+        return Db::withNamedLock(UserStore::usernameLock(), $wait, static function () use ($userId, $username, $ignoreHolds): string {
             try {
-                Db::scalar('SELECT RELEASE_LOCK(?)', [$lock]);
+                if (UserStore::usernameTaken($username, $userId, $ignoreHolds)) {
+                    return 'taken';
+                }
+                UserStore::setUsername($userId, $username);
             } catch (\mindstellar\database\DbException $e) {
-                // The lock is dropped with the connection anyway.
+                return (int) $e->getCode() === 1062 ? 'taken' : 'failed';
+            } finally {
+                if (function_exists('osc_invalidate_user_cache')) {
+                    osc_invalidate_user_cache($userId);
+                }
             }
-            if (function_exists('osc_invalidate_user_cache')) {
-                osc_invalidate_user_cache($userId);
-            }
-        }
 
-        return 'ok';
+            return 'ok';
+        }, static fn (): string => 'failed');
     }
 
     /**

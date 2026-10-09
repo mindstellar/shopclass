@@ -1062,6 +1062,7 @@ return array(
     'mindstellar\\currency\\CurrencyCode' => $baseDir . '/oc-includes/osclass/classes/currency/CurrencyCode.php',
     'mindstellar\\currency\\CurrencyService' => $baseDir . '/oc-includes/osclass/classes/currency/CurrencyService.php',
     'mindstellar\\currency\\CurrencyStore' => $baseDir . '/oc-includes/osclass/classes/currency/CurrencyStore.php',
+    'mindstellar\\currency\\Money' => $baseDir . '/oc-includes/osclass/classes/currency/Money.php',
     'mindstellar\\database\\Connection' => $baseDir . '/oc-includes/osclass/classes/database/Connection.php',
     'mindstellar\\database\\ConnectionManager' => $baseDir . '/oc-includes/osclass/classes/database/ConnectionManager.php',
     'mindstellar\\database\\Db' => $baseDir . '/oc-includes/osclass/classes/database/Db.php',

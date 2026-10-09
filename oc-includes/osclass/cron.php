@@ -24,21 +24,11 @@ if (!defined('CLI')) {
     define('CLI', PHP_SAPI === 'cli');
 }
 
-// Hourly crons
-$cron = Cron::getInstance()->getCronByType('HOURLY');
-if (is_array($cron)) {
-    $claimed = false;
-    $i_next  = strtotime($cron['d_next_exec']);
-
-    if ((CLI && (Params::getParam('cron-type') === 'hourly')) || ((($i_now - $i_next + $shift_seconds) >= 0) && !CLI)) {
-        // Only the request that moves the schedule on runs the jobs, so two at once cannot both run.
-        $d_next = date('Y-m-d H:i:s', $i_now_truncated + 3600);
-        $claimed = Cron::getInstance()->claim('HOURLY', (string) $cron['d_next_exec'], $d_now, $d_next);
-    }
-    if ($claimed) {
+// Each schedule runs its jobs only in the request that moves it on, so two at once cannot both run.
+$schedules = array(
+    'HOURLY' => array(3600, static function (array $cron): void {
         osc_runAlert('HOURLY', $cron['d_last_exec']);
 
-        // Run cron AFTER updating the next execution time to avoid double run of cron
         $purge = osc_purge_latest_searches();
         if ($purge === 'hour') {
             LatestSearches::getInstance()->purgeDate(date('Y-m-d H:i:s', time() - 3600));
@@ -73,26 +63,10 @@ if (is_array($cron)) {
         \mindstellar\security\RateLimit::prune();
 
         osc_run_hook('cron_hourly');
-    }
-}
-
-// Daily cron
-$cron = Cron::getInstance()->getCronByType('DAILY');
-if (is_array($cron)) {
-    $claimed = false;
-    $i_next  = strtotime($cron['d_next_exec']);
-
-    if ((CLI && (Params::getParam('cron-type') === 'daily')) || ((($i_now - $i_next + $shift_seconds) >= 0) && !CLI)) {
-        // Only the request that moves the schedule on runs the jobs, so two at once cannot both run.
-        $d_next = date('Y-m-d H:i:s', $i_now_truncated + (24 * 3600));
-        $claimed = Cron::getInstance()->claim('DAILY', (string) $cron['d_next_exec'], $d_now, $d_next);
-    }
-    if ($claimed) {
-        //osc_do_auto_upgrade();
-
+    }),
+    'DAILY'  => array(24 * 3600, static function (array $cron): void {
         osc_runAlert('DAILY', $cron['d_last_exec']);
 
-        // Run cron AFTER updating the next execution time to avoid double run of cron
         $purge = osc_purge_latest_searches();
         if ($purge === 'day') {
             LatestSearches::getInstance()->purgeDate(date('Y-m-d H:i:s', time() - (24 * 3600)));
@@ -157,31 +131,29 @@ if (is_array($cron)) {
         }*/
 
         osc_run_hook('cron_daily');
-    }
-}
-
-// Weekly cron
-$cron = Cron::getInstance()->getCronByType('WEEKLY');
-if (is_array($cron)) {
-    $claimed = false;
-    $i_next  = strtotime($cron['d_next_exec']);
-
-    if ((CLI && (Params::getParam('cron-type') === 'weekly')) || ((($i_now - $i_next + $shift_seconds) >= 0) && !CLI)) {
-        // Only the request that moves the schedule on runs the jobs, so two at once cannot both run.
-        $d_next = date('Y-m-d H:i:s', $i_now_truncated + (7 * 24 * 3600));
-        $claimed = Cron::getInstance()->claim('WEEKLY', (string) $cron['d_next_exec'], $d_now, $d_next);
-    }
-    if ($claimed) {
+    }),
+    'WEEKLY' => array(7 * 24 * 3600, static function (array $cron): void {
         osc_runAlert('WEEKLY', $cron['d_last_exec']);
         // Correct drift in the listing counts of every country, region and city.
         osc_update_location_stats(true);
 
-        // Run cron AFTER updating the next execution time to avoid double run of cron
         $purge = osc_purge_latest_searches();
         if ($purge === 'week') {
             LatestSearches::getInstance()->purgeDate(date('Y-m-d H:i:s', time() - (7 * 24 * 3600)));
         }
         osc_run_hook('cron_weekly');
+    }),
+);
+foreach ($schedules as $type => [$period, $jobs]) {
+    $cron = Cron::getInstance()->getCronByType($type);
+    if (!is_array($cron)) {
+        continue;
+    }
+    $due = CLI
+        ? Params::getParam('cron-type') === strtolower($type)
+        : ($i_now - strtotime($cron['d_next_exec']) + $shift_seconds) >= 0;
+    if ($due && Cron::getInstance()->claim($type, (string) $cron['d_next_exec'], $d_now, date('Y-m-d H:i:s', $i_now_truncated + $period))) {
+        $jobs($cron);
     }
 }
 

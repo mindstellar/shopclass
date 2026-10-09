@@ -579,6 +579,102 @@ $dupSlug = (static function () use ($admin, $descTable, $dupId) {
 })();
 pin('a colliding slug is uniquified with a numeric suffix', 'boats_1', $dupSlug);
 
+harness_section('Utils::translateCategories — a translated slug skips the reserved prefix');
+
+if (!function_exists('osc_translations_path')) {
+    function osc_translations_path()
+    {
+        return __DIR__ . '/no-translations/';
+    }
+}
+$m     = $freshCategory();
+$apiId = $m->insert(
+    array('fk_i_parent_id' => null, 'i_expiration_days' => 0, 'i_position' => 0, 'b_enabled' => 1, 'b_price_enabled' => 1),
+    array($locale => array('s_name' => 'API'))
+);
+seed_exec($admin, "UPDATE $descTable SET s_slug = 'api-old' WHERE fk_i_category_id = ?", 'i', array($apiId));
+// No catalogue to load: an unconstructed Translation answers a missing .mo with false.
+$translationProp = new ReflectionProperty('Translation', 'instance');
+if (PHP_VERSION_ID < 80100) {
+    $translationProp->setAccessible(true);
+}
+$translationProp->setValue(null, (new ReflectionClass('Translation'))->newInstanceWithoutConstructor());
+$_SESSION = array();
+@Session::getInstance()->_set('adminLocale', $locale);
+\mindstellar\utility\Utils::translateCategories('es_ES');
+$translationProp->setValue(null, null);
+$sessionProp = new ReflectionProperty('Session', 'instance');
+if (PHP_VERSION_ID < 80100) {
+    $sessionProp->setAccessible(true);
+}
+$sessionProp->setValue(null, null);
+unset($_SESSION);
+$apiSlug = (static function () use ($admin, $descTable, $apiId) {
+    $stmt = $admin->prepare("SELECT s_slug FROM $descTable WHERE fk_i_category_id = ? AND fk_c_locale_code = 'es_ES'");
+    $stmt->bind_param('i', $apiId);
+    $stmt->execute();
+    $r = $stmt->get_result()->fetch_assoc()['s_slug'] ?? null;
+    $stmt->close();
+
+    return $r;
+})();
+pin('a category translated as "API" is saved as api_1, not the reserved "api"', 'api_1', $apiSlug);
+seed_exec($admin, "DELETE FROM $descTable WHERE fk_i_category_id = ?", 'i', array($apiId));
+seed_exec($admin, "DELETE FROM $catTable WHERE pk_i_id = ?", 'i', array($apiId));
+$freshCategory();
+
+harness_section('Category::toTree — a cache read of null is a miss');
+
+$m = $freshCategory();
+$treeIds = array_column($m->toTree(), 'pk_i_id');
+// A driver that answers null on a miss used to be read as a stored tree.
+$nullCache = new class () implements iObject_Cache {
+    public static function is_supported()
+    {
+        return true;
+    }
+    public function add($key, $data, $expire = 0)
+    {
+        return false;
+    }
+    public function set($key, $data, $expire = 0)
+    {
+        return true;
+    }
+    public function delete($key)
+    {
+        return true;
+    }
+    public function flush()
+    {
+        return true;
+    }
+    public function get($key, &$found = null)
+    {
+        $found = false;
+
+        return null;
+    }
+    public function stats()
+    {
+    }
+    public function _get_cache()
+    {
+        return 'null';
+    }
+    public function __destruct()
+    {
+    }
+};
+$factoryProp = new ReflectionProperty('Object_Cache_Factory', 'instance');
+if (PHP_VERSION_ID < 80100) {
+    $factoryProp->setAccessible(true);
+}
+$factoryProp->setValue(null, $nullCache);
+pin('toTree() over a driver that answers null rebuilds the same tree', $treeIds, array_column($m->toTree(), 'pk_i_id'));
+$factoryProp->setValue(null, $cache);
+$freshCategory();
+
 /* ----------------------------------------------------------------------------
  * insertDescription().
  * ------------------------------------------------------------------------- */

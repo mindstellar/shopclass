@@ -85,6 +85,16 @@ abstract class BaseModel
     }
 
     /**
+     * Whether a script sent this request (X-Requested-With: XMLHttpRequest).
+     *
+     * @return bool
+     */
+    protected function isXhrRequest(): bool
+    {
+        return strtolower((string) Params::getServerParam('HTTP_X_REQUESTED_WITH')) === 'xmlhttprequest';
+    }
+
+    /**
      * Sends a Location header to $url and terminates the request.
      *
      * @param string   $url

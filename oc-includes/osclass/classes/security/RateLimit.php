@@ -87,12 +87,8 @@ final class RateLimit extends Model
         $params = array($bucket, $window, $window + $windowSeconds, $by, $by);
 
         try {
-            try {
-                $count = Db::insertGetId($sql, $params);
-            } catch (\Throwable $e) {
-                // A burst on one key can deadlock its own row; one retry settles that.
-                $count = Db::insertGetId($sql, $params);
-            }
+            // A burst on one key can deadlock its own row; one retry settles that.
+            $count = Db::retryOnce(static fn (): int => Db::insertGetId($sql, $params));
         } catch (\Throwable $e) {
             FailOpen::log('RateLimit', 'the request', $e, $failOpen);
 

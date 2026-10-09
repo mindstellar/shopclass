@@ -29,7 +29,6 @@ class Category extends DAO
     private $categories;
     private $categoriesEnabled;
     private $relation;
-    private $emptyTree;
     private $slugs;
 
     /**
@@ -60,8 +59,7 @@ class Category extends DAO
             }
         }
 
-        $this->language  = $l;
-        $this->emptyTree = true;
+        $this->language = $l;
         $this->toTree();
     }
 
@@ -74,54 +72,43 @@ class Category extends DAO
      */
     public function toTree(bool $empty = true)
     {
-        $key   = md5(osc_cache_category_generation() . osc_base_url() . (string)$this->language . (string)$empty);
-        $found = false;
-        $cache = osc_cache_get($key, $found);
-        if ($cache === false) {
-            if ($empty == $this->emptyTree && $this->tree != null) {
-                return $this->tree;
-            }
+        $state = \mindstellar\cache\CacheGroup::remember('category', 'tree:' . $this->language . ':' . (int)$empty, function () use ($empty): ?array {
             // if listEnabled has been called before, don't redo the query
-            if ($this->categoriesEnabled) {
-                $categories = $this->categoriesEnabled;
-            } else {
+            if (!$this->categoriesEnabled) {
                 $this->categoriesEnabled = $this->listEnabled();
-                $categories              = $this->categoriesEnabled;
             }
+            $this->tree       = array();
             $this->categories = array();
             $this->relation   = array();
-            foreach ($categories as $c) {
+            foreach ($this->categoriesEnabled as $c) {
                 if ($empty || ($c['i_num_items'] > 0)) {
                     $this->categories[$c['pk_i_id']] = $c;
                     if ($c['fk_i_parent_id'] == null) {
-                        $this->tree[]        = $c;
                         $this->relation[0][] = $c['pk_i_id'];
                     } else {
                         $this->relation[$c['fk_i_parent_id']][] = $c['pk_i_id'];
                     }
                 }
             }
-
-            if (count($this->relation) == 0 || !isset($this->relation[0])) {
-                return array();
+            if (!isset($this->relation[0])) {
+                return null;
             }
 
-            $this->tree = $this->sideTree($this->relation[0], $this->categories, $this->relation);
-            $cache                      = [];
-            $cache['tree']              = $this->tree;
-            $cache['empty_tree']        = $this->emptyTree;
-            $cache['relation']          = $this->relation;
-            $cache['categories']        = $this->categories;
-            $cache['categoriesEnabled'] = $this->categoriesEnabled;
-            osc_cache_set($key, $cache, OSC_CACHE_TTL);
-
-            return $this->tree;
+            return array(
+                'tree'              => $this->sideTree($this->relation[0], $this->categories, $this->relation),
+                'relation'          => $this->relation,
+                'categories'        => $this->categories,
+                'categoriesEnabled' => $this->categoriesEnabled,
+            );
+        });
+        if ($state === null) {
+            return array();
         }
 
-        $this->tree              = $cache['tree'];
-        $this->relation          = $cache['relation'];
-        $this->categories        = $cache['categories'];
-        $this->categoriesEnabled = $cache['categoriesEnabled'];
+        $this->tree              = $state['tree'];
+        $this->relation          = $state['relation'];
+        $this->categories        = $state['categories'];
+        $this->categoriesEnabled = $state['categoriesEnabled'];
 
         return $this->tree;
     }
@@ -418,22 +405,18 @@ class Category extends DAO
         if ($categoryID == null) {
             return false;
         }
-        $key   = md5(osc_cache_category_generation() . osc_base_url() . 'Category:findByPrimaryKey:' . $categoryID . $locale);
-        $found = false;
-        $cache = osc_cache_get($key, $found);
-        if ($cache === false) {
-            $category = array();
+        $key = 'row:' . $categoryID . ':' . $this->language . ':' . $locale;
 
+        return \mindstellar\cache\CacheGroup::remember('category', $key, function () use ($categoryID, $locale): ?array {
             if (isset($this->categories[$categoryID])) {
                 $category = $this->categories[$categoryID];
 
                 // if we already have locale data, we return the category
-                if ($locale == '' || ($locale != '' && isset($category['locale']))) {
+                if ($locale == '' || isset($category['locale'])) {
                     if ($locale != '' && isset($category['locale'][$locale])) {
                         $category['s_name']        = $category['locale'][$locale]['s_name'];
                         $category['s_description'] = $category['locale'][$locale]['s_description'];
                     }
-                    osc_cache_set($key, $category, OSC_CACHE_TTL);
 
                     return $category;
                 }
@@ -441,7 +424,7 @@ class Category extends DAO
                 $category = $this->listWhere('a.pk_i_id = %d', (int)$categoryID);
 
                 if (!isset($category[0]) || !isset($category[0]['pk_i_id'])) {
-                    return false;
+                    return null;
                 }
                 $category = $category[0];
             }
@@ -452,7 +435,7 @@ class Category extends DAO
                     ->orderBy('fk_c_locale_code')
                     ->get();
             } catch (\mindstellar\database\DbException $e) {
-                return false;
+                return null;
             }
 
             $sub_rows = Db::stringifyRows($sub_rows);
@@ -472,12 +455,9 @@ class Category extends DAO
                 $category['s_name']        = $category['locale'][$locale]['s_name'];
                 $category['s_description'] = $category['locale'][$locale]['s_description'];
             }
-            osc_cache_set($key, $category, OSC_CACHE_TTL);
 
             return $category;
-        }
-
-        return $cache;
+        }) ?? false;
     }
 
     /**
@@ -619,21 +599,11 @@ class Category extends DAO
                         isset($fieldsDescription['s_name']) ? $fieldsDescription['s_name'] : ''
                     ));
                 }
-                $slug_tmp                              = $slug;
-                $slug_unique                           = 1;
-                while (true) {
-                    $cat_slug = $this->findBySlug($slug);
-                    // A reserved slug counts as taken, so "api" is saved as "api_1".
-                    if ((!isset($cat_slug['pk_i_id']) || $cat_slug['pk_i_id'] == $pk)
-                        && !\mindstellar\routing\ReservedSlugs::taken($slug)
-                    ) {
-                        break;
-                    }
+                $fieldsDescription['s_slug'] = \mindstellar\routing\ReservedSlugs::unique($slug, function (string $candidate) use ($pk): bool {
+                    $row = $this->findBySlug($candidate);
 
-                    $slug = $slug_tmp . '_' . $slug_unique;
-                    $slug_unique++;
-                }
-                $fieldsDescription['s_slug'] = $slug;
+                    return isset($row['pk_i_id']) && $row['pk_i_id'] != $pk;
+                });
                 $array_where                 = array(
                     'fk_i_category_id' => $pk,
                     'fk_c_locale_code' => $fieldsDescription['fk_c_locale_code']
@@ -779,21 +749,10 @@ class Category extends DAO
         foreach ($aFieldsDescription as $k => $fieldsDescription) {
             $fieldsDescription['fk_i_category_id'] = $category_id;
             $fieldsDescription['fk_c_locale_code'] = $k;
-            $slug                                  = osc_sanitizeString(osc_apply_filter(
-                'slug',
-                $fieldsDescription['s_name']
-            ));
-            $slug_tmp                              = $slug;
-            $slug_unique                           = 1;
-            while (true) {
-                if (!$this->findBySlug($slug) && !\mindstellar\routing\ReservedSlugs::taken($slug)) {
-                    break;
-                }
-
-                $slug = $slug_tmp . '_' . $slug_unique;
-                $slug_unique++;
-            }
-            $fieldsDescription['s_slug'] = $slug;
+            $fieldsDescription['s_slug']           = \mindstellar\routing\ReservedSlugs::unique(
+                osc_sanitizeString(osc_apply_filter('slug', $fieldsDescription['s_name'])),
+                fn (string $slug): bool => (bool) $this->findBySlug($slug)
+            );
             // The result was discarded here before this conversion, so a
             // per-locale failure is swallowed rather than aborting the rest.
             try {

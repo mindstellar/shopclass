@@ -481,6 +481,45 @@ class Db
     }
 
     /**
+     * Run $fn under a named lock on the shared connection; see Connection::withNamedLock().
+     *
+     * @param string        $name
+     * @param int           $wait
+     * @param callable      $fn
+     * @param callable|null $busy
+     *
+     * @return mixed
+     * @throws DbException
+     */
+    public static function withNamedLock(string $name, int $wait, callable $fn, ?callable $busy = null)
+    {
+        return Connection::getInstance()->withNamedLock($name, $wait, $fn, $busy);
+    }
+
+    /**
+     * Run $fn, and once more after 50 ms if it throws a DbException, since a deadlock usually
+     * clears. Inside a transaction it throws at once: a deadlock has rolled the whole transaction back.
+     *
+     * @param callable $fn
+     *
+     * @return mixed
+     * @throws DbException when both tries fail, or the first fails inside a transaction
+     */
+    public static function retryOnce(callable $fn)
+    {
+        try {
+            return $fn();
+        } catch (DbException $e) {
+            if (self::$depth > 0) {
+                throw $e;
+            }
+            usleep(50000);
+
+            return $fn();
+        }
+    }
+
+    /**
      * Validate a savepoint identifier. Savepoint names cannot be bound as query
      * parameters, so they are an injection surface and must be whitelisted.
      *

@@ -14,7 +14,7 @@ use mindstellar\admin\DatabaseTools;
 use mindstellar\database\Connection;
 use mindstellar\database\DbException;
 use mindstellar\job\JobWorker;
-use mindstellar\utility\Curl;
+use mindstellar\utility\FileSystem;
 use mindstellar\utility\Formatting;
 use Throwable;
 
@@ -579,21 +579,11 @@ final class BackupService
         if (is_array($cached) && time() - (int) ($cached['t'] ?? 0) < ($open === true ? 3600 : 86400)) {
             return $open;
         }
-        if (!is_file(BackupStore::site()->dir() . BackupStore::PROBE) || !Curl::available()) {
+        if (!is_file(BackupStore::site()->dir() . BackupStore::PROBE)) {
             return null;
         }
-        $ch = curl_init(osc_base_url() . BackupStore::FOLDER . BackupStore::PROBE);
-        curl_setopt_array($ch, array(
-            CURLOPT_NOBODY         => true,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_FOLLOWLOCATION => false,
-            CURLOPT_CONNECTTIMEOUT => 2,
-            CURLOPT_TIMEOUT        => 3,
-        ));
-        $ok     = curl_exec($ch) !== false;
-        $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-        $open = !$ok || $status === 0 ? null : ($status >= 200 && $status < 300);
+        $status = (new FileSystem())->head(osc_base_url() . BackupStore::FOLDER . BackupStore::PROBE);
+        $open   = $status === 0 ? null : ($status >= 200 && $status < 300);
         osc_set_preference('backup_probe', (string) json_encode(array('t' => time(), 'open' => $open)), 'osclass', 'STRING');
 
         return $open;

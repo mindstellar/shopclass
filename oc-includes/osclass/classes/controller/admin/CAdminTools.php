@@ -93,7 +93,7 @@ class CAdminTools extends AdminSecBaseModel
             case ('locations_post'):
                 // Also posted from the Locations Data tab, which asks to come back there.
                 $fromLocations = Params::getParamString('return') === 'locations';
-                $isXhr         = strtolower(Params::getServerParam('HTTP_X_REQUESTED_WITH')) === 'xmlhttprequest';
+                $isXhr         = $this->isXhrRequest();
                 $back          = $fromLocations
                     ? osc_admin_base_url(true) . '?page=settings&action=locations&tab=data'
                     : osc_admin_base_url(true) . '?page=tools&action=locations';
@@ -1051,7 +1051,7 @@ class CAdminTools extends AdminSecBaseModel
             'photos'           => (int) osc_max_images_per_item(),
             'extensions'       => get_loaded_extensions(),
             'imagick'          => extension_loaded('imagick'),
-            'imagick_on'       => extension_loaded('imagick') && osc_use_imagick(),
+            'imagick_on'       => \ImageProcessing::usesImagick(),
             'gd'               => extension_loaded('gd'),
             'opcache'          => function_exists('opcache_get_status') && ini_get('opcache.enable'),
             'allow_url_fopen'  => (bool) ini_get('allow_url_fopen'),

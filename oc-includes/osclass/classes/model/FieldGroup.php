@@ -166,14 +166,8 @@ class FieldGroup extends DAO
         if ($slug === '') {
             $slug = 'group';
         }
-        $slugTmp = $slug;
-        $k       = 0;
-        while ($this->findBySlug($slug)) {
-            $k++;
-            $slug = $slugTmp . '_' . $k;
-        }
 
-        return $slug;
+        return \mindstellar\routing\ReservedSlugs::unique($slug, fn (string $slug): bool => (bool) $this->findBySlug($slug));
     }
 
     /**

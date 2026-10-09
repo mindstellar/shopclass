@@ -161,7 +161,7 @@ final class JobQueue
                 . ' VALUES (' . implode(', ', array_fill(0, count($row), '?')) . ')'
                 . self::onDuplicate() . ', pk_i_id = LAST_INSERT_ID(pk_i_id)';
 
-            return (int) self::retryOnce(static fn () => Db::insertGetId($sql, array_values($row)));
+            return (int) Db::retryOnce(static fn () => Db::insertGetId($sql, array_values($row)));
         } catch (DbException $e) {
             return 0;
         }
@@ -232,7 +232,7 @@ final class JobQueue
                 . ' VALUES ' . implode(', ', array_fill(0, count($chunk), $tuple))
                 . self::onDuplicate();
             try {
-                self::retryOnce(static fn () => Db::execute($sql, $params));
+                Db::retryOnce(static fn () => Db::execute($sql, $params));
                 $queued += count($chunk);
             } catch (DbException $e) {
                 // A failed chunk is not counted; the others still go in.
@@ -339,26 +339,6 @@ final class JobQueue
         }
 
         return $row;
-    }
-
-    /**
-     * Run $fn, and once more if it fails: a keyed insert can lose a lock race (deadlock)
-     * with another insert or a claim, and the second try almost always goes through.
-     *
-     * @param callable $fn
-     *
-     * @return mixed
-     * @throws DbException when both tries fail
-     */
-    private static function retryOnce(callable $fn)
-    {
-        try {
-            return $fn();
-        } catch (DbException $e) {
-            usleep(50000);
-
-            return $fn();
-        }
     }
 
     /**

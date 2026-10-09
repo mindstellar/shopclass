@@ -236,23 +236,7 @@ final class DatabaseTools
      */
     public static function upgradeLock(Connection $conn): ?Closure
     {
-        $lock = (new MigrationRunner($conn, MigrationRunner::coreDir()))->lockName();
-        if ((int) $conn->scalar('SELECT IS_USED_LOCK(?) = CONNECTION_ID()', array($lock)) === 1) {
-            // Taking it again would release it early on MySQL before 5.7.5.
-            return static function (): void {
-            };
-        }
-        if ((int) $conn->scalar('SELECT GET_LOCK(?, 0)', array($lock)) !== 1) {
-            return null;
-        }
-
-        return static function () use ($conn, $lock): void {
-            try {
-                $conn->scalar('SELECT RELEASE_LOCK(?)', array($lock));
-            } catch (Throwable $e) {
-                // The server drops the lock with the session anyway.
-            }
-        };
+        return $conn->namedLock((new MigrationRunner($conn, MigrationRunner::coreDir()))->lockName(), 0);
     }
 
     /** Oldest servers Shopclass supports. */

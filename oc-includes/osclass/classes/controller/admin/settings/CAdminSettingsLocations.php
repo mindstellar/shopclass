@@ -332,7 +332,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
             $this->respond('warning', Demo::message(), $this->backUrl());
         }
         // A fetch() caller reads the CSRF refusal as JSON rather than following a redirect.
-        if ($this->isXhr() && !defined('IS_AJAX')) {
+        if ($this->isXhrRequest() && !defined('IS_AJAX')) {
             define('IS_AJAX', true);
         }
         osc_csrf_check();
@@ -670,7 +670,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
             $this->respond('error', sprintf(_m('%s could not be read from the catalog'), $offer['name']), $this->dataUrl());
         }
 
-        if ($this->isXhr()) {
+        if ($this->isXhrRequest()) {
             $this->_exportVariableToView('locationPreview', $preview);
             ob_start();
             osc_current_admin_theme_path('settings/locations/preview.php');
@@ -825,7 +825,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
      */
     private function respond(string $status, string $message, string $redirect, array $extra = array())
     {
-        if ($this->isXhr()) {
+        if ($this->isXhrRequest()) {
             header('Content-Type: application/json');
             header('Cache-Control: no-store');
             // Tags escaped, so the CSRF injector finds no <form> inside the JSON.
@@ -861,14 +861,6 @@ class CAdminSettingsLocations extends AdminSecBaseModel
         $search = LocationAdminView::search(Params::getParamString('q', false, false, false), '');
 
         return array('q' => $search['q'], 'pageNum' => Params::getParamInt('pageNum'));
-    }
-
-    /**
-     * @return bool
-     */
-    private function isXhr(): bool
-    {
-        return strtolower(Params::getServerParam('HTTP_X_REQUESTED_WITH')) === 'xmlhttprequest';
     }
 
     /**

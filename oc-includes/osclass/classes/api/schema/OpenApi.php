@@ -23,6 +23,7 @@ use mindstellar\apiaccess\CredentialKind;
 use mindstellar\apiaccess\KeyOwner;
 use mindstellar\apiaccess\PageTokens;
 use mindstellar\apiaccess\Scopes;
+use mindstellar\cache\CacheGroup;
 use mindstellar\webhook\Events;
 
 /**
@@ -143,24 +144,13 @@ final class OpenApi
 
     /**
      * The document from the object cache, keyed on the route table, site URL, version and
-     * active plugins. A per-request cache driver builds it every time.
+     * active plugins.
      *
      * @return array<string,mixed>
      */
     private function cached(): array
     {
-        if (!function_exists('osc_cache_get') || \Object_Cache_Factory::getInstance() instanceof \Object_Cache_default) {
-            return $this->build();
-        }
-        $key = 'api_openapi_' . $this->fingerprint();
-        $doc = osc_cache_get($key, $found);
-        if ($found && is_array($doc)) {
-            return $doc;
-        }
-        $doc = $this->build();
-        osc_cache_set($key, $doc, self::CACHE_TTL);
-
-        return $doc;
+        return CacheGroup::remember('openapi', $this->fingerprint(), fn (): array => $this->build(), self::CACHE_TTL);
     }
 
     private function fingerprint(): string

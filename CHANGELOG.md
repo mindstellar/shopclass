@@ -46,6 +46,10 @@ Plugin authors should read the Breaking section before upgrading.
 - A user keeps at most 20 saved searches, set under **Settings → Spam and bots → Search alerts**.
 - Changing the e-mail through the API asks for the current password.
 - A photo URL that is refused or fails to download no longer says why.
+- Sign-in, form and posting limits count an IPv6 visitor by its /64, so changing address inside it no longer resets them.
+- Saving a search through the API or while signed in counts toward the hourly alert limit, as guests already did.
+- Flash, form and sign-in redirect cookies are signed for their one use and expire with the cookie.
+- A custom URL field takes only `http` and `https` addresses.
 
 ### Performance
 
@@ -97,12 +101,18 @@ Plugin authors should read the Breaking section before upgrading.
 - `BackupManager` is now `BackupService`, and `BackupFailure` is now `BackupException`.
 - **Listings → Settings** and **Users → Settings** check their numbers: a negative or blank number saves as 0.
 - Adding, renaming or deleting a country runs in one transaction, so a failure leaves nothing half done.
+- New `Db::withNamedLock()`, `Db::retryOnce()`, `FileSystem::writeAtomic()`, `FileSystem::head()` and `ImageProcessing::usesImagick()` replace the copies core kept of each. A failed query inside a transaction is no longer retried.
 
 ### Fixed
 
+- Passing `password` to `osc_sendMail()` no longer changes the SMTP security setting; `ssl` does.
+- The installer saves a downloaded language's files into that language's folder.
+- `Formatting::formatSlug()` gives the same slug as `osc_sanitizeString()`; its pattern was broken.
 - An unknown place id in a listing no longer causes a server error.
 - The ban rules are read once per request, not once per address checked.
 - The search result cache key includes the locale, so a language filter no longer shows another language's cached results.
+- A category translated to a new language can no longer take the reserved `api` slug.
+- The category tree no longer breaks on a cache driver that answers a miss with null.
 
 ## Shopclass 6.4.5
 

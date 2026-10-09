@@ -640,6 +640,27 @@ pin('overdue is the waiting job due longest, failed ones aside', '2001-01-01 00:
 
 $truncate();
 
+harness_section('Db::retryOnce');
+$tries = 0;
+$flaky = static function () use (&$tries): string {
+    if (++$tries === 1) {
+        throw new \mindstellar\database\DbException('Deadlock found');
+    }
+
+    return 'done';
+};
+pin('outside a transaction a failed try is run once more', array('done', 2), array(\mindstellar\database\Db::retryOnce($flaky), $tries));
+$tries  = 0;
+$thrown = false;
+try {
+    \mindstellar\database\Db::transaction(static function () use ($flaky) {
+        return \mindstellar\database\Db::retryOnce($flaky);
+    });
+} catch (\mindstellar\database\DbException $e) {
+    $thrown = true;
+}
+pin('inside a transaction it throws after one try', array(true, 1), array($thrown, $tries));
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }

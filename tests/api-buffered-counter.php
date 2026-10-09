@@ -193,21 +193,12 @@ for ($i = 0; $i < 5; $i++) {
 }
 pin('the 4th request is refused, remaining stops at 0', [[true, 2], [true, 1], [true, 0], [false, 0], [false, 0]], $results);
 
-harness_section('install prefix');
-$a = new ArrayStore();
-$b = new BufferedCounter($a, $clock, static fn (): ?int => null, static fn (): int => 0, 'siteA');
-$b->increment('api', 'k', 60);
-pin('every memory key carries the install prefix', [], array_values(array_filter(array_keys($a->data), static fn (string $k): bool => !str_starts_with($k, 'osc_rl:siteA:'))));
-$c = new BufferedCounter($a, $clock, static fn (): ?int => null, static fn (): int => 0, 'siteB');
-pin('another install sharing the store counts from 1', 1, $c->increment('api', 'k', 60));
-pin('the install prefix is 12 characters, and differs per database', [12, false], [strlen(RateLimiter::installPrefix('oc_', 'a', 'https://a.test/')), RateLimiter::installPrefix('oc_', 'a', 'https://a.test/') === RateLimiter::installPrefix('oc_', 'b', 'https://a.test/')]);
-
 harness_section('the object cache as the store');
 $shared = new MemoryCacheDriver('memcached');
 $noDb   = static fn (): ?int => null;
 pin('memcached and apcu drivers hold counts; the per-request default does not', [true, true, null], [CacheStore::of($shared) !== null, CacheStore::of(new MemoryCacheDriver('apcu')) !== null, CacheStore::of(new MemoryCacheDriver('default'))]);
-$serverA = new RateLimiter([new BufferedCounter(CacheStore::of($shared), $clock, $noDb, $noDb, 'site'), 'increment'], $clock);
-$serverB = new RateLimiter([new BufferedCounter(CacheStore::of($shared), $clock, $noDb, $noDb, 'site'), 'increment'], $clock);
+$serverA = new RateLimiter([new BufferedCounter(CacheStore::of($shared), $clock, $noDb, $noDb), 'increment'], $clock);
+$serverB = new RateLimiter([new BufferedCounter(CacheStore::of($shared), $clock, $noDb, $noDb), 'increment'], $clock);
 $bucket  = new RateBucket('api_anon', '1.2.3.4', 4, 60);
 $left    = [];
 foreach ([$serverA, $serverB, $serverA, $serverB, $serverA] as $server) {
@@ -218,7 +209,7 @@ $shared->down = true;
 $fellBack     = 0;
 $downCounter  = new BufferedCounter(CacheStore::of($shared), $clock, $noDb, static function () use (&$fellBack): int {
     return ++$fellBack;
-}, 'site');
+});
 pin('a cache server that is down falls back to the database counter', [1, 1], [$downCounter->increment('api', 'k', 60), $fellBack]);
 
 harness_section('seeding from the database');
@@ -235,7 +226,6 @@ $seeded  = new BufferedCounter(
         return null;
     },
     static fn (): int => 0,
-    'p',
     static function () use (&$seeds): int {
         $seeds++;
 

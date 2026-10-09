@@ -117,11 +117,11 @@ msgstr ""
 msgid "%s is installed with its regions and cities"
 msgstr ""
 
-#: oc-includes/osclass/classes/listing/ListingValidator.php
+#: oc-includes/osclass/classes/form/builder/FieldValidator.php
 msgid "%s is invalid."
 msgstr ""
 
-#: oc-includes/osclass/classes/listing/ListingValidator.php
+#: oc-includes/osclass/classes/form/builder/FieldValidator.php
 msgid "%s is required."
 msgstr ""
 
