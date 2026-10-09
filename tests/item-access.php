@@ -120,9 +120,8 @@ check('admin rights with no admin signed in still count', ListingPolicy::canView
 
 harness_section('both delete paths use it');
 $root = __DIR__ . '/../oc-includes/osclass/classes/controller/';
-$ajax = file_get_contents($root . 'CWebAjax.php');
 $w = array(1 => harness_method_source($root . 'CWebItem.php', 'deleteResources'));
-preg_match("/case 'delete_image':(.*?)case 'alerts':/s", $ajax, $a);
+$a = array(1 => harness_method_source($root . 'CWebAjax.php', 'deleteImage'));
 foreach (array('CWebItem deleteResources' => $w[1] ?? '', 'CWebAjax delete_image' => $a[1] ?? '') as $name => $body) {
     $manage = strpos($body, 'ListingPolicy::canManage(');
     $photoOf = strpos($body, 'ListingPolicy::isPhotoOf(');

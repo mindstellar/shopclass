@@ -25,6 +25,24 @@ use mindstellar\utility\AjaxResponse;
 
 class CWebAjax extends BaseModel
 {
+    /** Each action and the method that answers it; any other action goes to noAction(). */
+    private const ACTIONS = array(
+        'bulk_actions'                => 'bulkActions',
+        'regions'                     => 'regions',
+        'cities'                      => 'cities',
+        'location'                    => 'location',
+        'location_countries'          => 'locationCountries',
+        'custom_field_autocomplete'   => 'fieldSuggestions',
+        'location_regions'            => 'locationRegions',
+        'location_cities'             => 'locationCities',
+        'delete_image'                => 'deleteImage',
+        'alerts'                      => 'alerts',
+        'runhook'                     => 'runHook',
+        'custom'                      => 'custom',
+        'check_username_availability' => 'checkUsername',
+        'ajax_upload'                 => 'ajaxUpload',
+    );
+
     /**
      * Boots the base controller, flags the request as AJAX and fires the `init_ajax` hook.
      */
@@ -45,267 +63,341 @@ class CWebAjax extends BaseModel
      */
     public function doModel()
     {
-        //specific things for this class
-        switch ($this->action) {
-            case 'bulk_actions':
+        $method = is_string($this->action) ? (self::ACTIONS[$this->action] ?? 'noAction') : 'noAction';
+
+        $this->$method();
+    }
+
+    /**
+     * Kept so an old theme's call still gets an empty answer.
+     */
+    private function bulkActions(): void
+    {
+    }
+
+    /**
+     * The regions of a country, in JSON.
+     */
+    private function regions(): void
+    {
+        $regions = Region::getInstance()->findByCountry(Params::getParam('countryId'));
+        AjaxResponse::json($regions);
+    }
+
+    /**
+     * The cities of a region, in JSON.
+     */
+    private function cities(): void
+    {
+        $cities = City::getInstance()->findByRegion(Params::getParamInt('regionId'));
+        AjaxResponse::json($cities);
+    }
+
+    /**
+     * Places that start with the typed text, for the location box.
+     */
+    private function location(): void
+    {
+        $cities = City::getInstance()->ajax(Params::getParam('term'));
+        foreach ($cities as $k => $city) {
+            $cities[$k]['label'] = $city['label'] . ' (' . $city['region'] . ')';
+        }
+        AjaxResponse::json($cities);
+    }
+
+    /**
+     * Countries that start with the typed text.
+     */
+    private function locationCountries(): void
+    {
+        $countries = Country::getInstance()->ajax(Params::getParam('term'));
+        AjaxResponse::json($countries);
+    }
+
+    /**
+     * Suggestions for an autocomplete custom field.
+     */
+    private function fieldSuggestions(): void
+    {
+        AjaxResponse::json($this->customFieldAutocomplete(
+            (int) Params::getParam('field'),
+            (string) Params::getParam('term')
+        ));
+    }
+
+    /**
+     * Regions that start with the typed text.
+     */
+    private function locationRegions(): void
+    {
+        $regions = Region::getInstance()
+            ->ajax(Params::getParam('term'), Params::getParam('country'));
+        AjaxResponse::json($regions);
+    }
+
+    /**
+     * Cities that start with the typed text.
+     */
+    private function locationCities(): void
+    {
+        $cities =
+        // @phpstan-ignore argument.type (region may be an id or a name)
+            City::getInstance()->ajax(Params::getParam('term'), Params::getParam('region'));
+        AjaxResponse::json($cities);
+    }
+
+    /**
+     * Delete one of a listing's photos.
+     */
+    private function deleteImage(): void
+    {
+        $ajax_photo = Params::getParam('ajax_photo');
+        $id         = Params::getParam('id');
+        $item       = Params::getParam('item');
+        $code       = Params::getParamString('code');
+        $secret     = Params::getParamString('secret');
+        $json       = array();
+
+        if ($ajax_photo != '') {
+            // Only a file this browser's upload token staged is removed.
+            $success = UploadTmpStore::discard(UploadTmpStore::formOwner(), (string) $ajax_photo, UploadTmpStore::dir());
+
+            AjaxResponse::json(array(
+                'success' => $success,
+                'msg'     => _m($success
+                    ? 'The selected photo has been successfully deleted'
+                    : "The selected photo couldn't be deleted")
+            ));
+
+            return;
+        }
+
+        // Check for required fields
+        if (!(is_numeric($id) && is_numeric($item)
+            && preg_match('/^([a-z0-9]+)$/i', $code))
+        ) {
+            $json['success'] = false;
+            $json['msg']     =
+                _m("The selected photo couldn't be deleted, the url doesn't exist");
+            AjaxResponse::json($json);
+
+            return;
+        }
+
+        $aItem = Item::getInstance()->findByPrimaryKey((int) $item);
+
+        // Check if the item exists
+        if (count($aItem) == 0) {
+            $json['success'] = false;
+            $json['msg']     = _m("The listing doesn't exist");
+            AjaxResponse::json($json);
+
+            return;
+        }
+
+        $actor = Actor::visitorOrAdmin($secret);
+        if (!ListingPolicy::canManage($aItem, $actor)) {
+            $json['success'] = false;
+            $json['msg']     = _m("The listing doesn't belong to you");
+            AjaxResponse::json($json);
+
+            return;
+        }
+
+        // Does id & code combination exist?
+        $result = ItemResource::getInstance()->existResource((int) $id, $code);
+
+        if ($result > 0) {
+            $resource = ItemResource::getInstance()->findByPrimaryKey($id);
+
+            if (ListingPolicy::isPhotoOf($resource, $aItem, $code)
+                && (new PhotoService())->delete((int) $id, (int) $item, $actor, $code)
+            ) {
+                $json['msg']     = _m('The selected photo has been successfully deleted');
+                $json['success'] = 'true';
+            } else {
+                $json['msg']     = _m('The selected photo does not belong to you');
+                $json['success'] = 'false';
+            }
+        } else {
+            $json['msg']     = _m("The selected photo couldn't be deleted");
+            $json['success'] = 'false';
+        }
+
+        AjaxResponse::json($json);
+
+        return;
+    }
+
+    /**
+     * Save a search alert for an e-mail address.
+     */
+    private function alerts(): void
+    {
+        echo (string)osc_subscribe_alert(Params::getParamString('alert'), Params::getParamString('email'));
+    }
+
+    /**
+     * Run a hook the listing form asks for: item_form, item_edit or an ajax_ hook.
+     */
+    private function runHook(): void
+    {
+        $hook = Params::getParam('hook');
+
+        if ($hook == '') {
+            AjaxResponse::json(array('error' => 'hook parameter not defined'));
+            return;
+        }
+
+        switch ($hook) {
+            case 'item_form':
+                osc_run_hook('item_form', Params::getParam('catId'));
                 break;
-            case 'regions': //Return regions given a countryId
-                $regions = Region::getInstance()->findByCountry(Params::getParam('countryId'));
-                AjaxResponse::json($regions);
-                break;
-            case 'cities': //Returns cities given a regionId
-                $cities = City::getInstance()->findByRegion(Params::getParamInt('regionId'));
-                AjaxResponse::json($cities);
-                break;
-            case 'location': // This is the autocomplete AJAX
-                $cities = City::getInstance()->ajax(Params::getParam('term'));
-                foreach ($cities as $k => $city) {
-                    $cities[$k]['label'] = $city['label'] . ' (' . $city['region'] . ')';
+            case 'item_edit':
+                $catId  = Params::getParam('catId');
+                $itemId = Params::getParamInt('itemId');
+                // Stored values go only to someone who may edit the listing.
+                if ($itemId > 0 && ListingPolicy::manageable($itemId, Actor::visitorOrAdmin(Params::getParamString('secret'))) === null) {
+                    $itemId = 0;
                 }
-                AjaxResponse::json($cities);
-                break;
-            case 'location_countries': // This is the autocomplete AJAX
-                $countries = Country::getInstance()->ajax(Params::getParam('term'));
-                AjaxResponse::json($countries);
-                break;
-            case 'custom_field_autocomplete': // Suggestions for an AUTOCOMPLETE custom field
-                AjaxResponse::json($this->customFieldAutocomplete(
-                    (int) Params::getParam('field'),
-                    (string) Params::getParam('term')
-                ));
-                break;
-            case 'location_regions': // This is the autocomplete AJAX
-                $regions = Region::getInstance()
-                    ->ajax(Params::getParam('term'), Params::getParam('country'));
-                AjaxResponse::json($regions);
-                break;
-            case 'location_cities': // This is the autocomplete AJAX
-                $cities =
-                // @phpstan-ignore argument.type (region may be an id or a name)
-                    City::getInstance()->ajax(Params::getParam('term'), Params::getParam('region'));
-                AjaxResponse::json($cities);
-                break;
-            case 'delete_image': // Delete images via AJAX
-                $ajax_photo = Params::getParam('ajax_photo');
-                $id         = Params::getParam('id');
-                $item       = Params::getParam('item');
-                $code       = Params::getParamString('code');
-                $secret     = Params::getParamString('secret');
-                $json       = array();
-
-                if ($ajax_photo != '') {
-                    // Only a file this browser's upload token staged is removed.
-                    $success = UploadTmpStore::discard(UploadTmpStore::formOwner(), (string) $ajax_photo, UploadTmpStore::dir());
-
-                    AjaxResponse::json(array(
-                        'success' => $success,
-                        'msg'     => _m($success
-                            ? 'The selected photo has been successfully deleted'
-                            : "The selected photo couldn't be deleted")
-                    ));
-
-                    return;
-                }
-
-                // Check for required fields
-                if (!(is_numeric($id) && is_numeric($item)
-                    && preg_match('/^([a-z0-9]+)$/i', $code))
-                ) {
-                    $json['success'] = false;
-                    $json['msg']     =
-                        _m("The selected photo couldn't be deleted, the url doesn't exist");
-                    AjaxResponse::json($json);
-
-                    return;
-                }
-
-                $aItem = Item::getInstance()->findByPrimaryKey((int) $item);
-
-                // Check if the item exists
-                if (count($aItem) == 0) {
-                    $json['success'] = false;
-                    $json['msg']     = _m("The listing doesn't exist");
-                    AjaxResponse::json($json);
-
-                    return;
-                }
-
-                $actor = Actor::visitorOrAdmin($secret);
-                if (!ListingPolicy::canManage($aItem, $actor)) {
-                    $json['success'] = false;
-                    $json['msg']     = _m("The listing doesn't belong to you");
-                    AjaxResponse::json($json);
-
-                    return;
-                }
-
-                // Does id & code combination exist?
-                $result = ItemResource::getInstance()->existResource((int) $id, $code);
-
-                if ($result > 0) {
-                    $resource = ItemResource::getInstance()->findByPrimaryKey($id);
-
-                    if (ListingPolicy::isPhotoOf($resource, $aItem, $code)
-                        && (new PhotoService())->delete((int) $id, (int) $item, $actor, $code)
-                    ) {
-                        $json['msg']     = _m('The selected photo has been successfully deleted');
-                        $json['success'] = 'true';
-                    } else {
-                        $json['msg']     = _m('The selected photo does not belong to you');
-                        $json['success'] = 'false';
-                    }
-                } else {
-                    $json['msg']     = _m("The selected photo couldn't be deleted");
-                    $json['success'] = 'false';
-                }
-
-                AjaxResponse::json($json);
-
-                return;
-            case 'alerts': // Allow to register to an alert given (not sure it's used on admin)
-                echo (string)osc_subscribe_alert(Params::getParamString('alert'), Params::getParamString('email'));
-
-                return;
-            case 'runhook': // run hooks
-                $hook = Params::getParam('hook');
-
-                if ($hook == '') {
-                    AjaxResponse::json(array('error' => 'hook parameter not defined'));
-                    break;
-                }
-
-                switch ($hook) {
-                    case 'item_form':
-                        osc_run_hook('item_form', Params::getParam('catId'));
-                        break;
-                    case 'item_edit':
-                        $catId  = Params::getParam('catId');
-                        $itemId = Params::getParamInt('itemId');
-                        // Stored values go only to someone who may edit the listing.
-                        if ($itemId > 0 && ListingPolicy::manageable($itemId, Actor::visitorOrAdmin(Params::getParamString('secret'))) === null) {
-                            $itemId = 0;
-                        }
-                        osc_run_hook('item_edit', $catId, $itemId);
-                        break;
-                    default:
-                        osc_run_hook('ajax_' . $hook);
-                        break;
-                }
-                break;
-            case 'custom': // Execute via AJAX custom file
-                if (Params::existParam('route')) {
-                    $routes = Rewrite::getInstance()->getRoutes();
-                    $rid    = Params::getParam('route');
-                    $file   = '../';
-                    if (isset($routes[$rid]['file'])) {
-                        $file = $routes[$rid]['file'];
-                    }
-                } else {
-                    // DEPRECATED: Disclosed path in URL is deprecated, use routes instead
-                    // This will be REMOVED in 3.4
-                    $file = Params::getParam('ajaxfile');
-                }
-
-                if ($file == '') {
-                    AjaxResponse::json(array('error' => 'no action defined'));
-                    break;
-                }
-
-                // valid file?
-                if (strpos($file, '../') !== false || strpos($file, '..\\') !== false
-                    || stripos($file, '/admin/') !== false
-                ) { //If the file is inside an "admin" folder, it should NOT be opened in frontend
-                    AjaxResponse::json(array('error' => 'no valid ajaxFile'));
-                    break;
-                }
-
-                if (!file_exists(osc_plugins_path() . $file)) {
-                    AjaxResponse::json(array('error' => "ajaxFile doesn't exist"));
-                    break;
-                }
-
-                // Unauthenticated, and it ends in require_once: resolve the path before
-                // running it -- .php only, and inside the plugins directory once symlinks
-                // are followed.
-                $resolved = \mindstellar\security\PluginAjaxFile::resolve($file, osc_plugins_path());
-                if ($resolved === null) {
-                    AjaxResponse::json(array('error' => 'no valid ajaxFile'));
-                    break;
-                }
-
-                require_once $resolved;
-                break;
-            case 'check_username_availability':
-                $username = (new \mindstellar\utility\Sanitize())->username(Params::getParam('s_username'));
-                if (osc_is_username_blacklisted($username)) {
-                    AjaxResponse::json(array('exists' => 1, 's_username' => $username));
-                } else {
-                    $user = User::getInstance()->findByUsername($username);
-                    if (isset($user['s_username'])) {
-                        AjaxResponse::json(array('exists' => 1, 's_username' => $username));
-                    } else {
-                        AjaxResponse::json(array('exists' => 0, 's_username' => $username));
-                    }
-                }
-                break;
-            case 'ajax_upload':
-                $refused = $this->uploadRefusal();
-                if ($refused !== '') {
-                    AjaxResponse::json(array('success' => false, 'error' => $refused));
-                    break;
-                }
-                $uploader = new AjaxUploader();
-                $original = pathinfo($uploader->getOriginalName());
-                $original['extension'] = $original['extension'] ?? '';
-                $filename = uniqid('qqfile_', true) . '.' . $original['extension'];
-                try {
-                    $result =
-                        $uploader->handleUpload(osc_content_path() . 'uploads/temp/' . $filename);
-                } catch (Exception $e) {
-                    trigger_error($e->getMessage(), E_USER_WARNING);
-                    AjaxResponse::json(array('success' => false));
-                    break;
-                }
-
-                // auto rotate
-
-                $img = ImageProcessing::fromFile(osc_content_path() . 'uploads/temp/' . $filename);
-                $img->autoRotate();
-                try {
-                    $img->saveToFile(
-                        osc_content_path() . 'uploads/temp/auto_' . $filename,
-                        $original['extension']
-                    );
-                } catch (Exception $e) {
-                    trigger_error($e->getMessage(), E_USER_NOTICE);
-                    AjaxResponse::json(array('success' => false));
-                    break;
-                }
-                try {
-                    $img->saveToFile(
-                        osc_content_path() . 'uploads/temp/' . $filename,
-                        $original['extension']
-                    );
-                } catch (Exception $e) {
-                    trigger_error($e->getMessage(), E_USER_NOTICE);
-                    AjaxResponse::json(array('success' => false));
-                    break;
-                }
-
-                $result['uploadName'] = 'auto_' . $filename;
-                // Stage the name the client attaches and deletes by, under the form's upload token.
-                UploadTmpStore::stage(UploadTmpStore::formOwner(), Params::getParamString('qquuid'), (string) $result['uploadName'], time());
-                if (!osc_is_web_user_logged_in() && !osc_is_admin_user_logged_in()) {
-                    \mindstellar\security\ActionThrottle::record('ajax_upload');
-                }
-                echo htmlspecialchars(json_encode($result), ENT_NOQUOTES);
+                osc_run_hook('item_edit', $catId, $itemId);
                 break;
             default:
-                AjaxResponse::json(array('error' => __('no action defined')));
+                osc_run_hook('ajax_' . $hook);
                 break;
         }
     }
 
+    /**
+     * Run a plugin's ajax file.
+     */
+    private function custom(): void
+    {
+        if (Params::existParam('route')) {
+            $routes = Rewrite::getInstance()->getRoutes();
+            $rid    = Params::getParam('route');
+            $file   = '../';
+            if (isset($routes[$rid]['file'])) {
+                $file = $routes[$rid]['file'];
+            }
+        } else {
+            // DEPRECATED: Disclosed path in URL is deprecated, use routes instead
+            // This will be REMOVED in 3.4
+            $file = Params::getParam('ajaxfile');
+        }
+
+        if ($file == '') {
+            AjaxResponse::json(array('error' => 'no action defined'));
+            return;
+        }
+
+        // valid file?
+        if (strpos($file, '../') !== false || strpos($file, '..\\') !== false
+            || stripos($file, '/admin/') !== false
+        ) { //If the file is inside an "admin" folder, it should NOT be opened in frontend
+            AjaxResponse::json(array('error' => 'no valid ajaxFile'));
+            return;
+        }
+
+        if (!file_exists(osc_plugins_path() . $file)) {
+            AjaxResponse::json(array('error' => "ajaxFile doesn't exist"));
+            return;
+        }
+
+        // Unauthenticated, and it ends in require_once: resolve the path before
+        // running it -- .php only, and inside the plugins directory once symlinks
+        // are followed.
+        $resolved = \mindstellar\security\PluginAjaxFile::resolve($file, osc_plugins_path());
+        if ($resolved === null) {
+            AjaxResponse::json(array('error' => 'no valid ajaxFile'));
+            return;
+        }
+
+        require_once $resolved;
+    }
+
+    /**
+     * Whether a username is free.
+     */
+    private function checkUsername(): void
+    {
+        $username = (new \mindstellar\utility\Sanitize())->username(Params::getParam('s_username'));
+        if (osc_is_username_blacklisted($username)) {
+            AjaxResponse::json(array('exists' => 1, 's_username' => $username));
+        } else {
+            $user = User::getInstance()->findByUsername($username);
+            if (isset($user['s_username'])) {
+                AjaxResponse::json(array('exists' => 1, 's_username' => $username));
+            } else {
+                AjaxResponse::json(array('exists' => 0, 's_username' => $username));
+            }
+        }
+    }
+
+    /**
+     * Stage a photo the listing form uploads.
+     */
+    private function ajaxUpload(): void
+    {
+        $refused = $this->uploadRefusal();
+        if ($refused !== '') {
+            AjaxResponse::json(array('success' => false, 'error' => $refused));
+            return;
+        }
+        $uploader = new AjaxUploader();
+        $original = pathinfo($uploader->getOriginalName());
+        $original['extension'] = $original['extension'] ?? '';
+        $filename = uniqid('qqfile_', true) . '.' . $original['extension'];
+        try {
+            $result =
+                $uploader->handleUpload(osc_content_path() . 'uploads/temp/' . $filename);
+        } catch (Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+            AjaxResponse::json(array('success' => false));
+            return;
+        }
+
+        // auto rotate
+
+        $img = ImageProcessing::fromFile(osc_content_path() . 'uploads/temp/' . $filename);
+        $img->autoRotate();
+        try {
+            $img->saveToFile(
+                osc_content_path() . 'uploads/temp/auto_' . $filename,
+                $original['extension']
+            );
+        } catch (Exception $e) {
+            trigger_error($e->getMessage(), E_USER_NOTICE);
+            AjaxResponse::json(array('success' => false));
+            return;
+        }
+        try {
+            $img->saveToFile(
+                osc_content_path() . 'uploads/temp/' . $filename,
+                $original['extension']
+            );
+        } catch (Exception $e) {
+            trigger_error($e->getMessage(), E_USER_NOTICE);
+            AjaxResponse::json(array('success' => false));
+            return;
+        }
+
+        $result['uploadName'] = 'auto_' . $filename;
+        // Stage the name the client attaches and deletes by, under the form's upload token.
+        UploadTmpStore::stage(UploadTmpStore::formOwner(), Params::getParamString('qquuid'), (string) $result['uploadName'], time());
+        if (!osc_is_web_user_logged_in() && !osc_is_admin_user_logged_in()) {
+            \mindstellar\security\ActionThrottle::record('ajax_upload');
+        }
+        echo htmlspecialchars(json_encode($result), ENT_NOQUOTES);
+    }
+
+    /**
+     * The answer to an unknown action.
+     */
+    private function noAction(): void
+    {
+        AjaxResponse::json(array('error' => __('no action defined')));
+    }
     /**
      * Why this visitor may not stage another photo, or '' when they may. Only guests have an hourly limit.
      *

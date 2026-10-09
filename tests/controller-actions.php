@@ -54,6 +54,11 @@ $controllers = array(
         'change_password_post', 'change_username', 'change_username_post', 'dashboard', 'delete', 'delete_post',
         'export', 'items', 'profile', 'profile_post', 'sign_out_all_post', 'unsub_alert',
     ), null),
+    'CWebAjax' => array('CWebAjax.php', array(
+        'ajax_upload', 'alerts', 'bulk_actions', 'check_username_availability', 'cities', 'custom',
+        'custom_field_autocomplete', 'delete_image', 'location', 'location_cities', 'location_countries',
+        'location_regions', 'regions', 'runhook',
+    ), 'noAction'),
 );
 
 foreach ($controllers as $class => [$file, $expected, $fallback]) {
