@@ -847,6 +847,10 @@ $run = drive('CAdminSettingsMain', 'update', array('num_rss_items' => '-1') + $m
 pin('a negative count is refused', array('warning:RSS shows must be 0 or more'), flashed($run));
 $run = drive('CAdminSettingsMain', 'update', array('num_rss_items' => '') + $main);
 pin('and a blank one is the zero the screen has always stored', array('0', 'INTEGER'), pref($admin, 'num_rss_items'));
+drive('CAdminSettingsMain', 'update', array('attachment_max_mb' => '3') + $main);
+pin('the attachment limit is saved as a whole number', array('3', 'INTEGER'), pref($admin, 'attachment_max_mb'));
+$run = drive('CAdminSettingsMain', 'update', array('attachment_max_mb' => '0') + $main);
+pin('an attachment limit below 1 MB is stored as 1', array('1', 'INTEGER'), pref($admin, 'attachment_max_mb'));
 
 harness_section('comment settings');
 

@@ -38,7 +38,7 @@ final class MediaSettingsScreen extends SettingsScreen
     /** What jpeg_quality holds when nothing between 1 and 100 was given. */
     public const DEFAULT_JPEG_QUALITY = 82;
 
-    /** Width x height, lower-cased, as every image-size reader parses it. */
+    /** Width x height, lower-cased, both above 0: what ImageProcessing::parseSize() accepts. */
     private const DIMENSION = '/^[1-9][0-9]*x[1-9][0-9]*$/';
 
     /** The text options JSON, each with what a missing or zero entry reads as. */

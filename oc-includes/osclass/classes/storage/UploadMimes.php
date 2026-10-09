@@ -32,7 +32,10 @@ final class UploadMimes
         'webp' => ['image/webp'],
     ];
 
-    /** The files a visitor may attach to a contact e-mail: the name's extension and the real type must agree. */
+    /**
+     * The files a visitor may attach to a contact e-mail: the name's extension and the real type
+     * must agree. Kept apart from IMAGE_MIMES, which follows the owner's photo extensions.
+     */
     private const ATTACHMENT_MIMES = [
         'jpg'  => ['image/jpeg'],
         'jpeg' => ['image/jpeg'],

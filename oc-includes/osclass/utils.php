@@ -248,7 +248,9 @@ function osc_mail_upload_attachment($field)
         || !is_uploaded_file($file['tmp_name'])) {
         return false;
     }
-    $name = trim(preg_replace('/[\x00-\x1F\x7F"\\\\\/]+/', '', basename((string) ($file['name'] ?? ''))));
+    // Direction marks are dropped too: they can make a name show a different extension.
+    $name = preg_replace('/[\x00-\x1F\x7F"\\\\\/]+/', '', basename((string) ($file['name'] ?? '')));
+    $name = trim((string) preg_replace('/[\x{202A}-\x{202E}\x{2066}-\x{2069}]/u', '', $name));
     if (!\mindstellar\storage\UploadMimes::isAllowedAttachment($file['tmp_name'], $name)) {
         return false;
     }

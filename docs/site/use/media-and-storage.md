@@ -20,7 +20,7 @@ from every upload:
 | **Preview size** | The gallery strip on a listing page |
 | **Normal size** | The full view a visitor opens |
 
-Sizes are entered as dimensions. Bigger is not better here: thumbnails are what
+Sizes are entered as width x height, such as `640x480`; neither side may be 0. Bigger is not better here: thumbnails are what
 a browse page loads dozens of at once, and they set how fast the page feels.
 
 **Photo shape → Keep each photo's own shape** (on for new sites) only makes photos
@@ -64,7 +64,8 @@ Photos already uploaded keep their format.
 
 ## Upload restrictions
 
-**Maximum size** caps what a visitor may upload, in KB. The screen shows the
+**Maximum size** caps a listing photo a visitor may upload, in KB. Files attached to a
+contact message have their own limit, in **Settings → General**. The screen shows the
 ceiling PHP itself imposes (*Maximum size PHP configuration allows: n KB*), and
 your setting cannot exceed it.
 

@@ -24,7 +24,7 @@ Set them before you have users, not after.
 | **Attach *n* images per listing** | The photo limit. 0 means no limit. |
 | **Title length** and **Description length** | The most characters a seller may type. The page refuses a length outside the allowed range and shows why. |
 | **Show reCAPTCHA in add/edit listing form** | A captcha on the posting form, once reCAPTCHA is set up. |
-| **Allow attached files in contact publisher form** | Whether the contact form takes a file. |
+| **Allow attached files in contact publisher form** | Whether the contact form takes a file: a picture, PDF, text or office document, up to the size set in **Settings → General**. |
 | **An user has to wait *n* seconds between each listing added** | Rate limit on posting: the cheapest defence against a bulk poster. 0 means no wait. |
 | **Only allow registered users to contact publisher** | Whether the contact form needs an account. |
 | **Notify admin when a new listing is added** | An e-mail to you on every publish. Useful early, unbearable at volume. |
@@ -33,6 +33,8 @@ Set them before you have users, not after.
 :::note
 **RSS shows** and **Latest listings shown** (how many listings appear in the
 RSS feed and on the home page) live under **Settings → General**, not here.
+So do the site contact form's **Attachments** switch and **Largest attached file**
+(5 MB unless you change it), which also limits files sent to a publisher.
 :::
 
 ## Moderating
